@@ -8,7 +8,7 @@
 | Bundle ID | `com.idlery.ultimatetrifecta`: the candidate ID from the brief. Whether it is already registered on your team could not be checked from here. |
 | Marketing version | `1.0` (`MARKETING_VERSION` in `.github/workflows/ios.yml`) |
 | Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`); without it, the GitHub run number. It can be overridden with the `build_number` workflow input. |
-| Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape left/right (all verified in the CI archive's Info.plist, run 4) |
+| Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape left/right. Godot also adds `UIRequiredDeviceCapabilities` `iphone-ipad-minimum-performance-a12`, which means A12 (iPhone XS/XR) or newer. All verified in the CI archive's Info.plist. |
 | Capabilities | Game Center (`com.apple.developer.game-center`) |
 | Toolchain | Godot 4.7.2-stable export; Xcode 26.6 (17F113) with the iOS 26 SDK on the `macos-26` GitHub runner (verified in CI run 3). Apple requires the iOS 26 SDK for uploads from April 28, 2026. |
 

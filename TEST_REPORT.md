@@ -115,7 +115,7 @@ The 7- and 3-client soaks ran on commit `23004fe`, before the bot and chase-tuni
 | Godot 4.7.2 export to Xcode project (bundle `com.idlery.ultimatetrifecta`, Game Center entitlement) | ✅ |
 | `xcodebuild archive` for `generic/platform=iOS`, `CODE_SIGNING_ALLOWED=NO` (arm64 compile + link) | ✅ **project compiled** (unsigned) |
 | Simulator build (x86_64; Godot 4.7.2's simulator slice is x86_64 only) | ✅ |
-| Simulator launch (runs 3–6, iPhone Air simulator, iOS 26.2 runtime) | ✅ **Installs, launches, loads, and reached a match in runs 4 and 5.** No crash reports in any run.<br>Run 5 on commit `27e4a68` is shown in `docs/media/ios_simulator_ci_run5.jpg`: boot splash, then the loading screen for about 2 minutes, then at about 140 s the match with role-reveal card, 4:00 HUD, target list, minimap and [BOT]-labelled players. The frames then stayed identical for 60 s, because the Simulator renders roughly one frame every 30–60 s here, which also slows game time.<br>Run 4 reached the match at about 215 s. Run 6, on the final gameplay commit `ad58d95`, was still on the loading screen when the 200 s capture window ended; runner VM speed varies.<br>In no run was the title screen captured: a cold launch was still on the boot splash after 45 s. |
+| Simulator launch (runs 3–9, iPhone Air simulator, iOS 26.2 runtime) | ✅ **Installs, launches and reaches a match** (runs 4, 5, 8 and 9; runs 6 and 7 used a shorter window and were still loading when it closed).<br>Run 9 is on the final game code (`docs/media/ios_simulator_ci_run9.jpg`): boot splash, about 3 minutes of loading, then the role-reveal card, 4:00 HUD, target list, minimap and [BOT] players, still rendering 8 minutes after launch. The Simulator here produces roughly one frame every 30 s, so game time advances very slowly and the round never got past the reveal.<br>**Crash reports:** run 8 produced one `UltimateTrifecta-…-111659.ips` report. CI printed only its file name, and the cold-launch app was no longer in the foreground at 45 s in that run, so the report most likely belongs to that cold launch. Its contents were not captured, so the cause is **unknown**. CI now summarises any report (`tools/ips_summary.py`). Runs 3–7 and 9 produced none, and in run 9 the cold launch was still alive at 45 s.<br>A cold launch never reached the title screen within the 45 s window. |
 | Archive facts (runs 4–6) | Xcode 26.6 (17F113), iphoneos SDK 26.5, `arm64` binary, `.app` 261 MB uncompressed. Runs 5–6 have no purpose-string warnings.<br>Info.plist: `CFBundleIdentifier com.idlery.ultimatetrifecta`, `1.0 (6)` in run 6, `MinimumOSVersion 17.0`, `UIDeviceFamily 1,2`, landscape left/right, `ITSAppUsesNonExemptEncryption false`.<br>Entitlement: `com.apple.developer.game-center`.<br>Frameworks: `GodotApplePluginsGameCenter`, `SwiftGodotRuntime`. `PrivacyInfo.xcprivacy` declares file-timestamp, boot-time and disk-space API reasons. |
 | Signed archive / upload | ⏸ not run: no App Store Connect credentials (see TESTFLIGHT_RELEASE.md) |
 
@@ -176,7 +176,7 @@ Index: `docs/media/README.md`. Every file is labelled by platform and commit.
 
   The local player in each is bot-driven automation (`--local-bot`), and each clip says so.
 - **Stills:** the title screen, the six waters and other campus locations, and key moments from the clips.
-- **iOS Simulator contact sheet** from CI run 5 (see section 4).
+- **iOS Simulator contact sheet** from CI run 9 (see section 4).
 - **Visual review findings.** Reviewing these captures found the canopy-camera, bot-stacking and foot-chase problems listed under "Fixed during testing", and the time-scale capture bug. All are fixed; the clips were re-recorded afterwards.
 - **No physical-device footage.**
 
@@ -203,3 +203,6 @@ Index: `docs/media/README.md`. Every file is labelled by platform and commit.
 - **Code rooms.** Code rooms use Game Center matchmaking with a `player_group` derived from the code. Players with the same code are matched together, but Game Center decides timing, which can take a few seconds. This has only been reasoned about from Apple's API documentation and has not been run on devices.
 - **Desktop LAN.** Desktop LAN (ENet) exists for development and testing only and is not shown in iOS builds.
 - **Lighting.** Night lighting was tuned on desktop screenshots, and brightness needs a check on a real iPhone screen.
+- **Plugin export errors.** When Godot exports, GodotApplePlugins' extension logs about 76 "Class 'GK…' already has constant …" errors (duplicate enum constants). They are harmless duplicates and the build succeeds, but they will also appear in the device console.
+- **Minimum device.** Godot's export marks the app `iphone-ipad-minimum-performance-a12`, so it installs on A12-class devices (iPhone XS/XR) and newer.
+- **One unexplained Simulator crash report** (run 8, see section 4). It was not reproduced in run 9, and it needs watching in the first TestFlight sessions.
