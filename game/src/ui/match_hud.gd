@@ -32,6 +32,15 @@ var _safe := Rect2()
 var _spectating := -1
 var _t := 0.0
 var _last_penalty_sec := -1
+# tutorial coach
+var coach: PanelContainer
+var coach_lbl: Label
+var coach_step := 0
+var _coach_moved := 0.0
+var _coach_last := Vector3.INF
+var _coach_look := 0.0
+var _coach_yaw := 0.0
+var _coach_flash := 0.0
 
 
 func setup(controller: MatchController) -> void:
@@ -148,6 +157,17 @@ func setup(controller: MatchController) -> void:
 	spectate_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(spectate_lbl)
 
+	coach = UIKit.panel(Color(0.12, 0.36, 0.26, 0.92), 22, 14)
+	coach.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ch := UIKit.hbox(10)
+	ch.add_child(Icons.IconRect.new("star", UIKit.ACCENT, 34))
+	coach_lbl = UIKit.label("", 26, UIKit.TEXT, true)
+	coach_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	coach_lbl.custom_minimum_size = Vector2(560, 0)
+	ch.add_child(coach_lbl)
+	coach.add_child(ch)
+	coach.visible = false
+	root.add_child(coach)
 	_build_pause()
 	_build_reveal()
 	get_viewport().size_changed.connect(_layout)
@@ -367,6 +387,7 @@ func refresh(delta: float) -> void:
 		emotes[slot]["t"] = float(emotes[slot]["t"]) - delta
 		if float(emotes[slot]["t"]) <= 0.0:
 			emotes.erase(slot)
+	_update_coach(delta, phase, role)
 	_place(vs)
 	draw_layer.queue_redraw()
 	compass.queue_redraw()
@@ -394,9 +415,64 @@ func _place(vs: Vector2) -> void:
 	overlay.size = os
 	var fs := feed_box.get_combined_minimum_size()
 	feed_box.position = Vector2(_safe.position.x + 6, vs.y * 0.42 - fs.y)
+	var cs := coach.get_combined_minimum_size()
+	coach.position = Vector2((vs.x - cs.x) * 0.5, vs.y * 0.66)
+	coach.size = cs
 	var ss := spectate_lbl.get_combined_minimum_size()
 	spectate_lbl.position = Vector2((vs.x - ss.x) * 0.5, vs.y - _safe.size.y - 150)
 	spectate_lbl.size = ss
+
+
+func _hint(kind: String) -> String:
+	var d := Controls.device
+	var table := {
+		"move": {"touch": "put your left thumb down and drag", "gamepad": "left stick", "keyboard": "W A S D"},
+		"look": {"touch": "drag on the right side of the screen", "gamepad": "right stick", "keyboard": "hold right mouse and drag (or I J K L)"},
+		"jump": {"touch": "tap Jump", "gamepad": "press A / Cross", "keyboard": "press Space"},
+		"sprint": {"touch": "push the stick all the way to its outer ring", "gamepad": "hold LB or RB", "keyboard": "hold Shift"},
+	}
+	return String(table[kind].get(d, table[kind]["touch"]))
+
+
+func _update_coach(delta: float, phase: int, role: int) -> void:
+	var tut := bool(mc.start.get("tutorial", false))
+	if not tut or role != TC.Role.RUNNER or phase < TC.Phase.PLAYING or phase > TC.Phase.PLAYING:
+		coach.visible = false
+		return
+	var rs: Dictionary = info.get("rs", {})
+	if not rs.has("pos"):
+		return
+	var p: Vector3 = rs["pos"]
+	if _coach_last != Vector3.INF:
+		_coach_moved += Vector2(p.x - _coach_last.x, p.z - _coach_last.z).length()
+	_coach_last = p
+	_coach_look += absf(wrapf(mc.camera.yaw - _coach_yaw, -PI, PI))
+	_coach_yaw = mc.camera.yaw
+	var stamps: int = info.get("stamps", 0)
+	var st: int = rs.get("state", 0)
+	var steps := [
+		["Move: %s." % _hint("move"), _coach_moved > 4.0],
+		["Look around: %s." % _hint("look"), _coach_look > 1.2],
+		["Jump: %s." % _hint("jump"), not bool(rs.get("on_floor", true)) and (rs.get("vel", Vector3.ZERO) as Vector3).y > 2.0],
+		["Dive: jump, then %s again while in the air." % _hint("jump").replace("tap ", "tap ").replace("press ", "press "), bool(rs.get("diving", false))],
+		["Sprint: %s. It refills quickly." % _hint("sprint"), bool(rs.get("sprinting", false))],
+		["Follow a glowing beam (see the compass at the top) and jump into that water!", stamps != 0],
+		["SPLASH! Two more spots to go. Each one has its own shape and colour.", stamps == 7],
+		["All three! Now run home through ANY of the dorm's four doors.", st == TC.PState.FINISHED],
+		["You did the Trifecta! The Night Watch is out now — cheer on your team.", false],
+	]
+	while coach_step < steps.size() - 1 and bool(steps[coach_step][1]):
+		coach_step += 1
+		_coach_flash = 0.6
+		Sfx.play("pickup")
+	var rel: float = info.get("release_left", 0.0)
+	var txt: String = steps[coach_step][0]
+	if rel > 0.0 and coach_step < 7:
+		txt += "\n(Night Watch is still in the shed: %ds)" % int(ceil(rel))
+	coach_lbl.text = txt
+	_coach_flash = maxf(0.0, _coach_flash - delta)
+	coach.modulate = Color(1, 1, 1, 1).lerp(Color(1.4, 1.4, 1.0, 1), _coach_flash)
+	coach.visible = true
 
 
 func world_to_screen(p: Vector3) -> Vector2:
@@ -505,8 +581,15 @@ class Compass:
 		var home := role == TC.Role.RUNNER and stamps == 7
 		var dist_items: Array = []
 		if home or role == TC.Role.PATROL:
+			# nearest entrance only (keeps the compass readable)
+			var best: Dictionary = hud.mc.layout.dorm_doors[0]
+			var bd := 1e9
 			for d in hud.mc.layout.dorm_doors:
-				items.append({"p": d["pos"], "icon": "house", "col": Color(1.0, 0.9, 0.55) if home else Color(1, 1, 1, 0.5)})
+				var dd := (d["pos"] as Vector2).distance_to(Vector2(pos.x, pos.z))
+				if dd < bd:
+					bd = dd
+					best = d
+			items.append({"p": best["pos"], "icon": "house", "col": Color(1.0, 0.9, 0.55) if home else Color(1, 1, 1, 0.55)})
 		for m in info.get("markers", []):
 			var wt2: Dictionary = hud.mc.layout.waters[int(m["water"])]
 			items.append({"p": wt2["center"], "icon": "drop", "col": Color(1, 1, 1)})

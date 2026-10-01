@@ -17,6 +17,7 @@ var pitch: float = 0.0
 var prev_speed: float = 0.0
 var t: float = 0.0
 var rs: Dictionary = {}
+var engine: AudioStreamPlayer3D
 
 
 func setup(index: int) -> void:
@@ -49,21 +50,21 @@ func setup(index: int) -> void:
 		_mi(chassis, sph, CharacterView.mat(Color(1.0, 0.95, 0.75), 0.0, Color.WHITE, 2.5), Vector3(hx, 0.7, -1.38), Vector3(0.24, 0.24, 0.12))
 	head_beam = MeshInstance3D.new()
 	var bm := CylinderMesh.new()
-	bm.top_radius = 0.4
-	bm.bottom_radius = 2.4
-	bm.height = 9.0
+	bm.top_radius = 0.3
+	bm.bottom_radius = 1.6
+	bm.height = 7.0
 	bm.cap_top = false
 	bm.cap_bottom = false
 	head_beam.mesh = bm
 	var gm := ShaderMaterial.new()
 	gm.shader = preload("res://assets/shaders/glow_add.gdshader")
 	gm.set_shader_parameter("color", Color(1.0, 0.9, 0.7))
-	gm.set_shader_parameter("intensity", 0.12)
+	gm.set_shader_parameter("intensity", 0.07)
 	gm.set_shader_parameter("mode", 2.0)
 	head_beam.material_override = gm
 	head_beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	head_beam.rotation = Vector3(-PI * 0.5 + 0.12, 0, 0)
-	head_beam.position = Vector3(0, 0.5, -5.8)
+	head_beam.position = Vector3(0, 0.55, -4.8)
 	chassis.add_child(head_beam)
 	# rotating orange beacon on the roof (funny, not police)
 	beacon = _mi(chassis, sph, CharacterView.mat(Color(1.0, 0.6, 0.1), 0.0, Color.WHITE, 2.0), Vector3(0, 2.48, 0.15), Vector3(0.3, 0.26, 0.3))
@@ -73,6 +74,19 @@ func setup(index: int) -> void:
 	beacon_light.omni_range = 7.0
 	beacon_light.position = Vector3(0, 2.6, 0.15)
 	chassis.add_child(beacon_light)
+	# electric motor hum (looped), pitch follows speed
+	engine = AudioStreamPlayer3D.new()
+	var st: AudioStream = load("res://assets/audio/cart_loop.wav")
+	if st is AudioStreamWAV:
+		var w := st as AudioStreamWAV
+		w.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		w.loop_begin = 0
+		w.loop_end = int(w.get_length() * w.mix_rate) - 1
+	engine.stream = st
+	engine.max_distance = 45.0
+	engine.unit_size = 5.0
+	engine.volume_db = -12.0
+	add_child(engine)
 	# wheels
 	for wx in [-0.72, 0.72]:
 		for wz in [-0.85, 0.95]:
@@ -135,4 +149,11 @@ func _process(delta: float) -> void:
 	beacon_light.light_energy = 0.8 + 0.6 * absf(sin(t * 6.0))
 	beacon.rotation.y = t * 8.0
 	head_beam.visible = occupied
+	if engine:
+		if occupied and not engine.playing:
+			engine.play()
+		elif not occupied and engine.playing:
+			engine.stop()
+		engine.pitch_scale = 0.7 + clampf(absf(speed) / 11.0, 0.0, 1.0) * 0.9
+		engine.volume_db = linear_to_db(maxf(Sfx.sfx_volume, 0.001)) - 14.0 + clampf(absf(speed) / 11.0, 0.0, 1.0) * 6.0
 	chassis.position.y = (0.03 * sin(t * 30.0) if occupied and absf(speed) > 1.0 else 0.0) + (0.05 * sin(t * 20.0) if slowed else 0.0)

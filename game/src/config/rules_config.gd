@@ -108,7 +108,6 @@ extends Resource
 @export var noise_jog_m: float = 14.0
 @export var noise_patrol_step_m: float = 12.0
 @export var noise_cart_m: float = 45.0
-@export var noise_splash_m: float = 30.0
 
 @export_group("Networking")
 @export var sim_hz: int = 60

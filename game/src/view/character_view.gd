@@ -55,6 +55,12 @@ var t_accum: float = 0.0
 var hidden_for_state := false
 var reduced_motion := false
 var rs: Dictionary = {}
+var _was_diving := false
+
+
+func _near_camera(r: float) -> bool:
+	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
+	return cam != null and cam.global_position.distance_to(global_position) < r
 
 
 static func _init_meshes() -> void:
@@ -351,6 +357,9 @@ func _build_label(display_name: String, is_bot: bool) -> void:
 	name_label.position = Vector3(0, 2.1, 0)
 	name_label.modulate = Color(1.0, 0.65, 0.35) if role == TC.Role.PATROL else Color(0.6, 0.95, 1.0)
 	name_label.outline_modulate = Color(0.05, 0.05, 0.12)
+	name_label.visibility_range_end = 32.0
+	name_label.visibility_range_end_margin = 6.0
+	name_label.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	if is_local:
 		name_label.visible = false
 	add_child(name_label)
@@ -416,8 +425,12 @@ func _process(delta: float) -> void:
 		"scale": Vector3.ONE, "spin": 0.0,
 	}
 	var gait := clampf(speed / 7.0, 0.0, 1.2)
+	var prev_phase := phase
 	if on_floor and speed > 0.3 and not diving and not in_cart:
 		phase += delta * (5.0 + speed * 1.55)
+	# footsteps: silent when sneaking (matches the gameplay noise rule), louder sprinting
+	if on_floor and speed > 3.2 and not in_cart and int(prev_phase / PI) != int(phase / PI) and _near_camera(30.0):
+		Sfx.play("step", global_position, -6.0 + (4.0 if sprinting else 0.0) + (2.0 if role == TC.Role.PATROL else 0.0), 0.9 if role == TC.Role.PATROL else 1.1)
 	var s := sin(phase)
 	var c := cos(phase)
 	if in_cart:
@@ -538,8 +551,15 @@ func _process(delta: float) -> void:
 	var air := not on_floor
 	if prev_air and not air:
 		squash = clampf(-prev_vel.y * 0.05, 0.08, 0.32)
+		if prev_vel.y < -3.0 and _near_camera(25.0):
+			Sfx.play("land", global_position, -4.0)
 	if not prev_air and air and vel.y > 2.0:
 		squash = -0.15
+		if _near_camera(25.0):
+			Sfx.play("jump", global_position, -6.0)
+	if diving and not _was_diving and _near_camera(25.0):
+		Sfx.play("dive", global_position, -4.0)
+	_was_diving = diving
 	prev_air = air
 	prev_vel = vel
 	squash = move_toward(squash, 0.0, delta * 1.6)

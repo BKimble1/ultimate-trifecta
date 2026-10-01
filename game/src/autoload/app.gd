@@ -31,7 +31,9 @@ func _ready() -> void:
 	if OS.has_feature("mobile"):
 		Engine.max_fps = 60
 	Social.invite_ready.connect(_on_invite_ready)
-	Social.authenticate()
+	# automation runs (simulator evidence) skip the Game Center sign-in sheet
+	if not OS.get_cmdline_user_args().has("--no-gamecenter"):
+		Social.authenticate()
 	_ui_layer = CanvasLayer.new()
 	_ui_layer.layer = 10
 	add_child(_ui_layer)
@@ -75,7 +77,7 @@ func _process(delta: float) -> void:
 				if e != null:
 					readies.append("%s%s" % [e["slot"], "R" if bool(e["ready"]) else "-"])
 			st = "mode=%d phase=%d slot=%d host_peer=%d humans=%d roster=%s connected=%s peers=%s" % [session.mode, session.phase, session.local_slot, session.host_peer, session.human_count(), str(readies), session.connected, str(session.transport.peers() if session.transport else [])]
-		printerr("SOAK t=%.0f %s match=%s" % [_dev_t, st, match_ctrl != null])
+		printerr("SOAK t=%.0f %s match=%s fps=%.0f" % [_dev_t, st, match_ctrl != null, Engine.get_frames_per_second()])
 
 
 func _boot() -> void:
@@ -119,7 +121,7 @@ func _boot() -> void:
 		if a.begins_with("--autoplay="):
 			# dev/automation hook: jump straight into practice as a role
 			practice_role = a.split("=")[1]
-			start_practice(practice_role, false)
+			start_practice("runner" if practice_role == "tutorial" else practice_role, practice_role == "tutorial")
 			return
 	goto_title()
 

@@ -130,22 +130,60 @@ jobs:
           set -x
           APP=$(find build/ios/dd-sim -name '*.app' -maxdepth 6 | head -1)
           DEV=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; c=[x for r,l in d.items() if "iOS" in r for x in l if "iPhone" in x["name"]]; print(sorted(c,key=lambda x:x["name"])[-1]["udid"])')
+          xcrun simctl list devices available | grep "$DEV" || true
           xcrun simctl boot "$DEV" || true
           xcrun simctl bootstatus "$DEV" -b
           xcrun simctl install "$DEV" "$APP"
           mkdir -p sim-evidence
-          xcrun simctl io "$DEV" recordVideo --codec h264 --force sim-evidence/practice_bot_run.mp4 &
+          # cold launch to the title screen first (Game Center skipped: no account on CI)
+          xcrun simctl launch "$DEV" "$BUNDLE_ID" -- --no-gamecenter > /dev/null
+          sleep 45
+          xcrun simctl io "$DEV" screenshot sim-evidence/00_title.png || true
+          xcrun simctl terminate "$DEV" "$BUNDLE_ID" || true
+          sleep 2
+          # bot-driven practice round as a runner (labelled: iOS Simulator, x86_64, Release, unsigned)
+          xcrun simctl io "$DEV" recordVideo --codec h264 --force sim-evidence/practice_bot_run_simulator.mp4 &
           REC=$!
-          xcrun simctl launch --console-pty "$DEV" "$BUNDLE_ID" -- --autoplay=runner --local-bot > sim-evidence/app-console.log 2>&1 &
-          for i in 1 2 3 4 5 6 7 8; do sleep 8; xcrun simctl io "$DEV" screenshot "sim-evidence/shot_$i.png" || true; done
+          xcrun simctl launch --console-pty "$DEV" "$BUNDLE_ID" -- --no-gamecenter --autoplay=runner --local-bot --report=user://sim_report.json > sim-evidence/app-console.log 2>&1 &
+          for i in $(seq 1 14); do sleep 15; xcrun simctl io "$DEV" screenshot "sim-evidence/run_$(printf %02d $i).png" || true; done
           kill -INT $REC || true
           sleep 3
           xcrun simctl terminate "$DEV" "$BUNDLE_ID" || true
-          # cold launch to the title screen
-          xcrun simctl launch "$DEV" "$BUNDLE_ID" > /dev/null
-          sleep 10
-          xcrun simctl io "$DEV" screenshot sim-evidence/title.png || true
           ls -la sim-evidence
+          echo "---- app console (tail) ----"
+          tail -n 120 sim-evidence/app-console.log || true
+          echo "---- crash reports ----"
+          ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i -E "trifecta|godot" || echo "none"
+      - name: Evidence contact sheet (base64 JPEG in log)
+        if: steps.simbuild.outcome == 'success'
+        continue-on-error: true
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          import base64, glob, io
+          from PIL import Image
+          files = sorted(glob.glob("sim-evidence/*.png"))
+          if not files:
+              raise SystemExit("no screenshots")
+          W, cols = 300, 4
+          thumbs = []
+          for f in files:
+              im = Image.open(f).convert("RGB")
+              thumbs.append(im.resize((W, int(im.height * W / im.width))))
+          h = max(t.height for t in thumbs)
+          rows = (len(thumbs) + cols - 1) // cols
+          sheet = Image.new("RGB", (W * cols, h * rows), (0, 0, 0))
+          for i, t in enumerate(thumbs):
+              sheet.paste(t, ((i % cols) * W, (i // cols) * h))
+          sheet.save("sim-evidence/contact_sheet.jpg", quality=55)
+          buf = io.BytesIO(); sheet.save(buf, "JPEG", quality=40)
+          print("CONTACT_SHEET_FILES", " ".join(f.split("/")[-1] for f in files))
+          print("CONTACT_SHEET_BEGIN")
+          b = base64.b64encode(buf.getvalue()).decode()
+          for i in range(0, len(b), 1000):
+              print(b[i:i+1000])
+          print("CONTACT_SHEET_END")
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
