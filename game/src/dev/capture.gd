@@ -51,6 +51,7 @@ func snap(shot_name: String) -> void:
 		return
 	_shots[shot_name] = _t
 	if DisplayServer.get_name() == "headless":
+		printerr("CAPTURE-HEADLESS %s t=%.1f" % [shot_name, _t])   # timing only (no image)
 		return
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
@@ -195,7 +196,8 @@ func _results() -> void:
 		r.session = s
 		App._show(r)
 		later(2.5, "results")
-	elif _shots.has("results") and not _scheduled.has("drawer"):
+	elif _shots.has("results") and _t > float(_shots["results"]) + 0.6 and not _scheduled.has("drawer"):
+		# (wait until the "results" PNG is written: snap() awaits the frame)
 		_scheduled["drawer"] = true
 		(App.screen as ResultsScreen)._toggle_board()
 		later(1.5, "results_drawer")
