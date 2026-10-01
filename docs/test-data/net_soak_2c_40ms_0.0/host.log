@@ -1,0 +1,56 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+SOAK t=5 mode=1 phase=2 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=10 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=15 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=20 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=25 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=30 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=35 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=40 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=45 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=50 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=55 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=60 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=65 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=70 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=75 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=80 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=85 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=90 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=95 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=100 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=105 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=110 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=115 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=120 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=125 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=130 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=135 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=140 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=145 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=150 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=155 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=160 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=165 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=170 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=175 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=180 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=185 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=190 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=195 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=200 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=205 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=210 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=215 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=220 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=225 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=230 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=235 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=240 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=245 mode=1 phase=4 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+SOAK t=250 mode=1 phase=5 slot=0 host_peer=-1 humans=3 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[3672973, 1666556144] match=true
+WARNING: 10 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

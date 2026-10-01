@@ -20,6 +20,13 @@ var targets: Array = []
 var roster: Dictionary = {}   # slot -> start roster entry
 var quality := 1
 var reduced_motion := false
+var with_visuals := true
+## Tests/automation: Callable(mc) -> InputCmd used instead of device input.
+var input_source: Callable
+# measurements (network tests / soak runs)
+var stat_corrections: Array[float] = []
+var stat_snapshots := 0
+var stat_big: Array = []
 
 # host
 var sim: MatchSim
@@ -32,6 +39,7 @@ var pred_cart_id := -1
 var client_world: Node3D
 var cart_proxies: Array[AnimatableBody3D] = []
 var _pending: Array = []      # InputCmd not yet acknowledged
+var _last_ack := 0
 var _sent_window: Array = []
 var _next_seq := 1
 var _est_tick: float = 0.0
@@ -63,6 +71,8 @@ var _local_events: Array = []
 var _shake_cd := 0.0
 var _phase_seen := -1
 var _countdown_last := -1
+var _finish_sent := false
+var _prev_server_state := -1
 
 
 func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> void:
@@ -74,6 +84,7 @@ func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> 
 	local_slot = session.local_slot
 	quality = int(settings.get("quality", 1))
 	reduced_motion = bool(settings.get("reduced_motion", false))
+	with_visuals = bool(settings.get("visuals", true))
 	targets = start["targets"]
 	for e in start["roster"]:
 		roster[int(e["slot"])] = e
@@ -82,10 +93,11 @@ func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> 
 
 func _ready() -> void:
 	# --- world
-	var builder := CampusBuilder.new(layout)
-	water_nodes = builder.build_visuals(self, quality)
-	add_child(EnvFactory.make_environment(quality))
-	add_child(EnvFactory.make_moon(quality))
+	if with_visuals:
+		var builder := CampusBuilder.new(layout)
+		water_nodes = builder.build_visuals(self, quality)
+		add_child(EnvFactory.make_environment(quality))
+		add_child(EnvFactory.make_moon(quality))
 	fx = Fx.new()
 	add_child(fx)
 	_build_beacons()
@@ -169,8 +181,22 @@ func _setup_client_world() -> void:
 		pred.role = int(roster[local_slot]["role"])
 		pred.body = Motor.make_character_body("Pred")
 		client_world.add_child(pred.body)
-		var sp: Vector2 = layout.runner_spawns[0] if pred.is_runner() else layout.patrol_spawns[0]
+		# same spawn assignment as MatchSim.setup (roster order)
+		var ri := 0
+		var pi := 0
+		var sp := Vector2.ZERO
+		for e in start["roster"]:
+			var is_r := int(e["role"]) == TC.Role.RUNNER
+			if int(e["slot"]) == local_slot:
+				sp = layout.runner_spawns[ri % layout.runner_spawns.size()] if is_r else layout.patrol_spawns[pi % layout.patrol_spawns.size()]
+				pred.yaw = 0.0 if is_r else PI
+			if is_r:
+				ri += 1
+			else:
+				pi += 1
 		pred.body.global_position = Vector3(sp.x, 0.05, sp.y)
+		if pred.is_patrol():
+			pred.state = TC.PState.WAITING
 	for i in cfg.cart_count:
 		var ab := AnimatableBody3D.new()
 		ab.collision_layer = TC.L_CART
@@ -206,6 +232,12 @@ func _local_in_cart() -> bool:
 func _build_local_cmd() -> InputCmd:
 	var cmd := InputCmd.new()
 	if spectator:
+		return cmd
+	if input_source.is_valid():
+		cmd = input_source.call(self)
+		cmd.seq = _next_seq
+		_next_seq += 1
+		cmd.quantize()
 		return cmd
 	var mv := Controls.get_move()
 	var yaw := camera.yaw if camera else 0.0
@@ -265,9 +297,43 @@ func _controllable(st: int) -> bool:
 	return st == TC.PState.ACTIVE or st == TC.PState.STUMBLE or st == TC.PState.EXITING
 
 
+## Server tick at which an input sent now will be simulated (clock estimate).
+func _arrival_tick() -> float:
+	var rtt_s := session.rtt if session != null else 0.1
+	return _est_tick + rtt_s * 0.5 * cfg.sim_hz + 1.0
+
+
+func _round_start_estimate() -> float:
+	var s := _last_snap
+	if _client_phase >= TC.Phase.PLAYING:
+		return float(s.get("round_start", 0))
+	if _client_phase == TC.Phase.COUNTDOWN:
+		return float(s.get("phase_tick", 0)) + cfg.ticks(cfg.start_countdown_s)
+	if _client_phase == TC.Phase.REVEAL:
+		return float(s.get("phase_tick", 0)) + cfg.ticks(cfg.role_reveal_s + cfg.start_countdown_s)
+	return INF
+
+
+## Host tick that will simulate input `seq`: inputs are consumed one per tick
+## after the last acknowledged one (reported in each snapshot).
+func _process_tick_of(seq: int) -> float:
+	if not _last_snap.has("tick"):
+		return _arrival_tick()
+	return float(_last_snap["tick"]) + float(seq - _last_ack)
+
+
 func _predict_step(cmd: InputCmd, dt: float) -> void:
-	if _client_phase != TC.Phase.PLAYING:
+	# predict exactly the inputs the host will simulate as PLAYING ("GO")
+	var arrive := _process_tick_of(cmd.seq)
+	var start_t := _round_start_estimate()
+	if _client_phase > TC.Phase.PLAYING or not _last_snap.has("tick") or arrive < start_t:
 		return
+	if pred.state == TC.PState.WAITING:
+		if arrive >= start_t + cfg.ticks(cfg.runner_head_start_s):
+			pred.state = TC.PState.ACTIVE
+			pred.state_t = 0.0
+		else:
+			return
 	if pred.state == TC.PState.IN_CART and pred_cart != null:
 		Motor.advance_timers(pred, cfg, dt)
 		Motor.step_cart(pred_cart, cmd, cfg, dt, layout)
@@ -296,7 +362,8 @@ func _on_snapshot(s: Dictionary) -> void:
 	_last_snap_tick = tick
 	_last_snap = s
 	_client_phase = int(s["phase"])
-	var target := float(tick) + session.rtt * 0.5 * cfg.sim_hz
+	var rtt_s := session.rtt if session != null else 0.1
+	var target := float(tick) + rtt_s * 0.5 * cfg.sim_hz
 	if not _have_clock or absf(_est_tick - target) > 20.0:
 		_est_tick = target
 		_have_clock = true
@@ -325,11 +392,14 @@ func _reconcile(s: Dictionary) -> void:
 	if pred == null or not _me.has("motor"):
 		return
 	var ack: int = s["ack"]
+	_last_ack = ack
 	while not _pending.is_empty() and (_pending[0] as InputCmd).seq <= ack:
 		_pending.pop_front()
 	var before := pred.pos()
 	var m: Dictionary = _me["motor"]
 	pred.apply_motor(m)
+	if pred.on_floor:
+		pred.body.apply_floor_snap()
 	var server_state: int = m["state"]
 	var cart_id: int = m["cart_id"]
 	# local cart prediction while driving
@@ -342,13 +412,22 @@ func _reconcile(s: Dictionary) -> void:
 		pred_cart.body.queue_free()
 		pred_cart = null
 		pred_cart_id = -1
-	var enabled := _controllable(server_state)
+	var enabled := _controllable(server_state) or server_state == TC.PState.WAITING
 	Motor.set_body_enabled(pred.body, enabled)
 	if enabled or server_state == TC.PState.IN_CART:
 		for c in _pending:
 			_predict_step(c, cfg.dt())
 	var after := pred.pos()
 	var err := before.distance_to(after)
+	stat_snapshots += 1
+	# only count true mispredictions: skip legitimate teleports (respawn,
+	# resurfacing, recovery, cart exits) where the server state just changed
+	var transition := server_state != _prev_server_state
+	_prev_server_state = server_state
+	if enabled and stat_snapshots > 1 and not transition and err < 4.0:
+		stat_corrections.append(err)
+		if err > 0.2 and stat_big.size() < 12:
+			stat_big.append({"err": snappedf(err, 0.01), "tick": int(s["tick"]), "ack": ack, "phase": _client_phase, "pend_seqs": [(_pending[0] as InputCmd).seq if not _pending.is_empty() else -1, (_pending[-1] as InputCmd).seq if not _pending.is_empty() else -1], "state": server_state, "pending": _pending.size(), "srv_pos": m["pos"], "before": before, "after": after, "floor": m["on_floor"], "vel": m["vel"], "role": pred.role})
 	if err < 3.0:
 		_smooth += before - after
 	else:
@@ -565,14 +644,12 @@ func _process(delta: float) -> void:
 		_phase_seen = info_phase
 		if info_phase == TC.Phase.PLAYING:
 			Sfx.play("go")
-		if info_phase == TC.Phase.RESULTS or info_phase == TC.Phase.ENDED:
-			var res: Dictionary = sim.results if sim else _client_results
-			if not res.is_empty():
-				Sfx.music("results")
-				get_tree().create_timer(cfg.results_hold_s).timeout.connect(func() -> void: finished.emit(res))
-	if is_client and (_client_phase == TC.Phase.RESULTS) and not _client_results.is_empty() and _phase_seen == TC.Phase.RESULTS and not has_meta("res_done"):
-		set_meta("res_done", true)
-		get_tree().create_timer(cfg.results_hold_s).timeout.connect(func() -> void: finished.emit(_client_results))
+	var done_phase := info_phase == TC.Phase.RESULTS or info_phase == TC.Phase.ENDED
+	var res: Dictionary = sim.results if sim else _client_results
+	if done_phase and not res.is_empty() and not _finish_sent:
+		_finish_sent = true
+		Sfx.music("results")
+		get_tree().create_timer(cfg.results_hold_s).timeout.connect(func() -> void: finished.emit(res))
 	if info_phase < TC.Phase.PLAYING:
 		var cd := int(ceil(float(local_info().get("countdown", 0.0))))
 		if cd != _countdown_last and cd <= int(cfg.start_countdown_s) and cd > 0:

@@ -101,17 +101,19 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 	p.jumped_this_tick = false
 	p.landed_this_tick = false
 	var runner := p.is_runner()
-	var was_floor := p.on_floor
-	p.on_floor = b.is_on_floor()
+	# p.on_floor is the floor state after the previous move; it is part of the
+	# serialized motor state so host and predicting client step identically.
 	if p.on_floor:
-		if not was_floor:
+		if p.air_t > 0.0:
 			p.landed_this_tick = true
+		p.air_t = 0.0
 		if p.diving:
 			p.diving = false
 			p.dive_land = cfg.dive_land_s
 		p.coyote = cfg.coyote_time_s
 	else:
 		p.coyote = maxf(0.0, p.coyote - dt)
+		p.air_t += dt
 
 	# --- timers
 	p.turbo_t = maxf(0.0, p.turbo_t - dt)
@@ -214,7 +216,8 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 	b.move_and_slide()
 	var rv := b.velocity
 	p.vel = Vector3(rv.x, rv.y, rv.z)
-	if b.is_on_floor() and p.vel.y < 0.0:
+	p.on_floor = b.is_on_floor()
+	if p.on_floor and p.vel.y < 0.0:
 		p.vel.y = 0.0
 	if b.is_on_ceiling() and p.vel.y > 0.0:
 		p.vel.y = 0.0

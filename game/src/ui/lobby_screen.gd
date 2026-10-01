@@ -126,9 +126,8 @@ func _build_room() -> void:
 	warm.light_energy = 2.2
 	warm.omni_range = 9.0
 	room.stage.add_child(warm)
-	room.cam.position = Vector3(0, 2.4, 6.2)
 	room.cam.fov = 52
-	room.cam.look_at(Vector3(0, 1.0, -0.5))
+	room.aim(Vector3(0, 2.4, 6.2), Vector3(0, 1.0, -0.5))
 	_room_built = true
 
 

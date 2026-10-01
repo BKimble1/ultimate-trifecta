@@ -15,6 +15,11 @@ var dev_local_bot := false
 var dev_shots_dir := ""
 var dev_quit_after := 0.0
 var dev_seed := -1
+var dev_report := ""
+var dev_rounds := 1
+var dev_expect := 8
+var _dev_rounds_done := 0
+var _dev_report_rows: Array = []
 var _dev_t := 0.0
 var _dev_shot_i := 0
 var _dev_next_shot := 2.0
@@ -40,13 +45,19 @@ func _ready() -> void:
 			dev_quit_after = float(a.split("=")[1])
 		elif a.begins_with("--seed="):
 			dev_seed = int(a.split("=")[1])
+		elif a.begins_with("--report="):
+			dev_report = a.split("=")[1]
+		elif a.begins_with("--rounds="):
+			dev_rounds = int(a.split("=")[1])
+		elif a.begins_with("--expect="):
+			dev_expect = int(a.split("=")[1])
 	if OS.get_cmdline_user_args().has("--no-app"):
 		return
 	call_deferred("_boot")
 
 
 func _process(delta: float) -> void:
-	if dev_quit_after <= 0.0 and dev_shots_dir == "":
+	if dev_quit_after <= 0.0 and dev_shots_dir == "" and dev_report == "":
 		return
 	_dev_t += delta
 	if dev_shots_dir != "" and _dev_t >= _dev_next_shot:
@@ -56,10 +67,54 @@ func _process(delta: float) -> void:
 		_dev_shot_i += 1
 	if dev_quit_after > 0.0 and _dev_t >= dev_quit_after:
 		get_tree().quit()
+	if dev_report != "" and int(_dev_t) % 5 == 0 and int(_dev_t - delta) % 5 != 0:
+		var st := "no session"
+		if session:
+			var readies := []
+			for e in session.roster:
+				if e != null:
+					readies.append("%s%s" % [e["slot"], "R" if bool(e["ready"]) else "-"])
+			st = "mode=%d phase=%d slot=%d host_peer=%d humans=%d roster=%s connected=%s peers=%s" % [session.mode, session.phase, session.local_slot, session.host_peer, session.human_count(), str(readies), session.connected, str(session.transport.peers() if session.transport else [])]
+		printerr("SOAK t=%.0f %s match=%s" % [_dev_t, st, match_ctrl != null])
 
 
 func _boot() -> void:
+	var cs := get_tree().current_scene
+	if cs != null and cs.scene_file_path != "" and cs.scene_file_path != "res://src/main.tscn":
+		return   # tools / dev scenes run without the menu flow
 	var args := OS.get_cmdline_user_args()
+	var lag := 0.0
+	var jitter := 0.0
+	var loss := 0.0
+	for a in args:
+		if a.begins_with("--lag="):
+			lag = float(a.split("=")[1])
+		elif a.begins_with("--jitter="):
+			jitter = float(a.split("=")[1])
+		elif a.begins_with("--loss="):
+			loss = float(a.split("=")[1])
+	for a in args:
+		if a.begins_with("--net-host"):
+			var port := int(a.split("=")[1]) if a.contains("=") else 7787
+			host_room_enet(port)
+			_shape(lag, jitter, loss)
+			_dev_autostart()
+			return
+		if a.begins_with("--net-join="):
+			var addr := a.split("=")[1]
+			var port2 := 7787
+			if addr.contains(":"):
+				port2 = int(addr.split(":")[1])
+				addr = addr.split(":")[0]
+			join_room_enet(addr, port2)
+			_shape(lag, jitter, loss)
+			if session:
+				session.lobby_changed.connect(func() -> void:
+					if session and session.local_slot >= 0 and session.phase == TC.Phase.LOBBY:
+						var e: Variant = session.roster[session.local_slot]
+						if e != null and not bool(e["ready"]):
+							session.set_local_ready(true))
+			return
 	for a in args:
 		if a.begins_with("--autoplay="):
 			# dev/automation hook: jump straight into practice as a role
@@ -67,6 +122,65 @@ func _boot() -> void:
 			start_practice(practice_role, false)
 			return
 	goto_title()
+
+
+func _shape(lag: float, jitter: float, loss: float) -> void:
+	if session and session.transport is EnetTransport:
+		var et := session.transport as EnetTransport
+		et.latency_ms = lag
+		et.jitter_ms = jitter
+		et.loss = loss
+
+
+func _dev_autostart() -> void:
+	# host: start as soon as the expected humans are in and ready
+	var timer := Timer.new()
+	timer.wait_time = 0.5
+	timer.autostart = true
+	add_child(timer)
+	timer.timeout.connect(func() -> void:
+		if session == null or match_ctrl != null or session.phase != TC.Phase.LOBBY:
+			return
+		if session.human_count() >= dev_expect and session.can_start():
+			session.host_start_match(dev_seed))
+
+
+func _dev_record(results: Dictionary, reward: Dictionary) -> void:
+	if dev_report == "":
+		return
+	var row := {"round": _dev_rounds_done + 1, "mode": ["offline", "host", "client"][session.mode] if session else "?",
+		"slot": session.local_slot if session else -1, "outcome": int(results.get("outcome", 0)),
+		"finished": int(results.get("finished", 0)), "round_time": results.get("round_time", 0.0),
+		"reward_coins": int(reward.get("coins", 0)), "rtt_ms": snappedf(session.rtt * 1000.0, 1) if session else 0.0}
+	if match_ctrl:
+		var corr: Array = match_ctrl.stat_corrections
+		var avg := 0.0
+		var mx := 0.0
+		for e in corr:
+			avg += e
+			mx = maxf(mx, e)
+		row["snapshots"] = match_ctrl.stat_snapshots
+		row["corr_avg_m"] = snappedf(avg / maxf(1.0, corr.size()), 0.0001)
+		row["corr_max_m"] = snappedf(mx, 0.001)
+		row["fps_avg"] = Engine.get_frames_per_second()
+	if session and session.transport is EnetTransport:
+		var et := session.transport as EnetTransport
+		row["sent"] = et.stats_sent
+		row["dropped_by_shaper"] = et.stats_dropped
+		row["lag_ms"] = et.latency_ms
+		row["loss"] = et.loss
+	if session and session.mode == NetSession.Mode.HOST:
+		row["host_starved"] = session.stat_starved
+		row["host_skipped"] = session.stat_skipped
+		var humans := 0
+		for r in results.get("players", []):
+			if not bool(r.get("is_bot", false)):
+				humans += 1
+		row["humans"] = humans
+	_dev_report_rows.append(row)
+	var f := FileAccess.open(dev_report, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(_dev_report_rows, "  "))
 
 
 # ---------------------------------------------------------------------------
@@ -253,6 +367,9 @@ func _on_match_starting(info: Dictionary) -> void:
 	match_ctrl.setup(session, info, {"quality": int(Save.get_setting("quality", 1)), "reduced_motion": bool(Save.get_setting("reduced_motion", false))})
 	match_ctrl.finished.connect(_on_match_finished)
 	match_ctrl.quit_requested.connect(_on_match_quit)
+	if dev_local_bot and session.mode == NetSession.Mode.CLIENT:
+		var ap := Autopilot.new(hash(Save.player_uid()))
+		match_ctrl.input_source = func(m: MatchController) -> InputCmd: return ap.cmd_for(m)
 	get_tree().root.add_child(match_ctrl)
 	if screen == loading:
 		loading.queue_free()
@@ -267,6 +384,19 @@ func _on_match_finished(results: Dictionary) -> void:
 	last_results = results
 	var practice := session != null and session.mode == NetSession.Mode.OFFLINE
 	var reward := Save.apply_results(results, session.local_slot if session else -1, practice)
+	_dev_record(results, reward)
+	if dev_report != "":
+		_dev_rounds_done += 1
+		if _dev_rounds_done >= dev_rounds:
+			get_tree().create_timer(1.0).timeout.connect(func() -> void: get_tree().quit())
+		elif session and session.is_host():
+			_end_match_scene()
+			session.host_return_to_lobby()
+			return
+		else:
+			_end_match_scene()
+			show_lobby()
+			return
 	if session and session.tutorial:
 		Save.data["tutorial_done"] = true
 		Save.mark()

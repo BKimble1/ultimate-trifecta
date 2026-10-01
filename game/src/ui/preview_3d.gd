@@ -40,11 +40,14 @@ func _init(px: Vector2i = Vector2i(420, 480)) -> void:
 	rim.omni_range = 8.0
 	stage.add_child(rim)
 	cam = Camera3D.new()
-	cam.position = Vector3(0, 1.3, 3.2)
 	cam.fov = 40
 	stage.add_child(cam)
-	cam.look_at(Vector3(0, 0.95, 0))
+	aim(Vector3(0, 1.3, 3.2), Vector3(0, 0.95, 0))
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+func aim(from: Vector3, at: Vector3) -> void:
+	cam.transform = Transform3D(Basis.looking_at(at - from, Vector3.UP), from)
 
 
 func show_character(role: int, cosmetic: Dictionary, pos: Vector3 = Vector3.ZERO, yaw: float = PI, emote: int = -1) -> CharacterView:

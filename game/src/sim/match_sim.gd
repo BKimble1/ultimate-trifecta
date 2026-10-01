@@ -94,6 +94,7 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 			patrol_i += 1
 			p.body.global_position = Vector3(pp.x, 0.05, pp.y)
 			p.yaw = PI
+			p.state = TC.PState.WAITING   # held in the cart shed until the head start ends
 		players.append(p)
 		if p.is_bot and _bot_factory.is_valid():
 			bots[p.id] = _bot_factory.call(self, p)

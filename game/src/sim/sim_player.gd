@@ -28,6 +28,7 @@ var sprinting := false
 var coyote: float = 0.0
 var jump_buf: float = 0.0
 var on_floor := true
+var air_t: float = 0.0
 var diving := false
 var dive_land: float = 0.0
 var turbo_t: float = 0.0
@@ -156,6 +157,8 @@ func write_motor(buf: StreamPeerBuffer) -> void:
 	buf.put_float(tag_cd)
 	buf.put_float(tag_lockout)
 	buf.put_8(cart_id)
+	buf.put_float(air_t)
+	buf.put_float(stuck_t)
 
 
 func read_motor(buf: StreamPeerBuffer) -> Dictionary:
@@ -180,6 +183,8 @@ func read_motor(buf: StreamPeerBuffer) -> Dictionary:
 	d["tag_cd"] = buf.get_float()
 	d["tag_lockout"] = buf.get_float()
 	d["cart_id"] = buf.get_8()
+	d["air_t"] = buf.get_float()
+	d["stuck_t"] = buf.get_float()
 	return d
 
 
@@ -206,3 +211,5 @@ func apply_motor(d: Dictionary) -> void:
 	tag_cd = d["tag_cd"]
 	tag_lockout = d["tag_lockout"]
 	cart_id = d["cart_id"]
+	air_t = d.get("air_t", 0.0)
+	stuck_t = d.get("stuck_t", 0.0)

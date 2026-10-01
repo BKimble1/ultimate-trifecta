@@ -1,0 +1,172 @@
+name: Build, test and ship (iOS)
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths-ignore: ["docs/**", "**.md"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: "Sign and upload to TestFlight (needs App Store Connect secrets)"
+        type: boolean
+        default: false
+      build_number:
+        description: "CFBundleVersion override (default: next after App Store Connect's latest)"
+        required: false
+        default: ""
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  MARKETING_VERSION: "1.0"
+  BUNDLE_ID: com.idlery.ultimatetrifecta
+
+jobs:
+  tests:
+    name: Rules, simulation and network tests (headless)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: tools/.cache/godot
+          key: godot-linux-${{ env.GODOT_VERSION }}
+      - name: Fetch Godot
+        run: tools/fetch_godot.sh
+      - name: Run tests
+        run: GODOT_BIN=$(cat tools/.cache/godot/BIN) tools/run_tests.sh 2>&1 | tee test-output.txt
+      - name: Fail on test failures
+        run: grep -E "^[0-9]+ tests, [0-9]+ checks, 0 failures" test-output.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-output
+          path: test-output.txt
+
+  ios:
+    name: iOS export, simulator run, device archive${{ github.event.inputs.upload == 'true' && ', TestFlight upload' || '' }}
+    needs: tests
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode version
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+      - uses: actions/cache@v4
+        with:
+          path: |
+            tools/.cache/godot
+            ~/Library/Application Support/Godot/export_templates
+          key: godot-macos-${{ env.GODOT_VERSION }}-templates
+      - name: Fetch Godot + export templates
+        run: tools/fetch_godot.sh --templates
+      - name: Fetch pinned plugins
+        run: tools/fetch_deps.sh
+      - name: Signing configuration present?
+        id: sign
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8_BASE64" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            mkdir -p "$RUNNER_TEMP/keys"
+            echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+            python3 -m pip install --quiet pyjwt cryptography requests
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No App Store Connect signing secrets configured: building unsigned (simulator + device compile only)."
+          fi
+      - name: Choose build number
+        id: num
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          N="${{ github.event.inputs.build_number }}"
+          if [ -z "$N" ] && [ "${{ steps.sign.outputs.available }}" = "true" ]; then
+            export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+            python3 tools/asc.py app || true
+            N=$(python3 tools/asc.py next-build 2>/dev/null || echo "")
+          fi
+          [ -z "$N" ] && N=${{ github.run_number }}
+          echo "build=$N" >> "$GITHUB_OUTPUT"
+          echo "CFBundleVersion: $N"
+      - name: Export Xcode project
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUILD_NUMBER: ${{ steps.num.outputs.build }}
+        run: |
+          export GODOT_BIN=$(cat tools/.cache/godot/BIN)
+          tools/export_ios.sh
+          ls build/ios
+      - name: Build for iOS Simulator
+        run: tools/build_ios.sh sim
+      - name: Run in iOS Simulator (screenshots + video)
+        run: |
+          set -x
+          APP=$(find build/ios/dd-sim -name '*.app' -maxdepth 6 | head -1)
+          DEV=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; c=[x for r,l in d.items() if "iOS" in r for x in l if "iPhone" in x["name"]]; print(sorted(c,key=lambda x:x["name"])[-1]["udid"])')
+          xcrun simctl boot "$DEV" || true
+          xcrun simctl bootstatus "$DEV" -b
+          xcrun simctl install "$DEV" "$APP"
+          mkdir -p sim-evidence
+          xcrun simctl io "$DEV" recordVideo --codec h264 --force sim-evidence/practice_bot_run.mp4 &
+          REC=$!
+          xcrun simctl launch --console-pty "$DEV" "$BUNDLE_ID" -- --autoplay=runner --local-bot > sim-evidence/app-console.log 2>&1 &
+          for i in 1 2 3 4 5 6 7 8; do sleep 8; xcrun simctl io "$DEV" screenshot "sim-evidence/shot_$i.png" || true; done
+          kill -INT $REC || true
+          sleep 3
+          xcrun simctl terminate "$DEV" "$BUNDLE_ID" || true
+          # cold launch to the title screen
+          xcrun simctl launch "$DEV" "$BUNDLE_ID" > /dev/null
+          sleep 10
+          xcrun simctl io "$DEV" screenshot sim-evidence/title.png || true
+          ls -la sim-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-simulator-evidence-${{ steps.num.outputs.build }}
+          path: |
+            sim-evidence
+            build/ios/export.log
+      - name: Device archive (unsigned compile check)
+        if: steps.sign.outputs.available != 'true'
+        run: tools/build_ios.sh device
+      - name: Signed archive + upload to TestFlight
+        if: steps.sign.outputs.available == 'true' && github.event.inputs.upload == 'true'
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          EXPORT_DESTINATION: upload
+          INTERNAL_ONLY: "false"
+        run: |
+          export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          python3 tools/asc.py app
+          tools/build_ios.sh signed
+      - name: Wait for App Store Connect processing + internal testers
+        if: steps.sign.outputs.available == 'true' && github.event.inputs.upload == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          set +e
+          python3 tools/asc.py wait "$MARKETING_VERSION" "${{ steps.num.outputs.build }}" 2400
+          RC=$?
+          python3 tools/asc.py builds | head -40
+          if [ $RC -eq 0 ]; then
+            BID=$(python3 tools/asc.py builds | python3 -c 'import json,sys; b=[x for x in json.load(sys.stdin) if str(x["build"])=="${{ steps.num.outputs.build }}"]; print(b[0]["id"] if b else "")')
+            [ -n "$BID" ] && python3 tools/asc.py internal "$BID"
+          fi
+          exit 0

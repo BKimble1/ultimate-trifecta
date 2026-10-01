@@ -12,6 +12,7 @@ class Hub:
 	var latency_ms := 0.0            # one-way base latency
 	var jitter_ms := 0.0
 	var loss := 0.0                  # unreliable loss probability
+	var frozen: Dictionary = {}      # endpoint id -> true: app frozen (sends/receives nothing)
 	var rng := RandomNumberGenerator.new()
 	var sent := 0
 	var dropped := 0
@@ -66,7 +67,7 @@ func peers() -> Array:
 
 
 func send(peer: int, data: PackedByteArray, reliable: bool) -> void:
-	if not _links.has(peer) or not hub.endpoints.has(peer):
+	if not _links.has(peer) or not hub.endpoints.has(peer) or hub.frozen.has(id):
 		return
 	hub.sent += 1
 	hub.bytes += data.size()
@@ -84,7 +85,7 @@ func send(peer: int, data: PackedByteArray, reliable: bool) -> void:
 
 
 func _deliver(now: float) -> void:
-	if _queue.is_empty():
+	if _queue.is_empty() or hub.frozen.has(id):
 		return
 	_queue.sort_custom(func(a, b): return a["t"] < b["t"])
 	while not _queue.is_empty() and float(_queue[0]["t"]) <= now:

@@ -45,6 +45,8 @@ var _last_seq: Dictionary = {}      # slot -> int
 var _rtt: Dictionary = {}           # peer -> seconds
 var _relevance: Dictionary = {}     # "recipient:slot" -> hold time
 var _pending_events: Array = []
+var stat_starved: Dictionary = {}   # slot -> ticks with no input available
+var stat_skipped: Dictionary = {}   # slot -> inputs merged while catching up
 var _snap_counter := 0
 var _ping_t := 0.0
 
@@ -530,13 +532,15 @@ func host_collect_inputs() -> Dictionary:
 	for slot in _queues.keys():
 		var q: Array = _queues[slot]
 		if q.is_empty():
+			stat_starved[slot] = int(stat_starved.get(slot, 0)) + 1
 			continue
 		var cmd: InputCmd = q.pop_front()
 		# stay near real time: if the buffer grows, skip ahead but keep button edges
-		while q.size() > 3:
+		while q.size() > 6:
 			var nxt: InputCmd = q.pop_front()
 			nxt.pressed |= cmd.pressed
 			cmd = nxt
+			stat_skipped[slot] = int(stat_skipped.get(slot, 0)) + 1
 		_last_seq[slot] = cmd.seq
 		out[slot] = cmd
 		var p := sim.player(slot) if sim else null
