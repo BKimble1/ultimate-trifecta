@@ -7,7 +7,7 @@ game/src/view/character_view.gd.
 import math
 from mathutils import Vector, Matrix
 import geo
-from geo import (MeshBuilder, Style, sweep, ellipsoid, lathe, slab, torus_profile, rot_align, rot_x, rot_y, rot_z,
+from geo import (MeshBuilder, Style, sweep, ellipsoid, lathe, slab, torus_profile, rot_align, rot_x, rot_y, rot_z, MAT_LIT,
                  smoothstep, lerp, srgb, T_NONE, T_HAIR, T_SKIN, T_SECOND, T_DARK, T_PRIMARY,
                  MAT_CLOTH, MAT_SKIN, MAT_RUBBER, MAT_GLOSS, MAT_EMIT)
 import rig
@@ -132,31 +132,33 @@ def build_base():
         # soft blush on the cheeks, slightly warmer lips area
         c = Vector((1.0, 1.0, 1.0))
         for sx in SIDES:
-            d2 = (p.x - 0.175 * sx) ** 2 + (p.z - 1.10) ** 2
-            b = math.exp(-d2 / (2 * 0.042 ** 2)) * (1.0 if p.y > 0.05 else 0.0)
+            d2 = (p.x - 0.178 * sx) ** 2 + (p.z - 1.095) ** 2
+            b = math.exp(-d2 / (2 * 0.048 ** 2)) * (1.0 if p.y > 0.05 else 0.0)
             c = c.lerp(Vector(srgb('#ffb2ae')), b * 0.75)
         return (c.x, c.y, c.z)
 
     def neck_w(p):
         return rig.seg_weights(p.z, [('neck', 0.93), ('head', None)], 0.03)
 
-    ellipsoid(mb, HEAD_C, HEAD_R, SKIN, neck_w, segs=32, rings=22, power=HEAD_P, colfn=head_col)
+    ellipsoid(mb, HEAD_C, HEAD_R, SKIN, neck_w, segs=36, rings=26, power=HEAD_P, colfn=head_col, deform=rig.head_deform(0.0))
     # neck stub (hidden by collars, visible in swim)
     lathe(mb, Vector((0, 0.0, 0)), Matrix.Identity(3), [(0.86, 0.0), (0.865, 0.06), (0.90, 0.066), (0.95, 0.07), (0.97, 0.0)],
           SKIN, neck_w, segs=16, ry_scale=0.9)
     # ears
     for sx in SIDES:
         R = rot_z(-15 * sx)
-        ellipsoid(mb, Vector((0.302 * sx, -0.005, 1.17)), (0.036, 0.05, 0.066), SKIN, hw, segs=14, rings=10, rot=R)
-        ellipsoid(mb, Vector((0.326 * sx, 0.004, 1.17)), (0.012, 0.031, 0.043), SKIN.with_col('#e9b9b1'), hw, segs=12, rings=8, rot=R)
+        ex = rig.head_side_x(1.165, 0.0, -0.005)
+        ellipsoid(mb, Vector(((ex - 0.012) * sx, -0.005, 1.165)), (0.036, 0.05, 0.066), SKIN, hw, segs=14, rings=10, rot=R)
+        ellipsoid(mb, Vector(((ex + 0.012) * sx, 0.004, 1.165)), (0.012, 0.031, 0.043), SKIN.with_col('#e9b9b1'), hw, segs=12, rings=8, rot=R)
     # nose
     _feature(mb, 0.0, 1.118, (0.031, 0.024, 0.022), SKIN.with_col('#ffe2d9'), hw, sink=0.008)
     # eyes: sclera, pupil, catch-light.  aux carries the eye frame for the shape keys
-    sclera = Style('#fbfaf6', T_NONE, 0.5, MAT_RUBBER)
-    pupil = Style('#161827', T_NONE, 0.3, MAT_GLOSS)
+    sclera = Style('#fdfcf8', T_NONE, 0.3, MAT_LIT)
+    iris = Style('#4a2b1a', T_NONE, 0.2, MAT_GLOSS)
+    pupil = Style('#120c0e', T_NONE, 0.2, MAT_GLOSS)
     shine = Style('#ffffff', T_NONE, 0.1, MAT_EMIT)
     for sx in SIDES:
-        ex, ez = 0.11 * sx, 1.172
+        ex, ez = 0.106 * sx, 1.162
         p = head_point(ex, ez)
         n = head_normal(p)
         R = rot_align(n, UP)
@@ -166,24 +168,27 @@ def build_base():
         c = p - n * 0.004
         aux = (c.copy(), side_v.copy(), up_v.copy(), n.copy(), sx)
         tag = 'eyeL' if sx < 0 else 'eyeR'
-        ellipsoid(mb, c, (0.049, 0.063, 0.02), sclera, hw, segs=18, rings=12, rot=R, tag=tag, aux=aux, cut_below=-0.35)
-        pc = c + n * 0.0135 - up_v * 0.004 + inward * 0.004
-        ellipsoid(mb, pc, (0.032, 0.041, 0.0105), pupil, hw, segs=16, rings=10, rot=R, tag=tag, aux=aux, cut_below=-0.35)
-        hc = pc + n * 0.0085 + up_v * 0.016 - inward * 0.011
-        ellipsoid(mb, hc, (0.011, 0.012, 0.004), shine, hw, segs=8, rings=6, rot=R, tag=tag, aux=aux, cut_below=-0.35)
-        hc2 = pc + n * 0.008 - up_v * 0.017 + inward * 0.009
-        ellipsoid(mb, hc2, (0.005, 0.005, 0.003), shine, hw, segs=6, rings=4, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        ellipsoid(mb, c, (0.053, 0.067, 0.02), sclera, hw, segs=20, rings=14, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        pc = c + n * 0.0135 - up_v * 0.006 + inward * 0.004
+        ellipsoid(mb, pc, (0.036, 0.046, 0.011), iris, hw, segs=18, rings=12, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        ppc = pc + n * 0.006 - up_v * 0.002
+        ellipsoid(mb, ppc, (0.021, 0.027, 0.0065), pupil, hw, segs=14, rings=10, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        hc = pc + n * 0.0105 + up_v * 0.017 - inward * 0.012
+        ellipsoid(mb, hc, (0.013, 0.014, 0.004), shine, hw, segs=10, rings=6, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        hc2 = pc + n * 0.0095 - up_v * 0.019 + inward * 0.011
+        ellipsoid(mb, hc2, (0.006, 0.006, 0.003), shine, hw, segs=8, rings=4, rot=R, tag=tag, aux=aux, cut_below=-0.35)
         # brow: short arched bar on the surface
         bpts = []
         for i in range(7):
             t = i / 6.0
-            bx = (0.062 + 0.09 * t) * sx
-            bz = 1.262 + 0.012 * math.sin(math.pi * t) - 0.004 * t
+            bx = (0.058 + 0.094 * t) * sx
+            bz = 1.252 + 0.015 * math.sin(math.pi * t) - 0.006 * t
             bp = head_point(bx, bz)
             bpts.append(bp + head_normal(bp) * 0.006)
         bc = sum(bpts, Vector()) / len(bpts)
         baux = (bc, (bpts[-1] - bpts[0]).normalized(), up_v.copy(), n.copy(), sx)
-        sweep(mb, bpts, [(0.0055, 0.011)] * len(bpts), HAIR.with_col('#c8c8c8'), hw, segs=8,
+        bw = [lerp(0.009, 0.007, i / 6.0) for i in range(7)]
+        sweep(mb, bpts, [(w, w * 2.0) for w in bw], HAIR.with_col('#c8c8c8'), hw, segs=8,
               tag='browL' if sx < 0 else 'browR', twist_hint=n)
         for i in range(len(mb.aux)):
             if mb.tag[i] in ('browL', 'browR') and mb.aux[i] is None and ((mb.tag[i] == 'browL') == (sx < 0)):
@@ -196,7 +201,7 @@ def build_base():
     mup = MR @ Vector((0, 1, 0))
     mc = mp - mn * 0.003
     maux = (mc.copy(), mside.copy(), mup.copy(), mn.copy(), 0)
-    ellipsoid(mb, mc, (0.042, 0.024, 0.008), Style('#5c1f2c', T_NONE, 0.4, MAT_GLOSS), hw, segs=20, rings=10, rot=MR,
+    ellipsoid(mb, mc, (0.046, 0.025, 0.008), Style('#5c1f2c', T_NONE, 0.4, MAT_GLOSS), hw, segs=20, rings=10, rot=MR,
               tag='mouth', aux=maux, cut_below=-0.35)
     ellipsoid(mb, mc - mup * 0.010, (0.022, 0.010, 0.005), Style('#ff8a96', T_NONE, 0.4, MAT_GLOSS), hw, segs=12, rings=8,
               rot=MR, tag='tongue', aux=maux)
@@ -207,9 +212,9 @@ def build_base():
         w = wrist(sx)
         R = rot_align(d, FWD)
         hwf = lambda p, sfx=sfx, w=w, d=d: rig.seg_weights((p - w).dot(d), [('forearm' + sfx, 0.0), ('hand' + sfx, None)], 0.012)
-        ellipsoid(mb, w + d * 0.052, (0.034, 0.047, 0.058), SKIN, hwf, segs=16, rings=12, rot=R)
+        ellipsoid(mb, w + d * 0.054, (0.044, 0.054, 0.060), SKIN, hwf, segs=18, rings=14, rot=R, power=2.2)
         tdir = (d + FWD * 0.9).normalized()
-        ellipsoid(mb, w + d * 0.035 + FWD * 0.036, (0.019, 0.019, 0.031), SKIN, hwf, segs=10, rings=8, rot=rot_align(tdir, UP))
+        ellipsoid(mb, w + d * 0.036 + FWD * 0.044, (0.023, 0.023, 0.034), SKIN, hwf, segs=12, rings=8, rot=rot_align(tdir, UP))
     return mb
 
 
@@ -222,15 +227,146 @@ def build_hair():
         zl = 1.08 + 0.505 * (y + 0.27) + 0.06 * (abs(p.x) / 0.3) ** 2
         return p.z > zl
     ellipsoid(mb, HEAD_C, (HEAD_R[0] + 0.016, HEAD_R[1] + 0.016, HEAD_R[2] + 0.018), HAIR, hw, segs=36, rings=26,
-              power=HEAD_P, keep=keep)
-    # forelock swoop
+              power=HEAD_P, keep=keep, deform=rig.head_deform(0.018))
+    # forelock swoop (projected onto the hair shell)
     pts = [Vector((0.06, 0.20, 1.43)), Vector((0.02, 0.27, 1.455)), Vector((-0.04, 0.30, 1.44)), Vector((-0.09, 0.29, 1.405)),
            Vector((-0.12, 0.265, 1.37))]
+    pts = [Vector((q.x, head_front_y(q.x, q.z, 0.03), q.z)) for q in pts]
     pts = _dense_path(pts, 0.015)
     n = len(pts)
     radii = [(lerp(0.05, 0.012, i / (n - 1)), lerp(0.026, 0.008, i / (n - 1))) for i in range(n)]
     sweep(mb, pts, radii, HAIR, hw, segs=10, twist_hint=UP)
     mb.compact()
+    return mb
+
+
+def _shell_point(ang, z, grow):
+    """Point on the (reshaped) head shell at height z, around the vertical axis
+    (ang 0 = straight back, +pi/2 = the character's left)."""
+    rx, ry, rz = HEAD_R[0] + grow, HEAD_R[1] + grow, HEAD_R[2] + grow
+    zn = (z - HEAD_C.z) / rz
+    sx, sy = rig.head_scale(max(-1.0, min(1.0, zn)))
+    k = max(1e-6, 1.0 - abs(zn) ** HEAD_P)
+    dx, dy = -math.sin(ang), -math.cos(ang)
+    t = (k / (abs(dx / (rx * sx)) ** HEAD_P + abs(dy / (ry * sy)) ** HEAD_P)) ** (1.0 / HEAD_P)
+    return Vector((HEAD_C.x + dx * t, HEAD_C.y + dy * t, z))
+
+
+def build_hair_bob():
+    """Chin-length bob with straight bangs; the face stays open."""
+    mb = MeshBuilder('hair_bob')
+    hw = rigid('head')
+    g = 0.024
+
+    def keep(p):
+        front = p.y - HEAD_C.y
+        if front > 0.10:
+            return p.z > 1.292 + 0.035 * (abs(p.x) / 0.22) ** 2
+        if front > -0.02 and abs(p.x) < 0.27:
+            return p.z > 1.29
+        return p.z > 0.985
+    ellipsoid(mb, HEAD_C, (HEAD_R[0] + g, HEAD_R[1] + g, HEAD_R[2] + g), HAIR, hw, segs=40, rings=30, power=HEAD_P,
+              keep=keep, deform=rig.head_deform(g))
+    # rolled ends: a soft tube along the lower edge (back and sides)
+    pts = [_shell_point(math.radians(a), 0.995, g) for a in range(-118, 119, 6)]
+    sweep(mb, pts, [(0.018, 0.016)] * len(pts), HAIR, hw, segs=8, twist_hint=UP)
+    # bangs edge: a slightly thicker lip so the fringe has thickness
+    bp = []
+    for i in range(15):
+        x = lerp(-0.21, 0.21, i / 14.0)
+        z = 1.296 + 0.035 * (abs(x) / 0.22) ** 2
+        bp.append(Vector((x, head_front_y(x, z, g) - 0.004, z)))
+    sweep(mb, bp, [(0.012, 0.01)] * len(bp), HAIR, hw, segs=8, twist_hint=FWD)
+    mb.compact()
+    return mb
+
+
+def build_hair_curly():
+    """Short curly crop: a shell plus soft curls on the sides, back and fringe.
+    The crown stays smooth so caps, crowns and headphones sit on it."""
+    mb = MeshBuilder('hair_curly')
+    hw = rigid('head')
+    g = 0.016
+
+    def keep(p):
+        y = p.y
+        zl = 1.06 + 0.5 * (y + 0.27) + 0.06 * (abs(p.x) / 0.3) ** 2
+        return p.z > zl
+    ellipsoid(mb, HEAD_C, (HEAD_R[0] + g, HEAD_R[1] + g, HEAD_R[2] + g), HAIR, hw, segs=36, rings=26, power=HEAD_P,
+              keep=keep, deform=rig.head_deform(g))
+    n = 150
+    ga = math.pi * (3 - math.sqrt(5))
+    placed = 0
+    for i in range(n):
+        zz = 1 - 2 * (i + 0.5) / n
+        rr = math.sqrt(max(0.0, 1 - zz * zz))
+        ang = ga * i
+        d = Vector((rr * math.cos(ang), rr * math.sin(ang), zz))
+        z = HEAD_C.z + d.z * (HEAD_R[2] + g)
+        if z > 1.43:          # smooth crown (hats sit here)
+            continue
+        q = _shell_point(math.atan2(-d.x, -d.y), z, g)
+        if not keep(q - (q - HEAD_C).normalized() * 0.004) or q.z < 1.0:
+            continue
+        if q.y - HEAD_C.y > 0.08 and q.z < 1.33:
+            continue          # keep the face clear
+        nrm = head_normal(q, g)
+        r = 0.03 + 0.008 * ((i * 7) % 5) / 4.0
+        ellipsoid(mb, q + nrm * 0.004, (r, r, r * 0.8), HAIR, hw, segs=10, rings=6, rot=rot_align(nrm, UP))
+        placed += 1
+    mb.compact()
+    return mb
+
+
+def build_hair_buns():
+    """Centre-parted short hair; the two buns are a separate part so they can
+    be hidden under headphones and crowns."""
+    mb = MeshBuilder('hair_buns')
+    hw = rigid('head')
+    g = 0.016
+
+    def keep(p):
+        y = p.y
+        zl = 1.07 + 0.5 * (y + 0.27) + 0.06 * (abs(p.x) / 0.3) ** 2
+        return p.z > zl
+    ellipsoid(mb, HEAD_C, (HEAD_R[0] + g, HEAD_R[1] + g, HEAD_R[2] + g), HAIR, hw, segs=36, rings=26, power=HEAD_P,
+              keep=keep, deform=rig.head_deform(g))
+    # centre part: two soft swoops meeting at the middle of the forehead
+    for sx in SIDES:
+        pts = [Vector((0.005 * sx, 0.0, 1.47)), Vector((0.06 * sx, 0.0, 1.45)), Vector((0.12 * sx, 0.0, 1.40)),
+               Vector((0.17 * sx, 0.0, 1.34))]
+        pts = [Vector((q.x, head_front_y(q.x, q.z, 0.028), q.z)) for q in pts]
+        pts = _dense_path(pts, 0.015)
+        m = len(pts)
+        sweep(mb, pts, [(lerp(0.03, 0.012, i / (m - 1)), lerp(0.018, 0.008, i / (m - 1))) for i in range(m)], HAIR, hw,
+              segs=8, twist_hint=UP)
+    mb.compact()
+    return mb
+
+
+def build_hair_buns_knots():
+    mb = MeshBuilder('hair_buns_knots')
+    hw = rigid('head')
+    tie = Style('#ff8fb1', T_NONE, 0.6, MAT_CLOTH)
+    for sx in SIDES:
+        c = Vector((0.205 * sx, -0.06, 1.385))
+        out = (c - HEAD_C).normalized()
+        R = rot_align(out, UP)
+        ellipsoid(mb, c + out * 0.07, (0.082, 0.082, 0.072), HAIR, hw, segs=16, rings=12, rot=R)
+        lathe(mb, c + out * 0.012, R, torus_profile(0.0, 0.058, 0.014, 8), tie, hw, segs=18, closed_profile=True)
+    return mb
+
+
+def build_freckles():
+    mb = MeshBuilder('freckles')
+    hw = rigid('head')
+    dot = Style('#b9734f', T_NONE, 0.8, MAT_SKIN)
+    spots = [(0.14, 1.112), (0.168, 1.122), (0.196, 1.108), (0.155, 1.092), (0.183, 1.088), (0.21, 1.125)]
+    for sx in SIDES:
+        for (x, z) in spots:
+            p = head_point(x * sx, z)
+            n = head_normal(p)
+            ellipsoid(mb, p - n * 0.0015, (0.0055, 0.0055, 0.0018), dot, hw, segs=8, rings=4, rot=rot_align(n, UP))
     return mb
 
 
@@ -417,7 +553,7 @@ def _hood(mb, base, rim_style, extra_grow=0.035):
         return True
     hw = lambda p: rig.seg_weights(p.z, [('neck', 0.95), ('head', None)], 0.03)
     ellipsoid(mb, HEAD_C, (HEAD_R[0] + extra_grow, HEAD_R[1] + extra_grow, HEAD_R[2] + extra_grow), base, hw,
-              segs=36, rings=26, power=HEAD_P, keep=keep)
+              segs=36, rings=26, power=HEAD_P, keep=keep, deform=rig.head_deform(extra_grow))
     # rim
     pts = []
     for i in range(32):
@@ -617,10 +753,10 @@ def build_nightcap():
     bone_s = [('head', 0.18), ('hat1', 0.29), ('hat2', 0.40), ('hat3', None)]
     sweep(mb, path, radii, CLOTH_P_PLAIN, lambda p, sv, i: rig.seg_weights(sv, bone_s, 0.045), segs=18, cap_start=None,
           cap_end='round', twist_hint=FWD)
-    lathe(mb, Vector((0, 0.0, 0)), Matrix.Identity(3), torus_profile(1.315, 0.322, 0.03, 10), CLOTH_S, rigid('head'), segs=32,
+    lathe(mb, Vector((0, 0.0, 0)), Matrix.Identity(3), torus_profile(1.318, 0.322, 0.044, 12), CLOTH_S, rigid('head'), segs=36,
           closed_profile=True, ry_scale=0.93)
-    tip = path[-1] + (path[-1] - path[-2]).normalized() * 0.03
-    ellipsoid(mb, tip, (0.055, 0.055, 0.055), Style('#f4f2ec', T_NONE, 1.0, MAT_CLOTH), rigid('hat3'), segs=14, rings=10)
+    tip = path[-1] + (path[-1] - path[-2]).normalized() * 0.04
+    ellipsoid(mb, tip, (0.068, 0.068, 0.066), Style('#f4f2ec', T_NONE, 1.0, MAT_CLOTH), rigid('hat3'), segs=16, rings=12)
     return mb
 
 
@@ -631,10 +767,11 @@ def build_swimcap():
     def keep(p):
         return p.z > 1.05 + 0.45 * (p.y + 0.27) * 0.6 + 0.04 * (abs(p.x) / 0.3) ** 2 + 0.02
     ellipsoid(mb, HEAD_C, (HEAD_R[0] + 0.012, HEAD_R[1] + 0.012, HEAD_R[2] + 0.014), rub, rigid('head'), segs=36, rings=26,
-              power=HEAD_P, keep=keep)
+              power=HEAD_P, keep=keep, deform=rig.head_deform(0.014))
     # goggles pushed up on the forehead
     strap = Style('#2a2d36', T_NONE, 0.6, MAT_RUBBER)
-    lathe(mb, HEAD_C + Vector((0, 0, 0.0)), rot_x(-14), torus_profile(0.13, 0.322, 0.011, 6, 1.6), strap, rigid('head'),
+    strap_r = rig.head_side_x(HEAD_C.z + 0.03, 0.014) + 0.006
+    lathe(mb, HEAD_C + Vector((0, 0, 0.0)), rot_x(-14), torus_profile(0.13, strap_r, 0.011, 6, 1.6), strap, rigid('head'),
           segs=32, closed_profile=True, ry_scale=0.93)
     for sx in SIDES:
         p = head_point(0.085 * sx, 1.335, 0.02)
@@ -673,7 +810,7 @@ def build_headphones():
     sweep(mb, pts, [(0.012, 0.03)] * len(pts), band, rigid('head'), segs=10, twist_hint=FWD)
     for sx in SIDES:
         R = rot_align(Vector((sx, 0, 0)), UP)
-        c = Vector((0.315 * sx, -0.005, 1.17))
+        c = Vector(((rig.head_side_x(1.17, 0.0, -0.005) - 0.004) * sx, -0.005, 1.17))
         lathe(mb, c, R, [(0.0, 0.0), (0.0, 0.066), (0.006, 0.072), (0.05, 0.074), (0.062, 0.064), (0.066, 0.0)],
               Style('#ffffff', T_PRIMARY, 0.4, MAT_GLOSS), rigid('head'), segs=20, ry_scale=1.15)
         lathe(mb, c, R, torus_profile(0.0, 0.05, 0.02, 8), Style('#3a3d48', T_NONE, 0.9, MAT_CLOTH), rigid('head'), segs=18,
@@ -751,20 +888,20 @@ def build_slippers():
     for sx in SIDES:
         sfx = '.L' if sx < 0 else '.R'
         fw = rigid('foot' + sfx)
-        slab(mb, _foot_outline(sx, toe=0.18, w_heel=0.055, w_toe=0.07), 0.0, 0.026, sole, fw, bevel=0.009)
+        slab(mb, _foot_outline(sx, toe=0.195, heel=-0.08, w_heel=0.06, w_toe=0.078), 0.0, 0.028, sole, fw, bevel=0.01)
         cx = rig.HIP_X * sx
-        ellipsoid(mb, Vector((cx, 0.05, 0.024)), (0.07, 0.13, 0.085), fluff, fw, segs=16, rings=10, cut_below=-0.1)
+        ellipsoid(mb, Vector((cx, 0.055, 0.026)), (0.08, 0.142, 0.094), fluff, fw, segs=20, rings=12, cut_below=-0.1)
         lathe(mb, Vector((cx, -0.01, 0)), Matrix.Identity(3), torus_profile(0.1, 0.064, 0.02, 8), fluff,
               lambda p, sfx=sfx: rig.seg_weights(p.z, [('foot' + sfx, 0.11), ('shin' + sfx, None)], 0.03), segs=18,
               closed_profile=True)
-        for ex in (-0.028, 0.028):
-            R = rot_x(-20) @ rot_y(ex * 300)
-            ellipsoid(mb, Vector((cx + ex, 0.12, 0.13)), (0.017, 0.012, 0.055), fluff, fw, segs=10, rings=8, rot=R)
-            ellipsoid(mb, Vector((cx + ex, 0.127, 0.13)), (0.009, 0.006, 0.04), Style('#ff9fbe', T_NONE, 1.0, MAT_CLOTH), fw,
+        for ex in (-0.032, 0.032):
+            R = rot_x(-22) @ rot_y(ex * 300)
+            ellipsoid(mb, Vector((cx + ex, 0.128, 0.145)), (0.021, 0.014, 0.066), fluff, fw, segs=12, rings=8, rot=R)
+            ellipsoid(mb, Vector((cx + ex, 0.136, 0.145)), (0.011, 0.007, 0.048), Style('#ff9fbe', T_NONE, 1.0, MAT_CLOTH), fw,
                       segs=8, rings=6, rot=R)
-            ellipsoid(mb, Vector((cx + ex * 0.8, 0.165, 0.075)), (0.007, 0.006, 0.008), Style('#1b1d2b', T_NONE, 0.2, MAT_GLOSS),
+            ellipsoid(mb, Vector((cx + ex * 0.8, 0.181, 0.083)), (0.009, 0.007, 0.010), Style('#1b1d2b', T_NONE, 0.2, MAT_GLOSS),
                       fw, segs=8, rings=6)
-        ellipsoid(mb, Vector((cx, 0.183, 0.058)), (0.011, 0.008, 0.008), Style('#ff7aa2', T_NONE, 0.5, MAT_GLOSS), fw, segs=8,
+        ellipsoid(mb, Vector((cx, 0.199, 0.063)), (0.013, 0.009, 0.009), Style('#ff7aa2', T_NONE, 0.5, MAT_GLOSS), fw, segs=8,
                   rings=6)
     return mb
 
@@ -809,7 +946,8 @@ def build_flippers():
 
 
 ALL_PARTS = [
-    build_base, build_hair, build_body_skin, build_pj, build_swim, build_robe, build_duck, build_frog,
+    build_base, build_hair, build_hair_bob, build_hair_curly, build_hair_buns, build_hair_buns_knots, build_freckles,
+    build_body_skin, build_pj, build_swim, build_robe, build_duck, build_frog,
     build_watch, build_flashlight, build_mustache,
     build_nightcap, build_swimcap, build_party, build_headphones, build_crown,
     build_slippers, build_hightops, build_flippers,

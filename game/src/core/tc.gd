@@ -22,6 +22,10 @@ enum Outcome { NONE, RUNNERS_WIN, PATROL_WIN, CANCELLED }
 
 enum Gadget { NONE, TURBO, DECOY, SPLASH_BOMB }
 
+## How a runner met the water (presentation: splash clip + spray shape).
+## Carried by SPLASH_* events (field m) and snapshots; no rule reads it.
+enum Impact { WALK, JUMP, DIVE }
+
 enum Ev {
 	SPLASH_STAMP,     # a, target_index
 	SPLASH_NOSTAMP,   # a

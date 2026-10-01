@@ -406,7 +406,7 @@ class SlotCell:
 			return
 		var ent: Dictionary = e
 		_style(Color(UIKit.SLATE_HI, 0.95) if me else Color(UIKit.SLATE_LO, 0.85), UIKit.AMBER if me else Color(0, 0, 0, 0))
-		dot.color = Cosmetics.COLORS[int(ent["cosmetic"].get("color", 0)) % Cosmetics.COLORS.size()]
+		dot.color = Cosmetics.color_of(ent["cosmetic"])
 		name_l.text = String(ent["name"])
 		name_l.add_theme_color_override("font_color", UIKit.IVORY)
 		var bits: Array[String] = []

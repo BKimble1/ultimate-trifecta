@@ -5,7 +5,8 @@ shader_type spatial;
 //   * an active target shows only a slim ring just inside its shoreline in
 //     the water's own colour (plus the beacon column above it);
 //   * a stamp (for this player) calms the ring away;
-//   * a splash sends out one expanding ripple from where it happened.
+//   * splashes send out expanding ripples: up to RIPPLES sources at once per
+//     water (x, z in the water's local xz, age s, strength), aged by Fx.
 // The surface itself never glows.
 render_mode diffuse_lambert, specular_schlick_ggx, cull_back;
 
@@ -16,8 +17,10 @@ uniform vec3 highlight_color : source_color = vec3(0.435, 0.847, 0.8);   // mute
 uniform vec3 target_color : source_color = vec3(1.0, 0.78, 0.4);
 uniform float active = 0.0;
 uniform float stamped = 0.0;
-uniform float splash_flash = 0.0;      // 1 -> 0 over the ripple's life
-uniform vec2 splash_local = vec2(0.0); // splash point in the water's local xz
+#define RIPPLES 4
+const float RIPPLE_LIFE = 1.8;
+const float RIPPLE_SPEED = 3.2;   // m/s
+uniform vec4 ripples[RIPPLES];    // x, z, age (s), strength; strength 0 = unused
 uniform vec2 shape_half = vec2(5.0, 5.0);
 uniform float shape_kind = 0.0; // 0 = ellipse/circle, 1 = rect
 
@@ -50,16 +53,22 @@ void fragment() {
 	float calm = 1.0 - stamped * active * 0.5;
 	vec3 n = normalize(vec3((r1 * 0.05 + r2 * 0.035) * calm, 1.0, (cos(p.x * 1.6 + t) * 0.04 + r2 * 0.02) * calm));
 	float ed = edge_dist(v_local);
-	// expanding splash ripple
-	float age = 1.0 - splash_flash;
-	float sd = length(v_local - splash_local);
+	// expanding splash ripples: a leading crest and a softer trailing one
 	float wave = 0.0;
-	if (splash_flash > 0.001) {
-		float front = age * 7.0;
-		wave = exp(-pow((sd - front) * 2.2, 2.0)) * splash_flash;
-		n.xz += normalize(v_local - splash_local + 1e-4) * wave * 0.35;
-		n = normalize(n);
+	for (int i = 0; i < RIPPLES; i++) {
+		vec4 r = ripples[i];
+		if (r.w <= 0.001 || r.z >= RIPPLE_LIFE) { continue; }
+		float life = 1.0 - r.z / RIPPLE_LIFE;
+		float fade = r.w * life * life;
+		vec2 dv = v_local - r.xy;
+		float sd = length(dv);
+		float front = r.z * RIPPLE_SPEED + 0.15;
+		float x = (sd - front) * 3.0;
+		float w = exp(-x * x) - 0.45 * exp(-pow(x + 2.2, 2.0));
+		wave += w * fade;
+		n.xz += normalize(dv + 1e-4) * w * fade * 0.4;
 	}
+	n = normalize(n);
 	NORMAL = (VIEW_MATRIX * vec4(n, 0.0)).xyz;
 	float fres = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 4.0);
 	float depth_t = smoothstep(0.0, 3.5, ed);
@@ -68,6 +77,8 @@ void fragment() {
 	// thin shoreline foam line
 	float foam = smoothstep(0.45, 0.0, ed) * (0.55 + 0.45 * sin(t * 1.6 + ed * 9.0 + p.x * 0.6));
 	col = mix(col, vec3(0.86, 0.92, 0.95), foam * 0.45);
+	// ripple crests catch a little foam
+	col = mix(col, vec3(0.86, 0.94, 0.97), clamp(wave, 0.0, 1.0) * 0.25);
 	ALBEDO = col;
 	ROUGHNESS = 0.08;
 	SPECULAR = 0.55;
@@ -75,7 +86,7 @@ void fragment() {
 	float pulse = 0.65 + 0.35 * sin(t * 2.4);
 	float ring = smoothstep(0.16, 0.0, abs(ed - 0.75)) * active * (1.0 - stamped);
 	vec3 emit = target_color * ring * pulse * 1.4;
-	emit += highlight_color * wave * 0.6;
+	emit += highlight_color * max(wave, 0.0) * 0.5;
 	emit += vec3(0.75, 0.85, 0.95) * foam * 0.05;
 	emit += col * 0.06;   // never pitch black at night
 	EMISSION = emit;

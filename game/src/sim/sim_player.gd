@@ -54,6 +54,7 @@ var penalty: float = 0.0
 var splash_water: int = -1
 var splash_exit := Vector3.ZERO
 var splash_stamped := false
+var splash_impact: int = TC.Impact.WALK   # presentation only: how the runner met the water
 var cart_id: int = -1
 var gadget: int = TC.Gadget.NONE
 var gadget_cd: float = 0.0

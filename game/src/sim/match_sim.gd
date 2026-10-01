@@ -172,9 +172,11 @@ func patrol_release_left() -> float:
 # ---------------------------------------------------------------------------
 # Events
 # ---------------------------------------------------------------------------
-func _emit(type: int, a: int = -1, b: int = -1, v: int = 0, pos: Vector3 = Vector3.ZERO) -> void:
+## m: presentation detail (e.g. TC.Impact for splashes); objective fields
+## a/b/v keep their meanings.
+func _emit(type: int, a: int = -1, b: int = -1, v: int = 0, pos: Vector3 = Vector3.ZERO, m: int = 0) -> void:
 	event_seq += 1
-	var ev := {"id": event_seq, "t": tick, "type": type, "a": a, "b": b, "v": v, "pos": pos}
+	var ev := {"id": event_seq, "t": tick, "type": type, "a": a, "b": b, "v": v, "pos": pos, "m": m}
 	events.append(ev)
 	event_emitted.emit(ev)
 
@@ -584,6 +586,13 @@ func _check_water(p: SimPlayer) -> void:
 	if pp.y > float(w["surface_y"]) + 0.25:
 		return
 	var heading := p.vel if p.vel.length() > 0.5 else p.facing()
+	# impact class, read before the velocity reset below (presentation only)
+	if p.diving:
+		p.splash_impact = TC.Impact.DIVE
+	elif p.air_t > 0.2 or p.vel.y < -3.0:
+		p.splash_impact = TC.Impact.JUMP
+	else:
+		p.splash_impact = TC.Impact.WALK
 	p.splash_water = wi
 	p.splash_exit = RulesLogic.choose_splash_exit(w["exits"], pp, heading)
 	p.splash_stamped = false
@@ -599,9 +608,9 @@ func _check_water(p: SimPlayer) -> void:
 		p.last_stamp_water = wi
 		p.splash_stamped = true
 		splash_markers.append({"water": wi, "t": cfg.splash_marker_s})
-		_emit(TC.Ev.SPLASH_STAMP, p.id, wi, ti, p.body.global_position)
+		_emit(TC.Ev.SPLASH_STAMP, p.id, wi, ti, p.body.global_position, p.splash_impact)
 	else:
-		_emit(TC.Ev.SPLASH_NOSTAMP, p.id, wi, 0, p.body.global_position)
+		_emit(TC.Ev.SPLASH_NOSTAMP, p.id, wi, 0, p.body.global_position, p.splash_impact)
 
 
 func _resurface(p: SimPlayer) -> void:

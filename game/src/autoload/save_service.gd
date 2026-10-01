@@ -7,7 +7,9 @@ extends Node
 signal changed
 
 const PATH := "user://profile.json"
-const VERSION := 2
+## 3 (V3): "cosmetic" holds the schema-2 appearance (Cosmetics); owned keys
+## use schema-2 item keys; free items need no owned entry.
+const VERSION := 3
 const ADJ := ["Sleepy", "Soggy", "Sneaky", "Snoozy", "Zippy", "Drowsy", "Splashy", "Fuzzy", "Comfy", "Wobbly", "Speedy", "Moonlit"]
 const ANIMALS := ["Otter", "Duck", "Frog", "Llama", "Panda", "Gecko", "Walrus", "Badger", "Koala", "Puffin", "Newt", "Moose"]
 
@@ -33,7 +35,7 @@ func default_profile() -> Dictionary:
 			"quality": 1, "sprint_threshold": 0.88, "touch_sprint": true, "role_pref": "any",
 			"stick_mode": "dynamic", "sprint_mode": "edge", "button_size": 1.0, "touch_layout": "standard", "haptics": true},
 		"cosmetic": Cosmetics.DEFAULT.duplicate(),
-		"owned": ["outfit:pj_stripes", "outfit:pj_plain", "outfit:swim", "hat:none", "hat:nightcap", "hat:swimcap", "shoes:slippers"],
+		"owned": [],
 		"coins": 0, "level": 1, "xp": 0,
 		"stats": {"online": _blank_stats(), "practice": _blank_stats()},
 		"rewarded": [],
@@ -79,7 +81,9 @@ func migrate(d: Dictionary) -> Dictionary:
 		if not (out["stats"] as Dictionary).has(mode):
 			out["stats"][mode] = _blank_stats()
 		out["stats"][mode] = _merge_stats(_blank_stats(), out["stats"][mode])
-	out["cosmetic"] = Cosmetics.sanitize(out["cosmetic"])
+	# V1/V2 wardrobe -> schema 2 appearance (same look) and item keys
+	out["cosmetic"] = Cosmetics.sanitize(out["cosmetic"] if out["cosmetic"] is Dictionary else {})
+	out["owned"] = Cosmetics.migrate_owned(out["owned"] if out["owned"] is Array else [])
 	out["version"] = VERSION
 	return out
 
@@ -149,27 +153,56 @@ func player_uid() -> String:
 	return String(data["uid"])
 
 
-func owns(slot: String, id: String) -> bool:
-	return (data["owned"] as Array).has("%s:%s" % [slot, id])
+func owns(field: String, key: String) -> bool:
+	if Cosmetics.entry(field, key).is_empty():
+		return false
+	return Cosmetics.cost(field, key) == 0 or (data["owned"] as Array).has(Cosmetics.own_key(field, key))
 
 
-func buy(slot: String, id: String) -> bool:
-	if owns(slot, id):
+func buy(field: String, key: String) -> bool:
+	if owns(field, key):
 		return true
-	var cost := Cosmetics.item_cost(slot, id)
+	if Cosmetics.entry(field, key).is_empty():
+		return false
+	var cost := Cosmetics.cost(field, key)
 	if int(data["coins"]) < cost:
 		return false
 	data["coins"] = int(data["coins"]) - cost
-	(data["owned"] as Array).append("%s:%s" % [slot, id])
+	(data["owned"] as Array).append(Cosmetics.own_key(field, key))
 	mark()
 	return true
 
 
-func equip(slot: String, id: Variant) -> void:
-	if slot == "color" or slot == "skin":
-		data["cosmetic"][slot] = int(id)
-	elif owns(slot, String(id)):
-		data["cosmetic"][slot] = String(id)
+## Coins needed to apply an appearance (items not yet owned).
+func price_of(appearance: Dictionary) -> int:
+	var a := Cosmetics.sanitize(appearance)
+	var total := 0
+	for f in Cosmetics.ORDER:
+		if not owns(f, a[f]):
+			total += Cosmetics.cost(f, a[f])
+	return total
+
+
+## Creator "Apply": buys whatever is not owned yet and equips the whole look
+## in one step.  Idempotent: applying the same look again costs nothing.
+## Returns {"ok", "spent", "short"}; nothing changes when coins are short.
+func apply_appearance(appearance: Dictionary) -> Dictionary:
+	var a := Cosmetics.sanitize(appearance)
+	var price := price_of(a)
+	if int(data["coins"]) < price:
+		return {"ok": false, "spent": 0, "short": price - int(data["coins"])}
+	for f in Cosmetics.ORDER:
+		if not owns(f, a[f]):
+			(data["owned"] as Array).append(Cosmetics.own_key(f, a[f]))
+	data["coins"] = int(data["coins"]) - price
+	data["cosmetic"] = a
+	mark()
+	return {"ok": true, "spent": price, "short": 0}
+
+
+func equip(field: String, key: Variant) -> void:
+	if owns(field, String(key)):
+		data["cosmetic"][field] = String(key)
 	data["cosmetic"] = Cosmetics.sanitize(data["cosmetic"])
 	mark()
 

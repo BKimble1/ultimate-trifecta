@@ -110,12 +110,19 @@ def make_mesh(mb, arm_ob, scn):
     return ob
 
 
+SHAPE_KEYS = ('blink', 'squint', 'smile', 'open', 'brow_up', 'brow_angry', 'face_bright', 'face_sleepy', 'brow_flat')
+
+
 def shape_keys(ob, mb):
-    """Face shapes on the base mesh: blink, squint (happy ^^), smile, open,
-    brow_up, brow_angry.  Only tagged face vertices move."""
+    """Face shapes on the base mesh.  Expressions: blink, squint (happy ^^),
+    smile, open, brow_up, brow_angry.  Face presets (held at a fixed weight
+    for a player's chosen face, expressions play on top): face_bright (bigger
+    eyes, lifted brows), face_sleepy (heavy lids, relaxed brows), brow_flat
+    (straight brows instead of the default arch).  Only tagged face vertices
+    move."""
     ob.shape_key_add(name='Basis', from_mix=False)
     shapes = {}
-    for name in ('blink', 'squint', 'smile', 'open', 'brow_up', 'brow_angry'):
+    for name in SHAPE_KEYS:
         shapes[name] = ob.shape_key_add(name=name, from_mix=False)
     basis = [v.co.copy() for v in ob.data.vertices]
     # neutral mouth = closed smile line: bake that into the basis first
@@ -148,13 +155,22 @@ def shape_keys(ob, mb):
             # squint: happy arch
             arch = 0.016 * (1.0 - min(1.0, (sx / 0.046) ** 2))
             shapes['squint'].data[vi].co = c + side * sx + up * (uy * 0.2 + arch - 0.004) + n * (nz * 0.75)
+            shapes['face_bright'].data[vi].co = c + side * (sx * 1.1) + up * (uy * 1.13 + 0.003) + n * (nz * 1.05)
+            lid = uy * 0.5 - 0.004 if uy > 0 else uy * 0.92
+            shapes['face_sleepy'].data[vi].co = c + side * sx + up * (lid - 0.006) + n * (nz * 0.9)
         elif tag in ('browL', 'browR'):
             c, along, up, n, sx_sign = mb.aux[vi]
             d = b - c
-            a = d.dot(along) * sx_sign  # + toward the outer end
+            a = d.dot(along)  # along points from the inner end to the outer end on both sides
             shapes['brow_up'].data[vi].co = b + up * 0.022
             inner = max(-1.0, min(1.0, -a / 0.045))
             shapes["brow_angry"].data[vi].co = b + up * (-0.012 * inner + 0.004)
+            shapes['face_bright'].data[vi].co = b + up * 0.011
+            outer = max(0.0, min(1.0, a / 0.045))
+            shapes['face_sleepy'].data[vi].co = b + up * (-0.005 - 0.007 * outer)
+            # the default brow is an arch 0.015 high: lift the ends to flatten it
+            u = max(0.0, min(1.0, 0.5 + a / 0.094))
+            shapes['brow_flat'].data[vi].co = b + up * (0.012 * (1.0 - math.sin(math.pi * u)) - 0.006)
         elif tag in ('mouth', 'tongue'):
             c, side, up, n, _ = mb.aux[vi]
             # use the *original* (unbaked) layout for open/smile
@@ -247,7 +263,7 @@ def main():
         'clips': {n: {'length': round(L, 4), 'loop': lp} for n, L, lp in clips},
         'loco_m_per_cycle': {k: v['speed'] for k, v in anims.LOCO.items()},
         'bones': list(rig.bone_table().keys()),
-        'shape_keys': ['blink', 'squint', 'smile', 'open', 'brow_up', 'brow_angry'],
+        'shape_keys': list(SHAPE_KEYS),
     }
     with open(os.path.splitext(OUT)[0] + '_manifest.json', 'w') as f:
         json.dump(manifest, f, indent=2, sort_keys=True)

@@ -23,15 +23,29 @@ import rig
 FPS = 30
 
 # design speeds: metres per 1.0 s cycle at playback rate 1 (read by the game)
+#
+# V3 cadence.  The character's legs are 0.44 m (hip joint 0.525 m, ankle
+# 0.085 m), so stride lengths are scaled from human gait by leg length:
+#   walk    0.70 m/cycle -> 1.9 cycles/s at 1.3 m/s  (3.7 steps/s)
+#   run     2.20 m/cycle -> 2.3 cycles/s at 5.0 m/s  (4.5 steps/s, short flight)
+#   sprint  2.75 m/cycle -> 2.5 cycles/s at 7.0 m/s  (5.1 steps/s, longer flight)
+# (V2 ran at 1.7 m/cycle = 2.9 cycles/s at 5 m/s, which read as scurrying.)
+# speed * duty is the planted-foot sweep; the hip drop at the stance extremes
+# keeps it reachable with a slightly bent leg (checked by reach_report()).
 LOCO = {
     # name: speed = metres per 1.0 s cycle (so playback rate = ground speed / speed),
     #       duty = stance fraction per foot, lift (m), hip drop (m), lean (deg, spine),
-    #       arm swing (deg), elbow (deg), bob (m).  speed * duty is the planted-foot
-    #       sweep; with 0.44 m legs it must stay reachable (see README_character.md).
-    'walk': dict(speed=0.8, duty=0.58, lift=0.05, drop=0.08, lean=-6.0, arm=18.0, elbow=35.0, bob=0.012, sneak=True),
-    'run': dict(speed=1.7, duty=0.24, lift=0.11, drop=0.06, lean=-12.0, arm=48.0, elbow=80.0, bob=0.02, sneak=False),
-    'sprint': dict(speed=2.05, duty=0.205, lift=0.14, drop=0.07, lean=-20.0, arm=62.0, elbow=95.0, bob=0.022, sneak=False),
+    #       arm swing (deg), elbow (deg), bob (m), gait ('walk' = vaulting, highest
+    #       at mid-stance; 'run' = bouncing, lowest at mid-stance)
+    'walk': dict(speed=0.70, duty=0.58, lift=0.065, drop=0.04, lean=-4.0, arm=20.0, elbow=26.0, bob=0.012, gait='walk'),
+    'run': dict(speed=2.20, duty=0.20, lift=0.15, drop=0.06, lean=-11.0, arm=44.0, elbow=86.0, bob=0.024, gait='run'),
+    'sprint': dict(speed=2.75, duty=0.165, lift=0.19, drop=0.07, lean=-18.0, arm=58.0, elbow=96.0, bob=0.026, gait='run'),
 }
+# foot-strike phases (left, right) of each cycle, for footstep timing in the game
+def strike_phases(name):
+    d = LOCO[name]['duty']
+    return ((1.0 - d * 0.5) % 1.0, (0.5 - d * 0.5) % 1.0)
+
 
 D2R = math.pi / 180.0
 
@@ -285,66 +299,140 @@ def loco_pose(name, phase):
     S_total = c['speed']          # metres per cycle (cycle = 1 s at rate 1)
     duty = c['duty']
     sweep = S_total * duty        # foot travel while planted
+    walk = c['gait'] == 'walk'
     pose = {}
-    # hips: bob twice per cycle (lowest at each mid-stance)
-    bob = -c['drop'] - c['bob'] * math.cos(4 * math.pi * phase)
-    if c['sneak']:
-        bob = -c['drop'] + c['bob'] * math.cos(4 * math.pi * phase)
-    twist = 6.0 * math.sin(2 * math.pi * phase) * (0.5 if c['sneak'] else 1.0)
-    pose['hips'] = {'loc': (0, 0, bob), 'rot': (c['lean'] * 0.25, 0, twist)}
-    pose['spine'] = {'rot': (c['lean'] * 0.55, 0, -twist * 0.9)}
-    pose['chest'] = {'rot': (c['lean'] * 0.3, 0, -twist * 0.8)}
+    # hips: bob twice per cycle.  Walking vaults over the planted leg (highest
+    # at mid-stance); running compresses into it (lowest at mid-stance).
+    cb = math.cos(4 * math.pi * phase)
+    bob = -c['drop'] + c['bob'] * cb if walk else -c['drop'] - c['bob'] * cb
+    # pelvis turns toward the leg that is forward; shoulders counter-rotate
+    twist = (4.0 if walk else 7.0) * math.sin(2 * math.pi * phase)
+    # weight over the stance foot (a little side-to-side sway, more when walking)
+    sway = (0.012 if walk else 0.006) * math.cos(2 * math.pi * phase)
+    roll = (3.0 if walk else 2.0) * math.cos(2 * math.pi * phase)
+    pose['hips'] = {'loc': (-sway, 0, bob), 'rot': (c['lean'] * 0.25, roll, twist)}
+    pose['spine'] = {'rot': (c['lean'] * 0.55, -roll * 0.6, -twist * 0.9)}
+    pose['chest'] = {'rot': (c['lean'] * 0.3, -roll * 0.3, -twist * 0.8)}
     pose['neck'] = {'rot': (-c['lean'] * 0.5, 0, twist * 0.3)}
-    pose['head'] = {'rot': (-c['lean'] * 0.45 + (4 if c['sneak'] else 0), 0, twist * 0.2)}
+    pose['head'] = {'rot': (-c['lean'] * 0.45, -roll * 0.2, twist * 0.25)}
     for side, ph0 in ((-1, 0.0), (1, 0.5)):
         sfx = '.L' if side < 0 else '.R'
         ph = (phase + ph0 + duty * 0.5) % 1.0     # 0 = foot strike, duty = toe-off
-        x = rig.HIP_X * side + (0.012 * side if not c['sneak'] else 0.03 * side)
+        x = rig.HIP_X * side + 0.012 * side
         if ph < duty:
             u = ph / duty
             y = sweep * (0.5 - u)
-            z = rig.ANKLE_Z
-            pitch = 0.0 if u < 0.75 else -25.0 * smoothstep(0.75, 1.0, u)
+            # heel strike -> flat -> heel rise: the ankle rides a little higher at
+            # both ends of the stance (heel/toe roll), which also keeps it reachable
+            z = rig.ANKLE_Z + 0.014 * (1.0 - smoothstep(0.0, 0.3, u)) + 0.022 * smoothstep(0.7, 1.0, u)
+            pitch = 8.0 * (1.0 - smoothstep(0.0, 0.25, u)) - 28.0 * smoothstep(0.7, 1.0, u)
         else:
             u = (ph - duty) / (1 - duty)
-            e = u * u * (3 - 2 * u)
-            y = -sweep * 0.5 + sweep * e
-            # overshoot forward a touch mid-swing for a lively gait
-            y += sweep * 0.12 * math.sin(math.pi * u)
-            z = rig.ANKLE_Z + c['lift'] * math.sin(math.pi * u) ** 0.8
-            pitch = lerp(-30.0, 12.0, smoothstep(0.0, 0.55, u)) * (1.0 - smoothstep(0.8, 1.0, u))
+            if walk:
+                e = u * u * (3 - 2 * u)
+                y = -sweep * 0.5 + sweep * e + sweep * 0.08 * math.sin(math.pi * u)
+                z = rig.ANKLE_Z + lerp(0.022, 0.014, u) + c['lift'] * math.sin(math.pi * u) ** 0.9 * (1.0 - 0.3 * u)
+                pitch = lerp(-28.0, 8.0, smoothstep(0.1, 0.8, u))
+            else:
+                # running swing: heel kicks up behind first, the knee drives
+                # forward, the foot reaches out and pulls back a touch before it
+                # lands (so it meets the ground moving backward, not skidding)
+                e = smoothstep(0.12, 0.82, u)
+                reach = sweep * 0.5 + sweep * 0.1 * smoothstep(0.55, 0.85, u) * (1.0 - smoothstep(0.85, 1.0, u))
+                y = lerp(-sweep * 0.5, reach, e)
+                kick = math.sin(math.pi * min(1.0, u / 0.92) ** 0.65) ** 0.7   # peaks early: heel kicks up behind
+                z = rig.ANKLE_Z + lerp(0.022, 0.014, u) + c['lift'] * kick * (1.0 - 0.2 * u)
+                pitch = lerp(-28.0, 8.0, smoothstep(0.35, 0.9, u)) - 14.0 * math.sin(math.pi * min(1.0, u / 0.6))
         # IK targets are in armature space; hips twist moves the hip joints,
         # ankles stay where the gait puts them (the solver reaches for them)
         pose['foot' + sfx] = {'ik': (Vector((x, y, z)), pitch)}
-        # arms swing opposite to the legs
-        sw = c['arm'] * math.sin(2 * math.pi * (phase + ph0 + 0.25))
-        sw = -sw
-        pose['upper_arm' + sfx] = {'rot': (sw, -12 * side if not c['sneak'] else -22 * side, 0)}
-        pose['forearm' + sfx] = {'rot': (c['elbow'] + 0.25 * max(0.0, sw), 0, 0)}
-        pose['hand' + sfx] = {'rot': (8, 0, 0)}
+        # arms swing opposite to the legs: each arm is at its forward peak when
+        # its own leg is furthest back (toe-off) and crosses the middle at mid-stance
+        sw = c['arm'] * math.sin(2 * math.pi * (phase + ph0))
+        pose['upper_arm' + sfx] = {'rot': (sw, (-10 if walk else -14) * side, 4 * side * max(0.0, sw) / max(1.0, c['arm']))}
+        pose['forearm' + sfx] = {'rot': (c['elbow'] + 0.3 * max(0.0, sw), 0, 0)}
+        pose['hand' + sfx] = {'rot': (6, 0, 0)}
         pose['shoulder' + sfx] = {'rot': (0, 0, -3 * side * math.sin(2 * math.pi * (phase + ph0)))}
-    if c['sneak']:
-        # tiptoe sneak: arms up in front like a cartoon burglar
-        for side in (-1, 1):
-            sfx = '.L' if side < 0 else '.R'
-            sw = 10 * math.sin(2 * math.pi * (phase + (0.0 if side < 0 else 0.5)))
-            pose['upper_arm' + sfx] = {'rot': (55 + sw, -18 * side, 0)}
-            pose['forearm' + sfx] = {'rot': (65, 0, 0)}
-            pose['hand' + sfx] = {'rot': (-25, 0, 0)}
     return pose
 
 
+def reach_report():
+    """Max ankle distance from the hip joint over each gait (must stay < 0.44 m)."""
+    out = {}
+    leg = 0.44
+    for name in LOCO:
+        worst = 0.0
+        for i in range(200):
+            p = loco_pose(name, i / 200.0)
+            hz = rig.HIP_Z + p['hips']['loc'][2]
+            for sfx in ('.L', '.R'):
+                t = p['foot' + sfx]['ik'][0]
+                d = math.sqrt(t.y ** 2 + (hz - t.z) ** 2)
+                worst = max(worst, d)
+        out[name] = round(worst, 4)
+    return out, leg
+
+
 # ------------------------------------------------------------------ clip library
+IDLE_L = 4.0
+
+
 def clip_idle(t):
-    L = 2.4
-    br = math.sin(2 * math.pi * t / L)
-    sw = math.sin(2 * math.pi * t / L * 0.5)
-    pose = stand(-0.006 + 0.006 * br)
-    pose['spine'] = {'rot': (-1.0 * br, 0, 0)}
-    pose['chest'] = {'rot': (-1.5 * br, 1.0 * sw, 0)}
-    pose['head'] = {'rot': (1.5 * br, 2.0 * sw, 6 * math.sin(2 * math.pi * t / L * 0.5 + 0.7))}
-    pose.update(sym({'upper_arm.L': {'rot': (3 + 1.5 * br, -12 - 1.5 * br, 0)}, 'forearm.L': {'rot': (16 + 2 * br, 0, 0)},
-                     'shoulder.L': {'rot': (0, 1.0 * br, 0)}}))
+    """4 s: two slow breaths, one weight shift from foot to foot, a glance."""
+    L = IDLE_L
+    br = math.sin(2 * math.pi * t / (L * 0.5))           # breathing, 2 per loop
+    ws = math.sin(2 * math.pi * t / L)                   # weight shift, 1 per loop
+    look = math.sin(2 * math.pi * t / L + 0.9)
+    pose = stand(-0.012 + 0.005 * br - 0.006 * abs(ws))
+    pose['hips']['loc'] = (0.016 * ws, 0, pose['hips']['loc'][2])
+    pose['hips']['rot'] = (0, -2.5 * ws, 1.5 * ws)
+    pose['spine'] = {'rot': (-1.2 * br, 2.0 * ws, 0)}
+    pose['chest'] = {'rot': (-1.8 * br, 1.0 * ws, -1.0 * ws)}
+    pose['neck'] = {'rot': (0.8 * br, -1.5 * ws, 0)}
+    pose['head'] = {'rot': (1.5 * br + 2.0, -2.0 * ws, 9.0 * look)}
+    pose.update(sym({'upper_arm.L': {'rot': (3 + 1.5 * br, -11 - 1.5 * br, 0)}, 'forearm.L': {'rot': (16 + 2 * br, 0, 0)},
+                     'shoulder.L': {'rot': (0, 1.2 * br, 0)}, 'hand.L': {'rot': (4, 0, 0)}}))
+    return pose
+
+
+def clip_fidget_yawn(t):
+    """Lobby/idle fidget (2.4 s): a big pajama yawn and stretch."""
+    k = smoothstep(0.0, 0.7, t) * (1.0 - smoothstep(1.7, 2.4, t))
+    pose = clip_idle(0.0)
+    pose['hips']['loc'] = (0, 0, -0.012 + 0.012 * k)
+    pose['spine'] = {'rot': (8 * k, 0, 0)}
+    pose['chest'] = {'rot': (6 * k, 0, 0)}
+    pose['neck'] = {'rot': (8 * k, 0, 0)}
+    pose['head'] = {'rot': (14 * k, 0, 0)}
+    pose.update(sym({'shoulder.L': {'rot': (0, 10 * k, 0)}, 'upper_arm.L': {'rot': (-10 * k, -11 + 140 * k, 0)},
+                     'forearm.L': {'rot': (16 + 40 * k, 0, 0)}, 'hand.L': {'rot': (0, 0, 0)}}))
+    return pose
+
+
+def clip_fidget_look(t):
+    """Lobby/idle fidget (2.0 s): looks over one shoulder, then the other."""
+    a = math.sin(2 * math.pi * min(1.0, t / 2.0))
+    k = smoothstep(0.0, 0.3, t) * (1.0 - smoothstep(1.7, 2.0, t))
+    pose = clip_idle(0.0)
+    pose['chest'] = {'rot': (0, 0, 10 * a * k)}
+    pose['neck'] = {'rot': (0, 0, 10 * a * k)}
+    pose['head'] = {'rot': (4 * k, 4 * a * k, 18 * a * k)}
+    pose['hips']['rot'] = (0, 0, 4 * a * k)
+    return pose
+
+
+def clip_ready(t):
+    """Lobby ready response (0.9 s): a quick fist pump with a bounce."""
+    u = t / 0.9
+    k = smoothstep(0.0, 0.25, u) * (1.0 - smoothstep(0.7, 1.0, u))
+    bounce = math.sin(math.pi * smoothstep(0.1, 0.55, u)) * 0.05
+    pose = stand(-0.03 * k + bounce)
+    pose.update(sym({'upper_arm.L': {'rot': (4, -11, 0)}, 'forearm.L': {'rot': (16, 0, 0)}}))
+    pose['upper_arm.R'] = {'rot': (30 * k, -11 - 100 * k, 0)}
+    pose['forearm.R'] = {'rot': (16 + 100 * k, 0, 0)}
+    pose['hand.R'] = {'rot': (10 * k, 0, 0)}
+    pose['chest'] = {'rot': (-4 * k, 0, -6 * k)}
+    pose['head'] = {'rot': (8 * k, 0, -8 * k)}
     return pose
 
 
@@ -366,41 +454,57 @@ def clip_turn(t, direction):
     return pose
 
 
-def clip_jump(t):
-    u = smoothstep(0.0, 0.3, t)
-    tuck = sym({'upper_arm.L': {'rot': (lerp(-20, 30, u), lerp(20, 70, u), 0)}, 'forearm.L': {'rot': (lerp(30, 40, u), 0, 0)},
-                'thigh.L': {'rot': (lerp(10, 55, u), 0, 0)}, 'shin.L': {'rot': (lerp(-20, -80, u), 0, 0)},
-                'foot.L': {'rot': (lerp(-30, -15, u), 0, 0)}})
-    tuck['thigh.R']['rot'] = (lerp(10, 25, u), 0, 0)
-    tuck['shin.R']['rot'] = (lerp(-20, -45, u), 0, 0)
-    tuck['spine'] = {'rot': (lerp(-10, 4, u), 0, 0)}
-    tuck['head'] = {'rot': (lerp(-5, 8, u), 0, 0)}
-    tuck['hips'] = {'loc': (0, 0, 0.02)}
-    return tuck
-
-
-def clip_fall(t):
-    L = 0.8
-    w = math.sin(2 * math.pi * t / L)
-    p = sym({'upper_arm.L': {'rot': (10 + 25 * w, 95, 0)}, 'forearm.L': {'rot': (20 + 15 * w, 0, 0)},
-             'thigh.L': {'rot': (30 + 20 * w, 0, 0)}, 'shin.L': {'rot': (-35 - 15 * w, 0, 0)}, 'foot.L': {'rot': (-15, 0, 0)}})
-    p['upper_arm.R']['rot'] = (10 - 25 * w, -95, 0)
-    p['thigh.R']['rot'] = (30 - 20 * w, 0, 0)
-    p['shin.R']['rot'] = (-35 + 15 * w, 0, 0)
-    p['spine'] = {'rot': (4, 0, 3 * w)}
-    p['head'] = {'rot': (8, 0, -3 * w)}
+def _air(tuck_l, tuck_r, arm_raise, arm_fwd, elbow, spine, head, flap=0.0):
+    p = sym({'upper_arm.L': {'rot': (arm_fwd + flap, arm_raise, 0)}, 'forearm.L': {'rot': (elbow, 0, 0)},
+             'hand.L': {'rot': (0, 0, 0)}})
+    p['upper_arm.R']['rot'] = (arm_fwd - flap, -arm_raise, 0)
+    for sfx, (th, sh, ft) in (('.L', tuck_l), ('.R', tuck_r)):
+        p['thigh' + sfx] = {'rot': (th, 0, 0)}
+        p['shin' + sfx] = {'rot': (sh, 0, 0)}
+        p['foot' + sfx] = {'rot': (ft, 0, 0)}
+    p['spine'] = {'rot': (spine, 0, 0)}
+    p['head'] = {'rot': (head, 0, 0)}
     p['hips'] = {'loc': (0, 0, 0.02)}
     return p
 
 
-def clip_land(t):
-    u = t / 0.28
-    squash = math.sin(math.pi * min(1.0, u * 1.4)) * (1.0 - smoothstep(0.6, 1.0, u))
-    pose = stand(-0.11 * squash, 0.015 * squash)
-    pose['spine'] = {'rot': (-14 * squash, 0, 0)}
-    pose['head'] = {'rot': (10 * squash, 0, 0)}
-    pose.update(sym({'upper_arm.L': {'rot': (25 * squash, -14 + 45 * squash, 0)}, 'forearm.L': {'rot': (16 + 25 * squash, 0, 0)}}))
+# Air poses form a blend space over vertical velocity (CharacterView): rising
+# (+5.5 m/s), apex (0) and falling (-7).  Each is a gentle 1 s loop so the
+# blend never pops at the top of the arc.
+def clip_air_rise(t):
+    w = math.sin(2 * math.pi * t)
+    return _air((52, -72, -25), (22, -38, -30), 55 + 3 * w, -18, 32, -6, -6, 3 * w)
+
+
+def clip_air_apex(t):
+    w = math.sin(2 * math.pi * t)
+    return _air((40, -62, -18), (30, -50, -18), 78 + 3 * w, 4, 26, 2, 4, 4 * w)
+
+
+def clip_air_fall(t):
+    w = math.sin(2 * math.pi * t)
+    return _air((16 + 6 * w, -26, -8), (24 - 6 * w, -34, -8), 100 + 6 * w, 10, 22, 5, 9, 12 * w)
+
+
+def _land(t, L, depth, lean, arms):
+    u = t / L
+    squash = math.sin(math.pi * min(1.0, u * 1.5)) * (1.0 - smoothstep(0.55, 1.0, u))
+    pose = stand(-depth * squash, 0.012 * squash)
+    pose['hips']['rot'] = (-lean * 0.3 * squash, 0, 0)
+    pose['spine'] = {'rot': (-lean * squash, 0, 0)}
+    pose['neck'] = {'rot': (lean * 0.4 * squash, 0, 0)}
+    pose['head'] = {'rot': (lean * 0.5 * squash, 0, 0)}
+    pose.update(sym({'upper_arm.L': {'rot': (20 * squash, -12 + arms * squash, 0)},
+                     'forearm.L': {'rot': (16 + 25 * squash, 0, 0)}}))
     return pose
+
+
+def clip_land_soft(t):
+    return _land(t, 0.3, 0.06, 8, 25)
+
+
+def clip_land_hard(t):
+    return _land(t, 0.45, 0.15, 20, 60)
 
 
 def clip_dive(t):
@@ -429,33 +533,110 @@ def clip_dive_land(t):
     return p
 
 
-def clip_splash(t):
-    # 1.5 s: hop in, flail with arms up while bobbing, then kick back up
-    u = t / 1.5
-    dip = smoothstep(0.0, 0.25, u) * (1.0 - smoothstep(0.75, 1.0, u))
-    w = math.sin(t * 14.0)
-    p = sym({'upper_arm.L': {'rot': (20 + 30 * w, 112 - 18 * w, 0)}, 'forearm.L': {'rot': (35 + 20 * w, 0, 0)},
-             'thigh.L': {'rot': (35 + 25 * w, -8, 0)}, 'shin.L': {'rot': (-60 - 20 * w, 0, 0)}, 'foot.L': {'rot': (-20, 0, 0)}})
-    p['upper_arm.R']['rot'] = (20 - 30 * w, -112 + 18 * w, 0)
-    p['forearm.R']['rot'] = (35 - 20 * w, 0, 0)
-    p['thigh.R']['rot'] = (35 - 25 * w, 8, 0)
-    p['shin.R']['rot'] = (-60 + 20 * w, 0, 0)
-    p['hips'] = {'loc': (0, 0, -0.62 * dip + 0.03 * math.sin(t * 9)), 'rot': (0, 6 * math.sin(t * 7), 0)}
-    p['head'] = {'rot': (12, 0, 8 * math.sin(t * 11))}
+SPLASH_L = 1.5   # == RulesConfig.splash_sequence_s (the sim moves the runner to the shore after this)
+
+
+def _tread(t):
+    """Treading water: hips low, slow sculling arms, slow bicycle legs."""
+    w = math.sin(2 * math.pi * 1.6 * t)
+    c = math.cos(2 * math.pi * 1.6 * t)
+    p = sym({'upper_arm.L': {'rot': (12 + 14 * w, 68, 0)}, 'forearm.L': {'rot': (30 + 8 * c, 0, 0)},
+             'hand.L': {'rot': (0, 0, 0)}, 'thigh.L': {'rot': (42 + 16 * w, -6, 0)}, 'shin.L': {'rot': (-62 - 14 * c, 0, 0)},
+             'foot.L': {'rot': (-20, 0, 0)}})
+    p['upper_arm.R']['rot'] = (12 - 14 * w, -68, 0)
+    p['thigh.R']['rot'] = (42 - 16 * w, 6, 0)
+    p['shin.R']['rot'] = (-62 + 14 * c, 0, 0)
+    p['hips'] = {'loc': (0, 0, -0.92 + 0.025 * math.sin(2 * math.pi * 1.6 * t + 0.6)), 'rot': (6, 0, 0)}
+    p['spine'] = {'rot': (-4, 0, 0)}
+    p['head'] = {'rot': (10, 0, 7 * math.sin(2 * math.pi * 0.6 * t))}
     return p
 
 
+def _splash_contact(kind, t):
+    """First beat: how the body meets the water (walk-in, jump, dive)."""
+    if kind == 'walk':
+        # tips in: one foot still up behind, arms thrown up and forward
+        p = sym({'upper_arm.L': {'rot': (120, 30, 0)}, 'forearm.L': {'rot': (25, 0, 0)}, 'thigh.L': {'rot': (35, 0, 0)},
+                 'shin.L': {'rot': (-40, 0, 0)}, 'foot.L': {'rot': (-20, 0, 0)}})
+        p['thigh.R'] = {'rot': (-25, 0, 0)}
+        p['shin.R'] = {'rot': (-55, 0, 0)}
+        p['hips'] = {'loc': (0, 0.05, -0.38), 'rot': (-22, 0, 0)}
+        p['head'] = {'rot': (20, 0, 0)}
+        return p
+    if kind == 'jump':
+        # cannonball: knees to chest, arms hug the shins
+        p = sym({'upper_arm.L': {'rot': (45, 20, 0)}, 'forearm.L': {'rot': (100, 0, 0)}, 'thigh.L': {'rot': (105, -6, 0)},
+                 'shin.L': {'rot': (-125, 0, 0)}, 'foot.L': {'rot': (-30, 0, 0)}})
+        p['hips'] = {'loc': (0, 0, -0.55), 'rot': (14, 0, 0)}
+        p['spine'] = {'rot': (14, 0, 0)}
+        p['head'] = {'rot': (16, 0, 0)}
+        return p
+    # dive: belly first, arms out front, legs back
+    p = sym({'upper_arm.L': {'rot': (150, 14, 0)}, 'forearm.L': {'rot': (10, 0, 0)}, 'thigh.L': {'rot': (-8, -4, 0)},
+             'shin.L': {'rot': (-30, 0, 0)}, 'foot.L': {'rot': (-30, 0, 0)}})
+    p['hips'] = {'rot': (-70, 0, 0), 'loc': (0, 0.1, -0.5)}
+    p['neck'] = {'rot': (22, 0, 0)}
+    p['head'] = {'rot': (28, 0, 0)}
+    return p
+
+
+def clip_splash(kind, t):
+    """1.5 s, played by authoritative elapsed time (CharacterView seeks it to
+    the runner's state_t, so a late joiner sees the right beat):
+      0.00-0.16  contact  (impact-specific pose, crown of spray from the game FX)
+      0.16-0.48  dip      (sinks to the chin, arms come up, cheeks puff)
+      0.48-1.12  tread    (controlled bob, sculling arms, slow legs)
+      1.12-1.50  duck     (a breath, then a tidy duck under; the runner pops
+                           up at the shore exit when the sim resurfaces them)"""
+    contact = _splash_contact(kind, t)
+    dip = _tread(t)
+    dip['hips']['loc'] = (0, 0, -1.04)
+    dip.update(sym({'upper_arm.L': {'rot': (40, 95, 0)}, 'forearm.L': {'rot': (30, 0, 0)}}))
+    dip['upper_arm.R']['rot'] = (40, -95, 0)
+    dip['head'] = {'rot': (14, 0, 0)}
+    if t < 0.16:
+        return contact
+    if t < 0.48:
+        return blend_pose(contact, dip, smoothstep(0.16, 0.48, t))
+    tread = _tread(t)
+    if t < 0.62:
+        return blend_pose(dip, tread, smoothstep(0.48, 0.62, t))
+    if t < 1.12:
+        return tread
+    # breath (hips rise a touch, head back) then duck under, arms overhead
+    breath = _tread(t)
+    breath['hips']['loc'] = (0, 0, -0.84)
+    breath['head'] = {'rot': (-6, 0, 0)}
+    duck = sym({'upper_arm.L': {'rot': (10, 168, 0)}, 'forearm.L': {'rot': (5, 0, 0)}, 'thigh.L': {'rot': (10, 0, 0)},
+                'shin.L': {'rot': (-15, 0, 0)}, 'foot.L': {'rot': (-35, 0, 0)}})
+    duck['upper_arm.R']['rot'] = (10, -168, 0)
+    duck['hips'] = {'loc': (0, 0, -1.75)}
+    duck['head'] = {'rot': (-4, 0, 0)}
+    if t < 1.26:
+        return blend_pose(tread, breath, smoothstep(1.12, 1.26, t))
+    return blend_pose(breath, duck, smoothstep(1.26, 1.47, t))
+
+
 def clip_recover(t):
-    # shake off the water at the shore: fast body shake that settles
-    u = t / 0.6
-    k = (1.0 - u) ** 1.5
-    s = math.sin(t * 38.0) * k
-    pose = stand(-0.03 * k)
-    pose['hips']['rot'] = (0, 4 * s, 0)
-    pose['spine'] = {'rot': (0, 9 * s, 0)}
-    pose['chest'] = {'rot': (0, 9 * s, 0)}
-    pose['head'] = {'rot': (0, -14 * s, 0)}
-    pose.update(sym({'upper_arm.L': {'rot': (10, 45 + 15 * s, 0)}, 'forearm.L': {'rot': (20 + 20 * s, 0, 0)}}))
+    """Upper-body overlay after popping out at the shore (1.1 s): a quick
+    shake-off from the head down, then a wipe of the face.  CharacterView
+    plays it on the upper body only, so the legs keep running."""
+    k = (1.0 - smoothstep(0.0, 0.6, t)) * smoothstep(0.0, 0.05, t)
+    s = math.sin(t * 2 * math.pi * 6.0) * k
+    pose = {}
+    pose['spine'] = {'rot': (0, 6 * s, 0)}
+    pose['chest'] = {'rot': (0, 8 * s, 0)}
+    pose['neck'] = {'rot': (0, -6 * s, 0)}
+    pose['head'] = {'rot': (4 * k, -16 * s, 0)}
+    pose.update(sym({'shoulder.L': {'rot': (0, 6 * abs(s), 0)}, 'upper_arm.L': {'rot': (6, 30 + 14 * s, 0)},
+                     'forearm.L': {'rot': (24 + 18 * s, 0, 0)}}))
+    # wipe: right mitten passes over the brow
+    w = smoothstep(0.5, 0.72, t) * (1.0 - smoothstep(0.86, 1.1, t))
+    if w > 0.0:
+        sweep = math.sin(math.pi * smoothstep(0.62, 0.92, t))
+        pose['upper_arm.R'] = {'rot': (lerp(6, 95, w), lerp(-30, -20, w), 0)}
+        pose['forearm.R'] = {'rot': (lerp(24, 120, w), lerp(0, 35 * sweep - 10, w), 0)}
+        pose['head']['rot'] = (pose['head']['rot'][0] + 6 * w, pose['head']['rot'][1], -6 * w * sweep)
     return pose
 
 
@@ -531,6 +712,19 @@ def clip_tag_recover(t):
     return blend_pose(clip_tag_lunge(0.22), clip_idle(0.0), u)
 
 
+def clip_tag_miss(t):
+    """Lunge that finds nobody (0.5 s, same window as tag_recover): the arm
+    sweeps through empty air and the body wobbles back to balance."""
+    u = smoothstep(0.0, 0.5, t)
+    over = math.sin(math.pi * min(1.0, t / 0.3))
+    p = blend_pose(clip_tag_lunge(0.22), clip_idle(0.0), u)
+    p['upper_arm.L'] = {'rot': (lerp(95, 4, u) - 20 * over, lerp(-8, -11, u) + 30 * over, 0)}
+    p['upper_arm.R'] = {'rot': (lerp(95, 4, u) + 10 * over, lerp(8, 11, u) - 50 * over, 0)}
+    p['spine'] = {'rot': (lerp(-20, 0, u), 0, 8 * over)}
+    p['head'] = {'rot': (lerp(18, 0, u), 0, -12 * over)}
+    return p
+
+
 # steering wheel, relative to the character origin (Blender axes: x right,
 # y forward, z up).  CartView places its wheel at the same spot (Godot:
 # SEAT + (0, 0.50, -0.27)) and turns it by steer * STEER_DEG.
@@ -604,16 +798,16 @@ def clip_celebrate(t):
 
 
 def emote(name, t):
-    pose = clip_idle(t)
+    pose = clip_idle(0.0)   # static base: emote loops must not carry the 4 s idle cycle
     if name == 'wave':
-        w = math.sin(t * 13.0)
+        w = math.sin(2 * math.pi * 3.0 * t / 1.2)     # 3 waves per 1.2 s loop (seamless)
         pose['upper_arm.R'] = {'rot': (8, -118, 0)}
         pose['forearm.R'] = {'rot': (0, 0, 0)}
         pose['forearm.R'] = {'rot': (10, 30 + 30 * w, 0)}
         pose['head']['rot'] = (6, 0, -6)
         pose['chest'] = {'rot': (0, 4, 0)}
     elif name == 'cheer':
-        b = abs(math.sin(t * 7.0))
+        b = abs(math.sin(2 * math.pi * t / 0.8))      # 3 bounces per 1.2 s loop
         pose = stand(0.0)
         if b > 0.5:
             pass
@@ -623,7 +817,7 @@ def emote(name, t):
         pose.update(sym({'upper_arm.L': {'rot': (4, 122, 0)}, 'forearm.L': {'rot': (10 + 20 * b, 0, 0)}}))
         pose['head'] = {'rot': (14, 0, 0)}
     elif name == 'laugh':
-        s = math.sin(t * 20.0)
+        s = math.sin(2 * math.pi * 4.0 * t / 1.2)     # 4 chuckles per 1.2 s loop
         pose['spine'] = {'rot': (-10 + 4 * s, 0, 0)}
         pose['chest'] = {'rot': (-6 + 3 * s, 0, 0)}
         pose['head'] = {'rot': (10 + 6 * s, 0, 0)}
@@ -681,25 +875,33 @@ def clip_arrive(t):
 def library():
     """name -> (length_s, loop, fn(t) -> pose)"""
     lib = {
-        'idle': (2.4, True, clip_idle),
+        'idle': (IDLE_L, True, clip_idle),
+        'fidget_yawn': (2.4, False, clip_fidget_yawn),
+        'fidget_look': (2.0, False, clip_fidget_look),
+        'ready': (0.9, False, clip_ready),
         'walk': (1.0, True, lambda t: loco_pose('walk', t)),
         'run': (1.0, True, lambda t: loco_pose('run', t)),
         'sprint': (1.0, True, lambda t: loco_pose('sprint', t)),
         'turn_l': (0.4, False, lambda t: clip_turn(t, 1)),
         'turn_r': (0.4, False, lambda t: clip_turn(t, -1)),
-        'jump': (0.3, False, clip_jump),
-        'fall': (0.8, True, clip_fall),
-        'land': (0.28, False, clip_land),
+        'air_rise': (1.0, True, clip_air_rise),
+        'air_apex': (1.0, True, clip_air_apex),
+        'air_fall': (1.0, True, clip_air_fall),
+        'land_soft': (0.3, False, clip_land_soft),
+        'land_hard': (0.45, False, clip_land_hard),
         'dive': (0.6, False, clip_dive),
         'dive_land': (0.32, False, clip_dive_land),
-        'splash': (1.5, False, clip_splash),
-        'recover': (0.6, False, clip_recover),
+        'splash_walk': (SPLASH_L, False, lambda t: clip_splash('walk', t)),
+        'splash_jump': (SPLASH_L, False, lambda t: clip_splash('jump', t)),
+        'splash_dive': (SPLASH_L, False, lambda t: clip_splash('dive', t)),
+        'recover': (1.1, False, clip_recover),
         'stumble': (0.55, False, clip_stumble),
         'flop': (0.9, False, clip_flop),
         'dizzy': (2.0, True, clip_dizzy),
         'tag_windup': (0.14, False, clip_tag_windup),
         'tag_lunge': (0.22, False, clip_tag_lunge),
         'tag_recover': (0.5, False, clip_tag_recover),
+        'tag_miss': (0.5, False, clip_tag_miss),
         'cart_enter': (0.35, False, clip_cart_enter),
         'cart_drive': (1.0, True, lambda t: clip_cart_drive(t, 0.0)),
         # steer follows the sim's sign: +1 = turning right

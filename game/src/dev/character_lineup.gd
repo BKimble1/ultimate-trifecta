@@ -6,14 +6,28 @@ extends Node3D
 ##        closeup (face), all (every mode in turn).
 ## Each mode saves a lossless PNG and quits when done.
 
-const MODES := ["views", "outfits", "skins", "posesheet", "transitions", "closeup", "faces", "cart"]
-const SHEET_CLIPS := ["idle", "walk", "run", "sprint", "turn_l", "jump", "fall", "land", "dive", "dive_land", "splash", "recover",
-	"stumble", "flop", "dizzy", "tag_windup", "tag_lunge", "tag_recover", "cart_enter", "cart_drive", "cart_steer_l", "cart_exit",
-	"celebrate", "arrive", "emote_wave", "emote_cheer", "emote_laugh", "emote_shrug", "emote_dance", "emote_point"]
-const SHEET_T := {"walk": 0.25, "run": 0.12, "sprint": 0.37, "turn_l": 0.2, "jump": 0.3, "fall": 0.2, "land": 0.08, "dive": 0.6,
-	"dive_land": 0.1, "splash": 0.7, "recover": 0.12, "stumble": 0.27, "flop": 0.9, "dizzy": 0.4, "tag_windup": 0.14, "tag_lunge": 0.15,
-	"tag_recover": 0.1, "cart_enter": 0.35, "cart_exit": 0.17, "celebrate": 0.25, "arrive": 0.33, "emote_wave": 0.3, "emote_cheer": 0.2,
-	"emote_laugh": 0.3, "emote_shrug": 0.4, "emote_dance": 0.2, "emote_point": 0.5}
+const MODES := ["views", "outfits", "looks", "posesheet", "transitions", "closeup", "faces", "cart", "hero", "group", "distance"]
+const SHEET_CLIPS := ["idle", "walk", "run", "sprint", "turn_l", "air_rise", "air_apex", "air_fall", "land_soft", "land_hard",
+	"dive", "dive_land", "splash_walk", "splash_jump", "splash_dive", "recover", "stumble", "flop", "dizzy", "tag_windup",
+	"tag_lunge", "tag_recover", "tag_miss", "cart_enter", "cart_drive", "cart_steer_l", "cart_exit", "celebrate", "arrive", "ready",
+	"fidget_yawn", "fidget_look", "emote_wave", "emote_cheer", "emote_laugh", "emote_shrug", "emote_dance", "emote_point"]
+const SHEET_T := {"walk": 0.25, "run": 0.3, "sprint": 0.37, "turn_l": 0.2, "air_rise": 0.0, "air_apex": 0.0, "air_fall": 0.25,
+	"land_soft": 0.1, "land_hard": 0.15, "dive": 0.6, "dive_land": 0.1, "splash_walk": 0.1, "splash_jump": 0.1, "splash_dive": 0.1,
+	"recover": 0.25, "stumble": 0.27, "flop": 0.9, "dizzy": 0.4, "tag_windup": 0.14, "tag_lunge": 0.15, "tag_recover": 0.1,
+	"tag_miss": 0.15, "cart_enter": 0.35, "cart_exit": 0.17, "celebrate": 0.25, "arrive": 0.33, "ready": 0.4, "fidget_yawn": 1.1,
+	"fidget_look": 0.5, "emote_wave": 0.3, "emote_cheer": 0.2, "emote_laugh": 0.3, "emote_shrug": 0.4, "emote_dance": 0.2,
+	"emote_point": 0.5}
+## the icon's hero: blue striped pajamas, nightcap, bunny slippers
+const HERO := {"outfit": "pj", "pattern": "stripes", "color": "sky", "hat": "nightcap", "shoes": "slippers", "skin": "tone2",
+	"hair": "tuft", "hair_color": "brown", "face": "classic"}
+
+
+static func look(over: Dictionary) -> Dictionary:
+	var c := Cosmetics.DEFAULT.duplicate()
+	for k in over:
+		c[k] = over[k]
+	return Cosmetics.sanitize(c)
+
 
 var out_dir := ""
 var modes: Array = []
@@ -130,7 +144,9 @@ func _next_mode() -> void:
 		return
 	_mode = modes.pop_front()
 	_t = 0.0
-	var d := Cosmetics.DEFAULT
+	var d := look(HERO)
+	var colors: Array = Cosmetics.keys_of("color")
+	var skins: Array = Cosmetics.keys_of("skin")
 	match _mode:
 		"views":
 			var yaws := [0.0, PI * 0.25, PI * 0.5, PI]
@@ -139,37 +155,31 @@ func _next_mode() -> void:
 				# yaw PI faces +Z (toward the camera); add the view angle
 				_add(TC.Role.RUNNER, d, -4.5 + i * 1.5, 0.0, PI + yaws[i], names[i])
 			for i in 2:
-				_add(TC.Role.PATROL, {"color": 0, "skin": 2}, 1.8 + i * 1.5, 0.0, PI + (0.0 if i == 0 else PI), "watch " + ("front" if i == 0 else "back"))
+				_add(TC.Role.PATROL, look({"color": "sky", "skin": "tone6"}), 1.8 + i * 1.5, 0.0, PI + (0.0 if i == 0 else PI), "watch " + ("front" if i == 0 else "back"))
 			_aim(Vector3(-0.75, 1.4, 11.5), Vector3(-0.75, 0.85, 0), 30)
 		"outfits":
-			var outfits := Cosmetics.OUTFITS.keys()
+			var outfits: Array = Cosmetics.keys_of("outfit")
 			var hats := ["nightcap", "none", "swimcap", "party", "headphones", "crown"]
 			var shoes := ["slippers", "sneakers", "flippers", "sneakers", "slippers", "sneakers"]
+			var pats := ["stripes", "plain", "plain", "bands", "plain", "plain"]
 			for i in outfits.size():
-				_add(TC.Role.RUNNER, {"outfit": outfits[i], "hat": hats[i], "shoes": shoes[i], "color": i, "skin": i % 5}, -4.5 + i * 1.5, 0.0, PI + 0.35, String(outfits[i]))
-			_add(TC.Role.PATROL, {"color": 1, "skin": 1}, 4.5, 0.0, PI + 0.35, "night watch")
+				_add(TC.Role.RUNNER, look({"outfit": outfits[i], "pattern": pats[i], "hat": hats[i], "shoes": shoes[i], "color": colors[i],
+					"skin": skins[(i * 3) % skins.size()], "hair": ["tuft", "bob", "curly", "buns", "tuft"][i % 5]}), -4.5 + i * 1.5, 0.0, PI + 0.35, String(outfits[i]))
+			_add(TC.Role.PATROL, look({"color": "bubblegum", "skin": "tone4"}), 4.5, 0.0, PI + 0.35, "night watch")
 			_aim(Vector3(0, 1.5, 13.5), Vector3(0, 0.85, 0), 32)
-		"skins":
-			for i in 5:
-				_add(TC.Role.RUNNER, {"outfit": "pj_plain", "hat": ["none", "headphones", "crown", "party", "none"][i], "shoes": "sneakers", "color": [0, 2, 4, 6, 7][i], "skin": i}, -3.0 + i * 1.5, 0.0, PI + 0.3, "skin %d" % (i + 1))
-			_aim(Vector3(0, 1.4, 10.5), Vector3(0, 0.85, 0), 30)
-		"poses", "poses2":
-			var all_clips := ["idle", "walk", "run", "sprint", "jump", "fall", "dive", "land", "splash", "recover", "stumble", "flop",
-				"dizzy", "tag_windup", "tag_lunge", "cart_drive", "celebrate", "arrive", "emote_wave", "emote_cheer", "emote_point", "emote_shrug", "emote_dance", "turn_l"]
-			var times := {"idle": 0.3, "walk": 0.25, "run": 0.12, "sprint": 0.37, "jump": 0.3, "fall": 0.2, "dive": 0.6, "land": 0.08,
-				"splash": 0.7, "recover": 0.15, "stumble": 0.27, "flop": 0.9, "dizzy": 0.4, "tag_windup": 0.14, "tag_lunge": 0.15,
-				"cart_drive": 0.0, "celebrate": 0.25, "arrive": 0.33, "emote_wave": 0.3, "emote_cheer": 0.2, "emote_point": 0.5,
-				"emote_shrug": 0.4, "emote_dance": 0.2, "turn_l": 0.2}
-			var clips := all_clips.slice(0, 12) if _mode == "poses" else all_clips.slice(12, 24)
-			for i in clips.size():
-				var col := i % 6
-				var row := i / 6
-				var v := _add(TC.Role.RUNNER if clips[i] != "tag_lunge" and clips[i] != "tag_windup" else TC.Role.PATROL,
-					{"outfit": "pj_stripes", "color": i % 8, "skin": i % 5}, -3.75 + col * 1.5, -row * 2.2, PI + 0.9, clips[i])
-				_pose(v, clips[i], times[clips[i]])
-			_aim(Vector3(0, 3.0, 9.6), Vector3(0, 0.3, -1.1), 36)
+		"looks", "skins":
+			# hairstyles x hair colours, faces, brows, freckles, skin tones
+			var hairs := ["tuft", "bob", "curly", "buns"]
+			var hcols := ["black", "brown", "auburn", "ginger", "blonde", "silver", "blue", "pink"]
+			var faces := ["classic", "bright", "sleepy", "classic", "bright", "sleepy", "classic", "bright"]
+			var brows := ["arched", "arched", "flat", "raised", "flat", "arched", "raised", "arched"]
+			for i in 8:
+				_add(TC.Role.RUNNER, look({"outfit": "pj", "pattern": "plain", "hat": "none", "hair": hairs[i % 4], "hair_color": hcols[i],
+					"face": faces[i], "brows": brows[i], "marks": "freckles" if i % 3 == 1 else "none", "color": colors[(i + 2) % colors.size()],
+					"skin": skins[i]}), -3.5 + i * 1.0, 0.0, PI + 0.15, "%s/%s" % [hairs[i % 4], faces[i]])
+			_aim(Vector3(0, 1.35, 8.6), Vector3(0, 1.0, 0), 30)
 		"posesheet":
-			var pv := _add(TC.Role.RUNNER, {"outfit": "pj_stripes", "color": 0, "skin": 0}, 0.0, 0.0, PI + 0.75, "")
+			var pv := _add(TC.Role.RUNNER, d, 0.0, 0.0, PI + 0.75, "")
 			pv.set_process(false)
 			_aim(Vector3(0, 1.1, 5.2), Vector3(0, 0.75, 0), 30)
 			_strip_frames.clear()
@@ -180,17 +190,20 @@ func _next_mode() -> void:
 			_strip_frames.clear()
 			_strip_next = 0.0
 		"faces":
-			var shapes := ["", "blink", "squint", "smile", "open", "brow_up", "brow_angry"]
+			var shapes := ["", "blink", "squint", "smile", "open", "brow_up", "brow_angry", "face_bright", "face_sleepy", "brow_flat"]
 			for i in shapes.size():
-				var v := _add(TC.Role.RUNNER, {"outfit": "pj_plain", "hat": "none", "color": i, "skin": i % 5}, -2.4 + i * 0.8, 0.0, PI, shapes[i] if shapes[i] != "" else "neutral")
+				var v := _add(TC.Role.RUNNER, look({"outfit": "pj", "pattern": "plain", "hat": "none", "color": colors[i % colors.size()],
+					"skin": skins[i % skins.size()], "hair": ["tuft", "bob", "curly", "buns"][i % 4]}), -3.15 + i * 0.7, 0.0, PI, shapes[i] if shapes[i] != "" else "neutral")
 				v.set_process(false)
 				v.tree.active = false
 				v.anim.play("idle")
 				v.anim.seek(0.0, true)
 				v.anim.pause()
+				for n in v._face_idx:
+					v.base_mesh.set_blend_shape_value(v._face_idx[n], 0.0)
 				if shapes[i] != "":
 					v.base_mesh.set_blend_shape_value(v.base_mesh.find_blend_shape_by_name(shapes[i]), 1.0)
-			_aim(Vector3(0, 1.25, 6.2), Vector3(0, 1.12, 0), 26)
+			_aim(Vector3(0, 1.25, 7.4), Vector3(0, 1.12, 0), 28)
 		"cart":
 			for i in 3:
 				var steer := float(i - 1)
@@ -200,7 +213,7 @@ func _next_mode() -> void:
 				var cpos := Vector3(-3.2 + i * 3.2, 0, 0)
 				var cyaw := PI + 0.7
 				cv.apply_state({"pos": cpos, "yaw": cyaw, "speed": 0.0, "steer": steer, "occupied": true})
-				var v := _add(TC.Role.PATROL, {"color": i, "skin": i + 1}, 0.0, 0.0, cyaw, "steer %+d" % int(steer))
+				var v := _add(TC.Role.PATROL, look({"color": colors[i], "skin": skins[i * 2]}), 0.0, 0.0, cyaw, "steer %+d" % int(steer))
 				v.global_position = cpos + Basis(Vector3.UP, cyaw) * CartView.SEAT
 				v.rotation.y = cyaw
 				v.name_label.visible = false
@@ -208,8 +221,25 @@ func _next_mode() -> void:
 			_aim(Vector3(0, 3.0, 8.5), Vector3(0, 1.0, 0), 36)
 		"closeup":
 			_add(TC.Role.RUNNER, d, -0.45, 0.0, PI + 0.35)
-			_add(TC.Role.PATROL, {"color": 0, "skin": 3}, 0.45, -0.3, PI - 0.3)
+			_add(TC.Role.PATROL, look({"color": "sky", "skin": "tone7"}), 0.45, -0.3, PI - 0.3)
 			_aim(Vector3(0, 1.3, 3.0), Vector3(0, 1.08, 0), 26)
+		"hero":
+			# the icon benchmark: front three-quarter head-and-shoulders, and full body
+			_add(TC.Role.RUNNER, d, 0.0, 0.0, PI + 0.42)
+			_aim(Vector3(0.05, 1.22, 2.05), Vector3(0.0, 1.1, 0), 30)
+		"group":
+			for i in 8:
+				var c := Cosmetics.bot_cosmetic(i * 7 + 3)
+				if i == 0:
+					c = d
+				_add(TC.Role.RUNNER if i < 6 else TC.Role.PATROL, c, -3.15 + i * 0.9, -0.35 * absf(i - 3.5), PI + (3.5 - i) * 0.06)
+			_aim(Vector3(0, 1.6, 8.6), Vector3(0, 0.9, -0.5), 34)
+		"distance":
+			# typical follow-camera distance (about 6 m) and a far runner (20 m)
+			_add(TC.Role.RUNNER, d, 0.0, 0.0, PI + 2.6)
+			_add(TC.Role.RUNNER, look({"color": "bubblegum", "hair": "bob", "hat": "none"}), 3.0, -14.0, PI + 0.5)
+			_add(TC.Role.PATROL, look({"color": "lime", "skin": "tone5"}), -4.0, -9.0, PI - 0.6)
+			_aim(Vector3(0.6, 2.6, 5.8), Vector3(0, 0.9, -3.0), 62)
 
 
 func _process(delta: float) -> void:
@@ -230,7 +260,9 @@ func _process(delta: float) -> void:
 				return
 			var clip: String = SHEET_CLIPS[_sheet_i]
 			var pv := _views[0]
-			pv.set_appearance(TC.Role.PATROL if clip.begins_with("tag_") or clip.begins_with("cart") else TC.Role.RUNNER, {"outfit": "pj_stripes", "color": _sheet_i % 8, "skin": _sheet_i % 5})
+			var cs: Array = Cosmetics.keys_of("color")
+			pv.set_appearance(TC.Role.PATROL if clip.begins_with("tag_") or clip.begins_with("cart") else TC.Role.RUNNER,
+				look({"color": cs[_sheet_i % cs.size()], "skin": Cosmetics.keys_of("skin")[_sheet_i % 8]}))
 			_pose(pv, clip, SHEET_T.get(clip, 0.3))
 			_sheet_wait = 2
 		"transitions":
@@ -265,7 +297,7 @@ func _drive_transitions(_delta: float) -> void:
 	if t < 0.6:
 		speed = 0.0
 	elif t < 1.4:
-		speed = 2.0
+		speed = 1.4
 	elif t < 2.2:
 		speed = 5.0
 	elif t < 3.0:

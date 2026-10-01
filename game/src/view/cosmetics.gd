@@ -1,96 +1,354 @@
 class_name Cosmetics
 extends RefCounted
-## The V1 wardrobe. Appearance only — no item changes gameplay.
+## Runner appearance, schema 2 ("Create Your Runner").  Appearance only: no
+## item changes speed, reach, hitboxes or anything else in the simulation.
+##
+## Stable identity.  Every catalog entry has a string key (used in saves and
+## in code) and an explicit numeric ID (used on the wire).  IDs are never
+## renumbered or reused; a new item gets a new ID.  Nothing depends on
+## dictionary order (the V1/V2 5-byte format did, which is why it is retired).
+##
+## Saved form (profile "appearance"):
+##   {"schema": 2, "outfit": "pj", "pattern": "stripes", "color": "sky", ...}
+## Wire form (encode/decode): [WIRE_MAGIC, SCHEMA, n, (field_id, value_id) * n]
+## Unknown field IDs are skipped and unknown value IDs fall back to the
+## field's default, so a newer client's extra fields never break an older
+## decoder within the same protocol version.
 
-const OUTFITS := {
-	"pj_stripes": {"name": "Striped PJs", "cost": 0, "kind": "pj", "stripes": 7.0},
-	"pj_plain": {"name": "Comfy PJs", "cost": 0, "kind": "pj", "stripes": 0.0},
-	"swim": {"name": "Swim Trunks", "cost": 0, "kind": "swim"},
-	"robe": {"name": "Fluffy Robe", "cost": 90, "kind": "robe"},
-	"duck": {"name": "Duck Mascot", "cost": 160, "kind": "duck"},
-	"frog": {"name": "Frog Onesie", "cost": 200, "kind": "frog"},
+const SCHEMA := 2
+const WIRE_MAGIC := 0xA7   # > any V1/V2 legacy first byte (those were 0..5)
+
+## field key -> wire field ID (stable)
+const FIELDS := {
+	"outfit": 1, "pattern": 2, "color": 3, "trim": 4, "skin": 5, "face": 6, "brows": 7, "marks": 8,
+	"hair": 9, "hair_color": 10, "hat": 11, "shoes": 12, "emote": 13,
 }
 
-const HATS := {
-	"none": {"name": "No Hat", "cost": 0},
-	"nightcap": {"name": "Nightcap", "cost": 0},
-	"swimcap": {"name": "Swim Cap + Goggles", "cost": 0},
-	"party": {"name": "Party Hat", "cost": 60},
-	"headphones": {"name": "Headphones", "cost": 110},
-	"crown": {"name": "Paper Crown", "cost": 240},
+## field -> {key: {id, name, cost, ...}}.  cost 0 = owned by everyone.
+const CATALOG := {
+	"outfit": {
+		"pj": {"id": 1, "name": "Pajamas", "cost": 0},
+		"swim": {"id": 2, "name": "Swim Trunks", "cost": 0},
+		"robe": {"id": 3, "name": "Fluffy Robe", "cost": 90},
+		"duck": {"id": 4, "name": "Duck Mascot", "cost": 160},
+		"frog": {"id": 5, "name": "Frog Onesie", "cost": 200},
+	},
+	"pattern": {
+		"plain": {"id": 1, "name": "Plain", "cost": 0, "per_m": 0.0},
+		"stripes": {"id": 2, "name": "Stripes", "cost": 0, "per_m": 13.0},
+		"pinstripes": {"id": 3, "name": "Pinstripes", "cost": 40, "per_m": 26.0},
+		"bands": {"id": 4, "name": "Wide Bands", "cost": 40, "per_m": 7.0},
+	},
+	"color": {
+		"sky": {"id": 1, "name": "Sky", "cost": 0, "rgb": Color(0.36, 0.55, 0.95)},
+		"bubblegum": {"id": 2, "name": "Bubblegum", "cost": 0, "rgb": Color(0.95, 0.42, 0.55)},
+		"lime": {"id": 3, "name": "Lime", "cost": 0, "rgb": Color(0.55, 0.85, 0.45)},
+		"sunny": {"id": 4, "name": "Sunny", "cost": 0, "rgb": Color(0.98, 0.78, 0.30)},
+		"grape": {"id": 5, "name": "Grape", "cost": 0, "rgb": Color(0.72, 0.50, 0.95)},
+		"teal": {"id": 6, "name": "Teal", "cost": 0, "rgb": Color(0.30, 0.82, 0.82)},
+		"tangerine": {"id": 7, "name": "Tangerine", "cost": 0, "rgb": Color(0.98, 0.58, 0.28)},
+		"cloud": {"id": 8, "name": "Cloud", "cost": 0, "rgb": Color(0.92, 0.92, 0.95)},
+		"navy": {"id": 9, "name": "Midnight", "cost": 30, "rgb": Color(0.22, 0.28, 0.58)},
+		"mint": {"id": 10, "name": "Mint", "cost": 30, "rgb": Color(0.56, 0.92, 0.76)},
+		"coral": {"id": 11, "name": "Coral", "cost": 30, "rgb": Color(0.98, 0.50, 0.44)},
+		"plum": {"id": 12, "name": "Plum", "cost": 30, "rgb": Color(0.56, 0.30, 0.62)},
+	},
+	## "auto" derives the trim from the main colour (the V2 look)
+	"trim": {
+		"auto": {"id": 1, "name": "Matching", "cost": 0},
+		"white": {"id": 2, "name": "White", "cost": 0, "rgb": Color(0.97, 0.96, 0.93)},
+		"cream": {"id": 3, "name": "Cream", "cost": 0, "rgb": Color(1.0, 0.91, 0.74)},
+		"navy": {"id": 4, "name": "Midnight", "cost": 20, "rgb": Color(0.22, 0.28, 0.58)},
+		"pink": {"id": 5, "name": "Pink", "cost": 20, "rgb": Color(1.0, 0.68, 0.78)},
+		"gold": {"id": 6, "name": "Gold", "cost": 20, "rgb": Color(1.0, 0.80, 0.36)},
+	},
+	"skin": {
+		"tone1": {"id": 1, "name": "Tone 1", "cost": 0, "rgb": Color(1.0, 0.87, 0.77)},
+		"tone2": {"id": 2, "name": "Tone 2", "cost": 0, "rgb": Color(0.98, 0.82, 0.68)},
+		"tone3": {"id": 3, "name": "Tone 3", "cost": 0, "rgb": Color(0.96, 0.74, 0.62)},
+		"tone4": {"id": 4, "name": "Tone 4", "cost": 0, "rgb": Color(0.87, 0.66, 0.50)},
+		"tone5": {"id": 5, "name": "Tone 5", "cost": 0, "rgb": Color(0.79, 0.59, 0.43)},
+		"tone6": {"id": 6, "name": "Tone 6", "cost": 0, "rgb": Color(0.66, 0.46, 0.32)},
+		"tone7": {"id": 7, "name": "Tone 7", "cost": 0, "rgb": Color(0.45, 0.30, 0.22)},
+		"tone8": {"id": 8, "name": "Tone 8", "cost": 0, "rgb": Color(0.33, 0.22, 0.16)},
+	},
+	## held face shape keys on the base mesh (expressions play on top)
+	"face": {
+		"classic": {"id": 1, "name": "Classic", "cost": 0, "keys": {}},
+		"bright": {"id": 2, "name": "Bright", "cost": 0, "keys": {"face_bright": 1.0}},
+		"sleepy": {"id": 3, "name": "Sleepy", "cost": 0, "keys": {"face_sleepy": 1.0}},
+	},
+	"brows": {
+		"arched": {"id": 1, "name": "Arched", "cost": 0, "keys": {}},
+		"flat": {"id": 2, "name": "Straight", "cost": 0, "keys": {"brow_flat": 1.0}},
+		"raised": {"id": 3, "name": "Raised", "cost": 0, "keys": {"brow_up": 0.35}},
+	},
+	"marks": {
+		"none": {"id": 1, "name": "None", "cost": 0, "parts": []},
+		"freckles": {"id": 2, "name": "Freckles", "cost": 0, "parts": ["freckles"]},
+	},
+	"hair": {
+		"tuft": {"id": 1, "name": "Tuft", "cost": 0, "parts": ["hair"]},
+		"bob": {"id": 2, "name": "Bob", "cost": 0, "parts": ["hair_bob"]},
+		"curly": {"id": 3, "name": "Curls", "cost": 0, "parts": ["hair_curly"]},
+		"buns": {"id": 4, "name": "Space Buns", "cost": 0, "parts": ["hair_buns", "hair_buns_knots"]},
+	},
+	"hair_color": {
+		"black": {"id": 1, "name": "Black", "cost": 0, "rgb": Color("151010")},
+		"espresso": {"id": 2, "name": "Espresso", "cost": 0, "rgb": Color("1f1712")},
+		"dark_brown": {"id": 3, "name": "Dark Brown", "cost": 0, "rgb": Color("2e1e15")},
+		"brown": {"id": 4, "name": "Brown", "cost": 0, "rgb": Color("4a3222")},
+		"auburn": {"id": 5, "name": "Auburn", "cost": 0, "rgb": Color("7a3420")},
+		"ginger": {"id": 6, "name": "Ginger", "cost": 0, "rgb": Color("b8743f")},
+		"blonde": {"id": 7, "name": "Blonde", "cost": 0, "rgb": Color("d9b26a")},
+		"silver": {"id": 8, "name": "Silver", "cost": 0, "rgb": Color("d6d3cf")},
+		"blue": {"id": 9, "name": "Blueberry", "cost": 40, "rgb": Color("4a7fd6")},
+		"pink": {"id": 10, "name": "Candy", "cost": 40, "rgb": Color("e889b5")},
+	},
+	"hat": {
+		"none": {"id": 1, "name": "No Hat", "cost": 0, "parts": []},
+		"nightcap": {"id": 2, "name": "Nightcap", "cost": 0, "parts": ["hat_nightcap"]},
+		"swimcap": {"id": 3, "name": "Swim Cap + Goggles", "cost": 0, "parts": ["hat_swimcap"]},
+		"party": {"id": 4, "name": "Party Hat", "cost": 60, "parts": ["hat_party"]},
+		"headphones": {"id": 5, "name": "Headphones", "cost": 110, "parts": ["hat_headphones"]},
+		"crown": {"id": 6, "name": "Paper Crown", "cost": 240, "parts": ["hat_crown"]},
+	},
+	"shoes": {
+		"slippers": {"id": 1, "name": "Bunny Slippers", "cost": 0, "parts": ["shoe_slippers"]},
+		"sneakers": {"id": 2, "name": "High-Tops", "cost": 50, "parts": ["shoe_hightops"]},
+		"flippers": {"id": 3, "name": "Flippers", "cost": 130, "parts": ["shoe_flippers"]},
+	},
+	## signature move: played when you ready up in the lobby and at results
+	"emote": {
+		"wave": {"id": 1, "name": "Wave", "cost": 0},
+		"cheer": {"id": 2, "name": "Cheer", "cost": 0},
+		"laugh": {"id": 3, "name": "Giggle", "cost": 0},
+		"shrug": {"id": 4, "name": "Shrug", "cost": 0},
+		"dance": {"id": 5, "name": "Wiggle Dance", "cost": 80},
+		"point": {"id": 6, "name": "Point", "cost": 0},
+	},
 }
 
-const SHOES := {
-	"slippers": {"name": "Bunny Slippers", "cost": 0},
-	"sneakers": {"name": "High-Tops", "cost": 50},
-	"flippers": {"name": "Flippers", "cost": 130},
+## field order in the creator (and the order fields are written on the wire)
+const ORDER := ["outfit", "pattern", "color", "trim", "skin", "face", "brows", "marks", "hair", "hair_color",
+	"hat", "shoes", "emote"]
+
+const DEFAULT := {
+	"schema": SCHEMA, "outfit": "pj", "pattern": "stripes", "color": "sky", "trim": "auto", "skin": "tone2",
+	"face": "classic", "brows": "arched", "marks": "none", "hair": "tuft", "hair_color": "brown",
+	"hat": "nightcap", "shoes": "slippers", "emote": "wave",
 }
 
-const COLORS := [
-	Color(0.36, 0.55, 0.95), Color(0.95, 0.42, 0.55), Color(0.55, 0.85, 0.45), Color(0.98, 0.78, 0.30),
-	Color(0.72, 0.50, 0.95), Color(0.30, 0.82, 0.82), Color(0.98, 0.58, 0.28), Color(0.92, 0.92, 0.95),
-]
-const COLOR_NAMES := ["Sky", "Bubblegum", "Lime", "Sunny", "Grape", "Teal", "Tangerine", "Cloud"]
+const OUTFIT_PARTS := {"pj": ["pj"], "swim": ["swim", "body_skin"], "robe": ["robe", "body_skin"], "duck": ["duck"], "frog": ["frog"]}
+## hoods replace hats and hair entirely
+const HOOD_OUTFITS := ["duck", "frog"]
+## hair/hat compatibility: which hair parts each hat hides
+const HAT_HIDES_HAIR := {
+	"nightcap": ["hair", "hair_bob", "hair_curly", "hair_buns", "hair_buns_knots"],
+	"swimcap": ["hair", "hair_bob", "hair_curly", "hair_buns", "hair_buns_knots"],
+	"headphones": ["hair_buns_knots"],
+	"crown": ["hair_buns_knots"],
+}
+## only these outfits show the pattern (the others are single-material)
+const PATTERNED_OUTFITS := ["pj", "robe"]
 
-const SKINS := [Color(0.98, 0.82, 0.68), Color(0.87, 0.66, 0.50), Color(0.66, 0.46, 0.32), Color(0.45, 0.30, 0.22), Color(0.96, 0.74, 0.62)]
+# --- V1/V2 legacy (5-byte wire format and the "cosmetic" save dictionary)
+const LEGACY_OUTFITS := ["pj_stripes", "pj_plain", "swim", "robe", "duck", "frog"]
+const LEGACY_HATS := ["none", "nightcap", "swimcap", "party", "headphones", "crown"]
+const LEGACY_SHOES := ["slippers", "sneakers", "flippers"]
+const LEGACY_COLORS := ["sky", "bubblegum", "lime", "sunny", "grape", "teal", "tangerine", "cloud"]
+const LEGACY_SKINS := ["tone2", "tone4", "tone6", "tone7", "tone3"]
+## V2 picked the hair colour from the skin tone; keep each migrated runner's look
+const LEGACY_HAIR_BY_SKIN := ["brown", "dark_brown", "espresso", "black", "ginger"]
 
-const DEFAULT := {"outfit": "pj_stripes", "hat": "nightcap", "shoes": "slippers", "color": 0, "skin": 0}
+
+static func entry(field: String, key: String) -> Dictionary:
+	return CATALOG.get(field, {}).get(key, {})
 
 
-static func sanitize(c: Dictionary) -> Dictionary:
+static func keys_of(field: String) -> Array:
+	return CATALOG.get(field, {}).keys()
+
+
+static func cost(field: String, key: String) -> int:
+	return int(entry(field, key).get("cost", 0))
+
+
+static func is_legacy(c: Dictionary) -> bool:
+	if c.has("schema"):
+		return false
+	# V1/V2 stored colour and skin as palette indices (ints; floats after JSON)
+	for f in ["color", "skin"]:
+		if typeof(c.get(f, null)) in [TYPE_INT, TYPE_FLOAT]:
+			return true
+	return String(c.get("outfit", "")) in ["pj_stripes", "pj_plain"]
+
+
+## V1/V2 cosmetic dictionary -> schema 2 appearance (same look).
+static func migrate_legacy(c: Dictionary) -> Dictionary:
 	var out := DEFAULT.duplicate()
-	if OUTFITS.has(c.get("outfit", "")):
-		out["outfit"] = c["outfit"]
-	if HATS.has(c.get("hat", "")):
-		out["hat"] = c["hat"]
-	if SHOES.has(c.get("shoes", "")):
-		out["shoes"] = c["shoes"]
-	out["color"] = clampi(int(c.get("color", 0)), 0, COLORS.size() - 1)
-	out["skin"] = clampi(int(c.get("skin", 0)), 0, SKINS.size() - 1)
+	var o := String(c.get("outfit", "pj_stripes"))
+	match o:
+		"pj_stripes":
+			out["outfit"] = "pj"
+			out["pattern"] = "stripes"
+		"pj_plain":
+			out["outfit"] = "pj"
+			out["pattern"] = "plain"
+		_:
+			if CATALOG["outfit"].has(o):
+				out["outfit"] = o
+				out["pattern"] = "plain"
+	if CATALOG["hat"].has(String(c.get("hat", ""))):
+		out["hat"] = String(c["hat"])
+	if CATALOG["shoes"].has(String(c.get("shoes", ""))):
+		out["shoes"] = String(c["shoes"])
+	var ci := clampi(int(c.get("color", 0)), 0, LEGACY_COLORS.size() - 1)
+	out["color"] = LEGACY_COLORS[ci]
+	var si := clampi(int(c.get("skin", 0)), 0, LEGACY_SKINS.size() - 1)
+	out["skin"] = LEGACY_SKINS[si]
+	out["hair_color"] = LEGACY_HAIR_BY_SKIN[si]
+	return out
+
+
+## Any input (schema 2, legacy, partial, hostile) -> a complete valid appearance.
+static func sanitize(c: Dictionary) -> Dictionary:
+	if is_legacy(c):
+		return migrate_legacy(c)
+	var out := DEFAULT.duplicate()
+	for f in ORDER:
+		var v = c.get(f, null)
+		if typeof(v) == TYPE_STRING or typeof(v) == TYPE_STRING_NAME:
+			if CATALOG[f].has(String(v)):
+				out[f] = String(v)
+	return out
+
+
+## Owned-item key used in the profile ("hat:crown").  Free items need no entry.
+static func own_key(field: String, key: String) -> String:
+	return "%s:%s" % [field, key]
+
+
+## Legacy owned keys -> schema 2 keys ("outfit:pj_stripes" -> "outfit:pj").
+static func migrate_owned(owned: Array) -> Array:
+	var out: Array = []
+	for k in owned:
+		var s := String(k)
+		if s == "outfit:pj_stripes" or s == "outfit:pj_plain":
+			s = "outfit:pj"
+		var parts := s.split(":")
+		if parts.size() == 2 and CATALOG.has(parts[0]) and CATALOG[parts[0]].has(parts[1]) and not out.has(s):
+			out.append(s)
+	return out
+
+
+static func color_of(c: Dictionary) -> Color:
+	return entry("color", String(c.get("color", "sky"))).get("rgb", Color(0.36, 0.55, 0.95))
+
+
+static func skin_color(c: Dictionary) -> Color:
+	return entry("skin", String(c.get("skin", "tone2"))).get("rgb", Color(0.98, 0.82, 0.68))
+
+
+static func hair_color(c: Dictionary) -> Color:
+	return entry("hair_color", String(c.get("hair_color", "brown"))).get("rgb", Color("4a3222"))
+
+
+## [primary, secondary (trim), dark] tints for the character shader
+static func tints(c: Dictionary) -> Array:
+	var prim := color_of(c)
+	var sec := prim.lerp(Color.WHITE, 0.55) if prim.get_luminance() < 0.72 else prim.darkened(0.28)
+	var tr: Dictionary = entry("trim", String(c.get("trim", "auto")))
+	if tr.has("rgb"):
+		sec = tr["rgb"]
+	return [prim, sec, prim.darkened(0.38)]
+
+
+static func stripes_per_m(c: Dictionary) -> float:
+	if not String(c.get("outfit", "pj")) in PATTERNED_OUTFITS:
+		return 0.0
+	return float(entry("pattern", String(c.get("pattern", "plain"))).get("per_m", 0.0))
+
+
+## Mesh parts to show for a runner with this appearance (Night Watch wears
+## the uniform whatever the appearance says; CharacterView handles that).
+static func runner_parts(c: Dictionary) -> Array:
+	var a := sanitize(c)
+	var want: Array = ["base"]
+	want.append_array(OUTFIT_PARTS[a["outfit"]])
+	want.append_array(entry("shoes", a["shoes"])["parts"])
+	want.append_array(entry("marks", a["marks"])["parts"])
+	if a["outfit"] in HOOD_OUTFITS:
+		return want
+	want.append_array(entry("hat", a["hat"])["parts"])
+	var hidden: Array = HAT_HIDES_HAIR.get(a["hat"], [])
+	for p in entry("hair", a["hair"])["parts"]:
+		if not p in hidden:
+			want.append(p)
+	return want
+
+
+## Held face shape-key weights for this appearance.
+static func face_keys(c: Dictionary) -> Dictionary:
+	var a := sanitize(c)
+	var out: Dictionary = {}
+	for f in ["face", "brows"]:
+		var k: Dictionary = entry(f, a[f]).get("keys", {})
+		for n in k:
+			out[n] = float(out.get(n, 0.0)) + float(k[n])
 	return out
 
 
 static func bot_cosmetic(seed_v: int) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_v
-	var outfits := OUTFITS.keys()
-	var hats := HATS.keys()
-	var shoes := SHOES.keys()
-	return {
-		"outfit": outfits[rng.randi() % outfits.size()],
-		"hat": hats[rng.randi() % hats.size()],
-		"shoes": shoes[rng.randi() % shoes.size()],
-		"color": rng.randi() % COLORS.size(),
-		"skin": rng.randi() % SKINS.size(),
-	}
+	var out := DEFAULT.duplicate()
+	for f in ORDER:
+		var ks: Array = keys_of(f)
+		out[f] = ks[rng.randi() % ks.size()]
+	return out
 
 
-static func item_cost(slot: String, id: String) -> int:
-	var table: Dictionary = OUTFITS if slot == "outfit" else (HATS if slot == "hat" else SHOES)
-	return int(table.get(id, {}).get("cost", 0))
-
-
-## Compact wire format: 5 bytes.
+## Versioned wire format (explicit field and value IDs).
 static func encode(c: Dictionary) -> PackedByteArray:
-	var s := sanitize(c)
-	var b := PackedByteArray()
-	b.append(OUTFITS.keys().find(s["outfit"]))
-	b.append(HATS.keys().find(s["hat"]))
-	b.append(SHOES.keys().find(s["shoes"]))
-	b.append(int(s["color"]))
-	b.append(int(s["skin"]))
+	var a := sanitize(c)
+	var b := PackedByteArray([WIRE_MAGIC, SCHEMA, ORDER.size()])
+	for f in ORDER:
+		b.append(int(FIELDS[f]))
+		b.append(int(entry(f, a[f])["id"]))
 	return b
 
 
+## Inverse of encode().  Accepts the legacy 5-byte format too (old saves or
+## captures); anything malformed decodes to a valid appearance, never an error.
 static func decode(b: PackedByteArray) -> Dictionary:
-	if b.size() < 5:
-		return DEFAULT.duplicate()
-	var o := OUTFITS.keys()
-	var h := HATS.keys()
-	var s := SHOES.keys()
-	return sanitize({
-		"outfit": o[b[0]] if b[0] < o.size() else "pj_stripes",
-		"hat": h[b[1]] if b[1] < h.size() else "none",
-		"shoes": s[b[2]] if b[2] < s.size() else "slippers",
-		"color": b[3], "skin": b[4],
-	})
+	if b.size() == 5 and b[0] < LEGACY_OUTFITS.size():
+		return migrate_legacy({
+			"outfit": LEGACY_OUTFITS[b[0]],
+			"hat": LEGACY_HATS[b[1]] if b[1] < LEGACY_HATS.size() else "none",
+			"shoes": LEGACY_SHOES[b[2]] if b[2] < LEGACY_SHOES.size() else "slippers",
+			"color": int(b[3]), "skin": int(b[4]),
+		})
+	var out := DEFAULT.duplicate()
+	if b.size() < 3 or b[0] != WIRE_MAGIC or b[1] < 2:
+		return out
+	var n := mini(int(b[2]), (b.size() - 3) / 2)
+	var by_fid := {}
+	for f in FIELDS:
+		by_fid[int(FIELDS[f])] = f
+	for i in n:
+		var fid := int(b[3 + i * 2])
+		var vid := int(b[4 + i * 2])
+		if not by_fid.has(fid):
+			continue
+		var f: String = by_fid[fid]
+		for k in CATALOG[f]:
+			if int(CATALOG[f][k]["id"]) == vid:
+				out[f] = k
+				break
+	return out
+
+
+## Wire bytes for a valid appearance are at most this long (decoders bound reads).
+static func max_wire_size() -> int:
+	return 3 + 2 * 32   # room for up to 32 fields

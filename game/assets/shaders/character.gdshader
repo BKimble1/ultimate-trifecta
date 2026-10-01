@@ -7,7 +7,7 @@ shader_type spatial;
 //              4 dark, 5 primary.  albedo = base * tint
 //   UV         x = stripe flag, 1 - y = stripe coordinate in metres
 //   UV2        x = roughness, 1 - y = material class (0 cloth, .25 skin,
-//              .5 rubber, .75 gloss, 1 emissive)
+//              .5 rubber, .75 gloss, .875 lit gloss, 1 emissive)
 render_mode diffuse_lambert_wrap, specular_schlick_ggx;
 
 instance uniform vec3 tint_primary : source_color = vec3(0.36, 0.55, 0.95);
@@ -21,6 +21,8 @@ instance uniform vec3 flash_color : source_color = vec3(1.0);
 // environment-dependent rim (warm indoors, cool moonlight outdoors); small on purpose
 instance uniform vec3 rim_color : source_color = vec3(0.55, 0.68, 1.0);
 instance uniform float rim_strength = 0.10;
+// 1 right out of the water, fading to 0: darker, glossier cloth and skin
+instance uniform float wet = 0.0;
 
 void fragment() {
 	vec3 base = COLOR.rgb;
@@ -40,8 +42,10 @@ void fragment() {
 		alb = mix(alb, base * tint_secondary, band * 0.9);
 	}
 	float cls = 1.0 - UV2.y;
+	float soak = wet * (cls < 0.37 ? (cls < 0.12 ? 1.0 : 0.45) : 0.2);
+	alb *= 1.0 - 0.28 * soak;
 	ALBEDO = alb;
-	ROUGHNESS = clamp(UV2.x, 0.05, 1.0);
+	ROUGHNESS = clamp(UV2.x * (1.0 - 0.55 * soak), 0.05, 1.0);
 	SPECULAR = 0.3;
 	vec3 emit = vec3(0.0);
 	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
@@ -54,8 +58,11 @@ void fragment() {
 		emit += rim_color * rim * rim_strength * 0.5;
 	} else if (cls < 0.62) {    // rubber / leather
 		SPECULAR = 0.42;
-	} else if (cls < 0.87) {    // gloss: eyes, buttons, badges, plastic
+	} else if (cls < 0.81) {    // gloss: buttons, badges, plastic, irises
 		SPECULAR = 0.55;
+	} else if (cls < 0.94) {    // lit gloss: eye whites keep a little self-light so
+		SPECULAR = 0.55;        // faces stay readable in night scenes
+		emit += alb * 0.35;
 	} else {                    // emissive: eye catch-lights, flashlight lens
 		emit += alb * 1.6;
 	}

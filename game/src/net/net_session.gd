@@ -211,14 +211,14 @@ func _host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			var ver := b.get_u16()
 			var uid := Protocol.get_str(b)
 			var name := Protocol.get_str(b)
-			var cos: Array = b.get_data(5)
+			var cos := Protocol.get_appearance(b)
 			var pref: String = ["any", "runner", "patrol"][clampi(b.get_u8(), 0, 2)]
 			if ver != Protocol.VERSION:
 				_send_welcome(peer, -1, "version")
 				return
 			if transport.peer_uid(peer) != "":
 				uid = transport.peer_uid(peer)   # Game Center identity wins
-			_host_admit(peer, uid, name, Cosmetics.decode(cos[1] if cos[0] == OK else PackedByteArray()), pref)
+			_host_admit(peer, uid, name, cos, pref)
 		Protocol.M.READY:
 			if _peer_slot.has(peer):
 				var e: Dictionary = roster[_peer_slot[peer]]
@@ -227,10 +227,8 @@ func _host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 				_broadcast_lobby()
 		Protocol.M.COSMETIC:
 			if _peer_slot.has(peer) and phase == TC.Phase.LOBBY:
-				var r: Array = b.get_data(5)
-				if r[0] == OK:
-					roster[_peer_slot[peer]]["cosmetic"] = Cosmetics.decode(r[1])
-					_broadcast_lobby()
+				roster[_peer_slot[peer]]["cosmetic"] = Protocol.get_appearance(b)
+				_broadcast_lobby()
 		Protocol.M.EMOTE:
 			if _peer_slot.has(peer):
 				var em := b.get_u8()
@@ -349,7 +347,7 @@ func set_local_cosmetic(c: Dictionary) -> void:
 		_broadcast_lobby()
 	elif host_peer >= 0:
 		var b := Protocol.buf_for(Protocol.M.COSMETIC)
-		b.put_data(Cosmetics.encode(local_cosmetic))
+		Protocol.put_appearance(b, local_cosmetic)
 		transport.send(host_peer, b.data_array, true)
 
 
@@ -396,7 +394,7 @@ func _lobby_bytes() -> PackedByteArray:
 		b.put_u8(flags)
 		b.put_u8(["any", "runner", "patrol"].find(String(e["pref"])))
 		b.put_8(int(e.get("role", -1)))
-		b.put_data(Cosmetics.encode(e["cosmetic"]))
+		Protocol.put_appearance(b, e["cosmetic"])
 	return b.data_array
 
 
@@ -724,7 +722,7 @@ func _send_hello() -> void:
 	b.put_u16(Protocol.VERSION)
 	Protocol.put_str(b, local_uid)
 	Protocol.put_str(b, local_name)
-	b.put_data(Cosmetics.encode(local_cosmetic))
+	Protocol.put_appearance(b, local_cosmetic)
 	b.put_u8(["any", "runner", "patrol"].find(local_pref))
 	transport.send(host_peer, b.data_array, true)
 	_hello_sent = true
@@ -744,8 +742,7 @@ func _read_lobby(b: StreamPeerBuffer) -> void:
 		var flags := b.get_u8()
 		var pref: String = ["any", "runner", "patrol"][clampi(b.get_u8(), 0, 2)]
 		var role := b.get_8()
-		var r: Array = b.get_data(5)
-		var e := _entry(i, uid, name, (flags & 1) != 0, -1, Cosmetics.decode(r[1] if r[0] == OK else PackedByteArray()), pref)
+		var e := _entry(i, uid, name, (flags & 1) != 0, -1, Protocol.get_appearance(b), pref)
 		e["ready"] = (flags & 2) != 0
 		e["connected"] = (flags & 4) != 0
 		e["is_host"] = (flags & 8) != 0
@@ -770,7 +767,7 @@ func _fix_start(d: Dictionary) -> Dictionary:
 	for e in d["roster"]:
 		var c: Dictionary = e["cosmetic"]
 		ro.append({"slot": int(e["slot"]), "uid": String(e["uid"]), "name": String(e["name"]), "is_bot": bool(e["is_bot"]), "role": int(e["role"]),
-			"cosmetic": {"outfit": c.get("outfit", "pj_stripes"), "hat": c.get("hat", "none"), "shoes": c.get("shoes", "slippers"), "color": int(c.get("color", 0)), "skin": int(c.get("skin", 0))}})
+			"cosmetic": Cosmetics.sanitize(c)})
 	out["roster"] = ro
 	return out
 

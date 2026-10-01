@@ -78,10 +78,53 @@ def ankle(side):
     return Vector((HIP_X * side, 0.0, ANKLE_Z))
 
 
+# Head shape (V3): a superellipsoid whose cross-section is scaled with height
+# so the cheeks and jaw are fuller and the temples a little narrower (the
+# friendly baby-face proportions of the app icon).  Every head-fitted part
+# (face features, ears, hair, hoods, caps) uses these functions, so they all
+# follow the same surface.
+def head_scale(zn):
+    """(sx, sy) cross-section scale at normalised head height zn in [-1, 1]."""
+    cheek = math.exp(-((zn + 0.30) / 0.42) ** 2)
+    top = max(0.0, min(1.0, (zn - 0.25) / 0.75))
+    top = top * top * (3 - 2 * top)
+    return 1.0 + 0.075 * cheek - 0.045 * top, 1.0 + 0.035 * cheek - 0.02 * top
+
+
+def head_deform(grow=0.0):
+    """Local-space deformation for ellipsoid() shells centred on HEAD_C."""
+    rz = HEAD_R[2] + grow
+
+    def f(lp):
+        sx, sy = head_scale(max(-1.0, min(1.0, lp.z / rz)))
+        return Vector((lp.x * sx, lp.y * sy, lp.z))
+    return f
+
+
+def _head_F(p, grow):
+    rx, ry, rz = HEAD_R[0] + grow, HEAD_R[1] + grow, HEAD_R[2] + grow
+    d = p - HEAD_C
+    zn = d.z / rz
+    sx, sy = head_scale(max(-1.0, min(1.0, zn)))
+    return abs(d.x / (rx * sx)) ** HEAD_P + abs(d.y / (ry * sy)) ** HEAD_P + abs(zn) ** HEAD_P
+
+
 def head_front_y(x, z, grow=0.0):
     rx, ry, rz = HEAD_R[0] + grow, HEAD_R[1] + grow, HEAD_R[2] + grow
-    t = 1.0 - abs(x / rx) ** HEAD_P - abs((z - HEAD_C.z) / rz) ** HEAD_P
-    return HEAD_C.y + ry * max(t, 0.0) ** (1.0 / HEAD_P)
+    zn = (z - HEAD_C.z) / rz
+    sx, sy = head_scale(max(-1.0, min(1.0, zn)))
+    t = 1.0 - abs(x / (rx * sx)) ** HEAD_P - abs(zn) ** HEAD_P
+    return HEAD_C.y + ry * sy * max(t, 0.0) ** (1.0 / HEAD_P)
+
+
+def head_side_x(z, grow=0.0, y=None):
+    """|x| of the head surface at height z (on the y = HEAD_C.y plane by default)."""
+    rx, ry, rz = HEAD_R[0] + grow, HEAD_R[1] + grow, HEAD_R[2] + grow
+    zn = (z - HEAD_C.z) / rz
+    sx, sy = head_scale(max(-1.0, min(1.0, zn)))
+    yy = 0.0 if y is None else (y - HEAD_C.y) / (ry * sy)
+    t = 1.0 - abs(zn) ** HEAD_P - abs(yy) ** HEAD_P
+    return rx * sx * max(t, 0.0) ** (1.0 / HEAD_P)
 
 
 def head_point(x, z, grow=0.0):
@@ -89,14 +132,11 @@ def head_point(x, z, grow=0.0):
 
 
 def head_normal(p, grow=0.0):
-    rx, ry, rz = HEAD_R[0] + grow, HEAD_R[1] + grow, HEAD_R[2] + grow
-    d = p - HEAD_C
-    P = HEAD_P
-
-    def g(v, r):
-        return P * math.copysign(abs(v / r) ** (P - 1), v) / r
-    n = Vector((g(d.x, rx), g(d.y, ry), g(d.z, rz)))
-    return n.normalized()
+    e = 1e-4
+    g = Vector((_head_F(p + Vector((e, 0, 0)), grow) - _head_F(p - Vector((e, 0, 0)), grow),
+                _head_F(p + Vector((0, e, 0)), grow) - _head_F(p - Vector((0, e, 0)), grow),
+                _head_F(p + Vector((0, 0, e)), grow) - _head_F(p - Vector((0, 0, e)), grow)))
+    return g.normalized()
 
 
 # ---------------------------------------------------------------- bones

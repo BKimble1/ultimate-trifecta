@@ -21,6 +21,7 @@ MAT_CLOTH = 0.0
 MAT_SKIN = 0.25
 MAT_RUBBER = 0.5
 MAT_GLOSS = 0.75
+MAT_LIT = 0.875     # gloss with a little self-light (eye whites stay white at night)
 MAT_EMIT = 1.0
 
 # tint selectors (COLOR_0.a, decoded in the shader as round(a * 5))
@@ -235,10 +236,12 @@ def sweep(mb, path, radii, style, weightfn, segs=16, cap_start='round', cap_end=
 
 
 def ellipsoid(mb, center, radii, style, weightfn, segs=20, rings=14, rot=None, power=2.0,
-              colfn=None, tag='', aux=None, uv_scale=1.0, cut_below=None, keep=None):
+              colfn=None, tag='', aux=None, uv_scale=1.0, cut_below=None, keep=None, deform=None):
     """(Super)ellipsoid. power>2 gives a boxier, rounder-cornered shape.
     rot: Matrix(3x3) orientation.  cut_below: optional local-z (unit sphere
-    space) under which rings are dropped (makes a dome, open at the bottom)."""
+    space) under which rings are dropped (makes a dome, open at the bottom).
+    deform: optional f(local_point) -> local_point applied before rotation
+    (the head shape uses it so shells follow the same surface)."""
     c = Vector(center)
     R = rot if rot is not None else Matrix.Identity(3)
     rows = []
@@ -260,6 +263,8 @@ def ellipsoid(mb, center, radii, style, weightfn, segs=20, rings=14, rot=None, p
             y = spow(math.cos(phi), e) * spow(math.sin(th), e)
             z = spow(math.sin(phi), e)
             lp = Vector((x * radii[0], y * radii[1], z * radii[2]))
+            if deform is not None:
+                lp = deform(lp)
             p = c + R @ lp
             col = colfn(p, lp) if colfn else None
             row.append(mb.vert(p, style, (k / segs, (z * radii[2]) * uv_scale), weightfn(p), tag, aux, col))

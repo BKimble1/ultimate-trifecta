@@ -4,7 +4,9 @@ extends RefCounted
 ## per-recipient (relevance filtered) and kept well under 1000 bytes so they
 ## fit a single unreliable GameKit/ENet packet.
 
-const VERSION := 3
+## 4 (V3): event field m (splash impact), snapshot impact byte, appearance
+## schema 2 wire format, host-bound control messages.
+const VERSION := 4
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}
@@ -104,6 +106,7 @@ static func encode_events(events: Array) -> PackedByteArray:
 		b.put_8(int(e["b"]))
 		b.put_16(int(e["v"]))
 		put_vec3(b, e["pos"])
+		b.put_u8(clampi(int(e.get("m", 0)), 0, 255))
 	return b.data_array
 
 
@@ -113,9 +116,25 @@ static func decode_events(b: StreamPeerBuffer) -> Array:
 	for i in n:
 		out.append({
 			"id": b.get_u32(), "t": b.get_u32(), "type": b.get_u8(), "a": b.get_8(),
-			"b": b.get_8(), "v": b.get_16(), "pos": get_vec3(b),
+			"b": b.get_8(), "v": b.get_16(), "pos": get_vec3(b), "m": b.get_u8(),
 		})
 	return out
+
+
+## Appearance: u8 length + Cosmetics wire bytes (schema 2, versioned).  The
+## read is bounded and always yields a valid appearance.
+static func put_appearance(b: StreamPeerBuffer, c: Dictionary) -> void:
+	var a := Cosmetics.encode(c)
+	b.put_u8(a.size())
+	b.put_data(a)
+
+
+static func get_appearance(b: StreamPeerBuffer) -> Dictionary:
+	var n := b.get_u8()
+	if n == 0 or n > Cosmetics.max_wire_size() or b.get_available_bytes() < n:
+		return Cosmetics.DEFAULT.duplicate()
+	var r: Array = b.get_data(n)
+	return Cosmetics.decode(r[1] if r[0] == OK else PackedByteArray())
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +207,7 @@ static func encode_snapshot(sim: MatchSim, recipient: SimPlayer, relevant: Array
 		b.put_8(sp.cart_id)
 		b.put_8(sp.emote if sp.emote_t > 0.0 else -1)
 		b.put_u8(clampi(int(sp.state_t * 20.0), 0, 255))
+		b.put_u8(sp.splash_impact)
 	# carts (all; they are loud and large)
 	b.put_u8(sim.carts.size())
 	for c in sim.carts:
@@ -279,6 +299,7 @@ static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
 		e["emote"] = b.get_8()
 		e["emote_t"] = 1.0 if e["emote"] >= 0 else 0.0
 		e["state_t"] = float(b.get_u8()) / 20.0
+		e["impact"] = b.get_u8()
 		players[id] = e
 	s["players"] = players
 	var carts: Array = []

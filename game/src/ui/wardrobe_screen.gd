@@ -103,27 +103,28 @@ func _refresh() -> void:
 		c.queue_free()
 	var cos: Dictionary = Save.data["cosmetic"]
 	if slot == "color" or slot == "skin":
-		var arr: Array = Cosmetics.COLORS if slot == "color" else Cosmetics.SKINS
 		grid.columns = 4
-		for i in arr.size():
-			var b := UIKit.secondary(Cosmetics.COLOR_NAMES[i] if slot == "color" else "Tone %d" % (i + 1), Vector2(132, 84), 18)
-			var col: Color = arr[i]
-			var sel := int(cos[slot]) == i
+		for key in Cosmetics.keys_of(slot):
+			var it: Dictionary = Cosmetics.entry(slot, key)
+			var b := UIKit.secondary(String(it["name"]), Vector2(132, 84), 18)
+			var col: Color = it["rgb"]
+			var sel: bool = String(cos[slot]) == key
 			b.add_theme_stylebox_override("normal", UIKit.box(col, UIKit.R_SMALL, 4 if sel else 0, UIKit.IVORY))
 			b.add_theme_stylebox_override("hover", UIKit.box(col.lightened(0.08), UIKit.R_SMALL, 4 if sel else 0, UIKit.IVORY))
 			b.add_theme_stylebox_override("pressed", UIKit.box(col.darkened(0.1), UIKit.R_SMALL, 4, UIKit.IVORY))
 			var fg := UIKit.NAVY if col.get_luminance() > 0.5 else UIKit.IVORY
 			for k in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 				b.add_theme_color_override(k, fg)
-			var idx := i
+			var kk: String = key
 			b.pressed.connect(func() -> void:
-				Save.equip(slot, idx)
+				if Save.buy(slot, kk):
+					Save.equip(slot, kk)
 				_equip_changed()
 				_refresh())
 			grid.add_child(b)
 		return
 	grid.columns = 2
-	var table: Dictionary = Cosmetics.OUTFITS if slot == "outfit" else (Cosmetics.HATS if slot == "hat" else Cosmetics.SHOES)
+	var table: Dictionary = Cosmetics.CATALOG[slot]
 	for id in table:
 		var item: Dictionary = table[id]
 		var owned: bool = Save.owns(slot, id)

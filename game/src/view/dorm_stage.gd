@@ -147,7 +147,7 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 			if bool(e.get("arrive", true)) and mode == "lobby":
 				v.play_arrive()
 		else:
-			if Cosmetics.encode(v.cosmetic) != Cosmetics.encode(e["cosmetic"]) or v.role != role:
+			if v.cosmetic != Cosmetics.sanitize(e["cosmetic"]) or v.role != role:
 				v.set_appearance(role, e["cosmetic"])
 		if v.name_label:
 			var nm := String(e.get("name", ""))

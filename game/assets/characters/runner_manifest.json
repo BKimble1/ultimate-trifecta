@@ -25,6 +25,18 @@
     "foot.R"
   ],
   "clips": {
+    "air_apex": {
+      "length": 1.0,
+      "loop": true
+    },
+    "air_fall": {
+      "length": 1.0,
+      "loop": true
+    },
+    "air_rise": {
+      "length": 1.0,
+      "loop": true
+    },
     "arrive": {
       "length": 0.9,
       "loop": false
@@ -89,35 +101,51 @@
       "length": 1.2,
       "loop": true
     },
-    "fall": {
-      "length": 0.8,
-      "loop": true
+    "fidget_look": {
+      "length": 2.0,
+      "loop": false
+    },
+    "fidget_yawn": {
+      "length": 2.4,
+      "loop": false
     },
     "flop": {
       "length": 0.9,
       "loop": false
     },
     "idle": {
-      "length": 2.4,
+      "length": 4.0,
       "loop": true
     },
-    "jump": {
+    "land_hard": {
+      "length": 0.45,
+      "loop": false
+    },
+    "land_soft": {
       "length": 0.3,
       "loop": false
     },
-    "land": {
-      "length": 0.28,
+    "ready": {
+      "length": 0.9,
       "loop": false
     },
     "recover": {
-      "length": 0.6,
+      "length": 1.1,
       "loop": false
     },
     "run": {
       "length": 1.0,
       "loop": true
     },
-    "splash": {
+    "splash_dive": {
+      "length": 1.5,
+      "loop": false
+    },
+    "splash_jump": {
+      "length": 1.5,
+      "loop": false
+    },
+    "splash_walk": {
       "length": 1.5,
       "loop": false
     },
@@ -131,6 +159,10 @@
     },
     "tag_lunge": {
       "length": 0.22,
+      "loop": false
+    },
+    "tag_miss": {
+      "length": 0.5,
       "loop": false
     },
     "tag_recover": {
@@ -157,34 +189,54 @@
   "forward": "Godot -Z (glTF -Z); built facing Blender +Y",
   "height_m": 1.5,
   "loco_m_per_cycle": {
-    "run": 1.7,
-    "sprint": 2.05,
-    "walk": 0.8
+    "run": 2.2,
+    "sprint": 2.75,
+    "walk": 0.7
   },
   "meshes": {
     "base": {
-      "tris": 5222,
-      "verts": 2712
+      "tris": 6554,
+      "verts": 3402
     },
     "body_skin": {
       "tris": 4104,
       "verts": 2073
     },
     "duck": {
-      "tris": 8012,
+      "tris": 8020,
       "verts": 4405
     },
     "flashlight": {
       "tris": 140,
       "verts": 74
     },
+    "freckles": {
+      "tris": 576,
+      "verts": 312
+    },
     "frog": {
-      "tris": 7932,
+      "tris": 7940,
       "verts": 4359
     },
     "hair": {
-      "tris": 1300,
-      "verts": 678
+      "tris": 1264,
+      "verts": 660
+    },
+    "hair_bob": {
+      "tris": 2364,
+      "verts": 1219
+    },
+    "hair_buns": {
+      "tris": 1588,
+      "verts": 823
+    },
+    "hair_buns_knots": {
+      "tris": 1280,
+      "verts": 644
+    },
+    "hair_curly": {
+      "tris": 5372,
+      "verts": 2803
     },
     "hat_crown": {
       "tris": 820,
@@ -195,8 +247,8 @@
       "verts": 744
     },
     "hat_nightcap": {
-      "tris": 2530,
-      "verts": 1277
+      "tris": 2854,
+      "verts": 1439
     },
     "hat_party": {
       "tris": 568,
@@ -227,8 +279,8 @@
       "verts": 1186
     },
     "shoe_slippers": {
-      "tris": 2896,
-      "verts": 1498
+      "tris": 3160,
+      "verts": 1634
     },
     "swim": {
       "tris": 1940,
@@ -245,7 +297,10 @@
     "smile",
     "open",
     "brow_up",
-    "brow_angry"
+    "brow_angry",
+    "face_bright",
+    "face_sleepy",
+    "brow_flat"
   ],
   "source": "tools/character/build_character.py (Blender 4.5.4 LTS)"
 }

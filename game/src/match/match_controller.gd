@@ -134,6 +134,8 @@ func _ready() -> void:
 		var e: Dictionary = roster[slot]
 		var v := CharacterView.new()
 		v.reduced_motion = reduced_motion
+		v.fx = fx
+		v.water_at = _water_info
 		add_child(v)
 		v.setup(int(e["role"]), e["cosmetic"], int(slot), String(e["name"]), bool(e["is_bot"]), int(slot) == local_slot)
 		views[int(slot)] = v
@@ -534,7 +536,7 @@ func _player_rs(slot: int) -> Dictionary:
 			"protect": p.protect, "bump_protect": p.bump_protect, "spotted": p.spotted > 0.0,
 			"cart_id": p.cart_id, "steer": sim.carts[p.cart_id].steer_s if p.cart_id >= 0 else 0.0,
 			"emote": p.emote, "emote_t": p.emote_t, "stamps": p.stamps, "visible": true,
-			"bot": p.is_bot or p.bot_takeover, "connected": p.connected,
+			"bot": p.is_bot or p.bot_takeover, "connected": p.connected, "impact": p.splash_impact,
 		}
 	if slot == local_slot and pred != null and _last_snap.has("players") and (_last_snap["players"] as Dictionary).has(slot):
 		var srv: Dictionary = _last_snap["players"][slot]
@@ -575,6 +577,8 @@ func _interp_player(slot: int) -> Dictionary:
 			var ea: Dictionary = a["e"]
 			var eb: Dictionary = b["e"]
 			var out: Dictionary = (eb if t > 0.5 else ea).duplicate()
+			if int(ea["state"]) == int(eb["state"]):
+				out["state_t"] = lerpf(float(ea["state_t"]), float(eb["state_t"]), t)
 			if (ea["pos"] as Vector3).distance_to(eb["pos"]) < 8.0:
 				out["pos"] = (ea["pos"] as Vector3).lerp(eb["pos"], t)
 				out["yaw"] = lerp_angle(float(ea["yaw"]), float(eb["yaw"]), t)
@@ -787,6 +791,17 @@ func _update_camera(delta: float) -> void:
 	hud.set_spectating(follow_slot if follow_slot != local_slot else -1)
 
 
+## Water under a point, for splash beats: {mat, center, color} or {}.
+func _water_info(pos: Vector3) -> Dictionary:
+	var wi := CampusBuilder.water_at(layout, Vector2(pos.x, pos.z))
+	if wi < 0:
+		return {}
+	var wd: Dictionary = layout.waters[wi]
+	if not water_nodes.has(wd["id"]):
+		return {"color": wd["color"]}
+	return {"mat": water_nodes[wd["id"]]["mat"], "center": wd["center"], "color": wd["color"]}
+
+
 func _spectatable(slot: int) -> bool:
 	if not roster.has(slot):
 		return false
@@ -820,15 +835,12 @@ func _present_event(ev: Dictionary) -> void:
 	var mine := a == local_slot
 	match type:
 		TC.Ev.SPLASH_STAMP, TC.Ev.SPLASH_NOSTAMP:
+			# the spray, foam and ripples are beats of the runner's splash
+			# sequence (CharacterView, driven by its time in the water); the
+			# event carries the one sound and the HUD feedback
 			var big := type == TC.Ev.SPLASH_STAMP
 			var wcol: Color = layout.waters[int(ev["b"])]["color"] if int(ev["b"]) >= 0 else Color.CYAN
-			fx.splash(pos, wcol if big else Color(0.6, 0.85, 1.0), big)
 			Sfx.play("splash_big" if big else "splash", pos)
-			if int(ev["b"]) >= 0 and water_nodes.has(layout.waters[int(ev["b"])]["id"]):
-				var wd: Dictionary = layout.waters[int(ev["b"])]
-				var wm: ShaderMaterial = water_nodes[wd["id"]]["mat"]
-				var wc: Vector2 = wd["center"]
-				fx.flash_water(wm, Vector2(pos.x - wc.x, pos.z - wc.y))
 			if mine:
 				if big:
 					hud.toast("SPLASH!  %s stamped" % layout.waters[int(ev["b"])]["name"], wcol)
@@ -852,6 +864,8 @@ func _present_event(ev: Dictionary) -> void:
 				hud.toast("Tagged %s!" % r.get("name", "?"), Color(1.0, 0.8, 0.3))
 		TC.Ev.TAG_MISS:
 			Sfx.play("whoosh", pos)
+			if views.has(a):
+				(views[a] as CharacterView).tag_missed()
 		TC.Ev.FINISH:
 			fx.confetti(pos)
 			Sfx.play("cheer", pos)
