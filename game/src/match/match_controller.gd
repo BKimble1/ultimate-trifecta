@@ -74,6 +74,7 @@ var _cart_prev: Dictionary = {}   # cart index -> rs
 var _cart_cur: Dictionary = {}
 var _discont: Dictionary = {}     # slot -> true: snap + reset presentation history
 var _cam_follow := -2
+var _foliage_mat: ShaderMaterial   # canopy see-through around the followed character
 var _local_events: Array = []
 var _shake_cd := 0.0
 var _phase_seen := -1
@@ -103,6 +104,7 @@ func _ready() -> void:
 	if with_visuals:
 		var builder := CampusBuilder.new(layout)
 		water_nodes = builder.build_visuals(self, quality)
+		_foliage_mat = builder.foliage_material
 		add_child(EnvFactory.make_environment(quality))
 		add_child(EnvFactory.make_moon(quality))
 	fx = Fx.new()
@@ -774,6 +776,13 @@ func _update_camera(delta: float) -> void:
 			p.y = maxf(p.y, 0.0)
 		camera.target_pos = p
 		camera.target_yaw = rs.get("yaw", 0.0)
+		if _foliage_mat:
+			# canopies between the camera and the followed runner/cart are cut
+			# away around them, so a tree never hides who you are playing
+			_foliage_mat.set_shader_parameter("focus", Vector4(p.x, p.y + (1.1 if camera.in_cart else 0.85), p.z,
+				2.0 if camera.in_cart else 1.25))
+	elif _foliage_mat:
+		_foliage_mat.set_shader_parameter("focus", Vector4.ZERO)
 	camera.update_camera(delta)
 	hud.set_spectating(follow_slot if follow_slot != local_slot else -1)
 

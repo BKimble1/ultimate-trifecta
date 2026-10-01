@@ -10,7 +10,9 @@ const GLOW_SHADER := preload("res://assets/shaders/glow_add.gdshader")
 
 var L: CampusLayout
 var _chunks: Dictionary = {}
-var _foliage: Dictionary = {}   # tree canopies: separate chunks with a near-camera fade
+var _foliage: Dictionary = {}   # tree canopies: separate chunks (near-camera parting, see-through)
+## the shared canopy material (MatchController feeds it the followed character)
+var foliage_material: ShaderMaterial
 var _glow_st: SurfaceTool
 var _glow_count := 0
 
@@ -280,6 +282,7 @@ func build_visuals(root: Node3D, quality: int = 1) -> Dictionary:
 	var water_nodes := _waters(container)
 	var fmat := ShaderMaterial.new()
 	fmat.shader = FOLIAGE_SHADER
+	foliage_material = fmat
 	for pass_i in 2:
 		var store := _chunks if pass_i == 0 else _foliage
 		for key in store:

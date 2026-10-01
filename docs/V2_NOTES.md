@@ -129,7 +129,9 @@ These are short notes for whoever works on the V2 changes next. Evidence and tes
 - A splash sends one ripple out from the splash point. A stamped target's ring calms away.
 - The surface itself never glows.
 
-**Foliage.** The 4×4 Bayer dissolve is replaced by vertex parting: canopy vertices inside a 2.6 m sphere around the camera are pushed outward. There is no discard and no screen-door pattern.
+**Foliage.** The 4×4 Bayer dissolve is gone. Two things replace it:
+- **Parting.** Canopy vertices inside a 2.6 m sphere around the camera are pushed outward, so a canopy the camera passes through never fills the screen.
+- **See-through.** Canopy that lies between the camera and the followed character is cut away inside a circle around the character, 1.25 m on foot and 2 m in a cart, measured in the camera's view. The edge is clean, with no dither. It applies only in the camera pass, so tree shadows still fall on the character. Found in the cart capture, where a canopy hid the player's own cart. Only the canopy material uses `discard`.
 
 **Props.**
 - Carts are rebuilt as merged meshes, about 7 draw calls instead of about 25. Tyres and hubs, a seat and a steering wheel that match the driver rig (hands IK'd onto the rim), and lights.
