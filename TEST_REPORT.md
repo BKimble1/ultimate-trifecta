@@ -60,6 +60,15 @@ The in-process network tests produce `NETSTAT` lines. Raw output: `docs/test-dat
 
 `tools/net_soak.sh` starts one host and N client processes, each with its own profile, outbound latency/jitter/loss shaping, and automation input. Every human slot is a separate process; no bots fill human slots. The rows below are copied from the JSON reports in `docs/test-data/`.
 
+**Final game code (`d89a78a`): host + 3 clients, 60 ms ±10 ms one-way, 3% loss each way (≈150 ms RTT).** `docs/test-data/net_soak_3c_60ms_0.03/`. A complete round; runners won 4/4.
+
+| process | round | outcome | home | RTT est. | snapshots | corr. avg | corr. max | fps | packets sent | shaper drops | host starved/skipped |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| client1 | 1 | Runners win | 4/4 | 154 ms | 4665 | 1.2 mm | 0.41 m | 60 | 14874 | 472 |  |
+| client2 | 1 | Runners win | 4/4 | 154 ms | 4668 | 2.1 mm | 1.19 m | 60 | 14877 | 451 |  |
+| client3 | 1 | Runners win | 4/4 | 152 ms | 4676 | 1.7 mm | 0.36 m | 60 | 14879 | 454 |  |
+| host | 1 | Runners win | 4/4 | - | 0 | host (no prediction) |  | 60 | 16135 | 437 | 24 starved / 3 skipped ticks (all clients) |
+
 **8 humans: host + 7 clients, 60 ms ±10 ms one-way per direction, 3% loss each way (≈150 ms RTT).** `docs/test-data/net_soak_7c_60ms_0.03/`. One complete 240 s round; the Night Watch won with 1 runner home.
 
 | process | round | outcome | home | RTT est. | snapshots | corr. avg | corr. max | fps | packets sent | shaper drops | host starved/skipped |

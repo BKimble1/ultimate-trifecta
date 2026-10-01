@@ -1,0 +1,20 @@
+[
+  {
+    "corr_avg_m": 0.0017,
+    "corr_max_m": 0.365,
+    "dropped_by_shaper": 454,
+    "finished": 4,
+    "fps_avg": 60.0,
+    "lag_ms": 60.0,
+    "loss": 0.03,
+    "mode": "client",
+    "outcome": 1,
+    "reward_coins": 40,
+    "round": 1,
+    "round_time": 232.2,
+    "rtt_ms": 152.0,
+    "sent": 14879,
+    "slot": 1,
+    "snapshots": 4676
+  }
+]

@@ -139,6 +139,8 @@ jobs:
           xcrun simctl launch "$DEV" "$BUNDLE_ID" -- --no-gamecenter > /dev/null
           sleep 45
           xcrun simctl io "$DEV" screenshot sim-evidence/00_title.png || true
+          echo "cold launch still running? $(xcrun simctl spawn "$DEV" launchctl list 2>/dev/null | grep -c "$BUNDLE_ID")"
+          ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i trifecta || echo "no crash report after cold launch"
           xcrun simctl terminate "$DEV" "$BUNDLE_ID" || true
           sleep 2
           # bot-driven practice round as a runner (labelled: iOS Simulator, x86_64, Release, unsigned)
@@ -160,6 +162,12 @@ jobs:
           grep -E "SOAK|ROUND|SCRIPT ERROR|ERROR:" sim-evidence/os_log.txt | tail -n 60 || echo "no app status lines in os_log"
           echo "---- crash reports ----"
           ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i -E "trifecta|godot" || echo "none"
+          mkdir -p sim-evidence/crash
+          for f in ~/Library/Logs/DiagnosticReports/UltimateTrifecta*.ips; do
+            [ -f "$f" ] || continue
+            cp "$f" sim-evidence/crash/
+            python3 tools/ips_summary.py "$f" || head -c 3000 "$f"
+          done
       - name: Evidence contact sheet (base64 JPEG in log)
         if: steps.simbuild.outcome == 'success'
         continue-on-error: true

@@ -28,6 +28,18 @@ Night Watch players hunt them on foot and in golf carts.
 - **Controls:** touch (dynamic stick, drag camera, context buttons, cart gas and brake) and MFi/extended game controllers. Prompts switch when a controller connects or disconnects.
 - **Persistence:** versioned local save with settings, outfit, level, coins, a small wardrobe, and separate online and practice stats. Each match pays rewards once, keyed by its match ID.
 
+## Why Godot rather than Unity
+
+The brief preferred Unity with Netcode and Relay. That stack could not be used here, for three reasons:
+- **No access from the build environment.** The repository started empty, and the build environment could not reach Unity's download, CDN or package servers (`download.unity3d.com`, `public-cdn.cloud.unity3d.com` and `packages.unity.com` were refused).
+- **Licensing.** The Unity Editor needs an activated license.
+- **Paid hosting.** Unity Relay and Lobby need a Unity Cloud project, which this task was not allowed to set up as paid hosting.
+
+What V1 uses instead:
+- **Engine:** Godot 4.7.2, which is MIT-licensed and needs no account. It exports a native iOS Xcode project that builds with Xcode 26.
+- **Online play:** Apple Game Center (`GKMatch` matchmaking and relay), reached through the MIT-licensed GodotApplePlugins. It is free, needs no server, and provides the friends and invites UI.
+- **Netcode:** prediction, reconciliation, lag compensation, reconnection and lobby logic are implemented in this repository (`game/src/net`, `game/src/match`). They do not come from a package.
+
 ## Repository layout
 
 ```
