@@ -15,7 +15,7 @@ This report records what was actually run, where, and what each result proves. V
 
 # V2 (version 1.1)
 
-Code commits `e628130` … `5505024` (followed by documentation-only commits) on `claude/ultimate-trifecta-testflight-oie9r7`. Implementation notes: [docs/V2_NOTES.md](docs/V2_NOTES.md). Media index: [docs/media/v2/README.md](docs/media/v2/README.md).
+Code commits `e628130` … `5505024`, then the owner's app icon (`b56a82a`; the final app code) and documentation-only commits on `claude/ultimate-trifecta-testflight-oie9r7`. Implementation notes: [docs/V2_NOTES.md](docs/V2_NOTES.md). Media index: [docs/media/v2/README.md](docs/media/v2/README.md).
 
 ## V2.1 Automated tests
 
@@ -162,7 +162,8 @@ Same lane as V1 (`.github/workflows/ios.yml`, GitHub Actions `macos-26`, Xcode 2
 | #12 | `0539d7c` (V2 UI, controls, motion, world) | ✅ | ✅ `1.1 (12)`, 263 MB `.app` | ✅ boot splash with the V2 character, loading, match role reveal and HUD; no crash report | ⏸ skipped |
 | #13 | `e3d5c85` | ✅ | ✅ | ✅ | ⏸ skipped |
 | #14 | `4c89ed0` | ✅ | ✅ `1.1 (14)`, arm64, 263 MB, `com.apple.developer.game-center`, `PrivacyInfo.xcprivacy` | ✅ same sequence (`docs/media/v2/ios_simulator_ci_run14.jpg`); cold launch still running at the check; "no crash report" | ⏸ skipped |
-| final | `5505024` + docs | the run for the final commit is recorded in TESTFLIGHT_RELEASE.md ("Current release state") | | | |
+| #15 | `36f4cea` (docs) | cancelled when #16 was pushed (the workflow cancels in-progress runs on the same branch) | | | |
+| #16 | `b56a82a` (final app code: `5505024` + owner-supplied app icon) | ✅ | ✅ `1.1 (16)`, arm64, 269 MB, Game Center entitlement, `PrivacyInfo.xcprivacy` | ✅ boot splash, loading, match reveal and HUD (`docs/media/v2/ios_simulator_ci_run16.jpg`); no crash report | ⏸ skipped (no secrets) |
 
 As in V1, the Simulator runs the x86_64 slice under Rosetta with an OpenGL ES fallback and produces roughly one frame every several seconds. These runs show that the build installs, launches and reaches a match. They say nothing about load time or frame rate on an iPhone.
 

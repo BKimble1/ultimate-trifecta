@@ -7,6 +7,7 @@ Current version: **1.1 (V2)**: the same app, bundle ID, Game Center capability, 
 | Field | Value |
 |---|---|
 | App name | Ultimate Trifecta |
+| App icon | The owner's "Pajama Dash" artwork (`Ultimate Trifecta_ Pajama Dash.png`), as `game/assets/icon/icon.png` at 1024×1024, opaque. Godot's export generates every other icon size from it. |
 | Bundle ID | `com.idlery.ultimatetrifecta`: the candidate ID from the brief. Whether it is already registered on your team could not be checked from here. |
 | Marketing version | `1.1` for V2 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot` and the export preset). V1 was `1.0`. |
 | Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`), so it always increases past anything already uploaded; without it, the GitHub run number (V1's last unsigned build was 10; V2's are 12 and up). It can be overridden with the `build_number` workflow input. |
@@ -19,8 +20,11 @@ Current version: **1.1 (V2)**: the same app, bundle ID, Game Center capability, 
 **State: source prepared · project compiled (unsigned).** This is unchanged from V1: V2 (1.1) compiles for device, but no signed archive, upload or TestFlight build exists.
 
 - **Project compiled (unsigned).** CI exports the Xcode project and builds an **unsigned arm64 device archive** with `CODE_SIGNING_ALLOWED=NO`. This proves the project compiles and links for iPhone; it is not installable.
-  - V2 final code: commit `5505024`. CI builds it together with these documents in the run after #14. That run's result is added to this file in the following documentation commit.
-  - Run #14 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/36923913263) built `4c89ed0`, which differs from the final code only in the results scoreboard and the lobby bot-count text. Tests passed, then the unsigned device archive `com.idlery.ultimatetrifecta` **1.1 (14)**: arm64, Xcode 26.6 (17F113), iOS SDK 26.5, 263 MB `.app`, MinimumOSVersion 17.0, with the Game Center entitlement and `PrivacyInfo.xcprivacy`. The Simulator build launched and reached a match, with no crash report.
+  - **V2 final app code: commit `b56a82a`** (the V2 code from `5505024` plus the owner-supplied app icon), GitHub Actions run #16 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/36934028555).
+    - Tests passed and the unsigned device-archive step succeeded. The archive is `com.idlery.ultimatetrifecta` **1.1 (16)**: arm64, Xcode 26.6 (17F113), iOS SDK 26.5, 269 MB `.app`, MinimumOSVersion 17.0, Game Center entitlement, `PrivacyInfo.xcprivacy`.
+    - The Simulator build launched and reached a match: boot splash, loading, role reveal and HUD (`docs/media/v2/ios_simulator_ci_run16.jpg`). No crash report.
+    - The signed archive and upload steps were skipped because no signing secrets are configured.
+  - Run #14 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/36923913263) built `4c89ed0`, which differs from the final code only in the results scoreboard, the lobby bot-count text and the app icon. Tests passed, then the unsigned device archive `com.idlery.ultimatetrifecta` **1.1 (14)**: arm64, Xcode 26.6 (17F113), iOS SDK 26.5, 263 MB `.app`, MinimumOSVersion 17.0, with the Game Center entitlement and `PrivacyInfo.xcprivacy`. The Simulator build launched and reached a match, with no crash report.
   - Earlier V2 runs on the same lane: #12 (`0539d7c`, V2 gameplay/UI) and #13 (`e3d5c85`) passed. Run #12's archive: `com.idlery.ultimatetrifecta` **1.1 (12)**, arm64, Xcode 26.6 (17F113) / iOS SDK 26.5, 263 MB `.app`, Game Center entitlement, `PrivacyInfo.xcprivacy`. Its Simulator run showed the boot splash with the V2 character, the loading screen, then the match's role reveal and 4:00 HUD; no crash report.
   - V1's last unsigned build was 1.0 (10). The unsigned build number is the GitHub run number. The signed lane picks the highest App Store Connect build + 1 instead, so a signed 1.1 upload is always above anything already uploaded.
 - **Not done yet:**
