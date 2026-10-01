@@ -848,18 +848,18 @@ func _build_pickups() -> void:
 		var n := Node3D.new()
 		n.position = Vector3(spot.x, 0.9, spot.y)
 		add_child(n)
-		CharacterView._init_meshes()
+		PropKit.init_meshes()
 		var box := MeshInstance3D.new()
-		box.mesh = CharacterView._box
+		box.mesh = PropKit.box
 		box.scale = Vector3(0.6, 0.6, 0.6)
-		box.material_override = CharacterView.mat(Color(1.0, 0.85, 0.3), 0.0, Color.WHITE, 0.8)
+		box.material_override = PropKit.mat(Color(1.0, 0.85, 0.3), 0.0, Color.WHITE, 0.8)
 		n.add_child(box)
 		var ring := MeshInstance3D.new()
 		var tm := TorusMesh.new()
 		tm.inner_radius = 0.55
 		tm.outer_radius = 0.7
 		ring.mesh = tm
-		ring.material_override = CharacterView.mat(Color(1.0, 1.0, 1.0), 0.0, Color.WHITE, 1.2)
+		ring.material_override = PropKit.mat(Color(1.0, 1.0, 1.0), 0.0, Color.WHITE, 1.2)
 		ring.position = Vector3(0, -0.8, 0)
 		n.add_child(ring)
 		var lbl := Label3D.new()

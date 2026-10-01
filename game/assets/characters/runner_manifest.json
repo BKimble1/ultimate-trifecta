@@ -1,0 +1,251 @@
+{
+  "bones": [
+    "root",
+    "hips",
+    "spine",
+    "chest",
+    "neck",
+    "head",
+    "hat1",
+    "hat2",
+    "hat3",
+    "shoulder.L",
+    "upper_arm.L",
+    "forearm.L",
+    "hand.L",
+    "thigh.L",
+    "shin.L",
+    "foot.L",
+    "shoulder.R",
+    "upper_arm.R",
+    "forearm.R",
+    "hand.R",
+    "thigh.R",
+    "shin.R",
+    "foot.R"
+  ],
+  "clips": {
+    "arrive": {
+      "length": 0.9,
+      "loop": false
+    },
+    "cart_drive": {
+      "length": 1.0,
+      "loop": true
+    },
+    "cart_enter": {
+      "length": 0.35,
+      "loop": false
+    },
+    "cart_exit": {
+      "length": 0.35,
+      "loop": false
+    },
+    "cart_steer_l": {
+      "length": 1.0,
+      "loop": true
+    },
+    "cart_steer_r": {
+      "length": 1.0,
+      "loop": true
+    },
+    "celebrate": {
+      "length": 1.0,
+      "loop": true
+    },
+    "dive": {
+      "length": 0.6,
+      "loop": false
+    },
+    "dive_land": {
+      "length": 0.32,
+      "loop": false
+    },
+    "dizzy": {
+      "length": 2.0,
+      "loop": true
+    },
+    "emote_cheer": {
+      "length": 1.2,
+      "loop": true
+    },
+    "emote_dance": {
+      "length": 1.25,
+      "loop": true
+    },
+    "emote_laugh": {
+      "length": 1.2,
+      "loop": true
+    },
+    "emote_point": {
+      "length": 1.2,
+      "loop": true
+    },
+    "emote_shrug": {
+      "length": 1.4,
+      "loop": true
+    },
+    "emote_wave": {
+      "length": 1.2,
+      "loop": true
+    },
+    "fall": {
+      "length": 0.8,
+      "loop": true
+    },
+    "flop": {
+      "length": 0.9,
+      "loop": false
+    },
+    "idle": {
+      "length": 2.4,
+      "loop": true
+    },
+    "jump": {
+      "length": 0.3,
+      "loop": false
+    },
+    "land": {
+      "length": 0.28,
+      "loop": false
+    },
+    "recover": {
+      "length": 0.6,
+      "loop": false
+    },
+    "run": {
+      "length": 1.0,
+      "loop": true
+    },
+    "splash": {
+      "length": 1.5,
+      "loop": false
+    },
+    "sprint": {
+      "length": 1.0,
+      "loop": true
+    },
+    "stumble": {
+      "length": 0.55,
+      "loop": false
+    },
+    "tag_lunge": {
+      "length": 0.22,
+      "loop": false
+    },
+    "tag_recover": {
+      "length": 0.5,
+      "loop": false
+    },
+    "tag_windup": {
+      "length": 0.14,
+      "loop": false
+    },
+    "turn_l": {
+      "length": 0.4,
+      "loop": false
+    },
+    "turn_r": {
+      "length": 0.4,
+      "loop": false
+    },
+    "walk": {
+      "length": 1.0,
+      "loop": true
+    }
+  },
+  "forward": "Godot -Z (glTF -Z); built facing Blender +Y",
+  "height_m": 1.5,
+  "loco_m_per_cycle": {
+    "run": 1.7,
+    "sprint": 2.05,
+    "walk": 0.8
+  },
+  "meshes": {
+    "base": {
+      "tris": 5222,
+      "verts": 2712
+    },
+    "body_skin": {
+      "tris": 4104,
+      "verts": 2073
+    },
+    "duck": {
+      "tris": 8012,
+      "verts": 4405
+    },
+    "flashlight": {
+      "tris": 140,
+      "verts": 74
+    },
+    "frog": {
+      "tris": 7932,
+      "verts": 4359
+    },
+    "hair": {
+      "tris": 1300,
+      "verts": 678
+    },
+    "hat_crown": {
+      "tris": 820,
+      "verts": 420
+    },
+    "hat_headphones": {
+      "tris": 1476,
+      "verts": 744
+    },
+    "hat_nightcap": {
+      "tris": 2530,
+      "verts": 1277
+    },
+    "hat_party": {
+      "tris": 568,
+      "verts": 288
+    },
+    "hat_swimcap": {
+      "tris": 2048,
+      "verts": 1050
+    },
+    "mustache": {
+      "tris": 480,
+      "verts": 244
+    },
+    "pj": {
+      "tris": 6812,
+      "verts": 3493
+    },
+    "robe": {
+      "tris": 6168,
+      "verts": 3144
+    },
+    "shoe_flippers": {
+      "tris": 1672,
+      "verts": 862
+    },
+    "shoe_hightops": {
+      "tris": 2212,
+      "verts": 1186
+    },
+    "shoe_slippers": {
+      "tris": 2896,
+      "verts": 1498
+    },
+    "swim": {
+      "tris": 1940,
+      "verts": 1007
+    },
+    "watch": {
+      "tris": 11012,
+      "verts": 5796
+    }
+  },
+  "shape_keys": [
+    "blink",
+    "squint",
+    "smile",
+    "open",
+    "brow_up",
+    "brow_angry"
+  ],
+  "source": "tools/character/build_character.py (Blender 4.5.4 LTS)"
+}

@@ -21,33 +21,33 @@ var engine: AudioStreamPlayer3D
 
 
 func setup(index: int) -> void:
-	CharacterView._init_meshes()
-	var sph := CharacterView._sphere
-	var box := CharacterView._box
-	var cyl := CharacterView._cyl
+	PropKit.init_meshes()
+	var sph := PropKit.sphere
+	var box := PropKit.box
+	var cyl := PropKit.cyl
 	chassis = Node3D.new()
 	add_child(chassis)
 	var accent := Color(1.0, 0.55, 0.15) if index == 0 else Color(0.25, 0.75, 0.95)
 	var white := Color(0.92, 0.93, 0.96)
 	# tub body
-	_mi(chassis, box, CharacterView.mat(white), Vector3(0, 0.55, 0.1), Vector3(1.5, 0.5, 2.5))
-	_mi(chassis, sph, CharacterView.mat(white), Vector3(0, 0.62, -1.05), Vector3(1.5, 0.6, 0.7))
-	_mi(chassis, box, CharacterView.mat(accent), Vector3(0, 0.62, 0.1), Vector3(1.54, 0.12, 2.52))
+	_mi(chassis, box, PropKit.mat(white), Vector3(0, 0.55, 0.1), Vector3(1.5, 0.5, 2.5))
+	_mi(chassis, sph, PropKit.mat(white), Vector3(0, 0.62, -1.05), Vector3(1.5, 0.6, 0.7))
+	_mi(chassis, box, PropKit.mat(accent), Vector3(0, 0.62, 0.1), Vector3(1.54, 0.12, 2.52))
 	# bench seat + back
-	_mi(chassis, box, CharacterView.mat(Color(0.2, 0.22, 0.3)), Vector3(0, 0.95, 0.35), Vector3(1.3, 0.2, 0.7))
-	_mi(chassis, box, CharacterView.mat(Color(0.2, 0.22, 0.3)), Vector3(0, 1.3, 0.72), Vector3(1.3, 0.6, 0.15))
+	_mi(chassis, box, PropKit.mat(Color(0.2, 0.22, 0.3)), Vector3(0, 0.95, 0.35), Vector3(1.3, 0.2, 0.7))
+	_mi(chassis, box, PropKit.mat(Color(0.2, 0.22, 0.3)), Vector3(0, 1.3, 0.72), Vector3(1.3, 0.6, 0.15))
 	# canopy on posts
 	for px in [-0.68, 0.68]:
 		for pz in [-0.65, 0.95]:
-			_mi(chassis, cyl, CharacterView.mat(Color(0.7, 0.72, 0.78)), Vector3(px, 1.55, pz), Vector3(0.06, 1.3, 0.06))
-	_mi(chassis, box, CharacterView.mat(accent), Vector3(0, 2.22, 0.15), Vector3(1.6, 0.12, 2.0))
-	_mi(chassis, box, CharacterView.mat(white), Vector3(0, 2.32, 0.15), Vector3(1.4, 0.1, 1.8))
+			_mi(chassis, cyl, PropKit.mat(Color(0.7, 0.72, 0.78)), Vector3(px, 1.55, pz), Vector3(0.06, 1.3, 0.06))
+	_mi(chassis, box, PropKit.mat(accent), Vector3(0, 2.22, 0.15), Vector3(1.6, 0.12, 2.0))
+	_mi(chassis, box, PropKit.mat(white), Vector3(0, 2.32, 0.15), Vector3(1.4, 0.1, 1.8))
 	# steering column + wheel
-	_mi(chassis, cyl, CharacterView.mat(Color(0.15, 0.15, 0.2)), Vector3(-0.35, 1.05, -0.45), Vector3(0.05, 0.6, 0.05), Vector3(0.6, 0, 0))
-	_mi(chassis, cyl, CharacterView.mat(Color(0.15, 0.15, 0.2)), Vector3(-0.35, 1.32, -0.3), Vector3(0.36, 0.04, 0.36), Vector3(0.9, 0, 0))
+	_mi(chassis, cyl, PropKit.mat(Color(0.15, 0.15, 0.2)), Vector3(-0.35, 1.05, -0.45), Vector3(0.05, 0.6, 0.05), Vector3(0.6, 0, 0))
+	_mi(chassis, cyl, PropKit.mat(Color(0.15, 0.15, 0.2)), Vector3(-0.35, 1.32, -0.3), Vector3(0.36, 0.04, 0.36), Vector3(0.9, 0, 0))
 	# headlights (emissive) + soft beam
 	for hx in [-0.5, 0.5]:
-		_mi(chassis, sph, CharacterView.mat(Color(1.0, 0.95, 0.75), 0.0, Color.WHITE, 2.5), Vector3(hx, 0.7, -1.38), Vector3(0.24, 0.24, 0.12))
+		_mi(chassis, sph, PropKit.mat(Color(1.0, 0.95, 0.75), 0.0, Color.WHITE, 2.5), Vector3(hx, 0.7, -1.38), Vector3(0.24, 0.24, 0.12))
 	head_beam = MeshInstance3D.new()
 	var bm := CylinderMesh.new()
 	bm.top_radius = 0.3
@@ -67,7 +67,7 @@ func setup(index: int) -> void:
 	head_beam.position = Vector3(0, 0.55, -4.8)
 	chassis.add_child(head_beam)
 	# rotating orange beacon on the roof (funny, not police)
-	beacon = _mi(chassis, sph, CharacterView.mat(Color(1.0, 0.6, 0.1), 0.0, Color.WHITE, 2.0), Vector3(0, 2.48, 0.15), Vector3(0.3, 0.26, 0.3))
+	beacon = _mi(chassis, sph, PropKit.mat(Color(1.0, 0.6, 0.1), 0.0, Color.WHITE, 2.0), Vector3(0, 2.48, 0.15), Vector3(0.3, 0.26, 0.3))
 	beacon_light = OmniLight3D.new()
 	beacon_light.light_color = Color(1.0, 0.6, 0.2)
 	beacon_light.light_energy = 1.2
@@ -95,9 +95,9 @@ func setup(index: int) -> void:
 			add_child(pivot)
 			var spin := Node3D.new()
 			pivot.add_child(spin)
-			_mi(spin, cyl, CharacterView.mat(Color(0.1, 0.1, 0.12)), Vector3.ZERO, Vector3(0.62, 0.26, 0.62), Vector3(0, 0, PI * 0.5))
-			_mi(spin, cyl, CharacterView.mat(Color(0.85, 0.85, 0.9)), Vector3(0.0, 0, 0), Vector3(0.3, 0.28, 0.3), Vector3(0, 0, PI * 0.5))
-			_mi(spin, box, CharacterView.mat(Color(0.6, 0.6, 0.65)), Vector3.ZERO, Vector3(0.29, 0.5, 0.08))
+			_mi(spin, cyl, PropKit.mat(Color(0.1, 0.1, 0.12)), Vector3.ZERO, Vector3(0.62, 0.26, 0.62), Vector3(0, 0, PI * 0.5))
+			_mi(spin, cyl, PropKit.mat(Color(0.85, 0.85, 0.9)), Vector3(0.0, 0, 0), Vector3(0.3, 0.28, 0.3), Vector3(0, 0, PI * 0.5))
+			_mi(spin, box, PropKit.mat(Color(0.6, 0.6, 0.65)), Vector3.ZERO, Vector3(0.29, 0.5, 0.08))
 			wheels.append(spin)
 			if wz < 0.0:
 				front_wheels.append(pivot)

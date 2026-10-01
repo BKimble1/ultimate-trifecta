@@ -1,0 +1,298 @@
+extends Node3D
+## Development-only character test scene (src/dev is excluded from exports).
+##   tools/gd.sh --path game res://src/dev/character_lineup.tscn -- --lineup=<mode> --capture-dir=DIR
+## modes: views (front/3-4/side/back, runner + Night Watch), outfits, skins,
+##        poses (one pose per clip), transitions (timed strip of state changes),
+##        closeup (face), all (every mode in turn).
+## Each mode saves a lossless PNG and quits when done.
+
+const MODES := ["views", "outfits", "skins", "posesheet", "transitions", "closeup", "faces"]
+const SHEET_CLIPS := ["idle", "walk", "run", "sprint", "turn_l", "jump", "fall", "land", "dive", "dive_land", "splash", "recover",
+	"stumble", "flop", "dizzy", "tag_windup", "tag_lunge", "tag_recover", "cart_enter", "cart_drive", "cart_steer_l", "cart_exit",
+	"celebrate", "arrive", "emote_wave", "emote_cheer", "emote_laugh", "emote_shrug", "emote_dance", "emote_point"]
+const SHEET_T := {"walk": 0.25, "run": 0.12, "sprint": 0.37, "turn_l": 0.2, "jump": 0.3, "fall": 0.2, "land": 0.08, "dive": 0.6,
+	"dive_land": 0.1, "splash": 0.7, "recover": 0.12, "stumble": 0.27, "flop": 0.9, "dizzy": 0.4, "tag_windup": 0.14, "tag_lunge": 0.15,
+	"tag_recover": 0.1, "cart_enter": 0.35, "cart_exit": 0.17, "celebrate": 0.25, "arrive": 0.33, "emote_wave": 0.3, "emote_cheer": 0.2,
+	"emote_laugh": 0.3, "emote_shrug": 0.4, "emote_dance": 0.2, "emote_point": 0.5}
+
+var out_dir := ""
+var modes: Array = []
+var cam: Camera3D
+var stage: Node3D
+var _t := 0.0
+var _mode := ""
+var _views: Array[CharacterView] = []
+var _strip_frames: Array[Image] = []
+var _strip_next := 0.0
+var _env: WorldEnvironment
+var lighting := "studio"
+var _sheet_i := -1
+var _sheet_wait := 0
+
+
+func _ready() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--lineup="):
+			var m := a.split("=")[1]
+			modes = MODES.duplicate() if m == "all" else Array(m.split(","))
+		elif a.begins_with("--capture-dir="):
+			out_dir = a.split("=")[1]
+		elif a.begins_with("--light="):
+			lighting = a.split("=")[1]
+	if modes.is_empty():
+		modes = ["views"]
+	if out_dir == "":
+		out_dir = OS.get_user_data_dir().path_join("lineup")
+	DirAccess.make_dir_recursive_absolute(out_dir)
+	_build_world()
+	_next_mode()
+
+
+func _build_world() -> void:
+	_env = WorldEnvironment.new()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("223049")
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("8fa3c8")
+	env.ambient_light_energy = 0.55
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_white = 6.0
+	_env.environment = env
+	add_child(_env)
+	var key := DirectionalLight3D.new()
+	key.rotation_degrees = Vector3(-38, 28, 0)
+	key.light_energy = 1.25
+	key.light_color = Color(1.0, 0.94, 0.86)
+	key.shadow_enabled = true
+	add_child(key)
+	var fill := DirectionalLight3D.new()
+	fill.rotation_degrees = Vector3(-20, -140, 0)
+	fill.light_energy = 0.35
+	fill.light_color = Color(0.6, 0.72, 1.0)
+	add_child(fill)
+	var floor_mi := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(60, 60)
+	floor_mi.mesh = pm
+	var fm := StandardMaterial3D.new()
+	fm.albedo_color = Color("2b3a57")
+	fm.roughness = 0.9
+	floor_mi.material_override = fm
+	add_child(floor_mi)
+	cam = Camera3D.new()
+	cam.fov = 30
+	add_child(cam)
+	cam.current = true
+	stage = Node3D.new()
+	add_child(stage)
+
+
+func _clear() -> void:
+	for v in _views:
+		v.queue_free()
+	_views.clear()
+
+
+func _add(role: int, cos: Dictionary, x: float, z: float = 0.0, yaw: float = PI, label: String = "") -> CharacterView:
+	var v := CharacterView.new()
+	stage.add_child(v)
+	v.setup(role, cos, -1, label, false, false)
+	v.apply_state({"pos": Vector3(x, 0, z), "yaw": yaw, "state": TC.PState.ACTIVE, "vel": Vector3.ZERO, "on_floor": true}, 0.0, true)
+	if v.name_label:
+		v.name_label.visible = label != ""
+		v.name_label.fixed_size = false
+		v.name_label.pixel_size = 0.004
+		v.name_label.position = Vector3(0, -0.25, 0.6)
+		v.name_label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+		v.name_label.rotation.y = -yaw + PI
+	_views.append(v)
+	return v
+
+
+func _aim(from: Vector3, at: Vector3, fov: float = 30.0) -> void:
+	cam.fov = fov
+	cam.look_at_from_position(from, at)
+
+
+func _pose(v: CharacterView, clip: String, t: float) -> void:
+	v.set_process(false)
+	v.tree.active = false
+	v.anim.play(clip)
+	v.anim.seek(t, true)
+	v.anim.pause()
+
+
+func _next_mode() -> void:
+	_clear()
+	if modes.is_empty():
+		get_tree().quit()
+		return
+	_mode = modes.pop_front()
+	_t = 0.0
+	var d := Cosmetics.DEFAULT
+	match _mode:
+		"views":
+			var yaws := [0.0, PI * 0.25, PI * 0.5, PI]
+			var names := ["front", "3/4", "side", "back"]
+			for i in 4:
+				# yaw PI faces +Z (toward the camera); add the view angle
+				_add(TC.Role.RUNNER, d, -4.5 + i * 1.5, 0.0, PI + yaws[i], names[i])
+			for i in 2:
+				_add(TC.Role.PATROL, {"color": 0, "skin": 2}, 1.8 + i * 1.5, 0.0, PI + (0.0 if i == 0 else PI), "watch " + ("front" if i == 0 else "back"))
+			_aim(Vector3(-0.75, 1.4, 11.5), Vector3(-0.75, 0.85, 0), 30)
+		"outfits":
+			var outfits := Cosmetics.OUTFITS.keys()
+			var hats := ["nightcap", "none", "swimcap", "party", "headphones", "crown"]
+			var shoes := ["slippers", "sneakers", "flippers", "sneakers", "slippers", "sneakers"]
+			for i in outfits.size():
+				_add(TC.Role.RUNNER, {"outfit": outfits[i], "hat": hats[i], "shoes": shoes[i], "color": i, "skin": i % 5}, -4.5 + i * 1.5, 0.0, PI + 0.35, String(outfits[i]))
+			_add(TC.Role.PATROL, {"color": 1, "skin": 1}, 4.5, 0.0, PI + 0.35, "night watch")
+			_aim(Vector3(0, 1.5, 13.5), Vector3(0, 0.85, 0), 32)
+		"skins":
+			for i in 5:
+				_add(TC.Role.RUNNER, {"outfit": "pj_plain", "hat": ["none", "headphones", "crown", "party", "none"][i], "shoes": "sneakers", "color": [0, 2, 4, 6, 7][i], "skin": i}, -3.0 + i * 1.5, 0.0, PI + 0.3, "skin %d" % (i + 1))
+			_aim(Vector3(0, 1.4, 10.5), Vector3(0, 0.85, 0), 30)
+		"poses", "poses2":
+			var all_clips := ["idle", "walk", "run", "sprint", "jump", "fall", "dive", "land", "splash", "recover", "stumble", "flop",
+				"dizzy", "tag_windup", "tag_lunge", "cart_drive", "celebrate", "arrive", "emote_wave", "emote_cheer", "emote_point", "emote_shrug", "emote_dance", "turn_l"]
+			var times := {"idle": 0.3, "walk": 0.25, "run": 0.12, "sprint": 0.37, "jump": 0.3, "fall": 0.2, "dive": 0.6, "land": 0.08,
+				"splash": 0.7, "recover": 0.15, "stumble": 0.27, "flop": 0.9, "dizzy": 0.4, "tag_windup": 0.14, "tag_lunge": 0.15,
+				"cart_drive": 0.0, "celebrate": 0.25, "arrive": 0.33, "emote_wave": 0.3, "emote_cheer": 0.2, "emote_point": 0.5,
+				"emote_shrug": 0.4, "emote_dance": 0.2, "turn_l": 0.2}
+			var clips := all_clips.slice(0, 12) if _mode == "poses" else all_clips.slice(12, 24)
+			for i in clips.size():
+				var col := i % 6
+				var row := i / 6
+				var v := _add(TC.Role.RUNNER if clips[i] != "tag_lunge" and clips[i] != "tag_windup" else TC.Role.PATROL,
+					{"outfit": "pj_stripes", "color": i % 8, "skin": i % 5}, -3.75 + col * 1.5, -row * 2.2, PI + 0.9, clips[i])
+				_pose(v, clips[i], times[clips[i]])
+			_aim(Vector3(0, 3.0, 9.6), Vector3(0, 0.3, -1.1), 36)
+		"posesheet":
+			var pv := _add(TC.Role.RUNNER, {"outfit": "pj_stripes", "color": 0, "skin": 0}, 0.0, 0.0, PI + 0.75, "")
+			pv.set_process(false)
+			_aim(Vector3(0, 1.1, 5.2), Vector3(0, 0.75, 0), 30)
+			_strip_frames.clear()
+			_sheet_i = -1
+		"transitions":
+			var v := _add(TC.Role.RUNNER, d, 0.0, 0.0, PI * 0.5, "")
+			_aim(Vector3(0, 1.0, 6.5), Vector3(0, 0.8, 0), 30)
+			_strip_frames.clear()
+			_strip_next = 0.0
+		"faces":
+			var shapes := ["", "blink", "squint", "smile", "open", "brow_up", "brow_angry"]
+			for i in shapes.size():
+				var v := _add(TC.Role.RUNNER, {"outfit": "pj_plain", "hat": "none", "color": i, "skin": i % 5}, -2.4 + i * 0.8, 0.0, PI, shapes[i] if shapes[i] != "" else "neutral")
+				v.set_process(false)
+				v.tree.active = false
+				v.anim.play("idle")
+				v.anim.seek(0.0, true)
+				v.anim.pause()
+				if shapes[i] != "":
+					v.base_mesh.set_blend_shape_value(v.base_mesh.find_blend_shape_by_name(shapes[i]), 1.0)
+			_aim(Vector3(0, 1.25, 6.2), Vector3(0, 1.12, 0), 26)
+		"closeup":
+			_add(TC.Role.RUNNER, d, -0.45, 0.0, PI + 0.35)
+			_add(TC.Role.PATROL, {"color": 0, "skin": 3}, 0.45, -0.3, PI - 0.3)
+			_aim(Vector3(0, 1.3, 3.0), Vector3(0, 1.08, 0), 26)
+
+
+func _process(delta: float) -> void:
+	_t += delta
+	match _mode:
+		"posesheet":
+			if _t < 1.0:
+				return
+			if _sheet_wait > 0:
+				_sheet_wait -= 1
+				return
+			if _sheet_i >= 0:
+				_strip_frames.append(get_viewport().get_texture().get_image())
+			_sheet_i += 1
+			if _sheet_i >= SHEET_CLIPS.size():
+				_save_strip("posesheet", 6, SHEET_CLIPS)
+				_next_mode()
+				return
+			var clip: String = SHEET_CLIPS[_sheet_i]
+			var pv := _views[0]
+			pv.set_appearance(TC.Role.PATROL if clip.begins_with("tag_") or clip.begins_with("cart") else TC.Role.RUNNER, {"outfit": "pj_stripes", "color": _sheet_i % 8, "skin": _sheet_i % 5})
+			_pose(pv, clip, SHEET_T.get(clip, 0.3))
+			_sheet_wait = 2
+		"transitions":
+			_drive_transitions(delta)
+			if _t >= _strip_next and _t < 6.0:
+				_strip_next += 0.4
+				await RenderingServer.frame_post_draw
+				_strip_frames.append(get_viewport().get_texture().get_image())
+			if _t >= 6.2:
+				_save_strip("transitions", 5, [])
+				_next_mode()
+		_:
+			if _t > 1.5:
+				await RenderingServer.frame_post_draw
+				if _mode != "" and _t > 1.5:
+					_save(_mode)
+					_t = -999.0
+					_next_mode()
+
+
+## Scripted state changes: idle -> walk -> run -> sprint -> jump/fall -> land
+## -> stop -> emote, driven through the same apply_state API as gameplay.
+func _drive_transitions(_delta: float) -> void:
+	if _views.is_empty():
+		return
+	var v := _views[0]
+	var t := _t
+	var speed := 0.0
+	var vy := 0.0
+	var floor_ok := true
+	var emote := -1
+	if t < 0.6:
+		speed = 0.0
+	elif t < 1.4:
+		speed = 2.0
+	elif t < 2.2:
+		speed = 5.0
+	elif t < 3.0:
+		speed = 7.0
+	elif t < 3.7:
+		speed = 6.0
+		floor_ok = false
+		vy = 6.4 - 19.0 * (t - 3.0)
+	elif t < 4.6:
+		speed = maxf(0.0, 5.0 - (t - 3.7) * 8.0)
+	else:
+		emote = 1
+	var x := 0.0
+	v.apply_state({"pos": Vector3(0, maxf(0.0, (6.4 * (t - 3.0) - 9.5 * (t - 3.0) * (t - 3.0))) if not floor_ok else 0.0, 0),
+		"yaw": PI * 0.5, "vel": Vector3(-speed, vy, 0), "state": TC.PState.ACTIVE, "on_floor": floor_ok,
+		"sprinting": speed > 6.5, "emote": emote, "emote_t": 1.0 if emote >= 0 else 0.0})
+
+
+func _save(n: String) -> void:
+	var img := get_viewport().get_texture().get_image()
+	var p := out_dir.path_join("lineup_%s.png" % n)
+	img.save_png(p)
+	printerr("LINEUP %s %dx%d" % [p, img.get_width(), img.get_height()])
+
+
+func _save_strip(n: String, cols: int, labels: Array) -> void:
+	if _strip_frames.is_empty():
+		return
+	var w := _strip_frames[0].get_width()
+	var h := _strip_frames[0].get_height()
+	var cw := w / 4
+	var ch := int(h * 0.8)
+	var rows := int(ceil(_strip_frames.size() / float(cols)))
+	var sheet := Image.create(cw * cols, ch * rows, false, Image.FORMAT_RGBA8)
+	for i in _strip_frames.size():
+		var f := _strip_frames[i]
+		f.convert(Image.FORMAT_RGBA8)
+		var crop := f.get_region(Rect2i(w / 2 - cw / 2, h / 2 - ch / 2, cw, ch))
+		sheet.blit_rect(crop, Rect2i(0, 0, cw, ch), Vector2i((i % cols) * cw, (i / cols) * ch))
+	var p := out_dir.path_join("lineup_%s.png" % n)
+	sheet.save_png(p)
+	if not labels.is_empty():
+		var f2 := FileAccess.open(out_dir.path_join("lineup_%s.txt" % n), FileAccess.WRITE)
+		f2.store_string("\n".join(PackedStringArray(labels)))
+	printerr("LINEUP %s %dx%d frames=%d" % [p, sheet.get_width(), sheet.get_height(), _strip_frames.size()])

@@ -53,9 +53,47 @@ func _ready() -> void:
 			dev_rounds = int(a.split("=")[1])
 		elif a.begins_with("--expect="):
 			dev_expect = int(a.split("=")[1])
+	_dev_tools(OS.get_cmdline_user_args())
 	if OS.get_cmdline_user_args().has("--no-app"):
 		return
 	call_deferred("_boot")
+
+
+## Development-only diagnostics and evidence capture. The scripts live in
+## src/dev/ (excluded from iOS exports) and are loaded by path, so a release
+## build simply finds nothing to load.
+func _dev_tools(args: PackedStringArray) -> void:
+	var diag_overlay := args.has("--diag")
+	var diag_report := ""
+	var capture := ""
+	var capture_dir := ""
+	var capture_label := ""
+	var capture_players := 1
+	for a in args:
+		if a.begins_with("--diag-report="):
+			diag_report = a.split("=")[1]
+		elif a.begins_with("--capture="):
+			capture = a.split("=")[1]
+		elif a.begins_with("--capture-dir="):
+			capture_dir = a.split("=")[1]
+		elif a.begins_with("--capture-label="):
+			capture_label = a.substr(a.find("=") + 1)
+		elif a.begins_with("--capture-players="):
+			capture_players = int(a.split("=")[1])
+	if (diag_overlay or diag_report != "") and ResourceLoader.exists("res://src/dev/diag.gd"):
+		var dg: Node = (load("res://src/dev/diag.gd") as GDScript).new()
+		dg.set("show_overlay", diag_overlay)
+		dg.set("report_path", diag_report)
+		add_child(dg)
+	if capture != "" and ResourceLoader.exists("res://src/dev/capture.gd"):
+		var cp: Node = (load("res://src/dev/capture.gd") as GDScript).new()
+		cp.set("scenario", capture)
+		cp.set("out_dir", capture_dir if capture_dir != "" else OS.get_user_data_dir().path_join("capture"))
+		cp.set("label", capture_label)
+		cp.set("want_players", capture_players)
+		add_child(cp)
+		if capture == "lobby":
+			dev_expect = 99   # hold the room open for the capture
 
 
 func _process(delta: float) -> void:

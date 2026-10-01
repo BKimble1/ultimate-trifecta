@@ -1,30 +1,63 @@
 shader_type spatial;
-// Characters: vertex/uniform colour with a moonlit rim so silhouettes read at night.
-render_mode diffuse_lambert, specular_schlick_ggx;
+// Skinned characters (assets/characters/runner.glb, built by tools/character).
+// Vertex data contract (see tools/character/geo.py):
+//   COLOR.rgb  base albedo, LINEAR (Blender exports glTF COLOR_0 linear and
+//              Godot keeps it, so there is no sRGB conversion here)
+//   COLOR.a    tint selector: round(a*5) 0 none, 1 hair, 2 skin, 3 secondary,
+//              4 dark, 5 primary.  albedo = base * tint
+//   UV         x = stripe flag, 1 - y = stripe coordinate in metres
+//   UV2        x = roughness, 1 - y = material class (0 cloth, .25 skin,
+//              .5 rubber, .75 gloss, 1 emissive)
+render_mode diffuse_lambert_wrap, specular_schlick_ggx;
 
-uniform vec3 albedo : source_color = vec3(1.0);
-uniform vec3 rim_color : source_color = vec3(0.55, 0.7, 1.0);
-uniform float rim_strength = 0.45;
-uniform float emission = 0.0;
-instance uniform vec3 flash_color : source_color = vec3(1.0, 1.0, 1.0);
+instance uniform vec3 tint_primary : source_color = vec3(0.36, 0.55, 0.95);
+instance uniform vec3 tint_secondary : source_color = vec3(0.70, 0.80, 1.0);
+instance uniform vec3 tint_dark : source_color = vec3(0.20, 0.30, 0.60);
+instance uniform vec3 tint_skin : source_color = vec3(0.98, 0.82, 0.68);
+instance uniform vec3 tint_hair : source_color = vec3(0.32, 0.22, 0.16);
+instance uniform float stripes = 0.0;   // stripes per metre, 0 = plain
 instance uniform float flash = 0.0;
-uniform float stripes = 0.0;
-uniform vec3 stripe_color : source_color = vec3(1.0);
-uniform float use_vertex_color = 0.0;
-
-vec3 srgb_to_linear(vec3 c) {
-	return mix(pow((c + vec3(0.055)) / 1.055, vec3(2.4)), c / 12.92, lessThan(c, vec3(0.04045)));
-}
+instance uniform vec3 flash_color : source_color = vec3(1.0);
+// environment-dependent rim (warm indoors, cool moonlight outdoors); small on purpose
+instance uniform vec3 rim_color : source_color = vec3(0.55, 0.68, 1.0);
+instance uniform float rim_strength = 0.10;
 
 void fragment() {
-	vec3 base = mix(albedo, srgb_to_linear(COLOR.rgb) * albedo, use_vertex_color);
-	if (stripes > 0.0) {
-		vec3 wp = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
-		float s = step(0.5, fract((UV.y) * stripes));
-		base = mix(base, stripe_color, s * 0.85);
+	vec3 base = COLOR.rgb;
+	int sel = int(round(COLOR.a * 5.0));
+	vec3 tint = vec3(1.0);
+	if (sel == 1) { tint = tint_hair; }
+	else if (sel == 2) { tint = tint_skin; }
+	else if (sel == 3) { tint = tint_secondary; }
+	else if (sel == 4) { tint = tint_dark; }
+	else if (sel == 5) { tint = tint_primary; }
+	vec3 alb = base * tint;
+	if (UV.x > 0.5 && stripes > 0.0) {
+		float coord = (1.0 - UV.y) * stripes;
+		float f = fract(coord);
+		float aa = max(fwidth(coord), 1e-4) * 0.75;
+		float band = smoothstep(0.5 - aa, 0.5 + aa, f) * (1.0 - smoothstep(1.0 - aa, 1.0, f));
+		alb = mix(alb, base * tint_secondary, band * 0.9);
 	}
-	ALBEDO = base;
-	ROUGHNESS = 0.7;
-	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.5);
-	EMISSION = rim_color * rim * rim_strength + base * emission + flash_color * flash;
+	float cls = 1.0 - UV2.y;
+	ALBEDO = alb;
+	ROUGHNESS = clamp(UV2.x, 0.05, 1.0);
+	SPECULAR = 0.3;
+	vec3 emit = vec3(0.0);
+	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
+	if (cls < 0.12) {           // matte cloth: low spec, soft sheen at grazing angles
+		SPECULAR = 0.18;
+		emit += rim_color * rim * rim_strength * (0.6 + 0.4 * alb);
+	} else if (cls < 0.37) {    // skin: warm wrap, a little transmission
+		SPECULAR = 0.35;
+		BACKLIGHT = alb * 0.22;
+		emit += rim_color * rim * rim_strength * 0.5;
+	} else if (cls < 0.62) {    // rubber / leather
+		SPECULAR = 0.42;
+	} else if (cls < 0.87) {    // gloss: eyes, buttons, badges, plastic
+		SPECULAR = 0.55;
+	} else {                    // emissive: eye catch-lights, flashlight lens
+		emit += alb * 1.6;
+	}
+	EMISSION = emit + flash_color * flash;
 }
