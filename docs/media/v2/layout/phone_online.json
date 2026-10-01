@@ -1,0 +1,47 @@
+{
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "canvas_to_px": 1.625,
+  "canvas_units": [
+    1558.0,
+    720.0
+  ],
+  "draw_calls": 37.0,
+  "fps": 2.0,
+  "frame_ms": {
+    "max": 16.67,
+    "n": 493,
+    "over_100ms": 0,
+    "over_1_5x_target": 0,
+    "p50": 16.67,
+    "p95": 16.67,
+    "p99": 16.67
+  },
+  "label": "V2 14475d3 linux llvmpipe 2532x1170 (iPhone-6.1in-19.5x9-@3x layout check); Game Center unavailable (desktop)",
+  "msaa_3d": 1,
+  "objects": 228.0,
+  "primitives": 42092.0,
+  "renderer": "mobile / vulkan",
+  "root_render_px": [
+    2532,
+    1170
+  ],
+  "scaling_3d_mode": 0,
+  "scaling_3d_scale": 1.0,
+  "screen_dpi": 96,
+  "screen_px": [
+    2600,
+    1600
+  ],
+  "screen_scale": 1.0,
+  "screen_space_aa": 0,
+  "shot": "online",
+  "static_mem_mb": 130.5,
+  "subviewports": [],
+  "t": 8.22,
+  "use_taa": false,
+  "video_mem_mb": 201.5,
+  "window_px": [
+    2532,
+    1170
+  ]
+}

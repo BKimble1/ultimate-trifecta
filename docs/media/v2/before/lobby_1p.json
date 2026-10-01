@@ -1,0 +1,67 @@
+{
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "canvas_to_px": 1.625,
+  "canvas_units": [
+    1558.0,
+    720.0
+  ],
+  "draw_calls": 54.0,
+  "fps": 25.0,
+  "frame_ms": {
+    "max": 16.67,
+    "n": 242,
+    "over_100ms": 0,
+    "over_1_5x_target": 0,
+    "p50": 16.67,
+    "p95": 16.67,
+    "p99": 16.67
+  },
+  "label": "baseline 654b0a8 linux llvmpipe 2532x1170",
+  "msaa_3d": 1,
+  "objects": 442.0,
+  "primitives": 12712.0,
+  "renderer": "mobile / vulkan",
+  "root_render_px": [
+    2532,
+    1170
+  ],
+  "scaling_3d_mode": 0,
+  "scaling_3d_scale": 1.0,
+  "screen_dpi": 95,
+  "screen_px": [
+    2600,
+    1300
+  ],
+  "screen_scale": 1.0,
+  "screen_space_aa": 0,
+  "shot": "lobby_1p",
+  "static_mem_mb": 118.6,
+  "subviewports": [
+    {
+      "container_canvas": [
+        990.0,
+        436.0
+      ],
+      "displayed_px": [
+        1608.9,
+        708.5
+      ],
+      "msaa_3d": 1,
+      "path": "App/@CanvasLayer@29/@Control@34/@MarginContainer@32/@VBoxContainer@33/@HBoxContainer@40/@SubViewportContainer@47/@SubViewport@41",
+      "render_px": [
+        990,
+        436
+      ],
+      "render_to_display": 0.615,
+      "scaling_3d_scale": 1.0,
+      "stretch": true
+    }
+  ],
+  "t": 4.03,
+  "use_taa": false,
+  "video_mem_mb": 118.8,
+  "window_px": [
+    2532,
+    1170
+  ]
+}

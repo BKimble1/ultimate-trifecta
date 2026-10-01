@@ -18,6 +18,7 @@ Apple frameworks (GameKit, GameController) are part of the iOS SDK and are used 
 |---|---|---|---|
 | Blender as a Python module (`bpy`) | 4.5.4 LTS, from PyPI into `tools/.cache/bpyenv`; not committed | GPL-2.0-or-later | Runs `tools/character/build_character.py`, which builds the character model, rig and animations and exports `game/assets/characters/runner.glb`. Blender is a tool here. The generated model is original output of this project's scripts, and no Blender code or data is shipped in the app. |
 | numpy | as resolved by pip alongside `bpy` | BSD-3-Clause | Dependency of `bpy` and of `tools/gen_audio.py`. |
+| ffmpeg, DejaVu Sans | system packages on the capture machine | ffmpeg: LGPL/GPL; DejaVu: Bitstream Vera license | Encode the evidence recordings in `docs/media/` and burn in their labels. Neither is part of the app.
 
 ## Original assets made for this project
 

@@ -1,0 +1,47 @@
+{
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "canvas_to_px": 1.028,
+  "canvas_units": [
+    1556.0,
+    720.0
+  ],
+  "draw_calls": 158.0,
+  "fps": 1.0,
+  "frame_ms": {
+    "max": 16.67,
+    "n": 1743,
+    "over_100ms": 0,
+    "over_1_5x_target": 0,
+    "p50": 16.67,
+    "p95": 16.67,
+    "p99": 16.67
+  },
+  "label": "V2 8e61029 linux llvmpipe 1600x740; Standard preset; local player bot-driven (--local-bot)",
+  "msaa_3d": 1,
+  "objects": 254.0,
+  "primitives": 246658.0,
+  "renderer": "mobile / vulkan",
+  "root_render_px": [
+    1600,
+    740
+  ],
+  "scaling_3d_mode": 0,
+  "scaling_3d_scale": 1.0,
+  "screen_dpi": 96,
+  "screen_px": [
+    1700,
+    900
+  ],
+  "screen_scale": 1.0,
+  "screen_space_aa": 0,
+  "shot": "runner_play_2",
+  "static_mem_mb": 149.7,
+  "subviewports": [],
+  "t": 29.05,
+  "use_taa": false,
+  "video_mem_mb": 144.3,
+  "window_px": [
+    1600,
+    740
+  ]
+}

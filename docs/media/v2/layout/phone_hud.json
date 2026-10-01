@@ -1,0 +1,61 @@
+{
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "campus_meshes_casting_shadows": "49 of 56",
+  "canvas_to_px": 1.625,
+  "canvas_units": [
+    1558.0,
+    720.0
+  ],
+  "draw_calls": 190.0,
+  "fps": 2.0,
+  "frame_ms": {
+    "max": 16.67,
+    "n": 662,
+    "over_100ms": 0,
+    "over_1_5x_target": 0,
+    "p50": 16.67,
+    "p95": 16.67,
+    "p99": 16.67
+  },
+  "glow": true,
+  "label": "V2 babee2a linux llvmpipe 2532x1170 (iPhone-6.1in-19.5x9-@3x layout check); local player bot-driven (--local-bot), touch layout shown",
+  "max_fps": 0,
+  "mesh_lod_threshold": 1.0,
+  "msaa_3d": 1,
+  "objects": 347.0,
+  "primitives": 334031.0,
+  "quality_preset": "Standard",
+  "render_3d_px": [
+    2532,
+    1170
+  ],
+  "renderer": "mobile / vulkan",
+  "root_render_px": [
+    2532,
+    1170
+  ],
+  "scaling_3d_mode": 0,
+  "scaling_3d_scale": 1.0,
+  "screen_dpi": 96,
+  "screen_px": [
+    2600,
+    1600
+  ],
+  "screen_scale": 1.0,
+  "screen_space_aa": 0,
+  "shadow_atlas": 2048,
+  "shot": "runner_play_0",
+  "static_mem_mb": 161.0,
+  "subviewports": [],
+  "sun_shadow": {
+    "max_distance": 70.0,
+    "mode": 1
+  },
+  "t": 11.03,
+  "use_taa": false,
+  "video_mem_mb": 244.2,
+  "window_px": [
+    2532,
+    1170
+  ]
+}

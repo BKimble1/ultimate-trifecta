@@ -1,4 +1,6 @@
-# TestFlight release: Ultimate Trifecta V1
+# TestFlight release: Ultimate Trifecta
+
+Current version: **1.1 (V2)**: the same app, bundle ID, Game Center capability, export scripts and signing lane as 1.0, with a higher build number.
 
 ## App identity
 
@@ -6,20 +8,21 @@
 |---|---|
 | App name | Ultimate Trifecta |
 | Bundle ID | `com.idlery.ultimatetrifecta`: the candidate ID from the brief. Whether it is already registered on your team could not be checked from here. |
-| Marketing version | `1.0` (`MARKETING_VERSION` in `.github/workflows/ios.yml`) |
-| Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`); without it, the GitHub run number. It can be overridden with the `build_number` workflow input. |
+| Marketing version | `1.1` for V2 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot` and the export preset). V1 was `1.0`. |
+| Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`), so it always increases past anything already uploaded; without it, the GitHub run number (V1's last unsigned build was 10; V2's are 12 and up). It can be overridden with the `build_number` workflow input. |
 | Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape left/right. Godot also adds `UIRequiredDeviceCapabilities` `iphone-ipad-minimum-performance-a12`, which means A12 (iPhone XS/XR) or newer. All verified in the CI archive's Info.plist. |
 | Capabilities | Game Center (`com.apple.developer.game-center`) |
 | Toolchain | Godot 4.7.2-stable export; Xcode 26.6 (17F113) with the iOS 26 SDK on the `macos-26` GitHub runner (verified in CI run 3). Apple requires the iOS 26 SDK for uploads from April 28, 2026. |
 
 ## Current release state
 
-**State: source prepared · project compiled (unsigned).**
+**State: source prepared · project compiled (unsigned).** This is unchanged from V1: V2 (1.1) compiles for device, but no signed archive, upload or TestFlight build exists.
 
 - **Project compiled (unsigned).** CI exports the Xcode project and builds an **unsigned arm64 device archive** with `CODE_SIGNING_ALLOWED=NO`. This proves the project compiles and links for iPhone; it is not installable.
-  - Final code: commit `f1c7579` (code identical to `b2d4844`), GitHub Actions run #10 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/36858867923).
-  - In that run: tests passed, then `** ARCHIVE SUCCEEDED **` for `com.idlery.ultimatetrifecta` 1.0 (10), arm64, Xcode 26.6 / iOS SDK 26.5, with no Info.plist warnings. The Simulator build launched and reached a match, with no crash report.
-  - The unsigned build number comes from the GitHub run number. The signed lane picks the next number from App Store Connect instead.
+  - V2 final code: commit `5505024`. CI builds it together with these documents in the run after #14. That run's result is added to this file in the following documentation commit.
+  - Run #14 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/36923913263) built `4c89ed0`, which differs from the final code only in the results scoreboard and the lobby bot-count text. Tests passed, then the unsigned device archive `com.idlery.ultimatetrifecta` **1.1 (14)**: arm64, Xcode 26.6 (17F113), iOS SDK 26.5, 263 MB `.app`, MinimumOSVersion 17.0, with the Game Center entitlement and `PrivacyInfo.xcprivacy`. The Simulator build launched and reached a match, with no crash report.
+  - Earlier V2 runs on the same lane: #12 (`0539d7c`, V2 gameplay/UI) and #13 (`e3d5c85`) passed. Run #12's archive: `com.idlery.ultimatetrifecta` **1.1 (12)**, arm64, Xcode 26.6 (17F113) / iOS SDK 26.5, 263 MB `.app`, Game Center entitlement, `PrivacyInfo.xcprivacy`. Its Simulator run showed the boot splash with the V2 character, the loading screen, then the match's role reveal and 4:00 HUD; no crash report.
+  - V1's last unsigned build was 1.0 (10). The unsigned build number is the GitHub run number. The signed lane picks the highest App Store Connect build + 1 instead, so a signed 1.1 upload is always above anything already uploaded.
 - **Not done yet:**
   - The app has not been device-tested.
   - No signed archive has been created.
@@ -72,10 +75,10 @@ The same steps run locally on a Mac with Xcode 26:
 
 ```sh
 export APPLE_TEAM_ID=… ASC_KEY_ID=… ASC_ISSUER_ID=… ASC_KEY_PATH=~/keys/AuthKey_….p8
-export BUILD_NUMBER=$(python3 tools/asc.py next-build) MARKETING_VERSION=1.0
+export BUILD_NUMBER=$(python3 tools/asc.py next-build) MARKETING_VERSION=1.1
 tools/fetch_godot.sh --templates && tools/fetch_deps.sh && tools/export_ios.sh
 EXPORT_DESTINATION=upload INTERNAL_ONLY=true tools/build_ios.sh signed
-python3 tools/asc.py wait 1.0 "$BUILD_NUMBER" 2400
+python3 tools/asc.py wait 1.1 "$BUILD_NUMBER" 2400
 ```
 
 ## Compliance and privacy answers
@@ -113,14 +116,17 @@ These answers are based on what the build actually contains; please confirm them
 
 **What to Test**
 
-> V1 private beta. Please try:
-> - Movement: run, sprint (push the stick to the edge), jump, dive (jump again in the air). Does it feel precise?
-> - Touch and controller: the left side moves, the right side drags the camera, and buttons only appear when useful. Connect and disconnect a game controller mid-match and check that prompts switch.
-> - Night Watch: hop in a golf cart (cart button), drive with gas/brake, hop out, and tag a runner on foot.
+> 1.1 private beta (V2: new characters, home and party lobby, touch controls, camera and water). Please try:
+> - Home and lobby: is your character sharp and facing you? Is the next action obvious? In a room, do joins, leaves, Ready and outfit changes update without the party jumping around?
+> - Movement: run, sprint (push the stick to the edge), jump, dive (jump again in the air). Starts, stops and turns: precise, and no foot sliding?
+> - Touch: move, drag the camera and press Jump at the same time; a second finger on the left side should move the camera, not steal the stick. Try Settings → Controls (fixed stick, hold-to-sprint, button size, mirrored layout) and Try in Practice.
+> - Camera: does it follow without lag or circling, and stay out of walls and trees?
+> - Night Watch: hop in a golf cart, drive with Gas/Brake, hop out while still holding Gas (nothing should stay pressed), and tag a runner on foot.
 > - Runner: splash into all three marked waters (any order), then reach any dorm door. Getting caught costs 6 s and returns you to your last splash.
-> - Online: Online → Create room and share the 5-letter code; a friend joins with Join with code on another iPhone. Also try Invite friends. Empty slots are filled by bots marked [BOT].
+> - Online: Online → Create room and share the 5-letter code; a friend joins with Join with code on another iPhone. Also try Invite. Empty slots are filled by bots marked BOT.
 > - Finish rounds both ways (four runners home, and the time running out), then Rematch and Leave.
-> - Tell us about any crash, stuck camera, unresponsive control, or frame drops (and your iPhone model).
+> - Settings → Graphics: Standard vs Battery Saver. Tell us about frame drops, heat or battery drain, with your iPhone model.
+> - Tell us about any crash, stuck camera, unresponsive control or stuck button.
 
 ## Release labels
 

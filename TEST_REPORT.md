@@ -1,15 +1,210 @@
-# Test report: Ultimate Trifecta V1
+# Test report: Ultimate Trifecta
 
-This report records what was actually run, where, and what each result proves. The evidence comes from four sources, each labelled by what it is:
+This report records what was actually run, where, and what each result proves. Version 1.1 (V2) is reported first; the V1 (1.0) report follows unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
 
 | Label | What it is | What it can prove |
 |---|---|---|
 | **Headless sim** | The real `MatchSim`/physics/rules code running headless (Godot 4.7.2, Linux), with scripted inputs or bots | Rules, ordering, validation, routes, bot behaviour |
-| **Loopback net** | Host and up to 7 `NetSession` clients in one process, connected through an in-memory transport with simulated latency, jitter, loss and frozen endpoints; each client runs its own `MatchController` prediction | Protocol, prediction/reconciliation, lag compensation, reconnect, host loss |
-| **Desktop UDP** | Separate Godot processes (1 host + N clients) on one Linux machine over real UDP (ENet), each shaping its outbound traffic with latency, jitter and loss, playing full rounds with automation input | Multi-process networking across full rounds; *not* iPhones, *not* the Game Center transport |
-| **CI iOS** | GitHub Actions `macos-26` runner: Xcode project export, unsigned arm64 device archive, x86_64 Simulator build and run | That the iOS project compiles and links for device, and launches in the Simulator; *not* device performance |
+| **Unit (presentation)** | Headless tests of pure presentation logic: `TouchRouter`, render-state capture/interpolation, camera damping, springs, the dorm stage, profile migration | Touch ownership/cancellation, interpolation and discontinuities, frame-rate independence, in-place lobby updates |
+| **Loopback net** | Host and up to 7 `NetSession` clients in one process over an in-memory transport with simulated latency, jitter and loss | Protocol, prediction/reconciliation, lag compensation, reconnect, host loss |
+| **Desktop UDP** | Separate Godot processes (1 host + N clients) on one Linux machine over real UDP (ENet), each shaping its outbound traffic, playing full rounds with automation input | Multi-process networking across full rounds; *not* iPhones, *not* the Game Center transport |
+| **Desktop render** | The game rendered by Godot's Mobile renderer on Mesa **llvmpipe** (software Vulkan) under Xvfb, at device resolutions, with a fixed frame clock (`--fixed-fps 60`, or Movie Maker) | Layout, framing, art, render-path dimensions (render size vs displayed size, MSAA, scale) and engine counters (draw calls, primitives). **Not** frame rate, frame pacing, GPU cost or device smoothness |
+| **CI iOS** | GitHub Actions `macos-26` runner: Xcode project export, unsigned arm64 device archive, x86_64 Simulator build and run | That the iOS project compiles and links for device and launches in the Simulator; *not* device performance |
 
-**Not done: no physical iPhone or iPad was available, so nothing has been device-tested.** No two-iPhone Game Center session has been run. See "Not yet verified".
+**Not done: no physical iPhone or iPad was available, so nothing in V1 or V2 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V2 section 8.
+
+# V2 (version 1.1)
+
+Code commits `e628130` … `5505024` (followed by documentation-only commits) on `claude/ultimate-trifecta-testflight-oie9r7`. Implementation notes: [docs/V2_NOTES.md](docs/V2_NOTES.md). Media index: [docs/media/v2/README.md](docs/media/v2/README.md).
+
+## V2.1 Automated tests
+
+`tools/run_tests.sh` on the final code (`5505024`): **76 tests, 914 checks, 0 failures** (`docs/test-data/full_test_run.txt`). V1 had 53 tests and 802 checks. CI runs the same suite on every push. All V1 suites still pass unchanged: the rules, simulation, camping, chase-balance, route and network tests did not need edits, which is the regression check that movement speeds, timers, tag reach, routes and win conditions were not changed.
+
+New V2 suites (behaviour, not style constants):
+
+| Suite | Tests | What they exercise |
+|---|---|---|
+| `test_touch_input` | 13 | Walk + camera drag + jump with three fingers at once; a second finger in the stick zone never moves the player (it becomes a camera drag); a finger that slides off its button keeps it; jump then dive within one tick become two queued presses; leaving the cart while holding Gas releases it; pause while moving cancels everything and stale drags are ignored; a fresh touch after an interruption works; radial dead zone with sneak magnitude kept and no diagonal boost; sprint hysteresis (on 0.88, off 0.76); dynamic stick spawn clamped on screen, fixed-stick option; reserved HUD regions (pause, minimap) never start a stick or camera; camera drag is a displacement in unscaled pixels converted to points, never multiplied by frame time; a controller taking over, or focus loss, releases stick, gas and sprint, and touch works again afterwards |
+| `test_motion` | 6 | Render state is interpolated between the last two sim ticks (position and yaw); a respawn after capture is not interpolated (no slide across the map); splash resurfacing, cart entry/exit and a large reconnect jump snap and reset history; camera damping reaches the same value after 1 s at 30 and at 120 fps; the head spring stays finite, bounded by its maximum lag and settles on target for steps from 1/120 s up to a 0.5 s hitch; character acceleration uses the previous frame's velocity (the V1 `prev_vel` bug) |
+| `test_lobby` | 2 | Real lobby traffic over the loopback rig: the dorm stage is updated by player identity through a guest dropping and rejoining (everyone else keeps the same character instance and mark); an outfit change is applied in place; eight players get eight distinct marks, are all inside the camera frustum, and no face is covered on screen by a nearer character's head or cap |
+| `test_profile` | 2 | A V1-era profile keeps uid, coins, level, stats, paid match IDs, wardrobe, equipped outfit and old settings, and new settings get defaults; all 108 outfit × hat × shoe combinations map onto parts of the new character, show the right parts (hoods hide hats, the Night Watch always wears the uniform) and round-trip the 5-byte network encoding |
+
+## V2.2 Render path, measured (G1)
+
+`game/src/dev/diag.gd` (`--diag`, `--diag-report=path`; excluded from iOS exports) records what reaches the screen. Every capture PNG has the snapshot next to it as JSON. Desktop render, llvmpipe; window at phone resolution 2532×1170 (canvas 1558×720, 1.625 px per canvas unit) or 1600×740 for gameplay.
+
+| View | Build | 3D rendered at | SubViewport render → displayed | MSAA | Draw calls | Primitives |
+|---|---|---|---|---|---|---|
+| Home | V1 `654b0a8` | 2532×1170 (root) | none | 2× | 179 | 140 103 |
+| Home | V2 `14475d3` | 2532×1170 (root) | none | 2× | 34 | 40 569 |
+| Wardrobe / character preview | V1 | **400×470 shown at 650×764 (0.615×: a 1.63× upscale)** | stretched `SubViewportContainer` | 2× in root, **off in the preview** | 182 | 153 539 |
+| Wardrobe | V2 `14475d3` | 2532×1170 (root, the character is in the dorm stage) | none | 2× | 48 | 42 326 |
+| Lobby, 1 player | V1 | **990×436 shown at 1609×708 (1.63× upscale)** | stretched `SubViewportContainer` | off in the preview | 54 | 12 712 |
+| Lobby, 1 player | V2 `4c89ed0` | 2532×1170 (root) | none | 2× | 82 | 44 566 |
+| Lobby, 8 players | V1 | 990×436 shown at 1609×708 | stretched `SubViewportContainer` | off in the preview | 291 | 87 982 |
+| Lobby, 8 players | V2 `4c89ed0` | 2532×1170 (root) | none | 2× | 166 | 272 632 |
+| Runner outdoors (play shot 2) | V1 | 1600×740 (root) | none | 2× | 267 | 212 115 |
+| Runner outdoors (play shot 2) | V2 `8e61029` | 1600×740 (root) | none | 2× | 158 | 246 658 |
+| Cart driving | V1 | 1600×740 (root) | none | 2× | 525 | 323 870 |
+| Cart driving | V2 `babee2a` | 1600×740 (root) | none | 2× | 234 | 261 019 |
+
+What this established:
+- **The V1 blur was a sizing bug, measured.** The `Preview3D.new(Vector2i(480, 300))` size in the source was never used: the stretched container sized the SubViewport in canvas units, so on a 3× phone the character preview rendered at 61.5% of its displayed size, upscaled bilinearly and without MSAA. V2 renders every menu character in the root viewport at native resolution. The inline `Preview3D` that remains renders at displayed pixel size and is drawn 1:1.
+- **The main game view was already native** in V1 (root render = window, scale 1.0). Its softness came from content: flat-shaded low-poly characters, washed-out sRGB vertex colours (fixed late in V1) and the canopy dither. V2 changes the content (authored character, materials, water, foliage) rather than the render size.
+- **Draw calls and geometry.** Home and wardrobe dropped from 179 and 182 draw calls to 34 and 48, because the campus fly-over and the stretched preview were replaced by one merged room. The one-player lobby draws more than V1's small preview card (54 → 82). The full lobby draws fewer calls (291 → 166) but more triangles (88k → 273k), because eight detailed characters replace primitives. In gameplay, draw calls fell from 267 to 158 (runner) and from 525 to 234 (cart view, where each rebuilt cart is about 7 calls instead of about 25), with similar geometry: 212k → 247k triangles for the runner view and 324k → 261k for the cart view. Distant characters use the imported LODs. Whether 273k triangles in the full lobby is comfortable on an iPhone 14-class GPU still needs a device measurement.
+- **Frame times in these JSON files are not measurements.** Under `--fixed-fps 60` and Movie Maker the engine advances exactly 16.67 ms per frame regardless of how long llvmpipe takes, so the `frame_ms` percentiles are always 16.67. They are recorded only to show that the capture clock was fixed.
+
+Presets (Settings → Graphics; never switched automatically), measured from the diag JSON of two captures: same seed, same moment (t = 20.03 s), commit `4c89ed0`, window 1600×740 (`docs/media/v2/standard_runner_same_moment.*` and `battery_saver_runner.*`):
+
+| Measured in the diag JSON | Standard | Battery Saver |
+|---|---|---|
+| 3D render size | 1600×740 (100%) | 1280×592 (80%, bilinear; UI stays native) |
+| MSAA | 2× | 2× |
+| Moon shadow | 2 splits to 70 m, 2048 atlas | 1 orthographic split to 30 m, 1024 atlas |
+| Campus meshes casting shadows | 49 of 56 | 0 of 56 (characters and carts still cast) |
+| Glow | on | off |
+| Mesh LOD threshold | 1.0 | 3.0 |
+| Draw calls / primitives in that frame | 175 / 279 798 | 147 / 110 383 |
+| Frame cap | 60 fps on iOS | 30 fps on iOS |
+
+The frame cap is applied only on iOS (`OS.has_feature("mobile")`), so it cannot be observed on desktop. The preset is stored in the profile and applied at startup and whenever it changes.
+
+## V2.3 Visual evidence
+
+Index with platform, commit and settings for every file: [docs/media/v2/README.md](docs/media/v2/README.md). Before/after pairs are lossless PNGs at the size they were rendered; **art evidence** (the character lineup sheets) is kept separate from **gameplay evidence** (the running game). There is no device evidence.
+
+| Before (V1 `654b0a8`) | After (V2) | What changed |
+|---|---|---|
+| `before/home.png` | `after/home.png` | Campus fly-over behind a column of five equally loud buttons, no character → your character standing front three-quarter in a native-resolution dorm common room; one primary action (Play with Friends), Practice as a quiet second, Outfit and Settings as icons |
+| `before/wardrobe.png` | `after/wardrobe.png` (+ `art/closeup.png`) | 1.63×-upscaled preview → the same character rendered natively; close-up shows eyes, brows, nose, mouth, cap, collar, buttons and cuffs |
+| `before/lobby_1p.png`, `before/lobby_8p.png` | `after/lobby_1p.png`, `after/lobby_8p.png` | Static roster beside a blurry preview → party on the stage, compact party list, one primary action; 8 players readable with a 34-character name |
+| `before/runner_outdoors.png` | `after/runner_outdoors.png` | Primitive runner, compass strip, large labels → authored runner, timer/home chip, objective chips with bearing and distance, compact minimap |
+| `before/water_entry.png`, `before/water_recovery.png` | `after/water_entry.png`, `after/water_recovery.png` | Glowing, washed-out surface → blue/teal water with a slim active ring, splash ripple and foam shoreline |
+| `before/cart_drive.png` | `after/cart_drive.png` | Boxy cart half hidden by a canopy → merged-mesh cart with tyres, seat and a steering wheel the driver holds; the canopy in front of your cart is cut away cleanly |
+| `before/foliage_near_camera.png` | `after/foliage_near_camera.png` | A canopy beside the camera drawn with the speckled 4×4 screen-door dither → the same canopy solid, parted away from the camera, no dither |
+| (no tag shot in the V1 capture round) | `after/tag_lunge.png` | On-foot tag lunge |
+| `before/results.png` | `after/results.png`, `after/results_drawer.png` | Full-screen eight-row table and reward list over a flat background → outcome, your round, rewards and one primary action on a sheet beside your character (cheering or shrugging); the full scoreboard is a drawer |
+
+Layout checks at other device aspects (`docs/media/v2/layout/`): iPhone 19.5:9 @3x (2532×1170), iPhone SE 16:9 @2x (1334×750) and iPad 4:3 @2x (2048×1536) for home, Play with Friends, Settings, lobby with 8 players and a long name, results with the scoreboard drawer open, and the match HUD with touch controls. Each layout check was reviewed by eye. Problems found and fixed are in V2.7: the Play with Friends sheet overflowing, How to Play over the room, the scoreboard covering the results sheet, and a face hidden in the full lobby.
+
+**Normal-speed recordings.** All are desktop renders recorded with Movie Maker at 60 fps, so one frame is 1/60 s of game time and the clips play at true game speed. The local player is bot-driven, and each clip says so in a burned-in label:
+- `docs/media/v2/night_watch_v2_desktop.mp4`: V2 `4c89ed0`, 82 s, 1280×720, seed 12. Release, cart entry, driving, hopping out, an on-foot chase (the runner dives away) and a tag at 1:16.
+- `docs/media/v2/runner_v2_desktop.mp4`: V2 `4c89ed0`, 50 s, 1280×720, seed 11. Countdown and head start, running and turns along paths and a road, the splash into Old Quarry Lagoon at 0:44 and the recovery.
+- `docs/media/v2/runner_v1_baseline_desktop.mp4`: V1 `654b0a8`, 35.9 s, seed 11. The recording was stopped by a task time limit, and the HUD edges are cropped by the recorder (1600×740 window, 1280×720 movie).
+
+These clips show animation, camera behaviour and the art in motion. **They cannot show device smoothness**: llvmpipe takes far longer than 16.7 ms per frame, and Movie Maker hides that. There is no recording of real touch input; that needs a device.
+
+## V2.4 Functional checks from the brief
+
+| Check | How | Result |
+|---|---|---|
+| No lost stick ownership, stuck gas/brake, stolen action touches, camera gestures firing actions | `test_touch_input` (13 cases above) | Pass (unit). Feel on glass unverified |
+| Touch ↔ controller switching in play | `test_touch_input::test_controller_takeover_and_focus_loss_release_touch_intent`; prompts switch via `Controls.device_changed` (V1 behaviour kept) | Pass (unit). Needs a real controller on device |
+| No progress loss, duplicate stamps/rewards, invalid captures, changed win conditions, rematch leaks | V1 `test_sim`, `test_rules`, `test_net` suites, unchanged and passing | Pass |
+| Event feedback once (no duplicate splashes, haptics, stamp toasts after reconciliation) | Splash/capture feedback is driven only by host events, deduplicated by event ID (`NetSession`, V1 `test_duplicate_reordered_inputs_and_late_snapshots`); footsteps are generated by the render-time animation phase, never by prediction replay; splash and capture haptics are called only from those event handlers (button-press haptics are local input feedback) | Pass by construction + V1 tests; not separately measured on device |
+| Lobby ready/outfit updates keep animation; all eight readable | `test_lobby`; lobby captures at three aspects | Pass |
+| Safe areas, long names, drawers, controls on small phones and iPad | Layout captures at 19.5:9, 16:9 and 4:3 (above); safe margins come from `DisplayServer.get_display_safe_area()` | Pass on desktop renders at the three aspects after the V2.7 fixes. Names longer than the cell are shortened with an ellipsis (e.g. "Bartholomew Sn…"). Safe-area insets on a Dynamic Island device are unverified (desktop has none) |
+| Standard and Battery Saver persist and match behaviour | Setting saved in the profile and applied at startup (`Save._apply_settings`); Battery Saver diag above | Pass on desktop: the measured settings differ as listed in V2.2. On device, the effect on frame time and battery is unmeasured. |
+| Existing cosmetics and saves still load | `test_profile` | Pass |
+| Routes, timers, speeds, tag reach unchanged | No rule, simulation, bot, network or map-layout code changed (`git diff 654b0a8 -- game/src/config game/src/core game/src/sim game/src/bots game/src/net game/src/map/campus_layout.gd game/src/map/nav_grid.gd` is empty); route and chase tests pass unchanged | Pass |
+
+## V2.5 Networking on V2
+
+V2 changed no simulation, protocol or network code (`git diff 654b0a8 -- game/src/net game/src/sim game/src/core game/src/bots game/src/config` is empty). What changed is presentation: render-time interpolation of the tick states the client already had, and explicit snaps on discontinuities. The network tests therefore check that the presentation work did not disturb prediction, reconciliation or events.
+
+**Loopback net** (`test_net`, from the final test run on `5505024`, `docs/test-data/full_test_run.txt`). RTT is the simulated round trip. "Client RTT est." is the client's own smoothed estimate, which varies between runs: the 300 ms case read 309 ms in an earlier run of the same test.
+
+| Case | Simulated network | Client RTT est. | Snapshots | Correction avg / max | Corrections > 25 cm | Teammate interpolation error | Missing reliable events |
+|---|---|---|---|---|---|---|---|
+| `rtt100` | 100 ms RTT, ±8 ms jitter | 97 ms | 379 | 3 mm / 0.18 m | 0 | 0.03 m | 0 |
+| `rtt150_loss5` | 150 ms RTT, ±15 ms, 5% loss | 148 ms | 361 | 3 mm / 0.23 m | 0 | 0.02 m | 0 |
+| `rtt300_loss10` | 300 ms RTT, ±30 ms, 10% loss | 231 ms | 332 | 4 mm / 0.34 m | 1 | 0.03 m | 0 |
+| 8 humans (host + 7 clients) | 120 ms RTT, 3% loss | n/a | 2038 total | worst client avg 2 mm | n/a | n/a | 0 |
+| Client Night Watch tag | 150 ms RTT | n/a | n/a | n/a | n/a | n/a | Tag **captured** with 9 ticks (150 ms) of lag |
+
+**Desktop UDP soak on V2** (`tools/net_soak.sh`, final code `5505024`): separate Godot processes on one Linux machine over real UDP (ENet). Each process shapes its own outbound traffic, and every human slot is a separate process playing with automation input (`--local-bot`). Reports are in `docs/test-data/v2_net_soak_*`.
+
+**8 humans: host + 7 clients, 60 ms ±10 ms one-way, 3% loss each way (about 150 ms RTT).** One complete 240 s round; the Night Watch won with 0/4 runners home.
+
+| process | round | outcome | home | RTT est. | snapshots | corr. avg | corr. max | fps | packets sent | shaper drops | host starved/skipped |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| client1 | 1 | Night Watch win | 0/4 | 156 ms | 4768 | 1.3 mm | 0.30 m | 60 | 15341 | 454 |  |
+| client2 | 1 | Night Watch win | 0/4 | 159 ms | 4794 | 1.7 mm | 0.54 m | 60 | 15359 | 460 |  |
+| client3 | 1 | Night Watch win | 0/4 | 153 ms | 4778 | 2.0 mm | 0.80 m | 60 | 15337 | 468 |  |
+| client4 | 1 | Night Watch win | 0/4 | 152 ms | 4794 | 1.7 mm | 1.56 m | 60 | 15341 | 501 |  |
+| client5 | 1 | Night Watch win | 0/4 | 153 ms | 4799 | 1.5 mm | 0.67 m | 60 | 15349 | 447 |  |
+| client6 | 1 | Night Watch win | 0/4 | 156 ms | 4774 | 1.3 mm | 0.26 m | 60 | 15351 | 449 |  |
+| client7 | 1 | Night Watch win | 0/4 | 154 ms | 4811 | 0.9 mm | 0.30 m | 60 | 15355 | 483 |  |
+| host | 1 | Night Watch win | 0/4 | - | 0 | host (no prediction) |  | 60 | 38859 | 1137 | 0 starved / 11 skipped ticks (all clients) |
+
+**High latency: host + 3 clients, 130 ms ±25 ms one-way, 8% loss each way (about 300 ms RTT).** One complete round; the Night Watch won with 3/4 home.
+
+| process | round | outcome | home | RTT est. | snapshots | corr. avg | corr. max | fps | packets sent | shaper drops | host starved/skipped |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| client1 | 1 | Night Watch win | 3/4 | 298 ms | 4552 | 2.3 mm | 0.31 m | 60 | 15357 | 1193 |  |
+| client2 | 1 | Night Watch win | 3/4 | 285 ms | 4510 | 2.5 mm | 2.07 m | 60 | 15366 | 1250 |  |
+| client3 | 1 | Night Watch win | 3/4 | 299 ms | 4539 | 4.2 mm | 1.86 m | 60 | 15369 | 1162 |  |
+| host | 1 | Night Watch win | 3/4 | - | 0 | host (no prediction) |  | 60 | 16725 | 1296 | 55 starved / 4 skipped ticks (all clients) |
+
+These match V1 under the same conditions (V1: average corrections of 0.4–2.5 mm, worst single correction 2.15 m at about 300 ms, host starved ≤ 0.3% of ticks), so the presentation changes did not degrade prediction or reconciliation. The round outcomes differ from V1's runs because the client processes' timing differs from run to run. The column meanings are explained under 3b below.
+
+What these runs do **not** cover: iPhones, the Game Center (`GKMatch`) transport, cellular networks, and reconnect on a device. They remain on the device checklist (V2.8).
+
+
+## V2.6 iOS build (CI iOS)
+
+Same lane as V1 (`.github/workflows/ios.yml`, GitHub Actions `macos-26`, Xcode 26.6 (17F113), iOS SDK 26.5). `MARKETING_VERSION` is now **1.1**. Without App Store Connect access, the unsigned build number is the run number, so it is above V1's last build, 1.0 (10).
+
+| Run | Commit | Tests | Unsigned arm64 device archive | Simulator (iPhone Air, iOS 26.2) | Signed archive / upload |
+|---|---|---|---|---|---|
+| #11 | `e628130` (character asset) | ✅ | ✅ | ✅ | ⏸ skipped (no secrets) |
+| #12 | `0539d7c` (V2 UI, controls, motion, world) | ✅ | ✅ `1.1 (12)`, 263 MB `.app` | ✅ boot splash with the V2 character, loading, match role reveal and HUD; no crash report | ⏸ skipped |
+| #13 | `e3d5c85` | ✅ | ✅ | ✅ | ⏸ skipped |
+| #14 | `4c89ed0` | ✅ | ✅ `1.1 (14)`, arm64, 263 MB, `com.apple.developer.game-center`, `PrivacyInfo.xcprivacy` | ✅ same sequence (`docs/media/v2/ios_simulator_ci_run14.jpg`); cold launch still running at the check; "no crash report" | ⏸ skipped |
+| final | `5505024` + docs | the run for the final commit is recorded in TESTFLIGHT_RELEASE.md ("Current release state") | | | |
+
+As in V1, the Simulator runs the x86_64 slice under Rosetta with an OpenGL ES fallback and produces roughly one frame every several seconds. These runs show that the build installs, launches and reaches a match. They say nothing about load time or frame rate on an iPhone.
+
+
+## V2.7 Fixed during V2 validation
+
+Found by reviewing captures and tests, then fixed:
+- **Steering sign.** The steer-left/right clips, the wheel rotation and the sim's steering sign disagreed, so the driver could turn the wheel against the cart. One convention now: positive steer is a right turn, the wheel rotates −50° × steer, and the clips are mapped to match (`art/cart.png`).
+- **Arm raises had the wrong sign** in the clip authoring convention, so raise poses (jump, fall, splash, celebrate, wave, cheer and others) moved the arms the wrong way. Fixed in `tools/character/anims.py`, over-rotation reduced, and re-baked (`art/posesheet.png`).
+- **Animation loop seam.** Clips were 1.033 s instead of 1.0 s because keys started at frame 1, which made locomotion hitch at the loop. Keys now start at frame 0.
+- **Foot IK out of reach.** Locomotion foot targets were further than the legs could reach. Stride sweep and stance timing were reduced and the pelvis drop raised; playback rate still comes from the clip's metres per cycle, so feet do not slide.
+- **Inside-out and misrotated geometry.** The cart steering wheel was mirrored with a negative scale and rendered inside out; it is now wound correctly. The new dorm doors were placed with a wrong yaw formula; corrected.
+- **Lobby framing.** On a square or 4:3 viewport only 7 of 8 characters were in view (`test_lobby` failed). The lobby camera now frames the group in the space left of the party panel for any aspect.
+- **A hidden face in the full lobby.** The 2532×1170 eight-player capture showed the back-centre player directly behind the local player, with their face covered by the local player's nightcap. The lobby camera is now 3.1 m up instead of 2.5 m, and the back mark is 0.2 m further back. `test_lobby` now checks on screen that no face is behind a nearer head or cap; on the old layout it fails with "p7 behind p0".
+- **Scoreboard over the results sheet.** In the 16:9 and 4:3 captures, the scoreboard drawer opened at the left edge at its natural width and covered "Your round" and Play again. It is now a centred sheet over a dimmed backdrop, sized to the screen, with its own Close button; Back closes it first. Also fixed in the lobby: "1 bots" now reads "1 bot".
+- **Name labels over the HUD.** A bot right next to the camera had its fixed-size name label float up over the timer (water-entry capture). Labels are now hidden within 3.5 m of the camera.
+- **A canopy hid the player's own cart.** With the dither gone, the V2 cart capture showed a tree fully covering the cart, because the camera correctly ignores canopies and the parting only reaches 2.6 m. Canopy between the camera and the followed character is now cut away in a circle around it, with a clean edge and in the camera pass only (`after/cart_drive.png`, same moment as `before/cart_drive.png`).
+- **Menu layout.** The wardrobe sheet slid with its container on entry (transitions are now fade + scale only); lobby labels overlapped and "(you)" was truncated; icon buttons stretched; the Play with Friends sheet ran off the bottom when the Game Center card was shown (now scrolls, inert controls hidden); How to Play drew text straight over the 3D room (now on a sheet with "Got it" in the header).
+
+## V2.8 Not verified (exact remaining device checks)
+
+Nothing below can be established on this machine. Each needs a signed build on hardware.
+- [ ] **Frame rate and pacing.** A 15–20 minute session (several rounds) on an iPhone 14-class device at Standard, with Xcode Instruments (Game Performance / Metal System Trace): frame-time distribution, missed presentation intervals, hitches, memory growth, thermal state. Repeat for Battery Saver on an A12/A13 device. Profile the host with the full roster and bots, and a client, separating CPU (sim + bots) from GPU.
+- [ ] **Touch on glass.** Dynamic and fixed stick feel, the 0.88/0.76 edge-sprint thresholds, camera drag speed (0.0065 rad per point), three-finger play, button sizes at Small/Medium/Large on a small iPhone, mirrored layout, haptics.
+- [ ] **Safe areas** on Dynamic Island iPhones and iPad (insets are zero on desktop).
+- [ ] **4× MSAA.** Standard uses 2×; whether 4× fits the frame budget needs GPU measurements on device.
+- [ ] **Game Center on two or more iPhones** (unchanged from V1): code room, friend invite, full round with cart, chase, tag, splash and finish, rematch, host leaving.
+- [ ] **Controllers on device**, connecting and disconnecting mid-match.
+- [ ] **TestFlight install** of a signed build (blocked on App Store Connect access; see TESTFLIGHT_RELEASE.md).
+
+## V2.9 Known limitations
+
+- **iOS share sheet.** The room code has a Copy button; a native share sheet is not implemented.
+- **World polish is partial.** Dorm doors (with trim, transom and step), benches, lamps, tree canopies, carts and water were refined. Window frames, roof edges, curbs and path edges, the fountain, the pool edge and the cart shed are unchanged from V1.
+- **Canopy see-through inside a large tree.** When the follow camera ends up inside a big canopy (Night Watch movie, about 0:30), the see-through shows as a round window around the cart. The player stays visible, but it reads like a porthole. A softer treatment needs tuning on a device.
+- **Overlapping distant labels.** Two characters at similar distance can still have overlapping name labels; there is no label decluttering.
+- **Character LODs** are Godot's automatic import LODs and have not been checked on device.
+- All V1 limitations below still apply (host trust, code-room timing, desktop LAN for development only, lighting needing a real-screen check, plugin export log noise, A12 minimum).
+
+# V1 (version 1.0), kept as the baseline
+
+The sections below are the V1 report as written for commit `b2d4844` / `f1c7579`. Where V2 changed behaviour, the V2 sections above take precedence.
 
 ## 1. Automated tests
 

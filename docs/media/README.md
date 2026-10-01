@@ -1,5 +1,9 @@
 # Media evidence
 
+**Version 1.1 (V2):** before/after pairs, art sheets, device-aspect layout checks and normal-speed recordings are in [v2/](v2/README.md).
+
+The files below are the **V1 (1.0)** evidence, kept as the baseline.
+
 Every file below is a capture of the running game; none of it is concept art or rendered footage. Each one is labelled with the platform and build it came from. The desktop clips also carry that label burned into the bottom of the frame.
 
 | File | Platform / build | What it shows |

@@ -41,7 +41,7 @@ Night Watch players hunt them on foot and in golf carts.
   - The camera responds immediately to manual look, recentres gradually without circling, and has more robust collision.
 - **Look.**
   - Blue and teal water: only active targets get a slim ring.
-  - Trees part around the camera instead of showing a screen-door dither.
+  - Trees part around the camera, and canopy in front of your character is cut away cleanly, instead of a screen-door dither.
   - Rebuilt golf carts and refined campus props.
   - A calmer HUD: a timer chip, objective chips with direction and distance, and a "Head back to the dorm" state.
   - Results show your contribution first.

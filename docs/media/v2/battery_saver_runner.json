@@ -1,0 +1,61 @@
+{
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "campus_meshes_casting_shadows": "0 of 56",
+  "canvas_to_px": 1.028,
+  "canvas_units": [
+    1556.0,
+    720.0
+  ],
+  "draw_calls": 147.0,
+  "fps": 4.0,
+  "frame_ms": {
+    "max": 16.67,
+    "n": 1202,
+    "over_100ms": 0,
+    "over_1_5x_target": 0,
+    "p50": 16.67,
+    "p95": 16.67,
+    "p99": 16.67
+  },
+  "glow": false,
+  "label": "V2 4c89ed0 linux llvmpipe 1600x740; Battery Saver preset; local player bot-driven (--local-bot)",
+  "max_fps": 0,
+  "mesh_lod_threshold": 3.0,
+  "msaa_3d": 1,
+  "objects": 244.0,
+  "primitives": 110383.0,
+  "quality_preset": "Battery Saver",
+  "render_3d_px": [
+    1280,
+    592
+  ],
+  "renderer": "mobile / vulkan",
+  "root_render_px": [
+    1600,
+    740
+  ],
+  "scaling_3d_mode": 0,
+  "scaling_3d_scale": 0.800000011920929,
+  "screen_dpi": 96,
+  "screen_px": [
+    1700,
+    900
+  ],
+  "screen_scale": 1.0,
+  "screen_space_aa": 0,
+  "shadow_atlas": 1024,
+  "shot": "runner_play_1",
+  "static_mem_mb": 149.6,
+  "subviewports": [],
+  "sun_shadow": {
+    "max_distance": 30.0,
+    "mode": 0
+  },
+  "t": 20.03,
+  "use_taa": false,
+  "video_mem_mb": 117.8,
+  "window_px": [
+    1600,
+    740
+  ]
+}

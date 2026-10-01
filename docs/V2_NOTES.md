@@ -118,6 +118,7 @@ These are short notes for whoever works on the V2 changes next. Evidence and tes
 **Party lobby.**
 - Eight fixed party cells are updated in place.
 - Stage characters are keyed by player uid. Arrivals hop in once and leavers are removed; outfit changes apply in place with no rebuild.
+- Eight fixed marks in staggered rows, with the local player front and centre. The lobby camera stands 3.1 m high, so faces in the back row show over the front row's caps. `test_lobby` checks on screen that every face is visible.
 - Bot fill is explained once, under Start ("You + 7 bots").
 - Mute and Remove are in a per-player popover.
 
@@ -143,5 +144,6 @@ These are short notes for whoever works on the V2 changes next. Evidence and tes
 - Objective chips at the top left, each with a bearing arrow and distance. They collapse to "Head back to the dorm" once all three are splashed; the compass strip and banner are gone.
 - Compact minimap and pause icon at the top right.
 - Event feed limited to 3 lines for 4 s.
+- Player name labels fade out beyond 30 m, are hidden within 3.5 m of the camera, are depth-tested (never seen through walls), and keep the "BOT" tag.
 
 **Results.** The order is outcome, then your contribution, then rewards, with one primary action (Rematch or Play again) and the scoreboard in a drawer. Your own character is on the stage, celebrating or shrugging.

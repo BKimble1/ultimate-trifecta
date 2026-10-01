@@ -1,0 +1,61 @@
+{
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "campus_meshes_casting_shadows": "49 of 56",
+  "canvas_to_px": 1.0,
+  "canvas_units": [
+    1280.0,
+    720.0
+  ],
+  "draw_calls": 106.0,
+  "fps": 3.0,
+  "frame_ms": {
+    "max": 16.67,
+    "n": 4569,
+    "over_100ms": 0,
+    "over_1_5x_target": 0,
+    "p50": 16.67,
+    "p95": 16.67,
+    "p99": 16.67
+  },
+  "glow": true,
+  "label": "V2 4c89ed0 linux llvmpipe 1280x720; Standard preset; local player bot-driven (--local-bot); Movie Maker",
+  "max_fps": 0,
+  "mesh_lod_threshold": 1.0,
+  "msaa_3d": 1,
+  "objects": 317.0,
+  "primitives": 147992.0,
+  "quality_preset": "Standard",
+  "render_3d_px": [
+    1280,
+    720
+  ],
+  "renderer": "mobile / vulkan",
+  "root_render_px": [
+    1280,
+    720
+  ],
+  "scaling_3d_mode": 0,
+  "scaling_3d_scale": 1.0,
+  "screen_dpi": 95,
+  "screen_px": [
+    1400,
+    800
+  ],
+  "screen_scale": 1.0,
+  "screen_space_aa": 0,
+  "shadow_atlas": 2048,
+  "shot": "tag_lunge",
+  "static_mem_mb": 145.1,
+  "subviewports": [],
+  "sun_shadow": {
+    "max_distance": 70.0,
+    "mode": 1
+  },
+  "t": 76.15,
+  "use_taa": false,
+  "video_mem_mb": 109.2,
+  "window_px": [
+    1280,
+    720
+  ]
+}
