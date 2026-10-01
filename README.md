@@ -78,7 +78,20 @@ Development flags go after `--`:
 tools/gd.sh --path game -- --autoplay=runner --local-bot          # bot-driven practice round
 tools/gd.sh --path game -- --autoplay=tutorial --shots=/tmp/s     # screenshots every 4 s
 tools/net_soak.sh 7 60 10 0.03 1                                  # 1 host + 7 UDP client processes with lag/jitter/loss
+python3 tools/soak_summary.py docs/test-data/net_soak_7c_60ms_0.03 # soak reports as a table
 ```
+
+Other automation flags:
+
+| Flag | Effect |
+|---|---|
+| `--no-gamecenter` | Skips the Game Center sign-in sheet. Used for Simulator runs. |
+| `--time-scale=N` | Time-lapse captures. |
+| `--seed=N` | Fixes the match seed. |
+| `--quit-after=S` | Quits after S seconds. |
+| `--report=path` | Writes per-round JSON stats and prints status lines every 5 s. |
+
+Release builds only act on these flags when they are passed on the command line, which a TestFlight install never does.
 
 ### iOS build
 

@@ -30,6 +30,9 @@ var patrol_stops: Array = []
 var stop_i := 0
 var linger_t := 0.0
 var stuck_t := 0.0
+var stuck_count := 0
+var unstick_t := 0.0
+var unstick_dir := Vector2.ZERO
 var reverse_t := 0.0
 var last_pos := Vector3.ZERO
 var pref_cart := -1
@@ -144,6 +147,7 @@ func _runner(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 			cmd.pressed |= TC.BTN_JUMP
 		return
 	_follow(sim, p, cmd, dt, false)
+	_separate(sim, p, cmd)
 	# pacing: sprint on long straights in bursts, keep a reserve for chases
 	var remaining_d := p.pos2().distance_to(goal)
 	if p.sprint > 0.75 and remaining_d > 25.0:
@@ -151,6 +155,27 @@ func _runner(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 	sprint_hold = maxf(0.0, sprint_hold - dt)
 	if sprint_hold > 0.0 or (goal_kind == "home" and remaining_d < 30.0):
 		cmd.held |= TC.BTN_SPRINT
+
+
+## Runners pass through each other, so without this bots sharing a nav path
+## run stacked in single file. Steer gently away from teammates that are close.
+func _separate(sim: MatchSim, p: SimPlayer, cmd: InputCmd) -> void:
+	if cmd.move.length() < 0.3:
+		return
+	var push := Vector2.ZERO
+	var pp := p.pos2()
+	for q in sim.players:
+		if q == p or not q.is_runner() or not q.is_in_play():
+			continue
+		var rel := pp - q.pos2()
+		var d := rel.length()
+		if d < 1.6:
+			if d < 0.05:
+				rel = Vector2(cmd.move.y, -cmd.move.x) * (1.0 if p.id > q.id else -1.0)
+				d = 0.05
+			push += rel.normalized() * (1.0 - d / 1.6)
+	if push != Vector2.ZERO:
+		cmd.move = (cmd.move + push * 0.7).normalized()
 
 
 func _plan_water(sim: MatchSim, p: SimPlayer, remaining: Array) -> void:
@@ -171,7 +196,9 @@ func _plan_water(sim: MatchSim, p: SimPlayer, remaining: Array) -> void:
 			cost += at.distance_to(c)
 			at = c
 		cost += at.distance_to(dorm)
-		cost += rng.randf_range(0.0, 15.0)  # personal route preference
+		# personal route preference: stable per bot and order (no flip-flopping
+		# between replans), large enough that bots don't all pick one order
+		cost += float(absi(hash([slot, sim.seed_v, perm])) % 1000) * 0.045
 		if cost < best_cost:
 			best_cost = cost
 			best_first = int(perm[0])
@@ -479,21 +506,39 @@ func _follow(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float, _cart: bool)
 			cmd.move = d.normalized()
 		return
 	var pp := p.pos2()
+	if unstick_t > 0.0:
+		# backing off a corner we kept running into, then re-path from there
+		unstick_t -= dt
+		cmd.move = unstick_dir
+		last_pos = p.pos()
+		if unstick_t <= 0.0:
+			replan_t = 0.0
+		return
 	while path_i < path.size() - 1 and pp.distance_to(path[path_i]) < 1.1:
 		path_i += 1
 	var wp := path[mini(path_i, path.size() - 1)]
 	var dir := wp - pp
 	if dir.length() > 0.05:
 		cmd.move = dir.normalized()
-	# stuck detection -> replan + hop
-	if p.pos().distance_to(last_pos) < 0.02 and cmd.move.length() > 0.5:
+	# stuck detection (horizontal progress only: hopping in place is still stuck)
+	var moved := Vector2(p.pos().x - last_pos.x, p.pos().z - last_pos.z).length()
+	if moved < 0.02 and cmd.move.length() > 0.5:
 		stuck_t += dt
 		if stuck_t > 0.7:
-			cmd.pressed |= TC.BTN_JUMP
 			stuck_t = 0.0
 			replan_t = 0.0
-	else:
+			stuck_count += 1
+			if stuck_count >= 2:
+				# hop didn't free us: step back and to one side, then try again
+				var side := 1.0 if rng.randf() < 0.5 else -1.0
+				unstick_dir = (Vector2(-cmd.move.y, cmd.move.x) * side - cmd.move * 0.7).normalized()
+				unstick_t = 0.6
+				stuck_count = 0
+			else:
+				cmd.pressed |= TC.BTN_JUMP
+	elif moved > 0.04:
 		stuck_t = 0.0
+		stuck_count = 0
 	last_pos = p.pos()
 
 

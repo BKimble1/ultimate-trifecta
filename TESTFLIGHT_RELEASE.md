@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | App name | Ultimate Trifecta |
-| Bundle ID | `com.idlery.ultimatetrifecta` (new, and used by no other app in this repo) |
+| Bundle ID | `com.idlery.ultimatetrifecta`: the candidate ID from the brief. Whether it is already registered on your team could not be checked from here. |
 | Marketing version | `1.0` (`MARKETING_VERSION` in `.github/workflows/ios.yml`) |
 | Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`); without it, the GitHub run number. It can be overridden with the `build_number` workflow input. |
 | Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape |
@@ -25,7 +25,7 @@
 
 The blocker is that this repository has no Apple signing access configured: no App Store Connect API key, team ID or certificates. This environment cannot reach `api.appstoreconnect.apple.com`, so the app record, existing builds and team could not be checked from here.
 
-The CI log says so explicitly: `No App Store Connect signing secrets configured: building unsigned`.
+In every CI run so far the signing check found no secrets, so the signed archive and upload steps were skipped.
 
 ## The owner action that unblocks TestFlight
 
