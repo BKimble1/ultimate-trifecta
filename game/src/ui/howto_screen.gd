@@ -2,24 +2,37 @@ class_name HowToScreen
 extends Screen
 
 
+## Rules and controls on one readable sheet over the dorm; "Got it" sits in
+## the header so it is reachable without scrolling.
 func build() -> void:
-	header("How to Play")
+	if App.stage:
+		App.stage.set_mode("home")
+	var h := header("How to Play")
+	h.add_child(UIKit.spacer_h())
+	var done := UIKit.primary("Got it", Vector2(220, maxf(72.0, UIKit.touch_min())), 26)
+	done.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	done.pressed.connect(func() -> void: App.goto_title())
+	h.add_child(done)
+	focus_first(done)
 	var sc := ScrollContainer.new()
 	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	sc.follow_focus = true
 	content.add_child(sc)
+	var body := UIKit.panel(Color(UIKit.SLATE, 0.96), UIKit.R_PANEL, 26)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sc.add_child(body)
 	var v := UIKit.vbox(16)
-	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sc.add_child(v)
+	body.add_child(v)
 	var cards := UIKit.hbox(20)
 	for c in [["RUNNERS (6)", TC.RUNNER_CARD, UIKit.RUNNER], ["NIGHT WATCH (2)", TC.PATROL_CARD, UIKit.PATROL]]:
-		var p := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 20)
+		var p := UIKit.panel(Color(UIKit.NAVY, 0.6), UIKit.R_SMALL, 18)
 		p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var pv := UIKit.vbox(8)
 		pv.add_child(UIKit.label(String(c[0]), 26, c[2], true))
 		var l := UIKit.label(String(c[1]), 21)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		l.custom_minimum_size = Vector2(420, 0)
+		l.custom_minimum_size = Vector2(360, 0)
 		pv.add_child(l)
 		p.add_child(pv)
 		cards.add_child(p)
@@ -54,10 +67,7 @@ func build() -> void:
 		for cell in row:
 			var gl := UIKit.label(String(cell), 18, UIKit.IVORY if row[0] != "Action" else UIKit.TEAL, row[0] == "Action")
 			gl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			gl.custom_minimum_size = Vector2(220, 0)
+			gl.custom_minimum_size = Vector2(180, 0)
+			gl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			grid.add_child(gl)
 	v.add_child(grid)
-	var done := UIKit.primary("Got it", Vector2(300, 88), 28)
-	done.pressed.connect(func() -> void: App.goto_title())
-	v.add_child(done)
-	focus_first(done)

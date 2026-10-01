@@ -27,8 +27,15 @@ func build() -> void:
 	var sheet := UIKit.panel(Color(UIKit.SLATE, 0.96), UIKit.R_PANEL, 28)
 	sheet.custom_minimum_size = Vector2(560, 0)
 	row.add_child(sheet)
+	# the sheet scrolls rather than running off the bottom (status card on a
+	# small phone, desktop LAN row)
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sc.follow_focus = true
+	sheet.add_child(sc)
 	var v := UIKit.vbox(18)
-	sheet.add_child(v)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sc.add_child(v)
 	v.add_child(UIKit.heading("Play with Friends", 38))
 	var ready := Social.online_ready()
 	if not ready:
@@ -41,6 +48,7 @@ func build() -> void:
 	var hint := UIKit.label("You get a 5-letter code to share. You can invite Game Center friends from the room.", 19, UIKit.IVORY_MUTED)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size = Vector2(500, 0)
+	hint.visible = ready   # the status card explains things instead
 	v.add_child(hint)
 	v.add_child(UIKit.label("Join with a code", 24, UIKit.IVORY, true))
 	var jrow := UIKit.hbox(12)
@@ -64,6 +72,7 @@ func build() -> void:
 	v.add_child(jrow)
 	var fr := UIKit.quiet("Show Game Center friends", Vector2(500, 72), 22)
 	fr.disabled = not ready
+	fr.visible = ready
 	fr.pressed.connect(func() -> void:
 		friends_status.visible = true
 		friends_status.text = "Loading…"
