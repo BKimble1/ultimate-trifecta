@@ -15,7 +15,7 @@ This report records what was actually run, where, and what each result proves. T
 
 Run them with `tools/run_tests.sh`. CI runs the same suite on every push (job "Rules, simulation and network tests").
 
-The latest full local run, on the final gameplay commit: **53 tests, 802 checks, 0 failures** (`docs/test-data/full_test_run.txt`). The CI test job runs the same suite on every push.
+The latest full local run, on the final commit `b2d4844`: **53 tests, 802 checks, 0 failures** (`docs/test-data/full_test_run.txt`). The CI test job runs the same suite on every push.
 
 | Suite | Tests | What they exercise (behaviour, not constants) |
 |---|---|---|
@@ -60,7 +60,7 @@ The in-process network tests produce `NETSTAT` lines. Raw output: `docs/test-dat
 
 `tools/net_soak.sh` starts one host and N client processes, each with its own profile, outbound latency/jitter/loss shaping, and automation input. Every human slot is a separate process; no bots fill human slots. The rows below are copied from the JSON reports in `docs/test-data/`.
 
-**Final game code (`d89a78a`): host + 3 clients, 60 ms ±10 ms one-way, 3% loss each way (≈150 ms RTT).** `docs/test-data/net_soak_3c_60ms_0.03/`. A complete round; runners won 4/4.
+**Gameplay code `d89a78a` (the last gameplay commit; the final commit `b2d4844` only defers the title background): host + 3 clients, 60 ms ±10 ms one-way, 3% loss each way (≈150 ms RTT).** `docs/test-data/net_soak_3c_60ms_0.03/`. A complete round; runners won 4/4.
 
 | process | round | outcome | home | RTT est. | snapshots | corr. avg | corr. max | fps | packets sent | shaper drops | host starved/skipped |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -115,8 +115,8 @@ The 7- and 3-client soaks ran on commit `23004fe`, before the bot and chase-tuni
 | Godot 4.7.2 export to Xcode project (bundle `com.idlery.ultimatetrifecta`, Game Center entitlement) | ✅ |
 | `xcodebuild archive` for `generic/platform=iOS`, `CODE_SIGNING_ALLOWED=NO` (arm64 compile + link) | ✅ **project compiled** (unsigned) |
 | Simulator build (x86_64; Godot 4.7.2's simulator slice is x86_64 only) | ✅ |
-| Simulator launch (runs 3–9, iPhone Air simulator, iOS 26.2 runtime) | ✅ **Installs, launches and reaches a match** (runs 4, 5, 8 and 9; runs 6 and 7 used a shorter window and were still loading when it closed).<br>Run 9 is on the final game code (`docs/media/ios_simulator_ci_run9.jpg`): boot splash, about 3 minutes of loading, then the role-reveal card, 4:00 HUD, target list, minimap and [BOT] players, still rendering 8 minutes after launch. The Simulator here produces roughly one frame every 30 s, so game time advances very slowly and the round never got past the reveal.<br>**Crash reports:** run 8 produced one `UltimateTrifecta-…-111659.ips` report. CI printed only its file name, and the cold-launch app was no longer in the foreground at 45 s in that run, so the report most likely belongs to that cold launch. Its contents were not captured, so the cause is **unknown**. CI now summarises any report (`tools/ips_summary.py`). Runs 3–7 and 9 produced none, and in run 9 the cold launch was still alive at 45 s.<br>A cold launch never reached the title screen within the 45 s window. |
-| Archive facts (runs 4–6) | Xcode 26.6 (17F113), iphoneos SDK 26.5, `arm64` binary, `.app` 261 MB uncompressed. Runs 5–6 have no purpose-string warnings.<br>Info.plist: `CFBundleIdentifier com.idlery.ultimatetrifecta`, `1.0 (6)` in run 6, `MinimumOSVersion 17.0`, `UIDeviceFamily 1,2`, landscape left/right, `ITSAppUsesNonExemptEncryption false`.<br>Entitlement: `com.apple.developer.game-center`.<br>Frameworks: `GodotApplePluginsGameCenter`, `SwiftGodotRuntime`. `PrivacyInfo.xcprivacy` declares file-timestamp, boot-time and disk-space API reasons. |
+| Simulator launch (runs 3–10, iPhone Air simulator, iOS 26.2 runtime) | ✅ **Installs, launches and reaches a match** (runs 4, 5, 8, 9 and 10; runs 6 and 7 used a shorter window and were still loading when it closed).<br>Run 10 is on the final code (`docs/media/ios_simulator_ci_run10.jpg`): boot splash, about 5 minutes of loading, then the role-reveal card, 4:00 HUD, target list, minimap and [BOT] players, still rendering at the end of the window. The Simulator here produces roughly one frame every 30 s, so game time advances very slowly and the round never got past the reveal.<br>**Crash reports:** run 8 produced one `UltimateTrifecta-…-111659.ips` report. CI printed only its file name, and the cold-launch app was no longer in the foreground at 45 s in that run, so the report most likely belongs to that cold launch. Its contents were not captured, so the cause is **unknown**. CI now summarises any report (`tools/ips_summary.py`). Runs 3–7, 9 and 10 produced none, and in runs 9 and 10 the cold launch was still alive at 45 s.<br>A cold launch never reached the title screen within the 45 s window. |
+| Archive facts (runs 4–10) | Xcode 26.6 (17F113), iphoneos SDK 26.5, `arm64` binary, `.app` 261 MB uncompressed. Runs 5–6 have no purpose-string warnings.<br>Info.plist: `CFBundleIdentifier com.idlery.ultimatetrifecta`, `1.0 (10)` in run 10 (final code), `MinimumOSVersion 17.0`, `UIDeviceFamily 1,2`, landscape left/right, `ITSAppUsesNonExemptEncryption false`.<br>Entitlement: `com.apple.developer.game-center`.<br>Frameworks: `GodotApplePluginsGameCenter`, `SwiftGodotRuntime`. `PrivacyInfo.xcprivacy` declares file-timestamp, boot-time and disk-space API reasons. |
 | Signed archive / upload | ⏸ not run: no App Store Connect credentials (see TESTFLIGHT_RELEASE.md) |
 
 Godot 4.7.2's simulator slice is x86_64, so the app runs under Rosetta on a virtualised Apple-silicon runner. It also falls back to an OpenGL ES 3.0 context there (the console says "Setting up an OpenGL ES 3.0 context"), while devices use Metal.
@@ -176,7 +176,7 @@ Index: `docs/media/README.md`. Every file is labelled by platform and commit.
 
   The local player in each is bot-driven automation (`--local-bot`), and each clip says so.
 - **Stills:** the title screen, the six waters and other campus locations, and key moments from the clips.
-- **iOS Simulator contact sheet** from CI run 9 (see section 4).
+- **iOS Simulator contact sheet** from CI run 10, on the final code (see section 4).
 - **Visual review findings.** Reviewing these captures found the canopy-camera, bot-stacking and foot-chase problems listed under "Fixed during testing", and the time-scale capture bug. All are fixed; the clips were re-recorded afterwards.
 - **No physical-device footage.**
 
