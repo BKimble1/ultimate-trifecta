@@ -4,11 +4,13 @@ extends RefCounted
 
 const CHUNK := Vector2(64.0, 60.0)
 const WORLD_SHADER := preload("res://assets/shaders/world_vc.gdshader")
+const FOLIAGE_SHADER := preload("res://assets/shaders/world_foliage.gdshader")
 const WATER_SHADER := preload("res://assets/shaders/water.gdshader")
 const GLOW_SHADER := preload("res://assets/shaders/glow_add.gdshader")
 
 var L: CampusLayout
 var _chunks: Dictionary = {}
+var _foliage: Dictionary = {}   # tree canopies: separate chunks with a near-camera fade
 var _glow_st: SurfaceTool
 var _glow_count := 0
 
@@ -212,15 +214,17 @@ func _ramp(body: CollisionObject3D, from: Vector3, to: Vector3, w: float) -> voi
 # ---------------------------------------------------------------------------
 # Visuals
 # ---------------------------------------------------------------------------
-func _kit_at(x: float, z: float) -> MeshKit:
+func _kit_at(x: float, z: float, foliage: bool = false) -> MeshKit:
 	var key := Vector2i(int(floor((x - CampusLayout.BOUNDS.position.x) / CHUNK.x)), int(floor((z - CampusLayout.BOUNDS.position.y) / CHUNK.y)))
-	if not _chunks.has(key):
-		_chunks[key] = MeshKit.new()
-	return _chunks[key]
+	var store := _foliage if foliage else _chunks
+	if not store.has(key):
+		store[key] = MeshKit.new()
+	return store[key]
 
 
 func build_visuals(root: Node3D, quality: int = 1) -> Dictionary:
 	_chunks.clear()
+	_foliage.clear()
 	_glow_st = SurfaceTool.new()
 	_glow_st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_glow_count = 0
@@ -274,17 +278,21 @@ func build_visuals(root: Node3D, quality: int = 1) -> Dictionary:
 	container.name = "CampusVisuals"
 	root.add_child(container)
 	var water_nodes := _waters(container)
-	for key in _chunks:
-		var mk: MeshKit = _chunks[key]
-		var mesh := mk.commit()
-		if mesh == null:
-			continue
-		var mi := MeshInstance3D.new()
-		mi.mesh = mesh
-		mi.material_override = mat
-		mi.name = "Chunk_%d_%d" % [key.x, key.y]
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if quality >= 1 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		container.add_child(mi)
+	var fmat := ShaderMaterial.new()
+	fmat.shader = FOLIAGE_SHADER
+	for pass_i in 2:
+		var store := _chunks if pass_i == 0 else _foliage
+		for key in store:
+			var mk: MeshKit = store[key]
+			var mesh := mk.commit()
+			if mesh == null:
+				continue
+			var mi := MeshInstance3D.new()
+			mi.mesh = mesh
+			mi.material_override = mat if pass_i == 0 else fmat
+			mi.name = ("Chunk_%d_%d" if pass_i == 0 else "Foliage_%d_%d") % [key.x, key.y]
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if quality >= 1 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			container.add_child(mi)
 	if _glow_count > 0:
 		var gm := ShaderMaterial.new()
 		gm.shader = GLOW_SHADER
@@ -577,10 +585,11 @@ func _bollards(s: Dictionary) -> void:
 
 func _tree(t: Dictionary) -> void:
 	var p: Vector2 = t["pos"]
-	var k := _kit_at(p.x, p.y)
+	var trunk := _kit_at(p.x, p.y)
+	var k := _kit_at(p.x, p.y, true)
 	var h: float = t["h"]
 	var tint: float = t["tint"]
-	k.cylinder(Vector3(p.x, 0, p.y), 0.32, h * 0.45, Color(0.38, 0.27, 0.20), 6, 0.0, false, 0.22)
+	trunk.cylinder(Vector3(p.x, 0, p.y), 0.32, h * 0.45, Color(0.38, 0.27, 0.20), 6, 0.0, false, 0.22)
 	if t["kind"] == "pine":
 		var g := Color(0.12, 0.34, 0.26).lerp(Color(0.16, 0.42, 0.30), tint)
 		for i in 3:
