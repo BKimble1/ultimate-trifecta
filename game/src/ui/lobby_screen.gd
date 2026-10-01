@@ -189,7 +189,8 @@ func _refresh() -> void:
 	if hosting:
 		primary_btn.text = "Start"
 		primary_btn.disabled = not session.can_start()
-		sub_lbl.text = ("You + %d bots" % bots if humans == 1 else "%d players + %d bots" % [humans, bots]) if bots > 0 else "Full party"
+		var bot_txt := "1 bot" if bots == 1 else "%d bots" % bots
+		sub_lbl.text = ("You + " + bot_txt if humans == 1 else "%d players + %s" % [humans, bot_txt]) if bots > 0 else "Full party"
 		if humans == 1:
 			status_lbl.text = "Share the code, or start now — bots fill empty spots."
 		elif not_ready > 0:

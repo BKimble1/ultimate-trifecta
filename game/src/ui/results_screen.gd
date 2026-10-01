@@ -123,39 +123,67 @@ func _contribution(r: Dictionary) -> String:
 	return "Caught %d different runner%s" % [n, "" if n == 1 else "s"]
 
 
+## The full scoreboard: a centred sheet over a dimmed backdrop (tap outside
+## or Close to dismiss), sized to the screen so it never covers the results
+## sheet partially on narrower aspects (16:9 phones, 4:3 iPad).
 func _toggle_board() -> void:
 	if _board and is_instance_valid(_board):
 		_board.queue_free()
 		_board = null
 		return
-	_board = UIKit.panel(Color(UIKit.SLATE_HI, 0.98), UIKit.R_PANEL, 20)
+	var vs := get_viewport().get_visible_rect().size
+	_board = PanelContainer.new()
+	_board.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.NAVY, 0.72), 0, 0, Color.WHITE, 0))
+	_board.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_board.mouse_filter = Control.MOUSE_FILTER_STOP
+	_board.gui_input.connect(func(ev: InputEvent) -> void:
+		if (ev is InputEventMouseButton and ev.pressed) or (ev is InputEventScreenTouch and ev.pressed):
+			_toggle_board())
+	var center := CenterContainer.new()
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_board.add_child(center)
+	var sheet := UIKit.panel(Color(UIKit.SLATE_HI, 0.99), UIKit.R_PANEL, 22)
+	sheet.mouse_filter = Control.MOUSE_FILTER_STOP
+	center.add_child(sheet)
+	var v := UIKit.vbox(10)
+	sheet.add_child(v)
+	var head := UIKit.hbox(12)
+	head.add_child(UIKit.label("Scoreboard", 24, UIKit.IVORY, true))
+	head.add_child(UIKit.spacer_h())
+	var close := UIKit.quiet("Close", Vector2(140, maxf(56.0, UIKit.touch_min() * 0.8)), 20)
+	close.pressed.connect(_toggle_board)
+	head.add_child(close)
+	v.add_child(head)
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 22)
-	grid.add_theme_constant_override("v_separation", 4)
+	grid.add_theme_constant_override("v_separation", 6)
 	for h in ["Player", "Role", "Round"]:
 		grid.add_child(UIKit.label(h, 16, UIKit.IVORY_MUTED, true))
 	var my_slot := session.local_slot if session else -1
 	var rows: Array = results.get("players", []).duplicate()
 	rows.sort_custom(func(a, b): return [int(a["role"]), -int(a.get("stamps", 0)) - (10 if bool(a.get("finished", false)) else 0)] < [int(b["role"]), -int(b.get("stamps", 0)) - (10 if bool(b.get("finished", false)) else 0)])
+	var name_w := clampf(vs.x * 0.2, 170.0, 240.0)
 	for r in rows:
 		var me := int(r["slot"]) == my_slot
 		var col := UIKit.AMBER if me else UIKit.IVORY
 		var nm := UIKit.label(String(r["name"]) + ("  · BOT" if bool(r["is_bot"]) else ""), 18, col, me)
 		nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		nm.custom_minimum_size = Vector2(220, 0)
+		nm.custom_minimum_size = Vector2(name_w, 0)
 		grid.add_child(nm)
 		grid.add_child(UIKit.label("Runner" if int(r["role"]) == TC.Role.RUNNER else "Night Watch", 17, UIKit.TEAL if int(r["role"]) == TC.Role.RUNNER else UIKit.PATROL))
 		grid.add_child(UIKit.label(_contribution(r), 17, col))
-	_board.add_child(grid)
+	v.add_child(grid)
 	add_child(_board)
-	var vs := get_viewport().get_visible_rect().size
-	var sz := _board.get_combined_minimum_size()
-	_board.position = Vector2(UIKit.safe_margins(get_viewport()).position.x + 24, (vs.y - sz.y) * 0.5)
-	UIKit.appear(_board, Vector2.ZERO, UIKit.T_FAST)
+	focus_first(close)
+	close.call_deferred("grab_focus")
+	UIKit.appear(sheet, Vector2.ZERO, UIKit.T_FAST)
 
 
 func _go_back() -> void:
+	if _board and is_instance_valid(_board):
+		_toggle_board()   # Back / B closes the scoreboard first
+		return
 	if session == null or session.mode == NetSession.Mode.OFFLINE:
 		App.goto_title()
 	else:
