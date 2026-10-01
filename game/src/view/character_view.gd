@@ -355,6 +355,10 @@ func _build_label(display_name: String, is_bot: bool) -> void:
 	name_label.outline_modulate = Color("11192b")
 	name_label.visibility_range_end = 30.0
 	name_label.visibility_range_end_margin = 8.0
+	# right next to the camera the label would float high over the HUD, and
+	# the player is plainly visible anyway
+	name_label.visibility_range_begin = 3.5
+	name_label.visibility_range_begin_margin = 1.0
 	name_label.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	name_label.visible = not is_local and display_name != ""
 
