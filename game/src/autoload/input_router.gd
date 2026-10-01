@@ -65,8 +65,8 @@ func _ready() -> void:
 	Input.joy_connection_changed.connect(_on_joy)
 	for id in Input.get_connected_joypads():
 		controller_name = Input.get_joy_name(id)
-	if OS.has_feature("pc") and not OS.has_feature("mobile"):
-		device = "keyboard"
+	if OS.has_feature("pc") and not OS.has_feature("mobile") and not UIKit.emulate_phone():
+		device = "keyboard"   # desktop; --emulate-phone keeps the touch layout for evidence runs
 
 
 func _install_actions() -> void:
