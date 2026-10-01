@@ -19,7 +19,7 @@ FWD = Vector((0, 1, 0))
 SIDES = (-1, 1)
 
 # ------------------------------------------------------------------ styles
-SKIN = Style('#ffffff', T_SKIN, 0.62, MAT_SKIN)
+SKIN = Style('#ffffff', T_SKIN, 0.78, MAT_SKIN)   # matte, soft sheen (the icon's skin)
 CLOTH_P = Style('#ffffff', T_PRIMARY, 0.9, MAT_CLOTH, stripes=True)       # primary cloth, takes stripes
 CLOTH_P_PLAIN = Style('#ffffff', T_PRIMARY, 0.9, MAT_CLOTH)
 CLOTH_S = Style('#ffffff', T_SECOND, 0.9, MAT_CLOTH)
@@ -154,8 +154,8 @@ def build_base():
     _feature(mb, 0.0, 1.118, (0.031, 0.024, 0.022), SKIN.with_col('#ffe2d9'), hw, sink=0.008)
     # eyes: sclera, pupil, catch-light.  aux carries the eye frame for the shape keys
     sclera = Style('#fdfcf8', T_NONE, 0.3, MAT_LIT)
-    iris = Style('#4a2b1a', T_NONE, 0.2, MAT_GLOSS)
-    pupil = Style('#120c0e', T_NONE, 0.2, MAT_GLOSS)
+    iris = Style('#3a2215', T_NONE, 0.2, MAT_GLOSS)
+    pupil = Style('#0d0809', T_NONE, 0.2, MAT_GLOSS)
     shine = Style('#ffffff', T_NONE, 0.1, MAT_EMIT)
     for sx in SIDES:
         ex, ez = 0.106 * sx, 1.162
@@ -170,11 +170,11 @@ def build_base():
         tag = 'eyeL' if sx < 0 else 'eyeR'
         ellipsoid(mb, c, (0.053, 0.067, 0.02), sclera, hw, segs=20, rings=14, rot=R, tag=tag, aux=aux, cut_below=-0.35)
         pc = c + n * 0.0135 - up_v * 0.006 + inward * 0.004
-        ellipsoid(mb, pc, (0.036, 0.046, 0.011), iris, hw, segs=18, rings=12, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        ellipsoid(mb, pc, (0.041, 0.051, 0.012), iris, hw, segs=18, rings=12, rot=R, tag=tag, aux=aux, cut_below=-0.35)
         ppc = pc + n * 0.006 - up_v * 0.002
-        ellipsoid(mb, ppc, (0.021, 0.027, 0.0065), pupil, hw, segs=14, rings=10, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        ellipsoid(mb, ppc, (0.027, 0.034, 0.0068), pupil, hw, segs=14, rings=10, rot=R, tag=tag, aux=aux, cut_below=-0.35)
         hc = pc + n * 0.0105 + up_v * 0.017 - inward * 0.012
-        ellipsoid(mb, hc, (0.013, 0.014, 0.004), shine, hw, segs=10, rings=6, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        ellipsoid(mb, hc, (0.0145, 0.0155, 0.004), shine, hw, segs=10, rings=6, rot=R, tag=tag, aux=aux, cut_below=-0.35)
         hc2 = pc + n * 0.0095 - up_v * 0.019 + inward * 0.011
         ellipsoid(mb, hc2, (0.006, 0.006, 0.003), shine, hw, segs=8, rings=4, rot=R, tag=tag, aux=aux, cut_below=-0.35)
         # brow: short arched bar on the surface
@@ -187,8 +187,8 @@ def build_base():
             bpts.append(bp + head_normal(bp) * 0.006)
         bc = sum(bpts, Vector()) / len(bpts)
         baux = (bc, (bpts[-1] - bpts[0]).normalized(), up_v.copy(), n.copy(), sx)
-        bw = [lerp(0.009, 0.007, i / 6.0) for i in range(7)]
-        sweep(mb, bpts, [(w, w * 2.0) for w in bw], HAIR.with_col('#c8c8c8'), hw, segs=8,
+        bw = [lerp(0.0072, 0.0052, i / 6.0) * (0.75 + 0.25 * math.sin(math.pi * i / 6.0)) for i in range(7)]
+        sweep(mb, bpts, [(w, w * 1.8) for w in bw], HAIR.with_col('#c8c8c8'), hw, segs=8,
               tag='browL' if sx < 0 else 'browR', twist_hint=n)
         for i in range(len(mb.aux)):
             if mb.tag[i] in ('browL', 'browR') and mb.aux[i] is None and ((mb.tag[i] == 'browL') == (sx < 0)):
@@ -404,8 +404,11 @@ def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None):
               twist_hint=FWD, colfn=colfn)
         # shoulder cap fills the joint
         sh = shoulder(sx)
-        ellipsoid(mb, sh + Vector((0.004 * sx, 0, 0.004)), (0.062 + grow, 0.062 + grow, 0.06 + grow), style,
-                  lambda p, sfx=sfx: {'upper_arm' + sfx: 0.55, 'shoulder' + sfx: 0.45}, segs=14, rings=10)
+        # stripes by world height so the cap continues the torso's stripes where
+        # they overlap; a little larger than the sleeve so the sleeve leaves it
+        # along a clean line instead of a grazing (sawtooth) intersection
+        ellipsoid(mb, sh + Vector((0.004 * sx, 0, 0.004)), (0.068 + grow, 0.066 + grow, 0.062 + grow), style,
+                  lambda p, sfx=sfx: {'upper_arm' + sfx: 0.55, 'shoulder' + sfx: 0.45}, segs=18, rings=12, world_v=True)
         if cuff_style is not None:
             d = arm_dir(sx)
             end = sh + d * (total - 0.015)

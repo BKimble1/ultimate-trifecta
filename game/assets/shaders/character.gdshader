@@ -8,7 +8,12 @@ shader_type spatial;
 //   UV         x = stripe flag, 1 - y = stripe coordinate in metres
 //   UV2        x = roughness, 1 - y = material class (0 cloth, .25 skin,
 //              .5 rubber, .75 gloss, .875 lit gloss, 1 emissive)
-render_mode diffuse_lambert_wrap, specular_schlick_ggx;
+// Characters cast shadows but do not receive them: at gameplay shadow-map
+// resolution self-shadowing (collar on shirt, cap on face) breaks up into
+// stipple and jaggies where the wrap lighting meets the shadow terminator.
+// The wrap diffuse alone shades the round forms cleanly, and it saves the
+// shadow lookups on every skinned pixel.
+render_mode diffuse_lambert_wrap, specular_schlick_ggx, shadows_disabled;
 
 instance uniform vec3 tint_primary : source_color = vec3(0.36, 0.55, 0.95);
 instance uniform vec3 tint_secondary : source_color = vec3(0.70, 0.80, 1.0);
@@ -52,8 +57,8 @@ void fragment() {
 	if (cls < 0.12) {           // matte cloth: low spec, soft sheen at grazing angles
 		SPECULAR = 0.18;
 		emit += rim_color * rim * rim_strength * (0.6 + 0.4 * alb);
-	} else if (cls < 0.37) {    // skin: warm wrap, a little transmission
-		SPECULAR = 0.35;
+	} else if (cls < 0.37) {    // skin: warm wrap, a little transmission, matte
+		SPECULAR = 0.22;
 		BACKLIGHT = alb * 0.22;
 		emit += rim_color * rim * rim_strength * 0.5;
 	} else if (cls < 0.62) {    // rubber / leather

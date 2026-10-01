@@ -162,6 +162,10 @@ func _match() -> void:
 			_splashes += 1
 			snap("water_%d_entry" % _splashes)
 			later(0.7, "water_%d_mid" % _splashes)
+			if _splashes == 1:
+				# the whole sequence, one frame every 0.15 s (entry to recovery)
+				for k in 17:
+					later(0.05 + 0.15 * k, "water_seq_%02d" % k)
 		if _prev_state == TC.PState.SPLASHING and st == TC.PState.ACTIVE and _recoveries < 2:
 			_recoveries += 1
 			later(0.25, "water_%d_recovery" % _recoveries)

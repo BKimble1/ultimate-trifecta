@@ -473,7 +473,7 @@ def _air(tuck_l, tuck_r, arm_raise, arm_fwd, elbow, spine, head, flap=0.0):
 # blend never pops at the top of the arc.
 def clip_air_rise(t):
     w = math.sin(2 * math.pi * t)
-    return _air((52, -72, -25), (22, -38, -30), 55 + 3 * w, -18, 32, -6, -6, 3 * w)
+    return _air((52, -72, -25), (22, -38, -30), 24 + 3 * w, 38, 55, -6, -6, 3 * w)
 
 
 def clip_air_apex(t):
@@ -628,14 +628,14 @@ def clip_recover(t):
     pose['chest'] = {'rot': (0, 8 * s, 0)}
     pose['neck'] = {'rot': (0, -6 * s, 0)}
     pose['head'] = {'rot': (4 * k, -16 * s, 0)}
-    pose.update(sym({'shoulder.L': {'rot': (0, 6 * abs(s), 0)}, 'upper_arm.L': {'rot': (6, 30 + 14 * s, 0)},
-                     'forearm.L': {'rot': (24 + 18 * s, 0, 0)}}))
+    pose.update(sym({'shoulder.L': {'rot': (0, 6 * abs(s), 0)}, 'upper_arm.L': {'rot': (10, -4 + 12 * s, 0)},
+                     'forearm.L': {'rot': (28 + 18 * s, 0, 0)}}))
     # wipe: right mitten passes over the brow
     w = smoothstep(0.5, 0.72, t) * (1.0 - smoothstep(0.86, 1.1, t))
     if w > 0.0:
         sweep = math.sin(math.pi * smoothstep(0.62, 0.92, t))
-        pose['upper_arm.R'] = {'rot': (lerp(6, 95, w), lerp(-30, -20, w), 0)}
-        pose['forearm.R'] = {'rot': (lerp(24, 120, w), lerp(0, 35 * sweep - 10, w), 0)}
+        pose['upper_arm.R'] = {'rot': (lerp(10, 95, w), lerp(4, -20, w), 0)}
+        pose['forearm.R'] = {'rot': (lerp(28, 120, w), lerp(0, 35 * sweep - 10, w), 0)}
         pose['head']['rot'] = (pose['head']['rot'][0] + 6 * w, pose['head']['rot'][1], -6 * w * sweep)
     return pose
 

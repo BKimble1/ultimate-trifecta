@@ -203,8 +203,8 @@
       "verts": 2073
     },
     "duck": {
-      "tris": 8020,
-      "verts": 4405
+      "tris": 8308,
+      "verts": 4549
     },
     "flashlight": {
       "tris": 140,
@@ -215,8 +215,8 @@
       "verts": 312
     },
     "frog": {
-      "tris": 7940,
-      "verts": 4359
+      "tris": 8228,
+      "verts": 4503
     },
     "hair": {
       "tris": 1264,
@@ -263,12 +263,12 @@
       "verts": 244
     },
     "pj": {
-      "tris": 6812,
-      "verts": 3493
+      "tris": 7100,
+      "verts": 3637
     },
     "robe": {
-      "tris": 6168,
-      "verts": 3144
+      "tris": 6456,
+      "verts": 3288
     },
     "shoe_flippers": {
       "tris": 1672,
@@ -287,8 +287,8 @@
       "verts": 1007
     },
     "watch": {
-      "tris": 11012,
-      "verts": 5796
+      "tris": 11300,
+      "verts": 5940
     }
   },
   "shape_keys": [

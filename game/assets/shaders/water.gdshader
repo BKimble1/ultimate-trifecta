@@ -17,7 +17,7 @@ uniform vec3 highlight_color : source_color = vec3(0.435, 0.847, 0.8);   // mute
 uniform vec3 target_color : source_color = vec3(1.0, 0.78, 0.4);
 uniform float active = 0.0;
 uniform float stamped = 0.0;
-#define RIPPLES 4
+#define RIPPLES 6
 const float RIPPLE_LIFE = 1.8;
 const float RIPPLE_SPEED = 3.2;   // m/s
 uniform vec4 ripples[RIPPLES];    // x, z, age (s), strength; strength 0 = unused
@@ -63,10 +63,10 @@ void fragment() {
 		vec2 dv = v_local - r.xy;
 		float sd = length(dv);
 		float front = r.z * RIPPLE_SPEED + 0.15;
-		float x = (sd - front) * 3.0;
+		float x = (sd - front) * 4.0;
 		float w = exp(-x * x) - 0.45 * exp(-pow(x + 2.2, 2.0));
 		wave += w * fade;
-		n.xz += normalize(dv + 1e-4) * w * fade * 0.4;
+		n.xz += normalize(dv + 1e-4) * w * fade * 0.3;
 	}
 	n = normalize(n);
 	NORMAL = (VIEW_MATRIX * vec4(n, 0.0)).xyz;
@@ -78,7 +78,7 @@ void fragment() {
 	float foam = smoothstep(0.45, 0.0, ed) * (0.55 + 0.45 * sin(t * 1.6 + ed * 9.0 + p.x * 0.6));
 	col = mix(col, vec3(0.86, 0.92, 0.95), foam * 0.45);
 	// ripple crests catch a little foam
-	col = mix(col, vec3(0.86, 0.94, 0.97), clamp(wave, 0.0, 1.0) * 0.25);
+	col = mix(col, vec3(0.80, 0.90, 0.95), clamp(wave, 0.0, 1.0) * 0.12);
 	ALBEDO = col;
 	ROUGHNESS = 0.08;
 	SPECULAR = 0.55;
@@ -86,7 +86,7 @@ void fragment() {
 	float pulse = 0.65 + 0.35 * sin(t * 2.4);
 	float ring = smoothstep(0.16, 0.0, abs(ed - 0.75)) * active * (1.0 - stamped);
 	vec3 emit = target_color * ring * pulse * 1.4;
-	emit += highlight_color * max(wave, 0.0) * 0.5;
+	emit += highlight_color * max(wave, 0.0) * 0.28;
 	emit += vec3(0.75, 0.85, 0.95) * foam * 0.05;
 	emit += col * 0.06;   // never pitch black at night
 	EMISSION = emit;

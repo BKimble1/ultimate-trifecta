@@ -8,7 +8,7 @@ extends Node3D
 ## material's ripple array (several at once per pond), aged here every frame.
 
 const POOL_MAX := 10              # emitters per kind
-const RIPPLE_SLOTS := 4           # == water.gdshader RIPPLES
+const RIPPLE_SLOTS := 6           # == water.gdshader RIPPLES
 const RIPPLE_LIFE := 1.8
 
 static var _soft_tex: GradientTexture2D
@@ -80,7 +80,8 @@ static func drop_material(emission: float = 0.6) -> StandardMaterial3D:
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	m.vertex_color_use_as_albedo = true
 	m.albedo_texture = soft_texture()
-	m.albedo_color = Color(1, 1, 1, 1) * (1.0 + emission * 0.5)
+	# water drops: never brighter than the tint (no blown-out white dots)
+	m.albedo_color = Color(1, 1, 1, 1) * (0.85 + emission * 0.1)
 	m.albedo_color.a = 1.0
 	m.no_depth_test = false
 	m.disable_receive_shadows = true
@@ -88,11 +89,11 @@ static func drop_material(emission: float = 0.6) -> StandardMaterial3D:
 	return m
 
 
-static func _fade_ramp(col: Color) -> Gradient:
+static func _fade_ramp(col: Color, a: float = 0.75) -> Gradient:
 	var g := Gradient.new()
-	g.set_color(0, Color(col, 0.95))
+	g.set_color(0, Color(col, a))
 	g.set_color(1, Color(col, 0.0))
-	g.add_point(0.6, Color(col, 0.8))
+	g.add_point(0.6, Color(col, a * 0.8))
 	return g
 
 
@@ -196,7 +197,7 @@ func _foam(pos: Vector3, col: Color, radius: float, life: float = 0.9) -> void:
 			add_child(mi)
 			_foam_pool.append(mi)
 	var mat := mi.material_override as StandardMaterial3D
-	mat.albedo_color = Color(col.lerp(Color.WHITE, 0.7), 0.85)
+	mat.albedo_color = Color(col.lerp(Color.WHITE, 0.6), 0.55)
 	mi.visible = true
 	mi.global_position = pos + Vector3(0, 0.03, 0)
 	mi.scale = Vector3.ONE * 0.25
@@ -210,8 +211,20 @@ func _foam(pos: Vector3, col: Color, radius: float, life: float = 0.9) -> void:
 ## Water entry: the contact crown/burst, shaped by how the runner went in
 ## (0 walk-in: small crown; 1 jump: tall cannonball column; 2 dive: wide sheet).
 func splash_impact(pos: Vector3, kind: int, col: Color, reduced: bool = false) -> void:
-	var tint := col.lerp(Color(0.85, 0.96, 1.0), 0.55)
+	var tint := col.lerp(Color(0.78, 0.9, 0.98), 0.45)
 	var k := 0.6 if reduced else 1.0
+	# soft white burst: a few large, faint puffs where the body went in
+	var mist := _emitter("mist", pos + Vector3(0, 0.25, 0), int(10 * k), 0.55, Color(0.9, 0.96, 1.0), 0.2)
+	mist.color_ramp = _fade_ramp(Color(0.9, 0.96, 1.0), 0.32)
+	mist.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	mist.emission_sphere_radius = 0.35
+	mist.direction = Vector3.UP
+	mist.spread = 60.0
+	mist.initial_velocity_min = 0.6
+	mist.initial_velocity_max = 1.6
+	mist.gravity = Vector3(0, -2.0, 0)
+	mist.scale_amount_min = 3.5 if kind != 0 else 2.5
+	mist.scale_amount_max = 6.0 if kind != 0 else 4.0
 	match kind:
 		1:
 			var p := _emitter("crown", pos + Vector3(0, 0.15, 0), int(46 * k), 1.0, tint, 1.0)
@@ -220,8 +233,8 @@ func splash_impact(pos: Vector3, kind: int, col: Color, reduced: bool = false) -
 			p.initial_velocity_min = 4.5
 			p.initial_velocity_max = 7.5
 			p.gravity = Vector3(0, -15, 0)
-			p.scale_amount_min = 0.8
-			p.scale_amount_max = 1.8
+			p.scale_amount_min = 0.35
+			p.scale_amount_max = 1.4
 			var r := _emitter("crown_ring", pos + Vector3(0, 0.1, 0), int(30 * k), 0.8, tint, 0.8)
 			r.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
 			r.emission_ring_axis = Vector3.UP
@@ -233,9 +246,9 @@ func splash_impact(pos: Vector3, kind: int, col: Color, reduced: bool = false) -
 			r.initial_velocity_min = 2.5
 			r.initial_velocity_max = 4.0
 			r.gravity = Vector3(0, -12, 0)
-			r.scale_amount_min = 0.6
-			r.scale_amount_max = 1.2
-			_foam(pos, col, 2.6)
+			r.scale_amount_min = 0.3
+			r.scale_amount_max = 1.0
+			_foam(pos, col, 1.9)
 		2:
 			var p := _emitter("sheet", pos + Vector3(0, 0.1, 0), int(54 * k), 0.85, tint, 0.9)
 			p.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
@@ -248,9 +261,9 @@ func splash_impact(pos: Vector3, kind: int, col: Color, reduced: bool = false) -
 			p.initial_velocity_min = 2.4
 			p.initial_velocity_max = 4.6
 			p.gravity = Vector3(0, -12, 0)
-			p.scale_amount_min = 0.7
-			p.scale_amount_max = 1.5
-			_foam(pos, col, 3.2, 1.1)
+			p.scale_amount_min = 0.35
+			p.scale_amount_max = 1.3
+			_foam(pos, col, 2.3, 1.0)
 		_:
 			var p := _emitter("crown", pos + Vector3(0, 0.1, 0), int(28 * k), 0.8, tint, 0.8)
 			p.direction = Vector3.UP
@@ -258,9 +271,9 @@ func splash_impact(pos: Vector3, kind: int, col: Color, reduced: bool = false) -
 			p.initial_velocity_min = 2.6
 			p.initial_velocity_max = 4.4
 			p.gravity = Vector3(0, -13, 0)
-			p.scale_amount_min = 0.6
-			p.scale_amount_max = 1.3
-			_foam(pos, col, 2.0)
+			p.scale_amount_min = 0.3
+			p.scale_amount_max = 1.1
+			_foam(pos, col, 1.5)
 
 
 ## The runner ducks under before reappearing at the shore: a small gulp of

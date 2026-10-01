@@ -236,12 +236,14 @@ def sweep(mb, path, radii, style, weightfn, segs=16, cap_start='round', cap_end=
 
 
 def ellipsoid(mb, center, radii, style, weightfn, segs=20, rings=14, rot=None, power=2.0,
-              colfn=None, tag='', aux=None, uv_scale=1.0, cut_below=None, keep=None, deform=None):
+              colfn=None, tag='', aux=None, uv_scale=1.0, cut_below=None, keep=None, deform=None, world_v=False):
     """(Super)ellipsoid. power>2 gives a boxier, rounder-cornered shape.
     rot: Matrix(3x3) orientation.  cut_below: optional local-z (unit sphere
     space) under which rings are dropped (makes a dome, open at the bottom).
     deform: optional f(local_point) -> local_point applied before rotation
-    (the head shape uses it so shells follow the same surface)."""
+    (the head shape uses it so shells follow the same surface).
+    world_v: stripe coordinate = world height (matches torso lathes, so a
+    piece overlapping the torso continues its stripes instead of clashing)."""
     c = Vector(center)
     R = rot if rot is not None else Matrix.Identity(3)
     rows = []
@@ -267,13 +269,13 @@ def ellipsoid(mb, center, radii, style, weightfn, segs=20, rings=14, rot=None, p
                 lp = deform(lp)
             p = c + R @ lp
             col = colfn(p, lp) if colfn else None
-            row.append(mb.vert(p, style, (k / segs, (z * radii[2]) * uv_scale), weightfn(p), tag, aux, col))
+            row.append(mb.vert(p, style, (k / segs, p.z if world_v else (z * radii[2]) * uv_scale), weightfn(p), tag, aux, col))
         rows.append(row)
     pt = c + R @ Vector((0, 0, radii[2]))
-    top = mb.vert(pt, style, (0, radii[2]), weightfn(pt), tag, aux, colfn(pt, Vector((0, 0, radii[2]))) if colfn else None)
+    top = mb.vert(pt, style, (0, pt.z if world_v else radii[2]), weightfn(pt), tag, aux, colfn(pt, Vector((0, 0, radii[2]))) if colfn else None)
     if cut_below is None:
         pb = c + R @ Vector((0, 0, -radii[2]))
-        bottom = mb.vert(pb, style, (0, -radii[2]), weightfn(pb), tag, aux, colfn(pb, Vector((0, 0, -radii[2]))) if colfn else None)
+        bottom = mb.vert(pb, style, (0, pb.z if world_v else -radii[2]), weightfn(pb), tag, aux, colfn(pb, Vector((0, 0, -radii[2]))) if colfn else None)
     # rows go from bottom to top; ring order CCW seen from +z => outward = (a_i, b_i, b_j, a_j)?
     # Our rings: theta increasing CCW around +z.  For outward normals with rows ascending in z
     # the quad must be (a_i, a_j, b_j, b_i).
