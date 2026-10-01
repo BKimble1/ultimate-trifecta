@@ -88,4 +88,23 @@ func test_eight_players_fit_on_distinct_marks() -> void:
 		else:
 			print("OUT ", k, " mark=", stage._mark_of[k], " pos=", v.global_position, " screen=", cam.unproject_position(v.global_position + Vector3(0, 0.8, 0)), " vp=", stage.get_viewport().get_visible_rect().size)
 	t.eq(inside, 8, "all eight characters are in view")
+	# readable: no face is covered by a nearer character's head or cap
+	var hidden: Array = []
+	for a in stage.chars:
+		var va: CharacterView = stage.chars[a]
+		var face := va.global_position + Vector3(0, 1.15, 0)
+		var fa := cam.unproject_position(face)
+		for b in stage.chars:
+			if a == b:
+				continue
+			var vb: CharacterView = stage.chars[b]
+			if cam.global_position.distance_to(vb.global_position) >= cam.global_position.distance_to(va.global_position):
+				continue
+			for blob: Array in [[1.18, 0.34], [1.45, 0.3]]:   # head, cap
+				var c := vb.global_position + Vector3(0, blob[0], 0)
+				var cp := cam.unproject_position(c)
+				var r := cp.distance_to(cam.unproject_position(c + cam.global_transform.basis.x * float(blob[1])))
+				if fa.distance_to(cp) < r:
+					hidden.append("%s behind %s" % [a, b])
+	t.eq(hidden, [], "every face is visible (none behind a nearer head or cap)")
 	stage.queue_free()

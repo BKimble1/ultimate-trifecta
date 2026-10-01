@@ -15,7 +15,7 @@ const MARKS := [
 	Vector3(-1.05, 0, 0.5), Vector3(1.05, 0, 0.5),
 	Vector3(-1.9, 0, -0.15), Vector3(1.9, 0, -0.15),
 	Vector3(-0.62, 0, -0.55), Vector3(0.62, 0, -0.55),
-	Vector3(0.0, 0, -1.2),
+	Vector3(0.0, 0, -1.4),      # back centre: seen over the local player's cap (camera 3.1 m up)
 ]
 ## Framing per mode, independent of screen aspect: the subject point is put
 ## at `x_frac` of the screen width (the menu / party panel owns the right
@@ -24,7 +24,7 @@ const MARKS := [
 const FRAMES := {
 	"home": [Vector3(0.62, 0.86, 0.6), 2.75, 0.40, 1.05, 0.0, 34.0],
 	"wardrobe": [Vector3(0.62, 0.84, 0.6), 2.35, 0.27, 1.0, 0.0, 34.0],
-	"lobby": [Vector3(0.0, 0.62, 0.0), 4.5, 0.33, 2.5, 0.0, 38.0],
+	"lobby": [Vector3(0.0, 0.62, 0.0), 4.5, 0.33, 3.1, 0.0, 38.0],
 }
 const HOME_MARK := Vector3(0.62, 0, 0.6)
 
