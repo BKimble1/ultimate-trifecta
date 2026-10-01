@@ -53,6 +53,10 @@ func _ready() -> void:
 			dev_rounds = int(a.split("=")[1])
 		elif a.begins_with("--expect="):
 			dev_expect = int(a.split("=")[1])
+		elif a.begins_with("--time-scale="):
+			# automation only: time-lapse captures of whole rounds
+			Engine.time_scale = clampf(float(a.split("=")[1]), 0.25, 8.0)
+			Engine.max_physics_steps_per_frame = 32
 	if OS.get_cmdline_user_args().has("--no-app"):
 		return
 	call_deferred("_boot")

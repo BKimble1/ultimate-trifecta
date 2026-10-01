@@ -184,6 +184,20 @@ jobs:
               print(b[i:i+1000])
           print("CONTACT_SHEET_END")
           PY
+      - name: Build facts (toolchain, binary, plist, privacy manifest)
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "BUILD_FACTS_BEGIN"
+          xcodebuild -version; echo "iphoneos SDK $(xcrun --sdk iphoneos --show-sdk-version)"
+          APP=$(find build/ios -path '*xcarchive*' -name '*.app' -maxdepth 6 | head -1)
+          [ -n "$APP" ] && { lipo -info "$APP/UltimateTrifecta"; du -sh "$APP";
+            for k in CFBundleIdentifier CFBundleShortVersionString CFBundleVersion MinimumOSVersion DTSDKName DTXcode UIDeviceFamily ITSAppUsesNonExemptEncryption NSGKFriendListUsageDescription UISupportedInterfaceOrientations; do
+              echo "$k = $(/usr/libexec/PlistBuddy -c "Print :$k" "$APP/Info.plist" 2>/dev/null | tr '\n' ' ')"; done
+            ls "$APP/Frameworks" 2>/dev/null; find "$APP" -name 'PrivacyInfo.xcprivacy' | sed "s|$APP/||"; }
+          find build/ios -name '*.entitlements' -maxdepth 3 -exec sh -c 'echo "== $1"; cat "$1"' _ {} \;
+          PM=$(find build/ios -maxdepth 3 -name PrivacyInfo.xcprivacy | head -1); [ -n "$PM" ] && { echo "== $PM"; plutil -convert json -o - "$PM"; echo; }
+          echo "BUILD_FACTS_END"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -198,10 +212,16 @@ jobs:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           EXPORT_DESTINATION: upload
-          INTERNAL_ONLY: "false"
+          # first delivery is for the owner's internal testers only
+          INTERNAL_ONLY: "true"
         run: |
           export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
-          python3 tools/asc.py app
+          # register the bundle ID with the Game Center capability if it is new
+          python3 tools/asc.py ensure-bundle || echo "::warning::could not register $BUNDLE_ID via the API (Xcode automatic signing will try)"
+          if ! python3 tools/asc.py app; then
+            echo "::error::No App Store Connect app record for $BUNDLE_ID. Create it in App Store Connect (Apps > + > New App, platform iOS, bundle ID $BUNDLE_ID), then re-run this workflow with upload=true."
+            exit 1
+          fi
           tools/build_ios.sh signed
       - name: Wait for App Store Connect processing + internal testers
         if: steps.sign.outputs.available == 'true' && github.event.inputs.upload == 'true'

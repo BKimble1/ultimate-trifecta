@@ -1,0 +1,55 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+SOAK t=5 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=10 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=15 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=20 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=25 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=30 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=35 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=40 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=45 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=50 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=55 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=60 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=65 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=70 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=75 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=80 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=85 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=90 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=95 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=100 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=105 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=110 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=115 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=120 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=125 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=130 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=135 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=140 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=145 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=150 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=155 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=160 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=165 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=170 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=175 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=180 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=185 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=190 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=195 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=200 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=205 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=210 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=215 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=220 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=225 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=230 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=235 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=240 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+SOAK t=245 mode=2 phase=1 slot=2 host_peer=1 humans=8 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6R", "7R"] connected=true peers=[1] match=true fps=60
+WARNING: 9 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

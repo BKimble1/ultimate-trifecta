@@ -1,0 +1,16 @@
+ROUTE ["Fountain", "Pond", "Garden"] finished 6/6 times [116.9, 119.2, 113.1, 116.3, 115.5, 109.1]
+ROUTE ["Fountain", "Pool", "Quarry"] finished 6/6 times [115.4, 114.4, 118.3, 109.1, 108.5, 109.1]
+ROUTE ["Fountain", "Pool", "Inlet"] finished 6/6 times [106.7, 105.0, 106.9, 103.3, 106.9, 106.9]
+ROUTE ["Fountain", "Quarry", "Garden"] finished 6/6 times [115.0, 114.0, 113.9, 114.7, 113.9, 112.6]
+ROUTE ["Fountain", "Garden", "Inlet"] finished 6/6 times [105.9, 108.4, 106.3, 108.0, 107.3, 106.3]
+ROUTE ["Pond", "Pool", "Quarry"] finished 6/6 times [123.4, 124.4, 115.4, 114.4, 124.5, 114.6]
+ROUTE ["Pond", "Pool", "Garden"] finished 6/6 times [123.8, 120.7, 116.1, 115.1, 124.9, 115.1]
+ROUTE ["Pond", "Pool", "Inlet"] finished 6/6 times [127.1, 127.6, 119.3, 118.9, 127.1, 119.1]
+ROUTE ["Pond", "Quarry", "Garden"] finished 6/6 times [127.1, 116.3, 118.4, 116.1, 116.2, 116.1]
+ROUTE ["Pond", "Garden", "Inlet"] finished 6/6 times [126.0, 126.5, 127.7, 125.2, 124.9, 124.3]
+ROUTE ["Pool", "Quarry", "Garden"] finished 6/6 times [119.6, 120.0, 119.6, 119.2, 118.4, 119.6]
+ROUTE ["Pool", "Quarry", "Inlet"] finished 6/6 times [124.4, 124.6, 116.0, 125.0, 120.8, 124.4]
+ROUTE ["Pool", "Garden", "Inlet"] finished 6/6 times [113.0, 113.2, 113.3, 113.3, 113.0, 113.3]
+ROUTE ["Quarry", "Garden", "Inlet"] finished 6/6 times [122.0, 125.3, 122.0, 124.6, 123.3, 122.1]
+ROUTE_SUMMARY n=84 min=103.3 median=116.2 max=127.7
+1 tests, 15 checks, 0 failures in 149.3s
