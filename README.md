@@ -86,7 +86,6 @@ Other automation flags:
 | Flag | Effect |
 |---|---|
 | `--no-gamecenter` | Skips the Game Center sign-in sheet. Used for Simulator runs. |
-| `--time-scale=N` | Time-lapse captures. |
 | `--seed=N` | Fixes the match seed. |
 | `--quit-after=S` | Quits after S seconds. |
 | `--report=path` | Writes per-round JSON stats and prints status lines every 5 s. |
