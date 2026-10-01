@@ -71,6 +71,25 @@ func snapshot() -> Dictionary:
 		"static_mem_mb": snappedf(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, 0.1),
 		"subviewports": [],
 	}
+	# the 3D buffer actually rendered (root size x 3D scale; UI stays native)
+	d["render_3d_px"] = [roundi(root.size.x * root.scaling_3d_scale), roundi(root.size.y * root.scaling_3d_scale)]
+	d["mesh_lod_threshold"] = root.mesh_lod_threshold
+	d["max_fps"] = Engine.max_fps
+	var w3 := root.find_world_3d()
+	if w3 and w3.environment:
+		d["glow"] = w3.environment.glow_enabled
+	for l: DirectionalLight3D in root.find_children("*", "DirectionalLight3D", true, false):
+		if l.visible and l.shadow_enabled:
+			d["sun_shadow"] = {"mode": l.directional_shadow_mode, "max_distance": l.directional_shadow_max_distance}
+	d["quality_preset"] = QualityPreset.label(QualityPreset.applied) if QualityPreset.applied >= 0 else "?"
+	d["shadow_atlas"] = QualityPreset.shadow_atlas
+	var cv := root.find_child("CampusVisuals", true, false)
+	if cv and cv.get_child_count() > 0:
+		var casts := 0
+		for c in cv.get_children():
+			if c is GeometryInstance3D and (c as GeometryInstance3D).cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+				casts += 1
+		d["campus_meshes_casting_shadows"] = "%d of %d" % [casts, cv.get_child_count()]
 	for sv: SubViewport in _all_subviewports(root):
 		var info := {"path": str(root.get_path_to(sv)), "render_px": [sv.size.x, sv.size.y], "msaa_3d": sv.msaa_3d,
 			"scaling_3d_scale": sv.scaling_3d_scale}

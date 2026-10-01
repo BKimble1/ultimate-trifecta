@@ -17,6 +17,10 @@ extends RefCounted
 const STANDARD := 1
 const BATTERY := 0
 
+## what apply() last set (read by the dev diagnostics)
+static var applied := -1
+static var shadow_atlas := 0
+
 
 static func apply(q: int) -> void:
 	var tree := Engine.get_main_loop() as SceneTree
@@ -35,6 +39,8 @@ static func apply(q: int) -> void:
 		root.msaa_3d = Viewport.MSAA_2X
 		root.mesh_lod_threshold = 3.0
 		RenderingServer.directional_shadow_atlas_set_size(1024, true)
+	applied = q
+	shadow_atlas = 2048 if q >= STANDARD else 1024
 	root.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 	root.use_taa = false
 	if OS.has_feature("mobile"):
