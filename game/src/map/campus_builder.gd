@@ -292,6 +292,11 @@ func build_visuals(root: Node3D, quality: int = 1) -> Dictionary:
 			mi.material_override = mat if pass_i == 0 else fmat
 			mi.name = ("Chunk_%d_%d" if pass_i == 0 else "Foliage_%d_%d") % [key.x, key.y]
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if quality >= 1 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			if pass_i == 1:
+				# tree canopies stop drawing where the night fog has already
+				# swallowed them (no dithered fade: a clean cut inside the fog)
+				mi.visibility_range_end = 230.0 if quality >= 1 else 150.0
+				mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 			container.add_child(mi)
 	if _glow_count > 0:
 		var gm := ShaderMaterial.new()

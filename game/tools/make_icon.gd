@@ -23,7 +23,7 @@ func _ready() -> void:
 	add_child(env)
 	var key := DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-30, 25, 0)
-	key.light_energy = 1.3
+	key.light_energy = 1.05
 	key.light_color = Color(1.0, 0.93, 0.82)
 	add_child(key)
 	var rim := OmniLight3D.new()
@@ -98,7 +98,7 @@ func _ready() -> void:
 	cam = Camera3D.new()
 	cam.fov = 34
 	add_child(cam)
-	cam.transform = Transform3D(Basis.looking_at(Vector3(0, 1.22, 0) - Vector3(0, 1.62, 4.25), Vector3.UP), Vector3(0, 1.62, 4.25))
+	cam.transform = Transform3D(Basis.looking_at(Vector3(0, 1.08, 0) - Vector3(0, 1.45, 3.45), Vector3.UP), Vector3(0, 1.45, 3.45))
 	if OS.get_cmdline_user_args().has("--splash"):
 		mode = "splash"
 

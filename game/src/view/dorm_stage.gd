@@ -28,6 +28,10 @@ const FRAMES := {
 }
 const HOME_MARK := Vector3(0.62, 0, 0.6)
 
+## lobby: half-width of the 8-character group (marks + body), and the
+## fraction of the screen width left of the party panel (set by LobbyScreen)
+const GROUP_HALF_W := 2.4
+var lobby_free_frac := 0.62
 var cam: Camera3D
 var chars: Dictionary = {}       # key -> CharacterView
 var _mark_of: Dictionary = {}    # key -> mark index
@@ -60,12 +64,28 @@ func _cam_for(m: String) -> Array:
 	var fov: float = f[5]
 	var vs := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(16, 9)
 	var aspect := vs.x / maxf(1.0, vs.y)
+	if m == "lobby":
+		# centre the group in the free area left of the party panel and make
+		# sure all eight fit on any aspect (phone 19.5:9 ... iPad 4:3)
+		x_frac = lobby_free_frac * 0.5
+		height_m = maxf(height_m, (GROUP_HALF_W * 2.2 / lobby_free_frac) / aspect)
 	var dist := height_m * 0.5 / tan(deg_to_rad(fov) * 0.5)
 	var width_m := height_m * aspect
 	var shift := (0.5 - x_frac) * width_m      # look right of the subject
 	var at := subject + Vector3(shift, 0, 0)
 	var from := Vector3(at.x, float(f[3]), subject.z + sqrt(maxf(0.01, dist * dist - pow(float(f[3]) - subject.y, 2.0))))
 	return [from, at, fov]
+
+
+func set_lobby_free_frac(f: float) -> void:
+	f = clampf(f, 0.3, 1.0)
+	if absf(f - lobby_free_frac) < 0.01:
+		return
+	lobby_free_frac = f
+	if mode == "lobby" and _cam_t >= 1.0:
+		_apply_cam(_cam_for(mode), 1.0)
+		for k in chars:
+			_place(k)
 
 
 func set_mode(m: String, animate: bool = true) -> void:

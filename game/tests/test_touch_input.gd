@@ -171,3 +171,31 @@ func test_look_is_displacement_not_rate() -> void:
 	t.near(a.x, b.x, 0.0001, "the same finger travel turns the same angle at any frame rate")
 	var pts := 300.0 / maxf(1.0, DisplayServer.screen_get_scale())
 	t.near(a.x, pts * Controls.TOUCH_RAD_PER_PT, 0.0001, "radians = points x TOUCH_RAD_PER_PT")
+
+
+func test_controller_takeover_and_focus_loss_release_touch_intent() -> void:
+	var s := TouchControls.TouchSurface.new()
+	s.router.view_size = Vector2(1558, 720)
+	s.router.set_buttons({"gas": {"c": GAS, "r": 74.0}})
+	for kind in ["gamepad", "focus"]:
+		s.router.touch_down(0, Vector2(250, 520))   # steering thumb
+		s.router.drag(0, Vector2(330, 520), Vector2(80, 0))
+		s.router.touch_down(1, GAS)                  # gas held
+		Controls.touch_move = s.router.move_vector()
+		Controls.touch_drive = 1.0
+		Controls.touch_sprint = true
+		if kind == "gamepad":
+			s._on_device("gamepad")                  # a controller takes over mid-drive
+		else:
+			s._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+		t.check(s.router.held().is_empty() and s.router.move_vector() == Vector2.ZERO, "%s: no finger keeps an owner" % kind)
+		t.check(Controls.touch_move == Vector2.ZERO and Controls.touch_drive == 0.0 and not Controls.touch_sprint,
+			"%s: no stuck stick, gas or sprint" % kind)
+		s.router.touch_up(0)
+		s.router.touch_up(1)
+	s._on_device("touch")                            # back to touch: fresh fingers work
+	s.router.touch_down(5, Vector2(260, 500))
+	s.router.drag(5, Vector2(340, 500), Vector2(80, 0))
+	t.check(s.router.move_vector().x > 0.6, "touch works again after switching back")
+	s.free()
+	Controls.reset_touch()

@@ -128,6 +128,16 @@ func build() -> void:
 	_is_ready = session.local_slot >= 0 and session.roster[session.local_slot] != null and bool(session.roster[session.local_slot]["ready"])
 	_refresh()
 	UIKit.appear(panel, Vector2(40, 0), UIKit.T_SHEET)
+	panel.resized.connect(_frame_stage.bind(panel))
+	get_viewport().size_changed.connect(_frame_stage.bind(panel))
+	_frame_stage.call_deferred(panel)
+
+
+## Tell the stage how much of the screen is free left of the party panel.
+func _frame_stage(panel: Control) -> void:
+	if App.stage and is_instance_valid(panel):
+		var w := get_viewport().get_visible_rect().size.x
+		App.stage.set_lobby_free_frac((panel.get_global_rect().position.x - 12.0) / maxf(1.0, w))
 
 
 func _on_primary() -> void:
