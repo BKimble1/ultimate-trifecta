@@ -4,7 +4,8 @@ extends SceneTree
 ## Usage: godot --headless --path game -s res://tools/route_analysis.gd
 ## Writes res://config/route_table.json
 
-const BAND := 0.16   # keep combos within +-16% of the median optimal route
+const BAND := 0.16       # nav-distance band (used when no measured times exist)
+const TIME_BAND := 0.12  # measured bot-time band around the median
 
 
 func _initialize() -> void:
@@ -52,10 +53,25 @@ func _initialize() -> void:
 	lens.sort()
 	var median: float = (lens[9] + lens[10]) * 0.5
 	var curated: Array = []
+	var measured := {}
+	if FileAccess.file_exists("res://config/route_bot_times.json"):
+		measured = JSON.parse_string(FileAccess.get_file_as_string("res://config/route_bot_times.json"))
+	var tmed := 0.0
+	if not measured.is_empty():
+		var tv: Array = measured.values()
+		tv.sort()
+		tmed = float(tv[tv.size() / 2])
 	for cb in combos:
 		var L2: float = cb["length_m"]
 		cb["vs_median"] = snappedf(L2 / median, 0.01)
-		if absf(L2 / median - 1.0) <= BAND:
+		var key := str(cb["targets"])
+		if measured.has(key):
+			cb["bot_time_s"] = measured[key]
+			cb["time_vs_median"] = snappedf(float(measured[key]) / tmed, 0.01)
+		var ok := absf(L2 / median - 1.0) <= BAND
+		if measured.has(key):
+			ok = ok and absf(float(measured[key]) / tmed - 1.0) <= TIME_BAND
+		if ok:
 			curated.append(cb["targets"])
 	var names: Array = []
 	for nd in nodes:
@@ -64,6 +80,7 @@ func _initialize() -> void:
 		"generated_by": "tools/route_analysis.gd", "band": BAND, "median_m": snappedf(median, 0.1),
 		"nodes": names, "pair_m": dist.map(func(r): return r.map(func(v): return snappedf(v, 0.1))),
 		"combos": combos, "curated": curated, "unreachable": unreachable,
+		"bot_time_median_s": tmed,
 		"runner_estimate_s": {"min": snappedf(float(lens[0]) / 5.6 + 6.0, 1), "median": snappedf(median / 5.6 + 6.0, 1), "max": snappedf(float(lens[19]) / 5.6 + 6.0, 1)},
 	}
 	var f := FileAccess.open("res://config/route_table.json", FileAccess.WRITE)

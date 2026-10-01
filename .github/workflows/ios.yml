@@ -109,9 +109,23 @@ jobs:
           export GODOT_BIN=$(cat tools/.cache/godot/BIN)
           tools/export_ios.sh
           ls build/ios
-      - name: Build for iOS Simulator
+      - name: Device archive (unsigned arm64 compile + link check)
+        if: steps.sign.outputs.available != 'true' || github.event.inputs.upload != 'true'
+        run: |
+          tools/build_ios.sh device
+          APP=$(find build/ios/UltimateTrifecta-unsigned.xcarchive -name '*.app' | head -1)
+          lipo -info "$APP/UltimateTrifecta" || file "$APP/UltimateTrifecta"
+          du -sh "$APP"
+          /usr/libexec/PlistBuddy -c Print "$APP/Info.plist" | head -80
+          codesign -d --entitlements :- "$APP" 2>/dev/null || true
+          ls "$APP" | head -40
+      - name: Build for iOS Simulator (x86_64, best effort)
+        id: simbuild
+        continue-on-error: true
         run: tools/build_ios.sh sim
       - name: Run in iOS Simulator (screenshots + video)
+        if: steps.simbuild.outcome == 'success'
+        continue-on-error: true
         run: |
           set -x
           APP=$(find build/ios/dd-sim -name '*.app' -maxdepth 6 | head -1)
@@ -139,9 +153,6 @@ jobs:
           path: |
             sim-evidence
             build/ios/export.log
-      - name: Device archive (unsigned compile check)
-        if: steps.sign.outputs.available != 'true'
-        run: tools/build_ios.sh device
       - name: Signed archive + upload to TestFlight
         if: steps.sign.outputs.available == 'true' && github.event.inputs.upload == 'true'
         env:

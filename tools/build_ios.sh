@@ -12,9 +12,11 @@ SCHEME=$(xcodebuild -list -project "$PROJ" -json | python3 -c 'import json,sys; 
 echo "scheme: $SCHEME"
 case "$MODE" in
   sim)
+    # Godot 4.7.2's official iOS templates ship an x86_64-only simulator slice,
+    # so the simulator build targets x86_64 (runs under Rosetta on Apple silicon).
     xcodebuild -project "$PROJ" -scheme "$SCHEME" -configuration Release -sdk iphonesimulator \
       -destination 'generic/platform=iOS Simulator' -derivedDataPath build/ios/dd-sim \
-      CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO build | tail -n 40
+      ARCHS=x86_64 EXCLUDED_ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build | tail -n 40
     find build/ios/dd-sim -name '*.app' -maxdepth 6 | head -1
     ;;
   device)
