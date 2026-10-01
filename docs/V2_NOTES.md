@@ -32,6 +32,10 @@ These are short notes for whoever works on the V2 changes next. Evidence and tes
 - TAA, FSR, motion blur, depth of field, chromatic aberration and grain are all off.
 - 4× MSAA was not adopted, because comparing it needs measured GPU headroom on a device.
 
+**UV2.** World meshes use UV2 for per-vertex emission (x) and foliage sway (y), so it is *not* a lightmap channel and no lightmaps are baked. Lighting is dynamic: moonlight with shadows, ambient light, lamp glow pools.
+
+**Visibility.** Tree-canopy chunks stop drawing at 230 m in Standard and 150 m in Battery Saver, inside the fog, with a hard cut and no dithered fade. Imported character meshes get Godot's automatic LODs. Distant characters advance their animation at a third of the rate.
+
 **Colour path, measured.**
 - Blender writes glTF `COLOR_0` linear and Godot keeps it, so the character shader uses vertex colour without conversion.
 - Colours authored in code for `MeshKit` meshes are sRGB, and `world_common` converts them.

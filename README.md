@@ -14,8 +14,40 @@ Night Watch players hunt them on foot and in golf carts.
 | [TEST_REPORT.md](TEST_REPORT.md) | What was tested, how, and what is still unverified |
 | [TESTFLIGHT_RELEASE.md](TESTFLIGHT_RELEASE.md) | Release status, signing lane, owner handoff and beta notes |
 | [ASSET_LICENSES.md](ASSET_LICENSES.md) | Where every asset and dependency comes from |
+| [docs/V2_NOTES.md](docs/V2_NOTES.md) | V2 implementation notes: render path, motion pipeline, touch rules, theme |
+| [tools/character/README.md](tools/character/README.md) | How the character asset is built |
 
-## What's in V1
+## What's new in V2 (version 1.1)
+
+- **Characters.**
+  - One authored, skinned character (built reproducibly with Blender's Python module) is used in the home screen, wardrobe, lobby, gameplay and results.
+  - It has a full face (eyes, brows, nose, mouth, ears, expressions), a rounded head, a compact body with working joints, mitten hands, pajama collar, cuffs and buttons, a nightcap, and shoes with uppers and soles.
+  - There is a Night Watch variant with a uniform, cap, boots, flashlight and whistle, plus the refined existing outfits.
+  - 32 animation clips are blended by a state-driven graph. Locomotion is speed-matched so feet don't slide.
+- **Home and party lobby.**
+  - A dorm common room is rendered at native resolution behind the menus.
+  - Your character stands front three-quarter.
+  - Each screen has one primary action: "Play with Friends", then Start or Ready.
+  - The party panel is a compact two-column list that updates in place.
+  - Outfit, Emote and Role are in small popovers, and bot fill is explained once ("You + 7 bots").
+- **Controls.**
+  - Touch ownership is rebuilt: one movement finger, per-finger buttons, and reliable cancellation.
+  - The camera drag is device-normalised (unscaled pixels converted to points).
+  - The stick has a radial dead zone, and sprint has hysteresis.
+  - New options: fixed stick, hold-to-sprint, button size, mirrored layout and haptics.
+- **Motion.**
+  - Characters, carts and the camera are drawn at render-time interpolated positions between 60 Hz sim ticks.
+  - Respawns, resurfacing and cart entry/exit snap explicitly instead of sliding.
+  - The camera responds immediately to manual look, recentres gradually without circling, and has more robust collision.
+- **Look.**
+  - Blue and teal water: only active targets get a slim ring.
+  - Trees part around the camera instead of showing a screen-door dither.
+  - Rebuilt golf carts and refined campus props.
+  - A calmer HUD: a timer chip, objective chips with direction and distance, and a "Head back to the dorm" state.
+  - Results show your contribution first.
+  - Two graphics presets that genuinely differ: Standard and Battery Saver.
+
+## Core game (since V1)
 
 - **Main mode, Trifecta Chase:** a 6-runner vs 2-Night-Watch round on one campus with six waters. Every round picks three shared targets, and four runners home wins. Both roles are playable.
 - **Online private rooms:** up to eight humans.
@@ -23,9 +55,9 @@ Night Watch players hunt them on foot and in golf carts.
   - You can also invite Game Center friends.
   - Empty slots are filled by bots labelled `Bot …`.
 - **Solo practice:** the same rules, simulation and controls against bots, played as runner or Night Watch. There is also a guided tutorial round.
-- **Lobby:** a 3D common room plus a static roster. It has ready-up, role preference, preset emotes, an outfit preview, mute, host remove, and invite or code sharing.
+- **Lobby:** the dorm common room with the party on stage and a party list. It has ready-up, role preference, preset emotes, an outfit change, mute, host remove, and invite or code sharing.
 - **Full flow:** title → practice or online → lobby → role reveal → countdown → match → results → rematch or leave.
-- **Controls:** touch (dynamic stick, drag camera, context buttons, cart gas and brake) and MFi/extended game controllers. Prompts switch when a controller connects or disconnects.
+- **Controls:** touch (dynamic or fixed stick, camera drag, context buttons: Jump/Dive, Tag, Drive, Gadget; in a cart, steering plus Gas, Brake and Exit) and MFi/extended game controllers. Prompts switch when a controller connects or disconnects.
 - **Persistence:** versioned local save with settings, outfit, level, coins, a small wardrobe, and separate online and practice stats. Each match pays rewards once, keyed by its match ID.
 
 ## Why Godot rather than Unity
@@ -49,11 +81,13 @@ game/                 Godot project (open game/project.godot)
   src/core|sim|bots/  deterministic simulation, rules logic, bots
   src/net/            protocol, NetSession (host/client), transports
   src/match/          MatchController (world, prediction, presentation)
-  src/view|ui/        characters, camera, FX, HUD, touch, screens
+  src/view|ui/        characters, carts, dorm stage, camera, FX, HUD, touch, screens
+  src/dev/            diagnostics, capture harness, character test scene (not exported)
   src/autoload/       Rules, Controls, Sfx, Social, Save, App
-  assets/             shaders, audio, font, icon/splash
-  tests/              headless rule/sim/network/route tests
+  assets/             characters (generated GLB), shaders, audio, font, icon/splash
+  tests/              headless rule/sim/network/route/touch/motion tests
 tools/                fetch, test, soak, export, build, App Store Connect scripts
+  character/          editable source of the character asset (Blender bpy scripts)
 .github/workflows/    ios.yml: tests → iOS export → device archive → simulator → TestFlight
 docs/                 test data, screenshots and recordings
 ```
@@ -67,6 +101,7 @@ tools/fetch_godot.sh              # pinned Godot 4.7.2 editor into tools/.cache 
 tools/run_tests.sh                # all headless tests (about 4 min; route test is slow)
 tools/run_tests.sh test_rules     # one suite
 tools/gd.sh --path game           # run the game on desktop (keyboard + mouse or controller)
+tools/character/build.sh          # rebuild game/assets/characters/runner.glb (needs bpy 4.5.4; see tools/character/README.md)
 ```
 
 Desktop keys are for testing only:
@@ -101,8 +136,14 @@ Other automation flags:
 | `--seed=N` | Fixes the match seed. |
 | `--quit-after=S` | Quits after S seconds. |
 | `--report=path` | Writes per-round JSON stats and prints status lines every 5 s. |
+| `--diag` / `--diag-report=path` | Render diagnostics overlay, or a JSON report every 5 s. Covers window, canvas, 3D render size and scale, SubViewport render size against displayed size, MSAA, frame-time percentiles and draw calls. |
+| `--capture=home\|screens\|lobby\|runner\|patrol --capture-dir=DIR` | Evidence capture. Saves lossless PNGs at moments chosen from game state, each with a diagnostics JSON beside it. |
+| `--emulate-phone[=2]` | Applies the 44 pt touch-size rule on desktop runs at device resolution (@3x iPhone by default, `=2` for @2x devices: iPhone SE, iPad) and starts with the touch layout instead of keyboard. |
+| `--quality=0\|1`, `--name=…`, `--random-cosmetic`, `--gc-sim=declined\|restricted\|signing_in` | Preset, name or outfit for capture runs. `--gc-sim` shows the Game Center states on desktop and is labelled as simulated in the evidence. |
 
-Release builds only act on these flags when they are passed on the command line, which a TestFlight install never does.
+The character test scene is `res://src/dev/character_lineup.tscn -- --lineup=views,outfits,skins,posesheet,transitions,closeup,faces,cart --capture-dir=DIR`.
+
+Release builds only act on these flags when they are passed on the command line, which a TestFlight install never does. The diagnostics and capture scripts live in `src/dev/`, which is excluded from iOS exports.
 
 ### iOS build
 

@@ -32,7 +32,7 @@ Apple frameworks (GameKit, GameController) are part of the iOS SDK and are used 
 | Particles and FX | CPU particles configured in code (`game/src/view/fx.gd`) | code |
 | UI icons (target shapes, gadgets, roles) | Vector shapes drawn in code (`game/src/ui/icons.gd`) | code |
 | Sound effects (22) and music loops (3) | Synthesized from scratch with numpy by `tools/gen_audio.py`. No samples or recordings. Music is converted to Ogg Vorbis by `tools/gen_audio.sh`. | `game/assets/audio/` |
-| App icon (1024²) and launch splash | Rendered in-engine from the project's own character and water geometry by `game/tools/make_icon.tscn`. The V1 icon shows the V1 character. | `game/assets/icon/` |
+| App icon (1024²) and launch splash | Rendered in-engine from the project's own V2 character and water by `game/tools/make_icon.tscn`. | `game/assets/icon/` |
 | Names: "Ultimate Trifecta", campus, waters ("Founders' Fountain", "Froggy Pond", "Splashdown Pool", "Old Quarry Lagoon", "Lily Basin", "Boathouse Inlet"), buildings, bots | Fictional names written for this project. No real institution is referenced. | code |
 
 ## Not included
