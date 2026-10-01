@@ -31,10 +31,11 @@ The latest full local run, on the final gameplay commit: **53 tests, 802 checks,
 
 - **Method.** Six runner bots, using the same input limits as players, run each of the 14 curated combinations with the Night Watch held idle. Raw output: `docs/test-data/route_bot_times_run.txt`.
 - **Result.** **84 / 84** bot runs finished.
-  - Trip times ranged **103–128 s**, with a median of **116 s**.
+  - Trip times ranged **103–132 s**, with a median of **117.5 s** (final run).
   - The per-combination medians are within ±12% of each other.
 - **Excluded combinations.** The 6 other combinations were left out because their estimated or measured trips fell outside that band.
 - **Expected human times.** Bots take near-optimal lines with sprint management. First-time human players should land in the requested 2–3 minutes: rough estimate 2:10–2:40, which still needs **device playtests** to confirm. That leaves 1–2 minutes of the 4-minute round for chases and captures.
+- **With pursuit.** In the full-round capture, bot runners played against both Night Watch bots on the final tuning. The first runner got home at 2:03 and the fourth at 2:36; along the way the Night Watch caught three runners once each, and one runner ended the round with only 2/3 stamps (`docs/media/shots/results_runners_win.jpg`).
 
 ## 3. Networking
 

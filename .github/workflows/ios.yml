@@ -144,14 +144,20 @@ jobs:
           # bot-driven practice round as a runner (labelled: iOS Simulator, x86_64, Release, unsigned)
           xcrun simctl io "$DEV" recordVideo --codec h264 --force sim-evidence/practice_bot_run_simulator.mp4 &
           REC=$!
+          # the app's own status lines (match state, fps) arrive through the unified log
+          xcrun simctl spawn "$DEV" log stream --style compact --level debug --predicate 'process == "UltimateTrifecta"' > sim-evidence/os_log.txt 2>&1 &
+          LOGP=$!
           xcrun simctl launch --console-pty "$DEV" "$BUNDLE_ID" -- --no-gamecenter --autoplay=runner --local-bot --report=user://sim_report.json > sim-evidence/app-console.log 2>&1 &
-          for i in $(seq 1 10); do sleep 20; xcrun simctl io "$DEV" screenshot "sim-evidence/run_$(printf %02d $i).png" || true; done
+          for i in $(seq 1 16); do sleep 30; xcrun simctl io "$DEV" screenshot "sim-evidence/run_$(printf %02d $i).png" || true; done
+          kill $LOGP || true
           kill -INT $REC || true
           sleep 3
           xcrun simctl terminate "$DEV" "$BUNDLE_ID" || true
           ls -la sim-evidence
           echo "---- app console (tail) ----"
           tail -n 120 sim-evidence/app-console.log || true
+          echo "---- app status lines (os_log) ----"
+          grep -E "SOAK|ROUND|SCRIPT ERROR|ERROR:" sim-evidence/os_log.txt | tail -n 60 || echo "no app status lines in os_log"
           echo "---- crash reports ----"
           ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i -E "trifecta|godot" || echo "none"
       - name: Evidence contact sheet (base64 JPEG in log)

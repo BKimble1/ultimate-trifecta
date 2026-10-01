@@ -17,6 +17,9 @@
 **State: source prepared · project compiled (unsigned).**
 
 - **Project compiled (unsigned).** CI exports the Xcode project and builds an **unsigned arm64 device archive** with `CODE_SIGNING_ALLOWED=NO`. This proves the project compiles and links for iPhone; it is not installable.
+  - Latest game code: commit `d89a78a`, GitHub Actions run #7 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/36850751987).
+  - In that run: tests passed, then `** ARCHIVE SUCCEEDED **` for `com.idlery.ultimatetrifecta` 1.0 (7), arm64, Xcode 26.6 / iOS SDK 26.5, with no Info.plist warnings.
+  - The unsigned build number comes from the GitHub run number. The signed lane picks the next number from App Store Connect instead.
 - **Not done yet:**
   - The app has not been device-tested.
   - No signed archive has been created.
