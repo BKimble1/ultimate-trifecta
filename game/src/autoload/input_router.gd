@@ -42,14 +42,18 @@ var sprint_threshold := 0.88     # touch: stick deflection that triggers sprint
 var touch_sprint_enabled := true
 
 # touch state written by TouchControls
-var touch_move := Vector2.ZERO   # x right, y forward (screen up)
-var touch_look := Vector2.ZERO   # accumulated drag in pixels
+var touch_move := Vector2.ZERO   # x right, y forward (screen up); radial dead zone applied
+var touch_look_px := Vector2.ZERO  # accumulated camera drag, UNSCALED screen pixels
 var touch_held := 0
-var touch_pressed := 0
+var touch_sprint := false        # edge-sprint (with hysteresis) or the hold-to-sprint button
 var touch_drive := 0.0
 var touch_steer := 0.0
+## Camera drag sensitivity: radians per point (pixels / screen scale), so the
+## same finger travel turns the camera the same amount on any device.
+const TOUCH_RAD_PER_PT := 0.0065
 
 var _pressed_acc := 0
+var _press_queue: Array[int] = []   # touch press edges, one entry per tap
 var _look_acc := Vector2.ZERO
 var _emote_req := -1
 var _mouse_look := false
@@ -146,12 +150,14 @@ func get_move() -> Vector2:
 	return out.limit_length(1.0)
 
 
-## Camera look delta in radians (yaw, pitch) since the last call.
+## Camera look delta in radians (yaw, pitch) since the last call.  Touch and
+## mouse are displacements (never scaled by delta); sticks/keys are rates.
 func consume_look(delta: float) -> Vector2:
 	var out := _look_acc * sensitivity
 	_look_acc = Vector2.ZERO
-	out += touch_look * 0.0055 * sensitivity
-	touch_look = Vector2.ZERO
+	var pts := touch_look_px / maxf(1.0, DisplayServer.screen_get_scale())
+	out += Vector2(pts.x, pts.y * 0.85) * TOUCH_RAD_PER_PT * sensitivity
+	touch_look_px = Vector2.ZERO
 	for id in Input.get_connected_joypads():
 		var rx := Input.get_joy_axis(id, JOY_AXIS_RIGHT_X)
 		var ry := Input.get_joy_axis(id, JOY_AXIS_RIGHT_Y)
@@ -175,15 +181,24 @@ func held_bits() -> int:
 		b |= TC.BTN_SPRINT
 	if Input.is_action_pressed("tag"):
 		b |= TC.BTN_TAG
-	if touch_sprint_enabled and touch_move.length() >= sprint_threshold and device == "touch":
+	if touch_sprint and device == "touch":
 		b |= TC.BTN_SPRINT
 	return b
 
 
+## Queue a touch press edge; each simulation tick consumes at most one queued
+## touch edge, so two quick taps (jump, then dive) are never merged.
+func queue_press(bit: int) -> void:
+	if _press_queue.size() < 8:
+		_press_queue.append(bit)
+
+
+## Press edges for this simulation tick (called once per tick).
 func consume_pressed() -> int:
-	var b := _pressed_acc | touch_pressed
+	var b := _pressed_acc
 	_pressed_acc = 0
-	touch_pressed = 0
+	if not _press_queue.is_empty():
+		b |= _press_queue.pop_front()
 	return b
 
 
@@ -221,9 +236,10 @@ func get_steer() -> float:
 
 func reset_touch() -> void:
 	touch_move = Vector2.ZERO
-	touch_look = Vector2.ZERO
+	touch_look_px = Vector2.ZERO
 	touch_held = 0
-	touch_pressed = 0
+	touch_sprint = false
+	_press_queue.clear()
 	touch_drive = 0.0
 	touch_steer = 0.0
 

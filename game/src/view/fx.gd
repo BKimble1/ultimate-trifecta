@@ -74,9 +74,12 @@ func _ring(pos: Vector3, col: Color, radius: float) -> void:
 	tw.chain().tween_callback(mi.queue_free)
 
 
-func flash_water(mat: ShaderMaterial) -> void:
+## One expanding ripple from the splash point (water-local xz); the surface
+## itself does not flash.
+func flash_water(mat: ShaderMaterial, local_xz: Vector2 = Vector2.ZERO) -> void:
+	mat.set_shader_parameter("splash_local", local_xz)
 	var tw := create_tween()
-	tw.tween_method(func(v: float) -> void: mat.set_shader_parameter("splash_flash", v), 1.0, 0.0, 0.8)
+	tw.tween_method(func(v: float) -> void: mat.set_shader_parameter("splash_flash", v), 1.0, 0.0, 1.4)
 
 
 func whistle_burst(pos: Vector3) -> void:

@@ -30,7 +30,8 @@ func default_profile() -> Dictionary:
 		"uid": uid,
 		"name": "%s %s %d" % [ADJ[rng.randi() % ADJ.size()], ANIMALS[rng.randi() % ANIMALS.size()], rng.randi_range(10, 99)],
 		"settings": {"sensitivity": 1.0, "invert_y": false, "reduced_motion": false, "sfx": 0.9, "music": 0.6,
-			"quality": 1, "sprint_threshold": 0.88, "touch_sprint": true, "role_pref": "any"},
+			"quality": 1, "sprint_threshold": 0.88, "touch_sprint": true, "role_pref": "any",
+			"stick_mode": "dynamic", "sprint_mode": "edge", "button_size": 1.0, "touch_layout": "standard", "haptics": true},
 		"cosmetic": Cosmetics.DEFAULT.duplicate(),
 		"owned": ["outfit:pj_stripes", "outfit:pj_plain", "outfit:swim", "hat:none", "hat:nightcap", "hat:swimcap", "shoes:slippers"],
 		"coins": 0, "level": 1, "xp": 0,
@@ -133,6 +134,7 @@ func _apply_settings() -> void:
 	Controls.sprint_threshold = float(s["sprint_threshold"])
 	Controls.touch_sprint_enabled = bool(s["touch_sprint"])
 	Sfx.set_volumes(float(s["sfx"]), float(s["music"]))
+	QualityPreset.apply(int(s.get("quality", 1)))
 
 
 func player_name() -> String:

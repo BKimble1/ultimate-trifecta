@@ -1,38 +1,50 @@
 class_name PracticeScreen
 extends Screen
-## Solo practice: identical rules and controls, the other seven slots are
-## clearly labelled bots. The tutorial adds coach tips and a longer head start.
+## Solo practice: identical rules and controls; the other seven slots are
+## clearly labelled bots.  The tutorial adds coach tips and a longer head
+## start.  One recommended option is the primary action.
 
 
 func build() -> void:
-	header("Practice")
-	var note := UIKit.label("Same rules, same controls. All other players are bots (labelled BOT). Practice rewards are reduced and recorded separately from online stats.", 24, UIKit.MUTED)
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_child(note)
-	var row := UIKit.hbox(24)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	if App.stage:
+		App.stage.set_mode("home")
+	var row := UIKit.hbox(0)
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(row)
-	var cards := [
-		["Tutorial Run", "Learn to run, jump, dive and splash. The Night Watch waits 30 seconds before chasing.", Color(0.45, 0.9, 0.6), func() -> void: App.start_practice("runner", true)],
-		["Practice as Runner", TC.RUNNER_CARD, UIKit.RUNNER, func() -> void: App.start_practice("runner", false)],
-		["Practice as Night Watch", TC.PATROL_CARD, UIKit.PATROL, func() -> void: App.start_practice("patrol", false)],
+	var back := UIKit.icon_button("back")
+	back.tooltip_text = "Back"
+	back.pressed.connect(_go_back)
+	back.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	row.add_child(back)
+	row.add_child(UIKit.spacer_h())
+	var sheet := UIKit.panel(Color(UIKit.SLATE, 0.96), UIKit.R_PANEL, 28)
+	sheet.custom_minimum_size = Vector2(minf(580.0, get_viewport().get_visible_rect().size.x * 0.56), 0)
+	sheet.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(sheet)
+	var v := UIKit.vbox(14)
+	sheet.add_child(v)
+	v.add_child(UIKit.heading("Practice", 38))
+	var note := UIKit.label("Same rules and controls. Everyone else is a bot (labelled BOT). Half rewards; stats kept separately.", 18, UIKit.IVORY_MUTED)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(note)
+	var tut_done: bool = Save.data.get("tutorial_done", false)
+	var opts := [
+		["Tutorial run", "Learn to run, jump, dive and splash. The Night Watch waits 30 s.", func() -> void: App.start_practice("runner", true)],
+		["As a Runner", TC.RUNNER_CARD, func() -> void: App.start_practice("runner", false)],
+		["As the Night Watch", TC.PATROL_CARD, func() -> void: App.start_practice("patrol", false)],
 	]
 	var first: Button = null
-	for c in cards:
-		var p := UIKit.panel(Color(0.12, 0.15, 0.32, 0.92), 26, 20)
-		p.custom_minimum_size = Vector2(340, 330)
-		var v := UIKit.vbox(12)
-		v.add_child(UIKit.label(String(c[0]), 30, c[2], true))
-		var d := UIKit.label(String(c[1]), 22, UIKit.TEXT)
-		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		d.custom_minimum_size = Vector2(300, 150)
-		v.add_child(d)
-		var b := UIKit.button("Start", c[2], Vector2(300, 70))
-		b.pressed.connect(c[3])
+	for i in opts.size():
+		var o: Array = opts[i]
+		var recommended := (i == 0 and not tut_done) or (i == 1 and tut_done)
+		var b := UIKit.primary(String(o[0]), Vector2(520, 84), 28) if recommended else UIKit.secondary(String(o[0]), Vector2(520, 76), 24)
+		b.pressed.connect(o[2])
 		v.add_child(b)
-		p.add_child(v)
-		row.add_child(p)
-		if first == null:
+		var d := UIKit.label(String(o[1]), 17, UIKit.IVORY_MUTED)
+		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		d.custom_minimum_size = Vector2(500, 0)
+		v.add_child(d)
+		if recommended:
 			first = b
 	focus_first(first)
+	UIKit.appear(sheet, Vector2.ZERO, UIKit.T_SHEET)

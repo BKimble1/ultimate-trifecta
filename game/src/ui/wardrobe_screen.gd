@@ -1,101 +1,157 @@
 class_name WardrobeScreen
 extends Screen
-## A small real wardrobe. Coins buy appearance only — never gameplay.
+## Wardrobe: the same character asset on the dorm stage (camera eases in),
+## a segmented slot picker and item cards.  Changes apply in place (no
+## rebuild) and, inside a room, are sent to the party immediately.
+## Coins buy appearance only — never gameplay.
 
-var preview: Preview3D
 var coins_lbl: Label
-var lists: VBoxContainer
+var grid: GridContainer
 var slot := "outfit"
+var tabs: Dictionary = {}
 var _spin := 0.0
 
 
 func build() -> void:
-	header("Wardrobe")
-	var row := UIKit.hbox(24)
+	if App.stage:
+		App.stage.set_mode("wardrobe")
+		App.sync_stage_local()
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shade := TextureRect.new()
+	shade.texture = TitleScreen._side_gradient()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.stretch_mode = TextureRect.STRETCH_SCALE
+	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+	move_child(shade, 0)
+	var row := UIKit.hbox(0)
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(row)
-	var left := UIKit.vbox(8)
+	var left := UIKit.vbox(12)
 	row.add_child(left)
-	preview = Preview3D.new(Vector2i(400, 470))
-	left.add_child(preview)
-	coins_lbl = UIKit.label("", 28, UIKit.ACCENT, true, HORIZONTAL_ALIGNMENT_CENTER)
+	var back := UIKit.icon_button("back")
+	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	back.tooltip_text = "Done"
+	back.pressed.connect(_go_back)
+	left.add_child(back)
+	left.add_child(UIKit.spacer_v())
+	coins_lbl = UIKit.label("", 26, UIKit.AMBER, true)
 	left.add_child(coins_lbl)
-	left.add_child(UIKit.label("Earn coins by playing. Cosmetic only.", 20, UIKit.MUTED, false, HORIZONTAL_ALIGNMENT_CENTER))
-	var right := UIKit.vbox(10)
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(right)
-	var tabs := UIKit.hbox(10)
-	var first: Button = null
-	for s in [["outfit", "Outfit"], ["hat", "Hat"], ["shoes", "Shoes"], ["color", "Colour"], ["skin", "Skin"]]:
-		var b := UIKit.button(String(s[1]), Color(0.3, 0.38, 0.7), Vector2(150, 58), 24)
+	left.add_child(UIKit.label("Earn coins by playing. Looks only.", 18, UIKit.IVORY_MUTED))
+	row.add_child(UIKit.spacer_h())
+	var sheet := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 22)
+	sheet.custom_minimum_size = Vector2(minf(600.0, get_viewport().get_visible_rect().size.x * 0.56), 0)
+	row.add_child(sheet)
+	var v := UIKit.vbox(14)
+	sheet.add_child(v)
+	v.add_child(UIKit.heading("Outfit", 36))
+	var seg := UIKit.hbox(6)
+	for s in [["outfit", "Clothes"], ["hat", "Hat"], ["shoes", "Shoes"], ["color", "Colour"], ["skin", "Skin"]]:
+		var b := UIKit.quiet(String(s[1]), Vector2(108, 64), 20)
 		var sid: String = s[0]
 		b.pressed.connect(func() -> void:
 			slot = sid
 			_refresh())
-		tabs.add_child(b)
-		if first == null:
-			first = b
-	right.add_child(tabs)
+		seg.add_child(b)
+		tabs[sid] = b
+	v.add_child(seg)
 	var sc := ScrollContainer.new()
 	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	sc.follow_focus = true
-	lists = UIKit.vbox(8)
-	lists.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sc.add_child(lists)
-	right.add_child(sc)
-	focus_first(first)
+	v.add_child(sc)
+	grid = GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sc.add_child(grid)
+	focus_first(tabs["outfit"])
 	_refresh()
+	UIKit.appear(sheet, Vector2(40, 0), UIKit.T_SHEET)
 
 
 func _process(delta: float) -> void:
-	_spin += delta * 0.6
-	for v in preview.views:
-		v.rotation.y = PI + sin(_spin) * 0.6
+	# slow turntable so the outfit can be seen from the side (still with Reduced Motion)
+	if App.stage == null or UIKit.reduced_motion():
+		return
+	_spin += delta * 0.5
+	var v := App.stage.local_character()
+	if v:
+		var base := atan2(-(App.stage.cam.global_position.x - v.global_position.x), -(App.stage.cam.global_position.z - v.global_position.z))
+		v.rotation.y = base - 0.25 + sin(_spin) * 0.55
+
+
+func _equip_changed() -> void:
+	App.sync_stage_local()
+	if App.session and is_instance_valid(App.session) and App.session.phase == TC.Phase.LOBBY and App.session.mode != NetSession.Mode.OFFLINE:
+		App.session.set_local_cosmetic(Save.data["cosmetic"])
+	Sfx.play("pop")
 
 
 func _refresh() -> void:
 	coins_lbl.text = "%d coins" % int(Save.data["coins"])
-	preview.clear()
-	preview.show_character(TC.Role.RUNNER, Save.data["cosmetic"])
-	for c in lists.get_children():
+	for k in tabs:
+		var b: Button = tabs[k]
+		if k == slot:
+			UIKit._apply(b, UIKit.TEAL, UIKit.NAVY)
+		else:
+			b.add_theme_stylebox_override("normal", UIKit.box(Color(UIKit.SLATE, 0.55), UIKit.R_BUTTON, 2, Color(UIKit.IVORY, 0.22)))
+			b.add_theme_color_override("font_color", UIKit.IVORY)
+	for c in grid.get_children():
 		c.queue_free()
 	var cos: Dictionary = Save.data["cosmetic"]
 	if slot == "color" or slot == "skin":
 		var arr: Array = Cosmetics.COLORS if slot == "color" else Cosmetics.SKINS
-		var grid := GridContainer.new()
 		grid.columns = 4
-		grid.add_theme_constant_override("h_separation", 12)
-		grid.add_theme_constant_override("v_separation", 12)
 		for i in arr.size():
-			var b := UIKit.button(Cosmetics.COLOR_NAMES[i] if slot == "color" else "Tone %d" % (i + 1), arr[i], Vector2(170, 70), 22)
-			if int(cos[slot]) == i:
-				b.text = "✓ " + b.text
+			var b := UIKit.secondary(Cosmetics.COLOR_NAMES[i] if slot == "color" else "Tone %d" % (i + 1), Vector2(132, 84), 18)
+			var col: Color = arr[i]
+			var sel := int(cos[slot]) == i
+			b.add_theme_stylebox_override("normal", UIKit.box(col, UIKit.R_SMALL, 4 if sel else 0, UIKit.IVORY))
+			b.add_theme_stylebox_override("hover", UIKit.box(col.lightened(0.08), UIKit.R_SMALL, 4 if sel else 0, UIKit.IVORY))
+			b.add_theme_stylebox_override("pressed", UIKit.box(col.darkened(0.1), UIKit.R_SMALL, 4, UIKit.IVORY))
+			var fg := UIKit.NAVY if col.get_luminance() > 0.5 else UIKit.IVORY
+			for k in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+				b.add_theme_color_override(k, fg)
 			var idx := i
 			b.pressed.connect(func() -> void:
 				Save.equip(slot, idx)
+				_equip_changed()
 				_refresh())
 			grid.add_child(b)
-		lists.add_child(grid)
 		return
+	grid.columns = 2
 	var table: Dictionary = Cosmetics.OUTFITS if slot == "outfit" else (Cosmetics.HATS if slot == "hat" else Cosmetics.SHOES)
 	for id in table:
 		var item: Dictionary = table[id]
 		var owned: bool = Save.owns(slot, id)
 		var equipped: bool = String(cos[slot]) == id
-		var label := String(item["name"])
-		var col := Color(0.25, 0.32, 0.62)
+		var price := int(item["cost"])
+		var affordable := int(Save.data["coins"]) >= price
+		var caption := String(item["name"])
+		var state := "Wearing" if equipped else ("Owned" if owned else "%d coins" % price)
+		var b := UIKit.secondary("", Vector2(270, 92), 22)
+		var vb := UIKit.vbox(2)
+		vb.set_anchors_preset(Control.PRESET_FULL_RECT)
+		vb.offset_left = 16
+		vb.offset_right = -12
+		vb.alignment = BoxContainer.ALIGNMENT_CENTER
+		vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var t := UIKit.label(caption, 22, UIKit.NAVY if equipped else UIKit.IVORY, true)
+		t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vb.add_child(t)
+		var st := UIKit.label(state, 17, UIKit.NAVY if equipped else (UIKit.AMBER if (not owned and affordable) else UIKit.IVORY_MUTED))
+		st.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vb.add_child(st)
+		b.add_child(vb)
 		if equipped:
-			label = "✓ " + label + "  (wearing)"
-			col = Color(0.3, 0.7, 0.45)
-		elif owned:
-			label += "  — wear"
-		else:
-			label += "  — %d coins" % int(item["cost"])
-			col = Color(0.6, 0.45, 0.2) if int(Save.data["coins"]) >= int(item["cost"]) else Color(0.3, 0.3, 0.4)
-		var b2 := UIKit.button(label, col, Vector2(560, 64), 24)
-		b2.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			UIKit._apply(b, UIKit.TEAL, UIKit.NAVY)
+		elif not owned and not affordable:
+			b.modulate = Color(1, 1, 1, 0.6)
 		var iid: String = id
-		b2.pressed.connect(func() -> void:
+		b.pressed.connect(func() -> void:
 			if Save.owns(slot, iid):
 				Save.equip(slot, iid)
 			elif Save.buy(slot, iid):
@@ -103,5 +159,7 @@ func _refresh() -> void:
 				Sfx.play("pickup")
 			else:
 				dialog("Not enough coins yet — play a few rounds!")
+				return
+			_equip_changed()
 			_refresh())
-		lists.add_child(b2)
+		grid.add_child(b)

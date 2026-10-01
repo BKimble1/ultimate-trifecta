@@ -57,71 +57,71 @@ func setup(controller: MatchController) -> void:
 	draw_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(draw_layer)
 
-	# --- top centre: timer, home count, compass
-	var top := UIKit.vbox(2)
+	# --- top centre: timer + runners-home chip
+	var top := UIKit.vbox(4)
 	top.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	top.alignment = BoxContainer.ALIGNMENT_BEGIN
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(top)
 	top.set_meta("anchor", "top")
-	timer_lbl = UIKit.outlined(UIKit.label("4:00", 46, UIKit.TEXT, true, HORIZONTAL_ALIGNMENT_CENTER), 10)
+	timer_lbl = UIKit.outlined(UIKit.label("4:00", 44, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER), 8)
+	timer_lbl.add_theme_font_override("font", UIKit.font_w(700))
 	top.add_child(timer_lbl)
-	home_lbl = UIKit.outlined(UIKit.label("0/4 HOME", 24, UIKit.GOOD, true, HORIZONTAL_ALIGNMENT_CENTER), 8)
-	top.add_child(home_lbl)
-	compass = Compass.new()
-	(compass as Compass).hud = self
-	compass.custom_minimum_size = Vector2(520, 44)
-	compass.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top.add_child(compass)
+	var hc := UIKit.panel(Color(UIKit.NAVY, 0.6), 999, 14)
+	hc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hh := UIKit.hbox(8)
+	hh.alignment = BoxContainer.ALIGNMENT_CENTER
+	hh.add_child(Icons.IconRect.new("house", UIKit.TEAL, 22))
+	home_lbl = UIKit.label("0 / 4 home", 19, UIKit.IVORY, true, HORIZONTAL_ALIGNMENT_CENTER)
+	hh.add_child(home_lbl)
+	hc.add_child(hh)
+	top.add_child(hc)
+	compass = Control.new()   # V2: the compass strip is replaced by objective chips
 
-	# --- top left: role + targets
+	# --- top left: role pill + three objective chips (bearing + distance)
 	var tl := UIKit.vbox(6)
 	tl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tl.set_meta("anchor", "top_left")
 	root.add_child(tl)
-	role_lbl = UIKit.outlined(UIKit.label("RUNNER", 22, UIKit.RUNNER, true), 8)
+	role_lbl = UIKit.label("Runner", 18, UIKit.TEAL, true)
 	tl.add_child(role_lbl)
-	for i in 3:
-		var row := UIKit.hbox(8)
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var ic := Icons.IconRect.new("star", Color.WHITE, 38)
-		var nm := UIKit.outlined(UIKit.label("Target", 25, UIKit.TEXT, true), 7)
-		var st := UIKit.outlined(UIKit.label("", 22, UIKit.GOOD, true), 7)
-		row.add_child(ic)
-		row.add_child(nm)
-		row.add_child(st)
-		tl.add_child(row)
-		target_rows.append({"row": row, "icon": ic, "name": nm, "state": st})
+	var chips := ObjectiveChips.new()
+	chips.hud = self
+	chips.custom_minimum_size = Vector2(250, 150)
+	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tl.add_child(chips)
+	target_rows = [chips]
 
-	# --- top right: minimap + pause
+	# --- top right: compact minimap + pause
 	var tr := UIKit.hbox(10)
 	tr.set_meta("anchor", "top_right")
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(tr)
 	minimap = Minimap.new()
 	(minimap as Minimap).hud = self
-	minimap.custom_minimum_size = Vector2(190, 190)
+	minimap.custom_minimum_size = Vector2(150, 150)
 	minimap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tr.add_child(minimap)
-	pause_btn = UIKit.button("II", Color(0.2, 0.24, 0.45, 0.85), Vector2(64, 64), 26)
+	pause_btn = UIKit.icon_button("pause", "", 64)
 	pause_btn.focus_mode = Control.FOCUS_NONE
 	pause_btn.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	pause_btn.pressed.connect(_toggle_pause)
 	tr.add_child(pause_btn)
 
 	# --- centre messages
-	center_lbl = UIKit.outlined(UIKit.label("", 96, UIKit.ACCENT, true, HORIZONTAL_ALIGNMENT_CENTER), 14)
+	center_lbl = UIKit.outlined(UIKit.label("", 88, UIKit.AMBER, true, HORIZONTAL_ALIGNMENT_CENTER), 12)
+	center_lbl.add_theme_font_override("font", UIKit.font_w(700))
 	center_lbl.set_anchors_preset(Control.PRESET_CENTER)
 	center_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(center_lbl)
-	sub_lbl = UIKit.outlined(UIKit.label("", 30, UIKit.TEXT, true, HORIZONTAL_ALIGNMENT_CENTER), 9)
+	sub_lbl = UIKit.outlined(UIKit.label("", 24, UIKit.IVORY, true, HORIZONTAL_ALIGNMENT_CENTER), 7)
 	sub_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(sub_lbl)
-	toast_lbl = UIKit.outlined(UIKit.label("", 34, UIKit.TEXT, true, HORIZONTAL_ALIGNMENT_CENTER), 10)
+	toast_lbl = UIKit.outlined(UIKit.label("", 28, UIKit.IVORY, true, HORIZONTAL_ALIGNMENT_CENTER), 8)
 	toast_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(toast_lbl)
 
-	banner = UIKit.panel(Color(0.12, 0.45, 0.25, 0.92), 22, 12)
+	banner = UIKit.panel(Color(UIKit.SLATE, 0.9), 22, 12)
 	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bh := UIKit.hbox(10)
 	bh.add_child(Icons.IconRect.new("house", Color(1.0, 0.9, 0.5), 36))
@@ -132,7 +132,7 @@ func setup(controller: MatchController) -> void:
 	root.add_child(banner)
 
 	# --- role reveal card
-	reveal = UIKit.panel(Color(0.10, 0.12, 0.28, 0.95), 30, 28)
+	reveal = UIKit.panel(Color(UIKit.SLATE, 0.96), UIKit.R_PANEL, 30)
 	reveal.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	reveal.custom_minimum_size = Vector2(760, 0)
 	root.add_child(reveal)
@@ -143,11 +143,12 @@ func setup(controller: MatchController) -> void:
 	root.add_child(feed_box)
 
 	# --- capture / finished overlay
-	overlay = UIKit.panel(Color(0.10, 0.12, 0.28, 0.88), 26, 20)
+	overlay = UIKit.panel(Color(UIKit.SLATE, 0.9), UIKit.R_PANEL, 20)
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var ov := UIKit.vbox(4)
-	overlay_title = UIKit.label("", 40, UIKit.ACCENT, true, HORIZONTAL_ALIGNMENT_CENTER)
-	overlay_sub = UIKit.label("", 24, UIKit.TEXT, false, HORIZONTAL_ALIGNMENT_CENTER)
+	overlay_title = UIKit.label("", 36, UIKit.AMBER, true, HORIZONTAL_ALIGNMENT_CENTER)
+	overlay_title.add_theme_font_override("font", UIKit.font_w(700))
+	overlay_sub = UIKit.label("", 21, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER)
 	ov.add_child(overlay_title)
 	ov.add_child(overlay_sub)
 	overlay.add_child(ov)
@@ -157,11 +158,11 @@ func setup(controller: MatchController) -> void:
 	spectate_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(spectate_lbl)
 
-	coach = UIKit.panel(Color(0.12, 0.36, 0.26, 0.92), 22, 14)
+	coach = UIKit.panel(Color(UIKit.SLATE, 0.92), 22, 14)
 	coach.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var ch := UIKit.hbox(10)
-	ch.add_child(Icons.IconRect.new("star", UIKit.ACCENT, 34))
-	coach_lbl = UIKit.label("", 26, UIKit.TEXT, true)
+	ch.add_child(Icons.IconRect.new("star", UIKit.TEAL, 30))
+	coach_lbl = UIKit.label("", 23, UIKit.IVORY, true)
 	coach_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	coach_lbl.custom_minimum_size = Vector2(560, 0)
 	ch.add_child(coach_lbl)
@@ -183,8 +184,10 @@ func _build_reveal() -> void:
 		my_role = int(mc.roster[mc.local_slot]["role"])
 	var is_patrol := my_role == TC.Role.PATROL
 	var title := "YOU'RE ON THE NIGHT WATCH" if is_patrol else ("YOU'RE A RUNNER" if my_role == TC.Role.RUNNER else "SPECTATING")
-	v.add_child(UIKit.label(title, 44, UIKit.PATROL if is_patrol else UIKit.RUNNER, true, HORIZONTAL_ALIGNMENT_CENTER))
-	var card := UIKit.label(TC.PATROL_CARD if is_patrol else TC.RUNNER_CARD, 28, UIKit.TEXT, false, HORIZONTAL_ALIGNMENT_CENTER)
+	var ttl := UIKit.label(title, 40, UIKit.PATROL if is_patrol else UIKit.TEAL, true, HORIZONTAL_ALIGNMENT_CENTER)
+	ttl.add_theme_font_override("font", UIKit.font_w(700))
+	v.add_child(ttl)
+	var card := UIKit.label(TC.PATROL_CARD if is_patrol else TC.RUNNER_CARD, 24, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER)
 	card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	card.custom_minimum_size = Vector2(700, 0)
 	v.add_child(card)
@@ -196,52 +199,56 @@ func _build_reveal() -> void:
 		cell.add_child(Icons.IconRect.new(w["icon"], w["color"], 34))
 		cell.add_child(UIKit.label(w["name"], 24, w["color"], true))
 		targets_row.add_child(cell)
-	v.add_child(UIKit.label("Tonight's splash spots", 20, UIKit.MUTED, false, HORIZONTAL_ALIGNMENT_CENTER))
+	v.add_child(UIKit.label("Tonight's splash spots", 19, UIKit.IVORY_MUTED, false, HORIZONTAL_ALIGNMENT_CENTER))
 	v.add_child(targets_row)
 	var teams := UIKit.hbox(30)
 	teams.alignment = BoxContainer.ALIGNMENT_CENTER
 	for role in [TC.Role.RUNNER, TC.Role.PATROL]:
 		var col := UIKit.vbox(2)
-		col.add_child(UIKit.label("Runners (6)" if role == TC.Role.RUNNER else "Night Watch (2)", 22, UIKit.RUNNER if role == TC.Role.RUNNER else UIKit.PATROL, true))
+		col.add_child(UIKit.label("Runners (6)" if role == TC.Role.RUNNER else "Night Watch (2)", 20, UIKit.TEAL if role == TC.Role.RUNNER else UIKit.PATROL, true))
 		for s in mc.roster:
 			var e: Dictionary = mc.roster[s]
 			if int(e["role"]) == role:
-				col.add_child(UIKit.label(String(e["name"]) + ("  · BOT" if bool(e["is_bot"]) else "") + ("  (you)" if int(s) == mc.local_slot else ""), 20, UIKit.TEXT))
+				col.add_child(UIKit.label(String(e["name"]) + ("  · BOT" if bool(e["is_bot"]) else "") + ("  (you)" if int(s) == mc.local_slot else ""), 18, UIKit.IVORY))
 		teams.add_child(col)
 	v.add_child(teams)
 	reveal.add_child(v)
 
 
 func _build_pause() -> void:
-	pause_panel = UIKit.panel(Color(0.08, 0.10, 0.24, 0.97), 30, 26)
+	pause_panel = UIKit.panel(Color(UIKit.SLATE, 0.98), UIKit.R_PANEL, 28)
 	pause_panel.visible = false
 	pause_panel.process_mode = Node.PROCESS_MODE_ALWAYS
-	var v := UIKit.vbox(14)
-	v.add_child(UIKit.label("Paused (the round keeps running)", 30, UIKit.TEXT, true, HORIZONTAL_ALIGNMENT_CENTER))
-	var sens_row := UIKit.hbox(10)
-	sens_row.add_child(UIKit.label("Camera sensitivity", 24))
+	var v := UIKit.vbox(16)
+	v.add_child(UIKit.heading("Paused", 34))
+	v.add_child(UIKit.label("The round keeps running for everyone else.", 18, UIKit.IVORY_MUTED))
+	var sens_row := UIKit.hbox(12)
+	var sl_l := UIKit.label("Camera sensitivity", 21)
+	sl_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	sens_row.add_child(sl_l)
 	var sl := HSlider.new()
 	sl.min_value = 0.3
 	sl.max_value = 2.5
 	sl.step = 0.05
 	sl.value = Controls.sensitivity
-	sl.custom_minimum_size = Vector2(260, 40)
+	sl.custom_minimum_size = Vector2(280, maxf(44.0, UIKit.touch_min()))
 	sl.value_changed.connect(func(val: float) -> void:
 		Controls.sensitivity = val
 		Save.set_setting("sensitivity", val))
 	sens_row.add_child(sl)
 	v.add_child(sens_row)
 	var rm := CheckButton.new()
-	rm.text = "Reduced camera motion"
+	rm.text = "Reduced motion"
 	rm.button_pressed = mc.reduced_motion
+	rm.custom_minimum_size = Vector2(0, maxf(44.0, UIKit.touch_min()))
 	rm.toggled.connect(func(on: bool) -> void:
 		mc.reduced_motion = on
 		Save.set_setting("reduced_motion", on))
 	v.add_child(rm)
-	var resume := UIKit.button("Resume", Color(0.3, 0.7, 0.45))
+	var resume := UIKit.primary("Resume", Vector2(420, 88), 28)
 	resume.pressed.connect(_toggle_pause)
 	v.add_child(resume)
-	var leave := UIKit.button("Leave match", UIKit.BAD)
+	var leave := UIKit.quiet("Leave match", Vector2(420, 72), 22)
 	leave.pressed.connect(func() -> void: mc.leave_match())
 	v.add_child(leave)
 	pause_panel.add_child(v)
@@ -251,6 +258,9 @@ func _build_pause() -> void:
 
 func _toggle_pause() -> void:
 	pause_panel.visible = not pause_panel.visible
+	if pause_panel.visible and mc and mc.touch:
+		# a finger that was moving/holding when the menu opened must not keep acting
+		mc.touch.cancel_all()
 	if pause_panel.visible:
 		(pause_panel.get_meta("resume") as Button).grab_focus()
 
@@ -277,6 +287,15 @@ func _layout() -> void:
 			"top_right":
 				c.position = Vector2(vs.x - _safe.size.x - cs.x, _safe.position.y)
 	pause_panel.position = (vs - pause_panel.get_combined_minimum_size()) * 0.5
+	call_deferred("_reserve_touch_regions")
+
+
+## Touches on the pause button and minimap must never start the stick or camera.
+func _reserve_touch_regions() -> void:
+	if mc == null or mc.touch == null or not is_instance_valid(pause_btn):
+		return
+	var rects: Array[Rect2] = [pause_btn.get_global_rect().grow(12), minimap.get_global_rect().grow(6)]
+	mc.touch.set_reserved(rects)
 
 
 func set_spectating(slot: int) -> void:
@@ -290,10 +309,10 @@ func toast(text: String, col: Color = UIKit.TEXT) -> void:
 
 
 func feed(text: String, role: int) -> void:
-	var l := UIKit.outlined(UIKit.label(text, 20, UIKit.RUNNER if role == TC.Role.RUNNER else (UIKit.PATROL if role == TC.Role.PATROL else UIKit.MUTED), true), 6)
-	l.set_meta("t", 6.0)
+	var l := UIKit.outlined(UIKit.label(text, 18, UIKit.TEAL if role == TC.Role.RUNNER else (UIKit.PATROL if role == TC.Role.PATROL else UIKit.IVORY_MUTED), true), 5)
+	l.set_meta("t", 4.0)
 	feed_box.add_child(l)
-	while feed_box.get_child_count() > 5:
+	while feed_box.get_child_count() > 3:
 		feed_box.get_child(0).queue_free()
 		feed_box.remove_child(feed_box.get_child(0))
 
@@ -311,30 +330,15 @@ func refresh(delta: float) -> void:
 	# timer
 	var tl: float = info.get("time_left", 0.0)
 	timer_lbl.text = "%d:%02d" % [int(tl) / 60, int(tl) % 60]
-	timer_lbl.add_theme_color_override("font_color", UIKit.BAD if tl < 30.0 and phase == TC.Phase.PLAYING else UIKit.TEXT)
+	timer_lbl.add_theme_color_override("font_color", UIKit.AMBER if tl < 30.0 and phase == TC.Phase.PLAYING else UIKit.IVORY)
 	var fin: int = info.get("finished", 0)
-	home_lbl.text = "%d / %d RUNNERS HOME" % [fin, mc.cfg.runners_needed]
-	role_lbl.text = "NIGHT WATCH" if role == TC.Role.PATROL else ("RUNNER" if role == TC.Role.RUNNER else "SPECTATOR")
-	role_lbl.add_theme_color_override("font_color", UIKit.PATROL if role == TC.Role.PATROL else UIKit.RUNNER)
-	# targets with stamp states
+	home_lbl.text = "%d / %d home" % [fin, mc.cfg.runners_needed]
+	role_lbl.text = "Night Watch" if role == TC.Role.PATROL else ("Runner" if role == TC.Role.RUNNER else "Spectating")
+	role_lbl.add_theme_color_override("font_color", UIKit.PATROL if role == TC.Role.PATROL else UIKit.TEAL)
 	var stamps: int = info.get("stamps", 0)
-	var tg: Array = info.get("targets", [])
-	for i in target_rows.size():
-		var row: Dictionary = target_rows[i]
-		if i >= tg.size():
-			(row["row"] as Control).visible = false
-			continue
-		var w: Dictionary = mc.layout.waters[int(tg[i])]
-		var ic: Icons.IconRect = row["icon"]
-		ic.kind = w["icon"]
-		var done := (stamps & (1 << i)) != 0 and role == TC.Role.RUNNER
-		ic.col = (w["color"] as Color).darkened(0.45) if done else w["color"]
-		ic.queue_redraw()
-		(row["name"] as Label).text = w["short"]
-		(row["state"] as Label).text = "SPLASHED" if done else ""
-	var all_done := role == TC.Role.RUNNER and stamps == 7
 	var st: int = (info.get("rs", {}) as Dictionary).get("state", 0)
-	banner.visible = all_done and phase == TC.Phase.PLAYING and st != TC.PState.FINISHED
+	banner.visible = false   # V2: the "head back" state lives in the objective chips
+	(target_rows[0] as Control).queue_redraw()
 	# countdown / reveal / release
 	reveal.visible = phase == TC.Phase.REVEAL
 	center_lbl.text = ""
@@ -390,7 +394,6 @@ func refresh(delta: float) -> void:
 	_update_coach(delta, phase, role)
 	_place(vs)
 	draw_layer.queue_redraw()
-	compass.queue_redraw()
 	minimap.queue_redraw()
 
 
@@ -456,7 +459,7 @@ func _update_coach(delta: float, phase: int, role: int) -> void:
 		["Jump: %s." % _hint("jump"), not bool(rs.get("on_floor", true)) and (rs.get("vel", Vector3.ZERO) as Vector3).y > 2.0],
 		["Dive: jump, then %s again while in the air." % _hint("jump").replace("tap ", "tap ").replace("press ", "press "), bool(rs.get("diving", false))],
 		["Sprint: %s. It refills quickly." % _hint("sprint"), bool(rs.get("sprinting", false))],
-		["Follow a glowing beam (see the compass at the top) and jump into that water!", stamps != 0],
+		["Follow a glowing beam (the chips top-left point the way) and jump into that water!", stamps != 0],
 		["SPLASH! Two more spots to go. Each one has its own shape and colour.", stamps == 7],
 		["All three! Now run home through ANY of the dorm's four doors.", st == TC.PState.FINISHED],
 		["You did the Trifecta! The Night Watch is out now — cheer on your team.", false],
@@ -527,14 +530,23 @@ class DrawLayer:
 			var v: CharacterView = hud.mc.views.get(slot)
 			if v == null or not v.visible:
 				continue
+			# like name labels: fade out with distance, never through walls
+			var head := v.global_position + Vector3(0, 1.6, 0)
+			var cam3 := hud.mc.camera
+			if cam3 == null or cam3.global_position.distance_to(head) > 28.0:
+				continue
+			if int(slot) != hud.mc.local_slot:
+				var q := PhysicsRayQueryParameters3D.create(cam3.global_position, head, TC.L_WORLD)
+				if not hud.mc.get_world_3d().direct_space_state.intersect_ray(q).is_empty():
+					continue
 			var sp := hud.world_to_screen(v.global_position + Vector3(0, 2.6, 0))
 			if sp.x < -1000:
 				continue
 			var label: String = TC.EMOTE_LABELS.get(TC.EMOTES[int(hud.emotes[slot]["id"])], "!")
 			var f := UIKit.font(true)
 			var tw := f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 26).x
-			draw_style_box(UIKit.box(Color(1, 1, 1, 0.92), 16), Rect2(sp - Vector2(tw * 0.5 + 12, 22), Vector2(tw + 24, 40)))
-			draw_string(f, sp + Vector2(-tw * 0.5, 8), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, UIKit.INK)
+			draw_style_box(UIKit.box(Color(UIKit.IVORY, 0.94), 16), Rect2(sp - Vector2(tw * 0.5 + 12, 22), Vector2(tw + 24, 40)))
+			draw_string(f, sp + Vector2(-tw * 0.5, 8), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, UIKit.NAVY)
 		# patrol: splash markers in the world (brief, location only)
 		for m in info.get("markers", []):
 			var w: Dictionary = hud.mc.layout.waters[int(m["water"])]
@@ -551,6 +563,66 @@ class DrawLayer:
 			var base := Vector2(vs.x * 0.5 - 90, vs.y - hud._safe.size.y - 26)
 			draw_style_box(UIKit.box(Color(0, 0, 0, 0.45), 8), Rect2(base, Vector2(180, 14)))
 			draw_style_box(UIKit.box(UIKit.ACCENT if sp3 > 0.15 else UIKit.BAD, 8), Rect2(base, Vector2(180 * sp3, 14)))
+
+
+## Top-left objective chips: one per target (icon, name, bearing arrow,
+## distance; a check when splashed).  When a runner has all three, they
+## collapse into a single "Head back to the dorm" chip pointing at the
+## nearest door.  Night Watch sees the targets to guard plus the dorm.
+class ObjectiveChips:
+	extends Control
+	var hud: MatchHUD
+
+	func _chip(y: float, icon: String, col: Color, text: String, bearing: float, dist: float, done: bool, emph: bool) -> void:
+		var h := 40.0
+		var w := size.x
+		var bg := Color(UIKit.NAVY, 0.62) if not emph else Color(UIKit.SLATE, 0.92)
+		draw_style_box(UIKit.box(bg, 999, 2 if emph else 0, UIKit.AMBER), Rect2(0, y, w, h))
+		Icons.draw_shape(self, icon, Vector2(22, y + h * 0.5), 12, col if not done else Color(col, 0.45))
+		var f := UIKit.font_w(650)
+		draw_string(f, Vector2(42, y + h * 0.5 + 7), text, HORIZONTAL_ALIGNMENT_LEFT, w - 120, 18, UIKit.IVORY if not done else Color(UIKit.IVORY, 0.5))
+		if done:
+			Icons.draw_shape(self, "check", Vector2(w - 22, y + h * 0.5), 10, UIKit.TEAL)
+			return
+		# bearing arrow relative to the camera, then distance
+		var a := bearing
+		var c := Vector2(w - 70, y + h * 0.5)
+		var dir := Vector2(sin(a), -cos(a))
+		var sd := Vector2(-dir.y, dir.x)
+		draw_colored_polygon(PackedVector2Array([c + dir * 9.0, c - dir * 6.0 + sd * 6.0, c - dir * 6.0 - sd * 6.0]), UIKit.IVORY)
+		draw_string(UIKit.font_w(500), Vector2(w - 56, y + h * 0.5 + 6), "%dm" % int(dist), HORIZONTAL_ALIGNMENT_LEFT, 54, 16, Color(UIKit.IVORY, 0.8))
+
+	func _bearing(me: Vector3, p: Vector2) -> float:
+		var cam := hud.mc.camera
+		var dx := p.x - me.x
+		var dz := p.y - me.z
+		return wrapf(atan2(dx, -dz) + (cam.yaw if cam else 0.0), -PI, PI)
+
+	func _draw() -> void:
+		var info := hud.info
+		var me: Dictionary = info.get("rs", {})
+		if not me.has("pos"):
+			return
+		var pos: Vector3 = me["pos"]
+		var role: int = info.get("role", 0)
+		var stamps: int = info.get("stamps", 0)
+		var tg: Array = info.get("targets", [])
+		var L := hud.mc.layout
+		var best: Dictionary = L.dorm_doors[0]
+		var bd := 1e9
+		for d in L.dorm_doors:
+			var dd := (d["pos"] as Vector2).distance_to(Vector2(pos.x, pos.z))
+			if dd < bd:
+				bd = dd
+				best = d
+		if role == TC.Role.RUNNER and stamps == 7:
+			_chip(0, "house", UIKit.AMBER, "Head back to the dorm", _bearing(pos, best["pos"]), bd, false, true)
+			return
+		for i in tg.size():
+			var w: Dictionary = L.waters[int(tg[i])]
+			var done := (stamps & (1 << i)) != 0 and role == TC.Role.RUNNER
+			var c: Vector2 = w["center"]
+			_chip(i * 46.0, w["icon"], w["color"], w["short"], _bearing(pos, c), c.distance_to(Vector2(pos.x, pos.z)), done, false)
 
 
 class Compass:

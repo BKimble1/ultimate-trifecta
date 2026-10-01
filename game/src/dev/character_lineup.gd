@@ -6,7 +6,7 @@ extends Node3D
 ##        closeup (face), all (every mode in turn).
 ## Each mode saves a lossless PNG and quits when done.
 
-const MODES := ["views", "outfits", "skins", "posesheet", "transitions", "closeup", "faces"]
+const MODES := ["views", "outfits", "skins", "posesheet", "transitions", "closeup", "faces", "cart"]
 const SHEET_CLIPS := ["idle", "walk", "run", "sprint", "turn_l", "jump", "fall", "land", "dive", "dive_land", "splash", "recover",
 	"stumble", "flop", "dizzy", "tag_windup", "tag_lunge", "tag_recover", "cart_enter", "cart_drive", "cart_steer_l", "cart_exit",
 	"celebrate", "arrive", "emote_wave", "emote_cheer", "emote_laugh", "emote_shrug", "emote_dance", "emote_point"]
@@ -191,6 +191,21 @@ func _next_mode() -> void:
 				if shapes[i] != "":
 					v.base_mesh.set_blend_shape_value(v.base_mesh.find_blend_shape_by_name(shapes[i]), 1.0)
 			_aim(Vector3(0, 1.25, 6.2), Vector3(0, 1.12, 0), 26)
+		"cart":
+			for i in 3:
+				var steer := float(i - 1)
+				var cv := CartView.new()
+				stage.add_child(cv)
+				cv.setup(i % 2)
+				var cpos := Vector3(-3.2 + i * 3.2, 0, 0)
+				var cyaw := PI + 0.7
+				cv.apply_state({"pos": cpos, "yaw": cyaw, "speed": 0.0, "steer": steer, "occupied": true})
+				var v := _add(TC.Role.PATROL, {"color": i, "skin": i + 1}, 0.0, 0.0, cyaw, "steer %+d" % int(steer))
+				v.global_position = cpos + Basis(Vector3.UP, cyaw) * CartView.SEAT
+				v.rotation.y = cyaw
+				v.name_label.visible = false
+				_pose(v, "cart_drive" if steer == 0.0 else ("cart_steer_r" if steer > 0.0 else "cart_steer_l"), 0.0)
+			_aim(Vector3(0, 3.0, 8.5), Vector3(0, 1.0, 0), 36)
 		"closeup":
 			_add(TC.Role.RUNNER, d, -0.45, 0.0, PI + 0.35)
 			_add(TC.Role.PATROL, {"color": 0, "skin": 3}, 0.45, -0.3, PI - 0.3)

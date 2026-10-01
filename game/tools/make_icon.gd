@@ -38,7 +38,7 @@ func _ready() -> void:
 	sm.radius = 0.55
 	sm.height = 1.1
 	moon.mesh = sm
-	moon.material_override = CharacterView.mat(Color(1.0, 0.96, 0.8), 0.0, Color.WHITE, 1.4, 0.0)
+	moon.material_override = PropKit.mat(Color(1.0, 0.96, 0.8), 0.0, Color.WHITE, 1.4, 0.0)
 	moon.position = Vector3(1.55, 2.75, -2.5)
 	moon.scale = Vector3(0.6, 0.6, 0.6)
 	add_child(moon)
@@ -49,7 +49,7 @@ func _ready() -> void:
 		ss.radius = 0.025
 		ss.height = 0.05
 		st.mesh = ss
-		st.material_override = CharacterView.mat(Color(1, 1, 1), 0.0, Color.WHITE, 3.0, 0.0)
+		st.material_override = PropKit.mat(Color(1, 1, 1), 0.0, Color.WHITE, 3.0, 0.0)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = i * 17 + 3
 		st.position = Vector3(rng.randf_range(-2.5, 2.5), rng.randf_range(1.6, 3.4), -3.0)
@@ -70,12 +70,12 @@ func _ready() -> void:
 	water.material_override = wm
 	water.position = Vector3(0, 0.05, 0)
 	add_child(water)
-	CharacterView._init_meshes()
+	PropKit.init_meshes()
 	for i in 22:
 		var a := TAU * float(i) / 22.0
 		var drop := MeshInstance3D.new()
-		drop.mesh = CharacterView._sphere
-		drop.material_override = CharacterView.mat(Color(0.7, 0.92, 1.0), 0.0, Color.WHITE, 0.35)
+		drop.mesh = PropKit.sphere
+		drop.material_override = PropKit.mat(Color(0.7, 0.92, 1.0), 0.0, Color.WHITE, 0.35)
 		var r := 0.95 + 0.12 * float(i % 3)
 		drop.position = Vector3(cos(a) * r, 0.12 + 0.22 * float(i % 3) + 0.1 * sin(a * 3.0), sin(a) * r * 0.55)
 		var sc := 0.07 + 0.03 * float(i % 2)
@@ -86,7 +86,7 @@ func _ready() -> void:
 	tm.inner_radius = 0.9
 	tm.outer_radius = 1.08
 	ringm.mesh = tm
-	ringm.material_override = CharacterView.mat(Color(0.85, 0.97, 1.0), 0.0, Color.WHITE, 0.6)
+	ringm.material_override = PropKit.mat(Color(0.85, 0.97, 1.0), 0.0, Color.WHITE, 0.6)
 	ringm.position = Vector3(0, 0.1, 0)
 	ringm.scale = Vector3(1, 0.35, 0.65)
 	add_child(ringm)

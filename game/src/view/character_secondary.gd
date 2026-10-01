@@ -49,14 +49,9 @@ func _process_modification_with_delta(delta: float) -> void:
 		return
 	# accel in model space: -Z forward.  Forward acceleration tips the head back.
 	var target := Vector2(clampf(-accel.z * 0.012, -MAX_LAG, MAX_LAG), clampf(-accel.x * 0.010, -MAX_LAG, MAX_LAG)) * gain
-	var t := minf(delta, 0.1)
-	while t > 0.0:
-		var h := minf(t, SUBSTEP)
-		var acc := (target - _lag) * (OMEGA * OMEGA) - _lag_v * (2.0 * ZETA * OMEGA)
-		_lag_v += acc * h
-		_lag += _lag_v * h
-		t -= h
-	_lag = _lag.limit_length(MAX_LAG)
+	var st := spring_step(_lag, _lag_v, target, delta)
+	_lag = st[0]
+	_lag_v = st[1]
 	var bank_target := clampf(-turn_rate * speed * 0.018, -0.3, 0.3) * gain if enabled_lean else 0.0
 	_bank = lerpf(_bank, bank_target, 1.0 - exp(-delta * 10.0))
 	if absf(_bank) > 1e-4:
@@ -64,6 +59,20 @@ func _process_modification_with_delta(delta: float) -> void:
 		_rotate_model(sk, _chest, Quaternion(Vector3(0, 0, 1), _bank * 0.4))
 	if _lag.length_squared() > 1e-8:
 		_rotate_model(sk, _head, Quaternion(Vector3(1, 0, 0), _lag.x) * Quaternion(Vector3(0, 0, 1), _lag.y))
+
+
+## Damped spring toward `target`, integrated with fixed sub-steps (semi-
+## implicit Euler, <= 1/120 s each; long frames are capped at 0.1 s), so it
+## is stable at any frame rate.  Returns [position, velocity].
+static func spring_step(x: Vector2, v: Vector2, target: Vector2, delta: float) -> Array:
+	var t := minf(delta, 0.1)
+	while t > 0.0:
+		var h := minf(t, SUBSTEP)
+		var acc := (target - x) * (OMEGA * OMEGA) - v * (2.0 * ZETA * OMEGA)
+		v += acc * h
+		x += v * h
+		t -= h
+	return [x.limit_length(MAX_LAG), v]
 
 
 static func _rotate_model(sk: Skeleton3D, bone: int, q: Quaternion) -> void:

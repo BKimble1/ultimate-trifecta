@@ -1,106 +1,158 @@
 class_name ResultsScreen
 extends Screen
-## Team outcome first, then individual splash/finish contribution, Fastest
-## Trifecta where applicable, and clearly earned cosmetic rewards.
+## Results: outcome first, then *your* contribution and rewards, then one
+## primary action (Rematch / Play again).  The full scoreboard is one tap
+## away in a drawer.  The player's character is on the dorm stage (the same
+## asset as everywhere else), celebrating or shrugging.
 
 var results: Dictionary
 var reward: Dictionary
 var session: NetSession
+var _board: PanelContainer
 
 
 func build() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.07, 0.18, 0.96)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
-	move_child(bg, 0)
+	if App.stage:
+		App.stage.set_mode("home", false)
+		App.sync_stage_local()
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shade := TextureRect.new()
+	shade.texture = TitleScreen._side_gradient()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.stretch_mode = TextureRect.STRETCH_SCALE
+	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+	move_child(shade, 0)
 	var oc := int(results.get("outcome", 0))
 	var my_slot := session.local_slot if session else -1
-	var my_role := -1
+	var me: Dictionary = {}
 	for r in results.get("players", []):
 		if int(r["slot"]) == my_slot:
-			my_role = int(r["role"])
+			me = r
+	var my_role := int(me.get("role", -1))
 	var won := (oc == TC.Outcome.RUNNERS_WIN and my_role == TC.Role.RUNNER) or (oc == TC.Outcome.PATROL_WIN and my_role == TC.Role.PATROL)
-	var title := "RUNNERS WIN!" if oc == TC.Outcome.RUNNERS_WIN else ("NIGHT WATCH WINS!" if oc == TC.Outcome.PATROL_WIN else "ROUND CANCELLED")
-	var t := UIKit.outlined(UIKit.label(title, 64, UIKit.RUNNER if oc == TC.Outcome.RUNNERS_WIN else UIKit.PATROL, true, HORIZONTAL_ALIGNMENT_CENTER), 14)
-	content.add_child(t)
+	if App.stage:
+		App.stage.emote(Save.player_uid(), 1 if won else 3, 3.5)
+
+	var row := UIKit.hbox(0)
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(row)
+	row.add_child(UIKit.spacer_h())
+	var sheet := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 28)
+	sheet.custom_minimum_size = Vector2(minf(600.0, get_viewport().get_visible_rect().size.x * 0.56), 0)
+	sheet.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(sheet)
+	var v := UIKit.vbox(14)
+	sheet.add_child(v)
+	var title := "Runners win!" if oc == TC.Outcome.RUNNERS_WIN else ("Night Watch wins!" if oc == TC.Outcome.PATROL_WIN else "Round cancelled")
+	var head := UIKit.heading(title, 46, UIKit.TEAL if oc == TC.Outcome.RUNNERS_WIN else (UIKit.PATROL if oc == TC.Outcome.PATROL_WIN else UIKit.IVORY))
+	v.add_child(head)
 	var sub := "%d of %d runners made it home" % [int(results.get("finished", 0)), int(results.get("needed", 4))]
 	if oc == TC.Outcome.RUNNERS_WIN:
 		sub += " in %d:%02d" % [int(results.get("round_time", 0)) / 60, int(results.get("round_time", 0)) % 60]
-	content.add_child(UIKit.label(sub + ("  —  your team won!" if won else ""), 28, UIKit.TEXT, false, HORIZONTAL_ALIGNMENT_CENTER))
+	v.add_child(UIKit.label(sub, 20, UIKit.IVORY_MUTED))
+	# your round
+	var yr := UIKit.panel(Color(UIKit.NAVY, 0.55), UIKit.R_SMALL, 16)
+	var yv := UIKit.vbox(6)
+	yv.add_child(UIKit.label("Your round" + ("  ·  your team won" if won else ""), 18, UIKit.AMBER if won else UIKit.IVORY_MUTED, true))
+	yv.add_child(UIKit.label(_contribution(me), 24, UIKit.IVORY, true))
 	var fastest := int(results.get("fastest_slot", -1))
 	if fastest >= 0:
 		for r in results.get("players", []):
 			if int(r["slot"]) == fastest:
 				var ftime := float(results.get("fastest_time", r.get("finish_time", 0.0)))
-				content.add_child(UIKit.label("★ Fastest Trifecta: %s  (%d:%02d)" % [String(r["name"]), int(ftime) / 60, int(ftime) % 60], 22, UIKit.ACCENT, true, HORIZONTAL_ALIGNMENT_CENTER))
-	var row := UIKit.hbox(20)
-	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(row)
-	# players table
-	var tp := UIKit.panel(Color(0.12, 0.15, 0.32, 0.92), 24, 16)
-	tp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var grid := GridContainer.new()
-	grid.columns = 3
-	grid.add_theme_constant_override("h_separation", 18)
-	grid.add_theme_constant_override("v_separation", 3)
-	for h in ["Player", "Role", "Contribution"]:
-		grid.add_child(UIKit.label(h, 18, UIKit.ACCENT, true))
-	var rows: Array = results.get("players", []).duplicate()
-	rows.sort_custom(func(a, b): return [int(a["role"]), -int(a.get("stamps", 0)) - (10 if bool(a.get("finished", false)) else 0)] < [int(b["role"]), -int(b.get("stamps", 0)) - (10 if bool(b.get("finished", false)) else 0)])
-	for r in rows:
-		var me := int(r["slot"]) == my_slot
-		var col := UIKit.ACCENT if me else UIKit.TEXT
-		var star := "★ " if int(r["slot"]) == fastest else ""
-		grid.add_child(UIKit.label(star + String(r["name"]) + (" [BOT]" if bool(r["is_bot"]) else "") + (" (you)" if me else ""), 19, col, me))
-		grid.add_child(UIKit.label("Runner" if int(r["role"]) == TC.Role.RUNNER else "Night Watch", 19, UIKit.RUNNER if int(r["role"]) == TC.Role.RUNNER else UIKit.PATROL))
-		var contrib := ""
-		if int(r["role"]) == TC.Role.RUNNER:
-			contrib = "%d/3 splashes" % int(r.get("stamps", 0))
-			if bool(r.get("finished", false)):
-				var ft := float(r.get("finish_time", 0.0))
-				contrib += " · home #%d at %d:%02d" % [int(r.get("finish_order", 0)), int(ft) / 60, int(ft) % 60]
-			if int(r.get("times_captured", 0)) > 0:
-				contrib += " · caught %dx" % int(r["times_captured"])
-		else:
-			contrib = "%d different runner%s caught" % [int(r.get("unique_captures", 0)), "" if int(r.get("unique_captures", 0)) == 1 else "s"]
-		grid.add_child(UIKit.label(contrib, 19, col))
-	tp.add_child(grid)
-	row.add_child(tp)
-	# rewards
-	var rp := UIKit.panel(Color(0.14, 0.2, 0.38, 0.95), 24, 18)
-	rp.custom_minimum_size = Vector2(280, 0)
-	var rv := UIKit.vbox(6)
-	rv.add_child(UIKit.label("Rewards", 26, UIKit.ACCENT, true))
+				var who := "You" if int(r["slot"]) == my_slot else String(r["name"])
+				yv.add_child(UIKit.label("Fastest Trifecta: %s  (%d:%02d)" % [who, int(ftime) / 60, int(ftime) % 60], 18, UIKit.IVORY_MUTED))
+	yr.add_child(yv)
+	v.add_child(yr)
+	# rewards (cosmetic coins)
+	var rw := UIKit.hbox(14)
 	if reward.is_empty():
-		rv.add_child(UIKit.label("No rewards for this round.", 22, UIKit.MUTED))
+		rw.add_child(UIKit.label("No rewards for this round.", 20, UIKit.IVORY_MUTED))
 	else:
+		var coins := UIKit.label("+%d coins" % int(reward.get("coins", 0)), 30, UIKit.AMBER)
+		coins.add_theme_font_override("font", UIKit.font_w(700))
+		rw.add_child(coins)
+		var bits: Array[String] = []
 		for line in reward.get("lines", []):
-			rv.add_child(UIKit.label("%s   +%d" % [line[0], int(line[1])] if int(line[1]) >= 0 else "%s   %d" % [line[0], int(line[1])], 19))
-		rv.add_child(UIKit.label("+%d coins" % int(reward.get("coins", 0)), 30, UIKit.ACCENT, true))
-		if bool(reward.get("level_up", false)):
-			rv.add_child(UIKit.label("LEVEL UP! Now level %d" % int(reward.get("level", 1)), 26, UIKit.GOOD, true))
-		rv.add_child(UIKit.label("Coins buy outfits in the Wardrobe.", 18, UIKit.MUTED))
+			bits.append("%s %+d" % [line[0], int(line[1])])
+		var det := UIKit.label("  ·  ".join(bits), 16, UIKit.IVORY_MUTED)
+		det.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		det.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		det.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		rw.add_child(det)
+	v.add_child(rw)
+	if bool(reward.get("level_up", false)):
+		v.add_child(UIKit.label("Level up! You're now level %d" % int(reward.get("level", 1)), 22, UIKit.TEAL, true))
 	if bool(results.get("practice", false)):
-		rv.add_child(UIKit.label("Practice round (with bots).", 18, UIKit.MUTED))
-	rp.add_child(rv)
-	row.add_child(rp)
-	var btns := UIKit.hbox(18)
-	btns.alignment = BoxContainer.ALIGNMENT_CENTER
+		v.add_child(UIKit.label("Practice round with bots (half rewards).", 16, UIKit.IVORY_MUTED))
 	var practice := session != null and session.mode == NetSession.Mode.OFFLINE
-	var again := UIKit.button("Play again" if practice else "Rematch", Color(1.0, 0.72, 0.25), Vector2(300, 74))
+	var btns := UIKit.hbox(12)
+	var again := UIKit.primary("Play again" if practice else "Rematch", Vector2(300, 96), 32)
 	again.pressed.connect(func() -> void: App.rematch())
 	btns.add_child(again)
-	var leave := UIKit.button("Leave" if not practice else "Menu", Color(0.3, 0.38, 0.7), Vector2(220, 74))
+	var board_b := UIKit.quiet("Scoreboard", Vector2(160, 96), 22)
+	board_b.pressed.connect(_toggle_board)
+	btns.add_child(board_b)
+	v.add_child(btns)
+	var leave := UIKit.quiet("Menu" if practice else "Leave room", Vector2(472, 72), 22)
 	leave.pressed.connect(func() -> void:
 		if practice:
 			App.goto_title()
 		else:
 			App.leave_room())
-	btns.add_child(leave)
-	content.add_child(btns)
+	v.add_child(leave)
 	focus_first(again)
+	UIKit.appear(sheet, Vector2.ZERO, UIKit.T_SHEET)
 	Sfx.play("cheer" if won else "pop")
+
+
+func _contribution(r: Dictionary) -> String:
+	if r.is_empty():
+		return "You watched this round."
+	if int(r["role"]) == TC.Role.RUNNER:
+		var t := "%d/3 splashes" % int(r.get("stamps", 0))
+		if bool(r.get("finished", false)):
+			var ft := float(r.get("finish_time", 0.0))
+			t += "  ·  home #%d at %d:%02d" % [int(r.get("finish_order", 0)), int(ft) / 60, int(ft) % 60]
+		if int(r.get("times_captured", 0)) > 0:
+			t += "  ·  caught %dx" % int(r["times_captured"])
+		return t
+	var n := int(r.get("unique_captures", 0))
+	return "Caught %d different runner%s" % [n, "" if n == 1 else "s"]
+
+
+func _toggle_board() -> void:
+	if _board and is_instance_valid(_board):
+		_board.queue_free()
+		_board = null
+		return
+	_board = UIKit.panel(Color(UIKit.SLATE_HI, 0.98), UIKit.R_PANEL, 20)
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 22)
+	grid.add_theme_constant_override("v_separation", 4)
+	for h in ["Player", "Role", "Round"]:
+		grid.add_child(UIKit.label(h, 16, UIKit.IVORY_MUTED, true))
+	var my_slot := session.local_slot if session else -1
+	var rows: Array = results.get("players", []).duplicate()
+	rows.sort_custom(func(a, b): return [int(a["role"]), -int(a.get("stamps", 0)) - (10 if bool(a.get("finished", false)) else 0)] < [int(b["role"]), -int(b.get("stamps", 0)) - (10 if bool(b.get("finished", false)) else 0)])
+	for r in rows:
+		var me := int(r["slot"]) == my_slot
+		var col := UIKit.AMBER if me else UIKit.IVORY
+		var nm := UIKit.label(String(r["name"]) + ("  · BOT" if bool(r["is_bot"]) else ""), 18, col, me)
+		nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		nm.custom_minimum_size = Vector2(220, 0)
+		grid.add_child(nm)
+		grid.add_child(UIKit.label("Runner" if int(r["role"]) == TC.Role.RUNNER else "Night Watch", 17, UIKit.TEAL if int(r["role"]) == TC.Role.RUNNER else UIKit.PATROL))
+		grid.add_child(UIKit.label(_contribution(r), 17, col))
+	_board.add_child(grid)
+	add_child(_board)
+	var vs := get_viewport().get_visible_rect().size
+	var sz := _board.get_combined_minimum_size()
+	_board.position = Vector2(UIKit.safe_margins(get_viewport()).position.x + 24, (vs.y - sz.y) * 0.5)
+	UIKit.appear(_board, Vector2.ZERO, UIKit.T_FAST)
 
 
 func _go_back() -> void:

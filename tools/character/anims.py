@@ -208,6 +208,40 @@ class Rig:
         L[ft] = [q, Vector((0, 0, 0))]
         P[ft] = O_ft @ q.to_matrix().to_4x4()
 
+    def arm_ik(self, P, L, side, wrist_target, pole):
+        """Two-bone IK for upper_arm/forearm reaching `wrist_target` (armature space)."""
+        sfx = '.L' if side < 0 else '.R'
+        ua, fa, hd = 'upper_arm' + sfx, 'forearm' + sfx, 'hand' + sfx
+        par = self.bones[ua].parent.name
+        O_ua = P[par] @ self.rest[par].inverted() @ self.rest[ua]
+        S = O_ua.translation.copy()
+        a = (self.bones[ua].tail_local - self.bones[ua].head_local).length
+        b = (self.bones[fa].tail_local - self.bones[fa].head_local).length
+        A = Vector(wrist_target)
+        dv = A - S
+        d = max(abs(a - b) + 1e-4, min(a + b - 1e-4, dv.length))
+        u = dv.normalized()
+        A = S + u * d
+        cos_a = (a * a + d * d - b * b) / (2 * a * d)
+        sin_a = math.sqrt(max(0.0, 1 - cos_a * cos_a))
+        pv = Vector(pole) - u * Vector(pole).dot(u)
+        pv.normalize()
+        E = S + u * (a * cos_a) + pv * (a * sin_a)
+        O3 = O_ua.to_3x3().normalized()
+        W = O3.col[1].normalized().rotation_difference((E - S).normalized()).to_matrix()
+        q = (O3.inverted() @ W @ O3).to_quaternion()
+        L[ua] = [q, Vector((0, 0, 0))]
+        P[ua] = O_ua @ q.to_matrix().to_4x4()
+        O_fa = P[ua] @ self.rest[ua].inverted() @ self.rest[fa]
+        O3 = O_fa.to_3x3().normalized()
+        W = O3.col[1].normalized().rotation_difference((A - E).normalized()).to_matrix()
+        q = (O3.inverted() @ W @ O3).to_quaternion()
+        L[fa] = [q, Vector((0, 0, 0))]
+        P[fa] = O_fa @ q.to_matrix().to_4x4()
+        # hand keeps the forearm's direction (relaxed fist on the rim)
+        L[hd] = [Quaternion(), Vector((0, 0, 0))]
+        P[hd] = P[fa] @ self.rest[fa].inverted() @ self.rest[hd]
+
     def evaluate(self, pose):
         P, L = self.solve(pose)
         for side in (-1, 1):
@@ -216,7 +250,10 @@ class Rig:
             if 'ik' in spec:
                 tgt, pitch = spec['ik']
                 self.leg_ik(P, L, side, tgt, pitch)
-                # children of the foot (none) would need re-solving here
+            hs = pose.get('hand' + sfx, {})
+            if 'ik' in hs:
+                tgt, pole = hs['ik']
+                self.arm_ik(P, L, side, tgt, pole)
         return L
 
 
@@ -494,20 +531,36 @@ def clip_tag_recover(t):
     return blend_pose(clip_tag_lunge(0.22), clip_idle(0.0), u)
 
 
-CART_HANDS = 0.0
+# steering wheel, relative to the character origin (Blender axes: x right,
+# y forward, z up).  CartView places its wheel at the same spot (Godot:
+# SEAT + (0, 0.50, -0.27)) and turns it by steer * STEER_DEG.
+WHEEL_C = Vector((0.0, 0.27, 0.50))
+WHEEL_R = 0.17
+WHEEL_U = Vector((0.0, 0.8, 0.6)).normalized()     # in the wheel plane, up/forward
+STEER_DEG = 50.0
+
+
+def _wheel_grip(side, steer):
+    a = math.radians(-steer * STEER_DEG)
+    x = side * WHEEL_R * 0.92
+    v = -WHEEL_R * 0.25
+    # rotate the grip point about the wheel axis (n = x̂ cross u)
+    xr = x * math.cos(a) - v * math.sin(a)
+    vr = x * math.sin(a) + v * math.cos(a)
+    return WHEEL_C + Vector((xr, 0, 0)) + WHEEL_U * vr
 
 
 def _seated(steer=0.0):
     p = _sit(1.0)
     p['hips']['loc'] = (0, -0.06, -0.33)
     p['hips']['rot'] = (6, 0, 0)
-    p['spine'] = {'rot': (-6, -steer * 6, steer * 4)}
-    p['head'] = {'rot': (2, steer * 4, steer * 10)}
-    p.update(sym({'upper_arm.L': {'rot': (62, -6, 0)}, 'forearm.L': {'rot': (38, 0, 0)}, 'hand.L': {'rot': (-20, 0, 0)},
-                  'thigh.L': {'rot': (82, -6, 0)}, 'shin.L': {'rot': (-75, 0, 0)}, 'foot.L': {'rot': (12, 0, 0)}}))
-    # steering: one hand rises, the other drops around the wheel
-    p['upper_arm.L']['rot'] = (62 + 14 * steer, -6 + 6 * steer, 0)
-    p['upper_arm.R']['rot'] = (62 - 14 * steer, 6 + 6 * steer, 0)
+    # steer +1 = right turn: lean and look into the turn (+Z turns left)
+    p['spine'] = {'rot': (-8, steer * 4, -steer * 3)}
+    p['head'] = {'rot': (2, steer * 3, -steer * 10)}
+    p.update(sym({'thigh.L': {'rot': (82, -6, 0)}, 'shin.L': {'rot': (-75, 0, 0)}, 'foot.L': {'rot': (12, 0, 0)}}))
+    for side in (-1, 1):
+        sfx = '.L' if side < 0 else '.R'
+        p['hand' + sfx] = {'ik': (_wheel_grip(side, steer), (side * 0.6, -0.2, -1.0))}
     return p
 
 
@@ -649,8 +702,9 @@ def library():
         'tag_recover': (0.5, False, clip_tag_recover),
         'cart_enter': (0.35, False, clip_cart_enter),
         'cart_drive': (1.0, True, lambda t: clip_cart_drive(t, 0.0)),
-        'cart_steer_l': (1.0, True, lambda t: clip_cart_drive(t, 1.0)),
-        'cart_steer_r': (1.0, True, lambda t: clip_cart_drive(t, -1.0)),
+        # steer follows the sim's sign: +1 = turning right
+        'cart_steer_l': (1.0, True, lambda t: clip_cart_drive(t, -1.0)),
+        'cart_steer_r': (1.0, True, lambda t: clip_cart_drive(t, 1.0)),
         'cart_exit': (0.35, False, clip_cart_exit),
         'celebrate': (1.0, True, clip_celebrate),
         'arrive': (0.9, False, clip_arrive),

@@ -26,12 +26,14 @@ static func make_environment(quality: int = 1) -> WorldEnvironment:
 	env.fog_depth_end = 320.0
 	env.fog_depth_curve = 1.4
 	env.fog_sky_affect = 0.4
+	# conservative glow: only genuinely bright things (lamps, lit windows,
+	# beacons) bloom; no full-screen haze.  Off in Battery Saver.
 	env.glow_enabled = quality >= 1
-	env.glow_intensity = 0.7
-	env.glow_strength = 0.9
-	env.glow_bloom = 0.05
-	env.glow_hdr_threshold = 0.9
-	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
+	env.glow_intensity = 0.45
+	env.glow_strength = 0.85
+	env.glow_bloom = 0.0
+	env.glow_hdr_threshold = 1.15
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 1.12
 	env.adjustment_contrast = 1.04
@@ -45,9 +47,11 @@ static func make_moon(quality: int = 1) -> DirectionalLight3D:
 	moon.light_color = Color(0.70, 0.78, 1.0)
 	moon.light_energy = 0.75
 	moon.rotation_degrees = Vector3(-52, 35, 0)
-	moon.shadow_enabled = quality >= 1
-	moon.shadow_opacity = 0.55
-	moon.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	moon.directional_shadow_max_distance = 70.0
+	# characters always cast (contact shadows read movement); Battery Saver
+	# uses a single short split and the campus itself does not cast
+	moon.shadow_enabled = true
+	moon.shadow_opacity = 0.6
+	moon.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS if quality >= 1 else DirectionalLight3D.SHADOW_ORTHOGONAL
+	moon.directional_shadow_max_distance = 70.0 if quality >= 1 else 30.0
 	moon.shadow_blur = 1.5
 	return moon

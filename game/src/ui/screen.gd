@@ -26,6 +26,8 @@ func _ready() -> void:
 	build()
 	if _first_focus:
 		_first_focus.call_deferred("grab_focus")
+	# entry transition: 180 ms fade (plus a small rise unless Reduced Motion)
+	UIKit.appear(margin, Vector2.ZERO, 0.18)
 
 
 func build() -> void:
@@ -38,6 +40,7 @@ func _apply_safe() -> void:
 	margin.add_theme_constant_override("margin_top", int(s.position.y) + 16)
 	margin.add_theme_constant_override("margin_right", int(s.size.x) + 24)
 	margin.add_theme_constant_override("margin_bottom", int(s.size.y) + 16)
+	margin.position = Vector2.ZERO
 
 
 func focus_first(c: Control) -> void:
@@ -46,12 +49,17 @@ func focus_first(c: Control) -> void:
 
 
 func header(title: String, show_back: bool = true) -> HBoxContainer:
-	var h := UIKit.hbox(18)
+	var h := UIKit.hbox(20)
+	h.alignment = BoxContainer.ALIGNMENT_BEGIN
 	if show_back:
-		var b := UIKit.button("‹ Back", Color(0.22, 0.26, 0.48), Vector2(150, 60), 24)
+		var b := UIKit.icon_button("back")
+		b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		b.tooltip_text = "Back"
 		b.pressed.connect(_go_back)
 		h.add_child(b)
-	var t := UIKit.outlined(UIKit.label(title, 46, UIKit.TEXT, true), 10)
+	var t := UIKit.heading(title, 40)
+	t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	t.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(t)
 	content.add_child(h)
 	return h
@@ -78,20 +86,20 @@ func spacer(h: float = 10) -> Control:
 
 func dialog(text: String, buttons: Array = [["OK", Callable()]]) -> PanelContainer:
 	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.55)
+	dim.color = Color(UIKit.NAVY, 0.72)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
-	var p := UIKit.panel(Color(0.10, 0.13, 0.30, 0.98), 28, 26)
-	var v := UIKit.vbox(16)
-	var l := UIKit.label(text, 28, UIKit.TEXT, false, HORIZONTAL_ALIGNMENT_CENTER)
+	var p := UIKit.panel(Color(UIKit.SLATE, 0.99), UIKit.R_PANEL, 30)
+	var v := UIKit.vbox(22)
+	var l := UIKit.label(text, 26, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.custom_minimum_size = Vector2(620, 0)
+	l.custom_minimum_size = Vector2(600, 0)
 	v.add_child(l)
-	var row := UIKit.hbox(14)
+	var row := UIKit.hbox(16)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var first: Button = null
 	for bdef in buttons:
-		var b := UIKit.button(String(bdef[0]), Color(0.3, 0.45, 0.85), Vector2(200, 64))
+		var b := UIKit.secondary(String(bdef[0]), Vector2(220, 76), 26) if first == null else UIKit.quiet(String(bdef[0]), Vector2(200, 76), 24)
 		var cb: Callable = bdef[1]
 		b.pressed.connect(func() -> void:
 			dim.queue_free()
@@ -106,6 +114,7 @@ func dialog(text: String, buttons: Array = [["OK", Callable()]]) -> PanelContain
 	add_child(p)
 	p.set_anchors_preset(Control.PRESET_CENTER)
 	p.position = (get_viewport().get_visible_rect().size - p.get_combined_minimum_size()) * 0.5
+	UIKit.appear(p, Vector2(0, 14), UIKit.T_FAST)
 	if first:
 		first.call_deferred("grab_focus")
 	return p

@@ -9,7 +9,8 @@ var last_results: Dictionary = {}
 var practice_role := "runner"
 var _pending_message := ""
 var _ui_layer: CanvasLayer
-var _bg: Node3D
+## the dorm common room behind every menu (home, wardrobe, lobby)
+var stage: DormStage
 # dev/automation flags (ignored in normal play)
 var dev_local_bot := false
 var dev_shots_dir := ""
@@ -28,8 +29,7 @@ var _dev_next_shot := 2.0
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().set_auto_accept_quit(true)
-	if OS.has_feature("mobile"):
-		Engine.max_fps = 60
+	QualityPreset.apply(int(Save.get_setting("quality", 1)))
 	Social.invite_ready.connect(_on_invite_ready)
 	# automation runs (simulator evidence) skip the Game Center sign-in sheet
 	if not OS.get_cmdline_user_args().has("--no-gamecenter"):
@@ -53,6 +53,29 @@ func _ready() -> void:
 			dev_rounds = int(a.split("=")[1])
 		elif a.begins_with("--expect="):
 			dev_expect = int(a.split("=")[1])
+		elif a.begins_with("--quality="):
+			# dev/automation: pick the graphics preset for a measured run
+			Save.set_setting("quality", int(a.split("=")[1]))
+		elif a.begins_with("--name="):
+			# dev/automation: e.g. long-name layout checks
+			Save.data["name"] = a.substr(a.find("=") + 1)
+		elif a.begins_with("--gc-sim="):
+			# dev/automation: show the Game Center states on desktop captures
+			# (unavailable is the real desktop state; the others are labelled
+			# simulations of what iOS reports)
+			match a.split("=")[1]:
+				"declined":
+					Social.available = true
+					Social.auth_error = "The user canceled the sign-in"
+				"restricted":
+					Social.available = true
+					Social.authenticated = true
+					Social.multiplayer_restricted = true
+				"signing_in":
+					Social.available = true
+		elif a == "--random-cosmetic":
+			# dev/automation: soak and lobby-capture clients wear varied outfits
+			Save.data["cosmetic"] = Cosmetics.bot_cosmetic(hash(Save.player_uid()))
 	_dev_tools(OS.get_cmdline_user_args())
 	if OS.get_cmdline_user_args().has("--no-app"):
 		return
@@ -234,16 +257,27 @@ func _show(node: Control) -> void:
 
 
 func _ensure_background() -> void:
-	if _bg and is_instance_valid(_bg):
+	if stage and is_instance_valid(stage):
 		return
-	_bg = MenuBackground.new()
-	get_tree().root.add_child.call_deferred(_bg)
+	stage = DormStage.new()
+	stage.name = "DormStage"
+	get_tree().root.add_child(stage)
+	sync_stage_local()
 
 
 func _clear_background() -> void:
-	if _bg and is_instance_valid(_bg):
-		_bg.queue_free()
-	_bg = null
+	if stage and is_instance_valid(stage):
+		stage.queue_free()
+	stage = null
+
+
+## Home/wardrobe: only the local player's character on the stage.
+func sync_stage_local() -> void:
+	if stage == null or not is_instance_valid(stage):
+		return
+	var in_room := session != null and is_instance_valid(session) and session.mode != NetSession.Mode.OFFLINE
+	stage.sync_party([{"key": Save.player_uid(), "role": TC.Role.RUNNER, "cosmetic": Save.data["cosmetic"],
+		"name": Save.player_name(), "is_bot": false, "local": true, "arrive": false}], not in_room)
 
 
 func goto_title(message: String = "") -> void:
@@ -342,7 +376,7 @@ func _begin_session(mode: int, t: NetTransport, code: String) -> void:
 
 func show_lobby() -> void:
 	_end_match_scene()
-	_clear_background()
+	_ensure_background()
 	Sfx.music("menu")
 	var l := LobbyScreen.new()
 	l.session = session
@@ -441,6 +475,8 @@ func _on_match_finished(results: Dictionary) -> void:
 		Save.data["tutorial_done"] = true
 		Save.mark()
 	_end_match_scene()
+	_ensure_background()
+	Sfx.music("menu")
 	var r := ResultsScreen.new()
 	r.results = results
 	r.reward = reward

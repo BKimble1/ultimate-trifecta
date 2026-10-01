@@ -1,6 +1,10 @@
 class_name TitleScreen
 extends Screen
-## Launch / main menu. No long intro: straight to play.
+## Home: the player's character in the dorm (3D stage behind the UI, front
+## three-quarter), a compact wordmark, one primary action ("Play with
+## Friends"), a quiet Practice, a small Outfit control, a compact profile
+## chip and Settings.  Game Center status is shown only where it matters
+## (the Play with Friends sheet).
 
 var _msg := ""
 
@@ -12,87 +16,108 @@ func show_message(m: String) -> void:
 
 
 func build() -> void:
-	var row := UIKit.hbox(40)
-	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(row)
-	var left := UIKit.vbox(14)
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_child(left)
-	var logo := LogoText.new()
-	logo.custom_minimum_size = Vector2(620, 220)
-	left.add_child(logo)
-	left.add_child(UIKit.outlined(UIKit.label("Moonbrook College  ·  3:00 a.m.", 28, UIKit.MUTED, true), 8))
-	var badge := UIKit.hbox(16)
-	badge.add_child(UIKit.outlined(UIKit.label("Level %d" % int(Save.data["level"]), 26, UIKit.ACCENT, true), 8))
-	badge.add_child(UIKit.outlined(UIKit.label("%d coins" % int(Save.data["coins"]), 26, UIKit.ACCENT, true), 8))
-	badge.add_child(UIKit.outlined(UIKit.label(Save.player_name(), 26, UIKit.TEXT, false), 8))
-	left.add_child(badge)
-	var gc := UIKit.outlined(UIKit.label(Social.status_text(), 20, UIKit.MUTED), 6)
-	gc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	gc.custom_minimum_size = Vector2(560, 0)
-	left.add_child(gc)
-	Social.auth_changed.connect(func(_ok: bool) -> void:
-		if is_instance_valid(gc):
-			gc.text = Social.status_text())
+	if App.stage:
+		App.stage.set_mode("home", false)
+		App.sync_stage_local()
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# soft vignette on the right so the menu reads over the room
+	var shade := TextureRect.new()
+	shade.texture = _side_gradient()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.stretch_mode = TextureRect.STRETCH_SCALE
+	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+	move_child(shade, 0)
 
-	var menu := UIKit.vbox(14)
-	menu.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_child(menu)
-	var tut_done: bool = Save.data.get("tutorial_done", false)
-	var play := UIKit.button("Play with Friends", Color(1.0, 0.72, 0.25), Vector2(380, 84), 32)
+	var top := UIKit.hbox(16)
+	content.add_child(top)
+	var mark := Wordmark.new()
+	mark.custom_minimum_size = Vector2(330, 112)
+	top.add_child(mark)
+	top.add_child(UIKit.spacer_h())
+	var prof := UIKit.panel(Color(UIKit.SLATE, 0.86), 999, 18)
+	var pv := UIKit.hbox(14)
+	var nm := UIKit.label(Save.player_name(), 22, UIKit.IVORY, true)
+	nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	nm.custom_minimum_size = Vector2(200, 0)
+	nm.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pv.add_child(nm)
+	var lv := UIKit.label("Lv %d" % int(Save.data["level"]), 20, UIKit.TEAL, true)
+	lv.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pv.add_child(lv)
+	var coins := UIKit.label("%d ¢" % int(Save.data["coins"]), 20, UIKit.AMBER, true)
+	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pv.add_child(coins)
+	prof.add_child(pv)
+	prof.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	top.add_child(prof)
+	var gear := UIKit.icon_button("gear")
+	gear.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	gear.tooltip_text = "Settings"
+	gear.pressed.connect(func() -> void: App.goto(SettingsScreen))
+	top.add_child(gear)
+
+	content.add_child(UIKit.spacer_v())
+	var bottom := UIKit.hbox(16)
+	bottom.alignment = BoxContainer.ALIGNMENT_END
+	content.add_child(bottom)
+	var outfit := UIKit.icon_button("shirt", "Outfit")
+	outfit.pressed.connect(func() -> void: App.goto(WardrobeScreen))
+	outfit.size_flags_vertical = Control.SIZE_SHRINK_END
+	bottom.add_child(outfit)
+	bottom.add_child(UIKit.spacer_h())
+	var col := UIKit.vbox(14)
+	col.alignment = BoxContainer.ALIGNMENT_END
+	bottom.add_child(col)
+	var play := UIKit.primary("Play with Friends", Vector2(400, 104), 34)
 	play.pressed.connect(func() -> void: App.goto(OnlineScreen))
-	menu.add_child(play)
-	var prac := UIKit.button("Practice" if tut_done else "Practice  (start here!)", Color(0.35, 0.75, 0.95), Vector2(380, 76))
+	col.add_child(play)
+	var tut_done: bool = Save.data.get("tutorial_done", false)
+	var prac := UIKit.quiet("Practice", Vector2(400, 80), 26)
 	prac.pressed.connect(func() -> void: App.goto(PracticeScreen))
-	menu.add_child(prac)
-	var ward := UIKit.button("Wardrobe", Color(0.75, 0.5, 0.95), Vector2(380, 70))
-	ward.pressed.connect(func() -> void: App.goto(WardrobeScreen))
-	menu.add_child(ward)
-	var how := UIKit.button("How to Play", Color(0.3, 0.38, 0.7), Vector2(380, 64))
-	how.pressed.connect(func() -> void: App.goto(HowToScreen))
-	menu.add_child(how)
-	var set_b := UIKit.button("Settings", Color(0.3, 0.38, 0.7), Vector2(380, 64))
-	set_b.pressed.connect(func() -> void: App.goto(SettingsScreen))
-	menu.add_child(set_b)
-	focus_first(play if tut_done else prac)
+	col.add_child(prac)
+	if not tut_done:
+		var hint := UIKit.label("New here? Practice starts with a short tutorial.", 18, UIKit.IVORY_MUTED, false, HORIZONTAL_ALIGNMENT_CENTER)
+		col.add_child(hint)
+	focus_first(play)
 	if _msg != "":
 		call_deferred("dialog", _msg)
+	elif App.stage and App.stage.local_character():
+		# a quick hello wave when the home screen opens
+		get_tree().create_timer(0.35).timeout.connect(func() -> void:
+			if App.stage and is_instance_valid(App.stage):
+				App.stage.emote(Save.player_uid(), 0, 1.6))
 
 
 func _go_back() -> void:
-	pass  # title is the root
+	pass  # home is the root
 
 
-class LogoText:
+static func _side_gradient() -> GradientTexture2D:
+	var g := Gradient.new()
+	g.set_color(0, Color(UIKit.NAVY, 0.0))
+	g.set_color(1, Color(UIKit.NAVY, 0.62))
+	g.add_point(0.55, Color(UIKit.NAVY, 0.0))
+	var t := GradientTexture2D.new()
+	t.gradient = g
+	t.fill_from = Vector2(0, 0.5)
+	t.fill_to = Vector2(1, 0.5)
+	t.width = 256
+	t.height = 4
+	return t
+
+
+## Compact two-line wordmark, static (no wobble), with three splash drops.
+class Wordmark:
 	extends Control
-	var t := 0.0
-
-	func _process(d: float) -> void:
-		t += d
-		queue_redraw()
 
 	func _draw() -> void:
-		var f := UIKit.font(true)
-		var lines := ["ULTIMATE", "TRIFECTA"]
-		var sizes := [92, 112]
-		var y := 96.0
-		for i in 2:
-			var txt: String = lines[i]
-			var fs: int = sizes[i]
-			var x := 0.0
-			for ci in txt.length():
-				var ch := txt[ci]
-				var wob := sin(t * 2.2 + float(ci) * 0.6) * 4.0
-				var col := Color(1.0, 0.82, 0.3) if i == 0 else Color(0.45, 0.88, 1.0)
-				if i == 1 and ci % 3 == 0:
-					col = Color(1.0, 0.55, 0.7)
-				draw_string_outline(f, Vector2(x, y + wob), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 18, Color(0.05, 0.06, 0.18))
-				draw_string(f, Vector2(x, y + wob), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
-				x += f.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 2.0
-			y += float(fs) * 0.95
-		# three splash drops
+		var f := UIKit.font_w(700)
+		draw_string_outline(f, Vector2(0, 46), "ULTIMATE", HORIZONTAL_ALIGNMENT_LEFT, -1, 44, 10, UIKit.NAVY)
+		draw_string(f, Vector2(0, 46), "ULTIMATE", HORIZONTAL_ALIGNMENT_LEFT, -1, 44, UIKit.AMBER)
+		draw_string_outline(f, Vector2(0, 102), "TRIFECTA", HORIZONTAL_ALIGNMENT_LEFT, -1, 56, 12, UIKit.NAVY)
+		draw_string(f, Vector2(0, 102), "TRIFECTA", HORIZONTAL_ALIGNMENT_LEFT, -1, 56, UIKit.IVORY)
+		var w := f.get_string_size("ULTIMATE", HORIZONTAL_ALIGNMENT_LEFT, -1, 44).x
 		for k in 3:
-			var dc := Vector2(470 + k * 44, 30 + sin(t * 3.0 + k) * 6.0)
-			Icons.draw_shape(self, "drop", dc, 16, [Color(1.0, 0.82, 0.3), Color(0.45, 1.0, 0.5), Color(0.3, 0.85, 1.0)][k])
-
+			Icons.draw_shape(self, "drop", Vector2(w + 22 + k * 24, 26), 10, [UIKit.AMBER, UIKit.TEAL, UIKit.IVORY][k])

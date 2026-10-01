@@ -502,8 +502,19 @@ func _building(bd: Dictionary, rng: RandomNumberGenerator) -> void:
 			var n: Vector2 = dd["normal"]
 			var right3 := Vector3(n.y, 0, -n.x)
 			var base := Vector3(dp.x, 0, dp.y) + Vector3(n.x, 0, n.y) * 0.08
-			# glowing doorway, frame, porch light and welcome mat
-			k.quad(base - right3 * 1.1 + Vector3.UP * 2.6, base + right3 * 1.1 + Vector3.UP * 2.6, base + right3 * 1.1, base - right3 * 1.1, Color(1.0, 0.72, 0.35), 1.4)
+			# double doors with small windows, lit transom, white trim and a step
+			var nn3 := Vector3(n.x, 0, n.y)
+			var door_yaw := -atan2(-right3.z, right3.x)   # box() takes yaw; Basis(UP, yaw) * x = right3
+			k.box(base + Vector3.UP * 1.15 - nn3 * 0.02, Vector3(2.3, 2.3, 0.08), Color(0.36, 0.22, 0.16), -door_yaw)
+			for side in [-1.0, 1.0]:
+				k.box(base + right3 * (0.56 * side) + Vector3.UP * 1.62 + nn3 * 0.03, Vector3(0.5, 0.62, 0.03), Color(1.0, 0.78, 0.45), -door_yaw, 1.3)
+				k.box(base + right3 * (0.16 * side) + Vector3.UP * 1.05 + nn3 * 0.06, Vector3(0.06, 0.14, 0.05), Color(0.95, 0.8, 0.4), -door_yaw)
+			k.box(base + Vector3.UP * 1.15 + nn3 * 0.03, Vector3(0.05, 2.3, 0.04), Color(0.22, 0.13, 0.1), -door_yaw)
+			k.box(base + Vector3.UP * 2.52 + nn3 * 0.02, Vector3(2.2, 0.36, 0.03), Color(1.0, 0.8, 0.5), -door_yaw, 1.5)
+			for side2 in [-1.0, 1.0]:
+				k.box(base + right3 * (1.25 * side2) + Vector3.UP * 1.4 + nn3 * 0.06, Vector3(0.18, 2.8, 0.14), Color(0.94, 0.92, 0.88), -door_yaw)
+			k.box(base + Vector3.UP * 2.82 + nn3 * 0.06, Vector3(2.7, 0.18, 0.16), Color(0.94, 0.92, 0.88), -door_yaw)
+			k.box(Vector3(dp.x, 0.04, dp.y) + nn3 * 0.55, Vector3(2.9, 0.08, 1.0), Color(0.7, 0.68, 0.72), -door_yaw, 0.0, Color(0.78, 0.76, 0.8))
 			k.box(base + Vector3.UP * 2.8 + Vector3(n.x, 0, n.y) * 0.2, Vector3(2.8, 0.35, 2.8) * Vector3(absf(right3.x) + absf(n.x) * 0.3, 1, absf(right3.z) + absf(n.y) * 0.3), Color(0.9, 0.86, 0.78))
 			k.blob(base + Vector3.UP * 3.2 + Vector3(n.x, 0, n.y) * 0.4, Vector3(0.28, 0.32, 0.28), Color(1.0, 0.85, 0.5), 2, 6, 2.5)
 			_glow_disc(Vector3(dp.x + n.x * 2.0, 0.11, dp.y + n.y * 2.0), 5.0)
@@ -598,6 +609,8 @@ func _tree(t: Dictionary) -> void:
 			k.cone(Vector3(p.x, y, p.y), r, h * 0.35, g.lightened(0.05 * float(i)), 7, 0.0, 0.6 + 0.3 * float(i))
 	else:
 		var g2 := Color(0.20, 0.44, 0.24).lerp(Color(0.34, 0.50, 0.22), tint)
+		# darker underside first, then the lit canopy lobes (depth without textures)
+		k.blob(Vector3(p.x, h * 0.55, p.y), Vector3(2.1, 1.3, 2.1), g2.darkened(0.3), 3, 8, 0.0, 0.6, 0.1, int(p.x * 13 + p.y * 7))
 		k.blob(Vector3(p.x, h * 0.62, p.y), Vector3(2.3, 2.0, 2.3), g2, 3, 8, 0.0, 0.7, 0.12, int(p.x * 31 + p.y))
 		k.blob(Vector3(p.x + 0.9, h * 0.8, p.y - 0.4), Vector3(1.5, 1.4, 1.5), g2.lightened(0.07), 3, 7, 0.0, 1.0, 0.1, int(p.x * 17 - p.y))
 		k.blob(Vector3(p.x - 0.8, h * 0.72, p.y + 0.6), Vector3(1.4, 1.2, 1.4), g2.darkened(0.05), 3, 7, 0.0, 0.9, 0.1, int(p.x - p.y * 5))
@@ -605,10 +618,14 @@ func _tree(t: Dictionary) -> void:
 
 func _lamp(lp: Vector2) -> void:
 	var k := _kit_at(lp.x, lp.y)
-	k.cylinder(Vector3(lp.x, 0, lp.y), 0.11, 3.3, Color(0.18, 0.2, 0.26), 6)
-	k.cylinder(Vector3(lp.x, 0, lp.y), 0.22, 0.4, Color(0.18, 0.2, 0.26), 6)
-	k.blob(Vector3(lp.x, 3.5, lp.y), Vector3(0.32, 0.36, 0.32), Color(1.0, 0.86, 0.55), 2, 6, 2.2)
-	k.cone(Vector3(lp.x, 3.75, lp.y), 0.45, 0.35, Color(0.18, 0.2, 0.26), 6)
+	var iron := Color(0.17, 0.19, 0.25)
+	k.cylinder(Vector3(lp.x, 0, lp.y), 0.24, 0.35, iron, 8, 0.0, true, 0.16)
+	k.cylinder(Vector3(lp.x, 0.35, lp.y), 0.08, 2.95, iron, 6)
+	k.cylinder(Vector3(lp.x, 3.25, lp.y), 0.16, 0.08, iron, 8)
+	# glass lantern (warm, emissive) under a small cap with a finial
+	k.cylinder(Vector3(lp.x, 3.33, lp.y), 0.2, 0.42, Color(1.0, 0.86, 0.56), 6, 2.0, true, 0.26)
+	k.cone(Vector3(lp.x, 3.75, lp.y), 0.38, 0.28, iron, 6)
+	k.blob(Vector3(lp.x, 4.06, lp.y), Vector3(0.05, 0.06, 0.05), iron, 2, 5)
 	_glow_disc(Vector3(lp.x, 0.1, lp.y), 4.2)
 
 
@@ -616,13 +633,19 @@ func _bench(bn: Dictionary) -> void:
 	var p: Vector2 = bn["pos"]
 	var yaw: float = bn["rot"]
 	var k := _kit_at(p.x, p.y)
-	var wood := Color(0.62, 0.42, 0.28)
-	k.box(Vector3(p.x, 0.45, p.y), Vector3(1.9, 0.12, 0.55), wood, yaw)
-	var back := Basis(Vector3.UP, yaw) * Vector3(0, 0, 0.3)
-	k.box(Vector3(p.x, 0.8, p.y) + back, Vector3(1.9, 0.5, 0.1), wood, yaw)
-	for sx in [-0.8, 0.8]:
-		var off := Basis(Vector3.UP, yaw) * Vector3(sx, 0, 0)
-		k.box(Vector3(p.x, 0.22, p.y) + off, Vector3(0.1, 0.45, 0.5), Color(0.2, 0.2, 0.25), yaw)
+	var wood := Color(0.66, 0.45, 0.29)
+	var iron := Color(0.18, 0.19, 0.24)
+	var b := Basis(Vector3.UP, yaw)
+	# three seat slats and two back slats on cast-iron ends with armrests
+	for i in 3:
+		k.box(Vector3(p.x, 0.46, p.y) + b * Vector3(0, 0, -0.17 + 0.17 * float(i)), Vector3(1.9, 0.06, 0.14), wood.darkened(0.04 * float(i)), yaw)
+	for j in 2:
+		k.box(Vector3(p.x, 0.7 + 0.2 * float(j), p.y) + b * Vector3(0, 0, 0.3), Vector3(1.9, 0.12, 0.05), wood, yaw)
+	for sx in [-0.86, 0.86]:
+		var off := b * Vector3(sx, 0, 0)
+		k.box(Vector3(p.x, 0.22, p.y) + off, Vector3(0.08, 0.45, 0.55), iron, yaw)
+		k.box(Vector3(p.x, 0.66, p.y) + off + b * Vector3(0, 0, 0.27), Vector3(0.08, 0.5, 0.08), iron, yaw)
+		k.box(Vector3(p.x, 0.66, p.y) + off + b * Vector3(0, 0, 0.02), Vector3(0.09, 0.05, 0.5), iron, yaw)
 
 
 func _ramp_visual(rp: Dictionary) -> void:

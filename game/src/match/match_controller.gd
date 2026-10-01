@@ -67,6 +67,13 @@ var hud: MatchHUD
 var touch: TouchControls
 var fx: Fx
 var spectate_slot := -1
+# render-time interpolation: state captured at the last two physics ticks
+var _tick_prev: Dictionary = {}   # slot -> rs at the previous tick
+var _tick_cur: Dictionary = {}    # slot -> rs at the latest tick
+var _cart_prev: Dictionary = {}   # cart index -> rs
+var _cart_cur: Dictionary = {}
+var _discont: Dictionary = {}     # slot -> true: snap + reset presentation history
+var _cam_follow := -2
 var _local_events: Array = []
 var _shake_cd := 0.0
 var _phase_seen := -1
@@ -221,6 +228,73 @@ func _physics_process(delta: float) -> void:
 		_client_tick(cmd, delta)
 	else:
 		_host_tick(cmd, delta)
+	_capture_tick()
+
+
+const _TELEPORT_STATES := [TC.PState.CAPTURED, TC.PState.SPLASHING, TC.PState.ENTERING, TC.PState.EXITING]
+
+
+## Pipeline: input -> fixed 60 Hz sim/prediction (above) -> capture the tick
+## state here -> _process renders lerp(prev, cur, physics fraction) for every
+## character, cart and the camera anchor.  Discontinuities (respawn,
+## resurfacing, cart entry/exit, recovery, reconnect jumps) are not
+## interpolated: prev = cur and the view's motion history is reset.
+func _capture_tick() -> void:
+	for slot in views:
+		var rs := _player_rs(slot)
+		if rs.is_empty() or not rs.has("pos"):
+			continue
+		var prev: Dictionary = _tick_cur.get(slot, {})
+		var jump := false
+		if prev.is_empty():
+			jump = true
+		else:
+			var ps: int = prev.get("state", 0)
+			var cs: int = rs.get("state", 0)
+			if (prev["pos"] as Vector3).distance_to(rs["pos"]) > 2.5:
+				jump = true
+			elif ps != cs and (ps in _TELEPORT_STATES or cs in _TELEPORT_STATES):
+				jump = true
+		_tick_prev[slot] = rs if jump else prev
+		_tick_cur[slot] = rs
+		if jump and not prev.is_empty():
+			_discont[slot] = true
+	for i in cart_views.size():
+		var crs := _cart_rs(i)
+		if crs.is_empty():
+			continue
+		var cp: Dictionary = _cart_cur.get(i, {})
+		var cjump := cp.is_empty() or (cp["pos"] as Vector3).distance_to(crs["pos"]) > 3.0
+		_cart_prev[i] = crs if cjump else cp
+		_cart_cur[i] = crs
+
+
+## Render-time state for a player: interpolated between the last two ticks.
+func _render_rs(slot: int, frac: float = -1.0) -> Dictionary:
+	var cur: Dictionary = _tick_cur.get(slot, {})
+	if cur.is_empty():
+		return _player_rs(slot)
+	var prev: Dictionary = _tick_prev.get(slot, cur)
+	var f := clampf(Engine.get_physics_interpolation_fraction() if frac < 0.0 else frac, 0.0, 1.0)
+	var out := cur.duplicate()
+	out["pos"] = (prev["pos"] as Vector3).lerp(cur["pos"], f)
+	out["yaw"] = lerp_angle(float(prev.get("yaw", 0.0)), float(cur.get("yaw", 0.0)), f)
+	if prev.has("steer") and cur.has("steer"):
+		out["steer"] = lerpf(float(prev["steer"]), float(cur["steer"]), f)
+	return out
+
+
+func _render_cart(i: int) -> Dictionary:
+	var cur: Dictionary = _cart_cur.get(i, {})
+	if cur.is_empty():
+		return _cart_rs(i)
+	var prev: Dictionary = _cart_prev.get(i, cur)
+	var f := clampf(Engine.get_physics_interpolation_fraction(), 0.0, 1.0)
+	var out := cur.duplicate()
+	out["pos"] = (prev["pos"] as Vector3).lerp(cur["pos"], f)
+	out["yaw"] = lerp_angle(float(prev["yaw"]), float(cur["yaw"]), f)
+	out["speed"] = lerpf(float(prev.get("speed", 0.0)), float(cur.get("speed", 0.0)), f)
+	return out
 
 
 func _local_in_cart() -> bool:
@@ -612,7 +686,7 @@ func _process(delta: float) -> void:
 	# characters
 	for slot in views:
 		var v: CharacterView = views[slot]
-		var rs := _player_rs(slot)
+		var rs := _render_rs(slot)
 		if rs.is_empty() or not bool(rs.get("visible", true)):
 			v.visible = false
 			continue
@@ -621,17 +695,21 @@ func _process(delta: float) -> void:
 		if st == TC.PState.IN_CART or st == TC.PState.ENTERING:
 			var cid: int = rs.get("cart_id", -1)
 			if cid >= 0:
-				var crs := _cart_rs(cid)
+				var crs := _render_cart(cid)
 				if crs.has("pos"):
 					var cy: float = crs["yaw"]
-					var seat: Vector3 = (crs["pos"] as Vector3) + Basis(Vector3.UP, cy) * Vector3(-0.35, 0.18, 0.25)
+					var seat: Vector3 = (crs["pos"] as Vector3) + Basis(Vector3.UP, cy) * CartView.SEAT
 					rs["pos"] = seat
 					rs["yaw"] = cy
 					rs["steer"] = crs.get("steer", 0.0)
-		v.apply_state(rs, delta)
+		var snap := bool(_discont.get(slot, false))
+		_discont.erase(slot)
+		v.apply_state(rs, delta, snap)
 		v.reduced_motion = reduced_motion
+		if snap and slot == (spectate_slot if spectate_slot >= 0 else local_slot) and camera:
+			camera.snap_to(rs["pos"], camera.yaw)
 	for i in cart_views.size():
-		var crs2 := _cart_rs(i)
+		var crs2 := _render_cart(i)
 		if not crs2.is_empty():
 			cart_views[i].apply_state(crs2, delta)
 	_update_beacons(delta)
@@ -659,7 +737,7 @@ func _process(delta: float) -> void:
 
 func _update_camera(delta: float) -> void:
 	var follow_slot := local_slot
-	var rs := _player_rs(local_slot) if not spectator else {}
+	var rs := _render_rs(local_slot) if not spectator else {}
 	var st: int = rs.get("state", TC.PState.ACTIVE)
 	var watching := spectator or st == TC.PState.FINISHED or (st == TC.PState.CAPTURED and float(rs.get("state_t", 0.0)) > 1.6)
 	if watching:
@@ -669,18 +747,24 @@ func _update_camera(delta: float) -> void:
 			spectate_slot = _next_spectate(spectate_slot)
 		if spectate_slot >= 0:
 			follow_slot = spectate_slot
-			rs = _player_rs(spectate_slot)
+			rs = _render_rs(spectate_slot)
 	else:
 		spectate_slot = -1
 	var look := Controls.consume_look(delta)
 	camera.add_look(look)
 	camera.reduced_motion = reduced_motion
+	camera.move_input = Controls.get_move() if follow_slot == local_slot else Vector2.ZERO
+	if follow_slot != _cam_follow and rs.has("pos"):
+		# spectator switch / own respawn view: cut, don't swing across the map
+		if _cam_follow != -2:
+			camera.snap_to(rs["pos"], camera.yaw)
+		_cam_follow = follow_slot
 	if rs.has("pos"):
 		var cs: int = rs.get("state", 0)
 		camera.in_cart = cs == TC.PState.IN_CART or cs == TC.PState.ENTERING
 		var p: Vector3 = rs["pos"]
 		if camera.in_cart:
-			var crs := _cart_rs(int(rs.get("cart_id", -1))) if int(rs.get("cart_id", -1)) >= 0 else {}
+			var crs := _render_cart(int(rs.get("cart_id", -1))) if int(rs.get("cart_id", -1)) >= 0 else {}
 			if crs.has("pos"):
 				p = crs["pos"]
 				camera.target_vel = Basis(Vector3.UP, float(crs["yaw"])) * Vector3(0, 0, -float(crs["speed"]))
@@ -715,6 +799,11 @@ func _next_spectate(after: int) -> int:
 	return -1
 
 
+func _haptic(ms: int) -> void:
+	if bool(Save.get_setting("haptics", true)) and OS.has_feature("mobile"):
+		Input.vibrate_handheld(ms, 0.5)
+
+
 func _present_event(ev: Dictionary) -> void:
 	var type: int = ev["type"]
 	var a: int = ev["a"]
@@ -726,12 +815,15 @@ func _present_event(ev: Dictionary) -> void:
 			var wcol: Color = layout.waters[int(ev["b"])]["color"] if int(ev["b"]) >= 0 else Color.CYAN
 			fx.splash(pos, wcol if big else Color(0.6, 0.85, 1.0), big)
 			Sfx.play("splash_big" if big else "splash", pos)
-			if big and water_nodes.has(layout.waters[int(ev["b"])]["id"]):
-				var wm: ShaderMaterial = water_nodes[layout.waters[int(ev["b"])]["id"]]["mat"]
-				fx.flash_water(wm)
+			if int(ev["b"]) >= 0 and water_nodes.has(layout.waters[int(ev["b"])]["id"]):
+				var wd: Dictionary = layout.waters[int(ev["b"])]
+				var wm: ShaderMaterial = water_nodes[wd["id"]]["mat"]
+				var wc: Vector2 = wd["center"]
+				fx.flash_water(wm, Vector2(pos.x - wc.x, pos.z - wc.y))
 			if mine:
 				if big:
 					hud.toast("SPLASH!  %s stamped" % layout.waters[int(ev["b"])]["name"], wcol)
+					_haptic(20)
 				else:
 					var wi: int = ev["b"]
 					hud.toast("Already stamped" if targets.has(wi) else "%s isn't a target tonight" % layout.waters[wi]["short"], Color(0.8, 0.9, 1.0))
@@ -746,7 +838,7 @@ func _present_event(ev: Dictionary) -> void:
 			hud.feed("%s caught %s!" % [by.get("name", "?"), r.get("name", "?")], TC.Role.PATROL)
 			if mine:
 				hud.toast("CAUGHT! Back in %d…" % int(cfg.capture_penalty_s), Color(1.0, 0.6, 0.4))
-				camera.add_shake(0.35)
+				_haptic(30)
 			elif int(ev["b"]) == local_slot:
 				hud.toast("Tagged %s!" % r.get("name", "?"), Color(1.0, 0.8, 0.3))
 		TC.Ev.TAG_MISS:
@@ -758,11 +850,12 @@ func _present_event(ev: Dictionary) -> void:
 			hud.feed("%s made it home! (%d/%d)" % [r2.get("name", "?"), int(ev["v"]), cfg.runners_needed], TC.Role.RUNNER)
 			if mine:
 				hud.toast("HOME SAFE! Cheer on your team", Color(0.5, 1.0, 0.6))
+				_haptic(40)
 		TC.Ev.BUMP:
 			fx.bump(pos)
 			Sfx.play("boing", pos)
 			if mine and _shake_cd <= 0.0:
-				camera.add_shake(0.3)
+				_haptic(15)
 				_shake_cd = 0.6
 		TC.Ev.CART_ENTER:
 			Sfx.play("cart_start", pos)

@@ -7,6 +7,71 @@ extends RefCounted
 static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: Color, filled: bool = true) -> void:
 	var pts := PackedVector2Array()
 	match kind:
+		"back":
+			ci.draw_polyline(PackedVector2Array([c + Vector2(r * 0.35, -r * 0.75), c + Vector2(-r * 0.4, 0), c + Vector2(r * 0.35, r * 0.75)]), col, r * 0.26, true)
+			return
+		"close":
+			ci.draw_line(c + Vector2(-r * 0.6, -r * 0.6), c + Vector2(r * 0.6, r * 0.6), col, r * 0.24, true)
+			ci.draw_line(c + Vector2(r * 0.6, -r * 0.6), c + Vector2(-r * 0.6, r * 0.6), col, r * 0.24, true)
+			return
+		"plus":
+			ci.draw_line(c + Vector2(-r * 0.65, 0), c + Vector2(r * 0.65, 0), col, r * 0.24, true)
+			ci.draw_line(c + Vector2(0, -r * 0.65), c + Vector2(0, r * 0.65), col, r * 0.24, true)
+			return
+		"check":
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.7, 0), c + Vector2(-r * 0.15, r * 0.55), c + Vector2(r * 0.75, -r * 0.6)]), col, r * 0.28, true)
+			return
+		"gear":
+			for i in 8:
+				var ga := TAU * float(i) / 8.0
+				ci.draw_line(c + Vector2(cos(ga), sin(ga)) * r * 0.5, c + Vector2(cos(ga), sin(ga)) * r * 0.98, col, r * 0.3)
+			ci.draw_circle(c, r * 0.68, col)
+			ci.draw_circle(c, r * 0.28, Color(0.07, 0.1, 0.17))
+			return
+		"copy":
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.75, -r * 0.45), Vector2(r * 1.1, r * 1.25)), col, false, r * 0.18)
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.35, -r * 0.85), Vector2(r * 1.1, r * 1.25)), col, false, r * 0.18)
+			return
+		"person":
+			ci.draw_circle(c + Vector2(0, -r * 0.42), r * 0.36, col)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.7, r * 0.85), c + Vector2(-r * 0.55, r * 0.15), c + Vector2(0, -r * 0.02),
+				c + Vector2(r * 0.55, r * 0.15), c + Vector2(r * 0.7, r * 0.85)]), col)
+			return
+		"invite":
+			ci.draw_circle(c + Vector2(-r * 0.25, -r * 0.42), r * 0.32, col)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.85, r * 0.8), c + Vector2(-r * 0.75, r * 0.15), c + Vector2(-r * 0.25, 0.0),
+				c + Vector2(r * 0.25, r * 0.15), c + Vector2(r * 0.35, r * 0.8)]), col)
+			ci.draw_line(c + Vector2(r * 0.45, -r * 0.25), c + Vector2(r * 1.0, -r * 0.25), col, r * 0.2)
+			ci.draw_line(c + Vector2(r * 0.72, -r * 0.52), c + Vector2(r * 0.72, r * 0.02), col, r * 0.2)
+			return
+		"shirt":
+			pts = PackedVector2Array([c + Vector2(-r * 0.35, -r * 0.8), c + Vector2(-r, -r * 0.45), c + Vector2(-r * 0.75, -r * 0.05), c + Vector2(-r * 0.5, -r * 0.2),
+				c + Vector2(-r * 0.5, r * 0.85), c + Vector2(r * 0.5, r * 0.85), c + Vector2(r * 0.5, -r * 0.2), c + Vector2(r * 0.75, -r * 0.05),
+				c + Vector2(r, -r * 0.45), c + Vector2(r * 0.35, -r * 0.8), c + Vector2(0, -r * 0.55)])
+		"smile":
+			ci.draw_arc(c, r * 0.9, 0, TAU, 24, col, r * 0.16, true)
+			ci.draw_circle(c + Vector2(-r * 0.32, -r * 0.22), r * 0.12, col)
+			ci.draw_circle(c + Vector2(r * 0.32, -r * 0.22), r * 0.12, col)
+			ci.draw_arc(c + Vector2(0, r * 0.05), r * 0.45, 0.35, PI - 0.35, 12, col, r * 0.15, true)
+			return
+		"role":
+			ci.draw_circle(c + Vector2(-r * 0.38, 0), r * 0.48, col)
+			ci.draw_arc(c + Vector2(r * 0.38, 0), r * 0.48, 0, TAU, 20, col, r * 0.16, true)
+			return
+		"crown":
+			pts = PackedVector2Array([c + Vector2(-r, r * 0.6), c + Vector2(-r, -r * 0.45), c + Vector2(-r * 0.45, 0), c + Vector2(0, -r * 0.7),
+				c + Vector2(r * 0.45, 0), c + Vector2(r, -r * 0.45), c + Vector2(r, r * 0.6)])
+		"pause":
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.55, -r * 0.7), Vector2(r * 0.38, r * 1.4)), col)
+			ci.draw_rect(Rect2(c + Vector2(r * 0.17, -r * 0.7), Vector2(r * 0.38, r * 1.4)), col)
+			return
+		"bot":
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.7, -r * 0.45), Vector2(r * 1.4, r * 1.1)), col)
+			ci.draw_line(c + Vector2(0, -r * 0.45), c + Vector2(0, -r * 0.85), col, r * 0.14)
+			ci.draw_circle(c + Vector2(0, -r * 0.9), r * 0.14, col)
+			ci.draw_circle(c + Vector2(-r * 0.3, 0.05 * r), r * 0.15, Color(0.07, 0.1, 0.17))
+			ci.draw_circle(c + Vector2(r * 0.3, 0.05 * r), r * 0.15, Color(0.07, 0.1, 0.17))
+			return
 		"star":
 			for i in 10:
 				var a := -PI * 0.5 + TAU * float(i) / 10.0

@@ -72,6 +72,8 @@ func _process(delta: float) -> void:
 	match scenario:
 		"home":
 			_home()
+		"screens":
+			_screens()
 		"lobby":
 			_lobby()
 		"runner", "patrol":
@@ -86,6 +88,19 @@ func _home() -> void:
 		App.goto(WardrobeScreen)
 		later(3.0, "wardrobe")
 	elif _t > 12.0 and _shots.has("wardrobe"):
+		get_tree().quit()
+
+
+## Menu screens in turn: online sheet, practice, settings, how-to.
+func _screens() -> void:
+	var seq := [[6.0, OnlineScreen, "online"], [9.0, PracticeScreen, "practice"], [12.0, SettingsScreen, "settings"], [15.0, HowToScreen, "howto"]]
+	for st in seq:
+		var key := "open_" + String(st[2])
+		if _t > float(st[0]) and not _scheduled.has(key):
+			_scheduled[key] = true
+			App.goto(st[1])
+			later(2.2, String(st[2]))
+	if _t > 18.0 and _shots.has("howto"):
 		get_tree().quit()
 
 

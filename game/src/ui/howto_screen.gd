@@ -13,11 +13,11 @@ func build() -> void:
 	sc.add_child(v)
 	var cards := UIKit.hbox(20)
 	for c in [["RUNNERS (6)", TC.RUNNER_CARD, UIKit.RUNNER], ["NIGHT WATCH (2)", TC.PATROL_CARD, UIKit.PATROL]]:
-		var p := UIKit.panel(Color(0.12, 0.15, 0.32, 0.92), 24, 18)
+		var p := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 20)
 		p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var pv := UIKit.vbox(8)
-		pv.add_child(UIKit.label(String(c[0]), 30, c[2], true))
-		var l := UIKit.label(String(c[1]), 24)
+		pv.add_child(UIKit.label(String(c[0]), 26, c[2], true))
+		var l := UIKit.label(String(c[1]), 21)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size = Vector2(420, 0)
 		pv.add_child(l)
@@ -34,27 +34,30 @@ func build() -> void:
 		"Gadgets (one at a time): Turbo Sneakers (short speed burst), Squeaky Decoy (fake footsteps), Splash Bomb (briefly slows a cart).",
 	]
 	for r in rules:
-		var l2 := UIKit.label("•  " + r, 22)
+		var l2 := UIKit.label("•  " + r, 20)
 		l2.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		v.add_child(l2)
-	v.add_child(UIKit.label("Controls", 30, UIKit.ACCENT, true))
+	v.add_child(UIKit.label("Controls", 26, UIKit.TEAL, true))
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.add_theme_constant_override("h_separation", 24)
 	grid.add_theme_constant_override("v_separation", 6)
 	for row in [["Action", "Touch", "Controller", "Keyboard (desktop)"],
-		["Move", "Left thumb stick (anywhere left)", "Left stick", "WASD"],
-		["Camera", "Drag on the right", "Right stick", "Right-mouse drag / IJKL"],
-		["Jump / Dive", "Jump button (again in the air = dive)", "A / Cross", "Space"],
-		["Sprint", "Push the stick to its outer ring", "Hold LB or RB", "Shift"],
+		["Move", "Left thumb: stick appears where you touch (or fixed, in Settings)", "Left stick", "WASD"],
+		["Camera", "Drag anywhere that isn't a button", "Right stick", "Right-mouse drag / IJKL"],
+		["Jump / Dive", "Jump (it becomes Dive in the air)", "A / Cross", "Space"],
+		["Sprint", "Push the stick to its edge (or hold Sprint, in Settings)", "Hold LB or RB", "Shift"],
 		["Gadget", "Gadget button (when holding one)", "B / Circle", "Q"],
-		["Tag (Night Watch)", "TAG button", "X / Square", "F"],
-		["Cart in/out", "Drive / Hop out button", "Y / Triangle", "E"],
-		["Drive", "Steer stick + GAS / BRAKE", "RT gas, LT brake, left stick steer", "W/S + A/D"]]:
+		["Tag (Night Watch)", "Tag button", "X / Square", "F"],
+		["Cart in/out", "Drive near a cart; small Exit while driving", "Y / Triangle", "E"],
+		["Drive", "Stick steers, Gas / Brake on the right", "RT gas, LT brake, left stick steer", "W/S + A/D"]]:
 		for cell in row:
-			grid.add_child(UIKit.label(String(cell), 20, UIKit.TEXT if row[0] != "Action" else UIKit.ACCENT, row[0] == "Action"))
+			var gl := UIKit.label(String(cell), 18, UIKit.IVORY if row[0] != "Action" else UIKit.TEAL, row[0] == "Action")
+			gl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			gl.custom_minimum_size = Vector2(220, 0)
+			grid.add_child(gl)
 	v.add_child(grid)
-	var done := UIKit.button("Got it", Color(0.35, 0.75, 0.95))
+	var done := UIKit.primary("Got it", Vector2(300, 88), 28)
 	done.pressed.connect(func() -> void: App.goto_title())
 	v.add_child(done)
 	focus_first(done)

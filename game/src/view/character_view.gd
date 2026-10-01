@@ -209,9 +209,10 @@ func _build_tree() -> void:
 	cart.min_space = -1.0
 	cart.max_space = 1.0
 	cart.sync = true
-	cart.add_blend_point(_anim_node("cart_steer_r"), -1.0, -1, "steer_r")
+	# sim steer +1 = turning right
+	cart.add_blend_point(_anim_node("cart_steer_l"), -1.0, -1, "steer_l")
 	cart.add_blend_point(_anim_node("cart_drive"), 0.0, -1, "drive")
-	cart.add_blend_point(_anim_node("cart_steer_l"), 1.0, -1, "steer_l")
+	cart.add_blend_point(_anim_node("cart_steer_r"), 1.0, -1, "steer_r")
 	bt.add_node("cart_bs", cart)
 	var st := AnimationNodeTransition.new()
 	st.xfade_time = 0.12
