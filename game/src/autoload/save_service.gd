@@ -1,0 +1,232 @@
+extends Node
+## Versioned local profile: settings, wardrobe, coins, level, personal stats,
+## reward ledger (each match id pays out once). Stored only on this device.
+## Identity kept: a random local id and an auto-generated fun name; with Game
+## Center signed in, the Game Center id/name are used for rooms instead.
+
+signal changed
+
+const PATH := "user://profile.json"
+const VERSION := 2
+const ADJ := ["Sleepy", "Soggy", "Sneaky", "Snoozy", "Zippy", "Drowsy", "Splashy", "Fuzzy", "Comfy", "Wobbly", "Speedy", "Moonlit"]
+const ANIMALS := ["Otter", "Duck", "Frog", "Llama", "Panda", "Gecko", "Walrus", "Badger", "Koala", "Puffin", "Newt", "Moose"]
+
+var data: Dictionary = {}
+var _dirty := false
+var _save_t := 0.0
+
+
+func _ready() -> void:
+	load_profile()
+	_apply_settings()
+
+
+func default_profile() -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var uid := "local-%08x%08x" % [rng.randi(), rng.randi()]
+	return {
+		"version": VERSION,
+		"uid": uid,
+		"name": "%s %s %d" % [ADJ[rng.randi() % ADJ.size()], ANIMALS[rng.randi() % ANIMALS.size()], rng.randi_range(10, 99)],
+		"settings": {"sensitivity": 1.0, "invert_y": false, "reduced_motion": false, "sfx": 0.9, "music": 0.6,
+			"quality": 1, "sprint_threshold": 0.88, "touch_sprint": true, "role_pref": "any"},
+		"cosmetic": Cosmetics.DEFAULT.duplicate(),
+		"owned": ["outfit:pj_stripes", "outfit:pj_plain", "outfit:swim", "hat:none", "hat:nightcap", "hat:swimcap", "shoes:slippers"],
+		"coins": 0, "level": 1, "xp": 0,
+		"stats": {"online": _blank_stats(), "practice": _blank_stats()},
+		"rewarded": [],
+		"recent": [],
+		"tutorial_done": false,
+		"muted": [],
+	}
+
+
+func _blank_stats() -> Dictionary:
+	return {"matches": 0, "runner_rounds": 0, "patrol_rounds": 0, "wins": 0, "splashes": 0, "finishes": 0,
+		"unique_captures": 0, "times_caught": 0, "fastest_trifecta_awards": 0, "with_bots": 0}
+
+
+func load_profile() -> void:
+	data = default_profile()
+	if not FileAccess.file_exists(PATH):
+		_dirty = true
+		return
+	var f := FileAccess.open(PATH, FileAccess.READ)
+	if f == null:
+		return
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	if parsed is Dictionary:
+		data = migrate(parsed)
+
+
+## Upgrades older profile versions and fills any missing keys.
+func migrate(d: Dictionary) -> Dictionary:
+	var out := default_profile()
+	var v := int(d.get("version", 1))
+	for k in out:
+		if d.has(k):
+			out[k] = d[k]
+	if v < 2:
+		# v1 kept a single stats table; split into online/practice
+		if d.has("stats") and not (d["stats"] as Dictionary).has("online"):
+			out["stats"] = {"online": _merge_stats(_blank_stats(), d["stats"]), "practice": _blank_stats()}
+	for k2 in default_profile()["settings"]:
+		if not (out["settings"] as Dictionary).has(k2):
+			out["settings"][k2] = default_profile()["settings"][k2]
+	for mode in ["online", "practice"]:
+		if not (out["stats"] as Dictionary).has(mode):
+			out["stats"][mode] = _blank_stats()
+		out["stats"][mode] = _merge_stats(_blank_stats(), out["stats"][mode])
+	out["cosmetic"] = Cosmetics.sanitize(out["cosmetic"])
+	out["version"] = VERSION
+	return out
+
+
+func _merge_stats(base: Dictionary, extra: Dictionary) -> Dictionary:
+	for k in extra:
+		if base.has(k):
+			base[k] = int(extra[k])
+	return base
+
+
+func save_now() -> void:
+	var f := FileAccess.open(PATH, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(data, "  "))
+	_dirty = false
+
+
+func _process(delta: float) -> void:
+	if _dirty:
+		_save_t += delta
+		if _save_t > 0.5:
+			_save_t = 0.0
+			save_now()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		if _dirty:
+			save_now()
+
+
+func mark() -> void:
+	_dirty = true
+	changed.emit()
+
+
+func get_setting(k: String, def: Variant = null) -> Variant:
+	return (data["settings"] as Dictionary).get(k, def)
+
+
+func set_setting(k: String, v: Variant) -> void:
+	data["settings"][k] = v
+	_apply_settings()
+	mark()
+
+
+func _apply_settings() -> void:
+	var s: Dictionary = data["settings"]
+	Controls.sensitivity = float(s["sensitivity"])
+	Controls.invert_y = bool(s["invert_y"])
+	Controls.sprint_threshold = float(s["sprint_threshold"])
+	Controls.touch_sprint_enabled = bool(s["touch_sprint"])
+	Sfx.set_volumes(float(s["sfx"]), float(s["music"]))
+
+
+func player_name() -> String:
+	if Social.authenticated and Social.display_name != "":
+		return Social.display_name
+	return String(data["name"])
+
+
+func player_uid() -> String:
+	if Social.authenticated and Social.local_player_id != "":
+		return Social.local_player_id
+	return String(data["uid"])
+
+
+func owns(slot: String, id: String) -> bool:
+	return (data["owned"] as Array).has("%s:%s" % [slot, id])
+
+
+func buy(slot: String, id: String) -> bool:
+	if owns(slot, id):
+		return true
+	var cost := Cosmetics.item_cost(slot, id)
+	if int(data["coins"]) < cost:
+		return false
+	data["coins"] = int(data["coins"]) - cost
+	(data["owned"] as Array).append("%s:%s" % [slot, id])
+	mark()
+	return true
+
+
+func equip(slot: String, id: Variant) -> void:
+	if slot == "color" or slot == "skin":
+		data["cosmetic"][slot] = int(id)
+	elif owns(slot, String(id)):
+		data["cosmetic"][slot] = String(id)
+	data["cosmetic"] = Cosmetics.sanitize(data["cosmetic"])
+	mark()
+
+
+## Applies rewards + stats once per match id. Returns {} if already applied
+## or if the round was cancelled (host loss etc.).
+func apply_results(results: Dictionary, slot: int, practice: bool) -> Dictionary:
+	var mid := String(results.get("match_id", ""))
+	if mid == "" or (data["rewarded"] as Array).has(mid):
+		return {}
+	if int(results.get("outcome", 0)) == TC.Outcome.CANCELLED:
+		return {}
+	var me: Dictionary = {}
+	var bots := 0
+	for r in results.get("players", []):
+		if bool(r.get("is_bot", false)):
+			bots += 1
+		if int(r["slot"]) == slot:
+			me = r
+	if me.is_empty():
+		return {}
+	var rew := RulesLogic.compute_rewards(results, slot, Rules.cfg, practice)
+	var st: Dictionary = data["stats"]["practice" if practice else "online"]
+	st["matches"] = int(st["matches"]) + 1
+	if bots > 0:
+		st["with_bots"] = int(st["with_bots"]) + 1
+	var role := int(me["role"])
+	var outcome := int(results["outcome"])
+	if role == TC.Role.RUNNER:
+		st["runner_rounds"] = int(st["runner_rounds"]) + 1
+		st["splashes"] = int(st["splashes"]) + int(me.get("stamps", 0))
+		if bool(me.get("finished", false)):
+			st["finishes"] = int(st["finishes"]) + 1
+		st["times_caught"] = int(st["times_caught"]) + int(me.get("times_captured", 0))
+		if outcome == TC.Outcome.RUNNERS_WIN:
+			st["wins"] = int(st["wins"]) + 1
+		if int(results.get("fastest_slot", -1)) == slot:
+			st["fastest_trifecta_awards"] = int(st["fastest_trifecta_awards"]) + 1
+	else:
+		st["patrol_rounds"] = int(st["patrol_rounds"]) + 1
+		st["unique_captures"] = int(st["unique_captures"]) + int(me.get("unique_captures", 0))
+		if outcome == TC.Outcome.PATROL_WIN:
+			st["wins"] = int(st["wins"]) + 1
+	var before_level := int(data["level"])
+	data["coins"] = int(data["coins"]) + int(rew["coins"])
+	var lx := RulesLogic.add_xp(int(data["level"]), int(data["xp"]), int(rew["xp"]), Rules.cfg)
+	data["level"] = lx[0]
+	data["xp"] = lx[1]
+	var ledger: Array = data["rewarded"]
+	ledger.append(mid)
+	while ledger.size() > 200:
+		ledger.pop_front()
+	var recent: Array = data["recent"]
+	recent.push_front({"when": Time.get_datetime_string_from_system(false, true), "kind": "practice" if practice else "online",
+		"role": role, "outcome": outcome, "bots": bots, "match_id": mid})
+	while recent.size() > 20:
+		recent.pop_back()
+	mark()
+	save_now()
+	rew["level_up"] = int(data["level"]) > before_level
+	rew["level"] = data["level"]
+	return rew

@@ -1,0 +1,820 @@
+class_name MatchController
+extends Node3D
+## One round of Trifecta Chase on this device.
+##  - Host / practice: runs the authoritative MatchSim and renders it directly.
+##  - Client: predicts its own character (and cart) with the shared Motor,
+##    reconciles against host snapshots, and interpolates everyone else.
+## Simulation, input, presentation, transport and persistence stay separate.
+
+signal finished(results: Dictionary)
+signal quit_requested
+
+var session: NetSession
+var start: Dictionary
+var cfg: RulesConfig
+var layout: CampusLayout
+var local_slot := -1
+var is_client := false
+var spectator := false
+var targets: Array = []
+var roster: Dictionary = {}   # slot -> start roster entry
+var quality := 1
+var reduced_motion := false
+
+# host
+var sim: MatchSim
+var _results_sent := false
+
+# client
+var pred: SimPlayer
+var pred_cart: SimCart
+var pred_cart_id := -1
+var client_world: Node3D
+var cart_proxies: Array[AnimatableBody3D] = []
+var _pending: Array = []      # InputCmd not yet acknowledged
+var _sent_window: Array = []
+var _next_seq := 1
+var _est_tick: float = 0.0
+var _have_clock := false
+var _bufs: Dictionary = {}    # slot -> Array of {tick, e}
+var _cart_bufs: Array = []
+var _last_snap: Dictionary = {}
+var _me: Dictionary = {}
+var _smooth := Vector3.ZERO
+var _client_phase: int = TC.Phase.REVEAL
+var _client_results: Dictionary = {}
+var _interp_ticks := 7.0
+var _snap_gap_avg := 3.0
+var _last_snap_tick := -1
+var _seen_tick: Dictionary = {}
+
+# presentation
+var views: Dictionary = {}     # slot -> CharacterView
+var cart_views: Array[CartView] = []
+var water_nodes: Dictionary = {}
+var beacons: Dictionary = {}   # water index -> MeshInstance3D
+var pickup_views: Array[Node3D] = []
+var camera: FollowCamera
+var hud: MatchHUD
+var touch: TouchControls
+var fx: Fx
+var spectate_slot := -1
+var _local_events: Array = []
+var _shake_cd := 0.0
+var _phase_seen := -1
+var _countdown_last := -1
+
+
+func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> void:
+	session = p_session
+	start = p_start
+	cfg = Rules.cfg
+	layout = CampusLayout.shared()
+	is_client = session.mode == NetSession.Mode.CLIENT
+	local_slot = session.local_slot
+	quality = int(settings.get("quality", 1))
+	reduced_motion = bool(settings.get("reduced_motion", false))
+	targets = start["targets"]
+	for e in start["roster"]:
+		roster[int(e["slot"])] = e
+	spectator = not roster.has(local_slot)
+
+
+func _ready() -> void:
+	# --- world
+	var builder := CampusBuilder.new(layout)
+	water_nodes = builder.build_visuals(self, quality)
+	add_child(EnvFactory.make_environment(quality))
+	add_child(EnvFactory.make_moon(quality))
+	fx = Fx.new()
+	add_child(fx)
+	_build_beacons()
+	_build_pickups()
+
+	if is_client:
+		_setup_client_world()
+	else:
+		sim = MatchSim.new()
+		sim.name = "Sim"
+		add_child(sim)
+		sim.setup(cfg, layout, start["roster"], int(start["seed"]), targets, String(start["match_id"]),
+			{"practice": bool(start.get("practice", false)), "tutorial": bool(start.get("tutorial", false)),
+			"patrol_release_extra_s": 24.0 if bool(start.get("tutorial", false)) else 0.0,
+			"bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p)})
+		session.attach_sim(sim)
+		sim.event_emitted.connect(func(ev: Dictionary) -> void: _local_events.append(ev))
+		if App.dev_local_bot and sim.player(local_slot) != null:
+			var lp := sim.player(local_slot)
+			lp.bot_takeover = true
+			sim.bots[local_slot] = BotBrain.new(sim, lp)
+
+	# --- characters + carts
+	for slot in roster:
+		var e: Dictionary = roster[slot]
+		var v := CharacterView.new()
+		v.reduced_motion = reduced_motion
+		add_child(v)
+		v.setup(int(e["role"]), e["cosmetic"], int(slot), String(e["name"]), bool(e["is_bot"]), int(slot) == local_slot)
+		views[int(slot)] = v
+	for i in cfg.cart_count:
+		var cv := CartView.new()
+		add_child(cv)
+		cv.setup(i)
+		cart_views.append(cv)
+		_cart_bufs.append([])
+
+	camera = FollowCamera.new()
+	camera.reduced_motion = reduced_motion
+	add_child(camera)
+	camera.current = true
+
+	hud = MatchHUD.new()
+	add_child(hud)
+	hud.setup(self)
+	touch = TouchControls.new()
+	add_child(touch)
+	touch.setup(self)
+	if is_client:
+		session.snapshot_received.connect(_on_snapshot)
+		session.events_received.connect(func(evs: Array) -> void: _local_events.append_array(evs))
+		session.results_received.connect(func(r: Dictionary) -> void: _client_results = r)
+	else:
+		session.events_received.connect(func(evs: Array) -> void:
+			for ev in evs:
+				if int(ev["type"]) == TC.Ev.EMOTE:
+					_local_events.append(ev))
+	# initial camera placement
+	var p0 := _player_rs(local_slot if not spectator else _first_slot())
+	camera.snap_to(p0.get("pos", Vector3.ZERO), p0.get("yaw", 0.0))
+	Sfx.music("chase_calm")
+
+
+func _first_slot() -> int:
+	for s in roster:
+		return int(s)
+	return 0
+
+
+# ---------------------------------------------------------------------------
+# Client world: collision + predicted body
+# ---------------------------------------------------------------------------
+func _setup_client_world() -> void:
+	client_world = Node3D.new()
+	client_world.name = "ClientWorld"
+	add_child(client_world)
+	CampusBuilder.new(layout).build_collision(client_world)
+	if not spectator:
+		pred = SimPlayer.new()
+		pred.id = local_slot
+		pred.role = int(roster[local_slot]["role"])
+		pred.body = Motor.make_character_body("Pred")
+		client_world.add_child(pred.body)
+		var sp: Vector2 = layout.runner_spawns[0] if pred.is_runner() else layout.patrol_spawns[0]
+		pred.body.global_position = Vector3(sp.x, 0.05, sp.y)
+	for i in cfg.cart_count:
+		var ab := AnimatableBody3D.new()
+		ab.collision_layer = TC.L_CART
+		ab.collision_mask = 0
+		ab.sync_to_physics = false
+		var cs := CollisionShape3D.new()
+		var bx := BoxShape3D.new()
+		bx.size = SimCart.HALF * 2.0 - Vector3(0, 0.6, 0)
+		cs.shape = bx
+		cs.position = Vector3(0, SimCart.HALF.y, 0)
+		ab.add_child(cs)
+		client_world.add_child(ab)
+		cart_proxies.append(ab)
+
+
+# ---------------------------------------------------------------------------
+# Per tick
+# ---------------------------------------------------------------------------
+func _physics_process(delta: float) -> void:
+	var cmd := _build_local_cmd()
+	if is_client:
+		_client_tick(cmd, delta)
+	else:
+		_host_tick(cmd, delta)
+
+
+func _local_in_cart() -> bool:
+	var rs := _player_rs(local_slot)
+	var st: int = rs.get("state", TC.PState.ACTIVE)
+	return st == TC.PState.IN_CART or st == TC.PState.ENTERING
+
+
+func _build_local_cmd() -> InputCmd:
+	var cmd := InputCmd.new()
+	if spectator:
+		return cmd
+	var mv := Controls.get_move()
+	var yaw := camera.yaw if camera else 0.0
+	var fwd := Vector2(-sin(yaw), -cos(yaw))
+	var right := Vector2(cos(yaw), -sin(yaw))
+	cmd.move = (right * mv.x + fwd * mv.y).limit_length(1.0)
+	cmd.cam_yaw = yaw
+	cmd.held = Controls.held_bits()
+	cmd.pressed = Controls.consume_pressed()
+	if _local_in_cart():
+		cmd.steer = Controls.get_steer()
+		cmd.drive = Controls.get_drive()
+		cmd.move = Vector2.ZERO
+	var em := Controls.consume_emote()
+	if em >= 0:
+		session.send_emote(em)
+	cmd.seq = _next_seq
+	_next_seq += 1
+	cmd.quantize()
+	return cmd
+
+
+func _host_tick(cmd: InputCmd, delta: float) -> void:
+	var inputs := session.host_collect_inputs()
+	if not spectator and roster.has(local_slot):
+		inputs[local_slot] = cmd
+	sim.step(inputs)
+	session.host_after_step(delta)
+	if (sim.phase == TC.Phase.RESULTS or sim.phase == TC.Phase.ENDED) and not _results_sent:
+		_results_sent = true
+		session.host_match_finished(sim.results)
+
+
+func _client_tick(cmd: InputCmd, delta: float) -> void:
+	_est_tick += delta * cfg.sim_hz
+	if not spectator and pred != null:
+		_pending.append(cmd)
+		if _pending.size() > 120:
+			_pending.pop_front()
+		_sent_window.append(cmd)
+		while _sent_window.size() > 6:
+			_sent_window.pop_front()
+		session.client_send_inputs(_sent_window)
+		_predict_step(cmd, delta)
+	# keep proxy carts where we render them (parked carts block runners)
+	for i in cart_proxies.size():
+		if i == pred_cart_id:
+			cart_proxies[i].global_position = Vector3(0, -50, 0)
+			continue
+		var crs := _cart_rs(i)
+		if crs.has("pos"):
+			cart_proxies[i].global_transform = Transform3D(Basis(Vector3.UP, float(crs["yaw"])), crs["pos"])
+	_smooth = _smooth.lerp(Vector3.ZERO, clampf(delta * 12.0, 0.0, 1.0))
+
+
+func _controllable(st: int) -> bool:
+	return st == TC.PState.ACTIVE or st == TC.PState.STUMBLE or st == TC.PState.EXITING
+
+
+func _predict_step(cmd: InputCmd, dt: float) -> void:
+	if _client_phase != TC.Phase.PLAYING:
+		return
+	if pred.state == TC.PState.IN_CART and pred_cart != null:
+		Motor.advance_timers(pred, cfg, dt)
+		Motor.step_cart(pred_cart, cmd, cfg, dt, layout)
+		pred.body.global_position = pred_cart.pos()
+		pred.yaw = pred_cart.yaw
+		pred.vel = pred_cart.forward() * pred_cart.speed
+		return
+	if not _controllable(pred.state):
+		return
+	Motor.advance_timers(pred, cfg, dt)
+	if pred.state == TC.PState.EXITING:
+		var frozen := cmd.duplicate_cmd()
+		frozen.move = Vector2.ZERO
+		frozen.pressed = 0
+		Motor.step_foot(pred, frozen, cfg, dt)
+	else:
+		Motor.step_foot(pred, cmd, cfg, dt)
+
+
+func _on_snapshot(s: Dictionary) -> void:
+	var tick: int = s["tick"]
+	if _last_snap.has("tick") and tick <= int(_last_snap["tick"]):
+		return   # late or duplicate snapshot: never let it override newer state
+	if _last_snap_tick >= 0:
+		_snap_gap_avg = lerpf(_snap_gap_avg, float(tick - _last_snap_tick), 0.1)
+	_last_snap_tick = tick
+	_last_snap = s
+	_client_phase = int(s["phase"])
+	var target := float(tick) + session.rtt * 0.5 * cfg.sim_hz
+	if not _have_clock or absf(_est_tick - target) > 20.0:
+		_est_tick = target
+		_have_clock = true
+	else:
+		_est_tick += (target - _est_tick) * 0.06
+	_interp_ticks = clampf(_snap_gap_avg * 2.0 + 1.0, 6.0, 14.0)
+	for slot in s["players"]:
+		var arr: Array = _bufs.get(int(slot), [])
+		arr.append({"tick": tick, "e": s["players"][slot]})
+		while arr.size() > 24:
+			arr.pop_front()
+		_bufs[int(slot)] = arr
+		_seen_tick[int(slot)] = tick
+	for i in (s["carts"] as Array).size():
+		if i < _cart_bufs.size():
+			var ca: Array = _cart_bufs[i]
+			ca.append({"tick": tick, "e": s["carts"][i]})
+			while ca.size() > 24:
+				ca.pop_front()
+	if s.has("me"):
+		_me = s["me"]
+		_reconcile(s)
+
+
+func _reconcile(s: Dictionary) -> void:
+	if pred == null or not _me.has("motor"):
+		return
+	var ack: int = s["ack"]
+	while not _pending.is_empty() and (_pending[0] as InputCmd).seq <= ack:
+		_pending.pop_front()
+	var before := pred.pos()
+	var m: Dictionary = _me["motor"]
+	pred.apply_motor(m)
+	var server_state: int = m["state"]
+	var cart_id: int = m["cart_id"]
+	# local cart prediction while driving
+	if cart_id >= 0 and _me.has("cart_motor"):
+		if pred_cart == null or pred_cart_id != cart_id:
+			_make_pred_cart(cart_id)
+		pred_cart.apply_motor(_me["cart_motor"])
+		pred_cart.occupant = local_slot
+	elif pred_cart != null:
+		pred_cart.body.queue_free()
+		pred_cart = null
+		pred_cart_id = -1
+	var enabled := _controllable(server_state)
+	Motor.set_body_enabled(pred.body, enabled)
+	if enabled or server_state == TC.PState.IN_CART:
+		for c in _pending:
+			_predict_step(c, cfg.dt())
+	var after := pred.pos()
+	var err := before.distance_to(after)
+	if err < 3.0:
+		_smooth += before - after
+	else:
+		_smooth = Vector3.ZERO
+
+
+func _make_pred_cart(cart_id: int) -> void:
+	if pred_cart != null:
+		pred_cart.body.queue_free()
+	pred_cart = SimCart.new()
+	pred_cart.id = cart_id
+	pred_cart.body = Motor.make_cart_body("PredCart")
+	client_world.add_child(pred_cart.body)
+	pred_cart_id = cart_id
+
+
+# ---------------------------------------------------------------------------
+# Render state providers
+# ---------------------------------------------------------------------------
+func _player_rs(slot: int) -> Dictionary:
+	if not is_client:
+		var p := sim.player(slot) if sim else null
+		if p == null:
+			return {}
+		return {
+			"pos": p.pos(), "yaw": p.yaw, "vel": p.vel, "state": p.state, "state_t": p.state_t,
+			"on_floor": p.on_floor, "diving": p.diving, "sprinting": p.sprinting, "tag_phase": p.tag_phase,
+			"protect": p.protect, "bump_protect": p.bump_protect, "spotted": p.spotted > 0.0,
+			"cart_id": p.cart_id, "steer": sim.carts[p.cart_id].steer_s if p.cart_id >= 0 else 0.0,
+			"emote": p.emote, "emote_t": p.emote_t, "stamps": p.stamps, "visible": true,
+			"bot": p.is_bot or p.bot_takeover, "connected": p.connected,
+		}
+	if slot == local_slot and pred != null and _last_snap.has("players") and (_last_snap["players"] as Dictionary).has(slot):
+		var srv: Dictionary = _last_snap["players"][slot]
+		var rs: Dictionary = srv.duplicate()
+		rs["pos"] = pred.pos() + _smooth
+		rs["yaw"] = pred.yaw
+		rs["vel"] = pred.vel
+		rs["on_floor"] = pred.on_floor
+		rs["diving"] = pred.diving
+		rs["sprinting"] = pred.sprinting
+		rs["state"] = pred.state if _controllable(int(srv["state"])) or int(srv["state"]) == TC.PState.IN_CART else int(srv["state"])
+		if pred.state == TC.PState.IN_CART and pred_cart != null:
+			rs["steer"] = pred_cart.steer_s
+		rs["visible"] = true
+		return rs
+	return _interp_player(slot)
+
+
+func _interp_player(slot: int) -> Dictionary:
+	var arr: Array = _bufs.get(slot, [])
+	if arr.is_empty():
+		return {}
+	var rt := _est_tick - _interp_ticks
+	var newest: Dictionary = arr[arr.size() - 1]
+	var vis := (int(_last_snap.get("tick", 0)) - int(_seen_tick.get(slot, -999))) < 18
+	if rt >= float(newest["tick"]):
+		var e: Dictionary = (newest["e"] as Dictionary).duplicate()
+		var ex := clampf((rt - float(newest["tick"])) / cfg.sim_hz, 0.0, 0.1)
+		e["pos"] = (e["pos"] as Vector3) + Vector3((e["vel"] as Vector3).x, 0, (e["vel"] as Vector3).z) * ex
+		e["visible"] = vis
+		return e
+	for i in range(arr.size() - 1, 0, -1):
+		var a: Dictionary = arr[i - 1]
+		var b: Dictionary = arr[i]
+		if float(a["tick"]) <= rt and rt <= float(b["tick"]):
+			var span := maxf(1.0, float(b["tick"]) - float(a["tick"]))
+			var t := (rt - float(a["tick"])) / span
+			var ea: Dictionary = a["e"]
+			var eb: Dictionary = b["e"]
+			var out: Dictionary = (eb if t > 0.5 else ea).duplicate()
+			if (ea["pos"] as Vector3).distance_to(eb["pos"]) < 8.0:
+				out["pos"] = (ea["pos"] as Vector3).lerp(eb["pos"], t)
+				out["yaw"] = lerp_angle(float(ea["yaw"]), float(eb["yaw"]), t)
+				out["vel"] = (ea["vel"] as Vector3).lerp(eb["vel"], t)
+			else:
+				out["pos"] = eb["pos"] if t > 0.5 else ea["pos"]
+			out["visible"] = vis
+			return out
+	var oldest: Dictionary = (arr[0]["e"] as Dictionary).duplicate()
+	oldest["visible"] = vis
+	return oldest
+
+
+func _cart_rs(i: int) -> Dictionary:
+	if not is_client:
+		var c: SimCart = sim.carts[i]
+		return {"pos": c.pos(), "yaw": c.yaw, "speed": c.speed, "steer": c.steer_s, "occupied": c.occupant >= 0, "slowed": c.slowed_t > 0.0, "occupant": c.occupant}
+	if i == pred_cart_id and pred_cart != null:
+		return {"pos": pred_cart.pos() + _smooth, "yaw": pred_cart.yaw, "speed": pred_cart.speed, "steer": pred_cart.steer_s, "occupied": true, "slowed": pred_cart.slowed_t > 0.0, "occupant": local_slot}
+	var arr: Array = _cart_bufs[i] if i < _cart_bufs.size() else []
+	if arr.is_empty():
+		return {}
+	var rt := _est_tick - _interp_ticks
+	for k in range(arr.size() - 1, 0, -1):
+		var a: Dictionary = arr[k - 1]
+		var b: Dictionary = arr[k]
+		if float(a["tick"]) <= rt and rt <= float(b["tick"]):
+			var t := (rt - float(a["tick"])) / maxf(1.0, float(b["tick"]) - float(a["tick"]))
+			var ea: Dictionary = a["e"]
+			var eb: Dictionary = b["e"]
+			return {"pos": (ea["pos"] as Vector3).lerp(eb["pos"], t), "yaw": lerp_angle(float(ea["yaw"]), float(eb["yaw"]), t),
+				"speed": lerpf(float(ea["speed"]), float(eb["speed"]), t), "steer": float(eb["steer"]),
+				"occupied": int(eb["occupant"]) >= 0, "slowed": bool(eb["slowed"]), "occupant": int(eb["occupant"])}
+	var last: Dictionary = arr[arr.size() - 1]["e"]
+	return {"pos": last["pos"], "yaw": last["yaw"], "speed": last["speed"], "steer": last["steer"], "occupied": int(last["occupant"]) >= 0, "slowed": last["slowed"], "occupant": int(last["occupant"])}
+
+
+## HUD-facing state for the local player (works for host and client).
+func local_info() -> Dictionary:
+	var info := {}
+	var rs := _player_rs(local_slot if not spectator else spectate_slot)
+	info["rs"] = rs
+	info["phase"] = sim.phase if sim else _client_phase
+	info["role"] = int(roster[local_slot]["role"]) if roster.has(local_slot) else TC.Role.SPECTATOR
+	if sim:
+		var p := sim.player(local_slot)
+		info["time_left"] = sim.time_left()
+		info["countdown"] = sim.countdown_left()
+		info["release_left"] = sim.patrol_release_left()
+		info["finished"] = sim.finished_count
+		if p:
+			info["sprint"] = p.sprint
+			info["gadget"] = p.gadget
+			info["gadget_cd"] = p.gadget_cd
+			info["penalty"] = p.penalty
+			info["turbo"] = p.turbo_t
+			info["spotted"] = p.spotted
+			info["stamps"] = p.stamps
+			info["noises"] = sim.noises_for(p)
+		info["markers"] = sim.splash_markers if (p != null and p.is_patrol()) else []
+	else:
+		var s := _last_snap
+		var est := _est_tick
+		var end_t := float(s.get("end_tick", 0))
+		var rs_t := float(s.get("round_start", 0))
+		var ph := _client_phase
+		if ph == TC.Phase.PLAYING:
+			info["time_left"] = maxf(0.0, (end_t - est) / cfg.sim_hz)
+			info["release_left"] = maxf(0.0, cfg.runner_head_start_s - (est - rs_t) / cfg.sim_hz)
+		else:
+			info["time_left"] = cfg.match_duration_s if ph < TC.Phase.PLAYING else 0.0
+			info["release_left"] = cfg.runner_head_start_s
+		info["countdown"] = maxf(0.0, (_reveal_end_tick() - est) / cfg.sim_hz) if ph < TC.Phase.PLAYING else 0.0
+		info["finished"] = int(s.get("finished", 0))
+		info["sprint"] = pred.sprint if pred else float(_me.get("sprint", 1.0))
+		info["gadget"] = int(_me.get("gadget", 0))
+		info["gadget_cd"] = float(_me.get("gadget_cd", 0.0))
+		info["penalty"] = float(_me.get("penalty", 0.0))
+		info["turbo"] = float(_me.get("turbo_t", 0.0))
+		info["spotted"] = float(_me.get("spotted", 0.0))
+		info["stamps"] = int(rs.get("stamps", 0))
+		info["noises"] = _me.get("noises", [])
+		var marks: Array = []
+		for m in _me.get("markers", []):
+			marks.append({"water": m["water"], "t": m["t"]})
+		info["markers"] = marks
+	info["targets"] = targets
+	return info
+
+
+func _reveal_end_tick() -> float:
+	var s := _last_snap
+	var pt := float(s.get("phase_tick", 0))
+	if _client_phase == TC.Phase.REVEAL:
+		return pt + cfg.ticks(cfg.role_reveal_s + cfg.start_countdown_s)
+	if _client_phase == TC.Phase.COUNTDOWN:
+		return pt + cfg.ticks(cfg.start_countdown_s)
+	return float(s.get("round_start", 0))
+
+
+# ---------------------------------------------------------------------------
+# Presentation
+# ---------------------------------------------------------------------------
+func _process(delta: float) -> void:
+	_shake_cd = maxf(0.0, _shake_cd - delta)
+	# events -> effects/sounds/HUD
+	var evs := _local_events
+	_local_events = []
+	for ev in evs:
+		_present_event(ev)
+	# characters
+	for slot in views:
+		var v: CharacterView = views[slot]
+		var rs := _player_rs(slot)
+		if rs.is_empty() or not bool(rs.get("visible", true)):
+			v.visible = false
+			continue
+		v.visible = true
+		var st: int = rs.get("state", 0)
+		if st == TC.PState.IN_CART or st == TC.PState.ENTERING:
+			var cid: int = rs.get("cart_id", -1)
+			if cid >= 0:
+				var crs := _cart_rs(cid)
+				if crs.has("pos"):
+					var cy: float = crs["yaw"]
+					var seat: Vector3 = (crs["pos"] as Vector3) + Basis(Vector3.UP, cy) * Vector3(-0.35, 0.18, 0.25)
+					rs["pos"] = seat
+					rs["yaw"] = cy
+					rs["steer"] = crs.get("steer", 0.0)
+		v.apply_state(rs, delta)
+		v.reduced_motion = reduced_motion
+	for i in cart_views.size():
+		var crs2 := _cart_rs(i)
+		if not crs2.is_empty():
+			cart_views[i].apply_state(crs2, delta)
+	_update_beacons(delta)
+	_update_pickups()
+	_update_camera(delta)
+	if hud:
+		hud.refresh(delta)
+	var info_phase: int = sim.phase if sim else _client_phase
+	if info_phase != _phase_seen:
+		_phase_seen = info_phase
+		if info_phase == TC.Phase.PLAYING:
+			Sfx.play("go")
+		if info_phase == TC.Phase.RESULTS or info_phase == TC.Phase.ENDED:
+			var res: Dictionary = sim.results if sim else _client_results
+			if not res.is_empty():
+				Sfx.music("results")
+				get_tree().create_timer(cfg.results_hold_s).timeout.connect(func() -> void: finished.emit(res))
+	if is_client and (_client_phase == TC.Phase.RESULTS) and not _client_results.is_empty() and _phase_seen == TC.Phase.RESULTS and not has_meta("res_done"):
+		set_meta("res_done", true)
+		get_tree().create_timer(cfg.results_hold_s).timeout.connect(func() -> void: finished.emit(_client_results))
+	if info_phase < TC.Phase.PLAYING:
+		var cd := int(ceil(float(local_info().get("countdown", 0.0))))
+		if cd != _countdown_last and cd <= int(cfg.start_countdown_s) and cd > 0:
+			Sfx.play("beep")
+		_countdown_last = cd
+
+
+func _update_camera(delta: float) -> void:
+	var follow_slot := local_slot
+	var rs := _player_rs(local_slot) if not spectator else {}
+	var st: int = rs.get("state", TC.PState.ACTIVE)
+	var watching := spectator or st == TC.PState.FINISHED or (st == TC.PState.CAPTURED and float(rs.get("state_t", 0.0)) > 1.6)
+	if watching:
+		if spectate_slot < 0 or not _spectatable(spectate_slot):
+			spectate_slot = _next_spectate(-1)
+		if Input.is_action_just_pressed("spectate_next") or (touch and touch.consume_spectate()):
+			spectate_slot = _next_spectate(spectate_slot)
+		if spectate_slot >= 0:
+			follow_slot = spectate_slot
+			rs = _player_rs(spectate_slot)
+	else:
+		spectate_slot = -1
+	var look := Controls.consume_look(delta)
+	camera.add_look(look)
+	camera.reduced_motion = reduced_motion
+	if rs.has("pos"):
+		var cs: int = rs.get("state", 0)
+		camera.in_cart = cs == TC.PState.IN_CART or cs == TC.PState.ENTERING
+		var p: Vector3 = rs["pos"]
+		if camera.in_cart:
+			var crs := _cart_rs(int(rs.get("cart_id", -1))) if int(rs.get("cart_id", -1)) >= 0 else {}
+			if crs.has("pos"):
+				p = crs["pos"]
+				camera.target_vel = Basis(Vector3.UP, float(crs["yaw"])) * Vector3(0, 0, -float(crs["speed"]))
+		else:
+			camera.target_vel = rs.get("vel", Vector3.ZERO)
+		if cs == TC.PState.SPLASHING:
+			p.y = maxf(p.y, 0.0)
+		camera.target_pos = p
+		camera.target_yaw = rs.get("yaw", 0.0)
+	camera.update_camera(delta)
+	hud.set_spectating(follow_slot if follow_slot != local_slot else -1)
+
+
+func _spectatable(slot: int) -> bool:
+	if not roster.has(slot):
+		return false
+	var my_role: int = int(roster[local_slot]["role"]) if roster.has(local_slot) else TC.Role.RUNNER
+	if int(roster[slot]["role"]) != my_role and not spectator:
+		return false
+	var rs := _player_rs(slot)
+	return not rs.is_empty() and int(rs.get("state", 0)) != TC.PState.FINISHED and bool(rs.get("visible", true))
+
+
+func _next_spectate(after: int) -> int:
+	var slots := roster.keys()
+	slots.sort()
+	var start_i := slots.find(after) + 1
+	for k in slots.size():
+		var s: int = slots[(start_i + k) % slots.size()]
+		if s != local_slot and _spectatable(s):
+			return s
+	return -1
+
+
+func _present_event(ev: Dictionary) -> void:
+	var type: int = ev["type"]
+	var a: int = ev["a"]
+	var pos: Vector3 = ev["pos"]
+	var mine := a == local_slot
+	match type:
+		TC.Ev.SPLASH_STAMP, TC.Ev.SPLASH_NOSTAMP:
+			var big := type == TC.Ev.SPLASH_STAMP
+			var wcol: Color = layout.waters[int(ev["b"])]["color"] if int(ev["b"]) >= 0 else Color.CYAN
+			fx.splash(pos, wcol if big else Color(0.6, 0.85, 1.0), big)
+			Sfx.play("splash_big" if big else "splash", pos)
+			if big and water_nodes.has(layout.waters[int(ev["b"])]["id"]):
+				var wm: ShaderMaterial = water_nodes[layout.waters[int(ev["b"])]["id"]]["mat"]
+				fx.flash_water(wm)
+			if mine:
+				if big:
+					hud.toast("SPLASH!  %s stamped" % layout.waters[int(ev["b"])]["name"], wcol)
+				else:
+					var wi: int = ev["b"]
+					hud.toast("Already stamped" if targets.has(wi) else "%s isn't a target tonight" % layout.waters[wi]["short"], Color(0.8, 0.9, 1.0))
+			if big:
+				var rr: Dictionary = roster.get(a, {})
+				hud.feed("%s splashed into %s" % [rr.get("name", "?"), layout.waters[int(ev["b"])]["short"]], int(rr.get("role", 0)))
+		TC.Ev.CAPTURE:
+			fx.whistle_burst(pos)
+			Sfx.play("whistle", pos)
+			var r: Dictionary = roster.get(a, {})
+			var by: Dictionary = roster.get(int(ev["b"]), {})
+			hud.feed("%s caught %s!" % [by.get("name", "?"), r.get("name", "?")], TC.Role.PATROL)
+			if mine:
+				hud.toast("CAUGHT! Back in %d…" % int(cfg.capture_penalty_s), Color(1.0, 0.6, 0.4))
+				camera.add_shake(0.35)
+			elif int(ev["b"]) == local_slot:
+				hud.toast("Tagged %s!" % r.get("name", "?"), Color(1.0, 0.8, 0.3))
+		TC.Ev.TAG_MISS:
+			Sfx.play("whoosh", pos)
+		TC.Ev.FINISH:
+			fx.confetti(pos)
+			Sfx.play("cheer", pos)
+			var r2: Dictionary = roster.get(a, {})
+			hud.feed("%s made it home! (%d/%d)" % [r2.get("name", "?"), int(ev["v"]), cfg.runners_needed], TC.Role.RUNNER)
+			if mine:
+				hud.toast("HOME SAFE! Cheer on your team", Color(0.5, 1.0, 0.6))
+		TC.Ev.BUMP:
+			fx.bump(pos)
+			Sfx.play("boing", pos)
+			if mine and _shake_cd <= 0.0:
+				camera.add_shake(0.3)
+				_shake_cd = 0.6
+		TC.Ev.CART_ENTER:
+			Sfx.play("cart_start", pos)
+		TC.Ev.CART_EXIT:
+			Sfx.play("hop", pos)
+		TC.Ev.GADGET_PICKUP:
+			Sfx.play("pickup", pos)
+			if mine:
+				hud.toast("Got %s!" % TC.GADGET_NAMES.get(int(ev["v"]), "a gadget"), Color(1.0, 0.9, 0.4))
+		TC.Ev.GADGET_USE:
+			var g: int = ev["v"]
+			Sfx.play("squeak" if g == TC.Gadget.DECOY else ("turbo" if g == TC.Gadget.TURBO else "toss"), pos)
+			if g == TC.Gadget.TURBO:
+				fx.turbo(pos)
+		TC.Ev.BOMB_HIT:
+			fx.splash(pos, Color(0.4, 0.8, 1.0), int(ev["v"]) == 1)
+			Sfx.play("splash", pos)
+		TC.Ev.RESPAWN:
+			fx.poof(pos)
+		TC.Ev.RECOVER:
+			fx.poof(pos)
+			if mine:
+				hud.toast("Back on campus", Color(0.8, 0.9, 1.0))
+		TC.Ev.EMOTE:
+			var who: Dictionary = roster.get(a, {})
+			if not session.muted.has(String(who.get("uid", ""))):
+				hud.emote_bubble(a, int(ev["v"]))
+				Sfx.play("pop")
+		TC.Ev.PLAYER_BOT_TAKEOVER:
+			hud.feed("%s disconnected — a bot is covering (slot held 20s)" % roster.get(a, {}).get("name", "?"), -1)
+		TC.Ev.PLAYER_RESUMED:
+			hud.feed("%s reconnected" % roster.get(a, {}).get("name", "?"), -1)
+		TC.Ev.PLAYER_LEFT:
+			hud.feed("%s left — bot keeps their spot this round" % roster.get(a, {}).get("name", "?"), -1)
+
+
+func _build_beacons() -> void:
+	var glow := preload("res://assets/shaders/glow_add.gdshader")
+	for wi in targets:
+		var w: Dictionary = layout.waters[int(wi)]
+		var c: Vector2 = w["center"]
+		var mi := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = 1.6
+		cm.bottom_radius = 2.4
+		cm.height = 34.0
+		cm.cap_top = false
+		cm.cap_bottom = false
+		cm.radial_segments = 16
+		mi.mesh = cm
+		var m := ShaderMaterial.new()
+		m.shader = glow
+		m.set_shader_parameter("color", w["color"])
+		m.set_shader_parameter("intensity", 0.55)
+		m.set_shader_parameter("mode", 1.0)
+		m.set_shader_parameter("fade_near", 10.0)
+		mi.material_override = m
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.position = Vector3(c.x, 17.0 + float(w["surface_y"]), c.y)
+		add_child(mi)
+		beacons[int(wi)] = mi
+		if water_nodes.has(w["id"]):
+			(water_nodes[w["id"]]["mat"] as ShaderMaterial).set_shader_parameter("active", 1.0)
+
+
+func _update_beacons(_delta: float) -> void:
+	var info_stamps := 0
+	var rs := _player_rs(local_slot) if not spectator else {}
+	info_stamps = int(rs.get("stamps", 0))
+	for i in targets.size():
+		var wi: int = targets[i]
+		var done := (info_stamps & (1 << i)) != 0
+		var mi: MeshInstance3D = beacons.get(wi)
+		if mi:
+			(mi.material_override as ShaderMaterial).set_shader_parameter("intensity", 0.18 if done else 0.55)
+		var wid: String = layout.waters[wi]["id"]
+		if water_nodes.has(wid):
+			(water_nodes[wid]["mat"] as ShaderMaterial).set_shader_parameter("stamped", 1.0 if done else 0.0)
+
+
+func _build_pickups() -> void:
+	for spot in layout.gadget_spots:
+		var n := Node3D.new()
+		n.position = Vector3(spot.x, 0.9, spot.y)
+		add_child(n)
+		CharacterView._init_meshes()
+		var box := MeshInstance3D.new()
+		box.mesh = CharacterView._box
+		box.scale = Vector3(0.6, 0.6, 0.6)
+		box.material_override = CharacterView.mat(Color(1.0, 0.85, 0.3), 0.0, Color.WHITE, 0.8)
+		n.add_child(box)
+		var ring := MeshInstance3D.new()
+		var tm := TorusMesh.new()
+		tm.inner_radius = 0.55
+		tm.outer_radius = 0.7
+		ring.mesh = tm
+		ring.material_override = CharacterView.mat(Color(1.0, 1.0, 1.0), 0.0, Color.WHITE, 1.2)
+		ring.position = Vector3(0, -0.8, 0)
+		n.add_child(ring)
+		var lbl := Label3D.new()
+		lbl.text = "?"
+		lbl.font_size = 64
+		lbl.pixel_size = 0.008
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.modulate = Color(0.3, 0.2, 0.1)
+		lbl.position = Vector3(0, 0, 0)
+		lbl.no_depth_test = false
+		n.add_child(lbl)
+		pickup_views.append(n)
+
+
+func _update_pickups() -> void:
+	var t := Time.get_ticks_msec() / 1000.0
+	var mask := 0
+	if sim:
+		for i in sim.pickups.size():
+			if float(sim.pickups[i]["respawn"]) <= 0.0:
+				mask |= (1 << i)
+	else:
+		mask = int(_me.get("pickups", 0x1FF))
+	var my_role: int = int(roster[local_slot]["role"]) if roster.has(local_slot) else TC.Role.RUNNER
+	for i in pickup_views.size():
+		var n := pickup_views[i]
+		n.visible = (mask & (1 << i)) != 0
+		n.rotation.y = t * 1.5 + float(i)
+		n.position.y = 0.9 + sin(t * 2.0 + float(i)) * 0.12
+		if my_role == TC.Role.PATROL:
+			n.scale = Vector3(0.7, 0.7, 0.7)
+
+
+func leave_match() -> void:
+	quit_requested.emit()

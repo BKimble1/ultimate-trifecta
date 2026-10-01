@@ -1,0 +1,25 @@
+# Godot
+game/.godot/
+game/.import/
+*.translation
+game/export.cfg
+game/export_credentials.cfg
+# Third-party binaries fetched by tools/fetch_deps.sh (pinned + checksummed)
+game/addons/GodotApplePlugins*/
+# Build output
+build/
+*.ipa
+*.xcarchive
+*.dSYM.zip
+# Credentials — never commit
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+AuthKey_*.p8
+.env
+.env.*
+# Local tool downloads
+tools/.cache/
+# OS
+.DS_Store

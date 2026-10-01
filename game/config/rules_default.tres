@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="RulesConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/config/rules_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+match_duration_s = 240.0
+start_countdown_s = 3.0
+runner_head_start_s = 6.0
+runner_slots = 6
+patrol_slots = 2
+runners_needed = 4
+targets_per_match = 3
+capture_penalty_s = 6.0
+respawn_protect_s = 2.0
+bump_protect_s = 1.0
+splash_marker_s = 3.0
+runner_speed = 5.0
+runner_sprint_speed = 7.0
+sprint_capacity_s = 2.5
+patrol_speed = 5.6
+cart_max_speed_road = 11.0

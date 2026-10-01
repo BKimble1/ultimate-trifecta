@@ -1,0 +1,511 @@
+class_name BotBrain
+extends RefCounted
+## Bots play by the same rules and produce the same InputCmd a human would.
+## Information limits: they only use MatchSim.can_see (range + view cone +
+## line of sight), MatchSim.noises_for (hearing), and patrol-visible splash
+## markers. No omniscience, no teleporting.
+
+enum Mode { PLAN, TRAVEL, APPROACH_WATER, FLEE, HOME, CHASE, INVESTIGATE, PATROL_ROUTE, TO_CART, IDLE }
+
+var slot: int
+var nav: NavGrid
+var rng := RandomNumberGenerator.new()
+var mode: int = Mode.PLAN
+var path := PackedVector2Array()
+var path_i := 0
+var path_cart := false
+var goal := Vector2.ZERO
+var goal_kind := ""
+var goal_water := -1
+var replan_t := 0.0
+var think_t := 0.0
+var jump_cool := 0.0
+var flee_t := 0.0
+var threat := Vector3.INF
+var threat_t := 0.0
+var last_seen: Dictionary = {}     # runner slot -> {pos, t}
+var investigate := Vector3.INF
+var investigate_t := 0.0
+var patrol_stops: Array = []
+var stop_i := 0
+var linger_t := 0.0
+var stuck_t := 0.0
+var reverse_t := 0.0
+var last_pos := Vector3.ZERO
+var pref_cart := -1
+var sprint_hold := 0.0
+var prev_pressed := 0
+var reaction := 0.0
+var skill := 1.0
+
+
+func _init(sim: MatchSim, p: SimPlayer) -> void:
+	slot = p.id
+	nav = NavGrid.shared(sim.layout)
+	rng.seed = sim.seed_v * 31 + p.id * 7919
+	pref_cart = p.id % maxi(sim.carts.size(), 1)
+	if p.is_patrol():
+		var patrol_index := 0
+		for q in sim.players:
+			if q.is_patrol() and q.id < p.id:
+				patrol_index += 1
+		pref_cart = patrol_index % maxi(sim.carts.size(), 1)
+	skill = rng.randf_range(0.85, 1.0)
+
+
+func think(sim: MatchSim, p: SimPlayer) -> InputCmd:
+	var cmd := InputCmd.new()
+	var dt := sim.cfg.dt()
+	jump_cool = maxf(0.0, jump_cool - dt)
+	replan_t -= dt
+	cmd.cam_yaw = p.yaw
+	if sim.phase != TC.Phase.PLAYING:
+		return cmd
+	match p.state:
+		TC.PState.CAPTURED, TC.PState.FINISHED, TC.PState.SPLASHING, TC.PState.WAITING, TC.PState.ENTERING, TC.PState.EXITING:
+			path = PackedVector2Array()
+			mode = Mode.PLAN
+			return cmd
+	if p.is_runner():
+		_runner(sim, p, cmd, dt)
+	else:
+		_patrol(sim, p, cmd, dt)
+	cmd.quantize()
+	return cmd
+
+
+# ---------------------------------------------------------------------------
+# Runner
+# ---------------------------------------------------------------------------
+func _runner(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
+	var cfg := sim.cfg
+	# perceive patrol threats (sight with a wide personal awareness, or hearing)
+	var nearest_threat := Vector3.INF
+	var nd := 1e9
+	for q in sim.players:
+		if not q.is_patrol() or q.state == TC.PState.WAITING:
+			continue
+		var qp := q.pos()
+		var d := qp.distance_to(p.pos())
+		var seen := d < 9.0 and sim.has_los(p.pos() + Vector3(0, 1.4, 0), qp + Vector3(0, 1.2, 0))
+		if not seen and d < cfg.view_range_m:
+			seen = sim.can_see(p, qp, p.yaw, cfg.view_range_m * 0.8)
+		if not seen:
+			for n in sim.noises_for(p):
+				if (n["pos"] as Vector3).distance_to(qp) < 2.0 and float(n["loud"]) > 0.35:
+					seen = true
+		if seen and d < nd:
+			nd = d
+			nearest_threat = qp
+	var danger_r := 12.0 if p.state == TC.PState.ACTIVE else 0.0
+	if nearest_threat != Vector3.INF and nd < danger_r and p.protect <= 0.0:
+		threat = nearest_threat
+		threat_t = 2.5
+	else:
+		threat_t = maxf(0.0, threat_t - dt)
+
+	if threat_t > 0.0 and threat != Vector3.INF:
+		_flee(sim, p, cmd, dt)
+		return
+
+	var remaining: Array = []
+	for i in sim.targets.size():
+		if (p.stamps & (1 << i)) == 0:
+			remaining.append(int(sim.targets[i]))
+	if remaining.is_empty():
+		if goal_kind != "home" or replan_t <= 0.0:
+			_plan_home(sim, p)
+	elif goal_kind != "water" or not remaining.has(goal_water) or replan_t <= 0.0:
+		_plan_water(sim, p, remaining)
+
+	# detour for a nearby gadget if empty-handed
+	if p.gadget == TC.Gadget.NONE and goal_kind != "gadget":
+		for pk in sim.pickups:
+			if float(pk["respawn"]) <= 0.0 and (pk["pos"] as Vector3).distance_to(p.pos()) < 9.0:
+				goal = Vector2(pk["pos"].x, pk["pos"].z)
+				goal_kind = "gadget"
+				_repath(p.pos2(), goal, false)
+				break
+	if goal_kind == "gadget" and (p.gadget != TC.Gadget.NONE or p.pos2().distance_to(goal) < 0.8):
+		replan_t = 0.0
+		goal_kind = ""
+
+	var near_goal := p.pos2().distance_to(goal) < 1.6
+	if goal_kind == "water" and near_goal:
+		# face the water and leap in (dive at apex sometimes)
+		var w: Dictionary = sim.layout.waters[goal_water]
+		var c: Vector2 = w["center"]
+		var dir := (c - p.pos2()).normalized()
+		cmd.move = dir
+		if p.on_floor and jump_cool <= 0.0:
+			cmd.pressed |= TC.BTN_JUMP
+			jump_cool = 0.6
+		elif not p.on_floor and p.vel.y < 0.5 and not p.diving and rng.randf() < 0.5:
+			cmd.pressed |= TC.BTN_JUMP
+		return
+	_follow(sim, p, cmd, dt, false)
+	# pacing: sprint on long straights in bursts, keep a reserve for chases
+	var remaining_d := p.pos2().distance_to(goal)
+	if p.sprint > 0.75 and remaining_d > 25.0:
+		sprint_hold = 1.4
+	sprint_hold = maxf(0.0, sprint_hold - dt)
+	if sprint_hold > 0.0 or (goal_kind == "home" and remaining_d < 30.0):
+		cmd.held |= TC.BTN_SPRINT
+
+
+func _plan_water(sim: MatchSim, p: SimPlayer, remaining: Array) -> void:
+	# best order over remaining targets by straight-line estimate (+ home)
+	var best_first := int(remaining[0])
+	var best_cost := 1e9
+	var dorm := Vector2(0, 112)
+	var perms: Array = [remaining]
+	if remaining.size() == 2:
+		perms = [[remaining[0], remaining[1]], [remaining[1], remaining[0]]]
+	elif remaining.size() == 3:
+		perms = RulesLogic.permutations3(remaining)
+	for perm in perms:
+		var cost := 0.0
+		var at := p.pos2()
+		for wi in perm:
+			var c: Vector2 = sim.layout.waters[int(wi)]["center"]
+			cost += at.distance_to(c)
+			at = c
+		cost += at.distance_to(dorm)
+		cost += rng.randf_range(0.0, 15.0)  # personal route preference
+		if cost < best_cost:
+			best_cost = cost
+			best_first = int(perm[0])
+	goal_water = best_first
+	var w: Dictionary = sim.layout.waters[goal_water]
+	# pick the jump point nearest to us (but not right next to a known patrol)
+	var best_jp: Vector2 = w["jump_points"][0]
+	var bd := 1e9
+	for jp in w["jump_points"]:
+		var d := p.pos2().distance_to(jp)
+		for q in sim.players:
+			if q.is_patrol() and last_seen.has(q.id):
+				pass
+		if d < bd:
+			bd = d
+			best_jp = jp
+	goal = best_jp
+	goal_kind = "water"
+	replan_t = 4.0
+	_repath(p.pos2(), goal, false)
+
+
+func _plan_home(sim: MatchSim, p: SimPlayer) -> void:
+	var best: Vector2 = sim.layout.dorm_doors[0]["pos"]
+	var bd := 1e9
+	for d in sim.layout.dorm_doors:
+		var dp: Vector2 = d["pos"]
+		var n: Vector2 = d["normal"]
+		var approach := dp + n * 1.0
+		var cost := p.pos2().distance_to(approach)
+		if threat != Vector3.INF and threat_t > 0.0:
+			cost += 40.0 / maxf(1.0, Vector2(threat.x, threat.z).distance_to(approach)) * 10.0
+		if cost < bd:
+			bd = cost
+			best = approach
+	goal = best
+	goal_kind = "home"
+	replan_t = 3.0
+	_repath(p.pos2(), goal, false)
+
+
+func _flee(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
+	var cfg := sim.cfg
+	var away := p.pos2() - Vector2(threat.x, threat.z)
+	if away.length() < 0.1:
+		away = Vector2(1, 0)
+	away = away.normalized()
+	# keep making progress toward the goal if it is not toward the threat
+	var to_goal := (goal - p.pos2()).normalized() if goal != Vector2.ZERO else away
+	var dir := away
+	if to_goal.dot(away) > -0.2:
+		dir = (away * 0.6 + to_goal * 0.4).normalized()
+	# avoid running into walls: probe a few angles on the nav grid
+	var best := dir
+	var best_score := -1e9
+	for k in 9:
+		var ang := (float(k) - 4.0) * 0.35
+		var cand := dir.rotated(ang)
+		var probe := p.pos2() + cand * 4.0
+		var score := cand.dot(away) * 2.0 + cand.dot(to_goal) * 0.6 - absf(ang) * 0.2
+		if not nav.is_walkable(probe) or not nav.is_walkable(p.pos2() + cand * 2.0):
+			score -= 10.0
+		if score > best_score:
+			best_score = score
+			best = cand
+	cmd.move = best
+	var d := p.pos2().distance_to(Vector2(threat.x, threat.z))
+	if p.sprint > 0.05:
+		cmd.held |= TC.BTN_SPRINT
+	if p.gadget == TC.Gadget.TURBO and d < 8.0:
+		cmd.pressed |= TC.BTN_GADGET
+		cmd.cam_yaw = atan2(-best.x, -best.y)
+	elif p.gadget == TC.Gadget.DECOY and d < 14.0:
+		cmd.pressed |= TC.BTN_GADGET
+		cmd.cam_yaw = atan2(best.x, best.y)  # toss sideways-back
+	elif p.gadget == TC.Gadget.SPLASH_BOMB:
+		for c in sim.carts:
+			if c.occupant >= 0 and c.pos().distance_to(p.pos()) < 12.0:
+				var rel := c.pos() - p.pos()
+				cmd.cam_yaw = atan2(-rel.x, -rel.z)
+				cmd.move = Vector2.ZERO
+				cmd.pressed |= TC.BTN_GADGET
+	# dive to snatch distance when the patrol is about to lunge
+	if d < 3.0 and jump_cool <= 0.0 and p.on_floor:
+		cmd.pressed |= TC.BTN_JUMP
+		jump_cool = 1.2
+	elif not p.on_floor and not p.diving and d < 3.5 and p.vel.y < 1.5:
+		cmd.pressed |= TC.BTN_JUMP
+	_hop_obstacles(sim, p, cmd)
+	replan_t = 0.0
+
+
+# ---------------------------------------------------------------------------
+# Patrol
+# ---------------------------------------------------------------------------
+func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
+	var cfg := sim.cfg
+	var in_cart := p.state == TC.PState.IN_CART
+	var view_yaw := sim.carts[p.cart_id].yaw if in_cart and p.cart_id >= 0 else p.yaw
+	# --- perceive runners (same limits as humans)
+	var target: SimPlayer = null
+	var td := 1e9
+	for r in sim.players:
+		if not r.is_runner() or not r.is_in_play():
+			continue
+		var seen := sim.can_see(p, r.pos(), view_yaw, cfg.view_range_m)
+		if not seen and r.pos().distance_to(p.pos()) < 6.0:
+			seen = sim.has_los(p.pos() + Vector3(0, 1.3, 0), r.pos() + Vector3(0, 1.0, 0))
+		if seen:
+			last_seen[r.id] = {"pos": r.pos(), "vel": r.vel, "t": sim.tick}
+			var d := r.pos().distance_to(p.pos())
+			if r.protect > 0.0 or r.bump_protect > 0.0:
+				d += 8.0
+			if d < td:
+				td = d
+				target = r
+	# hearing + splash markers feed investigation
+	if target == null:
+		var loudest := 0.0
+		for n in sim.noises_for(p):
+			if float(n["loud"]) > loudest:
+				loudest = float(n["loud"])
+				investigate = n["pos"]
+				investigate_t = 6.0
+		for m in sim.splash_markers:
+			var wc: Vector2 = sim.layout.waters[int(m["water"])]["center"]
+			if investigate_t <= 0.0 or rng.randf() < 0.02:
+				investigate = Vector3(wc.x, 0, wc.y)
+				investigate_t = 10.0
+	investigate_t = maxf(0.0, investigate_t - dt)
+
+	var cart_c: SimCart = sim.carts[p.cart_id] if in_cart else null
+	if target != null:
+		var lead := target.pos() + target.vel * clampf(td / 8.0, 0.0, 1.2)
+		if in_cart:
+			if td < 10.0 or not nav.is_drivable(Vector2(lead.x, lead.z)) and td < 22.0:
+				cmd.pressed |= TC.BTN_INTERACT   # hop out and chase on foot
+				cmd.drive = -1.0
+				return
+			_drive_to(sim, p, cart_c, Vector2(lead.x, lead.z), cmd, dt, true)
+			return
+		# on foot: chase, tag when close, go back to cart if they get away
+		if td > 30.0 and _free_cart_near(sim, p, 18.0) >= 0:
+			_go_to_cart(sim, p, cmd, dt)
+			return
+		var tp := Vector2(lead.x, lead.z)
+		if path.is_empty() or replan_t <= 0.0 or goal.distance_to(tp) > 3.0:
+			goal = tp
+			goal_kind = "chase"
+			replan_t = 0.5
+			_repath(p.pos2(), goal, false)
+		if td < 6.0 and sim.has_los(p.pos() + Vector3(0, 1.0, 0), target.pos() + Vector3(0, 1.0, 0)):
+			var rel := target.pos() - p.pos()
+			cmd.move = Vector2(rel.x, rel.z).normalized()
+		else:
+			_follow(sim, p, cmd, dt, false)
+		reaction -= dt
+		if td < cfg.tag_reach_m + 0.6 and p.tag_cd <= 0.0 and p.tag_lockout <= 0.0:
+			if reaction <= 0.0:
+				cmd.pressed |= TC.BTN_TAG
+				var rel2 := target.pos() - p.pos()
+				cmd.cam_yaw = atan2(-rel2.x, -rel2.z)
+				reaction = rng.randf_range(0.12, 0.3) / skill
+		_hop_obstacles(sim, p, cmd)
+		return
+
+	# --- no runner in sight: investigate or patrol a route
+	var dest := Vector2.INF
+	if investigate_t > 0.0 and investigate != Vector3.INF:
+		dest = Vector2(investigate.x, investigate.z)
+		if p.pos2().distance_to(dest) < 4.0:
+			investigate_t = 0.0
+	if dest == Vector2.INF:
+		if patrol_stops.is_empty():
+			_make_patrol_route(sim)
+		var stop: Vector2 = patrol_stops[stop_i % patrol_stops.size()]
+		if p.pos2().distance_to(stop) < 8.0:
+			linger_t += dt
+			if linger_t > rng.randf_range(3.0, 6.0):
+				linger_t = 0.0
+				stop_i += 1
+		dest = patrol_stops[stop_i % patrol_stops.size()]
+	if in_cart:
+		var reach := nav.nearest_open(nav.cart, dest, 30)
+		var drive_dest := nav.to_world(reach)
+		if p.pos2().distance_to(drive_dest) < 6.0 and p.pos2().distance_to(dest) > 8.0:
+			cmd.pressed |= TC.BTN_INTERACT   # park and walk in
+			cmd.drive = -1.0
+			return
+		_drive_to(sim, p, cart_c, drive_dest, cmd, dt, false)
+		return
+	if p.pos2().distance_to(dest) > 45.0 and _free_cart_near(sim, p, 25.0) >= 0:
+		_go_to_cart(sim, p, cmd, dt)
+		return
+	if goal.distance_to(dest) > 2.0 or path.is_empty() or replan_t <= 0.0:
+		goal = dest
+		goal_kind = "patrol"
+		replan_t = 3.0
+		_repath(p.pos2(), goal, false)
+	_follow(sim, p, cmd, dt, false)
+	_hop_obstacles(sim, p, cmd)
+	cmd.cam_yaw = p.yaw + sin(float(sim.tick) * 0.03 + slot) * 0.9   # look around
+
+
+func _make_patrol_route(sim: MatchSim) -> void:
+	patrol_stops.clear()
+	for wi in sim.targets:
+		var w: Dictionary = sim.layout.waters[int(wi)]
+		patrol_stops.append(w["center"])
+	patrol_stops.append(Vector2(0, 92))   # dorm front lawn
+	patrol_stops.append(Vector2(0, 131))  # dorm back lawn
+	# shuffle deterministically so two patrol bots split up
+	for i in patrol_stops.size():
+		var j := rng.randi_range(0, patrol_stops.size() - 1)
+		var t: Variant = patrol_stops[i]
+		patrol_stops[i] = patrol_stops[j]
+		patrol_stops[j] = t
+	stop_i = slot % patrol_stops.size()
+
+
+func _free_cart_near(sim: MatchSim, p: SimPlayer, radius: float) -> int:
+	var best := -1
+	var bd := radius
+	for c in sim.carts:
+		if c.occupant >= 0:
+			continue
+		var d := c.pos().distance_to(p.pos())
+		if c.id == pref_cart:
+			d -= 6.0
+		if d < bd:
+			bd = d
+			best = c.id
+	return best
+
+
+func _go_to_cart(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
+	var cid := _free_cart_near(sim, p, 60.0)
+	if cid < 0:
+		return
+	var c: SimCart = sim.carts[cid]
+	var cp := Vector2(c.pos().x, c.pos().z)
+	if p.pos2().distance_to(cp) < sim.cfg.cart_enter_range_m + 0.4:
+		cmd.pressed |= TC.BTN_INTERACT
+		return
+	if goal.distance_to(cp) > 1.5 or path.is_empty() or replan_t <= 0.0:
+		goal = cp
+		goal_kind = "cart"
+		replan_t = 1.5
+		_repath(p.pos2(), cp, false)
+	_follow(sim, p, cmd, dt, false)
+	_hop_obstacles(sim, p, cmd)
+
+
+func _drive_to(sim: MatchSim, p: SimPlayer, c: SimCart, dest: Vector2, cmd: InputCmd, dt: float, urgent: bool) -> void:
+	if not path_cart or path.is_empty() or replan_t <= 0.0 or goal.distance_to(dest) > 4.0:
+		goal = dest
+		path_cart = true
+		replan_t = 1.0 if urgent else 2.5
+		path = nav.find_path(Vector2(c.pos().x, c.pos().z), dest, true)
+		path_i = 0
+	var cp := Vector2(c.pos().x, c.pos().z)
+	# pure pursuit: aim ~6 m ahead along the path
+	var aim := dest
+	while path_i < path.size() and cp.distance_to(path[path_i]) < 5.0:
+		path_i += 1
+	if path_i < path.size():
+		aim = path[path_i]
+	var fwd := Vector2(c.forward().x, c.forward().z)
+	var to := (aim - cp)
+	var ang := fwd.angle_to(to.normalized()) if to.length() > 0.1 else 0.0
+	# angle_to is positive counter-clockwise in screen space (x right, y=z down) => turn right
+	cmd.steer = clampf(ang * 1.8, -1.0, 1.0)
+	var dist := cp.distance_to(dest)
+	cmd.drive = 1.0
+	if absf(ang) > 1.1:
+		cmd.drive = 0.35
+	if dist < 10.0 and not urgent:
+		cmd.drive = 0.3 if absf(c.speed) < 4.0 else -0.6
+	# stuck: back up with opposite lock
+	if absf(c.speed) < 0.6 and cmd.drive > 0.2:
+		stuck_t += dt
+	else:
+		stuck_t = maxf(0.0, stuck_t - dt * 2.0)
+	if stuck_t > 1.2:
+		reverse_t = 1.1
+		stuck_t = 0.0
+		replan_t = 0.0
+	if reverse_t > 0.0:
+		reverse_t -= dt
+		cmd.drive = -1.0
+		cmd.steer = -cmd.steer
+	cmd.cam_yaw = c.yaw
+
+
+func _repath(from: Vector2, to: Vector2, cart: bool) -> void:
+	path = nav.find_path(from, to, cart)
+	path_cart = cart
+	path_i = 1 if path.size() > 1 else 0
+
+
+func _follow(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float, _cart: bool) -> void:
+	if path.is_empty():
+		var d := goal - p.pos2()
+		if d.length() > 0.5:
+			cmd.move = d.normalized()
+		return
+	var pp := p.pos2()
+	while path_i < path.size() - 1 and pp.distance_to(path[path_i]) < 1.1:
+		path_i += 1
+	var wp := path[mini(path_i, path.size() - 1)]
+	var dir := wp - pp
+	if dir.length() > 0.05:
+		cmd.move = dir.normalized()
+	# stuck detection -> replan + hop
+	if p.pos().distance_to(last_pos) < 0.02 and cmd.move.length() > 0.5:
+		stuck_t += dt
+		if stuck_t > 0.7:
+			cmd.pressed |= TC.BTN_JUMP
+			stuck_t = 0.0
+			replan_t = 0.0
+	else:
+		stuck_t = 0.0
+	last_pos = p.pos()
+
+
+func _hop_obstacles(sim: MatchSim, p: SimPlayer, cmd: InputCmd) -> void:
+	if not p.on_floor or jump_cool > 0.0 or cmd.move.length() < 0.3:
+		return
+	var dir := Vector3(cmd.move.x, 0, cmd.move.y).normalized()
+	var base := p.pos()
+	var low := sim.space_state().intersect_ray(PhysicsRayQueryParameters3D.create(base + Vector3(0, 0.35, 0), base + Vector3(0, 0.35, 0) + dir * 1.3, TC.L_WORLD))
+	if low.is_empty():
+		return
+	var high := sim.space_state().intersect_ray(PhysicsRayQueryParameters3D.create(base + Vector3(0, 1.25, 0), base + Vector3(0, 1.25, 0) + dir * 1.6, TC.L_WORLD))
+	if high.is_empty():
+		cmd.pressed |= TC.BTN_JUMP
+		jump_cool = 0.5
