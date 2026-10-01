@@ -92,6 +92,7 @@ func _dev_tools(args: PackedStringArray) -> void:
 	var capture_dir := ""
 	var capture_label := ""
 	var capture_players := 1
+	var capture_results := ""
 	for a in args:
 		if a.begins_with("--diag-report="):
 			diag_report = a.split("=")[1]
@@ -103,6 +104,8 @@ func _dev_tools(args: PackedStringArray) -> void:
 			capture_label = a.substr(a.find("=") + 1)
 		elif a.begins_with("--capture-players="):
 			capture_players = int(a.split("=")[1])
+		elif a.begins_with("--capture-results="):
+			capture_results = a.substr(a.find("=") + 1)
 	if (diag_overlay or diag_report != "") and ResourceLoader.exists("res://src/dev/diag.gd"):
 		var dg: Node = (load("res://src/dev/diag.gd") as GDScript).new()
 		dg.set("show_overlay", diag_overlay)
@@ -114,6 +117,7 @@ func _dev_tools(args: PackedStringArray) -> void:
 		cp.set("out_dir", capture_dir if capture_dir != "" else OS.get_user_data_dir().path_join("capture"))
 		cp.set("label", capture_label)
 		cp.set("want_players", capture_players)
+		cp.set("results_path", capture_results)
 		add_child(cp)
 		if capture == "lobby":
 			dev_expect = 99   # hold the room open for the capture

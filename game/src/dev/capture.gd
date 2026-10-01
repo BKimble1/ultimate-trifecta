@@ -12,6 +12,10 @@ extends Node
 ##             outdoors, water entry / mid-splash / recovery, results
 ##   patrol    practice as Night Watch (bot-driven): shed, cart driving, an
 ##             on-foot tag, results
+##   results   re-displays the results of a recorded round (the runner and
+##             patrol scenarios save <scenario>_results.var; pass it with
+##             --capture-results=path) for layout checks at other aspects,
+##             then opens the scoreboard drawer
 
 var scenario := ""
 var out_dir := ""
@@ -31,6 +35,7 @@ var _play_shots := 0
 var _results_seen := -1.0
 var _diag: Node
 var _captures := 0
+var results_path := ""
 
 
 func _ready() -> void:
@@ -45,6 +50,8 @@ func snap(shot_name: String) -> void:
 	if _shots.has(shot_name):
 		return
 	_shots[shot_name] = _t
+	if DisplayServer.get_name() == "headless":
+		return
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
 	var path := out_dir.path_join(shot_name + ".png")
@@ -78,6 +85,8 @@ func _process(delta: float) -> void:
 			_lobby()
 		"runner", "patrol":
 			_match()
+		"results":
+			_results()
 
 
 func _home() -> void:
@@ -120,6 +129,11 @@ func _match() -> void:
 		if _results_seen < 0.0:
 			_results_seen = _t
 			later(2.0, "%s_results" % scenario)
+			var rs := App.screen as ResultsScreen
+			var f := FileAccess.open(out_dir.path_join("%s_results.var" % scenario), FileAccess.WRITE)
+			if f:
+				f.store_string(var_to_str({"results": rs.results, "reward": rs.reward,
+					"local_slot": rs.session.local_slot if rs.session else -1}))
 		elif _t > _results_seen + 3.0:
 			get_tree().quit()
 		return
@@ -163,6 +177,30 @@ func _match() -> void:
 			_tag_shot = true
 			snap("tag_lunge")
 	_prev_state = st
+
+
+## Results of a recorded round shown again (same ResultsScreen code), then
+## the scoreboard drawer opened.
+func _results() -> void:
+	if _t > 3.0 and not _scheduled.has("show"):
+		_scheduled["show"] = true
+		var d: Dictionary = str_to_var(FileAccess.get_file_as_string(results_path))
+		var s := NetSession.new()
+		s.local_slot = int(d["local_slot"])
+		add_child(s)
+		App._ensure_background()
+		var r := ResultsScreen.new()
+		r.results = d["results"]
+		r.reward = d["reward"]
+		r.session = s
+		App._show(r)
+		later(2.5, "results")
+	elif _shots.has("results") and not _scheduled.has("drawer"):
+		_scheduled["drawer"] = true
+		(App.screen as ResultsScreen)._toggle_board()
+		later(1.5, "results_drawer")
+	elif _shots.has("results_drawer") and _t > float(_shots["results_drawer"]) + 1.0:
+		get_tree().quit()
 
 
 func _on_sim_event(ev: Dictionary) -> void:

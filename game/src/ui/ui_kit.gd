@@ -67,15 +67,25 @@ static func touch_min() -> float:
 	if canvas_to_px <= 0.0:
 		return 64.0
 	if OS.has_feature("mobile") or emulate_phone():
-		# 44 pt at the device's point scale (@3x phones when emulating)
-		return clampf(44.0 * (maxf(scale, 2.0) if OS.has_feature("mobile") else 3.0) / canvas_to_px, 44.0, 96.0)
+		# 44 pt at the device's point scale (@3x phones, or the emulated scale)
+		return clampf(44.0 * (maxf(scale, 2.0) if OS.has_feature("mobile") else emulated_point_scale()) / canvas_to_px, 44.0, 96.0)
 	return clampf(44.0 * scale / canvas_to_px, 44.0, 64.0)
 
 
-## Desktop evidence runs at phone resolution can pass --emulate-phone so
-## touch-size rules match an @3x iPhone.
+## Desktop evidence runs at device resolution can pass --emulate-phone so
+## touch-size rules match an @3x iPhone (--emulate-phone=2 for @2x devices:
+## iPhone SE, iPad).
 static func emulate_phone() -> bool:
-	return OS.get_cmdline_user_args().has("--emulate-phone")
+	return emulated_point_scale() > 0.0
+
+
+static func emulated_point_scale() -> float:
+	for a in OS.get_cmdline_user_args():
+		if a == "--emulate-phone":
+			return 3.0
+		if a.begins_with("--emulate-phone="):
+			return clampf(a.get_slice("=", 1).to_float(), 1.0, 3.0)
+	return 0.0
 
 
 static func reduced_motion() -> bool:
