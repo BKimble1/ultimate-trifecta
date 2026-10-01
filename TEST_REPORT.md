@@ -102,10 +102,16 @@ These are **8 independent desktop clients on one Linux machine over UDP**. They 
 | Godot 4.7.2 export to Xcode project (bundle `com.idlery.ultimatetrifecta`, Game Center entitlement) | ✅ |
 | `xcodebuild archive` for `generic/platform=iOS`, `CODE_SIGNING_ALLOWED=NO` (arm64 compile + link) | ✅ **project compiled** (unsigned) |
 | Simulator build (x86_64; Godot 4.7.2's simulator slice is x86_64 only) | ✅ |
-| Simulator launch | IOS_SIM_PLACEHOLDER |
+| Simulator launch (run 3, iPhone Air simulator, iOS 26.2 runtime, Xcode 26.6) | ✅ The app installs, launches and renders the title screen (Game Center skipped with `--no-gamecenter`, since the runner has no Apple account). During the 4-minute bot-driven practice launch, the screen moved from the splash to a static loading-sized frame and then to large 3D frames after ~3.5 min, but too slowly to confirm play visually (see note). No crash reports were produced. |
 | Signed archive / upload | ⏸ not run: no App Store Connect credentials (see TESTFLIGHT_RELEASE.md) |
 
-The Simulator runs x86_64 code under Rosetta on a virtualised runner. Its frame rate says nothing about iPhone performance.
+Godot 4.7.2's simulator slice is x86_64, so the app runs under Rosetta on a virtualised Apple-silicon runner. It also falls back to an OpenGL ES 3.0 context there (the console says "Setting up an OpenGL ES 3.0 context"), while devices use Metal.
+
+As a result, the Simulator produced a new frame only every few seconds: consecutive screenshots 15 s apart were often identical. This run proves that the app launches and that the iOS build of the game code runs. It says nothing about iPhone frame rate.
+
+Evidence: the GitHub Actions artifact `ios-simulator-evidence-<build>`, holding screenshots, a screen recording, `app-console.log` and `export.log`.
+
+The archive build also showed that Godot's export writes **empty** camera, microphone and photo-library purpose strings, which Xcode warns about. They are now filled with honest "not used" text, so App Store validation does not trip on empty strings. The app bundle contains `PrivacyInfo.xcprivacy`.
 
 ## 5. Exploit attempts and fixes
 
@@ -141,7 +147,7 @@ The Simulator runs x86_64 code under Rosetta on a virtualised runner. Its frame 
 
 ## 6. Visual and audio evidence
 
-MEDIA_PLACEHOLDER
+Desktop captures are listed in docs/media (added in the following commit).
 
 ## 7. Not yet verified (exact remaining device checks)
 

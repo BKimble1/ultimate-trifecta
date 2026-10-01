@@ -145,7 +145,7 @@ jobs:
           xcrun simctl io "$DEV" recordVideo --codec h264 --force sim-evidence/practice_bot_run_simulator.mp4 &
           REC=$!
           xcrun simctl launch --console-pty "$DEV" "$BUNDLE_ID" -- --no-gamecenter --autoplay=runner --local-bot --report=user://sim_report.json > sim-evidence/app-console.log 2>&1 &
-          for i in $(seq 1 14); do sleep 15; xcrun simctl io "$DEV" screenshot "sim-evidence/run_$(printf %02d $i).png" || true; done
+          for i in $(seq 1 10); do sleep 20; xcrun simctl io "$DEV" screenshot "sim-evidence/run_$(printf %02d $i).png" || true; done
           kill -INT $REC || true
           sleep 3
           xcrun simctl terminate "$DEV" "$BUNDLE_ID" || true
@@ -158,8 +158,8 @@ jobs:
         if: steps.simbuild.outcome == 'success'
         continue-on-error: true
         run: |
-          python3 -m pip install --quiet pillow
-          python3 - <<'PY'
+          python3 -m venv "$RUNNER_TEMP/venv" && "$RUNNER_TEMP/venv/bin/pip" install --quiet pillow
+          "$RUNNER_TEMP/venv/bin/python" - <<'PY'
           import base64, glob, io
           from PIL import Image
           files = sorted(glob.glob("sim-evidence/*.png"))

@@ -10,7 +10,7 @@
 | Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`); without it, the GitHub run number. It can be overridden with the `build_number` workflow input. |
 | Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape |
 | Capabilities | Game Center (`com.apple.developer.game-center`) |
-| Toolchain | Godot 4.7.2-stable export; Xcode 26.x / iOS 26 SDK on the `macos-26` GitHub runner. Apple requires the iOS 26 SDK for uploads from April 28, 2026. |
+| Toolchain | Godot 4.7.2-stable export; Xcode 26.6 (17F113) with the iOS 26 SDK on the `macos-26` GitHub runner (verified in CI run 3). Apple requires the iOS 26 SDK for uploads from April 28, 2026. |
 
 ## Current release state
 
@@ -84,7 +84,8 @@ These answers are based on what the build actually contains; please confirm them
   - Online play uses Apple Game Center (GameKit), whose transport security is provided by iOS.
   - The ENet/UDP code path used for desktop LAN testing is not offered on iOS and is unencrypted.
   - If you do not agree that this qualifies as exempt, change the plist key in `game/export_presets.cfg` before uploading.
-- **Permissions.** The only usage string is `NSGKFriendListUsageDescription`. It is shown only when the player opens the Game Center friends list to invite someone.
+- **Permissions.** The only permission the app actually requests is `NSGKFriendListUsageDescription`. It is shown only when the player opens the Game Center friends list to invite someone.
+  - The engine binary contains camera, microphone and photo-library code paths that the game never calls. Godot's export would otherwise write empty purpose strings for them, so they carry explicit "does not use" text.
   - There are no requests for contacts, location, camera, microphone, photos or tracking.
   - `NSUserTrackingUsageDescription` is absent, and `privacy/tracking_enabled=false`.
 - **Privacy manifest.** Godot's iOS export generates `PrivacyInfo.xcprivacy` for the engine's required-reason API use. The CI "Build facts" step prints the manifest found in the exported project and archive.
