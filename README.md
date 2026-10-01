@@ -67,7 +67,7 @@ The brief preferred Unity with Netcode and Relay. That stack could not be used h
 - **Licensing.** The Unity Editor needs an activated license.
 - **Paid hosting.** Unity Relay and Lobby need a Unity Cloud project, which this task was not allowed to set up as paid hosting.
 
-What V1 uses instead:
+What the game uses instead (V1 and V2):
 - **Engine:** Godot 4.7.2, which is MIT-licensed and needs no account. It exports a native iOS Xcode project that builds with Xcode 26.
 - **Online play:** Apple Game Center (`GKMatch` matchmaking and relay), reached through the MIT-licensed GodotApplePlugins. It is free, needs no server, and provides the friends and invites UI.
 - **Netcode:** prediction, reconciliation, lag compensation, reconnection and lobby logic are implemented in this repository (`game/src/net`, `game/src/match`). They do not come from a package.

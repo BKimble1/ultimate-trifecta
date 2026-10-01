@@ -1,7 +1,10 @@
 extends Node3D
-## Renders the app icon (1024x1024, opaque) and the launch image from the
-## game's own character + water style. Run with a renderer (not headless):
-## godot --path game --resolution 1024x1024 res://tools/make_icon.tscn
+## Renders the launch image (--splash) from the game's own character + water
+## style. Run with a renderer (not headless):
+## godot --path game --resolution 1024x1024 res://tools/make_icon.tscn -- --splash
+## The shipped app icon is the owner's artwork ("Ultimate Trifecta_ Pajama
+## Dash.png" at the repository root, resized into assets/icon/icon.png), so
+## icon mode only writes a reference render to user:// and never replaces it.
 
 var frame := 0
 var cam: Camera3D
@@ -110,8 +113,8 @@ func _process(_d: float) -> void:
 		img.convert(Image.FORMAT_RGB8)
 		if mode == "icon":
 			img.resize(1024, 1024, Image.INTERPOLATE_LANCZOS)
-			img.save_png("res://assets/icon/icon.png")
-			print("icon written")
+			img.save_png("user://icon_render.png")
+			print("reference icon render written to ", ProjectSettings.globalize_path("user://icon_render.png"))
 		else:
 			img.save_png("res://assets/icon/splash.png")
 			print("splash written")
