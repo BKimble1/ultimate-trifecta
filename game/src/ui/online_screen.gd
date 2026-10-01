@@ -26,7 +26,10 @@ func build() -> void:
 	create.disabled = not ready
 	create.pressed.connect(func() -> void: App.host_room_gamekit())
 	left.add_child(create)
-	left.add_child(UIKit.label("You'll get a short code to share. Friends can also be invited with Game Center from the room.", 20, UIKit.MUTED))
+	var hint := UIKit.label("You'll get a short code to share. Friends can also be invited with Game Center from the room.", 20, UIKit.MUTED)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.custom_minimum_size = Vector2(500, 0)
+	left.add_child(hint)
 	left.add_child(spacer(10))
 	left.add_child(UIKit.label("Join with a code", 28, UIKit.TEXT, true))
 	var jrow := UIKit.hbox(12)
@@ -77,9 +80,9 @@ func build() -> void:
 	rv.add_child(UIKit.label("Friends", 30, UIKit.TEXT, true))
 	friends_status = UIKit.label("Game Center can share your friends list with this game so you can see who plays. iOS will ask first; declining is fine — room codes still work.", 20, UIKit.MUTED)
 	friends_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	friends_status.custom_minimum_size = Vector2(420, 0)
+	friends_status.custom_minimum_size = Vector2(300, 0)
 	rv.add_child(friends_status)
-	var load_b := UIKit.button("Show my Game Center friends", Color(0.3, 0.45, 0.85), Vector2(420, 64), 24)
+	var load_b := UIKit.button("Show Game Center friends", Color(0.3, 0.45, 0.85), Vector2(300, 64), 22)
 	load_b.disabled = not ready
 	load_b.pressed.connect(func() -> void:
 		friends_status.text = "Loading…"
@@ -87,10 +90,13 @@ func build() -> void:
 	rv.add_child(load_b)
 	friends_box = UIKit.vbox(6)
 	var sc := ScrollContainer.new()
-	sc.custom_minimum_size = Vector2(420, 180)
+	sc.custom_minimum_size = Vector2(300, 160)
 	sc.add_child(friends_box)
 	rv.add_child(sc)
-	rv.add_child(UIKit.label("To invite friends, create a room and tap “Invite Friends”.", 18, UIKit.MUTED))
+	var inv := UIKit.label("To invite friends, create a room and tap “Invite Friends”.", 18, UIKit.MUTED)
+	inv.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	inv.custom_minimum_size = Vector2(300, 0)
+	rv.add_child(inv)
 	right.add_child(rv)
 	row.add_child(right)
 	Social.friends_loaded.connect(_on_friends)

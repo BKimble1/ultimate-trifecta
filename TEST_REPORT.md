@@ -105,13 +105,13 @@ The 7- and 3-client soaks ran on commit `23004fe`, before the bot and chase-tuni
 | Godot 4.7.2 export to Xcode project (bundle `com.idlery.ultimatetrifecta`, Game Center entitlement) | ✅ |
 | `xcodebuild archive` for `generic/platform=iOS`, `CODE_SIGNING_ALLOWED=NO` (arm64 compile + link) | ✅ **project compiled** (unsigned) |
 | Simulator build (x86_64; Godot 4.7.2's simulator slice is x86_64 only) | ✅ |
-| Simulator launch (runs 3–5, iPhone Air simulator, iOS 26.2 runtime) | ✅ **Reaches a match.** The app installs and launches, and no crash reports were produced. Run 5 on commit `27e4a68` is shown in `docs/media/ios_simulator_ci_run5.jpg`.<br>Sequence: boot splash, then the loading screen for about 2 minutes, then at about 140 s the match with role-reveal card, 4:00 HUD, target list, minimap and [BOT]-labelled players.<br>After that the frames stayed identical for 60 s: in this environment the Simulator renders roughly one frame every 30–60 s, which also slows game time. A cold launch was still on the boot splash after 45 s, so the title screen was **not** captured in the Simulator. |
-| Archive facts (runs 4–5) | Xcode 26.6 (17F113), iphoneos SDK 26.5, `arm64` binary, `.app` 261 MB uncompressed. Run 5 has no purpose-string warnings.<br>Info.plist: `CFBundleIdentifier com.idlery.ultimatetrifecta`, `1.0 (5)` in run 5, `MinimumOSVersion 17.0`, `UIDeviceFamily 1,2`, landscape left/right, `ITSAppUsesNonExemptEncryption false`.<br>Entitlement: `com.apple.developer.game-center`.<br>Frameworks: `GodotApplePluginsGameCenter`, `SwiftGodotRuntime`. `PrivacyInfo.xcprivacy` declares file-timestamp, boot-time and disk-space API reasons. |
+| Simulator launch (runs 3–6, iPhone Air simulator, iOS 26.2 runtime) | ✅ **Installs, launches, loads, and reached a match in runs 4 and 5.** No crash reports in any run.<br>Run 5 on commit `27e4a68` is shown in `docs/media/ios_simulator_ci_run5.jpg`: boot splash, then the loading screen for about 2 minutes, then at about 140 s the match with role-reveal card, 4:00 HUD, target list, minimap and [BOT]-labelled players. The frames then stayed identical for 60 s, because the Simulator renders roughly one frame every 30–60 s here, which also slows game time.<br>Run 4 reached the match at about 215 s. Run 6, on the final gameplay commit `ad58d95`, was still on the loading screen when the 200 s capture window ended; runner VM speed varies.<br>In no run was the title screen captured: a cold launch was still on the boot splash after 45 s. |
+| Archive facts (runs 4–6) | Xcode 26.6 (17F113), iphoneos SDK 26.5, `arm64` binary, `.app` 261 MB uncompressed. Runs 5–6 have no purpose-string warnings.<br>Info.plist: `CFBundleIdentifier com.idlery.ultimatetrifecta`, `1.0 (6)` in run 6, `MinimumOSVersion 17.0`, `UIDeviceFamily 1,2`, landscape left/right, `ITSAppUsesNonExemptEncryption false`.<br>Entitlement: `com.apple.developer.game-center`.<br>Frameworks: `GodotApplePluginsGameCenter`, `SwiftGodotRuntime`. `PrivacyInfo.xcprivacy` declares file-timestamp, boot-time and disk-space API reasons. |
 | Signed archive / upload | ⏸ not run: no App Store Connect credentials (see TESTFLIGHT_RELEASE.md) |
 
 Godot 4.7.2's simulator slice is x86_64, so the app runs under Rosetta on a virtualised Apple-silicon runner. It also falls back to an OpenGL ES 3.0 context there (the console says "Setting up an OpenGL ES 3.0 context"), while devices use Metal.
 
-As a result, the Simulator is orders of magnitude slower than a device. Loading took minutes there, against 0.44 s for the campus visuals build on the Linux desktop, and screenshots 15–20 s apart were often identical. These runs prove that the iOS build installs, launches and runs the game code into a match. They say nothing about iPhone load time or frame rate.
+As a result, the Simulator is orders of magnitude slower than a device. Loading took minutes there, against about 1 s for the whole map generation on the Linux desktop (layout 68 ms, nav grid 54 ms, collision 242 ms, visuals 591 ms), and screenshots 15–20 s apart were often identical. These runs prove that the iOS build installs, launches and runs the game code into a match. They say nothing about iPhone load time or frame rate.
 
 Evidence: the GitHub Actions artifact `ios-simulator-evidence-<build>`, holding screenshots, a screen recording, `app-console.log` and `export.log`.
 
@@ -151,11 +151,24 @@ The archive build also showed that Godot's export writes **empty** camera, micro
 - **Foot chases could not be won.** Seen in the Night Watch capture, where the bot followed a runner at 1–2 m for 20 s without a tag. The Night Watch foot speed is now 6.2 m/s, the wind-up keeps 60% speed, and the bot waits for a closer gap against sprinting runners. Details are in RULES.md, and `test_chase_balance` covers it.
 - **Tree canopies could fill the screen** when the follow camera passed through a tree. Seen in the runner capture. Canopies now dissolve near the camera through a foliage-only shader variant.
 - **Bots ran stacked in single file** on shared nav paths, and one got pinned on the pool's west gate post for over 3 minutes during the route test. Bots now have stable route preferences, steer apart from nearby teammates, and back off sideways when a hop doesn't free them.
+- **Broken time-lapse captures.** A `--time-scale` capture flag made runners move 4× per simulation tick: a trifecta "in 0:36" in a captured results screen. The flag scaled the engine physics delta while the simulation counts fixed ticks. Normal play never used it; it has been removed.
+- **Screen overflow at 16:9 and iPad 4:3.** The results, Play with Friends and lobby screens overflowed at 1280×720 and 1280×960; the lobby's Start button was partly off-screen. Found by rendering every menu screen at both aspects. Layouts were tightened and re-checked at 16:9, 4:3 and 19.5:9.
 - **Empty purpose strings in Info.plist.** Godot's export wrote empty camera, microphone and photo-library strings; Xcode warned about them in CI run 3. They are now filled.
 
 ## 6. Visual and audio evidence
 
-Desktop captures are listed in docs/media (added in the following commit).
+Index: `docs/media/README.md`. Every file is labelled by platform and commit.
+
+- **Desktop clips** (Linux, Godot Movie Maker, software Vulkan):
+  - a 58 s runner clip: reveal, head start, splash and stamp;
+  - a 75 s Night Watch clip: cart in, drive, hop out, chase, capture;
+  - a full-round time-lapse through to the results screen.
+
+  The local player in each is bot-driven automation (`--local-bot`), and each clip says so.
+- **Stills:** the title screen, the six waters and other campus locations, and key moments from the clips.
+- **iOS Simulator contact sheet** from CI run 5 (see section 4).
+- **Visual review findings.** Reviewing these captures found the canopy-camera, bot-stacking and foot-chase problems listed under "Fixed during testing", and the time-scale capture bug. All are fixed; the clips were re-recorded afterwards.
+- **No physical-device footage.**
 
 ## 7. Not yet verified (exact remaining device checks)
 
@@ -165,7 +178,7 @@ Desktop captures are listed in docs/media (added in the following commit).
   - a full round with cart entry/exit, chase, tag, splash and finish;
   - rematch; host leaves mid-round.
 - [ ] **Performance:** 60 fps on an iPhone 14-class device across 3+ consecutive rounds, plus memory and heat (Xcode Instruments). Also check the "Battery saver" graphics option on an older device.
-- [ ] **Touch:** feel of the dynamic stick and the edge-sprint threshold, camera drag ownership, and button sizes on small iPhones. Safe areas on Dynamic Island devices and iPad.
+- [ ] **Touch:** feel of the dynamic stick and the edge-sprint threshold, camera drag ownership, and button sizes on small iPhones. Safe areas on Dynamic Island devices and iPad (menu layouts were render-checked at 16:9, 4:3 and 19.5:9 on desktop only).
 - [ ] **Controllers:** an MFi/Xbox/PlayStation controller on device, plus connect and disconnect mid-match with prompt switching.
 - [ ] **System behaviour:**
   - The silent switch mutes the game (Godot's default *Ambient* audio session); check that the visual cues carry play.

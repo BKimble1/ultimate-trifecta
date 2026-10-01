@@ -28,51 +28,56 @@ func build() -> void:
 	if oc == TC.Outcome.RUNNERS_WIN:
 		sub += " in %d:%02d" % [int(results.get("round_time", 0)) / 60, int(results.get("round_time", 0)) % 60]
 	content.add_child(UIKit.label(sub + ("  —  your team won!" if won else ""), 28, UIKit.TEXT, false, HORIZONTAL_ALIGNMENT_CENTER))
-	var row := UIKit.hbox(24)
+	var fastest := int(results.get("fastest_slot", -1))
+	if fastest >= 0:
+		for r in results.get("players", []):
+			if int(r["slot"]) == fastest:
+				var ftime := float(results.get("fastest_time", r.get("finish_time", 0.0)))
+				content.add_child(UIKit.label("★ Fastest Trifecta: %s  (%d:%02d)" % [String(r["name"]), int(ftime) / 60, int(ftime) % 60], 22, UIKit.ACCENT, true, HORIZONTAL_ALIGNMENT_CENTER))
+	var row := UIKit.hbox(20)
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(row)
 	# players table
 	var tp := UIKit.panel(Color(0.12, 0.15, 0.32, 0.92), 24, 16)
 	tp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var grid := GridContainer.new()
-	grid.columns = 4
-	grid.add_theme_constant_override("h_separation", 26)
-	grid.add_theme_constant_override("v_separation", 4)
-	for h in ["Player", "Role", "Contribution", ""]:
-		grid.add_child(UIKit.label(h, 20, UIKit.ACCENT, true))
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 18)
+	grid.add_theme_constant_override("v_separation", 3)
+	for h in ["Player", "Role", "Contribution"]:
+		grid.add_child(UIKit.label(h, 18, UIKit.ACCENT, true))
 	var rows: Array = results.get("players", []).duplicate()
 	rows.sort_custom(func(a, b): return [int(a["role"]), -int(a.get("stamps", 0)) - (10 if bool(a.get("finished", false)) else 0)] < [int(b["role"]), -int(b.get("stamps", 0)) - (10 if bool(b.get("finished", false)) else 0)])
-	var fastest := int(results.get("fastest_slot", -1))
 	for r in rows:
 		var me := int(r["slot"]) == my_slot
 		var col := UIKit.ACCENT if me else UIKit.TEXT
-		grid.add_child(UIKit.label(String(r["name"]) + ("  [BOT]" if bool(r["is_bot"]) else "") + ("  (you)" if me else ""), 22, col, me))
-		grid.add_child(UIKit.label("Runner" if int(r["role"]) == TC.Role.RUNNER else "Night Watch", 22, UIKit.RUNNER if int(r["role"]) == TC.Role.RUNNER else UIKit.PATROL))
+		var star := "★ " if int(r["slot"]) == fastest else ""
+		grid.add_child(UIKit.label(star + String(r["name"]) + (" [BOT]" if bool(r["is_bot"]) else "") + (" (you)" if me else ""), 19, col, me))
+		grid.add_child(UIKit.label("Runner" if int(r["role"]) == TC.Role.RUNNER else "Night Watch", 19, UIKit.RUNNER if int(r["role"]) == TC.Role.RUNNER else UIKit.PATROL))
 		var contrib := ""
 		if int(r["role"]) == TC.Role.RUNNER:
 			contrib = "%d/3 splashes" % int(r.get("stamps", 0))
 			if bool(r.get("finished", false)):
 				var ft := float(r.get("finish_time", 0.0))
-				contrib += ", home #%d at %d:%02d" % [int(r.get("finish_order", 0)), int(ft) / 60, int(ft) % 60]
+				contrib += " · home #%d at %d:%02d" % [int(r.get("finish_order", 0)), int(ft) / 60, int(ft) % 60]
 			if int(r.get("times_captured", 0)) > 0:
-				contrib += ", caught %dx" % int(r["times_captured"])
+				contrib += " · caught %dx" % int(r["times_captured"])
 		else:
 			contrib = "%d different runner%s caught" % [int(r.get("unique_captures", 0)), "" if int(r.get("unique_captures", 0)) == 1 else "s"]
-		grid.add_child(UIKit.label(contrib, 22, col))
-		grid.add_child(UIKit.label("FASTEST TRIFECTA" if int(r["slot"]) == fastest else "", 20, UIKit.ACCENT, true))
+		grid.add_child(UIKit.label(contrib, 19, col))
 	tp.add_child(grid)
 	row.add_child(tp)
 	# rewards
 	var rp := UIKit.panel(Color(0.14, 0.2, 0.38, 0.95), 24, 18)
-	rp.custom_minimum_size = Vector2(380, 0)
-	var rv := UIKit.vbox(8)
-	rv.add_child(UIKit.label("Rewards", 30, UIKit.ACCENT, true))
+	rp.custom_minimum_size = Vector2(280, 0)
+	var rv := UIKit.vbox(6)
+	rv.add_child(UIKit.label("Rewards", 26, UIKit.ACCENT, true))
 	if reward.is_empty():
 		rv.add_child(UIKit.label("No rewards for this round.", 22, UIKit.MUTED))
 	else:
 		for line in reward.get("lines", []):
-			rv.add_child(UIKit.label("%s   +%d" % [line[0], int(line[1])] if int(line[1]) >= 0 else "%s   %d" % [line[0], int(line[1])], 22))
-		rv.add_child(UIKit.label("+%d coins" % int(reward.get("coins", 0)), 34, UIKit.ACCENT, true))
+			rv.add_child(UIKit.label("%s   +%d" % [line[0], int(line[1])] if int(line[1]) >= 0 else "%s   %d" % [line[0], int(line[1])], 19))
+		rv.add_child(UIKit.label("+%d coins" % int(reward.get("coins", 0)), 30, UIKit.ACCENT, true))
 		if bool(reward.get("level_up", false)):
 			rv.add_child(UIKit.label("LEVEL UP! Now level %d" % int(reward.get("level", 1)), 26, UIKit.GOOD, true))
 		rv.add_child(UIKit.label("Coins buy outfits in the Wardrobe.", 18, UIKit.MUTED))

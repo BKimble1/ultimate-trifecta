@@ -37,14 +37,14 @@ func build() -> void:
 	var mid := UIKit.hbox(20)
 	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(mid)
-	room = Preview3D.new(Vector2i(560, 420))
+	room = Preview3D.new(Vector2i(480, 300))
 	room.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	room.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	mid.add_child(room)
 	var rp := UIKit.panel(Color(0.12, 0.15, 0.32, 0.92), 24, 14)
-	rp.custom_minimum_size = Vector2(520, 0)
+	rp.custom_minimum_size = Vector2(460, 0)
 	var sc := ScrollContainer.new()
-	sc.custom_minimum_size = Vector2(500, 380)
+	sc.custom_minimum_size = Vector2(440, 300)
 	sc.follow_focus = true
 	roster_box = UIKit.vbox(6)
 	roster_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -52,6 +52,9 @@ func build() -> void:
 	rp.add_child(sc)
 	mid.add_child(rp)
 
+	# two rows so the layout fits 16:9 and 4:3 screens: emotes, then actions
+	var emotes := UIKit.hbox(14)
+	content.add_child(emotes)
 	var bottom := UIKit.hbox(14)
 	content.add_child(bottom)
 	pref_opt = OptionButton.new()
@@ -64,21 +67,24 @@ func build() -> void:
 		Save.set_setting("role_pref", p)
 		session.set_local_pref(p))
 	bottom.add_child(pref_opt)
+	var gap := Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom.add_child(gap)
 	ready_btn = UIKit.button("Ready!", Color(0.45, 0.9, 0.55), Vector2(220, 64))
 	ready_btn.pressed.connect(func() -> void:
 		_is_ready = not _is_ready
 		session.set_local_ready(_is_ready)
 		_refresh())
 	bottom.add_child(ready_btn)
-	var ward := UIKit.button("Outfit", Color(0.75, 0.5, 0.95), Vector2(160, 64), 24)
+	var ward := UIKit.button("Outfit", Color(0.75, 0.5, 0.95), Vector2(160, 56), 24)
 	ward.pressed.connect(_quick_outfit)
-	bottom.add_child(ward)
+	emotes.add_child(ward)
 	for i in 4:
-		var e := UIKit.button(TC.EMOTE_LABELS[TC.EMOTES[i]], Color(0.3, 0.38, 0.7), Vector2(120, 64), 20)
+		var e := UIKit.button(TC.EMOTE_LABELS[TC.EMOTES[i]], Color(0.3, 0.38, 0.7), Vector2(120, 56), 20)
 		var idx := i
 		e.pressed.connect(func() -> void: session.send_emote(idx))
-		bottom.add_child(e)
-	start_btn = UIKit.button("Start", Color(1.0, 0.72, 0.25), Vector2(260, 64), 30)
+		emotes.add_child(e)
+	start_btn = UIKit.button("Start", Color(1.0, 0.72, 0.25), Vector2(300, 64), 26)
 	start_btn.pressed.connect(func() -> void:
 		if session.can_start():
 			session.host_start_match())
