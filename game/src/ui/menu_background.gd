@@ -7,6 +7,13 @@ var t := 0.0
 
 
 func _ready() -> void:
+	# let the menu UI present its first frames before the (heavier) campus
+	# build, so launch never blocks on it
+	set_process(false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_inside_tree():
+		return
 	var b := CampusBuilder.new(CampusLayout.shared())
 	var waters := b.build_visuals(self, int(Save.get_setting("quality", 1)))
 	for id in ["fountain", "pool", "garden"]:
@@ -27,6 +34,7 @@ func _ready() -> void:
 		v.setup(TC.Role.RUNNER, Cosmetics.bot_cosmetic(i * 7 + 3), -1, names[i], false, true)
 		v.global_position = Vector3(-3.0 + i * 3.0, 0, 90)
 		v.apply_state({"pos": Vector3(-3.0 + i * 3.0, 0, 90), "yaw": 0.4 - i * 0.4, "state": TC.PState.ACTIVE, "vel": Vector3.ZERO, "on_floor": true, "emote": i % 3, "emote_t": 1.0}, 0.0, true)
+	set_process(true)
 
 
 func _process(delta: float) -> void:
