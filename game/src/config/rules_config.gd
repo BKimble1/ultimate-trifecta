@@ -45,9 +45,10 @@ extends Resource
 @export var turn_rate_deg: float = 900.0
 
 @export_group("Patrol on foot")
-@export var patrol_speed: float = 5.6
+@export var patrol_speed: float = 6.2
 @export var patrol_jump_velocity: float = 6.0
 @export var tag_anticipation_s: float = 0.14
+@export var tag_anticipation_move_scale: float = 0.6   # foot speed kept during the wind-up
 @export var tag_lunge_s: float = 0.22
 @export var tag_lunge_speed: float = 8.2
 @export var tag_reach_m: float = 1.6

@@ -15,7 +15,7 @@ This report records what was actually run, where, and what each result proves. T
 
 Run them with `tools/run_tests.sh`. CI runs the same suite on every push (job "Rules, simulation and network tests").
 
-The latest full local run: **51 tests, 799 checks, 0 failures**. That is 48 tests / 758 checks in the full suite at `58436b9`, plus the 3 anti-camping tests / 41 checks added afterwards. CI test job on `58436b9`: success.
+The latest full local run, on the final gameplay commit: **53 tests, 802 checks, 0 failures** (`docs/test-data/full_test_run.txt`). The CI test job runs the same suite on every push.
 
 | Suite | Tests | What they exercise (behaviour, not constants) |
 |---|---|---|
@@ -24,6 +24,7 @@ The latest full local run: **51 tests, 799 checks, 0 failures**. That is 48 test
 | `test_camping` | 3 | Two campers at any water's exits/pads cannot cover every exit; the respawn pad is ≥ 15 m from both (worst case measured 20.7 m); an in-play respawn lands away from two campers; dorm doors are ≥ 15 m apart (18 m); carts driven flat out at the dorm from 4 directions are stopped by bollards 17–54 m from the nearest door |
 | `test_net` | 13 | Snapshot size and round-trip; lobby join/ready/start; match sync at 100 ms, 150 ms + 5% loss, and 300 ms + 10% loss RTT; capture reaching the client, and client-patrol lag-compensated tags; clean and silent host loss; reconnect resumes slot and progress; late join spectates then plays; rematch cleanup; duplicate/reordered inputs and late snapshots; 8 humans online with no bots |
 | `test_routes_bots` | 1 | Six runner bots, using the same movement code and inputs as players, complete every curated route with no pursuit |
+| `test_chase_balance` | 2 | On open ground a Night Watch bot runs down a fleeing runner bot from 8 m (at least 3 of 4 trials within 25 s); a runner sprint still opens the gap and the Night Watch closes it again afterwards |
 | `test_smoke`, `test_compile` | 2 | Campus layout and builder load; every script compiles |
 
 ## 2. Route fairness (headless sim, bots)
@@ -95,6 +96,8 @@ How to read these tables:
 
 These are **8 independent desktop clients on one Linux machine over UDP**. They are not iPhones and not the Game Center transport.
 
+The 7- and 3-client soaks ran on commit `23004fe`, before the bot and chase-tuning changes. Those changes alter gameplay balance, not the network code, so the networking numbers carry over.
+
 ## 4. iOS build (CI iOS)
 
 | Step (`.github/workflows/ios.yml`) | Result |
@@ -102,12 +105,13 @@ These are **8 independent desktop clients on one Linux machine over UDP**. They 
 | Godot 4.7.2 export to Xcode project (bundle `com.idlery.ultimatetrifecta`, Game Center entitlement) | ✅ |
 | `xcodebuild archive` for `generic/platform=iOS`, `CODE_SIGNING_ALLOWED=NO` (arm64 compile + link) | ✅ **project compiled** (unsigned) |
 | Simulator build (x86_64; Godot 4.7.2's simulator slice is x86_64 only) | ✅ |
-| Simulator launch (run 3, iPhone Air simulator, iOS 26.2 runtime, Xcode 26.6) | ✅ The app installs, launches and renders the title screen (Game Center skipped with `--no-gamecenter`, since the runner has no Apple account). During the 4-minute bot-driven practice launch, the screen moved from the splash to a static loading-sized frame and then to large 3D frames after ~3.5 min, but too slowly to confirm play visually (see note). No crash reports were produced. |
+| Simulator launch (runs 3–5, iPhone Air simulator, iOS 26.2 runtime) | ✅ **Reaches a match.** The app installs and launches, and no crash reports were produced. Run 5 on commit `27e4a68` is shown in `docs/media/ios_simulator_ci_run5.jpg`.<br>Sequence: boot splash, then the loading screen for about 2 minutes, then at about 140 s the match with role-reveal card, 4:00 HUD, target list, minimap and [BOT]-labelled players.<br>After that the frames stayed identical for 60 s: in this environment the Simulator renders roughly one frame every 30–60 s, which also slows game time. A cold launch was still on the boot splash after 45 s, so the title screen was **not** captured in the Simulator. |
+| Archive facts (runs 4–5) | Xcode 26.6 (17F113), iphoneos SDK 26.5, `arm64` binary, `.app` 261 MB uncompressed. Run 5 has no purpose-string warnings.<br>Info.plist: `CFBundleIdentifier com.idlery.ultimatetrifecta`, `1.0 (5)` in run 5, `MinimumOSVersion 17.0`, `UIDeviceFamily 1,2`, landscape left/right, `ITSAppUsesNonExemptEncryption false`.<br>Entitlement: `com.apple.developer.game-center`.<br>Frameworks: `GodotApplePluginsGameCenter`, `SwiftGodotRuntime`. `PrivacyInfo.xcprivacy` declares file-timestamp, boot-time and disk-space API reasons. |
 | Signed archive / upload | ⏸ not run: no App Store Connect credentials (see TESTFLIGHT_RELEASE.md) |
 
 Godot 4.7.2's simulator slice is x86_64, so the app runs under Rosetta on a virtualised Apple-silicon runner. It also falls back to an OpenGL ES 3.0 context there (the console says "Setting up an OpenGL ES 3.0 context"), while devices use Metal.
 
-As a result, the Simulator produced a new frame only every few seconds: consecutive screenshots 15 s apart were often identical. This run proves that the app launches and that the iOS build of the game code runs. It says nothing about iPhone frame rate.
+As a result, the Simulator is orders of magnitude slower than a device. Loading took minutes there, against 0.44 s for the campus visuals build on the Linux desktop, and screenshots 15–20 s apart were often identical. These runs prove that the iOS build installs, launches and runs the game code into a match. They say nothing about iPhone load time or frame rate.
 
 Evidence: the GitHub Actions artifact `ios-simulator-evidence-<build>`, holding screenshots, a screen recording, `app-console.log` and `export.log`.
 
@@ -144,6 +148,10 @@ The archive build also showed that Godot's export writes **empty** camera, micro
   - Washed-out vertex colours fixed with an sRGB→linear conversion.
   - Pool water was hidden under the plaza paving; fixed.
 - **Route test overwrote bot timings:** it replaced the measured times for non-curated combinations; it now merges them.
+- **Foot chases could not be won.** Seen in the Night Watch capture, where the bot followed a runner at 1–2 m for 20 s without a tag. The Night Watch foot speed is now 6.2 m/s, the wind-up keeps 60% speed, and the bot waits for a closer gap against sprinting runners. Details are in RULES.md, and `test_chase_balance` covers it.
+- **Tree canopies could fill the screen** when the follow camera passed through a tree. Seen in the runner capture. Canopies now dissolve near the camera through a foliage-only shader variant.
+- **Bots ran stacked in single file** on shared nav paths, and one got pinned on the pool's west gate post for over 3 minutes during the route test. Bots now have stable route preferences, steer apart from nearby teammates, and back off sideways when a hop doesn't free them.
+- **Empty purpose strings in Info.plist.** Godot's export wrote empty camera, microphone and photo-library strings; Xcode warned about them in CI run 3. They are now filled.
 
 ## 6. Visual and audio evidence
 

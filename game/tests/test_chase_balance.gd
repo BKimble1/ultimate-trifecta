@@ -1,0 +1,57 @@
+extends RefCounted
+## Chase balance with real movement and the real bots: on open ground the Night
+## Watch runs a fleeing runner down (a credible chase), while a runner sprint
+## still opens the gap for its duration (separation is possible).
+var t
+const R := TC.Role.RUNNER
+const P := TC.Role.PATROL
+# open lawn starts: runner position + flee heading; the patrol starts 8 m behind
+const STARTS := [[Vector3(-20, 0.05, 60), Vector2(1, 0)], [Vector3(-20, 0.05, 60), Vector2(0, -1)],
+	[Vector3(-20, 0.05, 60), Vector2(-1, 0)], [Vector3(30, 0.05, 62), Vector2(0, -1)]]
+
+
+func test_night_watch_runs_down_a_fleeing_runner_in_the_open() -> void:
+	var caught := 0
+	var times: Array = []
+	for si in STARTS.size():
+		var h := SimHarness.new(t)
+		h.make([R, P], [0, 1, 2], [0, 1], 500 + si)
+		await h.release_patrol()
+		var a: Vector3 = STARTS[si][0]
+		var d: Vector2 = STARTS[si][1]
+		h.place(0, a, atan2(-d.x, -d.y))
+		h.place(1, a - Vector3(d.x, 0, d.y) * 8.0, atan2(-d.x, -d.y))
+		var t0 := h.sim.tick
+		var secs := -1.0
+		for i in 60 * 25:
+			await h.step()
+			if h.sim.player(0).state == TC.PState.CAPTURED:
+				secs = float(h.sim.tick - t0) / 60.0
+				break
+		times.append(snappedf(secs, 0.1))
+		if secs > 0.0:
+			caught += 1
+		h.free_sim()
+	print("CHASE times (s, -1 = escaped 25 s): %s" % str(times))
+	t.check(caught >= 3, "patrol bot catches a fleeing runner bot from 8 m on open ground (%d/%d within 25 s)" % [caught, STARTS.size()])
+
+
+func test_runner_sprint_opens_the_gap() -> void:
+	var h := SimHarness.new(t)
+	h.make([R, P], [0, 1, 2])
+	await h.release_patrol()
+	h.place(0, Vector3(-20, 0.05, 60), atan2(-1.0, 0.0))
+	h.place(1, Vector3(-23, 0.05, 60), atan2(-1.0, 0.0))
+	h.cmd(0).move = Vector2(1, 0)
+	h.cmd(1).move = Vector2(1, 0)
+	await h.step(45)   # both up to speed
+	h.cmd(0).held = TC.BTN_SPRINT
+	var g0 := h.sim.player(0).pos2().distance_to(h.sim.player(1).pos2())
+	await h.step(90)   # 1.5 s of sprint
+	var g1 := h.sim.player(0).pos2().distance_to(h.sim.player(1).pos2())
+	t.check(g1 > g0 + 0.8, "a sprint opens the gap on the Night Watch (%.1f m -> %.1f m)" % [g0, g1])
+	h.cmd(0).held = 0
+	await h.step(120)  # jogging: the Night Watch closes again
+	var g2 := h.sim.player(0).pos2().distance_to(h.sim.player(1).pos2())
+	t.check(g2 < g1, "without sprint the Night Watch closes in (%.1f m -> %.1f m)" % [g1, g2])
+	h.free_sim()

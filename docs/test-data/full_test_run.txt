@@ -1,34 +1,37 @@
 Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
 
 [ok] test_camping::test_water_exits_and_pads_beat_two_campers (1 ms)
-[ok] test_camping::test_respawn_away_from_campers_in_play (971 ms)
-[ok] test_camping::test_dorm_doors_spread_and_cart_free (3880 ms)
-[ok] test_compile::test_all_scripts_compile (19 ms)
-[ok] test_net::test_protocol_snapshot_size_and_roundtrip (476 ms)
-[ok] test_net::test_lobby_join_ready_start (1162 ms)
-NETSTAT {"client_rtt_est_ms":130.0,"corr_avg_m":0.004,"corr_max_m":0.302,"corr_over_25cm":2,"host_events":3,"host_skipped":{},"host_starved":{},"hub_dropped":0,"hub_sent":1602,"interp_err_m":0.03,"jitter_ms":8.0,"kb_sent":188.6,"label":"rtt100","loss":0.0,"missing_reliable_events":0,"pred_vs_host_m":0.33,"rtt_ms":100.0,"snapshots":379}
-[ok] test_net::test_match_sync_100ms (10391 ms)
-NETSTAT {"client_rtt_est_ms":175.0,"corr_avg_m":0.005,"corr_max_m":0.325,"corr_over_25cm":3,"host_events":3,"host_skipped":{},"host_starved":{},"hub_dropped":69,"hub_sent":1599,"interp_err_m":0.01,"jitter_ms":15.0,"kb_sent":188.5,"label":"rtt150_loss5","loss":0.05,"missing_reliable_events":0,"pred_vs_host_m":0.59,"rtt_ms":150.0,"snapshots":359}
-[ok] test_net::test_match_sync_150ms_with_loss (10218 ms)
-NETSTAT {"client_rtt_est_ms":359.0,"corr_avg_m":0.002,"corr_max_m":0.097,"corr_over_25cm":0,"host_events":3,"host_skipped":{},"host_starved":{"1":1},"hub_dropped":141,"hub_sent":1593,"interp_err_m":0.01,"jitter_ms":30.0,"kb_sent":188.1,"label":"rtt300_loss10","loss":0.1,"missing_reliable_events":0,"pred_vs_host_m":1.61,"rtt_ms":300.0,"snapshots":336}
-[ok] test_net::test_match_sync_high_latency (10906 ms)
-[ok] test_net::test_capture_reaches_client_and_client_patrol_tag (3501 ms)
-NETSTAT {"captured":true,"label":"client_patrol_tag_150ms","lag_ticks":11}
-[ok] test_net::test_client_patrol_lag_compensated_tags (7725 ms)
-[ok] test_net::test_host_loss_clean_and_silent (3833 ms)
-[ok] test_net::test_reconnect_resumes_slot_and_progress (3544 ms)
-[ok] test_net::test_late_join_spectates_then_plays_next_round (2771 ms)
-[ok] test_net::test_rematch_cleanup (2027 ms)
-[ok] test_net::test_duplicate_reordered_inputs_and_late_snapshots (221 ms)
-CLIENT slot=4 role=0 avg=0.002 n=283 big=[]
-CLIENT slot=5 role=0 avg=0.002 n=292 big=[]
+[ok] test_camping::test_respawn_away_from_campers_in_play (989 ms)
+[ok] test_camping::test_dorm_doors_spread_and_cart_free (3696 ms)
+CHASE times (s, -1 = escaped 25 s): [10.5, 16.5, -1.0, 6.0]
+[ok] test_chase_balance::test_night_watch_runs_down_a_fleeing_runner_in_the_open (5340 ms)
+[ok] test_chase_balance::test_runner_sprint_opens_the_gap (786 ms)
+[ok] test_compile::test_all_scripts_compile (18 ms)
+[ok] test_net::test_protocol_snapshot_size_and_roundtrip (443 ms)
+[ok] test_net::test_lobby_join_ready_start (957 ms)
+NETSTAT {"client_rtt_est_ms":111.0,"corr_avg_m":0.002,"corr_max_m":0.15,"corr_over_25cm":0,"host_events":3,"host_skipped":{},"host_starved":{},"hub_dropped":0,"hub_sent":1602,"interp_err_m":0.04,"jitter_ms":8.0,"kb_sent":188.6,"label":"rtt100","loss":0.0,"missing_reliable_events":0,"pred_vs_host_m":0.33,"rtt_ms":100.0,"snapshots":379}
+[ok] test_net::test_match_sync_100ms (9041 ms)
+NETSTAT {"client_rtt_est_ms":151.0,"corr_avg_m":0.003,"corr_max_m":0.312,"corr_over_25cm":2,"host_events":3,"host_skipped":{},"host_starved":{},"hub_dropped":67,"hub_sent":1598,"interp_err_m":0.05,"jitter_ms":15.0,"kb_sent":188.5,"label":"rtt150_loss5","loss":0.05,"missing_reliable_events":0,"pred_vs_host_m":0.95,"rtt_ms":150.0,"snapshots":361}
+[ok] test_net::test_match_sync_150ms_with_loss (9454 ms)
+NETSTAT {"client_rtt_est_ms":246.0,"corr_avg_m":0.003,"corr_max_m":0.173,"corr_over_25cm":0,"host_events":3,"host_skipped":{},"host_starved":{"1":2},"hub_dropped":143,"hub_sent":1591,"interp_err_m":0.04,"jitter_ms":30.0,"kb_sent":188.1,"label":"rtt300_loss10","loss":0.1,"missing_reliable_events":0,"pred_vs_host_m":1.09,"rtt_ms":300.0,"snapshots":332}
+[ok] test_net::test_match_sync_high_latency (9315 ms)
+[ok] test_net::test_capture_reaches_client_and_client_patrol_tag (3955 ms)
+NETSTAT {"captured":true,"label":"client_patrol_tag_150ms","lag_ticks":10}
+[ok] test_net::test_client_patrol_lag_compensated_tags (5327 ms)
+[ok] test_net::test_host_loss_clean_and_silent (3627 ms)
+[ok] test_net::test_reconnect_resumes_slot_and_progress (3691 ms)
+[ok] test_net::test_late_join_spectates_then_plays_next_round (2830 ms)
+[ok] test_net::test_rematch_cleanup (1964 ms)
+[ok] test_net::test_duplicate_reordered_inputs_and_late_snapshots (215 ms)
+CLIENT slot=4 role=0 avg=0.003 n=283 big=[]
+CLIENT slot=5 role=0 avg=0.003 n=292 big=[]
 CLIENT slot=6 role=0 avg=0.002 n=293 big=[]
-CLIENT slot=3 role=0 avg=0.002 n=289 big=[]
-CLIENT slot=2 role=1 avg=0.000 n=290 big=[]
-CLIENT slot=1 role=0 avg=0.001 n=291 big=[]
-CLIENT slot=7 role=1 avg=0.000 n=291 big=[]
-NETSTAT {"clients":7,"dropped":236,"host_skipped":{},"host_starved":{"1":2,"2":2,"3":2,"4":2,"5":1,"6":2,"7":3},"kb_sent":1007.4,"label":"eight_player_loopback_rtt120_loss3","sent":8932,"snapshots":2038,"worst_avg_corr_m":0.002}
-[ok] test_net::test_eight_players_online_sync (12955 ms)
+CLIENT slot=3 role=0 avg=0.003 n=289 big=[]
+CLIENT slot=2 role=1 avg=0.002 n=290 big=[{ "err": 0.22, "tick": 846, "ack": 836, "phase": 4, "pend_seqs": [837, 845], "state": 0, "pending": 9, "srv_pos": (50.25024, 0.35733, -131.308), "before": (50.75857, 0.017527, -131.7297), "after": (50.91448, 0.00103, -131.5737), "floor": false, "vel": (2.144891, -4.449999, -4.055111), "role": 1 }]
+CLIENT slot=1 role=0 avg=0.003 n=291 big=[]
+CLIENT slot=7 role=1 avg=0.001 n=291 big=[]
+NETSTAT {"clients":7,"dropped":236,"host_skipped":{},"host_starved":{"1":2,"2":2,"3":2,"4":2,"5":1,"6":2,"7":3},"kb_sent":1007.4,"label":"eight_player_loopback_rtt120_loss3","sent":8932,"snapshots":2038,"worst_avg_corr_m":0.003}
+[ok] test_net::test_eight_players_online_sync (11495 ms)
 ROUTE ["Fountain", "Pond", "Garden"] finished 6/6 times [115.4, 110.9, 117.4, 111.3, 108.5, 108.1]
 ROUTE ["Fountain", "Pool", "Quarry"] finished 6/6 times [112.4, 110.2, 110.0, 118.3, 114.7, 109.8]
 ROUTE ["Fountain", "Pool", "Inlet"] finished 6/6 times [113.0, 105.0, 104.3, 103.3, 105.7, 107.0]
@@ -44,42 +47,42 @@ ROUTE ["Pool", "Quarry", "Inlet"] finished 6/6 times [127.1, 125.6, 116.0, 121.3
 ROUTE ["Pool", "Garden", "Inlet"] finished 6/6 times [118.5, 117.8, 117.1, 118.6, 113.9, 107.6]
 ROUTE ["Quarry", "Garden", "Inlet"] finished 6/6 times [123.8, 124.5, 126.3, 125.2, 123.6, 120.7]
 ROUTE_SUMMARY n=84 min=103.3 median=117.5 max=132.2
-[ok] test_routes_bots::test_bots_complete_every_curated_route (154260 ms)
-[ok] test_rules::test_combos_and_permutations (0 ms)
+[ok] test_routes_bots::test_bots_complete_every_curated_route (153858 ms)
+[ok] test_rules::test_combos_and_permutations (1 ms)
 [ok] test_rules::test_route_table_fairness (0 ms)
-[ok] test_rules::test_pick_targets_seeded_no_repeat (3 ms)
-[ok] test_rules::test_role_assignment_fair_rotation (1 ms)
-[ok] test_rules::test_role_preferences_honoured (0 ms)
+[ok] test_rules::test_pick_targets_seeded_no_repeat (2 ms)
+[ok] test_rules::test_role_assignment_fair_rotation (0 ms)
+[ok] test_rules::test_role_preferences_honoured (1 ms)
 [ok] test_rules::test_choose_pad_maximises_distance (0 ms)
 [ok] test_rules::test_tag_geometry (0 ms)
 [ok] test_rules::test_rewards_unique_captures_no_idle_survival (0 ms)
 [ok] test_rules::test_level_curve (0 ms)
 [ok] test_rules::test_input_cmd_roundtrip (0 ms)
-[ok] test_rules::test_save_reward_ledger_once (3 ms)
-[ok] test_sim::test_every_curated_combo_all_orders (33773 ms)
-[ok] test_sim::test_duplicate_and_inactive_splash (641 ms)
-[ok] test_sim::test_water_resurfaces_automatically (468 ms)
-[ok] test_sim::test_capture_timing_progress_and_respawn (1116 ms)
-[ok] test_sim::test_capture_before_first_splash_returns_to_dorm (886 ms)
-[ok] test_sim::test_after_three_splashes_return_to_third (1082 ms)
-[ok] test_sim::test_tag_reach_cooldown_and_walls (730 ms)
-[ok] test_sim::test_tag_validation_roles_and_states (713 ms)
-[ok] test_sim::test_same_tick_finish_beats_tag (1299 ms)
-[ok] test_sim::test_fourth_runner_ends_round_immediately (1767 ms)
-[ok] test_sim::test_timeout_and_deadline_finish (3784 ms)
-[ok] test_sim::test_cart_seat_race_and_roles (701 ms)
-[ok] test_sim::test_cart_drive_exit_safely_and_lockout (758 ms)
-[ok] test_sim::test_bump_stumbles_without_chain_or_capture (742 ms)
-[ok] test_sim::test_gadget_single_use_and_ownership (1302 ms)
-[ok] test_sim::test_splash_bomb_slows_cart_briefly (687 ms)
-[ok] test_sim::test_reconnect_resumes_and_reservation_expires (1576 ms)
-[ok] test_sim::test_out_of_bounds_recovery_grants_nothing (471 ms)
-[ok] test_sim::test_finished_runner_is_out_of_play (875 ms)
-[ok] test_sim::test_movement_feel_numbers (900 ms)
-[ok] test_sim::test_spotted_cue_requires_line_of_sight (734 ms)
+[ok] test_rules::test_save_reward_ledger_once (2 ms)
+[ok] test_sim::test_every_curated_combo_all_orders (35015 ms)
+[ok] test_sim::test_duplicate_and_inactive_splash (614 ms)
+[ok] test_sim::test_water_resurfaces_automatically (495 ms)
+[ok] test_sim::test_capture_timing_progress_and_respawn (1137 ms)
+[ok] test_sim::test_capture_before_first_splash_returns_to_dorm (876 ms)
+[ok] test_sim::test_after_three_splashes_return_to_third (1105 ms)
+[ok] test_sim::test_tag_reach_cooldown_and_walls (724 ms)
+[ok] test_sim::test_tag_validation_roles_and_states (745 ms)
+[ok] test_sim::test_same_tick_finish_beats_tag (1309 ms)
+[ok] test_sim::test_fourth_runner_ends_round_immediately (1854 ms)
+[ok] test_sim::test_timeout_and_deadline_finish (3735 ms)
+[ok] test_sim::test_cart_seat_race_and_roles (692 ms)
+[ok] test_sim::test_cart_drive_exit_safely_and_lockout (770 ms)
+[ok] test_sim::test_bump_stumbles_without_chain_or_capture (749 ms)
+[ok] test_sim::test_gadget_single_use_and_ownership (1356 ms)
+[ok] test_sim::test_splash_bomb_slows_cart_briefly (723 ms)
+[ok] test_sim::test_reconnect_resumes_and_reservation_expires (1633 ms)
+[ok] test_sim::test_out_of_bounds_recovery_grants_nothing (482 ms)
+[ok] test_sim::test_finished_runner_is_out_of_play (886 ms)
+[ok] test_sim::test_movement_feel_numbers (933 ms)
+[ok] test_sim::test_spotted_cue_requires_line_of_sight (801 ms)
 [ok] test_smoke::test_layout_and_builder_load (291 ms)
 
-51 tests, 799 checks, 0 failures in 284.3s
+53 tests, 802 checks, 0 failures in 284.1s
 WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for details).
    at: cleanup (core/object/object.cpp:2536)
 ERROR: 2 resources still in use at exit (run with --verbose for details).

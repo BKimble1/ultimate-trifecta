@@ -41,7 +41,7 @@ The fixed per-tick order is: timers → intents → movement → **finish** → 
 
 ## Capture
 
-- **Tag.** The Night Watch on foot presses Tag. There is a 0.14 s visible anticipation, then a 0.22 s lunge.
+- **Tag.** The Night Watch on foot presses Tag. There is a 0.14 s visible wind-up (the tagger keeps 60% of its speed), then a 0.22 s lunge at 8.2 m/s.
   - The lunge reaches 1.6 m within ±75° of facing and 1.5 m vertically, and needs line of sight from chest to chest.
   - A miss gives a 0.9 s cooldown; a hit gives a 0.5 s recovery.
   - Tagging is blocked for 0.5 s after leaving a cart, which prevents instant dismount tags.
@@ -86,9 +86,16 @@ The fixed per-tick order is: timers → intents → movement → **finish** → 
 | Sprint | 7 m/s, from a meter of 2.5 s that regenerates fully in 3.6 s after a 0.35 s delay (no wait after small actions) |
 | Jump | Jump with 0.12 s coyote time and a 0.13 s jump buffer |
 | Dive | Press jump again in the air: an 8.6 m/s forward dive with a short landing |
-| Night Watch on foot | 5.6 m/s |
+| Night Watch on foot | 6.2 m/s (see the tuning note below) |
 
 Ground acceleration is high and turning is fast, so movement stays precise while the animation is silly.
+
+**Tuning note: Night Watch foot speed went from 5.6 to 6.2 m/s, and wind-up speed from 25% to 60%.** Bot playtests showed the old values made foot chases unwinnable.
+- **Why 5.6 failed.** A runner who manages the sprint meter averages about 5.8 m/s: 2.5 s at 7 m/s, then about 4 s at 5 m/s while it refills. That is faster than 5.6.
+- **What the bots showed.** In a recorded practice round the Night Watch bot followed a runner at 1–2 m for over 20 s without ever landing a tag. The heavy wind-up slowdown made every lunge from behind fall short.
+- **Headless trials.** A Night Watch bot chased a fleeing runner bot from 8 m on open lawn. The old tuning caught the runner in 1 of 5 valid trials; the new tuning caught it in 5 of 5, in 6–17 s.
+- **Escape is still possible.** A sprint still out-runs the Night Watch for its duration (`test_chase_balance`). Corners, walls, hedges, dives, water and the cart-free zones remain the runner's ways out.
+- **Not final.** These are prototype values to re-check in device playtests.
 
 ## Gadgets (runners)
 

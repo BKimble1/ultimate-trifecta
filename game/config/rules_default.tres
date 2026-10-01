@@ -18,5 +18,5 @@ splash_marker_s = 3.0
 runner_speed = 5.0
 runner_sprint_speed = 7.0
 sprint_capacity_s = 2.5
-patrol_speed = 5.6
+patrol_speed = 6.2
 cart_max_speed_road = 11.0

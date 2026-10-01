@@ -5,6 +5,9 @@ extends RefCounted
 ## line of sight), MatchSim.noises_for (hearing), and patrol-visible splash
 ## markers. No omniscience, no teleporting.
 
+## How far beyond tag reach a patrol bot starts its wind-up.
+static var TAG_TRIGGER_SLACK := 0.6
+
 enum Mode { PLAN, TRAVEL, APPROACH_WATER, FLEE, HOME, CHASE, INVESTIGATE, PATROL_ROUTE, TO_CART, IDLE }
 
 var slot: int
@@ -356,7 +359,9 @@ func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 		else:
 			_follow(sim, p, cmd, dt, false)
 		reaction -= dt
-		if td < cfg.tag_reach_m + 0.6 and p.tag_cd <= 0.0 and p.tag_lockout <= 0.0:
+		# a sprinting runner outpaces the wind-up: wait until closer before lunging
+		var slack := TAG_TRIGGER_SLACK if not target.sprinting else 0.05
+		if td < cfg.tag_reach_m + slack and p.tag_cd <= 0.0 and p.tag_lockout <= 0.0:
 			if reaction <= 0.0:
 				cmd.pressed |= TC.BTN_TAG
 				var rel2 := target.pos() - p.pos()

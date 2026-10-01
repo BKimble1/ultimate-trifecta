@@ -153,7 +153,7 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 
 	# --- tag lunge phases (patrol)
 	if p.tag_phase == SimPlayer.TagPhase.ANTICIPATE:
-		target *= 0.25
+		target *= cfg.tag_anticipation_move_scale
 	var hv := Vector2(p.vel.x, p.vel.z)
 	var lunging := p.tag_phase == SimPlayer.TagPhase.LUNGE
 

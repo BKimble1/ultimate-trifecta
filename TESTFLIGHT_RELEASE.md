@@ -8,7 +8,7 @@
 | Bundle ID | `com.idlery.ultimatetrifecta`: the candidate ID from the brief. Whether it is already registered on your team could not be checked from here. |
 | Marketing version | `1.0` (`MARKETING_VERSION` in `.github/workflows/ios.yml`) |
 | Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`); without it, the GitHub run number. It can be overridden with the `build_number` workflow input. |
-| Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape |
+| Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape left/right (all verified in the CI archive's Info.plist, run 4) |
 | Capabilities | Game Center (`com.apple.developer.game-center`) |
 | Toolchain | Godot 4.7.2-stable export; Xcode 26.6 (17F113) with the iOS 26 SDK on the `macos-26` GitHub runner (verified in CI run 3). Apple requires the iOS 26 SDK for uploads from April 28, 2026. |
 
@@ -88,7 +88,7 @@ These answers are based on what the build actually contains; please confirm them
   - The engine binary contains camera, microphone and photo-library code paths that the game never calls. Godot's export would otherwise write empty purpose strings for them, so they carry explicit "does not use" text.
   - There are no requests for contacts, location, camera, microphone, photos or tracking.
   - `NSUserTrackingUsageDescription` is absent, and `privacy/tracking_enabled=false`.
-- **Privacy manifest.** Godot's iOS export generates `PrivacyInfo.xcprivacy` for the engine's required-reason API use. The CI "Build facts" step prints the manifest found in the exported project and archive.
+- **Privacy manifest** (confirmed in CI run 4). The archive contains Godot's `PrivacyInfo.xcprivacy`, with `NSPrivacyTracking false` and required-reason API declarations: file timestamp (DDA9.1, C617.1), system boot time (35F9.1) and disk space (E174.1, 85F4.1). It declares no collected data types. The two GodotApplePlugins frameworks carry no manifest of their own: only the app-level file was found in the bundle. They are not on Apple's list of SDKs that require one.
 - **Data handling** (for the App Privacy questionnaire, needed before any App Store submission but not for internal TestFlight):
   - The game has no developer server, analytics, ads or crash reporting.
   - Game Center identity (player ID and display name) is used on-device and shared with the other players in your room through Game Center.
