@@ -98,12 +98,14 @@ func push_modal(node: Control, on_cancel: Callable) -> void:
 
 
 func _on_modal_closed(node: Control) -> void:
-	var prev: Control = null
+	var prev: Variant = null     # untyped: the opener may already be freed
 	for i in range(_modals.size() - 1, -1, -1):
 		if _modals[i]["node"] == node:
 			prev = _modals[i]["prev"]
 			_modals.remove_at(i)
 			break
+	if not is_instance_valid(prev):
+		prev = null
 	# a sheet that opened a dialog and then closed: the dialog returns focus
 	# to whatever opened the sheet
 	for m in _modals:
@@ -116,8 +118,8 @@ func _on_modal_closed(node: Control) -> void:
 	if is_queued_for_deletion() or not is_inside_tree():
 		return
 	(func() -> void:
-		if is_instance_valid(prev) and prev.is_inside_tree() and prev.is_visible_in_tree():
-			prev.grab_focus()
+		if is_instance_valid(prev) and (prev as Control).is_inside_tree() and (prev as Control).is_visible_in_tree():
+			(prev as Control).grab_focus()
 		elif _modals.is_empty() and is_instance_valid(_first_focus) and _first_focus.is_inside_tree():
 			_first_focus.grab_focus()).call_deferred()
 

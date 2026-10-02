@@ -19,7 +19,7 @@ const MARKS := [
 	Vector3(-1.12, 0, 0.9), Vector3(1.12, 0, 0.9),
 	Vector3(-0.62, 0, -0.2), Vector3(0.62, 0, -0.2),
 	Vector3(-2.15, 0, 0.42), Vector3(2.15, 0, 0.42),
-	Vector3(1.72, 0, -0.5),
+	Vector3(1.78, 0, -0.62),
 ]
 ## each character turns a little toward the group's centre
 const YAW_BIAS := [0.0, 0.2, -0.2, 0.12, -0.12, 0.32, -0.32, -0.1]
@@ -80,14 +80,19 @@ func _cam_for(m: String) -> Array:
 		subject = Vector3((b.x + b.y) * 0.5, subject.y, (b.z + b.w) * 0.5)
 		var group_w := b.y - b.x + BODY_HALF_W * 2.0
 		x_frac = lobby_free_frac * 0.5
-		height_m = maxf(2.6 + 0.35 * (b.w - b.z), (group_w * 1.12 / lobby_free_frac) / aspect)
+		height_m = maxf(2.6 + 0.35 * (b.w - b.z), (group_w * 1.3 / lobby_free_frac) / aspect)
 		# the camera rises with the depth of the group so back-row faces clear the front row
-		cam_h = 1.5 + 1.6 * clampf((b.w - b.z) / 1.6, 0.0, 1.0)
+		cam_h = 1.5 + 1.9 * clampf((b.w - b.z) / 1.7, 0.0, 1.0)
 	var dist := height_m * 0.5 / tan(deg_to_rad(fov) * 0.5)
 	var width_m := height_m * aspect
 	var shift := (0.5 - x_frac) * width_m      # look right of the subject
 	var at := subject + Vector3(shift, 0, 0)
-	var from := Vector3(at.x, cam_h, subject.z + sqrt(maxf(0.01, dist * dist - pow(cam_h - subject.y, 2.0))))
+	# home/wardrobe: the camera sits right of the character and looks straight
+	# ahead.  Lobby: it stays in front of the group's centre and turns toward
+	# the same aim point, so the staggered back row is seen *between* the
+	# front row (from the side, back-row faces fell behind front heads)
+	var cam_x := subject.x if m == "lobby" else at.x
+	var from := Vector3(cam_x, cam_h, subject.z + sqrt(maxf(0.01, dist * dist - pow(cam_h - subject.y, 2.0))))
 	return [from, at, fov]
 
 

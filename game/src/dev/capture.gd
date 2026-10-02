@@ -6,6 +6,8 @@ extends Node
 ## game state (screen shown, player state transitions, events), plus a diag
 ## report of the measured render path next to them. Scenarios:
 ##   home      title screen, then the wardrobe
+##   creator   a scripted tour of Create Your Runner (tabs, items, colours,
+##             Run/Idle preview, turning); nothing is applied or saved
 ##   account   first-launch Create Your Runner + name sheet, Settings >
 ##             Profile, the Delete Game Profile confirmation (nothing saved)
 ##   lobby     a LAN room; waits for --capture-players=N humans (others are
@@ -86,6 +88,8 @@ func _process(delta: float) -> void:
 			_screens()
 		"account":
 			_account()
+		"creator":
+			_creator_tour()
 		"lobby":
 			_lobby()
 		"runner", "patrol":
@@ -103,6 +107,42 @@ func _home() -> void:
 		later(3.0, "wardrobe")
 	elif _t > 12.0 and _shots.has("wardrobe"):
 		get_tree().quit()
+
+
+const CREATOR_TOUR := [
+	[1.5, "open"], [3.0, "pick", "outfit", "robe"], [4.5, "pick", "pattern", "plain"], [6.0, "tab", 1],
+	[7.0, "pick", "color", "coral"], [8.0, "pick", "trim", "gold"], [9.0, "tab", 1], [10.0, "pick", "face", "bright"],
+	[11.0, "tab", 1], [12.0, "pick", "hair", "bob"], [13.0, "pick", "hair_color", "auburn"], [14.0, "tab", 1],
+	[15.0, "pick", "hat", "none"], [16.0, "run"], [19.0, "turn"], [22.0, "run"], [24.0, "end"],
+]
+
+
+func _creator_tour() -> void:
+	for step in CREATOR_TOUR:
+		var key := "tour_%s" % str(step)
+		if _t < float(step[0]) or _scheduled.has(key):
+			continue
+		_scheduled[key] = true
+		var c: CreatorScreen = App.screen as CreatorScreen
+		match String(step[1]):
+			"open":
+				App.goto(CreatorScreen)
+			"pick":
+				if c and Cosmetics.CATALOG.get(String(step[2]), {}).has(String(step[3])):
+					c._pick(String(step[2]), String(step[3]))
+			"tab":
+				if c:
+					c._step_tab(int(step[2]))
+			"run":
+				if c:
+					c.run_btn.pressed.emit()
+			"turn":
+				if c:
+					var tw := c.create_tween()
+					for i in 60:
+						tw.tween_callback(c.drag_turn.bind(9.0)).set_delay(1.0 / 30.0)
+			"end":
+				get_tree().quit()
 
 
 func _account() -> void:

@@ -65,19 +65,32 @@ func test_stage_updates_incrementally_through_drop_and_rejoin() -> void:
 
 
 func test_eight_players_fit_on_distinct_marks() -> void:
-	for n in [1, 2, 4, 8]:
-		await _check_party(n)
+	# phone (19.5:9), iPhone SE (16:9) and iPad (4:3) aspects; looks include
+	# tall hats (crowns, mascot hoods) as well as the bots' random looks
+	for size in [Vector2i(2532, 1170), Vector2i(1334, 750), Vector2i(2048, 1536)]:
+		for n in [1, 2, 4, 8]:
+			await _check_party(n, size, false)
+		await _check_party(8, size, true)
 
 
 ## n players on stage: distinct marks, all in view, every face clear of the
 ## heads and caps in front (V3: checked at 1, 2, 4 and 8).
-func _check_party(n: int) -> void:
+func _check_party(n: int, size: Vector2i = Vector2i(2532, 1170), tall_hats: bool = false) -> void:
+	var vp := SubViewport.new()
+	vp.size = size
+	vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	t.add_child(vp)
 	var stage := DormStage.new()
-	t.add_child(stage)
+	vp.add_child(stage)
 	stage.set_mode("lobby", false)
 	var entries: Array = []
 	for i in n:
-		entries.append({"key": "p%d" % i, "role": TC.Role.RUNNER, "cosmetic": Cosmetics.bot_cosmetic(i), "name": "Player %d" % i,
+		var look := Cosmetics.bot_cosmetic(i)
+		if tall_hats:
+			look["hat"] = ["crown", "party", "headphones", "nightcap"][i % 4]
+			if i % 3 == 1:
+				look["outfit"] = "frog"
+		entries.append({"key": "p%d" % i, "role": TC.Role.RUNNER, "cosmetic": Cosmetics.sanitize(look), "name": "Player %d" % i,
 			"is_bot": false, "local": i == 0})
 	stage.sync_party(entries)
 	var marks := {}
@@ -94,7 +107,8 @@ func _check_party(n: int) -> void:
 	var inside := 0
 	for k in stage.chars:
 		var v: CharacterView = stage.chars[k]
-		if cam.is_position_in_frustum(v.global_position + Vector3(0, 0.8, 0)) and cam.is_position_in_frustum(v.global_position + Vector3(0, 1.5, 0)):
+		var pts := [Vector3(0, 0.8, 0), Vector3(0, 1.5, 0), Vector3(-0.5, 0.9, 0), Vector3(0.5, 0.9, 0)]   # body, head, both shoulders/arms
+		if pts.all(func(p: Vector3) -> bool: return cam.is_position_in_frustum(v.global_position + cam.global_transform.basis * Vector3(p.x, 0, 0) + Vector3(0, p.y, 0))):
 			inside += 1
 	t.eq(inside, n, "%d players: all in view" % n)
 	# readable: no face is covered by a nearer character's head or cap
@@ -115,13 +129,13 @@ func _check_party(n: int) -> void:
 				var r := cp.distance_to(cam.unproject_position(c + cam.global_transform.basis.x * float(blob[1])))
 				if fa.distance_to(cp) < r:
 					hidden.append("%s behind %s" % [a, b])
-	t.eq(hidden, [], "%d players: every face is visible (none behind a nearer head or cap)" % n)
+	t.eq(hidden, [], "%d players at %s%s: every face is visible (none behind a nearer head or cap)" % [n, size, " (tall hats)" if tall_hats else ""])
 	# the local player stands front and centre, facing the camera
 	var lv: CharacterView = stage.chars["p0"]
 	var to_cam := (cam.global_position - lv.global_position) * Vector3(1, 0, 1)
 	var fwd := -lv.global_transform.basis.z
 	t.check(fwd.normalized().dot(to_cam.normalized()) > 0.8, "%d players: local player faces the camera" % n)
-	stage.queue_free()
+	vp.queue_free()
 
 
 func test_slot_cell_contents_stay_inside_the_cell() -> void:

@@ -162,7 +162,7 @@ func _toggle_board() -> void:
 		grid.add_child(UIKit.label(h, 16, UIKit.IVORY_MUTED, true))
 	var my_slot := session.local_slot if session else -1
 	var rows: Array = results.get("players", []).duplicate()
-	rows.sort_custom(func(a, b): return [int(a["role"]), -int(a.get("stamps", 0)) - (10 if bool(a.get("finished", false)) else 0)] < [int(b["role"]), -int(b.get("stamps", 0)) - (10 if bool(b.get("finished", false)) else 0)])
+	rows.sort_custom(func(a, b): return _board_key(a) < _board_key(b))
 	var name_w := clampf(vs.x * 0.2, 170.0, 240.0)
 	for r in rows:
 		var me := int(r["slot"]) == my_slot
@@ -178,6 +178,14 @@ func _toggle_board() -> void:
 	focus_first(close)
 	close.call_deferred("grab_focus")
 	UIKit.appear(sheet, Vector2.ZERO, UIKit.T_FAST)
+
+
+## Runners first, in the order they got home, then by splashes; then the
+## Night Watch by different runners caught.
+static func _board_key(r: Dictionary) -> Array:
+	var fin := bool(r.get("finished", false))
+	var order := int(r.get("finish_order", 0)) if fin else 99
+	return [int(r["role"]), order, -int(r.get("stamps", 0)), -int(r.get("unique_captures", 0)), int(r["slot"])]
 
 
 func _go_back() -> void:

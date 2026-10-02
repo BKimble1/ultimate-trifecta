@@ -188,3 +188,30 @@ func test_session_is_reused_and_renewed_once_when_expired() -> void:
 	t.eq(calls.map(func(c: Array) -> String: return String(c[1]) if c.size() > 1 else String(c[0])),
 		["/v1/me/appearance", "identity", "/v1/auth/gamecenter", "/v1/me/appearance"], "expired session renewed once, then retried")
 	await _end()
+
+
+func test_report_and_block_requests_match_the_service_contract() -> void:
+	_begin()
+	_fake_service()
+	var inner: Callable = Cloud.transport_override
+	Cloud.transport_override = func(method: int, path: String, body: Variant, headers: PackedStringArray) -> Dictionary:
+		if path == "/v1/reports" or path == "/v1/blocks" or path.begins_with("/v1/blocks/"):
+			calls.append([method, path, body, true])
+			return {"status": 200, "body": {"ok": true, "receipt": "R-ABC123"}}
+		return inner.call(method, path, body, headers)
+	# every reason the lobby offers is one the service accepts
+	var service_reasons := ["name", "harassment", "cheating", "inappropriate", "other"]
+	for rr in LobbyScreen.REPORT_REASONS:
+		t.check(service_reasons.has(String(rr[0])), "report reason %s is accepted by the service" % rr[0])
+	var r: Dictionary = await Cloud.report("p_target", "harassment", "x".repeat(900), {"room_code": "ACD347", "build": App.build_number()})
+	t.check(bool(r.get("ok", false)) and String(r.get("receipt", "")) == "R-ABC123", "report returns the receipt")
+	var rep: Array = calls.filter(func(c: Array) -> bool: return c.size() > 1 and String(c[1]) == "/v1/reports")[0]
+	t.eq(rep[0], HTTPClient.METHOD_POST, "POST /v1/reports")
+	t.eq(String(rep[2]["profile_id"]), "p_target", "target is the opaque profile id")
+	t.eq(String(rep[2]["details"]).length(), 500, "details bounded to 500 characters")
+	t.eq(String(rep[2]["context"]["room_code"]), "ACD347", "room code included as context")
+	await Cloud.block("p_target")
+	await Cloud.unblock("p_target")
+	var paths := calls.filter(func(c: Array) -> bool: return c.size() > 1 and String(c[1]).begins_with("/v1/blocks")).map(func(c: Array) -> Array: return [c[0], c[1]])
+	t.eq(paths, [[HTTPClient.METHOD_POST, "/v1/blocks"], [HTTPClient.METHOD_DELETE, "/v1/blocks/p_target"]], "block and unblock endpoints")
+	await _end()
