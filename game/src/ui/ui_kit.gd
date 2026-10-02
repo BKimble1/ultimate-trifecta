@@ -390,6 +390,12 @@ static func toast(parent: Control, text: String, seconds: float = 1.8) -> void:
 
 ## Safe-area margins in canvas units (notch / home indicator aware).
 static func safe_margins(vp: Viewport) -> Rect2:
+	var emu := emulated_safe_points()
+	if emu.size != Vector2.ZERO or emu.position != Vector2.ZERO:
+		# desktop evidence of a notched phone: insets given in points
+		var u := units_per_point()
+		return Rect2(Vector2(maxf(emu.position.x * u, 16.0), maxf(emu.position.y * u, 12.0)),
+			Vector2(maxf(emu.size.x * u, 16.0), maxf(emu.size.y * u, 12.0)))
 	var win := DisplayServer.window_get_size()
 	var safe := DisplayServer.get_display_safe_area()
 	var vsize := vp.get_visible_rect().size
@@ -402,6 +408,38 @@ static func safe_margins(vp: Viewport) -> Rect2:
 	var right := maxf(float(win.x - safe.end.x) * sx, 16.0)
 	var bottom := maxf(float(win.y - safe.end.y) * sy, 12.0)
 	return Rect2(Vector2(left, top), Vector2(right, bottom))
+
+
+## The safe area as a rect in canvas units (for a control of `view` size).
+static func safe_rect(vp: Viewport, view: Vector2) -> Rect2:
+	var m := safe_margins(vp) if vp != null else Rect2(Vector2(16, 12), Vector2(16, 12))
+	return Rect2(m.position, view - m.position - m.size)
+
+
+## Canvas units per iOS point on this device (TouchLayout.units_per_point):
+## the device's point scale over its pixels per canvas unit.  Desktop runs
+## act as a 390-pt-tall phone unless --emulate-phone gives the scale.
+static func units_per_point() -> float:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return 720.0 / 390.0
+	var c2px := tree.root.get_final_transform().get_scale().y
+	if OS.has_feature("mobile"):
+		return TouchLayout.units_per_point(c2px, maxf(DisplayServer.screen_get_scale(), 2.0))
+	if emulate_phone():
+		return TouchLayout.units_per_point(c2px, emulated_point_scale())
+	return 720.0 / 390.0
+
+
+## --emulate-safe=L,T,R,B (points): desktop captures of notched phones,
+## e.g. 59,0,59,21 for a Dynamic Island iPhone in landscape.
+static func emulated_safe_points() -> Rect2:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--emulate-safe="):
+			var v := a.get_slice("=", 1).split(",")
+			if v.size() == 4:
+				return Rect2(Vector2(v[0].to_float(), v[1].to_float()), Vector2(v[2].to_float(), v[3].to_float()))
+	return Rect2()
 
 
 ## Icon (+ caption) drawn inside an icon_button.

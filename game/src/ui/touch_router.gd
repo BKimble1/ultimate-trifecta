@@ -26,6 +26,10 @@ const KIND_BUTTON := 3
 
 var view_size := Vector2(1280, 720)
 var stick_zone_frac := 0.45          # left part of the screen that spawns the stick
+## The dynamic stick's zone in screen space (TouchLayout: that side of the
+## screen below the top HUD band, mirrored layouts on the right).  Empty =
+## the left stick_zone_frac of the view.
+var stick_zone := Rect2()
 var stick_radius := 92.0             # canvas units
 var fixed_stick := false
 var fixed_center := Vector2(200, 520)
@@ -33,7 +37,7 @@ var dead_zone := 0.12                # radial, fraction of the radius
 var sprint_on := 0.88                # edge-sprint hysteresis (fraction of radius)
 var sprint_off := 0.76
 var edge_sprint := true
-var buttons: Dictionary = {}         # name -> {"c": Vector2, "r": float}
+var buttons: Dictionary = {}         # name -> {"c": Vector2, "r": float, "hit": float (optional)}
 var reserved: Array[Rect2] = []      # HUD regions that are not camera/stick
 
 var owners: Dictionary = {}          # pointer index -> {"kind": int, "btn": String}
@@ -45,12 +49,22 @@ var look_px := Vector2.ZERO          # unscaled screen pixels since last consume
 var _edges: Array[String] = []       # button press edges, consumed once
 
 
+func zone() -> Rect2:
+	if stick_zone.has_area():
+		return stick_zone
+	return Rect2(0.0, 0.0, view_size.x * stick_zone_frac, view_size.y)
+
+
 func spawn_center_for(p: Vector2) -> Vector2:
 	if fixed_stick:
 		return fixed_center
-	# keep the whole ring on screen and inside the stick zone
+	# keep the whole ring on screen and inside the stick zone (a screen edge
+	# keeps the full ring clear; the inner side may overlap by half)
+	var z := zone()
 	var m := stick_radius + 16.0
-	return Vector2(clampf(p.x, m, view_size.x * stick_zone_frac - m * 0.5), clampf(p.y, view_size.y * 0.32, view_size.y - m))
+	var lo := z.position.x + (m if z.position.x <= 0.5 else m * 0.5)
+	var hi := z.end.x - (m if z.end.x >= view_size.x - 0.5 else m * 0.5)
+	return Vector2(clampf(p.x, lo, maxf(lo, hi)), clampf(p.y, view_size.y * 0.32, view_size.y - m))
 
 
 func hit_button(p: Vector2) -> String:
@@ -59,7 +73,7 @@ func hit_button(p: Vector2) -> String:
 	for name in buttons:
 		var b: Dictionary = buttons[name]
 		var d := p.distance_to(b["c"])
-		if d <= float(b["r"]) + 14.0 and d < best_d:
+		if d <= float(b.get("hit", float(b["r"]) + 14.0)) and d < best_d:
 			best = name
 			best_d = d
 	return best
@@ -83,7 +97,7 @@ func touch_down(index: int, p: Vector2) -> void:
 	if in_reserved(p):
 		owners[index] = {"kind": KIND_NONE, "btn": ""}
 		return
-	if p.x < view_size.x * stick_zone_frac and stick_index < 0:
+	if zone().has_point(p) and stick_index < 0:
 		owners[index] = {"kind": KIND_STICK, "btn": ""}
 		stick_index = index
 		stick_center = spawn_center_for(p)

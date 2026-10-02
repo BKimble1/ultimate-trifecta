@@ -1,16 +1,23 @@
 class_name TouchControls
 extends CanvasLayer
-## On-screen match controls.  Ownership and gesture rules live in
-## TouchRouter (pure, unit-tested); this layer lays out the context buttons,
-## feeds touch events to the router, writes intent to Controls and draws.
+## On-screen match controls (V4 rebuild).
+##  - Geometry: TouchLayout (pure) - sizes in points, clusters anchored to
+##    the safe area, per-context action anchors from the Layout editor.
+##  - Ownership and gestures: TouchRouter (pure) - one owner per finger,
+##    move + look + action together, ordered press queue via Controls.
+##  - This layer only feeds events to the router, writes intent to Controls
+##    and draws.  Hit testing and drawing use the same resolved positions
+##    (mirroring and safe insets included), so what you see is what you hit.
 ##
-## Layout (standard; "mirrored" swaps sides):
-##   left   movement stick (dynamic by default, optional fixed)
-##   right  Jump (Dive while airborne), Sprint (hold-to-sprint mode only),
-##          Gadget when carrying one; Night Watch: Tag + contextual Drive
-##   cart   left steers, right Gas / Brake, small Exit
-## Cancels every touch on focus loss, backgrounding, pause, scene change,
-## role/state change (via the button set) and when a controller takes over.
+## Contexts (action cluster, right thumb by default):
+##   runner  Jump (Dive in the air) primary; Gadget and hold-Sprint in fixed slots
+##   patrol  Tag primary (lights up when a runner is in reach); Jump beside it;
+##           Drive appears in its own reserved slot near a cart
+##   cart    Gas primary, Brake beside it, a small separate Exit
+##   watch   Next / Cheer while spectating or after finishing
+## The layout is recomputed only when the view, safe area, context, visible
+## set or settings change.  Every touch is cancelled on focus loss,
+## backgrounding, pause, scene change and when a controller takes over.
 
 var mc: MatchController
 var surface: TouchSurface
@@ -41,7 +48,81 @@ func cancel_all() -> void:
 ## HUD regions (canvas rects) that must never start a stick or camera drag.
 func set_reserved(rects: Array[Rect2]) -> void:
 	if surface:
-		surface.router.reserved = rects
+		surface.set_reserved(rects)
+
+
+## The saved layout (migrating the V3 button size / mirrored settings).
+static func saved_layout() -> Dictionary:
+	return TouchLayout.sanitize(Save.get_setting("touch_layout_v2", null), float(Save.get_setting("button_size", 1.0)),
+		String(Save.get_setting("touch_layout", "standard")) == "mirrored")
+
+
+## Labels per button name (the editor shows the same ones).
+const LABELS := {"jump": "Jump", "tag": "Tag", "gadget": "Gadget", "cart": "Drive", "gas": "Gas", "brake": "Brake",
+	"next": "Next", "cheer": "Cheer", "sprint": "Sprint"}
+const ICONS := {"tag": "whistle", "cart": "cart", "next": "eye", "cheer": "star", "sprint": "bolt"}
+const COLORS := {"jump": "teal", "tag": "patrol", "gadget": "amber", "gas": "good", "brake": "bad", "cart": "patrol", "sprint": "amber"}
+
+
+static func button_color(name: String) -> Color:
+	match String(COLORS.get(name, "")):
+		"teal": return Color(UIKit.TEAL, 0.62)
+		"patrol": return Color(UIKit.PATROL, 0.72)
+		"amber": return Color(UIKit.AMBER, 0.68)
+		"good": return Color(UIKit.GOOD, 0.62)
+		"bad": return Color(UIKit.BAD, 0.6)
+	return Color(UIKit.SLATE, 0.62)
+
+
+## Draws one button exactly where it is hit-tested.  `state`: pressed,
+## ready (glow), busy (0..1 cooldown remaining), off (unavailable).
+static func draw_button(ci: CanvasItem, b: Dictionary, name: String, label: String, icon: String, opacity: float, state: Dictionary = {}) -> void:
+	var center: Vector2 = b["c"]
+	var r: float = b["r"]
+	var col := button_color(name)
+	var pressed := bool(state.get("pressed", false))
+	var off := bool(state.get("off", false))
+	if pressed:
+		col = col.lightened(0.25)
+		r *= 0.95
+	if off:
+		col = Color(UIKit.SLATE, 0.45)
+	col.a *= opacity
+	if bool(state.get("ready", false)) and not off:
+		# a soft ring that breathes: in reach, press now
+		var pulse := 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) / 1000.0 * TAU * 1.6)
+		ci.draw_arc(center, r + 7.0 + 3.0 * pulse, 0, TAU, 56, Color(UIKit.AMBER, (0.55 + 0.35 * pulse) * opacity), 5.0, true)
+	ci.draw_circle(center, r, col)
+	ci.draw_arc(center, r, 0, TAU, 48, Color(UIKit.IVORY, 0.7 * opacity), 2.5, true)
+	var busy := float(state.get("busy", 0.0))
+	if busy > 0.01:
+		ci.draw_arc(center, r - 5.0, -PI * 0.5, -PI * 0.5 + TAU * busy, 48, Color(UIKit.NAVY, 0.75 * opacity), 7.0, true)
+	var f := UIKit.font_w(650)
+	var text_col := Color(UIKit.IVORY, (0.55 if off else 1.0) * clampf(opacity + 0.15, 0.0, 1.0))
+	if icon != "":
+		Icons.draw_shape(ci, icon, center - Vector2(0, r * 0.16), r * 0.3, text_col)
+	var fs := int(clampf(r * 0.3, 16.0, 26.0))
+	var tw := f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	ci.draw_string(f, center + Vector2(-tw * 0.5, r * 0.46 if icon != "" else fs * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, text_col)
+
+
+## The stick: base ring, the sprint threshold ring (runners, edge sprint)
+## and the knob.
+static func draw_stick(ci: CanvasItem, base: Vector2, knob: Vector2, R: float, knob_r: float, opacity: float, active: bool,
+		sprint_ring: float = 0.0, sprinting: bool = false, meter: float = -1.0) -> void:
+	var a := (0.9 if active else 0.42) * opacity
+	ci.draw_circle(base, R, Color(UIKit.NAVY, 0.3 * a))
+	ci.draw_arc(base, R, 0, TAU, 56, Color(UIKit.IVORY, 0.42 * a), 2.5, true)
+	if sprint_ring > 0.0:
+		# where edge-sprint begins: a dotted ring inside the rim
+		var rr := R * sprint_ring
+		for i in 24:
+			var a0 := TAU * float(i) / 24.0
+			ci.draw_arc(base, rr, a0, a0 + TAU / 48.0, 4, Color(UIKit.AMBER if sprinting else UIKit.IVORY, (0.8 if sprinting else 0.32) * a), 2.0, true)
+	if meter >= 0.0:
+		var col := UIKit.AMBER if meter > 0.15 else UIKit.BAD
+		ci.draw_arc(base, R + 8, -PI * 0.5, -PI * 0.5 + TAU * meter, 48, Color(col, (0.75 if sprinting else 0.4) * opacity), 5.0, true)
+	ci.draw_circle(knob, knob_r, Color(UIKit.AMBER, 0.9 * opacity) if sprinting else Color(UIKit.IVORY, (0.45 * a + 0.2)))
 
 
 class TouchSurface:
@@ -50,14 +131,19 @@ class TouchSurface:
 	var router := TouchRouter.new()
 	var spectate_req := false
 	var t := 0.0
+	var layout: Dictionary = {}
+	var res: Dictionary = {}          # TouchLayout.resolve result in use
+	var _sig := ""
 	var _was_in_cart := false
-	var _scale := 1.0
-	var _mirror := false
 	var _hold_sprint := false
+	var _reserved: Array[Rect2] = []
+	var _ctx_cache: Dictionary = {}
+	var layout_builds := 0            # tests: how often the layout was recomputed
 
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_PASS
 		_read_settings()
+		Save.changed.connect(_read_settings)
 
 	func _read_settings() -> void:
 		router.fixed_stick = String(Save.get_setting("stick_mode", "dynamic")) == "fixed"
@@ -65,9 +151,16 @@ class TouchSurface:
 		router.edge_sprint = not _hold_sprint and bool(Save.get_setting("touch_sprint", true))
 		router.sprint_on = float(Save.get_setting("sprint_threshold", 0.88))
 		router.sprint_off = router.sprint_on - 0.12
-		_scale = float(Save.get_setting("button_size", 1.0))
-		_mirror = String(Save.get_setting("touch_layout", "standard")) == "mirrored"
-		router.stick_radius = 92.0 * clampf(_scale, 0.85, 1.25)
+		var l := TouchControls.saved_layout()
+		if l != layout:
+			layout = l
+			_sig = ""
+
+	func set_reserved(rects: Array[Rect2]) -> void:
+		if rects != _reserved:
+			_reserved = rects
+			router.reserved = rects
+			_sig = ""
 
 	func _notification(what: int) -> void:
 		match what:
@@ -90,16 +183,18 @@ class TouchSurface:
 	func _process(delta: float) -> void:
 		t += delta
 		router.view_size = size
-		var zone := 0.45
-		router.stick_zone_frac = zone
-		_layout_buttons()
-		_apply()
+		_ctx_cache = _ctx()
+		_layout_buttons(_ctx_cache)
+		_apply(_ctx_cache)
 		queue_redraw()
 
 	func _show() -> bool:
 		return Controls.device == "touch"
 
 	func _ctx() -> Dictionary:
+		if mc == null:
+			return {"st": TC.PState.ACTIVE, "role": TC.Role.RUNNER, "in_cart": false, "near_cart": false, "gadget": 0,
+				"phase": TC.Phase.PLAYING, "airborne": false, "watching": false, "tag_ready": false, "tag_busy": 0.0}
 		var info: Dictionary = mc.hud.info if mc.hud else {}
 		var rs: Dictionary = info.get("rs", {})
 		var st: int = rs.get("state", TC.PState.ACTIVE)
@@ -112,87 +207,81 @@ class TouchSurface:
 				if crs.has("pos") and not bool(crs.get("occupied", false)) and (crs["pos"] as Vector3).distance_to(rs["pos"]) < mc.cfg.cart_enter_range_m + 1.2 and absf(float(crs.get("speed", 0.0))) < mc.cfg.cart_enter_max_speed:
 					near_cart = true
 		return {"st": st, "role": role, "in_cart": in_cart, "near_cart": near_cart, "gadget": int(info.get("gadget", 0)),
-			"phase": int(info.get("phase", 0)), "airborne": not bool(rs.get("on_floor", true)), "watching": mc.spectate_slot >= 0}
+			"phase": int(info.get("phase", 0)), "airborne": not bool(rs.get("on_floor", true)),
+			"watching": mc.spectate_slot >= 0 or st == TC.PState.FINISHED,
+			"tag_ready": bool(info.get("tag_ready", false)), "tag_busy": float(info.get("tag_busy", 0.0))}
 
-	## Button centre measured from the bottom-right (or bottom-left when mirrored).
-	func _at(right: float, bottom: float, dx: float, dy: float) -> Vector2:
-		if _mirror:
-			var left := UIKit.safe_margins(get_viewport()).position.x
-			return Vector2(left + dx * _scale, bottom - dy * _scale)
-		return Vector2(right - dx * _scale, bottom - dy * _scale)
-
-	func _layout_buttons() -> void:
-		var vs := size
-		var safe := UIKit.safe_margins(get_viewport())
-		var right := vs.x - safe.size.x
-		var bottom := vs.y - safe.size.y
-		var c := _ctx()
-		var b := {}
-		var s := _scale
+	## Which buttons of the context are showing now (slots never move).
+	func visible_set(c: Dictionary) -> Array:
+		var ctx := TouchLayout.context_for(c["role"], c["in_cart"], c["watching"])
 		var playing: bool = c["phase"] == TC.Phase.PLAYING
-		if c["watching"] or c["st"] == TC.PState.FINISHED:
-			b["next"] = {"c": _at(right, bottom, 96, 96), "r": 60.0 * s, "label": "Next", "icon": "eye"}
-			b["cheer"] = {"c": _at(right, bottom, 236, 72), "r": 50.0 * s, "label": "Cheer", "icon": "star"}
-		elif c["in_cart"]:
-			b["gas"] = {"c": _at(right, bottom, 98, 118), "r": 78.0 * s, "label": "Gas", "icon": ""}
-			b["brake"] = {"c": _at(right, bottom, 262, 78), "r": 60.0 * s, "label": "Brake", "icon": ""}
-			b["cart"] = {"c": _at(right, bottom, 84, 292), "r": 44.0 * s, "label": "Exit", "icon": "cart"}
-		elif playing:
-			b["jump"] = {"c": _at(right, bottom, 104, 104), "r": 74.0 * s, "label": "Dive" if bool(c["airborne"]) and c["role"] == TC.Role.RUNNER else "Jump", "icon": ""}
-			if c["role"] == TC.Role.PATROL:
-				if c["st"] == TC.PState.ACTIVE:
-					b["tag"] = {"c": _at(right, bottom, 272, 86), "r": 62.0 * s, "label": "Tag", "icon": "whistle"}
+		match ctx:
+			"watch":
+				return ["next", "cheer"]
+			"cart":
+				return ["gas", "brake", "cart"]
+			"patrol":
+				if not playing:
+					return []
+				# Tag always shows (greyed while it can't be used, e.g. the
+				# head start), so the primary never leaves a hole
+				var out := ["jump", "tag"]
 				if c["near_cart"]:
-					b["cart"] = {"c": _at(right, bottom, 122, 286), "r": 52.0 * s, "label": "Drive", "icon": "cart"}
-			else:
-				if c["gadget"] != TC.Gadget.NONE:
-					b["gadget"] = {"c": _at(right, bottom, 266, 92), "r": 56.0 * s, "label": TC.GADGET_NAMES.get(c["gadget"], ""), "icon": Icons.gadget_icon(c["gadget"])}
-				if _hold_sprint:
-					b["sprint"] = {"c": _at(right, bottom, 108, 280), "r": 52.0 * s, "label": "Sprint", "icon": "bolt"}
-		router.set_buttons(b)
+					out.append("cart")
+				return out
+		if not playing:
+			return []
+		var r := ["jump"]
+		if c["gadget"] != TC.Gadget.NONE:
+			r.append("gadget")
+		if _hold_sprint:
+			r.append("sprint")
+		return r
+
+	func _layout_buttons(c: Dictionary) -> void:
+		var ctx := TouchLayout.context_for(c["role"], c["in_cart"], c["watching"])
+		var vis := visible_set(c)
+		var safe := UIKit.safe_rect(get_viewport(), size)
+		var sig := "%s|%s|%s|%s|%s|%d" % [size, safe, ctx, vis, router.fixed_stick, layout.hash()]
+		if sig != _sig:
+			_sig = sig
+			layout_builds += 1
+			res = TouchLayout.resolve(layout, ctx, size, safe, UIKit.units_per_point(), _reserved)
+			var b := {}
+			for name in vis:
+				if (res["buttons"] as Dictionary).has(name):
+					b[name] = res["buttons"][name]
+			router.set_buttons(b)   # vanished buttons release their fingers
+			router.stick_radius = float(res["stick_r"])
+			router.fixed_center = res["stick_c"]
+			router.stick_zone = res["zone"]
 		if _was_in_cart and not c["in_cart"]:
 			Controls.touch_drive = 0.0
 		_was_in_cart = c["in_cart"]
-		# router space always has the stick on the left (mirrored layouts are
-		# flipped on the way in and out)
-		router.fixed_center = Vector2(maxf(safe.position.x, safe.size.x) + 170 * s, size.y - safe.size.y - 150 * s)
 
 	func _gui_input(event: InputEvent) -> void:
 		if event is InputEventScreenTouch:
 			var e := event as InputEventScreenTouch
-			var p := _mirror_point(e.position)
 			if e.pressed and not e.canceled:
-				router.touch_down(e.index, p)
+				router.touch_down(e.index, e.position)
 			else:
 				router.touch_up(e.index)
 			accept_event()
 		elif event is InputEventScreenDrag:
 			var d := event as InputEventScreenDrag
-			router.drag(d.index, _mirror_point(d.position), d.screen_relative)
+			router.drag(d.index, d.position, d.screen_relative)
 			accept_event()
 
-	## Mirrored layout: the router always works with the stick zone on the left.
-	func _mirror_point(p: Vector2) -> Vector2:
-		return Vector2(size.x - p.x, p.y) if _mirror else p
-
-	func _apply() -> void:
-		var c := _ctx()
-		# buttons are laid out in screen space; the router sees mirrored space
-		if _mirror:
-			var mb := {}
-			for k in router.buttons:
-				var bb: Dictionary = (router.buttons[k] as Dictionary).duplicate()
-				bb["c"] = _mirror_point(bb["c"])
-				mb[k] = bb
-			router.buttons = mb
+	func _apply(c: Dictionary) -> void:
 		for btn in router.take_edges():
 			match btn:
 				"jump":
 					Controls.queue_press(TC.BTN_JUMP)
 					_haptic(8)
 				"tag":
-					Controls.queue_press(TC.BTN_TAG)
-					_haptic(12)
+					if c["st"] == TC.PState.ACTIVE:
+						Controls.queue_press(TC.BTN_TAG)
+						_haptic(12)
 				"gadget":
 					Controls.queue_press(TC.BTN_GADGET)
 				"cart":
@@ -202,8 +291,6 @@ class TouchSurface:
 				"cheer":
 					Controls.request_emote(1)
 		var mv := router.move_vector()
-		if _mirror:
-			mv.x = -mv.x
 		if c["in_cart"]:
 			Controls.touch_steer = mv.x
 			Controls.touch_move = Vector2.ZERO
@@ -232,17 +319,32 @@ class TouchSurface:
 	const HINT_ACTIONS := {"jump": "jump", "tag": "tag", "gadget": "gadget", "cart": "interact", "gas": "accelerate",
 		"brake": "brake", "next": "spectate_next", "cheer": "emote_1", "sprint": "sprint"}
 
+	func label_of(name: String, c: Dictionary) -> String:
+		match name:
+			"jump":
+				return "Dive" if bool(c.get("airborne", false)) and c.get("role", 0) == TC.Role.RUNNER else "Jump"
+			"gadget":
+				return String(TC.GADGET_NAMES.get(c.get("gadget", 0), "Gadget"))
+			"cart":
+				return "Exit" if bool(c.get("in_cart", false)) else "Drive"
+		return String(TouchControls.LABELS.get(name, name.capitalize()))
+
+	func icon_of(name: String, c: Dictionary) -> String:
+		if name == "gadget":
+			return Icons.gadget_icon(int(c.get("gadget", 0)))
+		return String(TouchControls.ICONS.get(name, ""))
+
 	## Controller / keyboard: the same context actions as the touch buttons,
 	## as a compact glyph list at the bottom right (no touch buttons drawn).
 	func _draw_hints() -> void:
 		if Controls.device == "touch":
 			return
-		var c := _ctx()
+		var c := _ctx_cache
 		var rows: Array = []
 		for name in router.buttons:
 			if HINT_ACTIONS.has(name) and not (name == "sprint"):
-				rows.append([HINT_ACTIONS[name], String((router.buttons[name] as Dictionary)["label"])])
-		if c["role"] == TC.Role.RUNNER and not c["in_cart"] and c["phase"] == TC.Phase.PLAYING and not c["watching"]:
+				rows.append([HINT_ACTIONS[name], label_of(name, c)])
+		if c.get("role", 0) == TC.Role.RUNNER and not bool(c.get("in_cart", false)) and c.get("phase", 0) == TC.Phase.PLAYING and not bool(c.get("watching", false)):
 			rows.append(["sprint", "Sprint"])
 		if rows.is_empty():
 			return
@@ -266,54 +368,35 @@ class TouchSurface:
 		if not _show():
 			_draw_hints()
 			return
-		var c := _ctx()
-		var info: Dictionary = mc.hud.info if mc.hud else {}
-		var sprint: float = info.get("sprint", 1.0)
+		if res.is_empty():
+			return
+		var c := _ctx_cache
+		var info: Dictionary = mc.hud.info if mc != null and mc.hud else {}
+		var opacity := float(layout.get("opacity", 0.85))
 		var R := router.stick_radius
 		var active := router.stick_active()
-		var base := router.stick_center if active else (router.fixed_center if router.fixed_stick else Vector2(size.x * 0.15, size.y * 0.72))
+		var base: Vector2 = router.stick_center if active else (router.fixed_center if router.fixed_stick else _idle_stick())
 		var knob := base
 		if active:
 			knob = router.stick_center + (router.stick_pos - router.stick_center).limit_length(R)
-		if _mirror:
-			base = _mirror_point(base)
-			knob = _mirror_point(knob)
-		var alpha := 0.9 if active else 0.38
-		draw_circle(base, R, Color(UIKit.NAVY, 0.28 * alpha))
-		draw_arc(base, R, 0, TAU, 48, Color(UIKit.IVORY, 0.4 * alpha), 2.5, true)
-		if c["role"] == TC.Role.RUNNER and not c["in_cart"]:
-			# discreet sprint meter around the stick; brightens while sprinting
-			var col := UIKit.AMBER if sprint > 0.15 else UIKit.BAD
-			draw_arc(base, R + 8, -PI * 0.5, -PI * 0.5 + TAU * sprint, 48, Color(col, 0.75 if Controls.touch_sprint else 0.4), 5.0, true)
-		draw_circle(knob, 38, Color(UIKit.AMBER, 0.9) if Controls.touch_sprint else Color(UIKit.IVORY, 0.45 * alpha + 0.2))
-		if c["in_cart"]:
+		var runner_foot: bool = c.get("role", 0) == TC.Role.RUNNER and not bool(c.get("in_cart", false))
+		TouchControls.draw_stick(self, base, knob, R, float(res["knob_r"]), opacity, active,
+			router.sprint_on if runner_foot and router.edge_sprint else 0.0, Controls.touch_sprint,
+			float(info.get("sprint", 1.0)) if runner_foot else -1.0)
+		if bool(c.get("in_cart", false)):
 			var f0 := UIKit.font_w(650)
-			draw_string(f0, base + Vector2(-30, R + 34), "Steer", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(UIKit.IVORY, 0.75))
-		var f := UIKit.font_w(650)
+			draw_string(f0, base + Vector2(-30, R + 34), "Steer", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(UIKit.IVORY, 0.75 * opacity))
 		var held := router.held()
 		for name in router.buttons:
-			var b: Dictionary = router.buttons[name]
-			var center: Vector2 = _mirror_point(b["c"]) if _mirror else b["c"]
-			var pressed := held.has(name)
-			var col := Color(UIKit.SLATE, 0.62)
-			match name:
-				"jump": col = Color(UIKit.TEAL, 0.62)
-				"tag": col = Color(UIKit.PATROL, 0.72)
-				"gadget": col = Color(UIKit.AMBER, 0.72)
-				"gas": col = Color(UIKit.GOOD, 0.62)
-				"brake": col = Color(UIKit.BAD, 0.6)
-				"cart": col = Color(UIKit.PATROL, 0.62)
-				"sprint": col = Color(UIKit.AMBER, 0.55)
-			var r: float = b["r"]
-			if pressed:
-				col = col.lightened(0.25)
-				r *= 0.95
-			draw_circle(center, r, col)
-			draw_arc(center, r, 0, TAU, 48, Color(UIKit.IVORY, 0.7), 2.5, true)
-			var icon: String = b["icon"]
-			if icon != "":
-				Icons.draw_shape(self, icon, center - Vector2(0, 10), r * 0.3, Color(UIKit.IVORY, 0.95))
-			var label: String = b["label"]
-			var fs := 22 if r > 60 else 18
-			var tw := f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-			draw_string(f, center + Vector2(-tw * 0.5, r * 0.42 if icon != "" else 8), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UIKit.IVORY)
+			var st := {"pressed": held.has(name)}
+			if name == "tag":
+				st["off"] = c.get("st", TC.PState.ACTIVE) != TC.PState.ACTIVE
+				st["ready"] = bool(c.get("tag_ready", false))
+				st["busy"] = float(c.get("tag_busy", 0.0))
+			elif name == "gadget":
+				st["busy"] = clampf(float(info.get("gadget_cd", 0.0)) / maxf(0.1, mc.cfg.gadget_use_cooldown_s), 0.0, 1.0) if mc != null else 0.0
+			TouchControls.draw_button(self, router.buttons[name], name, label_of(name, c), icon_of(name, c), opacity, st)
+
+	## Where the dynamic stick rests while untouched: the layout's stick anchor.
+	func _idle_stick() -> Vector2:
+		return res.get("stick_c", Vector2(size.x * 0.15, size.y * 0.72))

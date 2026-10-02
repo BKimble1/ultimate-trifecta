@@ -96,6 +96,8 @@ func _process(delta: float) -> void:
 			_match()
 		"results":
 			_results()
+		"layout":
+			_layout_editor()
 
 
 func _home() -> void:
@@ -164,6 +166,48 @@ func _account() -> void:
 		later(1.0, "delete_confirm")
 	elif _t > 16.5 and _shots.has("delete_confirm"):
 		get_tree().quit()
+
+
+## Settings > Edit layout: the runner and Night Watch clusters, a dragged
+## action cluster, then Try it with two fingers down (synthetic touches
+## through the editor's own router).
+func _layout_editor() -> void:
+	var steps := [[5.0, "open"], [8.0, "patrol"], [10.5, "drag"], [13.0, "try"], [16.0, "end"]]
+	for st in steps:
+		var key := "layout_" + String(st[1])
+		if _t < float(st[0]) or _scheduled.has(key):
+			continue
+		_scheduled[key] = true
+		var ed := App.screen as TouchLayoutEditor
+		match String(st[1]):
+			"open":
+				App.goto(TouchLayoutEditor)
+				later(2.0, "layout_runner")
+			"patrol":
+				if ed:
+					ed._set_ctx("patrol")
+					later(1.0, "layout_patrol")
+			"drag":
+				if ed:
+					var c := ed.canvas
+					c._resolve()
+					var a: Vector2 = c.res["action_anchor"]
+					c._pointer(0, a, true, Vector2.ZERO, false)
+					c._pointer(0, a + Vector2(-260, -60), true, Vector2(-260, -60), true)
+					c._pointer(0, a + Vector2(-260, -60), false, Vector2.ZERO, false)
+					later(1.0, "layout_dragged")
+			"try":
+				if ed:
+					ed.try_btn.button_pressed = true
+					var c2 := ed.canvas
+					c2._resolve()
+					var z: Rect2 = c2.res["zone"]
+					c2._pointer(1, z.get_center(), true, Vector2.ZERO, false)
+					c2._pointer(1, z.get_center() + Vector2(30, -110), true, Vector2(30, -110), true)
+					c2._pointer(2, c2.res["buttons"]["tag"]["c"], true, Vector2.ZERO, false)
+					later(1.0, "layout_try")
+			"end":
+				get_tree().quit()
 
 
 ## Menu screens in turn: online sheet, practice, settings, how-to.

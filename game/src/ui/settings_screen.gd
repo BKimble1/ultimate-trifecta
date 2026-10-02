@@ -33,8 +33,18 @@ func build() -> void:
 	var first := _slider(v, "Camera sensitivity", "sensitivity", 0.3, 2.5, 0.05)
 	_choice(v, "Movement stick", "stick_mode", [["dynamic", "Appears where you touch"], ["fixed", "Fixed position"]])
 	_choice(v, "Sprint", "sprint_mode", [["edge", "Push the stick to the edge"], ["hold", "Hold a Sprint button"]])
-	_choice(v, "Button size", "button_size", [[0.85, "Small"], [1.0, "Medium"], [1.2, "Large"]])
-	_choice(v, "Layout", "touch_layout", [["standard", "Stick left, buttons right"], ["mirrored", "Stick right, buttons left"]])
+	var lrow := UIKit.hbox(14)
+	lrow.add_child(UIKit.label("Touch layout", 22, UIKit.IVORY))
+	var tl := TouchControls.saved_layout()
+	var custom := not (tl["move"] as Array).is_empty() or not (tl["action"] as Dictionary).is_empty()
+	var lsum := UIKit.label("%s · size %d%% · %s" % ["Mirrored" if bool(tl["mirror"]) else "Standard", int(round(float(tl["size"]) * 100.0)),
+		"your positions" if custom else "recommended positions"], 19, UIKit.IVORY_MUTED)
+	lsum.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lrow.add_child(lsum)
+	var edit := UIKit.secondary("Edit layout", Vector2(220, 64), 22)
+	edit.pressed.connect(func() -> void: App.goto(TouchLayoutEditor))
+	lrow.add_child(edit)
+	v.add_child(lrow)
 	_check(v, "Vibration (haptics)", "haptics", true)
 	var prow := UIKit.hbox(12)
 	var try_b := UIKit.secondary("Try in Practice", Vector2(260, 72), 22)
@@ -45,6 +55,7 @@ func build() -> void:
 		var d: Dictionary = Save.default_profile()["settings"]
 		for k in ["sensitivity", "invert_y", "reduced_motion", "sprint_threshold", "touch_sprint", "stick_mode", "sprint_mode", "button_size", "touch_layout", "haptics"]:
 			Save.set_setting(k, d[k])
+		Save.set_setting("touch_layout_v2", TouchLayout.default_layout())
 		App.goto(SettingsScreen))
 	prow.add_child(reset)
 	v.add_child(prow)
