@@ -181,6 +181,18 @@ func _roof(d: Dictionary, g: Dictionary, k: MeshKit) -> void:
 			# a stone chimney through the roof, a round window in the front gable
 			k.mat = MeshKit.M_STONE
 			k.chamfer_box(Vector3(c.x + fp.size.x * 0.22, h + rise2 * 0.75, c.y + fp.size.y * 0.15), Vector3(1.4, rise2 * 0.9 + 1.6, 1.2), STONE.darkened(0.15), 0.08)
+			# board-and-batten on both gable ends, lighter than the walls
+			k.mat = MeshKit.M_WOOD
+			for gz in [fp.position.y - 0.03, fp.end.y + 0.03]:
+				var half := fp.size.x * 0.5
+				var nb := int(fp.size.x / 1.1)
+				for i in nb + 1:
+					var bx := c.x - half + fp.size.x * float(i) / float(nb)
+					var top_y := h + rise2 * (1.0 - absf(bx - c.x) / half)
+					if top_y - h < 0.4:
+						continue
+					k.box(Vector3(bx, (h + top_y) * 0.5, gz), Vector3(0.12, top_y - h - 0.1, 0.06), TRIM.darkened(0.25))
+			k.chamfer_box(Vector3(c.x, h + 0.08, fp.position.y - 0.08), Vector3(fp.size.x + 0.2, 0.22, 0.2), TRIM.darkened(0.15), 0.04)
 			k.mat = MeshKit.M_GLASS
 			var gw := Vector3(c.x, h + rise2 * 0.42, fp.position.y - 0.06)
 			for i in 16:

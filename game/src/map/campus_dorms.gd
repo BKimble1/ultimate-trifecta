@@ -54,7 +54,7 @@ const DORMS := [
 		"inner": Color(0.96, 0.86, 0.66), "floor": Color(0.50, 0.37, 0.25), "fabric": Color(0.18, 0.46, 0.48), "style": "cupola", "warm": 0.85},
 	{"id": "moonpenny", "name": "Moonpenny Lodge", "short": "Moonpenny",
 		"pos": Vector2(96, 113), "size": Vector2(24, 26), "h": 8.5, "gallery": 9.5,
-		"wall": Color(0.44, 0.54, 0.44), "roof": Color(0.50, 0.21, 0.21), "accent": Color(0.40, 0.78, 0.74),
+		"wall": Color(0.55, 0.64, 0.50), "roof": Color(0.50, 0.21, 0.21), "accent": Color(0.40, 0.78, 0.74),
 		"inner": Color(0.92, 0.78, 0.60), "floor": Color(0.40, 0.28, 0.20), "fabric": Color(0.78, 0.56, 0.20), "style": "lodge", "warm": 0.85},
 ]
 

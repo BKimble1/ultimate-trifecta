@@ -267,8 +267,76 @@ TBD-BUDGETS
 
 ## Tests
 
-TBD-TESTS
+New suites (all in `tools/run_tests.sh`):
+
+- **`test_dorms`** (17 tests): three dorms with real doors and pads (faces,
+  spacing, widths, room sizes, pads inside/apart/clear of doorways and
+  furniture/facing an exit); colliders (a runner fits every doorway, the
+  wall beside it is solid, a clear line through it, a lintel above, a
+  ceiling, carts stopped, every pad sees its exit); navigation through every
+  door (and no cart inside); spawn inside and **no tags before GO** (every
+  dorm × 1/2/3 Night Watch); the **threshold contract at every door of every
+  dorm** (standing inside, running out, pushing against the wall, back in
+  without all stamps, finishing once through a named door); **other dorms
+  never finish**; the swept threshold geometry (direction, width, height,
+  step length, diagonal); a **40 m/s crossing between ticks counts on that
+  tick** and a dive into the wall or a blocked line never does; **safe inside
+  the home dorm**, tagged just outside; the **pre-first-stamp respawn inside
+  the home dorm** (farthest pad, protected, also after out-of-bounds);
+  **door jambs don't snag** (5 angles × 3 offsets × every door, plus sliding
+  along the wall); **bots leave and come home through the doors**; the
+  **round configuration** rotates the dorm (never twice in a row, all three
+  in 30 rounds, targets from the dorm's set, coins, timing); **guests refuse
+  another geometry** (version/fingerprint/unknown dorm → "Update the game")
+  and repair bad pads/coins; **yard colliders** clear of new paths and doors;
+  **the follow camera never clips** (1,560 poses); **two door campers can't
+  block the way out**.
+- **`test_coins`** (8 tests): candidate spots on routes and reachable from
+  every dorm; seeded, spread, clear of home doors and active waters (360
+  rounds); **first valid collector** (tie → lower slot, nearer wins, either
+  role) and **no double credit** (walking over a taken coin, results rows,
+  coin log); who can't collect (before GO, caught, home, in a cart); **bots
+  collect and are marked**; **cancelled rounds** still report and pay
+  nothing; the view dedups (a replayed event or a stale mask can't bring a
+  coin back) and every round shares one mesh and material; **over the
+  network**: the guest sees one event, its count, the mask; a replayed EVENTS
+  packet is ignored; a **reconnect** gets the same configuration and the
+  coin stays gone.
+
+Changed deliberately (each commit says why): `test_sim` finishes by running
+in through a door (`SimHarness.enter_door` / `cross_next_tick`) instead of
+being placed in a finish box, the same-tick finish-beats-tag case starts in
+the doorway, the pre-first-stamp return checks the home dorm's pads;
+`test_camping`'s dorm test checks every dorm's doors (spacing and carts held
+off from the roads); `test_campus_art` pins the V5 campus to the V4 values,
+proves V6 identical outside the districts, pins V6, and checks the dressing
+against every dorm's bot routes; `test_routes_bots` runs Puddlesworth's set
+from inside the dorm and three combinations from each other dorm.
+
+TBD-TESTRUN
 
 ## Limits
 
-TBD-LIMITS
+- **No device measurement.** Draw calls and primitives are llvmpipe engine
+  counters; frame time, GPU cost and heat on an iPhone are unmeasured.
+- **Bot balance, not people.** The contact and first-objective numbers are
+  one seed per dorm × combination with BotBrain on both sides; outcomes vary
+  by seed. They show the dorms behave alike (first contact medians within a
+  second or two of each other) and catch outliers; real playtests should
+  confirm them.
+- **The Night Watch spawn is the shed for every dorm.** Contact timings came
+  out comparable, so per-dorm watch spawns weren't needed; the yards make the
+  last stretch to Lanternfield and Moonpenny on foot, as at Puddlesworth.
+- **Doorway glow and beacon are presentation.** The finish is the host's
+  threshold test; a guest's prediction shows the runner stepping in a few
+  ticks before the host's FINISH event arrives.
+- **Furniture without colliders** (noticeboard, pigeonholes, pictures,
+  plants, pendants) is mounted on walls, in corners or overhead; a runner
+  hugging a wall can graze a board by a few centimetres.
+- **Other dorms are plain buildings to the rules**: enterable, no safety, no
+  finish. Their interiors are drawn like the home dorm's (warm), so the home
+  dorm is told by its glowing doors, the beacon, the map and the reveal.
+- **Coins are 8 per round** (`RulesConfig`), and both roles can collect; how
+  many a typical round yields per player is in the balance runs only
+  indirectly (bots detour within 7 m) — the commerce workstream tunes the
+  economy from `coins_picked`.

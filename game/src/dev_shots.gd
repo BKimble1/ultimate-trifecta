@@ -111,8 +111,8 @@ func _dorm_shots() -> void:
 		var fp: Rect2 = g["footprint"]
 		var c := fp.get_center()
 		var n: Vector2 = front["normal"]
-		var ext: Vector2 = (front["pos"] as Vector2) + n * 22.0 + Vector2(7.0, 0)
-		shots.append({"name": "dorm_%s_exterior" % id, "pos": Vector3(ext.x, 6.5, ext.y), "look": Vector3(c.x, 4.5, c.y), "fov": 62.0})
+		var ext: Vector2 = (front["pos"] as Vector2) + n * 19.0 + Vector2(-6.0, 0)
+		shots.append({"name": "dorm_%s_exterior" % id, "pos": Vector3(ext.x, 7.0, ext.y), "look": Vector3(c.x, 4.5, c.y), "fov": 62.0})
 		var pad: Dictionary = g["pads"][0]
 		var s1 := _follow_shot("dorm_%s_reveal" % id, pad["pos"], front["line_p"])
 		s1["clamp"] = true
