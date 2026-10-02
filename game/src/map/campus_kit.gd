@@ -19,9 +19,11 @@ extends RefCounted
 ##                walls, hedges, shrubs, rocks), warm light (lamps, entrances,
 ##                lit windows), cool light (the pool's and fountain's glow),
 ##                a canopy field (forest floor under groves) and a path field
-##                (worn grass beside the paths).  CampusBuilder bakes them
-##                into vertex colours: no runtime lights are added; the moon
-##                stays the one dynamic shadow-casting light.
+##                (worn grass beside the paths).  AO/warm/cool become a small
+##                texture the world shaders sample per fragment (V4 baked
+##                them into vertex colours on the CPU); canopy and wear tint
+##                the ground's vertex colours.  No runtime lights are added;
+##                the moon stays the one dynamic shadow-casting light.
 
 const KIT_PATH := "res://assets/campus/campus_kit.res"
 const REF_H := 8.0   # trees are authored 8 m tall and scaled per instance
@@ -357,6 +359,7 @@ func sample(grid: PackedFloat32Array, x: float, z: float) -> float:
 	return lerpf(lerpf(a, bb, tx), lerpf(c, d, tx), tz)
 
 
+## the light colours (sRGB); world_common's FIELD_WARM / FIELD_COOL match
 const WARM := Color(0.42, 0.26, 0.09)
 const COOL := Color(0.05, 0.20, 0.24)
 
@@ -380,63 +383,3 @@ func field_texture() -> ImageTexture:
 func field_params() -> Dictionary:
 	var b := CampusLayout.BOUNDS
 	return {"field_origin": b.position - Vector2(CELL, CELL) * 0.5, "field_size": Vector2(_w, _d) * CELL}
-
-
-## Bakes the light field into a MeshKit's vertices [from, to) (those at or
-## below max_y) - one bilinear lookup per vertex for all grids.  Returns the
-## next index, so a big chunk can be baked over several steps.
-func bake(mk: MeshKit, from: int, max_y: float = 3.0, to: int = -1) -> int:
-	var v := mk._v
-	var n := mk._n
-	var c := mk._c
-	var bx := CampusLayout.BOUNDS.position.x
-	var bz := CampusLayout.BOUNDS.position.y
-	var wmax := float(_w - 1) - 0.001
-	var dmax := float(_d - 1) - 0.001
-	var end := v.size() if to < 0 else mini(to, v.size())
-	for i in range(from, end):
-		var p := v[i]
-		if p.y > max_y:
-			continue
-		var fx := clampf((p.x - bx) / CELL, 0.0, wmax)
-		var fz := clampf((p.z - bz) / CELL, 0.0, dmax)
-		var gi := int(fx)
-		var gj := int(fz)
-		var tx := fx - gi
-		var tz := fz - gj
-		var i00 := gj * _w + gi
-		var i10 := i00 + _w
-		var ao_s := lerpf(lerpf(ao[i00], ao[i00 + 1], tx), lerpf(ao[i10], ao[i10 + 1], tx), tz)
-		var wm_s := lerpf(lerpf(warm[i00], warm[i00 + 1], tx), lerpf(warm[i10], warm[i10 + 1], tx), tz)
-		var cl_s := lerpf(lerpf(cool[i00], cool[i00 + 1], tx), lerpf(cool[i10], cool[i10 + 1], tx), tz)
-		var h := clampf(1.0 - maxf(p.y, 0.0) / 2.5, 0.0, 1.0)
-		var o := ao_s * h
-		var lh := clampf(1.0 - maxf(p.y, 0.0) / 4.0, 0.0, 1.0)
-		var wl := wm_s * lh
-		var cl := cl_s * lh
-		var m := 1.0 - 0.5 * o
-		var nn := n[i]
-		if absf(nn.y) < 0.5 and p.y < 1.4:
-			m *= lerpf(0.74, 1.0, clampf(p.y / 1.4, 0.0, 1.0))
-		var face := clampf(nn.y, 0.0, 1.0) * 0.6 + 0.4
-		var col := c[i]
-		c[i] = Color(col.r * m + (WARM.r * wl + COOL.r * cl) * face, col.g * m + (WARM.g * wl + COOL.g * cl) * face,
-			col.b * m + (WARM.b * wl + COOL.b * cl) * face, col.a)
-	mk._c = c
-	return end
-
-
-## [multiply, add] for a vertex near the ground: AO darkens, warm/cool light
-## adds colour; both fade with height, and walls get a soft darkening toward
-## their foot.
-func light_at(p: Vector3, n: Vector3) -> Array:
-	var h := clampf(1.0 - maxf(p.y, 0.0) / 2.5, 0.0, 1.0)
-	var o := sample(ao, p.x, p.z) * h
-	var lh := clampf(1.0 - maxf(p.y, 0.0) / 4.0, 0.0, 1.0)
-	var wl := sample(warm, p.x, p.z) * lh
-	var cl := sample(cool, p.x, p.z) * lh
-	var m := 1.0 - 0.5 * o
-	if absf(n.y) < 0.5 and p.y < 1.4:
-		m *= lerpf(0.74, 1.0, clampf(p.y / 1.4, 0.0, 1.0))   # contact shade at a wall's foot
-	var face := clampf(n.y, 0.0, 1.0) * 0.6 + 0.4
-	return [Color(m, m, m), (WARM * wl + COOL * cl) * face]

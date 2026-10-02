@@ -330,6 +330,11 @@ void fragment() {
 	// hemisphere fill: cool from the sky, a dim warm bounce from below
 	vec3 wn2 = (INV_VIEW_MATRIX * vec4(n, 0.0)).xyz;
 	EMISSION += base * mix(ground_bounce, sky_fill, clamp(wn2.y * 0.5 + 0.5, 0.0, 1.0));
+	if (m == 10) {
+		// leaves let a little light through: shaded crowns stay readable
+		// green instead of going black-blue next to the camera
+		EMISSION += base * vec3(0.20, 0.25, 0.26);
+	}
 	float rim = pow(1.0 - clamp(dot(n, VIEW), 0.0, 1.0), 3.0);
 	EMISSION += moon_rim_color * rim * (m == 10 ? 0.035 : 0.05);
 }

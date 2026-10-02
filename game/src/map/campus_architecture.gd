@@ -236,7 +236,6 @@ func roof_gable(k: MeshKit, center: Vector2, size: Vector2, y0: float, rise: flo
 			_quad_facing(k, lo, hi, hi - Vector3.UP * 0.3, lo - Vector3.UP * 0.3, TRIM.darkened(0.08), ax * se)
 	# ridge cap
 	k.mat = MeshKit.M_ROOF
-	var yaw := 0.0 if along_x else PI * 0.5
 	k.chamfer_box(ridge + Vector3.UP * 0.06, Vector3(L2 * 2.0 + 0.1, 0.18, 0.34) if along_x else Vector3(0.34, 0.18, L2 * 2.0 + 0.1), col.lightened(0.12), 0.06)
 	k.mat = 0.0
 	if chimneys:
@@ -249,8 +248,6 @@ func roof_gable(k: MeshKit, center: Vector2, size: Vector2, y0: float, rise: flo
 			k.chamfer_box(Vector3(cp.x, base_y + 2.25, cp.z), Vector3(1.2, 0.18, 1.0), STONE_TRIM, 0.04)
 			k.mat = MeshKit.M_BRICK
 		k.mat = 0.0
-	if yaw == 0.0:
-		pass
 
 
 func _quad_facing(k: MeshKit, a: Vector3, b: Vector3, c: Vector3, d: Vector3, col: Color, facing: Vector3) -> void:
@@ -910,15 +907,12 @@ func _board(p: Vector3, nrm: Vector3, text: String, size_m: float) -> void:
 	var right := Vector3(-nrm.z, 0, nrm.x)
 	var w := maxf(2.0, float(text.length()) * size_m * 0.42 + 0.6)
 	var k := _k(p.x, p.z, true)
-	var yaw := atan2(-right.z, right.x)
 	k.mat = MeshKit.M_WOOD
 	k.chamfer_box(p - nrm * 0.05, Vector3(w, size_m * 1.5, 0.1) if absf(nrm.z) > 0.5 else Vector3(0.1, size_m * 1.5, w), Color(0.16, 0.18, 0.26), 0.03)
 	k.mat = MeshKit.M_METAL
 	k.chamfer_box(p - nrm * 0.06, Vector3(w + 0.12, size_m * 1.5 + 0.12, 0.06) if absf(nrm.z) > 0.5 else Vector3(0.06, size_m * 1.5 + 0.12, w + 0.12), Color(0.8, 0.66, 0.36), 0.02)
 	k.mat = 0.0
 	_label(p + nrm * 0.03, nrm, text, size_m, w)
-	if yaw == INF:
-		pass
 
 
 func _label(p: Vector3, nrm: Vector3, text: String, size_m: float, width: float) -> void:
