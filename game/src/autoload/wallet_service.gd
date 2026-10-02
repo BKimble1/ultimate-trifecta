@@ -359,7 +359,7 @@ func refresh() -> Dictionary:
 
 
 func _on_retry() -> void:
-	if Cloud.signed_in() and not (state["outbox"] as Array).is_empty():
+	if Cloud.signed_in() and not (state["outbox"] as Array).is_empty() and not _next_op().is_empty():
 		_pump()
 	elif (state["outbox"] as Array).is_empty():
 		_retry.stop()
@@ -418,8 +418,9 @@ func _pump() -> void:
 
 
 func _next_op() -> Dictionary:
+	var t := now()
 	for op in state["outbox"]:
-		if String(op.get("profile_id", "")) == Cloud.profile_id() and not _inflight.has(op["id"]):
+		if String(op.get("profile_id", "")) == Cloud.profile_id() and not _inflight.has(op["id"]) and int(op.get("next_at", 0)) <= t:
 			return op
 	return {}
 
@@ -441,11 +442,29 @@ func _send(op: Dictionary) -> Dictionary:
 	var status := int(r.get("http_status", 0))
 	if bool(r.get("ok", false)):
 		apply_snapshot(r.get("wallet", {}))
+	if _retry_later(op, r):
+		_save()
+		return r
 	_after_op(op, r)
 	if bool(r.get("ok", false)) or status >= 400:
 		_drop_op(id)
 	_save()
 	return r
+
+
+## A confirmation can reach the service before the host's registration of
+## the round does (or while it is being retried): that "unknown round" is
+## retried for a while instead of being taken as final.
+const ACK_RETRY_S := 30 * 60
+
+
+func _retry_later(op: Dictionary, r: Dictionary) -> bool:
+	if String(op["kind"]) != "round_ack" or String(r.get("error", "")) != "no_round":
+		return false
+	if now() - int(op.get("created_at", 0)) > ACK_RETRY_S:
+		return false
+	op["next_at"] = now() + 60
+	return true
 
 
 func _after_op(op: Dictionary, r: Dictionary) -> void:

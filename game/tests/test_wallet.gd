@@ -297,3 +297,35 @@ func test_apply_results_routes_to_wallet_and_keeps_lifetime_xp_separate() -> voi
 	t.eq(Wallet.balance(), 0, "no local minting")
 	t.check(Save.apply_results(res, 0, false, "T:_host").is_empty(), "stats once per match")
 	await rig.end()
+
+
+func test_confirmation_before_registration_is_retried() -> void:
+	await _rig().begin()
+	await rig.sign_in("T:_host")
+	var host := Cloud.profile_id()
+	var mid := "QWERTY-3-0000abcd"
+	App.party_code = "QWERTY"
+	var res := _round_results(mid)
+	var me: Dictionary = res["players"][0]
+	var t0 := int(Time.get_unix_time_from_system())
+	var offset := {"s": 0}
+	Wallet.clock_override = func() -> int: return t0 + int(offset["s"])
+	# the guest's game confirms before the host's registration reached the service
+	rig.svc.rounds.erase(mid)
+	Wallet.settle_round(res, me, false)
+	await rig.frames(10)
+	t.eq(Wallet.pending_ops(), 1, "an 'unknown round' confirmation stays queued (not taken as final)")
+	t.eq(String(Wallet.round_summary(mid)["state"]), "pending", "still pending")
+	rig.svc.rounds[mid] = {"host": host, "participants": {host: 0}, "report": {"outcome": 1, "round_time_s": 180.0, "coin_spawns": 8,
+		"players": [{"profile_id": host, "slot": 0, "role": 0, "stamps": 3, "finished": true, "first_home": true, "unique_captures": 0,
+			"coins_picked": 2, "present": true, "away_s": 0.0}]}, "acks": {}, "settled": {}}
+	Wallet._pump()
+	await rig.frames(5)
+	t.eq(Wallet.pending_ops(), 1, "not hammered: it waits a minute")
+	offset["s"] = 61
+	Wallet._pump()
+	await rig.until(func() -> bool: return String(Wallet.round_summary(mid)["state"]) == "settled")
+	t.eq(String(Wallet.round_summary(mid)["state"]), "settled", "then it settles once the round is known")
+	Wallet.clock_override = Callable()
+	App.party_code = ""
+	await rig.end()

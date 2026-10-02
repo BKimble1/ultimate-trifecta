@@ -426,7 +426,7 @@ async function registerRound(req, env) {
     if (existing.host_profile_id !== p.id) throw new ApiError(409, 'bad_round', 'That round belongs to another party.');
     return json({ ok: true, replay: true });
   }
-  const last = await q.one('SELECT MAX(started_at) AS at FROM rounds WHERE room_id = ?', r.id);
+  const last = await q.one("SELECT MAX(started_at) AS at FROM rounds WHERE room_id = ? AND state != 'cancelled'", r.id);
   if (last && last.at && t - last.at < E.ECONOMY.eligibility.min_round_s * 1000) {
     throw new ApiError(429, 'too_soon', 'Rounds in a party start at most once a minute.');
   }
