@@ -626,10 +626,11 @@ func _begin_session(mode: int, t: NetTransport, code: String) -> void:
 	session.name = "Session"
 	add_child(session)
 	var pref: String = String(Save.get_setting("role_pref", "any"))
+	# (V6) the name other players see: service-approved, else curated
 	if mode == NetSession.Mode.HOST:
-		session.start_host(t, code, Save.player_uid(), Save.player_name(), Save.data["cosmetic"], pref)
+		session.start_host(t, code, Save.player_uid(), Save.party_name(), Save.data["cosmetic"], pref)
 	else:
-		session.start_client(t, code, Save.player_uid(), Save.player_name(), Save.data["cosmetic"], pref)
+		session.start_client(t, code, Save.player_uid(), Save.party_name(), Save.data["cosmetic"], pref)
 		session.rejoin_key = Save.rejoin_key_for(code)
 	session.match_starting.connect(_on_match_starting)
 	session.results_received.connect(_on_results)

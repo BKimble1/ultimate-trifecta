@@ -239,6 +239,26 @@ func list_blocks() -> Dictionary:
 	return await api(HTTPClient.METHOD_GET, "/v1/blocks")
 
 
+# ------------------------------------------------------------------ chat (V6)
+## Does the deployed service offer `f` ("chat", "message_reports")?  An
+## older deployment has no feature list, so typed chat stays unavailable.
+func has_feature(f: String) -> bool:
+	var fs: Variant = service_config.get("features", [])
+	return fs is Array and (fs as Array).has(f)
+
+
+## The service checks a typed message and, if it passes, signs the approved
+## text (ChatToken).  {ok, text, token} or {ok:false, error, reason, message}.
+func chat_check(room_code: String, channel: int, text: String) -> Dictionary:
+	return await api(HTTPClient.METHOD_POST, "/v1/chat/check", {"room_code": room_code, "channel": channel, "text": text})
+
+
+## Report one typed message: the signed message itself is the evidence.
+func report_message(token: String, reason: String, details: String = "") -> Dictionary:
+	return await api(HTTPClient.METHOD_POST, "/v1/reports/message", {"token": token, "reason": reason,
+		"details": details.substr(0, 500), "build": App.build_number()})
+
+
 # ------------------------------------------------------------------ rooms
 func create_room(capacity: int = 8) -> Dictionary:
 	return await api(HTTPClient.METHOD_POST, "/v1/rooms", {"build": App.build_number(), "protocol": Protocol.VERSION, "capacity": capacity})

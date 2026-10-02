@@ -192,7 +192,10 @@ func test_round_waits_for_load_acks() -> void:
 	t.check(rig.host.loads_complete(0.0), "nothing to wait for before a round")
 	rig.host.host_start_match(5)
 	t.check(not rig.host.loads_complete(0.0), "after START the host waits for the client to load")
-	t.eq(rig.host.loading_names(), ["Client0"], "and can say who it is waiting for")
+	# (V6) a party without the service shows curated names: the host shows
+	# the stand-in it gave the guest
+	t.eq(rig.host.loading_names(), [String(rig.host.roster[c.local_slot]["name"])], "and can say who it is waiting for")
+	t.check(NameRules.is_curated(String(rig.host.roster[c.local_slot]["name"])), "(a curated name: no service here)")
 	await rig.wait_until(func() -> bool: return rig.host.loads_complete(0.0), 600)
 	t.check(rig.host.loads_complete(0.0), "the client's LOADED ack releases the round")
 	rig.teardown()
@@ -211,5 +214,7 @@ func test_names_from_the_network_are_sanitised() -> void:
 	var rig := _rig(0)
 	var evil := rig.add_client("uid-evil", "[color=red]Admin[/color]", "any")
 	await rig.wait_until(func() -> bool: return evil.local_slot >= 0, 300)
-	t.eq(String(rig.host.roster[evil.local_slot]["name"]), "Player", "the host sanitises a typed name")
+	var shown := String(rig.host.roster[evil.local_slot]["name"])
+	t.check(shown != "[color=red]Admin[/color]" and NameRules.is_curated(shown), "the host replaces a typed name with a safe one (%s)" % shown)
+	t.eq(shown, NameRules.generated("uid-evil"), "stable for that player")
 	rig.teardown()

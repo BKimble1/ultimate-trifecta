@@ -361,6 +361,18 @@ static func safe_display(raw: String, seed: String = "") -> String:
 	return name + disc
 
 
+## A party member's name as this device shows it.  In a party set up
+## through the moderation service (`verified`), any name that passes the
+## policy; without the service, only curated names: anything else is shown
+## as a stable curated stand-in for that player (`seed`: their id).
+static func party_display(raw: String, seed: String, verified: bool) -> String:
+	if verified:
+		return safe_display(raw, seed)
+	if is_curated(raw):
+		return raw
+	return generated(seed if seed != "" else raw)
+
+
 # ---------------------------------------------------------------------------
 # Curated names
 # ---------------------------------------------------------------------------

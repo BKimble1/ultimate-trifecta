@@ -70,6 +70,8 @@ var series_brief: Dictionary = {}
 var settings_note := ""
 ## practice: "runner", "patrol" or "random"
 var practice_role := "runner"
+## V6: party chat and walk-around presence (message ids 60-79, SocialNet)
+var social: SocialNet
 ## tests and dev automation only: uid -> TC.Role forced after the fair draw
 ## (the Night Watch count is kept by swapping bots)
 var role_override: Dictionary = {}
@@ -122,6 +124,7 @@ const RATE_OTHER := 25
 
 
 func _init() -> void:
+	social = SocialNet.new(self)
 	cfg = Rules.cfg
 	round_cfg = PartySeries.rules_for(Rules.cfg, PartySeries.DEFAULT_WATCH)
 	roster.resize(8)
@@ -264,12 +267,19 @@ func _on_packet(peer: int, data: PackedByteArray) -> void:
 	if mode == Mode.HOST:
 		if not _rate_ok(peer, type):
 			return
+		if SocialProto.is_social(type):
+			social.host_packet(peer, type, b)
+			return
 		_host_packet(peer, type, b)
 	elif mode == Mode.CLIENT:
 		if type in Protocol.HOST_ONLY and (host_peer < 0 or peer != host_peer):
 			return   # only our bound host may send these
 		if peer == host_peer:
 			_host_silence = 0.0
+		if SocialProto.is_social(type):
+			if host_peer >= 0 and peer == host_peer:
+				social.client_packet(type, b)   # social messages only from the bound host
+			return
 		_client_packet(peer, type, b)
 
 
@@ -329,6 +339,8 @@ func _host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			var token := Protocol.get_long_str(b)
 			if transport.peer_uid(peer) != "":
 				uid = transport.peer_uid(peer)   # Game Center identity wins
+			if not require_admission:
+				name = NameRules.party_display(name, uid, false)   # (V6) no service: curated names only
 			var pid := ""
 			if require_admission:
 				var v := Admission.verify(token, admission_key, {"code": room_code, "gc": uid,
@@ -464,6 +476,8 @@ func _send_welcome(peer: int, slot: int, reason: String) -> void:
 	transport.send(peer, b.data_array, true)
 	if not series_view.is_empty() and reason not in ["version", "admission", "not_allowed", "in_use"]:
 		transport.send(peer, _series_bytes(), true)
+	if slot >= 0:
+		social.on_welcome(peer, slot)
 
 
 func _host_emote(slot: int, em: int) -> void:
@@ -1022,6 +1036,24 @@ func load_progress() -> Array:
 	return [ready, total]
 
 
+## V6: are this party's names service-approved?  (The host admits only
+## joiners with a service admission, whose name comes from it.)  Without the
+## service, shared play shows curated names only.
+func names_verified() -> bool:
+	if mode == Mode.OFFLINE:
+		return true
+	return require_admission if mode == Mode.HOST else admission != ""
+
+
+## A name received from the host, as this device shows it: the full name
+## policy (NameRules), curated names only in a party without the service,
+## and game-authored names for bots.
+func shown_name(raw: String, uid: String, is_bot: bool, slot: int) -> String:
+	if is_bot:
+		return raw if BOT_NAMES.has(raw) else String(BOT_NAMES[clampi(slot, 0, 7) % BOT_NAMES.size()])
+	return NameRules.party_display(raw, uid, names_verified())
+
+
 # ---------------------------------------------------------------------------
 # Client side
 # ---------------------------------------------------------------------------
@@ -1090,7 +1122,7 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			if not parsed2.is_empty():
 				var fr := _fix_results(parsed2)
 				if not fr.is_empty():
-					var sv2 := PartySeries.sanitize_view(parsed2.get("series", {}))
+					var sv2 := PartySeries.sanitize_view(parsed2.get("series", {}), names_verified())
 					fr["series"] = sv2
 					fr["round_index"] = clampi(int(parsed2.get("round_index", 1)), 1, 5)
 					fr["rounds_total"] = clampi(int(parsed2.get("rounds_total", 1)), 1, 5)
@@ -1115,7 +1147,7 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			if is_finite(d) and d >= 0.0 and d < 10.0:
 				rtt = lerpf(rtt, d, 0.3)
 		Protocol.M.SERIES:
-			var sv := PartySeries.sanitize_view(Protocol.get_json(b))
+			var sv := PartySeries.sanitize_view(Protocol.get_json(b), names_verified())
 			if not sv.is_empty():
 				series_view = sv
 				series_changed.emit()
@@ -1172,7 +1204,7 @@ func _read_lobby(b: StreamPeerBuffer) -> void:
 		var flags := b.get_u8()
 		var pref: String = ["any", "runner", "patrol"][clampi(b.get_u8(), 0, 2)]
 		var role := clampi(b.get_8(), -1, 1)
-		var e := _entry(i, uid, NameRules.safe_display(name), (flags & 1) != 0, -1, Protocol.get_appearance(b), pref)
+		var e := _entry(i, uid, shown_name(name, uid, (flags & 1) != 0, i), (flags & 1) != 0, -1, Protocol.get_appearance(b), pref)
 		e["pid"] = Protocol.get_str(b, 40)
 		e["ready"] = (flags & 2) != 0
 		e["connected"] = (flags & 4) != 0
@@ -1227,7 +1259,8 @@ func _fix_start(d: Dictionary) -> Dictionary:
 			return {}
 		slots[slot] = true
 		var c: Variant = e.get("cosmetic", {})
-		ro.append({"slot": slot, "uid": String(e.get("uid", "")).substr(0, 64), "name": NameRules.safe_display(String(e.get("name", ""))),
+		ro.append({"slot": slot, "uid": String(e.get("uid", "")).substr(0, 64),
+			"name": shown_name(String(e.get("name", "")), String(e.get("uid", "")), bool(e.get("is_bot", false)), slot),
 			"is_bot": bool(e.get("is_bot", false)), "role": role, "cosmetic": Cosmetics.sanitize(c if c is Dictionary else {})})
 	out["roster"] = ro
 	return out
@@ -1249,7 +1282,7 @@ func _fix_results(d: Dictionary) -> Dictionary:
 			continue
 		var rr: Dictionary = r.duplicate()
 		if rr.has("name"):
-			rr["name"] = NameRules.safe_display(String(rr["name"]))
+			rr["name"] = shown_name(String(rr["name"]), String(r.get("uid", "")), bool(r.get("is_bot", false)) and not bool(r.get("was_human", false)), int(r.get("slot", 0)))
 		for k in ["slot", "role", "stamps", "finish_order", "times_captured", "captures", "unique_captures"]:
 			rr[k] = int(r.get(k, 0))
 		rr["away_s"] = float(r.get("away_s", 0.0))
@@ -1299,6 +1332,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_clock += delta
 	transport.poll(delta)
+	social.tick(delta)
 	if mode == Mode.CLIENT:
 		if host_peer < 0:
 			_no_host_t += delta
