@@ -88,14 +88,17 @@ labelled in [docs/media/v4/README.md](docs/media/v4/README.md):
   and the V4 art, plus side-by-side comparisons.
 - **Characters:** 12 matched close-ups of the refined parts, the hero
   framing, skin tones under campus light, the outfits and a group.
-- **Screens:** V3 (`e39c98c`) and V4 renders of home, the creator, the
-  touch HUD as runner and Night Watch, the capture moment, round results
-  and the 8-player lobby; V4 alone for the layout editor, the full map and
-  the final series results.
-- **Clips:** normal-speed Movie Maker clips (fixed 30 fps game clock) of
-  startup and loading, lobby emotes and Try moves, a Night Watch pursuit and
-  tag, a runner's splash and recovery, and the change from round 1 to
-  round 2 of a series. None is frame-interpolated or sped up.
+- **Screens:** V3 (`e39c98c`) and V4 (`6677eb2`) stills from the same
+  capture scenarios and seeds: home, wardrobe, the creator, the touch HUD
+  as runner and Night Watch, a cart, the role reveals, a splash and
+  recovery, home safe, round results and the 8-player lobby. V4 alone: the
+  layout editor, the full maps, Night Watch results, the capture moment
+  ("Caught by …", then "Protected") and a friend series' final results.
+- **Clips:** normal-speed Movie Maker clips (fixed 30 fps game clock) on
+  `6677eb2`: runner practice with a splash, Night Watch practice with the
+  cart, an on-foot chase and a lunge, lobby emotes and Try moves, and the
+  change from round 1 to round 2 of a series. None is frame-interpolated or
+  sped up.
 - **Match loading animation** (`media/v4/loading/`): the screen at iPhone
   (1561×720), iPhone SE (1334×750) and iPad (1024×768) aspects at two loop
   times; the previous droplet screen for comparison; the bundled loop frames

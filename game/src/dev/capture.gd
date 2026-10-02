@@ -13,7 +13,8 @@ extends Node
 ##   lobby     a LAN room; waits for --capture-players=N humans (others are
 ##             headless --net-join processes), then captures the room
 ##   runner    practice as a runner (bot-driven: --local-bot): reveal,
-##             outdoors, water entry / mid-splash / recovery, results
+##             outdoors, water entry / mid-splash / recovery, caught and
+##             protected (if the bot runner is tagged), results
 ##   patrol    practice as Night Watch (bot-driven): shed, cart driving, an
 ##             on-foot tag, results
 ##   results   re-displays the results of a recorded round (the runner and
@@ -311,6 +312,13 @@ func _match() -> void:
 			later(0.25, "water_%d_recovery" % _recoveries)
 		if st == TC.PState.FINISHED and _prev_state != TC.PState.FINISHED:
 			later(0.4, "runner_home")
+		# the capture contract: "Caught by … · back in 6…", then "Protected"
+		if st == TC.PState.CAPTURED and _prev_state != TC.PState.CAPTURED and not _scheduled.has("caught"):
+			_scheduled["caught"] = true
+			later(0.6, "runner_caught")
+		if _prev_state == TC.PState.CAPTURED and st == TC.PState.ACTIVE and not _scheduled.has("protected"):
+			_scheduled["protected"] = true
+			later(0.4, "runner_protected")
 	else:
 		if st == TC.PState.IN_CART and _cart_shots < 3 and absf(float(rs.get("steer", 0.0))) >= 0.0:
 			if not _shots.has("cart_drive_%d" % _cart_shots) and (_cart_shots == 0 or _t > float(_shots.get("cart_drive_%d" % (_cart_shots - 1), 0.0)) + 6.0):
