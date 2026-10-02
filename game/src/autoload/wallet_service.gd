@@ -309,12 +309,28 @@ func _mirror() -> void:
 
 
 # ------------------------------------------------------------------ service
+## A sign-in schedules a wallet refresh shortly after (not inside flows that
+## sign in only to re-confirm, e.g. profile deletion, which finish first).
+const AUTO_REFRESH_S := 1.5
+var _auto_at := -1.0
+
+
 func _on_cloud_changed() -> void:
-	if Cloud.signed_in() and not syncing:
+	if Cloud.signed_in() and not syncing and _auto_at < 0.0:
 		var a: Dictionary = state.get("account", {})
 		if a.is_empty() or String(a.get("profile_id", "")) != Cloud.profile_id() or now() - int(a.get("synced_at", 0)) > 60:
-			refresh()
+			_auto_at = AUTO_REFRESH_S
 	changed.emit()
+
+
+func _process(delta: float) -> void:
+	if _auto_at < 0.0:
+		return
+	_auto_at -= delta
+	if _auto_at <= 0.0:
+		_auto_at = -1.0
+		if Cloud.signed_in() and not syncing:
+			refresh()
 
 
 ## GET /v1/wallet: the authoritative snapshot (account recovery and device

@@ -53,6 +53,7 @@ func end() -> void:
 	Wallet.path = _wallet_path
 	Wallet.state = _wallet_state
 	Wallet.syncing = false
+	Wallet._auto_at = -1.0
 	Save.data = _save_data
 	if App.screen and is_instance_valid(App.screen):
 		App.screen.queue_free()

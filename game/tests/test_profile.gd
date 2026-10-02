@@ -187,24 +187,24 @@ func test_catalog_ids_are_explicit_unique_and_pinned() -> void:
 	t.eq([int(Cosmetics.FIELDS["outfit"]), int(Cosmetics.FIELDS["hair_color"]), int(Cosmetics.FIELDS["emote"])], [1, 10, 13], "field IDs pinned")
 
 
-func test_apply_is_atomic_and_idempotent() -> void:
+## V6: the Locker's Save equips owned items only and never spends (buying
+## moved to the Shop, where the service debits and grants atomically).
+func test_apply_never_spends_and_refuses_unowned() -> void:
 	var saved: Dictionary = Save.data.duplicate(true)
 	Save.data["coins"] = 300
-	Save.data["owned"] = []
+	Save.data["owned"] = ["hat:crown"]
 	Save.data["cosmetic"] = Cosmetics.DEFAULT.duplicate()
-	var look := Cosmetics.sanitize({"hat": "crown", "color": "plum"})
-	t.eq(Save.price_of(look), 240 + 30, "price = crown + plum (both unowned)")
-	var short := Save.apply_appearance(Cosmetics.sanitize({"outfit": "frog", "hat": "crown"}))
-	t.check(not bool(short["ok"]) and int(short["short"]) == 140, "too expensive: refused, with the shortfall")
+	var unowned := Save.apply_appearance(Cosmetics.sanitize({"outfit": "frog", "hat": "crown"}))
+	t.check(not bool(unowned["ok"]) and (unowned["missing"] as Array).has("outfit:frog"), "an unowned item is refused, named")
 	t.eq(int(Save.data["coins"]), 300, "nothing was charged")
 	t.eq(Save.data["cosmetic"], Cosmetics.DEFAULT, "and nothing changed")
+	var look := Cosmetics.sanitize({"hat": "crown", "hair": "curly"})
 	var r := Save.apply_appearance(look)
-	t.check(bool(r["ok"]) and int(r["spent"]) == 270, "apply buys and equips in one step")
-	t.eq(int(Save.data["coins"]), 30, "coins charged once")
-	var r2 := Save.apply_appearance(look)
-	t.check(bool(r2["ok"]) and int(r2["spent"]) == 0, "applying again costs nothing")
-	t.eq(int(Save.data["coins"]), 30, "idempotent")
-	t.check(Save.owns("hat", "crown") and Save.owns("color", "plum") and Save.owns("hair", "curly"), "owned: bought + free items")
+	t.check(bool(r["ok"]), "owned + free items: saved")
+	t.eq(String(Save.data["cosmetic"]["hat"]), "crown", "equipped")
+	t.eq(int(Save.data["coins"]), 300, "saving never debits")
+	t.check(not r.has("spent"), "there is no spending path here")
+	t.check(Save.owns("hat", "crown") and Save.owns("hair", "curly") and not Save.owns("color", "plum"), "owned: pre-V6 unlock + free items")
 	Save.data = saved
 
 
