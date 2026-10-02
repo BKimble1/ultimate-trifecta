@@ -1,0 +1,17 @@
+# src/dev/sim_profile.tscn on the V5 code (2314331 + profiler): 8 BotBrain players, headless, desktop test machine shared with other jobs
+SIMPROF playing ticks=6204 mean=13.54 ms p50=16.81 p95=26.75 p99=35.81 max=60.76 over8ms=4159 over16ms=3589
+SIMPROF section intents    total= 78807.6 ms  per tick=11.897 ms
+SIMPROF section bots       total= 78515.9 ms  per tick=11.853 ms
+SIMPROF section move       total=  1812.3 ms  per tick=0.274 ms
+SIMPROF section carts      total=  1796.9 ms  per tick=0.271 ms
+SIMPROF section rules      total=   906.0 ms  per tick=0.137 ms
+SIMPROF section tag_cues   total=   272.9 ms  per tick=0.041 ms
+SIMPROF section perception total=    64.9 ms  per tick=0.010 ms
+SIMPROF worst tick 1823: 60.76 ms { "bots": 59760, "intents": 59893, "tag_cues": 67, "carts": 406, "move": 101, "rules": 163, "perception": 3 }
+SIMPROF worst tick 1822: 59.63 ms { "bots": 58008, "intents": 58098, "tag_cues": 85, "carts": 862, "move": 206, "rules": 226, "perception": 5 }
+SIMPROF worst tick 1179: 56.83 ms { "bots": 54995, "intents": 55072, "tag_cues": 49, "carts": 514, "move": 739, "rules": 382, "perception": 3 }
+SIMPROF worst tick 2584: 55.46 ms { "bots": 54405, "intents": 54469, "tag_cues": 54, "carts": 396, "move": 285, "rules": 142, "perception": 57 }
+SIMPROF worst tick 2592: 54.81 ms { "bots": 52098, "intents": 52162, "tag_cues": 53, "carts": 1942, "move": 421, "rules": 146, "perception": 32 }
+SIMPROF worst tick 919: 47.44 ms { "bots": 45005, "intents": 45131, "tag_cues": 45, "carts": 771, "move": 877, "rules": 557, "perception": 2 }
+SIMPROF worst tick 1897: 47.33 ms { "bots": 46129, "intents": 46205, "tag_cues": 65, "carts": 606, "move": 218, "rules": 155, "perception": 3 }
+SIMPROF worst tick 2603: 46.44 ms { "bots": 45554, "intents": 45615, "tag_cues": 50, "carts": 287, "move": 270, "rules": 165, "perception": 3 }

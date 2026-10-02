@@ -42,6 +42,8 @@ var pref_cart := -1
 var sprint_hold := 0.0
 var prev_pressed := 0
 var reaction := 0.0
+var _path_wait := Vector2.INF     # goal of a path request waiting for budget
+var _path_wait_cart := false
 var skill := 1.0
 var coin_i := -1
 
@@ -72,6 +74,8 @@ func think(sim: MatchSim, p: SimPlayer) -> InputCmd:
 func _think(sim: MatchSim, p: SimPlayer) -> InputCmd:
 	var cmd := InputCmd.new()
 	var dt := sim.cfg.dt()
+	if _path_wait != Vector2.INF and path.is_empty():
+		_repath(p.pos2(), _path_wait, _path_wait_cart)
 	jump_cool = maxf(0.0, jump_cool - dt)
 	replan_t -= dt
 	cmd.cam_yaw = p.yaw
@@ -514,7 +518,7 @@ func _drive_to(sim: MatchSim, p: SimPlayer, c: SimCart, dest: Vector2, cmd: Inpu
 		goal = dest
 		path_cart = true
 		replan_t = 1.0 if urgent else 2.5
-		path = nav.find_path(Vector2(c.pos().x, c.pos().z), dest, true)
+		path = nav.find_path_budgeted(Vector2(c.pos().x, c.pos().z), dest, true)   # V6: bounded
 		path_i = 0
 	var cp := Vector2(c.pos().x, c.pos().z)
 	# pure pursuit: aim ~6 m ahead along the path
@@ -551,9 +555,13 @@ func _drive_to(sim: MatchSim, p: SimPlayer, c: SimCart, dest: Vector2, cmd: Inpu
 
 
 func _repath(from: Vector2, to: Vector2, cart: bool) -> void:
-	path = nav.find_path(from, to, cart)
+	# V6: bounded per tick (NavGrid.find_path_budgeted); a request that has
+	# to wait is retried next tick while the bot steers at its goal
+	path = nav.find_path_budgeted(from, to, cart)
 	path_cart = cart
 	path_i = 1 if path.size() > 1 else 0
+	_path_wait = to if nav.deferred else Vector2.INF
+	_path_wait_cart = cart
 
 
 func _follow(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float, _cart: bool) -> void:
