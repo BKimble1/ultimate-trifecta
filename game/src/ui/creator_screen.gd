@@ -414,6 +414,7 @@ func _on_apply() -> void:
 		dialog("You need %d more coins for this look. Play a few rounds, or try a different item." % int(r["short"]))
 		return
 	saved = Cosmetics.sanitize(Save.data["cosmetic"])
+	Diag.mark("appearance_applied")
 	Save.save_now()
 	if int(r["spent"]) > 0:
 		Sfx.play("pickup")

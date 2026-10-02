@@ -103,7 +103,7 @@ No video in `media/` is frame-interpolated.
 - **Draw cost control:**
   - Trees are drawn as MultiMesh per 128×120 m region. Near trees (≤ 80 m) cast shadows; far trees use a lighter mesh without shadows.
   - Small props and window frames live in per-chunk detail meshes drawn within 100 m.
-- Comparison captures are taken from the same seven cameras on V3 (`654b0a8`) and V4: the dorm door, quad path, pond, grove, garden, fountain and return.
+- **Comparison captures:** the same seven route cameras, plus one camera per water for all six waters. The V3 art is rendered from `edbac7c`, the last commit before the art change, with the same shot tool (`src/dev_shots.gd --route` / `--waters`).
 
 ## Characters (detail)
 
@@ -176,9 +176,14 @@ scrolls sideways.
   - `BootCurtain` holds that frame over the title screen's first frames, so there is no flash.
 - **Loading screen:**
   - Animated Trifecta motif (three droplets) and wordmark.
-  - Real stage text ("Building the campus", …), then "Waiting for players · a/b ready".
+  - Real stage text ("Getting campus ready…", "Placing players…"), then "Waiting for players · a/b ready" in a party.
   - It fades out when the round is live: on the host when every load is complete, on a guest at the first snapshot.
-- **CI** (`ios.yml`) audits the launch assets and records the paths of any text file in the built app that names Idlery (`branding_text.txt`). It also captures early launch frames in the Simulator.
+- **CI** (`ios.yml`):
+  - audits the launch assets;
+  - records any text file in the built app that names Idlery, and counts "powered by" strings in the game data (`branding_text.txt`);
+  - captures six launch frames in the Simulator.
+
+  Each build's log prints the audit and a small sheet of those frames with the build facts.
 
 ## Information and network audit
 
@@ -232,7 +237,7 @@ What the summary answers:
 
 - **Startup:** the launch screen and loading screen show the Trifecta motif, with no stretched art and no text other than the game's own. (TestFlight's own pages show the developer account's name; the app doesn't.)
 - **Touch:** Jump/Dive, Tag, Gas, Brake and Exit are all reachable with thumbs. Pause is tappable. **Settings › Controls › Edit layout** lets you move and resize, and Try it previews the result.
-- **Night Watch:** tag runners. Tag glows and an amber ring appears when a press would land. Try the guided Night Watch practice.
+- **Night Watch:** tag runners. Tag glows and an amber ring appears when a press would land. Try Practice › Night Watch training.
 - **Getting caught as a runner:** "Caught by … · back in 6…", your splashes kept, then "Protected".
 - **HUD:** role and "Round x of y", "Home n/N", and the map (tap the minimap). It shows last-seen markers only.
 - **Lobby (host):** choose 1/2/3 Night Watch and 1/3/5 rounds. Roles are random each round. Emotes and Try moves play every time.

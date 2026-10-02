@@ -502,48 +502,66 @@ func _build_room() -> void:
 	for i in 9:
 		var lx := wx - 1.4 + 0.33 * float(i)
 		k.box(Vector3(lx, 1.62 + 0.12 * float(i % 3), -3.425), Vector3(0.09, 0.07, 0.01), Color("ffd27a"), 0.0, 2.2)
-	k.box(Vector3(wx, 2.35, -3.40), Vector3(3.5, 0.08, 0.1), Color("e9e2d2"))
-	k.box(Vector3(wx, 2.35, -3.40), Vector3(0.08, 2.2, 0.1), Color("e9e2d2"))
-	k.box(Vector3(wx, 1.27, -3.36), Vector3(3.7, 0.08, 0.22), Color("e9e2d2"))
-	k.box(Vector3(wx, 3.43, -3.40), Vector3(3.6, 0.1, 0.12), Color("e9e2d2"))
+	# (V4: frame, sill and head with softened edges, like painted wood)
+	k.chamfer_box(Vector3(wx, 2.35, -3.40), Vector3(3.5, 0.08, 0.1), Color("e9e2d2"), 0.02)
+	k.chamfer_box(Vector3(wx, 2.35, -3.40), Vector3(0.08, 2.2, 0.1), Color("e9e2d2"), 0.02)
+	k.chamfer_box(Vector3(wx, 1.27, -3.36), Vector3(3.7, 0.08, 0.22), Color("e9e2d2"), 0.03)
+	k.chamfer_box(Vector3(wx, 3.43, -3.40), Vector3(3.6, 0.1, 0.12), Color("e9e2d2"), 0.03)
 	# curtains
+	# (V4: three soft folds per curtain instead of one flat panel)
 	for side in [-1.0, 1.0]:
-		k.box(Vector3(wx + side * 1.95, 2.3, -3.32), Vector3(0.42, 2.5, 0.08), Color("b84d5e", FABRIC))
+		for f in 3:
+			var fx: float = wx + side * (1.81 + 0.14 * float(f))
+			var fold := Color("b84d5e", FABRIC).darkened(0.08 * float(f % 2))
+			k.chamfer_box(Vector3(fx, 2.3, -3.31 + 0.02 * float(f % 2)), Vector3(0.17, 2.5, 0.09), fold, 0.04)
 	# rug (round, layered)
 	k.ellipse_disc(Vector3(0.1, 0.012, 0.25), 3.1, 2.1, Color("2f8f88", FABRIC), 40)
 	k.ellipse_disc(Vector3(0.1, 0.018, 0.25), 2.75, 1.8, Color("f1d9a6", FABRIC), 40)
 	k.ellipse_disc(Vector3(0.1, 0.024, 0.25), 2.3, 1.45, Color("3aa39b", FABRIC), 40)
 	# couch along the back-left
+	# (V4: upholstered shapes with rounded edges, two seat cushions, rolled
+	# arms and short wooden feet instead of plain blocks)
 	var cc := Color("5b6fb3", FABRIC)
-	k.box(Vector3(-3.6, 0.28, -2.75), Vector3(3.0, 0.42, 1.05), cc.darkened(0.1))
-	k.box(Vector3(-3.6, 0.58, -2.6), Vector3(2.7, 0.2, 0.85), cc)
-	k.box(Vector3(-3.6, 0.95, -3.18), Vector3(3.0, 0.75, 0.32), cc.darkened(0.05))
+	k.chamfer_box(Vector3(-3.6, 0.3, -2.75), Vector3(3.0, 0.38, 1.05), cc.darkened(0.1), 0.06)
+	for ci in 2:
+		k.chamfer_box(Vector3(-4.27 + 1.34 * float(ci), 0.58, -2.6), Vector3(1.3, 0.2, 0.85), cc, 0.08)
+	k.chamfer_box(Vector3(-3.6, 0.95, -3.18), Vector3(3.0, 0.75, 0.32), cc.darkened(0.05), 0.12)
 	for sx in [-1.0, 1.0]:
-		k.box(Vector3(-3.6 + sx * 1.42, 0.68, -2.72), Vector3(0.28, 0.5, 1.05), cc.darkened(0.12))
-	k.box(Vector3(-4.2, 0.82, -2.75), Vector3(0.62, 0.38, 0.22), Color("ffc668", FABRIC), 0.25)
-	k.box(Vector3(-3.0, 0.82, -2.75), Vector3(0.58, 0.36, 0.2), Color("6fd8cc", FABRIC), -0.2)
+		k.chamfer_box(Vector3(-3.6 + sx * 1.42, 0.66, -2.72), Vector3(0.28, 0.46, 1.05), cc.darkened(0.12), 0.1)
+		k.soft_blob(Vector3(-3.6 + sx * 1.42, 0.89, -2.72), Vector3(0.15, 0.07, 0.52), cc.darkened(0.08), 4, 12)
+		for fz in [-1.0, 1.0]:
+			k.cylinder(Vector3(-3.6 + sx * 1.38, 0.0, -2.75 + fz * 0.42), 0.05, 0.11, wood_d, 10, 0.0, true, 0.035)
+	k.soft_blob(Vector3(-4.2, 0.84, -2.75), Vector3(0.3, 0.19, 0.11), Color("ffc668", FABRIC), 5, 12)
+	k.soft_blob(Vector3(-3.0, 0.84, -2.75), Vector3(0.28, 0.18, 0.1), Color("6fd8cc", FABRIC), 5, 12)
 	# floor lamp + warm shade
-	k.cylinder(Vector3(3.9, 0.0, -1.9), 0.25, 0.04, Color("2a2d36"), 12)
-	k.cylinder(Vector3(3.9, 0.0, -1.9), 0.035, 1.55, Color("2a2d36"), 8)
-	k.cylinder(Vector3(3.9, 1.5, -1.9), 0.36, 0.42, Color("ffd9a0"), 14, 1.4, true, 0.22)
+	k.cylinder(Vector3(3.9, 0.0, -1.9), 0.25, 0.04, Color("2a2d36"), 24, 0.0, true, 0.22)
+	k.cylinder(Vector3(3.9, 0.0, -1.9), 0.035, 1.55, Color("2a2d36"), 12)
+	k.cylinder(Vector3(3.9, 1.5, -1.9), 0.36, 0.42, Color("ffd9a0"), 28, 1.4, true, 0.22)
 	# bookshelf on the right
-	k.box(Vector3(5.1, 1.05, -2.9), Vector3(1.5, 2.1, 0.5), wood_d)
+	k.chamfer_box(Vector3(5.1, 1.05, -2.9), Vector3(1.5, 2.1, 0.5), wood_d, 0.03)
 	for sh in 4:
 		var y := 0.25 + 0.5 * float(sh)
-		k.box(Vector3(5.1, y, -2.7), Vector3(1.4, 0.04, 0.42), wood)
+		k.chamfer_box(Vector3(5.1, y, -2.7), Vector3(1.4, 0.04, 0.42), wood, 0.012)
 		for b in 6:
 			var bh := 0.26 + 0.05 * float((b * 7 + sh * 3) % 4)
 			k.box(Vector3(4.55 + 0.2 * float(b), y + bh * 0.5 + 0.02, -2.72), Vector3(0.15, bh, 0.3),
 				[Color("e46a5e"), Color("f1c75b"), Color("6fd8cc"), Color("9a7bd8"), Color("f4f2ec")][(b + sh) % 5])
 	# plant, beanbag, side table + pizza box, posters, string lights
-	k.cylinder(Vector3(-5.3, 0, 1.6), 0.28, 0.5, Color("c27a4f", GLOSS), 10, 0.0, true, 0.34)
-	k.blob(Vector3(-5.3, 0.95, 1.6), Vector3(0.55, 0.6, 0.55), Color("4f9a5c"), 4, 9)
-	k.blob(Vector3(4.0, 0.32, 1.1), Vector3(0.75, 0.38, 0.7), Color("ff8f6b", FABRIC), 4, 12)
-	k.box(Vector3(-1.9, 0.28, -2.1), Vector3(0.8, 0.04, 0.55), wood)
-	k.box(Vector3(-1.9, 0.14, -2.1), Vector3(0.7, 0.28, 0.45), wood_d)
-	k.box(Vector3(-1.9, 0.33, -2.1), Vector3(0.45, 0.06, 0.45), Color("f4f2ec"), 0.3)
-	k.cylinder(Vector3(-2.1, 0.3, -2.2), 0.08, 0.28, Color("e9e2d2", GLOSS), 10)
-	k.cylinder(Vector3(-2.1, 0.56, -2.2), 0.16, 0.2, Color("ffd9a0"), 12, 1.3, true, 0.1)
+	k.cylinder(Vector3(-5.3, 0, 1.6), 0.28, 0.5, Color("c27a4f", GLOSS), 22, 0.0, true, 0.34)
+	k.cylinder(Vector3(-5.3, 0.48, 1.6), 0.36, 0.05, Color("c27a4f", GLOSS).darkened(0.1), 22)
+	for li in 4:
+		var la := TAU * float(li) / 4.0 + 0.4
+		k.soft_blob(Vector3(-5.3 + cos(la) * 0.16, 0.92 + 0.08 * float(li % 2), 1.6 + sin(la) * 0.16), Vector3(0.36, 0.42, 0.36),
+			Color("4f9a5c").lightened(0.04 * float(li)), 5, 12)
+	k.soft_blob(Vector3(4.0, 0.32, 1.1), Vector3(0.75, 0.38, 0.7), Color("ff8f6b", FABRIC), 6, 18)
+	# side table: a top on four legs (V4; was one block)
+	k.chamfer_box(Vector3(-1.9, 0.28, -2.1), Vector3(0.8, 0.04, 0.55), wood, 0.012)
+	for lx in [-1.0, 1.0]:
+		for lz in [-1.0, 1.0]:
+			k.cylinder(Vector3(-1.9 + lx * 0.33, 0.0, -2.1 + lz * 0.21), 0.025, 0.27, wood_d, 8)
+	k.chamfer_box(Vector3(-1.9, 0.33, -2.1), Vector3(0.45, 0.06, 0.45), Color("f4f2ec"), 0.01, 0.3)
+	k.cylinder(Vector3(-2.1, 0.3, -2.2), 0.08, 0.28, Color("e9e2d2", GLOSS), 18)
+	k.cylinder(Vector3(-2.1, 0.56, -2.2), 0.16, 0.2, Color("ffd9a0"), 20, 1.3, true, 0.1)
 	k.box(Vector3(2.4, 2.45, -3.45), Vector3(0.9, 1.2, 0.03), Color("ffc668", GLOSS), 0.0, 0.0)
 	k.blob(Vector3(2.4, 2.62, -3.43), Vector3(0.24, 0.24, 0.01), Color("6fd8cc"), 6, 20)
 	k.box(Vector3(2.4, 2.1, -3.43), Vector3(0.62, 0.08, 0.01), Color("11192b"))
