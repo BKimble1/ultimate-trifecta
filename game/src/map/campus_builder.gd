@@ -456,7 +456,47 @@ func step() -> bool:
 	var more: Variant = _steps[_step_i].call()
 	if not (more is bool and more):
 		_step_i += 1
-	return _step_i < _steps.size()
+	if _step_i < _steps.size():
+		return true
+	_release()
+	return false
+
+
+## V6: the round was cancelled mid-build (Cancel on the loading screen).
+## Returns the chunk jobs still on the worker pool; the caller hands them
+## to App, which waits for each only once it has finished, so cancelling
+## never blocks a frame.
+func abort() -> Array[int]:
+	var ids: Array[int] = []
+	for item in _commit_keys:
+		ids.append(int(item[2]))
+	_commit_keys.clear()
+	_step_i = step_names.size()
+	_release()
+	return ids
+
+
+## V6: the build is over (finished or cancelled).  Its step closures refer
+## back to the builder, as do the architecture/landmark helpers, so without
+## this the builder and everything it gathered (mesh kits, the light-field
+## kit, tree and decor tables) stayed alive after every cold campus build.
+## Only what the round reads afterwards is kept: container, water_nodes,
+## foliage_material and step_names.
+func _release() -> void:
+	_steps.clear()
+	arch = null
+	marks = null
+	kit = null
+	_root = null
+	_rng = null
+	_glow_st = null
+	_world_mat = null
+	_field_tex = null
+	dressing = {}
+	for d: Dictionary in [_chunks, _foliage, _detail, _trees, _decor, _far, _proxy, _ground_end]:
+		d.clear()
+	_mm_queue.clear()
+	_commit_keys.clear()
 
 
 ## The name of the step step() will run next (diagnostics).
@@ -466,7 +506,7 @@ func next_step_name() -> String:
 
 ## Fraction of the steps done (loading screen progress, never invented).
 func progress() -> float:
-	return float(_step_i) / float(maxi(_steps.size(), 1))
+	return float(_step_i) / float(maxi(step_names.size(), 1))
 
 
 func _stamp_decor() -> void:
