@@ -5,24 +5,24 @@
     1558.0,
     720.0
   ],
-  "draw_calls": 96.0,
+  "draw_calls": 78.0,
   "fps": 2.0,
   "frame_ms": {
     "max": 116.67,
-    "n": 111,
-    "over_100ms": 65,
-    "over_1_5x_target": 111,
+    "n": 83,
+    "over_100ms": 45,
+    "over_1_5x_target": 83,
     "p50": 100.0,
-    "p95": 116.13,
+    "p95": 113.29,
     "p99": 116.67
   },
   "glow": true,
-  "label": "V3 desktop Linux llvmpipe 2532x1170",
+  "label": "V3 desktop Linux llvmpipe 2532x1170; SIMULATED: Game Center signed in (--gc-sim=ready) and an Xbox controller (--sim-pad=xbox); neither is real",
   "max_fps": 0,
   "mesh_lod_threshold": 1.0,
   "msaa_3d": 1,
-  "objects": 312.0,
-  "primitives": 53894.0,
+  "objects": 221.0,
+  "primitives": 55702.0,
   "quality_preset": "Standard",
   "render_3d_px": [
     2532,
@@ -43,16 +43,16 @@
   "screen_scale": 1.0,
   "screen_space_aa": 0,
   "shadow_atlas": 2048,
-  "shot": "wardrobe",
-  "static_mem_mb": 133.7,
+  "shot": "online",
+  "static_mem_mb": 135.6,
   "subviewports": [],
   "sun_shadow": {
     "max_distance": 14.0,
     "mode": 0
   },
-  "t": 11.11,
+  "t": 8.31,
   "use_taa": false,
-  "video_mem_mb": 196.5,
+  "video_mem_mb": 218.0,
   "window_px": [
     2532,
     1170

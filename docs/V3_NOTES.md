@@ -94,9 +94,20 @@ follows it.
 - **Wordmark.** An original Ultimate Trifecta wordmark on the home screen.
 - **Dorm.** A cozy late-night common room. A dorm shader adds wood grain
   and plank seams, fabric weave and sheen, wallpaper, glossy props and
-  contact AO. A reading lamp and moonlight light the room. The camera frames
-  1, 2, 4 or 8 players so every face is visible. It eases over 0.25 s, or
-  cuts with Reduced Motion. Departures and arrivals animate.
+  contact AO. A reading lamp and moonlight light the room. Departures and
+  arrivals animate.
+- **Lobby framing.** The camera frames 1, 2, 4 or 8 players. It eases over
+  0.25 s, or cuts with Reduced Motion.
+  - The camera stays in front of the group and turns toward an aim point
+    left of the party panel. When it sat off to the side, back-row faces
+    fell behind front-row heads.
+  - It rises with the depth of the group.
+  - The room is built larger than any framing, so the iPad 4:3 view never
+    sees past the walls.
+  - `test_lobby` renders at 2532×1170, 1334×750 and 2048×1536, with tall
+    hats. It checks that both eyes, the mouth and the forehead of every
+    face are clear of nearer heads and hats, and that both shoulders are
+    in frame.
 - **Play with Friends.** One primary action, Create Party. To join, you
   enter a 6-character code from an alphabet without look-alikes; parsing is
   strict, and only case, spaces and dashes are forgiven. A busy card has a
@@ -163,6 +174,11 @@ The service lives in `service/`; see [service/README.md](../service/README.md).
 - **Fix: double sign-in.** A successful sign-in used to end in the error
   state, because the state was derived from itself, so every API call
   signed in twice. Fixed and tested.
+- **Default names.** Generated default names now always fit the
+  3–16-character rule. V2 could generate 17-character names such as
+  "Splashy Walrus 56", which the new rules would show as "Player". Saved
+  names that don't fit are migrated: the number is dropped, or else a new
+  name is generated.
 - **Links.** Support and privacy links appear only when the owner sets real
   ones in the service config. There are no placeholders. A minimum client
   build can gate online play.
@@ -221,6 +237,18 @@ The service lives in `service/`; see [service/README.md](../service/README.md).
   - A controller code pad replaces the text field, which leaves controller
     focus so it can never trap you.
   - In the creator, LB/RB (or Q/E) switch categories.
+
+## Testing infrastructure
+
+- `tools/run_tests.sh` now fails a test when any script error is raised
+  during it, using a `Logger` registered with `OS.add_logger`. Before, such
+  errors were printed and ignored.
+- `test_focus` resizes the window to phone size: the headless default is a
+  1280×1280 square, where nothing scrolls.
+- `tools/capture_lobby.sh`, `tools/record_lobby.sh` and
+  `tools/label_movie.sh` produce the lobby evidence and the labelled clips.
+- `--capture=account|creator|results`, `--sim-pad=…`, `--gc-sim=ready` and
+  `--ready-after=S` are labelled development flags for captures.
 
 ## Camera and performance
 
