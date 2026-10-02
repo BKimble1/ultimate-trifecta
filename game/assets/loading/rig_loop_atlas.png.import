@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://by1lr7cux3egk"
-path.bptc="res://.godot/imported/run_still.jpg-311d98598d4d5297cc2b9ef65d3e2fc0.bptc.ctex"
-path.astc="res://.godot/imported/run_still.jpg-311d98598d4d5297cc2b9ef65d3e2fc0.astc.ctex"
+uid="uid://cb0pjeaxwuqp6"
+path.bptc="res://.godot/imported/rig_loop_atlas.png-26201ff633ed27b52e3441d2bc801244.bptc.ctex"
+path.astc="res://.godot/imported/rig_loop_atlas.png-26201ff633ed27b52e3441d2bc801244.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/loading/run_still.jpg"
-dest_files=["res://.godot/imported/run_still.jpg-311d98598d4d5297cc2b9ef65d3e2fc0.bptc.ctex", "res://.godot/imported/run_still.jpg-311d98598d4d5297cc2b9ef65d3e2fc0.astc.ctex"]
+source_file="res://assets/loading/rig_loop_atlas.png"
+dest_files=["res://.godot/imported/rig_loop_atlas.png-26201ff633ed27b52e3441d2bc801244.bptc.ctex", "res://.godot/imported/rig_loop_atlas.png-26201ff633ed27b52e3441d2bc801244.astc.ctex"]
 
 [params]
 

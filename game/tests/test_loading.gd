@@ -102,19 +102,22 @@ func test_ten_rounds_leave_nothing_behind() -> void:
 	s.queue_free()
 
 
-# --- the loading screen's character loop (owner's clip) ---
+# --- the loading screen's runner loop (V5: rendered from the game rig) ---
 
 func test_loading_loop_assets_agree() -> void:
-	var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/loading/run_loop.json"))
+	var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(LoadingScreen.LOOP_META))
 	var fw := int(meta["frame_w"])
 	var fh := int(meta["frame_h"])
 	t.eq(int(meta["frames"]), LoadingScreen.LOOP_FRAMES, "frame count matches the builder")
 	t.eq(Vector2(float(meta["cols"]), float(meta["rows"])), LoadingScreen.LOOP_GRID, "atlas grid matches")
-	t.eq(float(meta["fps"]), LoadingScreen.LOOP_FPS, "frame rate matches the source clip")
-	t.check(is_equal_approx(float(fw) / float(fh), LoadingScreen.LOOP_ASPECT), "picture aspect matches the frames")
-	t.eq(meta["side_stops"], LoadingScreen.LOOP_SIDES, "the backdrop continues the frame's own side colours")
+	t.eq(float(meta["fps"]), LoadingScreen.LOOP_FPS, "60 fps: the loop matches the UI's cadence (no 24 fps stride)")
+	t.eq(Vector2(fw, fh), LoadingScreen.LOOP_FRAME, "frame size matches")
+	t.check(bool(meta["premultiplied"]), "frames are premultiplied (drawn over the screen's own background)")
+	t.check(float(meta["loop_closes_mad"]) < 0.05, "the loop closes: the frame after the last is the first")
+	t.check(float(meta["seam_step_mad"]) <= float(meta["step_mad_max"]) * 1.15, "the step from the last frame to the first is an ordinary step")
 	var g := LoadingScreen.LOOP_GRID
 	t.check(LoadingScreen.LOOP_FRAMES <= int(g.x * g.y) and LoadingScreen.LOOP_FRAMES > int(g.x * (g.y - 1.0)), "every frame has a cell, no empty row")
+	t.check(fw % 4 == 0 and fh % 4 == 0, "frames sit on whole compression blocks")
 	var atlas := load(LoadingScreen.LOOP_ATLAS) as Texture2D
 	var still := load(LoadingScreen.LOOP_STILL) as Texture2D
 	t.check(atlas != null and still != null, "atlas and still are bundled")
@@ -122,6 +125,24 @@ func test_loading_loop_assets_agree() -> void:
 		return
 	t.eq(atlas.get_size(), Vector2(fw * g.x, fh * g.y), "atlas is the grid of whole frames (never scaled)")
 	t.eq(still.get_size(), Vector2(fw, fh), "the still is one frame at full size")
+	t.check(not ResourceLoader.exists("res://assets/loading/run_loop_atlas.jpg"), "the V4 clip atlas is no longer shipped")
+
+
+func test_loading_layout_keeps_feet_clear_of_status() -> void:
+	var ls := LoadingScreen.new()
+	t.add_child(ls)
+	for sz in [Vector2(1558, 720), Vector2(1280, 720), Vector2(960, 720)]:
+		ls.size = sz
+		ls._layout()
+		await t.get_tree().process_frame
+		var pic := Rect2(ls.picture.position, ls.picture.size)
+		var title := Rect2(ls.title_art.position, ls.title_art.size)
+		t.check(pic.end.y <= sz.y * 0.8, "%s: the runners stand well above the status area" % str(sz))
+		t.check(title.end.y <= pic.position.y + pic.size.y * 0.08, "%s: the title stays clear of the runners" % str(sz))
+		t.check(absf(pic.get_center().x - sz.x * 0.5) < 1.0 and absf(title.get_center().x - sz.x * 0.5) < 1.0, "%s: centred" % str(sz))
+		t.check(is_equal_approx(pic.size.x / pic.size.y, LoadingScreen.LOOP_FRAME.x / LoadingScreen.LOOP_FRAME.y), "%s: never stretched" % str(sz))
+	t.eq(ls.title_art.accessibility_name, "Ultimate Trifecta", "the title graphic has an accessibility name")
+	ls.queue_free()
 
 
 ## Background loads finish in wall-clock time, while the test runner's fixed

@@ -1,0 +1,14 @@
+{
+  "frames": 26,
+  "fps": 60,
+  "cols": 4,
+  "rows": 7,
+  "frame_w": 920,
+  "frame_h": 540,
+  "premultiplied": true,
+  "loop_closes_mad": 0.0001,
+  "seam_step_mad": 5.504,
+  "step_mad_min": 3.795,
+  "step_mad_max": 5.423,
+  "source": "src/dev/loading_loop_render.tscn (game rig: runner.glb, character shader, animation graph)"
+}

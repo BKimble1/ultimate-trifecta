@@ -1,16 +1,13 @@
 extends Control
-## Development-only (src/dev is excluded from exports): renders the static
-## launch image from the loading screen's own drawing code, so the iOS launch
-## screen, the boot splash and the loading screen's resting frame match.
-##   tools/make_launch_art.sh  (writes assets/icon/launch.png, 1440x1440)
-## The image is square and drawn for a 720-unit-high screen at k = 2; shown
-## "scale to fit" on a landscape phone it fills the height, so the motif and
-## wordmark land where the loading screen draws them.
+## Development-only (src/dev is excluded from exports).
+##   --loading=T,T2,...  saves the real match loading screen at those loop
+##                       times (seconds into the runner loop) for evidence
+##   (no flag)           saves the first runtime frame of the startup curtain
+##                       (BootCurtain), to compare with assets/icon/launch.png
+## The launch image itself is built by tools/branding/make_branding.py.
 
-var out_path := "res://assets/icon/launch.png"
+var out_path := "user://launch_frame.png"
 var _frames := 0
-## --loading=T,T2,...: instead, save the real loading screen at those loop
-## times (seconds into the character loop) for evidence frames.
 var loading_times: Array = []
 var _ls: LoadingScreen
 var _wait := 0
@@ -28,15 +25,8 @@ func _ready() -> void:
 		_ls = LoadingScreen.new()
 		_ls.info = {"settings": {"watch": 2}}
 		add_child(_ls)
-
-
-func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, size), LoadingScreen.BG)
-	var h := size.y
-	var k := h / 720.0
-	var c := Vector2(size.x * 0.5, h * LoadingScreen.MOTIF_Y)
-	LoadingScreen.LoadingMotif.draw_resting(self, c, k, 1.0)
-	LoadingScreen.LoadingMotif.draw_wordmark(self, Vector2(size.x * 0.5, h * LoadingScreen.WORDMARK_Y), k)
+	else:
+		add_child(BootCurtain.new())
 
 
 func _process(_d: float) -> void:
@@ -48,7 +38,7 @@ func _process(_d: float) -> void:
 		var img := get_viewport().get_texture().get_image()
 		img.convert(Image.FORMAT_RGB8)
 		var err := img.save_png(ProjectSettings.globalize_path(out_path) if out_path.begins_with("res://") else out_path)
-		print("launch art %dx%d -> %s (%s)" % [img.get_width(), img.get_height(), out_path, error_string(err)])
+		print("first frame %dx%d -> %s (%s)" % [img.get_width(), img.get_height(), out_path, error_string(err)])
 		get_tree().quit(0 if err == OK else 1)
 
 
