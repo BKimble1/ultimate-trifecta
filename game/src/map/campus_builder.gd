@@ -338,6 +338,7 @@ var _world_mat: ShaderMaterial
 var kit: CampusKit
 var arch: CampusArchitecture
 var marks: CampusLandmarks
+var dorm_art: DormArt
 var dressing: Dictionary = {}
 var _trees: Dictionary = {}       # chunk key -> {species: [[Transform3D, tint, custom], ...]}
 var _decor: Dictionary = {}       # coarse key -> {kind: [[Transform3D, tint, custom], ...]}
@@ -374,6 +375,7 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_mm_started = false
 	arch = CampusArchitecture.new(self)
 	marks = CampusLandmarks.new(self)
+	dorm_art = DormArt.new(self, arch)
 	_add("kit", func() -> void:
 		CampusKit.load_kit(quality)
 		dressing = CampusDressing.load_baked())
@@ -401,6 +403,11 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 		if CampusArchitecture.has_windows(bd):
 			for face in 4:
 				_add("windows_" + String(bd["id"]), func() -> void: arch.windows(bd, face))
+		if bd.has("dorm_id"):
+			# V6 dorms: one step per part (each a few ms)
+			_add("dorm_windows", func() -> void: dorm_art.windows(bd))
+			_add("dorm_entrances", func() -> void: dorm_art.entrances(bd))
+			_add("dorm_interior", func() -> void: dorm_art.interior(bd))
 	_add("walls", arch.walls)
 	for hi in L.hedges.size():
 		var hl: float = (L.hedges[hi]["a"] as Vector2).distance_to(L.hedges[hi]["b"])
@@ -431,6 +438,7 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 			_add("fountain_jets", func() -> void: marks.fountain_jets(wi))
 	# signs add board geometry to the chunks: before they are committed
 	_add("signs", arch.signs)
+	_add("dorm_signs", dorm_art.yard_signs)
 	_add("commit", _commit_next)
 	_add("multimesh", _mm_next)
 	_add("glow", _glow_mesh)

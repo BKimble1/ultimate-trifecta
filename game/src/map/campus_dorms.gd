@@ -47,15 +47,15 @@ const DORMS := [
 	{"id": "puddlesworth", "name": "Puddlesworth Hall", "short": "Puddlesworth",
 		"pos": Vector2(0, 112), "size": Vector2(44, 18), "h": 11.0, "gallery": 9.5,
 		"wall": Color(0.64, 0.34, 0.30), "roof": Color(0.26, 0.30, 0.42), "accent": Color(0.24, 0.32, 0.78),
-		"inner": Color(0.93, 0.80, 0.62), "floor": Color(0.55, 0.36, 0.24), "style": "brick", "warm": 0.9},
+		"inner": Color(0.93, 0.80, 0.62), "floor": Color(0.44, 0.30, 0.21), "fabric": Color(0.62, 0.22, 0.22), "style": "brick", "warm": 0.9},
 	{"id": "lanternfield", "name": "Lanternfield House", "short": "Lanternfield",
 		"pos": Vector2(-96, 114), "size": Vector2(28, 20), "h": 9.5, "gallery": 9.5,
 		"wall": Color(0.88, 0.82, 0.68), "roof": Color(0.20, 0.44, 0.46), "accent": Color(0.96, 0.74, 0.30),
-		"inner": Color(0.96, 0.86, 0.66), "floor": Color(0.62, 0.44, 0.28), "style": "cupola", "warm": 0.85},
+		"inner": Color(0.96, 0.86, 0.66), "floor": Color(0.50, 0.37, 0.25), "fabric": Color(0.18, 0.46, 0.48), "style": "cupola", "warm": 0.85},
 	{"id": "moonpenny", "name": "Moonpenny Lodge", "short": "Moonpenny",
-		"pos": Vector2(96, 113), "size": Vector2(26, 24), "h": 8.5, "gallery": 9.5,
+		"pos": Vector2(96, 113), "size": Vector2(24, 26), "h": 8.5, "gallery": 9.5,
 		"wall": Color(0.44, 0.54, 0.44), "roof": Color(0.50, 0.21, 0.21), "accent": Color(0.40, 0.78, 0.74),
-		"inner": Color(0.92, 0.78, 0.60), "floor": Color(0.48, 0.32, 0.22), "style": "lodge", "warm": 0.85},
+		"inner": Color(0.92, 0.78, 0.60), "floor": Color(0.40, 0.28, 0.20), "fabric": Color(0.78, 0.56, 0.20), "style": "lodge", "warm": 0.85},
 ]
 
 ## The areas V6 rebuilt around the dorms (layout, colliders and nav may

@@ -54,6 +54,9 @@ func building(bd: Dictionary) -> void:
 	if id == "shed":
 		_shed(bd, k)
 		return
+	if bd.has("dorm_id"):
+		B.dorm_art.shell(bd)   # V6: a shell with a common room (DormArt)
+		return
 	if bd.get("dome", false):
 		_observatory(bd, k)
 		return
@@ -101,7 +104,7 @@ func building(bd: Dictionary) -> void:
 
 
 static func has_windows(bd: Dictionary) -> bool:
-	return not (String(bd["id"]) in ["tower", "shed"] or bd.get("dome", false) or bd.get("glass", false))
+	return not (String(bd["id"]) in ["tower", "shed"] or bd.get("dome", false) or bd.get("glass", false) or bd.has("dorm_id"))
 
 
 ## One face's windows (a separate build step per face: the dorm has ~100).
@@ -586,6 +589,8 @@ func _fence(s: Dictionary) -> void:
 
 
 func _bollards(s: Dictionary) -> void:
+	if bool(s.get("hidden", false)):
+		return   # V6: a dorm doorway's cart stop (its threshold is drawn by DormArt)
 	var a: Vector2 = s["a"]
 	var b: Vector2 = s["b"]
 	var L2 := a.distance_to(b)
@@ -879,7 +884,7 @@ func signs() -> void:
 		var h: float = bd["h"]
 		var to_c := (Vector2.ZERO - pos)
 		var face_n := Vector2(signf(to_c.x), 0) if absf(to_c.x) * size.y > absf(to_c.y) * size.x else Vector2(0, signf(to_c.y))
-		if id == "dorm":
+		if id == "dorm" or bd.has("dorm_id"):
 			face_n = Vector2(0, -1)
 		if id == "chapel_w":
 			pos = Vector2(0, -30)
@@ -887,6 +892,8 @@ func signs() -> void:
 			face_n = Vector2(0, 1)
 		var fp := pos + face_n * (Vector2(size.x, size.y) * 0.5 * face_n.abs()).length()
 		var y := minf(h - 1.4, 4.4) if id != "dorm" else 5.6
+		if bd.has("dorm_id"):
+			y = CampusDorms.CEIL + 1.0   # V6: above the front porch hood
 		if id == "chapel_w":
 			y = 5.0
 		_board(Vector3(fp.x, y, fp.y) + Vector3(face_n.x, 0, face_n.y) * 0.12, Vector3(face_n.x, 0, face_n.y), nm, 0.55 if nm.length() < 18 else 0.48)
@@ -899,6 +906,10 @@ func signs() -> void:
 		[Vector2(-103.5, -61.5), [["Old Quarry Lagoon", Vector2(-100, -90)], ["Stargazer Observatory", Vector2(-138, -118)]]],
 		[Vector2(-23.5, -96.0), [["Boathouse Inlet", Vector2(-19, -137)], ["Bellweather Tower", Vector2(0, -30)]]],
 	]
+	if not L.legacy:
+		# V6: the two new dorms from the yard junctions
+		posts.append([Vector2(-76.8, 95.2), [["Lanternfield House", Vector2(-96, 104)], ["Puddlesworth Hall", Vector2(0, 103)]]])
+		posts.append([Vector2(76.8, 95.2), [["Moonpenny Lodge", Vector2(96, 100)], ["Puddlesworth Hall", Vector2(0, 103)]]])
 	for pst in posts:
 		_fingerpost(pst[0], pst[1])
 

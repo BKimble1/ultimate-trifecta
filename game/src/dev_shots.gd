@@ -9,6 +9,13 @@ extends Node3D
 ##   --runner    a stand-in runner at each route/water view's focus point
 ##   --kit       (V5) a lineup of the Blender kit's meshes on a lawn, near
 ##               and far, without the campus (art iteration)
+##   --dorms     (V6) every dorm: exterior, common room at a spawn pad,
+##               departure through a side door, return through the front
+##               door; the follow camera is pulled in by the real colliders
+##               (as the game's camera is)
+##   --dorm-area (V6) matched views of the dorm districts (render the same
+##               cameras on V5 for before/after)
+##   --only=a,b  only shots whose name contains one of these
 ## Every shot prints a STATS line with the engine's counters for that frame
 ## (draw calls, primitives, objects; llvmpipe here - relative numbers only),
 ## and the staged campus build prints its step timings (BUILD line).  The
@@ -80,14 +87,63 @@ func _follow_shot(name: String, p: Vector2, to: Vector2) -> Dictionary:
 		"focus": Vector3(p.x, 0.0, p.y), "yaw": atan2(dir.x, dir.y)}
 
 
+## V6 dorm district views (identical cameras for the V5 "before" renders):
+## [name, runner (x, z), toward (x, z)] follow views, or [name, cam pos, look].
+const DORM_AREA := [
+	["area_puddlesworth_front", Vector2(0, 86), Vector2(0, 112)],
+	["area_puddlesworth_west", Vector2(-40, 104), Vector2(-20, 110)],
+	["area_lanternfield_approach", Vector2(-80, 90), Vector2(-96, 108)],
+	["area_lanternfield_yard", Vector3(-70, 16, 84), Vector3(-96, 2, 114)],
+	["area_moonpenny_approach", Vector2(78, 90), Vector2(96, 106)],
+	["area_moonpenny_yard", Vector3(70, 16, 84), Vector3(96, 2, 114)],
+	["area_south_overview", Vector3(0, 70, 30), Vector3(0, 0, 112)],
+]
+
+
+## --dorms: per dorm, the exterior from its forecourt, the common room at
+## the middle pad (as the reveal frames it), a runner leaving through the
+## west door and one coming home through the front door.
+func _dorm_shots() -> void:
+	for id in CampusDorms.ids():
+		var g := CampusDorms.geometry(id)
+		var doors: Array = g["doors"]
+		var front: Dictionary = doors[0]
+		var fp: Rect2 = g["footprint"]
+		var c := fp.get_center()
+		var n: Vector2 = front["normal"]
+		var ext: Vector2 = (front["pos"] as Vector2) + n * 22.0 + Vector2(7.0, 0)
+		shots.append({"name": "dorm_%s_exterior" % id, "pos": Vector3(ext.x, 6.5, ext.y), "look": Vector3(c.x, 4.5, c.y), "fov": 62.0})
+		var pad: Dictionary = g["pads"][0]
+		var s1 := _follow_shot("dorm_%s_reveal" % id, pad["pos"], front["line_p"])
+		s1["clamp"] = true
+		shots.append(s1)
+		var room: Rect2 = g["room"]
+		shots.append({"name": "dorm_%s_room" % id, "pos": Vector3(room.position.x + 1.2, 3.3, room.position.y + 1.2), "look": Vector3(room.end.x - 4.0, 1.2, room.end.y - 1.5), "fov": 66.0})
+		var west: Dictionary = doors[1]
+		var s2 := _follow_shot("dorm_%s_departure" % id, (west["inside"] as Vector2) + (west["n_in"] as Vector2) * 1.0, west["approach"])
+		s2["clamp"] = true
+		shots.append(s2)
+		var s3 := _follow_shot("dorm_%s_return" % id, (front["approach"] as Vector2) + (front["normal"] as Vector2) * 1.5, front["inside"])
+		s3["clamp"] = true
+		shots.append(s3)
+
+
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() > 0:
 		outdir = args[0]
 	var q := 0 if args.has("--q0") else 1
 	QualityPreset.apply(q)
-	if args.has("--route") or args.has("--waters") or args.has("--heroes"):
+	if args.has("--route") or args.has("--waters") or args.has("--heroes") or args.has("--dorms") or args.has("--dorm-area"):
 		shots.clear()
+	if args.has("--dorms"):
+		_dorm_shots()
+	if args.has("--dorm-area"):
+		for r in DORM_AREA:
+			if r.size() == 3:
+				shots.append(_follow_shot(r[0], r[1], r[2]))
+			else:
+				shots.append({"name": r[0], "pos": r[1], "look": r[2], "fov": 62.0})
 	for r in (WATERS if args.has("--waters") else []):
 		var sp: Vector2 = r[1]
 		var wc: Vector2 = r[2]
@@ -98,6 +154,14 @@ func _ready() -> void:
 		shots.append(_follow_shot(r[0], r[1], r[2]))
 	for r in (HEROES if args.has("--heroes") else []):
 		shots.append(_follow_shot(r[0], r[1], r[2]))
+	for a in args:
+		if String(a).begins_with("--only="):
+			var keys := String(a).get_slice("=", 1).split(",")
+			shots = shots.filter(func(sh: Dictionary) -> bool:
+				for kk in keys:
+					if String(sh["name"]).contains(kk):
+						return true
+				return false)
 	DirAccess.make_dir_recursive_absolute(outdir)
 	if args.has("--kit"):
 		_kit_lineup(q)
@@ -131,6 +195,12 @@ func _ready() -> void:
 			var pre := String(ch.name).get_slice("_", 0)
 			by[pre] = int(by.get(pre, 0)) + 1
 		print("NODES ", by)
+	if args.has("--dorms"):
+		# the real colliders, so follow views indoors are pulled in by the
+		# walls and ceiling like the game camera (FollowCamera sweeps them)
+		var col := Node3D.new()
+		add_child(col)
+		b.build_collision(col)
 	var waters: Dictionary = b.water_nodes
 	foliage_mat = b.foliage_material
 	for id in (waters.keys() if args.has("--waters") else ["fountain", "pond", "garden"]):
@@ -255,6 +325,13 @@ func _process(_d: float) -> void:
 		return
 	var s: Dictionary = shots[i]
 	cam.position = s["pos"]
+	if bool(s.get("clamp", false)):
+		# pull the camera in front of whatever collider is behind the runner
+		var f: Vector3 = s["focus"]
+		var pivot := f + Vector3(0, 1.55, 0)
+		var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(pivot, s["pos"], TC.L_WORLD))
+		if not hit.is_empty():
+			cam.position = (hit["position"] as Vector3) + (pivot - (s["pos"] as Vector3)).normalized() * 0.35
 	cam.look_at(s["look"])
 	cam.fov = float(s.get("fov", 62.0))
 	if foliage_mat:

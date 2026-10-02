@@ -30,6 +30,7 @@ func _run() -> void:
 	if args.size() > 2:
 		_out_path = args[2]
 	var seeds := int(args[3]) if args.size() > 3 else 1
+	var only := int(args[4]) if args.size() > 4 else -1
 	var dorms: Array = CampusDorms.ids() if which == "all" else [which]
 	var rows: Array = []
 	if FileAccess.file_exists(_out_path):
@@ -38,7 +39,11 @@ func _run() -> void:
 			rows = (old as Array).filter(func(r: Dictionary) -> bool: return not dorms.has(String(r.get("dorm", ""))) or not (mode == "both" or String(r.get("mode", "")) == mode))
 	var t0 := Time.get_ticks_msec()
 	for d in dorms:
+		var ci := -1
 		for combo in RulesLogic.all_combos(6):
+			ci += 1
+			if only >= 0 and ci != only:
+				continue
 			for s in seeds:
 				if mode == "trip" or mode == "both":
 					rows.append(await _trip(d, combo, 500 + s))

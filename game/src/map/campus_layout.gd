@@ -678,7 +678,8 @@ func _build_dorm_districts() -> void:
 		for pd in g["pads"]:
 			runner_spawns.append(pd["pos"])
 		for cl in g["cart_lines"]:
-			_bollards(cl[0], cl[1])
+			# a raised threshold carts can't cross: no bollards drawn in a doorway
+			cart_blockers.append({"a": cl[0], "b": cl[1], "hidden": true})
 	# nothing V5 put in a district may now stand inside a dorm or in a
 	# doorway (V6 additions below are placed by hand and checked by tests)
 	trees.assign(trees.filter(func(t: Dictionary) -> bool: return not _district_conflict(t["pos"], 1.6)))
@@ -705,17 +706,17 @@ func _build_dorm_districts() -> void:
 	_path([Vector2(-110.5, 109), Vector2(-117, 109)], 2.6, stone)
 	_path([Vector2(-81.5, 109), Vector2(-74.1, 101)], 2.6, stone)
 	# Moonpenny Lodge (east)
-	plazas.append({"shape": "rect", "center": Vector2(96, 96.5), "size": Vector2(14, 9), "color": stone})
+	plazas.append({"shape": "rect", "center": Vector2(96, 96), "size": Vector2(14, 8), "color": stone})
 	_path([Vector2(89, 97), Vector2(78, 98)], 3.0, stone)
-	_path([Vector2(82.5, 106), Vector2(74.1, 101)], 2.6, stone)
-	_path([Vector2(109.5, 106), Vector2(117, 106)], 2.6, stone)
+	_path([Vector2(83.5, 105), Vector2(74.1, 101)], 2.6, stone)
+	_path([Vector2(108.5, 105), Vector2(117, 105)], 2.6, stone)
 	for lp in [Vector2(-104.2, 93.4), Vector2(-87.8, 93.4), Vector2(-114.0, 110.9), Vector2(-76.4, 106.3),
-			Vector2(87.8, 92.9), Vector2(104.2, 92.9), Vector2(113.2, 107.9), Vector2(79.3, 101.9)]:
+			Vector2(87.8, 92.9), Vector2(104.2, 92.9), Vector2(113.2, 107.0), Vector2(80.0, 100.6)]:
 		lamps.append(lp)
-	for bp in [[Vector2(-101.5, 101.8), 0.0], [Vector2(-90.5, 101.8), 0.0], [Vector2(90.5, 99.6), 0.0], [Vector2(101.5, 99.6), 0.0]]:
+	for bp in [[Vector2(-101.5, 101.8), 0.0], [Vector2(-90.5, 101.8), 0.0], [Vector2(90.5, 98.0), 0.0], [Vector2(101.5, 98.0), 0.0]]:
 		benches.append({"pos": bp[0], "rot": bp[1]})
 	props.append({"kind": "bike_rack", "pos": Vector2(-106.5, 102.4), "rot": 0.0})
-	props.append({"kind": "bike_rack", "pos": Vector2(86.5, 99.5), "rot": 0.0})
+	props.append({"kind": "bike_rack", "pos": Vector2(86.0, 98.6), "rot": 0.0})
 	# monument name signs at each yard's forecourt (small colliders)
 	solids.append({"pos": Vector2(-105.8, 94.2), "size": Vector3(2.8, 1.25, 0.55), "rot": 0.0, "kind": "dorm_sign", "dorm": "lanternfield"})
 	solids.append({"pos": Vector2(86.0, 93.8), "size": Vector3(2.8, 1.25, 0.55), "rot": 0.0, "kind": "dorm_sign", "dorm": "moonpenny"})
