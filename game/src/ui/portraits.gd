@@ -106,6 +106,13 @@ func pending() -> int:
 	return _queue.size()
 
 
+## Cancel on the shared renderer if there is one (never creates it: safe
+## during teardown).
+static func cancel_shared(prefix: String) -> void:
+	if _inst != null and is_instance_valid(_inst):
+		_inst.cancel(prefix)
+
+
 ## Drop queued requests whose owner starts with `prefix` (the wardrobe's
 ## previous category): they will never be shown, so they are never rendered.
 func cancel(prefix: String) -> void:

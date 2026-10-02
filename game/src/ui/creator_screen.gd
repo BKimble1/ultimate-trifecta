@@ -263,7 +263,7 @@ func _select_tab(key: String) -> void:
 	if key == tab and not cards.is_empty():
 		return
 	_scroll_of[tab] = scroll.scroll_vertical
-	Portraits.shared().cancel("tile:")
+	Portraits.cancel_shared("tile:")
 	tab = key
 	_build_tab()
 	Motion.settle_in(body, UIKit.T_FAST)
@@ -522,7 +522,7 @@ func _back() -> void:
 
 
 func _leave() -> void:
-	Portraits.shared().cancel("tile:")
+	Portraits.cancel_shared("tile:")
 	var v := App.stage.local_character() if App.stage else null
 	if v:
 		v.set_appearance(TC.Role.RUNNER, saved)
@@ -536,7 +536,7 @@ func _leave() -> void:
 
 
 func _exit_tree() -> void:
-	Portraits.shared().cancel("tile:")
+	Portraits.cancel_shared("tile:")
 
 
 ## Left area: drag horizontally to turn the runner.
