@@ -120,6 +120,14 @@ game data carries.
   prepares normally.
 - The runner loop keeps animating throughout (preparation is sliced into
   short jobs, V4/V5).
+- On a device that renders slowly anyway (a hot phone, a weak GPU, the CI
+  Simulator at ~1 fps), preparation may use up to half of the frame
+  interval outside its own work (the least of the last four frames, so one
+  hitch doesn't count), capped at 40 ms; at 60 fps it keeps 9 ms. With
+  60 ms frames a round prepared in 75 frames instead of 178
+  (`test_loading::test_preparation_budget_follows_a_slow_device`). V5 and
+  V6 CI Simulator runs (x86_64, GL ES fallback, ~1 fps) were still loading
+  when the capture window closed.
 
 ## Startup
 

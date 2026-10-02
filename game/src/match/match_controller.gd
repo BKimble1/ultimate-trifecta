@@ -142,12 +142,34 @@ func _ready() -> void:
 		_finish_prepare()
 
 
+## V6: on a device that renders slowly anyway (a hot phone, a weak GPU,
+## the CI Simulator at ~1 fps) a fixed 9 ms of work per frame made loading
+## take as many frames as on a fast device, so many times longer.  When the
+## frames are slow anyway, preparation may use up to half the measured
+## frame interval (capped): the loop's cadence barely changes, the round is
+## ready sooner.  At 60 fps the budget stays 9 ms.
+const PREP_BUDGET_MAX_US := 40000
+var _prep_last_us := 0
+var _prep_iv: Array[float] = []     # the last few frame intervals outside our own work
+
+
+static func prep_budget_us(interval_us: float) -> int:
+	return clampi(int(interval_us * 0.5), PREP_BUDGET_US, PREP_BUDGET_MAX_US)
+
+
 func _process_prepare() -> void:
 	var f0 := Time.get_ticks_usec()
-	while _prep_i < _prep.size() and Time.get_ticks_usec() - f0 < PREP_BUDGET_US:
+	if _prep_last_us > 0:
+		_prep_iv.append(float(f0 - _prep_last_us))
+		if _prep_iv.size() > 4:
+			_prep_iv.pop_front()
+	# the least of the last four: one slow frame is not a slow device
+	var budget := prep_budget_us(_prep_iv.min() if _prep_iv.size() >= 4 else 0.0)
+	while _prep_i < _prep.size() and Time.get_ticks_usec() - f0 < budget:
 		_prep_run_one()
 	prep_frames += 1
 	prep_max_ms = maxf(prep_max_ms, float(Time.get_ticks_usec() - f0) / 1000.0)
+	_prep_last_us = Time.get_ticks_usec()
 	if _prep_i >= _prep.size():
 		_finish_prepare()
 
