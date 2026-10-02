@@ -10,6 +10,7 @@ Commands:
   builds         -> list recent builds with processing state
   wait VERSION BUILD [timeout_s] -> poll until the build is VALID (or fails)
   internal BUILD_ID -> add the build to every existing internal beta group
+  beta BUILD_ID  -> print the build's TestFlight states (internal/external)
   ensure-bundle  -> register BUNDLE_ID with Game Center if missing (Xcode
                     automatic signing can also do this)
 Never prints the key. Requires: pip install pyjwt cryptography requests
@@ -118,10 +119,23 @@ def main():
         r = call("GET", "/betaGroups", params={"filter[app]": a["id"], "filter[isInternalGroup]": "true"})
         groups = r.json().get("data", []) if r.ok else []
         for g in groups:
-            call("POST", f"/betaGroups/{g['id']}/relationships/builds", data=json.dumps({"data": [{"type": "builds", "id": build_id}]}))
-            print("added to internal group:", g["attributes"].get("name"))
+            name = g["attributes"].get("name")
+            if g["attributes"].get("hasAccessToAllBuilds"):
+                print("internal group %r gets every build automatically" % name)
+                continue
+            rr = call("POST", f"/betaGroups/{g['id']}/relationships/builds", data=json.dumps({"data": [{"type": "builds", "id": build_id}]}))
+            print(("added to internal group %r" if rr.ok else "could not add to internal group %r (HTTP %d)") % ((name,) if rr.ok else (name, rr.status_code)))
         if not groups:
             print("No internal beta group yet: in App Store Connect > TestFlight > Internal Testing, create a group with your account.")
+        return 0
+    if cmd == "beta":
+        # TestFlight availability as App Store Connect reports it
+        r = call("GET", f"/builds/{sys.argv[2]}/buildBetaDetail")
+        if not r.ok:
+            return 1
+        a = r.json()["data"]["attributes"]
+        print(json.dumps({"internalBuildState": a.get("internalBuildState"), "externalBuildState": a.get("externalBuildState"),
+                          "autoNotifyEnabled": a.get("autoNotifyEnabled")}))
         return 0
     print(__doc__)
     return 2

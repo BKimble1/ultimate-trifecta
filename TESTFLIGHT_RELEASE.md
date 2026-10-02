@@ -75,16 +75,17 @@ Also check that the Apple Developer Program membership is active and that the la
 | Pinned GodotApplePlugins (sha256 checked) | `tools/fetch_deps.sh` |
 | Xcode project export (team, version and build stamped into a temporary preset copy) | `tools/export_ios.sh` |
 | Signed App Store archive and export/upload | `tools/build_ios.sh signed`: `xcodebuild archive` with `-allowProvisioningUpdates` and API-key auth, then `-exportArchive` with `method=app-store-connect`, `destination=upload` |
-| Bundle ID registration, app check, build numbers, processing wait, internal groups | `tools/asc.py` (ES256 JWT; never prints the key) |
+| Bundle ID registration, app check, build numbers, processing wait, internal groups, TestFlight state | `tools/asc.py` (ES256 JWT; never prints the key). Adding a build to an internal group reports Apple's answer; groups set to receive every build are left alone. |
+| Read-only status check | Run the workflow with **asc_status** ticked: it prints the app record, recent builds with their processing state, and each build's internal/external TestFlight state. It builds and uploads nothing. |
 
 The same steps run locally on a Mac with Xcode 26:
 
 ```sh
 export APPLE_TEAM_ID=… ASC_KEY_ID=… ASC_ISSUER_ID=… ASC_KEY_PATH=~/keys/AuthKey_….p8
-export BUILD_NUMBER=$(python3 tools/asc.py next-build) MARKETING_VERSION=1.1
+export BUILD_NUMBER=$(python3 tools/asc.py next-build) MARKETING_VERSION=1.2
 tools/fetch_godot.sh --templates && tools/fetch_deps.sh && tools/export_ios.sh
 EXPORT_DESTINATION=upload INTERNAL_ONLY=true tools/build_ios.sh signed
-python3 tools/asc.py wait 1.1 "$BUILD_NUMBER" 2400
+python3 tools/asc.py wait 1.2 "$BUILD_NUMBER" 2400
 ```
 
 ## Compliance and privacy answers
