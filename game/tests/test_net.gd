@@ -458,3 +458,53 @@ func test_eight_players_online_sync() -> void:
 	t.check(worst < 0.15, "worst client's average correction %.3f m" % worst)
 	print("NETSTAT " + JSON.stringify({"label": "eight_player_loopback_rtt120_loss3", "clients": 7, "snapshots": total, "worst_avg_corr_m": snappedf(worst, 0.001), "kb_sent": snappedf(rig.hub.bytes / 1024.0, 0.1), "dropped": rig.hub.dropped, "sent": rig.hub.sent, "host_starved": rig.host.stat_starved, "host_skipped": rig.host.stat_skipped}))
 	rig.teardown()
+
+
+class AnyError:
+	extends Logger
+	var n := 0
+
+	func _log_error(_function: String, _file: String, _line: int, _code: String, _rationale: String, _editor_notify: bool,
+			_error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
+		n += 1
+
+
+func test_enet_sends_to_departed_peers_are_dropped_quietly() -> void:
+	# real UDP on localhost (the desktop/LAN development transport)
+	var port := 7600 + randi() % 90
+	var host := EnetTransport.new()
+	if host.host(port) != OK:
+		t.check(false, "could not open a UDP port for the ENet test")
+		return
+	var cl := EnetTransport.new()
+	cl.join("127.0.0.1", port)
+	var deadline := Time.get_ticks_msec() + 3000
+	while host.peers().is_empty() and Time.get_ticks_msec() < deadline:
+		host.poll(0.016)
+		cl.poll(0.016)
+		await t.get_tree().process_frame
+	t.eq(host.peers().size(), 1, "a client connects over UDP")
+	if host.peers().is_empty():
+		host.close()
+		cl.close()
+		return
+	var id: int = host.peers()[0]
+	host.latency_ms = 40.0
+	host.send(id, PackedByteArray([1, 2, 3]), true)  # still queued (shaped latency) when the client leaves
+	cl.close()
+	deadline = Time.get_ticks_msec() + 3000
+	while not host.peers().is_empty() and Time.get_ticks_msec() < deadline:
+		host.poll(0.016)
+		await t.get_tree().process_frame
+	t.check(host.peers().is_empty(), "the host sees the client leave")
+	var errs := AnyError.new()
+	OS.add_logger(errs)
+	host.send(id, PackedByteArray([4]), true)
+	host.latency_ms = 0.0
+	host.send(id, PackedByteArray([5]), false)
+	host.send(4242, PackedByteArray([6]), true)
+	await t.get_tree().create_timer(0.1).timeout
+	host.poll(0.016)
+	OS.remove_logger(errs)
+	t.eq(errs.n, 0, "packets for a departed or unknown peer are dropped without engine errors")
+	host.close()

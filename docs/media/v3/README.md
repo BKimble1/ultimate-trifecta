@@ -73,5 +73,6 @@ test that fails on the old code:
 | File | What it shows |
 |---|---|
 | `gameplay/controller_hints_playstation_simulated.png` (1600×740) | The controller hint list replacing the touch buttons, with PlayStation glyphs (✕ Jump, L1 Sprint). **Simulated** with `--sim-pad=playstation`: no controller was attached. Captured before the bot-name cleanup (`f5ecf18`), so bots still read "Bot Snooze · BOT". |
+| `gameplay/canopy_before_f*.png`, `gameplay/canopy_after_f*.png` (1280×720) | The canopy "porthole" and its fix. Frames 930, 1000 and 1250 of the same seeded Night Watch round (`--seed=21`, Movie Maker at 30 fps), before and after `cf53155`; the game state is identical frame for frame. Dark canopy covers 57.5% and 83.8% of frames 1000 and 1250 before, 2.2% and 2.8% after. Frame 930 shows the cost: a lit canopy no longer hides the right of the screen, and the tree's trunk and branches show instead. Method and full numbers: `docs/V3_NOTES.md`, "Camera and performance". |
 
 @@MOVIES@@

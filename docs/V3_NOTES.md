@@ -256,9 +256,29 @@ The service lives in `service/`; see [service/README.md](../service/README.md).
   position the character is drawn at. The view never smooths position
   again. The only extra smoothing is a 0.06 s vertical damp on the pivot
   for steps and jumps.
-- **Canopy cut-away.** It is unchanged. The alternative, a dithered soft
-  edge, adds stipple, which the art brief forbids, and there's no measured
-  improvement to justify it.
+- **Canopy: the porthole is gone.** When the follow camera passed through a
+  large tree, V2 pushed the nearby leaves out onto a 2.6 m sphere around
+  the camera. The screen became the inside of a green bubble, with only the
+  circle around the character cut open: the "porthole".
+  - Foliage closer than 3.2 m to the camera is now cut away cleanly in the
+    camera pass. The edge is clean, with no dither or stipple. Shadows are
+    unchanged.
+  - The circle around the followed character stays, for canopy further
+    away.
+  - **Measured** on the same seeded Night Watch round (`--seed=21`, Movie
+    Maker at 30 fps, identical game state frame for frame). The share of
+    the frame covered by dark canopy, sampling every 30th frame up to frame
+    1320:
+    - average: 26.9% before, 4.6% after;
+    - frames more than 25% covered: 16 of 45 before, none after;
+    - worst frame: 90.0% before, 2.9% after.
+  - The measurement counts dark under-canopy pixels only, so a lit canopy
+    face blocking the view isn't counted. One frame (930) reads 2.7% before
+    and 8.9% after: before, a lit canopy hid the right third of the screen;
+    after, the tree's trunk and branches show there instead.
+  - The runner clip on seed 11 differs by under 3% of pixels per frame
+    (wind sway).
+  - Before and after stills: `docs/media/v3/gameplay/canopy_*`.
 - **Budget.** The worst-scene budget is reported as draw calls and
   primitives from the in-game diagnostics. Those counts don't depend on the
   device. llvmpipe frame times are **not** performance data. See the test

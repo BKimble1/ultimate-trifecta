@@ -72,6 +72,14 @@ func send(to: int, data: PackedByteArray, reliable: bool) -> void:
 
 
 func _raw_send(to: int, data: PackedByteArray, reliable: bool) -> void:
+	# a peer can leave while packets to it are still queued (shaped latency),
+	# and when several drop at once ENet keeps the others as zombies (no
+	# channels) until their own disconnect is polled: sending then errors
+	if not _peers.has(to):
+		return
+	var pp := peer.get_peer(to)
+	if pp == null or not pp.is_active():
+		return
 	peer.set_target_peer(to)
 	peer.transfer_channel = CH_RELIABLE if reliable else CH_UNRELIABLE
 	peer.transfer_mode = MultiplayerPeer.TRANSFER_MODE_RELIABLE if reliable else MultiplayerPeer.TRANSFER_MODE_UNRELIABLE
