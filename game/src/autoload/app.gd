@@ -115,6 +115,11 @@ func _ready() -> void:
 ## build simply finds nothing to load.
 func _dev_tools(args: PackedStringArray) -> void:
 	var diag_overlay := args.has("--diag")
+	if args.has("--beta-diag"):
+		# dev evidence: the in-game beta diagnostics on, summary printed at exit
+		Diag.enabled = true
+		Diag._apply_measuring()
+		tree_exiting.connect(func() -> void: print("BETA_DIAG_SUMMARY_BEGIN\n%s\nBETA_DIAG_SUMMARY_END" % Diag.summary()))
 	var diag_report := ""
 	var capture := ""
 	var capture_dir := ""
@@ -162,6 +167,10 @@ var _orphan_timer: Timer
 func adopt_threaded_load(path: String) -> void:
 	if not _orphan_loads.has(path):
 		_orphan_loads.append(path)
+	_start_reaper()
+
+
+func _start_reaper() -> void:
 	if _orphan_timer == null:
 		_orphan_timer = Timer.new()
 		_orphan_timer.wait_time = 0.25
@@ -179,7 +188,23 @@ func claim_threaded_load(path: String) -> bool:
 	return true
 
 
+## V6: worker-pool jobs of a round cancelled while it was being prepared;
+## each is waited for (which releases it) only once it has finished.
+var _orphan_tasks: Array[int] = []
+
+
+func adopt_worker_tasks(ids: Array[int]) -> void:
+	if ids.is_empty():
+		return
+	_orphan_tasks.append_array(ids)
+	_start_reaper()
+
+
 func _reap_threaded_loads() -> void:
+	for id in _orphan_tasks.duplicate():
+		if WorkerThreadPool.is_task_completed(id):
+			WorkerThreadPool.wait_for_task_completion(id)
+			_orphan_tasks.erase(id)
 	for p in _orphan_loads.duplicate():
 		var st := ResourceLoader.load_threaded_get_status(p)
 		if st == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
@@ -187,7 +212,7 @@ func _reap_threaded_loads() -> void:
 		if st == ResourceLoader.THREAD_LOAD_LOADED:
 			ResourceLoader.load_threaded_get(p)     # taken and let go
 		_orphan_loads.remove_at(_orphan_loads.find(p))
-	if _orphan_loads.is_empty() and _orphan_timer:
+	if _orphan_loads.is_empty() and _orphan_tasks.is_empty() and _orphan_timer:
 		_orphan_timer.stop()
 
 
@@ -784,6 +809,15 @@ func _on_match_finished(results: Dictionary) -> void:
 	r.reward = reward
 	r.session = session
 	_show(r)
+
+
+## V6: Cancel / Leave party on the loading screen, usable at any point of
+## the preparation: practice goes back to the title, an online player
+## leaves the party.  The half-prepared round is freed (MatchController
+## hands any unfinished background work to App).
+func cancel_round() -> void:
+	Diag.mark("round_cancelled")
+	_on_match_quit()
 
 
 func _on_match_quit() -> void:

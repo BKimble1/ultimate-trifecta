@@ -30,6 +30,8 @@ var _last_us := 0
 var _thermal := -1
 var _thermal_check := 0.0
 var _root: Viewport
+var _resume_skip := 0
+var _window_start := 0.0      # judge only once a full window has been seen
 
 
 func _ready() -> void:
@@ -47,8 +49,25 @@ func _exit_tree() -> void:
 		_root.scaling_3d_scale = float(STEPS[preset][0])
 
 
+## Back from the background: the frame that spans the time away (and the
+## few right after, while iOS restores the surface) say nothing about the
+## phone's pace; start a fresh window.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_RESUMED \
+			or what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		_last_us = 0
+		_window.clear()
+		_window_start = _t
+		_steady = 0.0
+		_resume_skip = 3
+
+
 func _process(delta: float) -> void:
 	var now := Time.get_ticks_usec()
+	if _resume_skip > 0:
+		_resume_skip -= 1
+		_last_us = now
+		return
 	if _last_us > 0:
 		feed((now - _last_us) / 1000.0, delta)
 	_last_us = now
@@ -64,7 +83,7 @@ func feed(ms: float, delta: float) -> void:
 	_window.append([_t, ms])
 	while not _window.is_empty() and _t - float(_window[0][0]) > WINDOW_S:
 		_window.pop_front()
-	if _t < WINDOW_S:
+	if _t - _window_start < WINDOW_S:
 		return
 	var p75 := _percentile(0.75)
 	var p90 := _percentile(0.9)

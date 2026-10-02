@@ -211,7 +211,7 @@ func _prep_campus() -> bool:
 	if not with_visuals:
 		return false
 	if _builder == null:
-		_stage("Getting campus ready…")
+		_stage("Preparing campus…")
 		if _take_cached_campus():
 			Diag.mark("campus_cached")
 			return false
@@ -225,6 +225,19 @@ func _prep_campus() -> bool:
 	_builder = null
 	Diag.mark("campus_built")
 	return false
+
+
+## V6: freed before it was prepared (Cancel / Leave on the loading screen,
+## the party ended): nothing keeps running for a round that is gone.
+func _exit_tree() -> void:
+	stage_report = Callable()
+	if prepared:
+		return
+	Diag.mark("prep_cancelled")
+	if _builder != null:
+		App.adopt_worker_tasks(_builder.abort())
+		_builder = null
+	_prep_i = _prep.size()
 
 
 func _take_cached_campus() -> bool:

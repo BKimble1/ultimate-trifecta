@@ -80,3 +80,23 @@ func test_battery_saver_floor_and_thermal() -> void:
 	g.queue_free()
 	await t.get_tree().process_frame
 	root.scaling_3d_scale = saved_scale
+
+
+## V6: the frame that spans time in the background is not a slow pace.
+func test_coming_back_from_the_background_is_not_a_slowdown() -> void:
+	var root: Window = t.get_tree().root
+	var saved_scale: float = root.scaling_3d_scale
+	var g := _gov(1)
+	_run(g, 16.7, 4.0)
+	g.notification(Node.NOTIFICATION_APPLICATION_PAUSED)
+	g.notification(Node.NOTIFICATION_APPLICATION_RESUMED)
+	t.eq(g._last_us, 0, "the interval across the time away is dropped")
+	t.check(g._window.is_empty(), "a fresh window starts")
+	# a few slow frames while iOS restores the surface, then a normal pace
+	for i in 4:
+		g.feed(60.0, 1.0 / 60.0)
+	_run(g, 16.7, 6.0)
+	t.eq(g.level, 0, "no step down after coming back")
+	g.queue_free()
+	await t.get_tree().process_frame
+	root.scaling_3d_scale = saved_scale

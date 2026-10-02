@@ -323,7 +323,8 @@ func _step_tab(d: int) -> void:
 func _select_tab(key: String) -> void:
 	if key == tab and not cards.is_empty():
 		return
-	_scroll_of[tab] = scroll.scroll_vertical
+	# a restore still pending: the tab never moved from where it was going
+	_scroll_of[tab] = _restore_at if _restore_at >= 0 else scroll.scroll_vertical
 	Portraits.cancel_shared("tile:")
 	tab = key
 	_build_tab()
@@ -382,11 +383,24 @@ func _build_tab() -> void:
 			_notes[f] = note
 			body.add_child(note)
 	_refresh()
-	var at := int(_scroll_of.get(tab, 0))
-	(func() -> void:
-		await get_tree().process_frame
-		if is_instance_valid(scroll):
-			scroll.scroll_vertical = at).call()
+	# V6: the category's own position, applied once its cards have laid out.
+	# Only the newest request is kept (rapid tab switching restores the tab
+	# that is showing, never an earlier one), through this screen's one-shot
+	# frame hook (dropped if the screen goes), and never under a finger.
+	_restore_at = int(_scroll_of.get(tab, 0))
+	if is_inside_tree() and not get_tree().process_frame.is_connected(_restore_scroll):
+		get_tree().process_frame.connect(_restore_scroll, CONNECT_ONE_SHOT)
+
+
+var _restore_at := -1
+
+
+func _restore_scroll() -> void:
+	var at := _restore_at
+	_restore_at = -1
+	if at < 0 or not is_instance_valid(scroll) or TouchScroll.is_dragging(scroll):
+		return
+	scroll.scroll_vertical = at
 
 
 ## Cards per row for the panel's width (3 on a phone, more on wide panels).
@@ -730,22 +744,53 @@ func _exit_tree() -> void:
 
 
 ## Left area: drag horizontally to turn the runner.
+## V6: one pointer owns the turn - the finger that went down first (touch
+## index).  V5 listened to every touch and mouse event, so a second finger
+## took the turn over and made the runner jump (test_stage_drag); mouse
+## events (the engine's emulated twin of a finger) are ignored too.  Touch
+## events always arrive: natively on iOS, from the mouse on desktop
+## (pointing/emulate_touch_from_mouse).
 class StageDrag:
 	extends Control
+	signal turned(dx: float)
 	var creator: CreatorScreen
 	var _last := -1.0
+	var _owner := -1
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_STOP
 
 	func _gui_input(e: InputEvent) -> void:
-		if e is InputEventScreenTouch or e is InputEventMouseButton:
-			var pressed: bool = e.pressed
-			_last = e.position.x if pressed else -1.0
-			creator._drag_from = _last
-		elif (e is InputEventScreenDrag or e is InputEventMouseMotion) and _last >= 0.0:
-			creator.drag_turn(e.position.x - _last)
-			_last = e.position.x
+		if e is InputEventScreenTouch:
+			var st := e as InputEventScreenTouch
+			if st.pressed and _owner < 0:
+				_owner = st.index
+				_last = st.position.x
+			elif not st.pressed and st.index == _owner:
+				release()
+			else:
+				return
+			if creator:
+				creator._drag_from = _last
+		elif e is InputEventScreenDrag and (e as InputEventScreenDrag).index == _owner and _last >= 0.0:
+			var d := e as InputEventScreenDrag
+			var dx := d.position.x - _last
+			_last = d.position.x
+			turned.emit(dx)
+			if creator:
+				creator.drag_turn(dx)
+
+	## Lifted, cancelled, or the screen lost focus.
+	func release() -> void:
+		_owner = -1
+		_last = -1.0
+		if creator:
+			creator._drag_from = -1.0
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED \
+				or what == NOTIFICATION_VISIBILITY_CHANGED:
+			release()
 
 
 ## A portrait-oriented item card: the item's picture on your runner (or an
