@@ -7,6 +7,8 @@ extends Node3D
 ##   --heroes    extra close views of the landmarks (V5)
 ##   --q0        Battery Saver preset (default: Standard)
 ##   --runner    a stand-in runner at each route/water view's focus point
+##   --kit       (V5) a lineup of the Blender kit's meshes on a lawn, near
+##               and far, without the campus (art iteration)
 ## Every shot prints a STATS line with the engine's counters for that frame
 ## (draw calls, primitives, objects; llvmpipe here - relative numbers only),
 ## and the staged campus build prints its step timings (BUILD line).  The
@@ -97,6 +99,9 @@ func _ready() -> void:
 	for r in (HEROES if args.has("--heroes") else []):
 		shots.append(_follow_shot(r[0], r[1], r[2]))
 	DirAccess.make_dir_recursive_absolute(outdir)
+	if args.has("--kit"):
+		_kit_lineup(q)
+		return
 	var lay := CampusLayout.shared()
 	var b := CampusBuilder.new(lay)
 	# the same staged build the loading screen runs, one step at a time,
@@ -104,17 +109,28 @@ func _ready() -> void:
 	var t0 := Time.get_ticks_usec()
 	b.begin_visuals(self, q)
 	var times: Array = []
+	var named: Array = []
 	var more := true
 	while more:
+		var nm: String = b.next_step_name() if b.has_method("next_step_name") else str(times.size())
 		var s0 := Time.get_ticks_usec()
 		more = b.step()
 		times.append(float(Time.get_ticks_usec() - s0) / 1000.0)
+		named.append([times[-1], nm])
 	var total := float(Time.get_ticks_usec() - t0) / 1000.0
 	var sorted := times.duplicate()
 	sorted.sort()
 	sorted.reverse()
+	named.sort_custom(func(x: Array, y: Array) -> bool: return x[0] > y[0])
+	print("SLOWEST ", named.slice(0, 12).map(func(x: Array) -> String: return "%s %.1f" % [x[1], x[0]]))
 	print("BUILD total %.0f ms, %d steps, longest %.1f ms, top5 %s, steps over 16 ms: %d" % [total, times.size(), sorted[0],
 		str(sorted.slice(0, 5).map(func(x: float) -> float: return snappedf(x, 0.1))), times.filter(func(x: float) -> bool: return x > 16.0).size()])
+	if b.container:
+		var by := {}
+		for ch in b.container.get_children():
+			var pre := String(ch.name).get_slice("_", 0)
+			by[pre] = int(by.get(pre, 0)) + 1
+		print("NODES ", by)
 	var waters: Dictionary = b.water_nodes
 	foliage_mat = b.foliage_material
 	for id in (waters.keys() if args.has("--waters") else ["fountain", "pond", "garden"]):
@@ -128,6 +144,89 @@ func _ready() -> void:
 	cam.fov = 62
 	cam.far = 600
 	add_child(cam)
+
+
+## --kit: every kit mesh in a row on a plain lawn under the game's night
+## lighting; views at follow-camera distance and from further away.
+func _kit_lineup(q: int) -> void:
+	shots.clear()
+	CampusKit.load_kit(q)
+	var mat := ShaderMaterial.new()
+	mat.shader = CampusBuilder.FOLIAGE_SHADER
+	mat.set_shader_parameter("detail_a", CampusBuilder.DETAIL_A)
+	mat.set_shader_parameter("detail_b", CampusBuilder.DETAIL_B)
+	var ground := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(200, 200)
+	ground.mesh = pm
+	var gm := StandardMaterial3D.new()
+	gm.albedo_color = Color(0.16, 0.3, 0.18)
+	ground.material_override = gm
+	add_child(ground)
+	var trees := ["oak", "linden", "maple", "birch", "blossom", "fir", "spruce", "pine"]
+	for i in trees.size():
+		var mi := MeshInstance3D.new()
+		mi.mesh = CampusKit.kit_mesh("tree_%s_0" % trees[i])
+		mi.material_override = mat
+		mi.position = Vector3(-35.0 + float(i) * 10.0, 0, 0)
+		add_child(mi)
+		for lod in [1, 2]:
+			var m2 := MeshInstance3D.new()
+			m2.mesh = CampusKit.kit_mesh("tree_%s_%d" % [trees[i], lod])
+			m2.material_override = mat
+			m2.position = Vector3(-35.0 + float(i) * 10.0, 0, -12.0 * float(lod))
+			add_child(m2)
+	var small := ["shrub_round_0", "shrub_tall_0", "shrub_bloom_0", "grass_tuft_0", "flowers_0", "reeds_0", "lilies_0", "rock_round_0", "rock_layer_0", "rock_flat_0"]
+	for i in small.size():
+		var mi2 := MeshInstance3D.new()
+		mi2.mesh = CampusKit.kit_mesh(small[i])
+		mi2.material_override = mat
+		mi2.position = Vector3(-13.5 + float(i) * 3.0, 0, 9.0)
+		add_child(mi2)
+	add_child(EnvFactory.make_environment(q))
+	add_child(EnvFactory.make_moon(q))
+	cam = Camera3D.new()
+	cam.far = 600
+	add_child(cam)
+	shots = [
+		{"name": "kit_trees_near", "pos": Vector3(-15, 3.5, 13), "look": Vector3(-15, 4, 0), "fov": 66.0},
+		{"name": "kit_trees_conifer", "pos": Vector3(15, 3.5, 13), "look": Vector3(15, 4, 0), "fov": 66.0},
+		{"name": "kit_row", "pos": Vector3(0, 9, 34), "look": Vector3(0, 3, 0), "fov": 66.0},
+		{"name": "kit_small", "pos": Vector3(0, 2.2, 15.5), "look": Vector3(0, 0.3, 9), "fov": 66.0},
+		{"name": "kit_lods", "pos": Vector3(-30, 7, 14), "look": Vector3(10, 3, -12), "fov": 66.0},
+	]
+
+
+## --count: rough per-kind tally of geometry inside the view and its
+## visibility range (diagnostics for draw-call work; shadows not included).
+func _count_visible(shot: String) -> void:
+	var planes := cam.get_frustum()
+	var by := {}
+	var stack: Array = [self]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		stack.append_array(n.get_children())
+		var gi := n as GeometryInstance3D
+		if gi == null or not gi.is_visible_in_tree():
+			continue
+		var aabb: AABB = gi.global_transform * gi.get_aabb()
+		var c := aabb.get_center()
+		if gi.visibility_range_end > 0.0 and cam.global_position.distance_to(c) > gi.visibility_range_end:
+			continue
+		if gi.visibility_range_begin > 0.0 and cam.global_position.distance_to(c) < gi.visibility_range_begin:
+			continue
+		if gi.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY:
+			continue
+		var inside := true
+		for pl in planes:
+			var pv := Vector3(aabb.end.x if pl.normal.x < 0.0 else aabb.position.x, aabb.end.y if pl.normal.y < 0.0 else aabb.position.y, aabb.end.z if pl.normal.z < 0.0 else aabb.position.z)
+			if pl.is_point_over(pv):
+				inside = false
+				break
+		if inside:
+			var pre := String(n.name).get_slice("_", 0)
+			by[pre] = int(by.get(pre, 0)) + 1
+	print("VISIBLE %s %s" % [shot, by])
 
 
 ## A stand-in runner (pajama colours, the character's size) so a view shows
@@ -170,6 +269,8 @@ func _process(_d: float) -> void:
 			runner.position = s["focus"]
 			runner.rotation.y = float(s.get("yaw", 0.0))
 	wait += 1
+	if wait == 3 and OS.get_cmdline_user_args().has("--count"):
+		_count_visible(s["name"])
 	if wait >= 4:
 		var img := get_viewport().get_texture().get_image()
 		img.save_png(outdir.path_join("%s.png" % s["name"]))
