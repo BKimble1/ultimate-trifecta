@@ -15,15 +15,51 @@ var cart := AStarGrid2D.new()
 var low_wall_cells: Dictionary = {}
 
 static var _shared: NavGrid
+## A grid being built in slices under the loading screen (V5).
+static var _building: NavGrid
+const FOOT_INF := 0.45
+const CART_INF := 1.25
+## The rasterisation in slices of similar cost (each ~12 ms or less on the
+## desktop test machine; V4 built it in one ~50 ms block).
+const PHASES := ["_r_roads", "_r_buildings_hedges_fences", "_r_walls_blockers_trees", "_r_rocks", "_r_waters", "_r_edges"]
+var _phase := 0
 
 
 static func shared(lay: CampusLayout) -> NavGrid:
 	if _shared == null or _shared.layout != lay:
-		_shared = NavGrid.new(lay)
+		if _building != null and _building.layout == lay:
+			while _building.step():
+				pass
+			_shared = _building
+			_building = null
+		else:
+			_shared = NavGrid.new(lay)
 	return _shared
 
 
-func _init(lay: CampusLayout) -> void:
+## Staged build for the loading screen: one slice per call, true while more
+## remain.  The finished grid is exactly the one shared() would build.
+static func build_step(lay: CampusLayout) -> bool:
+	if _shared != null and _shared.layout == lay:
+		return false
+	if _building == null or _building.layout != lay:
+		_building = NavGrid.new(lay, true)
+		return true
+	if _building.step():
+		return true
+	_shared = _building
+	_building = null
+	return false
+
+
+func step() -> bool:
+	if _phase < PHASES.size():
+		call(PHASES[_phase])
+		_phase += 1
+	return _phase < PHASES.size()
+
+
+func _init(lay: CampusLayout, staged: bool = false) -> void:
 	layout = lay
 	origin = CampusLayout.BOUNDS.position
 	dims = Vector2i(int(CampusLayout.BOUNDS.size.x), int(CampusLayout.BOUNDS.size.y))
@@ -34,7 +70,11 @@ func _init(lay: CampusLayout) -> void:
 		g.default_compute_heuristic = AStarGrid2D.HEURISTIC_OCTILE
 		g.default_estimate_heuristic = AStarGrid2D.HEURISTIC_OCTILE
 		g.update()
-	_rasterize()
+	# grass costs carts more than road (V5: one native region fill instead of
+	# 96,000 single-cell calls)
+	cart.fill_weight_scale_region(Rect2i(Vector2i.ZERO, dims), 1.8)
+	if not staged:
+		_rasterize()
 
 
 func to_cell(p: Vector2) -> Vector2i:
@@ -77,12 +117,11 @@ func _solid_circle(g: AStarGrid2D, center: Vector2, radius: float) -> void:
 
 
 func _rasterize() -> void:
-	var foot_inf := 0.45
-	var cart_inf := 1.25
-	# grass costs carts more than road
-	for y in dims.y:
-		for x in dims.x:
-			cart.set_point_weight_scale(Vector2i(x, y), 1.8)
+	while step():
+		pass
+
+
+func _r_roads() -> void:
 	for r in layout.roads:
 		var pts: PackedVector2Array = r["pts"]
 		for i in pts.size() - 1:
@@ -90,6 +129,11 @@ func _rasterize() -> void:
 			for c in _cells_in_rect(rect):
 				if CampusLayout._dist_to_segment(to_world(c), pts[i], pts[i + 1]) <= float(r["w"]) * 0.5:
 					cart.set_point_weight_scale(c, 1.0)
+
+
+func _r_buildings_hedges_fences() -> void:
+	var foot_inf := FOOT_INF
+	var cart_inf := CART_INF
 	for bd in layout.buildings:
 		var half: Vector2 = bd["size"] * 0.5
 		var pos: Vector2 = bd["pos"]
@@ -120,6 +164,11 @@ func _rasterize() -> void:
 		else:
 			_solid_segment(foot, s["a"], s["b"], 0.15, foot_inf)
 		_solid_segment(cart, s["a"], s["b"], 0.15, cart_inf)
+
+
+func _r_walls_blockers_trees() -> void:
+	var foot_inf := FOOT_INF
+	var cart_inf := CART_INF
 	for s in layout.walls:
 		var rect2 := Rect2(s["a"], Vector2.ZERO).expand(s["b"]).grow(1.2)
 		for c in _cells_in_rect(rect2):
@@ -132,22 +181,31 @@ func _rasterize() -> void:
 	for t in layout.trees:
 		_solid_circle(foot, t["pos"], 0.45 + foot_inf)
 		_solid_circle(cart, t["pos"], 0.45 + cart_inf)
+
+
+func _r_rocks() -> void:
 	for rk in layout.rocks:
 		var rp: Vector3 = rk["pos"]
 		var rs: Vector3 = rk["size"]
-		_solid_circle(foot, Vector2(rp.x, rp.z), maxf(rs.x, rs.z) * 0.5 + foot_inf * 0.5)
-		_solid_circle(cart, Vector2(rp.x, rp.z), maxf(rs.x, rs.z) * 0.5 + cart_inf)
+		_solid_circle(foot, Vector2(rp.x, rp.z), maxf(rs.x, rs.z) * 0.5 + FOOT_INF * 0.5)
+		_solid_circle(cart, Vector2(rp.x, rp.z), maxf(rs.x, rs.z) * 0.5 + CART_INF)
 	for lp in layout.lamps:
-		_solid_circle(cart, lp, 0.2 + cart_inf)
+		_solid_circle(cart, lp, 0.2 + CART_INF)
+
+
+func _r_waters() -> void:
 	for w in layout.waters:
 		var c2: Vector2 = w["center"]
 		var ext := 16
 		for cell in _cells_in_rect(Rect2(c2 - Vector2(ext, ext), Vector2(ext, ext) * 2.0)):
 			var wp := to_world(cell)
-			if CampusLayout.in_water_shape(w, wp, foot_inf + float(w.get("rim_t", 0.0)) + 0.1):
+			if CampusLayout.in_water_shape(w, wp, FOOT_INF + float(w.get("rim_t", 0.0)) + 0.1):
 				foot.set_point_solid(cell, true)
-			if CampusLayout.in_water_shape(w, wp, cart_inf + 0.5):
+			if CampusLayout.in_water_shape(w, wp, CART_INF + 0.5):
 				cart.set_point_solid(cell, true)
+
+
+func _r_edges() -> void:
 	# docks / ledge platforms are walkable over the pit
 	for p in layout.platforms:
 		var pc: Vector3 = p["center"]
@@ -155,20 +213,15 @@ func _rasterize() -> void:
 		if p.get("dock", false):
 			for cell in _cells_in_rect(Rect2(Vector2(pc.x, pc.z) - Vector2(ps.x, ps.z) * 0.5 + Vector2(0.6, 0.6), Vector2(ps.x, ps.z) - Vector2(1.2, 1.2))):
 				foot.set_point_solid(cell, false)
-	# map edge
-	for x in dims.x:
-		for y in [0, 1, dims.y - 1, dims.y - 2]:
-			foot.set_point_solid(Vector2i(x, y), true)
-			cart.set_point_solid(Vector2i(x, y), true)
-	for y in dims.y:
-		for x in [0, 1, dims.x - 1, dims.x - 2]:
-			foot.set_point_solid(Vector2i(x, y), true)
-			cart.set_point_solid(Vector2i(x, y), true)
-	# the lake strip north of the rail
-	for y in range(0, int(-146.0 - origin.y) + 1):
-		for x in dims.x:
-			foot.set_point_solid(Vector2i(x, y), true)
-			cart.set_point_solid(Vector2i(x, y), true)
+	# map edge (two cells deep) and the lake strip north of the rail
+	var lake_rows := int(-146.0 - origin.y) + 1
+	for g in [foot, cart]:
+		g.fill_solid_region(Rect2i(0, 0, dims.x, 2))
+		g.fill_solid_region(Rect2i(0, dims.y - 2, dims.x, 2))
+		g.fill_solid_region(Rect2i(0, 0, 2, dims.y))
+		g.fill_solid_region(Rect2i(dims.x - 2, 0, 2, dims.y))
+		if lake_rows > 0:
+			g.fill_solid_region(Rect2i(0, 0, dims.x, lake_rows))
 
 
 func nearest_open(g: AStarGrid2D, p: Vector2, max_r: int = 8) -> Vector2i:

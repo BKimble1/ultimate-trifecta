@@ -134,7 +134,7 @@ static var _campus_cache: Dictionary = {}
 func _ready() -> void:
 	Diag.mark("load_begin")
 	_prep_t0 = Time.get_ticks_usec()
-	_prep = [_prep_campus, _prep_world, _prep_ground, _prep_nav, _prep_sim, _prep_views, _prep_rest]
+	_prep = [_prep_campus, _prep_world, _prep_ground, _prep_nav, _prep_sim, _prep_views, _prep_rest, _prep_hud, _prep_touch]
 	_prep_i = 0
 	if not staged:
 		while _prep_i < _prep.size():
@@ -159,7 +159,7 @@ func _process_prepare() -> void:
 func prep_progress() -> float:
 	if prepared:
 		return 1.0
-	const W := [0.55, 0.08, 0.07, 0.06, 0.05, 0.16, 0.03]   # campus, world, ground, nav, sim, views, rest
+	const W := [0.55, 0.08, 0.07, 0.06, 0.05, 0.16, 0.01, 0.01, 0.01]   # campus, world, ground, nav, sim, views, carts+camera, hud, touch
 	var done := 0.0
 	for k in mini(_prep_i, W.size()):
 		done += W[k]
@@ -169,12 +169,35 @@ func prep_progress() -> float:
 			part = _builder.progress()
 		elif _prep_i == 5 and not roster.is_empty():
 			part = 1.0 - float(_view_queue.size()) / float(roster.size())
+		elif _prep_i == 3 and NavGrid._building != null:
+			part = float(NavGrid._building._phase) / float(NavGrid.PHASES.size())
 		done += W[_prep_i] * clampf(part, 0.0, 1.0)
 	return clampf(done, 0.0, 1.0)
 
 
+## Per-job timings (V5): a budget checked *between* jobs can't stop one job
+## from overrunning it, so every job is timed and the longest is kept; a job
+## over PREP_SLOW_MS marks the diagnostics timeline with its name, so a
+## stall on a phone is attributed to the job that caused it.
+const PREP_SLOW_MS := 25.0
+const PREP_NAMES := ["campus", "world", "ground", "nav", "sim", "views", "carts_camera", "hud", "touch"]
+var prep_jobs: Array = []          # [[name, ms]] in order
+var prep_longest := ["", 0.0]      # [name, ms]
+
+
 func _prep_run_one() -> void:
+	var i := _prep_i
+	var nm := String(PREP_NAMES[i]) if i < PREP_NAMES.size() else "job%d" % i
+	if i == 0 and _builder != null:
+		nm = "campus#%s" % str(_builder.get("_step_i"))   # the builder's own step index
+	var t0 := Time.get_ticks_usec()
 	var again: Variant = _prep[_prep_i].call()
+	var ms := float(Time.get_ticks_usec() - t0) / 1000.0
+	prep_jobs.append([nm, ms])
+	if ms > float(prep_longest[1]):
+		prep_longest = [nm, ms]
+	if ms > PREP_SLOW_MS:
+		Diag.mark("prep_slow:" + nm)
 	if not (again is bool and again):
 		_prep_i += 1
 
@@ -269,9 +292,12 @@ func _prep_ground() -> void:
 	CampusBuilder.ground_shape(layout)
 
 
-func _prep_nav() -> void:
-	if not is_client:
-		NavGrid.shared(layout)
+## (V5) in slices, one per call, so the loading frame never holds the whole
+## ~50 ms build
+func _prep_nav() -> bool:
+	if is_client:
+		return false
+	return NavGrid.build_step(layout)
 
 
 func _prep_sim() -> void:
@@ -325,9 +351,16 @@ func _prep_rest() -> void:
 	add_child(camera)
 	camera.current = true
 
+
+## (V5) the HUD and the touch controls are separate jobs: together they were
+## the longest non-campus step of a round's preparation.
+func _prep_hud() -> void:
 	hud = MatchHUD.new()
 	add_child(hud)
 	hud.setup(self)
+
+
+func _prep_touch() -> void:
 	touch = TouchControls.new()
 	add_child(touch)
 	touch.setup(self)
@@ -352,7 +385,7 @@ func _finish_prepare() -> void:
 	prepare_ms = float(Time.get_ticks_usec() - _prep_t0) / 1000.0
 	Diag.mark("campus_prepared")
 	if staged:
-		print("[load] round prepared in %.0f ms over %d frames (longest frame of work %.1f ms)" % [prepare_ms, prep_frames, prep_max_ms])
+		print("[load] round prepared in %.0f ms over %d frames (longest frame of work %.1f ms; longest job %s %.1f ms)" % [prepare_ms, prep_frames, prep_max_ms, prep_longest[0], prep_longest[1]])
 	if is_client:
 		session.send_loaded()
 	else:
