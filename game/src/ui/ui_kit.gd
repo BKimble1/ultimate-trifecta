@@ -369,9 +369,10 @@ static func quiet(t: String, min_size: Vector2 = Vector2(220, 72), font_size: in
 		"hover": _with_bg(n, Color(SLATE, 0.85)),
 		"pressed": _with_bg(n, Color(SLATE_LO, 0.95)),
 		"disabled": _with_border(_with_bg(n, Color(SLATE_LO, 0.6)), Color(IVORY, 0.08)),
-		"selected": card_box(TEAL, R_BUTTON, 1.0),
+		# a restrained selection: tinted, with a teal edge (never a solid fill)
+		"selected": _with_border(_with_bg(n, Color(TEAL.darkened(0.35), 0.45)), TEAL),
 	}
-	f.fg = {"normal": IVORY, "disabled": IVORY_DIM, "selected": NAVY}
+	f.fg = {"normal": IVORY, "disabled": IVORY_DIM, "selected": IVORY}
 	f.queue_redraw()
 	return b
 

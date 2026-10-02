@@ -1295,8 +1295,16 @@ class FullMap:
 				n += 1
 		return n
 
+	## Laid out as soon as it enters the tree, so its first frame is already
+	## in place (V5: the panel showed at the top left for one frame).
+	func _ready() -> void:
+		_place()
+
 	func _process(_d: float) -> void:
-		var vs := size
+		_place()
+
+	func _place() -> void:
+		var vs := get_viewport().get_visible_rect().size
 		var safe := UIKit.safe_margins(get_viewport())
 		var side := get_node("Side") as Control
 		var sw := side.get_combined_minimum_size()

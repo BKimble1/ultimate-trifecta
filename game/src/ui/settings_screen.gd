@@ -17,7 +17,14 @@ func build() -> void:
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	sc.follow_focus = true
 	content.add_child(sc)
-	var body := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 26)
+	# an opaque sheet over a dimmed room (no translucent slab)
+	var dim := ColorRect.new()
+	dim.color = Color(UIKit.NAVY, 0.55)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(dim)
+	move_child(dim, 0)
+	var body := UIKit.panel(Color(UIKit.SLATE, 0.99), UIKit.R_PANEL, 26)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sc.add_child(body)
 	var v := UIKit.vbox(14)
@@ -313,9 +320,17 @@ func _on_controller(on: bool, n: String, ctl: Label) -> void:
 		ctl.text = "Controller: " + (n if on else "none connected (touch controls active)")
 
 
+## A section: a thin divider (except the first) and a small overline title.
 func _section(parent: Control, title: String) -> void:
-	var l := UIKit.label(title, 22, UIKit.TEAL, true)
-	parent.add_child(l)
+	if parent.get_child_count() > 0:
+		var gap := Control.new()
+		gap.custom_minimum_size = Vector2(0, 6)
+		parent.add_child(gap)
+		var line := ColorRect.new()
+		line.color = Color(UIKit.IVORY, 0.08)
+		line.custom_minimum_size = Vector2(0, 1)
+		parent.add_child(line)
+	parent.add_child(UIKit.styled(title, "overline", UIKit.TEAL))
 
 
 func _slider(parent: Control, text: String, key: String, mn: float, mx: float, step: float) -> HSlider:
@@ -363,14 +378,7 @@ func _choice(parent: Control, text: String, key: String, opts: Array) -> void:
 func _paint(btns: Array[Button], opts: Array, key: String) -> void:
 	var cur: Variant = Save.get_setting(key, opts[0][0])
 	for i in btns.size():
-		var on := str(cur) == str(opts[i][0])
-		if on:
-			UIKit._apply(btns[i], UIKit.TEAL, UIKit.NAVY)
-		else:
-			btns[i].add_theme_stylebox_override("normal", UIKit.box(Color(UIKit.SLATE, 0.55), UIKit.R_BUTTON, 2, Color(UIKit.IVORY, 0.22)))
-			btns[i].add_theme_stylebox_override("hover", UIKit.box(Color(UIKit.SLATE_HI, 0.75), UIKit.R_BUTTON, 2, Color(UIKit.IVORY, 0.3)))
-			for k in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-				btns[i].add_theme_color_override(k, UIKit.IVORY)
+		UIKit.set_selected(btns[i], str(cur) == str(opts[i][0]))
 
 
 func _check(parent: Control, text: String, key: String, def: bool) -> CheckButton:
