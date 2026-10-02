@@ -366,6 +366,11 @@ def build_hair_curly_hat():
     return build_hair_curly('hair_curly_hat', 1.34)
 
 
+def build_hair_curly_low():
+    """V6: curls only below a cap or beanie's edge (the nape and sides)."""
+    return build_hair_curly('hair_curly_low', 1.2)
+
+
 def build_hair_buns():
     """Centre-parted short hair; the two buns are a separate part so they can
     be hidden under headphones and crowns."""
@@ -613,8 +618,28 @@ def _hood(mb, base, rim_style, extra_grow=0.035):
                 return False
         return True
     hw = lambda p: rig.seg_weights(p.z, [('neck', 0.95), ('head', None)], 0.03)
+    f0 = len(mb.f)
     ellipsoid(mb, HEAD_C, (HEAD_R[0] + extra_grow, HEAD_R[1] + extra_grow, HEAD_R[2] + extra_grow), base, hw,
               segs=36, rings=26, power=HEAD_P, keep=keep, deform=rig.head_deform(extra_grow))
+    # V6: the face opening was cut by dropping whole quads, a stepped edge
+    # that showed skin in blocks beside the rim (duck, frog).  Slide the
+    # opening's boundary vertices onto the rim's ellipse.
+    uses = {}
+    for f in mb.f[f0:]:
+        for a, b in zip(f, f[1:] + f[:1]):
+            e = (min(a, b), max(a, b))
+            uses[e] = uses.get(e, 0) + 1
+    edge_v = {i for e, n in uses.items() if n == 1 for i in e}
+    for i in edge_v:
+        p = mb.v[i]
+        if p.y <= 0.0 or p.z < 0.95:
+            continue
+        u, w = p.x / 0.228, (p.z - 1.145) / 0.19
+        r = math.hypot(u, w)
+        if r < 1e-6 or r > 1.8:
+            continue
+        x, z = 0.228 * u / r, 1.145 + 0.19 * w / r
+        mb.v[i] = Vector((x, head_front_y(x, z, extra_grow), z))
     # rim
     pts = []
     for i in range(32):
@@ -1050,7 +1075,7 @@ def build_flippers():
 
 
 ALL_PARTS = [
-    build_base, build_hair, build_hair_hat, build_hair_bob, build_hair_curly, build_hair_curly_hat, build_hair_buns, build_hair_buns_knots,
+    build_base, build_hair, build_hair_hat, build_hair_bob, build_hair_curly, build_hair_curly_hat, build_hair_curly_low, build_hair_buns, build_hair_buns_knots,
     build_freckles,
     build_body_skin, build_pj, build_swim, build_robe, build_duck, build_frog,
     build_watch, build_flashlight, build_mustache,

@@ -222,13 +222,18 @@ const HAT_HIDES_HAIR := {
 	"@cap": ["hair_buns_knots"],
 	"@mask": ["hair_buns_knots"],
 }
-## V5/V6: hair drawn as its hat variant under a hat, so nothing pokes through
-## the band or shell: the curly crop's smooth-band version (V5) and the tuft
-## without its forelock (V6, `hair_hat`).  Variant name = part + "_hat".
+## V5/V6: hair drawn as a variant under a hat, so nothing pokes through the
+## band or shell: the curly crop with a smooth band on top (V5, `_hat`) or
+## with curls only below a cap's edge (V6, `_low`), and the tuft without its
+## forelock (V6, `hair_hat`).  hat (or headwear rule) -> {part: variant}.
 const HAT_HAIR_VARIANT := {
-	"crown": ["hair_curly"], "headphones": ["hair_curly"],
-	"headlamp": ["hair_curly"], "pompom_beanie": ["hair", "hair_curly"], "glow_headband": ["hair_curly"],
-	"owl_ears": ["hair_curly"], "@cap": ["hair", "hair_curly"], "@mask": ["hair", "hair_curly"],
+	"crown": {"hair_curly": "hair_curly_hat"}, "headphones": {"hair_curly": "hair_curly_hat"},
+	"headlamp": {"hair_curly": "hair_curly_hat"},
+	"pompom_beanie": {"hair": "hair_hat", "hair_curly": "hair_curly_low"},
+	"glow_headband": {"hair": "hair_hat", "hair_curly": "hair_curly_hat"},
+	"owl_ears": {"hair_curly": "hair_curly_hat"},
+	"@cap": {"hair": "hair_hat", "hair_curly": "hair_curly_low"},
+	"@mask": {"hair": "hair_hat", "hair_curly": "hair_curly_hat"},
 }
 ## only these outfits show the pattern (the others are single-material)
 const PATTERNED_OUTFITS := ["pj", "robe"]
@@ -365,13 +370,13 @@ static func runner_parts(c: Dictionary) -> Array:
 	want.append_array(entry("hat", a["hat"])["parts"])
 	want.append_array(headwear_parts(a))
 	var hidden: Array = []
-	var swap: Array = []
+	var swap: Dictionary = {}
 	for k in head_rules(a):
 		hidden.append_array(HAT_HIDES_HAIR.get(k, []))
-		swap.append_array(HAT_HAIR_VARIANT.get(k, []))
+		swap.merge(HAT_HAIR_VARIANT.get(k, {}))
 	for p in entry("hair", a["hair"])["parts"]:
 		if not p in hidden:
-			want.append(p + "_hat" if p in swap else p)
+			want.append(swap.get(p, p))
 	return want
 
 

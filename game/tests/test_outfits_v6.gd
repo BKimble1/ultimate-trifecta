@@ -62,7 +62,8 @@ func test_every_v6_key_ships_with_real_parts() -> void:
 	for hw in Cosmetics.OUTFIT_HEADWEAR.values():
 		for p in hw["parts"]:
 			t.check(meshes.has(p), "outfit headwear %s is in runner.glb" % p)
-	t.check(meshes.has("hair_hat"), "the tuft's hat variant is in runner.glb")
+	for v in ["hair_hat", "hair_curly_low"]:
+		t.check(meshes.has(v), "hair variant %s is in runner.glb" % v)
 
 
 func test_outfit_headwear_and_footwear_rules() -> void:
@@ -90,7 +91,7 @@ func test_outfit_headwear_and_footwear_rules() -> void:
 		var s3: Array = shown.call({"outfit": "campus_courier", "hat": h})
 		t.check(not s3.has("acc_courier_cap"), "courier cap gives way to %s" % h)
 	var cap: Array = shown.call({"outfit": "campus_courier", "hat": "none", "hair": "curly"})
-	t.check(cap.has("hair_curly_hat") and not cap.has("hair_curly"), "curls use their smooth-band variant under the cap")
+	t.check(cap.has("hair_curly_low") and not cap.has("hair_curly"), "curls only below the cap's edge")
 	var knots: Array = shown.call({"outfit": "campus_courier", "hat": "none", "hair": "buns"})
 	t.check(knots.has("hair_buns") and not knots.has("hair_buns_knots"), "space buns' knots hidden under the cap")
 	# the raincoat's own boots replace the chosen shoes, for every shoe

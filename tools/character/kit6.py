@@ -325,3 +325,53 @@ def bumpy(mb, center, radii, style, wfn, segs=16, rings=12, amp=0.12, freq=7, ro
         b = (math.sin(freq * n.x + seed) * math.sin(freq * n.y + 2 * seed) * math.sin(freq * n.z + 3 * seed))
         return lp * (1.0 + amp * b)
     ellipsoid(mb, center, radii, style, wfn, segs=segs, rings=rings, rot=rot, deform=deform)
+
+
+def ribbon(mb, pts, normals, half_w, half_t, style, wfn, closed=True, segs=8, lift=None):
+    """A band lying on a surface (head straps, hat cuffs, sweatbands): at each
+    point the cross-section is an ellipse half_w wide along the surface
+    (perpendicular to the path) and half_t thick along the surface normal.
+    geo.sweep orients its section by one hint vector for the whole path, so a
+    ring round a sloping head stood up off the surface or sank into it.
+    `lift` (default half_t) raises the band's centre off the given points."""
+    n = len(pts)
+    lift = half_t if lift is None else lift
+    rows = []
+    for i in range(n):
+        if closed:
+            t = pts[(i + 1) % n] - pts[i - 1]
+        else:
+            t = pts[min(i + 1, n - 1)] - pts[max(i - 1, 0)]
+        t.normalize()
+        nn = Vector(normals[i]).normalized()
+        nn = (nn - t * nn.dot(t)).normalized()
+        u = nn.cross(t).normalized()
+        c = pts[i] + nn * lift
+        row = []
+        for k in range(segs):
+            a = 2 * math.pi * k / segs
+            p = c + u * (math.cos(a) * half_w) + nn * (math.sin(a) * half_t)
+            row.append(mb.vert(p, style, (0, p.z), wfn(p)))
+        rows.append(row)
+    # winding: ring order around t is u -> n; (u x n) = -t, so reverse rows
+    # for outward normals
+    if not closed:
+        mb.grid(rows, True)
+    else:
+        mb.grid(rows, True, closed_v=True)
+    _fix = None
+    return rows
+
+
+def head_band_points(z_front, z_back, grow, n=40):
+    """Points and normals of a loop round the (reshaped) head, its height easing
+    from the forehead (ang +-pi) to the nape (ang 0)."""
+    import parts as P
+    pts, nrm = [], []
+    for k in range(n):
+        ang = -math.pi + 2 * math.pi * k / n
+        z = lerp(z_back, z_front, 0.5 - 0.5 * math.cos(ang))
+        p = P._shell_point(ang, z, grow)
+        pts.append(p)
+        nrm.append(rig.head_normal(p, grow))
+    return pts, nrm
