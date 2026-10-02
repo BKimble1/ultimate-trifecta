@@ -7,10 +7,14 @@ extends Screen
 ##            moonlit ground: a 60 fps loop that is exactly periodic (one
 ##            gait cycle), drawn with premultiplied alpha over the screen's
 ##            own night background, so there is no box, seam or 4:3 picture
-##   bottom   a quiet status: what the round is doing ("Getting campus
-##            ready…", "Placing players…"), a thin bar that follows the
-##            preparation steps actually completed (it never runs ahead), and
-##            "Waiting for players · 3/4 ready" when that is what's happening
+##   bottom   a quiet status: what the round is doing ("Preparing
+##            campus…", "Placing players…"), a thin bar that follows the
+##            preparation steps actually completed (it never runs ahead), then
+##            "Waiting for players · 3/4 ready" with an indeterminate sweep
+##            while this device is ready and the wait is on others (V6: an
+##            unknown wait never shows as a stuck bar)
+##   corner   Cancel (practice) / Leave party (online), usable throughout
+##            (V6; V5 offered it online only, after 25 s)
 ##
 ## The loop (assets/loading/rig_loop_*): 26 frames at 60 fps in one grid
 ## atlas, GPU-compressed (ASTC 4x4 on iOS, ~13 MB), no sound.  Frames rather
@@ -38,6 +42,9 @@ const LOOP_FRAME := Vector2(920, 540)
 const PIC_H := 0.47
 const PIC_MAX_SCALE := 1.25
 const FEET_Y := 0.785
+## Cancel/Leave appears after this long, so a tap carried over from the
+## previous screen can't cancel the round.
+const LEAVE_AFTER_S := 0.8
 
 signal done
 
@@ -60,7 +67,7 @@ var _atlas_pending := false
 var _loop_t := 0.0
 var _frame := -1
 var _t := 0.0
-var _stage_text := "Getting campus ready…"
+var _stage_text := "Preparing campus…"
 var _closing := false
 var _status: VBoxContainer
 
@@ -92,13 +99,14 @@ func build() -> void:
 	if not UIKit.reduced_motion():
 		if App.claim_threaded_load(LOOP_ATLAS) or ResourceLoader.load_threaded_request(LOOP_ATLAS, "Texture2D") == OK:
 			_atlas_pending = true
-	# top left, clear of the runners and the status: only after a long wait
+	# top left, clear of the runners and the status
 	var top := UIKit.hbox(0)
 	top.alignment = BoxContainer.ALIGNMENT_BEGIN
 	content.add_child(top)
-	leave_btn = UIKit.quiet("Leave party", Vector2(220, 0))
-	leave_btn.visible = false
-	leave_btn.pressed.connect(func() -> void: App.leave_room())
+	leave_btn = UIKit.quiet("Leave party" if _online() else "Cancel", Vector2(200, 0))
+	leave_btn.modulate.a = 0.0
+	leave_btn.disabled = true
+	leave_btn.pressed.connect(_leave)
 	top.add_child(leave_btn)
 	_status = UIKit.vbox(8)
 	_status.alignment = BoxContainer.ALIGNMENT_END
@@ -171,6 +179,20 @@ func loop_running() -> bool:
 	return _atlas != null
 
 
+func _online() -> bool:
+	return session != null and is_instance_valid(session) and session.mode != NetSession.Mode.OFFLINE
+
+
+## Cancel (practice) or leave the party (online), at any point of the
+## preparation.  App frees the half-prepared round.
+func _leave() -> void:
+	if _closing:
+		return
+	_closing = true
+	leave_btn.disabled = true
+	App.cancel_round()
+
+
 func _process(delta: float) -> void:
 	_t += delta
 	_poll_atlas()
@@ -182,22 +204,38 @@ func _process(delta: float) -> void:
 			_mat.set_shader_parameter("frame", float(f))
 	if _closing:
 		return
+	if leave_btn.disabled and _t >= LEAVE_AFTER_S:
+		leave_btn.disabled = false
+		Motion.animate(leave_btn, "modulate:a", 1.0, 0.0 if UIKit.reduced_motion() else 0.2)
 	var mc_ok := match_ctrl != null and is_instance_valid(match_ctrl)
 	if mc_ok and match_ctrl.round_live():
 		_close()
 		return
-	var online := session != null and is_instance_valid(session) and session.mode != NetSession.Mode.OFFLINE
-	if mc_ok:
-		bar.target = match_ctrl.prep_progress()
-		if match_ctrl.prepared:
-			set_stage("Starting…" if not online else "Ready")
-	if not online:
+	if not mc_ok:
 		return
-	var lp: Array = session.load_progress()
-	if int(lp[1]) > 1:
-		wait_lbl.text = "Waiting for players · %d/%d ready" % [lp[0], lp[1]] if int(lp[0]) < int(lp[1]) else "Everyone's ready"
-	# a real, recoverable state: a long wait for a slow or lost player
-	leave_btn.visible = _t > 25.0
+	_update_status(match_ctrl.prepared, match_ctrl.prep_progress(), session.load_progress() if _online() else [1, 1])
+
+
+## Two phases, never mixed up: "Preparing campus…" with the real share of
+## the preparation done, then (this device ready, the round not yet live)
+## "Waiting for players · a/b ready" with an indeterminate sweep, since how
+## long others take is unknown.  A guest that is ready waits for the host's
+## first snapshot ("Starting…").
+func _update_status(prepared: bool, progress: float, lp: Array) -> void:
+	if not prepared:
+		bar.indeterminate = false
+		bar.target = progress
+		wait_lbl.text = ""
+		return
+	bar.indeterminate = true
+	var ready := int(lp[0])
+	var total := int(lp[1])
+	if total > 1 and ready < total:
+		set_stage("Waiting for players")
+		wait_lbl.text = "%d/%d ready" % [ready, total]
+	else:
+		set_stage("Starting…")
+		wait_lbl.text = "Everyone's ready" if total > 1 else ""
 
 
 func _poll_atlas() -> void:
@@ -249,21 +287,40 @@ func _exit_tree() -> void:
 	_still = null
 
 
+## Back (controller/keyboard) cancels practice once Cancel is shown; online
+## it does nothing (leaving the party takes the button itself).
 func _go_back() -> void:
-	pass
+	if not _online() and not leave_btn.disabled:
+		_leave()
 
 
 ## A thin bar for the real preparation progress: it eases toward what the
-## match reports and never runs ahead of it.
+## match reports and never runs ahead of it.  Indeterminate (V6) for a wait
+## of unknown length: a short segment sweeps across (Reduced Motion: a
+## still, dimmer full bar).
 class ProgressLine:
 	extends Control
+	const SWEEP_S := 1.4
+	const SEG := 0.28
 	var target := 0.0
 	var shown := 0.0
+	var indeterminate := false:
+		set(v):
+			if v != indeterminate:
+				indeterminate = v
+				_phase = 0.0
+				queue_redraw()
+	var _phase := 0.0
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	func _process(delta: float) -> void:
+		if indeterminate:
+			if not UIKit.reduced_motion():
+				_phase = fmod(_phase + delta / SWEEP_S, 1.0)
+				queue_redraw()
+			return
 		var t := clampf(target, 0.0, 1.0)
 		var n := minf(t, move_toward(shown, t, delta * 1.6))
 		if not is_equal_approx(n, shown):
@@ -273,5 +330,17 @@ class ProgressLine:
 	func _draw() -> void:
 		var r := int(size.y * 0.5)
 		draw_style_box(UIKit.box(Color(UIKit.IVORY, 0.14), r, 0), Rect2(Vector2.ZERO, size))
+		if indeterminate:
+			if UIKit.reduced_motion():
+				draw_style_box(UIKit.box(Color(UIKit.TEAL, 0.55), r, 0), Rect2(Vector2.ZERO, size))
+				return
+			# eased sweep, clipped to the track
+			var e := 0.5 - 0.5 * cos(_phase * PI)
+			var x0 := (e * (1.0 + SEG) - SEG) * size.x
+			var a := maxf(0.0, x0)
+			var b := minf(size.x, x0 + SEG * size.x)
+			if b - a > 1.0:
+				draw_style_box(UIKit.box(UIKit.TEAL, r, 0), Rect2(Vector2(a, 0), Vector2(maxf(size.y, b - a), size.y)))
+			return
 		if shown > 0.001:
 			draw_style_box(UIKit.box(UIKit.TEAL, r, 0), Rect2(Vector2.ZERO, Vector2(maxf(size.y, size.x * shown), size.y)))

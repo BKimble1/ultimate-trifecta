@@ -166,6 +166,20 @@ static func _node() -> Node:
 	return tree.root.get_node_or_null("Diag")
 
 
+## V6: backgrounding (home, a call, Control Center).  The first frame after
+## coming back spans the whole time away: it starts a fresh interval instead
+## of being counted as a multi-second stall.  Both edges go on the timeline.
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT:
+			if _last_us != 0:
+				mark("app_paused" if what == NOTIFICATION_APPLICATION_PAUSED else "app_focus_out")
+			_last_us = 0
+		NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_IN:
+			_last_us = 0
+			mark("app_resumed" if what == NOTIFICATION_APPLICATION_RESUMED else "app_focus_in")
+
+
 func _process(_delta: float) -> void:
 	var now := Time.get_ticks_usec()
 	if _last_us == 0 or not enabled:
