@@ -191,23 +191,35 @@ static func _why(r: Dictionary) -> String:
 
 func _rewards(v: VBoxContainer) -> void:
 	var rw := UIKit.hbox(14)
+	var ws: Dictionary = reward.get("wallet", {})
 	if bool(reward.get("away", false)):
 		rw.add_child(UIKit.styled("You were away for most of this round, so it pays nothing.", "caption", UIKit.IVORY_MUTED))
+	elif not ws.is_empty():
+		# V6: Coins and Season XP are whatever the service settles for this
+		# round (Wallet.round_summary); the label updates in place
+		var lbl := UIKit.styled("", "label", UIKit.AMBER)
+		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		rw.add_child(lbl)
+		var mid := String(ws.get("match_id", ""))
+		var paint := func() -> void:
+			if not is_instance_valid(lbl):
+				return
+			var r := Wallet.round_summary(mid)
+			match String(r["state"]):
+				"settled":
+					lbl.text = "+%s Coins · +%d Season XP" % [Catalogue.format_coins(int(r["coins"])), int(r["season_xp"])]
+				"pending":
+					lbl.text = "+%s Coins · +%d Season XP (adding…)" % [Catalogue.format_coins(int(r["coins_projected"])), int(r["season_xp_projected"])]
+				_:
+					lbl.text = String(r["message"])
+					lbl.add_theme_color_override("font_color", UIKit.IVORY_MUTED)
+		paint.call()
+		Wallet.round_updated.connect(func(m: String) -> void:
+			if m == mid:
+				paint.call(), CONNECT_REFERENCE_COUNTED)
 	elif reward.is_empty() or int(reward.get("coins", 0)) == 0:
 		rw.add_child(UIKit.styled("No rewards for this round.", "caption", UIKit.IVORY_MUTED))
-	else:
-		var coins := UIKit.label("+%d ¢" % int(reward.get("coins", 0)), 30, UIKit.AMBER)
-		coins.add_theme_font_override("font", UIKit.font_num(800))
-		rw.add_child(coins)
-		var bits: Array[String] = []
-		for line in reward.get("lines", []):
-			bits.append("%s %+d" % [line[0], int(line[1])])
-		var det := UIKit.styled(" · ".join(bits), "caption", UIKit.IVORY_MUTED)
-		det.add_theme_font_size_override("font_size", 18)
-		det.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		det.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		det.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		rw.add_child(det)
 	v.add_child(rw)
 	if bool(reward.get("level_up", false)):
 		v.add_child(UIKit.styled("Level up! You're now level %d" % int(reward.get("level", 1)), "label", UIKit.TEAL))

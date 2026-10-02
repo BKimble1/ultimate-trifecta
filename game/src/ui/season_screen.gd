@@ -383,6 +383,7 @@ class RewardCell:
 		state = screen.cell_state(tier, track)
 		art.state = state
 		art.queue_redraw()
+		modulate.a = 0.45 if state == "empty" else 1.0
 		disabled = false
 		var r := Economy.reward_at(screen.sid, tier, track)
 		var label: String = {"locked": "locked", "premium_locked": "earned, needs Premium", "claimable": "ready to claim",

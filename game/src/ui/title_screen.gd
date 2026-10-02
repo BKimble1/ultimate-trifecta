@@ -59,14 +59,13 @@ func build() -> void:
 	var rail := UIKit.vbox(8)
 	rail.size_flags_vertical = Control.SIZE_SHRINK_END
 	rail.add_child(NavShell.make("play", true))
-	var wc := WalletChip.new()
-	wc.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	rail.add_child(wc)
+	var row := UIKit.hbox(8)
+	row.add_child(WalletChip.new())
 	emote_btn = UIKit.icon_button("smile", "Emote")
 	emote_btn.pressed.connect(func() -> void: emote_picker(emote_btn, _emote))
 	emote_btn.size_flags_vertical = Control.SIZE_SHRINK_END
-	emote_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	rail.add_child(emote_btn)
+	row.add_child(emote_btn)
+	rail.add_child(row)
 	bottom.add_child(rail)
 	bottom.add_child(UIKit.spacer_h())
 	var col := UIKit.vbox(12)
