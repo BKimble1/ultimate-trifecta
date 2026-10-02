@@ -73,6 +73,7 @@ var _yaw := 0.0
 var _drag_from := -1.0
 var _spin := 0.0
 var _yaw_set := false
+var _stage_area: Control
 
 
 func build() -> void:
@@ -108,14 +109,16 @@ func build() -> void:
 	v.add_child(mid)
 	# left: the stage area (drag to turn) + preview controls
 	var stage_area := StageDrag.new()
+	_stage_area = stage_area
 	stage_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	stage_area.creator = self
 	mid.add_child(stage_area)
-	var pv := UIKit.hbox(10)
+	# preview controls stacked in the corner, clear of the runner
+	var pv := UIKit.vbox(8)
 	stage_area.add_child(pv)
 	var turn_hint := UIKit.chip("Drag to turn", Color(UIKit.NAVY, 0.6), UIKit.IVORY_MUTED, 18)
 	turn_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	turn_hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	turn_hint.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	pv.add_child(turn_hint)
 	var turn_lbl: Label = turn_hint.find_children("*", "Label", true, false)[0]
 	var on_dev := func(k: String) -> void:
@@ -124,11 +127,13 @@ func build() -> void:
 	Controls.device_changed.connect(on_dev)
 	on_dev.call(Controls.device)
 	run_btn = UIKit.quiet("Run", Vector2(130, 0))
+	run_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	run_btn.tooltip_text = "Preview running"
 	run_btn.pressed.connect(func() -> void:
 		preview_run = not preview_run
 		run_btn.text = "Idle" if preview_run else "Run")
 	pv.add_child(run_btn)
+	pv.move_child(run_btn, 0)
 	stage_area.resized.connect(func() -> void: pv.position = Vector2(0, stage_area.size.y - pv.get_combined_minimum_size().y))
 
 	# right: categories + cards.  The panel takes ~58% of a wide phone and a
@@ -167,8 +172,20 @@ func build() -> void:
 	back_action = _back if not first_run else func() -> void: pass
 	_build_tab()
 	Motion.settle_in(panel)
+	_stage_area.resized.connect(_frame_stage)
+	get_viewport().size_changed.connect(_frame_stage)
+	_frame_stage.call_deferred()
 	var lc := App.stage.local_character() if App.stage else null
 	_yaw = lc.rotation.y if lc else 0.0
+
+
+## Tell the stage where the free space left of the item panel is.
+func _frame_stage() -> void:
+	if App.stage and is_instance_valid(_stage_area) and _stage_area.is_inside_tree():
+		var w := get_viewport().get_visible_rect().size.x
+		var r := _stage_area.get_global_rect()
+		# a little right of centre: the preview controls sit in the left corner
+		App.stage.set_wardrobe_region((r.get_center().x + r.size.x * 0.12) / maxf(1.0, w), r.size.x / maxf(1.0, w))
 
 
 func _category_strip() -> Control:

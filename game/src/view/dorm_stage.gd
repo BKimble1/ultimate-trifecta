@@ -39,6 +39,9 @@ const HOME_MARK := Vector3(0.62, 0, 0.6)
 const BODY_HALF_W := 0.62
 ## fraction of the screen width left of the party panel (set by LobbyScreen)
 var lobby_free_frac := 0.62
+## the wardrobe's free region left of its item panel, as fractions of the
+## screen width: [centre, width] (set by CreatorScreen, V5)
+var wardrobe_region := Vector2(0.27, 0.44)
 var cam: Camera3D
 var chars: Dictionary = {}       # key -> CharacterView
 var _mark_of: Dictionary = {}    # key -> mark index
@@ -88,6 +91,12 @@ func _cam_for(m: String) -> Array:
 	var vs := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(16, 9)
 	var aspect := vs.x / maxf(1.0, vs.y)
 	var cam_h := float(f[3])
+	if m == "wardrobe":
+		# (V5) centred in the space the item panel leaves, and small enough
+		# that the runner (arms out, ~1.45 m wide with margin) fits there on
+		# any aspect: a 4:3 iPad gives the panel more of the width
+		x_frac = wardrobe_region.x
+		height_m = maxf(height_m, 1.45 / maxf(0.1, aspect * wardrobe_region.y))
 	if m == "lobby":
 		# frame the marks actually in use (1 to 8 players), centred in the free
 		# area left of the party panel, on any aspect (phone 19.5:9 ... iPad 4:3)
@@ -134,6 +143,17 @@ func _reframe() -> void:
 		_apply_cam(_cam_for(mode), 1.0)
 	for k in chars:
 		_place(k)
+
+
+func set_wardrobe_region(center_frac: float, width_frac: float) -> void:
+	var r := Vector2(clampf(center_frac, 0.12, 0.6), clampf(width_frac, 0.2, 0.9))
+	if r.distance_to(wardrobe_region) < 0.01:
+		return
+	wardrobe_region = r
+	if mode == "wardrobe" and _cam_t >= 1.0:
+		_apply_cam(_cam_for(mode), 1.0)
+		for k in chars:
+			_place(k)
 
 
 func set_lobby_free_frac(f: float) -> void:
