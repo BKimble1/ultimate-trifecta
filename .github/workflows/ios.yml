@@ -146,6 +146,9 @@ jobs:
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           BUILD_NUMBER: ${{ steps.num.outputs.build }}
+          # V6: bake the Metal shaders into the export (falls back to the
+          # headless export if the baking export can't run on the runner)
+          SHADER_BAKE: "1"
         run: |
           export GODOT_BIN=$(cat tools/.cache/godot/BIN)
           tools/export_ios.sh
@@ -295,6 +298,7 @@ jobs:
             ls "$APP/Frameworks" 2>/dev/null; [ -f "$APP/Frameworks/UTShare.framework/UTShare" ] && { echo "UTShare embedded:"; lipo -info "$APP/Frameworks/UTShare.framework/UTShare"; } || echo "UTShare framework NOT embedded"; find "$APP" -name 'PrivacyInfo.xcprivacy' | sed "s|$APP/||"; }
           find build/ios -name '*.entitlements' -maxdepth 3 -exec sh -c 'echo "== $1"; cat "$1"' _ {} \;
           PM=$(find build/ios -maxdepth 3 -name PrivacyInfo.xcprivacy | head -1); [ -n "$PM" ] && { echo "== $PM"; plutil -convert json -o - "$PM"; echo; }
+          [ -f build/ios/shader_bake.txt ] && { echo "== shader baker"; cat build/ios/shader_bake.txt; }
           [ -f sim-evidence/summary.txt ] && { echo "== Simulator summary"; cat sim-evidence/summary.txt; }
           for f in sim-evidence/launch_assets/launch_audit.txt sim-evidence/launch_assets/files.txt sim-evidence/launch_assets/branding_text.txt; do
             [ -f "$f" ] && { echo "== launch audit: $(basename "$f")"; cat "$f"; }; done

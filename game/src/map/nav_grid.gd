@@ -276,6 +276,96 @@ func find_path(a: Vector2, b: Vector2, for_cart: bool = false, smooth: bool = tr
 	return out
 
 
+# ---------------------------------------------------------------------------
+# V6: bounded path work per simulation tick (bots)
+# ---------------------------------------------------------------------------
+## Measured (V6, src/dev/sim_profile.tscn): bot thinking was 97 % of a
+## simulation tick, almost all of it A* on this 320x300 grid (~6 ms a path
+## on the desktop test machine).  Replans cluster (round start, Night Watch
+## chases every 0.5 s, flee/stuck replans), so single ticks reached 45-60 ms
+## and pushed the 60 Hz physics loop into catch-up (6 ticks per frame): the
+## "smooth, then suddenly very glitchy" pattern.  Bots now ask for paths
+## here: a clear straight line needs no search; a path to the same goal from
+## the same neighbourhood is reused; at most `budget_per_tick` searches run
+## in one simulation tick and the rest wait a tick (the bot steers straight
+## at its goal meanwhile).  Direct find_path() calls (tools, tests) are
+## unchanged.
+const CACHE_MAX := 192
+const CACHE_BUCKET := 6          # start cells per cache key bucket (6 m)
+var budget_per_tick := 1
+var deferred := false            # the last budgeted request had to wait
+var path_stats := {"search": 0, "direct": 0, "cache": 0, "deferred": 0, "unreachable": 0}
+const UNREACHABLE_TTL := 300     # ticks (5 s) an unreachable foot start/goal is not searched again
+const UNREACHABLE_TTL_CART := 3600  # a cart goal off the road network stays off it (60 s)
+var _cache: Dictionary = {}      # key -> PackedVector2Array (world)
+var _cache_keys: Array = []
+var _unreachable: Dictionary = {} # key -> physics frame of the failed search
+## dev profiling only: set to [] to collect searches over 8 ms
+var debug_slow_searches = null
+var _budget_frame := -1
+var _budget_used := 0
+
+
+func find_path_budgeted(a: Vector2, b: Vector2, for_cart: bool = false) -> PackedVector2Array:
+	deferred = false
+	var g := cart if for_cart else foot
+	var ca := nearest_open(g, a)
+	var cb := nearest_open(g, b)
+	if ca == cb or _clear_line(g, ca, cb):
+		path_stats["direct"] += 1
+		return PackedVector2Array([to_world(ca), to_world(cb)])
+	var key := Vector4i(int(for_cart), ca.x / CACHE_BUCKET, ca.y / CACHE_BUCKET, cb.x * 4096 + cb.y)
+	# an unreachable cart goal (a dorm door, a lawn pocket) is unreachable
+	# from the whole road network, so it is remembered by goal alone: a cart
+	# moving through new neighbourhoods would otherwise search again from
+	# each one (measured: ~20 ms each, every few ticks).  Foot goals keep the
+	# start in the key (a runner boxed in somewhere must not block a goal for
+	# everyone).
+	var ukey := Vector4i(1, -1, -1, cb.x * 4096 + cb.y) if for_cart else key
+	if _unreachable.has(ukey):
+		if Engine.get_physics_frames() - int(_unreachable[ukey]) < (UNREACHABLE_TTL_CART if for_cart else UNREACHABLE_TTL):
+			# a search from here to there explored the whole grid a moment
+			# ago and found nothing: don't repeat it every tick
+			path_stats["unreachable"] += 1
+			return PackedVector2Array()
+		_unreachable.erase(ukey)
+	if _cache.has(key):
+		var cached: PackedVector2Array = _cache[key]
+		# reuse from here only if the first leg is clear from this start
+		if cached.size() >= 2 and _clear_line(g, ca, nearest_open(g, cached[1])):
+			path_stats["cache"] += 1
+			var out := cached.duplicate()
+			out[0] = to_world(ca)
+			return out
+	var f := Engine.get_physics_frames()
+	if f != _budget_frame:
+		_budget_frame = f
+		_budget_used = 0
+	if _budget_used >= budget_per_tick:
+		deferred = true
+		path_stats["deferred"] += 1
+		return PackedVector2Array()
+	_budget_used += 1
+	path_stats["search"] += 1
+	var ts := Time.get_ticks_usec()
+	var path := find_path(a, b, for_cart)
+	if debug_slow_searches != null:
+		var us := Time.get_ticks_usec() - ts
+		if us > 8000 and debug_slow_searches.size() < 60:
+			debug_slow_searches.append([snapped(a, Vector2(0.1, 0.1)), snapped(b, Vector2(0.1, 0.1)), for_cart, us / 1000.0, path.size()])
+	if path.is_empty():
+		if _unreachable.size() > CACHE_MAX:
+			_unreachable.clear()
+		_unreachable[ukey] = f
+	if path.size() >= 2:
+		if not _cache.has(key):
+			_cache_keys.append(key)
+			if _cache_keys.size() > CACHE_MAX:
+				_cache.erase(_cache_keys.pop_front())
+		_cache[key] = path
+	return path
+
+
 func path_length(path: PackedVector2Array) -> float:
 	var L := 0.0
 	for i in path.size() - 1:

@@ -76,6 +76,16 @@ func _pass(c: Variant) -> void:
 		ctl.mouse_filter = Control.MOUSE_FILTER_PASS
 
 
+## Backgrounding, an incoming call or losing focus mid-drag: nothing stays
+## pressed, and the next touch starts clean.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED \
+			or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+		dragging = false
+		if is_instance_valid(sc):
+			cancel_presses(sc)
+
+
 func _on_gui_input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		if e.pressed:
