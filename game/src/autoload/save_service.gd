@@ -1,6 +1,11 @@
 extends Node
-## Versioned local profile: settings, wardrobe, coins, level, personal stats,
-## reward ledger (each match id pays out once). Stored only on this device.
+## Versioned local profile: settings, appearance, level, personal stats and
+## the per-match stats ledger. Stored only on this device.
+## V6 (version 4): Coins, purchases and Season progress live in the Wallet
+## (the service's ledger, cached in user://wallet.json).  The pre-V6 balance
+## and unlocks are kept here, frozen, in "legacy" (imported once to an
+## account by the Wallet); "owned" stays the list of pre-V6 unlocks on this
+## device; "coins" is only a mirror of the displayed balance for old readers.
 ## Identity kept: a random local id and an auto-generated fun name; with Game
 ## Center signed in, the Game Center id/name are used for rooms instead.
 
@@ -9,7 +14,11 @@ signal changed
 const PATH := "user://profile.json"
 ## 3 (V3): "cosmetic" holds the schema-2 appearance (Cosmetics); owned keys
 ## use schema-2 item keys; free items need no owned entry.
-const VERSION := 3
+## 4 (V6): "legacy" freezes the pre-V6 balance/unlocks/round counts for the
+## one-time account import; "profile_style" (name card, badge); the 200-entry
+## "rewarded" list is a stats ledger only (financial idempotency is the
+## service's, keyed per round and player, never truncated).
+const VERSION := 4
 const ADJ := ["Sleepy", "Soggy", "Sneaky", "Snoozy", "Zippy", "Drowsy", "Splashy", "Fuzzy", "Comfy", "Wobbly", "Speedy", "Moonlit"]
 const ANIMALS := ["Otter", "Duck", "Frog", "Llama", "Panda", "Gecko", "Walrus", "Badger", "Koala", "Puffin", "Newt", "Moose"]
 
@@ -37,6 +46,8 @@ func default_profile() -> Dictionary:
 		"cosmetic": Cosmetics.DEFAULT.duplicate(),
 		"owned": [],
 		"coins": 0, "level": 1, "xp": 0,
+		"legacy": {"coins": 0, "owned": [], "online_rounds": 0, "practice_rounds": 0, "from_version": VERSION},
+		"profile_style": {"card": "", "badge": ""},
 		"stats": {"online": _blank_stats(), "practice": _blank_stats()},
 		"rewarded": [],
 		"recent": [],
@@ -113,6 +124,21 @@ func migrate(d: Dictionary) -> Dictionary:
 	# V1/V2 wardrobe -> schema 2 appearance (same look) and item keys
 	out["cosmetic"] = Cosmetics.sanitize(out["cosmetic"] if out["cosmetic"] is Dictionary else {})
 	out["owned"] = Cosmetics.migrate_owned(out["owned"] if out["owned"] is Array else [])
+	if v < 4:
+		# V6: freeze the pre-V6 balance, unlocks and round counts for the
+		# Wallet's one-time, bounded account import (source "legacy_beta").
+		# A v4 profile is never re-frozen, so migrating twice changes nothing.
+		var st: Dictionary = out["stats"]
+		out["legacy"] = {"coins": maxi(0, int(d.get("coins", 0))), "owned": (out["owned"] as Array).duplicate(),
+			"online_rounds": int(st["online"].get("matches", 0)), "practice_rounds": int(st["practice"].get("matches", 0)), "from_version": v}
+	if not (out["legacy"] is Dictionary):
+		out["legacy"] = default_profile()["legacy"]
+	var lg: Dictionary = out["legacy"]
+	out["legacy"] = {"coins": maxi(0, int(lg.get("coins", 0))), "owned": Cosmetics.migrate_owned(lg.get("owned", []) if lg.get("owned", []) is Array else []),
+		"online_rounds": maxi(0, int(lg.get("online_rounds", 0))), "practice_rounds": maxi(0, int(lg.get("practice_rounds", 0))),
+		"from_version": int(lg.get("from_version", VERSION))}
+	if not (out["profile_style"] is Dictionary):
+		out["profile_style"] = {"card": "", "badge": ""}
 	out["version"] = VERSION
 	return out
 
@@ -223,57 +249,50 @@ func player_uid() -> String:
 	return String(data["uid"])
 
 
+## Ownership is the Wallet's (free options, pre-V6 unlocks on this device,
+## account entitlements, Apple-verified skins).
 func owns(field: String, key: String) -> bool:
-	if Cosmetics.entry(field, key).is_empty():
-		return false
-	return Cosmetics.cost(field, key) == 0 or (data["owned"] as Array).has(Cosmetics.own_key(field, key))
+	return Wallet.owns(field, key)
 
 
-func buy(field: String, key: String) -> bool:
-	if owns(field, key):
-		return true
-	if Cosmetics.entry(field, key).is_empty():
-		return false
-	var cost := Cosmetics.cost(field, key)
-	if int(data["coins"]) < cost:
-		return false
-	data["coins"] = int(data["coins"]) - cost
-	(data["owned"] as Array).append(Cosmetics.own_key(field, key))
-	mark()
-	return true
-
-
-## Coins needed to apply an appearance (items not yet owned).
-func price_of(appearance: Dictionary) -> int:
-	var a := Cosmetics.sanitize(appearance)
-	var total := 0
-	for f in Cosmetics.ORDER:
-		if not owns(f, a[f]):
-			total += Cosmetics.cost(f, a[f])
-	return total
-
-
-## Creator "Apply": buys whatever is not owned yet and equips the whole look
-## in one step.  Idempotent: applying the same look again costs nothing.
-## Returns {"ok", "spent", "short"}; nothing changes when coins are short.
+## Locker "Save": equips a look made only of owned items.  Never spends:
+## buying happens in the Shop.  Returns {"ok", "missing": [item ids]}.
 func apply_appearance(appearance: Dictionary) -> Dictionary:
 	var a := Cosmetics.sanitize(appearance)
-	var price := price_of(a)
-	if int(data["coins"]) < price:
-		return {"ok": false, "spent": 0, "short": price - int(data["coins"])}
+	var missing: Array = []
 	for f in Cosmetics.ORDER:
 		if not owns(f, a[f]):
-			(data["owned"] as Array).append(Cosmetics.own_key(f, a[f]))
-	data["coins"] = int(data["coins"]) - price
+			missing.append(Catalogue.id_for(f, String(a[f])))
+	if not missing.is_empty():
+		return {"ok": false, "missing": missing}
 	data["cosmetic"] = a
 	mark()
-	return {"ok": true, "spent": price, "short": 0}
+	return {"ok": true, "missing": []}
 
 
 func equip(field: String, key: Variant) -> void:
 	if owns(field, String(key)):
 		data["cosmetic"][field] = String(key)
 	data["cosmetic"] = Cosmetics.sanitize(data["cosmetic"])
+	mark()
+
+
+## Name card / badge (UI-only profile cosmetics; "" = none).
+func profile_style() -> Dictionary:
+	var ps: Dictionary = data.get("profile_style", {})
+	var out := {"card": String(ps.get("card", "")), "badge": String(ps.get("badge", ""))}
+	for k in out:
+		if out[k] != "" and not Wallet.owns_id(String(out[k])):
+			out[k] = ""   # no longer owned (e.g. a different profile): shown as none
+	return out
+
+
+func set_profile_style(kind: String, id: String) -> void:
+	if id != "" and not Wallet.owns_id(id):
+		return
+	var ps: Dictionary = data.get("profile_style", {"card": "", "badge": ""})
+	ps[kind] = id
+	data["profile_style"] = ps
 	mark()
 
 
@@ -310,7 +329,7 @@ func apply_results(results: Dictionary, slot: int, practice: bool, uid: String =
 	if not bool(me.get("present", true)) or (rt > 0.0 and away > (1.0 - PartySeries.PRESENT_SHARE) * rt):
 		(data["rewarded"] as Array).append(mid)
 		mark()
-		return {"coins": 0, "xp": 0, "lines": [], "away": true}
+		return {"coins": 0, "xp": 0, "season_xp": 0, "lines": [], "away": true, "wallet": Wallet.settle_round(results, me, practice)}
 	var rew := RulesLogic.compute_rewards(results, slot, Rules.cfg, practice)
 	var st: Dictionary = data["stats"]["practice" if practice else "online"]
 	st["matches"] = int(st["matches"]) + 1
@@ -334,7 +353,8 @@ func apply_results(results: Dictionary, slot: int, practice: bool, uid: String =
 		if outcome == TC.Outcome.PATROL_WIN:
 			st["wins"] = int(st["wins"]) + 1
 	var before_level := int(data["level"])
-	data["coins"] = int(data["coins"]) + int(rew["coins"])
+	# V6: Coins and Season XP are settled by the service through the Wallet
+	# (eligible online rounds only); lifetime XP stays local
 	var lx := RulesLogic.add_xp(int(data["level"]), int(data["xp"]), int(rew["xp"]), Rules.cfg)
 	data["level"] = lx[0]
 	data["xp"] = lx[1]
@@ -351,4 +371,5 @@ func apply_results(results: Dictionary, slot: int, practice: bool, uid: String =
 	save_now()
 	rew["level_up"] = int(data["level"]) > before_level
 	rew["level"] = data["level"]
+	rew["wallet"] = Wallet.settle_round(results, me, practice)
 	return rew
