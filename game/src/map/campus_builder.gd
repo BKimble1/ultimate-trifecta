@@ -486,6 +486,7 @@ func _release() -> void:
 	_steps.clear()
 	arch = null
 	marks = null
+	dorm_art = null
 	kit = null
 	_root = null
 	_rng = null
