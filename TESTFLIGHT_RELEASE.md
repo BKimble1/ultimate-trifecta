@@ -19,42 +19,45 @@ Current version: **1.3 (V4)**. It uses the same app, bundle ID, Game Center capa
 
 ## Current release state
 
-**State: signed archive created · uploaded · processed (VALID) · available to internal testers.**
+**State: signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **1.3 (3)**.
 
 It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, and nothing was submitted for App Store review.
 
 | | |
 |---|---|
-| Build | `com.idlery.ultimatetrifecta` **1.2 (1)**. App Store Connect build ID `16d704eb-e460-4493-97b8-9345653b4589`. |
-| Build number | **1**: the lane's check of App Store Connect found no earlier build for the app, so it chose 1. |
-| Source | Commit `e39c98c`. Its game, service and native code are identical to `001f274`, the code every test, soak and capture ran on. The later commits change only the lane, docs and media. |
-| Uploaded | 2026-10-02 03:39:23 UTC, by GitHub Actions run #32 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/36960504454) with `upload=true`. |
+| Build | `com.idlery.ultimatetrifecta` **1.3 (3)**. App Store Connect build ID `0e2a48cf-c8f9-4845-a2e6-3a86c96e54cc`. |
+| Build number | **3**: the lane read the highest existing build (1.3 (2)) and added one. |
+| Source | Commit `6677eb2`: all V4 work, including the match loading animation. Later commits change only documentation, media and development tools (`src/dev`, which is excluded from the export). |
+| Uploaded | 2026-10-02 08:44:26 UTC, by GitHub Actions run #52 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/36984723213) with `upload=true`. |
 | Apple's processing | `VALID`. The build is `INTERNAL_ONLY` (uploaded with `testFlightInternalTestingOnly`) and declares no non-exempt encryption. |
-| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. |
+| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. What to Test is set from `docs/testflight/what_to_test.txt` (1455 characters, en-US). |
 | Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which is set to receive every build. The lane added no one. TestFlight's automatic notification is on, so that group's members are told the build is ready. |
-| Confirmed by | Apple's API, read by run #32 after processing and again by the read-only status runs #34 and #35 (03:51 and 03:53 UTC). Run #35 also shows the marketing version, 1.2. |
+| Confirmed by | Apple's API, read by run #52 after processing (09:02 UTC). |
 
-What the signed archive contains (run #32's build facts):
-- **Binary:** arm64, 270 MB `.app`.
-- **Toolchain:** Xcode 26.6 (17F113), iOS SDK 26.5. MinimumOSVersion 17.0; iPhone and iPad; landscape left and right.
+Earlier builds, all still `VALID` and internal-only:
+- **1.3 (2)** (`c277c020-…`, run #50, commit `4e828da`, uploaded 07:37 UTC): V4 without the loading animation. Test 1.3 (3) instead.
+- **1.2 (1)** (`16d704eb-…`, run #32, commit `e39c98c`, uploaded 03:39 UTC): V3.
+
+What the signed archive contains (run #52's build facts):
+- **Binary:** arm64. **Toolchain:** Xcode 26.6 (17F113), iOS SDK 26.5. MinimumOSVersion 17.0; iPhone and iPad; landscape left and right.
 - **Plist:** `ITSAppUsesNonExemptEncryption` false.
 - **Frameworks:** `GodotApplePluginsGameCenter`, `SwiftGodotRuntime` and `UTShare` are embedded; UTShare is arm64.
 - **Entitlements and privacy:** the Game Center entitlement, and `PrivacyInfo.xcprivacy` (no tracking, no collected data, because the game service is off).
+- **Launch audit:** the only launch file is the storyboard. The only text files naming Idlery are build plists carrying the bundle ID. There are no "powered by" strings in the game data.
+- **New in 1.3 (3):** the loading animation ships as one 19-frame texture atlas (about 13.8 MB as ASTC) and a still. There is no video file and no audio.
 
 How it got there:
-- **Run #31** (`7a5325b`) failed at the signed archive, before anything was uploaded. Godot writes "Apple Distribution" into the Release configuration, and Xcode rejects a manually chosen identity under automatic signing ("conflicting provisioning settings").
-- **The fix** (`e39c98c`): signed builds archive with the development identity, and the App Store Connect export re-signs the build for distribution.
-- **Run #32** archived, exported and uploaded the build in about 2 minutes. The Simulator run followed while Apple processed it.
-- **Run #36** (`26cb5fe`) checked that unsigned builds still work with the signing change: unsigned device archive, then the Simulator with no crash report.
-- **Earlier unsigned CI builds** of V3 (runs #26, #28, #29 and #30) passed, including the unsigned device archive. Run #28's Simulator log shows a cold launch with no crash report. V2 was never uploaded.
+- **V3:** run #31 failed at the signed archive before anything was uploaded. The fix in `e39c98c` archives with the development identity and lets the App Store Connect export re-sign for distribution. Run #32 then uploaded 1.2 (1).
+- **V4:** run #50 uploaded 1.3 (2). The loading animation came after it, so run #52 uploaded 1.3 (3) from `6677eb2`. Each upload run tests first; the signing and upload job runs only when every test passes.
 
 ## The owner action that remains
 
-The one-time setup is done: the API key and the four repository secrets, the app record, and an internal group. Apple accepted the upload, so the developer membership and agreements were in order at that point.
+The one-time setup is done: the API key and the four repository secrets, the app record, and an internal group. Nothing needs to be set up again.
 
 What only you can do now:
-1. **Install and play 1.2 (1)** from the TestFlight app on your iPhone. If the build doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing). Then work through the device checks in `TEST_REPORT.md` V3.8: frame rate and heat, touch, the share sheet, a controller if you have one, and a Game Center party on two devices.
-2. **Optional:** deploy the game service (`service/README.md`) if you want verified profiles and moderated names. Then fill in `game/config/service.cfg` and run the workflow again with **upload**.
+1. **Install 1.3 (3)** from the TestFlight app on your iPhone. If it doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing).
+2. **Play it and check the items in What to Test.** For a measurement, turn on **Settings › Diagnostics (beta)**, play a few rounds, then **Share summary** (no names, codes or Game Center IDs). The device checks are listed in `TEST_REPORT.md` V4.8.
+3. **Optional:** deploy the game service (`service/README.md`) if you want verified profiles and moderated names. Then fill in `game/config/service.cfg` and run the workflow again with **upload**.
 
 For later uploads, run "Build, test and ship (iOS)" with **upload** ticked. The build number follows the highest one in App Store Connect, and the build goes to internal testing only. **asc_status** reads the current state without building anything.
 

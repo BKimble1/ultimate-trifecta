@@ -28,8 +28,9 @@ the device (V4_NOTES, "Five-minute diagnostics check").
 
 ## V4.1 Automated tests
 
-`tools/run_tests.sh` on the final code: **153 tests, 2644 checks, 0 failures** in 211 s
-(`docs/test-data/v4_full_test_run.txt`). V3 had 117 tests and 1254 checks.
+On the final app code `6677eb2`: **159 tests, 2742 checks, 0 failures** in 162 s
+(CI run #52's headless test job, Ubuntu 24.04, which gates the iOS build).
+`docs/test-data/v4_full_test_run.txt` is the local run on this machine. V3 had 117 tests and 1254 checks.
 
 | Suite (new in V4) | Tests | What they exercise |
 |---|---|---|
@@ -115,7 +116,26 @@ labelled in [docs/media/v4/README.md](docs/media/v4/README.md):
 
 ## V4.6 iOS build (CI iOS) and TestFlight
 
-(filled in below when the signed upload has run)
+**Signed and uploaded:** `com.idlery.ultimatetrifecta` **1.3 (3)**, from
+`6677eb2` (the final app code, with the loading animation), went to App
+Store Connect at 08:44 UTC on 2 October 2026. Apple processed it to `VALID`,
+and it is **available to internal testers** (`IN_BETA_TESTING`) in the
+owner's existing internal group, which receives every build. The lane set
+its What to Test text (1455 characters). It was uploaded as internal-only;
+there is no external testing and no App Store submission. Details:
+`TESTFLIGHT_RELEASE.md`, "Current release state".
+
+| Run | Commit | What happened |
+|---|---|---|
+| #50 | `4e828da` | Tests passed, then signed archive and upload of **1.3 (2)**: `VALID`, internal group, What to Test set. It predates the loading animation; 1.3 (3) replaces it for testing. Simulator: cold launch, no crash report, 0 script errors. |
+| #51 | `6677eb2` | The push build; cancelled in favour of #52, which runs the same steps and also signs and uploads. |
+| #52 | `6677eb2` | Tests passed (159 tests, 2742 checks), then signed archive and upload of **1.3 (3)**: `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING`, What to Test set. Build facts: Xcode 26.6, iOS SDK 26.5, arm64, the three frameworks embedded, Game Center entitlement, privacy manifest. Launch audit: no launch file other than the storyboard; the only text files naming Idlery are build plists carrying the bundle ID; 0 "powered by" strings in the game data. Simulator: cold launch still running, no crash report, 0 script errors, 23 screenshots. |
+
+The Simulator in run #52 answered slowly. The first launch screenshot came
+back 152.8 s after the launch command, against 6.9 s in run #50, and each
+later screenshot command took 1–63 s. These times include the `simctl`
+commands on a shared x86_64 runner, so they say nothing about launch time
+on a phone. Launch time is one of the device checks in V4.8.
 
 ## V4.7 Found and fixed during V4 validation
 
@@ -151,8 +171,9 @@ labelled in [docs/media/v4/README.md](docs/media/v4/README.md):
   orientations.
 - The Night Watch tuning with people, as opposed to the pursuit harness.
 - A friend series over Game Center between two devices.
-- The launch screen as iOS draws it on a device (the Simulator run on CI is
-  the closest evidence).
+- The launch screen as iOS draws it on a device, and how long a cold launch
+  takes to reach the title (the Simulator run on CI is the closest evidence,
+  and its timings are not device timings).
 - The match loading animation on an iPhone: smooth 24 fps playback,
   sharpness at the phone's scale, nothing cropped, no jump at the loop
   point, and the fade into the round (checked here on desktop renders and
