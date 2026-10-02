@@ -3,9 +3,9 @@ extends Screen
 ## Home (V5): the dorm common room with the player's own runner as the focus.
 ##   upper left   the Ultimate Trifecta title graphic, modest
 ##   upper right  a compact profile chip (name, level, coins) and Settings
-##   lower left   Emote, always within reach
-##   V6: the navigation bar (Play · Locker · Shop · Season Pass) and the
-##   Coins chip under the title; the Locker replaces the Wardrobe button
+##   lower left   V6: the navigation rail (Play · Locker · Shop · Season
+##                Pass), the Coins chip and Emote; the Locker replaces the
+##                Wardrobe button
 ##   lower right  Play with Friends (the one gold action) and Practice
 ## No news or promotional tiles.  Game Center status is shown only where it
 ## matters (the Play with Friends sheet).
@@ -46,11 +46,6 @@ func build() -> void:
 	gear.accessibility_name = "Settings"
 	gear.pressed.connect(func() -> void: App.goto(SettingsScreen))
 	top.add_child(gear)
-	# V6: Play · Locker · Shop · Season Pass (Play is this screen)
-	var nav_row := UIKit.hbox(14)
-	nav_row.add_child(NavShell.make("play"))
-	nav_row.add_child(WalletChip.new())
-	content.add_child(nav_row)
 
 	content.add_child(UIKit.spacer_v())
 
@@ -58,10 +53,21 @@ func build() -> void:
 	var bottom := UIKit.hbox(14)
 	bottom.alignment = BoxContainer.ALIGNMENT_END
 	content.add_child(bottom)
+	# V6: Play · Locker · Shop · Season Pass as a rail on the left (Play is
+	# this screen), the Coins chip and Emote under it; the runner keeps the
+	# middle of the room
+	var rail := UIKit.vbox(8)
+	rail.size_flags_vertical = Control.SIZE_SHRINK_END
+	rail.add_child(NavShell.make("play", true))
+	var wc := WalletChip.new()
+	wc.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	rail.add_child(wc)
 	emote_btn = UIKit.icon_button("smile", "Emote")
 	emote_btn.pressed.connect(func() -> void: emote_picker(emote_btn, _emote))
 	emote_btn.size_flags_vertical = Control.SIZE_SHRINK_END
-	bottom.add_child(emote_btn)
+	emote_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	rail.add_child(emote_btn)
+	bottom.add_child(rail)
 	bottom.add_child(UIKit.spacer_h())
 	var col := UIKit.vbox(12)
 	col.alignment = BoxContainer.ALIGNMENT_END

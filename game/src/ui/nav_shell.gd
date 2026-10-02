@@ -1,5 +1,5 @@
 class_name NavShell
-extends HBoxContainer
+extends BoxContainer
 ## V6 navigation: Play · Locker · Shop · Season Pass, one reusable bar used
 ## by home, the party lobby, the Locker, the Shop and the Season Pass.
 ##   Play         the hub you came from (the party lobby while you're in a
@@ -31,15 +31,19 @@ var compact := false
 var compact_level := -1
 
 
-static func make(active_tab: String) -> NavShell:
+## `rail`: a vertical column (home: the runner keeps the middle of the
+## screen); otherwise a horizontal bar.
+static func make(active_tab: String, rail: bool = false) -> NavShell:
 	var n := NavShell.new()
 	n.active = active_tab
+	n.vertical = rail
 	return n
 
 
 func _init() -> void:
 	add_theme_constant_override("separation", 6)
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
 
 func _ready() -> void:
@@ -112,6 +116,8 @@ func available_width() -> float:
 
 
 func _fit() -> void:
+	if vertical:
+		return   # a rail always has room for its labels
 	var avail := available_width()
 	if avail <= 0.0:
 		return
@@ -127,14 +133,21 @@ func apply_level(level: int) -> void:
 	compact_level = level
 	compact = level > 0
 	var f := UIKit.font_w(600)
+	var widest := 0.0
+	if vertical:
+		for t in TABS:
+			widest = maxf(widest, PAD * 2.0 + ICON + 10.0 + f.get_string_size(String(t[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_LABEL).x)
 	for t in TABS:
 		var b: Button = buttons[t[0]]
 		var show_label: bool = level == 0 or (level == 1 and String(t[0]) == active)
 		var lw := f.get_string_size(String(t[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_LABEL).x if show_label else 0.0
 		b.custom_minimum_size.x = maxf(UIKit.touch_min(), PAD * 2.0 + ICON + (lw + 10.0 if show_label else 0.0))
+		if vertical:
+			b.custom_minimum_size.x = maxf(widest, UIKit.touch_min())
 		var tf := UIKit.face_of(b).get_child(0) as TabFace
 		if tf:
 			tf.show_label = show_label
+			tf.left = vertical
 			tf.queue_redraw()
 
 
@@ -189,6 +202,7 @@ class TabFace:
 	var icon := ""
 	var text := ""
 	var show_label := true
+	var left := false
 	var btn: Button
 
 	func _init() -> void:
@@ -200,7 +214,7 @@ class TabFace:
 		var font := UIKit.font_w(600)
 		var lw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_LABEL).x if show_label else 0.0
 		var total := NavShell.ICON + (lw + 10.0 if show_label else 0.0)
-		var x := (size.x - total) * 0.5
+		var x := NavShell.PAD if left else (size.x - total) * 0.5
 		var cy := size.y * 0.5
 		CommerceArt.glyph(self, icon, Vector2(x + NavShell.ICON * 0.5, cy), NavShell.ICON * 0.42, UIKit.TEAL if f != null and f.selected else col)
 		if show_label:

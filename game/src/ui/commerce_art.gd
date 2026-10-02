@@ -53,10 +53,15 @@ static func glyph(ci: CanvasItem, kind: String, c: Vector2, r: float, col: Color
 		"restore":
 			Icons.draw_shape(ci, "rotate", c, r, col)
 		"lantern":
-			ci.draw_rect(Rect2(c + Vector2(-r * 0.45, -r * 0.45), Vector2(r * 0.9, r * 1.15)), col)
-			ci.draw_rect(Rect2(c + Vector2(-r * 0.25, -r * 0.3), Vector2(r * 0.5, r * 0.85)), Color(1.0, 0.95, 0.75))
-			ci.draw_rect(Rect2(c + Vector2(-r * 0.55, -r * 0.6), Vector2(r * 1.1, r * 0.18)), col)
-			ci.draw_arc(c + Vector2(0, -r * 0.62), r * 0.25, PI, TAU, 10, col, r * 0.1, true)
+			# a hanging lantern: ring, cap, glass with a flame, base
+			var dark := Color(0.07, 0.1, 0.17)
+			ci.draw_arc(c + Vector2(0, -r * 0.82), r * 0.18, 0, TAU, 12, col, r * 0.1, true)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.5, -r * 0.42), c + Vector2(0, -r * 0.7), c + Vector2(r * 0.5, -r * 0.42)]), col)
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.42, -r * 0.42), Vector2(r * 0.84, r * 0.95)), col)
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.28, -r * 0.3), Vector2(r * 0.56, r * 0.72)), dark)
+			ci.draw_circle(c + Vector2(0, r * 0.12), r * 0.2, Color(1.0, 0.82, 0.42))
+			ci.draw_circle(c + Vector2(0, r * 0.02), r * 0.12, Color(1.0, 0.95, 0.75))
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.55, r * 0.53), Vector2(r * 1.1, r * 0.18)), col)
 		"moon":
 			ci.draw_circle(c, r * 0.85, col)
 			ci.draw_circle(c + Vector2(r * 0.38, -r * 0.22), r * 0.7, Color(0.07, 0.1, 0.17))
@@ -92,15 +97,14 @@ static func name_card(ci: CanvasItem, rect: Rect2, card_id: String, player_name:
 	var top := Color(String(cols[0]))
 	var bot := Color(String(cols[1])) if cols.size() > 1 else top
 	var accent := Color(String(it.get("accent", "f6f3ec")))
-	var sb := UIKit.box(top, int(minf(rect.size.y * 0.3, 18.0)), 0)
+	var rad := int(minf(rect.size.y * 0.3, 18.0))
+	var sb := UIKit.box(top, rad, 0)
 	ci.draw_style_box(sb, rect)
-	# a soft diagonal blend toward the second colour
-	var steps := 10
-	for i in steps:
-		var t := float(i) / float(steps)
-		var x := rect.position.x + rect.size.x * (0.35 + t * 0.65)
-		var w := rect.size.x * 0.065 + 1.0
-		ci.draw_rect(Rect2(Vector2(x, rect.position.y + 3), Vector2(minf(w, rect.end.x - x - 3), rect.size.y - 6)), Color(bot, 0.12 + t * 0.55))
+	# a smooth diagonal blend toward the second colour (vertex colours),
+	# inset so the rounded corners stay in the first colour
+	var g := rect.grow_individual(-rad * 0.6, -1.0, -rad * 0.6, -1.0)
+	ci.draw_polygon(PackedVector2Array([g.position, Vector2(g.end.x, g.position.y), g.end, Vector2(g.position.x, g.end.y)]),
+		PackedColorArray([Color(top, 0.0), Color(bot, 0.85), bot, Color(bot, 0.35)]))
 	if bool(it.get("stars", false)):
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash(card_id)

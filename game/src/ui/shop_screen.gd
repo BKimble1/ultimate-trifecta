@@ -168,21 +168,21 @@ func _frame_stage() -> void:
 
 
 # ------------------------------------------------------------------ preview
+## Idle / Run / Emote stacked in the stage's lower-left corner, clear of the
+## runner (who stands right of centre), with the turn hint under them.
 func _preview_controls() -> Control:
 	var pv := UIKit.vbox(8)
+	for spec in [["idle", "Idle"], ["run", "Run"], ["emote", "Emote"]]:
+		var b := UIKit.quiet(String(spec[1]), Vector2(130, 0), UIKit.T_CAPTION)
+		b.name = "Preview_" + String(spec[0])
+		b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		var kind: String = spec[0]
+		b.pressed.connect(func() -> void: _preview_action(kind))
+		pv.add_child(b)
 	var hint := UIKit.chip("Drag to turn", Color(UIKit.NAVY, 0.6), UIKit.IVORY_MUTED, 18)
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hint.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	pv.add_child(hint)
-	var row := UIKit.hbox(8)
-	for spec in [["idle", "Idle"], ["run", "Run"], ["emote", "Emote"]]:
-		var b := UIKit.quiet(String(spec[1]), Vector2(110, 0), UIKit.T_CAPTION)
-		b.name = "Preview_" + String(spec[0])
-		var kind: String = spec[0]
-		b.pressed.connect(func() -> void: _preview_action(kind))
-		row.add_child(b)
-	pv.add_child(row)
-	pv.move_child(row, 0)
 	_stage_area.resized.connect(func() -> void: pv.position = Vector2(0, _stage_area.size.y - pv.get_combined_minimum_size().y))
 	return pv
 
@@ -315,7 +315,7 @@ func _build_section() -> void:
 	var intro := ""
 	match section:
 		"featured":
-			intro = "New this season, and two skins you can buy directly from the App Store."
+			intro = "Season 1 · After Hours and this season's outfits."
 		"outfits":
 			intro = "Every outfit in the Shop. Prices are exact; everything is cosmetic."
 		"accessories":
@@ -327,9 +327,10 @@ func _build_section() -> void:
 	var il := UIKit.styled(intro, "caption", UIKit.IVORY_MUTED)
 	il.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(il)
-	if section == "season":
+	if section == "season" or section == "featured":
+		# Season 1 Premium leads Featured too (a real offer, never a timer)
 		body.add_child(_season_offer())
-	else:
+	if section != "season":
 		var cols := _columns()
 		var g := GridContainer.new()
 		g.columns = cols if section != "coins" else mini(cols, 3)
@@ -343,7 +344,7 @@ func _build_section() -> void:
 			g.add_child(card)
 			cards.append(card)
 		body.add_child(g)
-		if items.is_empty():
+		if items.is_empty() and section != "featured":
 			body.add_child(UIKit.styled("Nothing here right now.", "body", UIKit.IVORY_MUTED))
 	if section in ["featured", "outfits", "coins"]:
 		body.add_child(_restore_row())
@@ -586,7 +587,10 @@ func _includes_text(id: String) -> String:
 		parts.append("%s (%s)" % [Catalogue.display_name(String(g)), Catalogue.type_label(String(g)).to_lower()])
 	var t := "Includes: %s." % ", ".join(parts)
 	if id.begins_with("outfit:"):
-		t += " Your colours, hair, hat and shoes stay as you set them in the Locker."
+		if String(Catalogue.split(id)[1]) in Cosmetics.HOOD_OUTFITS:
+			t += " Its hood covers your hair and hat; your shoes stay as you set them in the Locker."
+		else:
+			t += " Your colours, hair, hat and shoes stay as you set them in the Locker."
 	if Catalogue.kind(id) == "apple_skin":
 		t += " Permanent: restore it with Restore Purchases on any device signed in to the same Apple Account."
 	return t
@@ -722,7 +726,7 @@ func _confirm_spend(id: String) -> void:
 	row2.alignment = BoxContainer.ALIGNMENT_END
 	var cancel := UIKit.quiet("Cancel", Vector2(200, 80))
 	cancel.name = "ConfirmCancel"
-	var buy := UIKit.primary("Buy for %s" % Catalogue.format_coins(price), Vector2(300, 84), 26)
+	var buy := UIKit.primary("Buy for %s Coins" % Catalogue.format_coins(price), Vector2(320, 84), 24)
 	buy.name = "ConfirmBuy"
 	row2.add_child(cancel)
 	row2.add_child(buy)
@@ -797,6 +801,8 @@ class ShopCard:
 		name = "Card_" + item_id.replace(":", "_")
 		var wide := Catalogue.kind(id) == "season_premium"
 		var img := (w - 24.0) if not wide else 150.0
+		if Catalogue.kind(id) == "coin_pack":
+			img = minf(img, 150.0)
 		UIKit.make_card(self, Vector2(w, (img + 112.0) if not wide else 210.0), Color(UIKit.SLATE_HI, 0.96))
 		var box: BoxContainer = UIKit.vbox(4) if not wide else UIKit.hbox(18)
 		box.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -913,14 +919,10 @@ class ShopPic:
 		if tex != null:
 			draw_texture_rect(tex, Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s)), false)
 		elif coins > 0:
+			# a stack that grows with the pack (no number: the name says it)
 			var n := 1 if coins <= 500 else (2 if coins <= 1500 else 3)
 			for i in n:
-				CommerceArt.coin(self, c + Vector2((float(i) - float(n - 1) * 0.5) * s * 0.2, -s * 0.06 + float(i % 2) * s * 0.05), s * 0.2)
-			var f := UIKit.font_num(800)
-			var txt := Catalogue.format_coins(coins)
-			var fs := int(s * 0.16)
-			var w := f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-			draw_string(f, Vector2(c.x - w * 0.5, size.y - s * 0.1), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UIKit.AMBER)
+				CommerceArt.coin(self, c + Vector2((float(i) - float(n - 1) * 0.5) * s * 0.24, float(i % 2) * s * 0.06 - s * 0.02), s * 0.24)
 		elif swatch.a > 0.0:
 			draw_circle(c + Vector2(0, 2), s * 0.3, swatch.darkened(0.4))
 			draw_circle(c, s * 0.3, swatch)

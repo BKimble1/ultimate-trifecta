@@ -146,6 +146,10 @@ func _header() -> Control:
 	xp_lbl = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
 	xp_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(xp_lbl)
+	var how := UIKit.styled("Season XP comes from online rounds with friends, never from Coins. No tier skips.", "caption", UIKit.IVORY_DIM)
+	how.add_theme_font_size_override("font_size", 18)
+	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(how)
 	claim_all_btn = UIKit.primary("Claim all", Vector2(240, 84), 24)
 	claim_all_btn.name = "ClaimAll"
 	claim_all_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -206,7 +210,7 @@ func _refresh() -> void:
 		var nxt := Economy.reward_at(sid, int(prog["next"]), "free")
 		var nxt_p := Economy.reward_at(sid, int(prog["next"]), "premium")
 		var what := reward_name(nxt) if not nxt.is_empty() else reward_name(nxt_p)
-		xp_lbl.text = "%s / %s XP to Tier %d · next: %s. Season XP comes from online rounds with friends, never from Coins." % [
+		xp_lbl.text = "%s / %s XP to Tier %d · next: %s" % [
 			Catalogue.format_coins(int(prog["into"])), Catalogue.format_coins(int(prog["into"]) + int(prog["need"])), int(prog["next"]), what]
 	var prem := bool(st["premium"])
 	premium_chip.text = "Premium" if prem else "Free track"
