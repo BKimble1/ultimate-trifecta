@@ -17,6 +17,10 @@ extends Node
 ##             protected (if the bot runner is tagged), results
 ##   patrol    practice as Night Watch (bot-driven): shed, cart driving, an
 ##             on-foot tag, results
+##   dorm      (V6) the runner scenario plus the home dorm: the reveal and
+##             countdown inside it, the first steps out through a door, a
+##             coin pickup (+1), the way home and the crossing back inside
+##             (pick the dorm with --seed; the bot plays every step)
 ##   results   re-displays the results of a recorded round (the runner and
 ##             patrol scenarios save <scenario>_results.var; pass it with
 ##             --capture-results=path) for layout checks at other aspects,
@@ -107,7 +111,7 @@ func _process(delta: float) -> void:
 			_creator_tour()
 		"lobby":
 			_lobby()
-		"runner", "patrol":
+		"runner", "patrol", "dorm":
 			_match()
 		"results":
 			_results()
@@ -285,6 +289,8 @@ func _match() -> void:
 	if ph == TC.Phase.REVEAL and not _scheduled.has("reveal"):
 		_scheduled["reveal"] = true
 		later(1.5, "%s_reveal" % scenario)
+	if scenario == "dorm":
+		_dorm_shots(mc, info, rs, st, ph)
 	if ph == TC.Phase.PLAYING:
 		if _next_play_shot == 0.0:
 			_next_play_shot = _t + 4.0
@@ -300,7 +306,7 @@ func _match() -> void:
 			get_tree().create_timer(2.5).timeout.connect(func() -> void:
 				if is_instance_valid(mc) and mc.hud:
 					mc.hud.close_map())
-	if scenario == "runner":
+	if scenario == "runner" or scenario == "dorm":
 		if st == TC.PState.SPLASHING and _prev_state != TC.PState.SPLASHING and _splashes < 2:
 			_splashes += 1
 			snap("water_%d_entry" % _splashes)
@@ -332,6 +338,44 @@ func _match() -> void:
 			_tag_shot = true
 			snap("tag_lunge")
 	_prev_state = st
+
+
+## V6 dorm evidence: inside at the countdown, out through a door, a coin,
+## the way back and the crossing in (all from real game state).
+var _was_inside := false
+var _coin_shots := 0
+
+
+func _dorm_shots(mc: MatchController, info: Dictionary, rs: Dictionary, st: int, ph: int) -> void:
+	if not rs.has("pos"):
+		return
+	var p: Vector3 = rs["pos"]
+	var inside := CampusDorms.in_room(mc.home_dorm, p)
+	if ph == TC.Phase.COUNTDOWN and not _scheduled.has("countdown"):
+		_scheduled["countdown"] = true
+		later(0.5, "dorm_%s_countdown" % mc.home_dorm)
+	if ph == TC.Phase.PLAYING:
+		if _was_inside and not inside and not _scheduled.has("departure") and st == TC.PState.ACTIVE:
+			_scheduled["departure"] = true
+			snap("dorm_%s_departure" % mc.home_dorm)
+			later(0.8, "dorm_%s_departure_b" % mc.home_dorm)
+		var coins := int(info.get("coins", 0))
+		if coins > _coin_shots and _coin_shots < 2:
+			_coin_shots = coins
+			later(0.2, "dorm_coin_%d" % coins)
+		if int(info.get("stamps", 0)) == 7 and st == TC.PState.ACTIVE:
+			for d in mc.layout.home_doors(mc.home_dorm):
+				var dist := Vector2(p.x, p.z).distance_to(d["pos"])
+				if dist < 14.0 and not _scheduled.has("approach"):
+					_scheduled["approach"] = true
+					snap("dorm_%s_return_approach" % mc.home_dorm)
+				if dist < 3.5 and not _scheduled.has("doorway"):
+					_scheduled["doorway"] = true
+					snap("dorm_%s_return_doorway" % mc.home_dorm)
+		if st == TC.PState.FINISHED and not _scheduled.has("home"):
+			_scheduled["home"] = true
+			snap("dorm_%s_home" % mc.home_dorm)
+	_was_inside = inside
 
 
 ## Results of a recorded round shown again (same ResultsScreen code), then
