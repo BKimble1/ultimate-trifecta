@@ -138,7 +138,8 @@ const CREATOR_TOUR := [
 	[1.5, "open"], [3.0, "pick", "outfit", "robe"], [4.5, "pick", "pattern", "plain"], [6.0, "tab", 1],
 	[7.0, "pick", "color", "coral"], [8.0, "pick", "trim", "gold"], [9.0, "tab", 1], [10.0, "pick", "face", "bright"],
 	[11.0, "tab", 1], [12.0, "pick", "hair", "bob"], [13.0, "pick", "hair_color", "auburn"], [14.0, "tab", 1],
-	[15.0, "pick", "hat", "none"], [16.0, "run"], [19.0, "turn"], [22.0, "run"], [24.0, "end"],
+	[15.0, "pick", "hat", "none"], [15.5, "tab", 1], [16.6, "pick", "shoes", "sneakers"], [17.5, "tab", 1],
+	[19.0, "run"], [22.0, "turn"], [25.0, "run"], [27.0, "end"],
 ]
 
 

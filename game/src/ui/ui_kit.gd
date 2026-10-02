@@ -787,8 +787,8 @@ class Face:
 			return
 		var f: Font = b.get_theme_font("font")
 		var fs: int = b.get_theme_font_size("font_size")
-		var pad := 14.0
-		var key := "%s|%d|%d|%d" % [b.text, fs, f.get_instance_id(), int(size.x)]
+		var pad := text_pad()
+		var key := "%s|%d|%d|%d|%d" % [b.text, fs, f.get_instance_id(), int(size.x), int(pad)]
 		if key != _line_key:
 			_line_key = key
 			_line.clear()
@@ -798,6 +798,15 @@ class Face:
 			_line.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		var h := _line.get_size().y
 		_line.draw(get_canvas_item(), Vector2(pad, (size.y - h) * 0.5), col)
+
+	## Side padding of the text: 14 units, or less when the button itself
+	## was sized with tighter padding (a fitted tab strip), so a word that
+	## sized the button is never trimmed inside it.
+	func text_pad() -> float:
+		var b := btn as Button
+		if b == null:
+			return 14.0
+		return minf(14.0, b.get_theme_stylebox("normal").content_margin_left)
 
 	func _draw_icon(col: Color) -> void:
 		var h := size.y

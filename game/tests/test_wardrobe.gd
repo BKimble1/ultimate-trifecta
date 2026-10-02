@@ -132,3 +132,28 @@ func test_apply_and_undo_say_what_they_do() -> void:
 	await _close(c)
 	Save.data["cosmetic"] = saved_cos
 	Save.data["coins"] = saved_coins
+
+
+func test_category_strip_fits_narrow_panels() -> void:
+	var c := _open()
+	await _frames(2)
+	var row := (c.tab_btns["outfit"] as Control).get_parent() as HBoxContainer
+	var strip := row.get_parent() as ScrollContainer
+	var wide := c.tabs_width(row, UIKit.T_LABEL, 18) + 40.0
+	strip.size.x = wide
+	await _frames(2)
+	t.eq((c.tab_btns["outfit"] as Button).get_theme_font_size("font_size"), UIKit.T_LABEL, "room to spare: full-size labels")
+	# the iPhone SE panel: every category must show whole, no cut-off word
+	var narrow := c.tabs_width(row, UIKit.T_CAPTION, 10) + 2.0
+	t.check(narrow < wide - 60.0, "a narrower panel (%d vs %d)" % [narrow, wide])
+	strip.size.x = narrow
+	await _frames(2)
+	t.check(row.get_combined_minimum_size().x <= narrow + 0.5, "every category fits whole (%d of %d)" % [row.get_combined_minimum_size().x, narrow])
+	for k in c.tab_btns:
+		var b := c.tab_btns[k] as Button
+		t.check(b.size.x >= UIKit.touch_min() - 0.5, "%s stays a full touch target" % k)
+		# and its face draws the whole word (no trim inside the face's padding)
+		var face := UIKit.face_of(b)
+		var text_w := b.get_theme_font("font").get_string_size(b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, b.get_theme_font_size("font_size")).x
+		t.check(text_w <= face.size.x - 2.0 * face.text_pad() + 0.5, "%s: the word fits inside its face (%d of %d)" % [b.text, text_w, face.size.x - 2.0 * face.text_pad()])
+	await _close(c)

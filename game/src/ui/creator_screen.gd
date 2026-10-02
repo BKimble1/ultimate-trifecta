@@ -214,7 +214,51 @@ func _category_strip() -> Control:
 		tab_btns[key] = b
 	tabs.add_child(Glyphs.Hint.new("menu_next", "", 30.0))
 	tab_scroll.custom_minimum_size.y = maxf(56.0, UIKit.touch_min()) + 4.0
+	tab_scroll.resized.connect(_fit_tabs.bind(tab_scroll, tabs))
 	return tab_scroll
+
+
+## The category strip fits its panel: on a narrow one (iPhone SE) the
+## padding tightens and the labels step down a size before any category
+## would sit cut off at the edge.  Scrolling stays as the last resort.
+const TAB_FITS := [[UIKit.T_LABEL, 18], [UIKit.T_LABEL, 12], [UIKit.T_CAPTION, 10], [UIKit.T_CAPTION, 6]]
+
+
+func _fit_tabs(strip: ScrollContainer, row: HBoxContainer) -> void:
+	var avail := strip.size.x
+	if avail <= 0.0:
+		return
+	var pick: Array = TAB_FITS[TAB_FITS.size() - 1]
+	for opt in TAB_FITS:
+		if tabs_width(row, int(opt[0]), int(opt[1])) <= avail:
+			pick = opt
+			break
+	for b in tab_btns.values():
+		var btn := b as Button
+		btn.add_theme_font_size_override("font_size", int(pick[0]))
+		var st := btn.get_theme_stylebox("normal")   # one StyleBoxEmpty shared by every state
+		st.content_margin_left = float(pick[1])
+		st.content_margin_right = float(pick[1])
+		btn.update_minimum_size()
+		UIKit.face_of(btn).queue_redraw()   # its text padding follows the button's
+
+
+## Width the strip's row needs with these label sizes and side padding.
+func tabs_width(row: HBoxContainer, font_size: int, pad: int) -> float:
+	var need := 0.0
+	var shown := 0
+	for c in row.get_children():
+		var ctl := c as Control
+		if not ctl.visible:
+			continue
+		shown += 1
+		if tab_btns.values().has(ctl):
+			var btn := ctl as Button
+			var w := btn.get_theme_font("font").get_string_size(btn.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+			need += maxf(ceilf(w) + 2.0 * pad, UIKit.touch_min())
+		else:
+			need += ctl.get_combined_minimum_size().x
+	return need + float(row.get_theme_constant("separation")) * maxi(shown - 1, 0)
 
 
 func _process(delta: float) -> void:
