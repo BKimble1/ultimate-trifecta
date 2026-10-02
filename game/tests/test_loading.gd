@@ -249,3 +249,90 @@ func test_loading_screen_reduced_motion_shows_the_still_only() -> void:
 	Save.data["settings"]["reduced_motion"] = was
 	await t.get_tree().process_frame
 	s.queue_free()
+
+
+# --- V6: cancel at any point, and an unknown wait never looks stuck ---
+
+func test_practice_can_be_cancelled_mid_preparation_and_the_next_round_works() -> void:
+	MatchController.drop_campus_cache()
+	var was_onboarded: Variant = Save.data.get("onboarded", false)
+	Save.data["onboarded"] = true
+	var counts: Array = []
+	for cycle in 3:
+		App.start_practice("runner", false)
+		await t.get_tree().process_frame
+		var ls := App.screen as LoadingScreen
+		var mc := App.match_ctrl
+		t.check(ls != null and mc != null, "practice opens the loading screen over a preparing round")
+		if ls == null or mc == null:
+			return
+		if cycle == 0:
+			t.eq(ls.leave_btn.text, "Cancel", "practice offers Cancel")
+			t.check(ls.leave_btn.disabled, "not in the first instant (a carried-over tap can't cancel)")
+		# well into the campus build: its chunk meshes are on the worker pool
+		var frames := 0
+		while frames < 2000 and not mc.prepared and not (mc._builder != null and mc._builder._commit_started):
+			await t.get_tree().process_frame
+			frames += 1
+		var on_pool := mc._builder != null and mc._builder._commit_started
+		t.check(not mc.prepared, "still preparing (%d frames, %.0f%%)" % [frames, mc.prep_progress() * 100.0])
+		if cycle == 0:
+			t.check(on_pool, "with campus work on the worker pool")
+			t.eq(ls.stage_lbl.text, "Preparing campus…", "the stage says the campus is being prepared")
+			t.check(not ls.bar.indeterminate, "with the real share done")
+		await _frames_until(func() -> bool: return ls._t >= LoadingScreen.LEAVE_AFTER_S, 3000)
+		t.check(not ls.leave_btn.disabled, "Cancel is usable while the round prepares")
+		ls.leave_btn.pressed.emit()
+		await t.get_tree().process_frame
+		await t.get_tree().process_frame
+		t.check(not is_instance_valid(mc), "the half-prepared round is freed")
+		t.check(App.match_ctrl == null and App.session == null, "no round or session left")
+		t.check(not (App.screen is LoadingScreen) and not is_instance_valid(ls), "back to the title")
+		await _frames_until(func() -> bool: return App._orphan_tasks.is_empty() and App._orphan_loads.is_empty())
+		t.check(App._orphan_tasks.is_empty(), "the build's background jobs were collected")
+		await t.get_tree().process_frame
+		counts.append([Performance.get_monitor(Performance.OBJECT_NODE_COUNT), Performance.get_monitor(Performance.OBJECT_COUNT), Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)])
+	print("[load] nodes/objects/orphans after each cancel: %s" % [counts])
+	t.eq(int(counts[2][0]), int(counts[1][0]), "cancelling again leaves no scene nodes behind")
+	t.eq(int(counts[2][2]), int(counts[1][2]), "nor orphan nodes")
+	t.check(int(counts[2][1]) - int(counts[1][1]) <= 16, "nor a growing number of objects (%d -> %d)" % [counts[1][1], counts[2][1]])
+	# and the next round prepares and goes live as usual
+	App.start_practice("runner", false)
+	await t.get_tree().process_frame
+	var mc2 := App.match_ctrl
+	var ls2 := App.screen as LoadingScreen
+	var closed := [false]
+	if ls2:
+		ls2.done.connect(func() -> void: closed[0] = true)
+	await _frames_until(func() -> bool: return closed[0] or not is_instance_valid(mc2), 60000)
+	t.check(is_instance_valid(mc2) and mc2.round_live(), "the next round prepares and goes live")
+	t.check(closed[0], "and its loading screen closes")
+	App._close_session(false)
+	App._end_match_scene()
+	App.goto_title()
+	await t.get_tree().process_frame
+	MatchController.drop_campus_cache()
+	Save.data["onboarded"] = was_onboarded
+
+
+func test_preparing_and_waiting_for_players_are_told_apart() -> void:
+	var s := _offline()
+	var ls := _loading_screen(s, null)
+	ls._update_status(false, 0.4, [1, 1])
+	t.eq(ls.stage_lbl.text, "Preparing campus…", "preparing: the campus")
+	t.check(not ls.bar.indeterminate and is_equal_approx(ls.bar.target, 0.4), "with the real share done")
+	t.eq(ls.wait_lbl.text, "", "no player count yet")
+	ls._update_status(true, 1.0, [1, 3])
+	t.eq(ls.stage_lbl.text, "Waiting for players", "ready here: waiting for the others")
+	t.eq(ls.wait_lbl.text, "1/3 ready", "with the count")
+	t.check(ls.bar.indeterminate, "an unknown wait shows an indeterminate sweep, not a stuck bar")
+	var p0 := ls.bar._phase
+	for i in 3:
+		await t.get_tree().process_frame
+	t.check(UIKit.reduced_motion() or ls.bar._phase != p0, "the sweep moves")
+	ls._update_status(true, 1.0, [3, 3])
+	t.eq(ls.stage_lbl.text, "Starting…", "everyone ready: starting")
+	t.eq(ls.wait_lbl.text, "Everyone's ready", "said once")
+	ls.queue_free()
+	await t.get_tree().process_frame
+	s.queue_free()

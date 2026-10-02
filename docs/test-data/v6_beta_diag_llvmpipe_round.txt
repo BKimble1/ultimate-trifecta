@@ -1,0 +1,63 @@
+# V6 rendered practice round with beta diagnostics (--beta-diag), 2026-10-02
+# Godot 4.7.2 Mobile renderer on Mesa llvmpipe (software Vulkan), 480x222, fixed 10 fps clock, Standard preset,
+# quit after 40 s of game time; this machine was also running other builds. Frame times are software-rendering
+# times and say nothing about a phone. The pipeline counters show WHERE compilation happens on this driver;
+# Metal on iOS compiles its own pipelines and is unmeasured.
+
+BETA_DIAG_SUMMARY_BEGIN
+Ultimate Trifecta beta diagnostics
+(no player names, room codes or Game Center IDs are included)
+App 1.4 · Godot 4.7.2 · Linux 24.04 · GenericDevice
+GPU llvmpipe (LLVM 20.1.2, 256 bits) · 1.4.318 · vulkan
+Preset Standard · frame cap none (display sync) · window 480x222 · 3D scale 1.00 · MSAA 2x
+Collected for 15.8 min · thermal now unavailable, worst unavailable · Low Power Mode unavailable
+
+Frame interval (engine loop, measured on the CPU; target 16.7 ms at 60, 33.3 ms at 30)
+context   frames   p50     p95     p99     >50ms  >100ms  worst
+loading      116   40.5   250.5   250.5      41      16   16791
+match        284  250.5   250.5   250.5     284     284    7172
+
+Renderer measurements per context (main viewport)
+loading   GPU avg 86.4 ms, max 5297.8 ms · CPU render avg 101.2 ms, max 11473.3 ms · draw calls avg 27 max 1805 · primitives max 567377
+match     GPU avg 3143.2 ms, max 7126.6 ms · CPU render avg 1.6 ms, max 10.7 ms · draw calls avg 232 max 303 · primitives max 352553
+
+Simulation (V6): 60 Hz ticks per frame and their script time
+context   1 tick  2 ticks  3+ ticks  sim avg  sim max  catch-up spirals (longest run)
+loading        1        0       115    3.6 ms 393.3 ms  1 (115 frames)
+match          0        0       284    6.8 ms 399.5 ms  0 (399 frames)
+Pipelines compiled (V6; draw-time ones can stall a frame)
+loading   canvas 7 · mesh 2 · surface 48 · draw 0 · specialization 27
+match     canvas 0 · mesh 0 · surface 0 · draw 0 · specialization 21
+Growth since the first sample: nodes +1261 · objects +2971 · orphans +0 · static memory +61.9 MB
+
+Memory: static 174 MB · video 185 MB
+
+Stalls over 50 ms (newest last; attributed to a marker in the 2 s before)
+  14:43  2155 ms  match    no marker · 6 ticks, sim 4.9 ms, draw pipelines 0
+  14:46  2664 ms  match    no marker · 6 ticks, sim 3.1 ms, draw pipelines 0
+  14:47  1670 ms  match    no marker · 6 ticks, sim 3.4 ms, draw pipelines 0
+  14:50  2894 ms  match    no marker · 6 ticks, sim 4.4 ms, draw pipelines 0
+  14:52  2013 ms  match    no marker · 6 ticks, sim 5.0 ms, draw pipelines 0
+  14:55  2738 ms  match    no marker · 6 ticks, sim 7.4 ms, draw pipelines 0
+  14:58  2750 ms  match    no marker · 6 ticks, sim 3.6 ms, draw pipelines 0
+  15:00  2127 ms  match    no marker · 6 ticks, sim 4.8 ms, draw pipelines 0
+  15:02  2055 ms  match    no marker · 6 ticks, sim 4.2 ms, draw pipelines 0
+  15:05  2584 ms  match    no marker · 6 ticks, sim 7.9 ms, draw pipelines 0
+  15:07  2410 ms  match    no marker · 6 ticks, sim 7.1 ms, draw pipelines 0
+  15:10  2937 ms  match    no marker · 6 ticks, sim 4.0 ms, draw pipelines 0
+  15:13  2777 ms  match    no marker · 6 ticks, sim 3.9 ms, draw pipelines 0
+  15:16  3360 ms  match    no marker · 6 ticks, sim 5.9 ms, draw pipelines 0
+  15:19  3108 ms  match    no marker · 6 ticks, sim 4.1 ms, draw pipelines 0
+  15:21  2241 ms  match    no marker · 6 ticks, sim 5.3 ms, draw pipelines 0
+  15:24  2979 ms  match    no marker · 6 ticks, sim 6.2 ms, draw pipelines 0
+  15:27  2942 ms  match    no marker · 6 ticks, sim 3.9 ms, draw pipelines 0
+  15:30  2967 ms  match    no marker · 6 ticks, sim 3.4 ms, draw pipelines 0
+  15:34  3702 ms  match    no marker · 6 ticks, sim 5.1 ms, draw pipelines 0
+  15:36  1957 ms  match    no marker · 6 ticks, sim 3.5 ms, draw pipelines 0
+  15:38  1694 ms  match    no marker · 6 ticks, sim 3.3 ms, draw pipelines 0
+  15:39  1727 ms  match    no marker · 6 ticks, sim 3.7 ms, draw pipelines 0
+  15:42  2635 ms  match    no marker · 6 ticks, sim 3.5 ms, draw pipelines 0
+  15:44  2292 ms  match    no marker · 6 ticks, sim 3.1 ms, draw pipelines 0
+
+Markers: load_begin ×1, loading_loop ×1, prep_slow:campus:ground ×14, catchup_spiral ×1, prep_slow:campus:bollards ×2, prep_slow:campus:water_fountain ×1, campus_built ×1, prep_slow:world ×1, prep_slow:nav ×2, prep_slow:views ×1, prep_slow:hud ×1, campus_prepared ×1, loading_closed ×1, render_scale_0.90_slow ×1, countdown ×1, render_scale_0.80_slow ×1, render_scale_0.72_slow ×1
+BETA_DIAG_SUMMARY_END

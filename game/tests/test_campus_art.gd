@@ -205,3 +205,32 @@ func test_battery_saver_is_lighter() -> void:
 		await t.get_tree().process_frame
 	t.check(counts[0][1] > 0, "Standard: trees cast through shadow proxies")
 	t.eq(counts[1][0], 0, "Battery Saver: the campus casts no shadows (characters still do)")
+
+
+## V6: a finished (or cancelled) build lets the builder go: its step
+## closures and helpers referred back to it, so every cold campus build kept
+## the builder and its working data (mesh kits, light-field kit, tree and
+## decor tables) alive for the rest of the session.
+func test_builder_is_freed_after_a_build_and_after_a_cancel() -> void:
+	var counts: Array = []
+	for i in 3:
+		var root := Node3D.new()
+		t.add_child(root)
+		var b: CampusBuilder = CampusBuilder.new(CampusLayout.shared())
+		b.begin_visuals(root, 0)
+		var wr: WeakRef = weakref(b)
+		if i == 2:
+			for k in 40:
+				b.step()
+			b.abort()
+		else:
+			while b.step():
+				pass
+			t.check(b.container != null and b.water_nodes.size() == 6 and b.foliage_material != null, "what the round reads is kept")
+		b = null
+		root.queue_free()
+		await t.get_tree().process_frame
+		await t.get_tree().process_frame
+		t.check(wr.get_ref() == null, "build %d: the builder is freed" % i)
+		counts.append(int(Performance.get_monitor(Performance.OBJECT_COUNT)))
+	t.check(counts[2] - counts[0] <= 4, "objects stay flat across builds (%s)" % [counts])

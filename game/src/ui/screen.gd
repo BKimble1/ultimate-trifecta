@@ -47,12 +47,36 @@ func _apply_safe() -> void:
 
 ## Wrapped labels report huge heights until their width is known, so the
 ## initial focus scroll of a ScrollContainer lands far down; once layout
-## settles, start at the top.
+## settles, start at the top.  V6: for the next three frames only, through
+## this screen's own one-shot frame hook (dropped if the screen goes), and
+## never under a finger that has already started to scroll it.
+var _top_list: ScrollContainer
+var _top_frames := 0
+
+
 func _open_at_top(sc: ScrollContainer) -> void:
-	for i in 3:
-		await get_tree().process_frame
-		if is_instance_valid(sc):
-			sc.scroll_vertical = 0
+	_top_list = sc
+	_top_frames = 3
+	_hook_top()
+
+
+func _hook_top() -> void:
+	if is_inside_tree() and not get_tree().process_frame.is_connected(_settle_top):
+		get_tree().process_frame.connect(_settle_top, CONNECT_ONE_SHOT)
+	elif not is_inside_tree() and not tree_entered.is_connected(_hook_top):
+		tree_entered.connect(_hook_top, CONNECT_ONE_SHOT)
+
+
+func _settle_top() -> void:
+	if _top_frames <= 0 or not is_instance_valid(_top_list):
+		return
+	_top_frames -= 1
+	if TouchScroll.is_dragging(_top_list):
+		_top_frames = 0
+		return
+	_top_list.scroll_vertical = 0
+	if _top_frames > 0:
+		_hook_top()
 
 
 func focus_first(c: Control) -> void:
@@ -104,6 +128,8 @@ func push_modal(node: Control, on_cancel: Callable) -> void:
 	var prev: Control = vp.gui_get_focus_owner() if vp else null
 	_modals.append({"node": node, "cancel": on_cancel, "prev": prev})
 	margin.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_DISABLED
+	# V6: lists behind it let go of the finger and stop gliding
+	TouchScroll.release_all(self, node)
 	node.tree_exiting.connect(_on_modal_closed.bind(node), CONNECT_ONE_SHOT)
 
 
