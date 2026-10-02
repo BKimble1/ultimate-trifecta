@@ -203,3 +203,19 @@ func test_apply_is_atomic_and_idempotent() -> void:
 	t.eq(int(Save.data["coins"]), 30, "idempotent")
 	t.check(Save.owns("hat", "crown") and Save.owns("color", "plum") and Save.owns("hair", "curly"), "owned: bought + free items")
 	Save.data = saved
+
+
+func test_generated_and_old_names_always_fit_the_name_rules() -> void:
+	var rng := RandomNumberGenerator.new()
+	var bad: Array = []
+	for i in 2000:
+		rng.seed = i
+		var n := Save.generated_name(rng)
+		if NameRules.shape_error(n) != "":
+			bad.append(n)
+	t.eq(bad, [], "every generated default name is valid (3-16 characters)")
+	t.eq(Save.fit_name("Splashy Walrus 56"), "Splashy Walrus", "a 17-character V2 name keeps its words")
+	t.eq(Save.fit_name("Sleepy Otter 42"), "Sleepy Otter 42", "a valid name is unchanged")
+	t.check(NameRules.shape_error(Save.fit_name("!!!")) == "", "an unusable old name becomes a fresh valid one")
+	var p: Dictionary = Save.migrate({"version": 2, "name": "Splashy Walrus 56"})
+	t.eq(String(p["name"]), "Splashy Walrus", "migration fixes it, so it's never shown as \"Player\"")

@@ -30,7 +30,7 @@ func default_profile() -> Dictionary:
 	return {
 		"version": VERSION,
 		"uid": uid,
-		"name": "%s %s %d" % [ADJ[rng.randi() % ADJ.size()], ANIMALS[rng.randi() % ANIMALS.size()], rng.randi_range(10, 99)],
+		"name": generated_name(rng),
 		"settings": {"sensitivity": 1.0, "invert_y": false, "reduced_motion": false, "sfx": 0.9, "music": 0.6,
 			"quality": 1, "sprint_threshold": 0.88, "touch_sprint": true, "role_pref": "any",
 			"stick_mode": "dynamic", "sprint_mode": "edge", "button_size": 1.0, "touch_layout": "standard", "haptics": true},
@@ -46,6 +46,31 @@ func default_profile() -> Dictionary:
 		"cloud_profile": {},
 		"onboarded": false,     # first launch: Create Your Runner + name
 	}
+
+
+## A fun default name that always fits the name rules (3-16 characters):
+## "Sleepy Otter 42", or without the number when the words are long.
+static func generated_name(rng: RandomNumberGenerator) -> String:
+	var base := "%s %s" % [ADJ[rng.randi() % ADJ.size()], ANIMALS[rng.randi() % ANIMALS.size()]]
+	var with_num := "%s %d" % [base, rng.randi_range(10, 99)]
+	return with_num if with_num.length() <= NameRules.MAX_LEN else base
+
+
+## Names saved by older versions that don't fit today's rules (V1/V2 could
+## generate 17-character names) are kept as close as possible: the number is
+## dropped, else a new name is generated.  Never shown as "Player".
+static func fit_name(n: String) -> String:
+	var name := NameRules.normalize(n)
+	if NameRules.shape_error(name) == "":
+		return name
+	var parts := name.split(" ")
+	if parts.size() > 1 and parts[-1].is_valid_int():
+		var short := " ".join(parts.slice(0, parts.size() - 1))
+		if NameRules.shape_error(short) == "":
+			return short
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(n)
+	return generated_name(rng)
 
 
 func _blank_stats() -> Dictionary:
@@ -84,6 +109,7 @@ func migrate(d: Dictionary) -> Dictionary:
 		if not (out["stats"] as Dictionary).has(mode):
 			out["stats"][mode] = _blank_stats()
 		out["stats"][mode] = _merge_stats(_blank_stats(), out["stats"][mode])
+	out["name"] = fit_name(String(out["name"]))
 	# V1/V2 wardrobe -> schema 2 appearance (same look) and item keys
 	out["cosmetic"] = Cosmetics.sanitize(out["cosmetic"] if out["cosmetic"] is Dictionary else {})
 	out["owned"] = Cosmetics.migrate_owned(out["owned"] if out["owned"] is Array else [])

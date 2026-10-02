@@ -346,15 +346,18 @@ func _build_room() -> void:
 	var wall := Color("3a4a6b", PAPER)
 	var wall_lo := Color("2f3d5a")
 	# floor planks (grain, seams and staggered ends come from the dorm shader)
-	for i in 16:
-		var x := -6.0 + 0.75 * float(i) + 0.375
-		k.box(Vector3(x, -0.05, 0.0), Vector3(0.75, 0.1, 10.0), Color(wood.lightened(0.03 * float(i % 3)) if i % 2 == 0 else wood.darkened(0.05), WOOD))
+	# (the room is larger than any framing needs: the wide iPad 4:3 lobby
+	# framing pulls the camera back, and must never see past the walls)
+	for i in 32:
+		var x := -12.0 + 0.75 * float(i) + 0.375
+		k.box(Vector3(x, -0.05, 4.0), Vector3(0.75, 0.1, 18.0), Color(wood.lightened(0.03 * float(i % 3)) if i % 2 == 0 else wood.darkened(0.05), WOOD))
 	# walls (back + left), skirting, window
-	k.box(Vector3(0, 2.1, -3.6), Vector3(12.4, 4.4, 0.25), wall)
-	k.box(Vector3(0, 0.6, -3.46), Vector3(12.4, 1.2, 0.05), wall_lo)
-	k.box(Vector3(0, 1.21, -3.43), Vector3(12.4, 0.06, 0.08), Color("c9b48a"))
-	k.box(Vector3(-6.1, 2.1, 0), Vector3(0.25, 4.4, 8.0), Color(wall.darkened(0.08), PAPER))
-	k.box(Vector3(-5.96, 0.6, 0), Vector3(0.05, 1.2, 8.0), wall_lo.darkened(0.08))
+	k.box(Vector3(0, 3.5, -3.6), Vector3(24.4, 7.2, 0.25), wall)
+	k.box(Vector3(0, 0.6, -3.46), Vector3(24.4, 1.2, 0.05), wall_lo)
+	k.box(Vector3(0, 1.21, -3.43), Vector3(24.4, 0.06, 0.08), Color("c9b48a"))
+	k.box(Vector3(0, 4.42, -3.45), Vector3(24.4, 0.1, 0.1), Color("c9b48a"))     # picture rail
+	k.box(Vector3(-6.1, 3.5, 4.0), Vector3(0.25, 7.2, 16.0), Color(wall.darkened(0.08), PAPER))
+	k.box(Vector3(-5.96, 0.6, 4.0), Vector3(0.05, 1.2, 16.0), wall_lo.darkened(0.08))
 	# window: frame, night sky panes, moon, distant lit windows
 	var wx := -0.4
 	k.box(Vector3(wx, 2.35, -3.46), Vector3(3.4, 2.1, 0.06), Color("1a2846"), 0.0, 0.0)
