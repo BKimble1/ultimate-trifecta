@@ -325,7 +325,10 @@ func emote(key: String, id: int, seconds: float = -1.0) -> bool:
 	v.apply_state(rs)
 	v.restart_emote(id)
 	_emote_until[key] = _t + dur
-	_show_bubble(key, v, String(TC.EMOTE_LABELS[name]))
+	# the name bubble tells a group who is emoting; alone on the home or
+	# results framing it would sit above the top of the screen (V5)
+	if mode == "lobby":
+		_show_bubble(key, v, String(TC.EMOTE_LABELS[name]))
 	emote_starts[key] = int(emote_starts.get(key, 0)) + 1
 	return true
 
