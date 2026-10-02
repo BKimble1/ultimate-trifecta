@@ -60,6 +60,10 @@ func _init() -> void:
 
 func _ready() -> void:
 	field.call_deferred("grab_focus")
+	# (V6) suggestions make the sheet taller: keep it centred on screen
+	resized.connect(func() -> void:
+		if is_inside_tree():
+			position = ((get_viewport().get_visible_rect().size - size) * 0.5).max(Vector2.ZERO))
 
 
 func cancel_sheet() -> void:

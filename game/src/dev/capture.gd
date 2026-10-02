@@ -63,6 +63,14 @@ func _ready() -> void:
 	var dg: GDScript = load("res://src/dev/diag.gd")
 	_diag = dg.new()
 	add_child(_diag)
+	if scenario.begins_with("social_"):
+		# V6 social evidence (hub, chat, names, rankings): its own driver
+		var sc: Node = (load("res://src/dev/capture_social.gd") as GDScript).new()
+		sc.set("cap", self)
+		sc.set("scenario", scenario)
+		add_child(sc)
+		if scenario == "social_hub":
+			App.dev_expect = 99   # hold the room open for the capture
 
 
 func snap(shot_name: String) -> void:
