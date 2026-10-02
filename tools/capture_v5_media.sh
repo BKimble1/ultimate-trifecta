@@ -72,11 +72,13 @@ for s in $SETS; do
       done;;
     startup)
       # Movie Maker frames of a normal boot: the Idlery Games curtain over the
-      # first frames, then home (fixed 30 fps game clock; not real time)
+      # first frames, then home (fixed 30 fps game clock; not real time).
+      # The movie writer saves the project size (1280x720), so the window is
+      # that size too (16:9, as an iPhone SE); another aspect would be cropped
       mkdir -p "$OUT/startup"
-      XDG_DATA_HOME=$(mktemp -d) timeout 900 xvfb-run -a -s "-screen 0 1400x700x24" tools/gd.sh --path game \
-        --resolution 1280x592 --write-movie "$OUT/startup/f.png" --fixed-fps 30 -- \
-        --skip-onboarding --no-gamecenter --quit-after=4 > "$OUT/startup/log.txt" 2>&1 || true
+      XDG_DATA_HOME=$(mktemp -d) timeout 900 xvfb-run -a -s "-screen 0 1400x800x24" tools/gd.sh --path game \
+        --resolution 1280x720 --write-movie "$OUT/startup/f.png" --fixed-fps 30 -- \
+        --emulate-phone=1.92 --skip-onboarding --no-gamecenter --quit-after=4 > "$OUT/startup/log.txt" 2>&1 || true
       ls "$OUT/startup" | grep -c png | sed 's/^/frames: /';;
     *) echo "unknown set $s";;
   esac

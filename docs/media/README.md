@@ -1,5 +1,9 @@
 # Media evidence
 
+**Version 1.4 (V5):** startup, home, party, wardrobe, loading, match and results at phone/SE/iPad sizes, V4/V5 comparisons, campus before/after and character-motion reels are in [v5/](v5/README.md).
+
+**Version 1.3 (V4):** see [v4/](v4/README.md).
+
 **Version 1.1 (V2):** before/after pairs, art sheets, device-aspect layout checks and normal-speed recordings are in [v2/](v2/README.md).
 
 The files below are the **V1 (1.0)** evidence, kept as the baseline.
