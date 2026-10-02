@@ -14,8 +14,43 @@ Night Watch players hunt them on foot and in golf carts.
 | [TEST_REPORT.md](TEST_REPORT.md) | What was tested, how, and what is still unverified |
 | [TESTFLIGHT_RELEASE.md](TESTFLIGHT_RELEASE.md) | Release status, signing lane, owner handoff and beta notes |
 | [ASSET_LICENSES.md](ASSET_LICENSES.md) | Where every asset and dependency comes from |
+| [docs/V3_NOTES.md](docs/V3_NOTES.md) | V3 implementation notes: character art and animation, splash sequence, lobby/creator/type, profiles, parties and protocol 4, controls |
+| [docs/APP_STORE.md](docs/APP_STORE.md) | Prepared App Store package: store text, review notes, age rating and privacy answers |
+| [service/README.md](service/README.md) | The trusted online service (profiles, names, moderation, party rooms): API and owner deployment |
 | [docs/V2_NOTES.md](docs/V2_NOTES.md) | V2 implementation notes: render path, motion pipeline, touch rules, theme |
 | [tools/character/README.md](tools/character/README.md) | How the character asset is built |
+
+## What's new in V3 (version 1.2)
+
+- **Characters and animation.**
+  - The character is restyled after the app icon: a rounded head with large, clear eyes, tapered brows, nine face shapes, hair built from clean hairlines, and matte skin.
+  - The face/collar speckling is fixed at its cause.
+  - Gaits are timed from the asset's own stride, with phase-continuous blends and footsteps from the gait phase.
+  - New animation: lean and plant on turns, jump arcs and landings, tag anticipation/lunge/miss, lobby idles, arrivals, ready moves and celebrations, and a recovery layer after splashing.
+- **Splash sequence.**
+  - A 1.5 s signature splash (contact, dip, tread, breath, duck under) follows the runner's authoritative time in the water.
+  - Walk-in, jump and dive impacts look different.
+  - Effects are pooled, the water shows up to six ripples at once, and the sound plays exactly once.
+- **Menus.**
+  - Real Medium/SemiBold/Bold font weights, an original wordmark, and buttons with depth and a short spring.
+  - A cozier dorm that frames 1, 2, 4 or 8 players with every face visible.
+  - **Create Your Runner** replaces the wardrobe.
+  - The HUD has a compact stamp celebration and a decluttered feed.
+- **Parties.**
+  - **Create Party** gives a six-character code, which you can Copy, Share (native iOS share sheet) or Invite with. Join with a code.
+  - Player cards show a portrait and offer Hide emotes, Report, Block and Remove.
+  - Rooms come from the game service when it is deployed; a match can't form without its host.
+- **Trust.**
+  - Protocol 4 binds clients to their host, verifies single-use admission tokens, and protects reconnect slots.
+  - Reads are bounds-checked, peers are rate-limited, and the round waits for every player to load.
+- **Profiles.**
+  - Game Center-verified sign-in and moderated names with a `#1234` tag.
+  - Reports with receipts, persistent blocks, and an owner moderation tool.
+  - **Delete Game Profile** in Settings › Profile.
+- **Controllers.**
+  - One ordered press queue for touch, keys and pads, so a fast jump-then-dive never merges.
+  - Prompts match the controller family: Xbox, PlayStation, MFi, or positional glyphs.
+  - Full d-pad menu navigation, a code pad for joining, and creator categories on LB/RB.
 
 ## What's new in V2 (version 1.1)
 
@@ -102,6 +137,8 @@ tools/run_tests.sh                # all headless tests (about 4 min; route test 
 tools/run_tests.sh test_rules     # one suite
 tools/gd.sh --path game           # run the game on desktop (keyboard + mouse or controller)
 tools/character/build.sh          # rebuild game/assets/characters/runner.glb (needs bpy 4.5.4; see tools/character/README.md)
+tools/build_native.sh             # UTShare extension: Linux .so for tests; on macOS also the iOS xcframework
+(cd service && npm test)          # the online service's API tests (Node 22.13+)
 ```
 
 Desktop keys are for testing only:
@@ -137,9 +174,11 @@ Other automation flags:
 | `--quit-after=S` | Quits after S seconds. |
 | `--report=path` | Writes per-round JSON stats and prints status lines every 5 s. |
 | `--diag` / `--diag-report=path` | Render diagnostics overlay, or a JSON report every 5 s. Covers window, canvas, 3D render size and scale, SubViewport render size against displayed size, MSAA, frame-time percentiles and draw calls. |
-| `--capture=home\|screens\|lobby\|runner\|patrol --capture-dir=DIR` | Evidence capture. Saves lossless PNGs at moments chosen from game state, each with a diagnostics JSON beside it. |
+| `--capture=home\|screens\|account\|lobby\|runner\|patrol\|results --capture-dir=DIR` (lobby with N players: `tools/capture_lobby.sh N DIR`) | Evidence capture. Saves lossless PNGs at moments chosen from game state, each with a diagnostics JSON beside it. |
 | `--emulate-phone[=2]` | Applies the 44 pt touch-size rule on desktop runs at device resolution (@3x iPhone by default, `=2` for @2x devices: iPhone SE, iPad) and starts with the touch layout instead of keyboard. |
 | `--quality=0\|1`, `--name=…`, `--random-cosmetic`, `--gc-sim=declined\|restricted\|signing_in` | Preset, name or outfit for capture runs. `--gc-sim` shows the Game Center states on desktop and is labelled as simulated in the evidence. |
+| `--sim-pad=xbox\|playstation\|mfi\|nintendo\|generic` | Renders controller prompts on desktop captures. Labelled as simulated: no controller is attached. |
+| `--skip-onboarding`, `--service-url=…` | Skip the first-launch creator/name flow; point the client at a service (for example a local `wrangler dev`). |
 
 The character test scene is `res://src/dev/character_lineup.tscn -- --lineup=views,outfits,skins,posesheet,transitions,closeup,faces,cart --capture-dir=DIR`.
 
@@ -152,6 +191,7 @@ This needs macOS with Xcode 26 or later, since App Store uploads require the iOS
 ```sh
 tools/fetch_godot.sh --templates
 tools/fetch_deps.sh               # pinned GodotApplePlugins (Game Center), sha256-checked
+tools/build_native.sh             # UTShare share-sheet xcframework (built from native/ut_share)
 tools/export_ios.sh               # Xcode project into build/ios
 tools/build_ios.sh device         # unsigned device archive (compile/link proof)
 tools/build_ios.sh signed         # signed archive + export (needs App Store Connect API key)
@@ -177,4 +217,5 @@ No credentials, keys or provisioning files belong in git; `.gitignore` excludes 
 - **Disconnects and late joins.**
   - A disconnected player's slot is held for 20 s while a bot takes over, and a reconnect resumes the same progress.
   - Newcomers mid-round spectate until the next round.
-- **Hosting cost.** Transport and matchmaking are Apple Game Center (`GKMatch`). There is no developer-run server and no hosting cost.
+- **Hosting cost.** Transport and matchmaking are Apple Game Center (`GKMatch`). There is no developer-run game server.
+- **Game service (V3).** `service/` adds verified profiles, name moderation, reports, blocks and party rooms with admission tokens. It is a Cloudflare Worker with D1 (free tiers) on the owner's account. It is **not deployed yet**; without it the game runs exactly as described above, and nothing claims a verified profile.

@@ -464,7 +464,9 @@ class SlotCell:
 		name_l = UIKit.label("", 21, UIKit.IVORY, true)
 		name_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		name_l.clip_text = true
-		name_l.custom_minimum_size = Vector2(150, 0)
+		# small minimum (long names ellipsize): the row must fit the cell's
+		# 248-unit minimum or the status badge spills outside it
+		name_l.custom_minimum_size = Vector2(90, 0)
 		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(name_l)
 		sub_l = UIKit.label("", 16, UIKit.IVORY_MUTED)

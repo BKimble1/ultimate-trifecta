@@ -122,3 +122,19 @@ func _check_party(n: int) -> void:
 	var fwd := -lv.global_transform.basis.z
 	t.check(fwd.normalized().dot(to_cam.normalized()) > 0.8, "%d players: local player faces the camera" % n)
 	stage.queue_free()
+
+
+func test_slot_cell_contents_stay_inside_the_cell() -> void:
+	var box := HBoxContainer.new()
+	t.add_child(box)
+	var cell := LobbyScreen.SlotCell.new()
+	box.add_child(cell)
+	box.size = Vector2(cell.custom_minimum_size.x, cell.custom_minimum_size.y)
+	cell.show_entry({"slot": 0, "uid": "u", "name": "Supercalifragilis", "cosmetic": Cosmetics.DEFAULT, "is_bot": false,
+		"connected": true, "ready": true, "role": TC.Role.RUNNER, "pref": "any"}, true, true, {}, false)
+	for i in 3:
+		await t.get_tree().process_frame
+	var r := cell.get_global_rect().grow(0.5)
+	for c in [cell.badge, cell.face, cell.name_l]:
+		t.check(r.encloses((c as Control).get_global_rect()), "%s inside the slot cell at its minimum width" % (c as Control).get_class())
+	box.queue_free()
