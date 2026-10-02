@@ -53,7 +53,7 @@ func build() -> void:
 	# the summary scrolls when it must; the actions below it never do
 	var outer := UIKit.vbox(14)
 	sheet.add_child(outer)
-	var sc := ScrollContainer.new()
+	var sc := UIKit.scroll_area()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	sc.follow_focus = true
 	outer.add_child(sc)

@@ -1213,7 +1213,7 @@ class FullMap:
 			legend.add_child(row)
 		v.add_child(legend)
 		v.add_child(UIKit.styled("Your team", "overline", UIKit.IVORY_MUTED))
-		var sc := ScrollContainer.new()
+		var sc := UIKit.scroll_area()
 		sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 		sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		sc.custom_minimum_size = Vector2(0, 120)

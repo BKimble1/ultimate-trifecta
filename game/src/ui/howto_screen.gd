@@ -14,7 +14,7 @@ func build() -> void:
 	done.pressed.connect(func() -> void: App.goto_title())
 	h.add_child(done)
 	focus_first(done)
-	var sc := ScrollContainer.new()
+	var sc := UIKit.scroll_area()
 	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	sc.follow_focus = true

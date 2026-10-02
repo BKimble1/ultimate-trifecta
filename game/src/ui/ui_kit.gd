@@ -436,6 +436,19 @@ static func fit_card(b: Control, content: Control, pad: float = 36.0) -> void:
 	upd.call()
 
 
+## V6: every scrolling list is made here, so a finger swipe scrolls it from
+## anywhere on its content and a drag never activates the card it started
+## on (TouchScroll).  Vertical by default; horizontal for strips and tracks.
+static func scroll_area(horizontal: bool = false) -> ScrollContainer:
+	var sc := ScrollContainer.new()
+	if horizontal:
+		sc.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	else:
+		sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	TouchScroll.attach(sc)
+	return sc
+
+
 ## Focus for controllers and keys; on touch the ring stays hidden until a
 ## directional input moves it (Godot shows it again on navigation).
 static func soft_focus(c: Control) -> void:

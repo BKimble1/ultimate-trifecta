@@ -37,7 +37,7 @@ func build() -> void:
 	var sheet := UIKit.panel(Color(UIKit.SLATE, 0.96), UIKit.R_PANEL, 28)
 	sheet.custom_minimum_size = Vector2(600, 0)
 	row.add_child(sheet)
-	var sc := ScrollContainer.new()
+	var sc := UIKit.scroll_area()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	sc.follow_focus = true
 	sheet.add_child(sc)

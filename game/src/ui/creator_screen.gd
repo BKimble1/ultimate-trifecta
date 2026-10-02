@@ -146,7 +146,7 @@ func build() -> void:
 	var pvb := UIKit.vbox(12)
 	panel.add_child(pvb)
 	pvb.add_child(_category_strip())
-	scroll = ScrollContainer.new()
+	scroll = UIKit.scroll_area()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.follow_focus = true
@@ -189,7 +189,7 @@ func _frame_stage() -> void:
 
 
 func _category_strip() -> Control:
-	var tab_scroll := ScrollContainer.new()
+	var tab_scroll := UIKit.scroll_area(true)
 	tab_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	tab_scroll.follow_focus = true
