@@ -58,19 +58,30 @@ rm -rf build/ios && mkdir -p build/ios
 # for Metal on Linux - so this export runs with a real rendering device.  If
 # that export fails, the ordinary headless export (no baked shaders) is used.
 BAKED=0
+BAKE_RC=""
 if [ "${SHADER_BAKE:-0}" = 1 ] && [ "$(uname -s)" = Darwin ]; then
   sed -i.tmp -e 's/^shader_baker\/enabled=.*/shader_baker\/enabled=true/' game/export_presets.cfg
   rm -f game/export_presets.cfg.tmp
-  if python3 -c 'import subprocess,sys; sys.exit(subprocess.run(sys.argv[1:], timeout=1200).returncode)' \
+  BAKE_RC=0
+  python3 -c 'import subprocess,sys; sys.exit(subprocess.run(sys.argv[1:], timeout=1200).returncode)' \
       "$GODOT" --path game --rendering-method mobile --rendering-driver metal --export-release "iOS" ../build/ios/UltimateTrifecta.xcodeproj \
-      > build/ios/export.log 2>&1 && test -d build/ios/UltimateTrifecta.xcodeproj; then
+      > build/ios/export.log 2>&1 || BAKE_RC=$?
+  sed -i.tmp -e 's/^shader_baker\/enabled=.*/shader_baker\/enabled=false/' game/export_presets.cfg
+  rm -f game/export_presets.cfg.tmp
+  # Judged by what it produced, not only the exit code: on the CI runner the
+  # editor has crashed while quitting after a finished export (run #63).
+  # Kept when the project and its game data exist and the data carries
+  # baked shaders; the simulator run below then plays exactly this build.
+  BPCK=$(find build/ios -maxdepth 1 -name '*.pck' | head -1)
+  BN=$( { [ -n "$BPCK" ] && strings -n 8 "$BPCK" 2>/dev/null | grep -c "shader_cache" ; } || true)
+  echo "shader-baking export: exit code $BAKE_RC · game data ${BPCK:-missing} · shader_cache entries ${BN:-0}"
+  grep -iE "shader|bake|export|error|crash|signal" build/ios/export.log | grep -v "already has constant\|bind_integer_constant" | head -40 || true
+  if [ -d build/ios/UltimateTrifecta.xcodeproj ] && [ -n "$BPCK" ] && [ "${BN:-0}" -gt 0 ]; then
     BAKED=1
   else
-    echo "shader-baking export failed; falling back to the headless export without baked shaders"
-    tail -20 build/ios/export.log || true
-    sed -i.tmp -e 's/^shader_baker\/enabled=.*/shader_baker\/enabled=false/' game/export_presets.cfg
-    rm -f game/export_presets.cfg.tmp
-    rm -rf build/ios/UltimateTrifecta* && mkdir -p build/ios
+    echo "shader-baking export unusable; falling back to the headless export without baked shaders"
+    tail -40 build/ios/export.log || true
+    rm -rf build/ios/UltimateTrifecta* build/ios/*.pck && mkdir -p build/ios
   fi
 fi
 if [ "$BAKED" = 0 ]; then
@@ -80,6 +91,6 @@ test -d build/ios/UltimateTrifecta.xcodeproj
 # what actually went into the game data (evidence, not an assumption)
 PCK=$(find build/ios -maxdepth 1 -name '*.pck' | head -1)
 N=$( { strings -n 8 "$PCK" 2>/dev/null | grep -c "shader_cache" ; } || true)
-{ echo "shader baker requested: ${SHADER_BAKE:-0} · baking export used: $BAKED · shader_cache entries in the game data: ${N:-0}"
+{ echo "shader baker requested: ${SHADER_BAKE:-0} · baking export used: $BAKED (its exit code: ${BAKE_RC:-n/a}) · shader_cache entries in the game data: ${N:-0}"
   grep -i "shader baker" build/ios/export.log | head -5 || true; } | tee build/ios/shader_bake.txt
 echo "Exported Xcode project: build/ios/UltimateTrifecta.xcodeproj (version $VERSION build $BUILD)"

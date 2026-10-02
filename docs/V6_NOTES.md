@@ -83,6 +83,30 @@ and other features are never toggled mid-round (a scale change reallocates
 the 3D buffers once and compiles no pipelines). Each change is marked on the
 diagnostics timeline. `test_quality_governor`. Device behaviour unmeasured.
 
+## Shader baking (Metal)
+
+Godot's shader baker can ship the game's shaders already compiled for the
+target driver, so a phone does not compile them from source the first time
+each material is drawn. It needs the editor running the target's renderer
+(Mobile on Metal), so it can only run on the macOS CI runner, not headless
+and not on Linux; nothing baked on this Linux machine covers Metal. The
+baker reduces shader compilation; it does not replace the driver's own
+pipeline preparation on each device.
+
+`tools/export_ios.sh` with `SHADER_BAKE=1` (set in CI) tries the baking
+export first and falls back to the ordinary export; `shader_bake.txt` in
+the build facts says which was used and how many `shader_cache` entries the
+game data carries.
+
+- Run #63 (c3daf59): the baking export ran for 3 minutes and then the editor
+  crashed inside `NSApplication terminate` (while quitting); the script
+  treated the non-zero exit as failure and shipped the fallback: **0 baked
+  shaders**.
+- Since then the baking export is judged by what it produced (the project
+  and game data exist and carry `shader_cache` entries), with its exit code
+  recorded; the CI simulator run then plays exactly that build. The result
+  for the uploaded build is in TESTFLIGHT_RELEASE.md.
+
 ## Loading (V6)
 
 - **Preparing campus…** with a bar that follows the steps actually done,
@@ -96,6 +120,14 @@ diagnostics timeline. `test_quality_governor`. Device behaviour unmeasured.
   prepares normally.
 - The runner loop keeps animating throughout (preparation is sliced into
   short jobs, V4/V5).
+- On a device that renders slowly anyway (a hot phone, a weak GPU, the CI
+  Simulator at ~1 fps), preparation may use up to half of the frame
+  interval outside its own work (the least of the last four frames, so one
+  hitch doesn't count), capped at 40 ms; at 60 fps it keeps 9 ms. With
+  60 ms frames a round prepared in 75 frames instead of 178
+  (`test_loading::test_preparation_budget_follows_a_slow_device`). V5 and
+  V6 CI Simulator runs (x86_64, GL ES fallback, ~1 fps) were still loading
+  when the capture window closed.
 
 ## Startup
 
