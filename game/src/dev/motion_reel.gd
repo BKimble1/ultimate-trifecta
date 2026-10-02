@@ -4,9 +4,11 @@ extends Node3D
 ##       res://src/dev/motion_reel.tscn -- --reel=runner|watch [--label=V5]
 ## Plays MotionRig scenarios (tests/motion_rig.gd: the same 60 Hz mini-motor
 ## and interpolation path as the measurements) one after another under the
-## game's night lighting, with a fixed three-quarter camera that follows the
-## character exactly (no smoothing, so the clip shows the character's own
-## motion).  The same file renders the V4 code for side-by-side clips.
+## character lineup's studio light on a tiled floor (so ground travel and
+## planted feet read), with a fixed three-quarter camera that follows the
+## character horizontally exactly (no smoothing, so the clip shows the
+## character's own motion).  The same file renders the V4 code for
+## side-by-side clips.
 ## No water or spray effects: the splash shows the body only.
 
 const REELS := {
@@ -31,14 +33,36 @@ func _ready() -> void:
 			reel = a.split("=")[1]
 		elif a.begins_with("--label="):
 			label_text = a.split("=")[1]
-	add_child(EnvFactory.make_environment(1))
-	add_child(EnvFactory.make_moon(1))
+	# the character lineup's studio light: motion reads better than under the
+	# night environment on an empty lawn
+	var we := WorldEnvironment.new()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("223049")
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("8fa3c8")
+	env.ambient_light_energy = 0.55
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_white = 6.0
+	we.environment = env
+	add_child(we)
+	var key := DirectionalLight3D.new()
+	key.rotation_degrees = Vector3(-38, 28, 0)
+	key.light_energy = 1.25
+	key.light_color = Color(1.0, 0.94, 0.86)
+	key.shadow_enabled = true
+	add_child(key)
+	var fill := DirectionalLight3D.new()
+	fill.rotation_degrees = Vector3(-20, -140, 0)
+	fill.light_energy = 0.35
+	fill.light_color = Color(0.6, 0.72, 1.0)
+	add_child(fill)
 	var lawn := MeshInstance3D.new()
 	var lp := PlaneMesh.new()
 	lp.size = Vector2(400, 400)
 	lawn.mesh = lp
 	var lm := StandardMaterial3D.new()
-	lm.albedo_color = Color(0.25, 0.46, 0.30)
+	lm.albedo_color = Color("2b3a57")
 	lm.roughness = 0.95
 	lm.uv1_scale = Vector3(200, 200, 1)
 	lawn.material_override = lm
@@ -58,12 +82,12 @@ func _ready() -> void:
 			k += 1
 	stones.multimesh = mm
 	var sm := StandardMaterial3D.new()
-	sm.albedo_color = Color(0.42, 0.44, 0.48)
+	sm.albedo_color = Color("3a4a6a")
 	sm.roughness = 0.9
 	stones.material_override = sm
 	add_child(stones)
 	cam = Camera3D.new()
-	cam.fov = 40
+	cam.fov = 44
 	add_child(cam)
 	var cl := CanvasLayer.new()
 	add_child(cl)
@@ -121,6 +145,8 @@ func _process(_delta: float) -> void:
 		var cpos := p - Basis(Vector3.UP, yaw) * CartView.SEAT
 		(cart as CartView).apply_state({"pos": cpos, "yaw": yaw, "speed": Vector2(_rig.m.vel.x, _rig.m.vel.z).length(),
 			"steer": float(v.rs.get("steer", 0.0)), "occupied": true})
-	var ground := Vector3(p.x, 0.0, p.z)
+	# rises with half of a jump's height, so the runner stays in frame and
+	# the ground still shows the jump
+	var ground := Vector3(p.x, maxf(0.0, p.y) * 0.5, p.z)
 	var off := _offset * (1.8 if _rig.scenario == "cart" else 1.0)
-	cam.look_at_from_position(ground + off, ground + Vector3(0, 0.75, 0))
+	cam.look_at_from_position(ground + off, ground + Vector3(0, 0.8, 0))

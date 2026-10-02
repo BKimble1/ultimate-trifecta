@@ -125,7 +125,7 @@ var lighting := "outdoor"
 var fx: Fx
 var water_at: Callable
 
-## menus: calmer idle (see set_menu_idle); null = automatic (lighting "indoor")
+## menus: calmer idle (see set_menu_idle); automatic for lighting "indoor"
 var menu_idle := false
 var _menu_idle_set := false
 
@@ -196,7 +196,6 @@ var _settle_to := -1.0        # stopping: gait phase the step settles on
 var _vel_f := Vector3.ZERO    # filtered velocity (secondary acceleration)
 var _air_hold := 0.0
 var _air_vis := false
-var _mode_fade := 0.0
 var _cut := false
 var _last_pos := Vector3.ZERO
 var _cam_d := INF
@@ -816,7 +815,6 @@ func _set_mode(m: String, cut: bool = false) -> void:
 		_fidget_on = false
 	_mode = m
 	_mode_t = 0.0
-	_mode_fade = x
 
 
 ## Start a pose fade from what is on screen (not for throttled distant
@@ -852,16 +850,13 @@ func _cut_pose() -> void:
 ## previews) keep the sim's facing.
 func _update_yaw(delta: float) -> float:
 	var target := float(rs.get("yaw", rotation.y))
-	var follow := 24.0
 	# heading of the filtered ground travel (prediction corrections jitter the
 	# raw velocity; a run on the spot in the lobby travels nowhere)
 	var hv := Vector2(_travel_f.x, _travel_f.z)
 	if _mode == "ground" and int(rs.get("tag_phase", 0)) == 0 and not bool(rs.get("diving", false)) \
 			and int(rs.get("state", TC.PState.ACTIVE)) == TC.PState.ACTIVE and hv.length() > 0.8:
 		var heading := atan2(-hv.x, -hv.y)
-		var k := smoothstep(0.8, 2.0, hv.length())
-		target += wrapf(heading - target, -PI, PI) * k
-		follow = 24.0
+		target += wrapf(heading - target, -PI, PI) * smoothstep(0.8, 2.0, hv.length())
 	if not _have_yaw:
 		_vis_yaw = target
 		_have_yaw = true
@@ -876,7 +871,7 @@ func _update_yaw(delta: float) -> float:
 		_turn_sign = signf(d)
 	elif absf(d) < 0.01:
 		_turn_sign = 0.0
-	var step := d * (1.0 - exp(-delta * follow))
+	var step := d * (1.0 - exp(-delta * 24.0))
 	_vis_yaw = wrapf(_vis_yaw + step, -PI, PI)
 	rotation.y = _vis_yaw
 	return step
