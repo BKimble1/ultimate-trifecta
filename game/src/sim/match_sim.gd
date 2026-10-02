@@ -223,6 +223,16 @@ func slot_for_uid(uid: String) -> int:
 # ---------------------------------------------------------------------------
 # Main step
 # ---------------------------------------------------------------------------
+## V6 development profiling: per-section tick cost in microseconds (off
+## unless a tool sets prof_on; then a handful of clock reads per tick).
+static var prof_on := false
+static var prof: Dictionary = {}
+
+
+static func _prof_add(section: String, t0: int) -> void:
+	prof[section] = int(prof.get(section, 0)) + Time.get_ticks_usec() - t0
+
+
 func step(inputs: Dictionary) -> void:
 	events.clear()
 	var dt := cfg.dt()
@@ -258,22 +268,32 @@ func step(inputs: Dictionary) -> void:
 
 	# 2. gather intents
 	var cmds := {}
+	var t0 := Time.get_ticks_usec() if prof_on else 0
 	for p in players:
 		var cmd: InputCmd = null
 		if p.is_bot or p.bot_takeover:
 			var brain = bots.get(p.id)
+			var tb := Time.get_ticks_usec() if prof_on else 0
 			cmd = brain.think(self, p) if brain != null else InputCmd.new()
+			if prof_on:
+				_prof_add("bots", tb)
 		else:
 			cmd = inputs.get(p.id)
 			if cmd == null:
 				cmd = p.last_input.repeat_without_edges(p.last_input.seq)
 		p.last_input = cmd
 		cmds[p.id] = cmd
+	if prof_on:
+		_prof_add("intents", t0)
+		t0 = Time.get_ticks_usec()
 	_resolve_cart_requests(cmds)
 	for p in players:
 		_update_tag_cues(p, (cmds[p.id] as InputCmd).cam_yaw)
 		_intent_tag(p, cmds[p.id])
 		_intent_gadget(p, cmds[p.id])
+	if prof_on:
+		_prof_add("tag_cues", t0)
+		t0 = Time.get_ticks_usec()
 
 	# 3. movement
 	for c in carts:
@@ -281,8 +301,14 @@ func step(inputs: Dictionary) -> void:
 		if c.occupant >= 0:
 			drv_cmd = cmds.get(c.occupant)
 		Motor.step_cart(c, drv_cmd, cfg, dt, layout)
+	if prof_on:
+		_prof_add("carts", t0)
+		t0 = Time.get_ticks_usec()
 	for p in players:
 		_move_player(p, cmds[p.id], dt)
+	if prof_on:
+		_prof_add("move", t0)
+		t0 = Time.get_ticks_usec()
 
 	# 4..9 rules in fixed order
 	if phase == TC.Phase.PLAYING and tick <= end_tick:
@@ -296,8 +322,13 @@ func step(inputs: Dictionary) -> void:
 		_update_gadgets(dt)
 		for p in players:
 			_check_recover(p)
+	if prof_on:
+		_prof_add("rules", t0)
+		t0 = Time.get_ticks_usec()
 	if tick % 4 == 0:
 		_perception()
+	if prof_on:
+		_prof_add("perception", t0)
 	for p in players:
 		p.push_history()
 	for m in splash_markers:

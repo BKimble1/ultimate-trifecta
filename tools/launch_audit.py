@@ -6,9 +6,10 @@
 V5 shows the requested Idlery Games lockup at startup (owner's request), so
 naming Idlery is no longer a finding.  What this audit still fails on:
   - no launch storyboard, or more than one;
-  - a launch image that is missing, not opaque, not on the startup navy
-    (#0c1324) or without the Idlery teal mark in its centre;
-  - a storyboard background that isn't the same navy (white flash);
+  - a launch image that is missing, not opaque, not on the startup black
+    (#000000, V6) or without the Idlery teal mark in its centre;
+  - a storyboard background that isn't the same black (white flash, or the
+    V5 navy rectangle);
   - any "powered by" text in the game data (.pck) or the project's text files.
 It also lists the launch files and the text files naming Idlery (expected:
 the bundle ID in build plists) for the build log.  Standard library only.
@@ -19,7 +20,7 @@ import struct
 import sys
 import zlib
 
-NAVY = (12, 19, 36)
+BLACK = (0, 0, 0)       # V6: pure black startup (was the V5 navy #0c1324)
 TEAL = (57, 165, 171)
 
 
@@ -102,11 +103,11 @@ def main():
         ok = False
         for c in cols:
             vals = {k: float(v) for k, v in re.findall(r'(red|green|blue)="([0-9.]+)"', c)}
-            if vals and near(tuple(round(vals[k] * 255) for k in ('red', 'green', 'blue')), NAVY, 3):
+            if vals and near(tuple(round(vals[k] * 255) for k in ('red', 'green', 'blue')), BLACK, 3):
                 ok = True
-        lines.append('storyboard background navy: %s' % ('yes' if ok else 'NO (%s)' % (cols[:1] or 'none')))
+        lines.append('storyboard background black: %s' % ('yes' if ok else 'NO (%s)' % (cols[:1] or 'none')))
         if not ok:
-            fails.append('launch storyboard background is not the startup navy (white flash risk)')
+            fails.append('launch storyboard background is not the startup black (white flash or navy risk)')
     lines.append('launch images: %s' % ', '.join(os.path.relpath(i, root) for i in images))
     if not images:
         fails.append('no launch image in the exported project')
@@ -119,15 +120,15 @@ def main():
         w, h, ch, rows = img
         corners = [px(img, 2, 2), px(img, w - 3, 2), px(img, 2, h - 3), px(img, w - 3, h - 3)]
         opaque = ch == 3 or all(c[3] == 255 for c in corners)
-        navy = all(near(c, NAVY, 6) for c in corners)
+        black = all(near(c, BLACK, 6) for c in corners)
         teal = 0
         for y in range(h // 3, 2 * h // 3, max(1, h // 120)):
             for x in range(w // 4, 3 * w // 4, max(1, w // 160)):
                 if near(px(img, x, y), TEAL, 40):
                     teal += 1
-        lines.append('%s: %dx%d, opaque %s, navy corners %s, Idlery teal samples %d' % (os.path.basename(i), w, h, opaque, navy, teal))
-        if not (opaque and navy and teal > 20):
-            fails.append('%s is not the Idlery Games launch composition on navy' % os.path.basename(i))
+        lines.append('%s: %dx%d, opaque %s, black corners %s, Idlery teal samples %d' % (os.path.basename(i), w, h, opaque, black, teal))
+        if not (opaque and black and teal > 20):
+            fails.append('%s is not the Idlery Games launch composition on black' % os.path.basename(i))
     powered = 0
     for p in pcks:
         with open(p, 'rb') as f:

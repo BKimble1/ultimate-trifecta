@@ -53,3 +53,35 @@ func test_summary_has_no_identifiers() -> void:
 	Save.data["name"] = old_name
 	Diag.clear()
 	Diag.enabled = was
+
+
+## V6: physics catch-up frames, a sustained run counted as a spiral (and
+## marked on the timeline), the stall context, bounded timeline, summary text.
+func test_v6_catchup_spiral_and_stall_context() -> void:
+	var was: bool = Diag.enabled
+	Diag.clear()
+	Diag.enabled = true
+	Diag.context("match")
+	for i in 10:
+		Diag._record(16.7)
+		Diag._record_v6(16.7, 0.0167, 1)
+	for i in Diag.SPIRAL_FRAMES + 5:
+		Diag._record(95.0 if i == 20 else 60.0)
+		Diag._record_v6(95.0 if i == 20 else 60.0, 0.06, 6)     # six ticks every frame
+	var s: Dictionary = Diag.stats("match")
+	var sh: PackedInt32Array = s["steps"]
+	t.eq(sh[1], 10, "single-tick frames counted")
+	t.check(sh[6] >= Diag.SPIRAL_FRAMES, "six-tick frames counted")
+	t.eq(int(s["spirals"]), 1, "a sustained catch-up run is one spiral")
+	t.eq(Diag.marker_count("catchup_spiral"), 1, "and it is marked on the timeline")
+	var last: Dictionary = Diag.stalls()[-1]
+	t.check(last.has("before") and (last["before"] as Array).size() <= Diag.STALL_CONTEXT, "a stall keeps the frames before it (bounded)")
+	t.eq(int(last["steps"]), 6, "with its tick count")
+	for i in Diag.TIMELINE + 50:
+		Diag._record_v6(16.7, 0.0, 1)
+	t.eq(Diag.timeline().size(), Diag.TIMELINE, "timeline is bounded")
+	var txt := Diag.summary()
+	t.check(txt.contains("Simulation (V6)") and txt.contains("catch-up spirals"), "summary reports ticks per frame and spirals")
+	t.check(txt.contains("Pipelines compiled"), "and pipeline compilations")
+	Diag.clear()
+	Diag.enabled = was

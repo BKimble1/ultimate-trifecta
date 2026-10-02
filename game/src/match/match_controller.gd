@@ -391,6 +391,12 @@ func _finish_prepare() -> void:
 	else:
 		session.mark_local_loaded()
 	Sfx.music("chase_calm")
+	# V6: hold a steady pace on a phone that can't keep the preset (heat):
+	# the 3D render scale steps down/up with hysteresis; freed with the match
+	if with_visuals and DisplayServer.get_name() != "headless":
+		var gov := QualityGovernor.new()
+		gov.name = "QualityGovernor"
+		add_child(gov)
 	prepared_now.emit()
 
 

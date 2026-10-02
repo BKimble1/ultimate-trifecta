@@ -51,6 +51,35 @@ PY
 fi
 rm -rf build/ios && mkdir -p build/ios
 "$GODOT" --headless --path game --import >/dev/null 2>&1 || true
-"$GODOT" --headless --path game --export-release "iOS" ../build/ios/UltimateTrifecta.xcodeproj 2>&1 | tee build/ios/export.log
+# V6: SHADER_BAKE=1 on macOS bakes the game's Metal shaders into the export
+# (Godot's shader baker), so a phone doesn't compile them from source the
+# first time each material is drawn.  The baker needs the editor running the
+# target's renderer (Mobile on Metal) - it can't bake in --headless mode or
+# for Metal on Linux - so this export runs with a real rendering device.  If
+# that export fails, the ordinary headless export (no baked shaders) is used.
+BAKED=0
+if [ "${SHADER_BAKE:-0}" = 1 ] && [ "$(uname -s)" = Darwin ]; then
+  sed -i.tmp -e 's/^shader_baker\/enabled=.*/shader_baker\/enabled=true/' game/export_presets.cfg
+  rm -f game/export_presets.cfg.tmp
+  if python3 -c 'import subprocess,sys; sys.exit(subprocess.run(sys.argv[1:], timeout=1200).returncode)' \
+      "$GODOT" --path game --rendering-method mobile --rendering-driver metal --export-release "iOS" ../build/ios/UltimateTrifecta.xcodeproj \
+      > build/ios/export.log 2>&1 && test -d build/ios/UltimateTrifecta.xcodeproj; then
+    BAKED=1
+  else
+    echo "shader-baking export failed; falling back to the headless export without baked shaders"
+    tail -20 build/ios/export.log || true
+    sed -i.tmp -e 's/^shader_baker\/enabled=.*/shader_baker\/enabled=false/' game/export_presets.cfg
+    rm -f game/export_presets.cfg.tmp
+    rm -rf build/ios/UltimateTrifecta* && mkdir -p build/ios
+  fi
+fi
+if [ "$BAKED" = 0 ]; then
+  "$GODOT" --headless --path game --export-release "iOS" ../build/ios/UltimateTrifecta.xcodeproj 2>&1 | tee build/ios/export.log
+fi
 test -d build/ios/UltimateTrifecta.xcodeproj
+# what actually went into the game data (evidence, not an assumption)
+PCK=$(find build/ios -maxdepth 1 -name '*.pck' | head -1)
+N=$( { strings -n 8 "$PCK" 2>/dev/null | grep -c "shader_cache" ; } || true)
+{ echo "shader baker requested: ${SHADER_BAKE:-0} · baking export used: $BAKED · shader_cache entries in the game data: ${N:-0}"
+  grep -i "shader baker" build/ios/export.log | head -5 || true; } | tee build/ios/shader_bake.txt
 echo "Exported Xcode project: build/ios/UltimateTrifecta.xcodeproj (version $VERSION build $BUILD)"
