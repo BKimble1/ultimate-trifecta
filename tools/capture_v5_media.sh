@@ -22,7 +22,7 @@ game() { # dir res scale safe args...
   local dir=$1 res=$2 scale=$3 safe=$4; shift 4
   local w=${res%x*} h=${res#*x}
   mkdir -p "$dir"
-  XDG_DATA_HOME=$(mktemp -d) timeout 900 xvfb-run -a -s "-screen 0 $((w + 64))x$((h + 64))x24" \
+  XDG_DATA_HOME=$(mktemp -d) timeout "${CAPTURE_TIMEOUT:-900}" xvfb-run -a -s "-screen 0 $((w + 64))x$((h + 64))x24" \
     tools/gd.sh --path game --resolution "$res" "$@" -- \
     --emulate-phone="$scale" --emulate-safe="$safe" --capture-dir="$dir" --no-gamecenter \
     ${CAPTURE_ARGS:-} > "$dir/log.txt" 2>&1 || true
@@ -57,14 +57,16 @@ for s in $SETS; do
         ls "$OUT/loading" | grep "^$d" | grep png || echo "no loading capture for $d"
       done;;
     runner)
-      # bot-driven Practice as a runner: reveal, play, waters, map, results
-      CAPTURE_ARGS="--capture=runner --autoplay=runner --local-bot --skip-onboarding" \
-        game "$OUT/runner" 1600x740 1.896 59,0,59,21;;
+      # bot-driven Practice as a runner: reveal, play, waters, map, results.
+      # A fixed 6 fps game clock: at ~1 fps on llvmpipe a real-time round
+      # would take hours (frames are still drawn one by one; not frame rate)
+      CAPTURE_TIMEOUT=5400 CAPTURE_ARGS="--capture=runner --autoplay=runner --local-bot --skip-onboarding" \
+        game "$OUT/runner" 1280x592 1.517 59,0,59,21 --fixed-fps 6;;
     results)
       rec="$OUT/runner/runner_results.var"
       [ -f "$rec" ] || { echo "run the runner set first"; continue; }
-      for d in se ipad; do
-        case $d in se) p=$SE;; ipad) p=$IPAD;; esac
+      for d in phone se ipad; do
+        case $d in phone) p=$PHONE;; se) p=$SE;; ipad) p=$IPAD;; esac
         # shellcheck disable=SC2086
         CAPTURE_ARGS="--capture=results --capture-results=$rec --skip-onboarding" game "$OUT/results/$d" $p
       done;;

@@ -439,8 +439,14 @@ static func fit_card(b: Control, content: Control, pad: float = 36.0) -> void:
 ## Focus for controllers and keys; on touch the ring stays hidden until a
 ## directional input moves it (Godot shows it again on navigation).
 static func soft_focus(c: Control) -> void:
-	if c != null and is_instance_valid(c) and c.is_inside_tree() and c.is_visible_in_tree():
-		c.grab_focus(Controls.device == "touch")
+	if c == null or not is_instance_valid(c) or not c.is_inside_tree() or not c.is_visible_in_tree():
+		return
+	# a control can't take focus while it, or a parent's recursive focus
+	# behaviour (a sheet over it), disables focus: nothing to do then
+	var mode: int = c.call("get_focus_mode_with_override") if c.has_method("get_focus_mode_with_override") else c.focus_mode
+	if mode == Control.FOCUS_NONE:
+		return
+	c.grab_focus(Controls.device == "touch")
 
 
 static func face_of(b: Control) -> Face:

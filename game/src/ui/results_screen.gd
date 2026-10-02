@@ -20,6 +20,7 @@ var final_only := false
 var _board: PanelContainer
 var _primary: Button
 var _status: Label
+var leave_btn: Button
 
 
 func build() -> void:
@@ -49,11 +50,13 @@ func build() -> void:
 	sheet.custom_minimum_size = Vector2(minf(640.0, get_viewport().get_visible_rect().size.x * 0.58), 0)
 	sheet.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(sheet)
+	# the summary scrolls when it must; the actions below it never do
+	var outer := UIKit.vbox(14)
+	sheet.add_child(outer)
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	sc.custom_minimum_size = Vector2(0, minf(get_viewport().get_visible_rect().size.y - 120.0, 640.0))
 	sc.follow_focus = true
-	sheet.add_child(sc)
+	outer.add_child(sc)
 	var v := UIKit.vbox(12)
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sc.add_child(v)
@@ -115,32 +118,39 @@ func build() -> void:
 	# actions
 	_status = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var btns := UIKit.hbox(12)
+	_status.visible = false   # shown when there is something to say (parties)
+	var btns := HFlowContainer.new()   # one row; wraps only on a narrow sheet
+	btns.add_theme_constant_override("h_separation", 10)
+	btns.add_theme_constant_override("v_separation", 10)
 	if practice:
-		_primary = UIKit.primary("Play again", Vector2(300, 92), 30)
+		_primary = UIKit.primary("Play again", Vector2(260, 92), 30)
 		_primary.pressed.connect(func() -> void: App.rematch())
 	elif session.is_host():
 		var nxt := session.next_round_number()
-		_primary = UIKit.primary("Play again" if series_over or final_only else "Next: round %d" % nxt, Vector2(320, 92), 30)
+		_primary = UIKit.primary("Play again" if series_over or final_only else "Next: round %d" % nxt, Vector2(260, 92), 30)
 		_primary.pressed.connect(func() -> void: App.back_to_party())
 	else:
-		_primary = UIKit.primary("", Vector2(320, 92), 28)
+		_primary = UIKit.primary("", Vector2(260, 92), 28)
 		_primary.pressed.connect(_guest_primary)
 	btns.add_child(_primary)
 	if not final_only:
-		var board_b := UIKit.quiet("Scoreboard", Vector2(180, 92))
+		var board_b := UIKit.quiet("Scoreboard", Vector2(160, 92))
 		board_b.pressed.connect(_toggle_board)
 		btns.add_child(board_b)
-	v.add_child(btns)
-	v.add_child(_status)
-	var leave := UIKit.quiet("Menu" if practice else "Leave party", Vector2(0, 68))
-	leave.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	var leave := UIKit.quiet("Menu" if practice else "Leave", Vector2(0, 92))
 	leave.pressed.connect(func() -> void:
 		if practice:
 			App.goto_title()
 		else:
 			dialog("Leave this party?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]]))
-	v.add_child(leave)
+	btns.add_child(leave)
+	outer.add_child(btns)
+	outer.add_child(_status)
+	leave_btn = leave
+	_fit_sheet.call_deferred(sc, v, btns)
+	v.minimum_size_changed.connect(func() -> void: _fit_sheet.call_deferred(sc, v, btns))
+	btns.resized.connect(func() -> void: _fit_sheet.call_deferred(sc, v, btns))
+	_status.minimum_size_changed.connect(func() -> void: _fit_sheet.call_deferred(sc, v, btns))
 	focus_first(_primary)
 	if session and not practice:
 		session.lobby_changed.connect(_refresh_actions)
@@ -215,11 +225,22 @@ func _guest_primary() -> void:
 	_refresh_actions()
 
 
+## The summary is as tall as its content, up to what the screen leaves
+## once the (never scrolling) actions are placed.
+func _fit_sheet(sc: ScrollContainer, v: Control, btns: Control) -> void:
+	if not is_instance_valid(sc):
+		return
+	var avail := get_viewport().get_visible_rect().size.y - 120.0 - btns.get_combined_minimum_size().y \
+		- (_status.get_combined_minimum_size().y + 14.0 if _status.visible else 0.0) - 14.0
+	sc.custom_minimum_size.y = clampf(v.get_combined_minimum_size().y, 0.0, maxf(160.0, avail))
+
+
 ## Guests: ready for the next round from here, or "Waiting for the host";
 ## the host sees who it is waiting for (nothing starts on its own).
 func _refresh_actions() -> void:
 	if not is_instance_valid(_primary) or session == null or session.mode == NetSession.Mode.OFFLINE:
 		return
+	_status.visible = true
 	var over := bool(session.series_view.get("finished", false)) or final_only
 	if session.is_host():
 		if over:
