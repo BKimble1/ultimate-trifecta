@@ -27,7 +27,7 @@ concurrency:
 
 env:
   GODOT_VERSION: "4.7.2"
-  MARKETING_VERSION: "1.3"
+  MARKETING_VERSION: "1.4"
   BUNDLE_ID: com.idlery.ultimatetrifecta
 
 jobs:
@@ -150,6 +150,11 @@ jobs:
           export GODOT_BIN=$(cat tools/.cache/godot/BIN)
           tools/export_ios.sh
           ls build/ios
+      - name: Launch and branding audit (V5)
+        # the startup shows the requested Idlery Games lockup; this fails on a
+        # missing or wrong launch image, a non-navy launch background, or any
+        # "powered by" copy in the game data or project text
+        run: python3 tools/launch_audit.py build/ios sim-evidence/launch_assets
       - name: Device archive (unsigned arm64 compile + link check)
         if: steps.sign.outputs.available != 'true' || github.event.inputs.upload != 'true'
         run: |
@@ -202,8 +207,11 @@ jobs:
           LS=sim-evidence/launch_assets; mkdir -p "$LS"
           find "$APP" -maxdepth 3 \( -iname '*launch*' -o -iname 'splash*' \) | tee "$LS/files.txt"
           find "$APP" -maxdepth 3 -iname 'splash*.png' -exec cp {} "$LS/" \; || true
-          { grep -rIl -i "idlery" "$APP" build/ios 2>/dev/null | grep -v '\.pck$' | head -20; echo "(text files naming Idlery: above, if any)"; } | tee "$LS/branding_text.txt"
-          { strings -n 6 "$APP"/*.pck 2>/dev/null | grep -i -c "powered by" ; echo "(pck strings containing 'powered by')"; } | tee -a "$LS/branding_text.txt"
+          # V5: Idlery Games is the requested startup mark, so naming Idlery is
+          # expected; "powered by" copy is still counted (the export step's
+          # audit already fails the lane on it)
+          { grep -rIl -i "idlery" "$APP" 2>/dev/null | grep -v '\.pck$' | head -20; echo "(text files naming Idlery: above; expected: the bundle ID)"; } | tee "$LS/branding_text.txt"
+          { strings -n 6 "$APP"/*.pck 2>/dev/null | grep -i -c "powered by" ; echo "(pck strings containing 'powered by': must be 0)"; } | tee -a "$LS/branding_text.txt"
           # cold launch to the title screen first (Game Center skipped: no account on CI)
           T0=$(python3 -c 'import time; print(time.time())')
           xcrun simctl launch "$DEV" "$BUNDLE_ID" -- --no-gamecenter > /dev/null
@@ -288,7 +296,7 @@ jobs:
           find build/ios -name '*.entitlements' -maxdepth 3 -exec sh -c 'echo "== $1"; cat "$1"' _ {} \;
           PM=$(find build/ios -maxdepth 3 -name PrivacyInfo.xcprivacy | head -1); [ -n "$PM" ] && { echo "== $PM"; plutil -convert json -o - "$PM"; echo; }
           [ -f sim-evidence/summary.txt ] && { echo "== Simulator summary"; cat sim-evidence/summary.txt; }
-          for f in sim-evidence/launch_assets/files.txt sim-evidence/launch_assets/branding_text.txt; do
+          for f in sim-evidence/launch_assets/launch_audit.txt sim-evidence/launch_assets/files.txt sim-evidence/launch_assets/branding_text.txt; do
             [ -f "$f" ] && { echo "== launch audit: $(basename "$f")"; cat "$f"; }; done
           echo "BUILD_FACTS_END"
           # the launch frames and the title, small enough to read back from the log

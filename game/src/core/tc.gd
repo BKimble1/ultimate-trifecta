@@ -72,11 +72,20 @@ const GADGET_KEYS := {"turbo": Gadget.TURBO, "decoy": Gadget.DECOY, "splash_bomb
 ## Role cards from the round's actual rules (the counts vary with the party
 ## settings; never hard-code them).
 static func runner_card(cfg: RulesConfig) -> String:
-	return "Splash into all three marked waters, then get back to the dorm. %d runners home before time runs out wins it for everyone. Caught? You keep your splashes and you're back in %d seconds." % [cfg.runners_needed, int(cfg.capture_penalty_s)]
+	return " ".join(role_lines(Role.RUNNER, cfg))
 
 
 static func patrol_card(cfg: RulesConfig) -> String:
-	return "Stop %d runners getting home before time runs out. Cut them off with a cart, hop out and tag. A tag sends a runner out for %d seconds; they keep their splashes." % [cfg.runners_needed, int(cfg.capture_penalty_s)]
+	return " ".join(role_lines(Role.PATROL, cfg))
+
+
+## A role in two short lines (V5): what to do, then the one rule to know.
+static func role_lines(r: int, cfg: RulesConfig) -> Array[String]:
+	if r == Role.PATROL:
+		return ["Stop %d runners getting home before time runs out: cut them off in a cart, hop out and tag." % cfg.runners_needed,
+			"A tag sends a runner out for %d s; they keep their splashes." % int(cfg.capture_penalty_s)]
+	return ["Splash into the three marked waters, then race back to the dorm. %d home wins it for every runner." % cfg.runners_needed,
+		"Caught? You keep your splashes and you're back in %d s." % int(cfg.capture_penalty_s)]
 
 
 static func role_name(r: int) -> String:

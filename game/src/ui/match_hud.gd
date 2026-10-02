@@ -217,26 +217,29 @@ func _build_reveal() -> void:
 	if mc.roster.has(mc.local_slot):
 		my_role = int(mc.roster[mc.local_slot]["role"])
 	var is_patrol := my_role == TC.Role.PATROL
-	var title := "YOU'RE ON THE NIGHT WATCH" if is_patrol else ("YOU'RE A RUNNER" if my_role == TC.Role.RUNNER else "SPECTATING")
+	var title := "You're on the Night Watch" if is_patrol else ("You're a Runner" if my_role == TC.Role.RUNNER else "Spectating")
 	var sr: Dictionary = mc.start.get("series", {})
 	if int(sr.get("total", 1)) > 1:
-		v.add_child(UIKit.label("Round %d of %d" % [int(sr.get("round", 1)), int(sr.get("total", 1))], 20, UIKit.IVORY_MUTED, true, HORIZONTAL_ALIGNMENT_CENTER))
-	var ttl := UIKit.label(title, 40, UIKit.PATROL if is_patrol else UIKit.TEAL, true, HORIZONTAL_ALIGNMENT_CENTER)
-	ttl.add_theme_font_override("font", UIKit.font_w(700))
+		v.add_child(UIKit.styled("Round %d of %d" % [int(sr.get("round", 1)), int(sr.get("total", 1))], "overline", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var ttl := UIKit.styled(title, "display", UIKit.PATROL if is_patrol else UIKit.TEAL, HORIZONTAL_ALIGNMENT_CENTER)
 	v.add_child(ttl)
-	var card := UIKit.label(TC.patrol_card(mc.cfg) if is_patrol else TC.runner_card(mc.cfg), 24, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER)
-	card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	card.custom_minimum_size = Vector2(700, 0)
-	v.add_child(card)
+	if my_role != TC.Role.SPECTATOR:
+		var lines := TC.role_lines(my_role, mc.cfg)
+		var card := UIKit.styled(lines[0], "body", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
+		card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		card.custom_minimum_size = Vector2(680, 0)
+		v.add_child(card)
+		var note := UIKit.styled(lines[1], "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+		v.add_child(note)
 	var targets_row := UIKit.hbox(18)
 	targets_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	for wi in mc.targets:
 		var w: Dictionary = mc.layout.waters[int(wi)]
 		var cell := UIKit.hbox(6)
 		cell.add_child(Icons.IconRect.new(w["icon"], w["color"], 34))
-		cell.add_child(UIKit.label(w["name"], 24, w["color"], true))
+		cell.add_child(UIKit.label(w["name"], 23, w["color"], true))
 		targets_row.add_child(cell)
-	v.add_child(UIKit.label("Tonight's splash spots", 19, UIKit.IVORY_MUTED, false, HORIZONTAL_ALIGNMENT_CENTER))
+	v.add_child(UIKit.styled("Tonight's splash spots", "overline", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	v.add_child(targets_row)
 	var teams := UIKit.hbox(30)
 	teams.alignment = BoxContainer.ALIGNMENT_CENTER

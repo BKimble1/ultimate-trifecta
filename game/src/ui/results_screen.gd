@@ -28,14 +28,7 @@ func build() -> void:
 		App.stage.set_mode("home", false)
 		App.sync_stage_local()
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var shade := TextureRect.new()
-	shade.texture = TitleScreen._side_gradient()
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.stretch_mode = TextureRect.STRETCH_SCALE
-	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(shade)
-	move_child(shade, 0)
+	TitleScreen.add_shades(self, 0.55, 0.0)
 	var practice := session != null and session.mode == NetSession.Mode.OFFLINE
 	var view: Dictionary = session.series_view if session else {}
 	if results.has("series") and not (results["series"] as Dictionary).is_empty():
@@ -69,21 +62,24 @@ func build() -> void:
 		var round_i := int(results.get("round_index", 1))
 		var total := int(results.get("rounds_total", 1))
 		if not practice:
-			v.add_child(UIKit.label("Round %d of %d" % [round_i, total], 19, UIKit.IVORY_MUTED, true))
+			v.add_child(UIKit.styled("Round %d of %d" % [round_i, total], "overline", UIKit.IVORY_MUTED))
 		var title := "Runners win!" if oc == TC.Outcome.RUNNERS_WIN else ("Night Watch wins!" if oc == TC.Outcome.PATROL_WIN else "Round cancelled")
-		v.add_child(UIKit.heading(title, 44, UIKit.TEAL if oc == TC.Outcome.RUNNERS_WIN else (UIKit.PATROL if oc == TC.Outcome.PATROL_WIN else UIKit.IVORY)))
-		var why := UIKit.label(_why(results), 20, UIKit.IVORY_MUTED)
+		v.add_child(UIKit.styled(title, "display", UIKit.TEAL if oc == TC.Outcome.RUNNERS_WIN else (UIKit.PATROL if oc == TC.Outcome.PATROL_WIN else UIKit.IVORY)))
+		var why := UIKit.styled(_why(results), "body", UIKit.IVORY_MUTED)
 		why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		v.add_child(why)
 		# your round
-		var yr := UIKit.panel(Color(UIKit.NAVY, 0.55), UIKit.R_SMALL, 16)
+		var yr := UIKit.panel(Color(UIKit.SLATE_HI, 0.9), UIKit.R_CARD, 18)
 		var yv := UIKit.vbox(6)
 		var role_txt := "Runner" if my_role == TC.Role.RUNNER else ("Night Watch" if my_role == TC.Role.PATROL else "Watching")
 		var yh := UIKit.hbox(10)
 		yh.add_child(UIKit.chip(role_txt, UIKit.RUNNER if my_role == TC.Role.RUNNER else UIKit.PATROL, UIKit.NAVY, 18))
-		yh.add_child(UIKit.label("Your team won" if won else ("Your team lost" if my_role >= 0 and oc != TC.Outcome.CANCELLED else ""), 19, UIKit.AMBER if won else UIKit.IVORY_MUTED, true))
+		var res_l := UIKit.styled("Your team won" if won else ("Your team lost" if my_role >= 0 and oc != TC.Outcome.CANCELLED else ""), "label", UIKit.AMBER if won else UIKit.IVORY_MUTED)
+		res_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		yh.add_child(res_l)
 		yv.add_child(yh)
-		var contrib := UIKit.label(contribution(me), 23, UIKit.IVORY, true)
+		var contrib := UIKit.styled(contribution(me), "headline")
+		contrib.add_theme_font_size_override("font_size", 24)
 		contrib.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		yv.add_child(contrib)
 		var fastest := int(results.get("fastest_slot", -1))
@@ -92,31 +88,32 @@ func build() -> void:
 				if int(r["slot"]) == fastest:
 					var ftime := float(results.get("fastest_time", r.get("finish_time", 0.0)))
 					var who := "You" if r == me else String(r["name"])
-					yv.add_child(UIKit.label("Fastest Trifecta: %s  (%d:%02d)" % [who, int(ftime) / 60, int(ftime) % 60], 18, UIKit.IVORY_MUTED))
+					var fl := UIKit.styled("Fastest Trifecta: %s · %d:%02d" % [who, int(ftime) / 60, int(ftime) % 60], "caption", UIKit.IVORY_MUTED)
+					yv.add_child(fl)
 		yr.add_child(yv)
 		v.add_child(yr)
 		_rewards(v)
 	# the series
 	if not practice and not view.is_empty():
 		if series_over or final_only:
-			v.add_child(UIKit.label("Series over" + (" (ended early)" if bool(view.get("ended_early", false)) else ""), 30, UIKit.AMBER, true))
+			v.add_child(UIKit.styled("Series over" + (" (ended early)" if bool(view.get("ended_early", false)) else ""), "title", UIKit.AMBER))
 			v.add_child(standings_table(view, Save.player_uid()))
 			v.add_child(_rounds_list(view))
 		else:
 			var tally := LobbyScreen._tally(view)
 			var sp := UIKit.panel(Color(UIKit.NAVY, 0.45), UIKit.R_SMALL, 14)
 			var sv := UIKit.vbox(6)
-			sv.add_child(UIKit.label("Series so far: Runners %d – %d Night Watch" % [tally[0], tally[1]], 19, UIKit.IVORY, true))
-			var note := UIKit.label("Roles change between rounds, so this is a tally by role. Your Round Wins are in the standings.", 16, UIKit.IVORY_MUTED)
+			sv.add_child(UIKit.styled("Series so far · Runners %d – %d Night Watch" % [tally[0], tally[1]], "label"))
+			var note := UIKit.styled("A tally by role (roles change between rounds). Your Round Wins are in the standings.", "caption", UIKit.IVORY_MUTED)
 			note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			sv.add_child(note)
 			sv.add_child(standings_table(view, Save.player_uid(), 3))
 			sp.add_child(sv)
 			v.add_child(sp)
 	if bool(results.get("practice", false)):
-		v.add_child(UIKit.label("Practice round with bots (half rewards).", 16, UIKit.IVORY_MUTED))
+		v.add_child(UIKit.styled("Practice round with bots · half rewards", "caption", UIKit.IVORY_MUTED))
 	# actions
-	_status = UIKit.label("", 18, UIKit.IVORY_MUTED)
+	_status = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var btns := UIKit.hbox(12)
 	if practice:
@@ -131,12 +128,13 @@ func build() -> void:
 		_primary.pressed.connect(_guest_primary)
 	btns.add_child(_primary)
 	if not final_only:
-		var board_b := UIKit.quiet("Scoreboard", Vector2(170, 92), 22)
+		var board_b := UIKit.quiet("Scoreboard", Vector2(180, 92))
 		board_b.pressed.connect(_toggle_board)
 		btns.add_child(board_b)
 	v.add_child(btns)
 	v.add_child(_status)
-	var leave := UIKit.quiet("Menu" if practice else "Leave party", Vector2(492, 68), 22)
+	var leave := UIKit.quiet("Menu" if practice else "Leave party", Vector2(0, 68))
+	leave.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	leave.pressed.connect(func() -> void:
 		if practice:
 			App.goto_title()
@@ -184,24 +182,25 @@ static func _why(r: Dictionary) -> String:
 func _rewards(v: VBoxContainer) -> void:
 	var rw := UIKit.hbox(14)
 	if bool(reward.get("away", false)):
-		rw.add_child(UIKit.label("You were away for most of this round, so it pays nothing.", 19, UIKit.IVORY_MUTED))
+		rw.add_child(UIKit.styled("You were away for most of this round, so it pays nothing.", "caption", UIKit.IVORY_MUTED))
 	elif reward.is_empty() or int(reward.get("coins", 0)) == 0:
-		rw.add_child(UIKit.label("No rewards for this round.", 20, UIKit.IVORY_MUTED))
+		rw.add_child(UIKit.styled("No rewards for this round.", "caption", UIKit.IVORY_MUTED))
 	else:
-		var coins := UIKit.label("+%d coins" % int(reward.get("coins", 0)), 30, UIKit.AMBER)
-		coins.add_theme_font_override("font", UIKit.font_w(700))
+		var coins := UIKit.label("+%d ¢" % int(reward.get("coins", 0)), 30, UIKit.AMBER)
+		coins.add_theme_font_override("font", UIKit.font_num(800))
 		rw.add_child(coins)
 		var bits: Array[String] = []
 		for line in reward.get("lines", []):
 			bits.append("%s %+d" % [line[0], int(line[1])])
-		var det := UIKit.label("  ·  ".join(bits), 16, UIKit.IVORY_MUTED)
+		var det := UIKit.styled(" · ".join(bits), "caption", UIKit.IVORY_MUTED)
+		det.add_theme_font_size_override("font_size", 18)
 		det.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		det.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		det.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		rw.add_child(det)
 	v.add_child(rw)
 	if bool(reward.get("level_up", false)):
-		v.add_child(UIKit.label("Level up! You're now level %d" % int(reward.get("level", 1)), 22, UIKit.TEAL, true))
+		v.add_child(UIKit.styled("Level up! You're now level %d" % int(reward.get("level", 1)), "label", UIKit.TEAL))
 
 
 func _guest_primary() -> void:
@@ -226,7 +225,7 @@ func _refresh_actions() -> void:
 		if over:
 			_status.text = "Play again takes everyone back to the party room with the same settings."
 		else:
-			_status.text = "Next takes everyone back to the party room. Round %d starts when everyone's ready." % session.next_round_number()
+			_status.text = "Back to the party room · round %d starts when everyone's ready." % session.next_round_number()
 		return
 	var e: Variant = session.roster[session.local_slot] if session.local_slot >= 0 else null
 	var rdy := e != null and bool(e["ready"])
@@ -236,7 +235,7 @@ func _refresh_actions() -> void:
 	else:
 		_primary.text = "Not ready" if rdy else "Ready for round %d" % session.next_round_number()
 		UIKit._apply(_primary, UIKit.SLATE_HI if rdy else UIKit.AMBER, UIKit.IVORY if rdy else UIKit.NAVY)
-		_status.text = "Waiting for the host" if rdy else "Tap Ready when you've seen enough. Nothing starts until everyone's ready."
+		_status.text = "Waiting for the host" if rdy else "Nothing starts until everyone's ready."
 
 
 static func contribution(r: Dictionary) -> String:

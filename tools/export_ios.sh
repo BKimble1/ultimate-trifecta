@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 GODOT="${GODOT_BIN:-$(cat tools/.cache/godot/BIN)}"
 TEAM="${APPLE_TEAM_ID:-TEAMID0000}"
 BUILD="${BUILD_NUMBER:-1}"
-VERSION="${MARKETING_VERSION:-1.3}"
+VERSION="${MARKETING_VERSION:-1.4}"
 [ -d game/addons/GodotApplePluginsGameCenter ] || tools/fetch_deps.sh
 # stamp identity into a temporary copy of the preset (the committed file keeps placeholders)
 cp game/export_presets.cfg build_export_presets.bak
