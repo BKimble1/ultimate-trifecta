@@ -18,6 +18,12 @@ extends Camera3D
 ##    inside geometry the sweep restarts from the character's chest; the
 ##    collision distance always wins over the preferred minimum; pull-in is
 ##    immediate, push-out waits for a short clear period (hysteresis).
+##  * V5: a narrow occluder (tree trunk, lamp post) crossing the line to a
+##    camera spot that is itself clear no longer pulls the camera in.  It
+##    jumped ~3 m in one frame and eased back over ~0.7 s for a 14 cm post
+##    (CameraRig cam_lamp).  Walls and buildings still pull in at once.
+##    Cost: up to four rays and one shape test, only on frames whose sweep
+##    hits something.
 ##  * Cart entry/exit blends distance/height over ~0.4 s.  No speed zoom, no
 ##    random shake, level horizon.  Reduced Motion: slower recentering, no
 ##    look-ahead, softer blends.
@@ -151,6 +157,37 @@ func _pivot_blocked(p: Vector3) -> bool:
 	return not get_world_3d().direct_space_state.intersect_shape(q, 1).is_empty()
 
 
+## True when what blocks the line from `from` to `to` is a post-like
+## obstacle: the camera spot is clear, a ray meets less than 0.9 m of it and
+## a parallel ray 1 m to one side passes.
+func _narrow_occluder(from: Vector3, to: Vector3) -> bool:
+	if not is_inside_tree() or _pivot_blocked(to):
+		return false
+	var ss := get_world_3d().direct_space_state
+	var len := from.distance_to(to)
+	var h1 := ss.intersect_ray(PhysicsRayQueryParameters3D.create(from, to, TC.L_WORLD))
+	if not h1.is_empty():
+		var h2 := ss.intersect_ray(PhysicsRayQueryParameters3D.create(to, from, TC.L_WORLD))
+		if h2.is_empty():
+			return false
+		var depth := len - from.distance_to(h1["position"]) - to.distance_to(h2["position"])
+		if depth > 0.9:
+			return false
+	else:
+		return true    # only the probe sphere grazes it: the line of sight is open
+	# a wall blocks parallel rays 1 m to both sides; a post or trunk (< 0.9 m
+	# across) at most one of them
+	var side := (to - from).cross(Vector3.UP)
+	if side.length() < 1e-4:
+		return false
+	side = side.normalized() * 1.0
+	for sgn in [-1.0, 1.0]:
+		var o: Vector3 = side * sgn
+		if ss.intersect_ray(PhysicsRayQueryParameters3D.create(to + o, from + o, TC.L_WORLD)).is_empty():
+			return true
+	return false
+
+
 func _update_transform(delta: float) -> void:
 	var dir := Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch))
 	var origin := _pivot
@@ -159,6 +196,8 @@ func _update_transform(delta: float) -> void:
 		origin = target_pos + Vector3(0, 0.9, 0)
 	var desired := origin + dir * _dist
 	var frac := _sweep(origin, desired)
+	if frac < 0.999 and _narrow_occluder(origin, desired):
+		frac = 1.0
 	var want_d := _dist * frac
 	# the preferred minimum only applies when collision allows it
 	var free_d := want_d

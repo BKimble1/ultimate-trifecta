@@ -90,10 +90,13 @@ func test_every_appearance_maps_onto_the_character() -> void:
 					var hidden: Array = Cosmetics.HAT_HIDES_HAIR.get(h, [])
 					for part in Cosmetics.entry("hair", hair)["parts"]:
 						var want: bool = not hood and not part in hidden
-						if shown.has(part) != want:
+						# V5: under a crown or headphones the curly crop is drawn
+						# as its smooth-band variant (CharacterView, parts.py)
+						var drawn: bool = shown.has(part) or shown.has(part + "_hat")
+						if drawn != want:
 							bad.append("hair %s visibility wrong for %s" % [part, c])
 					var hair_parts := 0
-					for hp in ["hair", "hair_bob", "hair_curly", "hair_buns"]:
+					for hp in ["hair", "hair_bob", "hair_curly", "hair_curly_hat", "hair_buns"]:
 						if shown.has(hp):
 							hair_parts += 1
 					if hair_parts > 1:

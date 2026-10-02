@@ -101,8 +101,12 @@ func test_character_acceleration_uses_previous_velocity() -> void:
 	v._process(0.1)
 	v.apply_state({"pos": Vector3.ZERO, "yaw": 0.0, "vel": Vector3(0, 0, -5), "state": TC.PState.ACTIVE, "on_floor": true})
 	v._process(0.1)
-	t.near(v.secondary.accel.z, -50.0, 0.01, "forward acceleration seen by the head spring (old bug: always 0)")
-	v.apply_state({"pos": Vector3.ZERO, "yaw": 0.0, "vel": Vector3(0, 0, -5), "state": TC.PState.ACTIVE, "on_floor": true})
-	v._process(0.1)
-	t.near(v.secondary.accel.length(), 0.0, 0.01, "constant velocity: no acceleration")
+	# V5: the derivative of a filtered velocity (CharacterView.ACC_TAU): a
+	# 5 m/s step over 0.1 s reads ~43 m/s^2, never more than ACC_MAX
+	var a0 := v.secondary.accel.z
+	t.check(a0 < -30.0 and a0 >= -CharacterView.ACC_MAX, "forward acceleration seen by the head spring (old bug: always 0): %.1f" % a0)
+	for i in 3:
+		v.apply_state({"pos": Vector3.ZERO, "yaw": 0.0, "vel": Vector3(0, 0, -5), "state": TC.PState.ACTIVE, "on_floor": true})
+		v._process(0.1)
+	t.check(v.secondary.accel.length() < 0.5, "constant velocity: the acceleration dies away (%.3f)" % v.secondary.accel.length())
 	root.queue_free()

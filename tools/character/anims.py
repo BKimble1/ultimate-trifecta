@@ -95,9 +95,16 @@ def blend_pose(a, b, t):
             la = va.get('loc', (0, 0, 0))
             lb = vb.get('loc', (0, 0, 0))
             nv['loc'] = tuple(lerp(x, y, t) for x, y in zip(la, lb))
-        for key in ('ik',):
-            if key in va or key in vb:
-                nv[key] = vb.get(key, va.get(key)) if t > 0.5 else va.get(key, vb.get(key))
+        if 'ik' in va and 'ik' in vb:
+            # V5: interpolate IK targets (V4 switched them at t = 0.5, so a
+            # blend between two IK stances jumped the feet ~20 cm mid-clip)
+            (ta, xa), (tb, xb) = va['ik'], vb['ik']
+            if isinstance(xa, (int, float)):
+                nv['ik'] = (Vector(ta).lerp(Vector(tb), t), lerp(xa, xb, t))
+            else:
+                nv['ik'] = (Vector(ta).lerp(Vector(tb), t), Vector(xa).lerp(Vector(xb), t))
+        elif 'ik' in va or 'ik' in vb:
+            nv['ik'] = vb.get('ik', va.get('ik')) if t > 0.5 else va.get('ik', vb.get('ik'))
         out[k] = nv
     return out
 
@@ -350,9 +357,18 @@ def loco_pose(name, phase):
         # its own leg is furthest back (toe-off) and crosses the middle at mid-stance
         sw = c['arm'] * math.sin(2 * math.pi * (phase + ph0))
         pose['upper_arm' + sfx] = {'rot': (sw, (-10 if walk else -14) * side, 4 * side * max(0.0, sw) / max(1.0, c['arm']))}
-        pose['forearm' + sfx] = {'rot': (c['elbow'] + 0.3 * max(0.0, sw), 0, 0)}
-        pose['hand' + sfx] = {'rot': (6, 0, 0)}
+        # V5: the forearm and mitten follow the upper arm a beat late
+        # (overlapping action), so the arm swing whips instead of hinging
+        lagf = math.sin(2 * math.pi * (phase + ph0 - 0.07))
+        lagh = math.sin(2 * math.pi * (phase + ph0 - 0.12))
+        pose['forearm' + sfx] = {'rot': (c['elbow'] + 0.18 * c['arm'] * lagf + 0.12 * max(0.0, sw), 0, 0)}
+        pose['hand' + sfx] = {'rot': (6 + (4 if walk else 7) * lagh, 0, 0)}
         pose['shoulder' + sfx] = {'rot': (0, 0, -3 * side * math.sin(2 * math.pi * (phase + ph0)))}
+    # V5: the head gives a little at each foot strike (twice per cycle) and
+    # the hips' bob is a touch rounder: bouncy, not stiff
+    nod = (1.0 if walk else -2.2) * math.cos(4 * math.pi * (phase - 0.04))   # + = back
+    hx, hy, hz = pose['head']['rot']
+    pose['head']['rot'] = (hx + nod, hy, hz)
     return pose
 
 
@@ -396,16 +412,18 @@ def clip_idle(t):
 
 
 def clip_fidget_yawn(t):
-    """Lobby/idle fidget (2.4 s): a big pajama yawn and stretch."""
+    """Lobby/idle fidget (2.4 s): a big pajama yawn and stretch.  V5: the
+    arms open into a wide V with the fists beside the head (in V4 they went
+    straight up into the big head and vanished)."""
     k = smoothstep(0.0, 0.7, t) * (1.0 - smoothstep(1.7, 2.4, t))
     pose = clip_idle(0.0)
-    pose['hips']['loc'] = (0, 0, -0.012 + 0.012 * k)
-    pose['spine'] = {'rot': (8 * k, 0, 0)}
+    pose['hips']['loc'] = (0, 0, -0.012 + 0.010 * k)
+    pose['spine'] = {'rot': (7 * k, 0, 0)}
     pose['chest'] = {'rot': (6 * k, 0, 0)}
-    pose['neck'] = {'rot': (8 * k, 0, 0)}
-    pose['head'] = {'rot': (14 * k, 0, 0)}
-    pose.update(sym({'shoulder.L': {'rot': (0, 10 * k, 0)}, 'upper_arm.L': {'rot': (-10 * k, -11 + 140 * k, 0)},
-                     'forearm.L': {'rot': (16 + 40 * k, 0, 0)}, 'hand.L': {'rot': (0, 0, 0)}}))
+    pose['neck'] = {'rot': (7 * k, 0, 0)}
+    pose['head'] = {'rot': (13 * k, 0, 0)}
+    pose.update(sym({'shoulder.L': {'rot': (0, 12 * k, 0)}, 'upper_arm.L': {'rot': (-6 * k, -11 + 84 * k, 0)},
+                     'forearm.L': {'rot': (16 + 62 * k, -30 * k, 0)}, 'hand.L': {'rot': (10 * k, 0, 0)}}))
     return pose
 
 
@@ -421,15 +439,59 @@ def clip_fidget_look(t):
     return pose
 
 
+def clip_fidget_shift(t):
+    """Menu idle fidget (2.6 s, V5): settles the weight onto the right leg
+    (the hip slides over it, the left knee softens), a small sigh of the
+    shoulders and a head tilt, then back to centre.  Feet stay planted."""
+    k = smoothstep(0.0, 0.7, t) * (1.0 - smoothstep(1.8, 2.6, t))
+    sigh = math.sin(math.pi * smoothstep(0.6, 1.7, t))
+    pose = stand(-0.014 - 0.010 * k)
+    pose['hips']['loc'] = (0.026 * k, 0, -0.014 - 0.010 * k)
+    pose['hips']['rot'] = (0, 3.0 * k, -3.0 * k)
+    pose['spine'] = {'rot': (-1.0 * sigh * k, -4.0 * k, 2.0 * k)}
+    pose['chest'] = {'rot': (-1.5 * sigh * k, -1.5 * k, 1.0 * k)}
+    pose['neck'] = {'rot': (0.8 * sigh, 1.0 * k, 0)}
+    pose['head'] = {'rot': (2.0 + 2.5 * sigh * k, 5.0 * k, -5.0 * k)}
+    pose.update(sym({'shoulder.L': {'rot': (0, 1.2 + 4.0 * sigh * k, 0)}, 'upper_arm.L': {'rot': (3, -11 - 2.0 * sigh * k, 0)},
+                     'forearm.L': {'rot': (16 + 4 * sigh * k, 0, 0)}, 'hand.L': {'rot': (4, 0, 0)}}))
+    # the relaxed (left) arm hangs a little looser
+    pose['upper_arm.L']['rot'] = (3 - 3 * k, -11 + 2 * k, 0)
+    return pose
+
+
+def clip_fidget_bounce(t):
+    """Menu idle fidget (1.8 s, V5): two small bounces up onto the toes with
+    a little arm swing, then settles.  The toes stay on the floor."""
+    u = t / 1.8
+    k = smoothstep(0.0, 0.15, u) * (1.0 - smoothstep(0.8, 1.0, u))
+    b = math.sin(math.pi * ((t / 0.75) % 1.0)) ** 2 if t < 1.5 else 0.0
+    lift = 0.03 * b * k
+    pose = stand(lift - 0.012 - 0.012 * (1.0 - b) * k)
+    for side, sfx in ((-1, '.L'), (1, '.R')):
+        pose['foot' + sfx] = {'ik': (REST_ANKLE[side] + Vector((0, -0.012 * b * k, lift)), -22.0 * b * k)}
+    sw = math.sin(2 * math.pi * t / 0.75) * k
+    pose.update(sym({'upper_arm.L': {'rot': (3 + 9 * sw, -11, 0)}, 'forearm.L': {'rot': (16 + 8 * b * k, 0, 0)},
+                     'hand.L': {'rot': (4, 0, 0)}}))
+    pose['upper_arm.R']['rot'] = (3 - 9 * sw, 11, 0)
+    pose['spine'] = {'rot': (-2 * b * k, 0, 0)}
+    pose['head'] = {'rot': (2 + 3 * b * k, 0, 3 * sw)}
+    return pose
+
+
 def clip_ready(t):
-    """Lobby ready response (0.9 s): a quick fist pump with a bounce."""
+    """Lobby ready response (0.9 s): a quick fist pump with a bounce.  V5:
+    the fist pumps beside the head, not into it, and the feet leave the
+    floor with the bounce instead of being stretched past the leg."""
     u = t / 0.9
     k = smoothstep(0.0, 0.25, u) * (1.0 - smoothstep(0.7, 1.0, u))
     bounce = math.sin(math.pi * smoothstep(0.1, 0.55, u)) * 0.05
     pose = stand(-0.03 * k + bounce)
+    lift = max(0.0, bounce - 0.006)
+    for side, sfx in ((-1, '.L'), (1, '.R')):
+        pose['foot' + sfx] = {'ik': (REST_ANKLE[side] + Vector((0, 0, lift)), -14.0 * lift / 0.05)}
     pose.update(sym({'upper_arm.L': {'rot': (4, -11, 0)}, 'forearm.L': {'rot': (16, 0, 0)}}))
-    pose['upper_arm.R'] = {'rot': (30 * k, -11 - 100 * k, 0)}
-    pose['forearm.R'] = {'rot': (16 + 100 * k, 0, 0)}
+    pose['upper_arm.R'] = {'rot': (22 * k, -11 - 72 * k, 0)}
+    pose['forearm.R'] = {'rot': (16 + 92 * k, 22 * k, 0)}
     pose['hand.R'] = {'rot': (10 * k, 0, 0)}
     pose['chest'] = {'rot': (-4 * k, 0, -6 * k)}
     pose['head'] = {'rot': (8 * k, 0, -8 * k)}
@@ -483,28 +545,35 @@ def clip_air_apex(t):
 
 def clip_air_fall(t):
     w = math.sin(2 * math.pi * t)
-    return _air((16 + 6 * w, -26, -8), (24 - 6 * w, -34, -8), 100 + 6 * w, 10, 22, 5, 9, 12 * w)
+    # V5: arms up and out (85 deg, not 100) so the flailing forearms stay
+    # outside the head
+    return _air((16 + 6 * w, -26, -8), (24 - 6 * w, -34, -8), 84 + 5 * w, 16, 30, 5, 9, 12 * w)
 
 
 def _land(t, L, depth, lean, arms):
-    u = t / L
-    squash = math.sin(math.pi * min(1.0, u * 1.5)) * (1.0 - smoothstep(0.55, 1.0, u))
-    pose = stand(-depth * squash, 0.012 * squash)
-    pose['hips']['rot'] = (-lean * 0.3 * squash, 0, 0)
-    pose['spine'] = {'rot': (-lean * squash, 0, 0)}
-    pose['neck'] = {'rot': (lean * 0.4 * squash, 0, 0)}
-    pose['head'] = {'rot': (lean * 0.5 * squash, 0, 0)}
-    pose.update(sym({'upper_arm.L': {'rot': (20 * squash, -12 + arms * squash, 0)},
-                     'forearm.L': {'rot': (16 + 25 * squash, 0, 0)}}))
+    """V5 landing: it starts from the fall (arms up, legs nearly straight) so
+    the overlay can come in fast without snapping the arms down; the knees
+    take the impact at once, a second small dip settles it."""
+    u = min(1.0, t / L)
+    dip = math.sin(math.pi * min(1.0, u / 0.6)) if u < 0.6 else 0.14 * math.sin(math.pi * (u - 0.6) / 0.4)
+    drop = smoothstep(0.0, 0.45, u)          # arms come down from the fall
+    pose = stand(-depth * dip, 0.012 * dip)
+    pose['hips']['rot'] = (-lean * 0.3 * dip, 0, 0)
+    pose['spine'] = {'rot': (-lean * dip, 0, 0)}
+    pose['neck'] = {'rot': (lean * 0.4 * dip, 0, 0)}
+    pose['head'] = {'rot': (lean * 0.5 * dip, 0, 0)}
+    raise_ = lerp(arms, -12 + arms * 0.25 * dip, drop)
+    pose.update(sym({'upper_arm.L': {'rot': (lerp(14, 20 * dip, drop), raise_, 0)},
+                     'forearm.L': {'rot': (lerp(28, 16 + 25 * dip, drop), 0, 0)}}))
     return pose
 
 
 def clip_land_soft(t):
-    return _land(t, 0.3, 0.06, 8, 25)
+    return _land(t, 0.3, 0.06, 8, 55)
 
 
 def clip_land_hard(t):
-    return _land(t, 0.45, 0.15, 20, 60)
+    return _land(t, 0.45, 0.15, 20, 78)
 
 
 def clip_dive(t):
@@ -591,8 +660,8 @@ def clip_splash(kind, t):
     contact = _splash_contact(kind, t)
     dip = _tread(t)
     dip['hips']['loc'] = (0, 0, -1.04)
-    dip.update(sym({'upper_arm.L': {'rot': (40, 95, 0)}, 'forearm.L': {'rot': (30, 0, 0)}}))
-    dip['upper_arm.R']['rot'] = (40, -95, 0)
+    dip.update(sym({'upper_arm.L': {'rot': (40, 86, 0)}, 'forearm.L': {'rot': (30, 0, 0)}}))
+    dip['upper_arm.R']['rot'] = (40, -86, 0)
     dip['head'] = {'rot': (14, 0, 0)}
     if t < 0.16:
         return contact
@@ -607,9 +676,9 @@ def clip_splash(kind, t):
     breath = _tread(t)
     breath['hips']['loc'] = (0, 0, -0.84)
     breath['head'] = {'rot': (-6, 0, 0)}
-    duck = sym({'upper_arm.L': {'rot': (10, 168, 0)}, 'forearm.L': {'rot': (5, 0, 0)}, 'thigh.L': {'rot': (10, 0, 0)},
+    # V5: arms overhead in a V that clears the big head (V4: 168 deg, through it)
+    duck = sym({'upper_arm.L': {'rot': (14, 92, 0)}, 'forearm.L': {'rot': (14, -30, 0)}, 'thigh.L': {'rot': (10, 0, 0)},
                 'shin.L': {'rot': (-15, 0, 0)}, 'foot.L': {'rot': (-35, 0, 0)}})
-    duck['upper_arm.R']['rot'] = (10, -168, 0)
     duck['hips'] = {'loc': (0, 0, -1.75)}
     duck['head'] = {'rot': (-4, 0, 0)}
     if t < 1.26:
@@ -686,48 +755,74 @@ def clip_dizzy(t):
 
 
 def clip_tag_windup(t):
-    u = smoothstep(0.0, 0.14, t)
-    p = stand(-0.07 * u, 0.02, (0.06 * u, -0.08 * u))
-    p['spine'] = {'rot': (8 * u, 0, -10 * u)}
-    p['chest'] = {'rot': (4 * u, 0, -8 * u)}
-    p.update(sym({'upper_arm.L': {'rot': (-30 * u, 35 * u - 12, 0)}, 'forearm.L': {'rot': (70 * u + 10, 0, 0)}}))
+    """Night Watch tag wind-up (0.14 s, V5): a quick coil.  The tagging hand
+    (left; the right holds the flashlight) cocks back, the torso turns into
+    it and the body drops.  Also played on the upper body alone while the
+    Night Watch keeps running."""
+    u = smoothstep(0.0, 0.12, t)
+    p = stand(-0.06 * u, 0.02 * u, (0.05 * u, -0.07 * u))
+    p['hips']['rot'] = (-4 * u, 0, -6 * u)
+    p['spine'] = {'rot': (-6 * u, 0, -12 * u)}
+    p['chest'] = {'rot': (-3 * u, 0, -9 * u)}
+    p['head'] = {'rot': (8 * u, 0, 14 * u)}
+    p['upper_arm.L'] = {'rot': (lerp(4, -38, u), lerp(-11, 22, u), 0)}
+    p['forearm.L'] = {'rot': (lerp(16, 92, u), 0, 0)}
+    p['hand.L'] = {'rot': (-12 * u, 0, 0)}
+    p['upper_arm.R'] = {'rot': (lerp(4, 30, u), 11, 0)}
+    p['forearm.R'] = {'rot': (lerp(16, 50, u), 0, 0)}
     return p
 
 
 def clip_tag_lunge(t):
-    u = smoothstep(0.0, 0.1, t)
-    p = stand(-0.1 * u, 0.02, (0.2 * u, -0.12 * u))
-    p['foot.L'] = {'ik': (REST_ANKLE[-1] + Vector((0, 0.22 * u, 0.0)), 0.0)}
-    p['foot.R'] = {'ik': (REST_ANKLE[1] + Vector((0, -0.16 * u, 0.02 * u)), -30 * u)}
-    p['hips']['rot'] = (-12 * u, 0, 0)
-    p['spine'] = {'rot': (-20 * u, 0, 0)}
-    p['head'] = {'rot': (18 * u, 0, 0)}
-    p.update(sym({'upper_arm.L': {'rot': (lerp(-30, 95, u), -8, 0)}, 'forearm.L': {'rot': (lerp(70, 5, u), 0, 0)},
-                  'hand.L': {'rot': (-10, 0, 0)}}))
+    """Night Watch lunge (0.22 s, V5): a leaping reach.  The sim carries the
+    body 2 m at 9 m/s, so the feet leave the floor (V4 slid a planted lunge
+    stance across the ground).  Ease-out: full reach almost at once."""
+    v = min(1.0, t / 0.11)
+    u = 1.0 - (1.0 - v) ** 2
+    p = {'hips': {'loc': (0, 0.03 * u, -0.05 * u + 0.03 * u), 'rot': (-14 * u, 0, 8 * u)}}
+    # right leg drives forward (knee up), left leg trails extended
+    p['foot.R'] = {'ik': (REST_ANKLE[1] + Vector((0.0, 0.20 * u, 0.10 * u)), lerp(0, 18, u))}
+    p['foot.L'] = {'ik': (REST_ANKLE[-1] + Vector((0.0, -0.26 * u, 0.13 * u)), lerp(0, -48, u))}
+    p['spine'] = {'rot': (-16 * u, 0, 8 * u)}
+    p['chest'] = {'rot': (-8 * u, 0, 6 * u)}
+    p['neck'] = {'rot': (10 * u, 0, 0)}
+    p['head'] = {'rot': (14 * u, 0, -10 * u)}
+    p['upper_arm.L'] = {'rot': (lerp(-38, 98, u), lerp(22, -4, u), 0)}
+    p['forearm.L'] = {'rot': (lerp(92, 6, u), 0, 0)}
+    p['hand.L'] = {'rot': (lerp(-12, -14, u), 0, 0)}
+    p['upper_arm.R'] = {'rot': (lerp(30, -42, u), lerp(11, 16, u), 0)}
+    p['forearm.R'] = {'rot': (lerp(50, 34, u), 0, 0)}
     return p
 
 
 def clip_tag_recover(t):
-    u = smoothstep(0.0, 0.5, t)
-    return blend_pose(clip_tag_lunge(0.22), clip_idle(0.0), u)
+    """After a lunge (0.5 s, V5): lands from the leap with a dip and comes
+    back to neutral; IK targets interpolate (V4 jumped the feet mid-clip)."""
+    u = smoothstep(0.0, 0.42, t)
+    p = blend_pose(clip_tag_lunge(0.22), clip_idle(0.0), u)
+    dip = math.sin(math.pi * min(1.0, t / 0.3)) * 0.05
+    hl = p['hips'].get('loc', (0, 0, 0))
+    p['hips']['loc'] = (hl[0], hl[1], hl[2] - dip)
+    return p
 
 
 def clip_tag_miss(t):
     """Lunge that finds nobody (0.5 s, same window as tag_recover): the arm
     sweeps through empty air and the body wobbles back to balance."""
-    u = smoothstep(0.0, 0.5, t)
+    u = smoothstep(0.0, 0.45, t)
     over = math.sin(math.pi * min(1.0, t / 0.3))
     p = blend_pose(clip_tag_lunge(0.22), clip_idle(0.0), u)
-    p['upper_arm.L'] = {'rot': (lerp(95, 4, u) - 20 * over, lerp(-8, -11, u) + 30 * over, 0)}
-    p['upper_arm.R'] = {'rot': (lerp(95, 4, u) + 10 * over, lerp(8, 11, u) - 50 * over, 0)}
-    p['spine'] = {'rot': (lerp(-20, 0, u), 0, 8 * over)}
-    p['head'] = {'rot': (lerp(18, 0, u), 0, -12 * over)}
+    dip = math.sin(math.pi * min(1.0, t / 0.3)) * 0.05
+    hl = p['hips'].get('loc', (0, 0, 0))
+    p['hips']['loc'] = (hl[0], hl[1], hl[2] - dip)
+    p['upper_arm.L'] = {'rot': (lerp(98, 4, u) - 24 * over, lerp(-4, -11, u) + 34 * over, 0)}
+    p['forearm.L'] = {'rot': (lerp(6, 16, u) + 30 * over, 0, 0)}
+    p['upper_arm.R'] = {'rot': (lerp(-42, 4, u) + 18 * over, lerp(16, 11, u) - 30 * over, 0)}
+    p['spine'] = {'rot': (lerp(-16, 0, u), 0, 10 * over)}
+    p['head'] = {'rot': (lerp(14, 0, u), 0, -14 * over)}
     return p
 
 
-# steering wheel, relative to the character origin (Blender axes: x right,
-# y forward, z up).  CartView places its wheel at the same spot (Godot:
-# SEAT + (0, 0.50, -0.27)) and turns it by steer * STEER_DEG.
 WHEEL_C = Vector((0.0, 0.27, 0.50))
 WHEEL_R = 0.17
 WHEEL_U = Vector((0.0, 0.8, 0.6)).normalized()     # in the wheel plane, up/forward
@@ -766,18 +861,38 @@ def clip_cart_drive(t, steer=0.0):
 
 
 def clip_cart_enter(t):
-    u = smoothstep(0.0, 0.35, t)
-    hop = math.sin(math.pi * u) * 0.12
-    p = blend_pose(clip_idle(0.0), _seated(0.0), u)
-    p['hips']['loc'] = (0, lerp(0.0, -0.06, u), lerp(0.0, -0.33, u) + hop)
+    """Hop into the seat (0.35 s, V5).  The character is drawn at the seat
+    from the first frame (the sim puts it there), so the clip starts in the
+    air above the cushion, knees tucked, hands reaching for the wheel, and
+    lands seated.  V4 stood up on the seat and blended standing IK legs into
+    seated FK legs, which jumped half-way through."""
+    u = smoothstep(0.0, 0.33, t)
+    hop = math.sin(math.pi * min(1.0, 0.35 + t / 0.5)) * 0.16 * (1.0 - u)
+    tuck = sym({'thigh.L': {'rot': (70, -8, 0)}, 'shin.L': {'rot': (-105, 0, 0)}, 'foot.L': {'rot': (20, 0, 0)}})
+    tuck['hips'] = {'loc': (0, -0.04, -0.2), 'rot': (8, 0, 0)}
+    tuck['spine'] = {'rot': (-12, 0, 0)}
+    tuck['head'] = {'rot': (6, 0, 0)}
+    for side in (-1, 1):
+        sfx = '.L' if side < 0 else '.R'
+        tuck['hand' + sfx] = {'ik': (_wheel_grip(side, 0.0) + Vector((side * 0.06, -0.08, 0.1)), (side * 0.6, -0.2, -1.0))}
+    p = blend_pose(tuck, _seated(0.0), u)
+    hl = p['hips']['loc']
+    p['hips']['loc'] = (hl[0], hl[1], hl[2] + hop)
     return p
 
 
 def clip_cart_exit(t):
-    u = smoothstep(0.0, 0.35, t)
-    hop = math.sin(math.pi * u) * 0.14
-    p = blend_pose(_seated(0.0), clip_idle(0.0), u)
-    p['hips']['loc'] = (0, lerp(-0.06, 0.0, u), lerp(-0.33, 0.0, u) + hop)
+    """Hop out (0.3 s, the sim's cart_exit_s, V5).  The character is drawn at
+    the exit point beside the cart from the first frame, so the clip is a
+    landing: knees bent, arms out for balance, then up to standing.  V4
+    started seated on the ground there and hopped up through the leg IK."""
+    u = min(1.0, t / 0.3)
+    k = 1.0 - smoothstep(0.0, 1.0, u)
+    p = stand(-0.12 * k, 0.03 * k)
+    p['hips']['rot'] = (-6 * k, 0, 0)
+    p['spine'] = {'rot': (-10 * k, 0, 0)}
+    p['head'] = {'rot': (8 * k, 0, 0)}
+    p.update(sym({'upper_arm.L': {'rot': (14 * k, -11 + 46 * k, 0)}, 'forearm.L': {'rot': (16 + 18 * k, 0, 0)}}))
     return p
 
 
@@ -791,7 +906,8 @@ def clip_celebrate(t):
     if jump > 0.0:
         p['foot.L'] = {'ik': (REST_ANKLE[-1] + Vector((0, 0, jump)), -20 * jump / 0.16)}
         p['foot.R'] = {'ik': (REST_ANKLE[1] + Vector((0, 0, jump)), -20 * jump / 0.16)}
-    p.update(sym({'upper_arm.L': {'rot': (6, 118 - 10 * pump, 0)}, 'forearm.L': {'rot': (25 + 20 * pump, 0, 0)}}))
+    # V5: a wide V with bent elbows (V4: 118 deg, hands inside the head)
+    p.update(sym({'upper_arm.L': {'rot': (8, 82 - 6 * pump, 0)}, 'forearm.L': {'rot': (36 + 18 * pump, -22, 0)}}))
     p['head'] = {'rot': (12, 0, 6 * pump)}
     p['spine'] = {'rot': (6, 0, 0)}
     return p
@@ -801,9 +917,11 @@ def emote(name, t):
     pose = clip_idle(0.0)   # static base: emote loops must not carry the 4 s idle cycle
     if name == 'wave':
         w = math.sin(2 * math.pi * 3.0 * t / 1.2)     # 3 waves per 1.2 s loop (seamless)
-        pose['upper_arm.R'] = {'rot': (8, -118, 0)}
-        pose['forearm.R'] = {'rot': (0, 0, 0)}
-        pose['forearm.R'] = {'rot': (10, 30 + 30 * w, 0)}
+        # V5: elbow out, the waving hand by the cheek but outside the head
+        # (V4 swung the forearm into the head; the chibi head leaves no room
+        # for a hand above it)
+        pose['upper_arm.R'] = {'rot': (10, -82, 0)}
+        pose['forearm.R'] = {'rot': (10, -2 + 24 * w, 0)}
         pose['head']['rot'] = (6, 0, -6)
         pose['chest'] = {'rot': (0, 4, 0)}
     elif name == 'cheer':
@@ -814,7 +932,7 @@ def emote(name, t):
         pose['hips'] = {'loc': (0, 0, -0.05 + 0.1 * b)}
         pose['foot.L'] = {'ik': (REST_ANKLE[-1] + Vector((0, 0, max(0.0, 0.1 * b - 0.05))), 0.0)}
         pose['foot.R'] = {'ik': (REST_ANKLE[1] + Vector((0, 0, max(0.0, 0.1 * b - 0.05))), 0.0)}
-        pose.update(sym({'upper_arm.L': {'rot': (4, 122, 0)}, 'forearm.L': {'rot': (10 + 20 * b, 0, 0)}}))
+        pose.update(sym({'upper_arm.L': {'rot': (8, 92, 0)}, 'forearm.L': {'rot': (26 + 20 * b, -24, 0)}}))
         pose['head'] = {'rot': (14, 0, 0)}
     elif name == 'laugh':
         s = math.sin(2 * math.pi * 4.0 * t / 1.2)     # 4 chuckles per 1.2 s loop
@@ -834,8 +952,8 @@ def emote(name, t):
         pose['hips']['rot'] = (0, 10 * s, 12 * s)
         pose['spine'] = {'rot': (0, -8 * s, -10 * s)}
         pose['head'] = {'rot': (0, 8 * s, 0)}
-        pose.update(sym({'upper_arm.L': {'rot': (40 + 40 * s, 70, 0)}, 'forearm.L': {'rot': (80, 0, 0)}}))
-        pose['upper_arm.R'] = {'rot': (40 - 40 * s, -70, 0)}
+        pose.update(sym({'upper_arm.L': {'rot': (40 + 40 * s, 62, 0)}, 'forearm.L': {'rot': (72, 0, 0)}}))
+        pose['upper_arm.R'] = {'rot': (40 - 40 * s, -62, 0)}
     elif name == 'point':
         pose['upper_arm.R'] = {'rot': (85, 18, 0)}
         pose['forearm.R'] = {'rot': (5, 0, 0)}
@@ -858,10 +976,13 @@ def clip_arrive(t):
         u = (t - 0.15) / 0.35
         h = math.sin(math.pi * u) * 0.28
         p = stand(-0.08 + 0.08 * smoothstep(0.0, 0.3, u) + h)
-        lift = max(0.0, h - 0.02)
-        p['foot.L'] = {'ik': (REST_ANKLE[-1] + Vector((0, 0, lift)), -20)}
-        p['foot.R'] = {'ik': (REST_ANKLE[1] + Vector((0, 0, lift)), -20)}
-        p.update(sym({'upper_arm.L': {'rot': (10, 110 * math.sin(math.pi * u) - 14, 0)}, 'forearm.L': {'rot': (20, 0, 0)}}))
+        lift = max(0.0, h - 0.004)
+        p['foot.L'] = {'ik': (REST_ANKLE[-1] + Vector((0, 0, lift)), -20 * smoothstep(0.0, 0.04, h))}
+        p['foot.R'] = {'ik': (REST_ANKLE[1] + Vector((0, 0, lift)), -20 * smoothstep(0.0, 0.04, h))}
+        # (V5: the arms' forward swing continues from the crouch instead of
+        # jumping 30 degrees at 0.15 s)
+        p.update(sym({'upper_arm.L': {'rot': (lerp(-20, 10, smoothstep(0.0, 0.35, u)), 92 * math.sin(math.pi * u) - 14, 0)},
+                      'forearm.L': {'rot': (20 + 14 * math.sin(math.pi * u), -14 * math.sin(math.pi * u), 0)}}))
         return p
     u = (t - 0.5) / 0.4
     sq = math.sin(math.pi * min(1.0, u * 2.0)) * (1.0 - u)
@@ -878,6 +999,8 @@ def library():
         'idle': (IDLE_L, True, clip_idle),
         'fidget_yawn': (2.4, False, clip_fidget_yawn),
         'fidget_look': (2.0, False, clip_fidget_look),
+        'fidget_shift': (2.6, False, clip_fidget_shift),
+        'fidget_bounce': (1.8, False, clip_fidget_bounce),
         'ready': (0.9, False, clip_ready),
         'walk': (1.0, True, lambda t: loco_pose('walk', t)),
         'run': (1.0, True, lambda t: loco_pose('run', t)),

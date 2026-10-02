@@ -1,0 +1,55 @@
+# V5 motion defect register
+
+Scope: character animation, secondary motion, the follow camera and what a
+predicting client shows. Every "before" number comes from the V4 code
+(`dcebf4e`, rendered/run from a temporary worktree) through the **same**
+measuring code as the "after" number:
+
+- `game/tests/motion_rig.gd`: a 60 Hz mini-motor using the `RulesConfig`
+  values (5 / 7.4 / 6.6 m/s, 46 / 52 m/s² ground accel/decel, 900°/s turn,
+  jump, dive, tag, splash, cart timings), the same tick capture,
+  discontinuity rule and render-time lerp as `MatchController`, real engine
+  frames, the final pose read after the last skeleton modifier.
+- `src/dev/motion_probe.tscn` runs every scenario from three starting gait
+  phases. **pop** = the largest third difference of an upper-body joint
+  (hips, chest, head, shoulders, elbows, wrists, mitten tips) over four
+  equal 60 Hz frames, in cm. Smooth motion stays near zero; a steady sprint
+  peaks at ~3.5–4 cm; a pose that snaps by X cm in one frame scores 2X.
+  Teleport frames (respawn, resurfacing, cart seat) are excluded on both
+  sides because the pose cuts there on purpose. **slide** = mean horizontal
+  speed of the planted (lower) foot in ground locomotion.
+- `tests/camera_rig.gd`: the real `FollowCamera` past campus-sized
+  colliders (tree trunk r 0.42 m, lamp post r 0.14 m, a wall, a ramp).
+- `tools/character/clip_check.py`: every clip evaluated on the real rig in
+  Blender's Python (arm/head penetration, leg reach, in-clip jumps).
+- `src/dev/net_motion_probe.tscn`: host + predicting client over the
+  shaped in-process loopback (real NetSession, prediction, reconciliation,
+  interpolation).
+
+All of it runs headless or on llvmpipe on a desktop, on a fixed clock. It
+measures continuity, not phone frame rate.
+
+**Status key:** **Fixed** = reproduced, then fixed and re-measured.
+**Partial** = improved, residual stated. **Open** = reproduced, not fixed.
+**Hypothesis** = reasoned from code, not reproduced.
+
+| # | Trigger | Evidence (V4 → V5) | Category | Cause | Fix | Verification | Status |
+|---|---|---|---|---|---|---|---|
+| M1 | Start running from a standstill / release the stick | pop 35.1 → 5.3 cm (start), 25.2 → 3.5 (stop), 35.3 → 5.2 (walk), 35.2 → 5.4 (speed changes) | pose popping | The sim reaches 5 m/s in ~0.1 s; the idle↔gait weight was `smoothstep(speed)`, so whole poses swapped in 1–2 frames. The gait started at a random phase and froze mid-stride on stops. | Locomotion weight smoothed in time (in 0.045 s, out 0.085 s); a start begins on a step (phase snapped to a half cycle while the weight is ~0); a stop finishes its step at ≥ 2.4 cycles/s and holds a half-cycle pose. | `test_transitions_do_not_snap`, `test_start_and_stop_land_on_a_step`; strip `steps_*` | Fixed |
+| M2 | A cross-fade interrupted by another state change: floor contact flicker on crests/kerbs, a landing during a fade, tag phases, re-chosen emotes | pop 102.7 → 3.5 (1-tick on_floor flicker), 51.3 → 6.8 (kerb drop), 56.8 → 9.9 (running jump landing), 16.7 → 4.0 (emote, walk away, emote) | pose popping | `AnimationNodeTransition` and `OneShot` blend two inputs only: a new request mid-fade drops the half-faded pose in one frame. One-tick air flickers also played half a jump. | `CharacterPoseFade` (first skeleton modifier): every state change fades from the pose on screen, extrapolated with its own decaying angular velocity ("dead blending"); the visual air state needs 0.07 s off the floor unless rising; landings start from the falling pose. | `test_contact_flicker_never_plays_air` (0 air frames), `test_landings_and_jumps_fire_once` | Fixed |
+| M3 | Overhead arms: yawn, celebrate, arrive, cheer, wave, air fall, splash duck | clip_check: 11 clips with sleeves/mittens 1.4–30 cm inside the head (yawn 19.1, celebrate 12.4, cheer 10.5, wave 9.0, splash 30.0) → 0 clips over 1 cm (max 0.9) | limb clipping | Chibi proportions: shoulders 0.17 m from centre under a 0.31 m head; arms raised 100–168° pass through it (the yawn's arms vanished). | Raises opened into a V with bent elbows; the wave keeps the elbow out and the mitten beside the cheek. | `clip_check.py` (exit 0), `posesheet_*`, `arms_*` crops | Fixed |
+| M4 | Tag recover / miss; cart enter / exit | clip_check in-clip step 21.9 → 2.1 / 3.0 cm (tag recover/miss) | pose popping (in the asset) | `anims.blend_pose` switched IK targets at t = 0.5 instead of interpolating: feet jumped mid-clip. Cart clips blended standing IK legs into seated FK legs (same switch). | IK targets interpolate; cart clips rewritten as a hop-in from the air above the seat and a hop-out landing (the sim draws the character at the seat/exit point from the first frame). | clip_check; cart pop 35.1 → 5.3 | Fixed |
+| M5 | 250 ms hitch, respawn, standing-jump landing | nightcap tip moves 39.1 → 4.5 cm (hitch), 40.6 → 7.3 (respawn), 32.1 → 7.3 (jump) in one frame | spring explosion | The spring bone simulated in world space: a hitch or teleport implied a huge velocity; its reset took effect a frame late. | Simulated in the character's own space (`CENTER_FROM_NODE`) with inertia from the filtered body acceleration (`external_force`), a head collision sphere, the cap's rest shape on a teleport's cut frame. | `test_hitch_and_teleport_do_not_fling_the_cap` | Fixed |
+| M6 | A tick, snapshot or correction arriving in a short render frame | V4 fed the springs Δv/Δt of the render frame: 1 m/s in a 4 ms frame = 250 m/s². Correction stress run: 313 → 82 frames over 3 cm, pop 23.1 → 6.8 | network correction → visual impulse | Acceleration from the raw render-frame derivative of a 60 Hz quantised velocity. | Derivative of a filtered velocity (τ 0.05 s), bounded at 55 m/s²: ≤ Δv / τ whatever the frame length. Blend-space speed filtered over 0.03 s. | `test_secondary_bounded_under_irregular_frames` | Fixed |
+| M7 | A tree trunk or lamp post crossing the line between camera and runner | camera jump 3.14 → 0.03 m (trunk), 3.03 → 0.03 m (14 cm post); pulled in for 42 / 38 frames → 0 | camera collision | Any sweep hit pulled the camera in at once, then it eased out over ~0.7 s. | Narrow occluder (camera spot clear, < 0.9 m deep along the line, a parallel ray 1 m to one side passes): keep the distance. Walls still pull in at once. Cost: ≤ 4 rays + 1 shape query on frames whose sweep hits. | `test_camera_ignores_posts_but_not_walls`; the runner is partly hidden for 10 frames (trunk) / 3 (post) instead | Fixed |
+| M8 | 180° reversal, 90° turn | planted-foot slide 1.23 → 0.92 m/s (reversal), 0.69 → 0.78 (turn); pop 28.6 → 6.8 (reversal) | foot sliding / pose | The drawn facing lagged the velocity twice (sim yaw capped at 900°/s, then 24/s smoothing ≈ 0.65 rad), so the body ran sideways for ~0.2 s; the gait cycled at full speed while moving backward. | In plain locomotion the drawn body aims at the (filtered) velocity heading the sim is turning toward; the gait advances with the forward component while turning. | probe | Partial: 90° turns still slide about as in V4 (a planted foot pivots with the body). Foot locking would fix it; see notes. |
+| M9 | Wardrobe close-ups: crown or headphones on curly hair | curls poked through the crown band; the headphone band sank into the curls (`hathair_*`) | hat/hair penetration | Curly crop keeps curls up to z = 1.43 m, where both bands rest. | `hair_curly_hat` (smooth band from 1.34 m) shown instead under crown/headphones; catalog and wire format unchanged (4,048 vs 5,848 triangles). | `hathair_after` | Fixed |
+| M10 | Night Watch tags while running | pop 27.8 → 14.4 (miss) / 8.9 (hit); planted slide 2.26 → 0.99 m/s (miss) | pose / foot sliding | Wind-up (0.14 s at 90 % speed) and recovery were full-body standing clips skated along at ~6 m/s; the lunge slid a planted stance at 9 m/s. | Wind-up and recovery play on the upper body while the legs keep running (action layer, starts from the shown pose); the lunge is a leap with both feet off the floor. | probe, reels | Partial: the remaining pop is the lunge's own fast reach (designed to be immediate) |
+| M11 | Resurfacing at a shore exit | splash pop 46.8 → 14.7 cm (the V5 number is the water entry: the contact pose is fast by design) | pose popping | The underwater duck pose cross-faded into the shore pose: the body rose out of the ground for 0.16 s. | Teleports cut the pose (and reset history) with the position. | `test_teleport_cuts_pose_and_resets_history` | Fixed |
+| M12 | Every landing | model scale changed by up to 18 % in one frame | pose popping (squash) | Squash set instantly. | Damped spring kicked by the impact (peak ≤ 15 %). | included in M2 numbers | Fixed |
+| M13 | Camera hovering at the animation LOD distance | update rate could flip every frame at 45 m | pose (update rate) | Single threshold. | Hysteresis: throttled beyond 48 m, full rate inside 42 m; elapsed time still accumulates exactly; the local character never throttles; throttled characters skip the fade history. | `test_lod_has_hysteresis_and_keeps_time` | Hypothesis (code-reasoned), fixed |
+| M14 | Network conditions (classification) | loopback probe, 720 client frames at 0 / 120 / 300 ms RTT (10 / 30 ms jitter, 3 / 10 % loss): visible correction frames 0 / 0 / 0 (mean reconcile 0–4 mm, none > 25 cm); terrain/collision deviations 46 / 45 / 45; camera collision movement 176 / 150 / 53; remote extrapolation 0 / 25 / 310 remote-character frames; host input starvation 0. Real-UDP soak (full rounds): corrections 2.4–2.6 mm unshaped, 10.7–11.8 mm at 60 ± 10 ms / 3 %; max ≈ 1 m in both; host starved ticks 48 → 622 | classification | Corrections are mostly invisible; terrain and camera numbers do not change with the link (not network); the remote interpolation buffer runs dry under heavy loss; input starvation grows with shaping. | none (net code belongs to another stream) | `net_motion_probe`, `net_soak.sh` (notes) | Open: heavy-loss remote stutter; rare ≈ 1 m corrections not traced |
+| M15 | Interpolation ownership and frame order | — | audit | Physics interpolation is off; CharacterView never smooths translation; the camera follows the same interpolated anchor. `MatchController._process` updates states, then the camera, then the views animate (children); the camera reads only the anchor, so the image equals state → animation → camera. | none | code audit | Verified |
+| M16 | Emote → idle | 0.16 s fade from an arbitrary emote frame | pose | — | Emotes, celebrations and lobby reactions settle into idle over 0.28 s from the shown pose. | probe emote | Fixed |
+| M17 | Emote scenario planted slide | 0.19 → 0.41 m/s | foot sliding | The walk-away between two emotes now blends legs in/out over time; the residual is the settle step. | — | probe | Open (minor) |
+| M18 | Running on slopes and stairs | not measured (flat rig and a kerb only) | foot planting | No ground IK: feet follow the character origin's plane. | — | — | Hypothesis / open |
