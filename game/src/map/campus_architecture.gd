@@ -679,7 +679,21 @@ func _lamp(lp: Vector2, style: int) -> void:
 	B.glow_disc(Vector3(lp.x, 0.1, lp.y), 4.4)
 
 
-func small_things() -> void:
+## part 0: quarry boulders and platforms, 1: ramps and benches, 2: props
+func small_things(part: int = -1) -> void:
+	if part == 0 or part < 0:
+		_rocks_and_platforms()
+	if part == 1 or part < 0:
+		for rp2 in L.ramps:
+			_ramp_visual(rp2)
+		for bn in L.benches:
+			_bench(bn)
+	if part == 2 or part < 0:
+		for pr in L.props:
+			_prop(pr)
+
+
+func _rocks_and_platforms() -> void:
 	# quarry boulders: the kit's layered rock fitted to each collider box
 	for r in L.rocks:
 		var rp: Vector3 = r["pos"]
@@ -700,12 +714,6 @@ func small_things() -> void:
 			k2.mat = MeshKit.M_ROCK
 			k2.box(Vector3(pc.x, pc.y * 0.5 - 0.3, pc.z), Vector3(ps.x * 0.9, pc.y, ps.z * 0.9), Color(0.45, 0.43, 0.48))
 			k2.mat = 0.0
-	for rp2 in L.ramps:
-		_ramp_visual(rp2)
-	for bn in L.benches:
-		_bench(bn)
-	for pr in L.props:
-		_prop(pr)
 
 
 ## The inlet dock: planks with gaps over stringers, pilings with caps that
@@ -973,6 +981,7 @@ func _fingerpost(p: Vector2, boards: Array) -> void:
 			lb.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 			lb.position = c + nrm * (0.036 * sg)
 			lb.basis = Basis.looking_at(-nrm * sg, Vector3.UP)
+			lb.double_sided = false
 			lb.visibility_range_end = 32.0
 			lb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			lb.name = "Fingerpost_%s_%d" % [txt.validate_node_name(), int(sg)]

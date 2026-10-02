@@ -446,7 +446,10 @@ func _banks() -> void:
 				_try_bank("rock_flat", w, bank + dir * _rng.randf_range(0.2, 0.7), _rng.randf_range(0.45, 0.75))
 		if id == "pond":
 			# lily groups on the water, kept off the swim lines to the exits
-			for k in 9:
+			var placed := 0
+			for k in 60:
+				if placed >= 8:
+					break
 				var a2 := _rng.randf() * TAU
 				var rr := _rng.randf_range(0.35, 0.72)
 				var q2 := c + Vector2(cos(a2) * rx * rr, sin(a2) * rz * rr)
@@ -454,7 +457,8 @@ func _banks() -> void:
 				for e in w["exits"]:
 					if CampusLayout._dist_to_segment(q2, c, Vector2(e.x, e.z)) < 1.6:
 						ok = false
-				if ok:
+				if ok and clear_of_gameplay(L, q2, 0.0, true):
+					placed += 1
 					_add("lilies", q2, float(w["surface_y"]) + 0.03, _rng.randf() * TAU, _rng.randf_range(0.8, 1.2), Color(1, 1, 1), BLOOMS[0] if k % 3 else BLOOMS[2])
 
 
@@ -480,8 +484,14 @@ func _lily_basin() -> void:
 	var w := L.water_by_id("garden")
 	var c: Vector2 = w["center"]
 	var hs: Vector2 = w["size"] * 0.5
-	for k in 6:
+	var lil := 0
+	for k in 40:
+		if lil >= 5:
+			break
 		var q := c + Vector2(_rng.randf_range(-hs.x + 1.2, hs.x - 1.2), _rng.randf_range(-hs.y + 1.0, hs.y - 1.0))
+		if not clear_of_gameplay(L, q, 0.0, true):
+			continue
+		lil += 1
 		_add("lilies", q, float(w["surface_y"]) + 0.03, _rng.randf() * TAU, _rng.randf_range(0.7, 1.0), Color(1, 1, 1), BLOOMS[k % 2])
 	# flower borders inside the hedge ring (16 m square around the basin)
 	for side in 4:
@@ -530,6 +540,28 @@ func _flowers_and_grass() -> void:
 					_try_low("grass", p + Vector2(_rng.randf_range(-0.8, 0.8), _rng.randf_range(-0.8, 0.8)), _rng.randf_range(0.8, 1.3), _grass_tint())
 			x += step
 		y += step
+	# meadow islands: a few deliberate drifts of wildflowers and tall tufts
+	# in the open lawns (well away from paths), not a scatter
+	var islands := 0
+	var tries := 0
+	while islands < 28 and tries < 4000:
+		tries += 1
+		var cp := Vector2(_rng.randf_range(b.position.x, b.end.x), _rng.randf_range(b.position.y, b.end.y))
+		if _near_path(cp) or _noise(cp, 0.03, 41) < 0.55:
+			continue
+		if not clear_of_gameplay(L, cp, 2.4):
+			continue
+		var col4: Color = BLOOMS[islands % BLOOMS.size()]
+		var n_ok := 0
+		for k in 10:
+			var a4 := _rng.randf() * TAU
+			var rr := sqrt(_rng.randf()) * 2.0
+			var q := cp + Vector2(cos(a4) * rr, sin(a4) * rr * 0.7)
+			if k < 7:
+				n_ok += int(_try_low("flowers", q, _rng.randf_range(1.0, 1.4), Color(1, 1, 1), col4 if k % 3 else BLOOMS[2]))
+			else:
+				_try_low("grass", q, _rng.randf_range(1.2, 1.6), _grass_tint())
+		islands += int(n_ok >= 4)
 	# lamp feet: a few tufts, and on the formal lawns a little bed of blooms
 	for lp in L.lamps:
 		var col: Color = BLOOMS[posmod(int(lp.x * 3.0 + lp.y * 7.0), BLOOMS.size())]

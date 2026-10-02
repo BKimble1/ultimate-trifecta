@@ -6,6 +6,10 @@ uniform vec3 horizon_color : source_color = vec3(0.20, 0.24, 0.46);
 uniform vec3 ground_color : source_color = vec3(0.05, 0.06, 0.12);
 uniform vec3 moon_dir = vec3(-0.45, 0.62, -0.64);
 uniform vec3 moon_color : source_color = vec3(1.0, 0.97, 0.86);
+// V5: a warm glow low on the horizon (the town beyond the lake) and a soft
+// halo around the moon give the night sky depth without extra cost
+uniform vec3 town_glow : source_color = vec3(0.42, 0.30, 0.34);
+uniform vec3 town_dir = vec3(0.35, 0.0, -0.94);
 
 float hash(vec3 p) {
 	p = fract(p * 0.3183099 + 0.1);
@@ -30,8 +34,14 @@ void sky() {
 			col += vec3(0.9, 0.92, 1.0) * smoothstep(0.004, 0.0, dist) * tw * smoothstep(0.05, 0.3, h);
 		}
 	}
+	if (h > -0.05) {
+		float band = exp(-max(h, 0.0) * 14.0);
+		float toward = pow(max(dot(normalize(vec3(d.x, 0.0, d.z)), normalize(town_dir)), 0.0), 3.0);
+		col += town_glow * band * (0.25 + 0.75 * toward) * 0.5;
+	}
 	vec3 md = normalize(moon_dir);
 	float m = dot(d, md);
+	col += moon_color * pow(max(m, 0.0), 24.0) * 0.08;
 	col += moon_color * smoothstep(0.9993, 0.9996, m) * 1.6;
 	col += moon_color * pow(max(m, 0.0), 300.0) * 0.35;
 	COLOR = col;

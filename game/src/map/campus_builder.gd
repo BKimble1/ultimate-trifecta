@@ -383,9 +383,9 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 			_add("ground", func() -> void: _ground_chunk(Vector2i(gx, gz)))
 	_add("plazas", _plazas)
 	_add("roads", _roads)
-	for i0 in range(0, L.paths.size(), 3):
+	for i0 in range(0, L.paths.size(), 2):
 		_add("paths", func() -> void:
-			for i in range(i0, mini(i0 + 3, L.paths.size())):
+			for i in range(i0, mini(i0 + 2, L.paths.size())):
 				_path(L.paths[i]))
 	for bd in L.buildings:
 		_add("building_" + String(bd["id"]), func() -> void: arch.building(bd))
@@ -400,13 +400,14 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 			_add("hedges", func() -> void: arch.hedge_part(hi, float(pi) / float(parts), float(pi + 1) / float(parts)))
 	for fi in L.fences.size():
 		_add("fence", func() -> void: arch.fence(fi))
-	for bi in range(0, L.cart_blockers.size(), 3):
-		_add("bollards", func() -> void: arch.bollards(bi, bi + 3))
+	for bi in range(0, L.cart_blockers.size(), 2):
+		_add("bollards", func() -> void: arch.bollards(bi, bi + 2))
 	_add("trees", func() -> void:
 		_place_trees()
 		_merge_species())
 	_add("decor", _place_decor)
-	_add("small", arch.small_things)
+	for part in 3:
+		_add("small", func() -> void: arch.small_things(part))
 	for li in range(0, L.lamps.size(), 10):
 		_add("lamps", func() -> void: arch.lamps(li, li + 10))
 	_add("light_texture", func() -> void: _field_tex = kit.field_texture())
@@ -419,10 +420,11 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 		_add("water_" + String(L.waters[wi]["id"]), func() -> void: marks.water(wi))
 		if String(L.waters[wi]["id"]) == "fountain":
 			_add("fountain_jets", func() -> void: marks.fountain_jets(wi))
+	# signs add board geometry to the chunks: before they are committed
+	_add("signs", arch.signs)
 	_add("commit", _commit_next)
 	_add("multimesh", _mm_next)
 	_add("glow", _glow_mesh)
-	_add("signs", arch.signs)
 
 
 func _add(step_name: String, f: Callable) -> void:

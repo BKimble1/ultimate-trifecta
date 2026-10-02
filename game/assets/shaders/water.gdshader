@@ -149,9 +149,9 @@ void fragment() {
 		// water's own colour (the lanterns carry the rest)
 		float pulse = 0.7 + 0.3 * sin(t * 2.0);
 		float ring = smoothstep(0.16, 0.0, abs(ed - 0.5)) * active * (1.0 - stamped);
-		vec3 emit = target_color * ring * pulse * 0.45;
-		// the lanterns' light on the water: a soft tint near the edge
-		emit += target_color * active * (1.0 - stamped) * smoothstep(2.2, 0.0, ed) * 0.08;
+		vec3 emit = target_color * ring * pulse * 0.32;
+		// the lanterns' light on the water: a faint tint near the edge
+		emit += target_color * active * (1.0 - stamped) * smoothstep(1.6, 0.0, ed) * 0.035;
 		emit += highlight_color * max(wave, 0.0) * 0.28;
 		emit += vec3(0.75, 0.85, 0.95) * foam * 0.04;
 		emit += vec3(1.0, 0.97, 0.88) * glint * 1.4;
