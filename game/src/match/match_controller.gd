@@ -1111,7 +1111,7 @@ func _present_event(ev: Dictionary) -> void:
 			var r2: Dictionary = roster.get(a, {})
 			hud.feed("%s made it home! (%d/%d)" % [r2.get("name", "?"), int(ev["v"]), cfg.runners_needed], TC.Role.RUNNER)
 			if mine:
-				hud.toast("HOME SAFE! Cheer on your team", Color(0.5, 1.0, 0.6))
+				# (the HOME SAFE overlay says it; no second toast)
 				_haptic(40)
 		TC.Ev.BUMP:
 			fx.bump(pos)

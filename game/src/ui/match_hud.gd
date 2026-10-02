@@ -837,6 +837,9 @@ class ObjectiveChips:
 			if dd < bd:
 				bd = dd
 				best = d
+		if role == TC.Role.RUNNER and int(me.get("state", -1)) == TC.PState.FINISHED:
+			_chip(0, "house", UIKit.TEAL, "Home safe", 0.0, 0.0, true, false)
+			return
 		if role == TC.Role.RUNNER and stamps == 7:
 			_chip(0, "house", UIKit.AMBER, "Return to the dorm", _bearing(pos, best["pos"]), bd, false, true)
 			return
