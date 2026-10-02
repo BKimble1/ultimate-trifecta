@@ -15,12 +15,54 @@ them on foot and in golf carts, over a series of one, three or five rounds.
 | [TEST_REPORT.md](TEST_REPORT.md) | What was tested, how, and what is still unverified |
 | [TESTFLIGHT_RELEASE.md](TESTFLIGHT_RELEASE.md) | Release status, signing lane, owner handoff and beta notes |
 | [ASSET_LICENSES.md](ASSET_LICENSES.md) | Where every asset and dependency comes from |
+| [docs/V5_NOTES.md](docs/V5_NOTES.md) | V5 implementation notes: the issue register, branding, type/theme/motion, home/party/wardrobe, match loading, map/HUD/results, character motion, campus art, preparation performance |
 | [docs/V4_NOTES.md](docs/V4_NOTES.md) | V4 implementation notes: the owner's playtest issue register, diagnostics, performance table, touch layout, campus and character art, Night Watch tuning, series, map, migration, What to Test |
 | [docs/V3_NOTES.md](docs/V3_NOTES.md) | V3 implementation notes: character art and animation, splash sequence, lobby/creator/type, profiles, parties and protocol 4, controls |
 | [docs/APP_STORE.md](docs/APP_STORE.md) | Prepared App Store package: store text, review notes, age rating and privacy answers |
 | [service/README.md](service/README.md) | The trusted online service (profiles, names, moderation, party rooms): API and owner deployment |
 | [docs/V2_NOTES.md](docs/V2_NOTES.md) | V2 implementation notes: render path, motion pipeline, touch rules, theme |
 | [tools/character/README.md](tools/character/README.md) | How the character asset is built |
+
+## What's new in V5 (version 1.4)
+
+V5 answers the owner's feedback on 1.3 (unfinished-looking loading,
+occasional glitches) with a full presentation pass, and adds the owner's
+new branding. Details and evidence: [docs/V5_NOTES.md](docs/V5_NOTES.md),
+[docs/media/v5/](docs/media/v5/README.md).
+
+- **Branding:** Idlery Games at startup, one picture from the iOS launch
+  screen to the first frame, leaving when the home screen is ready (not
+  after a frame count). The new Ultimate Trifecta title on home and match
+  loading. CI audits the launch assets and fails on "powered by" copy.
+- **Type, controls and motion:** Manrope with real weights and tabular
+  digits; card controls with a focus ring and solid disabled states that
+  say why; a motion layer with one owner per animated property (press
+  85 ms, release 190 ms, panels 220 ms, camera 320 ms); Reduced Motion
+  removes movement and pulses.
+- **Home, party and wardrobe:** a calmer home with the runner as the focus;
+  a party screen with a code card, settings as short chips, roster cards
+  with portraits and full names, details on tap; a wardrobe with the runner
+  on the left, a category strip and portrait item cards that show every
+  item on your runner with its full name and Equipped / Owned / price.
+- **Match loading:** the title, three runners rendered from the game's own
+  rig in an exact 60 fps loop, and a quiet status with real progress.
+- **Campus:** eight authored tree species with LODs, terrain transitions
+  and path materials, a modular building kit, ~3,900 decorative pieces with
+  no collision, six distinct water landmarks, a GPU light field and softer
+  night lighting. Collision, navigation and gameplay are identical to V4
+  (tested).
+- **Map, HUD and results:** a baked stylized map with live overlays and
+  non-overlapping labels, a side panel with a legend and help, a tabular
+  clock, and a clearer results hierarchy.
+- **Character motion:** state changes fade from the pose on screen (the
+  largest snaps fell from 23–103 cm to 3.5–10 cm), starts and stops land on
+  a step, arms no longer pass through the head, a calmer menu idle, and a
+  camera that no longer jumps for posts and trunks. A defect register
+  separates render stalls, camera jitter, pose popping, collision, input
+  loss and network correction.
+- **Preparation:** the longest frame of round preparation fell from
+  62–77 ms to about 20 ms on the desktop test machine; a slow job is named
+  in the diagnostics timeline. Not a phone measurement.
 
 ## What's new in V4 (version 1.3)
 
@@ -142,12 +184,15 @@ game/                 Godot project (open game/project.godot)
   src/view|ui/        characters, carts, dorm stage, camera, FX, HUD, touch, screens
   src/dev/            diagnostics, capture harness, character test scene (not exported)
   src/autoload/       Rules, Controls, Sfx, Social, Save, App
-  assets/             characters (generated GLB), shaders, audio, font, icon/splash
-  tests/              headless rule/sim/network/route/touch/motion tests
-tools/                fetch, test, soak, export, build, App Store Connect scripts
+  assets/             characters (generated GLB), campus kit, shaders, audio, fonts, branding, loading loop, icon/launch
+  tests/              headless rule/sim/network/route/touch/motion/campus tests
+art_src/              masters: owner branding, the Manrope source, campus mesh dumps, the supplied loading clip
+tools/                fetch, test, soak, export, build, capture, launch audit, App Store Connect scripts
   character/          editable source of the character asset (Blender bpy scripts)
-.github/workflows/    ios.yml: tests → iOS export → device archive (or signed TestFlight upload) → simulator → processing check
-docs/                 test data, screenshots and recordings
+  campus/             the campus art kit, textures and dressing bake (Blender bpy + Godot)
+  branding/ fonts/    launch art and title builds; static Manrope instances
+.github/workflows/    ios.yml: tests → iOS export → launch audit → device archive (or signed TestFlight upload) → simulator → processing check
+docs/                 notes per version, test data, screenshots and recordings
 ```
 
 ## Setup

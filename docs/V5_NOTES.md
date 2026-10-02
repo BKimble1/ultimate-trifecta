@@ -342,9 +342,9 @@ frame. Every job is timed; one over 25 ms marks the diagnostics timeline
 |---|---|---|---|
 | Longest campus step, rendering (llvmpipe) | 81–83 ms | 30–37 ms (first-use shader compiles, one step each); 13–14 ms otherwise | `dev_shots --route`, two runs each |
 | Campus steps over 16 ms, rendering | 18–22 of 126 | 3 (the shader compiles) | same |
-| Longest campus step, headless | (not measured) | 14.5 ms | `test_campus_art` |
-| Longest non-campus job, headless | ~50 ms (nav grid) | 13 ms; nav slices ≤ 11 ms | `test_prep_jobs` |
-| Longest frame of round preparation, headless | 62–77 ms | 22–24 ms | `test_loading` |
+| Longest campus step, headless | (not measured) | 11.9–14.5 ms (paths, ground chunks); 12.5–17.9 ms as a job in a full preparation | `test_campus_art`, `test_loading`, `test_prep_jobs` |
+| Longest non-campus job, headless | ~50 ms (nav grid in one block) | 7.5 ms; the nav grid in 7 slices, longest 10.2 ms | `test_prep_jobs` |
+| Longest frame of round preparation, headless | 62–77 ms | 18.6–21.4 ms (722–839 ms over 63–69 frames) | `test_loading`, `test_prep_jobs` (final merged code) |
 | Ten rounds in a row | flat | flat (nodes, objects, orphans, signal connections) | `test_loading` |
 
 The first-use shader compiles stay on the main thread (compiling on the
