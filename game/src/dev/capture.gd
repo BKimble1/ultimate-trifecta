@@ -266,6 +266,14 @@ func _match() -> void:
 			_next_play_shot = _t + 9.0
 			snap("%s_play_%d" % [scenario, _play_shots])
 			_play_shots += 1
+		# the full map once, a few seconds into the chase
+		if _play_shots >= 2 and not _scheduled.has("map"):
+			_scheduled["map"] = true
+			mc.hud.open_map()
+			later(1.0, "%s_map" % scenario)
+			get_tree().create_timer(2.5).timeout.connect(func() -> void:
+				if is_instance_valid(mc) and mc.hud:
+					mc.hud.close_map())
 	if scenario == "runner":
 		if st == TC.PState.SPLASHING and _prev_state != TC.PState.SPLASHING and _splashes < 2:
 			_splashes += 1

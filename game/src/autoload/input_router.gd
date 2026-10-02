@@ -23,6 +23,7 @@ const ACTIONS := {
 	"cam_down": [KEY_K],
 	"emote_1": [KEY_1], "emote_2": [KEY_2], "emote_3": [KEY_3], "emote_4": [KEY_4],
 	"spectate_next": [KEY_TAB],
+	"map": [KEY_M],
 }
 const JOY_BUTTONS := {
 	"jump": [JOY_BUTTON_A],
@@ -33,6 +34,7 @@ const JOY_BUTTONS := {
 	"pause": [JOY_BUTTON_START],
 	"emote_1": [JOY_BUTTON_DPAD_UP], "emote_2": [JOY_BUTTON_DPAD_RIGHT], "emote_3": [JOY_BUTTON_DPAD_DOWN], "emote_4": [JOY_BUTTON_DPAD_LEFT],
 	"spectate_next": [JOY_BUTTON_RIGHT_SHOULDER],
+	"map": [JOY_BUTTON_BACK],
 }
 
 var device := "touch"            # "touch" | "keyboard" | "gamepad"
@@ -414,17 +416,17 @@ func reset_touch() -> void:
 ## Button for an action, by position (south/east/west/north face buttons,
 ## shoulders, triggers, menu) or keyboard key; Glyphs draws it per family.
 const PAD_SLOTS := {"jump": "south", "gadget": "east", "tag": "west", "interact": "north", "sprint": "l1",
-	"accelerate": "r2", "brake": "l2", "pause": "menu", "spectate_next": "r1", "emote_1": "dpad_up",
+	"accelerate": "r2", "brake": "l2", "pause": "menu", "spectate_next": "r1", "emote_1": "dpad_up", "map": "view",
 	"menu_prev": "l1", "menu_next": "r1", "accept": "south", "back": "east"}
 const KEY_NAMES := {"jump": "Space", "sprint": "Shift", "tag": "F", "interact": "E", "gadget": "Q", "pause": "Esc",
-	"accelerate": "W", "brake": "S", "spectate_next": "Tab", "emote_1": "1", "menu_prev": "Q", "menu_next": "E",
+	"accelerate": "W", "brake": "S", "spectate_next": "Tab", "emote_1": "1", "map": "M", "menu_prev": "Q", "menu_next": "E",
 	"accept": "Enter", "back": "Esc"}
 const LABELS := {
-	"xbox": {"south": "A", "east": "B", "west": "X", "north": "Y", "l1": "LB", "r1": "RB", "l2": "LT", "r2": "RT", "menu": "Menu", "dpad_up": "D-pad"},
-	"playstation": {"south": "cross", "east": "circle", "west": "square", "north": "triangle", "l1": "L1", "r1": "R1", "l2": "L2", "r2": "R2", "menu": "Options", "dpad_up": "D-pad"},
-	"mfi": {"south": "A", "east": "B", "west": "X", "north": "Y", "l1": "L1", "r1": "R1", "l2": "L2", "r2": "R2", "menu": "Menu", "dpad_up": "D-pad"},
-	"nintendo": {"south": "pos", "east": "pos", "west": "pos", "north": "pos", "l1": "L", "r1": "R", "l2": "ZL", "r2": "ZR", "menu": "+", "dpad_up": "D-pad"},
-	"generic": {"south": "pos", "east": "pos", "west": "pos", "north": "pos", "l1": "L1", "r1": "R1", "l2": "L2", "r2": "R2", "menu": "Menu", "dpad_up": "D-pad"},
+	"xbox": {"south": "A", "east": "B", "west": "X", "north": "Y", "l1": "LB", "r1": "RB", "l2": "LT", "r2": "RT", "menu": "Menu", "view": "View", "dpad_up": "D-pad"},
+	"playstation": {"south": "cross", "east": "circle", "west": "square", "north": "triangle", "l1": "L1", "r1": "R1", "l2": "L2", "r2": "R2", "menu": "Options", "view": "Create", "dpad_up": "D-pad"},
+	"mfi": {"south": "A", "east": "B", "west": "X", "north": "Y", "l1": "L1", "r1": "R1", "l2": "L2", "r2": "R2", "menu": "Menu", "view": "Options", "dpad_up": "D-pad"},
+	"nintendo": {"south": "pos", "east": "pos", "west": "pos", "north": "pos", "l1": "L", "r1": "R", "l2": "ZL", "r2": "ZR", "menu": "+", "view": "-", "dpad_up": "D-pad"},
+	"generic": {"south": "pos", "east": "pos", "west": "pos", "north": "pos", "l1": "L1", "r1": "R1", "l2": "L2", "r2": "R2", "menu": "Menu", "view": "Select", "dpad_up": "D-pad"},
 }
 
 

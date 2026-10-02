@@ -34,6 +34,8 @@ var _last_penalty_sec := -1
 # tutorial coach
 var coach: PanelContainer
 var coach_lbl: Label
+var role_icon: Icons.IconRect
+var round_lbl: Label
 var coach_step := 0
 var _coach_moved := 0.0
 var _coach_last := Vector3.INF
@@ -71,7 +73,7 @@ func setup(controller: MatchController) -> void:
 	var hh := UIKit.hbox(8)
 	hh.alignment = BoxContainer.ALIGNMENT_CENTER
 	hh.add_child(Icons.IconRect.new("house", UIKit.TEAL, 22))
-	home_lbl = UIKit.label("0 / 4 home", 19, UIKit.IVORY, true, HORIZONTAL_ALIGNMENT_CENTER)
+	home_lbl = UIKit.label("Home 0/%d" % mc.cfg.runners_needed, 19, UIKit.IVORY, true, HORIZONTAL_ALIGNMENT_CENTER)
 	hh.add_child(home_lbl)
 	hc.add_child(hh)
 	top.add_child(hc)
@@ -81,11 +83,30 @@ func setup(controller: MatchController) -> void:
 	tl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tl.set_meta("anchor", "top_left")
 	root.add_child(tl)
+	# role badge (icon + role) and the series round, e.g. "Round 2 of 3"
+	var badge_row := UIKit.hbox(8)
+	badge_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var badge := UIKit.panel(Color(UIKit.NAVY, 0.7), 999, 10)
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bh0 := UIKit.hbox(6)
+	role_icon = Icons.IconRect.new("whistle" if _my_role() == TC.Role.PATROL else "drop", UIKit.TEAL, 20)
+	bh0.add_child(role_icon)
 	role_lbl = UIKit.label("Runner", 18, UIKit.TEAL, true)
-	tl.add_child(role_lbl)
+	bh0.add_child(role_lbl)
+	badge.add_child(bh0)
+	badge_row.add_child(badge)
+	round_lbl = UIKit.label("", 17, UIKit.IVORY_MUTED, true)
+	round_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var sr: Dictionary = mc.start.get("series", {})
+	if int(sr.get("total", 1)) > 1:
+		round_lbl.text = "Round %d of %d" % [int(sr.get("round", 1)), int(sr.get("total", 1))]
+	elif bool(mc.start.get("practice", false)):
+		round_lbl.text = "Practice"
+	badge_row.add_child(round_lbl)
+	tl.add_child(badge_row)
 	var chips := ObjectiveChips.new()
 	chips.hud = self
-	chips.custom_minimum_size = Vector2(250, 150)
+	chips.custom_minimum_size = Vector2(300, 196 if _my_role() == TC.Role.PATROL else 150)
 	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tl.add_child(chips)
 	target_rows = [chips]
@@ -98,7 +119,6 @@ func setup(controller: MatchController) -> void:
 	minimap = Minimap.new()
 	(minimap as Minimap).hud = self
 	minimap.custom_minimum_size = Vector2(150, 150)
-	minimap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tr.add_child(minimap)
 	pause_btn = UIKit.icon_button("pause", "", 64)
 	pause_btn.focus_mode = Control.FOCUS_NONE
@@ -173,6 +193,12 @@ func setup(controller: MatchController) -> void:
 	_layout()
 
 
+func _my_role() -> int:
+	if mc and mc.roster.has(mc.local_slot):
+		return int(mc.roster[mc.local_slot]["role"])
+	return TC.Role.SPECTATOR
+
+
 func _build_reveal() -> void:
 	for c in reveal.get_children():
 		c.queue_free()
@@ -182,6 +208,9 @@ func _build_reveal() -> void:
 		my_role = int(mc.roster[mc.local_slot]["role"])
 	var is_patrol := my_role == TC.Role.PATROL
 	var title := "YOU'RE ON THE NIGHT WATCH" if is_patrol else ("YOU'RE A RUNNER" if my_role == TC.Role.RUNNER else "SPECTATING")
+	var sr: Dictionary = mc.start.get("series", {})
+	if int(sr.get("total", 1)) > 1:
+		v.add_child(UIKit.label("Round %d of %d" % [int(sr.get("round", 1)), int(sr.get("total", 1))], 20, UIKit.IVORY_MUTED, true, HORIZONTAL_ALIGNMENT_CENTER))
 	var ttl := UIKit.label(title, 40, UIKit.PATROL if is_patrol else UIKit.TEAL, true, HORIZONTAL_ALIGNMENT_CENTER)
 	ttl.add_theme_font_override("font", UIKit.font_w(700))
 	v.add_child(ttl)
@@ -203,7 +232,11 @@ func _build_reveal() -> void:
 	teams.alignment = BoxContainer.ALIGNMENT_CENTER
 	for role in [TC.Role.RUNNER, TC.Role.PATROL]:
 		var col := UIKit.vbox(2)
-		col.add_child(UIKit.label("Runners (6)" if role == TC.Role.RUNNER else "Night Watch (2)", 20, UIKit.TEAL if role == TC.Role.RUNNER else UIKit.PATROL, true))
+		var n := 0
+		for s2 in mc.roster:
+			if int(mc.roster[s2]["role"]) == role:
+				n += 1
+		col.add_child(UIKit.label(("Runners (%d)" if role == TC.Role.RUNNER else "Night Watch (%d)") % n, 20, UIKit.TEAL if role == TC.Role.RUNNER else UIKit.PATROL, true))
 		for s in mc.roster:
 			var e: Dictionary = mc.roster[s]
 			if int(e["role"]) == role:
@@ -266,8 +299,46 @@ func _toggle_pause() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
-		_toggle_pause()
+		if map_view != null:
+			close_map()
+		else:
+			_toggle_pause()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("map") or (map_view != null and event.is_action_pressed("ui_cancel")):
+		if map_view != null:
+			close_map()
+		elif not pause_panel.visible:
+			open_map()
+		get_viewport().set_input_as_handled()
+
+
+var map_view: FullMap
+var _map_refresh := 0.0
+
+
+func open_map() -> void:
+	if map_view != null or pause_panel.visible:
+		return
+	Diag.mark("map_open")
+	if mc.touch:
+		mc.touch.cancel_all()
+		mc.touch.visible = false   # no stray finger moves or turns you under the map
+	Controls.clear_edges()
+	map_view = FullMap.new()
+	map_view.hud = self
+	map_view.build()
+	root.add_child(map_view)
+	map_view.close_btn.grab_focus()
+
+
+func close_map() -> void:
+	if map_view == null:
+		return
+	map_view.queue_free()
+	map_view = null
+	if mc.touch:
+		mc.touch.visible = true
+	Controls.clear_edges()
 
 
 func _layout() -> void:
@@ -414,9 +485,12 @@ func refresh(delta: float) -> void:
 	timer_lbl.text = "%d:%02d" % [int(tl) / 60, int(tl) % 60]
 	timer_lbl.add_theme_color_override("font_color", UIKit.AMBER if tl < 30.0 and phase == TC.Phase.PLAYING else UIKit.IVORY)
 	var fin: int = info.get("finished", 0)
-	home_lbl.text = "%d / %d home" % [fin, mc.cfg.runners_needed]
+	home_lbl.text = "Home %d/%d" % [fin, mc.cfg.runners_needed]
 	role_lbl.text = "Night Watch" if role == TC.Role.PATROL else ("Runner" if role == TC.Role.RUNNER else "Spectating")
 	role_lbl.add_theme_color_override("font_color", UIKit.PATROL if role == TC.Role.PATROL else UIKit.TEAL)
+	if role_icon:
+		role_icon.kind = "whistle" if role == TC.Role.PATROL else ("drop" if role == TC.Role.RUNNER else "eye")
+		role_icon.col = UIKit.PATROL if role == TC.Role.PATROL else UIKit.TEAL
 	var stamps: int = info.get("stamps", 0)
 	var st: int = (info.get("rs", {}) as Dictionary).get("state", 0)
 	banner.visible = false   # V2: the "head back" state lives in the objective chips
@@ -483,6 +557,13 @@ func refresh(delta: float) -> void:
 		if float(emotes[slot]["t"]) <= 0.0:
 			emotes.erase(slot)
 	_update_coach(delta, phase, role)
+	if map_view != null:
+		_map_refresh -= delta
+		if _map_refresh <= 0.0:
+			_map_refresh = 0.5
+			map_view.refresh_team()
+		if phase == TC.Phase.RESULTS or phase == TC.Phase.ENDED:
+			close_map()
 	_place(vs)
 	draw_layer.queue_redraw()
 	minimap.queue_redraw()
@@ -606,6 +687,17 @@ func _update_watch_coach(delta: float) -> void:
 	_coach_flash = maxf(0.0, _coach_flash - delta)
 	coach.modulate = Color(1, 1, 1, 1).lerp(Color(1.4, 1.4, 1.0, 1), _coach_flash)
 	coach.visible = true
+
+
+## Runners not yet home (captured ones are still out).  From the round's
+## roster and the authoritative home count: a guest's snapshot doesn't carry
+## runners it can't see, so their states can't be counted directly.
+func runners_out() -> int:
+	var n := 0
+	for slot in mc.roster:
+		if int(mc.roster[slot]["role"]) == TC.Role.RUNNER:
+			n += 1
+	return maxi(0, n - int(info.get("finished", 0)))
 
 
 func world_to_screen(p: Vector3) -> Vector2:
@@ -746,13 +838,28 @@ class ObjectiveChips:
 				bd = dd
 				best = d
 		if role == TC.Role.RUNNER and stamps == 7:
-			_chip(0, "house", UIKit.AMBER, "Head back to the dorm", _bearing(pos, best["pos"]), bd, false, true)
+			_chip(0, "house", UIKit.AMBER, "Return to the dorm", _bearing(pos, best["pos"]), bd, false, true)
 			return
+		var y0 := 0.0
+		if role == TC.Role.PATROL:
+			# the Night Watch objective: stop the required number getting home
+			_summary(0.0, "Stop %d home · %d out" % [hud.mc.cfg.runners_needed, hud.runners_out()],
+				"%d catch%s" % [hud.mc.my_catches, "" if hud.mc.my_catches == 1 else "es"])
+			y0 = 46.0
 		for i in tg.size():
 			var w: Dictionary = L.waters[int(tg[i])]
 			var done := (stamps & (1 << i)) != 0 and role == TC.Role.RUNNER
 			var c: Vector2 = w["center"]
-			_chip(i * 46.0, w["icon"], w["color"], w["short"], _bearing(pos, c), c.distance_to(Vector2(pos.x, pos.z)), done, false)
+			_chip(y0 + i * 46.0, w["icon"], w["color"], w["short"], _bearing(pos, c), c.distance_to(Vector2(pos.x, pos.z)), done, false)
+
+	func _summary(y: float, text: String, right: String) -> void:
+		var h := 40.0
+		draw_style_box(UIKit.box(Color(UIKit.SLATE, 0.92), 999, 2, UIKit.PATROL), Rect2(0, y, size.x, h))
+		Icons.draw_shape(self, "whistle", Vector2(22, y + h * 0.5), 12, UIKit.PATROL)
+		var f := UIKit.font_w(650)
+		var rw := UIKit.font_w(500).get_string_size(right, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+		draw_string(f, Vector2(42, y + h * 0.5 + 7), text, HORIZONTAL_ALIGNMENT_LEFT, size.x - 60 - rw, 17, UIKit.IVORY)
+		draw_string(UIKit.font_w(500), Vector2(size.x - 14 - rw, y + h * 0.5 + 6), right, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, UIKit.AMBER)
 
 
 class Compass:
@@ -824,65 +931,244 @@ class Minimap:
 	extends Control
 	var hud: MatchHUD
 
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		tooltip_text = "Map"
+
+	## Tap (or click) the minimap: the full map.
+	func _gui_input(e: InputEvent) -> void:
+		if e is InputEventMouseButton and (e as InputEventMouseButton).pressed and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+			accept_event()
+			hud.open_map()
+
 	func _draw() -> void:
+		var s := size
+		var radius := minf(s.x, s.y) * 0.5
+		MapPainter.paint(self, hud, s * 0.5, radius, false)
+
+
+## The campus map, shared by the round minimap and the full map: roads,
+## buildings with a darker roofline, waters (tonight's targets as icons),
+## the dorm, your facing arrow, your team, and - per the information policy
+## - only host-sent cues for opponents: splash markers (Night Watch) and
+## "last seen" positions that fade, never live dots through walls.
+class MapPainter:
+	static func paint(ci: CanvasItem, hud: MatchHUD, c: Vector2, half: float, full: bool) -> void:
 		var info := hud.info
 		var me: Dictionary = info.get("rs", {})
-		var s := size
-		var c := s * 0.5
-		var radius := minf(s.x, s.y) * 0.5
-		draw_circle(c, radius, Color(0.06, 0.09, 0.2, 0.75))
 		var L := hud.mc.layout
 		var b := CampusLayout.BOUNDS
-		var scale := (radius * 2.0 - 10.0) / maxf(b.size.x, b.size.y)
+		if full:
+			ci.draw_style_box(UIKit.box(Color(0.06, 0.09, 0.2, 0.96), 24), Rect2(c - Vector2.ONE * half, Vector2.ONE * half * 2.0))
+		else:
+			ci.draw_circle(c, half, Color(0.06, 0.09, 0.2, 0.78))
+		var scale := (half * 2.0 - (24.0 if full else 10.0)) / maxf(b.size.x, b.size.y)
 		var to_map := func(p: Vector2) -> Vector2:
 			return c + (p - b.get_center()) * scale
+		# lawns as a soft ground tone (full map only)
+		if full:
+			ci.draw_rect(Rect2(to_map.call(b.position), b.size * scale), Color(0.12, 0.22, 0.2, 0.55))
 		for r in L.roads:
 			var pts: PackedVector2Array = r["pts"]
 			for i in pts.size() - 1:
-				draw_line(to_map.call(pts[i]), to_map.call(pts[i + 1]), Color(0.45, 0.5, 0.7, 0.8), 2.5)
+				ci.draw_line(to_map.call(pts[i]), to_map.call(pts[i + 1]), Color(0.45, 0.5, 0.7, 0.85), 4.0 if full else 2.5)
 		for bd in L.buildings:
 			var bp: Vector2 = bd["pos"]
 			var bs: Vector2 = bd["size"]
 			var tl: Vector2 = to_map.call(bp - bs * 0.5)
-			draw_rect(Rect2(tl, bs * scale), Color(0.6, 0.62, 0.8, 0.85))
+			ci.draw_rect(Rect2(tl, bs * scale), Color(0.6, 0.62, 0.8, 0.9))
+			if full:
+				ci.draw_rect(Rect2(tl, bs * scale), Color(0.3, 0.32, 0.5, 0.9), false, 2.0)
 		var tg: Array = info.get("targets", [])
 		var stamps: int = info.get("stamps", 0)
 		var role: int = info.get("role", 0)
+		var f := UIKit.font_w(600)
 		for i in L.waters.size():
 			var w: Dictionary = L.waters[i]
 			var wp: Vector2 = to_map.call(w["center"])
 			var ti := tg.find(i)
 			if ti >= 0:
 				var done := (stamps & (1 << ti)) != 0 and role == TC.Role.RUNNER
-				Icons.draw_shape(self, w["icon"], wp, 9, (w["color"] as Color).darkened(0.5) if done else w["color"])
+				Icons.draw_shape(ci, w["icon"], wp, 16 if full else 9, (w["color"] as Color).darkened(0.5) if done else w["color"])
+				if full:
+					ci.draw_string(f, wp + Vector2(-60, 32), String(w["short"]) + (" ✓" if done else ""), HORIZONTAL_ALIGNMENT_CENTER, 120, 17, Color(UIKit.IVORY, 0.9))
 			else:
-				draw_circle(wp, 3.5, Color(0.4, 0.6, 0.9, 0.7))
-		Icons.draw_shape(self, "house", to_map.call(Vector2(0, 112)), 8, Color(1.0, 0.9, 0.55))
-		# teammates (same role only) and own arrow
+				ci.draw_circle(wp, 6.0 if full else 3.5, Color(0.4, 0.6, 0.9, 0.7))
+		var dorm := Vector2(0, 112)
+		if not L.dorm_doors.is_empty():
+			var sum := Vector2.ZERO
+			for d in L.dorm_doors:
+				sum += d["pos"]
+			dorm = sum / float(L.dorm_doors.size())
+		Icons.draw_shape(ci, "house", to_map.call(dorm), 15 if full else 8, Color(1.0, 0.9, 0.55))
+		# your team (same role, openly shown)
 		var my_role := role
 		for slot in hud.mc.roster:
-			if int(slot) == hud.mc.local_slot:
-				continue
-			if int(hud.mc.roster[slot]["role"]) != my_role:
+			if int(slot) == hud.mc.local_slot or int(hud.mc.roster[slot]["role"]) != my_role:
 				continue
 			var rs := hud.mc._player_rs(int(slot))
 			if rs.has("pos") and int(rs.get("state", 0)) != TC.PState.FINISHED:
 				var pp: Vector3 = rs["pos"]
-				draw_circle(to_map.call(Vector2(pp.x, pp.z)), 3.5, UIKit.PATROL if my_role == TC.Role.PATROL else UIKit.RUNNER)
+				var mp: Vector2 = to_map.call(Vector2(pp.x, pp.z))
+				var tc := UIKit.PATROL if my_role == TC.Role.PATROL else UIKit.RUNNER
+				ci.draw_circle(mp, 7.0 if full else 3.5, tc)
+				if full:
+					ci.draw_string(f, mp + Vector2(10, 6), String(hud.mc.roster[slot]["name"]), HORIZONTAL_ALIGNMENT_LEFT, 140, 15, Color(UIKit.IVORY, 0.85))
 		if my_role == TC.Role.PATROL:
 			for i in hud.mc.cart_views.size():
 				var crs := hud.mc._cart_rs(i)
 				if crs.has("pos"):
 					var cp: Vector3 = crs["pos"]
-					Icons.draw_shape(self, "cart", to_map.call(Vector2(cp.x, cp.z)), 6, UIKit.PATROL)
+					Icons.draw_shape(ci, "cart", to_map.call(Vector2(cp.x, cp.z)), 11 if full else 6, UIKit.PATROL)
 			for m in info.get("markers", []):
 				var w2: Dictionary = L.waters[int(m["water"])]
-				draw_arc(to_map.call(w2["center"]), 10.0 + 3.0 * sin(hud._t * 10.0), 0, TAU, 16, Color(1, 1, 1), 2.0)
+				ci.draw_arc(to_map.call(w2["center"]), (20.0 if full else 10.0) + 3.0 * sin(hud._t * 10.0), 0, TAU, 20, Color(1, 1, 1), 2.0)
+		# opponents: last seen only (fading; labelled with the age on the full map)
+		var now := Time.get_ticks_msec()
+		var opp := UIKit.RUNNER if my_role == TC.Role.PATROL else UIKit.PATROL
+		for slot in hud.mc.last_seen:
+			var ls: Dictionary = hud.mc.last_seen[slot]
+			var age := float(now - int(ls["ms"])) / 1000.0
+			var a := clampf(1.0 - age / MatchController.LAST_SEEN_TTL_S, 0.0, 1.0)
+			var lp: Vector3 = ls["pos"]
+			var sp: Vector2 = to_map.call(Vector2(lp.x, lp.z))
+			var r := 7.0 if full else 4.0
+			if bool(ls.get("live", false)):
+				ci.draw_circle(sp, r, Color(opp, 0.95))
+			else:
+				ci.draw_arc(sp, r, 0, TAU, 16, Color(opp, 0.25 + 0.6 * a), 2.0)
+				if full:
+					ci.draw_string(f, sp + Vector2(10, 5), "seen %ds ago" % int(age), HORIZONTAL_ALIGNMENT_LEFT, 140, 14, Color(opp, 0.4 + 0.5 * a))
 		if me.has("pos"):
-			var mp: Vector3 = me["pos"]
-			var mpos: Vector2 = to_map.call(Vector2(mp.x, mp.z))
+			var mp2: Vector3 = me["pos"]
+			var mpos: Vector2 = to_map.call(Vector2(mp2.x, mp2.z))
 			var yaw: float = me.get("yaw", 0.0)
-			var f := Vector2(-sin(yaw), -cos(yaw))
-			var sd := Vector2(-f.y, f.x)
-			draw_colored_polygon(PackedVector2Array([mpos + f * 9.0, mpos - f * 5.0 + sd * 5.0, mpos - f * 5.0 - sd * 5.0]), Color(1, 1, 1))
-		draw_arc(c, radius - 1.0, 0, TAU, 48, Color(1, 1, 1, 0.35), 2.0)
+			var fw := Vector2(-sin(yaw), -cos(yaw))
+			var sd := Vector2(-fw.y, fw.x)
+			var k := 1.8 if full else 1.0
+			ci.draw_colored_polygon(PackedVector2Array([mpos + fw * 9.0 * k, mpos - fw * 5.0 * k + sd * 5.0 * k, mpos - fw * 5.0 * k - sd * 5.0 * k]), Color(1, 1, 1))
+			if hud.mc.camera:
+				# the camera's view direction, faint
+				var cy := hud.mc.camera.yaw
+				var vf := Vector2(-sin(cy), -cos(cy))
+				ci.draw_line(mpos, mpos + vf * (28.0 if full else 14.0), Color(1, 1, 1, 0.35), 2.0)
+		if not full:
+			ci.draw_arc(c, half - 1.0, 0, TAU, 48, Color(1, 1, 1, 0.35), 2.0)
+
+
+## The full map: tap the minimap or press Map; Close (or Back / Map again).
+## It shows the same information as the minimap, larger, with a legend and
+## your team.  The round keeps running; touch controls are set aside while
+## it is open so a finger can't move or turn you underneath it.
+class FullMap:
+	extends Control
+	var hud: MatchHUD
+	var canvas: Control
+	var team_box: VBoxContainer
+	var close_btn: Button
+
+	func build() -> void:
+		set_anchors_preset(Control.PRESET_FULL_RECT)
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		var dim := ColorRect.new()
+		dim.color = Color(UIKit.NAVY, 0.82)
+		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(dim)
+		canvas = MapCanvas.new()
+		(canvas as MapCanvas).hud = hud
+		canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(canvas)
+		var side := UIKit.panel(Color(UIKit.SLATE, 0.96), UIKit.R_PANEL, 18)
+		side.name = "Side"
+		var v := UIKit.vbox(10)
+		var head := UIKit.hbox(10)
+		var title := UIKit.heading("Campus map", 30)
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		head.add_child(title)
+		close_btn = UIKit.secondary("Close", Vector2(140, 64), 22)
+		close_btn.pressed.connect(func() -> void: hud.close_map())
+		head.add_child(close_btn)
+		v.add_child(head)
+		var legend := UIKit.vbox(4)
+		var role := int(hud.info.get("role", 0))
+		var rows := [["You (arrow) and where your camera looks", UIKit.IVORY], ["Your team", UIKit.PATROL if role == TC.Role.PATROL else UIKit.RUNNER],
+			["Tonight's splash spots (icons) · other waters (dots)", UIKit.TEAL], ["The dorm: home", Color(1.0, 0.9, 0.55)],
+			["Opponents you saw: solid while in sight, a fading ring up to %d s after" % int(MatchController.LAST_SEEN_TTL_S), UIKit.RUNNER if role == TC.Role.PATROL else UIKit.PATROL]]
+		if role == TC.Role.PATROL:
+			rows.append(["Carts · a white ring: a splash just happened there", UIKit.PATROL])
+		for r in rows:
+			var l := UIKit.label("●  " + String(r[0]), 17, r[1])
+			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			l.custom_minimum_size = Vector2(380, 0)
+			legend.add_child(l)
+		v.add_child(legend)
+		v.add_child(UIKit.label("Your team", 22, UIKit.IVORY, true))
+		team_box = UIKit.vbox(4)
+		v.add_child(team_box)
+		side.add_child(v)
+		add_child(side)
+		refresh_team()
+
+	func refresh_team() -> void:
+		for c in team_box.get_children():
+			c.queue_free()
+		var mc := hud.mc
+		var role := int(hud.info.get("role", 0))
+		for slot in mc.roster:
+			var e: Dictionary = mc.roster[slot]
+			if int(e["role"]) != role:
+				continue
+			var rs := mc._player_rs(int(slot))
+			var st := int(rs.get("state", TC.PState.ACTIVE))
+			var what := "Running"
+			if role == TC.Role.PATROL:
+				what = "Driving" if st == TC.PState.IN_CART or st == TC.PState.ENTERING else "On foot"
+			match st:
+				TC.PState.CAPTURED: what = "Caught · back soon"
+				TC.PState.FINISHED: what = "Home"
+				TC.PState.SPLASHING: what = "Splashing"
+			if not bool(rs.get("connected", true)):
+				what = "Away"
+			if role == TC.Role.RUNNER and st != TC.PState.FINISHED:
+				what += " · %d/3" % _bits(int(rs.get("stamps", 0)))
+			var row := UIKit.hbox(8)
+			row.add_child(Icons.IconRect.new("house" if st == TC.PState.FINISHED else ("whistle" if role == TC.Role.PATROL else "drop"), UIKit.PATROL if role == TC.Role.PATROL else UIKit.TEAL, 20))
+			var name := String(e["name"]) + ("  (you)" if int(slot) == mc.local_slot else "") + ("  · bot" if bool(e["is_bot"]) else "")
+			var nl := UIKit.label(name, 18, UIKit.IVORY, true)
+			nl.custom_minimum_size = Vector2(190, 0)
+			nl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			nl.clip_text = true
+			row.add_child(nl)
+			row.add_child(UIKit.label(what, 17, UIKit.IVORY_MUTED))
+			team_box.add_child(row)
+		var fin := int(hud.info.get("finished", 0))
+		team_box.add_child(UIKit.label("Home %d/%d · %d runners still out" % [fin, mc.cfg.runners_needed, hud.runners_out()], 18, UIKit.AMBER, true))
+
+	static func _bits(v: int) -> int:
+		var n := 0
+		for i in 3:
+			if v & (1 << i):
+				n += 1
+		return n
+
+	func _process(_d: float) -> void:
+		var vs := size
+		var safe := UIKit.safe_margins(get_viewport())
+		var side := get_node("Side") as Control
+		var sw := side.get_combined_minimum_size()
+		side.position = Vector2(vs.x - safe.size.x - 16 - sw.x, safe.position.y + 16)
+		side.size = Vector2(sw.x, minf(sw.y, vs.y - safe.position.y - safe.size.y - 32))
+		var avail := Rect2(safe.position.x + 16, safe.position.y + 16, side.position.x - safe.position.x - 32, vs.y - safe.position.y - safe.size.y - 32)
+		var half := minf(avail.size.x, avail.size.y) * 0.5
+		canvas.position = avail.get_center() - Vector2.ONE * half
+		canvas.size = Vector2.ONE * half * 2.0
+		canvas.queue_redraw()
+
+
+class MapCanvas:
+	extends Control
+	var hud: MatchHUD
+
+	func _draw() -> void:
+		MapPainter.paint(self, hud, size * 0.5, minf(size.x, size.y) * 0.5, true)

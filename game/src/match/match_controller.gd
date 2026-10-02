@@ -949,6 +949,7 @@ func _process(delta: float) -> void:
 			cart_views[i].apply_state(crs2, delta)
 	_update_beacons(delta)
 	_update_aim_ring()
+	_scan_seen(delta)
 	_update_pickups()
 	_update_camera(delta)
 	if hud:
@@ -1180,6 +1181,51 @@ func _build_beacons() -> void:
 		beacons[int(wi)] = mi
 		if water_nodes.has(w["id"]):
 			(water_nodes[w["id"]]["mat"] as ShaderMaterial).set_shader_parameter("active", 1.0)
+
+
+## Opponents this player has actually seen - in view range and line of
+## sight from their own head - and when.  The map shows them as "last seen"
+## markers that fade and expire after LAST_SEEN_TTL_S; losing sight stops
+## the tracking.  (Presentation only: see docs/V4_NOTES.md for what the
+## network actually carries.)
+const LAST_SEEN_TTL_S := 5.0
+var last_seen: Dictionary = {}   # slot -> {"pos": Vector3, "ms": int, "live": bool}
+var _seen_scan_t := 0.0
+
+
+func _scan_seen(delta: float) -> void:
+	_seen_scan_t -= delta
+	if _seen_scan_t > 0.0:
+		return
+	_seen_scan_t = 0.2
+	var now := Time.get_ticks_msec()
+	for k in last_seen.keys():
+		last_seen[k]["live"] = false
+		if now - int(last_seen[k]["ms"]) > int(LAST_SEEN_TTL_S * 1000.0):
+			last_seen.erase(k)
+	if spectator or not roster.has(local_slot):
+		return
+	var my_role := int(roster[local_slot]["role"])
+	var me := _player_rs(local_slot)
+	if not me.has("pos"):
+		return
+	var eye: Vector3 = (me["pos"] as Vector3) + Vector3(0, 1.5, 0)
+	var space := get_world_3d().direct_space_state
+	for slot in roster:
+		if int(roster[slot]["role"]) == my_role:
+			continue
+		var rs := _player_rs(int(slot))
+		if not rs.has("pos"):
+			continue
+		var st := int(rs.get("state", 0))
+		if st == TC.PState.FINISHED or st == TC.PState.CAPTURED or not bool(rs.get("visible", true)):
+			continue
+		var p: Vector3 = (rs["pos"] as Vector3) + Vector3(0, 1.0, 0)
+		if eye.distance_to(p) > cfg.view_range_m:
+			continue
+		var q := PhysicsRayQueryParameters3D.create(eye, p, TC.L_WORLD)
+		if space.intersect_ray(q).is_empty():
+			last_seen[int(slot)] = {"pos": rs["pos"], "ms": now, "live": true}
 
 
 var _aim_ring: MeshInstance3D
