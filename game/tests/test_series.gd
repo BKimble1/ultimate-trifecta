@@ -302,3 +302,46 @@ func test_reward_eligibility_and_dedup() -> void:
 	var fixed := ns._fix_results(JSON.parse_string(JSON.stringify(res)))
 	ns.free()
 	t.eq(float(fixed.get("round_time", 0.0)), 180.0, "guests' results keep the round length")
+
+
+func _practice_start(pref: String, seed_v: int, tutorial: bool = false) -> Dictionary:
+	var s := NetSession.new()
+	t.add_child(s)
+	s.start_offline("u-prac", "Tester", {}, pref, tutorial)
+	var info := {}
+	var grab := func(i: Dictionary) -> void: info.merge(i, true)
+	s.match_starting.connect(grab, CONNECT_ONE_SHOT)
+	s.host_start_match(seed_v)
+	var mine := -1
+	var watch := 0
+	for e in info.get("roster", []):
+		if int(e["role"]) == TC.Role.PATROL:
+			watch += 1
+		if String(e["uid"]) == "u-prac":
+			mine = int(e["role"])
+	s.queue_free()
+	return {"mine": mine, "watch": watch, "n": (info.get("roster", []) as Array).size(), "settings": info.get("settings", {}),
+		"practice": bool(info.get("practice", false))}
+
+
+## Solo practice: the player picks Runner, Night Watch or Random; bots fill
+## the other seats and the Night Watch count stays the round's setting.
+func test_offline_practice_role_choice() -> void:
+	for seed_v in [11, 12, 13]:
+		var r := _practice_start("runner", seed_v)
+		t.eq(r["mine"], TC.Role.RUNNER, "Runner chosen -> runner (seed %d)" % seed_v)
+		t.eq(r["watch"], int(r["settings"]["watch"]), "bots fill the Night Watch seats")
+		t.eq(r["n"], PartySeries.SLOTS, "a full roster of %d" % PartySeries.SLOTS)
+		t.check(r["practice"], "marked as practice")
+		var w := _practice_start("patrol", seed_v)
+		t.eq(w["mine"], TC.Role.PATROL, "Night Watch chosen -> Night Watch (seed %d)" % seed_v)
+		t.eq(w["watch"], int(w["settings"]["watch"]), "still the set number of Night Watch, you included")
+	var seen := {}
+	for seed_v in range(1, 41):
+		var x := _practice_start("random", seed_v)
+		seen[x["mine"]] = true
+		t.eq(x["watch"], int(x["settings"]["watch"]), "Random keeps the Night Watch count (seed %d)" % seed_v)
+	t.check(seen.has(TC.Role.RUNNER) and seen.has(TC.Role.PATROL), "Random gives both roles over 40 rounds")
+	var tr := _practice_start("patrol", 5, true)
+	t.eq(tr["mine"], TC.Role.PATROL, "Night Watch training: you watch")
+	t.eq(tr["watch"], 1, "Night Watch training: you are the only watcher")

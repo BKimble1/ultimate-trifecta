@@ -53,8 +53,13 @@ func _reach(start: Control) -> Dictionary:
 	return seen
 
 
-func _check_screen(cls: GDScript, label: String) -> void:
-	var s := await _open(cls)
+func _check_screen(cls: GDScript, label: String, prepared: Screen = null) -> void:
+	var s: Screen = prepared
+	if s == null:
+		s = await _open(cls)
+	else:
+		App._ensure_background()
+		App._show(s)
 	for i in 30:
 		await t.get_tree().process_frame
 	for sc in s.find_children("*", "ScrollContainer", true, false):
@@ -145,3 +150,66 @@ func test_dialogs_trap_focus_close_on_back_and_restore_focus() -> void:
 	t.check(App.screen == s, "and stays on the screen")
 	t.eq(_focused(), opener, "focus returns to the button that opened it")
 	await _close()
+
+
+## V4 screens: the touch layout editor, and round results (practice, and the
+## final results of a friend series as its host), with a controller.
+func test_v4_screens_and_results_are_navigable() -> void:
+	var root: Window = t.get_tree().root
+	var saved_size: Vector2i = root.size
+	root.size = Vector2i(2532, 1170)
+	await t.get_tree().process_frame
+	_saved_device = Controls.device
+	Controls.device = "gamepad"
+	Save.data["onboarded"] = true
+	await _check_screen(TouchLayoutEditor, "Edit layout")
+	var me := Save.player_uid()
+	var rows := [
+		{"slot": 0, "uid": me, "name": "Tester", "is_bot": false, "role": TC.Role.RUNNER, "stamps": 3, "finished": true,
+			"finish_order": 1, "finish_time": 120.0, "present": true, "away_s": 0.0},
+		{"slot": 1, "uid": "f1", "name": "Pip", "is_bot": false, "role": TC.Role.PATROL, "captures": 2, "unique_captures": 2,
+			"present": true, "away_s": 0.0},
+		{"slot": 2, "uid": "bot-2", "name": "Snooze", "is_bot": true, "role": TC.Role.RUNNER, "stamps": 3, "finished": true,
+			"present": true, "away_s": 0.0},
+	]
+	var res := {"match_id": "focus-r1", "outcome": TC.Outcome.RUNNERS_WIN, "players": rows, "finished": 4, "needed": 4,
+		"round_time": 150.0, "practice": true}
+	var reward := {"coins": 20, "xp": 10, "lines": [["Played the round", 20]]}
+	# practice results
+	var off := NetSession.new()
+	t.add_child(off)
+	off.start_offline(me, "Tester", {}, "runner")
+	var r1 := ResultsScreen.new()
+	r1.results = res.duplicate(true)
+	r1.reward = reward
+	r1.session = off
+	await _check_screen(ResultsScreen, "Results (practice)", r1)
+	off.queue_free()
+	# the last round of a friend series, as its host
+	var ps := PartySeries.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	ps.start({"watch": 2, "rounds": 3}, rng)
+	for k in 3:
+		var rk: Dictionary = res.duplicate(true)
+		rk["match_id"] = "focus-s%d" % k
+		rk["outcome"] = TC.Outcome.PATROL_WIN if k == 1 else TC.Outcome.RUNNERS_WIN
+		ps.record_round(rk)
+	var host := NetSession.new()
+	host.mode = NetSession.Mode.HOST
+	host.local_slot = 0
+	host.series_view = ps.to_dict()
+	t.add_child(host)
+	var r2 := ResultsScreen.new()
+	var fin: Dictionary = res.duplicate(true)
+	fin["practice"] = false
+	fin["series"] = ps.to_dict()
+	fin["round_index"] = 3
+	fin["rounds_total"] = 3
+	r2.results = fin
+	r2.reward = reward
+	r2.session = host
+	await _check_screen(ResultsScreen, "Results (series final, host)", r2)
+	host.queue_free()
+	Controls.device = _saved_device
+	root.size = saved_size

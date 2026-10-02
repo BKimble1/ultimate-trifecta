@@ -1,6 +1,6 @@
 # TestFlight release: Ultimate Trifecta
 
-Current version: **1.2 (V3)**. It uses the same app, bundle ID, Game Center capability and lane as 1.0 and 1.1. V3 adds a small native share-sheet framework (UTShare, built from source in CI) and the optional game service (`service/`), which is not deployed.
+Current version: **1.3 (V4)**. It uses the same app, bundle ID, Game Center capability, internal group and lane as 1.0–1.2, including the signed-archive fix from `e39c98c`. V4 adds no new frameworks, permissions, network services or data collection. Its opt-in diagnostics stay on the phone unless the player shares a summary through the existing share sheet. V3 added the UTShare share-sheet framework and the optional game service (`service/`), which is still not deployed.
 
 ## App identity
 
@@ -9,7 +9,7 @@ Current version: **1.2 (V3)**. It uses the same app, bundle ID, Game Center capa
 | App name | Ultimate Trifecta |
 | App icon | The owner's "Pajama Dash" artwork (`Ultimate Trifecta_ Pajama Dash.png`), as `game/assets/icon/icon.png` at 1024×1024, opaque. Godot's export generates every other icon size from it. |
 | Bundle ID | `com.idlery.ultimatetrifecta`. It is registered on your team: the App Store Connect app record below uses it. |
-| Marketing version | `1.2` for V3 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot` and the export preset). V2 was `1.1`, V1 `1.0`. |
+| Marketing version | `1.3` for V4 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot`, the export preset and `tools/export_ios.sh`). V3 was `1.2`, V2 `1.1`, V1 `1.0`. |
 | Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`), so it always increases past anything already uploaded; without it, the GitHub run number (V1's last unsigned build was 10; V2's are 12 and up). It can be overridden with the `build_number` workflow input. |
 | Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape left/right. Godot also adds `UIRequiredDeviceCapabilities` `iphone-ipad-minimum-performance-a12`, which means A12 (iPhone XS/XR) or newer. All verified in the CI archive's Info.plist. |
 | Capabilities | Game Center (`com.apple.developer.game-center`) |
@@ -67,16 +67,18 @@ For later uploads, run "Build, test and ship (iOS)" with **upload** ticked. The 
 | Xcode project export (team, version and build stamped into a temporary preset copy) | `tools/export_ios.sh` |
 | Signed App Store archive and export/upload | `tools/build_ios.sh signed`: `xcodebuild archive` with `-allowProvisioningUpdates` and API-key auth, then `-exportArchive` with `method=app-store-connect`, `destination=upload` |
 | Bundle ID registration, app check, build numbers, processing wait, internal groups, TestFlight state | `tools/asc.py` (ES256 JWT; never prints the key). Adding a build to an internal group reports Apple's answer; groups set to receive every build are left alone. |
-| Read-only status check | Run the workflow with **asc_status** ticked: it prints the app record, recent builds with their processing state, and each build's internal/external TestFlight state. It builds and uploads nothing. |
+| TestFlight "What to Test" (V4) | After processing, `tools/asc.py whats-new BUILD_ID docs/testflight/what_to_test.txt` sets the build's en-US beta notes (App Store Connect beta build localization) for the internal testers. |
+| Launch audit (V4) | Before the Simulator run, the lane lists the app's launch files and any text file naming Idlery, and counts "powered by" strings in the game data. It then captures six launch frames. The build facts in the log print the audit and a small sheet of those frames. |
+| Read-only status check | Run the workflow with **asc_status** ticked: it prints the app record, recent builds with their processing state, and each build's internal/external TestFlight state and What to Test text. It builds and uploads nothing. |
 
 The same steps run locally on a Mac with Xcode 26:
 
 ```sh
 export APPLE_TEAM_ID=… ASC_KEY_ID=… ASC_ISSUER_ID=… ASC_KEY_PATH=~/keys/AuthKey_….p8
-export BUILD_NUMBER=$(python3 tools/asc.py next-build) MARKETING_VERSION=1.2
+export BUILD_NUMBER=$(python3 tools/asc.py next-build) MARKETING_VERSION=1.3
 tools/fetch_godot.sh --templates && tools/fetch_deps.sh && tools/export_ios.sh
 EXPORT_DESTINATION=upload INTERNAL_ONLY=true tools/build_ios.sh signed
-python3 tools/asc.py wait 1.2 "$BUILD_NUMBER" 2400
+python3 tools/asc.py wait 1.3 "$BUILD_NUMBER" 2400
 ```
 
 ## Compliance and privacy answers
@@ -98,6 +100,7 @@ These answers are based on what the build actually contains; please confirm them
   - With the service off (as shipped): no developer server, analytics, ads or crash reporting.
   - With the service deployed: user ID, name, gameplay content (the runner's look) and reports, linked to the player, for app functionality only, never tracking. `tools/export_ios.sh` then declares these in the privacy manifest automatically.
   - Game Center identity (player ID and display name) is used on-device and shared with the other players in your room through Game Center.
+  - Diagnostics (V4): only when the player turns them on in Settings › Diagnostics (beta). They are held in memory, never written to disk or sent to a server. They leave the phone only if the player taps Share summary, which opens the iOS share sheet with plain text that has no names, party codes or Game Center IDs. This adds no collected data type.
   - Settings, stats and cosmetics are stored on the device. Settings › Profile › **Delete Game Profile** erases them, and the online profile too when the service is on.
   - You make the final declaration.
 - **Content.** Cartoon chase with no violence, nudity, gambling or purchases. Player names are user-generated; they are checked by the service when it is deployed, and every player card has Report and Block. There is no chat, only preset emotes.
@@ -119,7 +122,21 @@ These answers are based on what the build actually contains; please confirm them
 
 > Ultimate Trifecta is a playful 3 a.m. campus chase. Runners splash into three marked waters around a fictional campus and race back to the dorm; the Night Watch hunts them on foot and in golf carts. Get four runners home before the 4-minute clock runs out — or, as the Night Watch, stop them. Create your runner, play solo with bots, or start a private party with friends through Game Center.
 
-**What to Test (1.2)**
+**What to Test (1.3)**. The lane sets this text on the build from `docs/testflight/what_to_test.txt`:
+
+> 1.3 internal beta (V4: phone polish after the first iPhone playtest). Please try, and tell us your iPhone model:
+>
+> - Buttons: are Jump/Dive, Tag, Gas, Brake and Exit comfortable for your thumbs? Can you tap Pause and the minimap? Settings > Controls > Edit layout lets you move, resize and mirror them; "Try it" previews.
+> - Lobby: Emote (Dance, Wave, Ha!...) and Try moves should play every time, on your runner and for friends.
+> - Loading: from the app icon and between rounds. Any frozen screen, logo or text that isn't the game's own?
+> - Outdoors: trees, buildings, lamps and the six waters. Any spot that still looks blocky, or any stutter?
+> - Night Watch: chase and tag runners. Tag glows and a ring appears under a runner when a press would land. Too hard, too easy? Practice has a short "Night Watch training".
+> - Getting caught as a runner: "Caught by..., back in 6", your splashes kept, then a short "Protected".
+> - With friends: the host picks 1/2/3 Night Watch and 1/3/5 rounds. Roles are random each round. Play a 3-round series: round results, Ready for the next round, final standings.
+> - Heat and battery: after 10-15 minutes, is the phone hot? Does it slow down?
+> - Optional: Settings > Diagnostics (beta) > turn on, play a few rounds, then Share summary and send it to the developer. It has no names, codes or Game Center IDs.
+
+**What to Test (1.2)**, kept for reference:
 
 > 1.2 private beta (V3: new character look and animation, Create Your Runner, parties with codes, controller support). Please try:
 > - First launch: Create Your Runner, then pick a name. Later: Settings › Profile (Change name, Edit runner, Blocked players, Delete Game Profile).
