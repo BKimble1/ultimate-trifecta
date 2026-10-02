@@ -1219,7 +1219,7 @@ func _present_event(ev: Dictionary) -> void:
 				hud.toast("Back on campus", Color(0.8, 0.9, 1.0))
 		TC.Ev.EMOTE:
 			var who: Dictionary = roster.get(a, {})
-			if not session.muted.has(String(who.get("uid", ""))):
+			if not SocialSafety.is_hidden(session, String(who.get("uid", "")), String(who.get("pid", ""))):   # (V6: blocked too)
 				hud.emote_bubble(a, int(ev["v"]))
 				Sfx.play("pop")
 		TC.Ev.PLAYER_BOT_TAKEOVER:

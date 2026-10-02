@@ -847,7 +847,7 @@ func _on_events(evs: Array) -> void:
 		if a < 0 or a >= 8 or session.roster[a] == null:
 			continue
 		var who: Dictionary = session.roster[a]
-		if session.muted.has(String(who.get("uid", ""))):
+		if SocialSafety.is_hidden(session, String(who.get("uid", "")), String(who.get("pid", ""))):   # muted or blocked
 			continue
 		var now := Time.get_ticks_msec() / 1000.0
 		if a == session.local_slot and not session.is_host() and int(ev["v"]) == int(_predicted["id"]) and now - float(_predicted["t"]) < 2.0:

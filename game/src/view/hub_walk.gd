@@ -171,6 +171,11 @@ func _process(delta: float) -> void:
 			_draw(k, p, float(s["yaw"]), vel)
 		elif stage.free_roam.has(k) and not _returning.has(k):
 			_returning[k] = true
+	# someone who left the party leaves no trace
+	for k in stage.free_roam.keys():
+		if not stage.chars.has(k):
+			stage.free_roam.erase(k)
+			_last.erase(k)
 	# strolling back to the mark
 	for k in _returning.keys():
 		var v: CharacterView = stage.chars.get(k)
