@@ -21,9 +21,10 @@ test('character rules: length, characters, spacing, letters, long numbers', () =
 
 test('rejects slurs, sexual content, profanity, threats, impersonation and contact info, including disguised spellings', () => {
   const rejected = {
-    slur: [b('TjFHR0E='), b('bmlnZ2VyIGJveQ=='), b('Tmlnz2Vy').replace(/[^a-z]/gi, 'g'), b('ZmFnIGZhbg=='), b('UjN0NHJk'), b('a2lrZQ==') + 'man'],
-    sexual: ['Big D1ck', 'P0rnStar', 'sexy_time', 'ass', 'Nude Beach'],
+    slur: [b('Q29vb29vbg=='), b('TjFHR0E='), b('bmlnZ2VyIGJveQ=='), b('Tmlnz2Vy').replace(/[^a-z]/gi, 'g'), b('ZmFnIGZhbg=='), b('UjN0NHJk'), b('a2lrZQ==') + 'man'],
+    sexual: ['Big D1ck', 'P0rnStar', 'sexy_time', 'ass', 'Nude Beach', b('Qm9vb29i')],
     profanity: ['FuuuckYou', 'f_u_c_k', 'Sh1tHead', 'xX_B1tch_Xx', 'twat'],
+    // (V6) stretched letters still match a term matched as spelled
     threat: ['KYS', 'Kill Bill', 'killyou', 'Hitler', 'shoot up'],
     impersonation: ['Admin', 'm0d', 'B0t', 'Trifecta Staff', 'Official Team', 'GameCenter'],
     contact: ['discord gg', 'insta me', 'www site', 'site com', 'snapchat me', 'Add Me Now'],
@@ -44,7 +45,11 @@ test('false positives: ordinary names that contain blocked letters are allowed',
     'grape juice', 'Drape Cat', 'Skyscraper', 'Raccoon', 'Cocoon', 'Tycoon', 'Sussex Lad', 'Essex Owl', 'Arsenal FC',
     'Badminton Pro', 'Cassandra', 'Torpedo', 'Speedo', 'Pistachio', 'Mississippi', 'Shiitake', 'Titanic', 'Japan Fan',
     'Nigel Otter', 'Snoozy Gecko', 'Splash Bomb', 'Hello Kitty', 'Swatch', 'Watchful Owl', 'Therapist', 'Button Nose',
-    'Cucumber', 'Document', 'Spicy Taco', 'Knight Rider', 'Pakistan Fan', 'Sleepy Otter 42', 'Moonlit Koala', 'Comfy Frog 11'];
+    'Cucumber', 'Document', 'Spicy Taco', 'Knight Rider', 'Pakistan Fan', 'Sleepy Otter 42', 'Moonlit Koala', 'Comfy Frog 11',
+    // V6: rejected by the V5 rule (a collapsed term became a common fragment,
+    // or a number was read as leetspeak)
+    'Bob Builder', 'Iconic Otter', 'Second Wind', 'Contact Lens', 'Bacon Bits', 'Otter 99', 'Frog 10', 'Cocky Kid', 'Thorny Rose',
+    'Entity', 'Blue Skys', 'Raccoon 99', 'Tycoon 10'];
   for (const n of fine) assert.equal(moderate(n).ok, true, `"${n}" should be allowed (got ${moderate(n).reason})`);
 });
 

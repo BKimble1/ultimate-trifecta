@@ -59,14 +59,16 @@ static func generated_name(rng: RandomNumberGenerator) -> String:
 ## Names saved by older versions that don't fit today's rules (V1/V2 could
 ## generate 17-character names) are kept as close as possible: the number is
 ## dropped, else a new name is generated.  Never shown as "Player".
+## (V6) The whole name policy applies, not only the shape: a saved name the
+## policy rejects is replaced by a generated one.
 static func fit_name(n: String) -> String:
 	var name := NameRules.normalize(n)
-	if NameRules.shape_error(name) == "":
+	if bool(NameRules.moderate(name, [], false)["ok"]):
 		return name
 	var parts := name.split(" ")
 	if parts.size() > 1 and parts[-1].is_valid_int():
 		var short := " ".join(parts.slice(0, parts.size() - 1))
-		if NameRules.shape_error(short) == "":
+		if bool(NameRules.moderate(short, [], false)["ok"]):
 			return short
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(n)
@@ -213,6 +215,22 @@ func player_name() -> String:
 	if n != null and String(n) != "":
 		return String(n)
 	return NameRules.safe_display(String(data["name"]))
+
+
+## The name other players see in a party (V6).  The service-approved name
+## when there is one.  Without the moderation service a typed name can't be
+## checked against the full policy with reports and review behind it, so
+## shared play uses a curated name instead: the saved name when it is one of
+## the game's curated names ("Sleepy Otter 42"), else a stable generated one.
+func party_name() -> String:
+	var cp: Dictionary = data.get("cloud_profile", {})
+	var n: Variant = cp.get("display_name")
+	if n != null and String(n) != "" and Cloud.configured():
+		return String(n)
+	var mine := String(data["name"])
+	if NameRules.is_curated(mine):
+		return mine
+	return NameRules.generated(String(data["uid"]))
 
 
 func player_uid() -> String:
