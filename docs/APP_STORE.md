@@ -1,0 +1,161 @@
+# App Store submission package (prepared, not submitted)
+
+This pass does not include a public App Store submission. The material
+below is ready for the owner to review and paste into App Store Connect.
+Every statement describes what the build actually does.
+
+Items only the owner can supply are marked **owner**. Nothing here invents
+a contact address, URL or policy promise.
+
+## Identity
+
+| Field | Value |
+|---|---|
+| Name | Ultimate Trifecta |
+| Subtitle (≤30) | Splash three. Race home. |
+| Bundle ID | `com.idlery.ultimatetrifecta` |
+| Version | 1.2 (V3). The build number comes from App Store Connect (highest + 1). |
+| Primary category | Games › Action. Secondary: Games › Family. |
+| Platforms | iPhone and iPad, iOS 17+, landscape. A12 or newer. |
+| Support URL | **owner**: a real, monitored page. Required by App Store Connect. |
+| Privacy Policy URL | **owner**: required. It must cover the inventory below. |
+| Marketing URL | optional; **owner** |
+| Copyright | **owner** (for example "2026 <legal name>") |
+
+## Promotional text (≤170)
+
+> New in 1.2: create your own runner, throw a party with a six-letter code, and splash in style with all-new animation.
+
+## Description
+
+> Ultimate Trifecta is a playful 3 a.m. campus chase.
+>
+> Runners in pajamas and mascot suits must splash into tonight's three marked waters — fountains, ponds, a lagoon — and race back to the dorm. Two Night Watch players hunt them on foot and in golf carts. Get four runners home before the four-minute clock runs out, or, as the Night Watch, stop them.
+>
+> • Create your runner: outfits, colours, faces, hair, hats, shoes and a ready move.
+> • Play with friends: start a party and share a six-letter code, or invite Game Center friends. Empty spots are filled by bots, clearly marked BOT.
+> • Practice anytime: full rounds with bots, offline, plus a short tutorial.
+> • Touch controls built for two thumbs, with fixed or floating stick, button size and left-handed layouts; game controllers supported.
+> • Safe by design: no chat, just emotes; names are checked; report, block and remove from any player's card.
+>
+> A fictional campus, no ads, no tracking, no in-app purchases.
+
+Before using the last paragraph's name-checking and report lines,
+confirm the service is deployed (see "Service status at review").
+
+## Keywords (≤100)
+
+`party,chase,tag,runners,campus,splash,friends,multiplayer,pajamas,casual,game center,bots`
+
+## What's New (1.2)
+
+> Create Your Runner, a brand-new character look and animation, parties with six-letter codes and a share button, player cards with report and block, better controller support, and lots of polish.
+
+## App Review notes
+
+> **Playing without an account.** From Home, tap Practice → Play as Runner or Night Watch. Full rounds with bots, offline, no sign-in. A tutorial is on the Practice screen.
+>
+> **Online parties** use Game Center. Sign in under Settings › Game Center on the device. Play with Friends → Create Party gives a six-letter code, and a second device joins with that code (Join), or the host taps Invite to use Game Center's invite sheet. Codes avoid look-alike characters, and typing is checked strictly. Parties are private: there is no public matchmaking with strangers. Empty slots are filled by bots labelled BOT.
+>
+> **Profiles and names.** On first launch the player creates a runner and picks a name. Names are 3–16 letters, numbers, single spaces or underscores. When the game service is enabled, names are checked server-side: offensive terms, impersonation, contact details, with leet and look-alike handling. Approved names get a #1234 tag to tell duplicates apart. Sign-in to the service is verified with Game Center's identity signature; a player ID alone is never accepted.
+>
+> **Safety.** There is no chat: communication is limited to preset emotes. Tap any player in the party to Hide their emotes, Report them (with a reason; you get a receipt), Block them (they can't join your parties) or, as host, Remove them. Reports go to the owner's moderation queue, where the owner can dismiss them, force a rename or suspend a profile.
+>
+> **Delete Game Profile** is in Settings › Profile. It confirms with Game Center, deletes the online profile from the service, then erases everything on the device.
+>
+> **Controllers.** MFi, Xbox and PlayStation controllers work in menus and gameplay, with matching button prompts.
+>
+> **Contact for review:** **owner** (name, phone, email).
+
+### Service status at review
+
+The game service (`service/`) is not deployed yet; see
+`service/README.md`. Until it is:
+
+- The shipped build has `game/config/service.cfg` empty.
+- Names are kept on the device. Game Center provides the online identity.
+- Report sends nothing; it explains that and offers Block instead.
+- Delete Game Profile erases the device data.
+
+If the owner deploys the service before submission, fill in
+`service.cfg`, rebuild, and use the "with service" privacy answers below.
+The export script then also declares the collected data in the privacy
+manifest.
+
+## Age rating inputs
+
+These are suggested answers for the owner to confirm in App Store
+Connect's questionnaire.
+
+| Question area | Answer | Why |
+|---|---|---|
+| Cartoon or fantasy violence | None | The Night Watch "tags" a runner with a whistle; no harm is depicted. |
+| Realistic violence, horror, mature themes | None | |
+| Profanity or crude humour | None | Names are filtered when the service is on; there is no chat. |
+| Sexual content, nudity | None | Pajamas and swimwear are cartoon outfits. |
+| Alcohol, tobacco, drugs; gambling; contests | None | |
+| Medical or treatment information | None | |
+| User-generated content | Yes: player names only, with report, block and moderation | |
+| Messaging and chat | No. Preset emotes only. | |
+| Unrestricted web access | No | |
+| Advertising | No | |
+| In-app purchases | No. Coins are earned in play only. | |
+| Parental controls | Respects Game Center multiplayer restrictions (Screen Time). | |
+
+Expected result: the lowest age band, subject to Apple's evaluation of the
+user-generated-names answer.
+
+## App Privacy ("nutrition label")
+
+**Build without the service** (the current source):
+
+- Data collected by the developer: **none**.
+- Game Center (Apple) handles the player's identity and matchmaking.
+- Settings, progress and the runner's look stay on the device.
+
+**Build with the service deployed**:
+
+| Data type | Collected | Linked to user | Tracking | Purpose |
+|---|---|---|---|---|
+| User ID: Game Center team player ID, verified, mapped to an opaque profile ID | Yes | Yes | No | App Functionality |
+| Name: chosen display name | Yes | Yes | No | App Functionality |
+| Gameplay Content: runner appearance (item IDs) | Yes | Yes | No | App Functionality |
+| Other User Content: reports you file (reason, optional text, room code, build) | Yes | Yes | No | App Functionality |
+
+Not collected: contact info, location, contacts, photos, audio, browsing,
+purchases, usage analytics, diagnostics, advertising data or device IDs.
+
+### Inventory the privacy policy must cover (owner)
+
+Each item is stored in the service's database (Cloudflare D1, under the
+owner's account):
+
+- **Profile.** Opaque profile ID, display name and discriminator, name
+  history, runner appearance, status (active or suspended), and timestamps.
+- **Identity link.** Game Center team player ID ↔ profile, and bundle ID.
+- **Blocks.** Pairs of profile IDs.
+- **Reports.** Reporter profile ID, target profile ID and name at report
+  time, reason, optional details (≤500 characters), context (room code,
+  build), status and resolution.
+- **Party rooms.** Code, host and member profile IDs, state and
+  timestamps. Closed and expired rooms are purged after 24 h.
+- **Moderation audit log.** Owner actions; profile deletions are logged
+  without the profile ID.
+- **Operational.** Short-lived rate-limit counters (purged after 24 h) and
+  revoked session IDs (purged when they expire).
+
+What deletion removes: Delete Game Profile removes the profile, its
+identity link, name history and blocks. Reports the player filed stay, with
+the reporter link removed. Open reports against the player are closed.
+
+## Screenshots
+
+App Store Connect needs screenshots at the current required sizes,
+captured from the app, for example 6.9" iPhone landscape 2868 × 1320 and
+13" iPad 2752 × 2064.
+
+- Desktop renders of the real game can be produced at those sizes with the
+  capture tool (`--resolution 2868x1320 -- --capture=...`), but those are
+  renders from Linux.
+- Screenshots taken on a device or the Simulator are preferred. **owner**
+  to approve the final set.

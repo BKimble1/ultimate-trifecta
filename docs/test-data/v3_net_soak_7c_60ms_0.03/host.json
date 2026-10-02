@@ -1,0 +1,30 @@
+[
+  {
+    "corr_avg_m": 0.0,
+    "corr_max_m": 0.0,
+    "dropped_by_shaper": 1155,
+    "finished": 1,
+    "fps_avg": 60.0,
+    "host_skipped": {
+      "1": 17,
+      "2": 53,
+      "3": 4,
+      "4": 8,
+      "5": 21,
+      "6": 2
+    },
+    "host_starved": {},
+    "humans": 8,
+    "lag_ms": 60.0,
+    "loss": 0.03,
+    "mode": "host",
+    "outcome": 2,
+    "reward_coins": 60,
+    "round": 1,
+    "round_time": 240.0,
+    "rtt_ms": 100.0,
+    "sent": 42855,
+    "slot": 0,
+    "snapshots": 0
+  }
+]

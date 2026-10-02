@@ -8,7 +8,8 @@ Ultimate Trifecta uses no purchased assets, no asset-store packs, and nothing co
 |---|---|---|---|---|
 | Godot Engine | 4.7.2-stable | MIT. Bundled third-party components are listed in Godot's `COPYRIGHT.txt`, including Jolt Physics (MIT). | Editor and iOS export templates from `github.com/godotengine/godot-builds`, downloaded by `tools/fetch_godot.sh`; not committed | The engine and iOS runtime (`libgodot`). |
 | GodotApplePlugins (GameCenter + Runtime addons) | release build `bfade13ff8b6027ede438bac637b5bf93057d404`, sha256 `2ba56704…bfd3f` | MIT, © Miguel de Icaza | `github.com/migueldeicaza/GodotApplePlugins`, downloaded and verified by `tools/fetch_deps.sh` into `game/addons/`; not committed | Game Center bindings (authentication, matchmaking, `GKMatch`, friends, invites). Built on SwiftGodot (MIT). Linked into the iOS app only. |
-| Fredoka (variable TTF) | `google/fonts` `ofl/fredoka/Fredoka[wdth,wght].ttf`, sha256 `2ba02e68…73fc8` | SIL Open Font License 1.1 (`game/assets/fonts/Fredoka-OFL.txt`) | `game/assets/fonts/Fredoka-Variable.ttf` | UI typeface. Unmodified, embedded in the app. |
+| Fredoka (variable TTF) | `google/fonts` `ofl/fredoka/Fredoka[wdth,wght].ttf`, sha256 `2ba02e68…73fc8` | SIL Open Font License 1.1 (`game/assets/fonts/Fredoka-OFL.txt`) | `game/assets/fonts/Fredoka-Variable.ttf` | UI typeface source. Unmodified. |
+| Fredoka Medium / SemiBold / Bold (static instances, V3) | Generated from the variable font above by `tools/fonts/make_static_fonts.py` (fontTools `instantiateVariableFont`, width 100, weights 500/600/700) | SIL Open Font License 1.1, as a Modified Version (Fredoka declares no Reserved Font Name; the instances keep the OFL and copyright notices) | `game/assets/fonts/Fredoka-{Medium,SemiBold,Bold}.ttf` | The weights the UI actually renders. Godot drew the variable font at its default Light weight whatever weight was requested (measured; see `docs/V3_NOTES.md`). |
 
 Apple frameworks (GameKit, GameController) are part of the iOS SDK and are used under the Apple Developer Program License Agreement.
 
@@ -18,6 +19,8 @@ Apple frameworks (GameKit, GameController) are part of the iOS SDK and are used 
 |---|---|---|---|
 | Blender as a Python module (`bpy`) | 4.5.4 LTS, from PyPI into `tools/.cache/bpyenv`; not committed | GPL-2.0-or-later | Runs `tools/character/build_character.py`, which builds the character model, rig and animations and exports `game/assets/characters/runner.glb`. Blender is a tool here. The generated model is original output of this project's scripts, and no Blender code or data is shipped in the app. |
 | numpy | as resolved by pip alongside `bpy` | BSD-3-Clause | Dependency of `bpy` and of `tools/gen_audio.py`. |
+| fontTools | 4.55.3, from PyPI into `tools/.cache/fontenv`; not committed | MIT | Makes the static Fredoka instances (V3). |
+| Wrangler (Cloudflare CLI) | run with `npx` by the owner when deploying `service/`; not committed | MIT / Apache-2.0 | Deploys the service. The service code itself has no npm dependencies. |
 | ffmpeg, DejaVu Sans | system packages on the capture machine | ffmpeg: LGPL/GPL; DejaVu: Bitstream Vera license | Encode the evidence recordings in `docs/media/` and burn in their labels. Neither is part of the app.
 
 ## Original assets made for this project
@@ -25,6 +28,10 @@ Apple frameworks (GameKit, GameController) are part of the iOS SDK and are used 
 | Asset | How it was made | Location |
 |---|---|---|
 | Campus geometry: buildings, paths, waters, trees, props, bollards | Generated at runtime from the data in `game/src/map/campus_layout.gd` by `campus_builder.gd` and `mesh_kit.gd` (procedural meshes with vertex colors) | code |
+| Characters (V3 update) | The same scripts, extended: icon-style head and face (eyes, brows, 9 face shapes), hair built as shells from explicit hairline curves, freckles, matte skin, world-height stripes, and 40 animation clips (re-timed gait, lean/plant, air/landing variants, tag anticipation/lunge/miss, lobby idles/arrivals/ready/celebrations, the splash sequence, recovery). | `game/assets/characters/runner.glb` |
+| Native share sheet (UTShare) | Plain C and Objective-C written for this project against Godot's GDExtension C interface; uses only Apple's UIKit | `native/ut_share/` (built into `game/addons/ut_share/bin/` by `tools/build_native.sh`; binaries not committed) |
+| Online service | JavaScript written for this project (Cloudflare Workers runtime APIs and D1 only; no npm dependencies). The offensive-term lists are this project's own, stored base64-encoded. | `service/` |
+| Dorm materials, controller glyphs, wordmark | Shader (`game/assets/shaders/dorm.gdshader`), vector glyphs (`game/src/ui/glyphs.gd`: letters, the four PlayStation-style shapes, positional diamonds) and the home wordmark, all drawn in code. No platform-holder artwork is used. | code |
 | Characters (V2): one skinned runner with every outfit, hat and shoe as a part (pajamas, swimwear, robe, duck and frog mascots); the Night Watch uniform with cap, boots, flashlight and whistle; face shapes; 32 animation clips | Built by Python scripts that run in Blender's `bpy`. The scripts use parametric meshes, a 23-bone armature, skin weights, IK-solved locomotion and keyframed poses. The editable sources are `tools/character/*.py`; see `tools/character/README.md`. | `game/assets/characters/runner.glb` (+ `runner_manifest.json`) |
 | Character presentation | Animation graph, secondary motion and expressions in code (`game/src/view/character_view.gd`, `character_secondary.gd`) | code |
 | Golf carts | Merged procedural meshes (body, tyres, steering wheel) and animation (`game/src/view/cart_view.gd`) | code |
@@ -40,4 +47,4 @@ Apple frameworks (GameKit, GameController) are part of the iOS SDK and are used 
 ## Not included
 
 - No analytics, advertising, crash-reporting or tracking SDKs.
-- No third-party networking service. Online play uses Apple Game Center only.
+- No third-party networking service. Online play uses Apple Game Center, plus the game's own service (`service/`), which runs on the owner's Cloudflare account once deployed. Until then it is off, and nothing claims it is live.

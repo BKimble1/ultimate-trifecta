@@ -354,8 +354,10 @@ var _splash_lines: Dictionary = {}   # water short name -> {pill, names}
 
 func feed_splash(who: String, water: String, role: int) -> void:
 	var cur: Dictionary = _splash_lines.get(water, {})
-	var pill: PanelContainer = cur.get("pill")
-	if pill != null and is_instance_valid(pill) and float(pill.get_meta("t", 0.0)) > 0.5:
+	var pv: Variant = cur.get("pill")
+	# the pill may already be freed (faded out or pushed off the feed)
+	if is_instance_valid(pv) and float((pv as PanelContainer).get_meta("t", 0.0)) > 0.5:
+		var pill := pv as PanelContainer
 		var names: Array = cur["names"]
 		if not names.has(who):
 			names.append(who)

@@ -199,3 +199,25 @@ func test_disconnect_and_backgrounding_clear_presses() -> void:
 	Controls._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.eq(Controls.consume_pressed(), 0, "backgrounding drops queued presses")
 	_end()
+
+
+func test_hud_splash_feed_coalesces_and_survives_freed_lines() -> void:
+	var hud := MatchHUD.new()
+	hud.feed_box = VBoxContainer.new()
+	t.add_child(hud.feed_box)
+	hud.feed_splash("Yawn", "Pool", TC.Role.RUNNER)
+	hud.feed_splash("Snooze", "Pool", TC.Role.RUNNER)
+	hud.feed_splash("Pillow", "Pool", TC.Role.RUNNER)
+	t.eq(hud.feed_box.get_child_count(), 1, "splashes into the same water share one line")
+	var line := (hud.feed_box.get_child(0) as PanelContainer).get_child(0) as Label
+	t.eq(line.text, "Yawn, Snooze +1 splashed into Pool", "names coalesced")
+	hud.feed_splash("Moonbeam", "Quarry", TC.Role.RUNNER)
+	t.eq(hud.feed_box.get_child_count(), 2, "a different water gets its own line")
+	# the Pool line is pushed out and freed; the next Pool splash starts a new line
+	for c in hud.feed_box.get_children():
+		hud.feed_box.remove_child(c)
+		c.free()
+	hud.feed_splash("Drowsy", "Pool", TC.Role.RUNNER)
+	t.eq(hud.feed_box.get_child_count(), 1, "a freed line is never reused (no error, new line)")
+	hud.feed_box.queue_free()
+	hud.free()
