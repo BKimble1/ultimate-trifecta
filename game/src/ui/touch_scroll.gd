@@ -26,6 +26,8 @@ const DEADZONE_PT := 10.0
 var sc: ScrollContainer
 ## the list is being dragged by a finger (taps inside it are cancelled)
 var dragging := false
+## a finger (or the mouse) is down inside the list
+var _down := false
 
 
 static func attach(s: ScrollContainer) -> TouchScroll:
@@ -37,6 +39,15 @@ static func attach(s: ScrollContainer) -> TouchScroll:
 	s.set_meta(&"touch_scroll", t)
 	s.add_child(t, false, Node.INTERNAL_MODE_BACK)   # not content
 	return t
+
+
+## True while a finger is scrolling `s` (a programmatic scroll must not
+## fight it).
+static func is_dragging(s: ScrollContainer) -> bool:
+	if s == null or not is_instance_valid(s) or not s.has_meta(&"touch_scroll"):
+		return false
+	var t: Variant = s.get_meta(&"touch_scroll")
+	return is_instance_valid(t) and (t as TouchScroll).dragging
 
 
 ## The touch dead zone in canvas units (10 pt on this device).
@@ -81,17 +92,52 @@ func _pass(c: Variant) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED \
 			or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
-		dragging = false
-		if is_instance_valid(sc):
-			cancel_presses(sc)
+		release()
 
 
 func _on_gui_input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		_down = e.pressed
 		if e.pressed:
 			dragging = false
 			# a finger tapping a card must not make the list jump to it
 			sc.follow_focus = Controls.device != "touch"
+
+
+## A sheet or dialog opened over the list (Screen.push_modal), or the app
+## went to the background: the list lets go.  The press under the finger is
+## cancelled first; a finger still down is then lifted for the GUI (a
+## release delivered to whatever holds the pointer ends the list's drag and
+## its capture, and finds no press to complete); a glide stops where it is.
+## The next touch starts clean.
+func release() -> void:
+	if not is_instance_valid(sc):
+		return
+	cancel_presses(sc)
+	if (_down or dragging) and sc.is_inside_tree():
+		var vp := sc.get_viewport()
+		var up := InputEventMouseButton.new()
+		up.button_index = MOUSE_BUTTON_LEFT
+		up.pressed = false
+		up.position = vp.get_mouse_position()
+		up.global_position = up.position
+		vp.push_input(up)
+	# `dragging` lasts until the engine's scroll_ended, i.e. through the glide
+	if dragging and sc.is_processing_internal():
+		sc.set_process_internal(false)    # the engine's glide; a new touch restarts it
+	dragging = false
+	_down = false
+
+
+## Every list under `root` lets go, except those inside `keep` (the sheet
+## that is opening may have lists of its own).
+static func release_all(root: Node, keep: Node = null) -> void:
+	for n in root.find_children("*", "ScrollContainer", true, false):
+		if keep != null and (n == keep or keep.is_ancestor_of(n)):
+			continue
+		var ts: Variant = n.get_meta(&"touch_scroll") if n.has_meta(&"touch_scroll") else null
+		if is_instance_valid(ts):
+			(ts as TouchScroll).release()
 
 
 func _on_scroll_started() -> void:

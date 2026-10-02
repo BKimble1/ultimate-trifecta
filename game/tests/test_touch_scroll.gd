@@ -164,3 +164,84 @@ func test_horizontal_strip_inside_a_vertical_list_keeps_its_axis() -> void:
 	t.eq(taps, [], "no card in the strip was activated by either swipe")
 	layer.queue_free()
 	_teardown()
+
+
+func _flick(sc: ScrollContainer, s: Vector2) -> Vector2:
+	_press(s, true)
+	var prev := s
+	for i in 4:
+		var p := s + Vector2(0, -60 * (i + 1))
+		var e := InputEventMouseMotion.new()
+		e.position = p
+		e.global_position = p
+		e.relative = p - prev
+		e.button_mask = MOUSE_BUTTON_MASK_LEFT
+		t.get_viewport().push_input(e)
+		prev = p
+		await t.get_tree().physics_frame
+	return prev
+
+
+func _screen_with_list(presses: Array) -> Array:
+	var layer := CanvasLayer.new()
+	layer.layer = 120
+	t.add_child(layer)
+	var scr := Screen.new()
+	layer.add_child(scr)
+	var sc := _list(30, presses)
+	sc.get_parent().remove_child(sc)
+	scr.add_child(sc)
+	return [layer, scr, sc]
+
+
+## V6: a sheet opening over a list makes it let go: a glide stops, and a
+## finger still down neither keeps scrolling it nor activates a card.
+func test_a_sheet_opening_releases_the_list() -> void:
+	await _setup()
+	var presses: Array = []
+	var parts := _screen_with_list(presses)
+	var scr: Screen = parts[1]
+	var sc: ScrollContainer = parts[2]
+	await _frames(3)
+	# 1) gliding after a flick
+	var end := await _flick(sc, Vector2(300, 420))
+	_press(end, false)
+	await t.get_tree().physics_frame
+	await t.get_tree().physics_frame
+	var a := sc.scroll_vertical
+	await t.get_tree().physics_frame
+	t.check(sc.scroll_vertical != a, "the list glides after a flick")
+	var sheet := Control.new()
+	sheet.set_anchors_preset(Control.PRESET_FULL_RECT)   # sheets cover the screen and stop the pointer
+	scr.add_child(sheet)
+	scr.push_modal(sheet, Callable())
+	var at := sc.scroll_vertical
+	await _frames(12)
+	t.eq(sc.scroll_vertical, at, "a sheet opening stops the glide where it is")
+	sheet.queue_free()
+	await _frames(2)
+	# 2) a finger down and dragging when the sheet opens
+	var s := Vector2(300, 250)
+	_press(s, true)
+	await _move(s, s + Vector2(0, 60), 5)
+	var sheet2 := Control.new()
+	sheet2.set_anchors_preset(Control.PRESET_FULL_RECT)   # sheets cover the screen and stop the pointer
+	scr.add_child(sheet2)
+	scr.push_modal(sheet2, Callable())
+	var held := sc.scroll_vertical
+	await _move(s + Vector2(0, 60), s + Vector2(0, 160), 6)
+	_press(s + Vector2(0, 160), false)
+	await _frames(15)
+	t.eq(sc.scroll_vertical, held, "the finger no longer scrolls the list behind the sheet")
+	t.eq(presses, [], "and lifting it activates nothing")
+	sheet2.queue_free()
+	await _frames(2)
+	# 3) the list works normally afterwards
+	var top := sc.scroll_vertical
+	_press(s, true)
+	await _move(s, s + Vector2(0, -150), 8)
+	_press(s + Vector2(0, -150), false)
+	await _frames(20)
+	t.check(sc.scroll_vertical > top, "the next swipe scrolls as usual (%d -> %d)" % [top, sc.scroll_vertical])
+	parts[0].queue_free()
+	_teardown()

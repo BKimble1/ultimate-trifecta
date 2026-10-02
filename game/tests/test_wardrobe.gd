@@ -157,3 +157,44 @@ func test_category_strip_fits_narrow_panels() -> void:
 		var text_w := b.get_theme_font("font").get_string_size(b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, b.get_theme_font_size("font_size")).x
 		t.check(text_w <= face.size.x - 2.0 * face.text_pad() + 0.5, "%s: the word fits inside its face (%d of %d)" % [b.text, text_w, face.size.x - 2.0 * face.text_pad()])
 	await _close(c)
+
+
+## V6: each category keeps its scroll position; switching quickly never
+## lands one category's position on another, and a screen closed before the
+## restore leaves nothing to run.
+func test_category_positions_survive_rapid_switching() -> void:
+	var saved_size: Vector2i = t.get_tree().root.size
+	t.get_tree().root.size = Vector2i(1280, 720)
+	var c := _open()
+	await _frames(4)
+	c._select_tab("face")
+	await _frames(4)
+	var room: int = int(c.scroll.get_v_scroll_bar().max_value - c.scroll.size.y)
+	t.check(room >= 40, "the face list scrolls here (%d px of room)" % room)
+	var pos := mini(room, 300)
+	c.scroll.scroll_vertical = pos
+	await _frames(2)
+	# away and back within frames: the restore pending for one category must
+	# never land on another, and face's own position comes back
+	c._select_tab("hat")
+	c._select_tab("hair")
+	c._select_tab("face")
+	await _frames(3)
+	t.eq(c.scroll.scroll_vertical, pos, "the category comes back where it was")
+	t.eq(int(c._scroll_of.get("hair", -1)), 0, "a category switched through at once keeps its top")
+	c._select_tab("hair")
+	await _frames(3)
+	t.eq(c.scroll.scroll_vertical, 0, "and opens at its own position, not face's")
+	c._select_tab("face")
+	await _frames(3)
+	t.eq(c.scroll.scroll_vertical, pos, "face again")
+	# closed with a restore pending: nothing runs against a freed screen
+	c._select_tab("hair")
+	c.queue_free()
+	await _frames(3)
+	t.check(not is_instance_valid(c), "the screen is gone and no restore ran on it")
+	if is_instance_valid(_stage):
+		_stage.queue_free()
+	App.stage = null
+	t.get_tree().root.size = saved_size
+	await _frames(2)
