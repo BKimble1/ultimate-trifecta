@@ -612,7 +612,7 @@ func _player_popover(i: int, anchor: Control) -> void:
 	pic.custom_minimum_size = Vector2(84, 84)
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	pic.texture = Portraits.shared().portrait(e["cosmetic"])
+	pic.texture = Portraits.shared().portrait(e["cosmetic"], TC.Role.RUNNER, "sheet")
 	head.add_child(pic)
 	var nv := UIKit.vbox(2)
 	var nm := UIKit.label(String(e["name"]), 24, UIKit.IVORY, true)
@@ -779,6 +779,11 @@ class SlotCell:
 		if k == _face_key and is_instance_valid(face):
 			face.texture = tex
 
+	## Our portrait's atlas cell went to another look: ask again next update.
+	func _on_portrait_evicted(k: String) -> void:
+		if k == _face_key:
+			_face_key = ""
+
 	func _style(bg: Color, border: Color) -> void:
 		add_theme_stylebox_override("normal", UIKit.box(bg, UIKit.R_SMALL, 2, border))
 		add_theme_stylebox_override("hover", UIKit.box(bg.lightened(0.06), UIKit.R_SMALL, 2, border))
@@ -806,9 +811,10 @@ class SlotCell:
 		if key != _face_key:
 			_face_key = key
 			var ps := Portraits.shared()
-			face.texture = ps.portrait(ent["cosmetic"], TC.Role.PATROL if role == TC.Role.PATROL else TC.Role.RUNNER)
+			face.texture = ps.portrait(ent["cosmetic"], TC.Role.PATROL if role == TC.Role.PATROL else TC.Role.RUNNER, "cell%d" % get_instance_id())
 			if not ps.portrait_ready.is_connected(_on_portrait):
 				ps.portrait_ready.connect(_on_portrait)
+				ps.portrait_evicted.connect(_on_portrait_evicted)
 		name_l.text = String(ent["name"])
 		name_l.add_theme_color_override("font_color", UIKit.IVORY)
 		var bits: Array[String] = []

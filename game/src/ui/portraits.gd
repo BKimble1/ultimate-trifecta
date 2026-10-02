@@ -3,23 +3,45 @@ extends Node
 ## Head-and-shoulders portraits of runners for the party panel and player
 ## sheets, rendered once per look in a small off-screen viewport (the same
 ## CharacterView and asset as everywhere else) and cached by appearance.
-## Requests are queued and rendered one per frame pair; until a portrait is
-## ready the caller gets a soft placeholder in the runner's colour.
-## Headless runs (tests, servers) never render and always get placeholders.
+## Until a portrait is ready the caller gets a soft placeholder in the
+## runner's colour.  Headless runs (tests, servers) never render.
+##
+## V4 (smoothness):
+##  - No CPU readback.  A portrait is rendered once, then copied on the GPU
+##    into a cell of a bounded atlas viewport that is never cleared; callers
+##    get an AtlasTexture of that cell.  (V3 read every portrait back with
+##    get_image, a GPU sync point.)
+##  - The portrait viewport uses the main view's MSAA level, so it reuses the
+##    character pipelines already compiled for the dorm stage instead of
+##    compiling 4x variants on the first portrait.
+##  - Jobs: one in flight, three frames each; a newer request from the
+##    same owner (a party cell) replaces its queued older one, and the queue
+##    is bounded, so stale looks are never rendered.
 
 signal portrait_ready(key: String, tex: Texture2D)
+## A cell was reused for another look: holders of `key` should ask again.
+signal portrait_evicted(key: String)
 
 const SIZE := 160
-const MAX_CACHE := 48
+const COLS := 8
+const ROWS := 6
+const MAX_CACHE := COLS * ROWS
+const MAX_QUEUE := 12
+const COPY_SHADER := "shader_type canvas_item;\nrender_mode blend_disabled;\nvoid fragment() { COLOR = texture(TEXTURE, UV); }\n"
 
 static var _inst: Portraits
-var _cache: Dictionary = {}      # key -> Texture2D
+var _cache: Dictionary = {}      # key -> AtlasTexture
+var _cell_of: Dictionary = {}    # key -> cell index
 var _order: Array = []           # LRU keys
-var _queue: Array = []           # [{key, role, app}]
+var _queue: Array = []           # [{key, role, app, owner}]
 var _busy := false
 var _vp: SubViewport
 var _view: CharacterView
 var _cam: Camera3D
+var _atlas: SubViewport
+var _copy: TextureRect
+var renders := 0                 # portraits rendered (diagnostics/tests)
+var dropped := 0                 # stale requests skipped
 
 
 static func shared() -> Portraits:
@@ -35,16 +57,36 @@ static func key_of(app: Dictionary, role: int) -> String:
 
 
 ## Cached portrait, or a placeholder now and `portrait_ready` later.
-func portrait(app: Dictionary, role: int = TC.Role.RUNNER) -> Texture2D:
+## `owner` (e.g. a party cell): its newer request replaces its queued one.
+func portrait(app: Dictionary, role: int = TC.Role.RUNNER, owner: String = "") -> Texture2D:
 	var a := Cosmetics.sanitize(app)
 	var k := key_of(a, role)
 	if _cache.has(k):
 		_order.erase(k)
 		_order.append(k)
 		return _cache[k]
-	if DisplayServer.get_name() != "headless" and not _queue.any(func(q: Dictionary) -> bool: return q["key"] == k):
-		_queue.append({"key": k, "role": role, "app": a})
+	if DisplayServer.get_name() != "headless":
+		_enqueue({"key": k, "role": role, "app": a, "owner": owner})
 	return placeholder(a)
+
+
+func _enqueue(q: Dictionary) -> void:
+	var owner := String(q["owner"])
+	for i in range(_queue.size() - 1, -1, -1):
+		var old: Dictionary = _queue[i]
+		if old["key"] == q["key"]:
+			return
+		if owner != "" and String(old["owner"]) == owner:
+			_queue.remove_at(i)
+			dropped += 1
+	_queue.append(q)
+	while _queue.size() > MAX_QUEUE:
+		_queue.pop_front()
+		dropped += 1
+
+
+func pending() -> int:
+	return _queue.size()
 
 
 static func placeholder(app: Dictionary) -> Texture2D:
@@ -71,7 +113,9 @@ func _ensure_rig() -> void:
 	_vp.size = Vector2i(SIZE, SIZE)
 	_vp.transparent_bg = true
 	_vp.own_world_3d = true
-	_vp.msaa_3d = Viewport.MSAA_4X
+	# the main view's level (Standard and Battery Saver both use 2x): same
+	# pipelines as the dorm stage, no 4x variants compiled on first use
+	_vp.msaa_3d = get_tree().root.msaa_3d
 	_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(_vp)
 	var env := Environment.new()
@@ -100,6 +144,23 @@ func _ensure_rig() -> void:
 	_vp.add_child(_cam)
 	_cam.current = true
 	_cam.look_at_from_position(Vector3(0.0, 1.25, 1.85), Vector3(0.0, 1.13, 0.0))
+	# the atlas: never cleared, each portrait drawn into its own cell
+	_atlas = SubViewport.new()
+	_atlas.size = Vector2i(SIZE * COLS, SIZE * ROWS)
+	_atlas.transparent_bg = true
+	_atlas.disable_3d = true
+	_atlas.render_target_clear_mode = SubViewport.CLEAR_MODE_NEVER
+	_atlas.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	add_child(_atlas)
+	_copy = TextureRect.new()
+	_copy.size = Vector2(SIZE, SIZE)
+	_copy.texture = _vp.get_texture()
+	var sm := Shader.new()
+	sm.code = COPY_SHADER
+	var mat := ShaderMaterial.new()
+	mat.shader = sm
+	_copy.material = mat   # overwrite the cell (alpha too), no blending
+	_atlas.add_child(_copy)
 
 
 func _process(_d: float) -> void:
@@ -108,9 +169,34 @@ func _process(_d: float) -> void:
 	_render(_queue.pop_front())
 
 
+func _free_cell() -> int:
+	if _cell_of.size() < MAX_CACHE:
+		var used := {}
+		for k in _cell_of:
+			used[_cell_of[k]] = true
+		for i in MAX_CACHE:
+			if not used.has(i):
+				return i
+	var oldest: String = _order.pop_front()
+	var cell: int = _cell_of[oldest]
+	_cell_of.erase(oldest)
+	_cache.erase(oldest)
+	portrait_evicted.emit(oldest)
+	return cell
+
+
 func _render(q: Dictionary) -> void:
 	_busy = true
-	_ensure_rig()
+	Diag.mark("lobby_portrait")
+	if _vp == null:
+		# a new rig's first render comes out with untinted (grey) skin, even
+		# after a settle frame: render it once unseen, which also compiles
+		# the portrait pipelines before the first real portrait
+		_ensure_rig()
+		_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+		await RenderingServer.frame_post_draw
+		if not is_inside_tree():
+			return
 	_view.set_appearance(int(q["role"]), q["app"])
 	_view.tree.active = false
 	_view.anim.play("idle")
@@ -124,15 +210,30 @@ func _render(q: Dictionary) -> void:
 			_view.base_mesh.set_blend_shape_value(_view._face_idx[n], float(base[n]))
 	if _view._face_idx.has("smile"):
 		_view.base_mesh.set_blend_shape_value(_view._face_idx["smile"], 0.5)
+	# one settle frame: per-instance tints of parts just shown (a new outfit,
+	# hair, the first portrait) reach the renderer a frame later, and a
+	# portrait rendered at once came out with the default grey skin
+	await RenderingServer.frame_post_draw
+	if not is_inside_tree():
+		return
 	_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 	await RenderingServer.frame_post_draw
+	if not is_inside_tree():
+		return
+	# next frame: copy the finished portrait into its atlas cell (GPU only)
+	var cell := _free_cell()
+	_copy.position = Vector2((cell % COLS) * SIZE, (cell / COLS) * SIZE)
+	_atlas.render_target_update_mode = SubViewport.UPDATE_ONCE
 	await RenderingServer.frame_post_draw
-	var img := _vp.get_texture().get_image()
-	var tex := ImageTexture.create_from_image(img)
+	if not is_inside_tree():
+		return
+	var tex := AtlasTexture.new()
+	tex.atlas = _atlas.get_texture()
+	tex.region = Rect2(_copy.position, Vector2(SIZE, SIZE))
 	var k := String(q["key"])
 	_cache[k] = tex
+	_cell_of[k] = cell
 	_order.append(k)
-	while _order.size() > MAX_CACHE:
-		_cache.erase(_order.pop_front())
+	renders += 1
 	_busy = false
 	portrait_ready.emit(k, tex)

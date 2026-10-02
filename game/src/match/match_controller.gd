@@ -232,6 +232,8 @@ func _prep_world() -> void:
 		add_child(EnvFactory.make_moon(quality))
 	fx = Fx.new()
 	add_child(fx)
+	if with_visuals:
+		fx.warm()
 	_build_beacons()
 	_build_pickups()
 

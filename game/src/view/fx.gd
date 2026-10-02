@@ -170,6 +170,24 @@ func _emitter(kind: String, pos: Vector3, amount: int, life: float, col: Color, 
 	return p
 
 
+## Loading-time warm-up (V4): every effect kind fires once far below the
+## campus, out of every camera's view.  Their pooled nodes then exist and
+## the renderer has met each particle/foam material before the first real
+## splash, tag or finish, instead of compiling on that frame.
+func warm(at: Vector3 = Vector3(0, -80, 0)) -> void:
+	for kind in [TC.Impact.WALK, TC.Impact.JUMP, TC.Impact.DIVE]:
+		splash_impact(at, kind, Color(0.4, 0.8, 1.0))
+	duck_under(at)
+	shore_pop(at)
+	whistle_burst(at)
+	confetti(at)
+	bump(at)
+	poof(at)
+	turbo(at)
+	# the next real effect may reuse these at once
+	_busy_until.clear()
+
+
 ## Flat soft foam ring on the water surface, expanding and fading.
 func _foam(pos: Vector3, col: Color, radius: float, life: float = 0.9) -> void:
 	var mi: MeshInstance3D = null
