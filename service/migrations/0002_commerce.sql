@@ -140,9 +140,11 @@ CREATE TABLE legacy_imports (
   claimed_coins INTEGER NOT NULL,
   imported_coins INTEGER NOT NULL,
   items TEXT NOT NULL,
+  subject_hash TEXT,              -- salted hash of the Game Center player: one import per player, even after a profile is deleted and recreated
   at INTEGER NOT NULL,
   PRIMARY KEY (profile_id, environment)
 );
+CREATE UNIQUE INDEX legacy_subject ON legacy_imports(environment, subject_hash) WHERE subject_hash IS NOT NULL;
 
 -- App Store Server Notifications V2 seen (idempotent by notificationUUID).
 CREATE TABLE apple_notifications (

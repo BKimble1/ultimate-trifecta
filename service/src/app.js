@@ -9,6 +9,8 @@ import { verifyIdentity } from './gamecenter.js';
 import { issueSession, verifySession, issueAdmission, SESSION_TTL_S } from './tokens.js';
 import { moderate, suggestions, normalizeName } from './names.js';
 import { randomId, newRoomCode, normalizeCode } from './ids.js';
+import { routeCommerce, deletionStmts, sweepCommerce } from './commerce.js';
+import CATALOGUE from './catalogue_data.js';
 
 const HOUR = 3600 * 1000;
 export const RENAME_COOLDOWN_MS = 24 * HOUR;
@@ -27,11 +29,11 @@ const TRANSITIONS = {
   results: ['results', 'open', 'loading', 'closing'],
 };
 
-function clock(env) {
+export function clock(env) {
   return env.__now ? env.__now() : Date.now();
 }
 
-function db(env) {
+export function db(env) {
   const d = env.DB;
   if (!d) throw new ApiError(503, 'not_configured', 'The service is not configured.');
   return {
@@ -43,7 +45,7 @@ function db(env) {
   };
 }
 
-async function audit(env, actor, action, target = null, detail = null) {
+export async function audit(env, actor, action, target = null, detail = null) {
   await db(env).run('INSERT INTO audit (at, actor, action, target, detail) VALUES (?, ?, ?, ?, ?)',
     clock(env), actor, action, target, detail === null ? null : JSON.stringify(detail));
 }
@@ -83,7 +85,7 @@ function publicProfile(p, self = false) {
   return out;
 }
 
-async function requireUser(req, env, { allowSuspended = false } = {}) {
+export async function requireUser(req, env, { allowSuspended = false } = {}) {
   const h = req.headers.get('authorization') || '';
   if (!h.startsWith('Bearer ')) throw new ApiError(401, 'signed_out', 'Please sign in.');
   const s = await verifySession(env, h.slice(7), clock(env));
@@ -102,7 +104,7 @@ async function requireUser(req, env, { allowSuspended = false } = {}) {
   return { profile: p, session: s };
 }
 
-function requireAdmin(req, env) {
+export function requireAdmin(req, env) {
   const want = env.ADMIN_TOKEN || '';
   const got = (req.headers.get('authorization') || '').replace(/^Bearer /, '');
   if (want.length < 24) throw new ApiError(503, 'not_configured', 'Admin access is not configured.');
@@ -237,6 +239,9 @@ async function deleteMe(req, env) {
     q.stmt('DELETE FROM identities WHERE profile_id = ?', p.id),
     q.stmt('DELETE FROM profiles WHERE id = ?', p.id),
     q.stmt('INSERT OR IGNORE INTO revoked_sessions (jti, expires_at) VALUES (?, ?)', session.jti, session.exp * 1000),
+    // V6: Coins, items, Season progress go with the profile; ledger and App
+    // Store rows stay for reconciliation without the profile link
+    ...deletionStmts(q, p.id),
   ]);
   await audit(env, 'system', 'profile_deleted', null, { at: t });
   return json({ ok: true, deleted_at: t });
@@ -396,7 +401,7 @@ async function gcPlayerOf(env, profileId) {
   return r.subject;
 }
 
-async function liveRoom(env, code) {
+export async function liveRoom(env, code) {
   const q = db(env);
   const r = await q.one(`SELECT * FROM rooms WHERE code = ? AND state IN ('forming','open','full','loading','in_match','results')`, code);
   if (!r) {
@@ -599,6 +604,7 @@ export async function sweep(env) {
   await q.run("DELETE FROM rooms WHERE state IN ('closing','expired') AND updated_at < ?", t - 24 * HOUR);
   await q.run('DELETE FROM rate_events WHERE at < ?', t - 24 * HOUR);
   await q.run('DELETE FROM revoked_sessions WHERE expires_at < ?', t);
+  await sweepCommerce(env, q, t);
 }
 
 function config(env) {
@@ -609,6 +615,8 @@ function config(env) {
     support_url: env.SUPPORT_URL || null,
     privacy_url: env.PRIVACY_URL || null,
     min_build: Number(env.MIN_CLIENT_BUILD || 0),
+    apple_environment: env.APPLE_ENVIRONMENT === 'Production' ? 'Production' : 'Sandbox',
+    catalogue_version: CATALOGUE.catalogue_version,
     admission_key_id: env.ADMISSION_KEY_ID || 'adm1',
     session_ttl_s: SESSION_TTL_S,
   });
@@ -646,6 +654,8 @@ export async function handle(req, env) {
       if (m === 'POST' && sub === '/kick') return await kickMember(req, env, code);
       if (m === 'DELETE' && sub === '') return await leaveRoom(req, env, code);
     }
+    const c = await routeCommerce(req, env, path, m, { requireUser, requireAdmin, db, rateLimit, audit, clock, liveRoom });
+    if (c) return c;
     if (m === 'GET' && path === '/v1/admin/reports') return await adminReports(req, env, url);
     if (m === 'POST' && (k = path.match(/^\/v1\/admin\/reports\/([A-Za-z0-9_-]{3,40})\/resolve$/))) return await adminResolve(req, env, k[1]);
     if (m === 'GET' && (k = path.match(/^\/v1\/admin\/profiles\/([A-Za-z0-9_]{3,40})$/))) return await adminProfile(req, env, k[1]);

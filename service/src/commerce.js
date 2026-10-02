@@ -591,10 +591,10 @@ export async function settle(env, mid, pid) {
     await H.audit(env, 'system', 'round_mismatch', pid, { match: mid });
     return mark('mismatch', 'digest');
   }
+  if (!E.presentEnough(row, rd.round_time_s)) return mark('ineligible', 'away');
   const all = await q.all('SELECT report FROM round_players WHERE environment = ? AND match_id = ? AND report IS NOT NULL', e, mid);
   const humans = all.filter((x) => E.presentEnough(JSON.parse(x.report), rd.round_time_s)).length;
   if (humans < E.ECONOMY.eligibility.min_humans) return mark('ineligible', 'few_humans');
-  if (!E.presentEnough(row, rd.round_time_s)) return mark('ineligible', 'away');
   const coins = E.roundCoins(row, rd.outcome, rd.coin_spawns);
   const xp = E.roundSeasonXp(row, rd.outcome);
   const sid = Object.keys(E.CATALOGUE.seasons)[0];
