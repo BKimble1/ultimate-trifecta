@@ -149,3 +149,21 @@ func test_round_start_stops_walking_for_everyone() -> void:
 	rig.teardown()
 	await t.get_tree().process_frame   # (queued frees happen before the next test)
 	await t.get_tree().process_frame
+
+
+func test_a_hitching_host_never_takes_poses_for_a_flood() -> void:
+	# a host whose session clock falls behind (a long frame) sees several
+	# seconds of a guest's 10 Hz poses inside one rate window
+	var rig := _rig(1)
+	await _ready_party(rig)
+	var c0: NetSession = rig.clients[0]
+	var peer := _peer_of(rig, c0)
+	var ok := 0
+	for i in 60:
+		if rig.host._rate_ok(peer, SocialProto.HUB_POSE):
+			ok += 1
+	t.eq(ok, 60, "six seconds of poses in one window are within the stream budget")
+	t.check(rig.host.roster[c0.local_slot] != null, "and the guest stays in the party")
+	rig.teardown()
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame

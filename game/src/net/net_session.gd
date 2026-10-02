@@ -297,7 +297,10 @@ func _rate_ok(peer: int, type: int) -> bool:
 		r["input"] = 0
 		r["other"] = 0
 		r["struck"] = false
-	var key := "input" if type == Protocol.M.INPUT or type == Protocol.M.PONG or type == Protocol.M.PING else "other"
+	# (V6) walk-around poses are a steady 10 Hz stream like inputs: on the
+	# input budget, so a host that hitches (its session clock falls behind)
+	# never mistakes them for a flood
+	var key := "input" if type == Protocol.M.INPUT or type == Protocol.M.PONG or type == Protocol.M.PING or type == SocialProto.HUB_POSE else "other"
 	r[key] = int(r[key]) + 1
 	var ok := int(r[key]) <= (RATE_INPUT if key == "input" else RATE_OTHER)
 	if not ok:
