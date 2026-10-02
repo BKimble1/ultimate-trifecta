@@ -53,7 +53,7 @@ createServer(async (req, res) => {
     const text = await r.text();
     res.writeHead(r.status, { 'content-type': 'application/json' });
     res.end(text);
-    console.log(`${req.method} ${url.pathname} -> ${r.status}`);
+    console.log(`${new Date().toISOString()} ${req.method} ${url.pathname} -> ${r.status}${r.status >= 400 ? ' ' + text.slice(0, 120) : ''}`);
   } catch (e) {
     res.writeHead(500, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ ok: false, error: 'internal', message: String(e) }));

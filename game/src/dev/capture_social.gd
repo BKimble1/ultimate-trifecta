@@ -319,6 +319,8 @@ func _show_series() -> void:
 #                         and sends Quick Chat
 # ---------------------------------------------------------------------------
 var _busy := false
+var _hb_at := 0.0
+var _tries := 0
 var _ready_done := false
 var _code := ""
 
@@ -384,7 +386,9 @@ func _service_host() -> void:
 			s.roster[0]["pid"] = s.local_pid
 			s.roster[0]["name"] = String(Cloud.profile.get("display_name", "Host"))
 			App._start_room_heartbeat(_code)
-			await get_tree().create_timer(2.0).timeout
+			var hb: Dictionary = await Cloud.room_heartbeat(_code, "", [s.local_pid])
+			printerr("SOCIAL heartbeat %s %s" % [str(hb.get("ok", false)), String(hb.get("room", {}).get("state", ""))])
+			_hb_at = _t
 			var f := FileAccess.open(_arg("dev-service-dir").path_join("room_code.txt"), FileAccess.WRITE)
 			f.store_string(_code)
 			f.close()
@@ -392,6 +396,16 @@ func _service_host() -> void:
 			_busy = false
 			_next(1.0)
 		1:
+			# (this slow software-rendered host keeps its room alive itself)
+			if _t - _hb_at > 6.0:
+				_hb_at = _t
+				var pids: Array = []
+				for e in s.roster:
+					if e != null and not bool(e["is_bot"]) and String(e.get("pid", "")) != "":
+						pids.append(String(e["pid"]))
+				_busy = true
+				await Cloud.room_heartbeat(_code, "", pids)
+				_busy = false
 			if s.human_count() >= 2 and chat.history.any(func(m: Dictionary) -> bool: return int(m["kind"]) == SocialProto.Kind.TEXT):
 				_next(3.0)
 		2:
@@ -487,15 +501,18 @@ func _service_guest() -> void:
 			if not FileAccess.file_exists(p):
 				return
 			_busy = true
-			if not await _service_login():
+			if _tries == 0 and not await _service_login():
 				get_tree().quit()
 				return
 			_code = FileAccess.get_file_as_string(p).strip_edges()
 			var r: Dictionary = await Cloud.join_room(_code)
-			printerr("SOCIAL join %s: %s" % [_code, str(r.get("ok", false))])
+			printerr("SOCIAL join %s: %s %s" % [_code, str(r.get("ok", false)), String(r.get("error", ""))])
 			if not bool(r.get("ok", false)):
-				printerr(str(r))
-				get_tree().quit()
+				_tries += 1
+				_busy = false
+				if _tries > 8:
+					get_tree().quit()
+				_at = _t + 5.0   # the host is slow to come back to its heartbeat: try again
 				return
 			App.join_room_enet("127.0.0.1", int(_arg("dev-port", "7787")))
 			App.session.admission = String(r["admission"])
