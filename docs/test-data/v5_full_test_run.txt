@@ -1,0 +1,401 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+[ok] test_account::test_first_launch_creates_runner_then_name (80 ms)
+[ok] test_account::test_delete_reconfirms_and_deletes_online_before_local (98 ms)
+[ok] test_account::test_failed_online_delete_keeps_everything (59 ms)
+[ok] test_account::test_without_service_deletes_on_device_only (85 ms)
+[ok] test_account::test_profile_section_offers_rename_and_delete (65 ms)
+[ok] test_account::test_session_is_reused_and_renewed_once_when_expired (1 ms)
+[ok] test_account::test_report_and_block_requests_match_the_service_contract (1 ms)
+[ok] test_animation::test_gait_cadence_matches_the_asset (0 ms)
+[ok] test_animation::test_footsteps_follow_the_gait_phase (6 ms)
+[ok] test_animation::test_distant_characters_keep_real_time (3 ms)
+[ok] test_animation::test_visual_yaw_never_takes_the_long_way (2 ms)
+[ok] test_animation::test_landing_sound_survives_on_floor_flicker (3 ms)
+[ok] test_animation::test_splash_plays_from_authoritative_time (6 ms)
+WARNING: Jolt Physics job system exceeded the maximum number of jobs. This should not happen. Please report this. Waiting for jobs to become available...
+[ok] test_animation::test_impact_class_comes_from_the_sim (204 ms)
+[ok] test_boot_branding::test_launch_image_boot_splash_and_curtain_agree (162 ms)
+[ok] test_boot_branding::test_curtain_waits_for_readiness_not_frames (15 ms)
+[ok] test_boot_branding::test_brand_marks_import_cleanly (40 ms)
+[ok] test_boot_branding::test_no_unwanted_branding_copy (24 ms)
+[ok] test_camping::test_water_exits_and_pads_beat_two_campers (0 ms)
+[ok] test_camping::test_respawn_away_from_campers_in_play (493 ms)
+[ok] test_camping::test_dorm_doors_spread_and_cart_free (1818 ms)
+[ok] test_campus_art::test_collision_nav_and_layout_unchanged_from_v4 (201 ms)
+[ok] test_campus_art::test_visual_build_adds_no_physics (770 ms)
+[campus] dressing: 3859 pieces
+[ok] test_campus_art::test_dressing_is_fresh_and_visual_only (616 ms)
+[ok] test_campus_art::test_dressing_keeps_out_of_corridors_and_water_exits (429 ms)
+[ok] test_campus_art::test_bot_routes_and_swim_lines_are_clear (183 ms)
+[campus] slowest build steps (ms): ["paths 10.6", "bollards 8.7", "ground 8.4", "horizon 8.4", "plazas 8.1", "ground 8.1"]
+[ok] test_campus_art::test_staged_build_steps_are_short (910 ms)
+[ok] test_campus_art::test_art_kit_loads_with_lods (3 ms)
+[ok] test_campus_art::test_battery_saver_is_lighter (1761 ms)
+CHASE times (s, -1 = escaped 25 s): [7.0, 5.2, 6.2, 5.2]
+[ok] test_chase_balance::test_night_watch_runs_down_a_fleeing_runner_in_the_open (2182 ms)
+[ok] test_chase_balance::test_runner_sprint_opens_the_gap (340 ms)
+[ok] test_compile::test_all_scripts_compile (282 ms)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:225)
+       [2] test_rapid_jump_then_dive_is_two_presses_on_every_device (res://tests/test_controls.gd:66)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_runner_sprint_opens_the_gap (res://tests/test_chase_balance.gd:57)
+       [5] step (res://tests/sim_harness.gd:43)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:225)
+       [2] test_rapid_jump_then_dive_is_two_presses_on_every_device (res://tests/test_controls.gd:66)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_runner_sprint_opens_the_gap (res://tests/test_chase_balance.gd:57)
+       [5] step (res://tests/sim_harness.gd:43)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:225)
+       [2] test_rapid_jump_then_dive_is_two_presses_on_every_device (res://tests/test_controls.gd:66)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_runner_sprint_opens_the_gap (res://tests/test_chase_balance.gd:57)
+       [5] step (res://tests/sim_harness.gd:43)
+[ok] test_controls::test_rapid_jump_then_dive_is_two_presses_on_every_device (0 ms)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:225)
+       [2] test_mixed_sources_keep_arrival_order (res://tests/test_controls.gd:79)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_runner_sprint_opens_the_gap (res://tests/test_chase_balance.gd:57)
+       [5] step (res://tests/sim_harness.gd:43)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:225)
+       [2] test_mixed_sources_keep_arrival_order (res://tests/test_controls.gd:79)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_runner_sprint_opens_the_gap (res://tests/test_chase_balance.gd:57)
+       [5] step (res://tests/sim_harness.gd:43)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:225)
+       [2] test_mixed_sources_keep_arrival_order (res://tests/test_controls.gd:79)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_runner_sprint_opens_the_gap (res://tests/test_chase_balance.gd:57)
+       [5] step (res://tests/sim_harness.gd:43)
+[ok] test_controls::test_mixed_sources_keep_arrival_order (0 ms)
+[ok] test_controls::test_queue_is_bounded_and_stale_presses_expire (0 ms)
+[ok] test_controls::test_text_fields_and_pause_do_not_leak_presses (5 ms)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:230)
+       [2] test_drift_cannot_fight_touch_or_flip_prompts (res://tests/test_controls.gd:131)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_text_fields_and_pause_do_not_leak_presses (res://tests/test_controls.gd:114)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:230)
+       [2] test_drift_cannot_fight_touch_or_flip_prompts (res://tests/test_controls.gd:131)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_text_fields_and_pause_do_not_leak_presses (res://tests/test_controls.gd:114)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:230)
+       [2] test_drift_cannot_fight_touch_or_flip_prompts (res://tests/test_controls.gd:131)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_text_fields_and_pause_do_not_leak_presses (res://tests/test_controls.gd:114)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:221)
+       [2] test_drift_cannot_fight_touch_or_flip_prompts (res://tests/test_controls.gd:133)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_text_fields_and_pause_do_not_leak_presses (res://tests/test_controls.gd:114)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:221)
+       [2] test_drift_cannot_fight_touch_or_flip_prompts (res://tests/test_controls.gd:133)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_text_fields_and_pause_do_not_leak_presses (res://tests/test_controls.gd:114)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:221)
+       [2] test_drift_cannot_fight_touch_or_flip_prompts (res://tests/test_controls.gd:133)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_text_fields_and_pause_do_not_leak_presses (res://tests/test_controls.gd:114)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:225)
+       [2] test_drift_cannot_fight_touch_or_flip_prompts (res://tests/test_controls.gd:137)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_text_fields_and_pause_do_not_leak_presses (res://tests/test_controls.gd:114)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:225)
+       [2] test_drift_cannot_fight_touch_or_flip_prompts (res://tests/test_controls.gd:137)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_text_fields_and_pause_do_not_leak_presses (res://tests/test_controls.gd:114)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _set_device (res://src/autoload/input_router.gd:198)
+       [1] _input (res://src/autoload/input_router.gd:225)
+       [2] test_drift_cannot_fight_touch_or_flip_prompts (res://tests/test_controls.gd:137)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_text_fields_and_pause_do_not_leak_presses (res://tests/test_controls.gd:114)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _activate_joy (res://src/autoload/input_router.gd:166)
+       [1] _input (res://src/autoload/input_router.gd:224)
+       [2] test_drift_cannot_fight_touch_or_flip_prompts (res://tests/test_controls.gd:139)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_text_fields_and_pause_do_not_leak_presses (res://tests/test_controls.gd:114)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _activate_joy (res://src/autoload/input_router.gd:166)
+       [1] _input (res://src/autoload/input_router.gd:224)
+       [2] test_drift_cannot_fight_touch_or_flip_prompts (res://tests/test_controls.gd:139)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_text_fields_and_pause_do_not_leak_presses (res://tests/test_controls.gd:114)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+   GDScript backtrace (most recent call first):
+       [0] _activate_joy (res://src/autoload/input_router.gd:166)
+       [1] _input (res://src/autoload/input_router.gd:224)
+       [2] test_drift_cannot_fight_touch_or_flip_prompts (res://tests/test_controls.gd:139)
+       [3] _ready (res://tests/test_runner.gd:59)
+       [4] test_text_fields_and_pause_do_not_leak_presses (res://tests/test_controls.gd:114)
+[ok] test_controls::test_drift_cannot_fight_touch_or_flip_prompts (0 ms)
+[ok] test_controls::test_stick_curves (0 ms)
+[ok] test_controls::test_prompts_follow_the_controller_family (1 ms)
+[ok] test_controls::test_disconnect_and_backgrounding_clear_presses (0 ms)
+[ok] test_controls::test_hud_splash_feed_coalesces_and_survives_freed_lines (1 ms)
+[ok] test_diag::test_ring_histogram_and_stall_attribution (6 ms)
+[ok] test_diag::test_summary_has_no_identifiers (0 ms)
+[ok] test_emotes::test_every_emote_from_host_and_guest (102 ms)
+[ok] test_emotes::test_reselection_repeat_ready_and_teardown (183 ms)
+[ok] test_focus::test_menu_screens_are_fully_navigable (288 ms)
+[ok] test_focus::test_code_entry_never_traps_a_controller (42 ms)
+ERROR: Lambda capture at index 0 was freed. Passed "null" instead.
+[ok] test_focus::test_dialogs_trap_focus_close_on_back_and_restore_focus (51 ms)
+[ok] test_focus::test_v4_screens_and_results_are_navigable (98 ms)
+[load] round prepared in 771 ms over 65 frames (longest frame of work 17.9 ms; longest job campus:paths 12.6 ms)
+[ok] test_loading::test_round_is_prepared_in_bounded_steps (802 ms)
+[ok] test_loading::test_campus_look_is_reused_between_rounds (880 ms)
+[load] nodes/objects/orphans after rounds 2, 10: [45.0, 3140.0, 190.0]  [45.0, 3140.0, 190.0]; session connections [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[ok] test_loading::test_ten_rounds_leave_nothing_behind (1344 ms)
+[ok] test_loading::test_loading_loop_assets_agree (10 ms)
+WARNING: Nodes with non-equal opposite anchors will have their size overridden after _ready(). 
+If you want to set size, change the anchors or consider using set_deferred().
+     GDScript backtrace (most recent call first):
+         [0] test_loading_layout_keeps_feet_clear_of_status (res://tests/test_loading.gd:135)
+         [1] _ready (res://tests/test_runner.gd:59)
+         [2] test_ten_rounds_leave_nothing_behind (res://tests/test_loading.gd:102)
+[ok] test_loading::test_loading_layout_keeps_feet_clear_of_status (19 ms)
+[load] round prepared in 763 ms over 67 frames (longest frame of work 16.4 ms; longest job campus:paths 10.7 ms)
+[ok] test_loading::test_loading_screen_still_loop_progress_and_release (840 ms)
+[ok] test_loading::test_loading_screen_closed_early_hands_its_load_to_app (39 ms)
+[ok] test_loading::test_loading_screen_reduced_motion_shows_the_still_only (19 ms)
+[ok] test_lobby::test_stage_updates_incrementally_through_drop_and_rejoin (24 ms)
+[ok] test_lobby::test_eight_players_fit_on_distinct_marks (402 ms)
+[ok] test_lobby::test_slot_cell_contents_stay_inside_the_cell (8 ms)
+[ok] test_lobby_flow::test_emotes_wardrobe_return_and_start (188 ms)
+[ok] test_map::test_bake_and_overlay_share_the_transform (0 ms)
+[ok] test_map::test_labels_never_overlap (1 ms)
+[load] round prepared in 837 ms over 68 frames (longest frame of work 17.5 ms; longest job campus:paths 12.4 ms)
+[ok] test_map::test_map_shows_only_permitted_opponents (980 ms)
+[ok] test_motion::test_render_state_interpolates_between_ticks (1 ms)
+[ok] test_motion::test_respawn_is_not_interpolated (0 ms)
+[ok] test_motion::test_splash_resurface_cart_and_reconnect_jumps_snap (0 ms)
+[ok] test_motion::test_camera_damping_is_frame_rate_independent (0 ms)
+[ok] test_motion::test_head_spring_is_stable_at_any_frame_rate (0 ms)
+[ok] test_motion::test_character_acceleration_uses_previous_velocity (4 ms)
+[ok] test_motion_layer::test_v4_press_race_is_reproduced_and_fixed (3 ms)
+[ok] test_motion_layer::test_press_scales_the_face_not_the_hit_region (1 ms)
+[ok] test_motion_layer::test_hidden_while_held_resets_and_free_mid_animation_is_clean (2 ms)
+[ok] test_motion_layer::test_retarget_cancels_the_old_callback (0 ms)
+[ok] test_motion_layer::test_reduced_motion_keeps_state_feedback_only (1 ms)
+[ok] test_motion_layer::test_focus_ring_and_disabled_state_stay_readable (1 ms)
+[ok] test_motion_layer::test_tabular_digits (1 ms)
+[ok] test_motion_v5::test_transitions_do_not_snap (334 ms)
+[ok] test_motion_v5::test_contact_flicker_never_plays_air (22 ms)
+[ok] test_motion_v5::test_landings_and_jumps_fire_once (116 ms)
+[ok] test_motion_v5::test_hitch_and_teleport_do_not_fling_the_cap (74 ms)
+[ok] test_motion_v5::test_teleport_cuts_pose_and_resets_history (7 ms)
+[ok] test_motion_v5::test_secondary_bounded_under_irregular_frames (11 ms)
+[ok] test_motion_v5::test_gait_cadence_matches_ground_travel (72 ms)
+[ok] test_motion_v5::test_start_and_stop_land_on_a_step (18 ms)
+[ok] test_motion_v5::test_lod_has_hysteresis_and_keeps_time (3 ms)
+[ok] test_motion_v5::test_menu_idle_api (203 ms)
+[ok] test_motion_v5::test_asset_has_the_v5_clips (0 ms)
+[ok] test_motion_v5::test_camera_ignores_posts_but_not_walls (26 ms)
+[ok] test_motion_v5::test_run_on_the_spot_keeps_its_facing (6 ms)
+[ok] test_motion_v5::test_first_frame_faces_the_sim_yaw_away_from_the_origin (3 ms)
+[ok] test_native::test_share_extension_registers_and_falls_back_off_device (0 ms)
+[ok] test_native::test_device_state_for_diagnostics (0 ms)
+[ok] test_net::test_protocol_snapshot_size_and_roundtrip (133 ms)
+[ok] test_net::test_lobby_join_ready_start (178 ms)
+NETSTAT {"client_rtt_est_ms":122.0,"corr_avg_m":0.004,"corr_max_m":0.234,"corr_over_25cm":0,"host_events":6,"host_skipped":{},"host_starved":{"1":2},"hub_dropped":0,"hub_sent":1626,"interp_err_m":0.01,"jitter_ms":8.0,"kb_sent":195.2,"label":"rtt100","loss":0.0,"missing_reliable_events":0,"pred_vs_host_m":0.59,"rtt_ms":100.0,"snapshots":378}
+[ok] test_net::test_match_sync_100ms (10910 ms)
+NETSTAT {"client_rtt_est_ms":183.0,"corr_avg_m":0.004,"corr_max_m":0.244,"corr_over_25cm":0,"host_events":6,"host_skipped":{},"host_starved":{"1":3},"hub_dropped":71,"hub_sent":1623,"interp_err_m":0.01,"jitter_ms":15.0,"kb_sent":195.3,"label":"rtt150_loss5","loss":0.05,"missing_reliable_events":0,"pred_vs_host_m":0.67,"rtt_ms":150.0,"snapshots":367}
+[ok] test_net::test_match_sync_150ms_with_loss (10901 ms)
+NETSTAT {"client_rtt_est_ms":336.0,"corr_avg_m":0.002,"corr_max_m":0.098,"corr_over_25cm":0,"host_events":6,"host_skipped":{},"host_starved":{},"hub_dropped":147,"hub_sent":1624,"interp_err_m":0.01,"jitter_ms":30.0,"kb_sent":195.6,"label":"rtt300_loss10","loss":0.1,"missing_reliable_events":0,"pred_vs_host_m":1.17,"rtt_ms":300.0,"snapshots":338}
+[ok] test_net::test_match_sync_high_latency (10382 ms)
+[ok] test_net::test_capture_reaches_client_and_client_patrol_tag (4879 ms)
+NETSTAT {"captured":true,"label":"client_patrol_tag_150ms","lag_ticks":9}
+[ok] test_net::test_client_patrol_lag_compensated_tags (5947 ms)
+[ok] test_net::test_host_loss_clean_and_silent (3557 ms)
+[ok] test_net::test_reconnect_resumes_slot_and_progress (4427 ms)
+[ok] test_net::test_late_join_spectates_then_plays_next_round (2350 ms)
+[ok] test_net::test_rematch_cleanup (1848 ms)
+[ok] test_net::test_duplicate_reordered_inputs_and_late_snapshots (5 ms)
+CLIENT slot=4 role=0 avg=0.002 n=292 big=[]
+CLIENT slot=5 role=0 avg=0.003 n=290 big=[{ "err": 0.24, "tick": 720, "ack": 716, "phase": 4, "pend_seqs": [717, 727], "state": 0, "pending": 11, "srv_pos": (-5.89831, 0.4271, 85.73273), "before": (-5.44637, 0.017431, 86.19746), "after": (-5.616602, 0.00026, 86.36773), "floor": false, "vel": (4.175043, -4.683332, 0.824958), "role": 0 }]
+CLIENT slot=6 role=0 avg=0.002 n=289 big=[]
+CLIENT slot=3 role=0 avg=0.001 n=284 big=[]
+CLIENT slot=2 role=1 avg=0.000 n=289 big=[]
+CLIENT slot=1 role=0 avg=0.003 n=284 big=[{ "err": 0.24, "tick": 720, "ack": 715, "phase": 4, "pend_seqs": [716, 727], "state": 0, "pending": 12, "srv_pos": (-3.982592, 0.42817, 91.64928), "before": (-3.530652, 0.017449, 92.19735), "after": (-3.700906, 0.000306, 92.36761), "floor": false, "vel": (4.175043, -4.683332, 0.824958), "role": 0 }]
+CLIENT slot=7 role=1 avg=0.000 n=289 big=[]
+NETSTAT {"clients":7,"dropped":234,"host_skipped":{},"host_starved":{"1":3,"2":3,"3":3,"4":2,"5":3,"6":3,"7":3},"kb_sent":1091.0,"label":"eight_player_loopback_rtt120_loss3","sent":9610,"snapshots":2026,"worst_avg_corr_m":0.003}
+[ok] test_net::test_eight_players_online_sync (15009 ms)
+[ok] test_net::test_enet_sends_to_departed_peers_are_dropped_quietly (143 ms)
+[ok] test_portraits::test_newer_request_from_same_owner_replaces_queued_one (0 ms)
+[ok] test_portraits::test_queue_is_bounded (0 ms)
+[ok] test_portraits::test_headless_gets_placeholder_without_work (0 ms)
+[prep] nav grid: 7 slices, longest 9.2 ms (V4: one ~50 ms block)
+[ok] test_prep_jobs::test_staged_nav_grid_equals_the_one_shot_grid (195 ms)
+[load] round prepared in 755 ms over 66 frames (longest frame of work 18.3 ms; longest job campus:paths 10.9 ms)
+[prep] longest job campus:paths 10.9 ms; longest non-campus job nav 9.8 ms
+[ok] test_prep_jobs::test_every_job_is_timed_and_named (788 ms)
+[ok] test_profile::test_v1_profile_loads_with_progress_and_new_defaults (0 ms)
+[ok] test_profile::test_v2_striped_and_plain_pajamas_keep_their_pattern (0 ms)
+[ok] test_profile::test_every_appearance_maps_onto_the_character (35 ms)
+[ok] test_profile::test_wire_format_round_trips_every_value (5 ms)
+[ok] test_profile::test_wire_format_rejects_junk_safely (5 ms)
+[ok] test_profile::test_catalog_ids_are_explicit_unique_and_pinned (1 ms)
+[ok] test_profile::test_apply_is_atomic_and_idempotent (1 ms)
+[ok] test_profile::test_generated_and_old_names_always_fit_the_name_rules (10 ms)
+PURSUIT jog 4 m, presses at 2.6 m          caught   1.3 s  attempts 1  hits 1  closure -1.00 m/s
+PURSUIT jog 8 m, presses at 2.6 m          caught   3.8 s  attempts 1  hits 1  closure 1.55 m/s
+PURSUIT jog 12 m, presses at 2.6 m         caught   6.3 s  attempts 1  hits 1  closure 1.55 m/s
+PURSUIT jog 8 m, presses on the cue        caught   3.8 s  attempts 1  hits 1  closure 1.55 m/s
+PURSUIT sprint cycle 8 m                   caught  10.8 s  attempts 1  hits 1  closure -0.33 m/s
+PURSUIT close rear tag, both running 2.2 m caught   0.2 s  attempts 1  hits 1  closure -1.00 m/s
+PURSUIT weaving runner 6 m                 caught   1.9 s  attempts 1  hits 1  closure -1.00 m/s
+PURSUIT jog 8 m, 100 ms input delay +-33 ms caught   5.0 s  attempts 3  hits 1  closure 1.33 m/s
+PURSUIT jog 8 m, 250 ms hitch at 2 s       caught   3.8 s  attempts 1  hits 1  closure 1.55 m/s
+[ok] test_pursuit::test_pursuit_report_and_targets (3470 ms)
+PURSUIT cart interception 21 m             caught  11.8 s  out of the cart at 7.9 s  (lockout presses ignored: 13)
+[ok] test_pursuit::test_cart_interception (533 ms)
+PURSUIT sprint burst: gap 4.0 m -> 5.5 m over 2 s
+[ok] test_pursuit::test_sprint_is_still_an_escape_burst (349 ms)
+[ok] test_pursuit::test_untaggable_states_and_cart_exit_lockout (615 ms)
+[ok] test_results_layout::test_actions_are_always_on_screen (132 ms)
+ROUTE ["Fountain", "Pond", "Garden"] finished 6/6 times [107.3, 113.5, 115.0, 112.0, 105.7, 106.7]
+ROUTE ["Fountain", "Pool", "Quarry"] finished 6/6 times [109.9, 107.8, 107.7, 110.4, 110.8, 106.8]
+ROUTE ["Fountain", "Pool", "Inlet"] finished 6/6 times [103.0, 103.7, 101.8, 100.7, 102.3, 104.9]
+ROUTE ["Fountain", "Quarry", "Garden"] finished 6/6 times [113.9, 115.2, 113.2, 113.4, 111.6, 108.8]
+ROUTE ["Fountain", "Garden", "Inlet"] finished 6/6 times [102.8, 97.6, 106.5, 107.3, 104.9, 106.9]
+ROUTE ["Pond", "Pool", "Quarry"] finished 6/6 times [116.8, 121.7, 112.6, 111.6, 113.1, 112.0]
+ROUTE ["Pond", "Pool", "Garden"] finished 6/6 times [119.0, 122.3, 114.4, 120.6, 113.9, 116.7]
+ROUTE ["Pond", "Pool", "Inlet"] finished 6/6 times [119.5, 116.8, 117.9, 116.2, 124.3, 116.0]
+ROUTE ["Pond", "Quarry", "Garden"] finished 6/6 times [114.0, 123.1, 114.2, 119.8, 117.8, 116.2]
+ROUTE ["Pond", "Garden", "Inlet"] finished 6/6 times [116.7, 121.8, 124.5, 122.3, 122.6, 121.9]
+ROUTE ["Pool", "Quarry", "Garden"] finished 6/6 times [122.8, 118.7, 116.7, 116.5, 119.3, 115.4]
+ROUTE ["Pool", "Quarry", "Inlet"] finished 6/6 times [121.8, 118.4, 114.6, 122.8, 113.8, 121.5]
+ROUTE ["Pool", "Garden", "Inlet"] finished 6/6 times [115.3, 110.3, 114.1, 113.1, 114.5, 104.8]
+ROUTE ["Quarry", "Garden", "Inlet"] finished 6/6 times [122.8, 121.9, 125.3, 116.2, 114.6, 119.1]
+ROUTE_SUMMARY n=84 min=97.6 median=114.6 max=125.2
+[ok] test_routes_bots::test_bots_complete_every_curated_route (116598 ms)
+[ok] test_rules::test_combos_and_permutations (0 ms)
+[ok] test_rules::test_route_table_fairness (0 ms)
+[ok] test_rules::test_pick_targets_seeded_no_repeat (1 ms)
+[ok] test_rules::test_choose_pad_maximises_distance (1 ms)
+[ok] test_rules::test_tag_geometry (0 ms)
+[ok] test_rules::test_rewards_unique_captures_no_idle_survival (0 ms)
+[ok] test_rules::test_level_curve (0 ms)
+[ok] test_rules::test_input_cmd_roundtrip (0 ms)
+[ok] test_rules::test_save_reward_ledger_once (8 ms)
+[ok] test_series::test_settings_combinations_and_rules_copy (1 ms)
+[ok] test_series::test_role_counts_and_human_constraints (13 ms)
+[ok] test_series::test_first_round_is_an_equal_draw_and_later_rounds_rotate (93 ms)
+[ok] test_series::test_one_human_policy (90 ms)
+[ok] test_series::test_round_recording_scores_and_ties (0 ms)
+[ok] test_series::test_series_view_is_sanitized (1 ms)
+[ok] test_series::test_settings_and_series_over_the_network (121 ms)
+[ok] test_series::test_three_round_series_end_to_end (9886 ms)
+[ok] test_series::test_reward_eligibility_and_dedup (2 ms)
+[ok] test_series::test_offline_practice_role_choice (21 ms)
+[ok] test_sim::test_every_curated_combo_all_orders (22556 ms)
+[ok] test_sim::test_duplicate_and_inactive_splash (201 ms)
+[ok] test_sim::test_water_resurfaces_automatically (128 ms)
+[ok] test_sim::test_capture_timing_progress_and_respawn (489 ms)
+[ok] test_sim::test_capture_before_first_splash_returns_to_dorm (433 ms)
+[ok] test_sim::test_after_three_splashes_return_to_third (661 ms)
+[ok] test_sim::test_tag_reach_cooldown_and_walls (399 ms)
+[ok] test_sim::test_tag_validation_roles_and_states (374 ms)
+[ok] test_sim::test_same_tick_finish_beats_tag (631 ms)
+[ok] test_sim::test_fourth_runner_ends_round_immediately (1289 ms)
+[ok] test_sim::test_timeout_and_deadline_finish (2207 ms)
+[ok] test_sim::test_cart_seat_race_and_roles (371 ms)
+[ok] test_sim::test_cart_drive_exit_safely_and_lockout (302 ms)
+[ok] test_sim::test_bump_stumbles_without_chain_or_capture (309 ms)
+[ok] test_sim::test_gadget_single_use_and_ownership (462 ms)
+[ok] test_sim::test_splash_bomb_slows_cart_briefly (296 ms)
+[ok] test_sim::test_reconnect_resumes_and_reservation_expires (1289 ms)
+[ok] test_sim::test_out_of_bounds_recovery_grants_nothing (85 ms)
+[ok] test_sim::test_finished_runner_is_out_of_play (328 ms)
+[ok] test_sim::test_movement_feel_numbers (436 ms)
+[ok] test_sim::test_spotted_cue_requires_line_of_sight (440 ms)
+[ok] test_smoke::test_layout_and_builder_load (87 ms)
+[ok] test_touch_input::test_walk_drag_and_jump_together (0 ms)
+[ok] test_touch_input::test_second_finger_in_stick_zone_never_moves (0 ms)
+[ok] test_touch_input::test_sliding_action_finger_keeps_its_button (0 ms)
+[ok] test_touch_input::test_rapid_jump_then_dive_are_two_ticks (0 ms)
+[ok] test_touch_input::test_leaving_cart_while_holding_gas_clears_it (0 ms)
+[ok] test_touch_input::test_pause_while_moving_cancels_everything (0 ms)
+[ok] test_touch_input::test_resume_after_interruption_works_normally (0 ms)
+[ok] test_touch_input::test_dead_zone_sneak_and_no_diagonal_boost (0 ms)
+[ok] test_touch_input::test_sprint_hysteresis (0 ms)
+[ok] test_touch_input::test_dynamic_stick_spawn_is_clamped_and_fixed_stick_option (0 ms)
+[ok] test_touch_input::test_reserved_regions_never_start_stick_or_camera (0 ms)
+[ok] test_touch_input::test_look_is_displacement_not_rate (0 ms)
+[ok] test_touch_input::test_controller_takeover_and_focus_loss_release_touch_intent (0 ms)
+[ok] test_touch_layout::test_targets_are_at_least_44_points_and_the_same_size_everywhere (0 ms)
+[ok] test_touch_layout::test_everything_stays_inside_the_safe_area_standard_and_mirrored (1 ms)
+[ok] test_touch_layout::test_hit_padding_never_overlaps_and_never_shrinks_a_target (0 ms)
+[ok] test_touch_layout::test_mirrored_hit_testing_matches_the_drawn_controls (0 ms)
+[ok] test_touch_layout::test_custom_anchor_is_used_and_clamped_on_another_device (0 ms)
+[ok] test_touch_layout::test_action_cluster_dropped_on_the_stick_is_pushed_clear (0 ms)
+[ok] test_touch_layout::test_contextual_buttons_never_shuffle_the_others (1 ms)
+[ok] test_touch_layout::test_role_transition_releases_holds_but_keeps_movement (0 ms)
+[ok] test_touch_layout::test_repeated_taps_each_count_once_in_order (0 ms)
+[ok] test_touch_layout::test_vanished_gadget_button_releases_its_finger (0 ms)
+[ok] test_touch_layout::test_layout_is_not_rebuilt_every_frame (0 ms)
+[ok] test_touch_layout::test_saved_layout_migrates_and_rejects_garbage (0 ms)
+[ok] test_touch_layout::test_tiny_or_degenerate_views_never_hang (12 ms)
+[ok] test_touch_layout::test_hud_regions_fall_through_the_touch_surface (0 ms)
+[ok] test_trust::test_bound_host_cannot_be_replaced_and_others_cannot_speak_for_it (13 ms)
+[ok] test_trust::test_expected_host_identity_is_enforced (1 ms)
+[ok] test_trust::test_admission_is_verified_bound_and_single_use (505 ms)
+[ok] test_trust::test_junk_and_floods_are_contained (61 ms)
+[ok] test_trust::test_round_waits_for_load_acks (131 ms)
+[ok] test_trust::test_names_from_the_network_are_sanitised (32 ms)
+[ok] test_wardrobe::test_every_item_name_is_readable_without_ellipsis (1 ms)
+[ok] test_wardrobe::test_a_picture_lands_on_every_card_showing_that_look (38 ms)
+[ok] test_wardrobe::test_rapid_category_switching_drops_stale_work (256 ms)
+[ok] test_wardrobe::test_apply_and_undo_say_what_they_do (46 ms)
+[ok] test_wardrobe::test_category_strip_fits_narrow_panels (39 ms)
+205 tests, 3208 checks, 0 failures in 257.5s
+WARNING: 821 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+ERROR: 17 resources still in use at exit (run with --verbose for details).
+ERROR: Pages in use exist at exit in PagedAllocator: N12VariantPools12BucketMediumE
+ERROR: 80 RID allocations of type 'N13RendererDummy15MaterialStorage13DummyMaterialE' were leaked at exit.
+ERROR: 3 RID allocations of type 'N13RendererDummy15MaterialStorage11DummyShaderE' were leaked at exit.
+ERROR: 12 RID allocations of type 'PN13RendererDummy14TextureStorage12DummyTextureE' were leaked at exit.
