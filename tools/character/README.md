@@ -34,6 +34,7 @@ tools/character/build.sh                            # writes runner.glb + runner
   - Shape keys on `base`: `blink`, `squint`, `smile`, `open`, `brow_up`, `brow_angry`.
   - The neutral mouth (a closed smile) is baked into the basis.
 - **Budgets.**
-  - A typical outfit (base + pajamas + nightcap + slippers) is about 17k triangles at LOD0. Godot generates LODs on import.
-  - Each visible part is one draw call with one shared `ShaderMaterial`; per-character colours are instance uniforms.
+  - A typical outfit (base + pajamas + nightcap + slippers) is about 23k triangles at LOD0 (V3: 19.7k). Godot generates LODs on import.
+  - Each visible part is one draw call with one shared `ShaderMaterial`; per-character colours are instance uniforms. Parts listed in `CharacterView.TWO_SIDED` (the nightcap) use a second, double-sided material with the same shader body (`character.gdshaderinc`).
+- **Checking changes.** `src/dev/character_lineup.tscn -- --lineup=parts` renders 12 fixed close-ups (nightcap, collar, cuff and hand, robe hem, each shoe, hair edges, Night Watch cap); `--parts-debug` hides the head to inspect the cap alone. Render it before and after a change and compare.
   - Distant characters advance their AnimationTree at a third of the rate.

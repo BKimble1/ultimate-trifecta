@@ -11,6 +11,9 @@ Commands:
   wait VERSION BUILD [timeout_s] -> poll until the build is VALID (or fails)
   internal BUILD_ID -> add the build to every existing internal beta group
   beta BUILD_ID  -> print the build's TestFlight states (internal/external)
+                    and its What to Test text
+  whats-new BUILD_ID FILE [LOCALE] -> set the build's TestFlight "What to
+                    Test" text (en-US by default) from FILE (max 4000 chars)
   ensure-bundle  -> register BUNDLE_ID with Game Center if missing (Xcode
                     automatic signing can also do this)
 Never prints the key. Requires: pip install pyjwt cryptography requests
@@ -134,9 +137,32 @@ def main():
         if not r.ok:
             return 1
         a = r.json()["data"]["attributes"]
-        print(json.dumps({"internalBuildState": a.get("internalBuildState"), "externalBuildState": a.get("externalBuildState"),
-                          "autoNotifyEnabled": a.get("autoNotifyEnabled")}))
+        out = {"internalBuildState": a.get("internalBuildState"), "externalBuildState": a.get("externalBuildState"),
+               "autoNotifyEnabled": a.get("autoNotifyEnabled")}
+        rl = call("GET", f"/builds/{sys.argv[2]}/betaBuildLocalizations")
+        if rl.ok:
+            out["whatToTest"] = {l["attributes"].get("locale"): (l["attributes"].get("whatsNew") or "")[:80]
+                                 for l in rl.json().get("data", [])}
+        print(json.dumps(out))
         return 0
+    if cmd == "whats-new":
+        build_id, path = sys.argv[2], sys.argv[3]
+        locale = sys.argv[4] if len(sys.argv) > 4 else "en-US"
+        text = open(path, encoding="utf-8").read().strip()
+        if len(text) > 4000:
+            print(f"What to Test text is {len(text)} characters; App Store Connect allows 4000")
+            return 1
+        rl = call("GET", f"/builds/{build_id}/betaBuildLocalizations")
+        have = [l for l in (rl.json().get("data", []) if rl.ok else []) if l["attributes"].get("locale") == locale]
+        if have:
+            body = {"data": {"type": "betaBuildLocalizations", "id": have[0]["id"], "attributes": {"whatsNew": text}}}
+            r = call("PATCH", f"/betaBuildLocalizations/{have[0]['id']}", data=json.dumps(body))
+        else:
+            body = {"data": {"type": "betaBuildLocalizations", "attributes": {"locale": locale, "whatsNew": text},
+                             "relationships": {"build": {"data": {"type": "builds", "id": build_id}}}}}
+            r = call("POST", "/betaBuildLocalizations", data=json.dumps(body))
+        print(("What to Test set (%s, %d characters)" % (locale, len(text))) if r.ok else ("could not set What to Test (HTTP %d)" % r.status_code))
+        return 0 if r.ok else 1
     print(__doc__)
     return 2
 

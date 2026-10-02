@@ -1,8 +1,9 @@
 # Ultimate Trifecta
 
 A playful third-person campus chase at a fictional 3:00 a.m. Runners in pajamas
-and mascot suits splash into three marked waters and race home to the dorm. Two
-Night Watch players hunt them on foot and in golf carts.
+and mascot suits splash into three marked waters and race home to the dorm. The
+Night Watch (one to three players; the party host picks, two by default) hunts
+them on foot and in golf carts, over a series of one, three or five rounds.
 
 - **Engine:** Godot 4.7.2-stable (GDScript, Mobile renderer, Jolt physics).
 - **Platform:** iOS 17+ for iPhone and iPad, landscape.
@@ -14,11 +15,33 @@ Night Watch players hunt them on foot and in golf carts.
 | [TEST_REPORT.md](TEST_REPORT.md) | What was tested, how, and what is still unverified |
 | [TESTFLIGHT_RELEASE.md](TESTFLIGHT_RELEASE.md) | Release status, signing lane, owner handoff and beta notes |
 | [ASSET_LICENSES.md](ASSET_LICENSES.md) | Where every asset and dependency comes from |
+| [docs/V4_NOTES.md](docs/V4_NOTES.md) | V4 implementation notes: the owner's playtest issue register, diagnostics, performance table, touch layout, campus and character art, Night Watch tuning, series, map, migration, What to Test |
 | [docs/V3_NOTES.md](docs/V3_NOTES.md) | V3 implementation notes: character art and animation, splash sequence, lobby/creator/type, profiles, parties and protocol 4, controls |
 | [docs/APP_STORE.md](docs/APP_STORE.md) | Prepared App Store package: store text, review notes, age rating and privacy answers |
 | [service/README.md](service/README.md) | The trusted online service (profiles, names, moderation, party rooms): API and owner deployment |
 | [docs/V2_NOTES.md](docs/V2_NOTES.md) | V2 implementation notes: render path, motion pipeline, touch rules, theme |
 | [tools/character/README.md](tools/character/README.md) | How the character asset is built |
+
+## What's new in V4 (version 1.3)
+
+V4 answers the owner's first iPhone playtest. Details and evidence are in [docs/V4_NOTES.md](docs/V4_NOTES.md).
+
+- **Touch controls** are sized in points and anchored to the safe area, and each role has fixed slots. Tag is the Night Watch's main button. Pause and the map can be tapped. **Settings › Controls › Edit layout** moves, resizes and mirrors the controls.
+- **Smoother rounds.**
+  - Rounds are prepared in short steps under an animated loading screen, and the campus is kept between rounds (17 ms rematch preparation, was ~650 ms in one frame).
+  - The ground uses a real height field.
+  - Portraits copy on the GPU, and effects are warmed up before play.
+  - Opt-in **Settings › Diagnostics (beta)** measures frame times, stalls and heat on the phone and shares a summary with no identifiers.
+- **Campus art:** rounded trees with LODs, baked shade and lamp light, framed windows, cornices and porches, turned lamps, softer rocks, hedges and landmarks. Colliders are unchanged.
+- **Characters:** a smoother nightcap that no longer shows the scalp at its fold, round cuffs and collars, rounder sleeves and hands, open robe sleeves, tidier hair edges, and dark skin tones that stay readable at night.
+- **Night Watch:** target assist toward runners in sight, a faster wind-up and lunge, a tag-ready cue, slightly faster on foot (runners sprint faster too), and a guided Night Watch training. Measured with pursuit scenarios.
+- **Clear feedback:** "Caught by … · back in 6", splashes kept, then "Protected". The HUD shows role and "Round x of y", "Home n/N" and the Night Watch's objective. A full map shows last-seen markers only.
+- **Parties:**
+  - The host picks 1/2/3 Night Watch and 1/3/5 rounds.
+  - Roles are drawn at random, fairly, each round; solo practice lets you choose Runner, Night Watch or Random.
+  - A series has round results, a ready step for the next round, and final standings by Round Wins.
+  - Lobby emotes always play, and you can try moves.
+- **Startup:** the launch image and loading screen use the Trifecta droplet motif. No third-party branding is drawn by the app.
 
 ## What's new in V3 (version 1.2)
 

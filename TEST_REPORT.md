@@ -1,6 +1,6 @@
 # Test report: Ultimate Trifecta
 
-This report records what was actually run, where, and what each result proves. Version 1.2 (V3) is reported first. The V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
+This report records what was actually run, where, and what each result proves. Version 1.3 (V4) is reported first. The V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
 
 | Label | What it is | What it can prove |
 |---|---|---|
@@ -11,7 +11,132 @@ This report records what was actually run, where, and what each result proves. V
 | **Desktop render** | The game rendered by Godot's Mobile renderer on Mesa **llvmpipe** (software Vulkan) under Xvfb, at device resolutions, with a fixed frame clock (`--fixed-fps 60`, or Movie Maker) | Layout, framing, art, render-path dimensions (render size vs displayed size, MSAA, scale) and engine counters (draw calls, primitives). **Not** frame rate, frame pacing, GPU cost or device smoothness |
 | **CI iOS** | GitHub Actions `macos-26` runner: Xcode project export, unsigned arm64 device archive (or, from V3, a signed archive and TestFlight upload), x86_64 Simulator build and run, App Store Connect API checks | That the iOS project compiles, links, signs and uploads, launches in the Simulator, and what App Store Connect reports for the build; *not* device performance or a device install |
 
-**Not done: no physical iPhone or iPad was available, so nothing in V1, V2 or V3 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V3.8.
+**Not done: no physical iPhone or iPad was available, so nothing in V1–V4 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V4.8. V4 adds an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md).
+
+# V4 (version 1.3)
+
+V4 answers the owner's first iPhone playtest of 1.2. Code is on
+`claude/ultimate-trifecta-testflight-oie9r7`; the final app code is named in
+V4.6. Implementation notes and the issue register:
+[docs/V4_NOTES.md](docs/V4_NOTES.md). Media index:
+[docs/media/v4/README.md](docs/media/v4/README.md).
+
+Evidence sources are labelled as in the table at the top of this report.
+**No physical iPhone or iPad was available for V4 either**: nothing below is
+a device measurement. V4 adds the opt-in diagnostics panel that measures
+the device (V4_NOTES, "Five-minute diagnostics check").
+
+## V4.1 Automated tests
+
+`tools/run_tests.sh` on the final code: **153 tests, 2644 checks, 0 failures** in 211 s
+(`docs/test-data/v4_full_test_run.txt`). V3 had 117 tests and 1254 checks.
+
+| Suite (new in V4) | Tests | What they exercise |
+|---|---|---|
+| `test_touch_layout` | 14 | Targets ≥ 44 pt and the same physical size on iPhone SE, 14 Pro, Pro Max and iPad; everything inside the safe area, standard and mirrored; hit padding never overlaps and never shrinks a target; mirrored hit testing matches the drawn controls; a custom anchor is used, and clamped on another device; an action cluster dropped on the stick is pushed clear; contextual buttons never shuffle the others; role transitions release holds but keep movement; repeated taps each count once, in order; a vanished gadget button releases its finger; the layout is not rebuilt every frame; saved layouts migrate and garbage is rejected; tiny views never hang; HUD regions (Pause, map) fall through the touch surface |
+| `test_pursuit` | 4 | Real sim and physics with a human-like Night Watch (camera lag, presses at a "looks close" 2.6 m or on the cue): the 11-scenario report with targets (V4.2); cart interception; a sprint is still an escape burst; untaggable states and the cart-exit lockout |
+| `test_series` | 9 | Every 1/2/3 Night Watch × 1/3/5 rounds combination and its per-round rules copy; role counts and human/bot constraints; round 1 an equal draw, later rounds rotate; the one-human policy; round recording, scores and shared places; the series view is sanitised; settings and series over the loopback network; **a full three-round friend series end to end over the loopback network** (Round x of 3, ready gating, fair Night Watch rotation 2/2/2, repeated results counted once, drop and rejoin keeps one standing, Play again starts a fresh series); reward eligibility (short drop keeps the reward, most-of-the-round away gets none, no double payment) |
+| `test_emotes` | 2 | Every emote from the host and from a guest, picker → session → host event → the right character → visible animation → clean return; rapid reselection, repeats, the ready response, an outfit change, the picker sheet and the stage going away mid-emote |
+| `test_loading` | 3 | A round is prepared in bounded steps under the loading screen (no step a long freeze); the campus is reused between rounds with clean per-round water state; ten rounds in a row leave scene nodes, objects, orphans and signal connections flat |
+| `test_portraits` | 3 | A newer request from the same party cell replaces its queued one; the queue is bounded; headless gets a placeholder without work |
+| `test_diag` | 2 | Frame-interval ring, histogram percentiles and stall attribution to markers; **the shared summary contains no names, room codes or Game Center IDs** |
+
+Existing suites still pass unchanged: rules, sim, routes, net (protocol 5),
+trust, controls, focus, lobby, animation, profile, account and native.
+
+## V4.2 Night Watch pursuit, before and after (headless sim)
+
+The same harness ran on the V3 values (a worktree of the V4 code with the
+old rules and no assist) and on the final V4 values:
+`docs/v4/pursuit_before.txt`, `docs/v4/pursuit_after.txt`.
+
+| Scenario | V3 | V4 |
+|---|---|---|
+| Jogging runner from 4 m | 2.7 s, 2 presses | 1.3 s, 1 press |
+| Jogging runner from 8 m | 6.1 s, 2 presses | 3.8 s, 1 press |
+| Jogging runner from 12 m | 9.4 s, 2 presses | 6.3 s, 1 press |
+| Pressing only when Tag lights up (8 m) | no cue: escaped | 3.8 s, 1 press |
+| Runner cycling sprint (8 m) | 17.8 s | 10.8 s |
+| Close rear tag, both running (2.2 m) | 0.3 s | 0.2 s |
+| Weaving runner (6 m) | 3.5 s, 2 presses | 1.9 s, 1 press |
+| 100 ms input delay ±33 ms (8 m) | 5.9 s, 2 presses | 5.0 s, 3 presses |
+| 250 ms hitch at 2 s (8 m) | 6.1 s | 3.8 s |
+| Cart from 21 m, hop out, tag | 14.1 s | 11.8 s |
+| 2 s sprint burst (gap gained) | +1.6 m | +1.5 m |
+
+These are measured scenario values, not playtests with people.
+
+## V4.3 Loading and frame-time work (desktop CPU; not device numbers)
+
+| Measurement | V3 code | V4 code |
+|---|---|---|
+| Round preparation | the whole campus, collision and characters built inside one frame in `MatchController._ready` (~650 ms), every round including rematches | first round 688 ms of work over 42 frames under the loading screen, longest frame of work 57 ms (headless test run); rematch / next round **17 ms** (campus kept) |
+| Ground collision | 161 ms (Jolt mesh fallback for a 321×301 map) | 6 ms (square 321×321 height field) |
+| Collision bodies | 45 ms | 4 ms |
+| Visible primitives, Night Watch capture scenario (llvmpipe engine counters) | 179–253k | 238–307k |
+
+The windowed llvmpipe runs took longer (for example 2.2–2.5 s of
+preparation over 47 frames), because the software rasteriser also uploads
+and draws. Neither figure is a phone measurement.
+
+## V4.4 Visual evidence (desktop render)
+
+All of it was rendered by the Mobile renderer on llvmpipe under Xvfb and is
+labelled in [docs/media/v4/README.md](docs/media/v4/README.md):
+- **Campus:** seven matched route cameras and all six waters on the V3 art
+  and the V4 art, plus side-by-side comparisons.
+- **Characters:** 12 matched close-ups of the refined parts, the hero
+  framing, skin tones under campus light, the outfits and a group.
+- **Screens:** V3 (`e39c98c`) and V4 renders of home, the creator, the
+  touch HUD as runner and Night Watch, the capture moment, round results
+  and the 8-player lobby; V4 alone for the layout editor, the full map and
+  the final series results.
+- **Clips:** normal-speed Movie Maker clips (fixed 30 fps game clock) of
+  startup and loading, lobby emotes and Try moves, a Night Watch pursuit and
+  tag, a runner's splash and recovery, and the change from round 1 to
+  round 2 of a series. None is frame-interpolated or sped up.
+
+## V4.5 Networking on V4 (protocol 5)
+
+- **Loopback net:** `test_series` runs settings, START snapshots, SERIES
+  standings, ready gating, a drop and rejoin between rounds and Play again
+  across three rounds; `test_net` and `test_trust` pass unchanged on
+  protocol 5.
+- **Desktop UDP:** see `docs/test-data/v4_net_soak_*` for the multi-round
+  soak over real UDP, if listed there; otherwise it was not run for V4.
+
+## V4.6 iOS build (CI iOS) and TestFlight
+
+(filled in below when the signed upload has run)
+
+## V4.7 Found and fixed during V4 validation
+
+- **HUD Pause (and map) could not be tapped:** the full-screen touch surface
+  on the layer above swallowed those taps. Found by a real-window check
+  (`src/dev/input_fallthrough_check.tscn`): the V3 surface blocked the tap,
+  V4 passes it.
+- **Emotes cut short:** a stale emote timer could cancel a newer emote.
+- **Grey portraits:** a new rig's first render (and parts just shown)
+  missed their per-instance tints; fixed with an unseen warm-up render.
+- **Orphan leak:** a dead HUD node leaked one orphan per round.
+- **Touch layout recursion:** the fallback could recurse on tiny views.
+- **Nightcap:** the scalp showed beside the fold in close-ups, because the
+  spring chain sagged the cap into the head and the fold crosses itself.
+  The polyline path also creased the cap.
+- **Robe sleeves:** read as a flat disc inside a thin hoop.
+- **Night skin readability:** dark skin tones lost facial detail under
+  campus night light.
+
+## V4.8 Not verified (exact remaining checks)
+
+- Frame interval, stalls, GPU time and thermals on an iPhone: use
+  **Settings › Diagnostics (beta)** and Share summary (V4_NOTES).
+- Touch comfort and the layout editor on a real phone, in both landscape
+  orientations.
+- The Night Watch tuning with people, as opposed to the pursuit harness.
+- A friend series over Game Center between two devices.
+- The launch screen as iOS draws it on a device (the Simulator run on CI is
+  the closest evidence).
 
 # V3 (version 1.2)
 

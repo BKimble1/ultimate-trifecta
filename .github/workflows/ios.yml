@@ -288,7 +288,31 @@ jobs:
           find build/ios -name '*.entitlements' -maxdepth 3 -exec sh -c 'echo "== $1"; cat "$1"' _ {} \;
           PM=$(find build/ios -maxdepth 3 -name PrivacyInfo.xcprivacy | head -1); [ -n "$PM" ] && { echo "== $PM"; plutil -convert json -o - "$PM"; echo; }
           [ -f sim-evidence/summary.txt ] && { echo "== Simulator summary"; cat sim-evidence/summary.txt; }
+          for f in sim-evidence/launch_assets/files.txt sim-evidence/launch_assets/branding_text.txt; do
+            [ -f "$f" ] && { echo "== launch audit: $(basename "$f")"; cat "$f"; }; done
           echo "BUILD_FACTS_END"
+          # the launch frames and the title, small enough to read back from the log
+          if [ -x "$RUNNER_TEMP/venv/bin/python" ] && ls sim-evidence/launch_*.png > /dev/null 2>&1; then
+            "$RUNNER_TEMP/venv/bin/python" - <<'PY'
+          import base64, glob, io
+          from PIL import Image
+          files = sorted(glob.glob("sim-evidence/launch_*.png")) + sorted(glob.glob("sim-evidence/00_title.png"))
+          W = 240
+          th = [Image.open(f).convert("RGB") for f in files]
+          th = [t.resize((W, int(t.height * W / t.width))) for t in th]
+          h = max(t.height for t in th)
+          sheet = Image.new("RGB", (W * len(th), h), (0, 0, 0))
+          for i, t in enumerate(th):
+              sheet.paste(t, (i * W, 0))
+          buf = io.BytesIO(); sheet.save(buf, "JPEG", quality=60)
+          print("LAUNCH_SHEET_FILES", " ".join(f.split("/")[-1] for f in files))
+          print("LAUNCH_SHEET_BEGIN")
+          b = base64.b64encode(buf.getvalue()).decode()
+          for i in range(0, len(b), 1000):
+              print(b[i:i+1000])
+          print("LAUNCH_SHEET_END")
+          PY
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -311,6 +335,7 @@ jobs:
             BID=$("$ASC_PY" tools/asc.py builds | python3 -c 'import json,sys; b=[x for x in json.load(sys.stdin) if str(x["build"])=="${{ steps.num.outputs.build }}"]; print(b[0]["id"] if b else "")')
             if [ -n "$BID" ]; then
               "$ASC_PY" tools/asc.py internal "$BID"
+              [ -f docs/testflight/what_to_test.txt ] && "$ASC_PY" tools/asc.py whats-new "$BID" docs/testflight/what_to_test.txt
               "$ASC_PY" tools/asc.py beta "$BID"
             fi
           fi

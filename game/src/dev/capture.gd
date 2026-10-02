@@ -20,6 +20,19 @@ extends Node
 ##             patrol scenarios save <scenario>_results.var; pass it with
 ##             --capture-results=path) for layout checks at other aspects,
 ##             then opens the scoreboard drawer
+##   startup   normal boot (boot curtain over the title), then Practice as a
+##             runner: loading screen, role reveal and countdown (for clips)
+##   emotes    a LAN room (--capture-players=N): presses the real Emote and
+##             Try moves buttons and tiles (Dance, Wave, Ha!, Sprint, Jump)
+##   transition  the host of a LAN series (--net-host, --expect=2, a
+##             headless --net-join client): round 1's results, the real
+##             "Next: round 2" button, the party room, then round 2's
+##             loading, reveal and countdown (for the multi-round clip)
+##   series    the final results of a three-round friend series: a recorded
+##             round (--capture-results=path) is played as round 3 after two
+##             earlier rounds, all recorded through PartySeries (real Round
+##             Wins, standings and role tally); two bot seats are relabelled
+##             as friends.  Layout evidence only: no network play happens.
 
 var scenario := ""
 var out_dir := ""
@@ -96,6 +109,14 @@ func _process(delta: float) -> void:
 			_match()
 		"results":
 			_results()
+		"series":
+			_series()
+		"startup":
+			_startup()
+		"transition":
+			_transition()
+		"emotes":
+			_emotes()
 		"layout":
 			_layout_editor()
 
@@ -325,6 +346,153 @@ func _results() -> void:
 		(App.screen as ResultsScreen)._toggle_board()
 		later(1.5, "results_drawer")
 	elif _shots.has("results_drawer") and _t > float(_shots["results_drawer"]) + 1.0:
+		get_tree().quit()
+
+
+func _startup() -> void:
+	if _t > 4.0 and not _scheduled.has("go"):
+		_scheduled["go"] = true
+		snap("startup_title")
+		App.start_practice("runner", false)
+	if _t > 6.0 and App.screen is LoadingScreen and not _shots.has("startup_loading"):
+		snap("startup_loading")
+	var mc: MatchController = App.match_ctrl
+	if mc != null and is_instance_valid(mc) and mc.round_live() and not _scheduled.has("live"):
+		_scheduled["live"] = _t
+	if _scheduled.has("live") and _t > float(_scheduled["live"]) + 9.0:
+		get_tree().quit()
+
+
+func _transition() -> void:
+	if App.screen is ResultsScreen and not _scheduled.has("res"):
+		_scheduled["res"] = _t
+		later(1.5, "transition_results")
+	if _scheduled.has("res") and not _scheduled.has("next") and _t > float(_scheduled["res"]) + 6.0:
+		_scheduled["next"] = _t
+		_press("Next: round 2")
+	if _scheduled.has("next") and App.screen is LobbyScreen and not _scheduled.has("party"):
+		_scheduled["party"] = true
+		later(0.8, "transition_party")
+	var mc: MatchController = App.match_ctrl
+	if _scheduled.has("next") and mc != null and is_instance_valid(mc) and mc.round_live() and not _scheduled.has("live2"):
+		_scheduled["live2"] = _t
+		later(1.0, "transition_round2")
+	if _scheduled.has("live2") and _t > float(_scheduled["live2"]) + 8.0:
+		get_tree().quit()
+
+
+## Press a visible button by its tooltip (icon buttons) or its label text
+## (tiles), the same signal a tap or controller press emits.
+func _press(text: String) -> bool:
+	for b in get_tree().root.find_children("*", "Button", true, false):
+		var btn := b as Button
+		if not btn.is_visible_in_tree():
+			continue
+		var hit := btn.tooltip_text == text or btn.text == text
+		if not hit:
+			for l in btn.find_children("*", "Label", true, false):
+				if (l as Label).text == text:
+					hit = true
+					break
+		if hit:
+			btn.pressed.emit()
+			return true
+	printerr("CAPTURE no button '%s'" % text)
+	return false
+
+
+const EMOTE_STEPS := [
+	[2.0, "Emote"], [3.4, "Dance"], [3.0, "shot:lobby_emote_picker"], [5.0, "shot:lobby_emote_dance"],
+	[8.0, "Emote"], [9.2, "Wave"], [12.0, "Emote"], [13.2, "Ha!"], [16.0, "Try moves"], [17.2, "Sprint"],
+	[17.4, "shot:lobby_try_sprint"], [20.0, "Try moves"], [21.2, "Jump"], [25.0, "quit"],
+]
+
+
+func _emotes() -> void:
+	var s: NetSession = App.session
+	if s == null or not (App.screen is LobbyScreen) or s.human_count() < want_players:
+		return
+	if not _scheduled.has("t0"):
+		_scheduled["t0"] = _t + 2.0
+	var t := _t - float(_scheduled["t0"])
+	for st in EMOTE_STEPS:
+		var key := "em_%s_%s" % [st[0], st[1]]
+		if t < float(st[0]) or _scheduled.has(key):
+			continue
+		_scheduled[key] = true
+		var what := String(st[1])
+		if what == "quit":
+			get_tree().quit()
+		elif what.begins_with("shot:"):
+			snap(what.substr(5))
+		else:
+			_press(what)
+
+
+func _series() -> void:
+	if _t > 3.0 and not _scheduled.has("show"):
+		_scheduled["show"] = true
+		var d: Dictionary = str_to_var(FileAccess.get_file_as_string(results_path))
+		var res: Dictionary = (d["results"] as Dictionary).duplicate(true)
+		var local := int(d["local_slot"])
+		# one bot seat on each side becomes a friend
+		var need := {TC.Role.RUNNER: "Pip", TC.Role.PATROL: "Rowan"}
+		var rows: Array = res.get("players", [])
+		for r in rows:
+			var row: Dictionary = r
+			var role := int(row.get("role", TC.Role.RUNNER))
+			if int(row.get("slot", -1)) == local:
+				row["uid"] = Save.player_uid()
+			elif bool(row.get("is_bot", false)) and need.has(role):
+				row["name"] = need[role]
+				row["uid"] = "friend-" + String(need[role])
+				row["is_bot"] = false
+				need.erase(role)
+			elif String(row.get("uid", "")) == "":
+				row["uid"] = "bot-%d" % int(row.get("slot", 0))
+		var ps := PartySeries.new()
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 7
+		ps.start({"watch": 2, "rounds": 3}, rng)
+		# rounds 1 and 2: the same people, roles rotated (bots keep theirs)
+		var me := Save.player_uid()
+		var plan := [
+			{"outcome": TC.Outcome.RUNNERS_WIN, me: TC.Role.RUNNER, "friend-Pip": TC.Role.PATROL, "friend-Rowan": TC.Role.RUNNER},
+			{"outcome": TC.Outcome.PATROL_WIN, me: TC.Role.PATROL, "friend-Pip": TC.Role.RUNNER, "friend-Rowan": TC.Role.RUNNER},
+		]
+		for k in plan.size():
+			var earlier: Array = []
+			for r in rows:
+				var e: Dictionary = (r as Dictionary).duplicate()
+				if plan[k].has(String(e.get("uid", ""))):
+					e["role"] = plan[k][String(e["uid"])]
+				earlier.append(e)
+			ps.record_round({"match_id": "series-r%d" % (k + 1), "outcome": plan[k]["outcome"], "round_time": 200.0, "players": earlier})
+		res["match_id"] = "series-r3"
+		ps.record_round(res)
+		res["series"] = ps.to_dict()
+		res["round_index"] = 3
+		res["rounds_total"] = 3
+		res["practice"] = false
+		var s := NetSession.new()
+		s.mode = NetSession.Mode.HOST
+		s.local_slot = local
+		s.series_view = res["series"]
+		add_child(s)
+		App._ensure_background()
+		var rsc := ResultsScreen.new()
+		rsc.results = res
+		rsc.reward = d["reward"]
+		rsc.session = s
+		App._show(rsc)
+		later(2.5, "series_final")
+	elif _shots.has("series_final") and _t > float(_shots["series_final"]) + 0.6 and not _scheduled.has("scroll"):
+		_scheduled["scroll"] = true
+		# the standings sit below the round: scroll the sheet to them
+		for sc in App.screen.find_children("*", "ScrollContainer", true, false):
+			(sc as ScrollContainer).scroll_vertical = 100000
+		later(0.8, "series_final_standings")
+	elif _shots.has("series_final_standings") and _t > float(_shots["series_final_standings"]) + 1.0:
 		get_tree().quit()
 
 
