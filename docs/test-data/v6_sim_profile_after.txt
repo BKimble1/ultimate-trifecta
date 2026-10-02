@@ -1,0 +1,33 @@
+# src/dev/sim_profile.tscn after the V6 bounded path service (budget, clear-line, cache, unreachable cache): same harness and seed
+SIMPROF playing ticks=5870 mean=1.52 ms p50=1.36 p95=2.24 p99=3.70 max=25.62 over8ms=19 over16ms=10
+SIMPROF section intents    total=  3716.8 ms  per tick=0.591 ms
+SIMPROF section bots       total=  3477.4 ms  per tick=0.553 ms
+SIMPROF section carts      total=  1850.5 ms  per tick=0.294 ms
+SIMPROF section move       total=  1783.0 ms  per tick=0.283 ms
+SIMPROF section rules      total=   828.4 ms  per tick=0.132 ms
+SIMPROF section tag_cues   total=   214.2 ms  per tick=0.034 ms
+SIMPROF section perception total=    59.7 ms  per tick=0.009 ms
+SIMPROF paths { "search": 142, "direct": 407, "cache": 230, "deferred": 71, "unreachable": 2602 } (budget 1 per tick)
+SIMPROF slow search from (54.0, -122.0) to (-0.5, 93.5) cart=true 22.7 ms cells=0
+SIMPROF slow search from (47.5, -93.3) to (-0.5, 93.5) cart=true 21.9 ms cells=0
+SIMPROF slow search from (39.5, -61.8) to (-0.5, 93.5) cart=true 20.6 ms cells=0
+SIMPROF slow search from (37.8, -56.3) to (-0.5, 93.5) cart=true 19.8 ms cells=0
+SIMPROF slow search from (37.8, -56.3) to (119.5, 31.5) cart=true 23.9 ms cells=0
+SIMPROF slow search from (49.8, -0.6) to (-126.5, 54.5) cart=true 10.0 ms cells=16
+SIMPROF slow search from (39.3, -56.3) to (-126.5, 54.5) cart=true 14.0 ms cells=15
+SIMPROF slow search from (37.6, -58.9) to (119.5, 31.5) cart=true 18.6 ms cells=0
+SIMPROF slow search from (39.4, -57.5) to (119.5, 31.5) cart=true 17.4 ms cells=0
+SIMPROF slow search from (42.0, -56.3) to (-0.5, 93.5) cart=true 22.5 ms cells=0
+SIMPROF slow search from (41.1, -57.7) to (-0.5, 93.5) cart=true 23.1 ms cells=0
+SIMPROF slow search from (43.9, -9.1) to (-126.5, 54.5) cart=true 8.3 ms cells=16
+SIMPROF slow search from (40.8, -10.0) to (119.5, 31.5) cart=true 21.7 ms cells=0
+SIMPROF slow search from (42.1, -10.0) to (-126.5, 54.5) cart=true 10.2 ms cells=16
+SIMPROF slow search from (44.3, -10.2) to (-126.5, 54.5) cart=true 9.9 ms cells=16
+SIMPROF worst tick 1750: 25.62 ms { "bots": 24692, "intents": 24748, "tag_cues": 32, "carts": 381, "move": 255, "rules": 124, "perception": 2 }
+SIMPROF worst tick 2893: 24.56 ms { "bots": 23740, "intents": 23793, "tag_cues": 26, "carts": 289, "move": 283, "rules": 121, "perception": 1 }
+SIMPROF worst tick 2593: 24.20 ms { "bots": 23136, "intents": 23192, "tag_cues": 31, "carts": 433, "move": 321, "rules": 147, "perception": 2 }
+SIMPROF worst tick 825: 24.19 ms { "bots": 23342, "intents": 23396, "tag_cues": 37, "carts": 325, "move": 240, "rules": 113, "perception": 2 }
+SIMPROF worst tick 4446: 23.40 ms { "bots": 22305, "intents": 22348, "tag_cues": 71, "carts": 368, "move": 354, "rules": 158, "perception": 2 }
+SIMPROF worst tick 1125: 23.38 ms { "bots": 22432, "intents": 22478, "tag_cues": 33, "carts": 274, "move": 370, "rules": 150, "perception": 1 }
+SIMPROF worst tick 1425: 22.18 ms { "bots": 21217, "intents": 21271, "tag_cues": 48, "carts": 280, "move": 287, "rules": 224, "perception": 2 }
+SIMPROF worst tick 1725: 21.21 ms { "bots": 20456, "intents": 20508, "tag_cues": 28, "carts": 211, "move": 220, "rules": 149, "perception": 1 }

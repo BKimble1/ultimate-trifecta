@@ -1,0 +1,91 @@
+# Headless practice soak on the V5 code (dev report COST lines every 5 s: script process/physics ms per frame, physics steps per frame, growth)
+SOAK t=5 mode=0 phase=2 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=5 frames=637 proc_avg=19.08 proc_max=55.80 phys_avg=6.30 phys_max=99.58 steps_max=6 multi=3 objects=4942 nodes=1309 orphans=0 mem_mb=214.4
+SOAK t=10 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=10 frames=723 proc_avg=5.19 proc_max=8.69 phys_avg=6.37 phys_max=22.69 steps_max=1 multi=0 objects=4987 nodes=1309 orphans=0 mem_mb=217.0
+SOAK t=15 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=15 frames=702 proc_avg=5.08 proc_max=8.69 phys_avg=5.69 phys_max=16.17 steps_max=6 multi=3 objects=5027 nodes=1309 orphans=0 mem_mb=217.1
+SOAK t=20 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=5
+COST t=20 frames=50 proc_avg=3.58 proc_max=5.62 phys_avg=41.13 phys_max=52.76 steps_max=6 multi=50 objects=5029 nodes=1309 orphans=0 mem_mb=217.2
+SOAK t=25 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=3
+COST t=25 frames=50 proc_avg=3.42 proc_max=4.96 phys_avg=42.57 phys_max=60.62 steps_max=6 multi=50 objects=5029 nodes=1309 orphans=0 mem_mb=217.1
+SOAK t=30 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=4
+COST t=30 frames=59 proc_avg=3.64 proc_max=4.27 phys_avg=46.54 phys_max=60.62 steps_max=6 multi=59 objects=5039 nodes=1310 orphans=0 mem_mb=217.2
+SOAK t=35 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=31
+COST t=35 frames=490 proc_avg=4.24 proc_max=7.61 phys_avg=42.52 phys_max=67.60 steps_max=6 multi=21 objects=5036 nodes=1310 orphans=0 mem_mb=217.2
+SOAK t=40 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=87
+COST t=40 frames=513 proc_avg=7.65 proc_max=21.81 phys_avg=24.94 phys_max=61.05 steps_max=6 multi=21 objects=5037 nodes=1310 orphans=0 mem_mb=217.2
+SOAK t=45 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=130
+COST t=45 frames=533 proc_avg=5.76 proc_max=11.04 phys_avg=21.39 phys_max=36.10 steps_max=6 multi=18 objects=5082 nodes=1321 orphans=0 mem_mb=217.8
+SOAK t=50 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=51
+COST t=50 frames=159 proc_avg=5.29 proc_max=11.04 phys_avg=26.20 phys_max=32.26 steps_max=6 multi=71 objects=5075 nodes=1319 orphans=0 mem_mb=217.7
+SOAK t=55 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=57
+COST t=55 frames=185 proc_avg=4.46 proc_max=6.62 phys_avg=24.61 phys_max=32.10 steps_max=6 multi=51 objects=5086 nodes=1321 orphans=0 mem_mb=217.8
+SOAK t=60 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=82
+COST t=60 frames=180 proc_avg=4.08 proc_max=5.29 phys_avg=23.93 phys_max=32.92 steps_max=6 multi=70 objects=5080 nodes=1321 orphans=0 mem_mb=217.8
+SOAK t=65 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=99
+COST t=65 frames=265 proc_avg=3.52 proc_max=4.26 phys_avg=23.31 phys_max=26.34 steps_max=6 multi=66 objects=5121 nodes=1328 orphans=0 mem_mb=218.3
+SOAK t=70 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=70 frames=436 proc_avg=8.10 proc_max=13.44 phys_avg=15.48 phys_max=43.58 steps_max=6 multi=21 objects=5094 nodes=1322 orphans=0 mem_mb=218.2
+SOAK t=75 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=75 frames=713 proc_avg=11.62 proc_max=28.79 phys_avg=10.39 phys_max=24.08 steps_max=2 multi=1 objects=5105 nodes=1322 orphans=0 mem_mb=219.3
+SOAK t=80 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=122
+COST t=80 frames=598 proc_avg=4.41 proc_max=5.21 phys_avg=4.89 phys_max=22.01 steps_max=6 multi=11 objects=5106 nodes=1322 orphans=0 mem_mb=219.3
+SOAK t=85 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=85 frames=245 proc_avg=3.01 proc_max=7.15 phys_avg=33.42 phys_max=54.07 steps_max=6 multi=36 objects=5110 nodes=1323 orphans=0 mem_mb=219.3
+SOAK t=90 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=144
+COST t=90 frames=619 proc_avg=4.95 proc_max=6.80 phys_avg=15.21 phys_max=42.67 steps_max=6 multi=13 objects=5122 nodes=1326 orphans=0 mem_mb=219.3
+SOAK t=95 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=28
+COST t=95 frames=538 proc_avg=3.58 proc_max=4.85 phys_avg=4.16 phys_max=36.83 steps_max=6 multi=16 objects=5124 nodes=1326 orphans=0 mem_mb=219.3
+SOAK t=100 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=24
+COST t=100 frames=386 proc_avg=5.39 proc_max=6.84 phys_avg=16.79 phys_max=36.83 steps_max=6 multi=37 objects=5130 nodes=1326 orphans=0 mem_mb=219.3
+SOAK t=105 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=80
+COST t=105 frames=186 proc_avg=3.42 proc_max=5.03 phys_avg=21.81 phys_max=32.23 steps_max=6 multi=53 objects=5130 nodes=1327 orphans=0 mem_mb=219.3
+SOAK t=110 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=110 frames=292 proc_avg=3.15 proc_max=6.23 phys_avg=19.23 phys_max=25.19 steps_max=6 multi=51 objects=5134 nodes=1327 orphans=0 mem_mb=219.4
+SOAK t=115 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=63
+COST t=115 frames=633 proc_avg=5.24 proc_max=9.11 phys_avg=5.62 phys_max=52.68 steps_max=6 multi=9 objects=5135 nodes=1328 orphans=0 mem_mb=219.4
+SOAK t=120 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=4
+COST t=120 frames=50 proc_avg=6.06 proc_max=31.73 phys_avg=54.14 phys_max=62.54 steps_max=6 multi=50 objects=5134 nodes=1328 orphans=0 mem_mb=219.3
+SOAK t=125 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=9
+COST t=125 frames=64 proc_avg=4.29 proc_max=4.88 phys_avg=30.90 phys_max=60.72 steps_max=6 multi=64 objects=5140 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=130 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=130 frames=574 proc_avg=4.73 proc_max=7.57 phys_avg=12.87 phys_max=25.51 steps_max=6 multi=11 objects=5139 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=135 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=135 frames=725 proc_avg=5.00 proc_max=7.37 phys_avg=3.98 phys_max=4.83 steps_max=1 multi=0 objects=5141 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=140 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=140 frames=725 proc_avg=3.56 proc_max=3.99 phys_avg=3.36 phys_max=5.06 steps_max=1 multi=0 objects=5142 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=145 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=145 frames=725 proc_avg=4.29 proc_max=9.60 phys_avg=3.13 phys_max=4.15 steps_max=1 multi=0 objects=5140 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=150 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=143
+COST t=150 frames=701 proc_avg=4.33 proc_max=7.55 phys_avg=12.39 phys_max=51.05 steps_max=5 multi=2 objects=5141 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=155 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=110
+COST t=155 frames=398 proc_avg=4.34 proc_max=5.98 phys_avg=14.65 phys_max=35.84 steps_max=6 multi=31 objects=5146 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=160 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=144
+COST t=160 frames=725 proc_avg=4.85 proc_max=5.92 phys_avg=6.12 phys_max=20.12 steps_max=1 multi=0 objects=5141 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=165 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=165 frames=725 proc_avg=4.46 proc_max=6.68 phys_avg=4.14 phys_max=5.29 steps_max=1 multi=0 objects=5140 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=170 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=170 frames=724 proc_avg=4.76 proc_max=7.42 phys_avg=3.14 phys_max=3.63 steps_max=1 multi=0 objects=5141 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=175 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=145
+COST t=175 frames=725 proc_avg=4.85 proc_max=7.42 phys_avg=2.84 phys_max=3.96 steps_max=1 multi=0 objects=5140 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=180 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=8
+COST t=180 frames=308 proc_avg=4.65 proc_max=5.94 phys_avg=4.77 phys_max=33.02 steps_max=6 multi=33 objects=5140 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=185 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=92
+COST t=185 frames=200 proc_avg=6.12 proc_max=11.54 phys_avg=23.74 phys_max=32.72 steps_max=6 multi=39 objects=5140 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=190 mode=0 phase=4 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=true fps=20
+COST t=190 frames=392 proc_avg=7.84 proc_max=11.54 phys_avg=9.30 phys_max=21.47 steps_max=6 multi=41 objects=5142 nodes=1329 orphans=0 mem_mb=219.4
+SOAK t=195 mode=0 phase=0 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=false fps=145
+COST t=195 frames=503 proc_avg=11.83 proc_max=32.57 phys_avg=10.57 phys_max=38.81 steps_max=6 multi=16 objects=2637 nodes=44 orphans=205 mem_mb=203.6
+SOAK t=200 mode=0 phase=0 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=false fps=145
+COST t=200 frames=724 proc_avg=0.70 proc_max=2.92 phys_avg=0.12 phys_max=0.14 steps_max=1 multi=0 objects=2635 nodes=44 orphans=205 mem_mb=203.6
+SOAK t=205 mode=0 phase=0 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=false fps=145
+COST t=205 frames=725 proc_avg=0.92 proc_max=3.47 phys_avg=0.23 phys_max=0.67 steps_max=1 multi=0 objects=2635 nodes=44 orphans=205 mem_mb=203.6
+SOAK t=210 mode=0 phase=0 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=false fps=145
+COST t=210 frames=724 proc_avg=0.83 proc_max=3.48 phys_avg=0.24 phys_max=0.62 steps_max=1 multi=0 objects=2635 nodes=44 orphans=205 mem_mb=203.6
+SOAK t=215 mode=0 phase=0 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=false fps=145
+COST t=215 frames=724 proc_avg=0.26 proc_max=0.69 phys_avg=0.13 phys_max=0.23 steps_max=1 multi=0 objects=2635 nodes=44 orphans=205 mem_mb=203.6
+SOAK t=220 mode=0 phase=0 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=false fps=145
+COST t=220 frames=724 proc_avg=0.71 proc_max=2.39 phys_avg=0.13 phys_max=0.22 steps_max=1 multi=0 objects=2635 nodes=44 orphans=205 mem_mb=203.6
+SOAK t=225 mode=0 phase=0 slot=0 host_peer=-1 humans=1 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[] match=false fps=144
+COST t=225 frames=724 proc_avg=0.28 proc_max=0.92 phys_avg=0.20 phys_max=0.74 steps_max=1 multi=0 objects=2635 nodes=44 orphans=205 mem_mb=203.6

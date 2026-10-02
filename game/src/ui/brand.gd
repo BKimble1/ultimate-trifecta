@@ -13,7 +13,7 @@ const TITLE := "res://assets/branding/title_ultimate_trifecta.png"
 const STUDIO := "res://assets/branding/idlery_games.png"
 ## Startup background: the launch storyboard, Godot's boot splash and the
 ## boot curtain all use it (project boot_splash/bg_color).
-const STARTUP_BG := Color("0c1324")
+const STARTUP_BG := Color("000000")   # V6: pure black (owner request)
 ## The lockup's width as a fraction of the launch square's side (the square
 ## is fitted to the landscape screen's height).  make_branding.py uses the
 ## same value for launch.png.

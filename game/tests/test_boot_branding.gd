@@ -31,17 +31,18 @@ func _bbox(img: Image, bg: Color, tol: float = 0.08) -> Rect2i:
 func test_launch_image_boot_splash_and_curtain_agree() -> void:
 	t.eq(ProjectSettings.get_setting("application/boot_splash/image"), "res://assets/icon/launch.png", "boot splash shows the launch image")
 	var bg: Color = ProjectSettings.get_setting("application/boot_splash/bg_color")
-	t.check(bg.is_equal_approx(Brand.STARTUP_BG), "boot splash background is the startup navy")
+	t.check(bg.is_equal_approx(Brand.STARTUP_BG), "boot splash background is the startup black (V6)")
+	t.eq(Brand.STARTUP_BG, Color(0, 0, 0, 1), "the startup background is pure black #000000 (owner request, V6)")
 	var preset := FileAccess.get_file_as_string("res://export_presets.cfg")
 	t.check(preset.contains('storyboard/custom_image@3x="res://assets/icon/launch.png"') and preset.contains('storyboard/custom_image@2x="res://assets/icon/launch.png"'),
 		"the iOS launch storyboard uses the same image")
-	t.check(preset.contains("storyboard/custom_bg_color=Color(0.047058824, 0.07450981, 0.14117648, 1)"), "and the same navy (no white flash)")
+	t.check(preset.contains("storyboard/custom_bg_color=Color(0, 0, 0, 1)"), "and the same black (no white flash, no navy rectangle)")
 	t.check(preset.contains("storyboard/image_scale_mode=2"), "scaled to fit, like the boot splash")
 	var launch := (load("res://assets/icon/launch.png") as Texture2D).get_image()
 	t.eq(launch.get_width(), launch.get_height(), "the launch image is square (fitted to the screen height)")
 	t.check(not launch.detect_alpha(), "opaque: no checkerboard or see-through launch")
 	var corner := launch.get_pixel(4, 4)
-	t.check(absf(corner.r - Brand.STARTUP_BG.r) + absf(corner.g - Brand.STARTUP_BG.g) + absf(corner.b - Brand.STARTUP_BG.b) < 0.02, "its background is the startup navy")
+	t.check(absf(corner.r - Brand.STARTUP_BG.r) + absf(corner.g - Brand.STARTUP_BG.g) + absf(corner.b - Brand.STARTUP_BG.b) < 0.02, "its background is the startup black")
 	# where the lockup sits in the launch image = where the curtain draws it
 	var lock := (load(Brand.STUDIO) as Texture2D).get_image()
 	lock.decompress()
