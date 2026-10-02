@@ -90,7 +90,8 @@ static func draw_button(ci: CanvasItem, b: Dictionary, name: String, label: Stri
 	col.a *= opacity
 	if bool(state.get("ready", false)) and not off:
 		# a soft ring that breathes: in reach, press now
-		var pulse := 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) / 1000.0 * TAU * 1.6)
+		# (Reduced Motion: a steady ring, same meaning)
+		var pulse := 0.6 if UIKit.reduced_motion() else 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) / 1000.0 * TAU * 1.6)
 		ci.draw_arc(center, r + 7.0 + 3.0 * pulse, 0, TAU, 56, Color(UIKit.AMBER, (0.55 + 0.35 * pulse) * opacity), 5.0, true)
 	ci.draw_circle(center, r, col)
 	ci.draw_arc(center, r, 0, TAU, 48, Color(UIKit.IVORY, 0.7 * opacity), 2.5, true)

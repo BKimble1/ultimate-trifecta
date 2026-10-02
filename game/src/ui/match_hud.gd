@@ -731,7 +731,7 @@ class DrawLayer:
 		# spotted cue: restrained edge vignette + eye icon (driven by real detection)
 		var spotted: float = info.get("spotted", 0.0)
 		if spotted > 0.0 and int(info.get("role", 0)) == TC.Role.RUNNER:
-			var a := clampf(spotted / 1.0, 0.0, 1.0) * (0.55 + 0.2 * sin(hud._t * 8.0))
+			var a := clampf(spotted / 1.0, 0.0, 1.0) * (0.65 if hud.mc.reduced_motion else 0.55 + 0.2 * sin(hud._t * 8.0))
 			var col := Color(1.0, 0.35, 0.3, 0.32 * a)
 			for i in 6:
 				var w := 18.0 + float(i) * 10.0
@@ -788,7 +788,7 @@ class DrawLayer:
 			var c: Vector2 = w["center"]
 			var sp2 := hud.world_to_screen(Vector3(c.x, 3.0, c.y))
 			if sp2.x > -1000:
-				var pulse := 1.0 + 0.2 * sin(hud._t * 10.0)
+				var pulse := 1.0 if hud.mc.reduced_motion else 1.0 + 0.2 * sin(hud._t * 10.0)
 				draw_arc(sp2, 26.0 * pulse, 0, TAU, 24, w["color"], 4.0)
 				Icons.draw_shape(self, w["icon"], sp2, 14, w["color"])
 				draw_string(UIKit.font(true), sp2 + Vector2(-40, 48), "SPLASH!", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, w["color"])
