@@ -1,158 +1,300 @@
 class_name CampusKit
 extends RefCounted
-## V4 campus art kit (original, procedural; regenerated from this code - no
-## external assets).  Two parts:
+## Campus art kit (V5; original, generated - no external assets).
 ##
-##  Tree variants   smooth, softly self-shaded meshes built once per session:
-##                  three rounded broadleaf crowns (overlapping ellipsoid
-##                  lobes) and two layered pines (revolved tiers with a
-##                  drooping lip and a shaded underside), each with a rounded
-##                  trunk whose root flare matches the collider radius.
-##                  CampusBuilder draws them per 64x60 m chunk as MultiMesh
-##                  instances (one transform + tint per tree), so chunks cull
-##                  independently and the whole forest is a few draw calls.
-##  Light field     a 2 m grid of soft ambient occlusion (around trunks,
-##                  buildings, walls and hedges) and warm light (lamps, lit
-##                  entrances, lit windows) that CampusBuilder bakes into the
-##                  ground, paths and low geometry's vertex colours.  No
-##                  runtime lights are added; the moon stays the one dynamic
-##                  shadow-casting light.
-##
-## Tree meshes are authored at REF_H metres tall and scaled per instance.
+##  Mesh kit      vegetation and rocks authored offline by the Blender
+##                generator (tools/campus/build_kit.py) into one MeshLibrary,
+##                game/assets/campus/campus_kit.res: eight tree species with
+##                three LODs each, three shrubs, grass, flowers, reeds,
+##                lilies and three rock shapes.  Nothing heavy is generated
+##                at runtime; CampusBuilder places them as chunked MultiMesh
+##                instances.
+##  Species       which tree each CampusLayout tree is drawn as.  Collider
+##                trees keep their place, radius and collider; only the look
+##                is chosen here: groves of related species (a conifer stand,
+##                a birch glade, mixed oaks) from a low-frequency field, linden
+##                avenues along the loop road, autumn maples and blossom trees
+##                as accents on the quad, the dorm lawns and Lily Basin.
+##  Light field   a 2 m grid of soft ambient occlusion (trunks, buildings,
+##                walls, hedges, shrubs, rocks), warm light (lamps, entrances,
+##                lit windows), cool light (the pool's and fountain's glow),
+##                a canopy field (forest floor under groves) and a path field
+##                (worn grass beside the paths).  AO/warm/cool become a small
+##                texture the world shaders sample per fragment (V4 baked
+##                them into vertex colours on the CPU); canopy and wear tint
+##                the ground's vertex colours.  No runtime lights are added;
+##                the moon stays the one dynamic shadow-casting light.
 
-const REF_H := 8.0
-const BROAD_VARIANTS := 2
-const PINE_VARIANTS := 2
+const KIT_PATH := "res://assets/campus/campus_kit.res"
+const REF_H := 8.0   # trees are authored 8 m tall and scaled per instance
+const BROAD := ["oak", "linden", "maple", "birch", "blossom"]
+const CONIFER := ["fir", "spruce", "pine"]
 
-static var _trees: Dictionary = {}   # "broad0" / "pine1" -> {"trunk": ArrayMesh, "crown": ArrayMesh}
+static var _kit: Dictionary = {}   # mesh name -> ArrayMesh
+static var _lod: Dictionary = {}   # base name -> ArrayMesh with native LODs
+static var _lod_scale := -1.0
+
+## dressing kind -> kit mesh base name
+const DECOR_MESH := {"grass": "grass_tuft", "flowers": "flowers", "lilies": "lilies", "rock_flat": "rock_flat", "rock_round": "rock_round",
+	"rock_layer": "rock_layer", "shrub_round": "shrub_round", "shrub_tall": "shrub_tall", "shrub_bloom": "shrub_bloom", "reeds": "reeds"}
+## LOD switch distances in metres (Standard, at any render height): one per
+## authored LOD after the first; a distance beyond the authored LODs is an
+## empty LOD (the batch draws nothing there, so tufts and flowers end).
+const LOD_M := {"tree": [30.0, 90.0], "shrub": [24.0, 70.0], "rock": [30.0], "grass": [36.0], "flowers": [40.0], "reeds": [60.0], "lilies": [70.0]}
+## Godot picks a mesh LOD by screen-space error: measured on the 4.7.2 Mobile
+## renderer, a LOD key k switches at ~520 * k metres at a 720 px render
+## height and proportionally further on taller renders, so keys are scaled
+## by 720 / render height to keep the distances above on every device.
+const KEY_PER_M := 1.0 / 520.0
 
 
-## lod 0: near (smooth, the follow camera's surroundings); lod 1: far
-## (same silhouette with a fraction of the triangles).
-static func tree(kind: String, variant: int, lod: int = 0) -> Dictionary:
-	var key := "%s%d_%d" % [kind, variant, lod]
-	if not _trees.has(key):
-		_trees[key] = _build_pine(variant, lod) if kind == "pine" else _build_broad(variant, lod)
-	return _trees[key]
+## Loads the MeshLibrary once per session (~0.2 MB, a few ms).
+static func load_kit(quality: int = 1) -> void:
+	var h := 720.0
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null and tree.root.size.y > 0:
+		h = float(tree.root.size.y) * tree.root.scaling_3d_scale
+	# Battery Saver also raises the LOD threshold (3x): ease it to ~1.5x
+	var sc := (720.0 / maxf(h, 1.0)) * (2.0 if quality < 1 else 1.0)
+	if not is_equal_approx(sc, _lod_scale):
+		_lod.clear()
+		_lod_scale = sc
+	if not _kit.is_empty():
+		return
+	var lib := load(KIT_PATH) as MeshLibrary
+	if lib == null:
+		push_error("campus kit missing: %s" % KIT_PATH)
+		return
+	for id in lib.get_item_list():
+		_kit[lib.get_item_name(id)] = lib.get_item_mesh(id)
 
 
-static func variant_of(t: Dictionary) -> int:
+## The authored LODs of `base` (base_0, base_1, ...) in one ArrayMesh: the
+## vertex arrays are concatenated and each lower LOD is an index range of
+## its own, registered as a native mesh LOD.
+static func lod_mesh(base: String) -> Mesh:
+	if _lod.has(base):
+		return _lod[base]
+	if _kit.is_empty():
+		load_kit()
+	var parts: Array[ArrayMesh] = []
+	for i in 3:
+		var m: ArrayMesh = _kit.get("%s_%d" % [base, i])
+		if m != null:
+			parts.append(m)
+	if parts.is_empty():
+		push_error("campus kit: no mesh %s" % base)
+		return null
+	var dists: Array = LOD_M.get(base.get_slice("_", 0), [])
+	var v := PackedVector3Array()
+	var n := PackedVector3Array()
+	var c := PackedColorArray()
+	var uv := PackedVector2Array()
+	var cu := PackedFloat32Array()
+	var idx: Array[PackedInt32Array] = []
+	for m in parts:
+		var a := m.surface_get_arrays(0)
+		var off := v.size()
+		v.append_array(a[Mesh.ARRAY_VERTEX])
+		n.append_array(a[Mesh.ARRAY_NORMAL])
+		c.append_array(a[Mesh.ARRAY_COLOR])
+		uv.append_array(a[Mesh.ARRAY_TEX_UV])
+		cu.append_array(a[Mesh.ARRAY_CUSTOM0])
+		var ii: PackedInt32Array = a[Mesh.ARRAY_INDEX]
+		var shifted := PackedInt32Array()
+		shifted.resize(ii.size())
+		for j in ii.size():
+			shifted[j] = ii[j] + off
+		idx.append(shifted)
+	var lods := {}
+	var sc := maxf(_lod_scale, 0.01)
+	for li in range(1, mini(parts.size(), dists.size() + 1)):
+		lods[float(dists[li - 1]) * KEY_PER_M * sc] = idx[li]
+	if dists.size() >= parts.size():
+		# an empty last LOD: one degenerate triangle
+		lods[float(dists[parts.size() - 1]) * KEY_PER_M * sc] = PackedInt32Array([0, 0, 0])
+	var arr := []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = v
+	arr[Mesh.ARRAY_NORMAL] = n
+	arr[Mesh.ARRAY_COLOR] = c
+	arr[Mesh.ARRAY_TEX_UV] = uv
+	arr[Mesh.ARRAY_CUSTOM0] = cu
+	arr[Mesh.ARRAY_INDEX] = idx[0]
+	var out := ArrayMesh.new()
+	out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr, [], lods, Mesh.ARRAY_CUSTOM_RG_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
+	out.resource_name = base
+	_lod[base] = out
+	return out
+
+
+static func kit_mesh(mesh_name: String) -> Mesh:
+	if _kit.is_empty():
+		load_kit()
+	return _kit.get(mesh_name)
+
+
+static func has_mesh(mesh_name: String) -> bool:
+	if _kit.is_empty():
+		load_kit()
+	return _kit.has(mesh_name)
+
+
+static func _hash01(x: float, z: float, salt: int = 0) -> float:
+	var h := hash(Vector3i(int(floor(x * 10.0)), int(floor(z * 10.0)), salt))
+	return float(posmod(h, 10007)) / 10007.0
+
+
+## Grove field: one of four stands per ~26 m cell (smoothed by jitter so the
+## boundaries are not a grid).
+static func _grove(p: Vector2) -> int:
+	var j := Vector2(sin(p.y * 0.11) * 6.0, cos(p.x * 0.09) * 6.0)
+	var c := ((p + j) / 26.0).floor()
+	return posmod(hash(Vector2i(int(c.x), int(c.y))), 4)
+
+
+## The species a layout tree is drawn as (visual only).
+static func species_of(t: Dictionary) -> String:
 	var p: Vector2 = t["pos"]
-	var n := PINE_VARIANTS if String(t["kind"]) == "pine" else BROAD_VARIANTS
-	return posmod(int(floor(p.x * 3.7 + p.y * 1.3)), n)
+	var pine := String(t["kind"]) == "pine"
+	var r := _hash01(p.x, p.y, 7)
+	# avenue trees along the College Loop and the quad's north row
+	var avenue := (absf(absf(p.x) - 84.0) < 0.01 or absf(p.y + 63.5) < 0.01 or absf(p.y - 93.5) < 0.01)
+	if avenue and not pine:
+		return "linden"
+	if absf(p.y + 8.0) < 0.01 and absf(p.x) <= 24.0:
+		return "maple"
+	# the pond woods: conifer stands, birch glades and mixed oak groves
+	if p.x < -92.0 and p.y > -10.0 and p.y < 86.0:
+		match _grove(p):
+			0, 1:
+				return "fir" if r < 0.8 else "oak"
+			2:
+				return "birch" if r < 0.6 else ("oak" if r < 0.85 else "fir")
+			_:
+				return "oak" if r < 0.65 else ("fir" if r < 0.85 else "birch")
+	# north-west quarry woods: stout pines and spruce on the rocky ground
+	if p.x < -100.0 and p.y < -100.0:
+		return "pine" if r < 0.6 else "spruce"
+	# Lily Basin / greenhouse side: blossom and linden
+	if p.x > 60.0 and p.y < -60.0:
+		if pine:
+			return "spruce"
+		return "blossom" if r < 0.45 else ("linden" if r < 0.75 else "birch")
+	# dorm lawns: blossom, birch, the odd maple
+	if p.y > 94.0 and absf(p.x) < 80.0:
+		if pine:
+			return "fir"
+		return "blossom" if r < 0.4 else ("birch" if r < 0.7 else "maple")
+	# the quad (between library and science): warm maples among oaks
+	if absf(p.x) < 40.0 and p.y > -12.0 and p.y < 60.0:
+		if pine:
+			return "spruce"
+		return "maple" if r < 0.45 else ("oak" if r < 0.8 else "blossom")
+	if pine:
+		return "fir" if r < 0.5 else ("spruce" if r < 0.8 else "pine")
+	return "oak" if r < 0.45 else ("linden" if r < 0.7 else ("maple" if r < 0.85 else "birch"))
 
 
-static func _trunk(k: MeshKit, top: float, seg: int = 10) -> void:
-	var prof := PackedVector2Array([Vector2(0.44, 0.0), Vector2(0.33, 0.18), Vector2(0.26, 0.7), Vector2(0.22, top * 0.6), Vector2(0.17, top)])
-	var bark := Color(0.36, 0.26, 0.20)
-	var cols := PackedColorArray([bark.darkened(0.45), bark.darkened(0.25), bark, bark.lightened(0.04), bark.lightened(0.06)])
-	k.revolve(Vector3.ZERO, prof, cols, seg)
-
-
-static func _build_broad(v: int, lod: int = 0) -> Dictionary:
-	var trunk := MeshKit.new()
-	_trunk(trunk, REF_H * 0.62, 7 if lod == 0 else 5)
-	var crown := MeshKit.new()
-	var g := Color(0.29, 0.52, 0.29)
-	# lobes: centre, radii, lightness (lower = darker), seed
-	var lobes: Array = [
-		[Vector3(0, 5.0, 0), Vector3(2.4, 1.85, 2.4), 0.84],
-	]
-	match v:
-		0:
-			lobes += [[Vector3(1.05, 6.0, -0.45), Vector3(1.6, 1.4, 1.55), 1.0], [Vector3(-0.95, 5.75, 0.65), Vector3(1.5, 1.3, 1.5), 0.95], [Vector3(0.15, 6.75, 0.25), Vector3(1.3, 1.1, 1.3), 1.08]]
-		_:
-			lobes += [[Vector3(-1.1, 5.9, -0.6), Vector3(1.65, 1.45, 1.6), 1.0], [Vector3(1.0, 5.6, 0.8), Vector3(1.55, 1.35, 1.45), 0.94], [Vector3(-0.2, 6.85, 0.1), Vector3(1.25, 1.05, 1.25), 1.08]]
-	for i in lobes.size():
-		var lb: Array = lobes[i]
-		var light: float = lb[2]
-		var col_fn := func(n: Vector3) -> Color:
-			# soft self-shading: lit tops, darker undersides, no texture
-			var sh := 0.58 + 0.42 * smoothstep(-0.7, 0.85, n.y)
-			var c := g * (sh * light)
-			c += Color(0.07, 0.09, 0.05) * pow(maxf(n.y, 0.0), 2.0)
-			return Color(c.r, c.g, c.b, 1.0)
-		crown.lobe(lb[0], lb[1], col_fn, 5 if lod == 0 else 3, 8 if lod == 0 else 5, 0.55 + 0.1 * float(i), 0.07, 31 * v + i)
-	return {"trunk": trunk.commit(), "crown": crown.commit()}
-
-
-static func _build_pine(v: int, lod: int = 0) -> Dictionary:
-	var trunk := MeshKit.new()
-	_trunk(trunk, REF_H * 0.5, 7 if lod == 0 else 5)
-	var crown := MeshKit.new()
-	# a touch warmer and lighter than the faceted V3 pines: smooth shading
-	# under the side moonlight otherwise reads darker and bluer
-	var g := Color(0.27, 0.54, 0.31) if v == 0 else Color(0.3, 0.56, 0.31)
-	var tiers := 3
-	for i in tiers:
-		var f := float(i) / float(tiers)
-		var slim := 0.88 if v == 1 else 1.0
-		var y0 := REF_H * (0.28 + 0.6 * f)
-		var r := 2.55 * (1.0 - 0.62 * f) * slim
-		var th := REF_H * (0.36 if v == 0 else 0.4)
-		# a soft tier: shaded underside, drooping rim, rounded shoulder, tip
-		# the underside closes onto the trunk (no hollow seen from below)
-		var lt := 0.86 + 0.14 * f
-		var sw := 0.45 + 0.35 * f
-		var prof: PackedVector2Array
-		var cols: PackedColorArray
-		var sway: PackedFloat32Array
-		if lod == 0:
-			prof = PackedVector2Array([Vector2(0.12, y0 + 0.05), Vector2(r * 0.88, y0 - 0.22), Vector2(r * 1.0, y0 - 0.08),
-				Vector2(r * 0.9, y0 + 0.14), Vector2(r * 0.5, y0 + th * 0.5), Vector2(0.03, y0 + th)])
-			cols = PackedColorArray([g * 0.6, g * 0.72, g * (0.9 * lt), g * lt, g * (lt * 1.1), g * (lt * 1.2)])
-			sway = PackedFloat32Array([sw * 0.3, sw, sw, sw, sw * 0.85, sw * 0.7])
-		else:
-			prof = PackedVector2Array([Vector2(0.12, y0 + 0.05), Vector2(r * 1.0, y0 - 0.08), Vector2(r * 0.5, y0 + th * 0.5), Vector2(0.03, y0 + th)])
-			cols = PackedColorArray([g * 0.65, g * (0.9 * lt), g * (lt * 1.1), g * (lt * 1.2)])
-			sway = PackedFloat32Array([sw * 0.3, sw, sw * 0.85, sw * 0.7])
-		for ci in cols.size():
-			cols[ci] = Color(cols[ci].r, cols[ci].g, cols[ci].b, 1.0)
-		crown.revolve(Vector3.ZERO, prof, cols, 9 if lod == 0 else 6, sway, 0.0, 0.37 * float(i + v))
-	return {"trunk": trunk.commit(), "crown": crown.commit()}
+## Per-instance tint for a tree (crowns vary a little in value and warmth).
+static func tint_of(t: Dictionary) -> Color:
+	var p: Vector2 = t["pos"]
+	var a := _hash01(p.x, p.y, 13)
+	var b := _hash01(p.x, p.y, 17)
+	var v := 0.9 + 0.2 * a
+	return Color(v * (0.97 + 0.06 * b), v, v * (1.03 - 0.06 * b))
 
 
 # ---------------------------------------------------------------------------
-# Light field: soft AO + warm light on a 2 m grid
+# Light field: soft AO + warm/cool light + canopy + path wear on a 2 m grid
 # ---------------------------------------------------------------------------
 const CELL := 2.0
 var _w := 0
 var _d := 0
 var ao: PackedFloat32Array      # 0 = open sky .. 1 = deeply occluded
 var warm: PackedFloat32Array    # 0 .. ~1 warm light
+var cool: PackedFloat32Array    # 0 .. ~1 cool (pool / fountain) light
+var canopy: PackedFloat32Array  # 0 .. 1 under tree crowns (forest floor)
+var wear: PackedFloat32Array    # 0 .. 1 beside paths (worn grass)
+var _layout: CampusLayout
 
 
-func _init(layout: CampusLayout) -> void:
+## The field is filled in stages (begin + stamp_* calls) so the staged build
+## keeps each step short; `fill_all` does everything at once.
+func _init(layout: CampusLayout, fill: bool = true) -> void:
+	_layout = layout
 	var b := CampusLayout.BOUNDS
 	_w = int(b.size.x / CELL) + 1
 	_d = int(b.size.y / CELL) + 1
-	ao = PackedFloat32Array()
-	ao.resize(_w * _d)
-	ao.fill(0.0)
-	warm = PackedFloat32Array()
-	warm.resize(_w * _d)
-	warm.fill(0.0)
-	for t in layout.trees:
+	for g in ["ao", "warm", "cool", "canopy", "wear"]:
+		var arr := PackedFloat32Array()
+		arr.resize(_w * _d)
+		arr.fill(0.0)
+		set(g, arr)
+	if fill:
+		stamp_trees()
+		stamp_buildings()
+		stamp_barriers()
+		stamp_lights()
+		stamp_paths()
+
+
+func stamp_trees() -> void:
+	for t in _layout.trees:
 		_stamp(ao, t["pos"], 3.6, 0.45, 1.6)
-	for bd in layout.buildings:
+		_stamp(canopy, t["pos"], 5.0, 0.55, 0.8)
+
+
+func stamp_buildings() -> void:
+	for bd in _layout.buildings:
 		var pos: Vector2 = bd["pos"]
 		var size: Vector2 = bd["size"]
 		_stamp_rect(ao, Rect2(pos - size * 0.5, size), 3.2, 0.5)
 		# lit windows spill a little warmth onto the ground along the walls
 		if not bd.get("dome", false) and String(bd["id"]) not in ["shed", "tower"]:
 			_stamp_rect(warm, Rect2(pos - size * 0.5, size), 3.0, 0.16 * float(bd.get("warm", 0.5)) * 2.0)
-	for s in layout.walls + layout.hedges:
+
+
+func stamp_barriers() -> void:
+	for s in _layout.walls + _layout.hedges:
 		var a: Vector2 = s["a"]
 		var bb: Vector2 = s["b"]
 		var n := int(a.distance_to(bb) / CELL) + 1
 		for i in n + 1:
 			_stamp(ao, a.lerp(bb, float(i) / float(n)), 1.8, 0.22, 1.0)
-	for lp in layout.lamps:
+	for r in _layout.rocks:
+		var rp: Vector3 = r["pos"]
+		_stamp(ao, Vector2(rp.x, rp.z), 3.4, 0.35, 1.2)
+
+
+func stamp_lights() -> void:
+	for lp in _layout.lamps:
 		_stamp(warm, lp, 8.0, 0.75, 1.4)
-	for dd in layout.dorm_doors:
+	for dd in _layout.dorm_doors:
 		var dp: Vector2 = dd["pos"]
 		var dn: Vector2 = dd["normal"]
 		_stamp(warm, dp + dn * 2.0, 6.0, 0.8, 1.2)
+	for w in _layout.waters:
+		var c: Vector2 = w["center"]
+		match String(w["id"]):
+			"pool":
+				_stamp_rect(cool, Rect2(c - w["size"] * 0.5, w["size"]), 5.0, 0.55)
+			"fountain":
+				_stamp(cool, c, 11.0, 0.35, 1.0)
+				_stamp(warm, c, 13.0, 0.25, 1.0)
+
+
+func stamp_paths() -> void:
+	for pth in _layout.paths:
+		var pts: PackedVector2Array = pth["pts"]
+		var hw: float = float(pth["w"]) * 0.5
+		for i in pts.size() - 1:
+			_stamp_segment(wear, pts[i], pts[i + 1], hw + 2.2, hw, 0.7)
+
+
+## Extra soft contact shade under decorative things (shrubs, rocks).
+func stamp_contact(p: Vector2, radius: float, amount: float) -> void:
+	_stamp(ao, p, radius, amount, 1.3)
 
 
 func _stamp(grid: PackedFloat32Array, c: Vector2, radius: float, amount: float, power: float) -> void:
@@ -160,18 +302,30 @@ func _stamp(grid: PackedFloat32Array, c: Vector2, radius: float, amount: float, 
 	var r := int(ceil(radius / CELL))
 	var ci := int(round((c.x - b.position.x) / CELL))
 	var cj := int(round((c.y - b.position.y) / CELL))
-	for j in range(cj - r, cj + r + 1):
-		if j < 0 or j >= _d:
-			continue
-		for i in range(ci - r, ci + r + 1):
-			if i < 0 or i >= _w:
-				continue
+	for j in range(maxi(cj - r, 0), mini(cj + r + 1, _d)):
+		for i in range(maxi(ci - r, 0), mini(ci + r + 1, _w)):
 			var p := Vector2(b.position.x + i * CELL, b.position.y + j * CELL)
 			var t := 1.0 - p.distance_to(c) / radius
 			if t <= 0.0:
 				continue
 			var idx := j * _w + i
 			grid[idx] = minf(1.0, grid[idx] + amount * pow(t, power))
+
+
+## Distance-to-segment stamp: full `amount` inside `inner`, fading to 0 at `outer`.
+func _stamp_segment(grid: PackedFloat32Array, a: Vector2, bb: Vector2, outer: float, inner: float, amount: float) -> void:
+	var b := CampusLayout.BOUNDS
+	var lo := Vector2(minf(a.x, bb.x), minf(a.y, bb.y)) - Vector2(outer, outer)
+	var hi := Vector2(maxf(a.x, bb.x), maxf(a.y, bb.y)) + Vector2(outer, outer)
+	for j in range(maxi(0, int((lo.y - b.position.y) / CELL)), mini(_d, int((hi.y - b.position.y) / CELL) + 2)):
+		for i in range(maxi(0, int((lo.x - b.position.x) / CELL)), mini(_w, int((hi.x - b.position.x) / CELL) + 2)):
+			var p := Vector2(b.position.x + i * CELL, b.position.y + j * CELL)
+			var d := CampusLayout._dist_to_segment(p, a, bb)
+			if d >= outer:
+				continue
+			var v := amount * (1.0 - smoothstep(inner, outer, d))
+			var idx := j * _w + i
+			grid[idx] = maxf(grid[idx], v)
 
 
 func _stamp_rect(grid: PackedFloat32Array, rect: Rect2, falloff: float, amount: float) -> void:
@@ -205,56 +359,27 @@ func sample(grid: PackedFloat32Array, x: float, z: float) -> float:
 	return lerpf(lerpf(a, bb, tx), lerpf(c, d, tx), tz)
 
 
+## the light colours (sRGB); world_common's FIELD_WARM / FIELD_COOL match
 const WARM := Color(0.42, 0.26, 0.09)
+const COOL := Color(0.05, 0.20, 0.24)
 
 
-## Bakes light_at into a MeshKit's vertices from `from` (those at or below
-## max_y) - the same as MeshKit.bake_range(light_at) without a call per vertex.
-func bake(mk: MeshKit, from: int, max_y: float = 3.0) -> void:
-	var v := mk._v
-	var n := mk._n
-	var c := mk._c
-	var bx := CampusLayout.BOUNDS.position.x
-	var bz := CampusLayout.BOUNDS.position.y
-	var wmax := float(_w - 1) - 0.001
-	var dmax := float(_d - 1) - 0.001
-	for i in range(from, v.size()):
-		var p := v[i]
-		if p.y > max_y:
-			continue
-		# both grids, one bilinear lookup
-		var fx := clampf((p.x - bx) / CELL, 0.0, wmax)
-		var fz := clampf((p.z - bz) / CELL, 0.0, dmax)
-		var gi := int(fx)
-		var gj := int(fz)
-		var tx := fx - gi
-		var tz := fz - gj
-		var i00 := gj * _w + gi
-		var i10 := i00 + _w
-		var ao_s := lerpf(lerpf(ao[i00], ao[i00 + 1], tx), lerpf(ao[i10], ao[i10 + 1], tx), tz)
-		var wm_s := lerpf(lerpf(warm[i00], warm[i00 + 1], tx), lerpf(warm[i10], warm[i10 + 1], tx), tz)
-		var h := clampf(1.0 - maxf(p.y, 0.0) / 2.5, 0.0, 1.0)
-		var o := ao_s * h
-		var wl := wm_s * clampf(1.0 - maxf(p.y, 0.0) / 4.0, 0.0, 1.0)
-		var m := 1.0 - 0.5 * o
-		var nn := n[i]
-		if absf(nn.y) < 0.5 and p.y < 1.4:
-			m *= lerpf(0.78, 1.0, clampf(p.y / 1.4, 0.0, 1.0))
-		var add := wl * (clampf(nn.y, 0.0, 1.0) * 0.6 + 0.4)
-		var col := c[i]
-		c[i] = Color(col.r * m + WARM.r * add, col.g * m + WARM.g * add, col.b * m + WARM.b * add, col.a)
-	mk._c = c
+## V5: the light field as a small texture (R ao, G warm, B cool; one texel
+## per 2 m cell, ~100 KB) that the world shaders sample per fragment, so no
+## vertex is baked on the CPU and the MultiMesh vegetation is lit by it too.
+func field_texture() -> ImageTexture:
+	var bytes := PackedByteArray()
+	bytes.resize(_w * _d * 4)
+	for i in _w * _d:
+		bytes[i * 4] = clampi(int(ao[i] * 255.0 + 0.5), 0, 255)
+		bytes[i * 4 + 1] = clampi(int(warm[i] * 255.0 + 0.5), 0, 255)
+		bytes[i * 4 + 2] = clampi(int(cool[i] * 255.0 + 0.5), 0, 255)
+		bytes[i * 4 + 3] = 255
+	var img := Image.create_from_data(_w, _d, false, Image.FORMAT_RGBA8, bytes)
+	return ImageTexture.create_from_image(img)
 
 
-## [multiply, add] for a vertex near the ground (MeshKit.bake_range): AO
-## darkens and warm light adds lamp colour; both fade with height, and walls
-## get a soft darkening toward their foot.
-func light_at(p: Vector3, n: Vector3) -> Array:
-	var h := clampf(1.0 - maxf(p.y, 0.0) / 2.5, 0.0, 1.0)
-	var o := sample(ao, p.x, p.z) * h
-	var wl := sample(warm, p.x, p.z) * clampf(1.0 - maxf(p.y, 0.0) / 4.0, 0.0, 1.0)
-	var m := 1.0 - 0.5 * o
-	if absf(n.y) < 0.5 and p.y < 1.4:
-		m *= lerpf(0.78, 1.0, clampf(p.y / 1.4, 0.0, 1.0))   # contact shade at a wall's foot
-	var face := clampf(n.y, 0.0, 1.0) * 0.6 + 0.4
-	return [Color(m, m, m), WARM * (wl * face)]
+## Shader parameters that place the field texture in the world.
+func field_params() -> Dictionary:
+	var b := CampusLayout.BOUNDS
+	return {"field_origin": b.position - Vector2(CELL, CELL) * 0.5, "field_size": Vector2(_w, _d) * CELL}

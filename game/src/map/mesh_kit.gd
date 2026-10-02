@@ -9,12 +9,42 @@ extends RefCounted
 ## lighting baked into its vertex colours (bake_range) before commit, plus
 ## smooth-shaded primitives (tri_n, revolve, chamfer_box, lobe) next to the
 ## original faceted ones.
+##
+## V5: UV carries a material id (x) and one parameter (y) for the world
+## shaders' detail patterns (see world_common.gdshaderinc).  Set `mat` (and
+## `param`) before adding primitives; everything added takes them.
 
 var _v := PackedVector3Array()
 var _n := PackedVector3Array()
 var _c := PackedColorArray()
 var _cu := PackedFloat32Array()   # 2 floats per vertex (emission, sway)
+var _uv := PackedVector2Array()   # material id, parameter (V5)
 var _count := 0
+## V5: an indexed grid section (the ground) may come first; everything
+## after _grid_end is plain triangles (one vertex each corner)
+var _gidx := PackedInt32Array()
+var _grid_end := 0
+## material id / parameter for what is added next (world_common's table)
+var mat := 0.0
+var param := 0.0
+
+const M_PLAIN := 0.0
+const M_LAWN := 1.0
+const M_PAVING := 2.0
+const M_GRAVEL := 3.0
+const M_ASPHALT := 4.0
+const M_BRICK := 5.0
+const M_ROOF := 6.0
+const M_STONE := 7.0
+const M_WOOD := 8.0
+const M_LEAF := 10.0
+const M_BARK := 11.0
+const M_ROCK := 12.0
+const M_METAL := 14.0
+const M_GLASS := 15.0
+const M_TILE := 16.0
+const M_PLASTER := 17.0
+const M_VERGE := 18.0
 
 
 func is_empty() -> bool:
@@ -26,15 +56,40 @@ func vert_count() -> int:
 	return _v.size()
 
 
+## Adds one grid vertex (indexed section) and returns its index.
+func grid_vertex(p: Vector3, n: Vector3, col: Color, uv: Vector2) -> int:
+	_v.append(p)
+	_n.append(n)
+	_c.append(col)
+	_cu.append(0.0)
+	_cu.append(0.0)
+	_uv.append(uv)
+	_grid_end = _v.size()
+	return _grid_end - 1
+
+
+func grid_tri(a: int, b: int, c: int) -> void:
+	_gidx.append(a)
+	_gidx.append(b)
+	_gidx.append(c)
+	_count += 1
+
+
 func commit() -> ArrayMesh:
 	if _count == 0:
 		return null
 	var arr := []
 	arr.resize(Mesh.ARRAY_MAX)
+	if not _gidx.is_empty():
+		# the grid's shared vertices, then one index per plain-triangle corner
+		var idx := _gidx.duplicate()
+		idx.append_array(PackedInt32Array(range(_grid_end, _v.size())))
+		arr[Mesh.ARRAY_INDEX] = idx
 	arr[Mesh.ARRAY_VERTEX] = _v
 	arr[Mesh.ARRAY_NORMAL] = _n
 	arr[Mesh.ARRAY_COLOR] = _c
 	arr[Mesh.ARRAY_CUSTOM0] = _cu
+	arr[Mesh.ARRAY_TEX_UV] = _uv
 	var m := ArrayMesh.new()
 	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr, [], {},
 		Mesh.ARRAY_CUSTOM_RG_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
@@ -60,6 +115,41 @@ func _push(p: Vector3, n: Vector3, col: Color, emis: float, sway: float) -> void
 	_c.append(col)
 	_cu.append(emis)
 	_cu.append(sway)
+	_uv.append(Vector2(mat, param))
+
+
+## Sets the emission of the last n vertices (glowing faces built with
+## helpers that take no emission argument).
+func cu_emission_last(n: int, emis: float) -> void:
+	var start := maxi(_v.size() - n, 0)
+	for i in range(start, _v.size()):
+		_cu[i * 2] = emis
+
+
+## Sets mat/param and returns self (k.with(M_BRICK).box(...)).
+func with(m: float, p: float = 0.0) -> MeshKit:
+	mat = m
+	param = p
+	return self
+
+
+## Raw smooth triangle with a colour (incl. alpha) and uv per corner.
+func tri_full(a: Vector3, b: Vector3, c: Vector3, na: Vector3, nb: Vector3, nc: Vector3, ca: Color, cb: Color, cc: Color, ua: Vector2, ub: Vector2, uc: Vector2) -> void:
+	_v.append(a)
+	_v.append(b)
+	_v.append(c)
+	_n.append(na)
+	_n.append(nb)
+	_n.append(nc)
+	_c.append(ca)
+	_c.append(cb)
+	_c.append(cc)
+	for i in 6:
+		_cu.append(0.0)
+	_uv.append(ua)
+	_uv.append(ub)
+	_uv.append(uc)
+	_count += 1
 
 
 func tri(a: Vector3, b: Vector3, c: Vector3, col: Color, emis: float = 0.0, sway: float = 0.0, n: Vector3 = Vector3.ZERO) -> void:
@@ -69,9 +159,21 @@ func tri(a: Vector3, b: Vector3, c: Vector3, col: Color, emis: float = 0.0, sway
 		if nn.length_squared() < 1e-12:
 			return
 		nn = -nn.normalized()
-	_push(a, nn, col, emis, sway)
-	_push(b, nn, col, emis, sway)
-	_push(c, nn, col, emis, sway)
+	# inlined _push (hot path)
+	var uvv := Vector2(mat, param)
+	_v.append(a)
+	_v.append(b)
+	_v.append(c)
+	_n.append(nn)
+	_n.append(nn)
+	_n.append(nn)
+	_c.append(col)
+	_c.append(col)
+	_c.append(col)
+	_cu.append_array(PackedFloat32Array([emis, sway, emis, sway, emis, sway]))
+	_uv.append(uvv)
+	_uv.append(uvv)
+	_uv.append(uvv)
 	_count += 1
 
 
@@ -79,9 +181,20 @@ func tri(a: Vector3, b: Vector3, c: Vector3, col: Color, emis: float = 0.0, sway
 func tri_n(a: Vector3, b: Vector3, c: Vector3, na: Vector3, nb: Vector3, nc: Vector3, ca: Color, cb: Color, cc: Color, emis: float = 0.0, sway_a: float = 0.0, sway_b: float = 0.0, sway_c: float = 0.0) -> void:
 	if (b - a).cross(c - a).length_squared() < 1e-12:
 		return
-	_push(a, na, ca, emis, sway_a)
-	_push(b, nb, cb, emis, sway_b)
-	_push(c, nc, cc, emis, sway_c)
+	var uvv := Vector2(mat, param)
+	_v.append(a)
+	_v.append(b)
+	_v.append(c)
+	_n.append(na)
+	_n.append(nb)
+	_n.append(nc)
+	_c.append(ca)
+	_c.append(cb)
+	_c.append(cc)
+	_cu.append_array(PackedFloat32Array([emis, sway_a, emis, sway_b, emis, sway_c]))
+	_uv.append(uvv)
+	_uv.append(uvv)
+	_uv.append(uvv)
 	_count += 1
 
 
@@ -123,15 +236,20 @@ func revolve(base: Vector3, profile: PackedVector2Array, cols: PackedColorArray,
 
 
 ## Smooth ellipsoid lobe (latitude/longitude, normals from the ellipsoid),
-## coloured by a callable(normal) -> Color for baked self-shading.
-func lobe(center: Vector3, radii: Vector3, color_fn: Callable, rings: int = 6, seg: int = 10, sway: float = 0.0, jitter: float = 0.0, seed_v: int = 0) -> void:
+## coloured by a callable(normal) -> Color for baked self-shading, or (V5,
+## faster: no callable) by `col` with the soft_blob shading when color_fn is
+## not given.  Colours are evaluated once per grid vertex.
+func lobe(center: Vector3, radii: Vector3, color_fn: Callable, rings: int = 6, seg: int = 10, sway: float = 0.0, jitter: float = 0.0, seed_v: int = 0, col: Color = Color.WHITE) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_v
+	var use_fn := color_fn.is_valid()
 	var pts: Array = []
 	var nrm: Array = []
+	var cls: Array = []
 	for r in rings + 1:
 		var row: Array = []
 		var nrow: Array = []
+		var crow: Array = []
 		var phi := PI * float(r) / float(rings)
 		for s in seg + 1:
 			var th := TAU * float(s % seg) / float(seg)
@@ -141,11 +259,19 @@ func lobe(center: Vector3, radii: Vector3, color_fn: Callable, rings: int = 6, s
 				j = 1.0 + rng.randf_range(-jitter, jitter)
 			var p := u * radii * j
 			row.append(center + p)
-			nrow.append(Vector3(u.x / radii.x, u.y / radii.y, u.z / radii.z).normalized())
+			var nn := Vector3(u.x / radii.x, u.y / radii.y, u.z / radii.z).normalized()
+			nrow.append(nn)
+			if use_fn:
+				crow.append(color_fn.call(nn))
+			else:
+				var sh := 0.62 + 0.38 * smoothstep(-0.8, 0.9, nn.y)
+				crow.append(Color(col.r * sh, col.g * sh, col.b * sh, col.a))
 		# close the seam exactly
 		row[seg] = row[0]
+		crow[seg] = crow[0]
 		pts.append(row)
 		nrm.append(nrow)
+		cls.append(crow)
 	for r in rings:
 		for s in seg:
 			var a: Vector3 = pts[r][s]
@@ -159,18 +285,16 @@ func lobe(center: Vector3, radii: Vector3, color_fn: Callable, rings: int = 6, s
 			var sa := sway * (0.6 + 0.4 * na.y)
 			var sd := sway * (0.6 + 0.4 * nd.y)
 			if r != 0:
-				tri_n(b, a, d, nb, na, nd, color_fn.call(nb), color_fn.call(na), color_fn.call(nd), 0.0, sa, sa, sd)
+				tri_n(b, a, d, nb, na, nd, cls[r][s + 1], cls[r][s], cls[r + 1][s], 0.0, sa, sa, sd)
 			if r != rings - 1:
-				tri_n(b, d, c, nb, nd, nc, color_fn.call(nb), color_fn.call(nd), color_fn.call(nc), 0.0, sa, sd, sd)
+				tri_n(b, d, c, nb, nd, nc, cls[r][s + 1], cls[r + 1][s], cls[r + 1][s + 1], 0.0, sa, sd, sd)
 
 
 ## Smooth ellipsoid with soft self-shading (lit top, darker underside):
 ## rocks, hedge tops, shrubs, small rounded props.
 func soft_blob(center: Vector3, radii: Vector3, col: Color, rings: int = 4, seg: int = 8, sway: float = 0.0, jitter: float = 0.0, seed_v: int = 0, emis: float = 0.0) -> void:
 	var start := _v.size()
-	lobe(center, radii, func(n: Vector3) -> Color:
-		var sh := 0.62 + 0.38 * smoothstep(-0.8, 0.9, n.y)
-		return Color(col.r * sh, col.g * sh, col.b * sh, col.a), rings, seg, sway, jitter, seed_v)
+	lobe(center, radii, Callable(), rings, seg, sway, jitter, seed_v, col)
 	if emis > 0.0:
 		for i in range(start, _v.size()):
 			_cu[i * 2] = emis
@@ -186,10 +310,6 @@ func chamfer_box(center: Vector3, size: Vector3, col: Color, bevel: float = 0.06
 	var basis := Basis(Vector3.UP, yaw)
 	var tc: Color = col if top_col == null else top_col
 	var axes := [Vector3.RIGHT, Vector3.UP, Vector3.BACK]
-	var w := func(p: Vector3) -> Vector3:
-		return center + basis * p
-	var rn := func(n: Vector3) -> Vector3:
-		return basis * n
 	# faces
 	for ai in 3:
 		for sg in [-1.0, 1.0]:
@@ -203,12 +323,12 @@ func chamfer_box(center: Vector3, size: Vector3, col: Color, bevel: float = 0.06
 			var c0 := n * absf(h.dot(n))
 			var fc := tc if (ai == 1 and sg > 0.0) else (col.darkened(0.06) if ai == 0 else col)
 			var q := [c0 - u * hu - v * hv, c0 + u * hu - v * hv, c0 + u * hu + v * hv, c0 - u * hu + v * hv]
-			var nn: Vector3 = rn.call(n)
+			var nn: Vector3 = basis * n
 			# orient clockwise from outside
-			var A: Vector3 = w.call(q[0])
-			var B: Vector3 = w.call(q[1])
-			var C: Vector3 = w.call(q[2])
-			var D: Vector3 = w.call(q[3])
+			var A: Vector3 = center + basis * (q[0] as Vector3)
+			var B: Vector3 = center + basis * (q[1] as Vector3)
+			var C: Vector3 = center + basis * (q[2] as Vector3)
+			var D: Vector3 = center + basis * (q[3] as Vector3)
 			if (B - A).cross(C - A).dot(nn) > 0.0:
 				tri_n(A, C, B, nn, nn, nn, fc, fc, fc, emis)
 				tri_n(A, D, C, nn, nn, nn, fc, fc, fc, emis)
@@ -229,12 +349,12 @@ func chamfer_box(center: Vector3, size: Vector3, col: Color, bevel: float = 0.06
 				var pu := nu * absf(h.dot(u2)) + nvv * (absf(h.dot(v2)) - bv)
 				var pv := nvv * absf(h.dot(v2)) + nu * (absf(h.dot(u2)) - bv)
 				var e: Vector3 = axes[ai] * len
-				var A2: Vector3 = w.call(pu - e)
-				var B2: Vector3 = w.call(pu + e)
-				var C2: Vector3 = w.call(pv + e)
-				var D2: Vector3 = w.call(pv - e)
-				var n_u: Vector3 = rn.call(nu)
-				var n_v: Vector3 = rn.call(nvv)
+				var A2: Vector3 = center + basis * (pu - e)
+				var B2: Vector3 = center + basis * (pu + e)
+				var C2: Vector3 = center + basis * (pv + e)
+				var D2: Vector3 = center + basis * (pv - e)
+				var n_u: Vector3 = basis * nu
+				var n_v: Vector3 = basis * nvv
 				var cu := tc if nu.y > 0.5 else col
 				var cv := tc if nvv.y > 0.5 else col
 				var out := (n_u + n_v).normalized()
@@ -253,12 +373,12 @@ func chamfer_box(center: Vector3, size: Vector3, col: Color, bevel: float = 0.06
 				var cx := Vector3(sx * h.x, sy * (h.y - bv), sz * (h.z - bv))
 				var cy := Vector3(sx * (h.x - bv), sy * h.y, sz * (h.z - bv))
 				var cz := Vector3(sx * (h.x - bv), sy * (h.y - bv), sz * h.z)
-				var X: Vector3 = w.call(cx)
-				var Y: Vector3 = w.call(cy)
-				var Z: Vector3 = w.call(cz)
-				var nx: Vector3 = rn.call(Vector3(sx, 0, 0))
-				var ny: Vector3 = rn.call(Vector3(0, sy, 0))
-				var nz: Vector3 = rn.call(Vector3(0, 0, sz))
+				var X: Vector3 = center + basis * cx
+				var Y: Vector3 = center + basis * cy
+				var Z: Vector3 = center + basis * cz
+				var nx: Vector3 = basis * Vector3(sx, 0, 0)
+				var ny: Vector3 = basis * Vector3(0, sy, 0)
+				var nz: Vector3 = basis * Vector3(0, 0, sz)
 				var ccy := tc if sy > 0.0 else col
 				var outc := (nx + ny + nz).normalized()
 				if (Y - X).cross(Z - X).dot(outc) > 0.0:
