@@ -1,6 +1,16 @@
 extends Node3D
 ## Dev tool: renders the campus from several viewpoints to PNGs.
-## Usage: godot --path game res://src/dev_shots.tscn -- <outdir>
+## Usage: godot --path game res://src/dev_shots.tscn -- <outdir> [flags]
+##   (no flag)   overview set (`shots` below)
+##   --route     the seven follow-camera route views
+##   --waters    one view per water (all six marked active)
+##   --heroes    extra close views of the landmarks (V5)
+##   --q0        Battery Saver preset (default: Standard)
+##   --runner    a stand-in runner at each route/water view's focus point
+## Every shot prints a STATS line with the engine's counters for that frame
+## (draw calls, primitives, objects; llvmpipe here - relative numbers only),
+## and the staged campus build prints its step timings (BUILD line).  The
+## camera lists are kept identical between versions for matched comparisons.
 
 var shots := [
 	{"name": "quad_fountain", "pos": Vector3(18, 9, 52), "look": Vector3(0, 1, 20)},
@@ -17,7 +27,7 @@ var shots := [
 ## Follow-camera views along the representative route (dorm door -> path ->
 ## pond / garden -> return) at the game's camera distance, height and FOV:
 ## [name, runner position (x, z), heading toward (x, z)].  The same list
-## renders V3 and V4 art for matched comparisons.
+## renders V3, V4 and V5 art for matched comparisons.
 const ROUTE := [
 	["route_1_dorm_door", Vector2(0, 92), Vector2(0, 40)],
 	["route_2_quad_path", Vector2(-30, 64), Vector2(-90, 50)],
@@ -37,19 +47,44 @@ const WATERS := [
 	["water_5_garden", Vector2(77, -73), Vector2(92, -88)],
 	["water_6_inlet", Vector2(-26, -117), Vector2(-19, -137)],
 ]
+## --heroes (V5): follow-camera framings at the landmarks and the barren
+## areas the V5 art pass dressed: [name, runner (x, z), heading toward (x, z)]
+const HEROES := [
+	["hero_pond_exit", Vector2(-110, 62), Vector2(-121, 46)],
+	["hero_pond_trail", Vector2(-86, 46), Vector2(-106, 46)],
+	["hero_fountain", Vector2(-10, 8), Vector2(0, 22)],
+	["hero_pool_gate", Vector2(84, 32), Vector2(112, 32)],
+	["hero_quarry", Vector2(-100, -66), Vector2(-100, -90)],
+	["hero_garden", Vector2(92, -60), Vector2(92, -88)],
+	["hero_inlet", Vector2(-20, -104), Vector2(-19, -132)],
+	["hero_dorm_west", Vector2(-60, 112), Vector2(-26, 112)],
+	["hero_north_lawn", Vector2(0, -50), Vector2(-6, -90)],
+	["hero_east_lawn", Vector2(64, 40), Vector2(64, -10)],
+]
 var cam: Camera3D
 var i := 0
 var wait := 0
 var outdir := "user://shots"
+var foliage_mat: ShaderMaterial
+var runner: Node3D
+
+
+func _follow_shot(name: String, p: Vector2, to: Vector2) -> Dictionary:
+	var dir := (to - p).normalized()
+	var target := Vector3(p.x, CampusBuilder.ground_y(CampusLayout.shared(), p.x, p.y) + 1.3, p.y)
+	var pitch := 0.24
+	var back := Vector3(-dir.x, 0, -dir.y) * 6.2 * cos(pitch)
+	return {"name": name, "pos": target + back + Vector3(0, 1.55 + 6.2 * sin(pitch) - 1.3, 0), "look": target + Vector3(dir.x, 0, dir.y) * 2.0, "fov": 66.0,
+		"focus": Vector3(p.x, 0.0, p.y), "yaw": atan2(dir.x, dir.y)}
 
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() > 0:
 		outdir = args[0]
-	QualityPreset.apply(1)
-	var list: Array = WATERS if args.has("--waters") else ROUTE
-	if args.has("--route") or args.has("--waters"):
+	var q := 0 if args.has("--q0") else 1
+	QualityPreset.apply(q)
+	if args.has("--route") or args.has("--waters") or args.has("--heroes"):
 		shots.clear()
 	for r in (WATERS if args.has("--waters") else []):
 		var sp: Vector2 = r[1]
@@ -57,28 +92,62 @@ func _ready() -> void:
 		var lay0 := CampusLayout.shared()
 		shots.append({"name": r[0], "pos": Vector3(sp.x, CampusBuilder.ground_y(lay0, sp.x, sp.y) + 5.0, sp.y),
 			"look": Vector3(wc.x, 0.0, wc.y), "fov": 60.0})
-	for r in ([] if args.has("--waters") else list):
-		var p: Vector2 = r[1]
-		var to: Vector2 = r[2]
-		var dir := (to - p).normalized()
-		var target := Vector3(p.x, CampusBuilder.ground_y(CampusLayout.shared(), p.x, p.y) + 1.3, p.y)
-		var pitch := 0.24
-		var back := Vector3(-dir.x, 0, -dir.y) * 6.2 * cos(pitch)
-		shots.append({"name": r[0], "pos": target + back + Vector3(0, 1.55 + 6.2 * sin(pitch) - 1.3, 0), "look": target + Vector3(dir.x, 0, dir.y) * 2.0, "fov": 66.0})
+	for r in (ROUTE if args.has("--route") else []):
+		shots.append(_follow_shot(r[0], r[1], r[2]))
+	for r in (HEROES if args.has("--heroes") else []):
+		shots.append(_follow_shot(r[0], r[1], r[2]))
 	DirAccess.make_dir_recursive_absolute(outdir)
 	var lay := CampusLayout.shared()
 	var b := CampusBuilder.new(lay)
-	var t0 := Time.get_ticks_msec()
-	var waters := b.build_visuals(self, 1)
-	print("visuals built in %d ms" % (Time.get_ticks_msec() - t0))
+	# the same staged build the loading screen runs, one step at a time,
+	# timing each step (this machine's CPU, not a phone)
+	var t0 := Time.get_ticks_usec()
+	b.begin_visuals(self, q)
+	var times: Array = []
+	var more := true
+	while more:
+		var s0 := Time.get_ticks_usec()
+		more = b.step()
+		times.append(float(Time.get_ticks_usec() - s0) / 1000.0)
+	var total := float(Time.get_ticks_usec() - t0) / 1000.0
+	var sorted := times.duplicate()
+	sorted.sort()
+	sorted.reverse()
+	print("BUILD total %.0f ms, %d steps, longest %.1f ms, top5 %s, steps over 16 ms: %d" % [total, times.size(), sorted[0],
+		str(sorted.slice(0, 5).map(func(x: float) -> float: return snappedf(x, 0.1))), times.filter(func(x: float) -> bool: return x > 16.0).size()])
+	var waters: Dictionary = b.water_nodes
+	foliage_mat = b.foliage_material
 	for id in (waters.keys() if args.has("--waters") else ["fountain", "pond", "garden"]):
 		(waters[id]["mat"] as ShaderMaterial).set_shader_parameter("active", 1.0)
-	add_child(EnvFactory.make_environment())
-	add_child(EnvFactory.make_moon())
+	add_child(EnvFactory.make_environment(q))
+	add_child(EnvFactory.make_moon(q))
+	if args.has("--runner"):
+		runner = _make_runner()
+		add_child(runner)
 	cam = Camera3D.new()
 	cam.fov = 62
 	cam.far = 600
 	add_child(cam)
+
+
+## A stand-in runner (pajama colours, the character's size) so a view shows
+## how a player reads against the scenery.  Not the game's character rig.
+func _make_runner() -> Node3D:
+	PropKit.init_meshes()
+	var n := Node3D.new()
+	var body := MeshInstance3D.new()
+	body.mesh = PropKit.capsule
+	body.material_override = PropKit.mat(Color(0.35, 0.55, 1.0), 6.0, Color(0.95, 0.95, 1.0), 0.0, 0.45)
+	body.scale = Vector3(0.42, 0.42, 0.42)
+	body.position = Vector3(0, 0.82, 0)
+	n.add_child(body)
+	var head := MeshInstance3D.new()
+	head.mesh = PropKit.sphere
+	head.material_override = PropKit.mat(Color(0.95, 0.75, 0.6), 0.0, Color.WHITE, 0.0, 0.45)
+	head.scale = Vector3(0.42, 0.42, 0.42)
+	head.position = Vector3(0, 1.62, 0)
+	n.add_child(head)
+	return n
 
 
 func _process(_d: float) -> void:
@@ -89,9 +158,24 @@ func _process(_d: float) -> void:
 	cam.position = s["pos"]
 	cam.look_at(s["look"])
 	cam.fov = float(s.get("fov", 62.0))
+	if foliage_mat:
+		if s.has("focus"):
+			var f: Vector3 = s["focus"]
+			foliage_mat.set_shader_parameter("focus", Vector4(f.x, f.y + 0.85, f.z, 1.25))
+		else:
+			foliage_mat.set_shader_parameter("focus", Vector4.ZERO)
+	if runner:
+		runner.visible = s.has("focus")
+		if s.has("focus"):
+			runner.position = s["focus"]
+			runner.rotation.y = float(s.get("yaw", 0.0))
 	wait += 1
 	if wait >= 4:
 		var img := get_viewport().get_texture().get_image()
 		img.save_png(outdir.path_join("%s.png" % s["name"]))
+		print("STATS %s draws %d prims %d objs %d" % [s["name"],
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME)])
 		wait = 0
 		i += 1
