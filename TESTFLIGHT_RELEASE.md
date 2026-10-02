@@ -19,53 +19,43 @@ Current version: **1.2 (V3)**. It uses the same app, bundle ID, Game Center capa
 
 ## Current release state
 
-**State: source prepared · project compiled (unsigned).** This is unchanged from V1: V2 (1.1) compiles for device, but no signed archive, upload or TestFlight build exists.
+**State: signed archive created · uploaded · processed (VALID) · available to internal testers.**
 
-- **Project compiled (unsigned).** CI exports the Xcode project and builds an **unsigned arm64 device archive** with `CODE_SIGNING_ALLOWED=NO`. This proves the project compiles and links for iPhone; it is not installable.
-  - **V2 final app code: commit `b56a82a`** (the V2 code from `5505024` plus the owner-supplied app icon), GitHub Actions run #16 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/36934028555).
-    - Tests passed and the unsigned device-archive step succeeded. The archive is `com.idlery.ultimatetrifecta` **1.1 (16)**: arm64, Xcode 26.6 (17F113), iOS SDK 26.5, 269 MB `.app`, MinimumOSVersion 17.0, Game Center entitlement, `PrivacyInfo.xcprivacy`.
-    - The Simulator build launched and reached a match: boot splash, loading, role reveal and HUD (`docs/media/v2/ios_simulator_ci_run16.jpg`). No crash report.
-    - The signed archive and upload steps were skipped because no signing secrets are configured.
-  - Run #14 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/36923913263) built `4c89ed0`, which differs from the final code only in the results scoreboard, the lobby bot-count text and the app icon. Tests passed, then the unsigned device archive `com.idlery.ultimatetrifecta` **1.1 (14)**: arm64, Xcode 26.6 (17F113), iOS SDK 26.5, 263 MB `.app`, MinimumOSVersion 17.0, with the Game Center entitlement and `PrivacyInfo.xcprivacy`. The Simulator build launched and reached a match, with no crash report.
-  - Earlier V2 runs on the same lane: #12 (`0539d7c`, V2 gameplay/UI) and #13 (`e3d5c85`) passed. Run #12's archive: `com.idlery.ultimatetrifecta` **1.1 (12)**, arm64, Xcode 26.6 (17F113) / iOS SDK 26.5, 263 MB `.app`, Game Center entitlement, `PrivacyInfo.xcprivacy`. Its Simulator run showed the boot splash with the V2 character, the loading screen, then the match's role reveal and 4:00 HUD; no crash report.
-  - V1's last unsigned build was 1.0 (10). The unsigned build number is the GitHub run number. The signed lane picks the highest App Store Connect build + 1 instead, so a signed 1.1 upload is always above anything already uploaded.
-- **Not done yet:**
-  - The app has not been device-tested.
-  - No signed archive has been created.
-  - Nothing has been uploaded.
-  - There is no App Store Connect processing and no TestFlight availability.
+It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, and nothing was submitted for App Store review.
 
-The blocker is that this repository has no Apple signing access configured: no App Store Connect API key, team ID or certificates. This environment cannot reach `api.appstoreconnect.apple.com`, so the app record, existing builds and team could not be checked from here.
+| | |
+|---|---|
+| Build | `com.idlery.ultimatetrifecta` **1.2 (1)**. App Store Connect build ID `16d704eb-e460-4493-97b8-9345653b4589`. |
+| Build number | **1**: the lane's check of App Store Connect found no earlier build for the app, so it chose 1. |
+| Source | Commit `e39c98c`. Its game, service and native code are identical to `001f274`, the code every test, soak and capture ran on. The later commits change only the lane, docs and media. |
+| Uploaded | 2026-10-02 03:39:23 UTC, by GitHub Actions run #32 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/36960504454) with `upload=true`. |
+| Apple's processing | `VALID`. The build is `INTERNAL_ONLY` (uploaded with `testFlightInternalTestingOnly`) and declares no non-exempt encryption. |
+| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. |
+| Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which is set to receive every build. The lane added no one. TestFlight's automatic notification is on, so that group's members are told the build is ready. |
+| Confirmed by | Apple's API, read by run #32 after processing and again by the read-only status runs #34 and #35 (03:51 and 03:53 UTC). Run #35 also shows the marketing version, 1.2. |
 
-In every CI run so far the signing check found no secrets, so the signed archive and upload steps were skipped.
+What the signed archive contains (run #32's build facts):
+- **Binary:** arm64, 270 MB `.app`.
+- **Toolchain:** Xcode 26.6 (17F113), iOS SDK 26.5. MinimumOSVersion 17.0; iPhone and iPad; landscape left and right.
+- **Plist:** `ITSAppUsesNonExemptEncryption` false.
+- **Frameworks:** `GodotApplePluginsGameCenter`, `SwiftGodotRuntime` and `UTShare` are embedded; UTShare is arm64.
+- **Entitlements and privacy:** the Game Center entitlement, and `PrivacyInfo.xcprivacy` (no tracking, no collected data, because the game service is off).
 
-## The owner action that unblocks TestFlight
+How it got there:
+- **Run #31** (`7a5325b`) failed at the signed archive, before anything was uploaded. Godot writes "Apple Distribution" into the Release configuration, and Xcode rejects a manually chosen identity under automatic signing ("conflicting provisioning settings").
+- **The fix** (`e39c98c`): signed builds archive with the development identity, and the App Store Connect export re-signs the build for distribution.
+- **Run #32** archived, exported and uploaded the build in about 2 minutes. The Simulator run followed while Apple processed it.
+- **Earlier unsigned CI builds** of V3 (runs #26, #28, #29 and #30) passed, including the unsigned device archive. Run #28's Simulator log shows a cold launch with no crash report. V2 was never uploaded.
 
-You only need to do this once.
+## The owner action that remains
 
-1. **Create an App Store Connect API key.**
-   - In App Store Connect, open Users and Access → Integrations → App Store Connect API → Team Keys → (+).
-   - Use role **Admin**. Xcode's automatic signing needs to create the cloud-managed distribution certificate and provisioning profile; lower roles may not be allowed to.
-   - Download `AuthKey_XXXXXXXXXX.p8` (it can only be downloaded once), and note the Key ID and Issuer ID.
-2. **Add four repository secrets** under GitHub → Settings → Secrets and variables → Actions:
+The one-time setup is done: the API key and the four repository secrets, the app record, and an internal group. Apple accepted the upload, so the developer membership and agreements were in order at that point.
 
-   | Secret | Value |
-   |---|---|
-   | `ASC_KEY_ID` | The Key ID |
-   | `ASC_ISSUER_ID` | The Issuer ID |
-   | `ASC_KEY_P8_BASE64` | Output of `base64 -i AuthKey_XXXXXXXXXX.p8` (one line) |
-   | `APPLE_TEAM_ID` | Your 10-character Team ID, from the Membership page at developer.apple.com |
+What only you can do now:
+1. **Install and play 1.2 (1)** from the TestFlight app on your iPhone. If the build doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing). Then work through the device checks in `TEST_REPORT.md` V3.8: frame rate and heat, touch, the share sheet, a controller if you have one, and a Game Center party on two devices.
+2. **Optional:** deploy the game service (`service/README.md`) if you want verified profiles and moderated names. Then fill in `game/config/service.cfg` and run the workflow again with **upload**.
 
-3. **Create the app record.** The App Store Connect API cannot create apps.
-   - Go to App Store Connect → Apps → (+) New App: platform iOS, name **Ultimate Trifecta**, primary language English (U.S.), bundle ID **com.idlery.ultimatetrifecta**, SKU e.g. `ULTIMATETRIFECTA1`, full access.
-   - If the bundle ID isn't in the list yet, either register it under Certificates, Identifiers & Profiles → Identifiers (enable **Game Center**), or run the workflow once (step 4). The workflow registers the ID through the API and then stops with an instruction to create the record.
-   - If the name "Ultimate Trifecta" is already taken on the App Store, choose the replacement name yourself; the build does not rename the game.
-4. **Run the workflow.**
-   - In GitHub → Actions → "Build, test and ship (iOS)" → Run workflow, choose branch `claude/ultimate-trifecta-testflight-oie9r7` and tick **upload**.
-   - The run tests, exports, signs (automatic signing via the API key), uploads with `testFlightInternalTestingOnly`, waits for processing, and adds the build to your existing **internal** TestFlight groups.
-5. **Internal group.** If you have no internal group yet: TestFlight → Internal Testing → (+), add **only your own account**, then re-run step 4 or add the build to the group by hand. Install with the TestFlight app on your iPhone.
-
-Also check that the Apple Developer Program membership is active and that the latest Program License Agreement is accepted under Business. Uploads fail without them, and I could not check either from here.
+For later uploads, run "Build, test and ship (iOS)" with **upload** ticked. The build number follows the highest one in App Store Connect, and the build goes to internal testing only. **asc_status** reads the current state without building anything.
 
 ## What the lane does (reproducible, no secrets in git)
 

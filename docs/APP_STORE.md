@@ -14,7 +14,7 @@ a contact address, URL or policy promise.
 | Name | Ultimate Trifecta |
 | Subtitle (≤30) | Splash three. Race home. |
 | Bundle ID | `com.idlery.ultimatetrifecta` |
-| Version | 1.2 (V3). The build number comes from App Store Connect (highest + 1). |
+| Version | 1.2 (V3). The build number comes from App Store Connect (highest + 1). The first upload, 1.2 (1), is in internal TestFlight testing only. |
 | Primary category | Games › Action. Secondary: Games › Family. |
 | Platforms | iPhone and iPad, iOS 17+, landscape. A12 or newer. |
 | Support URL | **owner**: a real, monitored page. Required by App Store Connect. |
