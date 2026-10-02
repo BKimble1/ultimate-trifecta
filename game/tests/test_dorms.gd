@@ -468,3 +468,122 @@ func test_bots_leave_and_come_home_through_the_doors() -> void:
 		t.eq(r.state, TC.PState.FINISHED, "%s: runner bot comes home through a door (%.1f s)" % [d, float(ticks) / 60.0])
 		t.check(CampusDorms.has_dorm(d) and h.sim.home_doors.map(func(x: Dictionary) -> String: return x["id"]).has(r.finish_door), "%s: through a home door (%s)" % [d, r.finish_door])
 		h.free_sim()
+
+
+## The host picks tonight's dorm from the seed, never the same twice in a
+## row, and publishes it with its geometry version and fingerprint, the
+## spawn pads, the coins and the start timing in the round configuration.
+func test_round_configuration_rotates_the_home_dorm() -> void:
+	var s := NetSession.new()
+	t.add_child(s)
+	s.start_offline("u-dorm", "Tester", {}, "runner")
+	var starts: Array = []
+	s.match_starting.connect(func(i: Dictionary) -> void: starts.append(i))
+	var seen := {}
+	var prev := ""
+	for k in 30:
+		s.host_start_match(1000 + k * 37)
+		var st: Dictionary = starts[-1]
+		var d := String(st["home_dorm"])
+		t.check(CampusDorms.has_dorm(d), "round %d: a real dorm (%s)" % [k, d])
+		t.check(d != prev, "round %d: not last round's dorm" % k)
+		var dm: Dictionary = st["dorm"]
+		t.eq(String(dm["id"]), d, "configuration names it")
+		t.eq(int(dm["ver"]), CampusDorms.VERSION, "with the geometry version")
+		t.eq(String(dm["geo"]), CampusDorms.geometry_hash(d), "and its fingerprint")
+		t.eq((dm["spawns"] as Dictionary).size(), (st["roster"] as Array).size(), "a spawn for every seat")
+		t.check(RulesLogic.curated_combos(d).has(st["targets"]), "targets from %s's fair set" % d)
+		t.eq((st["coins"] as Array).size(), Rules.cfg.coin_spawns_per_round, "the round's coins")
+		t.check((st["timing"] as Dictionary).has("countdown_s"), "start timing")
+		seen[d] = true
+		prev = d
+	t.eq(seen.size(), CampusDorms.ids().size(), "every dorm comes round")
+	s.queue_free()
+
+
+## A guest checks the configuration field by field; another build's dorm
+## geometry is refused cleanly ("Update the game"), bad pads fall back.
+func test_guest_refuses_other_dorm_geometry() -> void:
+	var host := NetSession.new()
+	t.add_child(host)
+	host.start_offline("u-h", "Host", {}, "runner")
+	var st := {}
+	host.match_starting.connect(func(i: Dictionary) -> void: st.merge(i, true), CONNECT_ONE_SHOT)
+	host.host_start_match(4242)
+	var wire: Dictionary = JSON.parse_string(JSON.stringify(NetSession._jsonable(st)))
+	var guest := NetSession.new()
+	t.add_child(guest)
+	var ok := guest._fix_start(wire.duplicate(true))
+	t.eq(String(ok.get("home_dorm", "")), String(st["home_dorm"]), "a valid configuration is accepted as sent")
+	t.eq((ok["dorm"] as Dictionary)["spawns"], (st["dorm"] as Dictionary)["spawns"], "spawn pads kept")
+	t.eq(ok["coins"], st["coins"], "coins kept")
+	var bad := wire.duplicate(true)
+	bad["dorm"]["geo"] = "0000000000000000"
+	t.check(guest._fix_start(bad).has("_incompatible"), "another geometry is incompatible")
+	var bad2 := wire.duplicate(true)
+	bad2["dorm"]["id"] = "nowhere_hall"
+	t.check(guest._fix_start(bad2).has("_incompatible"), "an unknown dorm is incompatible")
+	var bad3 := wire.duplicate(true)
+	bad3["dorm"]["ver"] = CampusDorms.VERSION + 1
+	t.check(guest._fix_start(bad3).has("_incompatible"), "another geometry version is incompatible")
+	var odd := wire.duplicate(true)
+	for k in (odd["dorm"]["spawns"] as Dictionary).keys():
+		odd["dorm"]["spawns"][k] = 99
+	odd["coins"].append({"id": "x", "x": 9999.0, "z": 0.0})
+	odd["coins"].append({"id": "s00"})
+	var fixed := guest._fix_start(odd)
+	var defaults := MatchSim.default_spawns(fixed["roster"])
+	for k in (fixed["dorm"]["spawns"] as Dictionary):
+		t.eq(int(fixed["dorm"]["spawns"][k]), int(defaults[int(k)]), "an out-of-range pad falls back to the default")
+	t.eq((fixed["coins"] as Array).size(), (st["coins"] as Array).size(), "malformed coins are dropped")
+	# the real packet path: the guest leaves with "version"
+	var reason := []
+	guest.ended.connect(func(r: String) -> void: reason.append(r))
+	var b := Protocol.buf_for(Protocol.M.START)
+	var u := JSON.stringify(bad).to_utf8_buffer()
+	b.put_u32(u.size())
+	b.put_data(u)
+	guest.mode = NetSession.Mode.CLIENT
+	var rd := Protocol.reader(b.data_array)
+	rd.get_u8()
+	guest._client_packet(0, Protocol.M.START, rd)
+	t.eq(reason, ["version"], "the guest ends cleanly with an update message")
+	host.queue_free()
+	guest.queue_free()
+	await t.get_tree().process_frame
+
+
+## What V6 added around the dorms with a collider (lamp posts, benches,
+## trees, monument signs) stands beside the new paths, never on them, and
+## never in a doorway or on a door's approach.
+func test_yard_colliders_keep_routes_clear() -> void:
+	var v6 := CampusLayout.shared()
+	var v5 := CampusLayout.legacy_shared()
+	var added: Array = []
+	for l in v6.lamps:
+		if not v5.lamps.has(l):
+			added.append(["lamp", l, 0.2])
+	for b in v6.benches:
+		if not v5.benches.has(b):
+			added.append(["bench", b["pos"], 1.0])
+	for tr in v6.trees:
+		if CampusDorms.district_of(tr["pos"]) != "" and not v5.trees.has(tr):
+			added.append(["tree", tr["pos"], 0.45])
+	for so in v6.solids:
+		added.append(["sign", so["pos"], 1.5])
+	t.check(added.size() >= 20, "V6 yard colliders found (%d)" % added.size())
+	var new_paths: Array = v6.paths.filter(func(p: Dictionary) -> bool:
+		for q in v5.paths:
+			if q["pts"] == p["pts"]:
+				return false
+		return true)
+	t.check(new_paths.size() >= 6, "new approach paths (%d)" % new_paths.size())
+	for it in added:
+		var p: Vector2 = it[1]
+		var r: float = it[2]
+		for pth in new_paths:
+			var pts: PackedVector2Array = pth["pts"]
+			for i in pts.size() - 1:
+				t.check(CampusLayout._dist_to_segment(p, pts[i], pts[i + 1]) >= float(pth["w"]) * 0.5 + r - 0.05, "%s at %s stands beside the path, not on it" % [it[0], str(p)])
+		for d in v6.dorm_doors:
+			t.check(p.distance_to(d["approach"]) >= 2.5 + r and p.distance_to(d["pos"]) >= 3.0 + r, "%s at %s keeps clear of %s's %s door" % [it[0], str(p), d["dorm"], d["id"]])

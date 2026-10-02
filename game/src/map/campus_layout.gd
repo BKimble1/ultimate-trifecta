@@ -710,13 +710,13 @@ func _build_dorm_districts() -> void:
 	_path([Vector2(89, 97), Vector2(78, 98)], 3.0, stone)
 	_path([Vector2(83.5, 105), Vector2(74.1, 101)], 2.6, stone)
 	_path([Vector2(108.5, 105), Vector2(117, 105)], 2.6, stone)
-	for lp in [Vector2(-104.2, 93.4), Vector2(-87.8, 93.4), Vector2(-114.0, 110.9), Vector2(-76.4, 106.3),
+	for lp in [Vector2(-104.2, 93.4), Vector2(-87.8, 93.4), Vector2(-115.2, 111.6), Vector2(-76.4, 106.3),
 			Vector2(87.8, 92.9), Vector2(104.2, 92.9), Vector2(113.2, 107.0), Vector2(80.0, 100.6)]:
 		lamps.append(lp)
-	for bp in [[Vector2(-101.5, 101.8), 0.0], [Vector2(-90.5, 101.8), 0.0], [Vector2(90.5, 98.0), 0.0], [Vector2(101.5, 98.0), 0.0]]:
+	for bp in [[Vector2(-101.5, 101.8), 0.0], [Vector2(-90.5, 101.8), 0.0], [Vector2(91.6, 98.2), 0.0], [Vector2(100.4, 98.2), 0.0]]:
 		benches.append({"pos": bp[0], "rot": bp[1]})
 	props.append({"kind": "bike_rack", "pos": Vector2(-106.5, 102.4), "rot": 0.0})
-	props.append({"kind": "bike_rack", "pos": Vector2(86.0, 98.6), "rot": 0.0})
+	props.append({"kind": "bike_rack", "pos": Vector2(86.0, 94.8), "rot": 0.0})
 	# monument name signs at each yard's forecourt (small colliders)
 	solids.append({"pos": Vector2(-105.8, 94.2), "size": Vector3(2.8, 1.25, 0.55), "rot": 0.0, "kind": "dorm_sign", "dorm": "lanternfield"})
 	solids.append({"pos": Vector2(86.0, 93.8), "size": Vector3(2.8, 1.25, 0.55), "rot": 0.0, "kind": "dorm_sign", "dorm": "moonpenny"})
