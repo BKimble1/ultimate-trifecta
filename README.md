@@ -198,7 +198,8 @@ tools/build_ios.sh signed         # signed archive + export (needs App Store Con
 ```
 
 The CI lane in `.github/workflows/ios.yml` runs the same steps on `macos-26`.
-- Run it manually with `upload=true` to sign and upload to TestFlight.
+- Run it manually with `upload=true` to sign and upload to TestFlight (internal testing only).
+- Run it with `asc_status=true` to only read App Store Connect: the app record, recent builds and their TestFlight state.
 - It needs four repository secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8_BASE64` and `APPLE_TEAM_ID`.
 - See [TESTFLIGHT_RELEASE.md](TESTFLIGHT_RELEASE.md) for details.
 

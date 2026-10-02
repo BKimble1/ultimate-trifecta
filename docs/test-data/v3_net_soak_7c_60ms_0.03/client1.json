@@ -1,20 +1,20 @@
 [
   {
-    "corr_avg_m": 0.0021,
-    "corr_max_m": 0.411,
-    "dropped_by_shaper": 458,
-    "finished": 1,
+    "corr_avg_m": 0.0009,
+    "corr_max_m": 0.712,
+    "dropped_by_shaper": 461,
+    "finished": 0,
     "fps_avg": 60.0,
     "lag_ms": 60.0,
     "loss": 0.03,
     "mode": "client",
     "outcome": 2,
-    "reward_coins": 25,
+    "reward_coins": 45,
     "round": 1,
     "round_time": 240.0,
-    "rtt_ms": 157.0,
-    "sent": 15437,
-    "slot": 4,
-    "snapshots": 4804
+    "rtt_ms": 154.0,
+    "sent": 15422,
+    "slot": 3,
+    "snapshots": 4837
   }
 ]
