@@ -9,7 +9,7 @@ Current version: **1.3 (V4)**. It uses the same app, bundle ID, Game Center capa
 | App name | Ultimate Trifecta |
 | App icon | The owner's "Pajama Dash" artwork (`Ultimate Trifecta_ Pajama Dash.png`), as `game/assets/icon/icon.png` at 1024×1024, opaque. Godot's export generates every other icon size from it. |
 | Bundle ID | `com.idlery.ultimatetrifecta`. It is registered on your team: the App Store Connect app record below uses it. |
-| Marketing version | `1.3` for V4 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot`, the export preset and `tools/export_ios.sh`). V3 was `1.2`, V2 `1.1`, V1 `1.0`. |
+| Marketing version | `1.4` for V5 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot`, the export preset and `tools/export_ios.sh`). V4 was `1.3`, V3 `1.2`, V2 `1.1`, V1 `1.0`. |
 | Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`), so it always increases past anything already uploaded; without it, the GitHub run number (V1's last unsigned build was 10; V2's are 12 and up). It can be overridden with the `build_number` workflow input. |
 | Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape left/right. Godot also adds `UIRequiredDeviceCapabilities` `iphone-ipad-minimum-performance-a12`, which means A12 (iPhone XS/XR) or newer. All verified in the CI archive's Info.plist. |
 | Capabilities | Game Center (`com.apple.developer.game-center`) |
@@ -71,17 +71,17 @@ For later uploads, run "Build, test and ship (iOS)" with **upload** ticked. The 
 | Signed App Store archive and export/upload | `tools/build_ios.sh signed`: `xcodebuild archive` with `-allowProvisioningUpdates` and API-key auth, then `-exportArchive` with `method=app-store-connect`, `destination=upload` |
 | Bundle ID registration, app check, build numbers, processing wait, internal groups, TestFlight state | `tools/asc.py` (ES256 JWT; never prints the key). Adding a build to an internal group reports Apple's answer; groups set to receive every build are left alone. |
 | TestFlight "What to Test" (V4) | After processing, `tools/asc.py whats-new BUILD_ID docs/testflight/what_to_test.txt` sets the build's en-US beta notes (App Store Connect beta build localization) for the internal testers. |
-| Launch audit (V4) | Before the Simulator run, the lane lists the app's launch files and any text file naming Idlery, and counts "powered by" strings in the game data. It then captures six launch frames. The build facts in the log print the audit and a small sheet of those frames. |
+| Launch and branding audit (V5) | Right after the Xcode export, before any signing or upload, `tools/launch_audit.py` fails the run on: no launch storyboard or more than one; a storyboard background that isn't the startup navy `#0C1324` (white-flash risk); a launch image that is missing, not opaque, not on navy or without the Idlery teal mark; any "powered by" text in the game data or project text. It lists the text files naming Idlery (expected: the bundle ID). The Simulator step then captures six launch frames, and the build facts print the audit and a sheet of those frames. |
 | Read-only status check | Run the workflow with **asc_status** ticked: it prints the app record, recent builds with their processing state, and each build's internal/external TestFlight state and What to Test text. It builds and uploads nothing. |
 
 The same steps run locally on a Mac with Xcode 26:
 
 ```sh
 export APPLE_TEAM_ID=… ASC_KEY_ID=… ASC_ISSUER_ID=… ASC_KEY_PATH=~/keys/AuthKey_….p8
-export BUILD_NUMBER=$(python3 tools/asc.py next-build) MARKETING_VERSION=1.3
+export BUILD_NUMBER=$(python3 tools/asc.py next-build) MARKETING_VERSION=1.4
 tools/fetch_godot.sh --templates && tools/fetch_deps.sh && tools/export_ios.sh
 EXPORT_DESTINATION=upload INTERNAL_ONLY=true tools/build_ios.sh signed
-python3 tools/asc.py wait 1.3 "$BUILD_NUMBER" 2400
+python3 tools/asc.py wait 1.4 "$BUILD_NUMBER" 2400
 ```
 
 ## Compliance and privacy answers
@@ -125,7 +125,22 @@ These answers are based on what the build actually contains; please confirm them
 
 > Ultimate Trifecta is a playful 3 a.m. campus chase. Runners splash into three marked waters around a fictional campus and race back to the dorm; the Night Watch hunts them on foot and in golf carts. Get four runners home before the 4-minute clock runs out — or, as the Night Watch, stop them. Create your runner, play solo with bots, or start a private party with friends through Game Center.
 
-**What to Test (1.3)**. The lane sets this text on the build from `docs/testflight/what_to_test.txt`:
+**What to Test (1.4)**. The lane sets this text on the build from `docs/testflight/what_to_test.txt`:
+
+> 1.4 internal beta (V5: new look, smoother motion, cleaner menus). Please try, and tell us your iPhone model:
+>
+> - Startup: Idlery Games should show at once and fade into the dorm. Any white flash, second logo, or a frozen logo over a menu?
+> - Home, party and wardrobe: new text, buttons and room. Is everything easy to read? Do buttons react the moment you tap, even when you tap fast?
+> - Wardrobe: every item shows a picture of it on your runner, its full name and Equipped / Owned / a price. Try lots of items, switch categories quickly, then Apply or Undo.
+> - Party: names should read in full; settings show as "3 rounds", "2 Night Watch", "4 home to win". Tap a player for details. Emote, Try moves, go to the Wardrobe and back, then Start.
+> - Match loading: the new title and three runners. Smooth, sharp, no jump at the loop, and straight into the round.
+> - Campus: new trees, buildings, props and all six waters. Any spot that looks blocky, cluttered or hard to read, or a prop you snag on?
+> - Movement: start, stop, turn around, jump, dive, land, tag, splash, carts. Anything that pops, slides or jitters? Say if it happens only with friends or in Practice too.
+> - Map: tap the minimap. Labels shouldn't overlap; the (i) explains the marks.
+> - Heat and smoothness after 15 minutes.
+> - Optional: Settings > Diagnostics (beta) > on, play a few rounds, Share summary. It has no names, codes or Game Center IDs.
+
+**What to Test (1.3)**, kept for reference:
 
 > 1.3 internal beta (V4: phone polish after the first iPhone playtest). Please try, and tell us your iPhone model:
 >
