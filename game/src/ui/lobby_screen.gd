@@ -15,6 +15,11 @@ extends Screen
 ##             line (right).  Nothing moves when states change.
 ## Updates are incremental: lobby_changed rewrites card contents and syncs
 ## the stage by player identity; nothing is rebuilt wholesale.
+## V6: Walk around (HubWalk: a stick on the left, the roster folds away,
+## nameplates over everyone, Done or Back returns to the menu composition),
+## the party chat drawer with Quick Chat (bubbles over heads, an unread
+## badge), "joined" / "left" notes, and Mute / Report / Block that act the
+## same everywhere (SocialSafety, ReportSheet).  Emote holds Try moves.
 
 var session: NetSession
 var code_lbl: Label
@@ -36,10 +41,23 @@ var _is_ready := false
 ## guests see their own emote at once; the host's echo of it is skipped
 var _predicted := {"id": -1, "t": -10.0}
 var _last_note := ""
+# V6
+var hub: HubWalk
+var stick: HubStick
+var walk_btn: Button
+var chat_btn: Button
+var top_bar: Control
+var bottom_bar: Control
+var _known: Dictionary = {}      # uid -> shown name (join / leave notes)
+var _bubbled := 0                # newest chat sequence shown as a bubble
 
 
 func build() -> void:
-	back_action = func() -> void: dialog("Leave this party?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]])
+	back_action = func() -> void:
+		if hub != null and hub.walking:
+			_set_walk(false)   # Back first returns to the menu
+			return
+		dialog("Leave this party?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]])
 	Diag.context("lobby")
 	if App.stage:
 		App.stage.set_mode("lobby")
@@ -49,6 +67,7 @@ func build() -> void:
 	# --- top bar
 	var top := UIKit.hbox(12)
 	content.add_child(top)
+	top_bar = top
 	var back := UIKit.icon_button("back")
 	back.tooltip_text = "Leave party"
 	back.accessibility_name = "Leave party"
@@ -128,6 +147,7 @@ func build() -> void:
 	# --- bottom: secondary actions (left) + primary action (right)
 	var bottom := UIKit.hbox(12)
 	content.add_child(bottom)
+	bottom_bar = bottom
 	var outfit := UIKit.icon_button("shirt", "Wardrobe")
 	outfit.pressed.connect(_open_wardrobe)
 	outfit.size_flags_vertical = Control.SIZE_SHRINK_END
@@ -136,10 +156,21 @@ func build() -> void:
 	emote_b.pressed.connect(func() -> void: _emote_popover(emote_b))
 	emote_b.size_flags_vertical = Control.SIZE_SHRINK_END
 	bottom.add_child(emote_b)
-	var moves_b := UIKit.icon_button("m_run", "Try moves")
-	moves_b.pressed.connect(func() -> void: _moves_popover(moves_b))
-	moves_b.size_flags_vertical = Control.SIZE_SHRINK_END
-	bottom.add_child(moves_b)
+	# (V6) Try moves lives in the Emote popover; Walk and Chat take its place
+	walk_btn = UIKit.icon_button("walk", "Walk")
+	walk_btn.tooltip_text = "Walk around the party room"
+	walk_btn.accessibility_name = "Walk around"
+	walk_btn.pressed.connect(func() -> void: _set_walk(not (hub != null and hub.walking)))
+	walk_btn.size_flags_vertical = Control.SIZE_SHRINK_END
+	walk_btn.visible = session.mode != NetSession.Mode.OFFLINE
+	bottom.add_child(walk_btn)
+	chat_btn = UIKit.icon_button("chat", "Chat")
+	chat_btn.tooltip_text = "Party chat"
+	chat_btn.accessibility_name = "Party chat"
+	chat_btn.pressed.connect(_open_chat)
+	chat_btn.size_flags_vertical = Control.SIZE_SHRINK_END
+	chat_btn.visible = session.mode != NetSession.Mode.OFFLINE
+	bottom.add_child(chat_btn)
 	bottom.add_child(UIKit.spacer_h())
 	var pcol := UIKit.vbox(6)
 	pcol.alignment = BoxContainer.ALIGNMENT_END
@@ -160,6 +191,18 @@ func build() -> void:
 	session.status_changed.connect(_on_status)
 	session.events_received.connect(_on_events)
 	session.series_changed.connect(_refresh)
+	# (V6) walking around and chat
+	if App.stage:
+		hub = HubWalk.attach(App.stage, session)
+		hub.input_allowed = func() -> bool: return is_visible_in_tree() and not has_modal()
+	stick = HubStick.new()
+	stick.walk = hub
+	stick.visible = false
+	add_child(stick)
+	session.social.chat.changed.connect(_on_chat)
+	_bubbled = _newest_seq()
+	_compact_bottom.call_deferred()
+	get_viewport().size_changed.connect(_compact_bottom)
 	_is_ready = session.local_slot >= 0 and session.roster[session.local_slot] != null and bool(session.roster[session.local_slot]["ready"])
 	_refresh()
 	Motion.settle_in(roster_col)
@@ -214,6 +257,130 @@ func _frame_stage(panel: Control) -> void:
 	if App.stage and is_instance_valid(panel):
 		var w := get_viewport().get_visible_rect().size.x
 		App.stage.set_lobby_free_frac((panel.get_global_rect().position.x - 12.0) / maxf(1.0, w))
+
+
+# ---------------------------------------------------------------------------
+# V6: Walk around and chat
+# ---------------------------------------------------------------------------
+## Walk mode on/off.  The roster folds away (the names float over everyone)
+## and the stick appears on the left; off, everyone is back in the menu
+## composition and the stick's finger is released.
+func _set_walk(on: bool) -> void:
+	if hub == null or session.mode == NetSession.Mode.OFFLINE:
+		return
+	if on and has_modal():
+		return
+	hub.set_walking(on)
+	on = hub.walking
+	if on and App.stage:
+		App.stage._walk_at = Vector3.INF
+	stick.visible = on
+	if not on:
+		stick.release()
+	roster_col.visible = not on
+	series_row.visible = not on and session.series_active()
+	UIKit.face_of(walk_btn).caption = "Done" if on else "Walk"
+	UIKit.face_of(walk_btn).icon = "check" if on else "walk"
+	UIKit.face_of(walk_btn).queue_redraw()
+	walk_btn.accessibility_name = "Stop walking" if on else "Walk around"
+	if on:
+		_layout_stick()
+		# menu focus would turn the stick's arrow keys into menu moves
+		var fo := get_viewport().gui_get_focus_owner()
+		if fo != null:
+			fo.release_focus()
+		margin.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_DISABLED
+		status_lbl.text = "Drag on the left to walk · Done to stop" if Controls.device == "touch" else "Move to walk · Back to stop"
+	else:
+		margin.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_INHERITED
+		_refresh()
+	Diag.mark("hub_walk" if on else "hub_menu")
+
+
+func _layout_stick() -> void:
+	if not is_instance_valid(stick) or not is_instance_valid(top_bar) or not is_instance_valid(bottom_bar):
+		return
+	var vs := get_viewport().get_visible_rect().size
+	var top := top_bar.get_global_rect().end.y + 8.0
+	var bottom := bottom_bar.get_global_rect().position.y - 8.0
+	stick.position = Vector2(0, top)
+	stick.size = Vector2(vs.x * 0.5, maxf(120.0, bottom - top))
+
+
+## Narrow screens (iPad 4:3, iPhone SE): the bottom actions drop their
+## captions so the primary action keeps its size.
+func _compact_bottom() -> void:
+	if not is_instance_valid(bottom_bar):
+		return
+	var vs := get_viewport().get_visible_rect().size
+	var narrow := vs.x / maxf(1.0, vs.y) < 1.6
+	for b in bottom_bar.get_children():
+		if b is Button and UIKit.face_of(b) != null and String(UIKit.face_of(b).icon) != "":
+			var f := UIKit.face_of(b)
+			if not b.has_meta(&"caption"):
+				b.set_meta(&"caption", f.caption)
+				b.set_meta(&"min_w", b.custom_minimum_size.x)
+			f.caption = "" if narrow else String(b.get_meta(&"caption"))
+			b.custom_minimum_size.x = UIKit.touch_min() if narrow else float(b.get_meta(&"min_w"))
+			f.queue_redraw()
+	if hub != null and hub.walking:
+		_layout_stick.call_deferred()
+
+
+func _open_chat() -> void:
+	if has_modal():
+		return
+	close_popover()
+	if hub != null and hub.walking:
+		stick.release()
+	var d := ChatDrawer.open(self, session, "results" if session.phase == TC.Phase.RESULTS else "party")
+	d.closed.connect(_paint_chat_badge)
+	_paint_chat_badge()
+
+
+func _newest_seq() -> int:
+	var n := 0
+	for m in session.social.chat.history:
+		n = maxi(n, int(m["seq"]))
+	return n
+
+
+## New messages: a bubble over the sender's head (the drawer has the full
+## conversation) and the unread badge.
+func _on_chat() -> void:
+	if not is_instance_valid(chat_btn):
+		return
+	for m in session.social.chat.visible([QuickChat.Channel.PARTY, QuickChat.Channel.ALL]):
+		if int(m["seq"]) > _bubbled:
+			_bubbled = int(m["seq"])
+			if App.stage:
+				App.stage.say(String(m["uid"]), String(m["text"]))
+			if not bool(m["mine"]):
+				Sfx.play("pop")
+	_paint_chat_badge()
+
+
+func _paint_chat_badge() -> void:
+	if not is_instance_valid(chat_btn):
+		return
+	var n: int = session.social.chat.unread
+	var f := UIKit.face_of(chat_btn)
+	f.caption = ("Chat · %d" % n) if n > 0 else "Chat"
+	if chat_btn.has_meta(&"caption"):
+		chat_btn.set_meta(&"caption", f.caption)
+		var vs := get_viewport().get_visible_rect().size
+		if vs.x / maxf(1.0, vs.y) < 1.6:
+			f.caption = ""
+	f.queue_redraw()
+	chat_btn.accessibility_name = "Party chat, %d new" % n if n > 0 else "Party chat"
+
+
+func _exit_tree() -> void:
+	# leaving the party room (Wardrobe/Locker, Shop, results, a round): the
+	# walk ends here and nothing keeps reading the stick
+	if hub != null and is_instance_valid(hub):
+		hub.set_walking(false)
+	InputOwner.release("chat")
 
 
 func _open_wardrobe() -> void:
@@ -271,7 +438,7 @@ func _refresh() -> void:
 				ready_n += 1
 			elif i != session.local_slot:
 				not_ready += 1
-		var ent := {"key": String(e["uid"]), "role": TC.Role.RUNNER, "cosmetic": e["cosmetic"], "name": String(e["name"]),
+		var ent := {"key": String(e["uid"]), "role": TC.Role.RUNNER, "cosmetic": e["cosmetic"], "name": SocialSafety.name_of(e),
 			"is_bot": bool(e["is_bot"]), "local": i == session.local_slot, "ready": bool(e["ready"]) or int(e["slot"]) == 0}
 		if i == session.local_slot:
 			entries.push_front(ent)
@@ -285,13 +452,14 @@ func _refresh() -> void:
 		if ci < order.size():
 			var slot: int = order[ci]
 			c.slot = slot
-			c.show_entry(session.roster[slot], slot == session.local_slot, hosting, session.muted, _can_invite(), false)
+			c.show_entry(SocialSafety.display_entry(session.roster[slot]), slot == session.local_slot, hosting, session.muted, _can_invite(), false)
 		elif ci < shown:
 			c.slot = -1
 			c.show_entry(null, false, hosting, session.muted, _can_invite(), true)
 	_grid.columns = 1 if shown <= 2 else 2
 	if App.stage:
 		App.stage.sync_party(entries)
+	_join_leave_notes()
 	count_lbl.text = ("Party · %d/8 · %d ready" % [humans, ready_n]) if humans > 1 else "Party · %d/8" % humans
 	# settings + series
 	_paint_settings()
@@ -302,7 +470,7 @@ func _refresh() -> void:
 	if series_on:
 		var tally := _tally(view)
 		series_lbl.text = "Round %d of %d next  ·  Runners %d – %d Night Watch" % [nxt, total, tally[0], tally[1]]
-	series_row.visible = series_on
+	series_row.visible = series_on and not (hub != null and hub.walking)
 	standings_btn.visible = series_on and not (view.get("standings", {}) as Dictionary).is_empty()
 	var bots := 8 - humans
 	if hosting:
@@ -333,8 +501,31 @@ func _refresh() -> void:
 			session.settings_note = ""
 	# roster updates keep focus on its cell; if the focused control went away
 	# (a sheet closed with its player gone), controllers land on the main action
-	if Controls.device != "touch" and not has_modal() and get_viewport().gui_get_focus_owner() == null:
+	if Controls.device != "touch" and not has_modal() and get_viewport().gui_get_focus_owner() == null and not (hub != null and hub.walking):
 		UIKit.soft_focus.call_deferred(primary_btn)
+	if hub != null and hub.walking:
+		status_lbl.text = "Drag on the left to walk · Done to stop" if Controls.device == "touch" else "Move to walk · Back to stop"
+
+
+## "Comfy Frog joined" / "… left" for people (not bots), once per change.
+func _join_leave_notes() -> void:
+	var now: Dictionary = {}
+	for e in session.roster:
+		if e != null and not bool(e["is_bot"]):
+			now[String(e["uid"])] = SocialSafety.name_of(e)
+	var first := _known.is_empty()
+	if not first:
+		var notes: Array[String] = []
+		for uid in now:
+			if not _known.has(uid) and uid != _local_key():
+				notes.append("%s joined" % now[uid])
+		for uid in _known:
+			if not now.has(uid):
+				notes.append("%s left" % _known[uid])
+		if not notes.is_empty():
+			UIKit.toast(self, " · ".join(notes), 2.4)
+			Sfx.play("pop")
+	_known = now
 
 
 static func _tally(view: Dictionary) -> Array:
@@ -368,7 +559,25 @@ func _on_cell(c: SlotCell) -> void:
 
 
 func _emote_popover(anchor: Control) -> void:
-	emote_picker(anchor, _send_emote)
+	var v := UIKit.vbox(12)
+	v.add_child(UIKit.styled("Emote", "headline"))
+	var g := GridContainer.new()
+	g.columns = 3
+	g.add_theme_constant_override("h_separation", 10)
+	g.add_theme_constant_override("v_separation", 10)
+	for i in TC.EMOTES.size():
+		var idx := i
+		g.add_child(icon_tile(Icons.emote_icon(i), String(TC.EMOTE_LABELS[TC.EMOTES[i]]), func() -> void:
+			close_popover()
+			_send_emote(idx)))
+	v.add_child(g)
+	if not (hub != null and hub.walking):
+		var tm := UIKit.quiet("Try moves (just on your screen)", Vector2(0, 64), UIKit.T_CAPTION)
+		tm.pressed.connect(func() -> void:
+			close_popover()
+			_moves_popover(anchor))
+		v.add_child(tm)
+	popover_at(anchor, v)
 
 
 ## Play an emote: shown on our own runner at once (a guest's request still
@@ -432,7 +641,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 	if not (ev is InputEventMouseButton) or not (ev as InputEventMouseButton).pressed or (ev as InputEventMouseButton).button_index != MOUSE_BUTTON_LEFT:
 		super(ev)
 		return
-	if App.stage == null or has_modal() or not is_visible_in_tree():
+	if App.stage == null or has_modal() or not is_visible_in_tree() or (hub != null and hub.walking):
 		return
 	if hit_own_runner((ev as InputEventMouseButton).position):
 		_play_own_move()
@@ -582,12 +791,9 @@ func _player_popover(i: int, anchor: Control) -> void:
 		popover_at(anchor, v, "left")
 		return
 	var muted := session.muted.has(uid)
-	var mb := UIKit.secondary("Show their emotes" if muted else "Hide their emotes", Vector2(340, 72))
+	var mb := UIKit.secondary("Unmute" if muted else "Mute (chat and emotes)", Vector2(340, 72))
 	mb.pressed.connect(func() -> void:
-		if session.muted.has(uid):
-			session.muted.erase(uid)
-		else:
-			session.muted[uid] = true
+		SocialActions.toggle_mute(session, uid)
 		close_popover()
 		_refresh())
 	v.add_child(mb)
@@ -599,7 +805,7 @@ func _player_popover(i: int, anchor: Control) -> void:
 	var bb := UIKit.quiet("Block", Vector2(340, 72))
 	bb.pressed.connect(func() -> void:
 		close_popover()
-		dialog("Block %s? You won't be put in parties together, and they can't join yours." % e["name"],
+		dialog("Block %s? You won't see their chat, emotes or name, you won't be put in parties together, and they can't join yours." % SocialSafety.name_of(e),
 			[["Block", func() -> void: _block(e, i)], ["Cancel", Callable()]]))
 	v.add_child(bb)
 	if session.is_host():
@@ -618,42 +824,19 @@ const REPORT_REASONS := [["name", "Offensive name"], ["harassment", "Harassment 
 	["inappropriate", "Inappropriate behaviour"], ["other", "Something else"]]
 
 
+## (V6) The report sheet: honest states, a receipt only from the service.
 func _report(e: Dictionary) -> void:
-	var pid := String(e.get("pid", ""))
-	if not Cloud.configured() or pid == "":
-		dialog("Reports go to the game's moderators through the online service, which isn't available for this player right now. You can block them instead.")
-		return
-	var v := UIKit.vbox(10)
-	v.add_child(UIKit.styled("Report %s" % e["name"], "headline"))
-	v.add_child(UIKit.styled("What's wrong?", "caption", UIKit.IVORY_MUTED))
-	for rr in REPORT_REASONS:
-		var reason: String = rr[0]
-		var b := UIKit.secondary(String(rr[1]), Vector2(360, 68))
-		b.pressed.connect(func() -> void:
-			close_popover()
-			var r: Dictionary = await Cloud.report(pid, reason, "", {"room_code": session.room_code, "build": App.build_number()})
-			if bool(r.get("ok", false)):
-				dialog("Thanks — your report was sent to our moderators.\nReceipt: %s" % r.get("receipt", ""))
-			else:
-				dialog("The report couldn't be sent: %s" % Cloud.explain(r)))
-		v.add_child(b)
-	popover_at(cells[0], v, "left")
+	ReportSheet.open(self, {"kind": "player", "name": SocialSafety.name_of(e), "pid": String(e.get("pid", "")),
+		"context": {"room_code": session.room_code, "build": App.build_number()}})
 
 
 func _block(e: Dictionary, slot: int) -> void:
-	var pid := String(e.get("pid", ""))
-	Save.add_block(pid, String(e["uid"]), String(e["name"]))
-	session.muted[String(e["uid"])] = true
-	var note := "Blocked on this device."
-	if Cloud.configured() and pid != "":
-		var r: Dictionary = await Cloud.block(pid)
-		note = "Blocked." if bool(r.get("ok", false)) else "Blocked on this device (the online block will be retried: %s)." % Cloud.explain(r)
-	if session.is_host():
-		if pid != "" and App.party_code != "":
-			Cloud.kick_from_room(App.party_code, pid)
-		session.kick(slot)
-	UIKit.toast(self, note)
-	_refresh()
+	var d := e.duplicate()
+	d["slot"] = slot
+	var note: String = await SocialActions.block(session, d)
+	if is_inside_tree():
+		UIKit.toast(self, note)
+		_refresh()
 
 
 func _on_events(evs: Array) -> void:

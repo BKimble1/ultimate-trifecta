@@ -32,6 +32,8 @@ const FRAMES := {
 	"home": [Vector3(0.62, 0.86, 0.6), 2.75, 0.40, 1.05, 0.0, 34.0],
 	"wardrobe": [Vector3(0.62, 0.84, 0.6), 2.35, 0.27, 1.0, 0.0, 34.0],
 	"lobby": [Vector3(0.0, 0.62, 0.0), 4.5, 0.33, 3.1, 0.0, 38.0],
+	# (V6) Walk around: a follow camera over the shoulder of the room (see _cam_for)
+	"walk": [Vector3(0.0, 0.75, 0.0), 4.0, 0.5, 3.3, 0.0, 40.0],
 }
 const HOME_MARK := Vector3(0.62, 0, 0.6)
 
@@ -60,6 +62,14 @@ var _emote_until: Dictionary = {}   # key -> stage time the emote ends
 var _bubbles: Dictionary = {}       # key -> Label3D (the emote's name over the head)
 ## "Try moves": key -> {kind, t, len} local presentation of the player's own runner
 var _preview: Dictionary = {}
+## (V6 Walk around, HubWalk) characters walking freely instead of standing
+## on their marks (key -> true), and the point the walk camera follows
+var free_roam: Dictionary = {}
+var walk_focus := Vector3.ZERO
+var _walk_at := Vector3.INF
+var _names_on := false
+## chat bubbles over heads: key -> {label, until}
+var _says: Dictionary = {}
 ## emotes started per character (tests: one tap is one start)
 var emote_starts: Dictionary = {}
 
@@ -91,6 +101,12 @@ func _cam_for(m: String) -> Array:
 	var vs := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(16, 9)
 	var aspect := vs.x / maxf(1.0, vs.y)
 	var cam_h := float(f[3])
+	if m == "walk":
+		# (V6) behind and above the walker, looking a little ahead: the room
+		# reads from front to back and the camera never leaves the room
+		var wf := walk_focus
+		var wfrom := Vector3(clampf(wf.x * 0.8, -3.8, 3.8), cam_h, minf(wf.z + 5.4, 8.0))
+		return [wfrom, Vector3(wf.x, subject.y, wf.z - 0.8), fov]
 	if m == "wardrobe":
 		# (V5) centred in the space the item panel leaves, and small enough
 		# that the runner (arms out, ~1.45 m wide with margin) fits there on
@@ -201,6 +217,14 @@ func _process(delta: float) -> void:
 	for k in _emote_until.keys():
 		if _t >= float(_emote_until[k]):
 			_end_emote(k)
+	for k in _says.keys():
+		if _t >= float(_says[k]["until"]):
+			var sl: Label3D = _says[k]["label"]
+			if is_instance_valid(sl):
+				sl.visible = false
+			_says.erase(k)
+	if mode == "walk" and _cam_t >= 1.0:
+		_follow(delta)
 	if not _preview.is_empty():
 		_update_preview(delta)
 	if _cam_t < 1.0:
@@ -247,7 +271,8 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 			var nm := String(e.get("name", ""))
 			v.name_label.text = (nm + "  ·  BOT") if bool(e.get("is_bot", false)) else nm
 			# names live in the party panel; 3D labels would overlap in a group
-			v.name_label.visible = false
+			# (V6: shown over everyone while walking around, see show_names)
+			v.name_label.visible = _names_on and not bool(e.get("local", false))
 			v.name_label.font_size = 26
 			v.name_label.position = Vector3(0, 1.82, 0)
 	for k in chars.keys():
@@ -284,6 +309,9 @@ func _place(key: String) -> void:
 	var v: CharacterView = chars.get(key)
 	if v == null:
 		return
+	if free_roam.has(key) and (mode == "lobby" or mode == "walk"):
+		v.visible = true
+		return   # walking around: HubWalk places them
 	var mi: int = _mark_of.get(key, 0)
 	var p: Vector3 = MARKS[mi]
 	var yaw_bias := 0.0
@@ -296,6 +324,12 @@ func _place(key: String) -> void:
 		v.visible = true
 		yaw_bias = YAW_BIAS[mi]
 	v.position = p
+	if mode == "walk":
+		# face the room's centre line, not the moving camera
+		v.face_toward(Vector3(p.x * 0.5, 0, p.z + 4.0))
+		v.set_facing(v.rotation.y + yaw_bias)
+		v.rs["pos"] = v.global_position
+		return
 	var cpos: Vector3 = _cam_for(mode)[0]
 	v.face_toward(Vector3(cpos.x, 0, cpos.z))
 	v.set_facing(v.rotation.y + yaw_bias)
@@ -433,6 +467,75 @@ func _update_preview(delta: float) -> void:
 				rs["on_floor"] = t >= 0.75
 				rs["vel"] = fwd * (Rules.cfg.dive_speed * 0.3) if t < 0.75 else Vector3.ZERO
 		v.apply_state(rs)
+
+
+# ---------------------------------------------------------------------------
+# (V6) Walk around helpers (HubWalk)
+# ---------------------------------------------------------------------------
+func place(key: String) -> void:
+	_place(key)
+
+
+## Where a character's mark is (stage space).
+func mark_position(key: String) -> Vector3:
+	return MARKS[int(_mark_of.get(key, 0))]
+
+
+## The walk camera eases after the walker (Reduced Motion: it keeps up at
+## once, no drift).
+func _follow(delta: float) -> void:
+	var c := _cam_for("walk")
+	var to_p: Vector3 = c[0]
+	var to_at: Vector3 = c[1]
+	if _walk_at == Vector3.INF or reduced_motion:
+		_walk_at = to_at
+		cam.fov = float(c[2])
+		cam.look_at_from_position(to_p, to_at)
+		return
+	var k := 1.0 - exp(-delta * 6.0)
+	_walk_at = _walk_at.lerp(to_at, k)
+	cam.look_at_from_position(cam.global_position.lerp(to_p, k), _walk_at)
+
+
+## Nameplates over the party (walking around: the party panel is hidden).
+## Blocked players show as "Blocked player"; bots carry their label.
+func show_names(on: bool) -> void:
+	if on == _names_on:
+		return
+	_names_on = on
+	for k in chars:
+		var v: CharacterView = chars[k]
+		if is_instance_valid(v) and v.name_label:
+			v.name_label.visible = on and v != local_character()
+
+
+## A chat bubble over a character's head (Quick Chat or approved text, as
+## plain text; long messages are cut short here and read in the drawer).
+func say(key: String, text: String, seconds: float = 4.0) -> bool:
+	var v: CharacterView = chars.get(key)
+	if v == null or not is_instance_valid(v) or not v.visible or (mode != "lobby" and mode != "walk"):
+		return false
+	var e: Dictionary = _says.get(key, {})
+	var l: Label3D = e.get("label")
+	if l == null or not is_instance_valid(l):
+		l = Label3D.new()
+		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		l.no_depth_test = true
+		l.pixel_size = 0.0036
+		l.font_size = 40
+		l.outline_size = 14
+		l.font = UIKit.font_w(700)
+		l.modulate = UIKit.IVORY
+		l.outline_modulate = Color(UIKit.NAVY, 0.92)
+		l.position = Vector3(0, 2.45, 0)
+		l.render_priority = 5
+		l.width = 520.0
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		v.add_child(l)
+	l.text = text if text.length() <= 48 else text.substr(0, 46) + "…"
+	l.visible = true
+	_says[key] = {"label": l, "until": _t + seconds}
+	return true
 
 
 func local_character() -> CharacterView:
