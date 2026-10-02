@@ -85,6 +85,12 @@ func build() -> void:
 	var turn_hint := UIKit.chip("Drag to turn", Color(UIKit.SLATE, 0.75), UIKit.IVORY_MUTED, 18)
 	turn_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pv.add_child(turn_hint)
+	var turn_lbl: Label = turn_hint.find_children("*", "Label", true, false)[0]
+	var on_dev := func(k: String) -> void:
+		if is_instance_valid(turn_lbl):
+			turn_lbl.text = "Right stick to turn" if k == "gamepad" else "Drag to turn"
+	Controls.device_changed.connect(on_dev)
+	on_dev.call(Controls.device)
 	run_btn = UIKit.quiet("Run", Vector2(140, 64), 22)
 	run_btn.tooltip_text = "Preview running"
 	run_btn.pressed.connect(func() -> void:
@@ -104,6 +110,7 @@ func build() -> void:
 	tabs.add_theme_constant_override("h_separation", 8)
 	tabs.add_theme_constant_override("v_separation", 8)
 	pvb.add_child(tabs)
+	tabs.add_child(Glyphs.Hint.new("menu_prev", "", 30.0))
 	for t in TABS:
 		var b := UIKit.quiet(String(t[1]), Vector2(0, 60), 19)
 		var key: String = t[0]
@@ -112,6 +119,7 @@ func build() -> void:
 			_rebuild())
 		tabs.add_child(b)
 		tab_btns[key] = b
+	tabs.add_child(Glyphs.Hint.new("menu_next", "", 30.0))
 	var sc := ScrollContainer.new()
 	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -146,6 +154,11 @@ func _process(delta: float) -> void:
 	var v := App.stage.local_character() if App.stage else null
 	if v == null:
 		return
+	# controller: right stick turns the runner (same as dragging)
+	if Controls.active_joy >= 0 and not has_modal():
+		var rx := InputRouter.radial(Vector2(Input.get_joy_axis(Controls.active_joy, JOY_AXIS_RIGHT_X), 0.0), 0.2, 0.95).x
+		if rx != 0.0:
+			drag_turn(rx * 220.0 * delta)
 	if _drag_from < 0.0 and not UIKit.reduced_motion() and not preview_run:
 		# a slow sway so the sides of the outfit show, until the player drags
 		_spin += delta * 0.45
@@ -163,6 +176,24 @@ func _process(delta: float) -> void:
 
 
 var _yaw_set := false
+
+
+## Controller shoulders (or Q / E) switch categories.
+func _unhandled_input(event: InputEvent) -> void:
+	if not has_modal():
+		for dir in [["menu_prev", -1], ["menu_next", 1]]:
+			if event.is_action_pressed(String(dir[0])):
+				_step_tab(int(dir[1]))
+				get_viewport().set_input_as_handled()
+				return
+	super(event)
+
+
+func _step_tab(d: int) -> void:
+	var keys: Array = TABS.map(func(t: Array) -> String: return String(t[0]))
+	tab = String(keys[wrapi(keys.find(tab) + d, 0, keys.size())])
+	_rebuild()
+	(tab_btns[tab] as Button).grab_focus()
 
 
 func drag_turn(dx: float) -> void:

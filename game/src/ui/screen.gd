@@ -7,6 +7,8 @@ var content: VBoxContainer
 var margin: MarginContainer
 var _first_focus: Control
 var back_action: Callable
+## open sheets/dialogs, top last: {node, cancel, prev}
+var _modals: Array[Dictionary] = []
 
 
 func _init() -> void:
@@ -74,8 +76,54 @@ func _go_back() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		_go_back()
 		get_viewport().set_input_as_handled()
+		if not _modals.is_empty():
+			var cb: Callable = _modals[-1]["cancel"]
+			if cb.is_valid():
+				cb.call()
+			return
+		_go_back()
+
+
+## Registers an open sheet or dialog: controller/keyboard focus stays inside
+## it (the screen behind can't take focus), Back runs `on_cancel` (an invalid
+## Callable means Back does nothing, e.g. while working), and when it closes
+## focus returns to the control that was focused when it opened.
+func push_modal(node: Control, on_cancel: Callable) -> void:
+	var vp := get_viewport()
+	var prev: Control = vp.gui_get_focus_owner() if vp else null
+	_modals.append({"node": node, "cancel": on_cancel, "prev": prev})
+	margin.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_DISABLED
+	node.tree_exiting.connect(_on_modal_closed.bind(node), CONNECT_ONE_SHOT)
+
+
+func _on_modal_closed(node: Control) -> void:
+	var prev: Control = null
+	for i in range(_modals.size() - 1, -1, -1):
+		if _modals[i]["node"] == node:
+			prev = _modals[i]["prev"]
+			_modals.remove_at(i)
+			break
+	# a sheet that opened a dialog and then closed: the dialog returns focus
+	# to whatever opened the sheet
+	for m in _modals:
+		var mp: Variant = m["prev"]
+		if mp == null or not is_instance_valid(mp) or node.is_ancestor_of(mp) or mp == node:
+			m["prev"] = prev
+	if not _modals.is_empty():
+		return
+	margin.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_INHERITED
+	if is_queued_for_deletion() or not is_inside_tree():
+		return
+	(func() -> void:
+		if is_instance_valid(prev) and prev.is_inside_tree() and prev.is_visible_in_tree():
+			prev.grab_focus()
+		elif _modals.is_empty() and is_instance_valid(_first_focus) and _first_focus.is_inside_tree():
+			_first_focus.grab_focus()).call_deferred()
+
+
+func has_modal() -> bool:
+	return not _modals.is_empty()
 
 
 func spacer(h: float = 10) -> Control:
@@ -102,6 +150,7 @@ func busy(text: String) -> Control:
 	root.add_child(p)
 	add_child(root)
 	p.position = (get_viewport().get_visible_rect().size - p.get_combined_minimum_size()) * 0.5
+	push_modal(root, Callable())
 	return root
 
 
@@ -119,6 +168,16 @@ func dialog(text: String, buttons: Array = [["OK", Callable()]]) -> PanelContain
 	var row := UIKit.hbox(16)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var first: Button = null
+	var cancel_cb := Callable()
+	for bdef in buttons:
+		# Back = the dialog's non-destructive choice
+		if String(bdef[0]) in ["Cancel", "OK", "Done", "Keep editing", "Not now", "Close"]:
+			var cbd: Callable = bdef[1]
+			cancel_cb = func() -> void:
+				dim.queue_free()
+				p.queue_free()
+				if cbd.is_valid():
+					cbd.call()
 	for bdef in buttons:
 		var b := UIKit.secondary(String(bdef[0]), Vector2(220, 76), 26) if first == null else UIKit.quiet(String(bdef[0]), Vector2(200, 76), 24)
 		var cb: Callable = bdef[1]
@@ -136,6 +195,10 @@ func dialog(text: String, buttons: Array = [["OK", Callable()]]) -> PanelContain
 	p.set_anchors_preset(Control.PRESET_CENTER)
 	p.position = (get_viewport().get_visible_rect().size - p.get_combined_minimum_size()) * 0.5
 	UIKit.appear(p, Vector2(0, 14), UIKit.T_FAST)
+	push_modal(p, cancel_cb)
+	p.tree_exiting.connect(func() -> void:
+		if is_instance_valid(dim):
+			dim.queue_free(), CONNECT_ONE_SHOT)
 	if first:
 		first.call_deferred("grab_focus")
 	return p

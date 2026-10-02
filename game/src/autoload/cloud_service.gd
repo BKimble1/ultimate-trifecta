@@ -19,6 +19,9 @@ var token := ""
 var token_exp_ms := 0
 var profile: Dictionary = {}       # profile_id, display_name, discriminator, needs_name, status, ...
 var state := "off"                 # off | signed_out | signing_in | ready | error
+## /v1/config: the owner's real support/privacy links (null until set) and
+## the minimum client build.  Empty when the service is off or unreachable.
+var service_config: Dictionary = {}
 var last_error := ""
 var _signing_in := false
 ## tests and the dev harness can replace the HTTP layer: func(method, path, body, headers) -> {status, body}
@@ -36,6 +39,26 @@ func _ready() -> void:
 		if a.begins_with("--service-url="):
 			base_url = a.get_slice("=", 1).trim_suffix("/")
 	state = "signed_out" if configured() else "off"
+	if base_url != "":
+		fetch_config.call_deferred()
+
+
+func fetch_config() -> void:
+	var r := await _http(HTTPClient.METHOD_GET, "/v1/config", null, false)
+	if int(r["status"]) == 200 and bool(r["body"].get("ok", true)):
+		service_config = r["body"]
+		changed.emit()
+
+
+## A configured https link from the service (support_url, privacy_url), or "".
+func link(key: String) -> String:
+	var v: Variant = service_config.get(key)
+	return String(v) if v is String and String(v).begins_with("https://") else ""
+
+
+## True when the service says this build is too old for online play.
+func update_required() -> bool:
+	return int(service_config.get("min_build", 0)) > App.build_number()
 
 
 func configured() -> bool:

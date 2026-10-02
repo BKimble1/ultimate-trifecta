@@ -261,6 +261,7 @@ func _toggle_pause() -> void:
 	if pause_panel.visible and mc and mc.touch:
 		# a finger that was moving/holding when the menu opened must not keep acting
 		mc.touch.cancel_all()
+	Controls.clear_edges()
 	if pause_panel.visible:
 		(pause_panel.get_meta("resume") as Button).grab_focus()
 

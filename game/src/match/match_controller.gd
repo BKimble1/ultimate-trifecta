@@ -318,6 +318,14 @@ func _build_local_cmd() -> InputCmd:
 		_next_seq += 1
 		cmd.quantize()
 		return cmd
+	if hud and hud.pause_panel and hud.pause_panel.visible:
+		# the pause menu owns the controller: its A/Enter is "Resume", not a jump
+		Controls.clear_edges()
+		cmd.cam_yaw = camera.yaw if camera else 0.0
+		cmd.seq = _next_seq
+		_next_seq += 1
+		cmd.quantize()
+		return cmd
 	var mv := Controls.get_move()
 	var yaw := camera.yaw if camera else 0.0
 	var fwd := Vector2(-sin(yaw), -cos(yaw))

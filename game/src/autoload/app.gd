@@ -84,6 +84,11 @@ func _ready() -> void:
 					Social.multiplayer_restricted = true
 				"signing_in":
 					Social.available = true
+		elif a.begins_with("--sim-pad="):
+			# dev/automation: render controller prompts on desktop captures
+			# (labelled simulation: no physical controller is attached)
+			Controls.device = "gamepad"
+			Controls.family = a.get_slice("=", 1)
 		elif a == "--random-cosmetic":
 			# dev/automation: soak and lobby-capture clients wear varied outfits
 			Save.data["cosmetic"] = Cosmetics.bot_cosmetic(hash(Save.player_uid()))
@@ -269,6 +274,7 @@ func _dev_record(results: Dictionary, reward: Dictionary) -> void:
 # Screens
 # ---------------------------------------------------------------------------
 func _show(node: Control) -> void:
+	Controls.clear_edges()   # a press that opened/closed a menu never reaches play
 	if screen and is_instance_valid(screen):
 		screen.queue_free()
 	screen = node

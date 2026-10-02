@@ -213,6 +213,10 @@ func _refresh() -> void:
 			status_lbl.text = "Looking for room %s…" % session.room_code
 		else:
 			status_lbl.text = "You're ready — the host starts the round" if _is_ready else "Tap Ready when you are"
+	# roster updates keep focus on its cell; if the focused control went away
+	# (a sheet closed with its player gone), controllers land on the main action
+	if Controls.device != "touch" and not has_modal() and get_viewport().gui_get_focus_owner() == null:
+		primary_btn.call_deferred("grab_focus")
 
 
 func _can_invite() -> bool:
@@ -263,6 +267,7 @@ func _popover_at(anchor: Control, body: Control, above: bool = true) -> void:
 	p.position = pos
 	UIKit.appear(p, Vector2(0, 10) if above else Vector2(10, 0), UIKit.T_FAST)
 	_popover = root
+	push_modal(root, _close_popover)
 	var first := body.find_children("*", "Button", true, false)
 	if not first.is_empty():
 		(first[0] as Button).call_deferred("grab_focus")

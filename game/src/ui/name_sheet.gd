@@ -47,9 +47,7 @@ func _init() -> void:
 	var row := UIKit.hbox(12)
 	row.alignment = BoxContainer.ALIGNMENT_END
 	var cancel := UIKit.quiet("Cancel", Vector2(180, 80), 24)
-	cancel.pressed.connect(func() -> void:
-		done.emit("")
-		queue_free())
+	cancel.pressed.connect(cancel_sheet)
 	row.add_child(cancel)
 	save_btn = UIKit.primary("Save name", Vector2(260, 84), 28)
 	save_btn.pressed.connect(_save)
@@ -60,6 +58,13 @@ func _init() -> void:
 
 func _ready() -> void:
 	field.call_deferred("grab_focus")
+
+
+func cancel_sheet() -> void:
+	if _busy:
+		return
+	done.emit("")
+	queue_free()
 
 
 static func _current() -> String:
@@ -131,6 +136,8 @@ static func ask(parent: Control, on_device_only: bool = false) -> String:
 	s.set_anchors_preset(Control.PRESET_CENTER)
 	s.position = (parent.get_viewport().get_visible_rect().size - s.get_combined_minimum_size()) * 0.5
 	UIKit.appear(s, Vector2(0, 14), UIKit.T_FAST)
+	if parent is Screen:
+		(parent as Screen).push_modal(s, s.cancel_sheet)
 	var r: Variant = await s.done
 	dim.queue_free()
 	return String(r)

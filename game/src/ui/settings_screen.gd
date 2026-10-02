@@ -70,6 +70,18 @@ func build() -> void:
 	var priv := UIKit.label(_privacy_text(), 18, UIKit.IVORY_MUTED)
 	priv.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(priv)
+	# the owner's real links only (from the service); nothing shown until set
+	var links := UIKit.hbox(12)
+	for l in [["privacy_url", "Privacy policy"], ["support_url", "Support"]]:
+		var url := Cloud.link(String(l[0]))
+		if url != "":
+			var lb := UIKit.quiet(String(l[1]), Vector2(240, 64), 20)
+			lb.pressed.connect(func() -> void: OS.shell_open(url))
+			links.add_child(lb)
+	if links.get_child_count() > 0:
+		v.add_child(links)
+	else:
+		links.free()
 	_section(v, "How to play")
 	var how := UIKit.quiet("Open the rules card", Vector2(320, 72), 22)
 	how.pressed.connect(func() -> void: App.goto(HowToScreen))

@@ -18,6 +18,8 @@ var friends_status: Label
 var who_lbl: Label
 var _status_card: PanelContainer
 var _op := 0          # increments on every start/cancel; stale results are ignored
+var code_pad: GridContainer   # controller code entry (no system keyboard needed)
+var _busy_cancel: Button
 
 
 func build() -> void:
@@ -86,6 +88,10 @@ func build() -> void:
 	join_btn.pressed.connect(_join)
 	jrow.add_child(join_btn)
 	v.add_child(jrow)
+	code_pad = _make_code_pad()
+	v.add_child(code_pad)
+	Controls.device_changed.connect(_on_device)
+	_on_device(Controls.device)
 	code_msg = UIKit.label("", 19, UIKit.IVORY_MUTED)
 	code_msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	code_msg.custom_minimum_size = Vector2(540, 0)
@@ -99,6 +105,7 @@ func build() -> void:
 	var cancel := UIKit.quiet("Cancel", Vector2(170, 68), 22)
 	cancel.pressed.connect(_cancel)
 	bh.add_child(cancel)
+	_busy_cancel = cancel
 	busy_card.add_child(bh)
 	busy_card.visible = false
 	v.add_child(busy_card)
@@ -212,6 +219,9 @@ func _on_code_text(t: String) -> void:
 func _ensure_name() -> bool:
 	if not Cloud.configured():
 		return true
+	if Cloud.update_required():
+		_on_party_error("This version is too old for online parties. Update Ultimate Trifecta, then try again.", "update_required")
+		return false
 	if not Cloud.signed_in():
 		_busy("Signing in…")
 		var s: Dictionary = await Cloud.sign_in()
@@ -258,14 +268,19 @@ func _busy(text: String) -> void:
 	busy_card.visible = true
 	create_btn.disabled = true
 	join_btn.disabled = true
+	back_action = _cancel      # Back cancels the request instead of leaving
+	_busy_cancel.call_deferred("grab_focus")
 
 
 func _idle() -> void:
 	if not is_instance_valid(busy_card):
 		return
 	busy_card.visible = false
+	back_action = Callable()
 	create_btn.disabled = not Social.online_ready()
 	_on_code_text(code_edit.text)
+	if _busy_cancel.has_focus():
+		create_btn.call_deferred("grab_focus")
 
 
 func _cancel() -> void:
@@ -289,6 +304,7 @@ func _on_party_error(message: String, code: String) -> void:
 		"suspended": "Online play paused",
 		"code_format": "Check the code",
 		"network": "No connection",
+		"update_required": "Update needed",
 	}.get(code, "")
 	dialog((title + "\n" if title != "" else "") + message)
 
@@ -304,3 +320,44 @@ func _on_friends(friends: Array, err: String) -> void:
 	friends_status.text = "%d Game Center friend%s play Ultimate Trifecta. Invite them from your party." % [friends.size(), "" if friends.size() == 1 else "s"]
 	for f in friends:
 		friends_box.add_child(UIKit.label("•  " + NameRules.safe_display(String(f["name"])), 22))
+
+
+## Controller code pad: the code alphabet as buttons plus Delete.  Shown while
+## a controller is in use; the text field then leaves controller focus so it
+## can never trap navigation (touch and keyboards type into it as usual).
+func _make_code_pad() -> GridContainer:
+	var g := GridContainer.new()
+	g.columns = 8
+	g.add_theme_constant_override("h_separation", 8)
+	g.add_theme_constant_override("v_separation", 8)
+	for ch in Social.CODE_ALPHABET:
+		var b := UIKit.quiet(ch, Vector2(62, 62), 26)
+		b.pressed.connect(func() -> void: _pad_key(ch))
+		g.add_child(b)
+	var del := UIKit.quiet("Del", Vector2(62, 62), 20)
+	del.tooltip_text = "Delete"
+	del.pressed.connect(func() -> void: _pad_key(""))
+	g.add_child(del)
+	return g
+
+
+func _pad_key(ch: String) -> void:
+	var cur := code_edit.text.to_upper().replace(" ", "").replace("-", "")
+	if ch == "":
+		cur = cur.substr(0, maxi(0, cur.length() - 1))
+	elif cur.length() < Social.CODE_LEN:
+		cur += ch
+	code_edit.text = cur
+	_on_code_text(cur)
+	if cur.length() == Social.CODE_LEN and not join_btn.disabled:
+		join_btn.grab_focus()
+
+
+func _on_device(kind: String) -> void:
+	if not is_instance_valid(code_pad):
+		return
+	var pad := kind == "gamepad" and code_edit.editable
+	code_pad.visible = pad
+	code_edit.focus_mode = Control.FOCUS_NONE if kind == "gamepad" else Control.FOCUS_ALL
+	if pad and code_edit.has_focus():
+		(code_pad.get_child(0) as Control).grab_focus()

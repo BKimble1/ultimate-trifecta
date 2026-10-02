@@ -85,6 +85,7 @@ class TouchSurface:
 	func cancel_all() -> void:
 		router.cancel_all()
 		Controls.reset_touch()
+		Controls.set_touch_points(0)
 
 	func _process(delta: float) -> void:
 		t += delta
@@ -222,13 +223,48 @@ class TouchSurface:
 		Controls.touch_held = h
 		Controls.touch_sprint = (router.sprinting or held.has("sprint")) and c["role"] == TC.Role.RUNNER and not c["in_cart"]
 		Controls.touch_look_px += router.take_look_px()
+		Controls.set_touch_points(router.owners.size())
 
 	func _haptic(ms: int) -> void:
 		if bool(Save.get_setting("haptics", true)) and OS.has_feature("mobile"):
 			Input.vibrate_handheld(ms, 0.4)
 
+	const HINT_ACTIONS := {"jump": "jump", "tag": "tag", "gadget": "gadget", "cart": "interact", "gas": "accelerate",
+		"brake": "brake", "next": "spectate_next", "cheer": "emote_1", "sprint": "sprint"}
+
+	## Controller / keyboard: the same context actions as the touch buttons,
+	## as a compact glyph list at the bottom right (no touch buttons drawn).
+	func _draw_hints() -> void:
+		if Controls.device == "touch":
+			return
+		var c := _ctx()
+		var rows: Array = []
+		for name in router.buttons:
+			if HINT_ACTIONS.has(name) and not (name == "sprint"):
+				rows.append([HINT_ACTIONS[name], String((router.buttons[name] as Dictionary)["label"])])
+		if c["role"] == TC.Role.RUNNER and not c["in_cart"] and c["phase"] == TC.Phase.PLAYING and not c["watching"]:
+			rows.append(["sprint", "Sprint"])
+		if rows.is_empty():
+			return
+		var safe := UIKit.safe_margins(get_viewport())
+		var h := 34.0
+		var gap := 10.0
+		var f := UIKit.font_w(650)
+		var fs := 20
+		var w := 0.0
+		for r in rows:
+			w = maxf(w, Glyphs.width(String(r[0]), h) + 10.0 + f.get_string_size(String(r[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+		var x := size.x - safe.size.x - 28.0 - w
+		var y := size.y - safe.size.y - 28.0 - rows.size() * (h + gap) + gap
+		draw_style_box(UIKit.box(Color(UIKit.NAVY, 0.45), 18), Rect2(x - 14, y - 12, w + 28, rows.size() * (h + gap) - gap + 24))
+		for r in rows:
+			var gw := Glyphs.draw(self, String(r[0]), Vector2(x, y + h * 0.5), h)
+			draw_string(f, Vector2(x + gw + 10.0, y + h * 0.5 + fs * 0.36), String(r[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UIKit.IVORY)
+			y += h + gap
+
 	func _draw() -> void:
 		if not _show():
+			_draw_hints()
 			return
 		var c := _ctx()
 		var info: Dictionary = mc.hud.info if mc.hud else {}
