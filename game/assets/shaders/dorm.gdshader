@@ -49,8 +49,10 @@ void fragment() {
 		// wood: grain runs along the plank (Z on the floor, X on furniture tops)
 		vec2 g = up ? v_wp.xz : vec2(v_wp.x + v_wp.z, v_wp.y);
 		float lane = floor(g.x / 0.75);
-		float grain = vnoise(vec2(g.x * 22.0, g.y * 0.9 + lane * 7.3)) * 0.6 + vnoise(vec2(g.x * 60.0, g.y * 2.5)) * 0.4;
-		float rings = sin((g.x * 40.0 + vnoise(g * vec2(3.0, 0.4)) * 6.0)) * 0.5 + 0.5;
+		// fine grain and rings fade with screen-space density (no shimmer far off)
+		float gd = clamp(1.0 - (fwidth(g.x) * 60.0 - 0.2) * 3.0, 0.0, 1.0);
+		float grain = vnoise(vec2(g.x * 22.0, g.y * 0.9 + lane * 7.3)) * 0.6 + mix(0.5, vnoise(vec2(g.x * 60.0, g.y * 2.5)), gd) * 0.4;
+		float rings = mix(0.5, sin((g.x * 40.0 + vnoise(g * vec2(3.0, 0.4)) * 6.0)) * 0.5 + 0.5, gd);
 		base *= 0.84 + 0.2 * grain + 0.06 * rings;
 		// staggered plank ends on the floor
 		if (up) {
@@ -65,6 +67,10 @@ void fragment() {
 		// fabric: fine weave + a fuzzy sheen at grazing angles
 		vec2 q = up ? v_wp.xz : vec2(v_wp.x + v_wp.z, v_wp.y);
 		float weave = sin(q.x * 160.0) * sin(q.y * 160.0) * 0.5 + 0.5;
+		// (V5) the weave fades out where it would fall below ~4 pixels per
+		// cycle on screen, so it never shimmers or moires on a phone
+		float wv = max(fwidth(q.x), fwidth(q.y)) * 160.0 / 6.2832;
+		weave = mix(0.5, weave, clamp(1.0 - (wv - 0.12) * 6.0, 0.0, 1.0));
 		float fuzz = vnoise(q * 9.0);
 		base *= 0.9 + 0.08 * weave + 0.08 * fuzz;
 		rough = 0.97;
