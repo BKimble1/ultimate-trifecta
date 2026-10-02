@@ -96,8 +96,11 @@ func _bench() -> void:
 		add_child(v)
 		v.setup(TC.Role.RUNNER if i < 6 else TC.Role.PATROL, _look(), i, "b%d" % i, false, i == 0)
 		v.apply_state({"pos": Vector3(i - 4, 0, 0), "yaw": 0.0, "vel": Vector3.ZERO, "state": TC.PState.ACTIVE, "on_floor": true}, 0.0, true)
+		if OS.get_cmdline_user_args().has("--no-footlock") and v.foot_lock:
+			v.foot_lock.active = false
 		vs.append(v)
 	var times: Array[float] = []
+	CharacterFootLock.profile = true
 	var last := Time.get_ticks_usec()
 	for f in 660:
 		var tt := f / 60.0
@@ -117,7 +120,10 @@ func _bench() -> void:
 	for x in times:
 		mean += x
 	mean /= times.size()
-	print("BENCH 8 characters: frame CPU mean %.0f us, p95 %.0f us (desktop headless, relative only)" % [mean, times[int(times.size() * 0.95)]])
+	print("BENCH foot lock: %.1f us per character and frame (%d calls)" % [
+		float(CharacterFootLock.profile_us) / maxf(1.0, CharacterFootLock.profile_calls), CharacterFootLock.profile_calls])
+	print("BENCH 8 characters%s: frame CPU mean %.0f us, p95 %.0f us (desktop headless, relative only)" % [
+		" (foot lock off)" if OS.get_cmdline_user_args().has("--no-footlock") else "", mean, times[int(times.size() * 0.95)]])
 
 
 ## The icon hero: nightcap (spring tip), striped pajamas, slippers (or, with

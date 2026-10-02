@@ -136,6 +136,8 @@ var anim: AnimationPlayer
 var tree: AnimationTree
 var secondary: CharacterSecondary
 var pose_fade: CharacterPoseFade
+## V6: pins the stance foot in turns, stops and reversals (CharacterFootLock)
+var foot_lock: CharacterFootLock
 var hat_spring: SpringBoneSimulator3D
 var parts: Dictionary = {}          # name -> MeshInstance3D
 var visible_parts: Array[MeshInstance3D] = []
@@ -210,6 +212,7 @@ var _fidget := ""
 var _blink_len := 0.16
 var _hat_off := false
 var _travel_f := Vector3.ZERO
+var _spot_t := 0.0            # how long the character has run without travelling
 ## total animation time advanced (tests: equals the real elapsed time)
 var anim_time_advanced := 0.0
 
@@ -296,6 +299,9 @@ func _build_model() -> void:
 	skeleton.add_child(pose_fade)
 	secondary = CharacterSecondary.new()
 	skeleton.add_child(secondary)
+	foot_lock = CharacterFootLock.new()
+	foot_lock.name = "FootLock"
+	skeleton.add_child(foot_lock)
 	_build_tree()
 	_build_effects()
 
@@ -765,6 +771,8 @@ func reset_motion() -> void:
 	_have_last = false
 	if secondary:
 		secondary.reset_motion()
+	if foot_lock:
+		foot_lock.reset()
 	if hat_spring:
 		hat_spring.reset()
 		hat_spring.external_force = Vector3.ZERO
@@ -1050,6 +1058,8 @@ func _process(delta: float) -> void:
 	else:
 		_still_t = 0.0
 		tree.set("parameters/loco_seek/seek_request", fposmod(_phase, 1.0))
+		if foot_lock:
+			foot_lock.weight = 0.0
 	if m == "air":
 		tree.set("parameters/air/blend_position", clampf(vel.y, AIR_POINTS["air_fall"], AIR_POINTS["air_rise"]))
 	elif m == "cart":
@@ -1190,6 +1200,17 @@ func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sp
 	tree.set("parameters/loco/blend_position", _bs)
 	tree.set("parameters/move/blend_amount", _move_w)
 	tree.set("parameters/loco_seek/seek_request", fposmod(_phase, 1.0))
+	# V6 foot lock: on for ground locomotion that really travels (not a run
+	# on the spot in the lobby, not a throttled distant character)
+	if foot_lock:
+		# "on the spot" only when it lasts (a reversal passes through zero
+		# travel for a moment and keeps the lock)
+		var travel := Vector2(_travel_f.x, _travel_f.z).length()
+		_spot_t = _spot_t + delta if speed > 0.5 and travel < speed * 0.3 else 0.0
+		var on_spot := _spot_t > 0.25
+		foot_lock.weight = _move_w if on_floor and not on_spot and _act == "" and not (_far and not is_local) else 0.0
+		foot_lock.phase = fposmod(_phase, 1.0)
+		foot_lock.duty = _duty(_bs)
 	# footsteps at the gait's own foot strikes (left at 1 - duty/2, right at
 	# 0.5 - duty/2 of the cycle): the sound is where the foot meets the ground
 	var duty := _duty(_bs)

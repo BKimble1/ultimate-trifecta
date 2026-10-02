@@ -746,3 +746,4 @@ func _run_shots() -> void:
 			pv.parts[part].visible = false
 	_aim(sh["from"], sh["at"], float(sh.get("fov", 30.0)))
 	_sheet_wait = 6
+
