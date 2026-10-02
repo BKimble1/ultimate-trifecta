@@ -1121,6 +1121,13 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			var parsed2 := Protocol.get_json(b)
 			if not parsed2.is_empty():
 				var fr := _fix_results(parsed2)
+				# (V6) results for another round (a late packet after the next
+				# START) or the same results again (a repeat) change nothing
+				var rmid := String(fr.get("match_id", ""))
+				if not fr.is_empty() and not current_start.is_empty() and rmid != String(current_start.get("match_id", "")):
+					fr = {}
+				if not fr.is_empty() and rmid != "" and rmid == String(last_results.get("match_id", "")) and phase == TC.Phase.RESULTS:
+					fr = {}
 				if not fr.is_empty():
 					var sv2 := PartySeries.sanitize_view(parsed2.get("series", {}), names_verified())
 					fr["series"] = sv2
