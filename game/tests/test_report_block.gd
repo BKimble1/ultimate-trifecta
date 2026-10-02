@@ -86,3 +86,5 @@ func test_block_hides_and_the_host_removes() -> void:
 	t.eq(String(rig.ended_reason.get(c1, "")), "kicked", "and they are told")
 	Save.data["blocked"] = saved
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame

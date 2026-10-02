@@ -62,6 +62,8 @@ func test_round_chat_feed_drawer_and_input_ownership() -> void:
 	t.eq(Controls.pending_edges(), 0, "and nothing pressed meanwhile fires afterwards")
 	t.check(mc.touch == null or mc.touch.visible, "the touch controls are back")
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 func test_practice_has_no_chat() -> void:
@@ -85,3 +87,5 @@ func test_practice_has_no_chat() -> void:
 	t.check(mc.hud != null and mc.hud.chat == null, "practice with bots has no chat button")
 	vp.queue_free()
 	off.queue_free()
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame

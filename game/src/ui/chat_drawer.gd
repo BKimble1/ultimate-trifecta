@@ -179,7 +179,8 @@ func close() -> void:
 		return
 	if field and field.has_focus():
 		field.release_focus()
-	DisplayServer.virtual_keyboard_hide()
+	if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+		DisplayServer.virtual_keyboard_hide()
 	closed.emit()
 	queue_free()
 

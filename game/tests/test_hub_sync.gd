@@ -50,6 +50,8 @@ func test_walkers_are_seen_by_everyone() -> void:
 	await rig.frames(20)
 	t.eq(c1.social.hub.mode_of(c0.local_slot), HubSync.MODE_MARK, "back on the mark for everyone")
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 func test_host_clamps_teleports_furniture_and_bounds() -> void:
@@ -73,6 +75,8 @@ func test_host_clamps_teleports_furniture_and_bounds() -> void:
 	var through := HubRoom.step(Vector2(-3.6, -1.5), Vector2(0, -3.0))
 	t.check(through.y > -2.2, "a fast step can't tunnel through the couch (%s)" % str(through))
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 func test_stale_forged_and_strangers_are_ignored() -> void:
@@ -108,6 +112,8 @@ func test_stale_forged_and_strangers_are_ignored() -> void:
 	rig.host._on_packet(_peer_of(rig, c0), PackedByteArray([SocialProto.HUB_POSE, 1]))
 	t.check(true, "malformed packets are ignored without errors")
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 func _peer_of(rig: NetRig, c: NetSession) -> int:
@@ -141,3 +147,5 @@ func test_round_start_stops_walking_for_everyone() -> void:
 	c0._on_packet(c0.host_peer, b.data_array)
 	t.check(c0.social.hub.samples.is_empty(), "and late poses are ignored once the round is on")
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame

@@ -126,6 +126,8 @@ func test_walk_mode_input_ownership_and_sync() -> void:
 	App.session = saved_session
 	Save.data["uid"] = saved_uid
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 func test_round_start_cancels_walking_everywhere() -> void:
@@ -161,3 +163,5 @@ func test_round_start_cancels_walking_everywhere() -> void:
 	App.session = saved_session
 	Save.data["uid"] = saved_uid
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame

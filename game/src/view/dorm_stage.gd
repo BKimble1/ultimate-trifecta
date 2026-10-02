@@ -218,11 +218,18 @@ func _process(delta: float) -> void:
 		if _t >= float(_emote_until[k]):
 			_end_emote(k)
 	for k in _says.keys():
+		var sl: Variant = _says[k]["label"]
+		if not is_instance_valid(sl):
+			_says.erase(k)   # its character left
+			continue
 		if _t >= float(_says[k]["until"]):
-			var sl: Label3D = _says[k]["label"]
-			if is_instance_valid(sl):
-				sl.visible = false
+			(sl as Label3D).visible = false
 			_says.erase(k)
+		else:
+			var sv: Variant = chars.get(k)
+			if sv != null and is_instance_valid(sv):
+				var right := cam.global_transform.basis.x if cam else Vector3.RIGHT
+				(sl as Label3D).global_position = (sv as Node3D).global_position + Vector3(0, 1.78, 0) + right * 0.62
 	if mode == "walk" and _cam_t >= 1.0:
 		_follow(delta)
 	if not _preview.is_empty():
@@ -516,8 +523,9 @@ func say(key: String, text: String, seconds: float = 4.0) -> bool:
 	if v == null or not is_instance_valid(v) or not v.visible or (mode != "lobby" and mode != "walk"):
 		return false
 	var e: Dictionary = _says.get(key, {})
-	var l: Label3D = e.get("label")
-	if l == null or not is_instance_valid(l):
+	var lv: Variant = e.get("label")
+	var l: Label3D = lv if lv != null and is_instance_valid(lv) else null
+	if l == null:
 		l = Label3D.new()
 		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		l.no_depth_test = true
@@ -527,13 +535,17 @@ func say(key: String, text: String, seconds: float = 4.0) -> bool:
 		l.font = UIKit.font_w(700)
 		l.modulate = UIKit.IVORY
 		l.outline_modulate = Color(UIKit.NAVY, 0.92)
-		l.position = Vector3(0, 2.45, 0)
+		# beside the head, on the camera's right (not above it: the 1-2 player
+		# framing is tight at the top); placed in world space every frame
+		l.top_level = true
 		l.render_priority = 5
 		l.width = 520.0
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		v.add_child(l)
 	l.text = text if text.length() <= 48 else text.substr(0, 46) + "…"
 	l.visible = true
+	if l.is_inside_tree():
+		l.global_position = v.global_position + Vector3(0, 1.78, 0) + (cam.global_transform.basis.x if cam else Vector3.RIGHT) * 0.62
 	_says[key] = {"label": l, "until": _t + seconds}
 	return true
 

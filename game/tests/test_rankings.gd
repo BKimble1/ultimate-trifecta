@@ -188,6 +188,8 @@ func test_repeated_and_stale_results_packets_change_nothing() -> void:
 	send.call("m-now")
 	t.eq(got, ["m-now"], "the same results three times are taken once")
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 static func _texts(n: Node) -> Array:

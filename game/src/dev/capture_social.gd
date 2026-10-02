@@ -52,6 +52,10 @@ func _process(delta: float) -> void:
 			_names()
 		"social_results":
 			_results()
+		"social_service_host":
+			_service_host()
+		"social_service_guest":
+			_service_guest()
 
 
 func _lobby() -> LobbyScreen:
@@ -299,3 +303,215 @@ func _show_series() -> void:
 	rsc.reward = d["reward"]
 	rsc.session = s
 	App._show(rsc)
+
+
+# ---------------------------------------------------------------------------
+# With the real service code, run locally (service/tools/dev_server.mjs:
+# NOT a deployment).  Args: --service-url=http://127.0.0.1:P (Cloud reads
+# it), --dev-service-dir=DIR (admission_public.pem from the dev server; the
+# host writes room_code.txt there), --dev-player=T:id, --dev-name="Name",
+# --dev-port=ENET_PORT (guest).
+#   social_service_host   a LAN dev room registered as a service room:
+#                         typed chat approved by the service and verified on
+#                         every device, a refused message, a message report
+#                         with its receipt, a block
+#   social_service_guest  a headless member admitted by the service; types
+#                         and sends Quick Chat
+# ---------------------------------------------------------------------------
+var _busy := false
+var _ready_done := false
+var _code := ""
+
+
+func _arg(k: String, def: String = "") -> String:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--%s=" % k):
+			return a.substr(a.find("=") + 1)
+	return def
+
+
+func _identity() -> Dictionary:
+	var h := HTTPRequest.new()
+	add_child(h)
+	h.request(Cloud.base_url + "/dev/identity?player=" + _arg("dev-player").uri_encode())
+	var res: Array = await h.request_completed
+	h.queue_free()
+	var d: Variant = JSON.parse_string((res[3] as PackedByteArray).get_string_from_utf8())
+	return d if d is Dictionary else {"ok": false, "message": "dev identity failed"}
+
+
+## Sign in with the dev identity and take the approved name.
+func _service_login() -> bool:
+	var dir := _arg("dev-service-dir")
+	Save.data["uid"] = _arg("dev-player")
+	Save.data["name"] = _arg("dev-name", "Comfy Frog")
+	Cloud.admission_key = Admission.load_public_key(FileAccess.get_file_as_string(dir.path_join("admission_public.pem")))
+	Cloud.identity_override = _identity
+	await Cloud.fetch_config()
+	var s: Dictionary = await Cloud.sign_in()
+	if not bool(s.get("ok", false)):
+		printerr("SOCIAL dev sign-in failed: %s" % str(s))
+		return false
+	var n: Dictionary = await Cloud.set_display_name(_arg("dev-name", "Comfy Frog"))
+	printerr("SOCIAL signed in as %s (%s)" % [Cloud.full_name(), str(n.get("ok", false))])
+	return true
+
+
+func _service_host() -> void:
+	var s: NetSession = App.session
+	if s == null or _busy or _t < _at:
+		return
+	var l := _lobby()
+	var chat := s.social.chat
+	match _step:
+		0:
+			_busy = true
+			if not await _service_login():
+				get_tree().quit()
+				return
+			var r: Dictionary = await Cloud.create_room(8)
+			_code = String(r.get("room", {}).get("code", ""))
+			printerr("SOCIAL room %s" % _code)
+			s.room_code = _code
+			s.local_uid = Save.player_uid()
+			s.require_admission = true
+			s.admission_key = Cloud.admission_key
+			s.local_pid = Cloud.profile_id()
+			s.roster[0]["uid"] = s.local_uid
+			s.roster[0]["pid"] = s.local_pid
+			s.roster[0]["name"] = String(Cloud.profile.get("display_name", "Host"))
+			App._start_room_heartbeat(_code)
+			await get_tree().create_timer(2.0).timeout
+			var f := FileAccess.open(_arg("dev-service-dir").path_join("room_code.txt"), FileAccess.WRITE)
+			f.store_string(_code)
+			f.close()
+			s._broadcast_lobby()
+			_busy = false
+			_next(1.0)
+		1:
+			if s.human_count() >= 2 and chat.history.any(func(m: Dictionary) -> bool: return int(m["kind"]) == SocialProto.Kind.TEXT):
+				_next(3.0)
+		2:
+			_snap("service_lobby_typed_bubble")
+			_next(1.0)
+		3:
+			l._open_chat()
+			_next(2.0)
+		4:
+			var d: ChatDrawer = l.find_children("*", "ChatDrawer", true, false)[0]
+			d.field.text = "Nice outfit! See you at the fountain"
+			_busy = true
+			await d._send_text()
+			_busy = false
+			_next(3.0)
+		5:
+			_snap("service_chat_typed")
+			_next(1.0)
+		6:
+			var d: ChatDrawer = l.find_children("*", "ChatDrawer", true, false)[0]
+			d.field.text = "add me on snap, my number is 555 123 4567"
+			_busy = true
+			await d._send_text()
+			_busy = false
+			_next(1.5)
+		7:
+			_snap("service_chat_refused")
+			_next(1.0)
+		8:
+			var d: ChatDrawer = l.find_children("*", "ChatDrawer", true, false)[0]
+			for m in chat.visible([QuickChat.Channel.PARTY]):
+				if not bool(m["mine"]) and int(m["kind"]) == SocialProto.Kind.TEXT:
+					d._open_actions = int(m["seq"])
+					d._refresh()
+					break
+			_next(1.5)
+		9:
+			_snap("service_message_actions")
+			_next(1.0)
+		10:
+			var d: ChatDrawer = l.find_children("*", "ChatDrawer", true, false)[0]
+			for b in d.find_children("*", "Button", true, false):
+				if (b as Button).text == "Report message":
+					(b as Button).pressed.emit()
+					break
+			_next(1.5)
+		11:
+			_snap("service_report_reasons")
+			_next(1.0)
+		12:
+			var rs: ReportSheet = l.find_children("*", "ReportSheet", true, false)[0]
+			for b in rs.find_children("*", "Button", true, false):
+				if (b as Button).text == "Harassment or bullying":
+					(b as Button).pressed.emit()
+					break
+			_next(4.0)
+		13:
+			_snap("service_report_sent")
+			var rs: ReportSheet = l.find_children("*", "ReportSheet", true, false)[0]
+			printerr("SOCIAL report state=%s receipt=%s" % [rs.state, rs.receipt])
+			_next(1.0)
+		14:
+			for rs in l.find_children("*", "ReportSheet", true, false):
+				(rs as ReportSheet).close()
+			for d in l.find_children("*", "ChatDrawer", true, false):
+				(d as ChatDrawer).close()
+			_next(1.0)
+		15:
+			for i in range(1, 8):
+				if s.roster[i] != null and not bool(s.roster[i]["is_bot"]):
+					var e: Dictionary = s.roster[i].duplicate()
+					e["slot"] = i
+					_busy = true
+					var note: String = await SocialActions.block(s, e)
+					printerr("SOCIAL block: %s" % note)
+					UIKit.toast(l, note)
+					_busy = false
+					break
+			_next(1.0)
+		16:
+			_snap("service_after_block")
+			_next(2.0)
+		17:
+			get_tree().quit()
+
+
+func _service_guest() -> void:
+	if _busy or _t < _at:
+		return
+	match _step:
+		0:
+			var p := _arg("dev-service-dir").path_join("room_code.txt")
+			if not FileAccess.file_exists(p):
+				return
+			_busy = true
+			if not await _service_login():
+				get_tree().quit()
+				return
+			_code = FileAccess.get_file_as_string(p).strip_edges()
+			var r: Dictionary = await Cloud.join_room(_code)
+			printerr("SOCIAL join %s: %s" % [_code, str(r.get("ok", false))])
+			if not bool(r.get("ok", false)):
+				printerr(str(r))
+				get_tree().quit()
+				return
+			App.join_room_enet("127.0.0.1", int(_arg("dev-port", "7787")))
+			App.session.admission = String(r["admission"])
+			App.session.local_pid = Cloud.profile_id()
+			App.party_code = _code
+			_busy = false
+			_next(1.0)
+		1:
+			var s: NetSession = App.session
+			if s != null and s.local_slot >= 0:
+				_next(3.0)
+		2:
+			_busy = true
+			var r2: Dictionary = await App.session.social.chat.send_text("Ready when you are!", QuickChat.Channel.PARTY)
+			printerr("SOCIAL guest typed: %s" % str(r2))
+			_busy = false
+			_next(6.0)
+		3:
+			App.session.social.chat.send_quick(5, QuickChat.Channel.PARTY)
+			_next(60.0)
+		4:
+			pass

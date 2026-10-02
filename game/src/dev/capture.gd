@@ -69,7 +69,7 @@ func _ready() -> void:
 		sc.set("cap", self)
 		sc.set("scenario", scenario)
 		add_child(sc)
-		if scenario == "social_hub":
+		if scenario == "social_hub" or scenario == "social_service_host":
 			App.dev_expect = 99   # hold the room open for the capture
 
 

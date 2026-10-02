@@ -15,10 +15,15 @@
 #            phone, iPhone SE and iPad
 #   clip     a normal-speed clip of 4 players walking around (Movie Maker,
 #            fixed 30 fps game clock: playback speed is game time)
+#   service  the real service code run LOCALLY (service/tools/dev_server.mjs,
+#            in-memory database, test Game Center key; NOT a deployment):
+#            names approved by it, typed chat approved and verified, a
+#            refused message, a message report with its receipt (and the
+#            owner's queue from tools/admin.mjs), a block
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT=${1:?out dir}; shift
-SETS=${*:-hub names results clip}
+SETS=${*:-hub names results clip service}
 mkdir -p "$OUT"
 OUT=$(cd "$OUT" && pwd)
 PHONE="2532x1170 3 59,0,59,21"
@@ -100,6 +105,30 @@ for s in $SETS; do
           "desktop Linux llvmpipe · LAN dev room, 4 players (3 scripted headless clients) · Movie Maker 30 fps game clock, not real-time performance" \
           && rm -f "$OUT/clip/hub_walk.avi"
       fi;;
+    service)
+      dir="$OUT/service"; mkdir -p "$dir/svc"
+      sp=$((8700 + RANDOM % 90)); ep=$((7900 + RANDOM % 90))
+      (cd service && node tools/dev_server.mjs $sp "$dir/svc") > "$dir/dev_server.log" 2>&1 &
+      svc=$!
+      sleep 3
+      XDG_DATA_HOME=$(mktemp -d) timeout 1800 xvfb-run -a -s "-screen 0 2600x1240x24" nice -n 10 tools/gd.sh --path game --resolution 2532x1170 -- \
+        --emulate-phone=3 --emulate-safe=59,0,59,21 --net-host=$ep --capture=social_service_host --capture-dir="$dir" \
+        --capture-label="desktop Linux llvmpipe, LAN dev room registered with the service code run locally (not deployed)" \
+        --service-url=http://127.0.0.1:$sp --dev-service-dir="$dir/svc" --dev-player=T:dev-host --dev-name="Juniper Moss" \
+        --no-gamecenter --random-cosmetic > "$dir/host.log" 2>&1 &
+      host=$!
+      sleep 5
+      XDG_DATA_HOME=$(mktemp -d) timeout 1800 nice -n 15 tools/gd.sh --headless --path game -- --capture=social_service_guest \
+        --capture-dir="$dir/guest" --service-url=http://127.0.0.1:$sp --dev-service-dir="$dir/svc" --dev-player=T:dev-guest \
+        --dev-name="Rowan Pine" --dev-port=$ep --no-gamecenter --random-cosmetic > "$dir/guest.log" 2>&1 &
+      guest=$!
+      wait $host || true
+      kill $guest 2>/dev/null || true
+      TRIFECTA_SERVICE=http://127.0.0.1:$sp TRIFECTA_ADMIN_TOKEN=$(cat "$dir/svc/admin_token.txt") node service/tools/admin.mjs queue > "$dir/admin_queue.txt" 2>&1 || true
+      TRIFECTA_SERVICE=http://127.0.0.1:$sp TRIFECTA_ADMIN_TOKEN=$(cat "$dir/svc/admin_token.txt") node service/tools/admin.mjs audit 40 > "$dir/admin_audit.txt" 2>&1 || true
+      kill $svc 2>/dev/null || true
+      grep -E "^CAPTURE |SCRIPT ERROR|^SOCIAL" "$dir/host.log" "$dir/guest.log" | sed "s|$OUT/||" || true
+      cat "$dir/admin_queue.txt";;
     *) echo "unknown set $s";;
   esac
 done

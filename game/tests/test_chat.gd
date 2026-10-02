@@ -117,6 +117,8 @@ func test_quick_chat_reaches_the_party_in_order_once() -> void:
 	c1._on_packet(c1.host_peer, late)
 	t.eq(_texts(c1).slice(2), ["Change the settings?", "Let's play!"], "ordered by the host's sequence, whatever the arrival order")
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 func test_host_referees_channel_phrase_rate_and_repeat() -> void:
@@ -154,6 +156,8 @@ func test_host_referees_channel_phrase_rate_and_repeat() -> void:
 	await rig.frames(8)
 	t.eq(rejections.size(), 5, "the same phrase twice in three seconds is dropped")
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 func test_receivers_defend_against_forged_messages() -> void:
@@ -188,6 +192,8 @@ func test_receivers_defend_against_forged_messages() -> void:
 		c1._on_packet(c1.host_peer, d2)
 	t.eq(_texts(c1).size(), ChatChannel.RECV_MAX, "a flooding sender is cut off on the receiver too")
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 func test_typed_messages_need_the_services_signature() -> void:
@@ -241,7 +247,11 @@ func test_typed_messages_need_the_services_signature() -> void:
 	t.check(not bool(pc.social.chat.text_available()["ok"]), "and says typed chat is unavailable")
 	t.check(String(pc.social.chat.text_available()["why"]).contains("Quick Chat"), "while Quick Chat keeps working")
 	plain.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 func test_send_text_shows_only_approved_text() -> void:
@@ -279,6 +289,8 @@ func test_send_text_shows_only_approved_text() -> void:
 	Cloud.service_config = saved["cfg"]
 	Cloud.transport_override = saved["tr"]
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 func test_mute_and_block_suppress_everywhere() -> void:
@@ -307,6 +319,8 @@ func test_mute_and_block_suppress_everywhere() -> void:
 	t.check(SocialSafety.name_of(c1.roster[0]) != SocialSafety.BLOCKED_NAME, "others' names are untouched")
 	Save.data["blocked"] = saved_blocks
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 func test_rejoining_player_gets_recent_party_chat() -> void:
@@ -320,6 +334,8 @@ func test_rejoining_player_gets_recent_party_chat() -> void:
 	await rig.frames(10)
 	t.eq(_texts(late), ["Hi everyone!", "Ready!"], "a newcomer sees the recent party conversation")
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
 
 
 func test_round_channels_keep_information_on_its_side() -> void:
@@ -372,3 +388,5 @@ func test_round_channels_keep_information_on_its_side() -> void:
 	await rig.frames(10)
 	t.check(_texts(c0).has("Good game!") and _texts(rig.host).has("Good game!"), "heard by both teams")
 	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame
