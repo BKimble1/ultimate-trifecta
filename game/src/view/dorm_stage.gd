@@ -82,7 +82,7 @@ func _cam_for(m: String) -> Array:
 		x_frac = lobby_free_frac * 0.5
 		height_m = maxf(2.6 + 0.35 * (b.w - b.z), (group_w * 1.3 / lobby_free_frac) / aspect)
 		# the camera rises with the depth of the group so back-row faces clear the front row
-		cam_h = 1.5 + 1.9 * clampf((b.w - b.z) / 1.7, 0.0, 1.0)
+		cam_h = 1.5 + 2.2 * clampf((b.w - b.z) / 1.7, 0.0, 1.0)
 	var dist := height_m * 0.5 / tan(deg_to_rad(fov) * 0.5)
 	var width_m := height_m * aspect
 	var shift := (0.5 - x_frac) * width_m      # look right of the subject

@@ -1,0 +1,148 @@
+
+> trifecta-service@1.0.0 test
+> node --test test/*.test.mjs
+
+TAP version 13
+# (node:26432) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: a verified Game Center signature creates an opaque profile and a session
+ok 1 - a verified Game Center signature creates an opaque profile and a session
+  ---
+  duration_ms: 275.737989
+  type: 'test'
+  ...
+# Subtest: claiming an ID without a valid Apple signature gets nothing
+ok 2 - claiming an ID without a valid Apple signature gets nothing
+  ---
+  duration_ms: 360.253129
+  type: 'test'
+  ...
+# Subtest: session tokens are bound to environment, bundle, audience and expiry, and sign-out revokes
+ok 3 - session tokens are bound to environment, bundle, audience and expiry, and sign-out revokes
+  ---
+  duration_ms: 162.769109
+  type: 'test'
+  ...
+# Subtest: sign-in is rate limited per address
+ok 4 - sign-in is rate limited per address
+  ---
+  duration_ms: 279.634138
+  type: 'test'
+  ...
+# (node:26434) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: reports reach the queue with a receipt; duplicates are idempotent; self-reports and junk are refused
+ok 5 - reports reach the queue with a receipt; duplicates are idempotent; self-reports and junk are refused
+  ---
+  duration_ms: 258.108021
+  type: 'test'
+  ...
+# Subtest: admin actions: forced rename hides the name and requires a new one; suspension blocks online play and expires; all audited
+ok 6 - admin actions: forced rename hides the name and requires a new one; suspension blocks online play and expires; all audited
+  ---
+  duration_ms: 208.729535
+  type: 'test'
+  ...
+# Subtest: blocks persist per profile and can be listed and removed
+ok 7 - blocks persist per profile and can be listed and removed
+  ---
+  duration_ms: 120.890121
+  type: 'test'
+  ...
+# Subtest: deleting a game profile needs confirmation and a fresh sign-in, removes personal data, and keeps others' reports
+ok 8 - deleting a game profile needs confirmation and a fresh sign-in, removes personal data, and keeps others' reports
+  ---
+  duration_ms: 51.395712
+  type: 'test'
+  ...
+# (node:26439) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: character rules: length, characters, spacing, letters, long numbers
+ok 9 - character rules: length, characters, spacing, letters, long numbers
+  ---
+  duration_ms: 2.006669
+  type: 'test'
+  ...
+# Subtest: rejects slurs, sexual content, profanity, threats, impersonation and contact info, including disguised spellings
+ok 10 - rejects slurs, sexual content, profanity, threats, impersonation and contact info, including disguised spellings
+  ---
+  duration_ms: 1.536023
+  type: 'test'
+  ...
+# Subtest: false positives: ordinary names that contain blocked letters are allowed
+ok 11 - false positives: ordinary names that contain blocked letters are allowed
+  ---
+  duration_ms: 71.677633
+  type: 'test'
+  ...
+# Subtest: suggestions are friendly, valid and different
+ok 12 - suggestions are friendly, valid and different
+  ---
+  duration_ms: 0.826208
+  type: 'test'
+  ...
+# Subtest: setting a name: approval, duplicates get different discriminators, cooldown, rate limit
+ok 13 - setting a name: approval, duplicates get different discriminators, cooldown, rate limit
+  ---
+  duration_ms: 448.422006
+  type: 'test'
+  ...
+# Subtest: reserved names and forced renames
+ok 14 - reserved names and forced renames
+  ---
+  duration_ms: 155.432082
+  type: 'test'
+  ...
+# (node:26469) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: party codes: 6 unambiguous characters; typing is forgiven for case, spaces and dashes only
+ok 15 - party codes: 6 unambiguous characters; typing is forgiven for case, spaces and dashes only
+  ---
+  duration_ms: 9.402638
+  type: 'test'
+  ...
+# Subtest: create, join with admission, version sync, capacity, own room, needs a name
+ok 16 - create, join with admission, version sync, capacity, own room, needs a name
+  ---
+  duration_ms: 301.510936
+  type: 'test'
+  ...
+# Subtest: distinct errors: unknown code, ended party, round in progress, host still setting up
+ok 17 - distinct errors: unknown code, ended party, round in progress, host still setting up
+  ---
+  duration_ms: 67.799085
+  type: 'test'
+  ...
+# Subtest: only the host updates the room; transitions follow the lifecycle
+ok 18 - only the host updates the room; transitions follow the lifecycle
+  ---
+  duration_ms: 118.285848
+  type: 'test'
+  ...
+# Subtest: reconnecting keeps your own slot; nobody can take a slot that is held
+ok 19 - reconnecting keeps your own slot; nobody can take a slot that is held
+  ---
+  duration_ms: 66.002818
+  type: 'test'
+  ...
+# Subtest: blocks and removals: a blocked or removed player cannot get in
+ok 20 - blocks and removals: a blocked or removed player cannot get in
+  ---
+  duration_ms: 42.018071
+  type: 'test'
+  ...
+# Subtest: one live party per host; unconnected reservations lapse
+ok 21 - one live party per host; unconnected reservations lapse
+  ---
+  duration_ms: 61.193914
+  type: 'test'
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1614.817166

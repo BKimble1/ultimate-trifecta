@@ -115,20 +115,31 @@ func _check_party(n: int, size: Vector2i = Vector2i(2532, 1170), tall_hats: bool
 	var hidden: Array = []
 	for a in stage.chars:
 		var va: CharacterView = stage.chars[a]
-		var face := va.global_position + Vector3(0, 1.15, 0)
-		var fa := cam.unproject_position(face)
-		for b in stage.chars:
-			if a == b:
-				continue
-			var vb: CharacterView = stage.chars[b]
-			if cam.global_position.distance_to(vb.global_position) >= cam.global_position.distance_to(va.global_position):
-				continue
-			for blob: Array in [[1.18, 0.34], [1.45, 0.3]]:   # head, cap
-				var c := vb.global_position + Vector3(0, blob[0], 0)
-				var cp := cam.unproject_position(c)
-				var r := cp.distance_to(cam.unproject_position(c + cam.global_transform.basis.x * float(blob[1])))
-				if fa.distance_to(cp) < r:
-					hidden.append("%s behind %s" % [a, b])
+		var right := cam.global_transform.basis.x
+		# eyes, centre, mouth and forehead; hidden if an eye or two points are covered
+		var samples := [[-0.1, 1.2, true], [0.1, 1.2, true], [0.0, 1.15, false], [0.0, 1.05, false], [0.0, 1.3, false]]
+		var covered := 0
+		var eye_covered := false
+		for smp: Array in samples:
+			var fa := cam.unproject_position(va.global_position + right * float(smp[0]) + Vector3(0, float(smp[1]), 0))
+			var blocked := false
+			for b in stage.chars:
+				if a == b:
+					continue
+				var vb: CharacterView = stage.chars[b]
+				if cam.global_position.distance_to(vb.global_position) >= cam.global_position.distance_to(va.global_position):
+					continue
+				for blob: Array in [[1.18, 0.34], [1.45, 0.3], [1.68, 0.22]]:   # head, cap, tall hat (nightcap / party hat / crown)
+					var c := vb.global_position + Vector3(0, blob[0], 0)
+					var cp := cam.unproject_position(c)
+					var r := cp.distance_to(cam.unproject_position(c + right * float(blob[1])))
+					if fa.distance_to(cp) < r:
+						blocked = true
+			if blocked:
+				covered += 1
+				eye_covered = eye_covered or bool(smp[2])
+		if eye_covered or covered >= 2:
+			hidden.append("%s (%d/5 covered)" % [a, covered])
 	t.eq(hidden, [], "%d players at %s%s: every face is visible (none behind a nearer head or cap)" % [n, size, " (tall hats)" if tall_hats else ""])
 	# the local player stands front and centre, facing the camera
 	var lv: CharacterView = stage.chars["p0"]

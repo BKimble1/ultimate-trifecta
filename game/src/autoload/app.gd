@@ -195,11 +195,24 @@ func _boot() -> void:
 				addr = addr.split(":")[0]
 			join_room_enet(addr, port2)
 			_shape(lag, jitter, loss)
+			# dev/automation: ready up (after --ready-after=S seconds in the
+			# room, for recordings of the ready response; default at once)
+			var ready_after := 0.0
+			for a2 in args:
+				if a2.begins_with("--ready-after="):
+					ready_after = float(a2.get_slice("=", 1))
 			if session:
+				var joined_at := {"t": -1.0}
 				session.lobby_changed.connect(func() -> void:
 					if session and session.local_slot >= 0 and session.phase == TC.Phase.LOBBY:
+						if joined_at["t"] < 0.0:
+							joined_at["t"] = Time.get_ticks_msec() / 1000.0
+							if ready_after > 0.0:
+								get_tree().create_timer(ready_after).timeout.connect(func() -> void:
+									if session and session.local_slot >= 0 and session.phase == TC.Phase.LOBBY:
+										session.set_local_ready(true))
 						var e: Variant = session.roster[session.local_slot]
-						if e != null and not bool(e["ready"]):
+						if e != null and not bool(e["ready"]) and ready_after <= 0.0:
 							session.set_local_ready(true))
 			return
 	for a in args:
