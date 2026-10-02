@@ -150,9 +150,9 @@ jobs:
           export GODOT_BIN=$(cat tools/.cache/godot/BIN)
           tools/export_ios.sh
           ls build/ios
-      - name: Launch and branding audit (V5)
+      - name: Launch and branding audit (V5, black startup V6)
         # the startup shows the requested Idlery Games lockup; this fails on a
-        # missing or wrong launch image, a non-navy launch background, or any
+        # missing or wrong launch image, a launch background that is not pure black, or any
         # "powered by" copy in the game data or project text
         run: python3 tools/launch_audit.py build/ios sim-evidence/launch_assets
       - name: Device archive (unsigned arm64 compile + link check)
