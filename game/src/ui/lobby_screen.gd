@@ -380,6 +380,8 @@ func _exit_tree() -> void:
 	# walk ends here and nothing keeps reading the stick
 	if hub != null and is_instance_valid(hub):
 		hub.set_walking(false)
+		hub.input_allowed = Callable()   # (it refers to this screen)
+		hub.stick = Vector2.ZERO
 	InputOwner.release("chat")
 
 
