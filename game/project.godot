@@ -24,6 +24,7 @@ Controls="*res://src/autoload/input_router.gd"
 Sfx="*res://src/autoload/audio_service.gd"
 Social="*res://src/autoload/social_service.gd"
 Save="*res://src/autoload/save_service.gd"
+Cloud="*res://src/autoload/cloud_service.gd"
 App="*res://src/autoload/app.gd"
 
 [display]

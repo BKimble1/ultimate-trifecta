@@ -42,6 +42,8 @@ func default_profile() -> Dictionary:
 		"recent": [],
 		"tutorial_done": false,
 		"muted": [],
+		"blocked": [],          # [{pid, uid, name}]: persists; also sent to the service when signed in
+		"cloud_profile": {},
 	}
 
 
@@ -116,6 +118,40 @@ func _notification(what: int) -> void:
 			save_now()
 
 
+## Rejoin key for the party we were last in (lets this device back into its
+## own slot after a dropped connection or an app restart; never shared).
+func remember_rejoin(code: String, key: String) -> void:
+	data["rejoin"] = {"code": code, "key": key}
+	mark()
+
+
+func rejoin_key_for(code: String) -> String:
+	var r: Dictionary = data.get("rejoin", {})
+	return String(r.get("key", "")) if String(r.get("code", "")) == code and code != "" else ""
+
+
+## Local block list (works offline; the service keeps the authoritative copy
+## when signed in, which also stops blocked players joining your parties).
+func is_blocked(pid: String, uid: String) -> bool:
+	for b in data.get("blocked", []):
+		if (pid != "" and String(b.get("pid", "")) == pid) or (uid != "" and String(b.get("uid", "")) == uid):
+			return true
+	return false
+
+
+func add_block(pid: String, uid: String, name: String) -> void:
+	if is_blocked(pid, uid):
+		return
+	(data["blocked"] as Array).append({"pid": pid, "uid": uid, "name": NameRules.safe_display(name)})
+	mark()
+
+
+func remove_block(pid: String, uid: String) -> void:
+	data["blocked"] = (data["blocked"] as Array).filter(func(b: Dictionary) -> bool:
+		return not ((pid != "" and String(b.get("pid", "")) == pid) or (uid != "" and String(b.get("uid", "")) == uid)))
+	mark()
+
+
 func mark() -> void:
 	_dirty = true
 	changed.emit()
@@ -148,6 +184,8 @@ func player_name() -> String:
 
 
 func player_uid() -> String:
+	if Social.authenticated and Social.team_player_id != "":
+		return Social.team_player_id
 	if Social.authenticated and Social.local_player_id != "":
 		return Social.local_player_id
 	return String(data["uid"])

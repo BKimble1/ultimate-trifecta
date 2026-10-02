@@ -302,6 +302,26 @@ func set_spectating(slot: int) -> void:
 	_spectating = slot
 
 
+## Host: players whose match is still loading (the round waits for them).
+func set_waiting(names: Array) -> void:
+	if names.is_empty():
+		if _waiting_lbl:
+			_waiting_lbl.visible = false
+		return
+	if _waiting_lbl == null:
+		_waiting_lbl = UIKit.outlined(UIKit.label("", 24, UIKit.IVORY, true, HORIZONTAL_ALIGNMENT_CENTER), 6)
+		_waiting_lbl.set_anchors_preset(Control.PRESET_CENTER)
+		_waiting_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_waiting_lbl)
+	_waiting_lbl.visible = true
+	var shown := names.slice(0, 3)
+	_waiting_lbl.text = "Waiting for %s to load…" % ", ".join(PackedStringArray(shown)) + (" (+%d)" % (names.size() - 3) if names.size() > 3 else "")
+	_waiting_lbl.position = (get_viewport().get_visible_rect().size - _waiting_lbl.get_combined_minimum_size()) * 0.5 - Vector2(0, 120)
+
+
+var _waiting_lbl: Label
+
+
 func toast(text: String, col: Color = UIKit.TEXT) -> void:
 	toast_lbl.text = text
 	toast_lbl.add_theme_color_override("font_color", col)

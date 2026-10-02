@@ -114,6 +114,7 @@ var _turn_cd := 0.0
 var _yaw_accum := 0.0
 var _phase := 0.0
 var _step_k := 0
+var _step_init := false
 var _idle_off := 0.0
 var _still_t := 0.0
 var _next_fidget := 8.0
@@ -841,6 +842,9 @@ func _update_ground(delta: float, speed: float, on_floor: bool, sprinting: bool,
 	# 0.5 - duty/2 of the cycle): the sound is where the foot meets the ground
 	var duty := _duty(bs)
 	var k := int(floor((_phase + duty * 0.5) * 2.0))
+	if not _step_init:
+		_step_k = k   # start counting from the current phase (no phantom step)
+		_step_init = true
 	if k != _step_k:
 		if on_floor and speed > 1.0 and k > _step_k and _near_camera(30.0):
 			var walk := speed < 3.0

@@ -27,7 +27,15 @@ enum M {
 	HOST_END,       # host -> all: room closing / round cancelled
 	KICK,           # host -> client
 	MUTE,           # unused on wire (local block list)
+	LOADED,         # client -> host: {round} match scene ready (load ack)
 }
+
+## Messages a client accepts only from its bound host (protocol 4).
+const HOST_ONLY := [M.WELCOME, M.LOBBY, M.START, M.SNAP, M.EVENTS, M.RESULTS, M.HOST_END, M.KICK]
+## Hard upper bounds for reads (bytes)
+const MAX_STR := 64
+const MAX_TOKEN := 4096
+const MAX_JSON := 32768
 
 const POS_SCALE := 64.0     # 1/64 m precision, int16 range +-512 m
 const VEL_SCALE := 100.0
@@ -53,14 +61,50 @@ static func put_str(b: StreamPeerBuffer, s: String, max_len: int = 64) -> void:
 	b.put_data(u.slice(0, mini(u.size(), 255)))
 
 
-static func get_str(b: StreamPeerBuffer) -> String:
+static func get_str(b: StreamPeerBuffer, max_len: int = MAX_STR) -> String:
+	if b.get_available_bytes() < 1:
+		return ""
 	var n := b.get_u8()
-	if n == 0:
+	if n == 0 or n > b.get_available_bytes():
 		return ""
 	var r: Array = b.get_data(n)
 	if r[0] != OK:
 		return ""
-	return (r[1] as PackedByteArray).get_string_from_utf8()
+	var s := (r[1] as PackedByteArray).get_string_from_utf8()
+	return s.substr(0, max_len)
+
+
+## Long strings (admission tokens): u16 length, bounded.
+static func put_long_str(b: StreamPeerBuffer, s: String) -> void:
+	var u := s.to_utf8_buffer()
+	if u.size() > MAX_TOKEN:
+		u = PackedByteArray()
+	b.put_u16(u.size())
+	b.put_data(u)
+
+
+static func get_long_str(b: StreamPeerBuffer) -> String:
+	if b.get_available_bytes() < 2:
+		return ""
+	var n := b.get_u16()
+	if n == 0 or n > MAX_TOKEN or n > b.get_available_bytes():
+		return ""
+	var r: Array = b.get_data(n)
+	return (r[1] as PackedByteArray).get_string_from_utf8() if r[0] == OK else ""
+
+
+## Length-prefixed JSON object (START, RESULTS), bounded; {} if malformed.
+static func get_json(b: StreamPeerBuffer) -> Dictionary:
+	if b.get_available_bytes() < 4:
+		return {}
+	var n := b.get_u32()
+	if n == 0 or n > MAX_JSON or n > b.get_available_bytes():
+		return {}
+	var r: Array = b.get_data(n)
+	if r[0] != OK:
+		return {}
+	var parsed: Variant = JSON.parse_string((r[1] as PackedByteArray).get_string_from_utf8())
+	return parsed if parsed is Dictionary else {}
 
 
 static func put_vec3(b: StreamPeerBuffer, v: Vector3) -> void:
@@ -150,9 +194,13 @@ static func encode_inputs(cmds: Array, emote: int = -1) -> PackedByteArray:
 
 
 static func decode_inputs(b: StreamPeerBuffer) -> Dictionary:
+	if b.get_available_bytes() < 1 or b.get_available_bytes() > 512:
+		return {"cmds": [], "emote": -1}
 	var n := b.get_u8()
 	var cmds: Array = []
 	for i in mini(n, 10):
+		if b.get_available_bytes() < 14:
+			break
 		cmds.append(InputCmd.read(b))
 	var emote := -1
 	if b.get_available_bytes() > 0:
@@ -277,6 +325,8 @@ static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
 	s["ack"] = b.get_u32()
 	var players := {}
 	var n := b.get_u8()
+	if n > 8:
+		return {}
 	for i in n:
 		var e := {}
 		var id := b.get_u8()
@@ -304,6 +354,8 @@ static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
 	s["players"] = players
 	var carts: Array = []
 	var nc := b.get_u8()
+	if nc > 8:
+		return {}
 	for i in nc:
 		carts.append({
 			"pos": get_vec3(b), "yaw": get_angle(b), "speed": float(b.get_16()) / 100.0,

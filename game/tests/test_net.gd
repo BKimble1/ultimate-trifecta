@@ -290,6 +290,8 @@ func test_reconnect_resumes_slot_and_progress() -> void:
 	var hmc := rig.host_mc()
 	await rig.wait_until(func() -> bool: return hmc.sim.phase == TC.Phase.PLAYING, 900)
 	var slot := c0.local_slot
+	var key := c0.rejoin_key
+	t.check(key.length() >= 16, "the host gave this player a rejoin key")
 	var sp := hmc.sim.player(slot)
 	sp.stamps = 1
 	sp.last_stamp_water = int(hmc.sim.targets[0])
@@ -298,8 +300,14 @@ func test_reconnect_resumes_slot_and_progress() -> void:
 	await rig.frames(30)
 	t.check(sp.bot_takeover, "bot covers while the player is away")
 	await rig.frames(60 * 5)
-	# same identity reconnects with a fresh transport
+	# an impostor with the same identity but no key is refused
+	var imp := rig.add_client("uid-c0", "Client0", "runner")
+	await rig.wait_until(func() -> bool: return rig.ended_reason.has(imp), 300)
+	t.eq(rig.ended_reason.get(imp, ""), "in_use", "no slot takeover without the rejoin key")
+	t.check(sp.bot_takeover, "the slot is still held for its owner")
+	# same identity reconnects with a fresh transport and its key
 	var c1 := rig.add_client("uid-c0", "Client0", "runner")
+	c1.rejoin_key = key
 	var ok := await rig.wait_until(func() -> bool: return c1.local_slot == slot and rig.started.has(c1), 300)
 	t.check(ok, "reconnected into the same slot and match")
 	t.check(sp.connected and not sp.bot_takeover, "player back in control")

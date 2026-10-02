@@ -38,8 +38,13 @@ func bind(m: Object) -> void:
 			_add(pl)
 
 
+## Identity of a Game Center player: the team-scoped player ID (what the
+## service verifies and binds admission to), else the game-scoped one.
 func _pid(pl: Object) -> String:
-	return String(pl.get("game_player_id")) if pl else ""
+	if pl == null:
+		return ""
+	var team := String(pl.get("team_player_id"))
+	return team if team != "" else String(pl.get("game_player_id"))
 
 
 func _add(pl: Object) -> int:

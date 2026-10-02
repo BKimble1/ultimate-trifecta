@@ -35,6 +35,8 @@ func test_gait_cadence_matches_the_asset() -> void:
 func test_footsteps_follow_the_gait_phase() -> void:
 	var v := _view()
 	var steps := 0
+	v.apply_state({"pos": Vector3.ZERO, "yaw": 0.0, "vel": Vector3(0, 0, -5), "state": TC.PState.ACTIVE, "on_floor": true})
+	v._process(1.0 / 60.0)   # the first ground frame starts the count at the current phase
 	var k0 := v._step_k
 	for i in 120:
 		v.apply_state({"pos": Vector3(0, 0, -5.0 * i / 60.0), "yaw": 0.0, "vel": Vector3(0, 0, -5), "state": TC.PState.ACTIVE, "on_floor": true})

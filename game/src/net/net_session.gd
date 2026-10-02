@@ -5,6 +5,16 @@ extends Node
 ## and results. This is a convenience trust model for a private beta: the host
 ## device could cheat and the host is not an independent server.
 ## OFFLINE mode runs the same host path with bots for solo practice.
+##
+## Trust (protocol 4): a client binds to one host (the Game Center player the
+## service named for the room, or the first announcing host on dev
+## transports) and accepts host-only messages from nobody else; a later
+## ANNOUNCE can never replace it.  With the service configured, the host
+## admits only joiners whose admission credential verifies and belongs to the
+## Game Center player who sent it, and takes their name from it.  Reconnects
+## must present the per-slot rejoin key (or the same verified profile), so
+## nobody can take over another player's slot.  Every read is bounded, enums
+## and phases are checked, and peers are rate limited.
 
 signal lobby_changed
 signal match_starting(info: Dictionary)
@@ -13,6 +23,9 @@ signal ended(reason: String)
 signal events_received(events: Array)
 signal snapshot_received(snap: Dictionary)
 signal status_changed(text: String)
+## client (invites): the host announced its code; fetch an admission for it,
+## then call provide_admission()
+signal admission_needed(code: String)
 
 enum Mode { OFFLINE, HOST, CLIENT }
 
@@ -61,6 +74,29 @@ var connected := false
 var _ended := false
 var muted: Dictionary = {}          # uid -> true (local block list: hide emotes)
 
+# trust (protocol 4)
+## client: Game Center player (teamPlayerID) the service says hosts this room
+var expected_host_uid := ""
+## client: admission credential from the service, presented in HELLO
+var admission := ""
+## client: secret for reconnecting into our own slot (from WELCOME)
+var rejoin_key := ""
+## host: require a verified admission credential from every joiner
+var require_admission := false
+var admission_key: CryptoKey
+var local_pid := ""                 # our verified profile id (service), if any
+var _seen_jti: Dictionary = {}
+var _rate: Dictionary = {}          # peer -> {w, input, other, strikes}
+var _loaded: Dictionary = {}        # slot -> true: load acks for this round
+## client: don't say HELLO until an admission credential is in hand
+var hold_hello := false
+var _clock := 0.0                   # seconds of session time (rate-limit windows)
+var _loads_done := false
+var _load_wait := 0.0
+const LOAD_TIMEOUT_S := 15.0
+const RATE_INPUT := 90              # per second
+const RATE_OTHER := 25
+
 
 func _init() -> void:
 	cfg = Rules.cfg
@@ -94,6 +130,7 @@ func start_host(t: NetTransport, code: String, uid: String, name: String, cosmet
 	_set_identity(uid, name, cosmetic, pref)
 	roster.fill(null)
 	roster[0] = _entry(0, uid, name, false, -1, cosmetic, pref)
+	roster[0]["pid"] = local_pid
 	local_slot = 0
 	connected = true
 	_wire_transport()
@@ -120,7 +157,7 @@ func _set_identity(uid: String, name: String, cosmetic: Dictionary, pref: String
 func _entry(slot: int, uid: String, name: String, is_bot: bool, peer: int, cosmetic: Dictionary, pref: String) -> Dictionary:
 	return {"slot": slot, "uid": uid, "name": name, "is_bot": is_bot, "peer": peer, "ready": false,
 		"pref": pref, "cosmetic": Cosmetics.sanitize(cosmetic), "connected": true,
-		"patrol_rounds": 0, "last_was_patrol": false, "role": -1}
+		"patrol_rounds": 0, "last_was_patrol": false, "role": -1, "pid": "", "rejoin_key": ""}
 
 
 func _wire_transport() -> void:
@@ -192,14 +229,56 @@ func _drop_slot(slot: int) -> void:
 func _on_packet(peer: int, data: PackedByteArray) -> void:
 	if data.is_empty():
 		return
+	if data.size() > 64 * 1024:
+		return
 	var b := Protocol.reader(data)
 	var type := b.get_u8()
 	if mode == Mode.HOST:
+		if not _rate_ok(peer, type):
+			return
 		_host_packet(peer, type, b)
 	elif mode == Mode.CLIENT:
+		if type in Protocol.HOST_ONLY and (host_peer < 0 or peer != host_peer):
+			return   # only our bound host may send these
 		if peer == host_peer:
 			_host_silence = 0.0
 		_client_packet(peer, type, b)
+
+
+## Host: per-peer budget per second (inputs vs everything else).  A peer that
+## keeps flooding for three seconds is removed.
+func _rate_ok(peer: int, type: int) -> bool:
+	var now := int(_clock)   # session time (physics frames), not the wall clock
+	var r: Dictionary = _rate.get(peer, {"w": now, "input": 0, "other": 0, "strikes": 0, "struck": false})
+	if int(r["w"]) != now:
+		if bool(r["struck"]):
+			r["strikes"] = int(r["strikes"]) + 1
+		else:
+			r["strikes"] = 0
+		r["w"] = now
+		r["input"] = 0
+		r["other"] = 0
+		r["struck"] = false
+	var key := "input" if type == Protocol.M.INPUT or type == Protocol.M.PONG or type == Protocol.M.PING else "other"
+	r[key] = int(r[key]) + 1
+	var ok := int(r[key]) <= (RATE_INPUT if key == "input" else RATE_OTHER)
+	if not ok:
+		r["struck"] = true
+	_rate[peer] = r
+	if int(r["strikes"]) >= 3:
+		_rate.erase(peer)
+		_remove_peer(peer, "flood")
+		return false
+	return ok
+
+
+func _remove_peer(peer: int, _why: String) -> void:
+	if _peer_slot.has(peer):
+		var slot: int = _peer_slot[peer]
+		kick(slot)
+	else:
+		transport.send(peer, Protocol.buf_for(Protocol.M.KICK).data_array, true)
+		spectators.erase(peer)
 
 
 # ---------------------------------------------------------------------------
@@ -208,19 +287,41 @@ func _on_packet(peer: int, data: PackedByteArray) -> void:
 func _host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 	match type:
 		Protocol.M.HELLO:
+			if b.get_available_bytes() < 2:
+				return
 			var ver := b.get_u16()
-			var uid := Protocol.get_str(b)
-			var name := Protocol.get_str(b)
-			var cos := Protocol.get_appearance(b)
-			var pref: String = ["any", "runner", "patrol"][clampi(b.get_u8(), 0, 2)]
 			if ver != Protocol.VERSION:
 				_send_welcome(peer, -1, "version")
 				return
+			var uid := Protocol.get_str(b)
+			var name := NameRules.safe_display(Protocol.get_str(b))
+			var cos := Protocol.get_appearance(b)
+			var pref: String = ["any", "runner", "patrol"][clampi(b.get_u8(), 0, 2)]
+			var key := Protocol.get_str(b, 32)
+			var token := Protocol.get_long_str(b)
 			if transport.peer_uid(peer) != "":
 				uid = transport.peer_uid(peer)   # Game Center identity wins
-			_host_admit(peer, uid, name, cos, pref)
+			var pid := ""
+			if require_admission:
+				var v := Admission.verify(token, admission_key, {"code": room_code, "gc": uid,
+					"now": int(Time.get_unix_time_from_system()), "seen": _seen_jti})
+				if not bool(v["ok"]):
+					_send_welcome(peer, -1, "admission")
+					return
+				var claims: Dictionary = v["claims"]
+				_seen_jti[String(claims["jti"])] = true
+				pid = String(claims.get("sub", ""))
+				# the service-approved name, not whatever the client typed
+				name = NameRules.safe_display(String(claims.get("name", name)).get_slice("#", 0))
+				if Save.is_blocked(pid, uid):
+					_send_welcome(peer, -1, "not_allowed")
+					return
+			elif Save.is_blocked("", uid):
+				_send_welcome(peer, -1, "not_allowed")
+				return
+			_host_admit(peer, uid, name, cos, pref, pid, key)
 		Protocol.M.READY:
-			if _peer_slot.has(peer):
+			if _peer_slot.has(peer) and (phase == TC.Phase.LOBBY or phase == TC.Phase.RESULTS) and b.get_available_bytes() >= 2:
 				var e: Dictionary = roster[_peer_slot[peer]]
 				e["ready"] = b.get_u8() == 1
 				e["pref"] = ["any", "runner", "patrol"][clampi(b.get_u8(), 0, 2)]
@@ -230,33 +331,50 @@ func _host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 				roster[_peer_slot[peer]]["cosmetic"] = Protocol.get_appearance(b)
 				_broadcast_lobby()
 		Protocol.M.EMOTE:
-			if _peer_slot.has(peer):
+			if _peer_slot.has(peer) and b.get_available_bytes() >= 1:
 				var em := b.get_u8()
-				_host_emote(_peer_slot[peer], em)
+				if em < TC.EMOTES.size():
+					_host_emote(_peer_slot[peer], em)
 		Protocol.M.INPUT:
 			if _peer_slot.has(peer) and sim != null:
 				var slot: int = _peer_slot[peer]
 				var d := Protocol.decode_inputs(b)
 				_queue_inputs(slot, d["cmds"])
-				if int(d["emote"]) >= 0:
+				if int(d["emote"]) >= 0 and int(d["emote"]) < TC.EMOTES.size():
 					_host_emote(slot, int(d["emote"]))
+		Protocol.M.LOADED:
+			if _peer_slot.has(peer) and b.get_available_bytes() >= 2 and b.get_u16() == round_no:
+				_loaded[int(_peer_slot[peer])] = true
 		Protocol.M.PING:
+			if b.get_available_bytes() < 8:
+				return
 			var t := b.get_double()
 			var r := Protocol.buf_for(Protocol.M.PONG)
 			r.put_double(t)
 			transport.send(peer, r.data_array, false)
 		Protocol.M.PONG:
+			if b.get_available_bytes() < 8:
+				return
 			var sent := b.get_double()
 			var now := Time.get_ticks_usec() / 1000000.0
-			_rtt[peer] = lerpf(float(_rtt.get(peer, now - sent)), now - sent, 0.3)
+			if is_finite(sent) and now - sent >= 0.0 and now - sent < 10.0:
+				_rtt[peer] = lerpf(float(_rtt.get(peer, now - sent)), now - sent, 0.3)
 		Protocol.M.LEAVE:
 			_on_peer_left(peer)
 
 
-func _host_admit(peer: int, uid: String, name: String, cosmetic: Dictionary, pref: String) -> void:
+## Proof that a returning player owns a slot: the rejoin key the host gave
+## them, or the same verified profile.
+func _owns_slot(e: Dictionary, pid: String, key: String) -> bool:
+	if key != "" and key == String(e.get("rejoin_key", "")):
+		return true
+	return pid != "" and pid == String(e.get("pid", ""))
+
+
+func _host_admit(peer: int, uid: String, name: String, cosmetic: Dictionary, pref: String, pid: String = "", key: String = "") -> void:
 	# reconnect into a reserved slot?
 	for e in roster:
-		if e != null and not bool(e["is_bot"]) and String(e["uid"]) == uid and not bool(e["connected"]):
+		if e != null and not bool(e["is_bot"]) and String(e["uid"]) == uid and not bool(e["connected"]) and _owns_slot(e, pid, key):
 			if sim != null and phase >= TC.Phase.REVEAL and phase <= TC.Phase.PLAYING:
 				if sim.resume(int(e["slot"]), uid):
 					e["connected"] = true
@@ -274,8 +392,12 @@ func _host_admit(peer: int, uid: String, name: String, cosmetic: Dictionary, pre
 				_send_welcome(peer, int(e["slot"]), "")
 				_broadcast_lobby()
 				return
-	# duplicate identity already connected: treat as the same player reconnecting
+	# the same identity already connected: the same player on a new
+	# connection, but only with proof (nobody can take over someone's slot)
 	for e in roster:
+		if e != null and String(e["uid"]) == uid and int(e["slot"]) != local_slot and not _owns_slot(e, pid, key) and not bool(e["is_bot"]):
+			_send_welcome(peer, -1, "in_use")
+			return
 		if e != null and String(e["uid"]) == uid and bool(e["connected"]) and int(e["peer"]) != peer and int(e["slot"]) != local_slot:
 			_peer_slot.erase(int(e["peer"]))
 			e["peer"] = peer
@@ -290,6 +412,8 @@ func _host_admit(peer: int, uid: String, name: String, cosmetic: Dictionary, pre
 		for i in roster.size():
 			if roster[i] == null or (bool(roster[i]["is_bot"]) and phase == TC.Phase.LOBBY):
 				roster[i] = _entry(i, uid, name, false, peer, cosmetic, pref)
+				roster[i]["pid"] = pid
+				roster[i]["rejoin_key"] = Crypto.new().generate_random_bytes(12).hex_encode()
 				_peer_slot[peer] = i
 				_send_welcome(peer, i, "")
 				_broadcast_lobby()
@@ -306,6 +430,8 @@ func _send_welcome(peer: int, slot: int, reason: String) -> void:
 	var b := Protocol.buf_for(Protocol.M.WELCOME)
 	b.put_8(slot)
 	Protocol.put_str(b, reason)
+	# the rejoin key goes only to the slot's own player
+	Protocol.put_str(b, String(roster[slot].get("rejoin_key", "")) if slot >= 0 and roster[slot] != null else "", 32)
 	transport.send(peer, b.data_array, true)
 
 
@@ -395,6 +521,7 @@ func _lobby_bytes() -> PackedByteArray:
 		b.put_u8(["any", "runner", "patrol"].find(String(e["pref"])))
 		b.put_8(int(e.get("role", -1)))
 		Protocol.put_appearance(b, e["cosmetic"])
+		Protocol.put_str(b, String(e.get("pid", "")), 40)
 	return b.data_array
 
 
@@ -458,6 +585,9 @@ func host_start_match(seed_override: int = -1) -> void:
 	_queues.clear()
 	_last_seq.clear()
 	_pending_events.clear()
+	_loaded.clear()
+	_load_wait = 0.0
+	_loads_done = false
 	if mode == Mode.HOST:
 		for peer in transport.peers():
 			_send_start(peer)
@@ -494,6 +624,42 @@ static func _jsonable(v: Variant) -> Variant:
 	if v is Vector3:
 		return [v.x, v.y, v.z]
 	return v
+
+
+## Client: our match scene is ready (load acknowledgement for this round).
+func send_loaded() -> void:
+	if mode == Mode.CLIENT and host_peer >= 0:
+		var b := Protocol.buf_for(Protocol.M.LOADED)
+		b.put_u16(round_no)
+		transport.send(host_peer, b.data_array, true)
+
+
+## Host: the round starts once every connected player has loaded (or after
+## LOAD_TIMEOUT_S, so one slow device can't hold everyone).  Bots and
+## disconnected players don't count.
+func loads_complete(delta: float = 0.0) -> bool:
+	if mode != Mode.HOST or _loads_done or current_start.is_empty() or phase == TC.Phase.LOBBY or phase == TC.Phase.RESULTS:
+		return true
+	_load_wait += delta
+	if _load_wait >= LOAD_TIMEOUT_S:
+		_loads_done = true
+		return true
+	for e in roster:
+		if e != null and not bool(e["is_bot"]) and bool(e["connected"]) and int(e["slot"]) != local_slot and not _loaded.has(int(e["slot"])):
+			return false
+	_loads_done = true   # once everyone is in, later reconnects never pause the round
+	return true
+
+
+## Slots still loading (HUD: "Waiting for …").
+func loading_names() -> Array:
+	var out: Array = []
+	if mode != Mode.HOST:
+		return out
+	for e in roster:
+		if e != null and not bool(e["is_bot"]) and bool(e["connected"]) and int(e["slot"]) != local_slot and not _loaded.has(int(e["slot"])):
+			out.append(String(e["name"]))
+	return out if not _loads_done else []
 
 
 ## Host: called by the match controller once its MatchSim exists.
@@ -652,19 +818,32 @@ func host_return_to_lobby() -> void:
 func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 	match type:
 		Protocol.M.ANNOUNCE:
+			if host_peer >= 0:
+				return   # bound already: an announcement can never replace the host
 			var is_h := b.get_u8() == 1
 			var _uid := Protocol.get_str(b)
-			var code := Protocol.get_str(b)
-			if is_h and (room_code == "" or code == room_code or transport.kind != "gamekit"):
+			var code := Protocol.get_str(b, 12)
+			if not is_h:
+				return
+			if expected_host_uid != "" and transport.peer_uid(peer) != expected_host_uid:
+				return   # not the Game Center player the service named as host
+			if room_code == "" or code == room_code or transport.kind != "gamekit":
 				host_peer = peer
 				room_code = code
-				_send_hello()
+				if hold_hello and admission == "":
+					admission_needed.emit(code)
+				else:
+					_send_hello()
 		Protocol.M.WELCOME:
-			local_slot = b.get_8()
+			local_slot = clampi(b.get_8(), -1, 7)
 			var reason := Protocol.get_str(b)
+			var key := Protocol.get_str(b, 32)
+			if key != "":
+				rejoin_key = key
+				Save.remember_rejoin(room_code, key)
 			connected = true
-			if reason == "version":
-				_end("version")
+			if reason in ["version", "admission", "not_allowed", "in_use"]:
+				_end(reason)
 				return
 			if local_slot < 0 and reason == "full":
 				status_changed.emit("Room is full — watching until a slot opens.")
@@ -672,18 +851,18 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 		Protocol.M.LOBBY:
 			_read_lobby(b)
 		Protocol.M.START:
-			var n := b.get_u32()
-			var r: Array = b.get_data(n)
-			if r[0] != OK:
-				return
-			var parsed: Variant = JSON.parse_string((r[1] as PackedByteArray).get_string_from_utf8())
-			if parsed is Dictionary:
-				current_start = _fix_start(parsed)
+			var parsed := Protocol.get_json(b)
+			var fixed := _fix_start(parsed) if not parsed.is_empty() else {}
+			if not fixed.is_empty():
+				current_start = fixed
+				round_no = int(fixed.get("round", round_no))
 				phase = TC.Phase.LOADING
 				_last_event_id = 0
 				match_starting.emit(current_start)
 		Protocol.M.SNAP:
-			snapshot_received.emit(Protocol.decode_snapshot(b))
+			var snap := Protocol.decode_snapshot(b)
+			if not snap.is_empty():
+				snapshot_received.emit(snap)
 		Protocol.M.EVENTS:
 			var evs := Protocol.decode_events(b)
 			var fresh: Array = []
@@ -695,26 +874,42 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			if not fresh.is_empty():
 				events_received.emit(fresh)
 		Protocol.M.RESULTS:
-			var n2 := b.get_u32()
-			var r2: Array = b.get_data(n2)
-			if r2[0] == OK:
-				var parsed2: Variant = JSON.parse_string((r2[1] as PackedByteArray).get_string_from_utf8())
-				if parsed2 is Dictionary:
-					last_results = _fix_results(parsed2)
+			var parsed2 := Protocol.get_json(b)
+			if not parsed2.is_empty():
+				var fr := _fix_results(parsed2)
+				if not fr.is_empty():
+					last_results = fr
 					phase = TC.Phase.RESULTS
 					results_received.emit(last_results)
 		Protocol.M.PING:
+			if b.get_available_bytes() < 8:
+				return
 			var t := b.get_double()
 			var rb := Protocol.buf_for(Protocol.M.PONG)
 			rb.put_double(t)
 			transport.send(peer, rb.data_array, false)
 		Protocol.M.PONG:
+			if b.get_available_bytes() < 8:
+				return
 			var sent := b.get_double()
-			rtt = lerpf(rtt, Time.get_ticks_usec() / 1000000.0 - sent, 0.3)
+			var d := Time.get_ticks_usec() / 1000000.0 - sent
+			if is_finite(d) and d >= 0.0 and d < 10.0:
+				rtt = lerpf(rtt, d, 0.3)
 		Protocol.M.HOST_END:
 			_end("host_ended")
 		Protocol.M.KICK:
 			_end("kicked")
+
+
+## Invites: the service vouched for us for the announced room.  The host it
+## names must be the peer we bound to.
+func provide_admission(token: String, host_uid: String) -> void:
+	if host_peer >= 0 and host_uid != "" and transport.peer_uid(host_peer) != host_uid:
+		_end("admission")
+		return
+	admission = token
+	expected_host_uid = host_uid
+	_send_hello()
 
 
 func _send_hello() -> void:
@@ -724,6 +919,8 @@ func _send_hello() -> void:
 	Protocol.put_str(b, local_name)
 	Protocol.put_appearance(b, local_cosmetic)
 	b.put_u8(["any", "runner", "patrol"].find(local_pref))
+	Protocol.put_str(b, rejoin_key, 32)
+	Protocol.put_long_str(b, admission)
 	transport.send(host_peer, b.data_array, true)
 	_hello_sent = true
 
@@ -741,8 +938,9 @@ func _read_lobby(b: StreamPeerBuffer) -> void:
 		var name := Protocol.get_str(b)
 		var flags := b.get_u8()
 		var pref: String = ["any", "runner", "patrol"][clampi(b.get_u8(), 0, 2)]
-		var role := b.get_8()
-		var e := _entry(i, uid, name, (flags & 1) != 0, -1, Protocol.get_appearance(b), pref)
+		var role := clampi(b.get_8(), -1, 1)
+		var e := _entry(i, uid, NameRules.safe_display(name), (flags & 1) != 0, -1, Protocol.get_appearance(b), pref)
+		e["pid"] = Protocol.get_str(b, 40)
 		e["ready"] = (flags & 2) != 0
 		e["connected"] = (flags & 4) != 0
 		e["is_host"] = (flags & 8) != 0
@@ -756,29 +954,55 @@ func _read_lobby(b: StreamPeerBuffer) -> void:
 	lobby_changed.emit()
 
 
+## START from the host, checked field by field: {} if anything is off.
 func _fix_start(d: Dictionary) -> Dictionary:
+	if not (d.get("targets") is Array) or not (d.get("roster") is Array) or not (d.get("seed") is float or d.get("seed") is int):
+		return {}
 	var out := d.duplicate(true)
 	out["seed"] = int(d["seed"])
+	out["match_id"] = String(d.get("match_id", "")).substr(0, 64)
+	out["round"] = int(d.get("round", 0))
 	var t: Array = []
 	for x in d["targets"]:
+		if not (x is float or x is int) or int(x) < 0 or int(x) > 5 or t.has(int(x)):
+			return {}
 		t.append(int(x))
+	if t.size() != 3:
+		return {}
 	out["targets"] = t
 	var ro: Array = []
-	for e in d["roster"]:
-		var c: Dictionary = e["cosmetic"]
-		ro.append({"slot": int(e["slot"]), "uid": String(e["uid"]), "name": String(e["name"]), "is_bot": bool(e["is_bot"]), "role": int(e["role"]),
-			"cosmetic": Cosmetics.sanitize(c)})
+	var slots := {}
+	var roster_in: Array = d["roster"]
+	if roster_in.size() < 1 or roster_in.size() > 8:
+		return {}
+	for e in roster_in:
+		if not (e is Dictionary):
+			return {}
+		var slot := int(e.get("slot", -1))
+		var role := int(e.get("role", -1))
+		if slot < 0 or slot > 7 or slots.has(slot) or not role in [TC.Role.RUNNER, TC.Role.PATROL]:
+			return {}
+		slots[slot] = true
+		var c: Variant = e.get("cosmetic", {})
+		ro.append({"slot": slot, "uid": String(e.get("uid", "")).substr(0, 64), "name": NameRules.safe_display(String(e.get("name", ""))),
+			"is_bot": bool(e.get("is_bot", false)), "role": role, "cosmetic": Cosmetics.sanitize(c if c is Dictionary else {})})
 	out["roster"] = ro
 	return out
 
 
 func _fix_results(d: Dictionary) -> Dictionary:
+	if not (d.get("outcome") is float or d.get("outcome") is int) or not (d.get("players", []) is Array):
+		return {}
 	var out := d.duplicate(true)
-	out["outcome"] = int(d["outcome"])
+	out["outcome"] = clampi(int(d["outcome"]), 0, TC.Outcome.CANCELLED)
 	out["fastest_slot"] = int(d.get("fastest_slot", -1))
 	var rows: Array = []
 	for r in d.get("players", []):
+		if not (r is Dictionary) or rows.size() >= 8:
+			continue
 		var rr: Dictionary = r.duplicate()
+		if rr.has("name"):
+			rr["name"] = NameRules.safe_display(String(rr["name"]))
 		for k in ["slot", "role", "stamps", "finish_order", "times_captured", "captures", "unique_captures"]:
 			rr[k] = int(r.get(k, 0))
 		rows.append(rr)
@@ -823,6 +1047,7 @@ func _end(reason: String) -> void:
 func _physics_process(delta: float) -> void:
 	if transport == null or _ended:
 		return
+	_clock += delta
 	transport.poll(delta)
 	if mode == Mode.CLIENT:
 		if host_peer < 0:
@@ -833,7 +1058,7 @@ func _physics_process(delta: float) -> void:
 			_host_silence += delta
 			if _host_silence > cfg.host_timeout_s:
 				_end("host_timeout")
-		if host_peer >= 0 and not _hello_sent:
+		if host_peer >= 0 and not _hello_sent and not (hold_hello and admission == ""):
 			_send_hello()
 		if host_peer >= 0:
 			_ping_t += delta

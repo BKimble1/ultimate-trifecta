@@ -26,6 +26,14 @@ var _dev_shot_i := 0
 var _dev_next_shot := 2.0
 
 
+## Client version code sent to the service (rooms record it for version
+## messages): marketing version 1.1 -> 101.  Compatibility between players is
+## decided by Protocol.VERSION.
+static func build_number() -> int:
+	var v := String(ProjectSettings.get_setting("application/config/version", "1.0")).split(".")
+	return int(v[0]) * 100 + (int(v[1]) if v.size() > 1 else 0)
+
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().set_auto_accept_quit(true)
@@ -320,28 +328,144 @@ func start_practice(role: String, tutorial: bool) -> void:
 # ---------------------------------------------------------------------------
 # Online rooms
 # ---------------------------------------------------------------------------
+## Create a party.  With the service configured: the service creates the
+## room atomically and returns its code; the host then opens the Game Center
+## match for that code and keeps the room alive with heartbeats.  Without it
+## (builds with no service URL) the room is an unverified Game Center room.
 func host_room_gamekit() -> void:
+	if not await _confirm_party_switch():
+		return
 	_close_session()
+	if Cloud.configured():
+		var r: Dictionary = await Cloud.create_room(8)
+		if not bool(r.get("ok", false)):
+			party_error.emit(Cloud.explain(r), String(r.get("error", "")))
+			return
+		var code := String(r["room"]["code"])
+		var t := Social.host_code_room(code)
+		_begin_session(NetSession.Mode.HOST, t, code)
+		session.require_admission = Cloud.admission_key != null
+		session.admission_key = Cloud.admission_key
+		session.local_pid = Cloud.profile_id()
+		if session.roster[0] != null:
+			session.roster[0]["pid"] = session.local_pid
+		_start_room_heartbeat(code)
+		return
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	var code := Social.make_code(rng)
-	var t := Social.host_code_room(code)
-	_begin_session(NetSession.Mode.HOST, t, code)
+	var code2 := Social.make_code(rng)
+	_begin_session(NetSession.Mode.HOST, Social.host_code_room(code2), code2)
 
 
+## Join a party by code: the service checks the code, room state, capacity,
+## version and blocks and hands back an admission credential plus the host's
+## Game Center player; we then join that Game Center match and present it.
 func join_room_gamekit(code: String) -> void:
+	var parsed := Social.parse_code(code)
+	if not bool(parsed["ok"]):
+		party_error.emit(String(parsed["message"]), "code_format")
+		return
+	var c := String(parsed["code"])
+	if not await _confirm_party_switch():
+		return
 	_close_session()
-	var c := Social.normalize_code(code)
+	var adm := ""
+	var host_gc := ""
+	if Cloud.configured():
+		var r: Dictionary = await Cloud.join_room(c)
+		if not bool(r.get("ok", false)):
+			party_error.emit(Cloud.explain(r), String(r.get("error", "")))
+			return
+		adm = String(r["admission"])
+		host_gc = String(r["host_gc_player"])
 	var t := Social.join_code_room(c)
 	_begin_session(NetSession.Mode.CLIENT, t, c)
+	session.admission = adm
+	session.expected_host_uid = host_gc
+	session.local_pid = Cloud.profile_id()
+	party_code = c
 
 
+## Invites converge on the same path: once the invited match forms, the host
+## announces its room code and we join that code through the service (so an
+## invite gets the same checks and credential as typing the code).
 func _on_invite_ready(t: GameKitTransport) -> void:
-	# a friend's invite was accepted: join their room
 	if match_ctrl != null:
+		return
+	if not await _confirm_party_switch():
+		t.close()
 		return
 	_close_session()
 	_begin_session(NetSession.Mode.CLIENT, t, "")
+	session.local_pid = Cloud.profile_id()
+	if Cloud.configured():
+		session.status_changed.emit("Joining your friend's party…")
+		session.hold_hello = true
+		session.admission_needed.connect(func(code: String) -> void:
+			var r: Dictionary = await Cloud.join_room(code)
+			if session == null or not is_instance_valid(session):
+				return
+			if not bool(r.get("ok", false)):
+				_close_session(false)
+				goto_title(Cloud.explain(r))
+				return
+			party_code = code
+			session.provide_admission(String(r["admission"]), String(r["host_gc_player"])))
+
+
+signal party_error(message: String, code: String)
+var party_code := ""
+var _hb_timer: Timer
+
+
+## Already in a party and about to switch to another: ask first.
+func _confirm_party_switch() -> bool:
+	if session == null or not is_instance_valid(session) or session.mode == NetSession.Mode.OFFLINE:
+		return true
+	if screen and screen is Screen:
+		var answer := {"v": -1}
+		(screen as Screen).dialog("Leave your current party to join this one?", [["Switch", func() -> void: answer["v"] = 1], ["Stay", func() -> void: answer["v"] = 0]])
+		while int(answer["v"]) < 0 and is_inside_tree():
+			await get_tree().process_frame
+		if int(answer["v"]) != 1:
+			return false
+	if session and is_instance_valid(session) and party_code != "" and Cloud.configured():
+		Cloud.leave_room(party_code)
+	return true
+
+
+## Host: keep the service's room record alive and in step with the lobby.
+func _start_room_heartbeat(code: String) -> void:
+	party_code = code
+	if _hb_timer == null:
+		_hb_timer = Timer.new()
+		_hb_timer.wait_time = 15.0
+		add_child(_hb_timer)
+		_hb_timer.timeout.connect(_room_heartbeat)
+	_hb_timer.start()
+	_room_heartbeat()
+
+
+func _room_heartbeat() -> void:
+	if session == null or not is_instance_valid(session) or session.mode != NetSession.Mode.HOST or party_code == "":
+		if _hb_timer:
+			_hb_timer.stop()
+		return
+	var st := "open"
+	match session.phase:
+		TC.Phase.LOADING:
+			st = "loading"
+		TC.Phase.REVEAL, TC.Phase.COUNTDOWN, TC.Phase.PLAYING:
+			st = "in_match"
+		TC.Phase.RESULTS, TC.Phase.ENDED:
+			st = "results"
+	var pids: Array = []
+	for e in session.roster:
+		if e != null and not bool(e["is_bot"]) and bool(e["connected"]) and String(e.get("pid", "")) != "":
+			pids.append(String(e["pid"]))
+	var r: Dictionary = await Cloud.room_heartbeat(party_code, st, pids)
+	if not bool(r.get("ok", false)) and String(r.get("error", "")) == "bad_transition":
+		await Cloud.room_heartbeat(party_code, "", pids)   # keep alive; state catches up next beat
 
 
 ## Desktop/LAN development rooms (debug builds only; not shown on iOS release).
@@ -372,6 +496,7 @@ func _begin_session(mode: int, t: NetTransport, code: String) -> void:
 		session.start_host(t, code, Save.player_uid(), Save.player_name(), Save.data["cosmetic"], pref)
 	else:
 		session.start_client(t, code, Save.player_uid(), Save.player_name(), Save.data["cosmetic"], pref)
+		session.rejoin_key = Save.rejoin_key_for(code)
 	session.match_starting.connect(_on_match_starting)
 	session.results_received.connect(_on_results)
 	session.ended.connect(_on_session_ended)
@@ -397,7 +522,13 @@ func _on_session_ended(reason: String) -> void:
 		"room_not_found":
 			msg = "Couldn't find that room. Check the code and that the host's room is open."
 		"version":
-			msg = "That room is running a different version of the game."
+			msg = "That party is running a different version of the game. Update to the latest version and try again."
+		"admission":
+			msg = "Couldn't confirm your place in that party. Try joining with the code again."
+		"not_allowed":
+			msg = "You can't join this party."
+		"in_use":
+			msg = "That player is already in the party on another device."
 		"left":
 			msg = ""
 		_:
@@ -417,6 +548,11 @@ func leave_room() -> void:
 
 
 func _close_session(send_leave: bool = true) -> void:
+	if party_code != "" and Cloud.configured():
+		Cloud.leave_room(party_code)
+	party_code = ""
+	if _hb_timer:
+		_hb_timer.stop()
 	if session and is_instance_valid(session):
 		if send_leave and session.connected and session.mode != NetSession.Mode.OFFLINE:
 			session.leave()

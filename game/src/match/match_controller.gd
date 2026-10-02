@@ -182,6 +182,7 @@ func _first_slot() -> int:
 # Client world: collision + predicted body
 # ---------------------------------------------------------------------------
 func _setup_client_world() -> void:
+	session.call_deferred("send_loaded")
 	client_world = Node3D.new()
 	client_world.name = "ClientWorld"
 	add_child(client_world)
@@ -339,6 +340,13 @@ func _build_local_cmd() -> InputCmd:
 
 
 func _host_tick(cmd: InputCmd, delta: float) -> void:
+	# hold the round until every player's match scene has loaded (load acks)
+	if not session.loads_complete(delta):
+		if hud:
+			hud.set_waiting(session.loading_names())
+		return
+	if hud:
+		hud.set_waiting([])
 	var inputs := session.host_collect_inputs()
 	if not spectator and roster.has(local_slot):
 		inputs[local_slot] = cmd
