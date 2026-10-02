@@ -1,26 +1,55 @@
-# Trifecta Chase: implemented V1 rules
+# Trifecta Chase: implemented rules (V4)
 
-All values come from one resource, `game/config/rules_default.tres` (`RulesConfig`, `game/src/config/rules_config.gd`). The simulation, bots, HUD text, tutorial and tests all read it. The numbers below are the shipped defaults. The authority is `MatchSim` (`game/src/sim/match_sim.gd`), which runs on the room host, or locally in practice.
+All values come from one resource, `game/config/rules_default.tres` (`RulesConfig`, `game/src/config/rules_config.gd`). The party's settings derive each round's own copy (`PartySeries.rules_for`), which the simulation, bots, HUD, tutorial, How to Play and results all read; the global default is never changed while a round uses it. The authority is `MatchSim` (`game/src/sim/match_sim.gd`), which runs on the room host, or locally in practice.
 
-**Runner card:** "Splash into all three marked spots. Get back to the dorm. Get four runners home before time runs out."
+**Runner card** (`TC.runner_card`, values filled in from the round): "Splash into all three marked waters, then get back to the dorm. 4 runners home before time runs out wins it for everyone. Caught? You keep your splashes and you're back in 6 seconds."
 
-**Night Watch card:** "Find the runners. Use your cart to cut them off. Hop out and tag them before they get home."
+**Night Watch card** (`TC.patrol_card`): "Stop 4 runners getting home before time runs out. Cut them off with a cart, hop out and tag. A tag sends a runner out for 6 seconds; they keep their splashes."
+
+## Party settings (host, before a series)
+
+| Night Watch | Runners | Home to win |
+|---|---|---|
+| 1 | 7 | 5 |
+| 2 (recommended) | 6 | 4 |
+| 3 ("a tougher runner challenge") | 5 | 4 |
+
+- Eight gameplay slots; bots fill empty seats and stay labelled. `runners = 8 − Night Watch`, `home to win = ceil(2 × runners / 3)` (`PartySeries.required_home`).
+- **Rounds:** 1, 3 (recommended for friends) or 5. The lobby shows one summary line, e.g. "3 rounds · 2 Night Watch · 6 runners · 4 home to win", and Reset to recommended.
+- Only the host can change them, only in the lobby before a series starts. A change bumps a revision, clears guests' Ready and tells them why. Settings lock when the series starts; ending the series (with confirmation) unlocks them. Guests see the host's values read-only.
+- Each round starts from an immutable snapshot of the locked settings carried in START; incompatible clients are refused with "Update the game to join." (protocol 5).
+
+## Roles
+
+- **Friend parties:** drawn on the host at each round from a seeded random draw. Round 1 gives every human an equal chance; later rounds prefer whoever has had fewer Night Watch turns, ties broken at random. With two or more humans at least one human stays a runner and up to min(Night Watch, humans − 1) humans go on the Night Watch; bots take the remaining Night Watch seats. Saved role preferences play no part.
+- **One human in a party:** Night Watch with probability (Night Watch count ÷ 8), otherwise runner. Solo practice is the way to pick a role.
+- **Solo practice:** Runner, Night Watch or Random, plus a guided runner tutorial and a guided Night Watch exercise (find a runner, wait for Tag to light, tag, the capture and protection rules, a cart and a hop-out tag; runner bots jog slower and never sprint there). The choice is stored for practice only.
+- A reconnecting player keeps the same seat and role for the current round. Spectators and newcomers join at a round boundary and never inherit anyone's score.
+
+## Series
+
+- A round is one campus chase; a series is the chosen 1/3/5 completed rounds in the same party. Lifecycle: party setup → role reveal → shared loading and countdown → round → round results → ready for the next round → … → final series results → play another series or back to the lobby.
+- The HUD and results say "Round 2 of 3". The host starts the next round when connected humans are ready (bots are always ready); nothing starts on its own. Guests see "Ready for round N" / "Waiting for host", not a Rematch button.
+- **Round Win:** every eligible participant whose role's team won the round gets one. Personal contribution is shown separately (runners: splashes, home order, times caught; Night Watch: tags and different runners tagged) and never ranked against the other role's numbers.
+- **Final leaderboard:** by Round Wins; ties share a place; "You" highlighted; rounds played shown; late joiners and partial participation marked; bots kept out of the standings. The role-team tally ("Runners won 2, Night Watch won 1") is a tally of roles, not a fixed team's score.
+- **Eligibility:** a human counts as present when connected at the end and away (a bot covering) for no more than 40% of the round; otherwise no Round Win and no coins for that round (it is still recorded so it can't pay later).
+- Results are applied once per series, round and player identity (match ID + uid), so repeated packets, reopened results and reconnects can't pay twice. A cancelled round counts for nothing and doesn't use up a round.
+- The host can end a series early (confirmation); completed rounds stand. Host loss ends the party as before.
 
 ## Round
 
 | Rule | Implemented behavior |
 |---|---|
-| Roster | 8 slots: 6 runners, 2 Night Watch. Bots fill empty slots. They are named `Bot …` (for example "Bot Snooze") and tagged [BOT] in the lobby, scoreboard and results. |
-| Roles | Assigned and shown before play. A 4 s role-reveal card comes first, then a 3 s shared countdown. |
-| Role fairness | Patrol seats go in tier order: players who asked for patrol, then "any", then bots, then players who asked to run. Within a tier, those with the fewest previous patrol rounds go first, then those who were not patrol last round, then a seeded tiebreak. Nobody is forced into patrol repeatedly while others are willing. |
+| Roster | 8 slots; runners and Night Watch per the party settings. Bots fill empty slots, named `Bot …` and tagged BOT in the lobby, scoreboard and results. |
+| Roles | Shown before play: a 4 s role-reveal card (with "Round x of y"), then a 3 s shared countdown. |
 | Clock | 240 s round clock starts after the countdown. Server ticks (60 Hz) drive the countdown, penalties and deadline. |
-| Head start | Runners leave the dorm immediately. The Night Watch waits 6 s at the Grounds Shed (cart shed) inside the round clock. The tutorial round extends this to 30 s. |
-| Targets | 3 distinct waters out of 6, the same for every runner. The pick comes from the match seed, drawn from a curated fair set (below) and avoiding an immediate repeat of the previous round. Targets never move or reroll. |
+| Head start | Runners leave the dorm immediately. The Night Watch waits 6 s at the Grounds Shed inside the round clock (30 s in the tutorial). |
+| Targets | 3 distinct waters out of 6, the same for every runner, from a curated fair set, avoiding an immediate repeat. Targets never move or reroll. |
 | Order | Any order, chosen by each runner. |
-| Stamp | Entering an active target's water volume (jump, dive or walk in) awards that target's stamp once. Each runner can earn each target's stamp only once. |
-| Finish | With all 3 stamps, cross the finish zone of any of the 4 dorm doors (Front, West, East, Back). |
-| Runner win | The round ends the tick the 4th distinct runner finishes. A finish on or before the deadline tick counts. |
-| Night Watch win | The clock expires with fewer than 4 runners home. |
+| Stamp | Entering an active target's water volume (jump, dive or walk in) awards that target's stamp once. |
+| Finish | With all 3 stamps, cross the finish zone of any of the 4 dorm doors. |
+| Runner win | The round ends the tick the required number of runners (see Party settings) are home. A finish on or before the deadline tick counts. |
+| Night Watch win | The clock expires with fewer runners home than required. Tags never eliminate anyone or win by themselves. |
 | Survival | Not being caught never counts toward winning; only finishes do. |
 
 ### Same-tick ordering
@@ -41,19 +70,17 @@ The fixed per-tick order is: timers → intents → movement → **finish** → 
 
 ## Capture
 
-- **Tag.** The Night Watch on foot presses Tag. There is a 0.14 s visible wind-up (the tagger keeps 60% of its speed), then a 0.22 s lunge at 8.2 m/s.
+One explicit contract, shown with the same values on the role reveal, in How to Play, the tutorials, the HUD and results.
+
+- **Tag.** The Night Watch on foot presses Tag. There is a 0.14 s visible wind-up (the Night Watch keeps 90% of its speed), then a 0.22 s lunge at 9.0 m/s.
+  - **Target assist (V4).** At the press, the host picks an eligible runner in line of sight within 4 m inside a ±50° cone of the camera (or the Night Watch's facing). The Night Watch turns toward it by at most 40° at once, then tracks it through the wind-up and lunge at up to 240°/s. No suction, no teleport, no lock-on: speed and reach are unchanged.
   - The lunge reaches 1.6 m within ±75° of facing and 1.5 m vertically, and needs line of sight from chest to chest.
-  - A miss gives a 0.9 s cooldown; a hit gives a 0.5 s recovery.
-  - Tagging is blocked for 0.5 s after leaving a cart, which prevents instant dismount tags.
-- **Validation (host).**
-  - The host checks role, state, cooldown, geometry and line of sight against the target's position as the tagger saw it, up to 150 ms back (lag compensation).
-  - The target must also still be within reach + 0.9 m *now*.
-  - Protected, finished, splashing and captured runners cannot be tagged.
-- **Penalty.** The runner is held for 6 s with a whistle, a comic flop, and a visible countdown, and can spectate teammates meanwhile.
-  - Stamps are kept and the runner stays a runner.
-- **Return.** The runner reappears at one of several pads around their **last stamped water**. Before the first stamp it is the dorm area; after three stamps it is the third water, so they still have to run home.
-  - The pad farthest from both Night Watch players is chosen.
-  - The runner gets 2 s of visible protection.
+  - A miss gives a 0.9 s cooldown; a hit gives a 0.5 s recovery. Tagging is blocked for 0.5 s after leaving a cart.
+- **Tag-ready cue.** The host predicts where the lunge would end if the runner keeps going; when that gap is inside the reach (with a 0.2 m margin) the Night Watch's Tag button glows and a ring under that runner turns amber. The cue and the aimed runner travel in the Night Watch's private snapshot block. The Tag button shows the cooldown or cart-exit lockout as an arc.
+- **Validation (host).** Role, state, cooldown, geometry and line of sight, against the target's position as the tagger saw it up to 150 ms back (lag compensation); the target must also still be within reach + 0.9 m *now*. Protected, finished, splashing and captured runners cannot be tagged; a finish on the same tick wins (finish is resolved before tags).
+- **Penalty.** The runner is held for 6 s and stays a runner with every stamp kept. On screen: "Caught by <name> · back in 6…", then "Back in 5…", with "Your splashes are safe." and where they will return. They can watch teammates meanwhile.
+- **Tagger.** One confirmation: "Tagged <name>! · 2 catches" (their count this round).
+- **Return.** The runner reappears at a pad around their **last stamped water** (the dorm area before the first stamp), the pad farthest from the Night Watch, with 2 s of visible protection ("Protected · 2").
 
 ## Carts (Night Watch only)
 
@@ -83,19 +110,32 @@ The fixed per-tick order is: timers → intents → movement → **finish** → 
 | Move | Value |
 |---|---|
 | Run | 5 m/s |
-| Sprint | 7 m/s, from a meter of 2.5 s that regenerates fully in 3.6 s after a 0.35 s delay (no wait after small actions) |
+| Sprint | 7.4 m/s, from a meter of 2.5 s that regenerates fully in 3.6 s after a 0.35 s delay |
 | Jump | Jump with 0.12 s coyote time and a 0.13 s jump buffer |
 | Dive | Press jump again in the air: an 8.6 m/s forward dive with a short landing |
-| Night Watch on foot | 6.2 m/s (see the tuning note below) |
+| Night Watch on foot | 6.6 m/s (see the tuning note) |
 
 Ground acceleration is high and turning is fast, so movement stays precise while the animation is silly.
 
-**Tuning note: Night Watch foot speed went from 5.6 to 6.2 m/s, and wind-up speed from 25% to 60%.** Bot playtests showed the old values made foot chases unwinnable.
-- **Why 5.6 failed.** A runner who manages the sprint meter averages about 5.8 m/s: 2.5 s at 7 m/s, then about 4 s at 5 m/s while it refills. That is faster than 5.6.
-- **What the bots showed.** In a recorded practice round the Night Watch bot followed a runner at 1–2 m for over 20 s without ever landing a tag. The heavy wind-up slowdown made every lunge from behind fall short.
-- **Headless trials.** A Night Watch bot chased a fleeing runner bot from 8 m on open lawn. The old tuning caught the runner in 1 of 5 valid trials; the new tuning caught it in 5 of 5, in 6–17 s.
-- **Escape is still possible.** A sprint still out-runs the Night Watch for its duration (`test_chase_balance`). Corners, walls, hedges, dives, water and the cart-free zones remain the runner's ways out.
-- **Not final.** These are prototype values to re-check in device playtests.
+**V4 tuning note (Night Watch too hard in the owner's playtest).** Measured with deterministic pursuit scenarios (`game/tests/test_pursuit.gd`: real sim and physics, a human-like Night Watch with a 0.25 s camera lag that presses Tag at a "looks close" 2.6 m or on the cue). The same harness ran on the V3 values and the V4 values (`docs/v4/pursuit_before.txt`, `pursuit_after.txt`):
+
+| Scenario | V3 values | V4 values |
+|---|---|---|
+| Jogging runner from 4 m | 2.7 s, 2 presses | 1.3 s, 1 press |
+| Jogging runner from 8 m | 6.1 s, 2 presses | 3.8 s, 1 press |
+| Jogging runner from 12 m | 9.4 s, 2 presses | 6.3 s, 1 press |
+| Pressing only when Tag lights up (8 m) | no cue (escaped) | 3.8 s, 1 press |
+| Runner sprinting whenever the meter is full (8 m) | 17.8 s | 10.8 s |
+| Close rear tag, both running (2.2 m) | 0.3 s | 0.2 s |
+| Weaving runner (6 m) | 3.5 s, 2 presses | 1.9 s, 1 press |
+| 100 ms input delay ±33 ms (8 m) | 5.9 s | 5.0 s |
+| 250 ms hitch at 2 s (8 m) | 6.1 s | 3.8 s |
+| Cart from 21 m, hop out, finish on foot | 14.1 s | 11.8 s |
+| A 2 s sprint (gap gained) | +1.6 m | +1.5 m |
+
+- **Control/aim first.** In V3 the first "close-looking" press at 2.6 m missed every time: the wind-up cost 40% speed and the lunge kept its facing while the runner moved on. The assist and tracking, the faster wind-up and lunge and the tag-ready cue fixed the misses before any speed change.
+- **Then speed.** A runner cycling the sprint meter averaged ~5.8 m/s against 6.2 m/s, so straight pursuits took ~18 s. Night Watch foot speed went to 6.6 m/s and runner sprint to 7.4 m/s so a sprint is still a real burst (still slower than sprint, dive 8.6 and Turbo 8.0). Corners, walls, hedges, dives, water and the cart-free zones remain the runner's ways out.
+- These are measured scenario values, not device playtests; re-check with people on phones.
 
 ## Gadgets (runners)
 
@@ -111,20 +151,13 @@ Ground acceleration is high and turning is fast, so movement stays precise while
 
 ## Information
 
-- **Night Watch sight.** The Night Watch sees runners with line of sight within 34 m and a ±62° view cone; within 4 m the cone is ignored. Buildings, walls and carts block sight.
-- **Spotted cue.** A spotted runner gets a restrained "spotted" vignette and icon for 2.2 s. It comes from the host's actual detection.
-- **Noise.** Each side receives anonymous noise directions, shown as on-screen chevrons and sound:
-
-  | Noise source | Range |
-  |---|---|
-  | Runner sprint | 24 m |
-  | Runner jog | 14 m (walking softly is silent) |
-  | Night Watch steps | 12 m |
-  | Carts | 45 m |
-
-- **Splashes.** A splash plays positional sound at the water, and stamps appear in the event feed.
-- **No omniscient map.** Runners do not see the Night Watch on the map. The Night Watch sees only splash markers.
-- **Bots.** Bots read the same `can_see`, `noises_for` and splash-marker data and nothing else.
+- **Night Watch sight.** Line of sight within 34 m and a ±62° view cone (cone ignored within 4 m). Buildings, walls and carts block sight.
+- **Spotted cue.** A spotted runner gets a restrained vignette and icon for 2.2 s, from the host's actual detection.
+- **Noise.** Each side receives anonymous noise directions (chevrons and sound): runner sprint 24 m, jog 14 m (walking softly is silent), Night Watch steps 12 m, carts 45 m.
+- **Splashes.** A stamp marks that water for the Night Watch for 3 s: the place, never the runner.
+- **Maps (V4).** The minimap and the full map (tap the minimap, or Map on a controller / M) show your own team openly, tonight's waters, the dorm and, for the Night Watch, carts and splash markers. Opponents appear only as **last seen**: solid while actually in line of sight and view range from your own head, then a fading ring labelled with its age for 5 s, then gone. Losing sight stops tracking; there are no live dots through walls. Spectating follows the same rules.
+- **What the network actually carries.** For smooth movement the host sends each player the positions of opponents within 45 m, or within 90 m in line of sight, whether or not they are visible on screen. The maps and HUD only present what was seen, but a modified client could read more: this is presentation policy, **not anti-cheat secrecy**. The Night Watch's private snapshot block also carries its own tag-ready flag and the runner the assist would pick (always someone already in its line of sight).
+- **Bots** read the same `can_see`, `noises_for` and splash-marker data and nothing else.
 
 ## Fair target combinations
 
@@ -146,14 +179,16 @@ Ground acceleration is high and turning is fast, so movement stays precise while
 - **Scaling and limits.**
   - Practice pays ×0.5.
   - There is nothing for idle survival time.
-  - Rewards are paid once per match ID.
+  - Rewards are paid once per match ID (and per player identity in a series), and not at all for a round you were mostly away from (see Series).
   - An interrupted round, such as one ended by host loss, pays nothing.
 - **What coins buy.** Coins buy outfits only. Everyone has identical abilities.
 
 ## Disconnects
 
-- **Reserved slot.** A disconnected player's slot is reserved for 20 s while a bot plays it; the event feed announces this. Reconnecting resumes the same authoritative progress and state, with no reset and no free protection.
-- **Late joiners.** Someone joining mid-round spectates until the next round.
+- **Reserved slot.** A disconnected player's slot is reserved for 20 s while a bot plays it; the feed announces this. Reconnecting (with the host's rejoin key) resumes the same authoritative progress, with no reset and no free protection. Time away is counted for series eligibility.
+- **Between rounds.** A disconnected player's seat frees up between rounds; their series standing is kept by identity, so rejoining later continues it.
+- **Late joiners.** Someone joining mid-round spectates until the next round and starts their own standing from that round.
+- **Loading.** A round starts when every connected human has loaded, or after the load timeout, so one slow device can't hold everyone.
 - **Host loss.** If the host leaves, or goes silent for 6 s, the round ends for everyone with no rewards, and clients return to a recoverable menu screen.
 
 ## Deferred: After Hours (not in V1)

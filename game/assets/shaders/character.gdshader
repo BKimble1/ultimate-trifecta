@@ -61,6 +61,11 @@ void fragment() {
 		SPECULAR = 0.22;
 		BACKLIGHT = alb * 0.22;
 		emit += rim_color * rim * rim_strength * 0.5;
+		// V4: keep darker skin tones readable in the night scenes without
+		// lifting light ones (checked across all eight tones, campus and
+		// studio light): a little self-light that grows as the tone darkens
+		float lum = dot(tint_skin, vec3(0.299, 0.587, 0.114));
+		emit += alb * 0.4 * clamp(0.72 - lum, 0.0, 0.5);
 	} else if (cls < 0.62) {    // rubber / leather
 		SPECULAR = 0.42;
 	} else if (cls < 0.81) {    // gloss: buttons, badges, plastic, irises

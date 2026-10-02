@@ -63,6 +63,26 @@ func _ready() -> void:
 
 
 func _build_world() -> void:
+	if lighting == "campus":
+		# the game's own night: environment, moon and a lawn-coloured floor
+		add_child(EnvFactory.make_environment(1))
+		add_child(EnvFactory.make_moon(1))
+		var lawn := MeshInstance3D.new()
+		var lp := PlaneMesh.new()
+		lp.size = Vector2(60, 60)
+		lawn.mesh = lp
+		var lm := StandardMaterial3D.new()
+		lm.albedo_color = Color(0.25, 0.46, 0.30)
+		lm.roughness = 0.95
+		lawn.material_override = lm
+		add_child(lawn)
+		cam = Camera3D.new()
+		cam.fov = 30
+		add_child(cam)
+		cam.current = true
+		stage = Node3D.new()
+		add_child(stage)
+		return
 	_env = WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
