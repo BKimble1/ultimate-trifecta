@@ -27,9 +27,14 @@ case "$MODE" in
   signed)
     : "${APPLE_TEAM_ID:?}" "${ASC_KEY_ID:?}" "${ASC_ISSUER_ID:?}" "${ASC_KEY_PATH:?}"
     AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+    SIGN=(DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY="Apple Development")
+    echo "signing settings (Release, iphoneos):"
+    xcodebuild -project "$PROJ" -scheme "$SCHEME" -configuration Release -sdk iphoneos "${SIGN[@]}" -showBuildSettings 2>/dev/null \
+      | grep -E "^ *(CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|PROVISIONING_PROFILE_SPECIFIER|PRODUCT_BUNDLE_IDENTIFIER) =" || true
     xcodebuild -project "$PROJ" -scheme "$SCHEME" -configuration Release -sdk iphoneos \
       -destination 'generic/platform=iOS' -archivePath build/ios/UltimateTrifecta.xcarchive \
-      DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic "${AUTH[@]}" archive | tail -n 60
+      "${SIGN[@]}" "${AUTH[@]}" archive | tail -n 60
+    [ -d build/ios/UltimateTrifecta.xcarchive ] || { echo "signed archive was not created"; exit 1; }
     cat > build/ios/ExportOptions.plist <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

@@ -16,6 +16,16 @@ sed -i.tmp -e "s/^application\/app_store_team_id=.*/application\/app_store_team_
   -e "s/^application\/version=.*/application\/version=\"$BUILD\"/" \
   -e "s/^application\/short_version=.*/application\/short_version=\"$VERSION\"/" game/export_presets.cfg
 rm -f game/export_presets.cfg.tmp
+# Signed builds use Xcode automatic signing. With an empty identity Godot
+# writes "Apple Distribution" into the Release configuration, and Xcode
+# refuses a manually chosen identity under automatic signing ("conflicting
+# provisioning settings"). Archive with the development identity; the App
+# Store Connect export re-signs for distribution.
+if [ -n "${APPLE_TEAM_ID:-}" ]; then
+  sed -i.tmp -e 's/^application\/code_sign_identity_release=.*/application\/code_sign_identity_release="Apple Development"/' \
+    -e 's/^application\/code_sign_identity_debug=.*/application\/code_sign_identity_debug="Apple Development"/' game/export_presets.cfg
+  rm -f game/export_presets.cfg.tmp
+fi
 # With the game service configured, the app collects a user ID (Game Center
 # team player ID, verified server-side), the player name, the runner's look
 # (gameplay content) and reports (other user content), linked to the player,

@@ -160,6 +160,25 @@ jobs:
           /usr/libexec/PlistBuddy -c Print "$APP/Info.plist" | head -80
           codesign -d --entitlements :- "$APP" 2>/dev/null || true
           ls "$APP" | head -40
+      # signed upload first, so Apple processes the build while the Simulator runs
+      - name: Signed archive + upload to TestFlight
+        if: steps.sign.outputs.available == 'true' && github.event.inputs.upload == 'true'
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          EXPORT_DESTINATION: upload
+          # first delivery is for the owner's internal testers only
+          INTERNAL_ONLY: "true"
+        run: |
+          export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          # register the bundle ID with the Game Center capability if it is new
+          "$ASC_PY" tools/asc.py ensure-bundle || echo "::warning::could not register $BUNDLE_ID via the API (Xcode automatic signing will try)"
+          if ! "$ASC_PY" tools/asc.py app; then
+            echo "::error::No App Store Connect app record for $BUNDLE_ID. Create it in App Store Connect (Apps > + > New App, platform iOS, bundle ID $BUNDLE_ID), then re-run this workflow with upload=true."
+            exit 1
+          fi
+          tools/build_ios.sh signed
       - name: Build for iOS Simulator (x86_64, best effort)
         id: simbuild
         continue-on-error: true
@@ -260,24 +279,6 @@ jobs:
           path: |
             sim-evidence
             build/ios/export.log
-      - name: Signed archive + upload to TestFlight
-        if: steps.sign.outputs.available == 'true' && github.event.inputs.upload == 'true'
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          EXPORT_DESTINATION: upload
-          # first delivery is for the owner's internal testers only
-          INTERNAL_ONLY: "true"
-        run: |
-          export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
-          # register the bundle ID with the Game Center capability if it is new
-          "$ASC_PY" tools/asc.py ensure-bundle || echo "::warning::could not register $BUNDLE_ID via the API (Xcode automatic signing will try)"
-          if ! "$ASC_PY" tools/asc.py app; then
-            echo "::error::No App Store Connect app record for $BUNDLE_ID. Create it in App Store Connect (Apps > + > New App, platform iOS, bundle ID $BUNDLE_ID), then re-run this workflow with upload=true."
-            exit 1
-          fi
-          tools/build_ios.sh signed
       - name: Wait for App Store Connect processing + internal testers
         if: steps.sign.outputs.available == 'true' && github.event.inputs.upload == 'true'
         env:
