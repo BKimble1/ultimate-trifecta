@@ -64,7 +64,12 @@ codes or Game Center IDs in the shared summary:
 - **Stall context**: each stall over 50 ms keeps the dozen frames before it
   (interval, ticks, sim time, draw-time pipelines) and its own tick count.
 - **Growth**: node, object and orphan counts and static memory every 10 s;
-  the summary reports the change since the first sample.
+  the summary reports the change since the first sample, and the same
+  counts **at each round start** (the same moment in every round, so a
+  leak across rounds shows as a steady climb; the first round also fills
+  one-time caches).
+- **Background/resume**: `app_paused`/`app_resumed` on the timeline; the
+  time away is not counted as a stall.
 
 ## Steady pace on a hot phone
 

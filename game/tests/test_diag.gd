@@ -104,3 +104,20 @@ func test_background_resume_is_marked_not_counted_as_a_stall() -> void:
 	t.eq(int(Diag.stats("match").get("over50", 0)), 0, "no stall recorded for the time away")
 	Diag.clear()
 	Diag.enabled = was
+
+
+## V6: counts at each round start (a leak across rounds is a steady climb).
+func test_counts_at_each_round_start() -> void:
+	var was: bool = Diag.enabled
+	Diag.clear()
+	Diag.enabled = true
+	for i in 14:
+		Diag.context("loading")
+		Diag.context("match")
+		Diag.context("match")      # the same context again is not a new round
+	t.eq(Diag._round_starts.size(), 12, "bounded: the first round and the last eleven")
+	t.check(Diag.summary().contains("At each round start"), "in the shared summary")
+	Diag.clear()
+	t.check(Diag._round_starts.is_empty(), "cleared with the rest")
+	Diag.context("menu")
+	Diag.enabled = was

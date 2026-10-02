@@ -68,6 +68,9 @@ var _pipe_prev := PackedInt64Array([0, 0, 0, 0, 0])
 var _timeline: Array = []        # [t_ms, interval_ms, steps, sim_ms, pipe_draw]
 var _catchup_run := 0
 var _growth: Array = []          # {t, nodes, objects, orphans, static_mb}
+## V6: the same counts as each round goes live (the same moment in every
+## round, so a leak across rounds shows as a steady climb); first + last 11
+var _round_starts: Array = []
 var _growth_t := 0.0
 
 
@@ -108,6 +111,7 @@ func clear() -> void:
 	_start_ms = Time.get_ticks_msec()
 	_timeline.clear()
 	_growth.clear()
+	_round_starts.clear()
 	_catchup_run = 0
 
 
@@ -125,7 +129,17 @@ func _apply_measuring() -> void:
 static func context(name: String) -> void:
 	var d := _node()
 	if d:
+		if name == "match" and d._ctx != "match" and d.enabled:
+			d._round_starts.append(_counts_now())
+			if d._round_starts.size() > 12:
+				d._round_starts.remove_at(1)
 		d._ctx = name
+
+
+static func _counts_now() -> Dictionary:
+	return {"nodes": int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		"objects": int(Performance.get_monitor(Performance.OBJECT_COUNT)), "orphans": int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),
+		"static_mb": Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0}
 
 
 ## A state marker: a stall shortly afterwards is attributed to it.
@@ -305,9 +319,9 @@ func _record_v6(ms: float, delta: float, steps_override: int = -1) -> void:
 	_growth_t -= delta
 	if _growth_t <= 0.0:
 		_growth_t = GROWTH_EVERY_S
-		_growth.append({"t": Time.get_ticks_msec() - _start_ms, "nodes": int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
-			"objects": int(Performance.get_monitor(Performance.OBJECT_COUNT)), "orphans": int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),
-			"static_mb": Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0})
+		var g := _counts_now()
+		g["t"] = Time.get_ticks_msec() - _start_ms
+		_growth.append(g)
 		if _growth.size() > 360:
 			_growth.remove_at(1)   # keep the first sample as the baseline
 
@@ -437,6 +451,13 @@ func summary() -> String:
 		L.append("Growth since the first sample: nodes %+d · objects %+d · orphans %+d · static memory %+.1f MB" % [
 			int(g1["nodes"]) - int(g0["nodes"]), int(g1["objects"]) - int(g0["objects"]), int(g1["orphans"]) - int(g0["orphans"]),
 			float(g1["static_mb"]) - float(g0["static_mb"])])
+	if not _round_starts.is_empty():
+		# the first round also fills one-time caches: later rounds are the
+		# comparison that shows a leak
+		var parts: PackedStringArray = []
+		for r in _round_starts:
+			parts.append("%d/%d/%d/%.0f" % [r["nodes"], r["objects"], r["orphans"], r["static_mb"]])
+		L.append("At each round start (nodes/objects/orphans/static MB): " + " → ".join(parts))
 	L.append("")
 	L.append("Memory: static %.0f MB · video %.0f MB" % [Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0,
 		Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0])
