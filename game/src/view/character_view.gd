@@ -30,6 +30,11 @@ extends Node3D
 
 const SCENE := preload("res://assets/characters/runner.glb")
 const SHADER := preload("res://assets/shaders/character.gdshader")
+const SHADER_TWO_SIDED := preload("res://assets/shaders/character_two_sided.gdshader")
+## Parts drawn without back-face culling: the nightcap's fold crosses itself
+## (tools/character/parts.py build_nightcap), and culled it showed the head
+## through the crease.
+const TWO_SIDED := ["hat_nightcap"]
 
 ## m/s at which each locomotion clip is blended in (blend-space positions)
 const LOCO_POINTS := {"walk": 1.3, "run": 5.0, "sprint": 7.0}
@@ -59,6 +64,7 @@ const FIDGETS := ["fidget_yawn", "fidget_look"]
 const EXPRESSIONS := ["blink", "squint", "smile", "open", "brow_up", "brow_angry"]
 
 static var _material: ShaderMaterial
+static var _material_two_sided: ShaderMaterial
 
 var role: int = TC.Role.RUNNER
 var cosmetic: Dictionary = Cosmetics.DEFAULT
@@ -139,7 +145,12 @@ var _anim_acc := 0.0
 var anim_time_advanced := 0.0
 
 
-static func _shared_material() -> ShaderMaterial:
+static func _shared_material(two_sided: bool = false) -> ShaderMaterial:
+	if two_sided:
+		if _material_two_sided == null:
+			_material_two_sided = ShaderMaterial.new()
+			_material_two_sided.shader = SHADER_TWO_SIDED
+		return _material_two_sided
 	if _material == null:
 		_material = ShaderMaterial.new()
 		_material.shader = SHADER
@@ -181,7 +192,7 @@ func _build_model() -> void:
 		if c is MeshInstance3D:
 			var mi := c as MeshInstance3D
 			parts[String(mi.name)] = mi
-			mi.material_override = _shared_material()
+			mi.material_override = _shared_material(TWO_SIDED.has(String(mi.name)))
 			mi.visible = false
 	base_mesh = parts.get("base")
 	for i in base_mesh.mesh.get_blend_shape_count():
@@ -516,13 +527,15 @@ func _apply_cosmetics() -> void:
 		hat_spring = SpringBoneSimulator3D.new()
 		skeleton.add_child(hat_spring)
 		hat_spring.setting_count = 1
-		hat_spring.set_root_bone_name(0, "hat1")
+		# only the tip swings: with the chain rooted at hat1 the wide middle
+		# of the cap sagged into the head and the scalp showed through it
+		hat_spring.set_root_bone_name(0, "hat2")
 		hat_spring.set_end_bone_name(0, "hat3")
 		hat_spring.set_extend_end_bone(0, true)
 		hat_spring.set_end_bone_length(0, 0.1)
-		hat_spring.set_stiffness(0, 1.6)
+		hat_spring.set_stiffness(0, 1.8)
 		hat_spring.set_drag(0, 0.45)
-		hat_spring.set_gravity(0, 0.4)
+		hat_spring.set_gravity(0, 0.2)
 		hat_spring.set_radius(0, 0.03)
 	if hat_spring:
 		hat_spring.active = cap

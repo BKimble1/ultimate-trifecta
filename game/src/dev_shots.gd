@@ -27,6 +27,16 @@ const ROUTE := [
 	["route_6_fountain", Vector2(14, 38), Vector2(0, 22)],
 	["route_7_return", Vector2(0, 50), Vector2(0, 100)],
 ]
+## --waters: each of the six waters from a nearby path, same framing as ROUTE
+## (camera 5 m above the first point, looking down at the water's centre)
+const WATERS := [
+	["water_1_fountain", Vector2(0, 41), Vector2(0, 22)],
+	["water_2_pond", Vector2(-101, 40), Vector2(-120, 46)],
+	["water_3_pool", Vector2(92, 32), Vector2(112, 32)],
+	["water_4_quarry", Vector2(-86, -74), Vector2(-100, -90)],
+	["water_5_garden", Vector2(77, -73), Vector2(92, -88)],
+	["water_6_inlet", Vector2(-26, -117), Vector2(-19, -137)],
+]
 var cam: Camera3D
 var i := 0
 var wait := 0
@@ -38,9 +48,16 @@ func _ready() -> void:
 	if args.size() > 0:
 		outdir = args[0]
 	QualityPreset.apply(1)
-	if args.has("--route"):
+	var list: Array = WATERS if args.has("--waters") else ROUTE
+	if args.has("--route") or args.has("--waters"):
 		shots.clear()
-	for r in ROUTE:
+	for r in (WATERS if args.has("--waters") else []):
+		var sp: Vector2 = r[1]
+		var wc: Vector2 = r[2]
+		var lay0 := CampusLayout.shared()
+		shots.append({"name": r[0], "pos": Vector3(sp.x, CampusBuilder.ground_y(lay0, sp.x, sp.y) + 5.0, sp.y),
+			"look": Vector3(wc.x, 0.0, wc.y), "fov": 60.0})
+	for r in ([] if args.has("--waters") else list):
 		var p: Vector2 = r[1]
 		var to: Vector2 = r[2]
 		var dir := (to - p).normalized()
@@ -54,7 +71,7 @@ func _ready() -> void:
 	var t0 := Time.get_ticks_msec()
 	var waters := b.build_visuals(self, 1)
 	print("visuals built in %d ms" % (Time.get_ticks_msec() - t0))
-	for id in ["fountain", "pond", "garden"]:
+	for id in (waters.keys() if args.has("--waters") else ["fountain", "pond", "garden"]):
 		(waters[id]["mat"] as ShaderMaterial).set_shader_parameter("active", 1.0)
 	add_child(EnvFactory.make_environment())
 	add_child(EnvFactory.make_moon())

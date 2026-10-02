@@ -195,16 +195,16 @@
   },
   "meshes": {
     "base": {
-      "tris": 6554,
-      "verts": 3402
+      "tris": 7298,
+      "verts": 3774
     },
     "body_skin": {
-      "tris": 4104,
-      "verts": 2073
+      "tris": 4244,
+      "verts": 2145
     },
     "duck": {
-      "tris": 8308,
-      "verts": 4549
+      "tris": 8896,
+      "verts": 4849
     },
     "flashlight": {
       "tris": 140,
@@ -215,24 +215,24 @@
       "verts": 312
     },
     "frog": {
-      "tris": 8228,
-      "verts": 4503
+      "tris": 8816,
+      "verts": 4803
     },
     "hair": {
       "tris": 2388,
       "verts": 1225
     },
     "hair_bob": {
-      "tris": 3520,
-      "verts": 1797
+      "tris": 4096,
+      "verts": 2085
     },
     "hair_buns": {
-      "tris": 2680,
-      "verts": 1373
+      "tris": 3096,
+      "verts": 1581
     },
     "hair_buns_knots": {
-      "tris": 1280,
-      "verts": 644
+      "tris": 1664,
+      "verts": 836
     },
     "hair_curly": {
       "tris": 5848,
@@ -243,12 +243,12 @@
       "verts": 420
     },
     "hat_headphones": {
-      "tris": 1476,
-      "verts": 744
+      "tris": 1620,
+      "verts": 816
     },
     "hat_nightcap": {
-      "tris": 2854,
-      "verts": 1439
+      "tris": 4188,
+      "verts": 2111
     },
     "hat_party": {
       "tris": 568,
@@ -263,32 +263,32 @@
       "verts": 244
     },
     "pj": {
-      "tris": 7100,
-      "verts": 3637
+      "tris": 8576,
+      "verts": 4385
     },
     "robe": {
-      "tris": 6456,
-      "verts": 3288
+      "tris": 7628,
+      "verts": 3932
     },
     "shoe_flippers": {
-      "tris": 1672,
-      "verts": 862
+      "tris": 1816,
+      "verts": 934
     },
     "shoe_hightops": {
       "tris": 2212,
       "verts": 1186
     },
     "shoe_slippers": {
-      "tris": 3160,
-      "verts": 1634
+      "tris": 3304,
+      "verts": 1706
     },
     "swim": {
-      "tris": 1940,
-      "verts": 1007
+      "tris": 2088,
+      "verts": 1083
     },
     "watch": {
-      "tris": 11300,
-      "verts": 5940
+      "tris": 12712,
+      "verts": 6656
     }
   },
   "shape_keys": [

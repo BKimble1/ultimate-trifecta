@@ -6,7 +6,29 @@ extends Node3D
 ##        closeup (face), all (every mode in turn).
 ## Each mode saves a lossless PNG and quits when done.
 
-const MODES := ["views", "outfits", "looks", "hairs", "posesheet", "transitions", "closeup", "faces", "cart", "hero", "group", "distance"]
+const MODES := ["views", "outfits", "looks", "hairs", "posesheet", "transitions", "closeup", "faces", "cart", "hero", "group", "distance", "parts"]
+## Close-ups of the parts whose silhouettes were refined in V4 (same cameras
+## before and after): [label, role, look overrides, yaw, camera from, camera at, fov]
+const PARTS := [
+	["nightcap", 0, {"hat": "nightcap"}, PI + 1.2, Vector3(0.0, 1.32, 1.35), Vector3(0, 1.28, 0), 34],
+	["collar", 0, {"hat": "none", "pattern": "plain"}, PI + 0.35, Vector3(0.0, 0.95, 1.05), Vector3(0, 0.82, 0), 34],
+	["cuff + hand", 0, {"hat": "none", "pattern": "plain"}, PI + 1.1, Vector3(-0.05, 0.62, 0.9), Vector3(0.0, 0.55, 0), 34],
+	["robe hem", 0, {"outfit": "robe", "hat": "none", "shoes": "slippers"}, PI + 0.5, Vector3(0.0, 0.5, 1.5), Vector3(0, 0.38, 0), 34],
+	["slippers", 0, {"shoes": "slippers"}, PI + 0.6, Vector3(0.0, 0.32, 1.0), Vector3(0, 0.08, 0), 34],
+	["sneakers", 0, {"shoes": "sneakers"}, PI + 0.6, Vector3(0.0, 0.32, 1.0), Vector3(0, 0.08, 0), 34],
+	["flippers", 0, {"shoes": "flippers", "outfit": "swim"}, PI + 0.6, Vector3(0.0, 0.32, 1.0), Vector3(0, 0.08, 0), 34],
+	["watch boots", 1, {}, PI + 0.6, Vector3(0.0, 0.32, 1.0), Vector3(0, 0.08, 0), 34],
+	["hair tuft", 0, {"hat": "none", "hair": "tuft"}, PI + 1.57, Vector3(0.0, 1.3, 1.5), Vector3(0, 1.2, 0), 34],
+	["hair bob", 0, {"hat": "none", "hair": "bob", "hair_color": "auburn"}, PI + 2.2, Vector3(0.0, 1.3, 1.5), Vector3(0, 1.18, 0), 34],
+	["hair buns", 0, {"hat": "none", "hair": "buns", "hair_color": "black"}, PI + 0.9, Vector3(0.0, 1.3, 1.5), Vector3(0, 1.2, 0), 34],
+	["watch cap", 1, {}, PI + 0.9, Vector3(0.0, 1.32, 1.45), Vector3(0, 1.25, 0), 34],
+]
+const PARTS_DEBUG := [
+	["cap no head", 0, {"hat": "nightcap"}, PI + 1.2, Vector3(0.0, 1.32, 1.35), Vector3(0, 1.28, 0), 34, ["base"]],
+	["cap no head 2", 0, {"hat": "nightcap"}, PI + 0.6, Vector3(0.0, 1.32, 1.35), Vector3(0, 1.28, 0), 34, ["base"]],
+	["cap no head 3", 0, {"hat": "nightcap"}, PI + 2.2, Vector3(0.0, 1.32, 1.35), Vector3(0, 1.28, 0), 34, ["base"]],
+	["cap no head top", 0, {"hat": "nightcap"}, PI + 1.2, Vector3(0.0, 2.1, 0.6), Vector3(0, 1.35, 0), 34, ["base"]],
+]
 const SHEET_CLIPS := ["idle", "walk", "run", "sprint", "turn_l", "air_rise", "air_apex", "air_fall", "land_soft", "land_hard",
 	"dive", "dive_land", "splash_walk", "splash_jump", "splash_dive", "recover", "stumble", "flop", "dizzy", "tag_windup",
 	"tag_lunge", "tag_recover", "tag_miss", "cart_enter", "cart_drive", "cart_steer_l", "cart_exit", "celebrate", "arrive", "ready",
@@ -42,6 +64,8 @@ var _env: WorldEnvironment
 var lighting := "studio"
 var _sheet_i := -1
 var _sheet_wait := 0
+var _grabbing := false
+var debug_parts := false
 
 
 func _ready() -> void:
@@ -51,6 +75,8 @@ func _ready() -> void:
 			modes = MODES.duplicate() if m == "all" else Array(m.split(","))
 		elif a.begins_with("--capture-dir="):
 			out_dir = a.split("=")[1]
+		elif a == "--parts-debug":
+			debug_parts = true
 		elif a.begins_with("--light="):
 			lighting = a.split("=")[1]
 	if modes.is_empty():
@@ -160,6 +186,7 @@ func _pose(v: CharacterView, clip: String, t: float) -> void:
 func _next_mode() -> void:
 	_clear()
 	if modes.is_empty():
+		_mode = ""
 		get_tree().quit()
 		return
 	_mode = modes.pop_front()
@@ -247,6 +274,10 @@ func _next_mode() -> void:
 				v.name_label.visible = false
 				_pose(v, "cart_drive" if steer == 0.0 else ("cart_steer_r" if steer > 0.0 else "cart_steer_l"), 0.0)
 			_aim(Vector3(0, 3.0, 8.5), Vector3(0, 1.0, 0), 36)
+		"parts":
+			_strip_frames.clear()
+			_sheet_i = -1
+			_sheet_wait = 0
 		"closeup":
 			_add(TC.Role.RUNNER, d, -0.45, 0.0, PI + 0.35)
 			_add(TC.Role.PATROL, look({"color": "sky", "skin": "tone7"}), 0.45, -0.3, PI - 0.3)
@@ -273,6 +304,40 @@ func _next_mode() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	match _mode:
+		"parts":
+			if _t < 0.5:
+				return
+			if _sheet_wait > 0:
+				_sheet_wait -= 1
+				return
+			if _grabbing:
+				return
+			if _sheet_i >= 0:
+				_grabbing = true
+				await RenderingServer.frame_post_draw
+				_strip_frames.append(get_viewport().get_texture().get_image())
+				_grabbing = false
+			_sheet_i += 1
+			var shots: Array = PARTS_DEBUG if debug_parts else PARTS
+			if _sheet_i >= shots.size():
+				_save_grid("parts_debug" if debug_parts else "parts", 4, shots.map(func(p: Array) -> String: return String(p[0])))
+				_next_mode()
+				return
+			var sh: Array = shots[_sheet_i]
+			_clear()
+			var role: int = TC.Role.PATROL if int(sh[1]) == 1 else TC.Role.RUNNER
+			var over: Dictionary = {"outfit": "pj", "pattern": "stripes", "color": "sky", "skin": "tone3"}
+			if role == TC.Role.PATROL:
+				over = {"color": "sky", "skin": "tone6"}
+			over.merge(sh[2], true)
+			var pv := _add(role, look(over), 0.0, 0.0, float(sh[3]))
+			_pose(pv, "idle", 0.0)
+			if sh.size() > 7:
+				for part in sh[7]:
+					if pv.parts.has(part):
+						pv.parts[part].visible = false
+			_aim(sh[4], sh[5], float(sh[6]))
+			_sheet_wait = 6
 		"posesheet":
 			if _t < 1.0:
 				return
@@ -349,6 +414,26 @@ func _save(n: String) -> void:
 	var p := out_dir.path_join("lineup_%s.png" % n)
 	img.save_png(p)
 	printerr("LINEUP %s %dx%d" % [p, img.get_width(), img.get_height()])
+
+
+## Whole frames, scaled into a grid (close-ups need the full frame).
+func _save_grid(n: String, cols: int, labels: Array) -> void:
+	if _strip_frames.is_empty():
+		return
+	var cw := 600
+	var ch := int(600.0 * _strip_frames[0].get_height() / _strip_frames[0].get_width())
+	var rows := int(ceil(_strip_frames.size() / float(cols)))
+	var sheet := Image.create(cw * cols, ch * rows, false, Image.FORMAT_RGBA8)
+	for i in _strip_frames.size():
+		var f := _strip_frames[i]
+		f.convert(Image.FORMAT_RGBA8)
+		f.resize(cw, ch, Image.INTERPOLATE_LANCZOS)
+		sheet.blit_rect(f, Rect2i(0, 0, cw, ch), Vector2i((i % cols) * cw, (i / cols) * ch))
+	var p := out_dir.path_join("lineup_%s.png" % n)
+	sheet.save_png(p)
+	var f2 := FileAccess.open(out_dir.path_join("lineup_%s.txt" % n), FileAccess.WRITE)
+	f2.store_string("\n".join(PackedStringArray(labels)))
+	printerr("LINEUP %s %dx%d frames=%d" % [p, sheet.get_width(), sheet.get_height(), _strip_frames.size()])
 
 
 func _save_strip(n: String, cols: int, labels: Array) -> void:

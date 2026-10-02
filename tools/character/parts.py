@@ -80,7 +80,7 @@ def _path_s(path):
     return s
 
 
-def torso_lathe(mb, style, grow, z0, z1, weightfn=torso_w, extra=None, segs=24, colfn=None, bottom_pole=False,
+def torso_lathe(mb, style, grow, z0, z1, weightfn=torso_w, extra=None, segs=28, colfn=None, bottom_pole=False,
                 top_open_r=None, hem_fold=0.0, flare=0.0):
     """Clothing shell over the torso between z0 and z1 (rest pose)."""
     prof = []
@@ -212,9 +212,9 @@ def build_base():
         w = wrist(sx)
         R = rot_align(d, FWD)
         hwf = lambda p, sfx=sfx, w=w, d=d: rig.seg_weights((p - w).dot(d), [('forearm' + sfx, 0.0), ('hand' + sfx, None)], 0.012)
-        ellipsoid(mb, w + d * 0.054, (0.044, 0.054, 0.060), SKIN, hwf, segs=18, rings=14, rot=R, power=2.2)
+        ellipsoid(mb, w + d * 0.054, (0.044, 0.054, 0.060), SKIN, hwf, segs=24, rings=16, rot=R, power=2.2)
         tdir = (d + FWD * 0.9).normalized()
-        ellipsoid(mb, w + d * 0.036 + FWD * 0.044, (0.023, 0.023, 0.034), SKIN, hwf, segs=12, rings=8, rot=rot_align(tdir, UP))
+        ellipsoid(mb, w + d * 0.036 + FWD * 0.044, (0.023, 0.023, 0.034), SKIN, hwf, segs=16, rings=10, rot=rot_align(tdir, UP))
     return mb
 
 
@@ -309,15 +309,15 @@ def build_hair_bob():
     g = 0.024
     angs, edge = hair_shell(mb, g, hairline_bob, HAIR, hw, segs=64, rows=18, tuck=0.018)
     # rolled ends: a soft tube along the lower edge (back and sides)
-    pts = [_shell_point(math.radians(a), hairline_bob(math.radians(a)) + 0.012, g + 0.002) for a in range(-100, 101, 5)]
-    sweep(mb, pts, [(0.017, 0.015)] * len(pts), HAIR, hw, segs=8, twist_hint=UP)
+    pts = [_shell_point(math.radians(a), hairline_bob(math.radians(a)) + 0.013, g - 0.006) for a in range(-100, 101, 5)]
+    sweep(mb, pts, [(0.016, 0.013)] * len(pts), HAIR, hw, segs=12, twist_hint=UP)
     # bangs edge: a slightly thicker lip so the fringe has thickness
     bp = []
     for i in range(15):
         x = lerp(-0.21, 0.21, i / 14.0)
         z = 1.296 + 0.035 * (abs(x) / 0.22) ** 2
         bp.append(Vector((x, head_front_y(x, z, g) - 0.004, z)))
-    sweep(mb, bp, [(0.012, 0.01)] * len(bp), HAIR, hw, segs=8, twist_hint=FWD)
+    sweep(mb, bp, [(0.012, 0.01)] * len(bp), HAIR, hw, segs=12, twist_hint=FWD)
     return mb
 
 
@@ -362,11 +362,11 @@ def build_hair_buns():
     for sx in SIDES:
         pts = [Vector((0.005 * sx, 0.0, 1.47)), Vector((0.06 * sx, 0.0, 1.45)), Vector((0.12 * sx, 0.0, 1.40)),
                Vector((0.17 * sx, 0.0, 1.34))]
-        pts = [Vector((q.x, head_front_y(q.x, q.z, 0.028), q.z)) for q in pts]
+        pts = [Vector((q.x, head_front_y(q.x, q.z, 0.017), q.z)) for q in pts]
         pts = _dense_path(pts, 0.015)
         m = len(pts)
-        sweep(mb, pts, [(lerp(0.03, 0.012, i / (m - 1)), lerp(0.018, 0.008, i / (m - 1))) for i in range(m)], HAIR, hw,
-              segs=8, twist_hint=UP)
+        sweep(mb, pts, [(lerp(0.03, 0.014, i / (m - 1)), lerp(0.011, 0.006, i / (m - 1))) for i in range(m)], HAIR, hw,
+              segs=12, twist_hint=UP)
     return mb
 
 
@@ -379,7 +379,7 @@ def build_hair_buns_knots():
         out = (c - HEAD_C).normalized()
         R = rot_align(out, UP)
         ellipsoid(mb, c + out * 0.07, (0.082, 0.082, 0.072), HAIR, hw, segs=16, rings=12, rot=R)
-        lathe(mb, c + out * 0.012, R, torus_profile(0.0, 0.058, 0.014, 8), tie, hw, segs=18, closed_profile=True)
+        lathe(mb, c + out * 0.012, R, torus_profile(0.0, 0.058, 0.014, 10), tie, hw, segs=24, closed_profile=True)
     return mb
 
 
@@ -413,7 +413,9 @@ def build_body_skin():
 
 
 # ================================================================== shared clothing pieces
-def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None):
+def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff_tube=0.016, inner_style=None):
+    """inner_style: leave the end open with a shaded funnel down to the wrist
+    (a wide bell sleeve read as a lid with a flat end disc)."""
     for sx in SIDES:
         sfx = '.L' if sx < 0 else '.R'
         path = _arm_path(sx, -0.015, s1)
@@ -426,21 +428,31 @@ def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None):
         colfn = None
         if band:
             colfn = lambda p, sv, a, band=band: band[2] if band[0] <= sv <= band[1] else None
-        sweep(mb, path, radii, style, lambda p, sv, i, sx=sx: arm_w(p, sx), segs=14, cap_start=None, cap_end='flat',
-              twist_hint=FWD, colfn=colfn)
+        sweep(mb, path, radii, style, lambda p, sv, i, sx=sx: arm_w(p, sx), segs=16, cap_start=None,
+              cap_end=None if inner_style is not None else 'flat', twist_hint=FWD, colfn=colfn)
         # shoulder cap fills the joint
         sh = shoulder(sx)
         # stripes by world height so the cap continues the torso's stripes where
         # they overlap; a little larger than the sleeve so the sleeve leaves it
         # along a clean line instead of a grazing (sawtooth) intersection
-        ellipsoid(mb, sh + Vector((0.004 * sx, 0, 0.004)), (0.068 + grow, 0.066 + grow, 0.062 + grow), style,
-                  lambda p, sfx=sfx: {'upper_arm' + sfx: 0.55, 'shoulder' + sfx: 0.45}, segs=18, rings=12, world_v=True)
+        # (V4: a little lower and flatter on top, so it rounds into the sleeve
+        # instead of standing up as a shoulder pad)
+        ellipsoid(mb, sh + Vector((0.004 * sx, 0, -0.002)), (0.066 + grow, 0.065 + grow, 0.055 + grow), style,
+                  lambda p, sfx=sfx: {'upper_arm' + sfx: 0.55, 'shoulder' + sfx: 0.45}, segs=20, rings=12, world_v=True)
         if cuff_style is not None:
             d = arm_dir(sx)
             end = sh + d * (total - 0.015)
             r = radii[-1][0]
-            lathe(mb, end, rot_align(d, FWD), torus_profile(0.0, r + 0.002, 0.014, 8), cuff_style,
-                  lambda p, sx=sx: arm_w(p, sx), segs=16, closed_profile=True)
+            lathe(mb, end - d * cuff_tube * 0.4, rot_align(d, FWD), torus_profile(0.0, r + 0.002, cuff_tube, 10, 0.85), cuff_style,
+                  lambda p, sx=sx: arm_w(p, sx), segs=20, closed_profile=True)
+        if inner_style is not None:
+            d = arm_dir(sx)
+            end = sh + d * (total - 0.015)
+            r = radii[-1][0]
+            wr = arm_radius(total) + 0.004
+            # inner face of the opening (profile ordered so the faces look in)
+            lathe(mb, end + d * 0.004, rot_align(d, FWD), [(-0.065, wr), (-0.03, lerp(r, wr, 0.65)), (0.0, r - 0.002)],
+                  inner_style, lambda p, sx=sx: arm_w(p, sx), segs=16)
 
 
 def pant_legs(mb, style, grow, bottom_z=None, cuff_style=None, flat_end=True):
@@ -448,13 +460,13 @@ def pant_legs(mb, style, grow, bottom_z=None, cuff_style=None, flat_end=True):
         lp = _leg_path(sx, 0.55, bottom_z)
         ls = _path_s(lp)
         radii = [(leg_radius(v) + grow, (leg_radius(v) + grow) * 0.96) for v in ls]
-        sweep(mb, lp, radii, style, lambda p, sv, i, sx=sx: leg_w(p, sx), segs=14, cap_start=None,
+        sweep(mb, lp, radii, style, lambda p, sv, i, sx=sx: leg_w(p, sx), segs=16, cap_start=None,
               cap_end='flat' if flat_end else None, twist_hint=FWD)
         if cuff_style is not None:
             k, e = lp[-2], lp[-1]
             d = (e - k).normalized()
-            lathe(mb, e - d * 0.006, rot_align(d, FWD), torus_profile(0.0, radii[-1][0] + 0.002, 0.016, 8), cuff_style,
-                  lambda p, sx=sx: leg_w(p, sx), segs=18, closed_profile=True)
+            lathe(mb, e - d * 0.006, rot_align(d, FWD), torus_profile(0.0, radii[-1][0] + 0.002, 0.016, 10, 0.85), cuff_style,
+                  lambda p, sx=sx: leg_w(p, sx), segs=22, closed_profile=True)
 
 
 def pelvis(mb, style, grow, z_top, extra=None):
@@ -487,8 +499,8 @@ def placket_and_buttons(mb, grow, n_buttons=3, style=CLOTH_S, button=IVORY, z0=0
 
 
 def collar(mb, grow, style=CLOTH_S, z=0.872):
-    lathe(mb, Vector((0, TORSO_CY - 0.004, 0)), Matrix.Identity(3), torus_profile(z, 0.086 + grow * 0.5, 0.019, 8), style,
-          lambda p: torso_w(p), segs=20, closed_profile=True, ry_scale=0.92)
+    lathe(mb, Vector((0, TORSO_CY - 0.004, 0)), Matrix.Identity(3), torus_profile(z, 0.086 + grow * 0.5, 0.019, 10), style,
+          lambda p: torso_w(p), segs=28, closed_profile=True, ry_scale=0.92)
     for sx in SIDES:
         p, n = on_torso(0.05 * sx, 0.836, grow + 0.004)
         R = rot_align(n, UP) @ rot_z(38 * sx)
@@ -527,7 +539,7 @@ def build_swim():
         sweep(mb, lp, radii, CLOTH_P_PLAIN, lambda p, sv, i, sx=sx: leg_w(p, sx), segs=18, cap_start=None, cap_end='flat',
               twist_hint=FWD, colfn=lambda p, sv, a: CLOTH_S if (abs(p.x) > 0.16 and abs(p.y) < 0.03) else None)
     # waistband + drawstring bow
-    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), torus_profile(0.612, torso_r(0.612) + 0.016, 0.011, 8),
+    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), torus_profile(0.612, torso_r(0.612) + 0.016, 0.011, 10),
           Style('#f4f2ec', T_NONE, 0.8, MAT_CLOTH), lambda p: torso_w(p), segs=24, closed_profile=True, ry_scale=TORSO_RY)
     for sx in SIDES:
         p, n = on_torso(0.022 * sx, 0.6, 0.03)
@@ -546,8 +558,9 @@ def build_robe():
         prof.append((z, torso_r(z) + 0.034))
         z += 0.025
     prof += [(0.875, 0.104), (0.88, 0.096), (0.86, 0.088)]
-    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, robe, skirt_w, segs=30, ry_scale=TORSO_RY)
-    sleeves(mb, robe, 0.03, bell=0.03, cuff_style=trim)
+    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, robe, skirt_w, segs=40, ry_scale=TORSO_RY)
+    sleeves(mb, robe, 0.024, bell=0.008, cuff_style=trim, cuff_tube=0.024,
+            inner_style=Style('#9298a8', T_SECOND, 0.95, MAT_CLOTH))
     # shawl lapels: back of the neck, over the shoulders, crossing to the belt
     for sx in SIDES:
         pts = [Vector((0.0, -0.105, 0.885)), Vector((0.07 * sx, -0.07, 0.885)), Vector((0.11 * sx, 0.02, 0.87))]
@@ -559,7 +572,7 @@ def build_robe():
         pts = _dense_path(pts, 0.02)
         sweep(mb, pts, [(0.009, 0.036)] * len(pts), trim, lambda p, sv, i: torso_w(p), segs=10, twist_hint=UP)
     # sash belt + knot + tails
-    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), torus_profile(0.6, torso_r(0.6) + 0.042, 0.017, 8),
+    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), torus_profile(0.6, torso_r(0.6) + 0.042, 0.017, 10),
           CLOTH_P_PLAIN, lambda p: torso_w(p), segs=26, closed_profile=True, ry_scale=TORSO_RY)
     p, n = on_torso(-0.07, 0.6, 0.06)
     ellipsoid(mb, p, (0.03, 0.026, 0.022), CLOTH_P_PLAIN, lambda q: torso_w(q), segs=10, rings=8, rot=rot_align(n, UP))
@@ -697,7 +710,7 @@ def build_watch():
     # trousers + belt
     pelvis(mb, NAVY_D, 0.014, 0.60)
     pant_legs(mb, NAVY_D, 0.022, flat_end=True)
-    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), torus_profile(0.565, torso_r(0.565) + 0.03, 0.02, 8, 0.8),
+    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), torus_profile(0.565, torso_r(0.565) + 0.03, 0.02, 10, 0.8),
           LEATHER, lambda p: torso_w(p), segs=28, closed_profile=True, ry_scale=TORSO_RY)
     p, n = on_torso(0.0, 0.565, 0.05)
     ellipsoid(mb, p, (0.03, 0.022, 0.008), SILVER, lambda q: torso_w(q), segs=10, rings=6, rot=rot_align(n, UP), power=4.0)
@@ -724,7 +737,7 @@ def build_watch():
     prof = [(1.30, 0.318), (1.36, 0.318), (1.405, 0.336), (1.44, 0.348), (1.462, 0.342), (1.475, 0.31), (1.482, 0.22),
             (1.485, 0.0)]
     lathe(mb, Vector((0, 0.005, 0)), Matrix.Identity(3), prof, cap, hw, segs=32, ry_scale=0.95)
-    lathe(mb, Vector((0, 0.005, 0)), Matrix.Identity(3), torus_profile(1.32, 0.322, 0.022, 8, 1.4),
+    lathe(mb, Vector((0, 0.005, 0)), Matrix.Identity(3), torus_profile(1.32, 0.322, 0.022, 10, 1.4),
           Style('#161c33', T_NONE, 0.8, MAT_CLOTH), hw, segs=32, closed_profile=True, ry_scale=0.95)
     ellipsoid(mb, Vector((0, 0.27, 1.305)), (0.215, 0.17, 0.02), Style('#121624', T_NONE, 0.35, MAT_GLOSS), hw, segs=26,
               rings=10, rot=rot_x(-16), keep=lambda p: p.y > 0.235)
@@ -766,12 +779,50 @@ def build_mustache():
 
 
 # ================================================================== HATS
+def _outside_head(p, margin):
+    """p, or the point on the head shell (grown by margin) at the same height
+    and direction from the head's axis when p lies inside it."""
+    if p.z >= HEAD_C.z + (HEAD_R[2] + margin) * 0.995 or p.z <= HEAD_C.z:
+        return p
+    dx, dy = p.x - HEAD_C.x, p.y - HEAD_C.y
+    h = math.hypot(dx, dy)
+    if h < 1e-6:
+        return p
+    ang = math.atan2(-dx, -dy)
+    q = _shell_point(ang, p.z, margin)
+    hq = math.hypot(q.x - HEAD_C.x, q.y - HEAD_C.y)
+    if h >= hq:
+        return p
+    return Vector((HEAD_C.x + dx / h * hq, HEAD_C.y + dy / h * hq, p.z))
+
+
+def _smooth_path(ctrl, step=0.012):
+    """Catmull-Rom curve through the control points, sampled about every
+    `step` metres (a polyline has hard corners a thick tube folds through)."""
+    pts = [ctrl[0] * 2.0 - ctrl[1]] + list(ctrl) + [ctrl[-1] * 2.0 - ctrl[-2]]
+    out = [ctrl[0].copy()]
+    for i in range(1, len(pts) - 2):
+        p0, p1, p2, p3 = pts[i - 1], pts[i], pts[i + 1], pts[i + 2]
+        n = max(2, int(math.ceil((p2 - p1).length / step)))
+        for k in range(1, n + 1):
+            t = k / n
+            t2, t3 = t * t, t * t * t
+            out.append(0.5 * ((2.0 * p1) + (p2 - p0) * t + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2
+                              + (3.0 * p1 - p0 - 3.0 * p2 + p3) * t3))
+    return out
+
+
 def build_nightcap():
     mb = MeshBuilder('hat_nightcap')
-    path = [Vector((0, 0.0, 1.31)), Vector((0, -0.008, 1.40)), Vector((0.012, -0.025, 1.48)), Vector((0.06, -0.05, 1.555)),
+    ctrl = [Vector((0, 0.0, 1.31)), Vector((0, -0.008, 1.40)), Vector((0.012, -0.025, 1.48)), Vector((0.06, -0.05, 1.555)),
             Vector((0.14, -0.08, 1.595)), Vector((0.225, -0.095, 1.575)), Vector((0.285, -0.095, 1.515)),
             Vector((0.315, -0.085, 1.45))]
-    path = _dense_path(path, 0.016)
+    # V4: a smooth curve through the V3 control points.  V3's polyline
+    # creased the cap at every control point.  The cap is wider than its
+    # fold is tight, so the fold's inside still crosses itself: the part is
+    # drawn double-sided in the game (CharacterView.TWO_SIDED), which shows
+    # that as a fabric crease instead of a see-through gap to the head.
+    path = _smooth_path(ctrl, 0.018)
     s = _path_s(path)
     total = s[-1]
     radii = []
@@ -780,9 +831,14 @@ def build_nightcap():
         r = 0.322 * (1.0 - smoothstep(0.0, 1.0, t)) ** 1.15 + 0.028 * smoothstep(0.0, 1.0, t)
         radii.append((r, r * 0.93))
     bone_s = [('head', 0.18), ('hat1', 0.29), ('hat2', 0.40), ('hat3', None)]
-    sweep(mb, path, radii, CLOTH_P_PLAIN, lambda p, sv, i: rig.seg_weights(sv, bone_s, 0.045), segs=18, cap_start=None,
+    v0 = len(mb.v)
+    sweep(mb, path, radii, CLOTH_P_PLAIN, lambda p, sv, i: rig.seg_weights(sv, bone_s, 0.045), segs=28, cap_start=None,
           cap_end='round', twist_hint=FWD)
-    lathe(mb, Vector((0, 0.0, 0)), Matrix.Identity(3), torus_profile(1.318, 0.322, 0.044, 12), CLOTH_S, rigid('head'), segs=36,
+    # where the leaning cap's rings dip into the head (V3: the scalp showed
+    # through beside the fold), lift them back out just above the scalp
+    for vi in range(v0, len(mb.v)):
+        mb.v[vi] = _outside_head(mb.v[vi], 0.03)
+    lathe(mb, Vector((0, 0.0, 0)), Matrix.Identity(3), torus_profile(1.318, 0.322, 0.044, 14), CLOTH_S, rigid('head'), segs=52,
           closed_profile=True, ry_scale=0.93)
     tip = path[-1] + (path[-1] - path[-2]).normalized() * 0.04
     ellipsoid(mb, tip, (0.068, 0.068, 0.066), Style('#f4f2ec', T_NONE, 1.0, MAT_CLOTH), rigid('hat3'), segs=16, rings=12)
@@ -842,7 +898,7 @@ def build_headphones():
         c = Vector(((rig.head_side_x(1.17, 0.0, -0.005) - 0.004) * sx, -0.005, 1.17))
         lathe(mb, c, R, [(0.0, 0.0), (0.0, 0.066), (0.006, 0.072), (0.05, 0.074), (0.062, 0.064), (0.066, 0.0)],
               Style('#ffffff', T_PRIMARY, 0.4, MAT_GLOSS), rigid('head'), segs=20, ry_scale=1.15)
-        lathe(mb, c, R, torus_profile(0.0, 0.05, 0.02, 8), Style('#3a3d48', T_NONE, 0.9, MAT_CLOTH), rigid('head'), segs=18,
+        lathe(mb, c, R, torus_profile(0.0, 0.05, 0.02, 10), Style('#3a3d48', T_NONE, 0.9, MAT_CLOTH), rigid('head'), segs=18,
               closed_profile=True, ry_scale=1.15)
     return mb
 
@@ -920,7 +976,7 @@ def build_slippers():
         slab(mb, _foot_outline(sx, toe=0.195, heel=-0.08, w_heel=0.06, w_toe=0.078), 0.0, 0.028, sole, fw, bevel=0.01)
         cx = rig.HIP_X * sx
         ellipsoid(mb, Vector((cx, 0.055, 0.026)), (0.08, 0.142, 0.094), fluff, fw, segs=20, rings=12, cut_below=-0.1)
-        lathe(mb, Vector((cx, -0.01, 0)), Matrix.Identity(3), torus_profile(0.1, 0.064, 0.02, 8), fluff,
+        lathe(mb, Vector((cx, -0.01, 0)), Matrix.Identity(3), torus_profile(0.1, 0.064, 0.02, 10), fluff,
               lambda p, sfx=sfx: rig.seg_weights(p.z, [('foot' + sfx, 0.11), ('shin' + sfx, None)], 0.03), segs=18,
               closed_profile=True)
         for ex in (-0.032, 0.032):
@@ -968,7 +1024,7 @@ def build_flippers():
             w = lerp(0.06, 0.1, smoothstep(0.02, 0.4, y))
             outline.append((cx + math.cos(a) * w, y))
         slab(mb, outline, 0.004, 0.018, fin, fw, bevel=0.006)
-        lathe(mb, Vector((cx, -0.005, 0)), Matrix.Identity(3), torus_profile(0.1, 0.062, 0.016, 8), blue,
+        lathe(mb, Vector((cx, -0.005, 0)), Matrix.Identity(3), torus_profile(0.1, 0.062, 0.016, 10), blue,
               lambda p, sfx=sfx: rig.seg_weights(p.z, [('foot' + sfx, 0.11), ('shin' + sfx, None)], 0.03), segs=18,
               closed_profile=True)
     return mb
