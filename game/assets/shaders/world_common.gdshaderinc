@@ -17,8 +17,8 @@ vec3 srgb_to_linear(vec3 c) {
 }
 
 void vertex() {
-	v_emis = UV2.x;
-	float sway = UV2.y * wind_strength;
+	v_emis = CUSTOM0.x;
+	float sway = CUSTOM0.y * wind_strength;
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	vec3 off = vec3(0.0);   // world-space displacement
 	if (sway > 0.0) {
@@ -40,8 +40,8 @@ void vertex() {
 		off += d / dl * (mix(dl, PART_R, k) - dl);
 	}
 #endif
-	// campus meshes are rigid (no scale): the inverse basis is its transpose
-	VERTEX += transpose(mat3(MODEL_MATRIX)) * off;
+	// world-space offset back into model space (MultiMesh trees are scaled)
+	VERTEX += inverse(mat3(MODEL_MATRIX)) * off;
 }
 
 void fragment() {

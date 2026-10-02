@@ -11,6 +11,8 @@ const GLOW_SHADER := preload("res://assets/shaders/glow_add.gdshader")
 var L: CampusLayout
 var _chunks: Dictionary = {}
 var _foliage: Dictionary = {}   # tree canopies: separate chunks (near-camera parting, see-through)
+var _detail: Dictionary = {}    # small props per chunk, drawn only near the camera
+const DETAIL_M := 100.0
 ## the shared canopy material (MatchController feeds it the followed character)
 var foliage_material: ShaderMaterial
 var _glow_st: SurfaceTool
@@ -257,9 +259,11 @@ func _ramp(body: CollisionObject3D, from: Vector3, to: Vector3, w: float) -> voi
 # ---------------------------------------------------------------------------
 # Visuals
 # ---------------------------------------------------------------------------
-func _kit_at(x: float, z: float, foliage: bool = false) -> MeshKit:
+## detail: small near-field props (lamps, bollards, benches, window frames)
+## in their own per-chunk mesh that stops drawing beyond DETAIL_M.
+func _kit_at(x: float, z: float, foliage: bool = false, detail: bool = false) -> MeshKit:
 	var key := Vector2i(int(floor((x - CampusLayout.BOUNDS.position.x) / CHUNK.x)), int(floor((z - CampusLayout.BOUNDS.position.y) / CHUNK.y)))
-	var store := _foliage if foliage else _chunks
+	var store := _foliage if foliage else (_detail if detail else _chunks)
 	if not store.has(key):
 		store[key] = MeshKit.new()
 	return store[key]
@@ -285,11 +289,17 @@ var _quality := 1
 var _root: Node3D
 var _commit_keys: Array = []
 var _world_mat: ShaderMaterial
+## V4 art kit: light field, tree instances per chunk, where each chunk's
+## ground ends (everything after it is baked from the light field)
+var kit: CampusKit
+var _trees: Dictionary = {}       # chunk key -> {variant key: [[Transform3D, Color], ...]}
+var _ground_end: Dictionary = {}  # chunk key -> vertex count after the ground
 
 
 func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_chunks.clear()
 	_foliage.clear()
+	_detail.clear()
 	_glow_st = SurfaceTool.new()
 	_glow_st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_glow_count = 0
@@ -299,8 +309,14 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_root = root
 	_step_i = 0
 	_steps.clear()
+	_trees.clear()
+	_ground_end.clear()
+	_steps.append(func() -> void: kit = CampusKit.new(L))
 	for z0 in range(0, ground_rows(), 10):
 		_steps.append(func() -> void: _ground_rows(z0, z0 + 10))
+	_steps.append(func() -> void:
+		for key in _chunks:
+			_ground_end[key] = (_chunks[key] as MeshKit).vert_count())
 	_steps.append(_flat_layers)
 	for bd in L.buildings:
 		_steps.append(func() -> void: _building(bd, _rng))
@@ -323,8 +339,13 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 				_tree(trees[i]))
 	_steps.append(_small_things)
 	_steps.append(_lake)
+	for kind in ["broad", "pine"]:
+		for v in (CampusKit.BROAD_VARIANTS if kind == "broad" else CampusKit.PINE_VARIANTS):
+			for lod in 2:
+				_steps.append(func() -> void: CampusKit.tree(kind, v, lod))
 	_steps.append(_containers)
 	_steps.append(_commit_next)
+	_steps.append(_tree_multimeshes)
 	_steps.append(_glow_mesh)
 
 
@@ -347,7 +368,12 @@ func _small_things() -> void:
 	for r in L.rocks:
 		var rp: Vector3 = r["pos"]
 		var sz: Vector3 = r["size"]
-		_kit_at(rp.x, rp.z).blob(rp + Vector3(0, sz.y * 0.45, 0), sz * Vector3(0.55, 0.6, 0.55), Color(0.42, 0.40, 0.46), 3, 7, 0.0, 0.0, 0.18, int(rp.x * 13 + rp.z * 7))
+		# layered boulder: a broad base and an offset cap, softly shaded
+		var rk := _kit_at(rp.x, rp.z)
+		var sd := int(rp.x * 13 + rp.z * 7)
+		var stone := Color(0.47, 0.43, 0.40).lerp(Color(0.40, 0.40, 0.43), float(posmod(sd, 5)) / 4.0)
+		rk.soft_blob(rp + Vector3(0, sz.y * 0.38, 0), sz * Vector3(0.58, 0.5, 0.56), stone, 5, 9, 0.0, 0.12, sd)
+		rk.soft_blob(rp + Vector3(sz.x * 0.12, sz.y * 0.72, -sz.z * 0.08), sz * Vector3(0.36, 0.34, 0.34), stone.lightened(0.06), 4, 7, 0.0, 0.1, sd + 1)
 	for p in L.platforms:
 		var pc: Vector3 = p["center"]
 		var ps: Vector3 = p["size"]
@@ -384,6 +410,8 @@ func _containers() -> void:
 		_commit_keys.append([0, key])
 	for key in _foliage:
 		_commit_keys.append([1, key])
+	for key in _detail:
+		_commit_keys.append([2, key])
 
 
 ## One chunk's mesh per call (the heaviest single pieces of the build).
@@ -393,14 +421,22 @@ func _commit_next() -> bool:
 	var item: Array = _commit_keys.pop_front()
 	var pass_i: int = item[0]
 	var key: Vector2i = item[1]
-	var mk: MeshKit = (_chunks if pass_i == 0 else _foliage)[key]
+	var mk: MeshKit = [_chunks, _foliage, _detail][pass_i][key]
+	if pass_i != 1 and kit != null:
+		# paths, plazas, walls, props and building feet: baked soft AO and
+		# warm lamp light (the ground was lit as it was built)
+		kit.bake(mk, int(_ground_end.get(key, 0)) if pass_i == 0 else 0, 3.0)
 	var mesh := mk.commit()
 	if mesh != null:
 		var mi := MeshInstance3D.new()
 		mi.mesh = mesh
-		mi.material_override = _world_mat if pass_i == 0 else foliage_material
-		mi.name = ("Chunk_%d_%d" if pass_i == 0 else "Foliage_%d_%d") % [key.x, key.y]
+		mi.material_override = foliage_material if pass_i == 1 else _world_mat
+		mi.name = (["Chunk_%d_%d", "Foliage_%d_%d", "Detail_%d_%d"][pass_i]) % [key.x, key.y]
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if _quality >= 1 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if pass_i == 2:
+			# measured to the chunk's centre: covers the camera's surroundings
+			mi.visibility_range_end = DETAIL_M if _quality >= 1 else DETAIL_M * 0.7
+			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 		if pass_i == 1:
 			# tree canopies stop drawing where the night fog has already
 			# swallowed them (no dithered fade: a clean cut inside the fog)
@@ -441,28 +477,63 @@ func ground_rows() -> int:
 ## One band of the 2 m ground grid (rows z0..z1).
 func _ground_rows(z_from: int, z_to: int) -> void:
 	var b := CampusLayout.BOUNDS
-	var step := GROUND_STEP
-	var nx := int(b.size.x / step)
+	var nx := int(b.size.x / GROUND_STEP)
 	if _noise == null:
 		_noise = FastNoiseLite.new()
 		_noise.seed = 11
 		_noise.frequency = 0.035
-	var base := Color(0.25, 0.46, 0.30)
+		_noise2 = FastNoiseLite.new()
+		_noise2.seed = 23
+		_noise2.frequency = 0.16
+	var row_a := _ground_row(z_from, nx)
 	for zi in range(z_from, mini(z_to, ground_rows())):
+		var row_b := _ground_row(zi + 1, nx)
 		for xi in nx:
-			var x0 := b.position.x + xi * step
-			var z0 := b.position.y + zi * step
-			var x1 := x0 + step
-			var z1 := z0 + step
-			var n := _noise.get_noise_2d(x0, z0)
-			var col := base.lerp(Color(0.32, 0.52, 0.30), 0.5 + 0.5 * n)
-			var ya := grid_y(L, x0, z0)
-			var yb := grid_y(L, x1, z0)
-			var yc := grid_y(L, x1, z1)
-			var yd := grid_y(L, x0, z1)
-			if ya < -0.1 or yb < -0.1 or yc < -0.1 or yd < -0.1:
-				col = Color(0.30, 0.28, 0.24)  # muddy bank / pit walls
-			_kit_at(x0 + 1.0, z0 + 1.0).quad(Vector3(x0, ya, z0), Vector3(x1, yb, z0), Vector3(x1, yc, z1), Vector3(x0, yd, z1), col)
+			var a: Array = row_a[xi]
+			var bb: Array = row_a[xi + 1]
+			var c: Array = row_b[xi + 1]
+			var d: Array = row_b[xi]
+			var k := _kit_at(b.position.x + xi * GROUND_STEP + 1.0, b.position.y + zi * GROUND_STEP + 1.0)
+			k.tri_n(a[0], bb[0], c[0], a[1], bb[1], c[1], a[2], bb[2], c[2])
+			k.tri_n(a[0], c[0], d[0], a[1], c[1], d[1], a[2], c[2], d[2])
+		row_a = row_b
+
+
+var _noise2: FastNoiseLite
+
+
+## One row of ground vertices: [position, smooth normal, lit colour].
+## Lawn tone from two noise scales (broad patches, fine variation), muddy
+## banks into the water pits, then the kit's baked AO and warm light.
+func _ground_row(zi: int, nx: int) -> Array:
+	var b := CampusLayout.BOUNDS
+	var out: Array = []
+	var z := b.position.y + zi * GROUND_STEP
+	var lawn_a := Color(0.24, 0.45, 0.30)
+	var lawn_b := Color(0.33, 0.53, 0.30)
+	var mud := Color(0.31, 0.29, 0.24)
+	for xi in nx + 1:
+		var x := b.position.x + xi * GROUND_STEP
+		var y := grid_y(L, x, z)
+		var hl := grid_y(L, x - GROUND_STEP, z)
+		var hr := grid_y(L, x + GROUND_STEP, z)
+		var hd := grid_y(L, x, z - GROUND_STEP)
+		var hu := grid_y(L, x, z + GROUND_STEP)
+		var n := Vector3((hl - hr) / (2.0 * GROUND_STEP), 1.0, (hd - hu) / (2.0 * GROUND_STEP)).normalized()
+		var p := Vector3(x, y, z)
+		var t := 0.5 + 0.5 * _noise.get_noise_2d(x, z)
+		var col := lawn_a.lerp(lawn_b, t)
+		col = col.lightened(0.04 * _noise2.get_noise_2d(x, z))
+		var low := minf(minf(y, hl), minf(minf(hr, hd), hu))
+		if low < -0.1:
+			col = col.lerp(mud, 1.0 if y < -0.1 else 0.7)
+		if kit != null:
+			var lt: Array = kit.light_at(p, n)
+			var m: Color = lt[0]
+			var ad: Color = lt[1]
+			col = Color(col.r * m.r + ad.r, col.g * m.g + ad.g, col.b * m.b + ad.b)
+		out.append([p, n, col])
+	return out
 
 
 func _flat_layers() -> void:
@@ -517,10 +588,17 @@ func _flat_layers() -> void:
 			_kit_at(pts[i].x, pts[i].y).disc(Vector3(pts[i].x, 0.052, pts[i].y), float(r["w"]) * 0.5, Color(0.17, 0.18, 0.22), 12)
 	for pth in L.paths:
 		var pts2: PackedVector2Array = pth["pts"]
+		var pc: Color = pth["color"]
 		for i in pts2.size() - 1:
 			var a2 := pts2[i]
 			var b2 := pts2[i + 1]
-			_kit_at((a2.x + b2.x) * 0.5, (a2.y + b2.y) * 0.5).ribbon(PackedVector2Array([a2, b2]), pth["w"], 0.07, pth["color"], 0.0, false)
+			var pk := _kit_at((a2.x + b2.x) * 0.5, (a2.y + b2.y) * 0.5)
+			pk.ribbon(PackedVector2Array([a2, b2]), pth["w"], 0.07, pc, 0.0, false)
+			# worn edges: a slightly darker border each side (V4)
+			var dd := (b2 - a2).normalized()
+			var nn := Vector2(-dd.y, dd.x) * (float(pth["w"]) * 0.5 - 0.12)
+			for sgn in [-1.0, 1.0]:
+				pk.ribbon(PackedVector2Array([a2 + nn * sgn, b2 + nn * sgn]), 0.24, 0.074, pc.darkened(0.12), 0.0, false)
 		for i in pts2.size():
 			_kit_at(pts2[i].x, pts2[i].y).disc(Vector3(pts2[i].x, 0.072, pts2[i].y), float(pth["w"]) * 0.5, pth["color"], 10)
 
@@ -542,9 +620,21 @@ func _window_face(k: MeshKit, origin: Vector3, right: Vector3, up: Vector3, norm
 			var hw := right * 0.6
 			var hh := up * 0.8
 			k.quad(ctr - hw + hh, ctr + hw + hh, ctr + hw - hh, ctr - hw - hh, col, em)
-			# sill
-			var sill := ctr - hh - up * 0.08 + normal * 0.05
-			k.quad(sill - hw * 1.15 + up * 0.08, sill + hw * 1.15 + up * 0.08, sill + hw * 1.15 - up * 0.08, sill - hw * 1.15 - up * 0.08, Color(0.85, 0.84, 0.8))
+			# painted frame around the pane and a mullion cross (V4; near-field
+			# detail mesh, so far facades keep their simpler look)
+			var kd := _kit_at(ctr.x, ctr.z, false, true)
+			var frame := Color(0.9, 0.88, 0.84)
+			var f0 := ctr + normal * 0.03
+			var t := 0.09
+			kd.quad(f0 - hw - right * t + hh + up * t, f0 + hw + right * t + hh + up * t, f0 + hw + right * t + hh, f0 - hw - right * t + hh, frame)
+			kd.quad(f0 - hw - right * t - hh, f0 + hw + right * t - hh, f0 + hw + right * t - hh - up * t, f0 - hw - right * t - hh - up * t, frame)
+			kd.quad(f0 - hw - right * t + hh, f0 - hw + hh, f0 - hw - hh, f0 - hw - right * t - hh, frame)
+			kd.quad(f0 + hw + hh, f0 + hw + right * t + hh, f0 + hw + right * t - hh, f0 + hw - hh, frame)
+			kd.quad(f0 - right * 0.035 + hh, f0 + right * 0.035 + hh, f0 + right * 0.035 - hh, f0 - right * 0.035 - hh, frame.darkened(0.08))
+			kd.quad(f0 - hw + up * 0.035 + up * 0.15, f0 + hw + up * 0.035 + up * 0.15, f0 + hw - up * 0.035 + up * 0.15, f0 - hw - up * 0.035 + up * 0.15, frame.darkened(0.08))
+			# a projecting stone sill
+			var sill_c := ctr - hh - up * 0.14 + normal * 0.08
+			kd.box(sill_c, Vector3(1.5, 0.12, 0.22), Color(0.82, 0.81, 0.78), atan2(-right.z, right.x), 0.0, Color(0.9, 0.89, 0.86))
 
 
 func _building(bd: Dictionary, rng: RandomNumberGenerator) -> void:
@@ -595,15 +685,28 @@ func _building(bd: Dictionary, rng: RandomNumberGenerator) -> void:
 		k.blob(Vector3(pos.x, h - 0.6, pos.y + hz - 0.4), Vector3(0.5, 0.25, 0.5), Color(1.0, 0.9, 0.6), 2, 6, 2.0)
 		return
 	if bd.get("dome", false):
-		k.cylinder(Vector3(pos.x, 0, pos.y), hx, h, wall, 14)
-		k.blob(Vector3(pos.x, h, pos.y), Vector3(hx, hx * 0.85, hx), roof, 5, 14, 0.15)
+		# drum with a plinth and cornice, under a smooth dome (V4)
+		k.revolve(Vector3(pos.x, 0, pos.y), PackedVector2Array([Vector2(hx + 0.35, 0.0), Vector2(hx + 0.3, 0.6), Vector2(hx, 0.7), Vector2(hx, h - 0.4),
+			Vector2(hx + 0.3, h - 0.3), Vector2(hx + 0.3, h)]), PackedColorArray([wall.darkened(0.3), wall.darkened(0.2), wall, wall, wall.lightened(0.2), wall.lightened(0.22)]), 20)
+		var dome := PackedVector2Array()
+		var dcol := PackedColorArray()
+		for di in 7:
+			var a := PI * 0.5 * float(di) / 6.0
+			dome.append(Vector2(hx * cos(a), h + hx * 0.85 * sin(a)))
+			dcol.append(roof.lightened(0.04 * float(di)))
+		k.revolve(Vector3(pos.x, 0, pos.y), dome, dcol, 20, PackedFloat32Array(), 0.15)
 		k.box(Vector3(pos.x, h + hx * 0.4, pos.y + 1.0), Vector3(1.2, 2.2, hx * 1.6), Color(0.12, 0.14, 0.25))
 		return
 	var top_col := wall.lightened(0.1)
 	k.box(Vector3(pos.x, h * 0.5, pos.y), Vector3(size.x, h, size.y), wall, 0.0, 0.0 if not bd.get("glass", false) else 0.25, top_col)
-	# plinth + cornice trim
-	k.box(Vector3(pos.x, 0.35, pos.y), Vector3(size.x + 0.5, 0.7, size.y + 0.5), wall.darkened(0.25))
-	k.box(Vector3(pos.x, h - 0.2, pos.y), Vector3(size.x + 0.6, 0.5, size.y + 0.6), wall.lightened(0.25))
+	# plinth, a moulded cornice and corner quoins with soft edges (V4)
+	k.chamfer_box(Vector3(pos.x, 0.35, pos.y), Vector3(size.x + 0.5, 0.7, size.y + 0.5), wall.darkened(0.25), 0.1)
+	k.chamfer_box(Vector3(pos.x, h - 0.2, pos.y), Vector3(size.x + 0.6, 0.5, size.y + 0.6), wall.lightened(0.25), 0.12)
+	k.chamfer_box(Vector3(pos.x, h - 0.55, pos.y), Vector3(size.x + 0.3, 0.2, size.y + 0.3), wall.lightened(0.18), 0.06)
+	if not bd.get("glass", false):
+		for cx in [-1.0, 1.0]:
+			for cz in [-1.0, 1.0]:
+				k.chamfer_box(Vector3(pos.x + cx * (hx - 0.05), (h - 0.7) * 0.5 + 0.35, pos.y + cz * (hz - 0.05)), Vector3(0.7, h - 1.4, 0.7), wall.lightened(0.16), 0.08)
 	if bd.get("glass", false):
 		k.box(Vector3(pos.x, h * 0.5, pos.y), Vector3(size.x + 0.05, h * 0.8, size.y + 0.05), Color(0.55, 0.9, 0.8), 0.0, 0.35)
 		k.gable_roof(pos, size, h, 3.0, roof, 0.2)
@@ -652,13 +755,24 @@ func _building(bd: Dictionary, rng: RandomNumberGenerator) -> void:
 			k.box(Vector3(pos.x + bx, h - 4.6, pos.y - hz - 0.18), Vector3(0.9, 0.9, 0.06), Color(1.0, 0.8, 0.25), 0.0, 0.3)
 		k.box(Vector3(pos.x, 3.3, pos.y - hz - 1.2), Vector3(5.0, 0.25, 2.6), Color(0.3, 0.32, 0.5))
 	else:
-		# simple glowing entrance on the longest face toward campus centre
+		# glowing entrance on the face toward campus centre, under a small
+		# bracketed porch roof (V4: depth at the door)
 		var to_c := (Vector2.ZERO - pos)
 		var face_n := Vector2(signf(to_c.x), 0) if absf(to_c.x) * size.y > absf(to_c.y) * size.x else Vector2(0, signf(to_c.y))
 		var fp := pos + face_n * (Vector2(hx, hz) * face_n.abs()).length()
 		var right4 := Vector3(face_n.y, 0, -face_n.x)
-		var base4 := Vector3(fp.x, 0, fp.y) + Vector3(face_n.x, 0, face_n.y) * 0.08
+		var nrm4 := Vector3(face_n.x, 0, face_n.y)
+		var base4 := Vector3(fp.x, 0, fp.y) + nrm4 * 0.08
 		k.quad(base4 - right4 * 1.0 + Vector3.UP * 2.4, base4 + right4 * 1.0 + Vector3.UP * 2.4, base4 + right4 * 1.0, base4 - right4 * 1.0, Color(0.95, 0.78, 0.5), 0.8)
+		var pyaw := atan2(-right4.z, right4.x)
+		var trim := Color(0.9, 0.88, 0.84)
+		k.chamfer_box(base4 + nrm4 * 1.0 + Vector3.UP * 3.0, Vector3(3.4, 0.22, 2.2), trim, 0.06, pyaw, trim.lightened(0.04))
+		k.chamfer_box(base4 + nrm4 * 1.0 + Vector3.UP * 3.24, Vector3(3.0, 0.26, 1.9), Color(roof.r, roof.g, roof.b).lightened(0.05), 0.08, pyaw)
+		# wall brackets, not posts: the colliders are unchanged, so nothing
+		# decorative may stand where runners walk
+		for side in [-1.0, 1.0]:
+			k.chamfer_box(base4 + nrm4 * 0.45 + right4 * (1.4 * side) + Vector3.UP * 2.7, Vector3(0.16, 0.5, 0.9), trim.darkened(0.08), 0.04, pyaw)
+		k.chamfer_box(Vector3(fp.x, 0.08, fp.y) + nrm4 * 1.1, Vector3(3.2, 0.16, 2.0), Color(0.7, 0.68, 0.72), 0.05, pyaw, Color(0.78, 0.76, 0.8))
 		_glow_disc(Vector3(fp.x + face_n.x * 1.6, 0.11, fp.y + face_n.y * 1.6), 3.6)
 
 
@@ -668,13 +782,16 @@ func _hedge(s: Dictionary, rng: RandomNumberGenerator) -> void:
 	var k := _kit_at((a.x + b.x) * 0.5, (a.y + b.y) * 0.5)
 	var h: float = s["h"]
 	var t: float = s["t"]
-	var col := Color(0.16, 0.38, 0.22)
-	k.segment_box(a, b, 0.0, h - 0.25, t, col, 0.0, col.lightened(0.08))
+	var col := Color(0.18, 0.40, 0.23)
+	var d2 := b - a
+	var mid := (a + b) * 0.5
 	var L2 := a.distance_to(b)
-	var n := int(L2 / 1.6)
+	# a clipped body with soft edges and a row of rounded tops (V4)
+	k.chamfer_box(Vector3(mid.x, (h - 0.25) * 0.5, mid.y), Vector3(L2 + t * 0.2, h - 0.25, t), col.darkened(0.08), 0.18, atan2(-d2.y, d2.x), col.lightened(0.04))
+	var n := int(L2 / 1.4)
 	for i in n + 1:
 		var p := a.lerp(b, float(i) / float(max(n, 1)))
-		k.blob(Vector3(p.x, h - 0.3, p.y), Vector3(t * 0.62, 0.42, t * 0.62), col.lightened(0.05 + 0.05 * float(i % 2)), 2, 6, 0.0, 0.25)
+		k.soft_blob(Vector3(p.x, h - 0.3, p.y), Vector3(t * 0.6, 0.42, t * 0.6), col.lightened(0.04 + 0.05 * float(i % 2)), 3, 7, 0.25)
 
 
 func _fence(s: Dictionary) -> void:
@@ -714,60 +831,108 @@ func _bollards(s: Dictionary) -> void:
 	var b: Vector2 = s["b"]
 	var L2 := a.distance_to(b)
 	var n := int(ceil(L2 / 2.0))
+	var grey := Color(0.32, 0.33, 0.38)
+	var band := Color(1.0, 0.82, 0.25)
 	for i in n + 1:
 		var p := a.lerp(b, float(i) / float(max(n, 1)))
-		var k := _kit_at(p.x, p.y)
-		k.cylinder(Vector3(p.x, 0, p.y), 0.13, 0.9, Color(0.32, 0.33, 0.38), 6)
-		k.cylinder(Vector3(p.x, 0.62, p.y), 0.14, 0.12, Color(1.0, 0.82, 0.25), 6, 0.6, false)
+		var k := _kit_at(p.x, p.y, false, true)
+		# rounded-top bollard with a reflective band
+		k.revolve(Vector3(p.x, 0, p.y), PackedVector2Array([Vector2(0.14, 0.0), Vector2(0.13, 0.6)]),
+			PackedColorArray([grey.darkened(0.25), grey]), 7)
+		k.revolve(Vector3(p.x, 0, p.y), PackedVector2Array([Vector2(0.135, 0.6), Vector2(0.135, 0.72)]), PackedColorArray([band]), 7, PackedFloat32Array(), 0.6)
+		k.revolve(Vector3(p.x, 0, p.y), PackedVector2Array([Vector2(0.13, 0.72), Vector2(0.12, 0.86), Vector2(0.0, 0.93)]),
+			PackedColorArray([grey, grey.lightened(0.1), grey.lightened(0.15)]), 7)
 
 
 func _tree(t: Dictionary) -> void:
+	# one MultiMesh instance per tree (V4 kit): uniform scale to its height,
+	# a turn and a gentle tint so no two neighbours look stamped
 	var p: Vector2 = t["pos"]
-	var trunk := _kit_at(p.x, p.y)
-	var k := _kit_at(p.x, p.y, true)
+	var kind := "pine" if String(t["kind"]) == "pine" else "broad"
+	var v := CampusKit.variant_of(t)
 	var h: float = t["h"]
 	var tint: float = t["tint"]
-	trunk.cylinder(Vector3(p.x, 0, p.y), 0.32, h * 0.45, Color(0.38, 0.27, 0.20), 6, 0.0, false, 0.22)
-	if t["kind"] == "pine":
-		var g := Color(0.12, 0.34, 0.26).lerp(Color(0.16, 0.42, 0.30), tint)
-		for i in 3:
-			var y := h * (0.3 + 0.2 * float(i))
-			var r := 2.4 - 0.6 * float(i)
-			k.cone(Vector3(p.x, y, p.y), r, h * 0.35, g.lightened(0.05 * float(i)), 7, 0.0, 0.6 + 0.3 * float(i))
-	else:
-		var g2 := Color(0.20, 0.44, 0.24).lerp(Color(0.34, 0.50, 0.22), tint)
-		# darker underside first, then the lit canopy lobes (depth without textures)
-		k.blob(Vector3(p.x, h * 0.55, p.y), Vector3(2.1, 1.3, 2.1), g2.darkened(0.3), 3, 8, 0.0, 0.6, 0.1, int(p.x * 13 + p.y * 7))
-		k.blob(Vector3(p.x, h * 0.62, p.y), Vector3(2.3, 2.0, 2.3), g2, 3, 8, 0.0, 0.7, 0.12, int(p.x * 31 + p.y))
-		k.blob(Vector3(p.x + 0.9, h * 0.8, p.y - 0.4), Vector3(1.5, 1.4, 1.5), g2.lightened(0.07), 3, 7, 0.0, 1.0, 0.1, int(p.x * 17 - p.y))
-		k.blob(Vector3(p.x - 0.8, h * 0.72, p.y + 0.6), Vector3(1.4, 1.2, 1.4), g2.darkened(0.05), 3, 7, 0.0, 0.9, 0.1, int(p.x - p.y * 5))
+	# trees use double-size chunks: fewer draw calls, still culled by region
+	var key := Vector2i(int(floor((p.x - CampusLayout.BOUNDS.position.x) / (CHUNK.x * 2.0))), int(floor((p.y - CampusLayout.BOUNDS.position.y) / (CHUNK.y * 2.0))))
+	var per: Dictionary = _trees.get(key, {})
+	var vk := "%s%d" % [kind, v]
+	var list: Array = per.get(vk, [])
+	var s := h / CampusKit.REF_H
+	var yaw := fposmod(p.x * 1.7 + p.y * 2.3, TAU)
+	var xf := Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(s, s, s)), Vector3(p.x, ground_y(L, p.x, p.y), p.y))
+	var col := Color(1, 1, 1).lerp(Color(1.12, 1.06, 0.86), tint) if kind == "broad" else Color(0.95, 0.98, 1.0).lerp(Color(1.06, 1.08, 1.02), tint)
+	list.append([xf, col])
+	per[vk] = list
+	_trees[key] = per
+
+
+## Per chunk and variant: MultiMeshes for trunks (world material) and crowns
+## (canopy material, which parts around the camera), near and far LOD.
+## Visibility distance is measured to the chunk's centre (tree chunks are
+## 128 x 120 m), so the near range covers past the camera's own chunk.
+const TREE_NEAR_M := 80.0
+func _tree_multimeshes() -> void:
+	for key in _trees:
+		var per: Dictionary = _trees[key]
+		for vk in per:
+			var list: Array = per[vk]
+			var kind := "pine" if String(vk).begins_with("pine") else "broad"
+			var variant := int(String(vk).substr(String(vk).length() - 1))
+			# near LOD up to NEAR_M from the chunk, the light one beyond it
+			for lod in 2:
+				var meshes := CampusKit.tree(kind, variant, lod)
+				for part in ["trunk", "crown"]:
+					var mm := MultiMesh.new()
+					mm.transform_format = MultiMesh.TRANSFORM_3D
+					mm.use_colors = true
+					mm.mesh = meshes[part]
+					mm.instance_count = list.size()
+					for i in list.size():
+						mm.set_instance_transform(i, list[i][0])
+						mm.set_instance_color(i, list[i][1] if part == "crown" else Color(1, 1, 1))
+					var mmi := MultiMeshInstance3D.new()
+					mmi.multimesh = mm
+					mmi.material_override = foliage_material if part == "crown" else _world_mat
+					mmi.name = "Trees_%s_%s_lod%d_%d_%d" % [vk, part, lod, key.x, key.y]
+					# far trees cast no shadow (the shadow range ends well before)
+					mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if _quality >= 1 and lod == 0 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+					if lod == 0:
+						mmi.visibility_range_end = TREE_NEAR_M
+					else:
+						mmi.visibility_range_begin = TREE_NEAR_M
+						mmi.visibility_range_end = 230.0 if _quality >= 1 else 150.0
+					mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+					container.add_child(mmi)
 
 
 func _lamp(lp: Vector2) -> void:
-	var k := _kit_at(lp.x, lp.y)
+	var k := _kit_at(lp.x, lp.y, false, true)
 	var iron := Color(0.17, 0.19, 0.25)
-	k.cylinder(Vector3(lp.x, 0, lp.y), 0.24, 0.35, iron, 8, 0.0, true, 0.16)
-	k.cylinder(Vector3(lp.x, 0.35, lp.y), 0.08, 2.95, iron, 6)
-	k.cylinder(Vector3(lp.x, 3.25, lp.y), 0.16, 0.08, iron, 8)
-	# glass lantern (warm, emissive) under a small cap with a finial
-	k.cylinder(Vector3(lp.x, 3.33, lp.y), 0.2, 0.42, Color(1.0, 0.86, 0.56), 6, 2.0, true, 0.26)
-	k.cone(Vector3(lp.x, 3.75, lp.y), 0.38, 0.28, iron, 6)
-	k.blob(Vector3(lp.x, 4.06, lp.y), Vector3(0.05, 0.06, 0.05), iron, 2, 5)
+	var b := Vector3(lp.x, 0, lp.y)
+	# a turned cast-iron post: stepped base, slim shaft, collar
+	k.revolve(b, PackedVector2Array([Vector2(0.27, 0.0), Vector2(0.26, 0.12), Vector2(0.17, 0.2), Vector2(0.16, 0.36), Vector2(0.09, 0.46),
+		Vector2(0.075, 3.0), Vector2(0.12, 3.12), Vector2(0.16, 3.22), Vector2(0.06, 3.3)]),
+		PackedColorArray([iron.darkened(0.3), iron.darkened(0.2), iron, iron, iron, iron.lightened(0.05), iron.lightened(0.08), iron.lightened(0.08), iron]), 8)
+	# glass lantern (warm, emissive) with a rounded cap and finial
+	k.revolve(b, PackedVector2Array([Vector2(0.06, 3.3), Vector2(0.2, 3.36), Vector2(0.27, 3.62), Vector2(0.24, 3.76)]),
+		PackedColorArray([Color(1.0, 0.86, 0.56)]), 8, PackedFloat32Array(), 2.0)
+	k.revolve(b, PackedVector2Array([Vector2(0.24, 3.74), Vector2(0.4, 3.8), Vector2(0.24, 3.94), Vector2(0.05, 4.12), Vector2(0.0, 4.16)]),
+		PackedColorArray([iron, iron.lightened(0.1), iron.lightened(0.12), iron, iron]), 8)
 	_glow_disc(Vector3(lp.x, 0.1, lp.y), 4.2)
 
 
 func _bench(bn: Dictionary) -> void:
 	var p: Vector2 = bn["pos"]
 	var yaw: float = bn["rot"]
-	var k := _kit_at(p.x, p.y)
+	var k := _kit_at(p.x, p.y, false, true)
 	var wood := Color(0.66, 0.45, 0.29)
 	var iron := Color(0.18, 0.19, 0.24)
 	var b := Basis(Vector3.UP, yaw)
 	# three seat slats and two back slats on cast-iron ends with armrests
 	for i in 3:
-		k.box(Vector3(p.x, 0.46, p.y) + b * Vector3(0, 0, -0.17 + 0.17 * float(i)), Vector3(1.9, 0.06, 0.14), wood.darkened(0.04 * float(i)), yaw)
+		k.chamfer_box(Vector3(p.x, 0.46, p.y) + b * Vector3(0, 0, -0.17 + 0.17 * float(i)), Vector3(1.9, 0.06, 0.14), wood.darkened(0.04 * float(i)), 0.025, yaw, wood.lightened(0.06))
 	for j in 2:
-		k.box(Vector3(p.x, 0.7 + 0.2 * float(j), p.y) + b * Vector3(0, 0, 0.3), Vector3(1.9, 0.12, 0.05), wood, yaw)
+		k.chamfer_box(Vector3(p.x, 0.7 + 0.2 * float(j), p.y) + b * Vector3(0, 0, 0.3), Vector3(1.9, 0.12, 0.05), wood, 0.02, yaw, wood.lightened(0.06))
 	for sx in [-0.86, 0.86]:
 		var off := b * Vector3(sx, 0, 0)
 		k.box(Vector3(p.x, 0.22, p.y) + off, Vector3(0.08, 0.45, 0.55), iron, yaw)
@@ -807,17 +972,24 @@ func _prop(pr: Dictionary) -> void:
 			k.box(Vector3(p.x, 1.0, p.y), Vector3(0.9, 2.0, 0.9), Color(0.95, 0.95, 0.95))
 			k.box(Vector3(p.x, 2.15, p.y), Vector3(1.0, 0.3, 1.0), Color(0.95, 0.3, 0.25))
 		"gazebo":
-			k.cylinder(Vector3(p.x, 0, p.y), 3.2, 0.25, Color(0.85, 0.82, 0.78), 8)
+			var cream := Color(0.95, 0.95, 0.92)
+			k.revolve(Vector3(p.x, 0, p.y), PackedVector2Array([Vector2(3.3, 0.0), Vector2(3.25, 0.2), Vector2(3.1, 0.28), Vector2(0.0, 0.3)]),
+				PackedColorArray([Color(0.7, 0.68, 0.66), Color(0.85, 0.82, 0.78), Color(0.88, 0.85, 0.8), Color(0.88, 0.85, 0.8)]), 12)
 			for i in 6:
 				var a := TAU * float(i) / 6.0
-				k.cylinder(Vector3(p.x + cos(a) * 2.8, 0, p.y + sin(a) * 2.8), 0.12, 2.8, Color(0.95, 0.95, 0.92), 6)
-			k.cone(Vector3(p.x, 2.8, p.y), 3.6, 1.8, Color(0.75, 0.35, 0.45), 6)
+				k.revolve(Vector3(p.x + cos(a) * 2.8, 0.28, p.y + sin(a) * 2.8), PackedVector2Array([Vector2(0.16, 0.0), Vector2(0.11, 0.14), Vector2(0.1, 2.4), Vector2(0.16, 2.52)]),
+					PackedColorArray([cream.darkened(0.1), cream, cream, cream]), 8)
+			# a softly flared roof with a finial
+			var rf := Color(0.75, 0.35, 0.45)
+			k.revolve(Vector3(p.x, 2.78, p.y), PackedVector2Array([Vector2(3.0, -0.05), Vector2(3.7, 0.0), Vector2(3.5, 0.18), Vector2(2.2, 0.75), Vector2(0.8, 1.55), Vector2(0.2, 1.9), Vector2(0.0, 2.0)]),
+				PackedColorArray([rf.darkened(0.35), rf.darkened(0.1), rf, rf.lightened(0.05), rf.lightened(0.08), rf.lightened(0.1), rf.lightened(0.1)]), 12)
+			k.soft_blob(Vector3(p.x, 4.85, p.y), Vector3(0.16, 0.2, 0.16), Color(1.0, 0.85, 0.45), 3, 6)
 		"canoe":
-			k.blob(Vector3(p.x, 0.2, p.y), Vector3(0.6, 0.25, 2.2), Color(0.85, 0.3, 0.2), 3, 8)
+			k.soft_blob(Vector3(p.x, 0.2, p.y), Vector3(0.6, 0.25, 2.2), Color(0.85, 0.3, 0.2), 4, 10)
 		"frog":
-			k.blob(Vector3(p.x, 0.5, p.y), Vector3(0.6, 0.45, 0.5), Color(0.3, 0.75, 0.3), 3, 8)
-			k.blob(Vector3(p.x - 0.25, 0.9, p.y - 0.3), Vector3(0.16, 0.16, 0.16), Color(1, 1, 1), 2, 6)
-			k.blob(Vector3(p.x + 0.25, 0.9, p.y - 0.3), Vector3(0.16, 0.16, 0.16), Color(1, 1, 1), 2, 6)
+			k.soft_blob(Vector3(p.x, 0.5, p.y), Vector3(0.6, 0.45, 0.5), Color(0.3, 0.75, 0.3), 5, 10)
+			k.soft_blob(Vector3(p.x - 0.25, 0.9, p.y - 0.3), Vector3(0.16, 0.16, 0.16), Color(1, 1, 1), 3, 6)
+			k.soft_blob(Vector3(p.x + 0.25, 0.9, p.y - 0.3), Vector3(0.16, 0.16, 0.16), Color(1, 1, 1), 3, 6)
 
 
 func _lake() -> void:
@@ -832,7 +1004,11 @@ func _lake() -> void:
 	for i in 40:
 		var x := -220.0 + float(i) * 11.0 + rng.randf_range(-3, 3)
 		var k2 := _kit_at(clampf(x, -150.0, 150.0), -149.0)
-		k2.cone(Vector3(x, -0.5, -255 + rng.randf_range(-6, 6)), rng.randf_range(4, 7), rng.randf_range(10, 18), Color(0.07, 0.12, 0.16), 5)
+		# soft rounded silhouettes, not spikes (V4)
+		var rr := rng.randf_range(7, 11)
+		var hh := rng.randf_range(9, 14)
+		k2.revolve(Vector3(x, -0.5, -255 + rng.randf_range(-6, 6)), PackedVector2Array([Vector2(rr, 0.0), Vector2(rr * 0.95, hh * 0.5), Vector2(rr * 0.7, hh * 0.85), Vector2(0.0, hh)]),
+			PackedColorArray([Color(0.06, 0.1, 0.14), Color(0.07, 0.12, 0.16), Color(0.08, 0.13, 0.17), Color(0.08, 0.13, 0.17)]), 6)
 	# hills beyond the other edges so the world does not end abruptly
 	for side in [[Vector2(-175, -150), Vector2(-175, 150)], [Vector2(175, -150), Vector2(175, 150)], [Vector2(-160, 168), Vector2(160, 168)]]:
 		var a: Vector2 = side[0]
@@ -840,7 +1016,7 @@ func _lake() -> void:
 		for j in 14:
 			var p := a.lerp(b, float(j) / 13.0)
 			var k3 := _kit_at(clampf(p.x, -150.0, 150.0), clampf(p.y, -140.0, 140.0))
-			k3.blob(Vector3(p.x, 0, p.y), Vector3(16, 9 + float(j % 3) * 3.0, 16), Color(0.09, 0.16, 0.18), 3, 8, 0.0, 0.0, 0.1, j)
+			k3.soft_blob(Vector3(p.x, 0, p.y), Vector3(16, 9 + float(j % 3) * 3.0, 16), Color(0.1, 0.17, 0.19), 4, 9, 0.0, 0.08, j)
 
 
 func _glow_disc(center: Vector3, r: float) -> void:
@@ -881,13 +1057,17 @@ func _waters(container: Node3D) -> Dictionary:
 				mat.set_shader_parameter("shape_kind", 0.0)
 				var rim: float = w["rim_h"]
 				var th: float = w.get("rim_t", 0.5)
-				deco.ring(Vector3(c.x, 0, c.y), r, r + th, rim, Color(0.70, 0.68, 0.72), 28, 0.0, Color(0.86, 0.84, 0.88))
-				# tiered centrepiece with a glowing jet
-				deco.cylinder(Vector3(c.x, -1.4, c.y), 1.3, 2.6, Color(0.7, 0.68, 0.72), 10)
-				deco.cylinder(Vector3(c.x, 1.2, c.y), 2.1, 0.25, Color(0.78, 0.76, 0.8), 12)
-				deco.cylinder(Vector3(c.x, 1.45, c.y), 0.45, 1.3, Color(0.7, 0.68, 0.72), 8)
-				deco.cylinder(Vector3(c.x, 2.75, c.y), 1.0, 0.2, Color(0.78, 0.76, 0.8), 10)
-				deco.cone(Vector3(c.x, 2.95, c.y), 0.35, 1.4, Color(0.65, 0.85, 1.0), 6, 0.9)
+				# a rounded stone rim (inner wall, soft lip, outer wall)
+				var stone2 := Color(0.72, 0.70, 0.74)
+				deco.revolve(Vector3(c.x, 0, c.y), PackedVector2Array([Vector2(r, -0.4), Vector2(r, rim - 0.12), Vector2(r + 0.06, rim - 0.02),
+					Vector2(r + th * 0.5, rim + 0.06), Vector2(r + th - 0.06, rim - 0.02), Vector2(r + th, rim - 0.12), Vector2(r + th + 0.06, 0.0)]),
+					PackedColorArray([stone2.darkened(0.3), stone2.darkened(0.1), stone2.lightened(0.08), stone2.lightened(0.16), stone2.lightened(0.08), stone2, stone2.darkened(0.15)]), 32)
+				# tiered centrepiece: turned pedestal, two basins and a glowing jet
+				deco.revolve(Vector3(c.x, 0, c.y), PackedVector2Array([Vector2(1.3, -1.4), Vector2(1.25, 0.6), Vector2(0.9, 1.0), Vector2(2.1, 1.2), Vector2(2.15, 1.4),
+					Vector2(1.9, 1.48), Vector2(0.5, 1.5), Vector2(0.42, 2.0), Vector2(0.48, 2.6), Vector2(1.0, 2.75), Vector2(1.02, 2.9), Vector2(0.3, 2.95)]),
+					PackedColorArray([stone2.darkened(0.25), stone2.darkened(0.1), stone2, stone2.lightened(0.05), stone2.lightened(0.12), stone2.lightened(0.1),
+					stone2, stone2.darkened(0.05), stone2, stone2.lightened(0.08), stone2.lightened(0.12), stone2]), 16)
+				deco.cone(Vector3(c.x, 2.95, c.y), 0.35, 1.4, Color(0.65, 0.85, 1.0), 8, 0.9)
 			"ellipse":
 				var rx: float = w["rx"]
 				var rz: float = w["rz"]
@@ -901,7 +1081,7 @@ func _waters(container: Node3D) -> Dictionary:
 					var a := TAU * float(j) / 26.0 + rng.randf_range(-0.1, 0.1)
 					var bank := c + Vector2(cos(a) * (rx + 0.9), sin(a) * (rz + 0.9))
 					if j % 3 == 0:
-						deco.blob(Vector3(bank.x, 0.0, bank.y), Vector3(0.7, 0.4, 0.6), Color(0.45, 0.43, 0.48), 2, 6, 0.0, 0.0, 0.2, j)
+						deco.soft_blob(Vector3(bank.x, 0.0, bank.y), Vector3(0.7, 0.42, 0.6), Color(0.47, 0.45, 0.5), 4, 7, 0.0, 0.15, j)
 					elif j % 3 == 1 and w["id"] == "pond":
 						for q in 3:
 							deco.cylinder(Vector3(bank.x + rng.randf_range(-0.3, 0.3), 0.0, bank.y + rng.randf_range(-0.3, 0.3)), 0.04, rng.randf_range(0.9, 1.5), Color(0.35, 0.55, 0.25), 4, 0.0, true, 0.01, 0.8)
@@ -918,10 +1098,22 @@ func _waters(container: Node3D) -> Dictionary:
 				if rim2 > 0.0:
 					var th2: float = w.get("rim_t", 0.5)
 					var stone := Color(0.72, 0.70, 0.74)
-					deco.box(Vector3(c.x, rim2 * 0.5, c.y - hs.y - th2 * 0.5), Vector3(hs.x * 2 + th2 * 2, rim2, th2), stone, 0.0, 0.0, stone.lightened(0.15))
-					deco.box(Vector3(c.x, rim2 * 0.5, c.y + hs.y + th2 * 0.5), Vector3(hs.x * 2 + th2 * 2, rim2, th2), stone, 0.0, 0.0, stone.lightened(0.15))
-					deco.box(Vector3(c.x - hs.x - th2 * 0.5, rim2 * 0.5, c.y), Vector3(th2, rim2, hs.y * 2), stone, 0.0, 0.0, stone.lightened(0.15))
-					deco.box(Vector3(c.x + hs.x + th2 * 0.5, rim2 * 0.5, c.y), Vector3(th2, rim2, hs.y * 2), stone, 0.0, 0.0, stone.lightened(0.15))
+					deco.chamfer_box(Vector3(c.x, rim2 * 0.5, c.y - hs.y - th2 * 0.5), Vector3(hs.x * 2 + th2 * 2, rim2, th2), stone, 0.08, 0.0, stone.lightened(0.15))
+					deco.chamfer_box(Vector3(c.x, rim2 * 0.5, c.y + hs.y + th2 * 0.5), Vector3(hs.x * 2 + th2 * 2, rim2, th2), stone, 0.08, 0.0, stone.lightened(0.15))
+					deco.chamfer_box(Vector3(c.x - hs.x - th2 * 0.5, rim2 * 0.5, c.y), Vector3(th2, rim2, hs.y * 2), stone, 0.08, 0.0, stone.lightened(0.15))
+					deco.chamfer_box(Vector3(c.x + hs.x + th2 * 0.5, rim2 * 0.5, c.y), Vector3(th2, rim2, hs.y * 2), stone, 0.08, 0.0, stone.lightened(0.15))
+					if w["id"] == "garden":
+						# Lily Basin's flower beds: low planters of soft blooms (near detail)
+						var fk := _kit_at(c.x, c.y, false, true)
+						var blooms := [Color(0.95, 0.55, 0.7), Color(1.0, 0.85, 0.4), Color(0.95, 0.95, 0.9), Color(0.7, 0.55, 0.95)]
+						for bi in 6:
+							var side := -1.0 if bi % 2 == 0 else 1.0
+							var bx := c.x - hs.x + 1.5 + float(bi / 2) * (hs.x - 1.5)
+							var bz := c.y + side * (hs.y + th2 + 1.4)
+							fk.chamfer_box(Vector3(bx, 0.2, bz), Vector3(2.4, 0.4, 0.9), Color(0.5, 0.36, 0.26), 0.06, 0.0, Color(0.26, 0.2, 0.15))
+							for fi in 5:
+								var fx := bx - 0.9 + float(fi) * 0.45
+								fk.soft_blob(Vector3(fx, 0.5, bz + 0.12 * sin(float(fi * 3 + bi))), Vector3(0.24, 0.2, 0.24), (blooms[(fi + bi) % 4] as Color), 3, 6, 0.2)
 					for j in 5:
 						deco.disc(Vector3(c.x - hs.x + 2.0 + float(j) * 2.5, y + 0.04, c.y + sin(float(j)) * 2.0), 0.5, Color(0.3, 0.6, 0.3), 7)
 				elif w["id"] == "pool":

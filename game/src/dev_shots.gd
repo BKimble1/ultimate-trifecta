@@ -14,6 +14,19 @@ var shots := [
 	{"name": "shed", "pos": Vector3(60, 8, -100), "look": Vector3(60, 2, -128)},
 	{"name": "tower", "pos": Vector3(10, 4, -8), "look": Vector3(0, 6, -30)},
 ]
+## Follow-camera views along the representative route (dorm door -> path ->
+## pond / garden -> return) at the game's camera distance, height and FOV:
+## [name, runner position (x, z), heading toward (x, z)].  The same list
+## renders V3 and V4 art for matched comparisons.
+const ROUTE := [
+	["route_1_dorm_door", Vector2(0, 92), Vector2(0, 40)],
+	["route_2_quad_path", Vector2(-30, 64), Vector2(-90, 50)],
+	["route_3_pond", Vector2(-98, 52), Vector2(-120, 46)],
+	["route_4_trees", Vector2(-96, 34), Vector2(-112, 2)],
+	["route_5_garden", Vector2(70, -72), Vector2(92, -88)],
+	["route_6_fountain", Vector2(14, 38), Vector2(0, 22)],
+	["route_7_return", Vector2(0, 50), Vector2(0, 100)],
+]
 var cam: Camera3D
 var i := 0
 var wait := 0
@@ -24,6 +37,17 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() > 0:
 		outdir = args[0]
+	QualityPreset.apply(1)
+	if args.has("--route"):
+		shots.clear()
+	for r in ROUTE:
+		var p: Vector2 = r[1]
+		var to: Vector2 = r[2]
+		var dir := (to - p).normalized()
+		var target := Vector3(p.x, CampusBuilder.ground_y(CampusLayout.shared(), p.x, p.y) + 1.3, p.y)
+		var pitch := 0.24
+		var back := Vector3(-dir.x, 0, -dir.y) * 6.2 * cos(pitch)
+		shots.append({"name": r[0], "pos": target + back + Vector3(0, 1.55 + 6.2 * sin(pitch) - 1.3, 0), "look": target + Vector3(dir.x, 0, dir.y) * 2.0, "fov": 66.0})
 	DirAccess.make_dir_recursive_absolute(outdir)
 	var lay := CampusLayout.shared()
 	var b := CampusBuilder.new(lay)
@@ -47,6 +71,7 @@ func _process(_d: float) -> void:
 	var s: Dictionary = shots[i]
 	cam.position = s["pos"]
 	cam.look_at(s["look"])
+	cam.fov = float(s.get("fov", 62.0))
 	wait += 1
 	if wait >= 4:
 		var img := get_viewport().get_texture().get_image()

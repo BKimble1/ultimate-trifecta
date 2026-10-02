@@ -4,7 +4,7 @@ shader_type spatial;
 //   10 plain painted / plastic      9 varnished wood (grain + plank seams)
 //    8 fabric (weave, soft sheen)   7 wallpaper (quiet stripe + dots)
 //    6 glossy (ceramic, lamp glass, poster gloss)
-// UV2.x = emission strength (string lights, lamp shade, window lights).
+// CUSTOM0.x = emission strength (string lights, lamp shade, window lights).
 // Cheap procedural detail (value noise, a few sines), no textures.
 render_mode diffuse_lambert_wrap, specular_schlick_ggx;
 
@@ -35,7 +35,7 @@ float vnoise(vec2 p) {
 void vertex() {
 	v_wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
-	v_emis = UV2.x;
+	v_emis = CUSTOM0.x;
 }
 
 void fragment() {
