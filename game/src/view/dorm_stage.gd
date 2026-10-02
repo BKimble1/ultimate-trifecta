@@ -229,7 +229,7 @@ func _process(delta: float) -> void:
 			var sv: Variant = chars.get(k)
 			if sv != null and is_instance_valid(sv):
 				var right := cam.global_transform.basis.x if cam else Vector3.RIGHT
-				(sl as Label3D).global_position = (sv as Node3D).global_position + Vector3(0, 1.78, 0) + right * 0.62
+				(sl as Label3D).global_position = (sv as Node3D).global_position + Vector3(0, 1.3, 0) + right * 0.78
 	if mode == "walk" and _cam_t >= 1.0:
 		_follow(delta)
 	if not _preview.is_empty():
@@ -545,7 +545,7 @@ func say(key: String, text: String, seconds: float = 4.0) -> bool:
 	l.text = text if text.length() <= 48 else text.substr(0, 46) + "…"
 	l.visible = true
 	if l.is_inside_tree():
-		l.global_position = v.global_position + Vector3(0, 1.78, 0) + (cam.global_transform.basis.x if cam else Vector3.RIGHT) * 0.62
+		l.global_position = v.global_position + Vector3(0, 1.3, 0) + (cam.global_transform.basis.x if cam else Vector3.RIGHT) * 0.78
 	_says[key] = {"label": l, "until": _t + seconds}
 	return true
 
