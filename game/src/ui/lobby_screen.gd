@@ -801,7 +801,7 @@ class SlotCell:
 			face.col = Color(UIKit.IVORY, 0.12)
 			name_l.text = "Invite" if can_invite else "Open seat"
 			name_l.add_theme_color_override("font_color", Color(UIKit.IVORY, 0.6))
-			sub_l.text = ("Tap to invite a friend" if can_invite else "Tap to copy the code") if first_open else ""
+			sub_l.text = ("Invite a friend" if can_invite else "Share the code") if first_open else ""
 			badge.kind = "plus"
 			badge.col = Color(UIKit.IVORY, 0.45)
 			badge.queue_redraw()
