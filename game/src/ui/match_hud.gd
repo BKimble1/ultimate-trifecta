@@ -65,15 +65,21 @@ func setup(controller: MatchController) -> void:
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(top)
 	top.set_meta("anchor", "top")
-	timer_lbl = UIKit.outlined(UIKit.label("4:00", 44, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER), 8)
-	timer_lbl.add_theme_font_override("font", UIKit.font_w(700))
-	top.add_child(timer_lbl)
+	# the clock in tabular digits (no jitter as they change) on a soft pill
+	var tpill := UIKit.scrim(999, 18, 0.5)
+	tpill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tpill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	timer_lbl = UIKit.label("4:00", 40, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER)
+	timer_lbl.add_theme_font_override("font", UIKit.font_num(800))
+	tpill.add_child(timer_lbl)
+	top.add_child(tpill)
 	var hc := UIKit.panel(Color(UIKit.NAVY, 0.6), 999, 14)
 	hc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var hh := UIKit.hbox(8)
 	hh.alignment = BoxContainer.ALIGNMENT_CENTER
 	hh.add_child(Icons.IconRect.new("house", UIKit.TEAL, 22))
 	home_lbl = UIKit.label("Home 0/%d" % mc.cfg.runners_needed, 19, UIKit.IVORY, true, HORIZONTAL_ALIGNMENT_CENTER)
+	home_lbl.add_theme_font_override("font", UIKit.font_num(700))
 	hh.add_child(home_lbl)
 	hc.add_child(hh)
 	top.add_child(hc)
@@ -120,6 +126,10 @@ func setup(controller: MatchController) -> void:
 	(minimap as Minimap).hud = self
 	minimap.custom_minimum_size = Vector2(150, 150)
 	tr.add_child(minimap)
+	# both map pictures are drawn once now (under the loading screen), not on
+	# the first look at the map
+	CampusMap.shared().texture(mc.layout, CampusMap.MINI_PX)
+	CampusMap.shared().texture(mc.layout, CampusMap.FULL_PX)
 	pause_btn = UIKit.icon_button("pause", "", 64)
 	pause_btn.focus_mode = Control.FOCUS_NONE
 	pause_btn.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -127,8 +137,8 @@ func setup(controller: MatchController) -> void:
 	tr.add_child(pause_btn)
 
 	# --- centre messages
-	center_lbl = UIKit.outlined(UIKit.label("", 88, UIKit.AMBER, true, HORIZONTAL_ALIGNMENT_CENTER), 12)
-	center_lbl.add_theme_font_override("font", UIKit.font_w(700))
+	center_lbl = UIKit.outlined(UIKit.label("", 84, UIKit.AMBER, true, HORIZONTAL_ALIGNMENT_CENTER), 12)
+	center_lbl.add_theme_font_override("font", UIKit.font_num(800))
 	center_lbl.set_anchors_preset(Control.PRESET_CENTER)
 	center_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(center_lbl)
@@ -143,7 +153,7 @@ func setup(controller: MatchController) -> void:
 	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bh := UIKit.hbox(10)
 	bh.add_child(Icons.IconRect.new("house", Color(1.0, 0.9, 0.5), 36))
-	banner_lbl = UIKit.label("ALL THREE SPLASHED — RUN HOME!", 26, UIKit.TEXT, true)
+	banner_lbl = UIKit.label("All three splashed · Run home!", 24, UIKit.TEXT, true)
 	bh.add_child(banner_lbl)
 	banner.add_child(bh)
 	banner.visible = false
@@ -164,8 +174,8 @@ func setup(controller: MatchController) -> void:
 	overlay = UIKit.panel(Color(UIKit.SLATE, 0.9), UIKit.R_PANEL, 20)
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var ov := UIKit.vbox(4)
-	overlay_title = UIKit.label("", 36, UIKit.AMBER, true, HORIZONTAL_ALIGNMENT_CENTER)
-	overlay_title.add_theme_font_override("font", UIKit.font_w(700))
+	overlay_title = UIKit.label("", 34, UIKit.AMBER, true, HORIZONTAL_ALIGNMENT_CENTER)
+	overlay_title.add_theme_font_override("font", UIKit.font_w(800))
 	overlay_sub = UIKit.label("", 21, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER)
 	ov.add_child(overlay_title)
 	ov.add_child(overlay_sub)
@@ -180,7 +190,7 @@ func setup(controller: MatchController) -> void:
 	coach.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var ch := UIKit.hbox(10)
 	ch.add_child(Icons.IconRect.new("star", UIKit.TEAL, 30))
-	coach_lbl = UIKit.label("", 23, UIKit.IVORY, true)
+	coach_lbl = UIKit.label("", UIKit.T_BODY, UIKit.IVORY, true)
 	coach_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	coach_lbl.custom_minimum_size = Vector2(560, 0)
 	ch.add_child(coach_lbl)
@@ -933,10 +943,13 @@ class Compass:
 class Minimap:
 	extends Control
 	var hud: MatchHUD
+	var _ring := PackedVector2Array()
+	var _uv := PackedVector2Array()
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		tooltip_text = "Map"
+		accessibility_name = "Map"
 
 	## Tap (or click) the minimap: the full map.
 	func _gui_input(e: InputEvent) -> void:
@@ -946,172 +959,295 @@ class Minimap:
 
 	func _draw() -> void:
 		var s := size
-		var radius := minf(s.x, s.y) * 0.5
-		MapPainter.paint(self, hud, s * 0.5, radius, false)
+		var half := minf(s.x, s.y) * 0.5
+		var c := s * 0.5
+		# the baked campus, clipped to a disc by drawing it as a textured
+		# polygon (no shader, no extra node)
+		if _ring.size() == 0 or not is_equal_approx(_uv[0].x, 1.0 - 0.0) or _ring[0] != c + Vector2(half, 0):
+			_ring.clear()
+			_uv.clear()
+			for i in 48:
+				var a := TAU * float(i) / 48.0
+				var d := Vector2(cos(a), sin(a))
+				_ring.append(c + d * (half - 1.0))
+				_uv.append(Vector2(0.5, 0.5) + d * 0.5 * (half - 1.0) / half)
+		draw_circle(c, half, Color(0.05, 0.08, 0.16, 0.85))
+		var tex := CampusMap.shared().texture(hud.mc.layout, CampusMap.MINI_PX)
+		draw_polygon(_ring, PackedColorArray([Color(1, 1, 1, 0.94)]), _uv, tex)
+		MapPainter.paint(self, hud, c, half, false)
 
 
-## The campus map, shared by the round minimap and the full map: roads,
-## buildings with a darker roofline, waters (tonight's targets as icons),
-## the dorm, your facing arrow, your team, and - per the information policy
-## - only host-sent cues for opponents: splash markers (Night Watch) and
-## "last seen" positions that fade, never live dots through walls.
+## Live things on the map, over the baked campus picture (CampusMap): your
+## arrow and where the camera looks, your team (grouped when close), tonight's
+## three waters as distinct markers (done ones checked), the dorm, and - per
+## the information policy - only host-sent cues for opponents: splash
+## markers (Night Watch) and fading "last seen" rings, never live dots
+## through walls.  The full map labels what fits without overlap.
 class MapPainter:
-	static func paint(ci: CanvasItem, hud: MatchHUD, c: Vector2, half: float, full: bool) -> void:
+	## What the map shows right now, as data (tests check the information
+	## policy here): [{kind, pos, ...}] in map units for a square of
+	## half-size `half` centred on `c`.  kinds: target, home, team, cart,
+	## splash, seen (an opponent: live while in sight, else fading), me.
+	static func items(hud: MatchHUD, c: Vector2, half: float, full: bool) -> Array:
+		var out: Array = []
 		var info := hud.info
 		var me: Dictionary = info.get("rs", {})
 		var L := hud.mc.layout
-		var b := CampusLayout.BOUNDS
-		if full:
-			ci.draw_style_box(UIKit.box(Color(0.06, 0.09, 0.2, 0.96), 24), Rect2(c - Vector2.ONE * half, Vector2.ONE * half * 2.0))
-		else:
-			ci.draw_circle(c, half, Color(0.06, 0.09, 0.2, 0.78))
-		var scale := (half * 2.0 - (24.0 if full else 10.0)) / maxf(b.size.x, b.size.y)
-		var to_map := func(p: Vector2) -> Vector2:
-			return c + (p - b.get_center()) * scale
-		# lawns as a soft ground tone (full map only)
-		if full:
-			ci.draw_rect(Rect2(to_map.call(b.position), b.size * scale), Color(0.12, 0.22, 0.2, 0.55))
-		for r in L.roads:
-			var pts: PackedVector2Array = r["pts"]
-			for i in pts.size() - 1:
-				ci.draw_line(to_map.call(pts[i]), to_map.call(pts[i + 1]), Color(0.45, 0.5, 0.7, 0.85), 4.0 if full else 2.5)
-		for bd in L.buildings:
-			var bp: Vector2 = bd["pos"]
-			var bs: Vector2 = bd["size"]
-			var tl: Vector2 = to_map.call(bp - bs * 0.5)
-			ci.draw_rect(Rect2(tl, bs * scale), Color(0.6, 0.62, 0.8, 0.9))
-			if full:
-				ci.draw_rect(Rect2(tl, bs * scale), Color(0.3, 0.32, 0.5, 0.9), false, 2.0)
+		var to_map := func(p: Vector2) -> Vector2: return CampusMap.to_map(p, c, half)
 		var tg: Array = info.get("targets", [])
 		var stamps: int = info.get("stamps", 0)
 		var role: int = info.get("role", 0)
-		var f := UIKit.font_w(600)
 		for i in L.waters.size():
-			var w: Dictionary = L.waters[i]
-			var wp: Vector2 = to_map.call(w["center"])
 			var ti := tg.find(i)
 			if ti >= 0:
-				var done := (stamps & (1 << ti)) != 0 and role == TC.Role.RUNNER
-				Icons.draw_shape(ci, w["icon"], wp, 16 if full else 9, (w["color"] as Color).darkened(0.5) if done else w["color"])
-				if full:
-					ci.draw_string(f, wp + Vector2(-60, 32), String(w["short"]) + (" ✓" if done else ""), HORIZONTAL_ALIGNMENT_CENTER, 120, 17, Color(UIKit.IVORY, 0.9))
-			else:
-				ci.draw_circle(wp, 6.0 if full else 3.5, Color(0.4, 0.6, 0.9, 0.7))
+				var w: Dictionary = L.waters[i]
+				out.append({"kind": "target", "pos": to_map.call(w["center"]), "water": i,
+					"done": (stamps & (1 << ti)) != 0 and role == TC.Role.RUNNER})
 		var dorm := Vector2(0, 112)
 		if not L.dorm_doors.is_empty():
 			var sum := Vector2.ZERO
 			for d in L.dorm_doors:
 				sum += d["pos"]
 			dorm = sum / float(L.dorm_doors.size())
-		Icons.draw_shape(ci, "house", to_map.call(dorm), 15 if full else 8, Color(1.0, 0.9, 0.55))
-		# your team (same role, openly shown)
-		var my_role := role
+		out.append({"kind": "home", "pos": to_map.call(dorm)})
+		# your team (same role, openly shown); close teammates share one dot
+		var groups: Array = []
 		for slot in hud.mc.roster:
-			if int(slot) == hud.mc.local_slot or int(hud.mc.roster[slot]["role"]) != my_role:
+			if int(slot) == hud.mc.local_slot or int(hud.mc.roster[slot]["role"]) != role:
 				continue
 			var rs := hud.mc._player_rs(int(slot))
-			if rs.has("pos") and int(rs.get("state", 0)) != TC.PState.FINISHED:
-				var pp: Vector3 = rs["pos"]
-				var mp: Vector2 = to_map.call(Vector2(pp.x, pp.z))
-				var tc := UIKit.PATROL if my_role == TC.Role.PATROL else UIKit.RUNNER
-				ci.draw_circle(mp, 7.0 if full else 3.5, tc)
-				if full:
-					ci.draw_string(f, mp + Vector2(10, 6), String(hud.mc.roster[slot]["name"]), HORIZONTAL_ALIGNMENT_LEFT, 140, 15, Color(UIKit.IVORY, 0.85))
-		if my_role == TC.Role.PATROL:
+			if not rs.has("pos") or int(rs.get("state", 0)) == TC.PState.FINISHED:
+				continue
+			var pp: Vector3 = rs["pos"]
+			var mp: Vector2 = to_map.call(Vector2(pp.x, pp.z))
+			var joined := false
+			for gr in groups:
+				if (gr["pos"] as Vector2).distance_to(mp) < (16.0 if full else 7.0):
+					(gr["names"] as Array).append(String(hud.mc.roster[slot]["name"]))
+					(gr["slots"] as Array).append(int(slot))
+					joined = true
+					break
+			if not joined:
+				groups.append({"kind": "team", "pos": mp, "names": [String(hud.mc.roster[slot]["name"])], "slots": [int(slot)]})
+		out.append_array(groups)
+		if role == TC.Role.PATROL:
 			for i in hud.mc.cart_views.size():
 				var crs := hud.mc._cart_rs(i)
 				if crs.has("pos"):
 					var cp: Vector3 = crs["pos"]
-					Icons.draw_shape(ci, "cart", to_map.call(Vector2(cp.x, cp.z)), 11 if full else 6, UIKit.PATROL)
+					out.append({"kind": "cart", "pos": to_map.call(Vector2(cp.x, cp.z))})
 			for m in info.get("markers", []):
 				var w2: Dictionary = L.waters[int(m["water"])]
-				ci.draw_arc(to_map.call(w2["center"]), (20.0 if full else 10.0) + 3.0 * sin(hud._t * 10.0), 0, TAU, 20, Color(1, 1, 1), 2.0)
-		# opponents: last seen only (fading; labelled with the age on the full map)
+				out.append({"kind": "splash", "pos": to_map.call(w2["center"]),
+					"left": clampf(float(m.get("t", 0.0)) / maxf(0.1, hud.mc.cfg.splash_marker_s), 0.0, 1.0)})
+		# opponents: only the host-sent "last seen" cues
 		var now := Time.get_ticks_msec()
-		var opp := UIKit.RUNNER if my_role == TC.Role.PATROL else UIKit.PATROL
 		for slot in hud.mc.last_seen:
 			var ls: Dictionary = hud.mc.last_seen[slot]
 			var age := float(now - int(ls["ms"])) / 1000.0
-			var a := clampf(1.0 - age / MatchController.LAST_SEEN_TTL_S, 0.0, 1.0)
 			var lp: Vector3 = ls["pos"]
-			var sp: Vector2 = to_map.call(Vector2(lp.x, lp.z))
-			var r := 7.0 if full else 4.0
-			if bool(ls.get("live", false)):
-				ci.draw_circle(sp, r, Color(opp, 0.95))
-			else:
-				ci.draw_arc(sp, r, 0, TAU, 16, Color(opp, 0.25 + 0.6 * a), 2.0)
-				if full:
-					ci.draw_string(f, sp + Vector2(10, 5), "seen %ds ago" % int(age), HORIZONTAL_ALIGNMENT_LEFT, 140, 14, Color(opp, 0.4 + 0.5 * a))
+			out.append({"kind": "seen", "pos": to_map.call(Vector2(lp.x, lp.z)), "slot": int(slot), "live": bool(ls.get("live", false)),
+				"fade": clampf(1.0 - age / MatchController.LAST_SEEN_TTL_S, 0.0, 1.0)})
 		if me.has("pos"):
 			var mp2: Vector3 = me["pos"]
-			var mpos: Vector2 = to_map.call(Vector2(mp2.x, mp2.z))
-			var yaw: float = me.get("yaw", 0.0)
+			out.append({"kind": "me", "pos": to_map.call(Vector2(mp2.x, mp2.z)), "yaw": float(me.get("yaw", 0.0)),
+				"cam": hud.mc.camera.yaw if hud.mc.camera else INF})
+		return out
+
+	static func paint(ci: CanvasItem, hud: MatchHUD, c: Vector2, half: float, full: bool) -> void:
+		var L := hud.mc.layout
+		if full:
+			var tex := CampusMap.shared().texture(L, CampusMap.FULL_PX)
+			ci.draw_texture_rect(tex, Rect2(c - Vector2.ONE * half, Vector2.ONE * half * 2.0), false)
+		var role := int(hud.info.get("role", 0))
+		var f := UIKit.font_w(700)
+		var labels: Array = []
+		var blocked: Array = []
+		var k := 1.0 if full else 0.55
+		var tc := UIKit.PATROL if role == TC.Role.PATROL else UIKit.RUNNER
+		var opp := UIKit.RUNNER if role == TC.Role.PATROL else UIKit.PATROL
+		var me_item: Dictionary = {}
+		for it in items(hud, c, half, full):
+			var p: Vector2 = it["pos"]
+			match String(it["kind"]):
+				"target":
+					# tonight's waters: a round badge in the water's colour with its icon
+					var w: Dictionary = L.waters[int(it["water"])]
+					var done := bool(it["done"])
+					var col: Color = w["color"]
+					var r := 15.0 * k
+					ci.draw_circle(p, r + 3.0 * k, Color(UIKit.NAVY, 0.85))
+					ci.draw_circle(p, r, col.darkened(0.55) if done else col)
+					Icons.draw_shape(ci, "check" if done else String(w["icon"]), p, r * 0.6, UIKit.IVORY if done else UIKit.NAVY)
+					blocked.append(Rect2(p - Vector2.ONE * (r + 3.0), Vector2.ONE * (r + 3.0) * 2.0))
+					if full:
+						labels.append({"at": p, "text": String(w["short"]) + (" · done" if done else ""), "size": 18, "prio": 3, "col": UIKit.IVORY, "r": r})
+				"home":
+					var hr := 14.0 * k
+					ci.draw_circle(p, hr + 3.0 * k, Color(UIKit.NAVY, 0.85))
+					ci.draw_circle(p, hr, Color(1.0, 0.86, 0.5))
+					Icons.draw_shape(ci, "house", p, hr * 0.62, UIKit.NAVY)
+					blocked.append(Rect2(p - Vector2.ONE * (hr + 3.0), Vector2.ONE * (hr + 3.0) * 2.0))
+					if full:
+						labels.append({"at": p, "text": "Home", "size": 18, "prio": 4, "col": Color(1.0, 0.9, 0.62), "r": hr})
+				"team":
+					var names: Array = it["names"]
+					var n := names.size()
+					var rr := (7.5 if n == 1 else 10.0) * k
+					ci.draw_circle(p, rr + 2.0 * k, Color(UIKit.NAVY, 0.9))
+					ci.draw_circle(p, rr, tc)
+					if n > 1 and full:
+						ci.draw_string(UIKit.font_num(800), p + Vector2(-rr, 5.0), str(n), HORIZONTAL_ALIGNMENT_CENTER, rr * 2.0, 14, UIKit.NAVY)
+					blocked.append(Rect2(p - Vector2.ONE * (rr + 2.0), Vector2.ONE * (rr + 2.0) * 2.0))
+					if full:
+						labels.append({"at": p, "text": String(names[0]) + ("  +%d" % (n - 1) if n > 1 else ""), "size": 15, "prio": 1, "col": Color(UIKit.IVORY, 0.9), "r": rr})
+				"cart":
+					Icons.draw_shape(ci, "cart", p, 11 if full else 6, UIKit.PATROL)
+				"splash":
+					# a splash just happened there: a still ring that fades (no pulsing)
+					ci.draw_arc(p, (22.0 if full else 11.0), 0, TAU, 32, Color(1, 1, 1, 0.3 + 0.6 * float(it["left"])), 2.5 if full else 1.5, true)
+				"seen":
+					var r2 := 7.0 if full else 4.0
+					if bool(it["live"]):
+						ci.draw_circle(p, r2 + 1.5, Color(UIKit.NAVY, 0.8))
+						ci.draw_circle(p, r2, Color(opp, 0.95))
+					else:
+						ci.draw_arc(p, r2, 0, TAU, 18, Color(opp, 0.2 + 0.65 * float(it["fade"])), 2.0, true)
+				"me":
+					me_item = it
+		# you, on top: an arrow and a soft wedge for where the camera looks
+		if not me_item.is_empty():
+			var mpos: Vector2 = me_item["pos"]
+			var yaw: float = me_item["yaw"]
 			var fw := Vector2(-sin(yaw), -cos(yaw))
 			var sd := Vector2(-fw.y, fw.x)
-			var k := 1.8 if full else 1.0
-			ci.draw_colored_polygon(PackedVector2Array([mpos + fw * 9.0 * k, mpos - fw * 5.0 * k + sd * 5.0 * k, mpos - fw * 5.0 * k - sd * 5.0 * k]), Color(1, 1, 1))
-			if hud.mc.camera:
-				# the camera's view direction, faint
-				var cy := hud.mc.camera.yaw
+			var kk := 1.7 if full else 1.0
+			if float(me_item["cam"]) != INF:
+				var cy: float = me_item["cam"]
 				var vf := Vector2(-sin(cy), -cos(cy))
-				ci.draw_line(mpos, mpos + vf * (28.0 if full else 14.0), Color(1, 1, 1, 0.35), 2.0)
-		if not full:
-			ci.draw_arc(c, half - 1.0, 0, TAU, 48, Color(1, 1, 1, 0.35), 2.0)
+				var vs := Vector2(-vf.y, vf.x)
+				var ln := (46.0 if full else 22.0)
+				ci.draw_colored_polygon(PackedVector2Array([mpos, mpos + (vf + vs * 0.55) * ln, mpos + (vf - vs * 0.55) * ln]), Color(1, 1, 1, 0.13))
+			var tri := PackedVector2Array([mpos + fw * 9.0 * kk, mpos - fw * 5.0 * kk + sd * 5.5 * kk, mpos - fw * 2.5 * kk, mpos - fw * 5.0 * kk - sd * 5.5 * kk])
+			var outline := PackedVector2Array()
+			for pnt in tri:
+				outline.append(mpos + (pnt - mpos) * 1.35)
+			ci.draw_colored_polygon(outline, Color(UIKit.NAVY, 0.9))
+			ci.draw_colored_polygon(tri, Color(1, 1, 1))
+			blocked.append(Rect2(mpos - Vector2.ONE * 12.0 * kk, Vector2.ONE * 24.0 * kk))
+		if full:
+			var area := Rect2(c - Vector2.ONE * half, Vector2.ONE * half * 2.0).grow(-6.0)
+			for lb in CampusMap.place_labels(labels, f, area, blocked):
+				var rect: Rect2 = lb["rect"]
+				ci.draw_style_box(UIKit.box(Color(UIKit.NAVY, 0.72), 8), rect)
+				ci.draw_string(f, rect.position + Vector2(5, rect.size.y - 6), String(lb["text"]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(lb["size"]), lb["col"])
+		else:
+			ci.draw_arc(c, half - 1.0, 0, TAU, 48, Color(1, 1, 1, 0.35), 2.0, true)
 
 
 ## The full map: tap the minimap or press Map; Close (or Back / Map again).
-## It shows the same information as the minimap, larger, with a legend and
-## your team.  The round keeps running; touch controls are set aside while
-## it is open so a finger can't move or turn you underneath it.
+## Left: the map, as large as fits.  Right: a compact panel - Home n/N and
+## runners out, a short legend, your team (scrolls), and a small help button
+## for the longer explanation.  The round keeps running; touch controls are
+## set aside while it is open so a finger can't move or turn you underneath.
 class FullMap:
 	extends Control
 	var hud: MatchHUD
 	var canvas: Control
 	var team_box: VBoxContainer
 	var close_btn: Button
+	var help_btn: Button
+	var help_card: Control
+	var home_lbl: Label
 
 	func build() -> void:
 		set_anchors_preset(Control.PRESET_FULL_RECT)
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		var dim := ColorRect.new()
-		dim.color = Color(UIKit.NAVY, 0.82)
+		dim.color = Color(UIKit.NAVY, 0.84)
 		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(dim)
 		canvas = MapCanvas.new()
 		(canvas as MapCanvas).hud = hud
 		canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		canvas.accessibility_name = "Campus map"
 		add_child(canvas)
-		var side := UIKit.panel(Color(UIKit.SLATE, 0.96), UIKit.R_PANEL, 18)
+		var side := UIKit.panel(Color(UIKit.SLATE, 0.97), UIKit.R_PANEL, 18)
 		side.name = "Side"
+		side.custom_minimum_size = Vector2(390, 0)
 		var v := UIKit.vbox(10)
-		var head := UIKit.hbox(10)
-		var title := UIKit.heading("Campus map", 30)
+		var head := UIKit.hbox(8)
+		var title := UIKit.styled("Map", "headline")
 		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		head.add_child(title)
-		close_btn = UIKit.secondary("Close", Vector2(140, 64), 22)
+		help_btn = UIKit.icon_button("info")
+		help_btn.tooltip_text = "What the map shows"
+		help_btn.accessibility_name = "What the map shows"
+		help_btn.pressed.connect(_toggle_help)
+		head.add_child(help_btn)
+		close_btn = UIKit.secondary("Close", Vector2(130, 0))
 		close_btn.pressed.connect(func() -> void: hud.close_map())
 		head.add_child(close_btn)
 		v.add_child(head)
-		var legend := UIKit.vbox(4)
+		home_lbl = UIKit.styled("", "label", UIKit.AMBER)
+		v.add_child(home_lbl)
+		# a brief legend: four icons
 		var role := int(hud.info.get("role", 0))
-		var rows := [["You (arrow) and where your camera looks", UIKit.IVORY], ["Your team", UIKit.PATROL if role == TC.Role.PATROL else UIKit.RUNNER],
-			["Tonight's splash spots (icons) · other waters (dots)", UIKit.TEAL], ["The dorm: home", Color(1.0, 0.9, 0.55)],
-			["Opponents you saw: solid while in sight, a fading ring up to %d s after" % int(MatchController.LAST_SEEN_TTL_S), UIKit.RUNNER if role == TC.Role.PATROL else UIKit.PATROL]]
-		if role == TC.Role.PATROL:
-			rows.append(["Carts · a white ring: a splash just happened there", UIKit.PATROL])
-		for r in rows:
-			var l := UIKit.label("●  " + String(r[0]), 17, r[1])
-			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			l.custom_minimum_size = Vector2(380, 0)
-			legend.add_child(l)
+		var legend := GridContainer.new()
+		legend.columns = 2
+		legend.add_theme_constant_override("h_separation", 14)
+		legend.add_theme_constant_override("v_separation", 4)
+		for r in [["arrow", "You", UIKit.IVORY], ["dot", "Your team", UIKit.PATROL if role == TC.Role.PATROL else UIKit.RUNNER],
+				["drop", "Tonight's waters", UIKit.TEAL], ["house", "Home", Color(1.0, 0.86, 0.5)],
+				["ring", "Last seen", UIKit.RUNNER if role == TC.Role.PATROL else UIKit.PATROL]]:
+			var row := UIKit.hbox(6)
+			row.add_child(LegendMark.make(String(r[0]), r[2]))
+			var l := UIKit.styled(String(r[1]), "caption", UIKit.IVORY_MUTED)
+			l.add_theme_font_size_override("font_size", 18)
+			row.add_child(l)
+			legend.add_child(row)
 		v.add_child(legend)
-		v.add_child(UIKit.label("Your team", 22, UIKit.IVORY, true))
+		v.add_child(UIKit.styled("Your team", "overline", UIKit.IVORY_MUTED))
+		var sc := ScrollContainer.new()
+		sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		sc.custom_minimum_size = Vector2(0, 120)
 		team_box = UIKit.vbox(4)
-		v.add_child(team_box)
+		team_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sc.add_child(team_box)
+		v.add_child(sc)
 		side.add_child(v)
 		add_child(side)
 		refresh_team()
+		Motion.settle_in(side, UIKit.T_FAST)
+
+	func _toggle_help() -> void:
+		if help_card != null and is_instance_valid(help_card):
+			help_card.queue_free()
+			help_card = null
+			return
+		var role := int(hud.info.get("role", 0))
+		var p := UIKit.panel(Color(UIKit.SLATE_HI, 0.99), UIKit.R_PANEL, 18)
+		var v := UIKit.vbox(6)
+		var lines := ["The white arrow is you; the light wedge is where your camera looks.",
+			"Tonight's three waters have round badges; a check means you've splashed there.",
+			"Your team is shown in its colour; close teammates share one dot with a count.",
+			"Opponents appear only when you see them: a solid dot while in sight, then a fading ring for %d s." % int(MatchController.LAST_SEEN_TTL_S)]
+		if role == TC.Role.PATROL:
+			lines.append("Carts are drawn as cart icons; a white ring marks a splash that just happened.")
+		for ln in lines:
+			var l := UIKit.styled(ln, "caption", UIKit.IVORY)
+			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			l.custom_minimum_size = Vector2(420, 0)
+			v.add_child(l)
+		p.add_child(v)
+		add_child(p)
+		var side := get_node("Side") as Control
+		p.position = Vector2(side.position.x - p.get_combined_minimum_size().x - 12, side.position.y)
+		help_card = p
+		Motion.appear(p, 6.0, UIKit.T_FAST)
 
 	func refresh_team() -> void:
 		for c in team_box.get_children():
@@ -1128,7 +1264,7 @@ class FullMap:
 			if role == TC.Role.PATROL:
 				what = "Driving" if st == TC.PState.IN_CART or st == TC.PState.ENTERING else "On foot"
 			match st:
-				TC.PState.CAPTURED: what = "Caught · back soon"
+				TC.PState.CAPTURED: what = "Caught"
 				TC.PState.FINISHED: what = "Home"
 				TC.PState.SPLASHING: what = "Splashing"
 			if not bool(rs.get("connected", true)):
@@ -1137,16 +1273,17 @@ class FullMap:
 				what += " · %d/3" % _bits(int(rs.get("stamps", 0)))
 			var row := UIKit.hbox(8)
 			row.add_child(Icons.IconRect.new("house" if st == TC.PState.FINISHED else ("whistle" if role == TC.Role.PATROL else "drop"), UIKit.PATROL if role == TC.Role.PATROL else UIKit.TEAL, 20))
-			var name := String(e["name"]) + ("  (you)" if int(slot) == mc.local_slot else "") + ("  · bot" if bool(e["is_bot"]) else "")
-			var nl := UIKit.label(name, 18, UIKit.IVORY, true)
-			nl.custom_minimum_size = Vector2(190, 0)
-			nl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-			nl.clip_text = true
+			var nm := String(e["name"]) + (" (you)" if int(slot) == mc.local_slot else "")
+			var nl := UIKit.styled(nm, "label")
+			nl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			UIKit.fit_text(nl, [18, 16])
 			row.add_child(nl)
-			row.add_child(UIKit.label(what, 17, UIKit.IVORY_MUTED))
+			var wl := UIKit.styled(what, "caption", UIKit.IVORY_MUTED)
+			wl.add_theme_font_size_override("font_size", 17)
+			row.add_child(wl)
 			team_box.add_child(row)
 		var fin := int(hud.info.get("finished", 0))
-		team_box.add_child(UIKit.label("Home %d/%d · %d runners still out" % [fin, mc.cfg.runners_needed, hud.runners_out()], 18, UIKit.AMBER, true))
+		home_lbl.text = "Home %d/%d · %d still out" % [fin, mc.cfg.runners_needed, hud.runners_out()]
 
 	static func _bits(v: int) -> int:
 		var n := 0
@@ -1160,13 +1297,42 @@ class FullMap:
 		var safe := UIKit.safe_margins(get_viewport())
 		var side := get_node("Side") as Control
 		var sw := side.get_combined_minimum_size()
+		var avail_h := vs.y - safe.position.y - safe.size.y - 32
 		side.position = Vector2(vs.x - safe.size.x - 16 - sw.x, safe.position.y + 16)
-		side.size = Vector2(sw.x, minf(sw.y, vs.y - safe.position.y - safe.size.y - 32))
-		var avail := Rect2(safe.position.x + 16, safe.position.y + 16, side.position.x - safe.position.x - 32, vs.y - safe.position.y - safe.size.y - 32)
+		side.size = Vector2(sw.x, avail_h)
+		var avail := Rect2(safe.position.x + 16, safe.position.y + 16, side.position.x - safe.position.x - 32, avail_h)
 		var half := minf(avail.size.x, avail.size.y) * 0.5
 		canvas.position = avail.get_center() - Vector2.ONE * half
 		canvas.size = Vector2.ONE * half * 2.0
 		canvas.queue_redraw()
+
+
+## A tiny legend mark matching the map's own markers.
+class LegendMark:
+	extends Control
+	var kind := "dot"
+	var col := Color.WHITE
+
+	static func make(k: String, c: Color) -> LegendMark:
+		var m := LegendMark.new()
+		m.kind = k
+		m.col = c
+		m.custom_minimum_size = Vector2(24, 24)
+		m.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return m
+
+	func _draw() -> void:
+		var c := size * 0.5
+		match kind:
+			"arrow":
+				draw_colored_polygon(PackedVector2Array([c + Vector2(0, -9), c + Vector2(7, 7), c + Vector2(0, 3), c + Vector2(-7, 7)]), col)
+			"ring":
+				draw_arc(c, 7.0, 0, TAU, 18, col, 2.0, true)
+			"dot":
+				draw_circle(c, 7.0, col)
+			_:
+				draw_circle(c, 10.0, col)
+				Icons.draw_shape(self, kind, c, 6.0, UIKit.NAVY)
 
 
 class MapCanvas:
