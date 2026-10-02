@@ -46,7 +46,7 @@ func _portraits_idle(max_s: float = 12.0) -> void:
 
 
 func snap(shot: String) -> void:
-	if only != "" and not shot.begins_with(only):
+	if only != "" and not Array(only.split(",")).any(func(o: String) -> bool: return shot.begins_with(o)):
 		return
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()

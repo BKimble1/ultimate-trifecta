@@ -33,6 +33,8 @@ var premium_chip: Label
 var claim_all_btn: Button
 var banner: Label
 var detail_box: VBoxContainer
+var _legend: Array = []
+var cell_size := CELL
 var focus_tier := 1
 var focus_track := "free"
 var _busy := false
@@ -85,6 +87,7 @@ func build() -> void:
 	track_scroll.add_child(row)
 	for t in Catalogue.season_tiers(sid):
 		row.add_child(_column(t))
+	tp.resized.connect(_fit_cells.bind(tp))
 
 	var view := get_viewport().get_visible_rect().size
 	var dp := UIKit.panel(Color(UIKit.SLATE, 0.96), UIKit.R_PANEL, 18)
@@ -166,7 +169,23 @@ func _track_legend() -> Control:
 		l.custom_minimum_size = Vector2(0, CELL + 12.0)
 		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		v.add_child(l)
+		_legend.append(l)
 	return v
+
+
+## Cells grow to fill a taller track (iPad) and never shrink below CELL.
+func _fit_cells(tp: Control) -> void:
+	var avail := tp.size.y - 24.0 - 30.0 - GAP * 2.0 - 16.0   # panel padding, tier label, gaps, scrollbar
+	var c := clampf(floorf(avail * 0.5 - 12.0), CELL, 210.0)
+	if absf(c - cell_size) < 1.0:
+		return
+	cell_size = c
+	for cell in cells:
+		(cell as Control).custom_minimum_size = Vector2(c, c + 12.0)
+	for l in _legend:
+		(l as Control).custom_minimum_size.y = c + 12.0
+	for t in columns:
+		((columns[t] as Control).get_meta(&"tier_label") as Control).custom_minimum_size.x = c
 
 
 func _column(t: Dictionary) -> Control:
