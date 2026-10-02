@@ -123,7 +123,7 @@ game/                 Godot project (open game/project.godot)
   tests/              headless rule/sim/network/route/touch/motion tests
 tools/                fetch, test, soak, export, build, App Store Connect scripts
   character/          editable source of the character asset (Blender bpy scripts)
-.github/workflows/    ios.yml: tests → iOS export → device archive → simulator → TestFlight
+.github/workflows/    ios.yml: tests → iOS export → device archive (or signed TestFlight upload) → simulator → processing check
 docs/                 test data, screenshots and recordings
 ```
 

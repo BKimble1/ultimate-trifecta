@@ -45,6 +45,7 @@ How it got there:
 - **Run #31** (`7a5325b`) failed at the signed archive, before anything was uploaded. Godot writes "Apple Distribution" into the Release configuration, and Xcode rejects a manually chosen identity under automatic signing ("conflicting provisioning settings").
 - **The fix** (`e39c98c`): signed builds archive with the development identity, and the App Store Connect export re-signs the build for distribution.
 - **Run #32** archived, exported and uploaded the build in about 2 minutes. The Simulator run followed while Apple processed it.
+- **Run #36** (`26cb5fe`) checked that unsigned builds still work with the signing change: unsigned device archive, then the Simulator with no crash report.
 - **Earlier unsigned CI builds** of V3 (runs #26, #28, #29 and #30) passed, including the unsigned device archive. Run #28's Simulator log shows a cold launch with no crash report. V2 was never uploaded.
 
 ## The owner action that remains

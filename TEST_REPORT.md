@@ -1,6 +1,6 @@
 # Test report: Ultimate Trifecta
 
-This report records what was actually run, where, and what each result proves. Version 1.1 (V2) is reported first; the V1 (1.0) report follows unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
+This report records what was actually run, where, and what each result proves. Version 1.2 (V3) is reported first. The V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
 
 | Label | What it is | What it can prove |
 |---|---|---|
@@ -9,9 +9,349 @@ This report records what was actually run, where, and what each result proves. V
 | **Loopback net** | Host and up to 7 `NetSession` clients in one process over an in-memory transport with simulated latency, jitter and loss | Protocol, prediction/reconciliation, lag compensation, reconnect, host loss |
 | **Desktop UDP** | Separate Godot processes (1 host + N clients) on one Linux machine over real UDP (ENet), each shaping its outbound traffic, playing full rounds with automation input | Multi-process networking across full rounds; *not* iPhones, *not* the Game Center transport |
 | **Desktop render** | The game rendered by Godot's Mobile renderer on Mesa **llvmpipe** (software Vulkan) under Xvfb, at device resolutions, with a fixed frame clock (`--fixed-fps 60`, or Movie Maker) | Layout, framing, art, render-path dimensions (render size vs displayed size, MSAA, scale) and engine counters (draw calls, primitives). **Not** frame rate, frame pacing, GPU cost or device smoothness |
-| **CI iOS** | GitHub Actions `macos-26` runner: Xcode project export, unsigned arm64 device archive, x86_64 Simulator build and run | That the iOS project compiles and links for device and launches in the Simulator; *not* device performance |
+| **CI iOS** | GitHub Actions `macos-26` runner: Xcode project export, unsigned arm64 device archive (or, from V3, a signed archive and TestFlight upload), x86_64 Simulator build and run, App Store Connect API checks | That the iOS project compiles, links, signs and uploads, launches in the Simulator, and what App Store Connect reports for the build; *not* device performance or a device install |
 
-**Not done: no physical iPhone or iPad was available, so nothing in V1 or V2 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V2 section 8.
+**Not done: no physical iPhone or iPad was available, so nothing in V1, V2 or V3 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V3.8.
+
+# V3 (version 1.2)
+
+Code on `claude/ultimate-trifecta-testflight-oie9r7`, final app code
+`001f274` (later commits change only documentation, media and the release lane). Implementation notes: [docs/V3_NOTES.md](docs/V3_NOTES.md).
+Media index: [docs/media/v3/README.md](docs/media/v3/README.md).
+
+Evidence sources are labelled as in the table at the top of this report.
+V3 adds two more:
+
+| Label | What it is | What it can prove |
+|---|---|---|
+| **Service (node)** | The service's whole HTTP API (`service/src`) running under Node 22's built-in test runner. It uses an in-memory D1 shim on `node:sqlite` and a per-run self-signed certificate standing in for Apple's key. | Sign-in verification logic, tokens, names, moderation, deletion, room lifecycle and admission. It does **not** prove a Cloudflare deployment or Apple's real certificate chain. |
+| **Native (Linux)** | The UTShare GDExtension built from source with gcc and loaded by the pinned engine | Class registration, method binding, argument marshalling and the clipboard fallback. It does **not** prove the iOS share sheet. |
+
+**Not done: no physical iPhone, iPad or game controller was available, and
+the service is not deployed.** See V3.8.
+
+## V3.1 Automated tests
+
+`tools/run_tests.sh` on the final code: **117 tests, 1254 checks, 0 failures** in 207 s
+(`docs/test-data/v3_full_test_run.txt`). V2 had 76 tests and 914 checks.
+
+The runner now also **fails a test when any script error is raised during
+it**: freed-instance access, bad calls and the like. Before, these were
+printed and ignored. Turning that on found nothing else in the suite; two
+real instances had already been found and fixed during V3 (V3.7).
+
+| Suite | Tests | What they exercise |
+|---|---|---|
+| `test_animation` | 7 | Gait cadence matches the asset's measured stride; footsteps follow the gait phase; distant (throttled) characters keep real time; visual yaw never turns the long way; landing sounds survive floor-contact flicker; the splash sequence plays from authoritative time, including late joins; the impact class comes from the sim |
+| `test_profile` | 8 | V1 and V2 saves migrate (progress, owned items, the same look in schema 2); generated and migrated default names always fit the 3–16-character rule; every appearance maps onto the character's parts with the hair/hat rules; the versioned wire format round-trips every value and rejects junk; catalog IDs are explicit, unique and pinned; Apply is atomic and idempotent |
+| `test_trust` | 6 | The bound host can't be replaced and nobody else can send host messages; the expected host identity is enforced; admission tokens are verified, bound to the sender and single use; junk and floods are contained (flooders removed); the round waits for load acks (15 s cap); names from the network are sanitised |
+| `test_controls` | 9 | Rapid jump-then-dive is two presses on keyboard, controller and touch; mixed sources keep arrival order; the queue is bounded and stale presses expire; text fields and pause don't leak presses; drift can't fight touch or flip prompts, and a button switches device at once; stick curves (radial dead zones, expo, boost); controller-family prompts; disconnect and backgrounding clear presses; HUD splash-feed coalescing survives freed lines |
+| `test_focus` | 3 | Home, Play with Friends, Practice, Settings, How to play and Create Your Runner each open focused, and every visible button is reachable with the d-pad (Settings: 22 buttons; creator: 19); the code field never traps a controller (code pad); dialogs trap focus, Back closes them, and focus returns to the opener |
+| `test_account` | 7 | First launch: Create Your Runner, then the name; Delete Game Profile signs in again, deletes online first and wipes the device only after success; a failure keeps everything; with no service it deletes on the device only; the Profile section has Change name and Delete; the session is reused and renewed once when it expires; report and block requests match the service contract (paths, bounded details, every lobby reason accepted) |
+| `test_lobby` | 3 | Incremental stage updates through drop and rejoin; **1, 2, 4 and 8 players at 2532×1170, 1334×750 and 2048×1536, with tall hats: distinct marks, every body (both shoulders) in frame, no face behind a nearer head or hat**; slot-cell contents stay inside the cell |
+| `test_native` | 1 | The UTShare extension registers an abstract class with static `share(text, url)` and `available()` with the right flags and types; UTF-8 crosses the boundary; desktop reports no sheet and Share falls back to the clipboard |
+| `test_net` (updated) | 14 | As in V2. The reconnect test now also checks that an impostor without the slot's rejoin key is refused (`in_use`). New: over real UDP on localhost, packets for a peer that has left are dropped without engine errors (fails on the old transport) |
+
+**Service (node)** (`cd service && npm test`, `docs/test-data/v3_service_tests.txt`):
+**21 tests, 0 failures**.
+
+- **Sign-in:** a verified signature creates an opaque profile; a claimed ID
+  without Apple's signature gets nothing; tokens are bound to environment,
+  bundle, audience and expiry; sign-out revokes; per-address rate limit.
+- **Names:** character rules; slurs, sexual content, profanity, threats,
+  impersonation and contact info are rejected, including disguised
+  spellings; **false positives**: ordinary names containing blocked letters
+  pass; suggestions; discriminators; cooldown; reserved names and forced
+  renames.
+- **Safety:**
+  - Reports reach the queue with a receipt.
+  - Admin actions (forced rename, suspension) work and are audited.
+  - Blocks persist.
+  - Deletion needs confirmation and a fresh sign-in and removes personal
+    data.
+- **Rooms:**
+  - Codes are 6 unambiguous characters, with strict normalisation.
+  - Create and join with admission and version sync.
+  - Distinct errors.
+  - Only the host updates the room, following the lifecycle.
+  - A reconnect keeps its own slot.
+  - Blocked or removed players can't get in.
+  - One live party per host; unconnected reservations lapse.
+
+## V3.2 Visual evidence (desktop render)
+
+Everything is listed in [docs/media/v3/README.md](docs/media/v3/README.md),
+with the build each file came from. All of it is **desktop render**; none
+is device footage.
+
+- **Party lobby**:
+  - 1, 2, 4 and 8 players at 2532×1170;
+  - eight players at iPhone SE 1334×750 and iPad 2048×1536;
+  - all with random looks including tall hats.
+  Every face and body is in frame. These captures found three layout bugs
+  (V3.7), now covered by `test_lobby`.
+- **Screens**: Home, Create Your Runner (also as the first launch, with no
+  Back), the name sheet, Settings › Profile, the Delete Game Profile
+  confirmation, Play with Friends, Practice, How to play and Results.
+- **Character art sheets**: faces, views, looks, hair, poses, gait
+  transitions and the cart drivers.
+- **Gameplay stills**:
+  - the Quarry splash sequence;
+  - a Night Watch tag;
+  - the cart;
+  - the canopy before and after on identical frames;
+  - controller hints with PlayStation glyphs (simulated pad).
+- **Normal-speed clips** (30 fps Movie Maker, labelled in the frame):
+  - a full runner round (75 s) and a Night Watch round (80 s) on
+    `cf53155`;
+  - the canopy before/after side by side;
+  - the lobby filling up;
+  - the creator.
+- **iOS Simulator** (CI, V3.5): a cold launch through the boot splash and
+  the loading screen to a practice match's role reveal, driven by the
+  CI's automation flags.
+
+## V3.3 Worst-scene budget (engine counters)
+
+Engine counters from the in-game diagnostics. Draw calls and primitives
+don't depend on the GPU, so they are comparable across runs. They are
+**not** frame times. Preset Standard.
+
+| Scene | Size | V2 draw calls / primitives | V3 draw calls / primitives |
+|---|---|---|---|
+| Home | 2532×1170 | 34 / 40.6k | 78 / 46.3k |
+| Lobby, 1 player | 2532×1170 | 82 / 44.6k | 91 / 46.0k |
+| Lobby, 4 players | 2532×1170 | — | 131 / 172.7k |
+| **Lobby, 8 players** | 2532×1170 | 166 / 272.6k | **194 / 349.9k** |
+| Lobby, 8 players (iPhone SE) | 1334×750 | — | 190 / 233.9k |
+| Lobby, 8 players (iPad) | 2048×1536 | — | 179 / 249.4k |
+| Results | 2532×1170 | 27 / 40.9k | 27 / 45.8k |
+| **Gameplay, role reveal** (8 characters by the dorm) | 1600×740 | — | **233 / 351.1k** |
+| Gameplay, running | 1600×740 | 158 / 246.7k (`runner_outdoors`) | 196 / 312.7k |
+| Water entry / mid-splash / recovery (seed 11) | 1280×720 | — | 124–128 / 161–232k |
+
+**Budget used for V3: at most 250 draw calls and 400k primitives in any
+frame at Standard.** The worst scenes are the gameplay role reveal
+(233 / 351k) and the full lobby (194 / 350k), so both are inside it. The
+increase over V2 comes from the new head, hair shells and face detail. Going
+from 1 to 8 players adds about 43k primitives per character in that frame,
+counting every pass that draws it (depth, shadow and colour). Distant
+characters use the imported LODs.
+
+These counters say nothing about GPU time. Whether 350k primitives with
+2× MSAA fits an iPhone XS (A12, the minimum) at 60 fps, or needs Battery
+Saver there, can only be measured on the device (V3.8).
+
+
+## V3.4 Networking on V3 (protocol 4)
+
+Protocol version 4 adds:
+- host binding and host-only messages;
+- admission tokens and rejoin keys;
+- load acknowledgements before the countdown;
+- per-peer rate limits that remove flooders;
+- bounds checks on incoming messages.
+`test_trust` covers these. The V2 network tests pass unchanged on top.
+
+**Loopback net** (the final test run; host and clients in one process over
+the in-memory transport):
+
+| Run | RTT / jitter / loss | Corrections avg / max | Over 25 cm | Missing reliable events |
+|---|---|---|---|---|
+| `rtt100` | 100 ms / 8 ms / 0 | 4 mm / 0.228 m | 0 | 0 |
+| `rtt150_loss5` | 150 ms / 15 ms / 5% | 2 mm / 0.098 m | 0 | 0 |
+| `rtt300_loss10` | 300 ms / 30 ms / 10% | 2 mm / 0.098 m | 0 | 0 |
+| 8 players, 7 clients | 120 ms / 3% | worst client average 3 mm | not reported | not reported |
+
+A client Night Watch's tag still lands at 150 ms, with 9 ticks of lag
+compensation.
+
+**Desktop UDP soak** (`tools/net_soak.sh 7 60 10 0.03`). Eight separate
+Godot processes on this machine (one host and seven clients) play one full
+round over real UDP (ENet). Each process adds 60 ms one-way latency, 10 ms
+jitter and 3% loss to its own outbound traffic, for about 150 ms of
+round-trip time. Final code, `docs/test-data/v3_net_soak_7c_60ms_0.03/`:
+
+| Process | Outcome | RTT est. | Snapshots | Corrections avg / max | Packets sent | Shaper drops |
+|---|---|---|---|---|---|---|
+| client1 | Night Watch win, 0/4 home | 154 ms | 4837 | 0.9 mm / 0.71 m | 15422 | 461 |
+| client2 | same | 153 ms | 4829 | 1.5 mm / 1.11 m | 15440 | 470 |
+| client3 | same | 162 ms | 4833 | 1.9 mm / 0.65 m | 15437 | 430 |
+| client4 | same | 151 ms | 4798 | 1.4 mm / 0.91 m | 15429 | 459 |
+| client5 | same | 157 ms | 4842 | 2.4 mm / 1.31 m | 15439 | 471 |
+| client6 | same | 156 ms | 4810 | 1.5 mm / 0.32 m | 15429 | 481 |
+| client7 | same | 153 ms | 4822 | 1.2 mm / 0.91 m | 15420 | 470 |
+| host | same | — | — | host (no prediction) | 42060 | 1095 |
+
+- **All eight processes** finished the 4:00 round together, with the same
+  outcome, at 60 fps.
+- **Logs:** no script errors and no transport errors in any of the eight;
+  only the engine's exit-time leak notices.
+- **Host input buffers:**
+  - The host never ran short of a client's input (0 starved ticks).
+  - It merged inputs 46 times across all clients, keeping button presses,
+    to stay near real time.
+- **Comparison with earlier soaks:**
+  - The V2 soak under the same conditions: corrections 0.9–2.0 mm average,
+    1.56 m worst; 11 merged inputs.
+  - The first V3 soak, before the splash-feed fix: 105 merged inputs and
+    13 script errors from the feed.
+  - Merging depends on how eight processes share four CPU cores, so the
+    count varies from run to run.
+- **Large corrections:** the maximum (0.3–1.3 m) is each client's single
+  largest correction in the round. The averages stay in millimetres.
+  Individual large corrections were not traced to a cause.
+
+What this does **not** show: Game Center's transport (GKMatch), real
+devices, mobile radios or internet paths. The UDP soak shares one CPU
+between eight processes. The service's room API (create, join, admission,
+heartbeats) is covered by the service tests only; it is not deployed.
+
+## V3.5 iOS build (CI iOS) and TestFlight
+
+**Signed and uploaded:** `com.idlery.ultimatetrifecta` **1.2 (1)** went to
+App Store Connect at 03:39 UTC on 2 October 2026. Apple processed it to
+`VALID`, and it is **available to internal testers** (`IN_BETA_TESTING`). It
+is in the owner's existing internal group, which receives every build. It
+was uploaded as internal-only; there is no external testing and no App
+Store submission. Details and evidence: `TESTFLIGHT_RELEASE.md`, "Current
+release state".
+
+| Run | Commit | What happened |
+|---|---|---|
+| #26, #28 | `cff7edb`, `d2fd2f3` | Unsigned device archive with the UTShare framework embedded (arm64). Run #28's Simulator log: a cold launch with no crash report; the contact sheet shows the boot splash, loading and the role reveal. |
+| #29, #30 | `cf53155`, `7a5325b` | Passed, including the unsigned device archive. |
+| #31 | `7a5325b`, upload | Tests and export passed, and the Simulator steps ran. The **signed archive failed**: Godot's "Apple Distribution" identity conflicts with automatic signing. Nothing was uploaded. |
+| **#32** | `e39c98c`, upload | Tests passed. Signed archive, export and upload in 2 min 19 s. The Simulator ran meanwhile. Apple reported `VALID` and `IN_BETA_TESTING`. |
+| #34, #35 | read only | App Store Connect state: 1.2 (1), `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING`. |
+| #36 | `26cb5fe` | An ordinary push build on the final lane. The unsigned device archive still builds with the development identity stamped in; it was numbered 2 and not uploaded. Simulator: the app was still running 45 s after a cold launch, with no crash report then or after the bot-driven round, and 17 screenshots were taken. The app's status lines did not reach the Simulator's unified log, so the log neither confirms the match's progress nor rules out script errors. |
+
+The signed archive in run #32:
+- **Binary:** arm64, 270 MB `.app`.
+- **Toolchain:** Xcode 26.6 (17F113), iOS SDK 26.5, MinimumOSVersion 17.0.
+- **Devices:** iPhone and iPad, landscape.
+- **Plist:** `ITSAppUsesNonExemptEncryption` false.
+- **Frameworks:** Game Center bindings and UTShare, embedded, arm64.
+- **Entitlements and privacy:** the Game Center entitlement; the privacy manifest with no tracking and no collected data.
+
+The game, service and native code of `e39c98c` are identical to
+`001f274`, the code the tests, soak and captures ran on.
+
+A Simulator run proves only that the app launches and plays under x86_64
+emulation. It says nothing about device performance.
+
+## V3.6 Functional checks from the brief
+
+Checked against the brief, with the evidence used for each:
+
+| Requirement | Result | Evidence |
+|---|---|---|
+| Rules unchanged (6 vs 2, 3 of 6 waters, 4:00, 4 home, stamps kept, 6 s capture) | ✅ | `test_rules`, `test_sim` and the route and chase suites pass unchanged. Animation never feeds the sim; the impact class goes sim → view only. |
+| Real cadence, phase-continuous blends, footsteps from phase | ✅ | `test_animation`; `art/lineup_transitions.png` |
+| Splash sequence from authoritative time; impact class in the event; one sound; pooled FX; concurrent ripples; Reduced Motion | ✅ | `test_animation` (late join, resync, impact class); movie `runner_v3_desktop.mp4` |
+| Faces visible at 1/2/4/8; steady camera; one primary action | ✅ | `test_lobby` at three aspects; `lobby/*.png` |
+| Create Party / Join Code; Copy / Share / Invite; native share sheet | ✅ code; ⚠ share sheet on device unverified | `screens/online.png`, `lobby/*`; UTShare built, linked and embedded (CI #26; the signed TestFlight build #32); `test_native` |
+| Portraits, host badge, player sheet (Hide/Report/Block/Remove), bot fill once | ✅ | `lobby/*.png`; `test_account` (report/block contract) |
+| Real static weights, wordmark, button depth/spring, 150–250 ms transitions | ✅ | measured ink (V3 notes); `screens/home.png` |
+| Create Your Runner; versioned appearance schema | ✅ | `test_profile`; `screens/creator.png`, movie `creator_v3_desktop.mp4` |
+| Verified Game Center sign-in; bound tokens; rename; sign-out; deletion | ✅ logic; ⚠ live Apple signature unverified | service tests 1–3, 8; `test_account` |
+| Name moderation incl. false positives | ✅ | service tests 9–14 |
+| Reports, blocks, owner queue, forced rename, suspension, audit | ✅ logic; ⚠ not deployed | service tests 5–7; `service/tools/admin.mjs` |
+| Rooms: atomic create, strict codes, states, heartbeat/expiry, atomic slots, admission, distinct errors | ✅ logic; ⚠ not deployed | service tests 15–21 |
+| No orphan matches (host/joiner attributes); party switch; host loss; rematch | ✅ design + loopback; ⚠ live Game Center unverified | `test_net` (host loss, rematch, reconnect); the attribute rule is documented in `service/README.md` |
+| Protocol hardening: host binding, host-only messages, bounds, no slot theft, rate limits, version 4 | ✅ | `test_trust`, `test_net` |
+| Load acks, then one countdown | ✅ | `test_trust::test_round_waits_for_load_acks` |
+| Controller: ordered edges, glyph families, focus navigation, code entry, arbitration, curves | ✅ desktop; ⚠ physical controllers unverified | `test_controls`, `test_focus`; `gameplay/controller_hints_playstation_simulated.png` (simulated) |
+| Delete Game Profile; privacy re-audit; store text; age rating; real URLs only | ✅ prepared | `docs/APP_STORE.md`; links appear only when the owner configures them |
+| Signed archive, upload to the existing internal TestFlight destination, Apple's processing and availability verified | ✅ 1.2 (1) `VALID`, `IN_BETA_TESTING`; ⚠ not installed on a device yet | V3.5; `TESTFLIGHT_RELEASE.md` |
+
+
+## V3.7 Found and fixed during V3 validation
+
+Found by the new tests, the captures and the soak, then fixed:
+- **Every service call signed in twice.** A successful sign-in ended in the
+  error state, because the state was computed from itself. Found by
+  `test_account`.
+- **Controller jump-then-dive merged into one press.** The bit
+  accumulator; now one ordered queue for all devices (`test_controls` fails
+  on the old code).
+- **Script errors in two new UI paths:**
+  - The splash feed could put a freed line into a typed variable. Found by
+    the 8-process soak: 13 errors.
+  - Modal focus restore read a freed opener.
+  The test runner now fails any test that raises a script error.
+- **Lobby layout.** All found in the 2532×1170 captures, each with a test
+  that fails on the old code:
+  - Slot badges drew outside their cells.
+  - A back-row face sat behind a crown, then an eye behind a nightcap.
+  - A wing player was clipped at the screen edge.
+  The old framing test had effectively run at the headless window size; it
+  now renders in SubViewports at phone, SE and iPad sizes.
+- **Content-sized buttons were empty pills** (creator tabs, name
+  suggestions). Ellipsis trimming made their minimum width ignore the
+  text.
+- **Settings and Play with Friends opened scrolled to the bottom.** Wrapped
+  labels had no width yet when the initial focus scrolled. The old focus
+  test missed it because the headless window is a 1280×1280 square, where
+  nothing scrolls; `test_focus` now resizes to phone size and checks the
+  scroll position.
+- **The code pad's Delete key read "De…".** Its width now comes from the
+  text.
+- **Default names over 16 characters.** V2 could generate names like
+  "Splashy Walrus 56" (17 characters), which V3's name rule displayed as
+  "Player". Names are now generated to fit, and saved ones are migrated
+  (`test_profile`).
+- **The iPad lobby saw past the room.** At 4:3 the camera saw beyond the
+  back wall's edge; the dorm is now built larger than any framing.
+- **The desktop ENet transport raised engine errors when several clients
+  dropped at once.** It sent to peers that had left, or to zombie peers
+  still waiting for their disconnect. Seen in the iPad lobby capture's log.
+  This is the desktop/LAN development path only; iOS uses Game Center.
+  Packets for those peers are now dropped (`test_net`).
+- **The canopy "porthole".** In a large tree, the follow camera saw the
+  inside of a green bubble with only a circle around the character open:
+  up to 90% of the frame. Foliage within 3.2 m of the camera is now cut
+  away. On the same seeded round, the average coverage fell from 26.9% to
+  4.6% of the frame, and no sampled frame is more than 25% covered (16 of
+  45 were before). Stills: `gameplay/canopy_*`.
+- **CI.**
+  - Once signing secrets were added, the signing step failed because
+    Homebrew Python refuses system-wide `pip` (PEP 668); it now uses a
+    venv.
+  - The UTShare framework needed CoreGraphics.
+  - Its Info.plist now carries the toolchain keys an Xcode-built framework
+    has.
+- **Scoreboard order.** Runners now list in the order they got home.
+
+
+## V3.8 Not verified (exact remaining checks)
+
+Nothing below can be established here. Each needs hardware, an account or a deployment.
+- [ ] **Device play** on an iPhone (and iPad) from TestFlight:
+  - frame rate and pacing with Instruments, thermals and memory;
+  - the lobby's 350k-primitive worst case and the gameplay reveal (V3.3);
+  - touch on glass;
+  - safe areas.
+- [ ] **The native share sheet** on device: it opens, the iPad popover is
+  anchored, the message and code arrive in Messages.
+- [ ] **Physical controllers** on iOS (Xbox, DualSense, MFi, Switch Pro):
+  - family detection from the names iOS reports;
+  - prompts;
+  - connect and disconnect mid-match;
+  - the code pad;
+  - jump-then-dive.
+- [ ] **Game Center on two or more devices:**
+  - parties by code and invite;
+  - host and joiner attributes forming only host-containing matches;
+  - a full round, rematch and host loss.
+- [ ] **The service deployed** on the owner's Cloudflare account, then:
+  - sign-in with a real Game Center signature (Apple's real certificate);
+  - names, reports, blocks and deletion against it;
+  - rooms and admission across devices;
+  - moderation with `admin.mjs`.
+- [ ] **TestFlight install** of 1.2 (1) on the owner's iPhone. It is
+  uploaded, processed and available to the internal group (V3.5), but
+  nobody has been observed installing it.
 
 # V2 (version 1.1)
 
