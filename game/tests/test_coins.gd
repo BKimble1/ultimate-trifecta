@@ -40,6 +40,12 @@ func test_candidate_spots_are_on_routes_and_reachable() -> void:
 
 func test_round_coins_seeded_spread_and_clear() -> void:
 	var lay := CampusLayout.shared()
+	# the host picks from the light round data (no campus build on Start)
+	var rd := CampusLayout.round_data()
+	t.eq(rd.coin_spots, lay.coin_spots, "round data: the same coin spots")
+	t.eq(rd.patrol_spawns, lay.patrol_spawns, "round data: the same Night Watch spawns")
+	t.eq(str(rd.waters), str(lay.waters), "round data: the same waters")
+	t.eq(RulesLogic.pick_coins(77, rd, "moonpenny", [0, 2, 4], Rules.cfg), RulesLogic.pick_coins(77, lay, "moonpenny", [0, 2, 4], Rules.cfg), "and the same choice")
 	var cfg: RulesConfig = Rules.cfg
 	var used := {}
 	for d in CampusDorms.ids():

@@ -649,7 +649,7 @@ func host_start_match(seed_override: int = -1) -> void:
 	current_start = {
 		"home_dorm": dorm_id,
 		"dorm": {"id": dorm_id, "ver": CampusDorms.VERSION, "geo": CampusDorms.geometry_hash(dorm_id), "spawns": spawns},
-		"coins": RulesLogic.pick_coins(seed_v, CampusLayout.shared(), dorm_id, targets, round_cfg),
+		"coins": RulesLogic.pick_coins(seed_v, CampusLayout.round_data(), dorm_id, targets, round_cfg),
 		"timing": {"reveal_s": round_cfg.role_reveal_s, "countdown_s": round_cfg.start_countdown_s, "head_start_s": round_cfg.runner_head_start_s},
 		"match_id": "%s-%d-%08x" % [room_code, round_no, seed_v], "seed": seed_v, "targets": targets,
 		"roster": start_roster, "practice": mode == Mode.OFFLINE, "tutorial": tutorial, "round": round_no,
@@ -1263,7 +1263,7 @@ func _fix_start(d: Dictionary) -> Dictionary:
 	for e2 in ro:
 		var sl := int(e2["slot"])
 		var v: Variant = (sp_in as Dictionary).get(str(sl), null) if sp_in is Dictionary else null
-		var lim := pads_n if int(e2["role"]) == TC.Role.RUNNER else CampusLayout.shared().patrol_spawns.size()
+		var lim := pads_n if int(e2["role"]) == TC.Role.RUNNER else CampusLayout.round_data().patrol_spawns.size()
 		spawns[str(sl)] = int(v) if (v is float or v is int) and int(v) >= 0 and int(v) < lim else int(defaults[sl])
 	out["home_dorm"] = did
 	out["dorm"] = {"id": did, "ver": CampusDorms.VERSION, "geo": CampusDorms.geometry_hash(did), "spawns": spawns}

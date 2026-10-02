@@ -69,8 +69,27 @@ static func legacy_shared() -> CampusLayout:
 	return _legacy_shared
 
 
-func _init(p_legacy: bool = false) -> void:
+## The round-configuration data only (V6): waters, the Night Watch spawns
+## and the coin spots, without the full campus (trees, scatter: ~150 ms).
+## The host picks the round's coins and a guest checks a START with it, on
+## the frame a round is started, without building the campus there.
+static func round_data() -> CampusLayout:
+	if _round_data == null:
+		_round_data = CampusLayout.new(false, true)
+	return _round_data
+
+
+static var _round_data: CampusLayout
+
+
+func _init(p_legacy: bool = false, p_round_data_only: bool = false) -> void:
 	legacy = p_legacy
+	if p_round_data_only:
+		_build_waters()
+		_build_spawns()
+		patrol_spawns.append(Vector2(60, -125))   # as _build_dorm_districts
+		_build_coin_spots()
+		return
 	_build_buildings()
 	_build_waters()
 	_build_roads_and_paths()
