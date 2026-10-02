@@ -9,10 +9,11 @@ extends Control
 
 var out_path := "res://assets/icon/launch.png"
 var _frames := 0
-## --loading=T,T2,...: instead, save the real loading screen at those motif
-## times (seconds into the loop) for evidence frames.
+## --loading=T,T2,...: instead, save the real loading screen at those loop
+## times (seconds into the character loop) for evidence frames.
 var loading_times: Array = []
 var _ls: LoadingScreen
+var _wait := 0
 
 
 func _ready() -> void:
@@ -52,14 +53,21 @@ func _process(_d: float) -> void:
 
 
 func _loading_frames() -> void:
+	# wait for the loop atlas (background load), then one time per 3 frames
+	if not _ls.loop_running() and _wait < 600:
+		_wait += 1
+		_frames = 0
+		if _wait == 600:
+			print("loading loop never started; capturing the still")
+		return
 	var idx := (_frames - 1) / 3
 	if idx >= loading_times.size():
 		get_tree().quit()
 		return
 	var phase := (_frames - 1) % 3
 	if phase == 0:
-		# the motif advances by its frame time before the capture (~2 frames)
-		_ls.motif._t = maxf(0.0, float(loading_times[idx]) - 2.0 / 60.0)
+		# the loop advances by about one frame time before the capture
+		_ls.set_loop_time(maxf(0.0, float(loading_times[idx]) - 1.0 / 60.0))
 	elif phase == 2:
 		var img := get_viewport().get_texture().get_image()
 		var path := out_path.get_basename() + "_%.2f.png" % float(loading_times[idx])

@@ -41,7 +41,7 @@ V4 answers the owner's first iPhone playtest. Details and evidence are in [docs/
   - Roles are drawn at random, fairly, each round; solo practice lets you choose Runner, Night Watch or Random.
   - A series has round results, a ready step for the next round, and final standings by Round Wins.
   - Lobby emotes always play, and you can try moves.
-- **Startup:** the launch image and loading screen use the Trifecta droplet motif. No third-party branding is drawn by the app.
+- **Startup and loading:** the launch image uses the Trifecta droplet motif. The match loading screen loops the three runners from the owner's animation, with the real loading stage and progress underneath, and fades into the round as soon as it is ready. No third-party branding is drawn by the app.
 
 ## What's new in V3 (version 1.2)
 

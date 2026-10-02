@@ -149,6 +149,46 @@ func _dev_tools(args: PackedStringArray) -> void:
 			dev_expect = 99   # hold the room open for the capture
 
 
+## Background resource loads whose requester went away before they finished
+## (the loading screen closed while its loop was still loading).  They are
+## collected when done and dropped, so the loader holds nothing; a new
+## requester can take one over instead of asking twice.
+var _orphan_loads: PackedStringArray = []
+var _orphan_timer: Timer
+
+
+func adopt_threaded_load(path: String) -> void:
+	if not _orphan_loads.has(path):
+		_orphan_loads.append(path)
+	if _orphan_timer == null:
+		_orphan_timer = Timer.new()
+		_orphan_timer.wait_time = 0.25
+		_orphan_timer.timeout.connect(_reap_threaded_loads)
+		add_child(_orphan_timer)
+	_orphan_timer.start()
+
+
+## True when `path` was an orphaned request: the caller now owns it (poll it
+## and load_threaded_get it) instead of requesting it again.
+func claim_threaded_load(path: String) -> bool:
+	if not _orphan_loads.has(path):
+		return false
+	_orphan_loads.remove_at(_orphan_loads.find(path))
+	return true
+
+
+func _reap_threaded_loads() -> void:
+	for p in _orphan_loads.duplicate():
+		var st := ResourceLoader.load_threaded_get_status(p)
+		if st == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			continue
+		if st == ResourceLoader.THREAD_LOAD_LOADED:
+			ResourceLoader.load_threaded_get(p)     # taken and let go
+		_orphan_loads.remove_at(_orphan_loads.find(p))
+	if _orphan_loads.is_empty() and _orphan_timer:
+		_orphan_timer.stop()
+
+
 func _process(delta: float) -> void:
 	if dev_quit_after <= 0.0 and dev_shots_dir == "" and dev_report == "":
 		return

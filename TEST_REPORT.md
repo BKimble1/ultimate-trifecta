@@ -37,7 +37,7 @@ the device (V4_NOTES, "Five-minute diagnostics check").
 | `test_pursuit` | 4 | Real sim and physics with a human-like Night Watch (camera lag, presses at a "looks close" 2.6 m or on the cue): the 11-scenario report with targets (V4.2); cart interception; a sprint is still an escape burst; untaggable states and the cart-exit lockout |
 | `test_series` | 9 | Every 1/2/3 Night Watch × 1/3/5 rounds combination and its per-round rules copy; role counts and human/bot constraints; round 1 an equal draw, later rounds rotate; the one-human policy; round recording, scores and shared places; the series view is sanitised; settings and series over the loopback network; **a full three-round friend series end to end over the loopback network** (Round x of 3, ready gating, fair Night Watch rotation 2/2/2, repeated results counted once, drop and rejoin keeps one standing, Play again starts a fresh series); reward eligibility (short drop keeps the reward, most-of-the-round away gets none, no double payment) |
 | `test_emotes` | 2 | Every emote from the host and from a guest, picker → session → host event → the right character → visible animation → clean return; rapid reselection, repeats, the ready response, an outfit change, the picker sheet and the stage going away mid-emote |
-| `test_loading` | 3 | A round is prepared in bounded steps under the loading screen (no step a long freeze); the campus is reused between rounds with clean per-round water state; ten rounds in a row leave scene nodes, objects, orphans and signal connections flat |
+| `test_loading` | 7 | A round is prepared in bounded steps under the loading screen (no step a long freeze); the campus is reused between rounds with clean per-round water state; ten rounds in a row leave scene nodes, objects, orphans and signal connections flat. **Loading animation:** the bundled loop matches its build data (frames, grid, fps, aspect, background colours; atlas and still at full size); the still shows at once, then the loop starts from that frame; preparation progress only moves forward and the bar never runs ahead of it; the screen closes as soon as the round is live; its textures are let go and no background load is left behind; a screen closed mid-load hands the load to `App` and the next screen picks it up; Reduced Motion shows only the still |
 | `test_portraits` | 3 | A newer request from the same party cell replaces its queued one; the queue is bounded; headless gets a placeholder without work |
 | `test_diag` | 2 | Frame-interval ring, histogram percentiles and stall attribution to markers; **the shared summary contains no names, room codes or Game Center IDs** |
 
@@ -95,6 +95,14 @@ labelled in [docs/media/v4/README.md](docs/media/v4/README.md):
   startup and loading, lobby emotes and Try moves, a Night Watch pursuit and
   tag, a runner's splash and recovery, and the change from round 1 to
   round 2 of a series. None is frame-interpolated or sped up.
+- **Match loading animation** (`media/v4/loading/`): the screen at iPhone
+  (1561×720), iPhone SE (1334×750) and iPad (1024×768) aspects at two loop
+  times; the previous droplet screen for comparison; the bundled loop frames
+  played six times at 24 fps; and a Movie Maker clip of Practice from the
+  title through loading into the round. The loop frames come from the
+  owner's clip. The two restart frames are optical-flow morphs of the
+  clip's own next frames (see V4_NOTES); no frames were added to make
+  playback look smoother.
 
 ## V4.5 Networking on V4 (protocol 5)
 
@@ -126,6 +134,14 @@ labelled in [docs/media/v4/README.md](docs/media/v4/README.md):
 - **Robe sleeves:** read as a flat disc inside a thin hoop.
 - **Night skin readability:** dark skin tones lost facial detail under
   campus night light.
+- **Loading loop ghosting:** the first loop build gave each runner a fixed
+  screen column. An arm reaching into a neighbour's column was warped with
+  the neighbour and showed twice. The columns are now joined on a
+  per-frame seam through the background.
+- **Loading fade:** the runner picture's shader replaced the colour it was
+  given, so it ignored the screen's fade. On a desktop clip it stayed fully
+  opaque over the round for 0.25 s, then vanished. It now multiplies by the
+  incoming colour and fades with the screen.
 
 ## V4.8 Not verified (exact remaining checks)
 
@@ -137,6 +153,10 @@ labelled in [docs/media/v4/README.md](docs/media/v4/README.md):
 - A friend series over Game Center between two devices.
 - The launch screen as iOS draws it on a device (the Simulator run on CI is
   the closest evidence).
+- The match loading animation on an iPhone: smooth 24 fps playback,
+  sharpness at the phone's scale, nothing cropped, no jump at the loop
+  point, and the fade into the round (checked here on desktop renders and
+  a Movie Maker clip only).
 
 # V3 (version 1.2)
 

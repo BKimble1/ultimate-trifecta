@@ -2,7 +2,7 @@
 
 - Buttons: are Jump/Dive, Tag, Gas, Brake and Exit comfortable for your thumbs? Can you tap Pause and the minimap? Settings > Controls > Edit layout lets you move, resize and mirror them; "Try it" previews.
 - Lobby: Emote (Dance, Wave, Ha!...) and Try moves should play every time, on your runner and for friends.
-- Loading: from the app icon and between rounds. Any frozen screen, logo or text that isn't the game's own?
+- Loading: from the app icon and between rounds. The three runners should loop smoothly, sharp and uncropped, then fade straight into the round. Any frozen screen, jump at the loop point, logo or text that isn't the game's own?
 - Outdoors: trees, buildings, lamps and the six waters. Any spot that still looks blocky, or any stutter?
 - Night Watch: chase and tag runners. Tag glows and a ring appears under a runner when a press would land. Too hard, too easy? Practice has a short "Night Watch training".
 - Getting caught as a runner: "Caught by..., back in 6", your splashes kept, then a short "Protected".

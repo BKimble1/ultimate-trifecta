@@ -152,6 +152,27 @@ func _process_prepare() -> void:
 		_finish_prepare()
 
 
+## How much of the round's preparation is done (0..1), from the steps
+## actually completed: the campus build (its own step count, or nothing to
+## do when the campus is kept from the last round), the shared data, the sim
+## and each character.  The loading screen shows it.
+func prep_progress() -> float:
+	if prepared:
+		return 1.0
+	const W := [0.55, 0.08, 0.07, 0.06, 0.05, 0.16, 0.03]   # campus, world, ground, nav, sim, views, rest
+	var done := 0.0
+	for k in mini(_prep_i, W.size()):
+		done += W[k]
+	if _prep_i < W.size():
+		var part := 0.0
+		if _prep_i == 0 and _builder != null:
+			part = _builder.progress()
+		elif _prep_i == 5 and not roster.is_empty():
+			part = 1.0 - float(_view_queue.size()) / float(roster.size())
+		done += W[_prep_i] * clampf(part, 0.0, 1.0)
+	return clampf(done, 0.0, 1.0)
+
+
 func _prep_run_one() -> void:
 	var again: Variant = _prep[_prep_i].call()
 	if not (again is bool and again):

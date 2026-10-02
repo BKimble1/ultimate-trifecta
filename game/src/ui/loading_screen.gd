@@ -1,21 +1,43 @@
 class_name LoadingScreen
 extends Screen
-## Loading (V4): a calm deep-night screen with the Trifecta motif - three
-## droplets landing in turn and rippling out - the wordmark, and the real
-## state underneath ("Getting campus ready…", then "Waiting for players ·
-## 3/4 ready" when that is what is happening).  No percentage is invented:
-## the stage text follows the match's actual preparation steps.
+## Match loading (V4): the three runners from the owner's clip running in a
+## seamless loop on the clip's own blue, with the real state underneath -
+## what the round is doing ("Getting campus ready…", "Placing players…"), a
+## bar that follows the preparation steps actually completed, and "Waiting
+## for players · 3/4 ready" when that is what is happening.  The screen
+## fades into the round the moment it is live; it never waits for the loop.
 ##
-## The motif's resting frame is the same drawing as the boot splash and the
-## iOS launch image (assets/icon/launch.png, rendered from this code by
-## tools/make_launch_art.sh), so launch -> boot -> loading has no jump.
-## Reduced Motion: the resting frame with a slow fade, nothing falls.
+## The loop (assets/loading, built by tools/make_loading_loop.py from
+## art_src/loading/characters_run.mp4): 19 frames at 24 fps in one grid
+## atlas, GPU-compressed (ASTC on iOS), no sound.  Frames rather than a
+## video stream: nothing is decoded on the main thread while the round is
+## being prepared, and the loop restarts frame-exactly.  The matching still
+## (loop frame 0) shows at once while the atlas loads on a background
+## thread, and stays if it can't load; Reduced Motion shows only the still.
+## Everything is released when the screen closes.
+##
+## The droplet motif below is no longer drawn here; the boot curtain and the
+## launch image (tools/make_launch_art.sh) still use it.
 
 const BG := Color("0c1324")
-## layout in canvas units of a 720-unit-high screen (shared with the launch art)
-const MOTIF_Y := 0.40          # motif centre, fraction of screen height
-const WORDMARK_Y := 0.585      # wordmark top
+## layout of the motif in canvas units of a 720-unit-high screen (launch art)
+const MOTIF_Y := 0.40
+const WORDMARK_Y := 0.585
 const LOOP_S := 2.6
+
+const LOOP_ATLAS := "res://assets/loading/run_loop_atlas.jpg"
+const LOOP_STILL := "res://assets/loading/run_still.jpg"
+## Written by tools/make_loading_loop.py (run_loop.json; test_loading_screen
+## checks they agree).
+const LOOP_FRAMES := 19
+const LOOP_GRID := Vector2(5, 4)
+const LOOP_FPS := 24.0
+const LOOP_ASPECT := 960.0 / 720.0
+## The frame's own side colours, top to bottom, continued across the screen.
+const LOOP_SIDES := ["0f3767", "103e6d", "124673", "144d7a", "114875", "114573", "11416f", "0e3967", "0d2f5c"]
+## Picture height and top, as fractions of the screen height.
+const PIC_H := 0.80
+const PIC_TOP := 0.025
 
 signal done
 
@@ -23,11 +45,18 @@ var info: Dictionary = {}
 var session: NetSession
 ## The round being prepared underneath; the screen goes once it is live.
 var match_ctrl: MatchController
-var motif: LoadingMotif
 var stage_lbl: Label
 var wait_lbl: Label
-var tip_lbl: Label
+var bar: ProgressLine
 var leave_btn: Button
+var backdrop: Backdrop
+var picture: ColorRect
+var _mat: ShaderMaterial
+var _still: Texture2D
+var _atlas: Texture2D
+var _atlas_pending := false
+var _loop_t := 0.0
+var _frame := -1
 var _t := 0.0
 var _stage_text := "Getting campus ready…"
 var _closing := false
@@ -35,33 +64,72 @@ var _closing := false
 
 func build() -> void:
 	Diag.context("loading")
-	var bg := ColorRect.new()
-	bg.color = BG
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
-	move_child(bg, 0)
-	motif = LoadingMotif.new()
-	motif.set_anchors_preset(Control.PRESET_FULL_RECT)
-	motif.animate = not UIKit.reduced_motion()
-	add_child(motif)
-	move_child(motif, 1)
-	var col := UIKit.vbox(6)
+	backdrop = Backdrop.new()
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(backdrop)
+	move_child(backdrop, 0)
+	_mat = ShaderMaterial.new()
+	_mat.shader = preload("res://assets/shaders/loading_loop.gdshader")
+	picture = ColorRect.new()
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	picture.material = _mat
+	add_child(picture)
+	move_child(picture, 1)
+	_still = load(LOOP_STILL) as Texture2D
+	_show_still()
+	if not UIKit.reduced_motion():
+		if App.claim_threaded_load(LOOP_ATLAS) or ResourceLoader.load_threaded_request(LOOP_ATLAS, "Texture2D") == OK:
+			_atlas_pending = true
+	# top left, clear of the runners and the status: only after a long wait
+	var top := UIKit.hbox(0)
+	top.alignment = BoxContainer.ALIGNMENT_BEGIN
+	content.add_child(top)
+	leave_btn = UIKit.quiet("Leave party", Vector2(240, 64), 20)
+	leave_btn.visible = false
+	leave_btn.pressed.connect(func() -> void: App.leave_room())
+	top.add_child(leave_btn)
+	var col := UIKit.vbox(8)
 	col.alignment = BoxContainer.ALIGNMENT_END
 	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(col)
-	stage_lbl = UIKit.label(_stage_text, 24, UIKit.IVORY, true, HORIZONTAL_ALIGNMENT_CENTER)
+	stage_lbl = UIKit.label(_stage_text, 22, UIKit.IVORY, true, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(stage_lbl)
-	wait_lbl = UIKit.label("", 20, UIKit.TEAL, false, HORIZONTAL_ALIGNMENT_CENTER)
+	bar = ProgressLine.new()
+	bar.custom_minimum_size = Vector2(300, 6)
+	bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	col.add_child(bar)
+	wait_lbl = UIKit.label("", 18, UIKit.TEAL, false, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(wait_lbl)
-	tip_lbl = UIKit.label(_tip(), 18, UIKit.IVORY_MUTED, false, HORIZONTAL_ALIGNMENT_CENTER)
-	tip_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	col.add_child(tip_lbl)
-	leave_btn = UIKit.quiet("Leave party", Vector2(240, 64), 20)
-	leave_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	leave_btn.visible = false
-	leave_btn.pressed.connect(func() -> void: App.leave_room())
-	col.add_child(leave_btn)
+	resized.connect(_layout)
+	_layout()
+
+
+## The picture: as tall as the layout allows, never stretched or cropped
+## (all three runners stay whole on every phone and iPad), centred, with the
+## status below it.
+func _layout() -> void:
+	var s := size
+	if s.y <= 0.0:
+		return
+	var h := s.y * PIC_H
+	var w := h * LOOP_ASPECT
+	if w > s.x * 0.98:
+		w = s.x * 0.98
+		h = w / LOOP_ASPECT
+	picture.position = Vector2((s.x - w) * 0.5, s.y * PIC_TOP)
+	picture.size = Vector2(w, h)
+	backdrop.pic_top = picture.position.y
+	backdrop.pic_h = h
+	backdrop.queue_redraw()
+
+
+func _show_still() -> void:
+	if _still == null:
+		picture.visible = false     # the backdrop alone: no broken image
+		return
+	_mat.set_shader_parameter("frames", _still)
+	_mat.set_shader_parameter("grid", Vector2.ONE)
+	_mat.set_shader_parameter("frame", 0.0)
 
 
 ## The match reports what it is doing (known steps only).
@@ -71,16 +139,36 @@ func set_stage(text: String) -> void:
 		stage_lbl.text = text
 
 
+## Evidence captures: the loop at a given time.
+func set_loop_time(t: float) -> void:
+	_loop_t = t
+	_frame = -1
+
+
+func loop_running() -> bool:
+	return _atlas != null
+
+
 func _process(delta: float) -> void:
 	_t += delta
+	_poll_atlas()
+	if _atlas != null:
+		_loop_t += delta
+		var f := int(floor(_loop_t * LOOP_FPS)) % LOOP_FRAMES
+		if f != _frame:
+			_frame = f
+			_mat.set_shader_parameter("frame", float(f))
 	if _closing:
 		return
-	if match_ctrl != null and is_instance_valid(match_ctrl) and match_ctrl.round_live():
+	var mc_ok := match_ctrl != null and is_instance_valid(match_ctrl)
+	if mc_ok and match_ctrl.round_live():
 		_close()
 		return
 	var online := session != null and is_instance_valid(session) and session.mode != NetSession.Mode.OFFLINE
-	if match_ctrl != null and is_instance_valid(match_ctrl) and match_ctrl.prepared:
-		set_stage("Starting…" if not online else "Ready")
+	if mc_ok:
+		bar.target = match_ctrl.prep_progress()
+		if match_ctrl.prepared:
+			set_stage("Starting…" if not online else "Ready")
 	if not online:
 		return
 	var lp: Array = session.load_progress()
@@ -88,6 +176,27 @@ func _process(delta: float) -> void:
 		wait_lbl.text = "Waiting for players · %d/%d ready" % [lp[0], lp[1]] if int(lp[0]) < int(lp[1]) else "Everyone's ready"
 	# a real, recoverable state: a long wait for a slow or lost player
 	leave_btn.visible = _t > 25.0
+
+
+func _poll_atlas() -> void:
+	if not _atlas_pending:
+		return
+	var st := ResourceLoader.load_threaded_get_status(LOOP_ATLAS)
+	if st == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		return
+	_atlas_pending = false
+	if st != ResourceLoader.THREAD_LOAD_LOADED:
+		return      # keep the still
+	var tex := ResourceLoader.load_threaded_get(LOOP_ATLAS) as Texture2D
+	if tex == null or _closing:
+		return
+	_atlas = tex
+	_mat.set_shader_parameter("frames", _atlas)
+	_mat.set_shader_parameter("grid", LOOP_GRID)
+	# starts on frame 0, the still that was already showing
+	_loop_t = 0.0
+	_frame = -1
+	Diag.mark("loading_loop")
 
 
 ## A short fade into the round (no fade with Reduced Motion).
@@ -104,21 +213,72 @@ func _close() -> void:
 	tw.tween_callback(func() -> void: done.emit())
 
 
-func _tip() -> String:
-	var watch := int((info.get("settings", {}) as Dictionary).get("watch", PartySeries.DEFAULT_WATCH))
-	var cfg := PartySeries.rules_for(Rules.cfg, watch)
-	return [
-		"Diving into water from a run is faster than climbing in.",
-		"Carts can't climb stairs, pass bollards or go into the woods.",
-		"A splash marks that spot for the Night Watch for %d seconds, never you." % int(cfg.splash_marker_s),
-		"Caught? You keep your splashes and you're back in %d seconds near your last one." % int(cfg.capture_penalty_s),
-		"%d runners home before time runs out wins it for every runner." % cfg.runners_needed,
-		"Night Watch: Tag lights up when a runner is in reach. Wait for it, then tap.",
-	][randi() % 6]
+## Release the loop's textures; a load still running is handed to App,
+## which collects and drops it when it finishes.
+func _exit_tree() -> void:
+	if _atlas_pending:
+		App.adopt_threaded_load(LOOP_ATLAS)
+		_atlas_pending = false
+	if _mat:
+		_mat.set_shader_parameter("frames", null)
+	_atlas = null
+	_still = null
 
 
 func _go_back() -> void:
 	pass
+
+
+## The screen behind the picture: the frame's own side colours row by row,
+## so the picture's feathered edges meet the same blue on any width.
+class Backdrop:
+	extends Control
+	var pic_top := 0.0
+	var pic_h := 1.0
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var stops: Array = LoadingScreen.LOOP_SIDES
+		var ys: Array = [0.0]
+		var cs: Array = [Color(stops[0])]
+		for i in stops.size():
+			ys.append(pic_top + pic_h * float(i) / float(stops.size() - 1))
+			cs.append(Color(stops[i]))
+		ys.append(size.y)
+		cs.append(Color(stops[-1]).darkened(0.12))
+		for i in ys.size() - 1:
+			var a: float = ys[i]
+			var b: float = ys[i + 1]
+			if b <= a:
+				continue
+			draw_polygon(PackedVector2Array([Vector2(0, a), Vector2(size.x, a), Vector2(size.x, b), Vector2(0, b)]),
+				PackedColorArray([cs[i], cs[i], cs[i + 1], cs[i + 1]]))
+
+
+## A thin bar for the real preparation progress: it eases toward what the
+## match reports and never runs ahead of it.
+class ProgressLine:
+	extends Control
+	var target := 0.0
+	var shown := 0.0
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _process(delta: float) -> void:
+		var t := clampf(target, 0.0, 1.0)
+		var n := minf(t, move_toward(shown, t, delta * 1.6))
+		if not is_equal_approx(n, shown):
+			shown = n
+			queue_redraw()
+
+	func _draw() -> void:
+		var r := size.y * 0.5
+		draw_style_box(UIKit.box(Color(UIKit.IVORY, 0.18), int(r), 0), Rect2(Vector2.ZERO, size))
+		if shown > 0.001:
+			draw_style_box(UIKit.box(UIKit.AMBER, int(r), 0), Rect2(Vector2.ZERO, Vector2(maxf(size.y, size.x * shown), size.y)))
 
 
 ## The droplet motif.  Drawn in canvas units relative to the screen height,
