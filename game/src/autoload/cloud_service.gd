@@ -12,6 +12,9 @@ signal changed
 
 const CFG_PATH := "res://config/service.cfg"
 const TIMEOUT_S := 12.0
+## per-request timeout (dev evidence runs on a software renderer raise it:
+## a 1 fps frame rate there is not a network failure)
+var timeout_s := TIMEOUT_S
 
 var base_url := ""
 var admission_key: CryptoKey
@@ -91,7 +94,7 @@ func _http(method: int, path: String, body: Variant, auth: bool) -> Dictionary:
 	if transport_override.is_valid():
 		return await transport_override.call(method, path, body, headers)
 	var h := HTTPRequest.new()
-	h.timeout = TIMEOUT_S
+	h.timeout = timeout_s
 	add_child(h)
 	var err := h.request(base_url + path, headers, method, JSON.stringify(body) if body != null else "")
 	if err != OK:

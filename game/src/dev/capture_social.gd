@@ -347,6 +347,7 @@ func _service_login() -> bool:
 	Save.data["name"] = _arg("dev-name", "Comfy Frog")
 	Cloud.admission_key = Admission.load_public_key(FileAccess.get_file_as_string(dir.path_join("admission_public.pem")))
 	Cloud.identity_override = _identity
+	Cloud.timeout_s = 60.0   # llvmpipe draws ~1 frame a second here
 	await Cloud.fetch_config()
 	var s: Dictionary = await Cloud.sign_in()
 	if not bool(s.get("ok", false)):
@@ -365,6 +366,8 @@ func _service_host() -> void:
 	var chat := s.social.chat
 	match _step:
 		0:
+			if _t < 6.0:
+				return   # let the first, slowest frames pass
 			_busy = true
 			if not await _service_login():
 				get_tree().quit()
