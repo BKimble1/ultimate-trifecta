@@ -235,8 +235,8 @@
       "verts": 2145
     },
     "courier": {
-      "tris": 15588,
-      "verts": 8187
+      "tris": 9946,
+      "verts": 5341
     },
     "duck": {
       "tris": 8896,
@@ -303,8 +303,8 @@
       "verts": 1050
     },
     "moonlight": {
-      "tris": 10910,
-      "verts": 5650
+      "tris": 7566,
+      "verts": 3978
     },
     "mustache": {
       "tris": 480,
@@ -315,16 +315,16 @@
       "verts": 4385
     },
     "raincoat": {
-      "tris": 13948,
-      "verts": 7226
+      "tris": 10476,
+      "verts": 5482
     },
     "robe": {
       "tris": 7628,
       "verts": 3932
     },
     "scout": {
-      "tris": 17608,
-      "verts": 9190
+      "tris": 11698,
+      "verts": 6200
     },
     "shoe_flippers": {
       "tris": 1816,
@@ -339,16 +339,16 @@
       "verts": 1706
     },
     "starry": {
-      "tris": 9660,
-      "verts": 5143
+      "tris": 7868,
+      "verts": 4247
     },
     "swim": {
       "tris": 2088,
       "verts": 1083
     },
     "varsity": {
-      "tris": 14412,
-      "verts": 7463
+      "tris": 8588,
+      "verts": 4575
     },
     "watch": {
       "tris": 12712,

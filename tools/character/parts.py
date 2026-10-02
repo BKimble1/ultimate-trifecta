@@ -38,12 +38,12 @@ def _dense_path(points, step=0.02):
     return out
 
 
-def _arm_path(side, s0=-0.01, s1=None):
+def _arm_path(side, s0=-0.01, s1=None, step=0.018):
     s1 = s1 if s1 is not None else rig.UPPER_LEN + rig.FORE_LEN
     sh = shoulder(side)
     d = arm_dir(side)
     pts = []
-    n = int(math.ceil((s1 - s0) / 0.018))
+    n = int(math.ceil((s1 - s0) / step))
     for i in range(n + 1):
         pts.append(sh + d * (s0 + (s1 - s0) * i / n))
     return pts
@@ -428,12 +428,15 @@ def build_body_skin():
 
 
 # ================================================================== shared clothing pieces
-def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff_tube=0.016, inner_style=None):
+def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff_tube=0.016, inner_style=None, lod=0):
     """inner_style: leave the end open with a shaded funnel down to the wrist
-    (a wide bell sleeve read as a lid with a flat end disc)."""
+    (a wide bell sleeve read as a lid with a flat end disc).
+    lod=1 (V6 outfits): the same shapes with fewer segments on the shoulder
+    cap and cuff, and rings every 2.4 cm instead of 1.8 cm."""
+    step = 0.024 if lod else 0.018
     for sx in SIDES:
         sfx = '.L' if sx < 0 else '.R'
-        path = _arm_path(sx, -0.015, s1)
+        path = _arm_path(sx, -0.015, s1, step)
         s = _path_s(path)
         total = s[-1]
         radii = []
@@ -453,13 +456,14 @@ def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff
         # (V4: a little lower and flatter on top, so it rounds into the sleeve
         # instead of standing up as a shoulder pad)
         ellipsoid(mb, sh + Vector((0.004 * sx, 0, -0.002)), (0.066 + grow, 0.065 + grow, 0.055 + grow), style,
-                  lambda p, sfx=sfx: {'upper_arm' + sfx: 0.55, 'shoulder' + sfx: 0.45}, segs=20, rings=12, world_v=True)
+                  lambda p, sfx=sfx: {'upper_arm' + sfx: 0.55, 'shoulder' + sfx: 0.45}, segs=16 if lod else 20,
+                  rings=10 if lod else 12, world_v=True)
         if cuff_style is not None:
             d = arm_dir(sx)
             end = sh + d * (total - 0.015)
             r = radii[-1][0]
-            lathe(mb, end - d * cuff_tube * 0.4, rot_align(d, FWD), torus_profile(0.0, r + 0.002, cuff_tube, 10, 0.85), cuff_style,
-                  lambda p, sx=sx: arm_w(p, sx), segs=20, closed_profile=True)
+            lathe(mb, end - d * cuff_tube * 0.4, rot_align(d, FWD), torus_profile(0.0, r + 0.002, cuff_tube, 7 if lod else 10, 0.85),
+                  cuff_style, lambda p, sx=sx: arm_w(p, sx), segs=16 if lod else 20, closed_profile=True)
         if inner_style is not None:
             d = arm_dir(sx)
             end = sh + d * (total - 0.015)

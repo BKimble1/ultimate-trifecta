@@ -210,12 +210,12 @@ def surface_tube(mb, uv_path, place, radius, style, wfn, lift=0.0, segs=8, flat=
           cap_end=None if closed else cap, twist_hint=hint, closed=closed)
 
 
-def path_tube(mb, pts, radius, style, wfn, segs=8, hint=FWD, flat=1.0, cap='round', closed=False):
+def path_tube(mb, pts, radius, style, wfn, segs=6, hint=FWD, flat=1.0, cap='round', closed=False):
     sweep(mb, list(pts), [(radius * flat, radius)] * len(pts), style, lambda p, sv, i: wfn(p), segs=segs,
           cap_start=None if closed else cap, cap_end=None if closed else cap, twist_hint=hint, closed=closed)
 
 
-def open_shell(mb, zs, grow_fn, gap_fn, style, wfn, segs=36, colfn=None, rib=None):
+def open_shell(mb, zs, grow_fn, gap_fn, style, wfn, segs=32, colfn=None, rib=None):
     """Torso shell between heights `zs` (ascending) that leaves a front
     opening: at height z the shell spans the angles 90deg + gap_fn(z) ..
     450deg - gap_fn(z) around the back (gap in radians, 0 = closed).
@@ -248,19 +248,28 @@ def skin_arm(mb, side, s0, skin_style, segs=12):
           lambda p, sv, i: rig.arm_w(p, side), segs=segs, cap_start=None, cap_end=None, twist_hint=FWD)
 
 
+def _clip_leg(pts, top_z, bottom_z):
+    """The hip -> knee -> ankle polyline clipped to [bottom_z, top_z] (corners only)."""
+    hipp, k, a = pts
+
+    def at(p0, p1, z):
+        return p0.lerp(p1, (p0.z - z) / (p0.z - p1.z))
+    out = []
+    top = min(top_z, hipp.z)
+    out.append(at(hipp, k, top) if top >= k.z else at(k, a, top))
+    if bottom_z < k.z < top:
+        out.append(k.copy())
+    out.append(at(hipp, k, bottom_z) if bottom_z >= k.z else at(k, a, bottom_z))
+    return out
+
+
 def skin_leg(mb, side, top_z, bottom_z, skin_style, segs=14, grow=0.0):
     """Bare leg between two heights (the shoe or sock covers the rest)."""
     from parts import _dense_path, _path_s, leg_radius
     pts = rig.leg_path(side, 0.55)
     k, a = pts[1], pts[2]
-    # clip the hip -> knee -> ankle polyline to [bottom_z, top_z]
-    poly = []
-    for p0, p1 in ((pts[0], k), (k, a)):
-        for i in range(21):
-            q = p0.lerp(p1, i / 20.0)
-            if bottom_z <= q.z <= top_z and (not poly or (q - poly[-1]).length > 1e-5):
-                poly.append(q)
-    poly = _dense_path(poly, 0.02)
+    poly = _clip_leg(pts, top_z, bottom_z)
+    poly = _dense_path(poly, 0.03)
     s_hip = []
     for q in poly:
         s_hip.append(rig.leg_s(q, side))
@@ -268,18 +277,11 @@ def skin_leg(mb, side, top_z, bottom_z, skin_style, segs=14, grow=0.0):
           lambda p, sv, i: rig.leg_w(p, side), segs=segs, cap_start=None, cap_end=None, twist_hint=FWD)
 
 
-def leg_tube(mb, side, top_z, bottom_z, grow, style, segs=16, colfn=None, flat_end=False, rfn=None):
+def leg_tube(mb, side, top_z, bottom_z, grow, style, segs=16, colfn=None, flat_end=False, rfn=None, step=0.025):
     """A trouser/sock tube between two heights along the leg."""
     from parts import _dense_path, leg_radius
-    pts = rig.leg_path(side, 0.55)
-    k, a = pts[1], pts[2]
-    poly = []
-    for p0, p1 in ((pts[0], k), (k, a)):
-        for i in range(31):
-            q = p0.lerp(p1, i / 30.0)
-            if bottom_z - 1e-6 <= q.z <= top_z + 1e-6 and (not poly or (q - poly[-1]).length > 1e-5):
-                poly.append(q)
-    poly = _dense_path(poly, 0.02)
+    poly = _clip_leg(rig.leg_path(side, 0.55), top_z, bottom_z)
+    poly = _dense_path(poly, step)
     radii = []
     for q in poly:
         r = leg_radius(rig.leg_s(q, side)) + (grow(q.z) if callable(grow) else grow)
@@ -289,7 +291,7 @@ def leg_tube(mb, side, top_z, bottom_z, grow, style, segs=16, colfn=None, flat_e
     return poly, radii
 
 
-def ring_on_leg(mb, side, z, grow, tube, style, segs=20, squash=0.85):
+def ring_on_leg(mb, side, z, grow, tube, style, segs=16, squash=0.85, n=6):
     from parts import leg_radius
     from geo import torus_profile
     pts = rig.leg_path(side, 0.55)
@@ -302,16 +304,16 @@ def ring_on_leg(mb, side, z, grow, tube, style, segs=20, squash=0.85):
     c = p0.lerp(p1, t)
     d = (p1 - p0).normalized()
     r = leg_radius(rig.leg_s(c, side)) + grow
-    lathe(mb, c, rot_align(-d, FWD), torus_profile(0.0, r, tube, 10, squash), style, lambda p: rig.leg_w(p, side), segs=segs,
+    lathe(mb, c, rot_align(-d, FWD), torus_profile(0.0, r, tube, n, squash), style, lambda p: rig.leg_w(p, side), segs=segs,
           closed_profile=True)
 
 
-def ring_on_arm(mb, side, s, grow, tube, style, segs=20, squash=0.85):
+def ring_on_arm(mb, side, s, grow, tube, style, segs=16, squash=0.85, n=6):
     from parts import arm_radius
     from geo import torus_profile
     d = rig.arm_dir(side)
     c = rig.shoulder(side) + d * s
-    lathe(mb, c, rot_align(d, FWD), torus_profile(0.0, arm_radius(s) + grow, tube, 10, squash), style,
+    lathe(mb, c, rot_align(d, FWD), torus_profile(0.0, arm_radius(s) + grow, tube, n, squash), style,
           lambda p: rig.arm_w(p, side), segs=segs, closed_profile=True)
 
 

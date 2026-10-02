@@ -1008,7 +1008,7 @@ def clip_stargaze(t):
     pose['spine'] = {'rot': (5.0, 1.5 * sw, 0)}
     pose['chest'] = {'rot': (4.0, 0, -4.0 + 3.0 * sw)}
     pose['neck'] = {'rot': (8.0, 0, 0)}
-    pose['head'] = {'rot': (16.0 + 2.0 * math.cos(2 * a), -3.0 * sw, -10.0 + 9.0 * sw)}
+    pose['head'] = {'rot': (22.0 + 2.0 * math.cos(2 * a), -3.0 * sw, -10.0 + 9.0 * sw)}
     # pointing arm: up and out, tracing a small loop of stars
     pose['shoulder.R'] = {'rot': (0, -8, 0)}
     pose['upper_arm.R'] = {'rot': (24 + 12 * math.cos(a), -84 + 8 * sw, 0)}
@@ -1079,18 +1079,22 @@ def clip_victory_lap(t):
 
 
 def clip_shush(t):
-    """Shush (1.4 s loop): a sneaky "shh!": leans in, the right mitten comes
-    up to the corner of the mouth (arm IK, in front of the cheek and outside
-    the head: the chibi arm cannot cross in front of the lips), the head dips
-    toward it and glances left and right; the other arm tucks in."""
+    """Shush (1.4 s loop): a sneaky "shh!": leans in, the face turns to the
+    right and dips, and the right mitten comes up in front of the lips (arm
+    IK in head space, 5 cm in front of the mouth; the short chibi arm only
+    reaches a face turned toward it); a small glance either way; the other
+    arm tucks in."""
     a = 2 * math.pi * t / SHUSH_L
     look = math.sin(a)
     pose = stand(-0.02)
     pose['hips']['rot'] = (-2.0, 0, 3.0 * look)
-    pose['spine'] = {'rot': (-3.0, 0, 3.0)}
+    # the glance turns the spine, so the head and the mitten move together
+    pose['spine'] = {'rot': (-3.0, 0, 3.0 + 7.0 * look)}
     pose['chest'] = {'rot': (-2.0, 0, 6.0)}
     pose['neck'] = {'rot': (-2.0, 0, 0)}
-    pose['head'] = {'rot': (-5.0, -4.0, 12.0 * look)}
+    # the head turns to the mitten (the chibi arm reaches the lips only when
+    # the face turns toward it)
+    pose['head'] = {'rot': (-9.0, -4.0, -28.0)}
     pose['shoulder.R'] = {'rot': (0, -6, 16)}
     pose['hand.R'] = {'ik': (Vector(SHUSH_WRIST), (0.9, -0.2, -0.8), 'head')}
     pose['upper_arm.L'] = {'rot': (14, -16, 0)}
@@ -1098,7 +1102,7 @@ def clip_shush(t):
     return pose
 
 
-SHUSH_WRIST = (0.22, 0.28, 0.99)   # wrist, head rest space: the mitten at the corner of the mouth
+SHUSH_WRIST = (0.05, 0.33, 1.03)   # wrist, head rest space: the mitten in front of the lips
 
 
 def clip_moon_shuffle(t):

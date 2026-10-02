@@ -28,7 +28,7 @@ const SHOWCASE := {
 	"starry_sleeper": {"shoes": "slippers", "hair": "bob", "hair_color": "black", "skin": "tone3", "color": "grape"},
 	"varsity_sprinter": {"shoes": "sneakers", "hair": "curly", "hair_color": "black", "skin": "tone7", "color": "coral"},
 	"raincoat_explorer": {"shoes": "sneakers", "hair": "buns", "hair_color": "ginger", "skin": "tone2", "color": "sunny"},
-	"campus_courier": {"shoes": "sneakers", "hair": "tuft", "hair_color": "brown", "skin": "tone6", "color": "teal"},
+	"campus_courier": {"shoes": "sneakers", "hair": "tuft", "hair_color": "brown", "skin": "tone6", "color": "sunny"},
 	"lantern_scout": {"shoes": "sneakers", "hair": "bob", "hair_color": "auburn", "skin": "tone4", "color": "lime"},
 	"after_hours_hoodie": {"shoes": "glow_sneakers", "hair": "curly", "hair_color": "espresso", "skin": "tone8", "color": "plum"},
 	"night_owl": {"shoes": "slippers", "hair": "tuft", "hair_color": "brown", "skin": "tone1", "color": "tangerine"},
