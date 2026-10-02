@@ -31,7 +31,7 @@ footage** (no device was available) and **no physical controller**.
 | `lobby/lobby_1p.png` | Create Party result: code with Copy and Share, your runner front and centre, "share the code" on the first open slot, Start, bot fill stated once. |
 | `lobby/lobby_2p.png` | Two players. Portraits in the slots, host crown, the guest's ready check. |
 | `lobby/lobby_4p.png`, `lobby/lobby_8p.png` | Four and eight players. Every face is visible and every body is in frame, with random looks including tall hats. Status badges sit inside their cells. |
-| `lobby_se_8p.png`, `lobby_ipad_8p.png` | Eight players at iPhone SE 16:9 (1334×750) and iPad 4:3 (2048×1536). |
+| `lobby/lobby_se_8p.png`, `lobby/lobby_ipad_8p.png` | Eight players at iPhone SE 16:9 (1334×750) and iPad 4:3 (2048×1536). The iPad capture is from `001f274`; the dorm is built larger than any framing, so the 4:3 view never sees past the walls. |
 
 Before (V2): `../v2/after/lobby_1p.png`, `../v2/after/lobby_8p.png`.
 
@@ -73,6 +73,26 @@ test that fails on the old code:
 | File | What it shows |
 |---|---|
 | `gameplay/controller_hints_playstation_simulated.png` (1600×740) | The controller hint list replacing the touch buttons, with PlayStation glyphs (✕ Jump, L1 Sprint). **Simulated** with `--sim-pad=playstation`: no controller was attached. Captured before the bot-name cleanup (`f5ecf18`), so bots still read "Bot Snooze · BOT". |
+| `gameplay/splash_sequence_quarry.png` (6 frames, 640×360 each), `gameplay/splash_quarry_f1340.png` (1280×720) | Splashing into the Quarry, from the runner clip (frames 1310–1410). Your runner (blue nightcap) leaps in, then a second runner drops in right in front of the camera. Then the impact spray, the ripples around the swimmer, and climbing out with drips and running on. The HUD shows "Quarry stamped, 1 of 3 splashes", and the feed shows the bots' splashes coalesced into one line. |
+| `gameplay/tag_f2035.png` (1280×720) | The Night Watch tags a runner: the whistle ring, "Tagged Snooze!", and the feed line. |
+| `gameplay/cart_f720.png` (1280×720) | A golf cart under a tree after the canopy fix. The near canopy is cut away, so the tree's trunk and bare branches show in the foreground (before the fix this frame was 45.7% canopy, after 3.4%). |
 | `gameplay/canopy_before_f*.png`, `gameplay/canopy_after_f*.png` (1280×720) | The canopy "porthole" and its fix. Frames 930, 1000 and 1250 of the same seeded Night Watch round (`--seed=21`, Movie Maker at 30 fps), before and after `cf53155`; the game state is identical frame for frame. Dark canopy covers 57.5% and 83.8% of frames 1000 and 1250 before, 2.2% and 2.8% after. Frame 930 shows the cost: a lit canopy no longer hides the right of the screen, and the tree's trunk and branches show instead. Method and full numbers: `docs/V3_NOTES.md`, "Camera and performance". |
 
-@@MOVIES@@
+## Movies (normal speed, 30 fps, 1280×720 unless stated)
+
+Movie Maker writes every frame on a fixed 30 fps clock, so each clip plays
+at normal game speed even though llvmpipe rendered it at about 9% of real
+time. Every clip has its build and "NOT device footage" burned into the
+bottom strip. H.264, no audio.
+
+| File | Length | Code | What it shows |
+|---|---|---|---|
+| `movies/runner_v3_desktop.mp4` | 75 s | `cf53155` | A practice round as a runner (seed 11, steered by the game's bot): loading, role reveal, countdown, running across campus with the other runners, the Quarry splash sequence and the Inlet stamp. |
+| `movies/nightwatch_v3_desktop.mp4` | 80 s | `cf53155` | A practice round as the Night Watch (seed 21, bot-driven): driving the golf cart along the roads and under trees, getting out, chasing on foot and tagging a runner. |
+| `movies/canopy_before_after_desktop.mp4` | 16 s, 1280×390 | before / `cf53155` | Frames 870–1350 of the same seeded Night Watch round side by side: left, V3 before the canopy change (the porthole); right, with it. |
+| `movies/lobby_v3_desktop.mp4` | 28 s | `d2fd2f3` | A LAN development room filling up: five headless desktop clients join one by one and ready up a few seconds later. The camera reframes as the group grows. |
+| `movies/creator_v3_desktop.mp4` | 24 s | `d2fd2f3` | Create Your Runner: an outfit and pattern, colour and trim, a face, a hair style and colour, the hat tab, the runner's test run, and turning the runner by drag. |
+
+The lobby and creator clips were recorded on `d2fd2f3`. Later commits
+changed the lobby only by enlarging the room behind the group (for iPad
+4:3); at 16:9 the old room already filled the frame.

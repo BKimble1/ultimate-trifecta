@@ -1,0 +1,70 @@
+{
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "canvas_to_px": 1.6,
+  "canvas_units": [
+    1280.0,
+    960.0
+  ],
+  "draw_calls": 179.0,
+  "fps": 4.0,
+  "frame_ms": {
+    "max": 116.55,
+    "n": 60,
+    "over_100ms": 29,
+    "over_1_5x_target": 60,
+    "p50": 99.98,
+    "p95": 110.0,
+    "p99": 116.55
+  },
+  "glow": true,
+  "label": "desktop Linux llvmpipe, LAN dev room, 8 players, iPad 4:3 (001f274)",
+  "max_fps": 0,
+  "mesh_lod_threshold": 1.0,
+  "msaa_3d": 1,
+  "objects": 341.0,
+  "primitives": 249422.0,
+  "quality_preset": "Standard",
+  "render_3d_px": [
+    2048,
+    1536
+  ],
+  "renderer": "mobile / vulkan",
+  "root_render_px": [
+    2048,
+    1536
+  ],
+  "scaling_3d_mode": 0,
+  "scaling_3d_scale": 1.0,
+  "screen_dpi": 96,
+  "screen_px": [
+    2112,
+    1600
+  ],
+  "screen_scale": 1.0,
+  "screen_space_aa": 0,
+  "shadow_atlas": 2048,
+  "shot": "lobby_8p",
+  "static_mem_mb": 128.2,
+  "subviewports": [
+    {
+      "msaa_3d": 2,
+      "path": "Portraits/@SubViewport@151",
+      "render_px": [
+        160,
+        160
+      ],
+      "scaling_3d_scale": 1.0
+    }
+  ],
+  "sun_shadow": {
+    "max_distance": 14.0,
+    "mode": 0
+  },
+  "t": 6.0,
+  "use_taa": false,
+  "video_mem_mb": 158.5,
+  "window_px": [
+    2048,
+    1536
+  ]
+}
