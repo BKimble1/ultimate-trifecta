@@ -1,6 +1,6 @@
 # TestFlight release: Ultimate Trifecta
 
-Current version: **1.1 (V2)**: the same app, bundle ID, Game Center capability, export scripts and signing lane as 1.0, with a higher build number.
+Current version: **1.2 (V3)**. It uses the same app, bundle ID, Game Center capability and lane as 1.0 and 1.1. V3 adds a small native share-sheet framework (UTShare, built from source in CI) and the optional game service (`service/`), which is not deployed.
 
 ## App identity
 
@@ -9,10 +9,12 @@ Current version: **1.1 (V2)**: the same app, bundle ID, Game Center capability, 
 | App name | Ultimate Trifecta |
 | App icon | The owner's "Pajama Dash" artwork (`Ultimate Trifecta_ Pajama Dash.png`), as `game/assets/icon/icon.png` at 1024×1024, opaque. Godot's export generates every other icon size from it. |
 | Bundle ID | `com.idlery.ultimatetrifecta`: the candidate ID from the brief. Whether it is already registered on your team could not be checked from here. |
-| Marketing version | `1.1` for V2 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot` and the export preset). V1 was `1.0`. |
+| Marketing version | `1.2` for V3 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot` and the export preset). V2 was `1.1`, V1 `1.0`. |
 | Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`), so it always increases past anything already uploaded; without it, the GitHub run number (V1's last unsigned build was 10; V2's are 12 and up). It can be overridden with the `build_number` workflow input. |
 | Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape left/right. Godot also adds `UIRequiredDeviceCapabilities` `iphone-ipad-minimum-performance-a12`, which means A12 (iPhone XS/XR) or newer. All verified in the CI archive's Info.plist. |
 | Capabilities | Game Center (`com.apple.developer.game-center`) |
+| App Store Connect record | **Exists** (seen by the CI lane's API check in run #26): app ID `6818346960`, name "Ultimate Trifecta", bundle `com.idlery.ultimatetrifecta`, SKU `ULTIMATETRIFECTA1`, primary locale en-US. No build had been uploaded before V3 (the next build number for 1.1 was 1). |
+| Embedded frameworks | `GodotApplePluginsGameCenter`, `SwiftGodotRuntime` (Game Center bindings) and `UTShare` (share sheet; built from `native/ut_share` by `tools/build_native.sh`). All three are embedded and arm64 in the CI archive (run #26). |
 | Toolchain | Godot 4.7.2-stable export; Xcode 26.6 (17F113) with the iOS 26 SDK on the `macos-26` GitHub runner (verified in CI run 3). Apple requires the iOS 26 SDK for uploads from April 28, 2026. |
 
 ## Current release state
@@ -93,22 +95,29 @@ These answers are based on what the build actually contains; please confirm them
   - The app adds no encryption of its own.
   - Online play uses Apple Game Center (GameKit), whose transport security is provided by iOS.
   - The ENet/UDP code path used for desktop LAN testing is not offered on iOS and is unencrypted.
+  - V3: with the game service deployed, the app also calls it over HTTPS using Godot's built-in TLS (mbedTLS, standard algorithms), for sign-in and profile requests only. This is standard encryption, which usually still qualifies for the exemption. The account holder confirms the answer in App Store Connect; the build shipped now has the service off.
   - If you do not agree that this qualifies as exempt, change the plist key in `game/export_presets.cfg` before uploading.
 - **Permissions.** The only permission the app actually requests is `NSGKFriendListUsageDescription`. It is shown only when the player opens the Game Center friends list to invite someone.
   - The engine binary contains camera, microphone and photo-library code paths that the game never calls. Godot's export would otherwise write empty purpose strings for them, so they carry explicit "does not use" text.
   - There are no requests for contacts, location, camera, microphone, photos or tracking.
   - `NSUserTrackingUsageDescription` is absent, and `privacy/tracking_enabled=false`.
 - **Privacy manifest** (confirmed in CI run 4). The archive contains Godot's `PrivacyInfo.xcprivacy`, with `NSPrivacyTracking false` and required-reason API declarations: file timestamp (DDA9.1, C617.1), system boot time (35F9.1) and disk space (E174.1, 85F4.1). It declares no collected data types. The two GodotApplePlugins frameworks carry no manifest of their own: only the app-level file was found in the bundle. They are not on Apple's list of SDKs that require one.
-- **Data handling** (for the App Privacy questionnaire, needed before any App Store submission but not for internal TestFlight):
-  - The game has no developer server, analytics, ads or crash reporting.
+- **Data handling** (for the App Privacy questionnaire, needed before any App Store submission but not for internal TestFlight; full answers and the policy inventory are in `docs/APP_STORE.md`):
+  - With the service off (as shipped): no developer server, analytics, ads or crash reporting.
+  - With the service deployed: user ID, name, gameplay content (the runner's look) and reports, linked to the player, for app functionality only, never tracking. `tools/export_ios.sh` then declares these in the privacy manifest automatically.
   - Game Center identity (player ID and display name) is used on-device and shared with the other players in your room through Game Center.
-  - Settings, stats and cosmetics are stored only on the device. Settings → Delete local profile erases them.
+  - Settings, stats and cosmetics are stored on the device. Settings › Profile › **Delete Game Profile** erases them, and the online profile too when the service is on.
   - You make the final declaration.
-- **Content.** Cartoon chase with no violence, nudity, gambling, purchases or user-generated text. Names come from Game Center or are generated.
+- **Content.** Cartoon chase with no violence, nudity, gambling or purchases. Player names are user-generated; they are checked by the service when it is deployed, and every player card has Report and Block. There is no chat, only preset emotes.
 
 ## Running services
 
-- **Online rooms.** Online rooms use Apple's Game Center matchmaking and `GKMatch` relay. There is no developer-operated server, no hosting cost and nothing that must be kept running.
+- **Online rooms.** Online rooms use Apple's Game Center matchmaking and `GKMatch` relay.
+- **Game service (V3, optional, not deployed).** `service/` adds verified profiles, moderated names, reports, blocks and party rooms with admission tokens. Until the owner deploys it to their Cloudflare account (see `service/README.md`) and fills in `game/config/service.cfg`:
+  - The build ships with the service off.
+  - Names stay on the device.
+  - Report explains it is unavailable and offers Block.
+  - Nothing claims a verified profile.
 - **Game Center environment.** TestFlight builds use Game Center's sandbox environment automatically. All players in a room must run TestFlight builds of the app.
 - **Review access.** App Review or a tester without Game Center can play **Solo practice** and the tutorial fully offline. No login or demo account is needed.
 
@@ -116,21 +125,18 @@ These answers are based on what the build actually contains; please confirm them
 
 **Beta App Description**
 
-> Ultimate Trifecta is a playful 3 a.m. campus chase. Runners splash into three marked waters around a fictional campus and race back to the dorm; the Night Watch hunts them on foot and in golf carts. Get four runners home before the 4-minute clock runs out — or, as the Night Watch, stop them. Play solo with bots or create a private room with friends through Game Center.
+> Ultimate Trifecta is a playful 3 a.m. campus chase. Runners splash into three marked waters around a fictional campus and race back to the dorm; the Night Watch hunts them on foot and in golf carts. Get four runners home before the 4-minute clock runs out — or, as the Night Watch, stop them. Create your runner, play solo with bots, or start a private party with friends through Game Center.
 
-**What to Test**
+**What to Test (1.2)**
 
-> 1.1 private beta (V2: new characters, home and party lobby, touch controls, camera and water). Please try:
-> - Home and lobby: is your character sharp and facing you? Is the next action obvious? In a room, do joins, leaves, Ready and outfit changes update without the party jumping around?
-> - Movement: run, sprint (push the stick to the edge), jump, dive (jump again in the air). Starts, stops and turns: precise, and no foot sliding?
-> - Touch: move, drag the camera and press Jump at the same time; a second finger on the left side should move the camera, not steal the stick. Try Settings → Controls (fixed stick, hold-to-sprint, button size, mirrored layout) and Try in Practice.
-> - Camera: does it follow without lag or circling, and stay out of walls and trees?
-> - Night Watch: hop in a golf cart, drive with Gas/Brake, hop out while still holding Gas (nothing should stay pressed), and tag a runner on foot.
-> - Runner: splash into all three marked waters (any order), then reach any dorm door. Getting caught costs 6 s and returns you to your last splash.
-> - Online: Online → Create room and share the 5-letter code; a friend joins with Join with code on another iPhone. Also try Invite. Empty slots are filled by bots marked BOT.
-> - Finish rounds both ways (four runners home, and the time running out), then Rematch and Leave.
-> - Settings → Graphics: Standard vs Battery Saver. Tell us about frame drops, heat or battery drain, with your iPhone model.
-> - Tell us about any crash, stuck camera, unresponsive control or stuck button.
+> 1.2 private beta (V3: new character look and animation, Create Your Runner, parties with codes, controller support). Please try:
+> - First launch: Create Your Runner, then pick a name. Later: Settings › Profile (Change name, Edit runner, Blocked players, Delete Game Profile).
+> - Movement and animation: walk, run, sprint, sharp turns, jump, dive (jump again in the air), landings. Do the feet match the ground? Anything robotic or sliding?
+> - Splash into a marked water by walking in, jumping in and diving in: the splash should look different each time, with one splash sound, and you should come up shaking off water.
+> - Play with Friends → Create Party: share the 6-character code with Share (the iOS share sheet should open), Copy or Invite; a friend uses Join on another device. In the party: tap a player for Hide emotes / Report / Block / Remove. Faces should stay visible with 1–8 players.
+> - Game controller (if you have one): menus with the d-pad, the code pad for joining, LB/RB in the creator, jump-then-dive quickly, sprint, cart throttle and brake. Do the button prompts match your controller?
+> - Touch: move + camera drag + jump at once; Settings → Controls options.
+> - Finish rounds both ways, then Rematch and Leave. Tell us about crashes, stuck controls, heat or frame drops, with your iPhone model.
 
 ## Release labels
 

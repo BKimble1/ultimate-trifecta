@@ -41,6 +41,7 @@ func build() -> void:
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	sc.follow_focus = true
 	sheet.add_child(sc)
+	_open_at_top(sc)
 	var v := UIKit.vbox(18)
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sc.add_child(v)
@@ -334,7 +335,7 @@ func _make_code_pad() -> GridContainer:
 		var b := UIKit.quiet(ch, Vector2(62, 62), 26)
 		b.pressed.connect(func() -> void: _pad_key(ch))
 		g.add_child(b)
-	var del := UIKit.quiet("Del", Vector2(62, 62), 20)
+	var del := UIKit.quiet("Del", Vector2(0, 62), 20)   # sized to its text
 	del.tooltip_text = "Delete"
 	del.pressed.connect(func() -> void: _pad_key(""))
 	g.add_child(del)

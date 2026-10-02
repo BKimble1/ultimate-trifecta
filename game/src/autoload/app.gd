@@ -84,6 +84,12 @@ func _ready() -> void:
 					Social.multiplayer_restricted = true
 				"signing_in":
 					Social.available = true
+				"ready":
+					# signed in (simulated): shows the online screen as on iOS;
+					# nothing that needs the real Game Center is invoked
+					Social.available = true
+					Social.authenticated = true
+					Social.display_name = "Player"
 		elif a.begins_with("--sim-pad="):
 			# dev/automation: render controller prompts on desktop captures
 			# (labelled simulation: no physical controller is attached)

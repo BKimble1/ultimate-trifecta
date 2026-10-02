@@ -45,6 +45,16 @@ func _apply_safe() -> void:
 	margin.position = Vector2.ZERO
 
 
+## Wrapped labels report huge heights until their width is known, so the
+## initial focus scroll of a ScrollContainer lands far down; once layout
+## settles, start at the top.
+func _open_at_top(sc: ScrollContainer) -> void:
+	for i in 3:
+		await get_tree().process_frame
+		if is_instance_valid(sc):
+			sc.scroll_vertical = 0
+
+
 func focus_first(c: Control) -> void:
 	if _first_focus == null:
 		_first_focus = c

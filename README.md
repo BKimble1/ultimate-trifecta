@@ -176,7 +176,7 @@ Other automation flags:
 | `--diag` / `--diag-report=path` | Render diagnostics overlay, or a JSON report every 5 s. Covers window, canvas, 3D render size and scale, SubViewport render size against displayed size, MSAA, frame-time percentiles and draw calls. |
 | `--capture=home\|screens\|account\|lobby\|runner\|patrol\|results --capture-dir=DIR` (lobby with N players: `tools/capture_lobby.sh N DIR`) | Evidence capture. Saves lossless PNGs at moments chosen from game state, each with a diagnostics JSON beside it. |
 | `--emulate-phone[=2]` | Applies the 44 pt touch-size rule on desktop runs at device resolution (@3x iPhone by default, `=2` for @2x devices: iPhone SE, iPad) and starts with the touch layout instead of keyboard. |
-| `--quality=0\|1`, `--name=…`, `--random-cosmetic`, `--gc-sim=declined\|restricted\|signing_in` | Preset, name or outfit for capture runs. `--gc-sim` shows the Game Center states on desktop and is labelled as simulated in the evidence. |
+| `--quality=0\|1`, `--name=…`, `--random-cosmetic`, `--gc-sim=declined\|restricted\|signing_in\|ready` | Preset, name or outfit for capture runs. `--gc-sim` shows the Game Center states on desktop and is labelled as simulated in the evidence. |
 | `--sim-pad=xbox\|playstation\|mfi\|nintendo\|generic` | Renders controller prompts on desktop captures. Labelled as simulated: no controller is attached. |
 | `--skip-onboarding`, `--service-url=…` | Skip the first-launch creator/name flow; point the client at a service (for example a local `wrangler dev`). |
 

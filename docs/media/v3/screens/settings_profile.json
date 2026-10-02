@@ -1,0 +1,60 @@
+{
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "canvas_to_px": 1.028,
+  "canvas_units": [
+    1556.0,
+    720.0
+  ],
+  "draw_calls": 55.0,
+  "fps": 9.0,
+  "frame_ms": {
+    "max": 114.67,
+    "n": 130,
+    "over_100ms": 73,
+    "over_1_5x_target": 130,
+    "p50": 100.0,
+    "p95": 111.11,
+    "p99": 113.19
+  },
+  "glow": true,
+  "label": "",
+  "max_fps": 0,
+  "mesh_lod_threshold": 1.0,
+  "msaa_3d": 1,
+  "objects": 402.0,
+  "primitives": 50704.0,
+  "quality_preset": "Standard",
+  "render_3d_px": [
+    1600,
+    740
+  ],
+  "renderer": "mobile / vulkan",
+  "root_render_px": [
+    1600,
+    740
+  ],
+  "scaling_3d_mode": 0,
+  "scaling_3d_scale": 1.0,
+  "screen_dpi": 95,
+  "screen_px": [
+    1700,
+    1000
+  ],
+  "screen_scale": 1.0,
+  "screen_space_aa": 0,
+  "shadow_atlas": 2048,
+  "shot": "settings_profile",
+  "static_mem_mb": 125.0,
+  "subviewports": [],
+  "sun_shadow": {
+    "max_distance": 14.0,
+    "mode": 0
+  },
+  "t": 13.01,
+  "use_taa": false,
+  "video_mem_mb": 126.0,
+  "window_px": [
+    1600,
+    740
+  ]
+}

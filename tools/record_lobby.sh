@@ -6,7 +6,7 @@
 # Usage: tools/record_lobby.sh OUT.avi [players=6] [WxH=1600x740] [seconds=30]
 set -euo pipefail
 cd "$(dirname "$0")/.."
-OUT=${1:?out.avi}; N=${2:-6}; RES=${3:-1600x740}; SECS=${4:-30}
+OUT=${1:?out.avi}; N=${2:-6}; RES=${3:-1280x720}; SECS=${4:-30}   # movie writer output is the project window size (1280x720)
 PORT=$((7900 + RANDOM % 90))
 W=${RES%x*}; H=${RES#*x}
 XDG_DATA_HOME=$(mktemp -d) xvfb-run -a -s "-screen 0 $((W + 64))x$((H + 64))x24" timeout 5400 tools/gd.sh --path game --resolution "$RES" \

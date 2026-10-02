@@ -55,6 +55,10 @@ func _reach(start: Control) -> Dictionary:
 
 func _check_screen(cls: GDScript, label: String) -> void:
 	var s := await _open(cls)
+	for i in 30:
+		await t.get_tree().process_frame
+	for sc in s.find_children("*", "ScrollContainer", true, false):
+		t.eq((sc as ScrollContainer).scroll_vertical, 0, "%s opens scrolled to the top" % label)
 	var f := _focused()
 	t.check(f != null and s.is_ancestor_of(f), "%s opens with a focused control" % label)
 	if f == null:
@@ -70,13 +74,27 @@ func _check_screen(cls: GDScript, label: String) -> void:
 
 
 func test_menu_screens_are_fully_navigable() -> void:
+	# phone-sized window (the headless default is a 1280x1280 square, where
+	# nothing needs to scroll)
+	var root: Window = t.get_tree().root
+	var saved_size: Vector2i = root.size
+	root.size = Vector2i(2532, 1170)
+	await t.get_tree().process_frame
 	_saved_device = Controls.device
 	Controls.device = "gamepad"
 	Save.data["onboarded"] = true
 	for pair in [[TitleScreen, "Home"], [OnlineScreen, "Play with Friends"], [PracticeScreen, "Practice"],
 			[SettingsScreen, "Settings"], [HowToScreen, "How to play"], [CreatorScreen, "Create Your Runner"]]:
 		await _check_screen(pair[0], pair[1])
+	# Play with Friends as on a signed-in iPhone (Create Party and the code pad live)
+	var gc := [Social.available, Social.authenticated]
+	Social.available = true
+	Social.authenticated = true
+	await _check_screen(OnlineScreen, "Play with Friends (signed in)")
+	Social.available = gc[0]
+	Social.authenticated = gc[1]
 	Controls.device = _saved_device
+	root.size = saved_size
 
 
 func test_code_entry_never_traps_a_controller() -> void:

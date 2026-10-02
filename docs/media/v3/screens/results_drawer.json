@@ -1,0 +1,60 @@
+{
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "canvas_to_px": 1.625,
+  "canvas_units": [
+    1558.0,
+    720.0
+  ],
+  "draw_calls": 49.0,
+  "fps": 1.0,
+  "frame_ms": {
+    "max": 116.48,
+    "n": 78,
+    "over_100ms": 47,
+    "over_1_5x_target": 78,
+    "p50": 100.0,
+    "p95": 115.56,
+    "p99": 116.48
+  },
+  "glow": true,
+  "label": "V3 desktop Linux llvmpipe 2532x1170; results of a headless bot-driven practice round (seed 11)",
+  "max_fps": 0,
+  "mesh_lod_threshold": 1.0,
+  "msaa_3d": 1,
+  "objects": 651.0,
+  "primitives": 47010.0,
+  "quality_preset": "Standard",
+  "render_3d_px": [
+    2532,
+    1170
+  ],
+  "renderer": "mobile / vulkan",
+  "root_render_px": [
+    2532,
+    1170
+  ],
+  "scaling_3d_mode": 0,
+  "scaling_3d_scale": 1.0,
+  "screen_dpi": 96,
+  "screen_px": [
+    2600,
+    1240
+  ],
+  "screen_scale": 1.0,
+  "screen_space_aa": 0,
+  "shadow_atlas": 2048,
+  "shot": "results_drawer",
+  "static_mem_mb": 133.1,
+  "subviewports": [],
+  "sun_shadow": {
+    "max_distance": 14.0,
+    "mode": 0
+  },
+  "t": 7.8,
+  "use_taa": false,
+  "video_mem_mb": 196.1,
+  "window_px": [
+    2532,
+    1170
+  ]
+}

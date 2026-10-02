@@ -95,15 +95,6 @@ func build() -> void:
 	_open_at_top(sc)
 
 
-## Wrapped labels report huge heights until their width is known, so the
-## initial focus scroll lands far down; once layout settles, start at the top.
-func _open_at_top(sc: ScrollContainer) -> void:
-	for i in 3:
-		await get_tree().process_frame
-		if is_instance_valid(sc):
-			sc.scroll_vertical = 0
-
-
 static func _privacy_text() -> String:
 	var t := "Settings, coins, unlocked items, level and stats are stored on this device. The game has no ads, tracking, chat or analytics. Online parties use Game Center for invitations and matchmaking."
 	if Cloud.configured():
