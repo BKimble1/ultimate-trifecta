@@ -1,34 +1,38 @@
 class_name LobbyScreen
 extends Screen
-## Party lobby in the dorm common room (V4).
-##   top bar   Back · room code · Copy · Share · Invite
-##   summary   the party settings in one line ("3 rounds · 2 Night Watch ·
-##             6 runners · 4 home to win"); the host taps it to change them,
-##             guests see a read-only copy.  During a series it shows the
-##             round coming up and the Round Wins so far.
-##   stage     the 3D room (App.stage).  Tap your own runner to play your
-##             move.  Emotes and "Try moves" play on the stage.
-##   panel     compact party list: everyone present plus one open seat
-##   actions   one primary (host: Start / Start round N, guest: Ready);
-##             Outfit, Emote and Try moves
-## Updates are incremental: lobby_changed rewrites cell contents and syncs the
-## stage by player identity; nothing is rebuilt wholesale.
+## Party lobby in the dorm common room (V5).
+##   top       Back · the party code with Copy and Share · Invite;
+##             the settings as short labelled values ("3 rounds",
+##             "2 Night Watch", "4 home to win"): the host taps them to
+##             change, guests see them read-only
+##   stage     the 3D room (App.stage) with the party on their marks, left of
+##             the roster.  Tap your own runner to play your move.
+##   roster    compact player cards: portrait, the full name where it fits
+##             (a smaller size before any trimming; tap for details), host,
+##             ready and bot status, and one open seat to invite into
+##   bottom    Wardrobe, Emote and Try moves (left); the one primary action
+##             (host: Start / Start round N, guest: Ready) with its status
+##             line (right).  Nothing moves when states change.
+## Updates are incremental: lobby_changed rewrites card contents and syncs
+## the stage by player identity; nothing is rebuilt wholesale.
 
 var session: NetSession
-var code_chip: Label
+var code_lbl: Label
 var invite_btn: Button
 var status_lbl: Label
 var primary_btn: Button
 var sub_lbl: Label
 var settings_btn: Button
-var settings_lbl: Label
+var settings_chips: Array[Label] = []
+var settings_lock: Icons.IconRect
 var series_lbl: Label
+var series_row: Control
 var standings_btn: Button
 var cells: Array[SlotCell] = []
 var count_lbl: Label
+var roster_col: VBoxContainer
 var _grid: GridContainer
 var _is_ready := false
-var _popover: Control
 ## guests see their own emote at once; the host's echo of it is skipped
 var _predicted := {"id": -1, "t": -10.0}
 var _last_note := ""
@@ -40,107 +44,80 @@ func build() -> void:
 	if App.stage:
 		App.stage.set_mode("lobby")
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var shade := TextureRect.new()
-	shade.texture = TitleScreen._side_gradient()
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.stretch_mode = TextureRect.STRETCH_SCALE
-	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(shade)
-	move_child(shade, 0)
+	TitleScreen.add_shades(self, 0.55, 0.3)
 
 	# --- top bar
-	var top := UIKit.hbox(14)
+	var top := UIKit.hbox(12)
 	content.add_child(top)
 	var back := UIKit.icon_button("back")
 	back.tooltip_text = "Leave party"
+	back.accessibility_name = "Leave party"
 	back.pressed.connect(_go_back)
 	top.add_child(back)
-	var code_box := UIKit.panel(Color(UIKit.SLATE, 0.9), 999, 20)
-	code_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var cb := UIKit.hbox(10)
-	cb.add_child(UIKit.label("PARTY", 18, UIKit.IVORY_MUTED, true))
-	code_chip = UIKit.label("", 30, UIKit.AMBER)
-	code_chip.add_theme_font_override("font", UIKit.font_w(700))
-	cb.add_child(code_chip)
-	code_box.add_child(cb)
-	top.add_child(code_box)
+	var code_card := UIKit.panel(Color(UIKit.SLATE, 0.94), UIKit.R_CARD, 18)
+	code_card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var cv := UIKit.vbox(0)
+	cv.add_child(UIKit.styled("Party code", "overline", UIKit.IVORY_MUTED))
+	code_lbl = UIKit.styled("", "num", UIKit.AMBER)
+	code_lbl.add_theme_font_override("font", UIKit.font_num(800))
+	code_lbl.add_theme_font_size_override("font_size", 30)
+	cv.add_child(code_lbl)
+	code_card.add_child(cv)
+	top.add_child(code_card)
 	var copy := UIKit.icon_button("copy")
 	copy.tooltip_text = "Copy party code"
+	copy.accessibility_name = "Copy party code"
+	copy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	copy.pressed.connect(func() -> void:
 		DisplayServer.clipboard_set(session.room_code)
 		UIKit.toast(self, "Code %s copied" % session.room_code))
 	top.add_child(copy)
 	var share := UIKit.icon_button("share")
 	share.tooltip_text = "Share party code"
+	share.accessibility_name = "Share party code"
+	share.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	share.pressed.connect(func() -> void:
 		if not Share.share_text(Share.party_message(session.room_code)):
 			UIKit.toast(self, "Invite message copied — paste it to a friend"))
 	top.add_child(share)
 	invite_btn = UIKit.icon_button("invite", "Invite")
 	invite_btn.tooltip_text = "Invite Game Center friends"
+	invite_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	invite_btn.pressed.connect(_invite)
 	top.add_child(invite_btn)
 	top.add_child(UIKit.spacer_h())
+	settings_btn = _settings_summary()
+	settings_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	top.add_child(settings_btn)
 
-	# --- settings summary (host: opens the sheet; guests: read-only copy)
+	# --- series line (only during a series)
 	var srow := UIKit.hbox(10)
+	series_row = srow
 	content.add_child(srow)
-	settings_btn = Button.new()
-	settings_btn.focus_mode = Control.FOCUS_ALL
-	settings_btn.custom_minimum_size = Vector2(0, maxf(56.0, UIKit.touch_min()))
-	settings_btn.add_theme_stylebox_override("normal", UIKit.box(Color(UIKit.NAVY, 0.72), 999, 2, Color(UIKit.TEAL, 0.55), 14))
-	settings_btn.add_theme_stylebox_override("hover", UIKit.box(Color(UIKit.SLATE, 0.85), 999, 2, UIKit.TEAL, 14))
-	settings_btn.add_theme_stylebox_override("pressed", UIKit.box(Color(UIKit.SLATE_LO, 0.9), 999, 2, UIKit.TEAL, 14))
-	settings_btn.add_theme_stylebox_override("focus", UIKit.box(Color(0, 0, 0, 0), 999, 3, UIKit.TEAL, 0))
-	UIKit.press_feedback(settings_btn)
-	var sh := UIKit.hbox(10)
-	sh.set_anchors_preset(Control.PRESET_FULL_RECT)
-	sh.offset_left = 16
-	sh.offset_right = -18
-	sh.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sicon := Icons.IconRect.new("sliders", UIKit.TEAL, 28)
-	sicon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	sh.add_child(sicon)
-	settings_lbl = UIKit.label("", 20, UIKit.IVORY)
-	settings_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	settings_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sh.add_child(settings_lbl)
-	settings_btn.add_child(sh)
-	settings_btn.resized.connect(func() -> void: pass)
-	settings_btn.pressed.connect(_settings_sheet)
-	srow.add_child(settings_btn)
-	series_lbl = UIKit.label("", 19, UIKit.AMBER)
-	series_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	srow.add_child(series_lbl)
-	standings_btn = UIKit.quiet("Standings", Vector2(170, maxf(56.0, UIKit.touch_min())), 19)
+	var sp := UIKit.scrim(999, 16, 0.6)
+	series_lbl = UIKit.styled("", "label", UIKit.AMBER)
+	sp.add_child(series_lbl)
+	srow.add_child(sp)
+	standings_btn = UIKit.quiet("Standings", Vector2(180, 0))
 	standings_btn.pressed.connect(_standings_sheet)
 	srow.add_child(standings_btn)
-	srow.add_child(UIKit.spacer_h())
 
-	# --- middle: stage space (left) + party panel (right)
+	# --- middle: stage space (left) + roster (right)
 	var mid := UIKit.hbox(0)
 	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	mid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(mid)
 	mid.add_child(UIKit.spacer_h())
-	var panel := UIKit.panel(Color(UIKit.SLATE, 0.92), UIKit.R_PANEL, 16)
-	panel.custom_minimum_size = Vector2(520, 0)
-	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	mid.add_child(panel)
-	var pv := UIKit.vbox(10)
-	panel.add_child(pv)
-	var ph := UIKit.hbox(10)
-	ph.add_child(UIKit.heading("Party", 28))
-	count_lbl = UIKit.label("", 20, UIKit.IVORY_MUTED)
-	count_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	ph.add_child(count_lbl)
-	pv.add_child(ph)
+	roster_col = UIKit.vbox(10)
+	roster_col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	mid.add_child(roster_col)
+	count_lbl = UIKit.styled("", "overline", UIKit.IVORY_MUTED)
+	roster_col.add_child(count_lbl)
 	_grid = GridContainer.new()
 	_grid.columns = 2
-	_grid.add_theme_constant_override("h_separation", 8)
-	_grid.add_theme_constant_override("v_separation", 8)
-	pv.add_child(_grid)
+	_grid.add_theme_constant_override("h_separation", 10)
+	_grid.add_theme_constant_override("v_separation", 10)
+	roster_col.add_child(_grid)
 	for i in 8:
 		var c := SlotCell.new()
 		c.slot = -1
@@ -151,13 +128,8 @@ func build() -> void:
 	# --- bottom: secondary actions (left) + primary action (right)
 	var bottom := UIKit.hbox(12)
 	content.add_child(bottom)
-	var outfit := UIKit.icon_button("shirt", "Outfit")
-	outfit.pressed.connect(func() -> void:
-		if App.stage:
-			App.stage.stop_previews()
-		var w := CreatorScreen.new()
-		w.back_action_override = func() -> void: App.show_lobby()
-		App._show(w))
+	var outfit := UIKit.icon_button("shirt", "Wardrobe")
+	outfit.pressed.connect(_open_wardrobe)
 	outfit.size_flags_vertical = Control.SIZE_SHRINK_END
 	bottom.add_child(outfit)
 	var emote_b := UIKit.icon_button("smile", "Emote")
@@ -169,16 +141,20 @@ func build() -> void:
 	moves_b.size_flags_vertical = Control.SIZE_SHRINK_END
 	bottom.add_child(moves_b)
 	bottom.add_child(UIKit.spacer_h())
-	var pcol := UIKit.vbox(4)
+	var pcol := UIKit.vbox(6)
 	pcol.alignment = BoxContainer.ALIGNMENT_END
 	bottom.add_child(pcol)
-	status_lbl = UIKit.label("", 18, UIKit.IVORY_MUTED, false, HORIZONTAL_ALIGNMENT_RIGHT)
+	status_lbl = UIKit.styled("", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
 	pcol.add_child(status_lbl)
-	primary_btn = UIKit.primary("Start", Vector2(340, 96), 32)
+	var prow := UIKit.hbox(12)
+	prow.alignment = BoxContainer.ALIGNMENT_END
+	pcol.add_child(prow)
+	sub_lbl = UIKit.styled("", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
+	sub_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	prow.add_child(sub_lbl)
+	primary_btn = UIKit.primary("Start", Vector2(340, 96))
 	primary_btn.pressed.connect(_on_primary)
-	pcol.add_child(primary_btn)
-	sub_lbl = UIKit.label("", 18, UIKit.IVORY_MUTED, false, HORIZONTAL_ALIGNMENT_CENTER)
-	pcol.add_child(sub_lbl)
+	prow.add_child(primary_btn)
 	focus_first(primary_btn)
 	session.lobby_changed.connect(_refresh)
 	session.status_changed.connect(_on_status)
@@ -186,17 +162,66 @@ func build() -> void:
 	session.series_changed.connect(_refresh)
 	_is_ready = session.local_slot >= 0 and session.roster[session.local_slot] != null and bool(session.roster[session.local_slot]["ready"])
 	_refresh()
-	UIKit.appear(panel, Vector2(40, 0), UIKit.T_SHEET)
-	panel.resized.connect(_frame_stage.bind(panel))
-	get_viewport().size_changed.connect(_frame_stage.bind(panel))
-	_frame_stage.call_deferred(panel)
+	Motion.settle_in(roster_col)
+	roster_col.resized.connect(_frame_stage.bind(roster_col))
+	get_viewport().size_changed.connect(_frame_stage.bind(roster_col))
+	_frame_stage.call_deferred(roster_col)
 
 
-## Tell the stage how much of the screen is free left of the party panel.
+## The settings as three short chips in one tappable group.
+func _settings_summary() -> Button:
+	var b := UIKit.card_button(Vector2(0, UIKit.touch_min()), Color(UIKit.SLATE, 0.94))
+	b.tooltip_text = "Party settings"
+	var f := UIKit.face_of(b)
+	var h := UIKit.hbox(8)
+	h.set_anchors_preset(Control.PRESET_FULL_RECT)
+	h.offset_left = 14
+	h.offset_right = -14
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	settings_lock = Icons.IconRect.new("sliders", UIKit.TEAL, 26)
+	settings_lock.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(settings_lock)
+	for i in 3:
+		var chip := PanelContainer.new()
+		chip.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.NAVY, 0.55), 999, 0, Color.WHITE, 12))
+		chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var l := UIKit.styled("", "label")
+		l.add_theme_font_size_override("font_size", UIKit.T_CAPTION)
+		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.add_child(l)
+		h.add_child(chip)
+		settings_chips.append(l)
+	f.add_child(h)
+	b.pressed.connect(_settings_sheet)
+	UIKit.fit_card(b, h, 28.0)
+	return b
+
+
+func _paint_settings() -> void:
+	var parts := PartySeries.summary_parts(session.settings)
+	for i in settings_chips.size():
+		settings_chips[i].text = parts[i]
+	var host := session.is_host() and session.mode != NetSession.Mode.OFFLINE and not session.series_active()
+	settings_lock.kind = "sliders" if host else "lock"
+	settings_lock.col = UIKit.TEAL if host else UIKit.IVORY_MUTED
+	settings_lock.queue_redraw()
+	settings_btn.accessibility_name = "Party settings: %s%s" % [", ".join(parts), "" if host else " (set by the host)"]
+
+
+## Tell the stage how much of the screen is free left of the roster.
 func _frame_stage(panel: Control) -> void:
 	if App.stage and is_instance_valid(panel):
 		var w := get_viewport().get_visible_rect().size.x
 		App.stage.set_lobby_free_frac((panel.get_global_rect().position.x - 12.0) / maxf(1.0, w))
+
+
+func _open_wardrobe() -> void:
+	if App.stage:
+		App.stage.stop_previews()
+	var w := CreatorScreen.new()
+	w.back_action_override = func() -> void: App.show_lobby()
+	App._show(w)
 
 
 func _on_primary() -> void:
@@ -212,9 +237,9 @@ func _on_primary() -> void:
 	_refresh()
 
 
-func _on_status(t: String) -> void:
-	if is_instance_valid(status_lbl) and t != "":
-		status_lbl.text = t
+func _on_status(txt: String) -> void:
+	if is_instance_valid(status_lbl) and txt != "":
+		status_lbl.text = txt
 
 
 func _local_key() -> String:
@@ -227,7 +252,7 @@ func _refresh() -> void:
 	if not is_instance_valid(primary_btn):
 		return
 	var hosting := session.is_host()
-	code_chip.text = session.room_code if session.room_code != "" else "…"
+	code_lbl.text = session.room_code if session.room_code != "" else "…"
 	invite_btn.visible = hosting and Social.online_ready() and session.transport is GameKitTransport
 	var humans := 0
 	var not_ready := 0
@@ -252,7 +277,7 @@ func _refresh() -> void:
 			entries.push_front(ent)
 		else:
 			entries.append(ent)
-	# compact list: everyone present, then one open seat (until the party is full)
+	# everyone present, then one open seat (until the party is full)
 	var shown := mini(8, order.size() + (1 if order.size() < 8 else 0))
 	for ci in cells.size():
 		var c: SlotCell = cells[ci]
@@ -267,19 +292,17 @@ func _refresh() -> void:
 	_grid.columns = 1 if shown <= 2 else 2
 	if App.stage:
 		App.stage.sync_party(entries)
-	count_lbl.text = "%d / 8 · %d ready" % [humans, ready_n] if humans > 1 else "%d / 8" % humans
+	count_lbl.text = ("Party · %d/8 · %d ready" % [humans, ready_n]) if humans > 1 else "Party · %d/8" % humans
 	# settings + series
+	_paint_settings()
 	var series_on := session.series_active()
 	var nxt := session.next_round_number()
 	var total := session.rounds_total()
-	settings_lbl.text = PartySeries.summary(session.settings)
 	var view: Dictionary = session.series_view
 	if series_on:
 		var tally := _tally(view)
 		series_lbl.text = "Round %d of %d next  ·  Runners %d – %d Night Watch" % [nxt, total, tally[0], tally[1]]
-	else:
-		series_lbl.text = ""
-	series_lbl.visible = series_on
+	series_row.visible = series_on
 	standings_btn.visible = series_on and not (view.get("standings", {}) as Dictionary).is_empty()
 	var bots := 8 - humans
 	if hosting:
@@ -311,7 +334,7 @@ func _refresh() -> void:
 	# roster updates keep focus on its cell; if the focused control went away
 	# (a sheet closed with its player gone), controllers land on the main action
 	if Controls.device != "touch" and not has_modal() and get_viewport().gui_get_focus_owner() == null:
-		primary_btn.call_deferred("grab_focus")
+		UIKit.soft_focus.call_deferred(primary_btn)
 
 
 static func _tally(view: Dictionary) -> Array:
@@ -341,89 +364,11 @@ func _on_cell(c: SlotCell) -> void:
 	var e: Variant = session.roster[i]
 	if e == null:
 		return
-	if i == session.local_slot:
-		_play_own_move()
-		return
-	if bool(e["is_bot"]):
-		return
 	_player_popover(i, c)
 
 
-func _close_popover() -> void:
-	if _popover and is_instance_valid(_popover):
-		_popover.queue_free()
-	_popover = null
-
-
-## Small anchored panel with a dismiss catcher behind it.
-func _popover_at(anchor: Control, body: Control, above: bool = true) -> void:
-	_close_popover()
-	var root := Control.new()
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(root)
-	var catcher := Button.new()
-	catcher.flat = true
-	catcher.focus_mode = Control.FOCUS_NONE
-	catcher.set_anchors_preset(Control.PRESET_FULL_RECT)
-	catcher.pressed.connect(_close_popover)
-	root.add_child(catcher)
-	var p := UIKit.panel(Color(UIKit.SLATE_HI, 0.98), UIKit.R_PANEL, 16)
-	p.add_child(body)
-	root.add_child(p)
-	var ar := anchor.get_global_rect()
-	var sz := p.get_combined_minimum_size()
-	var vis := get_viewport().get_visible_rect().size
-	var pos := Vector2(ar.position.x, ar.position.y - sz.y - 12) if above else Vector2(ar.position.x - sz.x - 12, ar.position.y)
-	pos.x = clampf(pos.x, 16, vis.x - sz.x - 16)
-	pos.y = clampf(pos.y, 16, vis.y - sz.y - 16)
-	p.position = pos
-	UIKit.appear(p, Vector2(0, 10) if above else Vector2(10, 0), UIKit.T_FAST)
-	_popover = root
-	push_modal(root, _close_popover)
-	var first := body.find_children("*", "Button", true, false)
-	if not first.is_empty():
-		(first[0] as Button).call_deferred("grab_focus")
-
-
-## A big icon tile (emote / move pickers).
-func _tile(icon: String, text: String, on_press: Callable) -> Button:
-	var b := Button.new()
-	b.focus_mode = Control.FOCUS_ALL
-	b.custom_minimum_size = Vector2(150, 118)
-	for st in ["normal", "hover", "pressed", "focus"]:
-		var bg := Color(UIKit.NAVY, 0.7) if st == "normal" else (Color(UIKit.SLATE_LO, 0.95) if st == "pressed" else Color(UIKit.SLATE, 0.95))
-		b.add_theme_stylebox_override(st, UIKit.box(bg if st != "focus" else Color(0, 0, 0, 0), UIKit.R_SMALL, 3 if st == "focus" else 2,
-			UIKit.TEAL if st == "focus" else Color(UIKit.IVORY, 0.14), 10))
-	UIKit.press_feedback(b)
-	var v := UIKit.vbox(4)
-	v.set_anchors_preset(Control.PRESET_FULL_RECT)
-	v.alignment = BoxContainer.ALIGNMENT_CENTER
-	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var ic := Icons.IconRect.new(icon, UIKit.AMBER, 52)
-	ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	v.add_child(ic)
-	var l := UIKit.label(text, 20, UIKit.IVORY, true, HORIZONTAL_ALIGNMENT_CENTER)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(l)
-	b.add_child(v)
-	b.pressed.connect(on_press)
-	return b
-
-
 func _emote_popover(anchor: Control) -> void:
-	var v := UIKit.vbox(10)
-	v.add_child(UIKit.label("Emote", 22, UIKit.IVORY, true))
-	var g := GridContainer.new()
-	g.columns = 3
-	g.add_theme_constant_override("h_separation", 10)
-	g.add_theme_constant_override("v_separation", 10)
-	for i in TC.EMOTES.size():
-		var idx := i
-		g.add_child(_tile(Icons.emote_icon(i), String(TC.EMOTE_LABELS[TC.EMOTES[i]]), func() -> void:
-			_close_popover()
-			_send_emote(idx)))
-	v.add_child(g)
-	_popover_at(anchor, v)
+	emote_picker(anchor, _send_emote)
 
 
 ## Play an emote: shown on our own runner at once (a guest's request still
@@ -444,10 +389,9 @@ func _send_emote(id: int) -> void:
 
 
 func _moves_popover(anchor: Control) -> void:
-	var v := UIKit.vbox(10)
-	v.add_child(UIKit.label("Try moves", 22, UIKit.IVORY, true))
-	var note := UIKit.label("Just on your screen", 17, UIKit.IVORY_MUTED)
-	v.add_child(note)
+	var v := UIKit.vbox(12)
+	v.add_child(UIKit.styled("Try moves", "headline"))
+	v.add_child(UIKit.styled("Just on your screen", "caption", UIKit.IVORY_MUTED))
 	var g := GridContainer.new()
 	g.columns = 3
 	g.add_theme_constant_override("h_separation", 10)
@@ -456,11 +400,11 @@ func _moves_popover(anchor: Control) -> void:
 	for m in [["m_idle", "Idle", "idle"], ["m_run", "Run", "run"], ["m_run", "Sprint", "sprint"], ["m_jump", "Jump", "jump"], ["m_dive", "Dive", "dive"],
 			["e_" + mine, "Your move", "move"]]:
 		var kind: String = m[2]
-		g.add_child(_tile(String(m[0]), String(m[1]), func() -> void:
-			_close_popover()
+		g.add_child(icon_tile(String(m[0]), String(m[1]), func() -> void:
+			close_popover()
 			_try_move(kind)))
 	v.add_child(g)
-	_popover_at(anchor, v)
+	popover_at(anchor, v)
 
 
 func _try_move(kind: String) -> void:
@@ -473,7 +417,7 @@ func _try_move(kind: String) -> void:
 		App.stage.preview_move(key, kind)
 
 
-## Tap your own runner (or its cell): your signature move, for everyone.
+## Tap your own runner (or Your move): your signature move, for everyone.
 func _play_own_move() -> void:
 	var mine := String(Cosmetics.sanitize(Save.data["cosmetic"]).get("emote", "wave"))
 	var id := TC.EMOTES.find(mine)
@@ -486,6 +430,7 @@ func _play_own_move() -> void:
 ## in the viewport's canvas units.
 func _unhandled_input(ev: InputEvent) -> void:
 	if not (ev is InputEventMouseButton) or not (ev as InputEventMouseButton).pressed or (ev as InputEventMouseButton).button_index != MOUSE_BUTTON_LEFT:
+		super(ev)
 		return
 	if App.stage == null or has_modal() or not is_visible_in_tree():
 		return
@@ -509,22 +454,21 @@ func _settings_sheet() -> void:
 	var locked := session.series_active()
 	var v := UIKit.vbox(12)
 	v.custom_minimum_size = Vector2(560, 0)
-	v.add_child(UIKit.label("Party settings", 26, UIKit.IVORY, true))
+	v.add_child(UIKit.styled("Party settings", "headline"))
 	if not host:
-		v.add_child(UIKit.label("Set by the host", 18, UIKit.IVORY_MUTED))
+		v.add_child(UIKit.styled("Set by the host", "caption", UIKit.IVORY_MUTED))
 	elif locked:
-		v.add_child(UIKit.label("Locked for this series (round %d of %d is next)." % [session.next_round_number(), session.rounds_total()], 18, UIKit.IVORY_MUTED))
+		v.add_child(UIKit.styled("Locked for this series (round %d of %d is next)." % [session.next_round_number(), session.rounds_total()], "caption", UIKit.IVORY_MUTED))
 	var cur := session.settings.duplicate()
-	var line := UIKit.label(PartySeries.summary(cur), 20, UIKit.AMBER)
 	var rows := []
-	var paint := func() -> void: pass
-	for spec in [["Night Watch", "watch", [[1, "1"], [2, "2"], [3, "3 · tougher for runners"]]],
-			["Rounds", "rounds", [[1, "Single round"], [3, "3"], [5, "5"]]]]:
-		v.add_child(UIKit.label(String(spec[0]), 20, UIKit.IVORY_MUTED, true))
+	var notes := {}
+	for spec in [["Night Watch", "watch", [[1, "1"], [2, "2"], [3, "3"]], "More Night Watch is tougher for runners."],
+			["Rounds", "rounds", [[1, "1"], [3, "3"], [5, "5"]], "Most Round Wins takes the series."]]:
+		v.add_child(UIKit.styled(String(spec[0]), "overline", UIKit.IVORY_MUTED))
 		var row := UIKit.hbox(10)
 		var btns: Array[Button] = []
 		for o in spec[2]:
-			var b := UIKit.quiet(String(o[1]), Vector2(150, 68), 20)
+			var b := UIKit.quiet(String(o[1]), Vector2(150, 68))
 			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			b.disabled = not host or locked
 			var key: String = spec[1]
@@ -533,126 +477,141 @@ func _settings_sheet() -> void:
 				cur[key] = val
 				session.host_set_settings(int(cur["watch"]), int(cur["rounds"]))
 				cur = session.settings.duplicate()
-				line.text = PartySeries.summary(cur)
-				_paint_choices(rows, cur)
+				_paint_choices(rows, cur, notes)
 				_refresh())
 			row.add_child(b)
 			btns.append(b)
 		rows.append([spec[1], spec[2], btns])
 		v.add_child(row)
-	_paint_choices(rows, cur)
+		var note := UIKit.styled(String(spec[3]), "caption", UIKit.IVORY_MUTED)
+		notes[spec[1]] = note
+		v.add_child(note)
+	var line := UIKit.styled("", "label", UIKit.AMBER)
+	notes["line"] = line
 	v.add_child(line)
+	_paint_choices(rows, cur, notes)
 	var foot := UIKit.hbox(10)
 	if host and not locked:
-		var reset := UIKit.quiet("Reset to recommended", Vector2(300, 68), 20)
+		var reset := UIKit.quiet("Reset to recommended", Vector2(300, 68))
 		reset.pressed.connect(func() -> void:
 			session.host_set_settings(PartySeries.DEFAULT_WATCH, PartySeries.DEFAULT_ROUNDS)
 			cur = session.settings.duplicate()
-			line.text = PartySeries.summary(cur)
-			_paint_choices(rows, cur)
+			_paint_choices(rows, cur, notes)
 			_refresh())
 		foot.add_child(reset)
 	if host and locked:
-		var endb := UIKit.quiet("End series", Vector2(240, 68), 20)
+		var endb := UIKit.quiet("End series", Vector2(240, 68))
 		endb.pressed.connect(func() -> void:
-			_close_popover()
+			close_popover()
 			dialog("End this series now? Rounds already played still count; there's no prize for the rest.", [["End series", func() -> void:
 				session.host_end_series()
 				App.show_series_final()], ["Keep playing", Callable()]]))
 		foot.add_child(endb)
 	foot.add_child(UIKit.spacer_h())
-	var done := UIKit.secondary("Done", Vector2(180, 68), 22)
-	done.pressed.connect(_close_popover)
+	var done := UIKit.secondary("Done", Vector2(180, 68))
+	done.pressed.connect(close_popover)
 	foot.add_child(done)
 	v.add_child(foot)
-	_popover_at(settings_btn, v, false)
-	if _popover:
-		var p: Control = _popover.get_child(1)
-		p.position = Vector2(clampf(settings_btn.get_global_rect().position.x, 16, get_viewport().get_visible_rect().size.x - p.get_combined_minimum_size().x - 16),
-			settings_btn.get_global_rect().end.y + 10)
+	popover_at(settings_btn, v, "below")
 
 
-func _paint_choices(rows: Array, cur: Dictionary) -> void:
+func _paint_choices(rows: Array, cur: Dictionary, notes: Dictionary = {}) -> void:
 	for r in rows:
 		var key: String = r[0]
 		var opts: Array = r[1]
 		var btns: Array = r[2]
 		for i in btns.size():
 			var b: Button = btns[i]
-			if not is_instance_valid(b):
-				continue
-			if int(opts[i][0]) == int(cur.get(key, -1)):
-				UIKit._apply(b, UIKit.TEAL, UIKit.NAVY)
-			else:
-				b.add_theme_stylebox_override("normal", UIKit.box(Color(UIKit.SLATE, 0.55), UIKit.R_BUTTON, 2, Color(UIKit.IVORY, 0.22)))
-				b.add_theme_stylebox_override("hover", UIKit.box(Color(UIKit.SLATE_HI, 0.75), UIKit.R_BUTTON, 2, Color(UIKit.IVORY, 0.3)))
-				b.add_theme_stylebox_override("disabled", UIKit.box(Color(UIKit.SLATE, 0.35), UIKit.R_BUTTON, 2, Color(UIKit.IVORY, 0.12)))
-				for k in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-					b.add_theme_color_override(k, UIKit.IVORY)
+			if is_instance_valid(b):
+				UIKit.set_selected(b, int(opts[i][0]) == int(cur.get(key, -1)))
+	if notes.has("line") and is_instance_valid(notes["line"]):
+		var w := int(cur.get("watch", PartySeries.DEFAULT_WATCH))
+		(notes["line"] as Label).text = "%d runners · %d home to win" % [PartySeries.runners(w), PartySeries.required_home(w)]
 
 
 func _standings_sheet() -> void:
 	var v := UIKit.vbox(10)
 	v.custom_minimum_size = Vector2(560, 0)
-	v.add_child(UIKit.label("Standings", 26, UIKit.IVORY, true))
+	v.add_child(UIKit.styled("Standings", "headline"))
 	v.add_child(ResultsScreen.standings_table(session.series_view, Save.player_uid()))
-	var done := UIKit.secondary("Close", Vector2(180, 68), 22)
-	done.pressed.connect(_close_popover)
+	var done := UIKit.secondary("Close", Vector2(180, 68))
+	done.pressed.connect(close_popover)
 	v.add_child(done)
-	_popover_at(standings_btn, v)
+	popover_at(standings_btn, v, "below")
 
 
+## Player details: the full name, status and the actions for that player.
+## Your own card: your move and the wardrobe.  Bots: who they are.
 func _player_popover(i: int, anchor: Control) -> void:
 	var e: Dictionary = session.roster[i]
 	var uid := String(e["uid"])
 	var pid := String(e.get("pid", ""))
+	var me := i == session.local_slot
 	var v := UIKit.vbox(10)
-	var head := UIKit.hbox(12)
-	var pic := TextureRect.new()
-	pic.custom_minimum_size = Vector2(84, 84)
-	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	pic.texture = Portraits.shared().portrait(e["cosmetic"], TC.Role.RUNNER, "sheet")
-	head.add_child(pic)
+	v.custom_minimum_size = Vector2(380, 0)
+	var head := UIKit.hbox(14)
+	var av := Avatar.new()
+	av.custom_minimum_size = Vector2(88, 88)
+	av.set_entry(e["cosmetic"], int(e.get("role", -1)), "sheet")
+	head.add_child(av)
 	var nv := UIKit.vbox(2)
-	var nm := UIKit.label(String(e["name"]), 24, UIKit.IVORY, true)
-	nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	nm.custom_minimum_size = Vector2(240, 0)
+	nv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var nm := UIKit.styled(String(e["name"]), "headline")
+	nm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	nm.custom_minimum_size = Vector2(250, 0)
 	nv.add_child(nm)
-	nv.add_child(UIKit.label("Host" if int(e["slot"]) == 0 else ("Ready" if bool(e["ready"]) else "In the party"), 18, UIKit.IVORY_MUTED))
+	var st := "Host" if int(e["slot"]) == 0 else ("Bot" if bool(e["is_bot"]) else ("Ready" if bool(e["ready"]) else "In the party"))
+	nv.add_child(UIKit.styled(("You · " if me else "") + st, "caption", UIKit.IVORY_MUTED))
 	head.add_child(nv)
 	v.add_child(head)
+	if me:
+		var mv := UIKit.secondary("Play your move", Vector2(340, 72))
+		mv.pressed.connect(func() -> void:
+			close_popover()
+			_play_own_move())
+		v.add_child(mv)
+		var wb := UIKit.quiet("Wardrobe", Vector2(340, 72))
+		wb.pressed.connect(func() -> void:
+			close_popover()
+			_open_wardrobe())
+		v.add_child(wb)
+		popover_at(anchor, v, "left")
+		return
+	if bool(e["is_bot"]):
+		v.add_child(UIKit.styled("Bots fill empty seats. A friend who joins takes this seat.", "caption", UIKit.IVORY_MUTED))
+		popover_at(anchor, v, "left")
+		return
 	var muted := session.muted.has(uid)
-	var mb := UIKit.secondary("Show their emotes" if muted else "Hide their emotes", Vector2(320, 72), 22)
+	var mb := UIKit.secondary("Show their emotes" if muted else "Hide their emotes", Vector2(340, 72))
 	mb.pressed.connect(func() -> void:
 		if session.muted.has(uid):
 			session.muted.erase(uid)
 		else:
 			session.muted[uid] = true
-		_close_popover()
+		close_popover()
 		_refresh())
 	v.add_child(mb)
-	var rb := UIKit.secondary("Report…", Vector2(320, 72), 22)
+	var rb := UIKit.secondary("Report…", Vector2(340, 72))
 	rb.pressed.connect(func() -> void:
-		_close_popover()
+		close_popover()
 		_report(e))
 	v.add_child(rb)
-	var bb := UIKit.quiet("Block", Vector2(320, 72), 22)
+	var bb := UIKit.quiet("Block", Vector2(340, 72))
 	bb.pressed.connect(func() -> void:
-		_close_popover()
+		close_popover()
 		dialog("Block %s? You won't be put in parties together, and they can't join yours." % e["name"],
 			[["Block", func() -> void: _block(e, i)], ["Cancel", Callable()]]))
 	v.add_child(bb)
 	if session.is_host():
-		var kb := UIKit.quiet("Remove from party", Vector2(320, 72), 22)
+		var kb := UIKit.quiet("Remove from party", Vector2(340, 72))
 		kb.pressed.connect(func() -> void:
-			_close_popover()
+			close_popover()
 			dialog("Remove %s from the party?" % e["name"], [["Remove", func() -> void:
 				if pid != "" and App.party_code != "":
 					Cloud.kick_from_room(App.party_code, pid)
 				session.kick(i)], ["Cancel", Callable()]]))
 		v.add_child(kb)
-	_popover_at(anchor, v, false)
+	popover_at(anchor, v, "left")
 
 
 const REPORT_REASONS := [["name", "Offensive name"], ["harassment", "Harassment or bullying"], ["cheating", "Cheating"],
@@ -665,20 +624,20 @@ func _report(e: Dictionary) -> void:
 		dialog("Reports go to the game's moderators through the online service, which isn't available for this player right now. You can block them instead.")
 		return
 	var v := UIKit.vbox(10)
-	v.add_child(UIKit.label("Report %s" % e["name"], 24, UIKit.IVORY, true))
-	v.add_child(UIKit.label("What's wrong?", 19, UIKit.IVORY_MUTED))
+	v.add_child(UIKit.styled("Report %s" % e["name"], "headline"))
+	v.add_child(UIKit.styled("What's wrong?", "caption", UIKit.IVORY_MUTED))
 	for rr in REPORT_REASONS:
 		var reason: String = rr[0]
-		var b := UIKit.secondary(String(rr[1]), Vector2(360, 68), 22)
+		var b := UIKit.secondary(String(rr[1]), Vector2(360, 68))
 		b.pressed.connect(func() -> void:
-			_close_popover()
+			close_popover()
 			var r: Dictionary = await Cloud.report(pid, reason, "", {"room_code": session.room_code, "build": App.build_number()})
 			if bool(r.get("ok", false)):
 				dialog("Thanks — your report was sent to our moderators.\nReceipt: %s" % r.get("receipt", ""))
 			else:
 				dialog("The report couldn't be sent: %s" % Cloud.explain(r)))
 		v.add_child(b)
-	_popover_at(cells[0], v, false)
+	popover_at(cells[0], v, "left")
 
 
 func _block(e: Dictionary, slot: int) -> void:
@@ -720,101 +679,132 @@ func _invite() -> void:
 		Social.invite_friends(session.transport, session.room_code)
 
 
-## One party-list cell (contents updated in place).
+## A round portrait on a soft disc in the player's colour (cached portrait
+## atlas; no live viewport per card).
+class Avatar:
+	extends Control
+	var tex: Texture2D
+	var col := Color(0.3, 0.4, 0.6)
+	var _key := ""
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		custom_minimum_size = Vector2(56, 56)
+
+	func set_entry(cosmetic: Variant, role: int, tag: String) -> void:
+		var r := TC.Role.PATROL if role == TC.Role.PATROL else TC.Role.RUNNER
+		col = Cosmetics.color_of(cosmetic)
+		var key := Portraits.key_of(Cosmetics.sanitize(cosmetic), r)
+		if key != _key:
+			_key = key
+			var ps := Portraits.shared()
+			tex = ps.portrait(cosmetic, r, tag)
+			if not ps.portrait_ready.is_connected(_on_portrait):
+				ps.portrait_ready.connect(_on_portrait)
+				ps.portrait_evicted.connect(_on_evicted)
+		queue_redraw()
+
+	func clear() -> void:
+		_key = ""
+		tex = null
+		queue_redraw()
+
+	func _on_portrait(k: String, t: Texture2D) -> void:
+		if k == _key:
+			tex = t
+			queue_redraw()
+
+	## Our portrait's atlas cell went to another look: ask again next update.
+	func _on_evicted(k: String) -> void:
+		if k == _key:
+			_key = ""
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var r := minf(size.x, size.y) * 0.5
+		draw_circle(c, r, col.darkened(0.45))
+		draw_circle(c, r * 0.93, col.darkened(0.2).lerp(UIKit.SLATE_HI, 0.35))
+		if tex:
+			draw_texture_rect(tex, Rect2(c - Vector2(r, r) * 1.02, Vector2(r, r) * 2.04), false)
+
+
+## One roster card (contents updated in place): portrait, name, status and
+## a status badge.  The card is the hit region; its face draws and presses.
 class SlotCell:
 	extends Button
 	var slot := 0
-	var dot: ColorRect
-	var face: TextureRect
-	var _face_key := ""
+	var face: Avatar
 	var name_l: Label
 	var sub_l: Label
 	var badge: Icons.IconRect
+	var _me := false
 
 	func _init() -> void:
-		custom_minimum_size = Vector2(248, maxf(64.0, UIKit.touch_min()))
-		focus_mode = Control.FOCUS_ALL
-		UIKit.press_feedback(self)
+		UIKit.make_card(self, Vector2(250, maxf(72.0, UIKit.touch_min())), Color(UIKit.SLATE, 0.95))
 		var h := UIKit.hbox(10)
 		h.set_anchors_preset(Control.PRESET_FULL_RECT)
-		h.offset_left = 12
-		h.offset_right = -10
+		h.offset_left = 10
+		h.offset_right = -12
 		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(h)
-		dot = ColorRect.new()
-		dot.custom_minimum_size = Vector2(6, 34)
-		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		h.add_child(dot)
-		face = TextureRect.new()
-		face.custom_minimum_size = Vector2(52, 52)
-		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		UIKit.face_of(self).add_child(h)
+		face = Avatar.new()
+		face.custom_minimum_size = Vector2(54, 54)
 		face.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		h.add_child(face)
 		var v := UIKit.vbox(0)
 		v.alignment = BoxContainer.ALIGNMENT_CENTER
 		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		h.add_child(v)
-		name_l = UIKit.label("", 21, UIKit.IVORY, true)
-		name_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		name_l.clip_text = true
-		# small minimum (long names ellipsize): the row must fit the cell's
-		# 248-unit minimum or the status badge spills outside it
-		name_l.custom_minimum_size = Vector2(90, 0)
+		name_l = UIKit.styled("", "label")
+		name_l.custom_minimum_size = Vector2(60, 0)
 		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		UIKit.fit_text(name_l, [UIKit.T_LABEL, UIKit.T_CAPTION, 18])
 		v.add_child(name_l)
-		sub_l = UIKit.label("", 16, UIKit.IVORY_MUTED)
+		sub_l = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
+		sub_l.add_theme_font_size_override("font_size", 18)
 		sub_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		sub_l.clip_text = true
 		sub_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(sub_l)
-		badge = Icons.IconRect.new("check", UIKit.TEAL, 30)
+		badge = Icons.IconRect.new("check", UIKit.TEAL, 28)
 		badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		h.add_child(badge)
 
-	func _on_portrait(k: String, tex: Texture2D) -> void:
-		if k == _face_key and is_instance_valid(face):
-			face.texture = tex
+	func _style(me: bool, open: bool) -> void:
+		var f := UIKit.face_of(self)
+		if open:
+			var n := UIKit.box(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 2, Color(UIKit.IVORY, 0.14))
+			f.styles = {"normal": n, "hover": UIKit._with_bg(n, Color(UIKit.SLATE, 0.6)), "pressed": UIKit._with_bg(n, Color(UIKit.SLATE_LO, 0.8)),
+				"disabled": n, "selected": n}
+		else:
+			var bg := Color(UIKit.SLATE_HI, 0.97) if me else Color(UIKit.SLATE, 0.95)
+			var n := UIKit.card_box(bg, UIKit.R_CARD, 1.0)
+			if me:
+				n.set_border_width_all(2)
+				n.border_color = Color(UIKit.AMBER, 0.85)
+			f.styles = {"normal": n, "hover": UIKit._with_bg(n, bg.lightened(0.05)), "pressed": UIKit.card_box(bg.darkened(0.08), UIKit.R_CARD, 0.0),
+				"disabled": n, "selected": n}
+		f.queue_redraw()
 
-	## Our portrait's atlas cell went to another look: ask again next update.
-	func _on_portrait_evicted(k: String) -> void:
-		if k == _face_key:
-			_face_key = ""
-
-	func _style(bg: Color, border: Color) -> void:
-		add_theme_stylebox_override("normal", UIKit.box(bg, UIKit.R_SMALL, 2, border))
-		add_theme_stylebox_override("hover", UIKit.box(bg.lightened(0.06), UIKit.R_SMALL, 2, border))
-		add_theme_stylebox_override("pressed", UIKit.box(bg.darkened(0.12), UIKit.R_SMALL, 2, border))
-		add_theme_stylebox_override("focus", UIKit.box(Color(0, 0, 0, 0), UIKit.R_SMALL + 2, 3, UIKit.TEAL, 0))
-
-	func show_entry(e: Variant, me: bool, hosting: bool, muted: Dictionary, can_invite: bool, first_open: bool = false) -> void:
+	func show_entry(e: Variant, me: bool, _hosting: bool, muted: Dictionary, can_invite: bool, first_open: bool = false) -> void:
+		_me = me
 		if e == null:
-			_style(Color(UIKit.NAVY, 0.3), Color(UIKit.IVORY, 0.1))
-			dot.color = Color(UIKit.IVORY, 0.1)
-			face.texture = null
-			_face_key = ""
-			name_l.text = "Invite" if can_invite else "Open"
-			name_l.add_theme_color_override("font_color", Color(UIKit.IVORY, 0.45))
-			sub_l.text = ("tap to invite a friend" if can_invite else "share the code") if first_open else ""
+			_style(false, true)
+			face.clear()
+			face.col = Color(UIKit.IVORY, 0.12)
+			name_l.text = "Invite" if can_invite else "Open seat"
+			name_l.add_theme_color_override("font_color", Color(UIKit.IVORY, 0.6))
+			sub_l.text = ("Tap to invite a friend" if can_invite else "Tap to copy the code") if first_open else ""
 			badge.kind = "plus"
-			badge.col = Color(UIKit.IVORY, 0.4)
+			badge.col = Color(UIKit.IVORY, 0.45)
 			badge.queue_redraw()
+			accessibility_name = name_l.text
+			UIKit.refit(name_l)
 			return
 		var ent: Dictionary = e
-		_style(Color(UIKit.SLATE_HI, 0.95) if me else Color(UIKit.SLATE_LO, 0.85), UIKit.AMBER if me else Color(0, 0, 0, 0))
-		dot.color = Cosmetics.color_of(ent["cosmetic"])
-		var role := int(ent.get("role", -1))
-		var key := Portraits.key_of(Cosmetics.sanitize(ent["cosmetic"]), TC.Role.PATROL if role == TC.Role.PATROL else TC.Role.RUNNER)
-		if key != _face_key:
-			_face_key = key
-			var ps := Portraits.shared()
-			face.texture = ps.portrait(ent["cosmetic"], TC.Role.PATROL if role == TC.Role.PATROL else TC.Role.RUNNER, "cell%d" % get_instance_id())
-			if not ps.portrait_ready.is_connected(_on_portrait):
-				ps.portrait_ready.connect(_on_portrait)
-				ps.portrait_evicted.connect(_on_portrait_evicted)
+		_style(me, false)
+		face.set_entry(ent["cosmetic"], int(ent.get("role", -1)), "cell%d" % get_instance_id())
 		name_l.text = String(ent["name"])
 		name_l.add_theme_color_override("font_color", UIKit.IVORY)
 		var bits: Array[String] = []
@@ -833,8 +823,10 @@ class SlotCell:
 			bits.append("Not ready")
 		if muted.has(String(ent["uid"])):
 			bits.append("emotes hidden")
-		sub_l.text = "  ·  ".join(bits)
+		sub_l.text = " · ".join(bits)
 		var ok := bool(ent["ready"]) or host_slot or bool(ent["is_bot"])
 		badge.kind = "crown" if host_slot else ("bot" if bool(ent["is_bot"]) else ("check" if ok else "smile"))
 		badge.col = UIKit.AMBER if host_slot else (UIKit.TEAL if ok else Color(UIKit.IVORY, 0.35))
 		badge.queue_redraw()
+		accessibility_name = "%s, %s" % [name_l.text, sub_l.text]
+		UIKit.refit(name_l)

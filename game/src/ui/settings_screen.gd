@@ -101,7 +101,7 @@ func build() -> void:
 	how.pressed.connect(func() -> void: App.goto(HowToScreen))
 	v.add_child(how)
 	_section(v, "Credits & licenses")
-	var cred := UIKit.label("Made with Godot Engine (MIT). Game Center bindings: GodotApplePlugins (MIT). Font: Fredoka (SIL OFL 1.1). Characters built with Blender's Python module (the generated model is original). All characters, campus, sounds and music are original to Ultimate Trifecta. Moonbrook College is fictional.", 18, UIKit.IVORY_MUTED)
+	var cred := UIKit.label("Made with Godot Engine (MIT). Game Center bindings: GodotApplePlugins (MIT). Fonts: Manrope (SIL OFL 1.1); the startup mark's descriptor is outlined DejaVu Sans (Bitstream Vera licence). Characters built with Blender's Python module (the generated model is original). All characters, campus, sounds and music are original to Ultimate Trifecta. Moonbrook College is fictional.", 18, UIKit.IVORY_MUTED)
 	cred.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(cred)
 	v.add_child(UIKit.label("Version %s" % ProjectSettings.get_setting("application/config/version", "1.0"), 16, UIKit.IVORY_MUTED))

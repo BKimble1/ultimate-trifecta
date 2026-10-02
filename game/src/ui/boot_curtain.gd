@@ -1,50 +1,107 @@
 class_name BootCurtain
 extends CanvasLayer
-## The launch image, held for the first frames of the app (V4): iOS shows
-## the static launch screen, Godot the same image as its boot splash, and
-## this curtain draws that frame again over the title while its 3D scene
-## warms up, then fades.  Launch -> boot -> title has no jump or flash.
+## App startup (V5): Idlery Games.
+##
+## iOS shows the static launch screen (assets/icon/launch.png: the Idlery
+## Games lockup centred on deep navy), Godot shows the same image as its
+## boot splash, and this curtain draws the same lockup at the same place
+## over the first runtime frames, so launch -> boot -> first frame is one
+## still picture with no white flash and no second splash.
+##
+## It leaves when the home screen is actually ready, not after a fixed
+## number of frames (V4 left after six process frames, whatever was
+## happening): the title screen is in the tree, the dorm stage has the
+## player's runner, and a few frames in a row have arrived without a stall
+## (first-use pipeline compiles happen under the curtain, not over the
+## menu; a device that is steadily slow counts as steady).  A short minimum
+## keeps the mark from flickering on a warm start; a cap makes sure a slow
+## device never sits on a frozen logo.  Then the
+## lockup fades with a slight settle and the navy dissolves into the room
+## (Reduced Motion: a plain short fade).  Taps are held until it has gone.
 
-const HOLD_FRAMES := 6
-var _frames := 0
-var _fading := false
-var _face: Control
+const MIN_HOLD_S := 0.45
+const MAX_WAIT_S := 6.0
+const STABLE_FRAMES := 3
+const STALL_S := 0.1
+
+var _t := 0.0
+var _stable := 0
+var _prev_delta := -1.0
+var _leaving := false
+var bg: ColorRect
+var logo: TextureRect
+## timings for diagnostics and tests
+var waited := 0.0
+var reason := ""
 
 
 func _ready() -> void:
 	layer = 100
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_face = Face.new()
-	_face.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(_face)
+	bg = ColorRect.new()
+	bg.color = Brand.STARTUP_BG
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_STOP   # nothing is tappable underneath yet
+	add_child(bg)
+	logo = Brand.studio()
+	add_child(logo)
+	get_viewport().size_changed.connect(_layout)
+	_layout()
 
 
-func _process(_d: float) -> void:
-	_frames += 1
-	if _fading or _frames < HOLD_FRAMES:
+func _layout() -> void:
+	if logo == null or logo.texture == null:
 		return
-	_fading = true
+	var view := get_viewport().get_visible_rect().size
+	var r := Brand.lockup_rect(view, Vector2(logo.texture.get_size()))
+	logo.position = r.position
+	logo.size = r.size
+	logo.pivot_offset = r.size * 0.5
+
+
+## True once the first interactive screen exists with its 3D room ready.
+static func app_ready() -> bool:
+	var s: Variant = App.screen
+	if s == null or not is_instance_valid(s) or not (s as Node).is_inside_tree():
+		return false
+	if App.stage != null and is_instance_valid(App.stage):
+		return App.stage.local_character() != null
+	return true
+
+
+## A frame without a hitch: quick, or no slower than the frame before it
+## (a slow device that is steadily slow is ready; a compile stall is not).
+static func steady(delta: float, prev: float) -> bool:
+	return delta < STALL_S or (prev > 0.0 and delta <= prev * 1.25)
+
+
+func _process(delta: float) -> void:
+	_t += delta
+	if _leaving:
+		return
+	if app_ready() and steady(delta, _prev_delta):
+		_stable += 1
+	else:
+		_stable = 0
+	_prev_delta = delta
+	if _stable >= STABLE_FRAMES and _t >= MIN_HOLD_S:
+		_leave("ready")
+	elif _t >= MAX_WAIT_S:
+		_leave("cap")
+
+
+func _leave(why: String) -> void:
+	_leaving = true
+	waited = _t
+	reason = why
 	Diag.mark("boot_curtain_out")
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if UIKit.reduced_motion():
-		queue_free()
+		Motion.animate(bg, "modulate:a", 0.0, 0.15)
+		Motion.animate(logo, "modulate:a", 0.0, 0.15)
+		get_tree().create_timer(0.16).timeout.connect(queue_free)
 		return
-	var tw := create_tween()
-	tw.tween_property(_face, "modulate:a", 0.0, 0.35)
-	tw.tween_callback(queue_free)
-
-
-class Face:
-	extends Control
-
-	func _init() -> void:
-		mouse_filter = Control.MOUSE_FILTER_STOP   # nothing is tappable underneath yet
-
-	func _draw() -> void:
-		draw_rect(Rect2(Vector2.ZERO, size), LoadingScreen.BG)
-		# the launch image is a square fitted to the screen's height
-		var side := minf(size.x, size.y)
-		var k := side / 720.0
-		var top := (size.y - side) * 0.5
-		var c := Vector2(size.x * 0.5, top + side * LoadingScreen.MOTIF_Y)
-		LoadingScreen.LoadingMotif.draw_resting(self, c, k, 1.0)
-		LoadingScreen.LoadingMotif.draw_wordmark(self, Vector2(size.x * 0.5, top + side * LoadingScreen.WORDMARK_Y), k)
+	Motion.animate(logo, "modulate:a", 0.0, 0.26, Tween.TRANS_QUAD, Tween.EASE_IN)
+	Motion.animate(logo, "scale", Vector2.ONE * 1.03, 0.3, Tween.TRANS_QUAD, Tween.EASE_OUT)
+	Motion.animate(bg, "modulate:a", 0.0, 0.34, Tween.TRANS_CUBIC, Tween.EASE_IN_OUT, 0.06)
+	get_tree().create_timer(0.42).timeout.connect(queue_free)

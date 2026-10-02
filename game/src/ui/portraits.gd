@@ -22,11 +22,13 @@ signal portrait_ready(key: String, tex: Texture2D)
 ## A cell was reused for another look: holders of `key` should ask again.
 signal portrait_evicted(key: String)
 
-const SIZE := 160
+## V5: 240 px cells (wardrobe item cards show the picture at ~150 canvas
+## units, ~240 px on an @3x phone), 8x5 cells (1920x1200 RGBA8, ~9 MB).
+const SIZE := 240
 const COLS := 8
-const ROWS := 6
+const ROWS := 5
 const MAX_CACHE := COLS * ROWS
-const MAX_QUEUE := 12
+const MAX_QUEUE := 24
 const COPY_SHADER := "shader_type canvas_item;\nrender_mode blend_disabled;\nvoid fragment() { COLOR = texture(TEXTURE, UV); }\n"
 
 static var _inst: Portraits
@@ -102,6 +104,20 @@ func _enqueue(q: Dictionary) -> void:
 
 func pending() -> int:
 	return _queue.size()
+
+
+## Drop queued requests whose owner starts with `prefix` (the wardrobe's
+## previous category): they will never be shown, so they are never rendered.
+func cancel(prefix: String) -> void:
+	for i in range(_queue.size() - 1, -1, -1):
+		if String(_queue[i]["owner"]).begins_with(prefix):
+			_queue.remove_at(i)
+			dropped += 1
+
+
+## True when `key` is cached (a picture, not the placeholder).
+func has_picture(key: String) -> bool:
+	return _cache.has(key)
 
 
 static func placeholder(app: Dictionary) -> Texture2D:

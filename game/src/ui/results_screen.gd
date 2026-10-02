@@ -368,7 +368,7 @@ func _toggle_board() -> void:
 	v.add_child(grid)
 	add_child(_board)
 	focus_first(close)
-	close.call_deferred("grab_focus")
+	UIKit.soft_focus.call_deferred(close)
 	UIKit.appear(sheet, Vector2.ZERO, UIKit.T_FAST)
 
 

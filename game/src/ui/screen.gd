@@ -27,7 +27,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_apply_safe)
 	build()
 	if _first_focus:
-		_first_focus.call_deferred("grab_focus")
+		UIKit.soft_focus.call_deferred(_first_focus)
 	# entry transition: 180 ms fade (plus a small rise unless Reduced Motion)
 	UIKit.appear(margin, Vector2.ZERO, 0.18)
 
@@ -69,7 +69,7 @@ func header(title: String, show_back: bool = true) -> HBoxContainer:
 		b.tooltip_text = "Back"
 		b.pressed.connect(_go_back)
 		h.add_child(b)
-	var t := UIKit.heading(title, 40)
+	var t := UIKit.styled(title, "title")
 	t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	t.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(t)
@@ -129,9 +129,9 @@ func _on_modal_closed(node: Control) -> void:
 		return
 	(func() -> void:
 		if is_instance_valid(prev) and (prev as Control).is_inside_tree() and (prev as Control).is_visible_in_tree():
-			(prev as Control).grab_focus()
+			UIKit.soft_focus(prev as Control)
 		elif _modals.is_empty() and is_instance_valid(_first_focus) and _first_focus.is_inside_tree():
-			_first_focus.grab_focus()).call_deferred()
+			UIKit.soft_focus(_first_focus)).call_deferred()
 
 
 func has_modal() -> bool:
@@ -155,7 +155,7 @@ func busy(text: String) -> Control:
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.add_child(dim)
 	var p := UIKit.panel(Color(UIKit.SLATE, 0.99), UIKit.R_PANEL, 30)
-	var l := UIKit.label(text, 26, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER)
+	var l := UIKit.styled(text, "body", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
 	l.custom_minimum_size = Vector2(480, 0)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	p.add_child(l)
@@ -173,9 +173,9 @@ func dialog(text: String, buttons: Array = [["OK", Callable()]]) -> PanelContain
 	add_child(dim)
 	var p := UIKit.panel(Color(UIKit.SLATE, 0.99), UIKit.R_PANEL, 30)
 	var v := UIKit.vbox(22)
-	var l := UIKit.label(text, 26, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER)
+	var l := UIKit.styled(text, "body", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.custom_minimum_size = Vector2(600, 0)
+	l.custom_minimum_size = Vector2(minf(600.0, get_viewport().get_visible_rect().size.x * 0.6), 0)
 	v.add_child(l)
 	var row := UIKit.hbox(16)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -191,7 +191,7 @@ func dialog(text: String, buttons: Array = [["OK", Callable()]]) -> PanelContain
 				if cbd.is_valid():
 					cbd.call()
 	for bdef in buttons:
-		var b := UIKit.secondary(String(bdef[0]), Vector2(220, 76), 26) if first == null else UIKit.quiet(String(bdef[0]), Vector2(200, 76), 24)
+		var b := UIKit.secondary(String(bdef[0]), Vector2(220, 76)) if first == null else UIKit.quiet(String(bdef[0]), Vector2(200, 76))
 		var cb: Callable = bdef[1]
 		b.pressed.connect(func() -> void:
 			dim.queue_free()
@@ -206,11 +206,98 @@ func dialog(text: String, buttons: Array = [["OK", Callable()]]) -> PanelContain
 	add_child(p)
 	p.set_anchors_preset(Control.PRESET_CENTER)
 	p.position = (get_viewport().get_visible_rect().size - p.get_combined_minimum_size()) * 0.5
-	UIKit.appear(p, Vector2(0, 14), UIKit.T_FAST)
+	Motion.appear(p, 10.0, UIKit.T_FAST)
 	push_modal(p, cancel_cb)
 	p.tree_exiting.connect(func() -> void:
 		if is_instance_valid(dim):
 			dim.queue_free(), CONNECT_ONE_SHOT)
 	if first:
-		first.call_deferred("grab_focus")
+		UIKit.soft_focus.call_deferred(first)
 	return p
+
+
+# ---------------------------------------------------------------------------
+# Popovers (V5: shared by home, lobby and wardrobe)
+# ---------------------------------------------------------------------------
+var _popover: Control
+
+
+func close_popover() -> void:
+	if _popover and is_instance_valid(_popover):
+		_popover.queue_free()
+	_popover = null
+
+
+## A small card anchored to `anchor` with a dismiss catcher behind it.
+## side: "above", "left" or "below".
+func popover_at(anchor: Control, body: Control, side: String = "above") -> PanelContainer:
+	close_popover()
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(root)
+	var catcher := Button.new()
+	catcher.flat = true
+	catcher.focus_mode = Control.FOCUS_NONE
+	catcher.set_anchors_preset(Control.PRESET_FULL_RECT)
+	catcher.pressed.connect(close_popover)
+	root.add_child(catcher)
+	var p := UIKit.panel(Color(UIKit.SLATE_HI, 0.99), UIKit.R_PANEL, 18)
+	p.add_child(body)
+	root.add_child(p)
+	var ar := anchor.get_global_rect()
+	var sz := p.get_combined_minimum_size()
+	var vis := get_viewport().get_visible_rect().size
+	var pos := Vector2(ar.position.x, ar.position.y - sz.y - 12)
+	match side:
+		"left":
+			pos = Vector2(ar.position.x - sz.x - 12, ar.position.y)
+		"below":
+			pos = Vector2(ar.position.x, ar.end.y + 12)
+	var sm := UIKit.safe_margins(get_viewport())
+	pos.x = clampf(pos.x, sm.position.x + 8, vis.x - sz.x - sm.size.x - 8)
+	pos.y = clampf(pos.y, sm.position.y + 8, vis.y - sz.y - sm.size.y - 8)
+	p.position = pos
+	Motion.appear(p, 8.0 if side == "above" else -8.0 if side == "below" else 0.0, UIKit.T_FAST)
+	_popover = root
+	push_modal(root, close_popover)
+	var first := body.find_children("*", "Button", true, false)
+	if not first.is_empty():
+		UIKit.soft_focus.call_deferred(first[0] as Button)
+	return p
+
+
+## The emote picker: six big tiles; `on_pick(id)` runs after it closes.
+func emote_picker(anchor: Control, on_pick: Callable, side: String = "above") -> void:
+	var v := UIKit.vbox(12)
+	v.add_child(UIKit.styled("Emote", "headline"))
+	var g := GridContainer.new()
+	g.columns = 3
+	g.add_theme_constant_override("h_separation", 10)
+	g.add_theme_constant_override("v_separation", 10)
+	for i in TC.EMOTES.size():
+		var idx := i
+		g.add_child(icon_tile(Icons.emote_icon(i), String(TC.EMOTE_LABELS[TC.EMOTES[i]]), func() -> void:
+			close_popover()
+			on_pick.call(idx)))
+	v.add_child(g)
+	popover_at(anchor, v, side)
+
+
+## A large icon tile (emote and move pickers): icon over a short label.
+static func icon_tile(icon: String, label_text: String, on_press: Callable) -> Button:
+	var b := UIKit.card_button(Vector2(150, 118), UIKit.SLATE)
+	var f := UIKit.face_of(b)
+	var v := UIKit.vbox(6)
+	v.set_anchors_preset(Control.PRESET_FULL_RECT)
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ic := Icons.IconRect.new(icon, UIKit.AMBER, 48)
+	ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	v.add_child(ic)
+	var l := UIKit.styled(label_text, "label", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(l)
+	f.add_child(v)
+	b.accessibility_name = label_text
+	b.pressed.connect(on_press)
+	return b

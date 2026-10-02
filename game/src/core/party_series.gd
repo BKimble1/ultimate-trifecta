@@ -73,6 +73,14 @@ static func summary(s: Dictionary) -> String:
 	return "%s · %d Night Watch · %d runners · %d home to win" % ["Single round" if r == 1 else "%d rounds" % r, w, runners(w), required_home(w)]
 
 
+## The same settings as short labelled values for the lobby (V5):
+## ["3 rounds", "2 Night Watch", "4 home to win"].
+static func summary_parts(s: Dictionary) -> Array[String]:
+	var w := int(s.get("watch", DEFAULT_WATCH))
+	var r := int(s.get("rounds", DEFAULT_ROUNDS))
+	return ["1 round" if r == 1 else "%d rounds" % r, "%d Night Watch" % w, "%d home to win" % required_home(w)]
+
+
 ## The rules for one round: a copy of the base config with the party's slot
 ## counts.  Nothing else changes, and the base resource is left untouched.
 static func rules_for(base: RulesConfig, watch: int) -> RulesConfig:

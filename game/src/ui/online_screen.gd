@@ -270,7 +270,7 @@ func _busy(text: String) -> void:
 	create_btn.disabled = true
 	join_btn.disabled = true
 	back_action = _cancel      # Back cancels the request instead of leaving
-	_busy_cancel.call_deferred("grab_focus")
+	UIKit.soft_focus.call_deferred(_busy_cancel)
 
 
 func _idle() -> void:
@@ -281,7 +281,7 @@ func _idle() -> void:
 	create_btn.disabled = not Social.online_ready()
 	_on_code_text(code_edit.text)
 	if _busy_cancel.has_focus():
-		create_btn.call_deferred("grab_focus")
+		UIKit.soft_focus.call_deferred(create_btn)
 
 
 func _cancel() -> void:

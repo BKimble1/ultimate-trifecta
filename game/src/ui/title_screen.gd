@@ -1,12 +1,19 @@
 class_name TitleScreen
 extends Screen
-## Home: the player's character in the dorm (3D stage behind the UI, front
-## three-quarter), a compact wordmark, one primary action ("Play with
-## Friends"), a quiet Practice, a small Outfit control, a compact profile
-## chip and Settings.  Game Center status is shown only where it matters
-## (the Play with Friends sheet).
+## Home (V5): the dorm common room with the player's own runner as the focus.
+##   upper left   the Ultimate Trifecta title graphic, modest
+##   upper right  a compact profile chip (name, level, coins) and Settings
+##   lower left   Wardrobe and Emote, always within reach
+##   lower right  Play with Friends (the one gold action) and Practice
+## Nothing else: no store, pass, news or empty tabs.  Game Center status is
+## shown only where it matters (the Play with Friends sheet).
 
 var _msg := ""
+var play_btn: Button
+var practice_btn: Button
+var wardrobe_btn: Button
+var emote_btn: Button
+var title_art: TextureRect
 
 
 func show_message(m: String) -> void:
@@ -17,86 +24,139 @@ func show_message(m: String) -> void:
 
 func build() -> void:
 	if App.stage:
-		App.stage.set_mode("home", false)
+		App.stage.set_mode("home")
 		App.sync_stage_local()
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# soft vignette on the right so the menu reads over the room
-	var shade := TextureRect.new()
-	shade.texture = _side_gradient()
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.stretch_mode = TextureRect.STRETCH_SCALE
-	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(shade)
-	move_child(shade, 0)
+	add_shades(self)
+	var view := get_viewport().get_visible_rect().size
 
-	var top := UIKit.hbox(16)
+	# --- top: title (left), profile + settings (right)
+	var top := UIKit.hbox(14)
 	content.add_child(top)
-	var mark := Wordmark.new()
-	top.add_child(mark)
+	title_art = Brand.title(clampf(view.x * 0.27, 340.0, 470.0))
+	title_art.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	top.add_child(title_art)
 	top.add_child(UIKit.spacer_h())
-	var prof := UIKit.panel(Color(UIKit.SLATE, 0.86), 999, 18)
-	var pv := UIKit.hbox(14)
-	var nm := UIKit.label(Save.player_name(), 22, UIKit.IVORY, true)
-	nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	nm.custom_minimum_size = Vector2(200, 0)
-	nm.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	pv.add_child(nm)
-	var lv := UIKit.label("Lv %d" % int(Save.data["level"]), 20, UIKit.TEAL, true)
-	lv.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	pv.add_child(lv)
-	var coins := UIKit.label("%d ¢" % int(Save.data["coins"]), 20, UIKit.AMBER, true)
-	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	pv.add_child(coins)
-	prof.add_child(pv)
-	prof.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	top.add_child(prof)
+	top.add_child(profile_chip())
 	var gear := UIKit.icon_button("gear")
-	gear.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	gear.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	gear.tooltip_text = "Settings"
+	gear.accessibility_name = "Settings"
 	gear.pressed.connect(func() -> void: App.goto(SettingsScreen))
 	top.add_child(gear)
 
 	content.add_child(UIKit.spacer_v())
-	var bottom := UIKit.hbox(16)
+
+	# --- bottom: wardrobe + emote (left), play + practice (right)
+	var bottom := UIKit.hbox(14)
 	bottom.alignment = BoxContainer.ALIGNMENT_END
 	content.add_child(bottom)
-	var outfit := UIKit.icon_button("shirt", "Outfit")
-	outfit.pressed.connect(func() -> void: App.goto(CreatorScreen))
-	outfit.size_flags_vertical = Control.SIZE_SHRINK_END
-	bottom.add_child(outfit)
+	wardrobe_btn = UIKit.icon_button("shirt", "Wardrobe")
+	wardrobe_btn.pressed.connect(func() -> void: App.goto(CreatorScreen))
+	wardrobe_btn.size_flags_vertical = Control.SIZE_SHRINK_END
+	bottom.add_child(wardrobe_btn)
+	emote_btn = UIKit.icon_button("smile", "Emote")
+	emote_btn.pressed.connect(func() -> void: emote_picker(emote_btn, _emote))
+	emote_btn.size_flags_vertical = Control.SIZE_SHRINK_END
+	bottom.add_child(emote_btn)
 	bottom.add_child(UIKit.spacer_h())
-	var col := UIKit.vbox(14)
+	var col := UIKit.vbox(12)
 	col.alignment = BoxContainer.ALIGNMENT_END
 	bottom.add_child(col)
-	var play := UIKit.primary("Play with Friends", Vector2(400, 104), 34)
-	play.pressed.connect(func() -> void: App.goto(OnlineScreen))
-	col.add_child(play)
 	var tut_done: bool = Save.data.get("tutorial_done", false)
-	var prac := UIKit.quiet("Practice", Vector2(400, 80), 26)
-	prac.pressed.connect(func() -> void: App.goto(PracticeScreen))
-	col.add_child(prac)
 	if not tut_done:
-		var hint := UIKit.label("New here? Practice starts with a short tutorial.", 18, UIKit.IVORY_MUTED, false, HORIZONTAL_ALIGNMENT_CENTER)
+		var hint := UIKit.styled("New here? Practice starts with a short tutorial.", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
 		col.add_child(hint)
-	focus_first(play)
+	play_btn = UIKit.primary("Play with Friends", Vector2(400, 100), 31)
+	play_btn.pressed.connect(func() -> void: App.goto(OnlineScreen))
+	col.add_child(play_btn)
+	practice_btn = UIKit.secondary("Practice", Vector2(400, 76))
+	practice_btn.pressed.connect(func() -> void: App.goto(PracticeScreen))
+	col.add_child(practice_btn)
+	focus_first(play_btn)
 	if _msg != "":
 		call_deferred("dialog", _msg)
 	elif App.stage and App.stage.local_character():
 		# a quick hello wave when the home screen opens
 		get_tree().create_timer(0.35).timeout.connect(func() -> void:
-			if App.stage and is_instance_valid(App.stage):
+			if App.stage and is_instance_valid(App.stage) and is_inside_tree():
 				App.stage.emote(Save.player_uid(), 0, 1.6))
+
+
+func _emote(id: int) -> void:
+	if App.stage and App.stage.emote(Save.player_uid(), id):
+		Sfx.play("pop")
 
 
 func _go_back() -> void:
 	pass  # home is the root
 
 
+## Name, level and coins in one compact chip (tap: Settings, Profile first).
+func profile_chip() -> Button:
+	var b := UIKit.card_button(Vector2(0, UIKit.touch_min()), Color(UIKit.SLATE, 0.92))
+	b.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	var f := UIKit.face_of(b)
+	var h := UIKit.hbox(14)
+	h.set_anchors_preset(Control.PRESET_FULL_RECT)
+	h.offset_left = 18
+	h.offset_right = -18
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var nm := UIKit.styled(Save.player_name(), "label")
+	nm.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	nm.size_flags_vertical = Control.SIZE_FILL
+	h.add_child(nm)
+	var lv := UIKit.styled("Lv %d" % int(Save.data["level"]), "num", UIKit.TEAL)
+	lv.add_theme_font_size_override("font_size", UIKit.T_CAPTION)
+	lv.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lv.size_flags_vertical = Control.SIZE_FILL
+	h.add_child(lv)
+	var coins := UIKit.styled("%d ¢" % int(Save.data["coins"]), "num", UIKit.AMBER)
+	coins.add_theme_font_size_override("font_size", UIKit.T_CAPTION)
+	coins.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	coins.size_flags_vertical = Control.SIZE_FILL
+	h.add_child(coins)
+	f.add_child(h)
+	# the chip sizes itself to its content (names up to 16 characters)
+	UIKit.fit_card(b, h, 36.0)
+	b.accessibility_name = "%s, level %d, %d coins" % [Save.player_name(), int(Save.data["level"]), int(Save.data["coins"])]
+	b.pressed.connect(func() -> void: App.goto(SettingsScreen))
+	return b
+
+
+## Soft gradients behind the title (upper left) and the actions (right),
+## so text reads over the room without a slab.
+static func add_shades(parent: Control, right: float = 0.5, top_left: float = 0.4) -> void:
+	for spec in [[Vector2(1.0, 0.5), Vector2(0.0, 0.5), right, 0.5], [Vector2(0.0, 0.0), Vector2(0.55, 0.6), top_left, 0.0]]:
+		var a: float = spec[2]
+		if a <= 0.0:
+			continue
+		var g := Gradient.new()
+		g.set_color(0, Color(UIKit.NAVY, a))
+		g.set_color(1, Color(UIKit.NAVY, 0.0))
+		g.add_point(float(spec[3]) * 0.5, Color(UIKit.NAVY, a * 0.55))
+		var t := GradientTexture2D.new()
+		t.gradient = g
+		t.fill = GradientTexture2D.FILL_LINEAR if spec[3] > 0.0 else GradientTexture2D.FILL_RADIAL
+		t.fill_from = spec[0]
+		t.fill_to = spec[1]
+		t.width = 256
+		t.height = 128
+		var shade := TextureRect.new()
+		shade.texture = t
+		shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+		shade.stretch_mode = TextureRect.STRETCH_SCALE
+		shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		parent.add_child(shade)
+		parent.move_child(shade, 0)
+
+
+## V4 compatibility: the old gradient helper (results and online screens).
 static func _side_gradient() -> GradientTexture2D:
 	var g := Gradient.new()
 	g.set_color(0, Color(UIKit.NAVY, 0.0))
-	g.set_color(1, Color(UIKit.NAVY, 0.62))
+	g.set_color(1, Color(UIKit.NAVY, 0.55))
 	g.add_point(0.55, Color(UIKit.NAVY, 0.0))
 	var t := GradientTexture2D.new()
 	t.gradient = g
@@ -105,54 +165,3 @@ static func _side_gradient() -> GradientTexture2D:
 	t.width = 256
 	t.height = 4
 	return t
-
-
-## The Ultimate Trifecta wordmark (original): a small amber "ULTIMATE" tilted
-## over a chunky "TRIFECTA" whose letters bob on the baseline like runners
-## mid-stride, each with a thick navy outline and a teal underside, plus three
-## splash drops for the three waters.  Static (no wobble animation).
-class Wordmark:
-	extends Control
-	const TOP := "ULTIMATE"
-	const MAIN := "TRIFECTA"
-	var scale_k := 1.0
-
-	func _init() -> void:
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	func _get_minimum_size() -> Vector2:
-		return Vector2(360, 128) * scale_k
-
-	func _draw() -> void:
-		var f := UIKit.font_w(700)
-		var k := scale_k
-		# "ULTIMATE": small caps, slight upward tilt, tracked out
-		var s1 := int(30 * k)
-		var x := 6.0 * k
-		draw_set_transform(Vector2(0, 40 * k), deg_to_rad(-3.0))
-		for ch in TOP:
-			var cw := f.get_char_size(ch.unicode_at(0), s1).x
-			draw_char_outline(f, Vector2(x, 0), ch, s1, int(8 * k), UIKit.NAVY)
-			draw_char(f, Vector2(x, 0), ch, s1, UIKit.AMBER)
-			x += cw + 2.5 * k
-		draw_set_transform(Vector2.ZERO, 0.0)
-		var top_w := x
-		# "TRIFECTA": big, letters bob and lean alternately
-		var s2 := int(64 * k)
-		x = 0.0
-		var i := 0
-		for ch in MAIN:
-			var cw := f.get_char_size(ch.unicode_at(0), s2).x
-			var bob := (-4.0 if i % 2 == 0 else 3.0) * k
-			var lean := deg_to_rad(-2.5 if i % 2 == 0 else 2.0)
-			draw_set_transform(Vector2(x + cw * 0.5, 112 * k + bob), lean)
-			var o := Vector2(-cw * 0.5, 0)
-			draw_char_outline(f, o + Vector2(0, 5 * k), ch, s2, int(14 * k), UIKit.NAVY)
-			draw_char(f, o + Vector2(0, 5 * k), ch, s2, UIKit.TEAL.darkened(0.25))
-			draw_char_outline(f, o, ch, s2, int(12 * k), UIKit.NAVY)
-			draw_char(f, o, ch, s2, UIKit.IVORY)
-			x += cw - 1.5 * k
-			i += 1
-		draw_set_transform(Vector2.ZERO, 0.0)
-		for d in 3:
-			Icons.draw_shape(self, "drop", Vector2(top_w + 18 * k + d * 22 * k, 26 * k), 9 * k, [UIKit.AMBER, UIKit.TEAL, UIKit.IVORY][d])
