@@ -495,24 +495,25 @@ func interior(bd: Dictionary) -> void:
 			var cxp := sc.x - ss.x * 0.5 + (float(i) + 0.5) * ss.x / float(n)
 			k.chamfer_box(Vector3(cxp, 0.78, sc.z + 0.2), Vector3(0.5, 0.4, 0.14), [Color(0.95, 0.86, 0.62), accent.lightened(0.15), fabric.lightened(0.3)][i % 3], 0.06)
 		k.mat = 0.0
-	# noticeboard on the front wall's inner face, pigeonholes and plants
+	# a noticeboard and the pigeonholes on the end walls, between the front
+	# corner and the end doors (clear of the windows), shallow and mounted
+	# high (no collider: a runner hugging the wall barely grazes them)
 	var kd2 := _k(c.x, c.y, true)
+	var ez := (r0.y + side_z - hw) * 0.5
 	kd2.mat = MeshKit.M_WOOD
-	var nbx := cx + room.size.x * 0.3
-	kd2.chamfer_box(Vector3(nbx, 1.75, r0.y + 0.06), Vector3(2.2, 1.3, 0.08), WOOD_DARK, 0.03)
+	kd2.chamfer_box(Vector3(r0.x + 0.05, 1.85, ez), Vector3(0.08, 1.2, 2.0), WOOD_DARK, 0.03)
 	kd2.mat = MeshKit.M_PLAIN
-	kd2.box(Vector3(nbx, 1.75, r0.y + 0.11), Vector3(1.9, 1.0, 0.02), Color(0.86, 0.78, 0.62), 0.0, 0.15)
+	kd2.box(Vector3(r0.x + 0.1, 1.85, ez), Vector3(0.02, 0.95, 1.75), Color(0.86, 0.78, 0.62), 0.0, 0.15)
 	var nrng := RandomNumberGenerator.new()
 	nrng.seed = hash(id)
 	for i in 7:
-		kd2.box(Vector3(nbx - 0.75 + 0.25 * float(i), 1.75 + nrng.randf_range(-0.3, 0.3), r0.y + 0.125), Vector3(0.2, 0.26, 0.01), [Color(1, 0.6, 0.6), Color(0.6, 0.8, 1), Color(1, 0.95, 0.6)][i % 3], 0.0, 0.25)
+		kd2.box(Vector3(r0.x + 0.115, 1.85 + nrng.randf_range(-0.3, 0.3), ez - 0.7 + 0.23 * float(i)), Vector3(0.01, 0.26, 0.2), [Color(1, 0.6, 0.6), Color(0.6, 0.8, 1), Color(1, 0.95, 0.6)][i % 3], 0.0, 0.25)
 	kd2.mat = MeshKit.M_WOOD
-	var pgx := cx - room.size.x * 0.3
-	kd2.chamfer_box(Vector3(pgx, 1.5, r0.y + 0.2), Vector3(2.4, 1.8, 0.3), WOOD_DARK.lightened(0.15), 0.03)
+	kd2.chamfer_box(Vector3(r1.x - 0.07, 1.95, ez), Vector3(0.12, 1.5, 2.1), WOOD_DARK.lightened(0.15), 0.03)
 	kd2.mat = MeshKit.M_PLAIN
-	for row in 4:
-		for col in 6:
-			kd2.box(Vector3(pgx - 1.0 + 0.4 * float(col), 0.85 + 0.42 * float(row), r0.y + 0.36), Vector3(0.32, 0.32, 0.02), Color(0.16, 0.11, 0.08))
+	for row in 3:
+		for col in 5:
+			kd2.box(Vector3(r1.x - 0.135, 1.45 + 0.45 * float(row), ez - 0.8 + 0.4 * float(col)), Vector3(0.02, 0.34, 0.32), Color(0.16, 0.11, 0.08))
 	kd2.mat = 0.0
 	for corner in [Vector2(r0.x + 0.55, r1.y - 0.55), Vector2(r1.x - 0.55, r1.y - 0.55)]:
 		kd2.mat = MeshKit.M_STONE
