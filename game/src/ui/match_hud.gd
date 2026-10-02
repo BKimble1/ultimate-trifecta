@@ -22,7 +22,6 @@ var overlay_title: Label
 var overlay_sub: Label
 var spectate_lbl: Label
 var draw_layer: Control
-var compass: Control
 var minimap: Control
 var pause_btn: Button
 var pause_panel: PanelContainer
@@ -76,7 +75,6 @@ func setup(controller: MatchController) -> void:
 	hh.add_child(home_lbl)
 	hc.add_child(hh)
 	top.add_child(hc)
-	compass = Control.new()   # V2: the compass strip is replaced by objective chips
 
 	# --- top left: role pill + three objective chips (bearing + distance)
 	var tl := UIKit.vbox(6)

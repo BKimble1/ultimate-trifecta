@@ -556,7 +556,7 @@ func _lobby_bytes() -> PackedByteArray:
 		if bool(e["ready"]): flags |= 2
 		if bool(e["connected"]): flags |= 4
 		if i == local_slot: flags |= 8
-		if phase == TC.Phase.LOADING and (_loaded.has(i) or bool(e["is_bot"])): flags |= 16
+		if phase >= TC.Phase.LOADING and phase <= TC.Phase.PLAYING and (_loaded.has(i) or bool(e["is_bot"])): flags |= 16
 		b.put_u8(flags)
 		b.put_u8(["any", "runner", "patrol"].find(String(e["pref"])))
 		b.put_8(int(e.get("role", -1)))

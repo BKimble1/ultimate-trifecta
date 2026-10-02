@@ -227,6 +227,7 @@ func _boot() -> void:
 			practice_role = a.split("=")[1]
 			start_practice("runner" if practice_role == "tutorial" else practice_role, practice_role == "tutorial")
 			return
+	get_tree().root.add_child(BootCurtain.new())
 	goto_title()
 
 
@@ -667,21 +668,24 @@ func _on_match_starting(info: Dictionary) -> void:
 	screen = null
 	var loading := LoadingScreen.new()
 	loading.info = info
+	loading.session = session
 	_show(loading)
-	await get_tree().process_frame
-	await get_tree().process_frame
 	match_ctrl = MatchController.new()
 	match_ctrl.name = "Match"
 	match_ctrl.setup(session, info, {"quality": int(Save.get_setting("quality", 1)), "reduced_motion": bool(Save.get_setting("reduced_motion", false))})
 	match_ctrl.finished.connect(_on_match_finished)
 	match_ctrl.quit_requested.connect(_on_match_quit)
+	match_ctrl.stage_report = loading.set_stage
+	loading.match_ctrl = match_ctrl
+	loading.done.connect(func() -> void:
+		if screen == loading:
+			screen = null
+		loading.queue_free())
 	if dev_local_bot and session.mode == NetSession.Mode.CLIENT:
 		var ap := Autopilot.new(hash(Save.player_uid()))
 		match_ctrl.input_source = func(m: MatchController) -> InputCmd: return ap.cmd_for(m)
+	# the match prepares itself in short steps under the loading screen
 	get_tree().root.add_child(match_ctrl)
-	if screen == loading:
-		loading.queue_free()
-		screen = null
 
 
 func _on_results(results: Dictionary) -> void:
@@ -778,6 +782,7 @@ func rematch() -> void:
 
 func _end_match_scene() -> void:
 	if match_ctrl and is_instance_valid(match_ctrl):
+		match_ctrl.release_campus()   # rematches reuse the campus look
 		match_ctrl.queue_free()
 	match_ctrl = null
 	Controls.reset_touch()

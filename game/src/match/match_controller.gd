@@ -94,18 +94,140 @@ func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> 
 	quality = int(settings.get("quality", 1))
 	reduced_motion = bool(settings.get("reduced_motion", false))
 	with_visuals = bool(settings.get("visuals", true))
+	# tests and tools without a loading screen prepare in one go
+	staged = bool(settings.get("staged", with_visuals))
 	targets = start["targets"]
 	for e in start["roster"]:
 		roster[int(e["slot"])] = e
 	spectator = not roster.has(local_slot)
 
 
+# --- staged preparation (V4): the round is made in short steps so the
+# loading screen keeps animating; the campus look is kept between rounds.
+signal prepared_now
+const PREP_BUDGET_US := 9000
+## Every step of a round's preparation is done (sim attached, views built).
+var prepared := false
+## App: shows the current preparation stage on the loading screen.
+var stage_report: Callable
+var _prep: Array[Callable] = []
+var _prep_i := 0
+var _builder: CampusBuilder
+var _campus: Node3D
+var _view_queue: Array = []
+var _prep_t0 := 0
+var prepare_ms := 0.0
+var prep_frames := 0
+var prep_max_ms := 0.0     # longest single frame of preparation work
+var staged := true
+
+## The campus look (meshes, waters, canopy material) outlives a round: it is
+## static for a layout and quality, so rematches reuse it instead of
+## regenerating ~60 meshes.  App releases it here when a round ends.
+static var _campus_cache: Dictionary = {}
+
+
 func _ready() -> void:
-	# --- world
+	Diag.mark("load_begin")
+	_prep_t0 = Time.get_ticks_usec()
+	_prep = [_prep_campus, _prep_world, _prep_ground, _prep_nav, _prep_sim, _prep_views, _prep_rest]
+	_prep_i = 0
+	if not staged:
+		while _prep_i < _prep.size():
+			_prep_run_one()
+		_finish_prepare()
+
+
+func _process_prepare() -> void:
+	var f0 := Time.get_ticks_usec()
+	while _prep_i < _prep.size() and Time.get_ticks_usec() - f0 < PREP_BUDGET_US:
+		_prep_run_one()
+	prep_frames += 1
+	prep_max_ms = maxf(prep_max_ms, float(Time.get_ticks_usec() - f0) / 1000.0)
+	if _prep_i >= _prep.size():
+		_finish_prepare()
+
+
+func _prep_run_one() -> void:
+	var again: Variant = _prep[_prep_i].call()
+	if not (again is bool and again):
+		_prep_i += 1
+
+
+func _stage(text: String) -> void:
+	if stage_report.is_valid():
+		stage_report.call(text)
+
+
+func _prep_campus() -> bool:
+	if not with_visuals:
+		return false
+	if _builder == null:
+		_stage("Getting campus ready…")
+		if _take_cached_campus():
+			Diag.mark("campus_cached")
+			return false
+		_builder = CampusBuilder.new(layout)
+		_builder.begin_visuals(self, quality)
+	if _builder.step():
+		return true
+	water_nodes = _builder.water_nodes
+	_foliage_mat = _builder.foliage_material
+	_campus = _builder.container
+	_builder = null
+	Diag.mark("campus_built")
+	return false
+
+
+func _take_cached_campus() -> bool:
+	var c := _campus_cache
+	if c.is_empty() or not is_instance_valid(c.get("node")) or c.get("layout") != layout or int(c.get("quality", -1)) != quality:
+		_campus_cache = {}
+		return false
+	_campus = c["node"]
+	_campus_cache = {}
+	if _campus.get_parent():
+		_campus.get_parent().remove_child(_campus)
+	add_child(_campus)
+	water_nodes = c["water"]
+	_foliage_mat = c["foliage"]
+	# per-round state on the shared materials starts clean
+	for wid in water_nodes:
+		var m: ShaderMaterial = water_nodes[wid]["mat"]
+		m.set_shader_parameter("active", 0.0)
+		m.set_shader_parameter("stamped", 0.0)
+		var empty: Array[Vector4] = []
+		for i in Fx.RIPPLE_SLOTS:
+			empty.append(Vector4.ZERO)
+		m.set_shader_parameter("ripples", empty)
+	if _foliage_mat:
+		_foliage_mat.set_shader_parameter("focus", Vector4.ZERO)
+	return true
+
+
+## App, when the round ends: keep the campus look for the next round.
+func release_campus() -> void:
+	if _campus == null or not is_instance_valid(_campus) or _campus.get_parent() != self:
+		return
+	remove_child(_campus)
+	_campus_cache = {"node": _campus, "water": water_nodes, "foliage": _foliage_mat, "quality": quality, "layout": layout}
+	_campus = null
+
+
+## Frees the kept campus (tests, quality change, low memory).
+static func drop_campus_cache() -> void:
+	var n: Variant = _campus_cache.get("node")
+	if n is Node and is_instance_valid(n) and (n as Node).get_parent() == null:
+		(n as Node).free()
+	_campus_cache = {}
+
+
+static func campus_cached() -> bool:
+	return not _campus_cache.is_empty() and is_instance_valid(_campus_cache.get("node"))
+
+
+func _prep_world() -> void:
 	if with_visuals:
-		var builder := CampusBuilder.new(layout)
-		water_nodes = builder.build_visuals(self, quality)
-		_foliage_mat = builder.foliage_material
 		add_child(EnvFactory.make_environment(quality))
 		add_child(EnvFactory.make_moon(quality))
 	fx = Fx.new()
@@ -113,6 +235,20 @@ func _ready() -> void:
 	_build_beacons()
 	_build_pickups()
 
+
+## Data every round shares, built once per session in steps of their own:
+## the ground collision shape and (host) the bots' navigation grid.
+func _prep_ground() -> void:
+	CampusBuilder.ground_shape(layout)
+
+
+func _prep_nav() -> void:
+	if not is_client:
+		NavGrid.shared(layout)
+
+
+func _prep_sim() -> void:
+	_stage("Placing players…")
 	if is_client:
 		_setup_client_world()
 	else:
@@ -129,17 +265,26 @@ func _ready() -> void:
 			var lp := sim.player(local_slot)
 			lp.bot_takeover = true
 			sim.bots[local_slot] = BotBrain.new(sim, lp)
+	_view_queue = roster.keys()
 
-	# --- characters + carts
-	for slot in roster:
-		var e: Dictionary = roster[slot]
-		var v := CharacterView.new()
-		v.reduced_motion = reduced_motion
-		v.fx = fx
-		v.water_at = _water_info
-		add_child(v)
-		v.setup(int(e["role"]), e["cosmetic"], int(slot), String(e["name"]), bool(e["is_bot"]), int(slot) == local_slot)
-		views[int(slot)] = v
+
+## One character per call (each is a full rig with its animation tree).
+func _prep_views() -> bool:
+	if _view_queue.is_empty():
+		return false
+	var slot: int = int(_view_queue.pop_front())
+	var e: Dictionary = roster[slot]
+	var v := CharacterView.new()
+	v.reduced_motion = reduced_motion
+	v.fx = fx
+	v.water_at = _water_info
+	add_child(v)
+	v.setup(int(e["role"]), e["cosmetic"], slot, String(e["name"]), bool(e["is_bot"]), slot == local_slot)
+	views[slot] = v
+	return not _view_queue.is_empty()
+
+
+func _prep_rest() -> void:
 	for i in cfg.cart_count:
 		var cv := CartView.new()
 		add_child(cv)
@@ -170,7 +315,33 @@ func _ready() -> void:
 	# initial camera placement
 	var p0 := _player_rs(local_slot if not spectator else _first_slot())
 	camera.snap_to(p0.get("pos", Vector3.ZERO), p0.get("yaw", 0.0))
+
+
+func _finish_prepare() -> void:
+	if prepared:
+		return
+	prepared = true
+	prepare_ms = float(Time.get_ticks_usec() - _prep_t0) / 1000.0
+	Diag.mark("campus_prepared")
+	if staged:
+		print("[load] round prepared in %.0f ms over %d frames (longest frame of work %.1f ms)" % [prepare_ms, prep_frames, prep_max_ms])
+	if is_client:
+		session.send_loaded()
+	else:
+		session.mark_local_loaded()
 	Sfx.music("chase_calm")
+	prepared_now.emit()
+
+
+## The round is under way on this device: the loading screen can go
+## (host: every player has loaded or the wait timed out; guest: the host's
+## first snapshot is here; practice: prepared).
+func round_live() -> bool:
+	if not prepared:
+		return false
+	if is_client:
+		return stat_snapshots > 0
+	return session.loads_complete()
 
 
 func _first_slot() -> int:
@@ -183,7 +354,6 @@ func _first_slot() -> int:
 # Client world: collision + predicted body
 # ---------------------------------------------------------------------------
 func _setup_client_world() -> void:
-	session.call_deferred("send_loaded")
 	client_world = Node3D.new()
 	client_world.name = "ClientWorld"
 	add_child(client_world)
@@ -229,6 +399,8 @@ func _setup_client_world() -> void:
 # Per tick
 # ---------------------------------------------------------------------------
 func _physics_process(delta: float) -> void:
+	if not prepared:
+		return
 	var cmd := _build_local_cmd()
 	if is_client:
 		_client_tick(cmd, delta)
@@ -535,6 +707,9 @@ func _reconcile(s: Dictionary) -> void:
 	_prev_server_state = server_state
 	if enabled and stat_snapshots > 1 and not transition and err < 4.0:
 		stat_corrections.append(err)
+		Diag.net_sample(session.rtt, err)
+		if err > 0.5:
+			Diag.mark("correction")
 		if err > 0.2 and stat_big.size() < 12:
 			stat_big.append({"err": snappedf(err, 0.01), "tick": int(s["tick"]), "ack": ack, "phase": _client_phase, "pend_seqs": [(_pending[0] as InputCmd).seq if not _pending.is_empty() else -1, (_pending[-1] as InputCmd).seq if not _pending.is_empty() else -1], "state": server_state, "pending": _pending.size(), "srv_pos": m["pos"], "before": before, "after": after, "floor": m["on_floor"], "vel": m["vel"], "role": pred.role})
 	if err < 3.0:
@@ -714,6 +889,9 @@ func _reveal_end_tick() -> float:
 # Presentation
 # ---------------------------------------------------------------------------
 func _process(delta: float) -> void:
+	if not prepared:
+		_process_prepare()
+		return
 	_shake_cd = maxf(0.0, _shake_cd - delta)
 	# events -> effects/sounds/HUD
 	var evs := _local_events
@@ -769,6 +947,8 @@ func _process(delta: float) -> void:
 		var cd := int(ceil(float(local_info().get("countdown", 0.0))))
 		if cd != _countdown_last and cd <= int(cfg.start_countdown_s) and cd > 0:
 			Sfx.play("beep")
+			if _countdown_last <= 0 or _countdown_last > int(cfg.start_countdown_s):
+				Diag.mark("countdown")
 		_countdown_last = cd
 
 
@@ -870,6 +1050,7 @@ func _present_event(ev: Dictionary) -> void:
 			# sequence (CharacterView, driven by its time in the water); the
 			# event carries the one sound and the HUD feedback
 			var big := type == TC.Ev.SPLASH_STAMP
+			Diag.mark("splash")
 			var wcol: Color = layout.waters[int(ev["b"])]["color"] if int(ev["b"]) >= 0 else Color.CYAN
 			Sfx.play("splash_big" if big else "splash", pos)
 			if mine:
@@ -883,6 +1064,7 @@ func _present_event(ev: Dictionary) -> void:
 				var rr: Dictionary = roster.get(a, {})
 				hud.feed_splash(String(rr.get("name", "?")), String(layout.waters[int(ev["b"])]["short"]), int(rr.get("role", 0)))
 		TC.Ev.CAPTURE:
+			Diag.mark("tag")
 			fx.whistle_burst(pos)
 			Sfx.play("whistle", pos)
 			var r: Dictionary = roster.get(a, {})
@@ -894,6 +1076,7 @@ func _present_event(ev: Dictionary) -> void:
 			elif int(ev["b"]) == local_slot:
 				hud.toast("Tagged %s!" % r.get("name", "?"), Color(1.0, 0.8, 0.3))
 		TC.Ev.TAG_MISS:
+			Diag.mark("tag_miss")
 			Sfx.play("whoosh", pos)
 			if views.has(a):
 				(views[a] as CharacterView).tag_missed()

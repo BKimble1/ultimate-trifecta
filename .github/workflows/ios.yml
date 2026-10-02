@@ -196,9 +196,22 @@ jobs:
           xcrun simctl install "$DEV" "$APP"
           mkdir -p sim-evidence
           S=sim-evidence/summary.txt
+          # launch audit (V4): what the exported app shows from the first
+          # moment - the launch storyboard's images, any third-party or
+          # publisher branding text in the bundle, then early frames
+          LS=sim-evidence/launch_assets; mkdir -p "$LS"
+          find "$APP" -maxdepth 3 \( -iname '*launch*' -o -iname 'splash*' \) | tee "$LS/files.txt"
+          find "$APP" -maxdepth 3 -iname 'splash*.png' -exec cp {} "$LS/" \; || true
+          { grep -rIl -i "idlery" "$APP" build/ios 2>/dev/null | grep -v '\.pck$' | head -20; echo "(text files naming Idlery: above, if any)"; } | tee "$LS/branding_text.txt"
+          { strings -n 6 "$APP"/*.pck 2>/dev/null | grep -i -c "powered by" ; echo "(pck strings containing 'powered by')"; } | tee -a "$LS/branding_text.txt"
           # cold launch to the title screen first (Game Center skipped: no account on CI)
+          T0=$(python3 -c 'import time; print(time.time())')
           xcrun simctl launch "$DEV" "$BUNDLE_ID" -- --no-gamecenter > /dev/null
-          sleep 45
+          for i in 1 2 3 4 5 6; do
+            xcrun simctl io "$DEV" screenshot "sim-evidence/launch_$i.png" > /dev/null 2>&1 || true
+            python3 -c "import time; print('launch_$i.png at %.1f s after the launch command' % (time.time() - $T0))" | tee -a "$S"
+          done
+          sleep 38
           xcrun simctl io "$DEV" screenshot sim-evidence/00_title.png || true
           echo "cold launch still running? $(xcrun simctl spawn "$DEV" launchctl list 2>/dev/null | grep -c "$BUNDLE_ID")" | tee -a "$S"
           { ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i trifecta || echo "no crash report after cold launch"; } | tee -a "$S"

@@ -85,22 +85,16 @@ func build_collision(root: Node3D) -> void:
 	world.name = "WorldCollision"
 	world.collision_layer = TC.L_WORLD
 	world.collision_mask = 0
-	root.add_child(world)
 	var blockers := StaticBody3D.new()
 	blockers.name = "CartBlockers"
 	blockers.collision_layer = TC.L_CART_BLOCK
 	blockers.collision_mask = 0
-	root.add_child(blockers)
+	# shapes go on the bodies before they enter the tree: added one by one
+	# to a body already in the physics space, each one rebuilt the body's
+	# compound shape (~45 ms for the campus; ~5 ms this way)
 
 	# Ground heightmap at 1 m resolution with real pits under every water body.
-	var b := CampusLayout.BOUNDS
-	var w := int(b.size.x) + 1
-	var d := int(b.size.y) + 1
-	var hm := HeightMapShape3D.new()
-	hm.map_width = w
-	hm.map_depth = d
-	hm.map_data = height_grid(L)
-	_add_shape(world, hm, Transform3D(Basis.IDENTITY, Vector3(b.get_center().x, 0, b.get_center().y)))
+	_add_shape(world, ground_shape(L), Transform3D(Basis.IDENTITY, ground_shape_origin()))
 
 	for bd in L.buildings:
 		var pos: Vector2 = bd["pos"]
@@ -175,6 +169,53 @@ func build_collision(root: Node3D) -> void:
 	_box(world, Vector3(bb.end.x, 5, bb.get_center().y), Vector3(1, 10, bb.size.y))
 	_box(world, Vector3(bb.get_center().x, 5, bb.position.y), Vector3(bb.size.x, 10, 1))
 	_box(world, Vector3(bb.get_center().x, 5, bb.end.y), Vector3(bb.size.x, 10, 1))
+	root.add_child(world)
+	root.add_child(blockers)
+
+
+static var _hm_shape: HeightMapShape3D
+static var _hm_layout: CampusLayout
+
+
+## The ground heightmap shape, shared by every round's collision (host sim
+## and client world alike), so the physics engine builds it once.  It is
+## square on purpose: Jolt only makes a real height field from a square map
+## and falls back to a ~190k-triangle mesh otherwise (161 ms to build and
+## slower to query; measured 6 ms square).  The extra rows lie beyond the
+## campus's outer walls at ground level.
+static func ground_shape(layout: CampusLayout) -> HeightMapShape3D:
+	if _hm_layout == layout and _hm_shape != null:
+		return _hm_shape
+	var b := CampusLayout.BOUNDS
+	var w := int(b.size.x) + 1
+	var d := int(b.size.y) + 1
+	var n := maxi(w, d)
+	var grid := height_grid(layout)
+	var data := PackedFloat32Array()
+	var pad := PackedFloat32Array()
+	pad.resize(n - w)
+	pad.fill(0.0)
+	for zi in d:
+		data.append_array(grid.slice(zi * w, zi * w + w))
+		data.append_array(pad)
+	var tail := PackedFloat32Array()
+	tail.resize((n - d) * n)
+	tail.fill(0.0)
+	data.append_array(tail)
+	var hm := HeightMapShape3D.new()
+	hm.map_width = n
+	hm.map_depth = n
+	hm.map_data = data
+	_hm_shape = hm
+	_hm_layout = layout
+	return hm
+
+
+## Where the square ground shape sits (its samples start at BOUNDS' corner).
+static func ground_shape_origin() -> Vector3:
+	var b := CampusLayout.BOUNDS
+	var n := maxi(int(b.size.x), int(b.size.y))
+	return Vector3(b.position.x + n * 0.5, 0.0, b.position.y + n * 0.5)
 
 
 func _add_shape(body: CollisionObject3D, shape: Shape3D, xf: Transform3D) -> void:
@@ -224,31 +265,85 @@ func _kit_at(x: float, z: float, foliage: bool = false) -> MeshKit:
 	return store[key]
 
 
+## Builds the whole campus look at once (dev shots, tests).
 func build_visuals(root: Node3D, quality: int = 1) -> Dictionary:
+	begin_visuals(root, quality)
+	while step():
+		pass
+	return water_nodes
+
+
+# Staged build: the visual work as a queue of short steps (a building, a row
+# of trees, one chunk's mesh) so a loading screen keeps animating while the
+# campus is made.  A step returning true runs again (chunk commits).
+var water_nodes: Dictionary = {}
+var container: Node3D
+var _steps: Array[Callable] = []
+var _step_i := 0
+var _rng: RandomNumberGenerator
+var _quality := 1
+var _root: Node3D
+var _commit_keys: Array = []
+var _world_mat: ShaderMaterial
+
+
+func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_chunks.clear()
 	_foliage.clear()
 	_glow_st = SurfaceTool.new()
 	_glow_st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_glow_count = 0
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 77
-
-	_ground(rng)
-	_flat_layers()
+	_rng = RandomNumberGenerator.new()
+	_rng.seed = 77
+	_quality = quality
+	_root = root
+	_step_i = 0
+	_steps.clear()
+	for z0 in range(0, ground_rows(), 10):
+		_steps.append(func() -> void: _ground_rows(z0, z0 + 10))
+	_steps.append(_flat_layers)
 	for bd in L.buildings:
-		_building(bd, rng)
-	for s in L.walls:
-		var a: Vector2 = s["a"]
-		var k := _kit_at(a.x, a.y)
-		k.segment_box(s["a"], s["b"], 0.0, s["h"], s["t"], Color(0.52, 0.50, 0.55), 0.0, Color(0.66, 0.64, 0.68))
-	for s in L.hedges:
-		_hedge(s, rng)
-	for s in L.fences:
-		_fence(s)
-	for s in L.cart_blockers:
-		_bollards(s)
-	for t in L.trees:
-		_tree(t)
+		_steps.append(func() -> void: _building(bd, _rng))
+	_steps.append(func() -> void:
+		for s in L.walls:
+			var a: Vector2 = s["a"]
+			_kit_at(a.x, a.y).segment_box(s["a"], s["b"], 0.0, s["h"], s["t"], Color(0.52, 0.50, 0.55), 0.0, Color(0.66, 0.64, 0.68)))
+	_steps.append(func() -> void:
+		for s in L.hedges:
+			_hedge(s, _rng))
+	_steps.append(func() -> void:
+		for s in L.fences:
+			_fence(s)
+		for s in L.cart_blockers:
+			_bollards(s))
+	var trees: Array = L.trees
+	for i0 in range(0, trees.size(), 12):
+		_steps.append(func() -> void:
+			for i in range(i0, mini(i0 + 12, trees.size())):
+				_tree(trees[i]))
+	_steps.append(_small_things)
+	_steps.append(_lake)
+	_steps.append(_containers)
+	_steps.append(_commit_next)
+	_steps.append(_glow_mesh)
+
+
+## Runs the next step; true while there is more to do.
+func step() -> bool:
+	if _step_i >= _steps.size():
+		return false
+	var more: Variant = _steps[_step_i].call()
+	if not (more is bool and more):
+		_step_i += 1
+	return _step_i < _steps.size()
+
+
+## Fraction of the steps done (loading screen progress, never invented).
+func progress() -> float:
+	return float(_step_i) / float(maxi(_steps.size(), 1))
+
+
+func _small_things() -> void:
 	for r in L.rocks:
 		var rp: Vector3 = r["pos"]
 		var sz: Vector3 = r["size"]
@@ -272,78 +367,102 @@ func build_visuals(root: Node3D, quality: int = 1) -> Dictionary:
 		_bench(bn)
 	for pr in L.props:
 		_prop(pr)
-	_lake()
 
-	var mat := ShaderMaterial.new()
-	mat.shader = WORLD_SHADER
-	var container := Node3D.new()
+
+func _containers() -> void:
+	_world_mat = ShaderMaterial.new()
+	_world_mat.shader = WORLD_SHADER
+	container = Node3D.new()
 	container.name = "CampusVisuals"
-	root.add_child(container)
-	var water_nodes := _waters(container)
+	_root.add_child(container)
+	water_nodes = _waters(container)
 	var fmat := ShaderMaterial.new()
 	fmat.shader = FOLIAGE_SHADER
 	foliage_material = fmat
-	for pass_i in 2:
-		var store := _chunks if pass_i == 0 else _foliage
-		for key in store:
-			var mk: MeshKit = store[key]
-			var mesh := mk.commit()
-			if mesh == null:
-				continue
-			var mi := MeshInstance3D.new()
-			mi.mesh = mesh
-			mi.material_override = mat if pass_i == 0 else fmat
-			mi.name = ("Chunk_%d_%d" if pass_i == 0 else "Foliage_%d_%d") % [key.x, key.y]
-			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if quality >= 1 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			if pass_i == 1:
-				# tree canopies stop drawing where the night fog has already
-				# swallowed them (no dithered fade: a clean cut inside the fog)
-				mi.visibility_range_end = 230.0 if quality >= 1 else 150.0
-				mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
-			container.add_child(mi)
-	if _glow_count > 0:
-		var gm := ShaderMaterial.new()
-		gm.shader = GLOW_SHADER
-		gm.set_shader_parameter("color", Color(1.0, 0.78, 0.45))
-		gm.set_shader_parameter("intensity", 0.32)
-		gm.set_shader_parameter("mode", 0.0)
-		var gmi := MeshInstance3D.new()
-		gmi.mesh = _glow_st.commit()
-		gmi.material_override = gm
-		gmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		gmi.name = "LampPools"
-		container.add_child(gmi)
-	return water_nodes
+	_commit_keys.clear()
+	for key in _chunks:
+		_commit_keys.append([0, key])
+	for key in _foliage:
+		_commit_keys.append([1, key])
 
 
-func _ground(rng: RandomNumberGenerator) -> void:
+## One chunk's mesh per call (the heaviest single pieces of the build).
+func _commit_next() -> bool:
+	if _commit_keys.is_empty():
+		return false
+	var item: Array = _commit_keys.pop_front()
+	var pass_i: int = item[0]
+	var key: Vector2i = item[1]
+	var mk: MeshKit = (_chunks if pass_i == 0 else _foliage)[key]
+	var mesh := mk.commit()
+	if mesh != null:
+		var mi := MeshInstance3D.new()
+		mi.mesh = mesh
+		mi.material_override = _world_mat if pass_i == 0 else foliage_material
+		mi.name = ("Chunk_%d_%d" if pass_i == 0 else "Foliage_%d_%d") % [key.x, key.y]
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if _quality >= 1 else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if pass_i == 1:
+			# tree canopies stop drawing where the night fog has already
+			# swallowed them (no dithered fade: a clean cut inside the fog)
+			mi.visibility_range_end = 230.0 if _quality >= 1 else 150.0
+			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+		container.add_child(mi)
+	return not _commit_keys.is_empty()
+
+
+func _glow_mesh() -> void:
+	if _glow_count <= 0:
+		return
+	var gm := ShaderMaterial.new()
+	gm.shader = GLOW_SHADER
+	gm.set_shader_parameter("color", Color(1.0, 0.78, 0.45))
+	gm.set_shader_parameter("intensity", 0.32)
+	gm.set_shader_parameter("mode", 0.0)
+	var gmi := MeshInstance3D.new()
+	gmi.mesh = _glow_st.commit()
+	gmi.material_override = gm
+	gmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	gmi.name = "LampPools"
+	container.add_child(gmi)
+
+
+const GROUND_STEP := 2.0
+var _noise: FastNoiseLite
+
+
+func _ground(_rng: RandomNumberGenerator) -> void:
+	_ground_rows(0, ground_rows())
+
+
+func ground_rows() -> int:
+	return int(CampusLayout.BOUNDS.size.y / GROUND_STEP)
+
+
+## One band of the 2 m ground grid (rows z0..z1).
+func _ground_rows(z_from: int, z_to: int) -> void:
 	var b := CampusLayout.BOUNDS
-	var step := 2.0
+	var step := GROUND_STEP
 	var nx := int(b.size.x / step)
-	var nz := int(b.size.y / step)
-	var noise := FastNoiseLite.new()
-	noise.seed = 11
-	noise.frequency = 0.035
-	var hgt := func(x: float, z: float) -> float:
-		return grid_y(L, x, z)
+	if _noise == null:
+		_noise = FastNoiseLite.new()
+		_noise.seed = 11
+		_noise.frequency = 0.035
 	var base := Color(0.25, 0.46, 0.30)
-	for zi in nz:
+	for zi in range(z_from, mini(z_to, ground_rows())):
 		for xi in nx:
 			var x0 := b.position.x + xi * step
 			var z0 := b.position.y + zi * step
 			var x1 := x0 + step
 			var z1 := z0 + step
-			var n := noise.get_noise_2d(x0, z0)
+			var n := _noise.get_noise_2d(x0, z0)
 			var col := base.lerp(Color(0.32, 0.52, 0.30), 0.5 + 0.5 * n)
-			var ya: float = hgt.call(x0, z0)
-			var yb: float = hgt.call(x1, z0)
-			var yc: float = hgt.call(x1, z1)
-			var yd: float = hgt.call(x0, z1)
+			var ya := grid_y(L, x0, z0)
+			var yb := grid_y(L, x1, z0)
+			var yc := grid_y(L, x1, z1)
+			var yd := grid_y(L, x0, z1)
 			if ya < -0.1 or yb < -0.1 or yc < -0.1 or yd < -0.1:
 				col = Color(0.30, 0.28, 0.24)  # muddy bank / pit walls
 			_kit_at(x0 + 1.0, z0 + 1.0).quad(Vector3(x0, ya, z0), Vector3(x1, yb, z0), Vector3(x1, yc, z1), Vector3(x0, yd, z1), col)
-	# Lake beyond the north rail (visual only)
-	pass
 
 
 func _flat_layers() -> void:
