@@ -375,7 +375,8 @@ func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 				cmd.pressed |= TC.BTN_INTERACT   # hop out and chase on foot
 				cmd.drive = -1.0
 				return
-			_drive_to(sim, p, cart_c, Vector2(lead.x, lead.z), cmd, dt, true)
+			var lead2 := Vector2(lead.x, lead.z)
+			_drive_to(sim, p, cart_c, _park_point(sim, lead2) if CampusDorms.in_yards(lead2) else lead2, cmd, dt, true)
 			return
 		# on foot: chase, tag when close, go back to cart if they get away
 		if td > 30.0 and _free_cart_near(sim, p, 18.0) >= 0:
@@ -421,8 +422,7 @@ func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 				stop_i += 1
 		dest = patrol_stops[stop_i % patrol_stops.size()]
 	if in_cart:
-		var reach := nav.nearest_open(nav.cart, dest, 30)
-		var drive_dest := nav.to_world(reach)
+		var drive_dest := _park_point(sim, dest)
 		if p.pos2().distance_to(drive_dest) < 6.0 and p.pos2().distance_to(dest) > 8.0:
 			cmd.pressed |= TC.BTN_INTERACT   # park and walk in
 			cmd.drive = -1.0
@@ -445,6 +445,17 @@ func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 	_follow(sim, p, cmd, dt, false)
 	_hop_obstacles(sim, p, cmd)
 	cmd.cam_yaw = p.yaw + sin(float(sim.tick) * 0.03 + slot) * 0.9   # look around
+
+
+## Where a cart stops for a destination: the nearest drivable cell, except
+## in the cart-free dorm yards (V6), whose cells are enclosed by bollards -
+## there the cart parks on the road along their north side and the watcher
+## walks in.  (A search toward an enclosed cell explores the whole road
+## network for nothing.)
+func _park_point(_sim: MatchSim, dest: Vector2) -> Vector2:
+	if CampusDorms.in_yards(dest):
+		return Vector2(clampf(dest.x, -118.0, 118.0), 88.0)
+	return nav.to_world(nav.nearest_open(nav.cart, dest, 30))
 
 
 func _make_patrol_route(sim: MatchSim) -> void:

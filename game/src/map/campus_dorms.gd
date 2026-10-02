@@ -68,6 +68,10 @@ const DISTRICTS := {
 	"moonpenny": Rect2(73.5, 89.0, 45.0, 50.0),
 }
 
+## The cart-free strip of dorm yards along the south of the campus
+## (Puddlesworth's grounds and the two new yards, bollards all round).
+const YARDS := Rect2(-116.4, 91.8, 232.8, 44.8)
+
 static var _geo: Dictionary = {}
 
 
@@ -285,6 +289,10 @@ static func _v3s(v: Vector3) -> String:
 
 static func _v2s(v: Vector2) -> String:
 	return "%.3f,%.3f" % [v.x, v.y]
+
+
+static func in_yards(p: Vector2) -> bool:
+	return YARDS.has_point(p)
 
 
 ## Which district rect (if any) a point lies in.
