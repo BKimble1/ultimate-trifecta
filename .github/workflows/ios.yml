@@ -195,12 +195,13 @@ jobs:
           xcrun simctl bootstatus "$DEV" -b
           xcrun simctl install "$DEV" "$APP"
           mkdir -p sim-evidence
+          S=sim-evidence/summary.txt
           # cold launch to the title screen first (Game Center skipped: no account on CI)
           xcrun simctl launch "$DEV" "$BUNDLE_ID" -- --no-gamecenter > /dev/null
           sleep 45
           xcrun simctl io "$DEV" screenshot sim-evidence/00_title.png || true
-          echo "cold launch still running? $(xcrun simctl spawn "$DEV" launchctl list 2>/dev/null | grep -c "$BUNDLE_ID")"
-          ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i trifecta || echo "no crash report after cold launch"
+          echo "cold launch still running? $(xcrun simctl spawn "$DEV" launchctl list 2>/dev/null | grep -c "$BUNDLE_ID")" | tee -a "$S"
+          { ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i trifecta || echo "no crash report after cold launch"; } | tee -a "$S"
           xcrun simctl terminate "$DEV" "$BUNDLE_ID" || true
           sleep 2
           # bot-driven practice round as a runner (labelled: iOS Simulator, x86_64, Release, unsigned)
@@ -220,8 +221,10 @@ jobs:
           tail -n 120 sim-evidence/app-console.log || true
           echo "---- app status lines (os_log) ----"
           grep -E "SOAK|ROUND|SCRIPT ERROR|ERROR:" sim-evidence/os_log.txt | tail -n 60 || echo "no app status lines in os_log"
+          { echo "app status lines (last 6):"; grep -E "SOAK|ROUND" sim-evidence/os_log.txt | tail -n 6 || echo "none"; echo "script errors: $(grep -c "SCRIPT ERROR" sim-evidence/os_log.txt)"; } >> "$S"
           echo "---- crash reports ----"
-          ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i -E "trifecta|godot" || echo "none"
+          { echo -n "crash reports: "; ls ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i -E "trifecta|godot" || echo "none"; } | tee -a "$S"
+          echo "screenshots: $(ls sim-evidence/*.png 2>/dev/null | wc -l)" >> "$S"
           mkdir -p sim-evidence/crash
           for f in ~/Library/Logs/DiagnosticReports/UltimateTrifecta*.ips; do
             [ -f "$f" ] || continue
@@ -271,6 +274,7 @@ jobs:
             ls "$APP/Frameworks" 2>/dev/null; [ -f "$APP/Frameworks/UTShare.framework/UTShare" ] && { echo "UTShare embedded:"; lipo -info "$APP/Frameworks/UTShare.framework/UTShare"; } || echo "UTShare framework NOT embedded"; find "$APP" -name 'PrivacyInfo.xcprivacy' | sed "s|$APP/||"; }
           find build/ios -name '*.entitlements' -maxdepth 3 -exec sh -c 'echo "== $1"; cat "$1"' _ {} \;
           PM=$(find build/ios -maxdepth 3 -name PrivacyInfo.xcprivacy | head -1); [ -n "$PM" ] && { echo "== $PM"; plutil -convert json -o - "$PM"; echo; }
+          [ -f sim-evidence/summary.txt ] && { echo "== Simulator summary"; cat sim-evidence/summary.txt; }
           echo "BUILD_FACTS_END"
       - uses: actions/upload-artifact@v4
         if: always()
