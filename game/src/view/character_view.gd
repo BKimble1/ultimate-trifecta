@@ -22,11 +22,30 @@ extends Node3D
 ##   splash  = one of three impact clips seeked to the runner's authoritative
 ##             time in the water (a late joiner sees the right beat)
 ##   others  = Transition states (dive, tag, cart, celebrate, emotes, ...)
-##   overlays: full-body and upper-body landing one-shots (soft/hard mix),
-##             an upper-body recovery shake-off (legs keep running) and idle
-##             fidgets.
-## CharacterSecondary adds head lag and banking; a spring-bone chain moves
-## the nightcap tip.  Face shapes are blend shapes on "base".
+##   overlays: an upper-body action layer (tag wind-up / recovery while the
+##             legs keep running), full-body and upper-body landing one-shots
+##             (soft/hard mix), an upper-body recovery shake-off (legs keep
+##             running) and idle fidgets.
+## CharacterPoseFade (first skeleton modifier) makes every state change start
+## from the pose on screen, so interrupted cross-fades never snap (V5).
+## CharacterSecondary adds head lag, body lean and banking; a spring-bone
+## chain moves the nightcap tip.  Face shapes are blend shapes on "base".
+##
+## V5 motion notes (docs/v5/motion_notes.md):
+##  * Locomotion weight and blend-space speed are smoothed in time (the sim
+##    reaches full speed in ~0.1 s, which used to swap whole poses in 1-2
+##    frames).  Starts begin on a step; stops finish the step they are in.
+##  * Gait cadence: rate = forward ground speed / metres per cycle of the
+##    pose actually shown, so planted feet stay planted while the blend moves.
+##  * Visual air needs ~0.07 s off the floor (or a real jump), so a floor
+##    contact flicker never plays half a jump.
+##  * Teleports (respawn, resurfacing, cart seat in/out) cut the pose; any
+##    other state change fades from the displayed pose.
+##  * Secondary motion reads a filtered acceleration (bounded by velocity
+##    change / ACC_TAU, independent of the render delta).
+##  * Menu idle (set_menu_idle, on by default for lighting "indoor"): slower
+##    breathing, restrained fidgets, softer blinks, a calmer nightcap.
+##  * Animation LOD has hysteresis (LOD_FAR / LOD_NEAR).
 
 const SCENE := preload("res://assets/characters/runner.glb")
 const SHADER := preload("res://assets/shaders/character.gdshader")
@@ -53,14 +72,39 @@ const HAIR_BY_SKIN := [Color("4a3222"), Color("2e1e15"), Color("1f1712"), Color(
 
 ## state name -> xfade seconds into that state
 const STATES := {
-	"ground": 0.16, "air": 0.1, "dive": 0.07, "dive_land": 0.06, "splash": 0.06,
+	"ground": 0.16, "air": 0.1, "dive": 0.1, "dive_land": 0.08, "splash": 0.1,
 	"stumble": 0.06, "flop": 0.1, "dizzy": 0.3, "tag_windup": 0.05, "tag_lunge": 0.04, "tag_recover": 0.08, "tag_miss": 0.08,
 	"cart_enter": 0.08, "cart": 0.12, "cart_exit": 0.06, "celebrate": 0.15, "arrive": 0.05, "ready": 0.08,
 	"emote_wave": 0.15, "emote_cheer": 0.15, "emote_laugh": 0.15, "emote_shrug": 0.15, "emote_dance": 0.15, "emote_point": 0.15,
 }
 const UPPER_BODY := ["spine", "chest", "neck", "head", "shoulder.L", "shoulder.R", "upper_arm.L", "upper_arm.R",
 	"forearm.L", "forearm.R", "hand.L", "hand.R"]
-const FIDGETS := ["fidget_yawn", "fidget_look"]
+const FIDGETS := ["fidget_yawn", "fidget_look", "fidget_shift", "fidget_bounce"]
+## gameplay idles pick from these; menus from MENU_FIDGETS (weights)
+const GAME_FIDGETS := {"fidget_yawn": 1.0, "fidget_look": 1.0}
+const MENU_FIDGETS := {"fidget_look": 3.0, "fidget_shift": 3.0, "fidget_bounce": 2.0, "fidget_yawn": 1.0}
+## upper-body action layer clips (tag wind-up and recovery while running)
+const ACTS := ["tag_windup", "tag_recover", "tag_miss"]
+## speed above which tag wind-up / recovery play on the upper body only
+const ACT_RUN_SPEED := 1.2
+## secondary motion: velocity filter (s) and acceleration bound (m/s^2)
+const ACC_TAU := 0.05
+const ACC_MAX := 55.0
+## a state discontinuity that moved the character further than this in one
+## frame is a teleport: the pose cuts instead of fading
+const CUT_DIST := 0.5
+## animation LOD: throttled beyond LOD_FAR, full rate again inside LOD_NEAR
+const LOD_FAR := 48.0
+const LOD_NEAR := 42.0
+## nightcap inertia: spring-bone force per m/s^2 of body acceleration (the
+## spring runs in the character's own space, so translation, yaw, hitches
+## and teleports never fling it; inertia comes only from this force)
+const HAT_INERTIA := 0.025
+const HAT_FORCE_MAX := 1.4
+## visual air state: seconds off the floor before it shows (unless rising)
+const AIR_DEBOUNCE := 0.07
+## blend-space speed filter (s)
+const BS_TAU := 0.03
 const EXPRESSIONS := ["blink", "squint", "smile", "open", "brow_up", "brow_angry"]
 
 static var _material: ShaderMaterial
@@ -81,11 +125,16 @@ var lighting := "outdoor"
 var fx: Fx
 var water_at: Callable
 
+## menus: calmer idle (see set_menu_idle); null = automatic (lighting "indoor")
+var menu_idle := false
+var _menu_idle_set := false
+
 var model: Node3D
 var skeleton: Skeleton3D
 var anim: AnimationPlayer
 var tree: AnimationTree
 var secondary: CharacterSecondary
+var pose_fade: CharacterPoseFade
 var hat_spring: SpringBoneSimulator3D
 var parts: Dictionary = {}          # name -> MeshInstance3D
 var visible_parts: Array[MeshInstance3D] = []
@@ -103,7 +152,6 @@ var _prev_state := -1
 var _prev_air := false
 var _prev_diving := false
 var _prev_vel := Vector3.ZERO
-var _prev_yaw := 0.0
 var _have_prev := false
 var _vis_yaw := 0.0
 var _have_yaw := false
@@ -141,6 +189,25 @@ var _squash := 0.0
 var _t := 0.0
 var _anim_skip := 0
 var _anim_acc := 0.0
+# V5 motion state
+var _move_w := 0.0            # locomotion weight shown (0 idle .. 1 moving)
+var _bs := 1.3                # blend-space speed shown (m/s)
+var _settle_to := -1.0        # stopping: gait phase the step settles on
+var _vel_f := Vector3.ZERO    # filtered velocity (secondary acceleration)
+var _air_hold := 0.0
+var _air_vis := false
+var _mode_fade := 0.0
+var _cut := false
+var _last_pos := Vector3.ZERO
+var _cam_d := INF
+var _far := false
+var _act := ""
+var _act_w := 0.0
+var _idle_clock := 0.0
+var _squash_v := 0.0
+var _fidget := ""
+var _blink_len := 0.16
+var _hat_off := false
 ## total animation time advanced (tests: equals the real elapsed time)
 var anim_time_advanced := 0.0
 
@@ -164,13 +231,33 @@ func setup(p_role: int, p_cosmetic: Dictionary, p_slot: int, display_name: Strin
 	is_local = local
 	_rng.seed = hash(str(p_slot) + display_name + str(get_instance_id()))
 	_idle_off = _rng.randf() * IDLE_LEN
+	_idle_clock = _idle_off
 	_phase = _rng.randf()
 	_next_fidget = _rng.randf_range(6.0, 14.0)
 	_blink_t = _rng.randf_range(0.5, 3.0)
+	if not _menu_idle_set:
+		menu_idle = lighting == "indoor"
 	if model == null:
 		_build_model()
 	_apply_cosmetics()
 	_build_label(display_name, is_bot)
+
+
+## Menus (dorm lobby, home, wardrobe/creator preview): a calmer idle for a
+## screen people read.  Idle breathing slows a little, fidgets are restrained
+## ones (look around, shift weight, a small heel bounce, the odd yawn) every
+## 7-12 s, blinks are softer with the occasional double blink, and the
+## nightcap spring is stiffer and better damped.  Emotes, arrivals, ready
+## responses and "Try moves" are unchanged.  On by default when `lighting`
+## is "indoor" (every menu stage); call this to override either way.
+func set_menu_idle(on: bool) -> void:
+	_menu_idle_set = true
+	if on == menu_idle:
+		return
+	menu_idle = on
+	_still_t = 0.0
+	_next_fidget = _rng.randf_range(5.0, 9.0) if on else _rng.randf_range(8.0, 16.0)
+	_apply_hat_tuning()
 
 
 ## Change outfit/role in place (no rebuild; used by lobby and creator).
@@ -200,9 +287,14 @@ func _build_model() -> void:
 	for k in _face_idx:
 		_face[k] = 0.0
 	_prepare_animations()
-	_build_tree()
+	# modifier order: pose fade (sees the raw animation), then secondary
+	# motion, then the nightcap spring (added with the cosmetics)
+	pose_fade = CharacterPoseFade.new()
+	pose_fade.name = "PoseFade"
+	skeleton.add_child(pose_fade)
 	secondary = CharacterSecondary.new()
 	skeleton.add_child(secondary)
+	_build_tree()
 	_build_effects()
 
 
@@ -232,7 +324,7 @@ func _seek_node() -> AnimationNodeTimeSeek:
 	return s
 
 
-func _filtered(n: AnimationNodeOneShot) -> void:
+func _filtered(n: AnimationNode) -> void:
 	n.filter_enabled = true
 	var root_path := String(anim.get_parent().get_path_to(skeleton)) if anim.get_parent() else "Runner/Skeleton3D"
 	for b in UPPER_BODY:
@@ -325,6 +417,21 @@ func _build_tree() -> void:
 			"cart": bt.connect_node("state", i, "cart_bs")
 			_: bt.connect_node("state", i, "a_" + s)
 		i += 1
+	# --- upper-body action layer: tag wind-up / recovery over running legs
+	var ap := AnimationNodeTransition.new()
+	ap.xfade_time = 0.0
+	for k in ACTS.size():
+		ap.add_input(ACTS[k])
+		ap.set_input_reset(k, true)
+		bt.add_node("act_" + ACTS[k], _anim_node(ACTS[k]))
+	bt.add_node("act_pick", ap)
+	for k in ACTS.size():
+		bt.connect_node("act_pick", k, "act_" + ACTS[k])
+	var act := AnimationNodeBlend2.new()
+	_filtered(act)
+	bt.add_node("act", act)
+	bt.connect_node("act", 0, "state")
+	bt.connect_node("act", 1, "act_pick")
 	# --- overlays
 	var fid := AnimationNodeTransition.new()
 	fid.xfade_time = 0.0
@@ -335,10 +442,10 @@ func _build_tree() -> void:
 	for k in FIDGETS.size():
 		bt.connect_node("fidget_pick", k, "a_" + FIDGETS[k])
 	var fidget := AnimationNodeOneShot.new()
-	fidget.fadein_time = 0.35
-	fidget.fadeout_time = 0.4
+	fidget.fadein_time = 0.45
+	fidget.fadeout_time = 0.5
 	bt.add_node("fidget", fidget)
-	bt.connect_node("fidget", 0, "state")
+	bt.connect_node("fidget", 0, "act")
 	bt.connect_node("fidget", 1, "fidget_pick")
 	var prev := "fidget"
 	for variant in ["f", "u"]:
@@ -374,8 +481,11 @@ func _build_tree() -> void:
 	tree.root_node = tree.get_path_to(anim.get_node(anim.root_node))
 	tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	tree.active = true
+	# every state change is a pose fade (CharacterPoseFade); the transition
+	# node itself switches at once
+	st.xfade_time = 0.0
 	_mode = ""
-	_set_mode("ground")
+	_set_mode("ground", true)
 
 
 func _build_effects() -> void:
@@ -501,6 +611,12 @@ func _apply_cosmetics() -> void:
 			want.append("mustache")
 	else:
 		want = Cosmetics.runner_parts(cosmetic)
+		# V5: under a paper crown or headphones the curly crop uses its
+		# variant with a smooth band (the curls poked through the crown band)
+		var hat := String(cosmetic.get("hat", ""))
+		if (hat == "crown" or hat == "headphones") and "hair_curly" in want and parts.has("hair_curly_hat"):
+			want.erase("hair_curly")
+			want.append("hair_curly_hat")
 	visible_parts.clear()
 	for n in parts:
 		var mi: MeshInstance3D = parts[n]
@@ -533,16 +649,34 @@ func _apply_cosmetics() -> void:
 		hat_spring.set_end_bone_name(0, "hat3")
 		hat_spring.set_extend_end_bone(0, true)
 		hat_spring.set_end_bone_length(0, 0.1)
-		hat_spring.set_stiffness(0, 1.8)
-		hat_spring.set_drag(0, 0.45)
 		hat_spring.set_gravity(0, 0.2)
 		hat_spring.set_radius(0, 0.03)
+		# V5: simulate in the character's own space.  In world space a 250 ms
+		# hitch or a landing flung the tip 30-40 cm in one frame; inertia now
+		# comes from the filtered body acceleration (external_force, below).
+		hat_spring.set_center_from(0, SpringBoneSimulator3D.CENTER_FROM_NODE)
+		hat_spring.set_center_node(0, hat_spring.get_path_to(self))
+		# keep the tip out of the head (a sphere just inside the head shell)
+		var head_col := SpringBoneCollisionSphere3D.new()
+		head_col.bone_name = "head"
+		head_col.position_offset = Vector3(0.0, 0.255, 0.0)
+		head_col.radius = 0.25
+		hat_spring.add_child(head_col)
+		_apply_hat_tuning()
 	if hat_spring:
 		hat_spring.active = cap
 	if patrol:
 		_build_flashlight()
 	if flashlight:
 		flashlight.get_parent().visible = patrol
+
+
+## Nightcap tip spring: lively in play, calm and better damped in menus.
+func _apply_hat_tuning() -> void:
+	if hat_spring == null:
+		return
+	hat_spring.set_stiffness(0, 2.6 if menu_idle else 1.8)
+	hat_spring.set_drag(0, 0.7 if menu_idle else 0.45)
 
 
 func set_flash(v: float, col: Color = Color.WHITE) -> void:
@@ -610,6 +744,7 @@ func restart_emote(id: int) -> void:
 		return
 	var m := "emote_" + String(TC.EMOTES[id])
 	if _mode == m:
+		_fade_from_shown(0.15)
 		tree.set("parameters/state/transition_request", m)
 		_mode_t = 0.0
 
@@ -626,45 +761,104 @@ func reset_motion() -> void:
 	_have_yaw = false
 	_prev_vel = Vector3.ZERO
 	_squash = 0.0
+	_squash_v = 0.0
 	if secondary:
 		secondary.reset_motion()
 	if hat_spring:
 		hat_spring.reset()
+		hat_spring.external_force = Vector3.ZERO
 
 
 ## rs keys: pos, yaw, vel, state, state_t, on_floor, diving, sprinting,
 ## tag_phase, protect, bump_protect, spotted, cart_id, steer, emote, emote_t,
 ## celebrate, show_finished, visible, impact.  The caller supplies render-time
 ## values (already interpolated); this view does not smooth position again.
+## snap: the caller saw a discontinuity (respawn, resurfacing, cart seat,
+## reconnect, a big correction).  Histories reset when the character really
+## moved; a move of more than CUT_DIST also cuts the pose (no fade across a
+## teleport).
 func apply_state(state_rs: Dictionary, _delta: float = 0.0, snap: bool = false) -> void:
 	rs = state_rs
+	var before := global_position
 	if rs.has("pos"):
 		global_position = rs["pos"]
-	if snap:
+	if snap and (before.distance_to(global_position) > 0.05 or not _have_prev):
 		reset_motion()
+		if before.distance_to(global_position) > CUT_DIST:
+			_cut = true
 	if rs.has("yaw") and (snap or not _have_yaw):
 		_vis_yaw = float(rs["yaw"])
 		rotation.y = _vis_yaw
 		_have_yaw = true
 
 
-func _set_mode(m: String) -> void:
+## Change the animation state.  The change fades from the pose on screen
+## (CharacterPoseFade) over the state's time, or cuts (teleports).
+func _set_mode(m: String, cut: bool = false) -> void:
 	if m == _mode or tree == null:
 		return
-	var st := tree.tree_root.get_node("state") as AnimationNodeTransition
-	st.xfade_time = STATES.get(m, 0.12) * (0.5 if reduced_motion else 1.0)
+	var x: float = STATES.get(m, 0.12)
+	# out of an emote, celebration or lobby reaction: a calmer settle
+	if m == "ground" and (_mode.begins_with("emote_") or _mode in ["celebrate", "ready", "arrive"]):
+		x = 0.28
+	x *= 0.5 if reduced_motion else 1.0
+	if cut:
+		if pose_fade:
+			pose_fade.cut()
+		x = 0.0
+	else:
+		_fade_from_shown(x)
 	tree.set("parameters/state/transition_request", m)
 	if _fidget_on:
 		tree.set("parameters/fidget/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
 		_fidget_on = false
 	_mode = m
 	_mode_t = 0.0
+	_mode_fade = x
+
+
+## Start a pose fade from what is on screen (not for throttled distant
+## characters, whose 20 Hz pose has no useful velocity: they switch at once).
+func _fade_from_shown(x: float) -> void:
+	if pose_fade == null:
+		return
+	if _far and not is_local:
+		pose_fade.cut()
+	else:
+		pose_fade.capture(x)
+
+
+## Teleport: no fade, no overlay carried across, histories already reset.
+func _cut_pose() -> void:
+	_cut = false
+	if pose_fade:
+		pose_fade.cut()
+	for os in ["land_f", "land_u", "fidget", "turn"]:
+		tree.set("parameters/%s/request" % os, AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)
+	_fidget_on = false
+	_act_w = 0.0
+	tree.set("parameters/act/blend_amount", 0.0)
 
 
 ## Visual facing: follows the sim yaw closely but never snaps (aim-assist
 ## turns, snapshot gaps) and never spins the long way back during a reversal.
+## V5: in plain ground locomotion the sim is turning its yaw toward the
+## velocity at a capped rate (turn_rate_deg); the drawn body aims at that
+## heading directly, so it does not run sideways for the ~0.2 s of a turn or
+## reversal (planted feet skated at 5-7 m/s there).  Tag phases, dives and
+## other states keep the sim's facing (aim assist, committed dives).
 func _update_yaw(delta: float) -> float:
 	var target := float(rs.get("yaw", rotation.y))
+	var follow := 24.0
+	# heading of the filtered velocity (prediction corrections jitter the raw one)
+	var vel: Vector3 = _vel_f if _have_prev else rs.get("vel", Vector3.ZERO)
+	var hv := Vector2(vel.x, vel.z)
+	if _mode == "ground" and int(rs.get("tag_phase", 0)) == 0 and not bool(rs.get("diving", false)) \
+			and int(rs.get("state", TC.PState.ACTIVE)) == TC.PState.ACTIVE and hv.length() > 0.8:
+		var heading := atan2(-hv.x, -hv.y)
+		var k := smoothstep(0.8, 2.0, hv.length())
+		target += wrapf(heading - target, -PI, PI) * k
+		follow = 24.0
 	if not _have_yaw:
 		_vis_yaw = target
 		_have_yaw = true
@@ -679,7 +873,7 @@ func _update_yaw(delta: float) -> float:
 		_turn_sign = signf(d)
 	elif absf(d) < 0.01:
 		_turn_sign = 0.0
-	var step := d * (1.0 - exp(-delta * 24.0))
+	var step := d * (1.0 - exp(-delta * follow))
 	_vis_yaw = wrapf(_vis_yaw + step, -PI, PI)
 	rotation.y = _vis_yaw
 	return step
@@ -703,37 +897,53 @@ func _process(delta: float) -> void:
 	var emote: int = rs.get("emote", -1)
 	var emote_t: float = rs.get("emote_t", 0.0)
 	visible = not finished or bool(rs.get("show_finished", false))
+	# camera distance once per frame (LOD with hysteresis, sounds, effects)
+	_cam_d = _camera_distance()
+	_far = _cam_d > (LOD_NEAR if _far else LOD_FAR)
 
-	# --- facing + motion history (acceleration from the previous frame's velocity)
+	# --- teleports: a state change that moved the character (respawn after
+	# capture, resurfacing at a shore exit, cart seat in/out) resets motion
+	# history and cuts the pose; any other state change fades (_set_mode)
+	var entered_splash := false
+	if st != _prev_state and _prev_state >= 0:
+		if global_position.distance_to(_last_pos) > CUT_DIST:
+			reset_motion()
+			_cut = true
+			_vis_yaw = float(rs.get("yaw", rotation.y))
+			rotation.y = _vis_yaw
+			_have_yaw = true
+		if _prev_state == TC.PState.SPLASHING and st == TC.PState.ACTIVE:
+			_on_resurface()
+	if st == TC.PState.SPLASHING and _prev_state != TC.PState.SPLASHING:
+		entered_splash = true
+	_prev_state = st
+	_last_pos = global_position
+
+	# --- facing + motion history.  Acceleration is the derivative of a
+	# filtered velocity: bounded by (velocity change) / ACC_TAU whatever the
+	# render delta, so a tick or snapshot landing in a 4 ms frame, a hitch or
+	# a prediction correction no longer kicks the springs.
 	var yaw_step := _update_yaw(delta)
 	var accel := Vector3.ZERO
 	var yaw_rate := 0.0
 	if _have_prev and delta > 0.0:
-		accel = (vel - _prev_vel) / delta
+		var nf := _vel_f + (vel - _vel_f) * (1.0 - exp(-delta / ACC_TAU))
+		accel = ((nf - _vel_f) / delta).limit_length(ACC_MAX)
+		_vel_f = nf
 		yaw_rate = yaw_step / delta
-	var entered_splash := false
-	if st != _prev_state and _prev_state >= 0:
-		# discontinuities: respawn after capture, splash resurfacing, cart in/out
-		if _prev_state in [TC.PState.CAPTURED, TC.PState.SPLASHING, TC.PState.IN_CART, TC.PState.EXITING] or st == TC.PState.ENTERING:
-			reset_motion()
-			_vis_yaw = float(rs.get("yaw", rotation.y))
-			rotation.y = _vis_yaw
-			_have_yaw = true
-			accel = Vector3.ZERO
-			yaw_rate = 0.0
-		if _prev_state == TC.PState.SPLASHING and st == TC.PState.ACTIVE:
-			_on_resurface()
-	if st == TC.PState.SPLASHING and (_prev_state != TC.PState.SPLASHING):
-		entered_splash = true
+	else:
+		_vel_f = vel
 	_prev_vel = vel
-	_prev_yaw = rotation.y
 	_have_prev = true
-	_prev_state = st
+	var accel_local := global_transform.basis.inverse() * accel
+	var calm := 0.6 if menu_idle else 1.0
 	if secondary:
-		secondary.accel = global_transform.basis.inverse() * accel
+		secondary.accel = accel_local
 		secondary.turn_rate = yaw_rate
 		secondary.speed = speed
-		secondary.gain = 0.4 if reduced_motion else 1.0
+		secondary.gain = (0.4 if reduced_motion else 1.0) * calm
+	if hat_spring and hat_spring.active:
+		hat_spring.external_force = (-accel_local * HAT_INERTIA * calm * (0.5 if reduced_motion else 1.0)).limit_length(HAT_FORCE_MAX)
 
 	# --- landing / jump / dive edges (sounds + squash), debounced so a
 	# prediction correction that flickers on_floor never doubles a sound
@@ -743,6 +953,10 @@ func _process(delta: float) -> void:
 	if air:
 		_air_t += delta
 		_fall_speed = maxf(_fall_speed, -vel.y)
+	_air_hold = _air_hold + delta if air else 0.0
+	# the air pose shows for a real jump at once, otherwise only after
+	# AIR_DEBOUNCE off the floor (kerbs, crests and contact flicker)
+	_air_vis = air and (vel.y > 1.0 or diving or _air_hold >= AIR_DEBOUNCE)
 	if _prev_air and not air and st == TC.PState.ACTIVE:
 		if _prev_diving or diving:
 			_dive_land_t = 0.32
@@ -752,7 +966,7 @@ func _process(delta: float) -> void:
 		_air_t = 0.0
 	if not _prev_air and air and vel.y > 2.0 and st == TC.PState.ACTIVE and _since_jump > 0.3:
 		_since_jump = 0.0
-		_squash = -0.08
+		_squash_v = -1.5
 		if _near_camera(25.0):
 			Sfx.play("jump", global_position, -6.0)
 	if not air:
@@ -767,8 +981,9 @@ func _process(delta: float) -> void:
 	_miss_t = maxf(0.0, _miss_t - delta)
 	_turn_cd = maxf(0.0, _turn_cd - delta)
 
-	# --- choose the animation state
+	# --- choose the animation state (+ the upper-body action layer)
 	var m := "ground"
+	var act := ""
 	if st == TC.PState.ENTERING:
 		m = "cart_enter"
 	elif st == TC.PState.IN_CART:
@@ -787,13 +1002,17 @@ func _process(delta: float) -> void:
 		m = "dive"
 	elif _dive_land_t > 0.0:
 		m = "dive_land"
-	elif tag_phase == 1:
-		m = "tag_windup"
 	elif tag_phase == 2:
 		m = "tag_lunge"
-	elif tag_phase == 3:
-		m = "tag_miss" if _miss_t > 0.0 else "tag_recover"
-	elif air:
+	elif tag_phase == 1 or tag_phase == 3:
+		var clip := "tag_windup" if tag_phase == 1 else ("tag_miss" if _miss_t > 0.0 else "tag_recover")
+		if speed > ACT_RUN_SPEED or _air_vis:
+			# moving: the legs keep running, the arms and torso tag
+			act = clip
+			m = "air" if _air_vis else "ground"
+		else:
+			m = clip
+	elif _air_vis:
 		m = "air"
 	elif emote >= 0 and emote_t > 0.0 and speed < 1.0:
 		m = "emote_" + TC.EMOTES[emote]
@@ -801,13 +1020,22 @@ func _process(delta: float) -> void:
 		m = "ready"
 	elif _arrive_t > 0.0:
 		m = "arrive"
-	_set_mode(m)
+	var cut_now := _cut
+	if _cut:
+		_cut_pose()
+		_set_mode(m, true)
+		_move_w = smoothstep(0.15, 0.9, speed)
+		_bs = clampf(speed, LOCO_POINTS["walk"], LOCO_POINTS["sprint"])
+		_settle_to = -1.0
+	else:
+		_set_mode(m)
+	_update_act(act, delta)
 
 	# --- per-state parameters
-	var idle_t := fmod(_t + _idle_off, IDLE_LEN)
-	tree.set("parameters/idle_seek/seek_request", idle_t)
+	_idle_clock += delta * (0.8 if menu_idle else 1.0)
+	tree.set("parameters/idle_seek/seek_request", fmod(_idle_clock, IDLE_LEN))
 	if m == "ground":
-		_update_ground(delta, speed, on_floor, sprinting, yaw_rate)
+		_update_ground(delta, vel, speed, on_floor, sprinting, yaw_rate)
 	else:
 		_still_t = 0.0
 		tree.set("parameters/loco_seek/seek_request", fposmod(_phase, 1.0))
@@ -820,8 +1048,9 @@ func _process(delta: float) -> void:
 	else:
 		_splash_t = -1.0
 
-	# --- squash & stretch (scale about the feet), small and fast
-	_squash = move_toward(_squash, 0.0, delta * 1.2)
+	# --- squash & stretch (scale about the feet): a small damped spring
+	# kicked by landings and take-offs, so the body never snaps in one frame
+	_squash_step(delta)
 	var sq := _squash * (0.4 if reduced_motion else 1.0)
 	model.scale = Vector3(1.0 + sq * 0.5, 1.0 - sq, 1.0 + sq * 0.5)
 
@@ -848,34 +1077,111 @@ func _process(delta: float) -> void:
 		_drip_t = maxf(0.0, _drip_t - delta)
 		drips.emitting = _drip_t > 0.0 and visible
 
-	# --- face
-	_update_face(delta, m, sprinting, tag_phase, bool(rs.get("spotted", false)))
+	# --- face (distant characters: at their animation rate)
+	var far := _far and not is_local
+	if not far or _anim_skip >= 2:
+		_update_face(delta if not far else delta * 3.0, m, sprinting, tag_phase, bool(rs.get("spotted", false)))
 
 	# --- animate (manual advance: distant characters update at a lower rate,
 	# with the real elapsed time accumulated so they keep the right pace)
 	if not tree.active:
 		return
-	var far := not is_local and not _near_camera(45.0)
 	_anim_acc += delta
 	_anim_skip += 1
-	if not far or _anim_skip >= 3:
+	if not far or _anim_skip >= 3 or cut_now:
 		tree.advance(_anim_acc)
 		anim_time_advanced += _anim_acc
 		_anim_acc = 0.0
 		_anim_skip = 0
+	if hat_spring and _hat_off:
+		_hat_off = false
+		hat_spring.active = true
+		hat_spring.reset()
+	if cut_now and hat_spring and hat_spring.active:
+		# teleport: the cap shows its rest shape in the cut frame and the
+		# spring restarts from there next frame (a reset alone settled one
+		# frame late: a second 22 cm jump after the cut)
+		hat_spring.active = false
+		_hat_off = true
 
 
-func _update_ground(delta: float, speed: float, on_floor: bool, sprinting: bool, yaw_rate: float) -> void:
-	var bs := clampf(speed, LOCO_POINTS["walk"], LOCO_POINTS["sprint"])
-	var mpc := _m_per_cycle(bs)
-	var rate := speed / mpc if speed > 0.05 else 0.0
-	tree.set("parameters/loco/blend_position", bs)
-	tree.set("parameters/move/blend_amount", smoothstep(0.15, 0.9, speed))
-	_phase += delta * rate
+## Upper-body action layer (tag wind-up / recovery while moving).
+func _update_act(act: String, delta: float) -> void:
+	if act != "" and act != _act:
+		# the action starts at once, from the pose on screen (a weight ramp
+		# over the running arms measured as a 26 cm snap at the mitten)
+		_fade_from_shown(0.1)
+		tree.set("parameters/act_pick/transition_request", act)
+		_act = act
+		_act_w = 1.0
+	var want := 1.0 if act != "" else 0.0
+	_act_w += (want - _act_w) * (1.0 - exp(-delta / 0.09))
+	if want == 0.0 and _act_w < 0.01:
+		_act_w = 0.0
+		_act = ""
+	tree.set("parameters/act/blend_amount", _act_w)
+
+
+const SQ_OMEGA := 20.0
+const SQ_ZETA := 0.5
+
+
+func _squash_step(delta: float) -> void:
+	var t := minf(delta, 0.1)
+	while t > 0.0:
+		var h := minf(t, 1.0 / 120.0)
+		var a := -_squash * SQ_OMEGA * SQ_OMEGA - _squash_v * 2.0 * SQ_ZETA * SQ_OMEGA
+		_squash_v += a * h
+		_squash += _squash_v * h
+		t -= h
+	_squash = clampf(_squash, -0.08, 0.15)
+
+
+func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sprinting: bool, yaw_rate: float) -> void:
+	# while the body turns, the gait advances with the forward part of the
+	# ground speed (no moonwalk while the facing catches up in a reversal).
+	# Without a turn in progress (a run on the spot in the lobby) speed rules.
+	var fwd_speed := speed
+	var align := 1.0
+	var turning := absf(yaw_rate) > 1.5 or absf(wrapf(float(rs.get("yaw", _vis_yaw)) - _vis_yaw, -PI, PI)) > 0.35
+	if turning and speed > 0.05:
+		var f := Vector3(vel.x, 0.0, vel.z).dot(Vector3(-sin(_vis_yaw), 0.0, -cos(_vis_yaw)))
+		align = clampf(f / speed, -1.0, 1.0)
+		fwd_speed = speed if align > 0.0 else 0.0
+	var want := smoothstep(0.15, 0.9, speed)
+	if _move_w < 0.01 and want > 0.0:
+		# from a standstill the gait begins on a step: one foot under the body,
+		# the other passing it (the loops have those poses at phase 0 and 0.5)
+		_phase = roundf(_phase * 2.0) * 0.5
+		_step_init = false
+		_settle_to = -1.0
+		_bs = clampf(speed, LOCO_POINTS["walk"], LOCO_POINTS["sprint"])
+	# the sim reaches full speed in ~0.1 s: blend the legs in fast, out a
+	# little slower, never in one frame
+	_move_w += (want - _move_w) * (1.0 - exp(-delta / (0.045 if want > _move_w else 0.085)))
+	if want == 0.0 and _move_w < 1e-3:
+		_move_w = 0.0
+	# blend-space speed follows the ground speed through a very short filter:
+	# 0.08 s measured as more foot slide in turns (0.95 vs 0.42 m/s), none
+	# let prediction corrections shake the pose.  The cadence uses the
+	# stride of the pose shown, so planted feet move at ground speed.
+	_bs += (clampf(speed, LOCO_POINTS["walk"], LOCO_POINTS["sprint"]) - _bs) * (1.0 - exp(-delta / BS_TAU))
+	var rate := fwd_speed / _m_per_cycle(_bs) if speed > 0.05 else 0.0
+	if want < 0.02 and _move_w > 0.02:
+		# stopping: finish the step in progress and hold on the next half
+		# cycle (one foot planted under the body, the other beside it)
+		if _settle_to < 0.0:
+			_settle_to = ceilf(_phase * 2.0) * 0.5
+		_phase = minf(_phase + delta * maxf(rate, 2.4), _settle_to)
+	else:
+		_settle_to = -1.0
+		_phase += delta * rate
+	tree.set("parameters/loco/blend_position", _bs)
+	tree.set("parameters/move/blend_amount", _move_w)
 	tree.set("parameters/loco_seek/seek_request", fposmod(_phase, 1.0))
 	# footsteps at the gait's own foot strikes (left at 1 - duty/2, right at
 	# 0.5 - duty/2 of the cycle): the sound is where the foot meets the ground
-	var duty := _duty(bs)
+	var duty := _duty(_bs)
 	var k := int(floor((_phase + duty * 0.5) * 2.0))
 	if not _step_init:
 		_step_k = k   # start counting from the current phase (no phantom step)
@@ -897,13 +1203,18 @@ func _update_ground(delta: float, speed: float, on_floor: bool, sprinting: bool,
 			_yaw_accum = 0.0
 	else:
 		_yaw_accum = 0.0
-	# idle fidgets
-	if fidgets and speed < 0.1 and float(rs.get("emote_t", 0.0)) <= 0.0 and _arrive_t <= 0.0 and _ready_t <= 0.0:
+	# idle fidgets (menus: restrained ones, more often)
+	var fid_on := bool(tree.get("parameters/fidget/active"))
+	if not fid_on:
+		_fidget_on = false
+	if fidgets and speed < 0.1 and _move_w < 0.05 and float(rs.get("emote_t", 0.0)) <= 0.0 and _arrive_t <= 0.0 and _ready_t <= 0.0:
 		_still_t += delta
-		if _still_t > _next_fidget:
+		if _still_t > _next_fidget and not fid_on:
 			_still_t = 0.0
-			_next_fidget = _rng.randf_range(8.0, 16.0)
-			tree.set("parameters/fidget_pick/transition_request", FIDGETS[_rng.randi() % FIDGETS.size()])
+			var pool: Dictionary = MENU_FIDGETS if menu_idle else GAME_FIDGETS
+			_next_fidget = _rng.randf_range(7.0, 12.0) if menu_idle else _rng.randf_range(8.0, 16.0)
+			_fidget = _pick(pool)
+			tree.set("parameters/fidget_pick/transition_request", _fidget)
 			tree.set("parameters/fidget/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 			_fidget_on = true
 	else:
@@ -913,13 +1224,27 @@ func _update_ground(delta: float, speed: float, on_floor: bool, sprinting: bool,
 			_fidget_on = false
 
 
+func _pick(pool: Dictionary) -> String:
+	var tot := 0.0
+	for k in pool:
+		tot += float(pool[k])
+	var r := _rng.randf() * tot
+	for k in pool:
+		r -= float(pool[k])
+		if r <= 0.0:
+			return k
+	return pool.keys()[0]
+
+
 func _land(fall_speed: float, speed: float) -> void:
 	_since_land = 0.0
 	var hard := clampf(inverse_lerp(4.0, 11.0, fall_speed), 0.0, 1.0)
 	var which := "u" if speed > 1.5 else "f"
+	# the impact starts from the pose on screen (arms still up from the fall)
+	_fade_from_shown(0.09)
 	tree.set("parameters/land_mix_%s/blend_amount" % which, hard)
 	tree.set("parameters/land_%s/request" % which, AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
-	_squash = clampf(fall_speed * 0.018, 0.05, 0.18) * (0.7 if speed > 1.5 else 1.0)
+	_squash_v += clampf(fall_speed * 0.32, 1.0, 3.6) * (0.6 if speed > 1.5 else 1.0)
 	if _near_camera(25.0):
 		Sfx.play("land", global_position, -8.0 + 5.0 * hard)
 
@@ -1052,23 +1377,34 @@ func _update_face(delta: float, m: String, sprinting: bool, tag_phase: int, spot
 			if sprinting or tag_phase > 0:
 				tgt["brow_angry"] = 0.8
 				tgt["smile"] = 0.0
-	if _fidget_on:
+	if _fidget_on and _fidget == "fidget_yawn":
 		tgt["open"] = 0.8
 		tgt["squint"] = 0.7
+	elif _fidget_on and _fidget == "fidget_bounce":
+		tgt["smile"] = 0.6
 	if _drip_t > 0.0:
 		tgt["squint"] = maxf(float(tgt["squint"]), 0.7)
 	if spotted:
 		tgt["brow_up"] = 1.0
 		tgt["open"] = maxf(float(tgt["open"]), 0.6)
 		tgt["smile"] = 0.0
-	# blinking (never while squinting)
+	# blinking (never while squinting): a quick close and a softer open; in
+	# menus slower, softer and now and then a double blink
 	_blink_t -= delta
 	if _blink_t <= 0.0:
-		_blink_t = _rng.randf_range(2.2, 4.6)
-		_blink = 0.13
+		if menu_idle and _rng.randf() < 0.2:
+			_blink_t = 0.3
+		else:
+			_blink_t = _rng.randf_range(2.6, 5.2) if menu_idle else _rng.randf_range(2.2, 4.6)
+		_blink_len = 0.2 if menu_idle else 0.15
+		_blink = _blink_len
 	_blink = maxf(0.0, _blink - delta)
-	if _blink > 0.0 and float(tgt["squint"]) < 0.5:
-		tgt["blink"] = 1.0
+	var bw := 0.0
+	if _blink > 0.0:
+		var u := 1.0 - _blink / _blink_len      # 0 -> 1 over the blink
+		bw = smoothstep(0.0, 0.3, u) * (1.0 - smoothstep(0.45, 1.0, u))
+	if float(tgt["squint"]) < 0.5:
+		tgt["blink"] = bw
 	var k := 1.0 - exp(-delta * 18.0)
 	for key in _face:
 		var target: float = float(tgt.get(key, 0.0))
@@ -1078,6 +1414,11 @@ func _update_face(delta: float, m: String, sprinting: bool, tag_phase: int, spot
 		base_mesh.set_blend_shape_value(_face_idx[key], w)
 
 
-func _near_camera(r: float) -> bool:
+func _camera_distance() -> float:
 	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
-	return cam != null and cam.global_position.distance_to(global_position) < r
+	return cam.global_position.distance_to(global_position) if cam != null else INF
+
+
+## Uses this frame's camera distance (measured once at the top of _process).
+func _near_camera(r: float) -> bool:
+	return _cam_d < r

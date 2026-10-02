@@ -4,9 +4,17 @@ extends Node3D
 ## modes: views (front/3-4/side/back, runner + Night Watch), outfits, skins,
 ##        poses (one pose per clip), transitions (timed strip of state changes),
 ##        closeup (face), all (every mode in turn).
+## V5: hathair (every hat that keeps hair visible x every hair style, close,
+##        the wardrobe's clipping risk), menuidle (a menu-idle character under
+##        indoor light, one frame every 1.2 s for 24 s), steps (start, stop and
+##        a reversal from the side, one frame every 0.1 s).
 ## Each mode saves a lossless PNG and quits when done.
 
-const MODES := ["views", "outfits", "looks", "hairs", "posesheet", "transitions", "closeup", "faces", "cart", "hero", "group", "distance", "parts"]
+const MODES := ["views", "outfits", "looks", "hairs", "posesheet", "transitions", "closeup", "faces", "cart", "hero", "group", "distance", "parts",
+	"hathair", "menuidle", "steps"]
+## hats that leave hair visible (nightcap and swim cap hide it) x hair styles
+const HATHAIR_HATS := ["party", "headphones", "crown"]
+const HATHAIR_HAIRS := ["tuft", "bob", "curly", "buns"]
 ## Close-ups of the parts whose silhouettes were refined in V4 (same cameras
 ## before and after): [label, role, look overrides, yaw, camera from, camera at, fov]
 const PARTS := [
@@ -293,6 +301,24 @@ func _next_mode() -> void:
 					c = d
 				_add(TC.Role.RUNNER if i < 6 else TC.Role.PATROL, c, -3.15 + i * 0.9, -0.35 * absf(i - 3.5), PI + (3.5 - i) * 0.06)
 			_aim(Vector3(0, 1.6, 8.6), Vector3(0, 0.9, -0.5), 34)
+		"hathair":
+			_strip_frames.clear()
+			_sheet_i = -1
+			_sheet_wait = 0
+		"menuidle":
+			var mv := _add(TC.Role.RUNNER, d, 0.0, 0.0, PI + 0.42, "")
+			mv.lighting = "indoor"
+			mv.set_appearance(mv.role, mv.cosmetic)   # indoor rim light, as in the dorm
+			if mv.has_method("set_menu_idle"):
+				mv.call("set_menu_idle", true)
+			_aim(Vector3(0.0, 1.1, 3.6), Vector3(0, 0.8, 0), 30)
+			_strip_frames.clear()
+			_strip_next = 0.6
+		"steps":
+			_add(TC.Role.RUNNER, d, 0.0, 0.0, PI * 0.5, "")
+			_aim(Vector3(0, 1.0, 7.5), Vector3(0, 0.8, 0), 34)
+			_strip_frames.clear()
+			_strip_next = 0.45
 		"distance":
 			# typical follow-camera distance (about 6 m) and a far runner (20 m)
 			_add(TC.Role.RUNNER, d, 0.0, 0.0, PI + 2.6)
@@ -358,6 +384,53 @@ func _process(delta: float) -> void:
 				look({"color": cs[_sheet_i % cs.size()], "skin": Cosmetics.keys_of("skin")[_sheet_i % 8]}))
 			_pose(pv, clip, SHEET_T.get(clip, 0.3))
 			_sheet_wait = 2
+		"hathair":
+			if _t < 0.5:
+				return
+			if _sheet_wait > 0:
+				_sheet_wait -= 1
+				return
+			if _grabbing:
+				return
+			if _sheet_i >= 0:
+				_grabbing = true
+				await RenderingServer.frame_post_draw
+				_strip_frames.append(get_viewport().get_texture().get_image())
+				_grabbing = false
+			_sheet_i += 1
+			var n := HATHAIR_HATS.size() * HATHAIR_HAIRS.size() * 2
+			if _sheet_i >= n:
+				var labels: Array = []
+				for i in n:
+					labels.append("%s + %s (%s)" % [HATHAIR_HATS[(i / 2) / HATHAIR_HAIRS.size()], HATHAIR_HAIRS[(i / 2) % HATHAIR_HAIRS.size()], "front" if i % 2 == 0 else "back"])
+				_save_grid("hathair", 6, labels)
+				_next_mode()
+				return
+			var k := _sheet_i / 2
+			_clear()
+			var hv := _add(TC.Role.RUNNER, look({"hat": HATHAIR_HATS[k / HATHAIR_HAIRS.size()], "hair": HATHAIR_HAIRS[k % HATHAIR_HAIRS.size()],
+				"hair_color": ["brown", "black", "auburn", "blonde"][k % 4], "skin": "tone3", "outfit": "pj"}), 0.0, 0.0,
+				PI + (0.5 if _sheet_i % 2 == 0 else PI - 0.7))
+			_pose(hv, "idle", 0.0)
+			_aim(Vector3(0.0, 1.5, 2.1), Vector3(0, 1.34, 0), 32)
+			_sheet_wait = 6
+		"menuidle":
+			if _t >= _strip_next and _t < 24.6:
+				_strip_next += 1.2
+				await RenderingServer.frame_post_draw
+				_strip_frames.append(get_viewport().get_texture().get_image())
+			if _t >= 24.8:
+				_save_strip("menuidle", 5, [])
+				_next_mode()
+		"steps":
+			_drive_steps()
+			if _t >= _strip_next and _t < 3.4:
+				_strip_next += 0.1
+				await RenderingServer.frame_post_draw
+				_strip_frames.append(get_viewport().get_texture().get_image())
+			if _t >= 3.5:
+				_save_strip("steps", 10, [])
+				_next_mode()
 		"transitions":
 			_drive_transitions(delta)
 			if _t >= _strip_next and _t < 6.0:
@@ -407,6 +480,34 @@ func _drive_transitions(_delta: float) -> void:
 	v.apply_state({"pos": Vector3(0, maxf(0.0, (6.4 * (t - 3.0) - 9.5 * (t - 3.0) * (t - 3.0))) if not floor_ok else 0.0, 0),
 		"yaw": PI * 0.5, "vel": Vector3(-speed, vy, 0), "state": TC.PState.ACTIVE, "on_floor": floor_ok,
 		"sprinting": speed > 6.5, "emote": emote, "emote_t": 1.0 if emote >= 0 else 0.0})
+
+
+## Start (0.5 s), run, stop (1.4 s), start again, reverse (2.6 s): the sim's
+## own accelerations (46 / 52 m/s^2) and turn rate, on the spot.
+var _steps_v := Vector3.ZERO
+var _steps_yaw := PI * 0.5
+var _steps_t := 0.0
+
+
+func _drive_steps() -> void:
+	if _views.is_empty():
+		return
+	var v := _views[0]
+	var dt := _t - _steps_t
+	_steps_t = _t
+	var dir := Vector3(-1, 0, 0)
+	var want := Vector3.ZERO
+	if _t >= 0.5 and _t < 1.4:
+		want = dir * 5.0
+	elif _t >= 1.9 and _t < 2.6:
+		want = dir * 5.0
+	elif _t >= 2.6:
+		want = -dir * 5.0
+	var acc := Rules.cfg.ground_accel if want.length() >= _steps_v.length() * 0.9 else Rules.cfg.ground_decel
+	_steps_v = _steps_v.move_toward(want, acc * dt)
+	if _steps_v.length() > 0.6:
+		_steps_yaw = rotate_toward(_steps_yaw, atan2(-_steps_v.x, -_steps_v.z), deg_to_rad(Rules.cfg.turn_rate_deg) * dt)
+	v.apply_state({"pos": Vector3.ZERO, "yaw": _steps_yaw, "vel": _steps_v, "state": TC.PState.ACTIVE, "on_floor": true})
 
 
 func _save(n: String) -> void:

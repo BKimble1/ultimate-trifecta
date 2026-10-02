@@ -101,8 +101,16 @@
       "length": 1.2,
       "loop": true
     },
+    "fidget_bounce": {
+      "length": 1.8,
+      "loop": false
+    },
     "fidget_look": {
       "length": 2.0,
+      "loop": false
+    },
+    "fidget_shift": {
+      "length": 2.6,
       "loop": false
     },
     "fidget_yawn": {
@@ -237,6 +245,10 @@
     "hair_curly": {
       "tris": 5848,
       "verts": 3033
+    },
+    "hair_curly_hat": {
+      "tris": 4048,
+      "verts": 2097
     },
     "hat_crown": {
       "tris": 820,

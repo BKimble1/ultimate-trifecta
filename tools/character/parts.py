@@ -321,10 +321,13 @@ def build_hair_bob():
     return mb
 
 
-def build_hair_curly():
+def build_hair_curly(name='hair_curly', top=1.43):
     """Short curly crop: a shell plus soft curls on the sides, back and fringe.
-    The crown stays smooth so caps, crowns and headphones sit on it."""
-    mb = MeshBuilder('hair_curly')
+    The crown stays smooth so caps, crowns and headphones sit on it.
+    V5: `hair_curly_hat` (top=1.34) is the same crop with a smooth band where
+    a paper crown or a headphone band rests; CharacterView shows it under
+    those hats (curls poked through the crown band in wardrobe close-ups)."""
+    mb = MeshBuilder(name)
     hw = rigid('head')
     g = 0.016
     line = hairline_short(1.06)
@@ -337,7 +340,7 @@ def build_hair_curly():
         ang = ga * i
         d = Vector((rr * math.cos(ang), rr * math.sin(ang), zz))
         z = HEAD_C.z + d.z * (HEAD_R[2] + g)
-        if z > 1.43:          # smooth crown (hats sit here)
+        if z > top:           # smooth crown (hats sit here)
             continue
         a = math.atan2(-d.x, -d.y)
         if z < line(a) + 0.02 or z < 1.0:
@@ -349,6 +352,10 @@ def build_hair_curly():
         r = 0.03 + 0.008 * ((i * 7) % 5) / 4.0
         ellipsoid(mb, q + nrm * 0.004, (r, r, r * 0.8), HAIR, hw, segs=10, rings=6, rot=rot_align(nrm, UP))
     return mb
+
+
+def build_hair_curly_hat():
+    return build_hair_curly('hair_curly_hat', 1.34)
 
 
 def build_hair_buns():
@@ -1031,7 +1038,8 @@ def build_flippers():
 
 
 ALL_PARTS = [
-    build_base, build_hair, build_hair_bob, build_hair_curly, build_hair_buns, build_hair_buns_knots, build_freckles,
+    build_base, build_hair, build_hair_bob, build_hair_curly, build_hair_curly_hat, build_hair_buns, build_hair_buns_knots,
+    build_freckles,
     build_body_skin, build_pj, build_swim, build_robe, build_duck, build_frog,
     build_watch, build_flashlight, build_mustache,
     build_nightcap, build_swimcap, build_party, build_headphones, build_crown,
