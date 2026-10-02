@@ -123,3 +123,27 @@ func test_saved_names_are_revalidated() -> void:
 	t.check(fixed != bad and bool(NameRules.moderate(fixed)["ok"]), "a saved name that fails the policy is replaced (%s)" % fixed)
 	t.eq(Save.fit_name("Comfy Frog 11"), "Comfy Frog 11", "a good saved name is kept")
 	t.eq(Save.fit_name("Sleepy Hedgehog 42"), "Sleepy Hedgehog", "too long: the number goes first (V5 rule kept)")
+
+
+func test_name_sheet_explains_and_suggests() -> void:
+	var host := Control.new()
+	host.set_anchors_preset(Control.PRESET_FULL_RECT)
+	t.add_child(host)
+	var sheet := NameSheet.new()
+	sheet.local_only = true
+	host.add_child(sheet)
+	await t.get_tree().process_frame
+	sheet.field.text = "Tr1fecta Admin"
+	sheet._on_text(sheet.field.text)
+	await t.get_tree().process_frame
+	t.check(sheet.save_btn.disabled, "a refused name can't be saved")
+	t.check(sheet.msg.text.contains("staff"), "the reason is friendly and specific (%s)" % sheet.msg.text)
+	var sugg := sheet.sugg_row.get_children().filter(func(c: Node) -> bool: return not c.is_queued_for_deletion())
+	t.eq(sugg.size(), 3, "three safe suggestions")
+	(sugg[0] as Button).pressed.emit()
+	await t.get_tree().process_frame
+	t.check(not sheet.save_btn.disabled and NameRules.is_curated(sheet.field.text), "a suggestion is one tap from a valid name (%s)" % sheet.field.text)
+	sheet.field.text = "Bob Builder"
+	sheet._on_text(sheet.field.text)
+	t.check(not sheet.save_btn.disabled, "an ordinary name that only looks like a listed word is fine")
+	host.queue_free()

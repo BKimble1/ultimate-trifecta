@@ -1,10 +1,12 @@
 class_name NameSheet
 extends PanelContainer
-## Choose / change your player name.  Character rules are checked as you type
-## (NameRules); the service decides whether the name is allowed and gives a
-## discriminator for duplicates (#1234).  Rejections come with three friendly
-## suggestions you can tap.  Without the service (or offline) the name is
-## saved on this device only, and the sheet says so.
+## Choose / change your player name.  (V6) The whole name policy is checked
+## as you type (NameRules: abuse, impersonation, contact details, reserved
+## names, with evasions handled); a refusal says why and offers three safe
+## suggestions to tap.  The service still decides whether the name is
+## allowed online and gives a discriminator for duplicates (#1234).
+## Without the service the name is saved on this device only, and parties
+## show a curated name instead (Save.party_name); the sheet says which.
 
 signal done(name: String)
 
@@ -77,20 +79,41 @@ static func _current() -> String:
 
 func _on_text(t: String) -> void:
 	var n := NameRules.normalize(t)
-	var err := NameRules.shape_error(n)
+	var m := NameRules.moderate(n)
+	var err := "" if bool(m["ok"]) else String(m["message"])
 	var ok_text := "Checked when you save."
 	if local_only and Cloud.configured():
 		ok_text = "Saved on this device. The game service checks it when you first play online."
 	elif not Cloud.configured():
-		ok_text = "Saved on this device. Online names are checked by the game service when it's set up."
+		ok_text = "Saved on this device." + ("" if NameRules.is_curated(n) else
+			" Parties show %s: without the online name check, parties use the game's own names." % NameRules.generated(String(Save.data.get("uid", ""))))
 	msg.text = err if err != "" else ok_text
 	msg.add_theme_color_override("font_color", UIKit.AMBER if err != "" else UIKit.IVORY_MUTED)
 	save_btn.disabled = err != "" or _busy
+	# a refusal for the words in it (not just a typo) comes with safe ideas
+	var words := not bool(m["ok"]) and not String(m["reason"]) in ["length", "characters", "spacing", "letters"]
+	if words and sugg_row.get_child_count() == 0:
+		_suggest(NameRules.suggestions(n, 3))
+	elif not words and not _busy and bool(m["ok"]):
+		for c in sugg_row.get_children():
+			c.queue_free()
+
+
+func _suggest(names: Array) -> void:
+	for c in sugg_row.get_children():
+		c.queue_free()
+	for sg in names:
+		var b := UIKit.secondary(String(sg), Vector2(0, 64), 21)
+		var ss := String(sg)
+		b.pressed.connect(func() -> void:
+			field.text = ss
+			_on_text(ss))
+		sugg_row.add_child(b)
 
 
 func _save() -> void:
 	var n := NameRules.normalize(field.text)
-	if NameRules.shape_error(n) != "" or _busy:
+	if not bool(NameRules.moderate(n)["ok"]) or _busy:
 		return
 	if not Cloud.configured() or local_only:
 		Save.data["name"] = n
@@ -114,13 +137,7 @@ func _save() -> void:
 	msg.text = Cloud.explain(r)
 	msg.add_theme_color_override("font_color", UIKit.AMBER)
 	save_btn.disabled = false
-	for s in r.get("suggestions", []):
-		var b := UIKit.secondary(String(s), Vector2(0, 64), 21)
-		var ss := String(s)
-		b.pressed.connect(func() -> void:
-			field.text = ss
-			_on_text(ss))
-		sugg_row.add_child(b)
+	_suggest(r.get("suggestions", []))
 
 
 ## Show the sheet centred over a screen; returns the chosen name ("" = cancelled).
