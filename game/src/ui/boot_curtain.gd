@@ -3,7 +3,7 @@ extends CanvasLayer
 ## App startup (V5): Idlery Games.
 ##
 ## iOS shows the static launch screen (assets/icon/launch.png: the Idlery
-## Games lockup centred on deep navy), Godot shows the same image as its
+## Games lockup centred on pure black; V5 used navy), Godot shows the same image as its
 ## boot splash, and this curtain draws the same lockup at the same place
 ## over the first runtime frames, so launch -> boot -> first frame is one
 ## still picture with no white flash and no second splash.
@@ -16,7 +16,7 @@ extends CanvasLayer
 ## menu; a device that is steadily slow counts as steady).  A short minimum
 ## keeps the mark from flickering on a warm start; a cap makes sure a slow
 ## device never sits on a frozen logo.  Then the
-## lockup fades with a slight settle and the navy dissolves into the room
+## lockup fades with a slight settle and the black dissolves into the room
 ## (Reduced Motion: a plain short fade).  Taps are held until it has gone.
 
 const MIN_HOLD_S := 0.45

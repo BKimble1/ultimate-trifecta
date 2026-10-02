@@ -22,6 +22,8 @@ var dev_expect := 8
 var _dev_rounds_done := 0
 var _dev_report_rows: Array = []
 var _dev_t := 0.0
+var _dev_pf := -1
+var _dev_win: Dictionary = {}
 var _dev_shot_i := 0
 var _dev_next_shot := 2.0
 ## automation / capture runs skip first-launch onboarding
@@ -200,6 +202,20 @@ func _process(delta: float) -> void:
 		_dev_shot_i += 1
 	if dev_quit_after > 0.0 and _dev_t >= dev_quit_after:
 		get_tree().quit()
+	if dev_report != "":
+		# per-window frame cost (V6 soak): script time in _process and
+		# _physics_process, physics steps per frame, growth counters
+		var pf := Engine.get_physics_frames()
+		var steps := pf - _dev_pf if _dev_pf >= 0 else 1
+		_dev_pf = pf
+		_dev_win["frames"] = int(_dev_win.get("frames", 0)) + 1
+		_dev_win["proc_max"] = maxf(float(_dev_win.get("proc_max", 0.0)), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
+		_dev_win["phys_max"] = maxf(float(_dev_win.get("phys_max", 0.0)), Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0)
+		_dev_win["proc_sum"] = float(_dev_win.get("proc_sum", 0.0)) + Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+		_dev_win["phys_sum"] = float(_dev_win.get("phys_sum", 0.0)) + Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+		_dev_win["steps_max"] = maxi(int(_dev_win.get("steps_max", 0)), steps)
+		if steps >= 2:
+			_dev_win["multi"] = int(_dev_win.get("multi", 0)) + 1
 	if dev_report != "" and int(_dev_t) % 5 == 0 and int(_dev_t - delta) % 5 != 0:
 		var st := "no session"
 		if session:
@@ -209,6 +225,13 @@ func _process(delta: float) -> void:
 					readies.append("%s%s" % [e["slot"], "R" if bool(e["ready"]) else "-"])
 			st = "mode=%d phase=%d slot=%d host_peer=%d humans=%d roster=%s connected=%s peers=%s" % [session.mode, session.phase, session.local_slot, session.host_peer, session.human_count(), str(readies), session.connected, str(session.transport.peers() if session.transport else [])]
 		printerr("SOAK t=%.0f %s match=%s fps=%.0f" % [_dev_t, st, match_ctrl != null, Engine.get_frames_per_second()])
+		var n := maxi(1, int(_dev_win.get("frames", 1)))
+		printerr("COST t=%.0f frames=%d proc_avg=%.2f proc_max=%.2f phys_avg=%.2f phys_max=%.2f steps_max=%d multi=%d objects=%d nodes=%d orphans=%d mem_mb=%.1f" % [
+			_dev_t, n, float(_dev_win.get("proc_sum", 0.0)) / n, float(_dev_win.get("proc_max", 0.0)),
+			float(_dev_win.get("phys_sum", 0.0)) / n, float(_dev_win.get("phys_max", 0.0)), int(_dev_win.get("steps_max", 0)), int(_dev_win.get("multi", 0)),
+			Performance.get_monitor(Performance.OBJECT_COUNT), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
+			Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT), Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0])
+		_dev_win = {}
 
 
 func _boot() -> void:
