@@ -3,16 +3,14 @@ extends Control
 ## and prints the ink coverage per row, so a weight that silently falls back
 ## to the default instance shows up as identical numbers.
 ##   tools/gd.sh --path game res://src/dev/font_weights.tscn -- --out=FILE.png
-const WEIGHTS := [400, 500, 600, 650, 700]
-## the V2 approach: one variable font + FontVariation weights (for comparison)
-const VAR_WEIGHTS := [300, 500, 700]
+const WEIGHTS := [400, 500, 600, 650, 700, 800]
+## V5: the UI ships only Manrope's static instances (the variable master is
+## kept in art_src/fonts); the tabular-digit variants are checked too.
+const VAR_WEIGHTS := [600, 800]
 
 
 static func _variable(w: int) -> Font:
-	var f := FontVariation.new()
-	f.base_font = load("res://assets/fonts/Fredoka-Variable.ttf")
-	f.variation_opentype = {"wght": w}
-	return f
+	return UIKit.font_num(w)
 
 var out := ""
 var _f := 0
