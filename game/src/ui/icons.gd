@@ -61,6 +61,88 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 		"crown":
 			pts = PackedVector2Array([c + Vector2(-r, r * 0.6), c + Vector2(-r, -r * 0.45), c + Vector2(-r * 0.45, 0), c + Vector2(0, -r * 0.7),
 				c + Vector2(r * 0.45, 0), c + Vector2(r, -r * 0.45), c + Vector2(r, r * 0.6)])
+		# --- emotes (lobby picker, results)
+		"e_wave":
+			# open hand with motion arcs
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.32, -r * 0.05), Vector2(r * 0.64, r * 0.75)), col)
+			for i in 4:
+				var fx := -r * 0.3 + r * 0.2 * float(i)
+				ci.draw_line(c + Vector2(fx + r * 0.06, 0), c + Vector2(fx + r * 0.06, -r * 0.62 + absf(float(i) - 1.5) * r * 0.1), col, r * 0.16, true)
+			ci.draw_line(c + Vector2(-r * 0.3, r * 0.25), c + Vector2(-r * 0.62, -r * 0.05), col, r * 0.16, true)
+			ci.draw_arc(c, r * 0.95, -2.5, -1.9, 6, col, r * 0.1, true)
+			ci.draw_arc(c, r * 0.95, -1.2, -0.6, 6, col, r * 0.1, true)
+			return
+		"e_cheer":
+			ci.draw_circle(c + Vector2(0, -r * 0.1), r * 0.3, col)
+			ci.draw_line(c + Vector2(-r * 0.2, r * 0.15), c + Vector2(-r * 0.7, -r * 0.65), col, r * 0.18, true)
+			ci.draw_line(c + Vector2(r * 0.2, r * 0.15), c + Vector2(r * 0.7, -r * 0.65), col, r * 0.18, true)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.35, r * 0.2), c + Vector2(r * 0.35, r * 0.2), c + Vector2(r * 0.28, r * 0.9), c + Vector2(-r * 0.28, r * 0.9)]), col)
+			return
+		"e_laugh":
+			ci.draw_arc(c, r * 0.9, 0, TAU, 24, col, r * 0.16, true)
+			ci.draw_arc(c + Vector2(-r * 0.32, -r * 0.18), r * 0.16, PI + 0.3, TAU - 0.3, 8, col, r * 0.12, true)
+			ci.draw_arc(c + Vector2(r * 0.32, -r * 0.18), r * 0.16, PI + 0.3, TAU - 0.3, 8, col, r * 0.12, true)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.45, r * 0.12), c + Vector2(r * 0.45, r * 0.12), c + Vector2(0, r * 0.6)]), col)
+			return
+		"e_shrug":
+			ci.draw_circle(c + Vector2(0, -r * 0.25), r * 0.3, col)
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.95, -r * 0.35), c + Vector2(-r * 0.7, r * 0.15), c + Vector2(-r * 0.25, r * 0.25)]), col, r * 0.16, true)
+			ci.draw_polyline(PackedVector2Array([c + Vector2(r * 0.95, -r * 0.35), c + Vector2(r * 0.7, r * 0.15), c + Vector2(r * 0.25, r * 0.25)]), col, r * 0.16, true)
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.3, r * 0.15), Vector2(r * 0.6, r * 0.75)), col)
+			return
+		"e_dance":
+			# two beamed notes
+			ci.draw_circle(c + Vector2(-r * 0.45, r * 0.55), r * 0.24, col)
+			ci.draw_circle(c + Vector2(r * 0.45, r * 0.4), r * 0.24, col)
+			ci.draw_line(c + Vector2(-r * 0.25, r * 0.55), c + Vector2(-r * 0.25, -r * 0.6), col, r * 0.13)
+			ci.draw_line(c + Vector2(r * 0.65, r * 0.4), c + Vector2(r * 0.65, -r * 0.75), col, r * 0.13)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.25, -r * 0.6), c + Vector2(r * 0.65, -r * 0.75), c + Vector2(r * 0.65, -r * 0.48), c + Vector2(-r * 0.25, -r * 0.33)]), col)
+			return
+		"e_point":
+			ci.draw_line(c + Vector2(-r * 0.8, r * 0.2), c + Vector2(r * 0.55, r * 0.2), col, r * 0.22, true)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(r * 0.95, r * 0.2), c + Vector2(r * 0.35, -r * 0.3), c + Vector2(r * 0.35, r * 0.7)]), col)
+			ci.draw_circle(c + Vector2(-r * 0.75, r * 0.2), r * 0.24, col)
+			return
+		# --- move previews
+		"m_run":
+			ci.draw_circle(c + Vector2(r * 0.2, -r * 0.6), r * 0.22, col)
+			ci.draw_polyline(PackedVector2Array([c + Vector2(r * 0.1, -r * 0.3), c + Vector2(-r * 0.1, r * 0.2), c + Vector2(-r * 0.6, r * 0.45)]), col, r * 0.18, true)
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.1, r * 0.2), c + Vector2(r * 0.3, r * 0.45), c + Vector2(r * 0.25, r * 0.9)]), col, r * 0.18, true)
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.55, -r * 0.2), c + Vector2(r * 0.05, -r * 0.2), c + Vector2(r * 0.6, r * 0.05)]), col, r * 0.16, true)
+			return
+		"m_jump":
+			ci.draw_circle(c + Vector2(0, -r * 0.55), r * 0.24, col)
+			ci.draw_line(c + Vector2(0, -r * 0.3), c + Vector2(0, r * 0.25), col, r * 0.18, true)
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.55, -r * 0.55), c + Vector2(0, -r * 0.15), c + Vector2(r * 0.55, -r * 0.55)]), col, r * 0.15, true)
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.4, r * 0.55), c + Vector2(0, r * 0.25), c + Vector2(r * 0.4, r * 0.55)]), col, r * 0.15, true)
+			ci.draw_line(c + Vector2(-r * 0.7, r * 0.9), c + Vector2(r * 0.7, r * 0.9), col, r * 0.12, true)
+			return
+		"m_dive":
+			ci.draw_circle(c + Vector2(r * 0.65, -r * 0.1), r * 0.22, col)
+			ci.draw_line(c + Vector2(r * 0.45, 0.0), c + Vector2(-r * 0.6, r * 0.3), col, r * 0.22, true)
+			ci.draw_line(c + Vector2(r * 0.4, -r * 0.05), c + Vector2(r * 0.95, -r * 0.45), col, r * 0.13, true)
+			ci.draw_line(c + Vector2(-r * 0.6, r * 0.3), c + Vector2(-r * 0.95, r * 0.15), col, r * 0.13, true)
+			ci.draw_arc(c + Vector2(0, r * 0.9), r * 0.7, PI + 0.5, TAU - 0.5, 10, col, r * 0.1, true)
+			return
+		"m_idle":
+			ci.draw_circle(c + Vector2(0, -r * 0.55), r * 0.26, col)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.38, -r * 0.2), c + Vector2(r * 0.38, -r * 0.2), c + Vector2(r * 0.3, r * 0.5), c + Vector2(-r * 0.3, r * 0.5)]), col)
+			ci.draw_line(c + Vector2(-r * 0.15, r * 0.5), c + Vector2(-r * 0.18, r * 0.92), col, r * 0.16, true)
+			ci.draw_line(c + Vector2(r * 0.15, r * 0.5), c + Vector2(r * 0.18, r * 0.92), col, r * 0.16, true)
+			return
+		"sliders":
+			for i in 3:
+				var y := -r * 0.6 + r * 0.6 * float(i)
+				ci.draw_line(c + Vector2(-r * 0.85, y), c + Vector2(r * 0.85, y), col, r * 0.12, true)
+				ci.draw_circle(c + Vector2([-0.35, 0.4, -0.05][i] * r, y), r * 0.2, col)
+			return
+		"trophy":
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.55, -r * 0.75), c + Vector2(r * 0.55, -r * 0.75), c + Vector2(r * 0.4, 0.0), c + Vector2(0, r * 0.2), c + Vector2(-r * 0.4, 0.0)]), col)
+			ci.draw_arc(c + Vector2(-r * 0.55, -r * 0.42), r * 0.28, PI * 0.5, PI * 1.5, 8, col, r * 0.12, true)
+			ci.draw_arc(c + Vector2(r * 0.55, -r * 0.42), r * 0.28, -PI * 0.5, PI * 0.5, 8, col, r * 0.12, true)
+			ci.draw_line(c + Vector2(0, r * 0.2), c + Vector2(0, r * 0.6), col, r * 0.16)
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.45, r * 0.6), Vector2(r * 0.9, r * 0.25)), col)
+			return
 		"pause":
 			ci.draw_rect(Rect2(c + Vector2(-r * 0.55, -r * 0.7), Vector2(r * 0.38, r * 1.4)), col)
 			ci.draw_rect(Rect2(c + Vector2(r * 0.17, -r * 0.7), Vector2(r * 0.38, r * 1.4)), col)
@@ -160,6 +242,10 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 	else:
 		pts.append(pts[0])
 		ci.draw_polyline(pts, col, maxf(2.0, r * 0.14))
+
+
+static func emote_icon(id: int) -> String:
+	return "e_" + String(TC.EMOTES[id]) if id >= 0 and id < TC.EMOTES.size() else "smile"
 
 
 static func gadget_icon(g: int) -> String:

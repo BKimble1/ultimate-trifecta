@@ -1,12 +1,16 @@
 class_name LobbyScreen
 extends Screen
-## Party lobby in the dorm common room.
-##   top bar   Back · room code (copy) · Invite
-##   stage     the 3D room (App.stage, root viewport): local player at the
-##             front facing the camera, others on stable staggered marks
-##   panel     compact two-column party list (8 fixed cells, updated in place)
-##   actions   one primary (host: Start, guest: Ready / Not ready); Outfit,
-##             Emote and Role live in small popovers
+## Party lobby in the dorm common room (V4).
+##   top bar   Back · room code · Copy · Share · Invite
+##   summary   the party settings in one line ("3 rounds · 2 Night Watch ·
+##             6 runners · 4 home to win"); the host taps it to change them,
+##             guests see a read-only copy.  During a series it shows the
+##             round coming up and the Round Wins so far.
+##   stage     the 3D room (App.stage).  Tap your own runner to play your
+##             move.  Emotes and "Try moves" play on the stage.
+##   panel     compact party list: everyone present plus one open seat
+##   actions   one primary (host: Start / Start round N, guest: Ready);
+##             Outfit, Emote and Try moves
 ## Updates are incremental: lobby_changed rewrites cell contents and syncs the
 ## stage by player identity; nothing is rebuilt wholesale.
 
@@ -16,14 +20,23 @@ var invite_btn: Button
 var status_lbl: Label
 var primary_btn: Button
 var sub_lbl: Label
+var settings_btn: Button
+var settings_lbl: Label
+var series_lbl: Label
+var standings_btn: Button
 var cells: Array[SlotCell] = []
 var count_lbl: Label
+var _grid: GridContainer
 var _is_ready := false
 var _popover: Control
+## guests see their own emote at once; the host's echo of it is skipped
+var _predicted := {"id": -1, "t": -10.0}
+var _last_note := ""
 
 
 func build() -> void:
-	back_action = func() -> void: dialog("Leave this room?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]])
+	back_action = func() -> void: dialog("Leave this party?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]])
+	Diag.context("lobby")
 	if App.stage:
 		App.stage.set_mode("lobby")
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -40,13 +53,13 @@ func build() -> void:
 	var top := UIKit.hbox(14)
 	content.add_child(top)
 	var back := UIKit.icon_button("back")
-	back.tooltip_text = "Leave room"
+	back.tooltip_text = "Leave party"
 	back.pressed.connect(_go_back)
 	top.add_child(back)
 	var code_box := UIKit.panel(Color(UIKit.SLATE, 0.9), 999, 20)
 	code_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var cb := UIKit.hbox(10)
-	cb.add_child(UIKit.label("ROOM", 18, UIKit.IVORY_MUTED, true))
+	cb.add_child(UIKit.label("PARTY", 18, UIKit.IVORY_MUTED, true))
 	code_chip = UIKit.label("", 30, UIKit.AMBER)
 	code_chip.add_theme_font_override("font", UIKit.font_w(700))
 	cb.add_child(code_chip)
@@ -70,9 +83,45 @@ func build() -> void:
 	top.add_child(invite_btn)
 	top.add_child(UIKit.spacer_h())
 
+	# --- settings summary (host: opens the sheet; guests: read-only copy)
+	var srow := UIKit.hbox(10)
+	content.add_child(srow)
+	settings_btn = Button.new()
+	settings_btn.focus_mode = Control.FOCUS_ALL
+	settings_btn.custom_minimum_size = Vector2(0, maxf(56.0, UIKit.touch_min()))
+	settings_btn.add_theme_stylebox_override("normal", UIKit.box(Color(UIKit.NAVY, 0.72), 999, 2, Color(UIKit.TEAL, 0.55), 14))
+	settings_btn.add_theme_stylebox_override("hover", UIKit.box(Color(UIKit.SLATE, 0.85), 999, 2, UIKit.TEAL, 14))
+	settings_btn.add_theme_stylebox_override("pressed", UIKit.box(Color(UIKit.SLATE_LO, 0.9), 999, 2, UIKit.TEAL, 14))
+	settings_btn.add_theme_stylebox_override("focus", UIKit.box(Color(0, 0, 0, 0), 999, 3, UIKit.TEAL, 0))
+	UIKit.press_feedback(settings_btn)
+	var sh := UIKit.hbox(10)
+	sh.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sh.offset_left = 16
+	sh.offset_right = -18
+	sh.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sicon := Icons.IconRect.new("sliders", UIKit.TEAL, 28)
+	sicon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	sh.add_child(sicon)
+	settings_lbl = UIKit.label("", 20, UIKit.IVORY)
+	settings_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	settings_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sh.add_child(settings_lbl)
+	settings_btn.add_child(sh)
+	settings_btn.resized.connect(func() -> void: pass)
+	settings_btn.pressed.connect(_settings_sheet)
+	srow.add_child(settings_btn)
+	series_lbl = UIKit.label("", 19, UIKit.AMBER)
+	series_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	srow.add_child(series_lbl)
+	standings_btn = UIKit.quiet("Standings", Vector2(170, maxf(56.0, UIKit.touch_min())), 19)
+	standings_btn.pressed.connect(_standings_sheet)
+	srow.add_child(standings_btn)
+	srow.add_child(UIKit.spacer_h())
+
 	# --- middle: stage space (left) + party panel (right)
 	var mid := UIKit.hbox(0)
 	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	mid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(mid)
 	mid.add_child(UIKit.spacer_h())
 	var panel := UIKit.panel(Color(UIKit.SLATE, 0.92), UIKit.R_PANEL, 16)
@@ -87,23 +136,25 @@ func build() -> void:
 	count_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	ph.add_child(count_lbl)
 	pv.add_child(ph)
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 8)
-	grid.add_theme_constant_override("v_separation", 8)
-	pv.add_child(grid)
+	_grid = GridContainer.new()
+	_grid.columns = 2
+	_grid.add_theme_constant_override("h_separation", 8)
+	_grid.add_theme_constant_override("v_separation", 8)
+	pv.add_child(_grid)
 	for i in 8:
 		var c := SlotCell.new()
-		c.slot = i
-		c.pressed.connect(_on_cell.bind(i))
-		grid.add_child(c)
+		c.slot = -1
+		c.pressed.connect(_on_cell.bind(c))
+		_grid.add_child(c)
 		cells.append(c)
 
-	# --- bottom: secondary popovers (left) + primary action (right)
+	# --- bottom: secondary actions (left) + primary action (right)
 	var bottom := UIKit.hbox(12)
 	content.add_child(bottom)
 	var outfit := UIKit.icon_button("shirt", "Outfit")
 	outfit.pressed.connect(func() -> void:
+		if App.stage:
+			App.stage.stop_previews()
 		var w := CreatorScreen.new()
 		w.back_action_override = func() -> void: App.show_lobby()
 		App._show(w))
@@ -113,10 +164,10 @@ func build() -> void:
 	emote_b.pressed.connect(func() -> void: _emote_popover(emote_b))
 	emote_b.size_flags_vertical = Control.SIZE_SHRINK_END
 	bottom.add_child(emote_b)
-	var role_b := UIKit.icon_button("role", "Role")
-	role_b.pressed.connect(func() -> void: _role_popover(role_b))
-	role_b.size_flags_vertical = Control.SIZE_SHRINK_END
-	bottom.add_child(role_b)
+	var moves_b := UIKit.icon_button("m_run", "Try moves")
+	moves_b.pressed.connect(func() -> void: _moves_popover(moves_b))
+	moves_b.size_flags_vertical = Control.SIZE_SHRINK_END
+	bottom.add_child(moves_b)
 	bottom.add_child(UIKit.spacer_h())
 	var pcol := UIKit.vbox(4)
 	pcol.alignment = BoxContainer.ALIGNMENT_END
@@ -132,6 +183,7 @@ func build() -> void:
 	session.lobby_changed.connect(_refresh)
 	session.status_changed.connect(_on_status)
 	session.events_received.connect(_on_events)
+	session.series_changed.connect(_refresh)
 	_is_ready = session.local_slot >= 0 and session.roster[session.local_slot] != null and bool(session.roster[session.local_slot]["ready"])
 	_refresh()
 	UIKit.appear(panel, Vector2(40, 0), UIKit.T_SHEET)
@@ -150,6 +202,9 @@ func _frame_stage(panel: Control) -> void:
 func _on_primary() -> void:
 	if session.is_host():
 		if session.can_start():
+			if App.stage:
+				App.stage.stop_previews()
+			Diag.mark("round_start")
 			session.host_start_match()
 		return
 	_is_ready = not _is_ready
@@ -162,6 +217,12 @@ func _on_status(t: String) -> void:
 		status_lbl.text = t
 
 
+func _local_key() -> String:
+	if session.local_slot >= 0 and session.roster[session.local_slot] != null:
+		return String(session.roster[session.local_slot]["uid"])
+	return ""
+
+
 func _refresh() -> void:
 	if not is_instance_valid(primary_btn):
 		return
@@ -170,71 +231,122 @@ func _refresh() -> void:
 	invite_btn.visible = hosting and Social.online_ready() and session.transport is GameKitTransport
 	var humans := 0
 	var not_ready := 0
+	var ready_n := 0
 	var entries: Array = []
-	var first_open := true
+	var order: Array = []
 	for i in 8:
 		var e: Variant = session.roster[i]
-		cells[i].show_entry(e, i == session.local_slot, hosting, session.muted, _can_invite(), first_open)
-		if e == null:
-			first_open = false
 		if e == null:
 			continue
+		order.append(i)
 		if not bool(e["is_bot"]):
 			humans += 1
-			if i != session.local_slot and not bool(e["ready"]) and int(e["slot"]) != 0:
+			var counts := bool(e["ready"]) or int(e["slot"]) == 0
+			if counts:
+				ready_n += 1
+			elif i != session.local_slot:
 				not_ready += 1
 		var ent := {"key": String(e["uid"]), "role": TC.Role.RUNNER, "cosmetic": e["cosmetic"], "name": String(e["name"]),
-			"is_bot": bool(e["is_bot"]), "local": i == session.local_slot}
+			"is_bot": bool(e["is_bot"]), "local": i == session.local_slot, "ready": bool(e["ready"]) or int(e["slot"]) == 0}
 		if i == session.local_slot:
 			entries.push_front(ent)
 		else:
 			entries.append(ent)
+	# compact list: everyone present, then one open seat (until the party is full)
+	var shown := mini(8, order.size() + (1 if order.size() < 8 else 0))
+	for ci in cells.size():
+		var c: SlotCell = cells[ci]
+		c.visible = ci < shown
+		if ci < order.size():
+			var slot: int = order[ci]
+			c.slot = slot
+			c.show_entry(session.roster[slot], slot == session.local_slot, hosting, session.muted, _can_invite(), false)
+		elif ci < shown:
+			c.slot = -1
+			c.show_entry(null, false, hosting, session.muted, _can_invite(), true)
+	_grid.columns = 1 if shown <= 2 else 2
 	if App.stage:
 		App.stage.sync_party(entries)
-	count_lbl.text = "%d / 8" % humans
+	count_lbl.text = "%d / 8 · %d ready" % [humans, ready_n] if humans > 1 else "%d / 8" % humans
+	# settings + series
+	var series_on := session.series_active()
+	var nxt := session.next_round_number()
+	var total := session.rounds_total()
+	settings_lbl.text = PartySeries.summary(session.settings)
+	var view: Dictionary = session.series_view
+	if series_on:
+		var tally := _tally(view)
+		series_lbl.text = "Round %d of %d next  ·  Runners %d – %d Night Watch" % [nxt, total, tally[0], tally[1]]
+	else:
+		series_lbl.text = ""
+	series_lbl.visible = series_on
+	standings_btn.visible = series_on and not (view.get("standings", {}) as Dictionary).is_empty()
 	var bots := 8 - humans
 	if hosting:
-		primary_btn.text = "Start"
+		primary_btn.text = ("Start round %d" % nxt) if series_on else "Start"
 		primary_btn.disabled = not session.can_start()
 		var bot_txt := "1 bot" if bots == 1 else "%d bots" % bots
 		sub_lbl.text = ("You + " + bot_txt if humans == 1 else "%d players + %s" % [humans, bot_txt]) if bots > 0 else "Full party"
 		if humans == 1:
-			status_lbl.text = "Share the code, or start now."
+			status_lbl.text = "Share the code, or start now." if not series_on else "Start the next round when you're ready."
 		elif not_ready > 0:
 			status_lbl.text = "Waiting for %d to tap Ready" % not_ready
 		else:
 			status_lbl.text = "Everyone's ready"
 	else:
 		primary_btn.disabled = session.local_slot < 0
-		primary_btn.text = "Not ready" if _is_ready else "Ready"
+		primary_btn.text = "Not ready" if _is_ready else ("Ready for round %d" % nxt if series_on else "Ready")
 		UIKit._apply(primary_btn, UIKit.SLATE_HI if _is_ready else UIKit.AMBER, UIKit.IVORY if _is_ready else UIKit.NAVY)
 		sub_lbl.text = ""
 		if session.host_peer < 0:
-			status_lbl.text = "Looking for room %s…" % session.room_code
+			status_lbl.text = "Looking for party %s…" % session.room_code
 		else:
-			status_lbl.text = "You're ready — the host starts the round" if _is_ready else "Tap Ready when you are"
+			status_lbl.text = "You're ready — waiting for the host" if _is_ready else "Tap Ready when you are"
+		# a settings change cleared our ready: say so once
+		if session.settings_note != "" and session.settings_note != _last_note:
+			_last_note = session.settings_note
+			_is_ready = false
+			UIKit.toast(self, session.settings_note, 4.0)
+			session.settings_note = ""
 	# roster updates keep focus on its cell; if the focused control went away
 	# (a sheet closed with its player gone), controllers land on the main action
 	if Controls.device != "touch" and not has_modal() and get_viewport().gui_get_focus_owner() == null:
 		primary_btn.call_deferred("grab_focus")
 
 
+static func _tally(view: Dictionary) -> Array:
+	var r := 0
+	var w := 0
+	for rd in view.get("rounds", []):
+		if int(rd.get("outcome", 0)) == TC.Outcome.RUNNERS_WIN:
+			r += 1
+		elif int(rd.get("outcome", 0)) == TC.Outcome.PATROL_WIN:
+			w += 1
+	return [r, w]
+
+
 func _can_invite() -> bool:
 	return session.is_host() and Social.online_ready() and session.transport is GameKitTransport
 
 
-func _on_cell(i: int) -> void:
-	var e: Variant = session.roster[i]
-	if e == null:
+func _on_cell(c: SlotCell) -> void:
+	var i := c.slot
+	if i < 0:
 		if _can_invite():
 			_invite()
 		else:
 			DisplayServer.clipboard_set(session.room_code)
 			UIKit.toast(self, "Code %s copied — share it to invite" % session.room_code)
 		return
-	if i == session.local_slot or bool(e["is_bot"]):
+	var e: Variant = session.roster[i]
+	if e == null:
 		return
-	_player_popover(i, cells[i])
+	if i == session.local_slot:
+		_play_own_move()
+		return
+	if bool(e["is_bot"]):
+		return
+	_player_popover(i, c)
 
 
 func _close_popover() -> void:
@@ -273,39 +385,221 @@ func _popover_at(anchor: Control, body: Control, above: bool = true) -> void:
 		(first[0] as Button).call_deferred("grab_focus")
 
 
+## A big icon tile (emote / move pickers).
+func _tile(icon: String, text: String, on_press: Callable) -> Button:
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_ALL
+	b.custom_minimum_size = Vector2(150, 118)
+	for st in ["normal", "hover", "pressed", "focus"]:
+		var bg := Color(UIKit.NAVY, 0.7) if st == "normal" else (Color(UIKit.SLATE_LO, 0.95) if st == "pressed" else Color(UIKit.SLATE, 0.95))
+		b.add_theme_stylebox_override(st, UIKit.box(bg if st != "focus" else Color(0, 0, 0, 0), UIKit.R_SMALL, 3 if st == "focus" else 2,
+			UIKit.TEAL if st == "focus" else Color(UIKit.IVORY, 0.14), 10))
+	UIKit.press_feedback(b)
+	var v := UIKit.vbox(4)
+	v.set_anchors_preset(Control.PRESET_FULL_RECT)
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ic := Icons.IconRect.new(icon, UIKit.AMBER, 52)
+	ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	v.add_child(ic)
+	var l := UIKit.label(text, 20, UIKit.IVORY, true, HORIZONTAL_ALIGNMENT_CENTER)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(l)
+	b.add_child(v)
+	b.pressed.connect(on_press)
+	return b
+
+
 func _emote_popover(anchor: Control) -> void:
+	var v := UIKit.vbox(10)
+	v.add_child(UIKit.label("Emote", 22, UIKit.IVORY, true))
 	var g := GridContainer.new()
 	g.columns = 3
 	g.add_theme_constant_override("h_separation", 10)
 	g.add_theme_constant_override("v_separation", 10)
 	for i in TC.EMOTES.size():
-		var b := UIKit.secondary(TC.EMOTE_LABELS[TC.EMOTES[i]], Vector2(170, 72), 22)
 		var idx := i
-		b.pressed.connect(func() -> void:
-			session.send_emote(idx)
-			_close_popover())
-		g.add_child(b)
-	_popover_at(anchor, g)
-
-
-func _role_popover(anchor: Control) -> void:
-	var v := UIKit.vbox(10)
-	v.add_child(UIKit.label("I'd like to play as", 20, UIKit.IVORY_MUTED, true))
-	var cur := session.local_pref
-	for opt in [["any", "Either role"], ["runner", "Runner"], ["patrol", "Night Watch"]]:
-		var key: String = opt[0]
-		var b := UIKit.secondary(("✓  " if key == cur else "") + String(opt[1]), Vector2(300, 72), 24)
-		if key == cur:
-			UIKit._apply(b, UIKit.TEAL, UIKit.NAVY)
-		b.pressed.connect(func() -> void:
-			Save.set_setting("role_pref", key)
-			session.set_local_pref(key)
+		g.add_child(_tile(Icons.emote_icon(i), String(TC.EMOTE_LABELS[TC.EMOTES[i]]), func() -> void:
 			_close_popover()
-			_refresh())
-		v.add_child(b)
-	var note := UIKit.label("Roles rotate fairly; this is a preference.", 17, UIKit.IVORY_MUTED)
-	v.add_child(note)
+			_send_emote(idx)))
+	v.add_child(g)
 	_popover_at(anchor, v)
+
+
+## Play an emote: shown on our own runner at once (a guest's request still
+## goes through the host, which tells everyone; our echo is skipped).
+func _send_emote(id: int) -> void:
+	var key := _local_key()
+	if key == "" or App.stage == null:
+		UIKit.toast(self, "Emotes show once you're in the party room.")
+		return
+	if session.is_host():
+		session.send_emote(id)   # the host's own event comes straight back and plays it
+	else:
+		if App.stage.emote(key, id):
+			Sfx.play("pop")
+		_predicted = {"id": id, "t": Time.get_ticks_msec() / 1000.0}
+		session.send_emote(id)
+	Diag.mark("emote")
+
+
+func _moves_popover(anchor: Control) -> void:
+	var v := UIKit.vbox(10)
+	v.add_child(UIKit.label("Try moves", 22, UIKit.IVORY, true))
+	var note := UIKit.label("Just on your screen", 17, UIKit.IVORY_MUTED)
+	v.add_child(note)
+	var g := GridContainer.new()
+	g.columns = 3
+	g.add_theme_constant_override("h_separation", 10)
+	g.add_theme_constant_override("v_separation", 10)
+	var mine := String(Cosmetics.sanitize(Save.data["cosmetic"]).get("emote", "wave"))
+	for m in [["m_idle", "Idle", "idle"], ["m_run", "Run", "run"], ["m_run", "Sprint", "sprint"], ["m_jump", "Jump", "jump"], ["m_dive", "Dive", "dive"],
+			["e_" + mine, "Your move", "move"]]:
+		var kind: String = m[2]
+		g.add_child(_tile(String(m[0]), String(m[1]), func() -> void:
+			_close_popover()
+			_try_move(kind)))
+	v.add_child(g)
+	_popover_at(anchor, v)
+
+
+func _try_move(kind: String) -> void:
+	var key := _local_key()
+	if key == "" or App.stage == null:
+		return
+	if kind == "move":
+		_play_own_move()
+	else:
+		App.stage.preview_move(key, kind)
+
+
+## Tap your own runner (or its cell): your signature move, for everyone.
+func _play_own_move() -> void:
+	var mine := String(Cosmetics.sanitize(Save.data["cosmetic"]).get("emote", "wave"))
+	var id := TC.EMOTES.find(mine)
+	_send_emote(id if id >= 0 else 0)
+
+
+## A tap on the room that no control took: on your own runner, it plays your
+## move.  (Touch arrives as an emulated mouse press too; only that is used,
+## so one tap is one action.)  Positions and the camera projection are both
+## in the viewport's canvas units.
+func _unhandled_input(ev: InputEvent) -> void:
+	if not (ev is InputEventMouseButton) or not (ev as InputEventMouseButton).pressed or (ev as InputEventMouseButton).button_index != MOUSE_BUTTON_LEFT:
+		return
+	if App.stage == null or has_modal() or not is_visible_in_tree():
+		return
+	if hit_own_runner((ev as InputEventMouseButton).position):
+		_play_own_move()
+		get_viewport().set_input_as_handled()
+
+
+func hit_own_runner(at: Vector2) -> bool:
+	var v := App.stage.local_character() if App.stage else null
+	if v == null or App.stage.cam == null or not v.visible:
+		return false
+	var head := App.stage.cam.unproject_position(v.global_position + Vector3(0, 1.45, 0))
+	var feet := App.stage.cam.unproject_position(v.global_position)
+	var h := absf(feet.y - head.y)
+	return Rect2(Vector2(head.x - h * 0.42, head.y - h * 0.1), Vector2(h * 0.84, h * 1.15)).has_point(at)
+
+
+func _settings_sheet() -> void:
+	var host := session.is_host() and session.mode != NetSession.Mode.OFFLINE
+	var locked := session.series_active()
+	var v := UIKit.vbox(12)
+	v.custom_minimum_size = Vector2(560, 0)
+	v.add_child(UIKit.label("Party settings", 26, UIKit.IVORY, true))
+	if not host:
+		v.add_child(UIKit.label("Set by the host", 18, UIKit.IVORY_MUTED))
+	elif locked:
+		v.add_child(UIKit.label("Locked for this series (round %d of %d is next)." % [session.next_round_number(), session.rounds_total()], 18, UIKit.IVORY_MUTED))
+	var cur := session.settings.duplicate()
+	var line := UIKit.label(PartySeries.summary(cur), 20, UIKit.AMBER)
+	var rows := []
+	var paint := func() -> void: pass
+	for spec in [["Night Watch", "watch", [[1, "1"], [2, "2"], [3, "3 · tougher for runners"]]],
+			["Rounds", "rounds", [[1, "Single round"], [3, "3"], [5, "5"]]]]:
+		v.add_child(UIKit.label(String(spec[0]), 20, UIKit.IVORY_MUTED, true))
+		var row := UIKit.hbox(10)
+		var btns: Array[Button] = []
+		for o in spec[2]:
+			var b := UIKit.quiet(String(o[1]), Vector2(150, 68), 20)
+			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			b.disabled = not host or locked
+			var key: String = spec[1]
+			var val: int = o[0]
+			b.pressed.connect(func() -> void:
+				cur[key] = val
+				session.host_set_settings(int(cur["watch"]), int(cur["rounds"]))
+				cur = session.settings.duplicate()
+				line.text = PartySeries.summary(cur)
+				_paint_choices(rows, cur)
+				_refresh())
+			row.add_child(b)
+			btns.append(b)
+		rows.append([spec[1], spec[2], btns])
+		v.add_child(row)
+	_paint_choices(rows, cur)
+	v.add_child(line)
+	var foot := UIKit.hbox(10)
+	if host and not locked:
+		var reset := UIKit.quiet("Reset to recommended", Vector2(300, 68), 20)
+		reset.pressed.connect(func() -> void:
+			session.host_set_settings(PartySeries.DEFAULT_WATCH, PartySeries.DEFAULT_ROUNDS)
+			cur = session.settings.duplicate()
+			line.text = PartySeries.summary(cur)
+			_paint_choices(rows, cur)
+			_refresh())
+		foot.add_child(reset)
+	if host and locked:
+		var endb := UIKit.quiet("End series", Vector2(240, 68), 20)
+		endb.pressed.connect(func() -> void:
+			_close_popover()
+			dialog("End this series now? Rounds already played still count; there's no prize for the rest.", [["End series", func() -> void:
+				session.host_end_series()
+				App.show_series_final()], ["Keep playing", Callable()]]))
+		foot.add_child(endb)
+	foot.add_child(UIKit.spacer_h())
+	var done := UIKit.secondary("Done", Vector2(180, 68), 22)
+	done.pressed.connect(_close_popover)
+	foot.add_child(done)
+	v.add_child(foot)
+	_popover_at(settings_btn, v, false)
+	if _popover:
+		var p: Control = _popover.get_child(1)
+		p.position = Vector2(clampf(settings_btn.get_global_rect().position.x, 16, get_viewport().get_visible_rect().size.x - p.get_combined_minimum_size().x - 16),
+			settings_btn.get_global_rect().end.y + 10)
+
+
+func _paint_choices(rows: Array, cur: Dictionary) -> void:
+	for r in rows:
+		var key: String = r[0]
+		var opts: Array = r[1]
+		var btns: Array = r[2]
+		for i in btns.size():
+			var b: Button = btns[i]
+			if not is_instance_valid(b):
+				continue
+			if int(opts[i][0]) == int(cur.get(key, -1)):
+				UIKit._apply(b, UIKit.TEAL, UIKit.NAVY)
+			else:
+				b.add_theme_stylebox_override("normal", UIKit.box(Color(UIKit.SLATE, 0.55), UIKit.R_BUTTON, 2, Color(UIKit.IVORY, 0.22)))
+				b.add_theme_stylebox_override("hover", UIKit.box(Color(UIKit.SLATE_HI, 0.75), UIKit.R_BUTTON, 2, Color(UIKit.IVORY, 0.3)))
+				b.add_theme_stylebox_override("disabled", UIKit.box(Color(UIKit.SLATE, 0.35), UIKit.R_BUTTON, 2, Color(UIKit.IVORY, 0.12)))
+				for k in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+					b.add_theme_color_override(k, UIKit.IVORY)
+
+
+func _standings_sheet() -> void:
+	var v := UIKit.vbox(10)
+	v.custom_minimum_size = Vector2(560, 0)
+	v.add_child(UIKit.label("Standings", 26, UIKit.IVORY, true))
+	v.add_child(ResultsScreen.standings_table(session.series_view, Save.player_uid()))
+	var done := UIKit.secondary("Close", Vector2(180, 68), 22)
+	done.pressed.connect(_close_popover)
+	v.add_child(done)
+	_popover_at(standings_btn, v)
 
 
 func _player_popover(i: int, anchor: Control) -> void:
@@ -413,9 +707,12 @@ func _on_events(evs: Array) -> void:
 		var who: Dictionary = session.roster[a]
 		if session.muted.has(String(who.get("uid", ""))):
 			continue
-		if App.stage:
-			App.stage.emote(String(who["uid"]), int(ev["v"]), 1.8)
-		Sfx.play("pop")
+		var now := Time.get_ticks_msec() / 1000.0
+		if a == session.local_slot and not session.is_host() and int(ev["v"]) == int(_predicted["id"]) and now - float(_predicted["t"]) < 2.0:
+			_predicted = {"id": -1, "t": -10.0}
+			continue   # our own emote, already showing (no second start or sound)
+		if App.stage and App.stage.emote(String(who["uid"]), int(ev["v"])):
+			Sfx.play("pop")
 
 
 func _invite() -> void:
@@ -423,7 +720,7 @@ func _invite() -> void:
 		Social.invite_friends(session.transport, session.room_code)
 
 
-## One party-list cell (fixed per slot; contents updated in place).
+## One party-list cell (contents updated in place).
 class SlotCell:
 	extends Button
 	var slot := 0
@@ -528,11 +825,6 @@ class SlotCell:
 			bits.append("Ready")
 		else:
 			bits.append("Not ready")
-		var pref := String(ent.get("pref", "any"))
-		if pref == "runner":
-			bits.append("prefers Runner")
-		elif pref == "patrol":
-			bits.append("prefers Night Watch")
 		if muted.has(String(ent["uid"])):
 			bits.append("emotes hidden")
 		sub_l.text = "  ·  ".join(bits)

@@ -593,6 +593,7 @@ func _begin_session(mode: int, t: NetTransport, code: String) -> void:
 	session.match_starting.connect(_on_match_starting)
 	session.results_received.connect(_on_results)
 	session.ended.connect(_on_session_ended)
+	session.series_changed.connect(_on_series_changed)
 	show_lobby()
 
 
@@ -615,7 +616,7 @@ func _on_session_ended(reason: String) -> void:
 		"room_not_found":
 			msg = "Couldn't find that room. Check the code and that the host's room is open."
 		"version":
-			msg = "That party is running a different version of the game. Update to the latest version and try again."
+			msg = "That party is on a different version of the game. Update the game to join."
 		"admission":
 			msg = "Couldn't confirm your place in that party. Try joining with the code again."
 		"not_allowed":
@@ -725,6 +726,43 @@ func _on_match_quit() -> void:
 		leave_room()
 
 
+## Everyone back to the party room (host: between rounds, or Play again
+## after a series - settings are kept).
+func back_to_party() -> void:
+	if session == null or not is_instance_valid(session):
+		goto_title()
+		return
+	if session.is_host():
+		Diag.mark("rematch")
+		session.host_return_to_lobby()
+	show_lobby()
+
+
+## The series' final standings on their own (the host ended it early).
+func show_series_final() -> void:
+	if session == null or not is_instance_valid(session):
+		return
+	_ensure_background()
+	var r := ResultsScreen.new()
+	r.results = {}
+	r.reward = {}
+	r.session = session
+	r.final_only = true
+	_show(r)
+
+
+## Guests in the party room see the final standings when the host ends the
+## series (once per series).
+func _on_series_changed() -> void:
+	if session == null or session.is_host() or match_ctrl != null:
+		return
+	var v: Dictionary = session.series_view
+	var key := "final_shown_" + String(v.get("id", ""))
+	if bool(v.get("finished", false)) and bool(v.get("ended_early", false)) and screen is LobbyScreen and not session.has_meta(key):
+		session.set_meta(key, true)
+		show_series_final()
+
+
 func rematch() -> void:
 	if session == null:
 		goto_title()
@@ -735,9 +773,7 @@ func rematch() -> void:
 		session.host_return_to_lobby()
 		session.host_start_match()
 		return
-	if session.is_host():
-		session.host_return_to_lobby()
-	show_lobby()
+	back_to_party()
 
 
 func _end_match_scene() -> void:

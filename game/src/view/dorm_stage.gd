@@ -56,6 +56,8 @@ var _emote_until: Dictionary = {}   # key -> stage time the emote ends
 var _bubbles: Dictionary = {}       # key -> Label3D (the emote's name over the head)
 ## "Try moves": key -> {kind, t, len} local presentation of the player's own runner
 var _preview: Dictionary = {}
+## emotes started per character (tests: one tap is one start)
+var emote_starts: Dictionary = {}
 
 ## How long each lobby emote plays: two passes of its loop, so a glance
 ## catches it (the clips are 1.2-1.4 s loops).
@@ -304,6 +306,7 @@ func emote(key: String, id: int, seconds: float = -1.0) -> bool:
 	v.restart_emote(id)
 	_emote_until[key] = _t + dur
 	_show_bubble(key, v, String(TC.EMOTE_LABELS[name]))
+	emote_starts[key] = int(emote_starts.get(key, 0)) + 1
 	return true
 
 
