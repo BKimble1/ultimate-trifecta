@@ -97,8 +97,8 @@ func build() -> void:
 	content.add_child(bottom)
 	var outfit := UIKit.icon_button("shirt", "Outfit")
 	outfit.pressed.connect(func() -> void:
-		var w := WardrobeScreen.new()
-		w.back_action = func() -> void: App.show_lobby()
+		var w := CreatorScreen.new()
+		w.back_action_override = func() -> void: App.show_lobby()
 		App._show(w))
 	outfit.size_flags_vertical = Control.SIZE_SHRINK_END
 	bottom.add_child(outfit)

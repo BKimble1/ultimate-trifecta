@@ -33,7 +33,6 @@ func build() -> void:
 	var top := UIKit.hbox(16)
 	content.add_child(top)
 	var mark := Wordmark.new()
-	mark.custom_minimum_size = Vector2(330, 112)
 	top.add_child(mark)
 	top.add_child(UIKit.spacer_h())
 	var prof := UIKit.panel(Color(UIKit.SLATE, 0.86), 999, 18)
@@ -63,7 +62,7 @@ func build() -> void:
 	bottom.alignment = BoxContainer.ALIGNMENT_END
 	content.add_child(bottom)
 	var outfit := UIKit.icon_button("shirt", "Outfit")
-	outfit.pressed.connect(func() -> void: App.goto(WardrobeScreen))
+	outfit.pressed.connect(func() -> void: App.goto(CreatorScreen))
 	outfit.size_flags_vertical = Control.SIZE_SHRINK_END
 	bottom.add_child(outfit)
 	bottom.add_child(UIKit.spacer_h())
@@ -108,16 +107,52 @@ static func _side_gradient() -> GradientTexture2D:
 	return t
 
 
-## Compact two-line wordmark, static (no wobble), with three splash drops.
+## The Ultimate Trifecta wordmark (original): a small amber "ULTIMATE" tilted
+## over a chunky "TRIFECTA" whose letters bob on the baseline like runners
+## mid-stride, each with a thick navy outline and a teal underside, plus three
+## splash drops for the three waters.  Static (no wobble animation).
 class Wordmark:
 	extends Control
+	const TOP := "ULTIMATE"
+	const MAIN := "TRIFECTA"
+	var scale_k := 1.0
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _get_minimum_size() -> Vector2:
+		return Vector2(360, 128) * scale_k
 
 	func _draw() -> void:
 		var f := UIKit.font_w(700)
-		draw_string_outline(f, Vector2(0, 46), "ULTIMATE", HORIZONTAL_ALIGNMENT_LEFT, -1, 44, 10, UIKit.NAVY)
-		draw_string(f, Vector2(0, 46), "ULTIMATE", HORIZONTAL_ALIGNMENT_LEFT, -1, 44, UIKit.AMBER)
-		draw_string_outline(f, Vector2(0, 102), "TRIFECTA", HORIZONTAL_ALIGNMENT_LEFT, -1, 56, 12, UIKit.NAVY)
-		draw_string(f, Vector2(0, 102), "TRIFECTA", HORIZONTAL_ALIGNMENT_LEFT, -1, 56, UIKit.IVORY)
-		var w := f.get_string_size("ULTIMATE", HORIZONTAL_ALIGNMENT_LEFT, -1, 44).x
-		for k in 3:
-			Icons.draw_shape(self, "drop", Vector2(w + 22 + k * 24, 26), 10, [UIKit.AMBER, UIKit.TEAL, UIKit.IVORY][k])
+		var k := scale_k
+		# "ULTIMATE": small caps, slight upward tilt, tracked out
+		var s1 := int(30 * k)
+		var x := 6.0 * k
+		draw_set_transform(Vector2(0, 40 * k), deg_to_rad(-3.0))
+		for ch in TOP:
+			var cw := f.get_char_size(ch.unicode_at(0), s1).x
+			draw_char_outline(f, Vector2(x, 0), ch, s1, int(8 * k), UIKit.NAVY)
+			draw_char(f, Vector2(x, 0), ch, s1, UIKit.AMBER)
+			x += cw + 2.5 * k
+		draw_set_transform(Vector2.ZERO, 0.0)
+		var top_w := x
+		# "TRIFECTA": big, letters bob and lean alternately
+		var s2 := int(64 * k)
+		x = 0.0
+		var i := 0
+		for ch in MAIN:
+			var cw := f.get_char_size(ch.unicode_at(0), s2).x
+			var bob := (-4.0 if i % 2 == 0 else 3.0) * k
+			var lean := deg_to_rad(-2.5 if i % 2 == 0 else 2.0)
+			draw_set_transform(Vector2(x + cw * 0.5, 112 * k + bob), lean)
+			var o := Vector2(-cw * 0.5, 0)
+			draw_char_outline(f, o + Vector2(0, 5 * k), ch, s2, int(14 * k), UIKit.NAVY)
+			draw_char(f, o + Vector2(0, 5 * k), ch, s2, UIKit.TEAL.darkened(0.25))
+			draw_char_outline(f, o, ch, s2, int(12 * k), UIKit.NAVY)
+			draw_char(f, o, ch, s2, UIKit.IVORY)
+			x += cw - 1.5 * k
+			i += 1
+		draw_set_transform(Vector2.ZERO, 0.0)
+		for d in 3:
+			Icons.draw_shape(self, "drop", Vector2(top_w + 18 * k + d * 22 * k, 26 * k), 9 * k, [UIKit.AMBER, UIKit.TEAL, UIKit.IVORY][d])

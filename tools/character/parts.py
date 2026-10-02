@@ -218,16 +218,67 @@ def build_base():
     return mb
 
 
+def hair_shell(mb, g, hairline, style, wfn, segs=56, rows=16, tuck=0.014):
+    """Hair cap over the (reshaped) head whose lower edge follows `hairline`
+    exactly: hairline(ang) -> z, ang 0 = straight back, +pi/2 = the
+    character's left, +-pi = the forehead.  Rings run from the hairline up to
+    the crown, so the edge is a smooth curve rather than whole mesh triangles
+    dropped by a mask (V3: the V2 masks left a stepped hairline).  A row tucked
+    under the edge gives the hair some thickness."""
+    rz = HEAD_R[2] + g
+    ztop = HEAD_C.z + rz * 0.9995
+    rows_idx = []
+    angs = [-math.pi + 2.0 * math.pi * k / segs for k in range(segs)]
+    angs.reverse()   # ring order counter-clockwise seen from above -> outward normals
+    edge = [hairline(a) for a in angs]
+    # tucked row (under the edge, toward the scalp)
+    row = []
+    for a, z0 in zip(angs, edge):
+        q = _shell_point(a, z0 + 0.004, g - tuck)
+        row.append(mb.vert(q, style, (0, q.z), wfn(q)))
+    rows_idx.append(row)
+    for r in range(rows):
+        u = r / float(rows)
+        row = []
+        for a, z0 in zip(angs, edge):
+            # polar spacing: rows bunch where the curvature is (near the edge and crown)
+            t0 = math.acos(max(-1.0, min(1.0, (z0 - HEAD_C.z) / rz)))
+            t = t0 * (1.0 - u)
+            z = HEAD_C.z + rz * math.cos(t)
+            q = _shell_point(a, min(z, ztop), g)
+            row.append(mb.vert(q, style, (0, q.z), wfn(q)))
+        rows_idx.append(row)
+    top = Vector((HEAD_C.x, HEAD_C.y, HEAD_C.z + rz))
+    pole = mb.vert(top, style, (0, top.z), wfn(top))
+    mb.grid(rows_idx, True, None, pole)
+    return angs, edge
+
+
+def _front(ang):
+    """1 at the forehead (ang +-pi), 0 at the back (ang 0)."""
+    return 0.5 - 0.5 * math.cos(ang)
+
+
+def hairline_short(base):
+    """Short hair: low at the nape, up over the temples, a forehead hairline."""
+    def f(ang):
+        return base + 0.29 * _front(ang) + 0.06 * math.sin(ang) ** 2
+    return f
+
+
+def hairline_bob(ang):
+    """Chin-length bob: down to the jaw at the back and sides, up around the
+    eyes and cheeks, straight bangs across the forehead."""
+    a = abs(ang)
+    bangs = 1.292 + 0.035 * (abs(math.sin(ang)) * 0.3 / 0.22) ** 2
+    w = smoothstep(math.radians(98), math.radians(124), a)
+    return lerp(0.99, bangs, w)
+
+
 def build_hair():
     mb = MeshBuilder('hair')
     hw = rigid('head')
-
-    def keep(p):
-        y = p.y
-        zl = 1.08 + 0.505 * (y + 0.27) + 0.06 * (abs(p.x) / 0.3) ** 2
-        return p.z > zl
-    ellipsoid(mb, HEAD_C, (HEAD_R[0] + 0.016, HEAD_R[1] + 0.016, HEAD_R[2] + 0.018), HAIR, hw, segs=36, rings=26,
-              power=HEAD_P, keep=keep, deform=rig.head_deform(0.018))
+    hair_shell(mb, 0.018, hairline_short(1.08), HAIR, hw)
     # forelock swoop (projected onto the hair shell)
     pts = [Vector((0.06, 0.20, 1.43)), Vector((0.02, 0.27, 1.455)), Vector((-0.04, 0.30, 1.44)), Vector((-0.09, 0.29, 1.405)),
            Vector((-0.12, 0.265, 1.37))]
@@ -236,7 +287,6 @@ def build_hair():
     n = len(pts)
     radii = [(lerp(0.05, 0.012, i / (n - 1)), lerp(0.026, 0.008, i / (n - 1))) for i in range(n)]
     sweep(mb, pts, radii, HAIR, hw, segs=10, twist_hint=UP)
-    mb.compact()
     return mb
 
 
@@ -257,19 +307,10 @@ def build_hair_bob():
     mb = MeshBuilder('hair_bob')
     hw = rigid('head')
     g = 0.024
-
-    def keep(p):
-        front = p.y - HEAD_C.y
-        if front > 0.10:
-            return p.z > 1.292 + 0.035 * (abs(p.x) / 0.22) ** 2
-        if front > -0.02 and abs(p.x) < 0.27:
-            return p.z > 1.29
-        return p.z > 0.985
-    ellipsoid(mb, HEAD_C, (HEAD_R[0] + g, HEAD_R[1] + g, HEAD_R[2] + g), HAIR, hw, segs=40, rings=30, power=HEAD_P,
-              keep=keep, deform=rig.head_deform(g))
+    angs, edge = hair_shell(mb, g, hairline_bob, HAIR, hw, segs=64, rows=18, tuck=0.018)
     # rolled ends: a soft tube along the lower edge (back and sides)
-    pts = [_shell_point(math.radians(a), 0.995, g) for a in range(-118, 119, 6)]
-    sweep(mb, pts, [(0.018, 0.016)] * len(pts), HAIR, hw, segs=8, twist_hint=UP)
+    pts = [_shell_point(math.radians(a), hairline_bob(math.radians(a)) + 0.012, g + 0.002) for a in range(-100, 101, 5)]
+    sweep(mb, pts, [(0.017, 0.015)] * len(pts), HAIR, hw, segs=8, twist_hint=UP)
     # bangs edge: a slightly thicker lip so the fringe has thickness
     bp = []
     for i in range(15):
@@ -277,7 +318,6 @@ def build_hair_bob():
         z = 1.296 + 0.035 * (abs(x) / 0.22) ** 2
         bp.append(Vector((x, head_front_y(x, z, g) - 0.004, z)))
     sweep(mb, bp, [(0.012, 0.01)] * len(bp), HAIR, hw, segs=8, twist_hint=FWD)
-    mb.compact()
     return mb
 
 
@@ -287,16 +327,10 @@ def build_hair_curly():
     mb = MeshBuilder('hair_curly')
     hw = rigid('head')
     g = 0.016
-
-    def keep(p):
-        y = p.y
-        zl = 1.06 + 0.5 * (y + 0.27) + 0.06 * (abs(p.x) / 0.3) ** 2
-        return p.z > zl
-    ellipsoid(mb, HEAD_C, (HEAD_R[0] + g, HEAD_R[1] + g, HEAD_R[2] + g), HAIR, hw, segs=36, rings=26, power=HEAD_P,
-              keep=keep, deform=rig.head_deform(g))
+    line = hairline_short(1.06)
+    hair_shell(mb, g, line, HAIR, hw)
     n = 150
     ga = math.pi * (3 - math.sqrt(5))
-    placed = 0
     for i in range(n):
         zz = 1 - 2 * (i + 0.5) / n
         rr = math.sqrt(max(0.0, 1 - zz * zz))
@@ -305,16 +339,15 @@ def build_hair_curly():
         z = HEAD_C.z + d.z * (HEAD_R[2] + g)
         if z > 1.43:          # smooth crown (hats sit here)
             continue
-        q = _shell_point(math.atan2(-d.x, -d.y), z, g)
-        if not keep(q - (q - HEAD_C).normalized() * 0.004) or q.z < 1.0:
+        a = math.atan2(-d.x, -d.y)
+        if z < line(a) + 0.02 or z < 1.0:
             continue
+        q = _shell_point(a, z, g)
         if q.y - HEAD_C.y > 0.08 and q.z < 1.33:
             continue          # keep the face clear
         nrm = head_normal(q, g)
         r = 0.03 + 0.008 * ((i * 7) % 5) / 4.0
         ellipsoid(mb, q + nrm * 0.004, (r, r, r * 0.8), HAIR, hw, segs=10, rings=6, rot=rot_align(nrm, UP))
-        placed += 1
-    mb.compact()
     return mb
 
 
@@ -324,13 +357,7 @@ def build_hair_buns():
     mb = MeshBuilder('hair_buns')
     hw = rigid('head')
     g = 0.016
-
-    def keep(p):
-        y = p.y
-        zl = 1.07 + 0.5 * (y + 0.27) + 0.06 * (abs(p.x) / 0.3) ** 2
-        return p.z > zl
-    ellipsoid(mb, HEAD_C, (HEAD_R[0] + g, HEAD_R[1] + g, HEAD_R[2] + g), HAIR, hw, segs=36, rings=26, power=HEAD_P,
-              keep=keep, deform=rig.head_deform(g))
+    hair_shell(mb, g, hairline_short(1.07), HAIR, hw)
     # centre part: two soft swoops meeting at the middle of the forehead
     for sx in SIDES:
         pts = [Vector((0.005 * sx, 0.0, 1.47)), Vector((0.06 * sx, 0.0, 1.45)), Vector((0.12 * sx, 0.0, 1.40)),
@@ -340,7 +367,6 @@ def build_hair_buns():
         m = len(pts)
         sweep(mb, pts, [(lerp(0.03, 0.012, i / (m - 1)), lerp(0.018, 0.008, i / (m - 1))) for i in range(m)], HAIR, hw,
               segs=8, twist_hint=UP)
-    mb.compact()
     return mb
 
 

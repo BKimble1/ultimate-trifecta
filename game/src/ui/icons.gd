@@ -133,6 +133,21 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 			ci.draw_circle(c + Vector2(-r * 0.35, -r * 0.35), r * 0.38, col)
 			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.7, -r * 0.4), c + Vector2(-r, -r * 0.25), c + Vector2(-r * 0.68, -r * 0.18)]), Color(1.0, 0.55, 0.15))
 			return
+		"lock":
+			ci.draw_arc(c + Vector2(0, -r * 0.2), r * 0.42, PI, TAU, 14, col, r * 0.18, true)
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.62, -r * 0.2), Vector2(r * 1.24, r * 0.98)), col)
+			return
+		"share":
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.35, -r * 0.2), c + Vector2(-r * 0.7, -r * 0.2), c + Vector2(-r * 0.7, r * 0.85),
+				c + Vector2(r * 0.7, r * 0.85), c + Vector2(r * 0.7, -r * 0.2), c + Vector2(r * 0.35, -r * 0.2)]), col, r * 0.16, true)
+			ci.draw_line(c + Vector2(0, r * 0.35), c + Vector2(0, -r * 0.85), col, r * 0.18, true)
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.38, -r * 0.48), c + Vector2(0, -r * 0.88), c + Vector2(r * 0.38, -r * 0.48)]), col, r * 0.18, true)
+			return
+		"rotate":
+			ci.draw_arc(c, r * 0.7, 0.4, TAU - 0.9, 20, col, r * 0.16, true)
+			var tip := c + Vector2(cos(0.4), sin(0.4)) * r * 0.7
+			ci.draw_colored_polygon(PackedVector2Array([tip + Vector2(-r * 0.32, -r * 0.05), tip + Vector2(r * 0.28, -r * 0.12), tip + Vector2(0.0, r * 0.38)]), col)
+			return
 		"bomb":
 			ci.draw_circle(c + Vector2(0, r * 0.15), r * 0.75, col)
 			ci.draw_line(c + Vector2(r * 0.3, -r * 0.45), c + Vector2(r * 0.6, -r * 0.9), col, r * 0.16)

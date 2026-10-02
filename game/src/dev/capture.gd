@@ -95,7 +95,7 @@ func _home() -> void:
 		snap("home")
 	elif _t > 8.0 and not _scheduled.has("wardrobe_open"):
 		_scheduled["wardrobe_open"] = true
-		App.goto(WardrobeScreen)
+		App.goto(CreatorScreen)
 		later(3.0, "wardrobe")
 	elif _t > 12.0 and _shots.has("wardrobe"):
 		get_tree().quit()

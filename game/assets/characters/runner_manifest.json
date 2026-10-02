@@ -219,24 +219,24 @@
       "verts": 4503
     },
     "hair": {
-      "tris": 1264,
-      "verts": 660
+      "tris": 2388,
+      "verts": 1225
     },
     "hair_bob": {
-      "tris": 2364,
-      "verts": 1219
+      "tris": 3520,
+      "verts": 1797
     },
     "hair_buns": {
-      "tris": 1588,
-      "verts": 823
+      "tris": 2680,
+      "verts": 1373
     },
     "hair_buns_knots": {
       "tris": 1280,
       "verts": 644
     },
     "hair_curly": {
-      "tris": 5372,
-      "verts": 2803
+      "tris": 5848,
+      "verts": 3033
     },
     "hat_crown": {
       "tris": 820,

@@ -134,6 +134,8 @@ var _squash := 0.0
 var _t := 0.0
 var _anim_skip := 0
 var _anim_acc := 0.0
+## total animation time advanced (tests: equals the real elapsed time)
+var anim_time_advanced := 0.0
 
 
 static func _shared_material() -> ShaderMaterial:
@@ -547,6 +549,25 @@ func face_toward(p: Vector3) -> void:
 	_have_yaw = true
 
 
+## Set the facing directly (menus: placement, creator turntable), no easing.
+func set_facing(yaw: float) -> void:
+	rotation.y = yaw
+	_vis_yaw = yaw
+	_have_yaw = true
+	rs["yaw"] = yaw
+
+
+## Lobby departure: a wave, then shrink away and free (Reduced Motion: quick).
+func play_leave() -> void:
+	set_process(true)
+	rs["emote"] = 0
+	rs["emote_t"] = 1.0
+	var tw := create_tween()
+	tw.tween_interval(0.15 if reduced_motion else 0.7)
+	tw.tween_property(self, "scale", Vector3.ONE * 0.01, 0.12 if reduced_motion else 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tw.tween_callback(queue_free)
+
+
 ## One brief arrival hop (lobby).
 func play_arrive() -> void:
 	_arrive_t = 0.9
@@ -803,6 +824,7 @@ func _process(delta: float) -> void:
 	_anim_skip += 1
 	if not far or _anim_skip >= 3:
 		tree.advance(_anim_acc)
+		anim_time_advanced += _anim_acc
 		_anim_acc = 0.0
 		_anim_skip = 0
 

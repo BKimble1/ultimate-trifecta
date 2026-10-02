@@ -6,7 +6,7 @@ extends Node3D
 ##        closeup (face), all (every mode in turn).
 ## Each mode saves a lossless PNG and quits when done.
 
-const MODES := ["views", "outfits", "looks", "posesheet", "transitions", "closeup", "faces", "cart", "hero", "group", "distance"]
+const MODES := ["views", "outfits", "looks", "hairs", "posesheet", "transitions", "closeup", "faces", "cart", "hero", "group", "distance"]
 const SHEET_CLIPS := ["idle", "walk", "run", "sprint", "turn_l", "air_rise", "air_apex", "air_fall", "land_soft", "land_hard",
 	"dive", "dive_land", "splash_walk", "splash_jump", "splash_dive", "recover", "stumble", "flop", "dizzy", "tag_windup",
 	"tag_lunge", "tag_recover", "tag_miss", "cart_enter", "cart_drive", "cart_steer_l", "cart_exit", "celebrate", "arrive", "ready",
@@ -178,6 +178,14 @@ func _next_mode() -> void:
 					"face": faces[i], "brows": brows[i], "marks": "freckles" if i % 3 == 1 else "none", "color": colors[(i + 2) % colors.size()],
 					"skin": skins[i]}), -3.5 + i * 1.0, 0.0, PI + 0.15, "%s/%s" % [hairs[i % 4], faces[i]])
 			_aim(Vector3(0, 1.35, 8.6), Vector3(0, 1.0, 0), 30)
+		"hairs":
+			# each hairstyle from three-quarter front and three-quarter back (hairline check)
+			var hs := ["tuft", "bob", "curly", "buns"]
+			for i in 8:
+				var hcol: String = ["brown", "auburn", "black", "blonde"][i % 4]
+				_add(TC.Role.RUNNER, look({"hair": hs[i % 4], "hair_color": hcol, "hat": "none", "outfit": "pj", "pattern": "plain",
+					"color": colors[i % 4], "skin": skins[(i * 2) % 8]}), -3.15 + i * 0.9, 0.0, PI + (0.6 if i < 4 else PI - 0.6), hs[i % 4])
+			_aim(Vector3(0, 1.45, 6.2), Vector3(0, 1.15, 0), 34)
 		"posesheet":
 			var pv := _add(TC.Role.RUNNER, d, 0.0, 0.0, PI + 0.75, "")
 			pv.set_process(false)

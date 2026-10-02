@@ -197,7 +197,8 @@ func _foam(pos: Vector3, col: Color, radius: float, life: float = 0.9) -> void:
 			add_child(mi)
 			_foam_pool.append(mi)
 	var mat := mi.material_override as StandardMaterial3D
-	mat.albedo_color = Color(col.lerp(Color.WHITE, 0.6), 0.55)
+	# mostly white-blue foam; the water colour only tints it
+	mat.albedo_color = Color(col.lerp(Color(0.86, 0.94, 1.0), 0.8), 0.34)
 	mi.visible = true
 	mi.global_position = pos + Vector3(0, 0.03, 0)
 	mi.scale = Vector3.ONE * 0.25
@@ -211,7 +212,7 @@ func _foam(pos: Vector3, col: Color, radius: float, life: float = 0.9) -> void:
 ## Water entry: the contact crown/burst, shaped by how the runner went in
 ## (0 walk-in: small crown; 1 jump: tall cannonball column; 2 dive: wide sheet).
 func splash_impact(pos: Vector3, kind: int, col: Color, reduced: bool = false) -> void:
-	var tint := col.lerp(Color(0.78, 0.9, 0.98), 0.45)
+	var tint := col.lerp(Color(0.8, 0.91, 0.98), 0.7)
 	var k := 0.6 if reduced else 1.0
 	# soft white burst: a few large, faint puffs where the body went in
 	var mist := _emitter("mist", pos + Vector3(0, 0.25, 0), int(10 * k), 0.55, Color(0.9, 0.96, 1.0), 0.2)

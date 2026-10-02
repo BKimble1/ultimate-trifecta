@@ -10,13 +10,19 @@ extends Node3D
 ## place: sync_party() adds arrivals (with one short arrival hop), removes
 ## leavers and changes outfits without rebuilding anyone else.
 
+## Lobby marks, filled in order (0 = the local player, front centre).  Nobody
+## stands directly behind anyone: every back-row mark sits between two
+## front-row marks, so with the raised camera each face clears the heads (and
+## nightcaps) in front at 1, 2, 4 or 8 players (test_lobby checks this).
 const MARKS := [
-	Vector3(0.0, 0, 1.15),      # local player, front and centre
-	Vector3(-1.05, 0, 0.5), Vector3(1.05, 0, 0.5),
-	Vector3(-1.9, 0, -0.15), Vector3(1.9, 0, -0.15),
-	Vector3(-0.62, 0, -0.55), Vector3(0.62, 0, -0.55),
-	Vector3(0.0, 0, -1.4),      # back centre: seen over the local player's cap (camera 3.1 m up)
+	Vector3(0.0, 0, 1.25),
+	Vector3(-1.12, 0, 0.9), Vector3(1.12, 0, 0.9),
+	Vector3(-0.62, 0, -0.2), Vector3(0.62, 0, -0.2),
+	Vector3(-2.15, 0, 0.42), Vector3(2.15, 0, 0.42),
+	Vector3(1.72, 0, -0.5),
 ]
+## each character turns a little toward the group's centre
+const YAW_BIAS := [0.0, 0.2, -0.2, 0.12, -0.12, 0.32, -0.32, -0.1]
 ## Framing per mode, independent of screen aspect: the subject point is put
 ## at `x_frac` of the screen width (the menu / party panel owns the right
 ## side), `height` metres of the scene fill the screen height.
@@ -28,17 +34,19 @@ const FRAMES := {
 }
 const HOME_MARK := Vector3(0.62, 0, 0.6)
 
-## lobby: half-width of the 8-character group (marks + body), and the
+## half-width of a character on its mark (body + arms + head), metres
+const BODY_HALF_W := 0.62
 ## fraction of the screen width left of the party panel (set by LobbyScreen)
-const GROUP_HALF_W := 2.4
 var lobby_free_frac := 0.62
 var cam: Camera3D
 var chars: Dictionary = {}       # key -> CharacterView
 var _mark_of: Dictionary = {}    # key -> mark index
+var _ready_of: Dictionary = {}   # key -> last ready flag (ready response once per change)
 var mode := "home"
 var reduced_motion := false
 var _cam_from: Array = []
 var _cam_t := 1.0
+var _cam_dur := 0.2
 var _t := 0.0
 var _lamp: OmniLight3D
 
@@ -64,17 +72,48 @@ func _cam_for(m: String) -> Array:
 	var fov: float = f[5]
 	var vs := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(16, 9)
 	var aspect := vs.x / maxf(1.0, vs.y)
+	var cam_h := float(f[3])
 	if m == "lobby":
-		# centre the group in the free area left of the party panel and make
-		# sure all eight fit on any aspect (phone 19.5:9 ... iPad 4:3)
+		# frame the marks actually in use (1 to 8 players), centred in the free
+		# area left of the party panel, on any aspect (phone 19.5:9 ... iPad 4:3)
+		var b := _group_bounds()
+		subject = Vector3((b.x + b.y) * 0.5, subject.y, (b.z + b.w) * 0.5)
+		var group_w := b.y - b.x + BODY_HALF_W * 2.0
 		x_frac = lobby_free_frac * 0.5
-		height_m = maxf(height_m, (GROUP_HALF_W * 2.2 / lobby_free_frac) / aspect)
+		height_m = maxf(2.6 + 0.35 * (b.w - b.z), (group_w * 1.12 / lobby_free_frac) / aspect)
+		# the camera rises with the depth of the group so back-row faces clear the front row
+		cam_h = 1.5 + 1.6 * clampf((b.w - b.z) / 1.6, 0.0, 1.0)
 	var dist := height_m * 0.5 / tan(deg_to_rad(fov) * 0.5)
 	var width_m := height_m * aspect
 	var shift := (0.5 - x_frac) * width_m      # look right of the subject
 	var at := subject + Vector3(shift, 0, 0)
-	var from := Vector3(at.x, float(f[3]), subject.z + sqrt(maxf(0.01, dist * dist - pow(float(f[3]) - subject.y, 2.0))))
+	var from := Vector3(at.x, cam_h, subject.z + sqrt(maxf(0.01, dist * dist - pow(cam_h - subject.y, 2.0))))
 	return [from, at, fov]
+
+
+## x min, x max, z min, z max of the occupied lobby marks.
+func _group_bounds() -> Vector4:
+	var b := Vector4(INF, -INF, INF, -INF)
+	for k in _mark_of:
+		var p: Vector3 = MARKS[int(_mark_of[k])]
+		b = Vector4(minf(b.x, p.x), maxf(b.y, p.x), minf(b.z, p.z), maxf(b.w, p.z))
+	if b.x == INF:
+		var p0: Vector3 = MARKS[0]
+		b = Vector4(p0.x, p0.x, p0.z, p0.z)
+	return b
+
+
+## Party size changed: ease the camera to the new framing (cut with Reduced Motion).
+func _reframe() -> void:
+	if mode != "lobby" or not is_inside_tree():
+		return
+	_cam_from = [cam.global_position, cam.global_position - cam.global_transform.basis.z * 3.0, cam.fov]
+	_cam_t = 1.0 if reduced_motion else 0.0
+	_cam_dur = 0.25
+	if _cam_t >= 1.0:
+		_apply_cam(_cam_for(mode), 1.0)
+	for k in chars:
+		_place(k)
 
 
 func set_lobby_free_frac(f: float) -> void:
@@ -96,6 +135,7 @@ func set_mode(m: String, animate: bool = true) -> void:
 	_cam_from = [cam.global_position, cam.global_position - cam.global_transform.basis.z * 3.0, cam.fov]
 	mode = m
 	_cam_t = 0.0 if (animate and not reduced_motion and is_inside_tree()) else 1.0
+	_cam_dur = 0.2
 	if _cam_t >= 1.0:
 		_apply_cam(_cam_for(m), 1.0)
 	for k in chars:
@@ -118,7 +158,7 @@ func _apply_cam(c: Array, u: float) -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	if _cam_t < 1.0:
-		_cam_t = minf(1.0, _cam_t + delta / 0.2)
+		_cam_t = minf(1.0, _cam_t + delta / _cam_dur)
 		_apply_cam(_cam_for(mode), _cam_t)
 	if _lamp:
 		_lamp.light_energy = 1.9 + 0.04 * sin(_t * 1.7)
@@ -129,6 +169,7 @@ func _process(delta: float) -> void:
 ## characters missing from `entries` are kept (single-entry updates).
 func sync_party(entries: Array, exclusive: bool = true) -> void:
 	var seen := {}
+	var marks_before := _mark_of.size()
 	for e in entries:
 		var key := String(e["key"])
 		seen[key] = true
@@ -146,9 +187,16 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 			v.apply_state(_idle_rs(v), 0.0, true)
 			if bool(e.get("arrive", true)) and mode == "lobby":
 				v.play_arrive()
+			_ready_of[key] = bool(e.get("ready", false))
 		else:
 			if v.cosmetic != Cosmetics.sanitize(e["cosmetic"]) or v.role != role:
 				v.set_appearance(role, e["cosmetic"])
+				if mode == "lobby":
+					v.play_arrive()   # a little hop to show the new look
+			var rdy := bool(e.get("ready", false))
+			if rdy and not bool(_ready_of.get(key, false)) and mode == "lobby":
+				v.play_ready()
+			_ready_of[key] = rdy
 		if v.name_label:
 			var nm := String(e.get("name", ""))
 			v.name_label.text = (nm + "  ·  BOT") if bool(e.get("is_bot", false)) else nm
@@ -160,9 +208,15 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 		if exclusive and not seen.has(k):
 			var v: CharacterView = chars[k]
 			if is_instance_valid(v):
-				v.queue_free()
+				if mode == "lobby" and is_inside_tree():
+					v.play_leave()
+				else:
+					v.queue_free()
 			chars.erase(k)
 			_mark_of.erase(k)
+			_ready_of.erase(k)
+	if _mark_of.size() != marks_before:
+		_reframe()
 
 
 func _free_mark(local: bool) -> int:
@@ -191,13 +245,12 @@ func _place(key: String) -> void:
 		yaw_bias = 0.42 if mode == "home" else 0.3
 	else:
 		v.visible = true
-		yaw_bias = [0.0, 0.18, -0.18, 0.3, -0.3, 0.1, -0.1, 0.0][mi]
+		yaw_bias = YAW_BIAS[mi]
 	v.position = p
 	var cpos: Vector3 = _cam_for(mode)[0]
 	v.face_toward(Vector3(cpos.x, 0, cpos.z))
-	v.rotation.y += yaw_bias
+	v.set_facing(v.rotation.y + yaw_bias)
 	v.rs["pos"] = v.global_position
-	v.rs["yaw"] = v.rotation.y
 
 
 func _idle_rs(v: CharacterView) -> Dictionary:
@@ -228,6 +281,13 @@ func local_character() -> CharacterView:
 
 
 # ---------------------------------------------------------------------------
+## dorm.gdshader surface codes (vertex alpha)
+const WOOD := 0.9
+const FABRIC := 0.8
+const PAPER := 0.7
+const GLOSS := 0.6
+
+
 func _build_room() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
@@ -267,21 +327,28 @@ func _build_room() -> void:
 	_lamp.omni_range = 7.5
 	_lamp.omni_attenuation = 1.4
 	add_child(_lamp)
+	var lamp2 := OmniLight3D.new()
+	lamp2.position = Vector3(-1.9, 0.75, -2.1)
+	lamp2.light_color = Color(1.0, 0.72, 0.45)
+	lamp2.light_energy = 0.9
+	lamp2.omni_range = 4.0
+	lamp2.omni_attenuation = 1.6
+	add_child(lamp2)
 
 	var k := MeshKit.new()
-	var wood := Color("8a5a3c")
-	var wood_d := Color("6e4630")
-	var wall := Color("3a4a6b")
+	var wood := Color("8a5a3c", WOOD)
+	var wood_d := Color("6e4630", WOOD)
+	var wall := Color("3a4a6b", PAPER)
 	var wall_lo := Color("2f3d5a")
-	# floor planks
+	# floor planks (grain, seams and staggered ends come from the dorm shader)
 	for i in 16:
 		var x := -6.0 + 0.75 * float(i) + 0.375
-		k.box(Vector3(x, -0.05, 0.0), Vector3(0.74, 0.1, 10.0), wood if i % 2 == 0 else wood.darkened(0.06))
+		k.box(Vector3(x, -0.05, 0.0), Vector3(0.75, 0.1, 10.0), Color(wood.lightened(0.03 * float(i % 3)) if i % 2 == 0 else wood.darkened(0.05), WOOD))
 	# walls (back + left), skirting, window
 	k.box(Vector3(0, 2.1, -3.6), Vector3(12.4, 4.4, 0.25), wall)
 	k.box(Vector3(0, 0.6, -3.46), Vector3(12.4, 1.2, 0.05), wall_lo)
 	k.box(Vector3(0, 1.21, -3.43), Vector3(12.4, 0.06, 0.08), Color("c9b48a"))
-	k.box(Vector3(-6.1, 2.1, 0), Vector3(0.25, 4.4, 8.0), wall.darkened(0.08))
+	k.box(Vector3(-6.1, 2.1, 0), Vector3(0.25, 4.4, 8.0), Color(wall.darkened(0.08), PAPER))
 	k.box(Vector3(-5.96, 0.6, 0), Vector3(0.05, 1.2, 8.0), wall_lo.darkened(0.08))
 	# window: frame, night sky panes, moon, distant lit windows
 	var wx := -0.4
@@ -299,20 +366,20 @@ func _build_room() -> void:
 	k.box(Vector3(wx, 3.43, -3.40), Vector3(3.6, 0.1, 0.12), Color("e9e2d2"))
 	# curtains
 	for side in [-1.0, 1.0]:
-		k.box(Vector3(wx + side * 1.95, 2.3, -3.32), Vector3(0.42, 2.5, 0.08), Color("b84d5e"))
+		k.box(Vector3(wx + side * 1.95, 2.3, -3.32), Vector3(0.42, 2.5, 0.08), Color("b84d5e", FABRIC))
 	# rug (round, layered)
-	k.ellipse_disc(Vector3(0.1, 0.012, 0.25), 3.1, 2.1, Color("2f8f88"), 40)
-	k.ellipse_disc(Vector3(0.1, 0.018, 0.25), 2.75, 1.8, Color("f1d9a6"), 40)
-	k.ellipse_disc(Vector3(0.1, 0.024, 0.25), 2.3, 1.45, Color("3aa39b"), 40)
+	k.ellipse_disc(Vector3(0.1, 0.012, 0.25), 3.1, 2.1, Color("2f8f88", FABRIC), 40)
+	k.ellipse_disc(Vector3(0.1, 0.018, 0.25), 2.75, 1.8, Color("f1d9a6", FABRIC), 40)
+	k.ellipse_disc(Vector3(0.1, 0.024, 0.25), 2.3, 1.45, Color("3aa39b", FABRIC), 40)
 	# couch along the back-left
-	var cc := Color("5b6fb3")
+	var cc := Color("5b6fb3", FABRIC)
 	k.box(Vector3(-3.6, 0.28, -2.75), Vector3(3.0, 0.42, 1.05), cc.darkened(0.1))
 	k.box(Vector3(-3.6, 0.58, -2.6), Vector3(2.7, 0.2, 0.85), cc)
 	k.box(Vector3(-3.6, 0.95, -3.18), Vector3(3.0, 0.75, 0.32), cc.darkened(0.05))
 	for sx in [-1.0, 1.0]:
 		k.box(Vector3(-3.6 + sx * 1.42, 0.68, -2.72), Vector3(0.28, 0.5, 1.05), cc.darkened(0.12))
-	k.box(Vector3(-4.2, 0.82, -2.75), Vector3(0.62, 0.38, 0.22), Color("ffc668"), 0.25)
-	k.box(Vector3(-3.0, 0.82, -2.75), Vector3(0.58, 0.36, 0.2), Color("6fd8cc"), -0.2)
+	k.box(Vector3(-4.2, 0.82, -2.75), Vector3(0.62, 0.38, 0.22), Color("ffc668", FABRIC), 0.25)
+	k.box(Vector3(-3.0, 0.82, -2.75), Vector3(0.58, 0.36, 0.2), Color("6fd8cc", FABRIC), -0.2)
 	# floor lamp + warm shade
 	k.cylinder(Vector3(3.9, 0.0, -1.9), 0.25, 0.04, Color("2a2d36"), 12)
 	k.cylinder(Vector3(3.9, 0.0, -1.9), 0.035, 1.55, Color("2a2d36"), 8)
@@ -327,13 +394,15 @@ func _build_room() -> void:
 			k.box(Vector3(4.55 + 0.2 * float(b), y + bh * 0.5 + 0.02, -2.72), Vector3(0.15, bh, 0.3),
 				[Color("e46a5e"), Color("f1c75b"), Color("6fd8cc"), Color("9a7bd8"), Color("f4f2ec")][(b + sh) % 5])
 	# plant, beanbag, side table + pizza box, posters, string lights
-	k.cylinder(Vector3(-5.3, 0, 1.6), 0.28, 0.5, Color("c27a4f"), 10, 0.0, true, 0.34)
+	k.cylinder(Vector3(-5.3, 0, 1.6), 0.28, 0.5, Color("c27a4f", GLOSS), 10, 0.0, true, 0.34)
 	k.blob(Vector3(-5.3, 0.95, 1.6), Vector3(0.55, 0.6, 0.55), Color("4f9a5c"), 4, 9)
-	k.blob(Vector3(4.0, 0.32, 1.1), Vector3(0.75, 0.38, 0.7), Color("ff8f6b"), 4, 12)
+	k.blob(Vector3(4.0, 0.32, 1.1), Vector3(0.75, 0.38, 0.7), Color("ff8f6b", FABRIC), 4, 12)
 	k.box(Vector3(-1.9, 0.28, -2.1), Vector3(0.8, 0.04, 0.55), wood)
 	k.box(Vector3(-1.9, 0.14, -2.1), Vector3(0.7, 0.28, 0.45), wood_d)
 	k.box(Vector3(-1.9, 0.33, -2.1), Vector3(0.45, 0.06, 0.45), Color("f4f2ec"), 0.3)
-	k.box(Vector3(2.4, 2.45, -3.45), Vector3(0.9, 1.2, 0.03), Color("ffc668"), 0.0, 0.0)
+	k.cylinder(Vector3(-2.1, 0.3, -2.2), 0.08, 0.28, Color("e9e2d2", GLOSS), 10)
+	k.cylinder(Vector3(-2.1, 0.56, -2.2), 0.16, 0.2, Color("ffd9a0"), 12, 1.3, true, 0.1)
+	k.box(Vector3(2.4, 2.45, -3.45), Vector3(0.9, 1.2, 0.03), Color("ffc668", GLOSS), 0.0, 0.0)
 	k.blob(Vector3(2.4, 2.62, -3.43), Vector3(0.24, 0.24, 0.01), Color("6fd8cc"), 6, 20)
 	k.box(Vector3(2.4, 2.1, -3.43), Vector3(0.62, 0.08, 0.01), Color("11192b"))
 	k.box(Vector3(2.4, 1.98, -3.43), Vector3(0.44, 0.05, 0.01), Color("11192b"))
@@ -346,7 +415,6 @@ func _build_room() -> void:
 	var mi := MeshInstance3D.new()
 	mi.mesh = k.commit()
 	var m := ShaderMaterial.new()
-	m.shader = preload("res://assets/shaders/world_vc.gdshader")
-	m.set_shader_parameter("moon_rim_color", Color(0.4, 0.42, 0.6))
+	m.shader = preload("res://assets/shaders/dorm.gdshader")
 	mi.material_override = m
 	add_child(mi)

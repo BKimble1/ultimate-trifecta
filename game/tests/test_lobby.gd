@@ -65,29 +65,38 @@ func test_stage_updates_incrementally_through_drop_and_rejoin() -> void:
 
 
 func test_eight_players_fit_on_distinct_marks() -> void:
+	for n in [1, 2, 4, 8]:
+		await _check_party(n)
+
+
+## n players on stage: distinct marks, all in view, every face clear of the
+## heads and caps in front (V3: checked at 1, 2, 4 and 8).
+func _check_party(n: int) -> void:
 	var stage := DormStage.new()
 	t.add_child(stage)
 	stage.set_mode("lobby", false)
 	var entries: Array = []
-	for i in 8:
+	for i in n:
 		entries.append({"key": "p%d" % i, "role": TC.Role.RUNNER, "cosmetic": Cosmetics.bot_cosmetic(i), "name": "Player %d" % i,
 			"is_bot": false, "local": i == 0})
 	stage.sync_party(entries)
 	var marks := {}
 	for k in stage._mark_of:
 		marks[stage._mark_of[k]] = true
-	t.eq(marks.size(), 8, "eight distinct stage marks")
-	# everyone is inside the camera frustum
+	t.eq(marks.size(), n, "%d distinct stage marks" % n)
+	# everyone is inside the camera frustum (after the reframe eases in)
 	await t.get_tree().process_frame
+	var guard := 0
+	while stage._cam_t < 1.0 and guard < 120:
+		await t.get_tree().process_frame
+		guard += 1
 	var cam := stage.cam
 	var inside := 0
 	for k in stage.chars:
 		var v: CharacterView = stage.chars[k]
 		if cam.is_position_in_frustum(v.global_position + Vector3(0, 0.8, 0)) and cam.is_position_in_frustum(v.global_position + Vector3(0, 1.5, 0)):
 			inside += 1
-		else:
-			print("OUT ", k, " mark=", stage._mark_of[k], " pos=", v.global_position, " screen=", cam.unproject_position(v.global_position + Vector3(0, 0.8, 0)), " vp=", stage.get_viewport().get_visible_rect().size)
-	t.eq(inside, 8, "all eight characters are in view")
+	t.eq(inside, n, "%d players: all in view" % n)
 	# readable: no face is covered by a nearer character's head or cap
 	var hidden: Array = []
 	for a in stage.chars:
@@ -106,5 +115,10 @@ func test_eight_players_fit_on_distinct_marks() -> void:
 				var r := cp.distance_to(cam.unproject_position(c + cam.global_transform.basis.x * float(blob[1])))
 				if fa.distance_to(cp) < r:
 					hidden.append("%s behind %s" % [a, b])
-	t.eq(hidden, [], "every face is visible (none behind a nearer head or cap)")
+	t.eq(hidden, [], "%d players: every face is visible (none behind a nearer head or cap)" % n)
+	# the local player stands front and centre, facing the camera
+	var lv: CharacterView = stage.chars["p0"]
+	var to_cam := (cam.global_position - lv.global_position) * Vector3(1, 0, 1)
+	var fwd := -lv.global_transform.basis.z
+	t.check(fwd.normalized().dot(to_cam.normalized()) > 0.8, "%d players: local player faces the camera" % n)
 	stage.queue_free()

@@ -9,7 +9,13 @@ extends RefCounted
 ## least 44 pt (touch_min(), in canvas units for the current device).
 ## Transitions run 150-220 ms; Reduced Motion turns slides into fades.
 
-const FONT_PATH := "res://assets/fonts/Fredoka-Variable.ttf"
+## Static weight instances (tools/fonts/make_static_fonts.py).  The variable
+## font rendered every requested weight at its default Light instance.
+const FONT_FILES := {
+	500: "res://assets/fonts/Fredoka-Medium.ttf",
+	600: "res://assets/fonts/Fredoka-SemiBold.ttf",
+	700: "res://assets/fonts/Fredoka-Bold.ttf",
+}
 
 const NAVY := Color("11192b")
 const SLATE := Color("223049")
@@ -42,19 +48,17 @@ static var _theme: Theme
 static var _fonts: Dictionary = {}
 
 
-## weight: 500 body, 600 emphasis, 700 headings/buttons
+## weight: 500 body, 600 emphasis/buttons, 700 headings and the wordmark.
+## Other values snap to the nearest shipped instance.
 static func font_w(weight: int) -> Font:
-	if not _fonts.has(weight):
-		var base: FontFile = load(FONT_PATH)
-		var f := FontVariation.new()
-		f.base_font = base
-		f.variation_opentype = {"wght": weight}
-		_fonts[weight] = f
-	return _fonts[weight]
+	var w := 500 if weight < 550 else (600 if weight < 675 else 700)
+	if not _fonts.has(w):
+		_fonts[w] = load(FONT_FILES[w])
+	return _fonts[w]
 
 
 static func font(bold: bool = false) -> Font:
-	return font_w(650 if bold else 500)
+	return font_w(600 if bold else 500)
 
 
 ## 44 pt in canvas units on this device (phones in landscape: ~81 units).
@@ -150,9 +154,9 @@ static func theme() -> Theme:
 
 
 static func _style_button(t: Theme, type: String, col: Color, fg: Color) -> void:
-	t.set_stylebox("normal", type, box(col, R_BUTTON))
-	t.set_stylebox("hover", type, box(col.lightened(0.08), R_BUTTON))
-	t.set_stylebox("pressed", type, box(col.darkened(0.15), R_BUTTON))
+	t.set_stylebox("normal", type, depth_box(col))
+	t.set_stylebox("hover", type, depth_box(col.lightened(0.08)))
+	t.set_stylebox("pressed", type, depth_box(col.darkened(0.08), true))
 	t.set_stylebox("disabled", type, box(Color(col, 0.45), R_BUTTON))
 	t.set_stylebox("focus", type, box(Color(0, 0, 0, 0), R_BUTTON + 3, 3, TEAL, 0))
 	for k in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
@@ -166,7 +170,7 @@ static func label(text: String, size: int = 24, col: Color = IVORY, bold: bool =
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", col)
 	if bold:
-		l.add_theme_font_override("font", font_w(650))
+		l.add_theme_font_override("font", font_w(600))
 	l.horizontal_alignment = align
 	return l
 
@@ -215,7 +219,9 @@ static func quiet(text: String, min_size: Vector2 = Vector2(220, 72), font_size:
 	var n := box(Color(SLATE, 0.55), R_BUTTON, 2, Color(IVORY, 0.22))
 	b.add_theme_stylebox_override("normal", n)
 	b.add_theme_stylebox_override("hover", box(Color(SLATE_HI, 0.75), R_BUTTON, 2, Color(IVORY, 0.3)))
-	b.add_theme_stylebox_override("pressed", box(Color(SLATE_LO, 0.9), R_BUTTON, 2, Color(IVORY, 0.3)))
+	var pq := box(Color(SLATE_LO, 0.9), R_BUTTON, 2, Color(IVORY, 0.3))
+	pq.content_margin_top += 2
+	b.add_theme_stylebox_override("pressed", pq)
 	b.add_theme_stylebox_override("disabled", box(Color(SLATE, 0.3), R_BUTTON, 2, Color(IVORY, 0.1)))
 	b.add_theme_stylebox_override("focus", box(Color(0, 0, 0, 0), R_BUTTON + 3, 3, TEAL, 0))
 	for k in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
@@ -245,7 +251,7 @@ static func _base_button(text: String, min_size: Vector2, font_size: int) -> But
 	b.custom_minimum_size = Vector2(maxf(min_size.x, tm), maxf(min_size.y, tm))
 	b.focus_mode = Control.FOCUS_ALL
 	b.add_theme_font_size_override("font_size", font_size)
-	b.add_theme_font_override("font", font_w(650))
+	b.add_theme_font_override("font", font_w(600))
 	b.clip_text = false
 	b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	b.pressed.connect(func() -> void: Sfx.play("click"))
@@ -253,10 +259,27 @@ static func _base_button(text: String, min_size: Vector2, font_size: int) -> But
 	return b
 
 
+## Raised button face: a darker lip under the face gives depth; pressed, the
+## face sinks onto the lip (layout size never changes).
+const LIP := 6
+
+
+static func depth_box(bg: Color, pressed: bool = false, radius: int = R_BUTTON) -> StyleBoxFlat:
+	var s := box(bg, radius)
+	var lip := LIP if not pressed else 2
+	s.border_width_bottom = lip
+	s.border_color = Color(bg.darkened(0.38), maxf(bg.a, 0.6))
+	s.content_margin_bottom += lip
+	if pressed:
+		s.expand_margin_top = -float(LIP - 2)
+		s.content_margin_top += float(LIP - 2)
+	return s
+
+
 static func _apply(b: Button, bg: Color, fg: Color) -> void:
-	b.add_theme_stylebox_override("normal", box(bg, R_BUTTON))
-	b.add_theme_stylebox_override("hover", box(bg.lightened(0.07), R_BUTTON))
-	b.add_theme_stylebox_override("pressed", box(bg.darkened(0.16), R_BUTTON))
+	b.add_theme_stylebox_override("normal", depth_box(bg))
+	b.add_theme_stylebox_override("hover", depth_box(bg.lightened(0.07)))
+	b.add_theme_stylebox_override("pressed", depth_box(bg.darkened(0.08), true))
 	b.add_theme_stylebox_override("disabled", box(Color(bg, 0.4), R_BUTTON))
 	b.add_theme_stylebox_override("focus", box(Color(0, 0, 0, 0), R_BUTTON + 3, 3, TEAL if bg != TEAL else IVORY, 0))
 	for k in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
@@ -264,7 +287,8 @@ static func _apply(b: Button, bg: Color, fg: Color) -> void:
 	b.add_theme_color_override("font_disabled_color", Color(fg, 0.5))
 
 
-## Pressed feedback: a quick 4% press-in scale (instant with Reduced Motion).
+## Pressed feedback: a quick 4% press-in, then a small spring back on
+## release (about 200 ms; none with Reduced Motion, the lip still shows it).
 static func press_feedback(c: Control) -> void:
 	if c.has_meta("press_fb"):
 		return
@@ -273,17 +297,20 @@ static func press_feedback(c: Control) -> void:
 	if c is BaseButton:
 		var bb := c as BaseButton
 		bb.button_down.connect(func() -> void: _scale_to(c, 0.96))
-		bb.button_up.connect(func() -> void: _scale_to(c, 1.0))
+		bb.button_up.connect(func() -> void: _scale_to(c, 1.0, true))
 
 
-static func _scale_to(c: Control, s: float) -> void:
+static func _scale_to(c: Control, s: float, spring: bool = false) -> void:
 	if not c.is_inside_tree():
 		return
 	if reduced_motion():
 		c.scale = Vector2.ONE
 		return
 	var tw := c.create_tween()
-	tw.tween_property(c, "scale", Vector2(s, s), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if spring:
+		tw.tween_property(c, "scale", Vector2(s, s), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	else:
+		tw.tween_property(c, "scale", Vector2(s, s), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 static func panel(col: Color = PANEL, radius: int = R_PANEL, pad: int = 22) -> PanelContainer:
