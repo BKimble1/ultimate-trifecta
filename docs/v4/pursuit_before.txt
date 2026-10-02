@@ -1,0 +1,12 @@
+PURSUIT jog 4 m, presses at 2.6 m          caught   2.7 s  attempts 2  hits 1  closure -1.00 m/s
+PURSUIT jog 8 m, presses at 2.6 m          caught   6.1 s  attempts 2  hits 1  closure 1.16 m/s
+PURSUIT jog 12 m, presses at 2.6 m         caught   9.4 s  attempts 2  hits 1  closure 1.16 m/s
+PURSUIT jog 8 m, presses on the cue        caught  -1.0 s  attempts 0  hits 0  closure 1.16 m/s  ESCAPED
+PURSUIT sprint cycle 8 m                   caught  17.8 s  attempts 2  hits 1  closure -0.40 m/s
+PURSUIT close rear tag, both running 2.2 m caught   0.3 s  attempts 1  hits 1  closure -1.00 m/s
+PURSUIT weaving runner 6 m                 caught   3.5 s  attempts 2  hits 1  closure 1.62 m/s
+PURSUIT jog 8 m, 100 ms input delay +-33 ms caught   5.9 s  attempts 2  hits 1  closure 0.96 m/s
+PURSUIT jog 8 m, 250 ms hitch at 2 s       caught   6.1 s  attempts 2  hits 1  closure 1.16 m/s
+PURSUIT cart interception 21 m             caught  14.1 s  out of the cart at 7.9 s  (lockout presses ignored: 13)
+PURSUIT sprint burst: gap 4.2 m -> 5.8 m over 2 s
+4 tests, 34 checks, 2 failures in 7.4s

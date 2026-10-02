@@ -25,7 +25,7 @@ extends Resource
 
 @export_group("Runner movement")
 @export var runner_speed: float = 5.0
-@export var runner_sprint_speed: float = 7.0
+@export var runner_sprint_speed: float = 7.4             # V4: was 7.0 (sprint stays an escape with the faster Night Watch)
 @export var sprint_capacity_s: float = 2.5
 @export var sprint_regen_delay_s: float = 0.35
 @export var sprint_regen_full_s: float = 3.6
@@ -45,12 +45,12 @@ extends Resource
 @export var turn_rate_deg: float = 900.0
 
 @export_group("Patrol on foot")
-@export var patrol_speed: float = 6.2
+@export var patrol_speed: float = 6.6                    # V4: was 6.2 (closes on a sprint-cycling runner)
 @export var patrol_jump_velocity: float = 6.0
 @export var tag_anticipation_s: float = 0.14
-@export var tag_anticipation_move_scale: float = 0.6   # foot speed kept during the wind-up
+@export var tag_anticipation_move_scale: float = 0.9   # foot speed kept during the wind-up (V4: was 0.6)
 @export var tag_lunge_s: float = 0.22
-@export var tag_lunge_speed: float = 8.2
+@export var tag_lunge_speed: float = 9.0                # V4: was 8.2 (a 2.6 m press behind a jogger now lands)
 @export var tag_reach_m: float = 1.6
 @export var tag_half_angle_deg: float = 75.0
 @export var tag_vertical_reach_m: float = 1.5
@@ -59,6 +59,17 @@ extends Resource
 @export var tag_lag_comp_max_s: float = 0.15
 @export var tag_lag_comp_slack_m: float = 0.9
 @export var cart_exit_tag_lockout_s: float = 0.5
+## V4 target assist: at a press the Night Watch turns (at most snap degrees)
+## toward an eligible runner in line of sight inside this cone and range,
+## then tracks it through the wind-up and lunge at a limited turn rate.
+## Reach, LOS and the hit test stay authoritative and unchanged.
+@export var tag_assist_range_m: float = 4.0
+@export var tag_assist_half_angle_deg: float = 50.0
+@export var tag_assist_snap_deg: float = 40.0
+@export var tag_track_deg_per_s: float = 240.0
+## the tag-ready cue lights when the predicted end of the lunge is this far
+## inside the reach (a little conservative: a lit Tag should land)
+@export var tag_ready_margin_m: float = 0.2
 
 @export_group("Carts")
 @export var cart_count: int = 2

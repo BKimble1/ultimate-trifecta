@@ -37,6 +37,12 @@ var turbo_t: float = 0.0
 var tag_phase: int = TagPhase.NONE
 var tag_t: float = 0.0
 var tag_cd: float = 0.0
+## host: a Tag pressed now would land (eligible, visible target in reach); the tag-ready cue
+var tag_ready := false
+## host: the runner the assist would pick now (-1 none) - the target cue
+var tag_aim: int = -1
+## the runner a wind-up / lunge in progress tracks (-1 none)
+var tag_target: int = -1
 var tag_lockout: float = 0.0
 var protect: float = 0.0
 var bump_protect: float = 0.0
@@ -159,6 +165,7 @@ func write_motor(buf: StreamPeerBuffer) -> void:
 	buf.put_float(tag_t)
 	buf.put_float(tag_cd)
 	buf.put_float(tag_lockout)
+	buf.put_8(tag_target)
 	buf.put_8(cart_id)
 	buf.put_float(air_t)
 	buf.put_float(stuck_t)
@@ -185,6 +192,7 @@ func read_motor(buf: StreamPeerBuffer) -> Dictionary:
 	d["tag_t"] = buf.get_float()
 	d["tag_cd"] = buf.get_float()
 	d["tag_lockout"] = buf.get_float()
+	d["tag_target"] = buf.get_8()
 	d["cart_id"] = buf.get_8()
 	d["air_t"] = buf.get_float()
 	d["stuck_t"] = buf.get_float()
@@ -213,6 +221,7 @@ func apply_motor(d: Dictionary) -> void:
 	tag_t = d["tag_t"]
 	tag_cd = d["tag_cd"]
 	tag_lockout = d["tag_lockout"]
+	tag_target = d.get("tag_target", -1)
 	cart_id = d["cart_id"]
 	air_t = d.get("air_t", 0.0)
 	stuck_t = d.get("stuck_t", 0.0)

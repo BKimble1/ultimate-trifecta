@@ -162,6 +162,12 @@ class TouchSurface:
 			router.reserved = rects
 			_sig = ""
 
+	## Reserved HUD regions (pause, map) are not ours: GUI picking falls
+	## through to the HUD's own buttons on the layer below.  (Before V4 the
+	## full-screen surface swallowed those taps, so Pause could not be tapped.)
+	func _has_point(point: Vector2) -> bool:
+		return Rect2(Vector2.ZERO, size).has_point(point) and not router.in_reserved(point)
+
 	func _notification(what: int) -> void:
 		match what:
 			NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_WINDOW_FOCUS_OUT, NOTIFICATION_EXIT_TREE:

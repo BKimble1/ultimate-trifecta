@@ -60,6 +60,15 @@ func _init(sim: MatchSim, p: SimPlayer) -> void:
 
 
 func think(sim: MatchSim, p: SimPlayer) -> InputCmd:
+	var cmd := _think(sim, p)
+	# Night Watch training: runner bots jog a little slower and never sprint
+	if sim.gentle_bots and p.is_runner():
+		cmd.move *= 0.8
+		cmd.held &= ~TC.BTN_SPRINT
+	return cmd
+
+
+func _think(sim: MatchSim, p: SimPlayer) -> InputCmd:
 	var cmd := InputCmd.new()
 	var dt := sim.cfg.dt()
 	jump_cool = maxf(0.0, jump_cool - dt)

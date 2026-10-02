@@ -256,3 +256,28 @@ func test_saved_layout_migrates_and_rejects_garbage() -> void:
 	t.check((g["action"] as Dictionary).has("patrol") and not (g["action"] as Dictionary).has("runner") and not (g["action"] as Dictionary).has("bogus"),
 		"bad anchors dropped, good ones clamped (%s)" % str(g["action"]))
 	t.eq(g["action"]["patrol"], [0.8, 1.0], "clamped to the safe area")
+
+
+func test_tiny_or_degenerate_views_never_hang() -> void:
+	for view in [Vector2(64, 64), Vector2(1, 1), Vector2(300, 720)]:
+		var safe := Rect2(Vector2(16, 12), view - Vector2(32, 24))
+		var res := TouchLayout.resolve(TouchLayout.default_layout(), "runner", view, safe, 1.846, [Rect2(0, 0, 50, 50)])
+		t.check(res.has("buttons"), "a layout comes back for %s" % str(view))
+
+
+## The touch surface covers the screen on a layer above the HUD; taps on the
+## HUD's Pause button and map must still reach them.  GUI picking skips a
+## control whose _has_point is false, so reserved HUD regions are not the
+## surface's.  (Headless test windows don't route GUI clicks; the dispatch
+## itself is checked in a real window by src/dev/input_fallthrough_check.tscn.)
+func test_hud_regions_fall_through_the_touch_surface() -> void:
+	var s := TouchControls.TouchSurface.new()
+	s.size = Vector2(1558, 720)
+	var pause_r := Rect2(1440, 20, 80, 80)
+	var reserved: Array[Rect2] = [pause_r.grow(12)]
+	s.set_reserved(reserved)
+	t.check(not s._has_point(pause_r.get_center()), "a tap on Pause is not the touch surface's")
+	t.check(not s._has_point(pause_r.position + Vector2(-8, -8)), "nor its padding")
+	t.check(s._has_point(Vector2(700, 400)), "the camera area is")
+	t.check(s._has_point(Vector2(200, 600)), "and the stick area")
+	s.free()

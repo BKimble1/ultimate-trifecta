@@ -453,14 +453,23 @@ func refresh(delta: float) -> void:
 	var rs: Dictionary = info.get("rs", {})
 	if role != TC.Role.SPECTATOR and phase == TC.Phase.PLAYING:
 		if st == TC.PState.CAPTURED:
+			# the capture contract, in the round's real values: who caught
+			# you, then the countdown; stamps are kept; a protected return
 			var pen: float = info.get("penalty", 0.0)
 			overlay.visible = true
-			overlay_title.text = "CAUGHT!  %d" % int(ceil(pen))
-			overlay_sub.text = "Your splashes are safe. You'll pop back near your last splash spot."
+			var since := mc.cfg.capture_penalty_s - pen
+			if since < 1.3 and mc.caught_by != "":
+				overlay_title.text = "Caught by %s · back in %d…" % [mc.caught_by, int(ceil(pen))]
+			else:
+				overlay_title.text = "Back in %d…" % int(ceil(pen))
+			overlay_sub.text = "Your splashes are safe. You'll be back near %s, protected for %d seconds." % [
+				"your last splash" if int(info.get("stamps", 0)) != 0 else "the dorm", int(mc.cfg.respawn_protect_s)]
 			var ps := int(ceil(pen))
 			if ps != _last_penalty_sec and ps <= 3 and ps > 0:
 				Sfx.play("tick")
 			_last_penalty_sec = ps
+		elif st == TC.PState.ACTIVE and float(rs.get("protect", 0.0)) > 0.0 and role == TC.Role.RUNNER:
+			sub_lbl.text = "Protected · %d" % int(ceil(float(rs.get("protect", 0.0))))
 		elif st == TC.PState.FINISHED:
 			overlay.visible = true
 			overlay_title.text = "HOME SAFE!"
@@ -515,12 +524,22 @@ func _hint(kind: String) -> String:
 		"look": {"touch": "drag on the right side of the screen", "gamepad": "right stick", "keyboard": "hold right mouse and drag (or I J K L)"},
 		"jump": {"touch": "tap Jump", "gamepad": "press A / Cross", "keyboard": "press Space"},
 		"sprint": {"touch": "push the stick all the way to its outer ring", "gamepad": "hold LB or RB", "keyboard": "hold Shift"},
+		"tag": {"touch": "tap Tag"},
+		"interact": {"touch": "tap Drive (Exit in the cart)"},
 	}
+	if d != "touch" and kind in ["tag", "interact"]:
+		return "press %s" % Controls.prompt(kind)
 	return String(table[kind].get(d, table[kind]["touch"]))
+
+
+var _coach_watch_t := 0.0
 
 
 func _update_coach(delta: float, phase: int, role: int) -> void:
 	var tut := bool(mc.start.get("tutorial", false))
+	if tut and role == TC.Role.PATROL and phase == TC.Phase.PLAYING:
+		_update_watch_coach(delta)
+		return
 	if not tut or role != TC.Role.RUNNER or phase < TC.Phase.PLAYING or phase > TC.Phase.PLAYING:
 		coach.visible = false
 		return
@@ -555,6 +574,35 @@ func _update_coach(delta: float, phase: int, role: int) -> void:
 	if rel > 0.0 and coach_step < 7:
 		txt += "\n(Night Watch is still in the shed: %ds)" % int(ceil(rel))
 	coach_lbl.text = txt
+	_coach_flash = maxf(0.0, _coach_flash - delta)
+	coach.modulate = Color(1, 1, 1, 1).lerp(Color(1.4, 1.4, 1.0, 1), _coach_flash)
+	coach.visible = true
+
+
+## Guided Night Watch training (V4): find a runner, wait for Tag to light
+## up, tag, see the capture and protection rules, then try a cart.
+func _update_watch_coach(delta: float) -> void:
+	var rs: Dictionary = info.get("rs", {})
+	var st: int = rs.get("state", 0)
+	var rel: float = info.get("release_left", 0.0)
+	var pen_s := int(mc.cfg.capture_penalty_s)
+	var prot_s := int(mc.cfg.respawn_protect_s)
+	if coach_step == 2:
+		_coach_watch_t += delta
+	var steps := [
+		["Runners have a head start. Get ready: %s to move, %s to look." % [_hint("move"), _hint("look")], rel <= 0.0],
+		["Chase the nearest runner. A ring appears under them when they're close and in sight.", int(info.get("tag_aim", -1)) >= 0],
+		["Wait for Tag to light up, then %s. Pressing early just misses." % _hint("tag"), mc.my_catches >= 1],
+		["Caught! They keep their splashes and come back in %d s near their last splash, protected for %d s — you can't tag them then." % [pen_s, prot_s], _coach_watch_t > 6.0],
+		["Carts are fast on the roads. Walk up to a cart and %s." % _hint("interact"), st == TC.PState.IN_CART],
+		["Drive close to a runner, %s to hop out, then finish on foot." % _hint("interact"), mc.my_catches >= 2],
+		["That's the Night Watch! Stop %d runners getting home before time runs out." % mc.cfg.runners_needed, false],
+	]
+	while coach_step < steps.size() - 1 and bool(steps[coach_step][1]):
+		coach_step += 1
+		_coach_flash = 0.6
+		Sfx.play("pickup")
+	coach_lbl.text = steps[coach_step][0]
 	_coach_flash = maxf(0.0, _coach_flash - delta)
 	coach.modulate = Color(1, 1, 1, 1).lerp(Color(1.4, 1.4, 1.0, 1), _coach_flash)
 	coach.visible = true

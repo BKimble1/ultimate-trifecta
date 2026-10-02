@@ -105,7 +105,7 @@ static func units_per_point(canvas_to_px: float, screen_scale: float) -> float:
 ## Returns {"buttons": {name: {"c", "r", "hit"}}, "stick_c", "stick_r",
 ##  "knob_r", "zone": Rect2, "action_anchor": Vector2, "clamped": bool,
 ##  "fallback": bool}.
-static func resolve(layout: Dictionary, ctx: String, view: Vector2, safe: Rect2, upp: float, reserved: Array = []) -> Dictionary:
+static func resolve(layout: Dictionary, ctx: String, view: Vector2, safe: Rect2, upp: float, reserved: Array = [], allow_fallback: bool = true) -> Dictionary:
 	var s: float = clampf(float(layout.get("size", 1.0)), SIZE_MIN, SIZE_MAX)
 	var mirror := bool(layout.get("mirror", false))
 	var k := upp * s
@@ -149,14 +149,16 @@ static func resolve(layout: Dictionary, ctx: String, view: Vector2, safe: Rect2,
 		blockers.append(r)
 	if _hits(Rect2(act_c + ext.position, ext.size), blockers):
 		var fixed := _push_clear(act_c, ext, safe, edge, blockers, mirror)
-		if fixed.x == INF:
+		if fixed.x == INF and allow_fallback:
+			# nothing fits around this layout: the recommended one (once)
 			var dl := default_layout()
 			dl["size"] = s
 			dl["mirror"] = mirror
-			var res := resolve(dl, ctx, view, safe, upp, [])
+			var res := resolve(dl, ctx, view, safe, upp, [], false)
 			res["fallback"] = true
 			return res
-		act_c = fixed
+		if fixed.x != INF:
+			act_c = fixed
 		clamped = true
 	# --- buttons with hit padding that never overlaps a neighbour
 	var buttons := {}

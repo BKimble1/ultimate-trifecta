@@ -8,7 +8,7 @@ extends RefCounted
 ## schema 2 wire format, host-bound control messages.
 ## 5 (V4): party settings (Night Watch count, rounds) and series state in
 ## LOBBY, settings + series in START, SERIES standings, load-ready flags,
-## tag-ready/target fields in snapshots.
+## tag-ready/target fields in the private snapshot block.
 const VERSION := 5
 
 enum M {
@@ -280,6 +280,9 @@ static func encode_snapshot(sim: MatchSim, recipient: SimPlayer, relevant: Array
 		b.put_u8(int(clampf(recipient.turbo_t, 0.0, 12.0) * 20.0))
 		b.put_u8(int(clampf(recipient.spotted, 0.0, 12.0) * 20.0))
 		b.put_u8(1 if recipient.spotted_by_cart else 0)
+		# Night Watch cues: tag-ready and the runner the assist would pick
+		b.put_u8(1 if recipient.tag_ready else 0)
+		b.put_8(recipient.tag_aim)
 		b.put_u8(1 if own_motor else 0)
 		if own_motor:
 			recipient.write_motor(b)
@@ -376,6 +379,8 @@ static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
 		me["turbo_t"] = float(b.get_u8()) / 20.0
 		me["spotted"] = float(b.get_u8()) / 20.0
 		me["spotted_by_cart"] = b.get_u8() == 1
+		me["tag_ready"] = b.get_u8() == 1
+		me["tag_aim"] = b.get_8()
 		var has_motor := b.get_u8() == 1
 		if has_motor:
 			var tmp := SimPlayer.new()

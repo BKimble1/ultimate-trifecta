@@ -81,6 +81,10 @@ var _phase_seen := -1
 var _countdown_last := -1
 var _finish_sent := false
 var _prev_server_state := -1
+## capture contract presentation: who caught me (shown while captured) and
+## my own catches this round (Night Watch confirmation)
+var caught_by := ""
+var my_catches := 0
 
 
 func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> void:
@@ -259,6 +263,7 @@ func _prep_sim() -> void:
 		add_child(sim)
 		sim.setup(cfg, layout, start["roster"], int(start["seed"]), targets, String(start["match_id"]),
 			{"practice": bool(start.get("practice", false)), "tutorial": bool(start.get("tutorial", false)),
+			"gentle_bots": String(start.get("training", "")) == "watch",
 			"patrol_release_extra_s": 24.0 if bool(start.get("tutorial", false)) else 0.0,
 			"bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p)})
 		session.attach_sim(sim)
@@ -846,6 +851,9 @@ func local_info() -> Dictionary:
 			info["spotted"] = p.spotted
 			info["stamps"] = p.stamps
 			info["noises"] = sim.noises_for(p)
+			info["tag_ready"] = p.tag_ready
+			info["tag_aim"] = p.tag_aim
+			info["tag_busy"] = _tag_busy(p.tag_cd, p.tag_lockout)
 		info["markers"] = sim.splash_markers if (p != null and p.is_patrol()) else []
 	else:
 		var s := _last_snap
@@ -873,8 +881,18 @@ func local_info() -> Dictionary:
 		for m in _me.get("markers", []):
 			marks.append({"water": m["water"], "t": m["t"]})
 		info["markers"] = marks
+		info["tag_ready"] = bool(_me.get("tag_ready", false))
+		info["tag_aim"] = int(_me.get("tag_aim", -1))
+		var mm: Dictionary = _me.get("motor", {})
+		info["tag_busy"] = _tag_busy(float(mm.get("tag_cd", 0.0)), float(mm.get("tag_lockout", 0.0)))
 	info["targets"] = targets
 	return info
+
+
+## Tag button cooldown ring, 0..1 of the miss cooldown (or cart-exit lockout).
+func _tag_busy(cd: float, lockout: float) -> float:
+	var c := maxf(cd / maxf(cfg.tag_miss_cooldown_s, 0.01), lockout / maxf(cfg.cart_exit_tag_lockout_s, 0.01))
+	return clampf(c, 0.0, 1.0)
 
 
 func _reveal_end_tick() -> float:
@@ -930,6 +948,7 @@ func _process(delta: float) -> void:
 		if not crs2.is_empty():
 			cart_views[i].apply_state(crs2, delta)
 	_update_beacons(delta)
+	_update_aim_ring()
 	_update_pickups()
 	_update_camera(delta)
 	if hud:
@@ -1073,10 +1092,13 @@ func _present_event(ev: Dictionary) -> void:
 			var by: Dictionary = roster.get(int(ev["b"]), {})
 			hud.feed("%s caught %s!" % [by.get("name", "?"), r.get("name", "?")], TC.Role.PATROL)
 			if mine:
-				hud.toast("CAUGHT! Back in %d…" % int(cfg.capture_penalty_s), Color(1.0, 0.6, 0.4))
+				caught_by = String(by.get("name", "the Night Watch"))
 				_haptic(30)
 			elif int(ev["b"]) == local_slot:
-				hud.toast("Tagged %s!" % r.get("name", "?"), Color(1.0, 0.8, 0.3))
+				# the tagger's confirmation, once, with their count this round
+				my_catches += 1
+				hud.toast("Tagged %s! · %d catch%s" % [r.get("name", "?"), my_catches, "" if my_catches == 1 else "es"], Color(1.0, 0.8, 0.3))
+				_haptic(20)
 		TC.Ev.TAG_MISS:
 			Diag.mark("tag_miss")
 			Sfx.play("whoosh", pos)
@@ -1158,6 +1180,46 @@ func _build_beacons() -> void:
 		beacons[int(wi)] = mi
 		if water_nodes.has(w["id"]):
 			(water_nodes[w["id"]]["mat"] as ShaderMaterial).set_shader_parameter("active", 1.0)
+
+
+var _aim_ring: MeshInstance3D
+var _aim_mat: StandardMaterial3D
+
+
+## Night Watch only: a ring under the runner the Tag assist would pick -
+## soft while out of reach, bright amber when a press now would land.  Only
+## this player sees it; it marks someone already in plain sight (the assist
+## requires line of sight), so it reveals nothing hidden.
+func _update_aim_ring() -> void:
+	var info: Dictionary = hud.info if hud else {}
+	var aim := int(info.get("tag_aim", -1))
+	var show := aim >= 0 and views.has(aim) and int(info.get("role", -1)) == TC.Role.PATROL and not spectator
+	if not show:
+		if _aim_ring:
+			_aim_ring.visible = false
+		return
+	if _aim_ring == null:
+		var tm := TorusMesh.new()
+		tm.inner_radius = 0.55
+		tm.outer_radius = 0.68
+		tm.rings = 32
+		tm.ring_segments = 6
+		_aim_mat = StandardMaterial3D.new()
+		_aim_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_aim_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_aim_mat.no_depth_test = true
+		_aim_ring = MeshInstance3D.new()
+		_aim_ring.mesh = tm
+		_aim_ring.material_override = _aim_mat
+		_aim_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(_aim_ring)
+	var v: CharacterView = views[aim]
+	_aim_ring.visible = true
+	_aim_ring.global_position = v.global_position + Vector3(0, 0.06, 0)
+	var ready := bool(info.get("tag_ready", false))
+	var pulse := 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) / 1000.0 * TAU * 1.6) if ready and not reduced_motion else 1.0
+	_aim_mat.albedo_color = Color(UIKit.AMBER, 0.65 + 0.3 * pulse) if ready else Color(UIKit.IVORY, 0.35)
+	_aim_ring.scale = Vector3.ONE * (1.0 + (0.06 * pulse if ready else 0.0))
 
 
 func _update_beacons(_delta: float) -> void:

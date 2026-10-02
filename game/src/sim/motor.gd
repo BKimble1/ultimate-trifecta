@@ -89,6 +89,7 @@ static func advance_timers(p: SimPlayer, cfg: RulesConfig, dt: float) -> bool:
 					p.tag_cd = cfg.tag_miss_cooldown_s
 					missed = true
 			SimPlayer.TagPhase.RECOVER:
+				p.tag_target = -1
 				if p.tag_t >= 0.2:
 					p.tag_phase = SimPlayer.TagPhase.NONE
 					p.tag_t = 0.0
@@ -205,8 +206,8 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 	else:
 		p.vel.y = 0.0
 
-	# --- facing
-	if lunging or p.diving:
+	# --- facing (an assisted wind-up keeps its aim; the sim tracks the target)
+	if lunging or p.diving or (p.tag_phase == SimPlayer.TagPhase.ANTICIPATE and p.tag_target >= 0):
 		pass
 	elif hv.length() > 0.6 and control > 0.0:
 		var want := atan2(-hv.x, -hv.y)

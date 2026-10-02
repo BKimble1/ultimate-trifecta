@@ -38,14 +38,22 @@ func build() -> void:
 		p.add_child(pv)
 		cards.add_child(p)
 	v.add_child(cards)
+	var mins := int(cfg.match_duration_s) / 60
+	var secs := int(cfg.match_duration_s) % 60
+	var needs: Array[String] = []
+	for w in PartySeries.WATCH_CHOICES:
+		var r := PartySeries.runners(w)
+		needs.append("%d Night Watch: %d of %d runners" % [w, PartySeries.required_home(w), r])
 	var rules := [
 		"Every runner gets the same three marked splash spots (glowing beams). Visit them in any order — jump or dive in to earn a stamp.",
 		"After three splashes, run home through any of Puddlesworth Hall's four doors.",
-		"4 runners home before the 4:00 clock runs out = runners win. Otherwise the Night Watch wins.",
-		"Caught? Wait 6 seconds, then pop back near your last splash (or the dorm). You keep every splash.",
-		"Night Watch: carts are fast on roads but can't climb stairs, pass bollards or enter the woods, gardens, pool deck or quad. Hop out to tag. A cart bump only makes runners stumble.",
-		"A splash marks that spot for the Night Watch for 3 seconds — not the runner. Break line of sight behind buildings to lose a chaser.",
+		"Get enough runners home before the %d:%02d clock runs out and every runner wins; otherwise the Night Watch wins. How many depends on the party: %s." % [mins, secs, "; ".join(needs)],
+		"Caught? You keep every splash and stay a runner. After %d seconds you're back near your last splash (or the dorm before your first), protected for %d seconds." % [int(cfg.capture_penalty_s), int(cfg.respawn_protect_s)],
+		"Night Watch: a ring marks the runner you'd tag; Tag lights up when a press would land. Pressing early just misses and needs a moment to recover.",
+		"Carts are fast on roads but can't climb stairs, pass bollards or enter the woods, gardens, pool deck or quad. Hop out to tag. A cart bump only makes runners stumble.",
+		"A splash marks that spot for the Night Watch for %d seconds — not the runner. Break line of sight behind buildings to lose a chaser." % int(cfg.splash_marker_s),
 		"Gadgets (one at a time): Turbo Sneakers (short speed burst), Squeaky Decoy (fake footsteps), Splash Bomb (briefly slows a cart).",
+		"Friend parties play a series of 1, 3 or 5 rounds; roles are drawn fairly each round. Solo practice lets you pick Runner or Night Watch.",
 	]
 	for r in rules:
 		var l2 := UIKit.label("•  " + r, 20)

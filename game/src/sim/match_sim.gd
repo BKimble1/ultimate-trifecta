@@ -36,6 +36,8 @@ var results: Dictionary = {}
 var bots: Dictionary = {}
 var practice := false
 var tutorial := false
+## Night Watch training: runner bots jog slower and never sprint
+var gentle_bots := false
 var patrol_release_extra_s := 0.0
 var _space: PhysicsDirectSpaceState3D
 var _cap_shape: CapsuleShape3D
@@ -50,6 +52,7 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 	match_id = mid
 	practice = bool(opts.get("practice", false))
 	tutorial = bool(opts.get("tutorial", false))
+	gentle_bots = bool(opts.get("gentle_bots", false))
 	patrol_release_extra_s = float(opts.get("patrol_release_extra_s", 0.0))
 	_bot_factory = opts.get("bot_factory", Callable())
 	var builder := CampusBuilder.new(layout)
@@ -268,6 +271,7 @@ func step(inputs: Dictionary) -> void:
 		cmds[p.id] = cmd
 	_resolve_cart_requests(cmds)
 	for p in players:
+		_update_tag_cues(p, (cmds[p.id] as InputCmd).cam_yaw)
 		_intent_tag(p, cmds[p.id])
 		_intent_gadget(p, cmds[p.id])
 
@@ -460,30 +464,90 @@ func _validate_exit_point(ep: Vector3, seat: Vector3 = Vector3.INF) -> Vector3:
 func _intent_tag(p: SimPlayer, cmd: InputCmd) -> void:
 	if not p.is_patrol() or p.state != TC.PState.ACTIVE:
 		return
+	_track_tag_target(p)
 	if not cmd.is_pressed(TC.BTN_TAG):
 		return
 	if p.tag_phase != SimPlayer.TagPhase.NONE or p.tag_cd > 0.0 or p.tag_lockout > 0.0:
 		return
 	if not (p.on_floor or p.coyote > 0.0):
 		return
-	# gentle aim assist: face the nearest valid runner close by in the view cone
-	var view := Vector3(-sin(cmd.cam_yaw), 0, -cos(cmd.cam_yaw))
-	var best: SimPlayer = null
-	var bd := 3.4
-	for r in players:
-		if not r.is_taggable():
-			continue
-		var rel := r.pos() - p.pos()
-		var flat := Vector3(rel.x, 0, rel.z)
-		var d := flat.length()
-		if d < bd and d > 0.05 and (flat.normalized().dot(view) > -0.2 or flat.normalized().dot(p.facing()) > 0.0):
-			bd = d
-			best = r
-	if best:
-		var rel2 := best.pos() - p.pos()
-		p.yaw = atan2(-rel2.x, -rel2.z)
+	# V4 assist: an eligible runner in sight inside the cone; turn toward it
+	# by at most tag_assist_snap_deg now, then track it at a limited rate
+	var best := tag_candidate(p, cmd.cam_yaw)
+	p.tag_target = best.id if best != null else -1
+	if best != null:
+		var rel := best.pos() - p.pos()
+		var want := atan2(-rel.x, -rel.z)
+		p.yaw = rotate_toward(p.yaw, want, deg_to_rad(cfg.tag_assist_snap_deg))
 	p.tag_phase = SimPlayer.TagPhase.ANTICIPATE
 	p.tag_t = 0.0
+
+
+## The runner the assist picks for a Night Watch pressing Tag now: taggable,
+## within the assist range and cone (camera view or facing), in line of
+## sight; nearest by an angle-weighted distance.  Null when none.
+func tag_candidate(p: SimPlayer, cam_yaw: float) -> SimPlayer:
+	var view := Vector3(-sin(cam_yaw), 0, -cos(cam_yaw))
+	var face := p.facing()
+	var cos_lim := cos(deg_to_rad(cfg.tag_assist_half_angle_deg))
+	var best: SimPlayer = null
+	var best_score := INF
+	for r in players:
+		if r == p or not r.is_taggable():
+			continue
+		var rel := r.pos() - p.pos()
+		if absf(rel.y) > cfg.tag_vertical_reach_m:
+			continue
+		var flat := Vector3(rel.x, 0, rel.z)
+		var d := flat.length()
+		if d > cfg.tag_assist_range_m:
+			continue
+		var c := 1.0 if d < 0.05 else maxf((flat / d).dot(view), (flat / d).dot(face))
+		if c < cos_lim:
+			continue
+		var score := d * (2.0 - c)
+		if score >= best_score:
+			continue
+		if not has_los(p.pos() + Vector3(0, 1.1, 0), r.pos() + Vector3(0, 1.0, 0)):
+			continue
+		best = r
+		best_score = score
+	return best
+
+
+## Wind-up and lunge follow their target within the turn-rate limit (no
+## suction: speed and reach are unchanged).
+func _track_tag_target(p: SimPlayer) -> void:
+	if p.tag_target < 0 or (p.tag_phase != SimPlayer.TagPhase.ANTICIPATE and p.tag_phase != SimPlayer.TagPhase.LUNGE):
+		return
+	var r := player(p.tag_target)
+	if r == null or not r.is_taggable():
+		p.tag_target = -1
+		return
+	var rel := r.pos() - p.pos()
+	p.yaw = rotate_toward(p.yaw, atan2(-rel.x, -rel.z), deg_to_rad(cfg.tag_track_deg_per_s) * cfg.dt())
+
+
+## The target and tag-ready cues for a Night Watch (host, every tick): the
+## assist's pick, and whether a press now would land if the runner keeps
+## going - the predicted gap at the end of the lunge is inside the reach.
+func _update_tag_cues(p: SimPlayer, cam_yaw: float) -> void:
+	p.tag_ready = false
+	p.tag_aim = -1
+	if not p.is_patrol() or p.state != TC.PState.ACTIVE or phase != TC.Phase.PLAYING:
+		return
+	var r := tag_candidate(p, cam_yaw)
+	if r == null:
+		return
+	p.tag_aim = r.id
+	if p.tag_phase != SimPlayer.TagPhase.NONE or p.tag_cd > 0.0 or p.tag_lockout > 0.0 or not (p.on_floor or p.coyote > 0.0):
+		return
+	var T := cfg.tag_anticipation_s + cfg.tag_lunge_s
+	var travel := cfg.patrol_speed * cfg.tag_anticipation_move_scale * cfg.tag_anticipation_s + cfg.tag_lunge_speed * cfg.tag_lunge_s
+	var future := r.pos() + Vector3(r.vel.x, 0, r.vel.z) * T
+	var gap := Vector2(future.x - p.pos().x, future.z - p.pos().z).length()
+	# the hit test measures from 0.25 m ahead of the Night Watch
+	p.tag_ready = maxf(0.0, gap - travel) <= cfg.tag_reach_m + 0.25 - cfg.tag_ready_margin_m
 
 
 func _resolve_tag(p: SimPlayer) -> void:
