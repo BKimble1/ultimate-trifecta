@@ -46,9 +46,10 @@ func build() -> void:
 		needs.append("%d Night Watch: %d of %d runners" % [w, PartySeries.required_home(w), r])
 	var rules := [
 		"Every runner gets the same three marked splash spots (glowing beams). Visit them in any order — jump or dive in to earn a stamp.",
-		"After three splashes, run home through any of Puddlesworth Hall's four doors.",
+		"Each round starts inside tonight's home dorm (Puddlesworth Hall, Lanternfield House or Moonpenny Lodge — the reveal says which). Run out through any of its doors; after three splashes, run back inside it through one of its glowing doors. Nobody can be tagged inside.",
+		"Gold coins wait along the paths: run through one to collect it (1 Coin each, first come first served, for runners and the Night Watch alike).",
 		"Get enough runners home before the %d:%02d clock runs out and every runner wins; otherwise the Night Watch wins. How many depends on the party: %s." % [mins, secs, "; ".join(needs)],
-		"Caught? You keep every splash and stay a runner. After %d seconds you're back near your last splash (or the dorm before your first), protected for %d seconds." % [int(cfg.capture_penalty_s), int(cfg.respawn_protect_s)],
+		"Caught? You keep every splash and stay a runner. After %d seconds you're back near your last splash (or inside the home dorm before your first), protected for %d seconds." % [int(cfg.capture_penalty_s), int(cfg.respawn_protect_s)],
 		"Night Watch: a ring marks the runner you'd tag; Tag lights up when a press would land. Pressing early just misses and needs a moment to recover.",
 		"Carts are fast on roads but can't climb stairs, pass bollards or enter the woods, gardens, pool deck or quad. Hop out to tag. A cart bump only makes runners stumble.",
 		"A splash marks that spot for the Night Watch for %d seconds — not the runner. Break line of sight behind buildings to lose a chaser." % int(cfg.splash_marker_s),

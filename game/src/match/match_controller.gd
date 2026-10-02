@@ -153,7 +153,7 @@ static var _campus_cache: Dictionary = {}
 func _ready() -> void:
 	Diag.mark("load_begin")
 	_prep_t0 = Time.get_ticks_usec()
-	_prep = [_prep_campus, _prep_world, _prep_ground, _prep_nav, _prep_sim, _prep_views, _prep_rest, _prep_hud, _prep_touch]
+	_prep = [_prep_campus, _prep_world, _prep_ground, _prep_nav, _prep_sim, _prep_views, _prep_rest, _prep_hud, _prep_touch, _prep_home_and_coins]
 	_prep_i = 0
 	if not staged:
 		while _prep_i < _prep.size():
@@ -178,7 +178,7 @@ func _process_prepare() -> void:
 func prep_progress() -> float:
 	if prepared:
 		return 1.0
-	const W := [0.55, 0.08, 0.07, 0.06, 0.05, 0.16, 0.01, 0.01, 0.01]   # campus, world, ground, nav, sim, views, carts+camera, hud, touch
+	const W := [0.54, 0.08, 0.07, 0.06, 0.05, 0.16, 0.01, 0.01, 0.01, 0.01]   # campus, world, ground, nav, sim, views, carts+camera, hud, touch, home doors + coins
 	var done := 0.0
 	for k in mini(_prep_i, W.size()):
 		done += W[k]
@@ -199,7 +199,7 @@ func prep_progress() -> float:
 ## over PREP_SLOW_MS marks the diagnostics timeline with its name, so a
 ## stall on a phone is attributed to the job that caused it.
 const PREP_SLOW_MS := 25.0
-const PREP_NAMES := ["campus", "world", "ground", "nav", "sim", "views", "carts_camera", "hud", "touch"]
+const PREP_NAMES := ["campus", "world", "ground", "nav", "sim", "views", "carts_camera", "hud", "touch", "home_coins"]
 var prep_jobs: Array = []          # [[name, ms]] in order
 var prep_longest := ["", 0.0]      # [name, ms]
 
@@ -396,6 +396,26 @@ func _prep_touch() -> void:
 	# initial camera placement
 	var p0 := _player_rs(local_slot if not spectator else _first_slot())
 	camera.snap_to(p0.get("pos", Vector3.ZERO), p0.get("yaw", 0.0))
+
+
+## V6: tonight's home-door markers and the round's coins (one MultiMesh,
+## one shared material), warmed under the loading screen.
+var coin_view: CoinView
+var home_view: HomeDoorsView
+
+
+func _prep_home_and_coins() -> void:
+	if not with_visuals:
+		return
+	home_view = HomeDoorsView.new()
+	home_view.name = "HomeDoors"
+	add_child(home_view)
+	home_view.setup(home_dorm)
+	coin_view = CoinView.new()
+	coin_view.name = "CoinView"
+	add_child(coin_view)
+	coin_view.setup(start.get("coins", []))
+	coin_view.warm()
 
 
 func _finish_prepare() -> void:
@@ -956,6 +976,14 @@ func local_info() -> Dictionary:
 		var mm: Dictionary = _me.get("motor", {})
 		info["tag_busy"] = _tag_busy(float(mm.get("tag_cd", 0.0)), float(mm.get("tag_lockout", 0.0)))
 	info["targets"] = targets
+	# V6: tonight's home dorm and the coins this player has collected
+	info["home_dorm"] = home_dorm
+	if sim:
+		var me := sim.player(local_slot)
+		info["coins"] = me.coins_picked if me else 0
+	else:
+		info["coins"] = int(_me.get("coins_picked", 0))
+	info["coins_total"] = (start.get("coins", []) as Array).size()
 	return info
 
 
@@ -1021,6 +1049,7 @@ func _process(delta: float) -> void:
 	_update_aim_ring()
 	_scan_seen(delta)
 	_update_pickups()
+	_update_home_and_coins()
 	_update_camera(delta)
 	if hud:
 		hud.refresh(delta)
@@ -1216,6 +1245,16 @@ func _present_event(ev: Dictionary) -> void:
 			if not session.muted.has(String(who.get("uid", ""))):
 				hud.emote_bubble(a, int(ev["v"]))
 				Sfx.play("pop")
+		TC.Ev.COIN_PICKUP:
+			# the host decided who got it; a replayed or late event finds the
+			# coin already gone and does nothing
+			var taken := coin_view.take(int(ev["v"])) if coin_view else true
+			if taken:
+				Sfx.play("pickup", pos, -5.0 if not mine else -2.0, 1.55)
+			if mine:
+				if hud:
+					hud.coin_pop()
+				_haptic(12)
 		TC.Ev.PLAYER_BOT_TAKEOVER:
 			hud.feed("%s disconnected — a bot is covering (slot held 20s)" % roster.get(a, {}).get("name", "?"), -1)
 		TC.Ev.PLAYER_RESUMED:
@@ -1401,6 +1440,22 @@ func _update_pickups() -> void:
 		n.position.y = 0.9 + sin(t * 2.0 + float(i)) * 0.12
 		if my_role == TC.Role.PATROL:
 			n.scale = Vector3(0.7, 0.7, 0.7)
+
+
+## Coins still out (the host's state: snapshots on a guest) and how bright
+## tonight's home doors are for this player.
+func _update_home_and_coins() -> void:
+	if coin_view:
+		coin_view.set_mask(sim.coin_mask() if sim else int(_last_snap.get("coins", 0xFFFF)))
+	if home_view:
+		var rs := _player_rs(local_slot) if not spectator else {}
+		var role: int = int(roster[local_slot]["role"]) if roster.has(local_slot) else TC.Role.SPECTATOR
+		var st := 0
+		if role == TC.Role.PATROL:
+			st = 1
+		elif role == TC.Role.RUNNER and int(rs.get("stamps", 0)) == 7 and int(rs.get("state", 0)) != TC.PState.FINISHED:
+			st = 2
+		home_view.set_state(st, reduced_motion)
 
 
 func leave_match() -> void:

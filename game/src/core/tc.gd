@@ -81,11 +81,13 @@ static func patrol_card(cfg: RulesConfig) -> String:
 
 
 ## A role in two short lines (V5): what to do, then the one rule to know.
-static func role_lines(r: int, cfg: RulesConfig) -> Array[String]:
+## V6: with tonight's home dorm named ("" keeps the general wording).
+static func role_lines(r: int, cfg: RulesConfig, dorm_name: String = "") -> Array[String]:
+	var home := dorm_name if dorm_name != "" else "the dorm"
 	if r == Role.PATROL:
-		return ["Stop %d runners getting home before time runs out: cut them off in a cart, hop out and tag." % cfg.runners_needed,
-			"A tag sends a runner out for %d s; they keep their splashes." % int(cfg.capture_penalty_s)]
-	return ["Splash into the three marked waters, then race back to the dorm. %d home wins it for every runner." % cfg.runners_needed,
+		return ["Stop %d runners getting back inside %s before time runs out: cut them off in a cart, hop out and tag." % [cfg.runners_needed, home],
+			"A tag sends a runner out for %d s; they keep their splashes. Nobody can be tagged inside the dorm." % int(cfg.capture_penalty_s)]
+	return ["Run out, splash into the three marked waters, then run back inside %s through one of its doors. %d home wins it for every runner." % [home, cfg.runners_needed],
 		"Caught? You keep your splashes and you're back in %d s." % int(cfg.capture_penalty_s)]
 
 

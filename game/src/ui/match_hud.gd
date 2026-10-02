@@ -7,6 +7,9 @@ var mc: MatchController
 var root: Control
 var timer_lbl: Label
 var home_lbl: Label
+var coin_lbl: Label
+var coin_chip: PanelContainer
+var _coin_shown := -1
 var role_lbl: Label
 var target_rows: Array = []
 var toast_lbl: Label
@@ -82,7 +85,24 @@ func setup(controller: MatchController) -> void:
 	home_lbl.add_theme_font_override("font", UIKit.font_num(700))
 	hh.add_child(home_lbl)
 	hc.add_child(hh)
-	top.add_child(hc)
+	# V6: the coins this player has collected this round, beside Home n/N
+	var row := UIKit.hbox(8)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(hc)
+	coin_chip = UIKit.panel(Color(UIKit.NAVY, 0.6), 999, 14)
+	coin_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ch2 := UIKit.hbox(6)
+	var ci := CoinIcon.new()
+	ci.custom_minimum_size = Vector2(22, 22)
+	ch2.add_child(ci)
+	coin_lbl = UIKit.label("0", 19, Color(1.0, 0.86, 0.45), true, HORIZONTAL_ALIGNMENT_CENTER)
+	coin_lbl.add_theme_font_override("font", UIKit.font_num(700))
+	ch2.add_child(coin_lbl)
+	coin_chip.add_child(ch2)
+	coin_chip.visible = (mc.start.get("coins", []) as Array).size() > 0
+	row.add_child(coin_chip)
+	top.add_child(row)
 
 	# --- top left: role pill + three objective chips (bearing + distance)
 	var tl := UIKit.vbox(6)
@@ -223,8 +243,15 @@ func _build_reveal() -> void:
 		v.add_child(UIKit.styled("Round %d of %d" % [int(sr.get("round", 1)), int(sr.get("total", 1))], "overline", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var ttl := UIKit.styled(title, "display", UIKit.PATROL if is_patrol else UIKit.TEAL, HORIZONTAL_ALIGNMENT_CENTER)
 	v.add_child(ttl)
+	# V6: tonight's home dorm (the runners are standing in it)
+	var dn := CampusDorms.display_name(mc.home_dorm)
+	var home_row := UIKit.hbox(8)
+	home_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	home_row.add_child(Icons.IconRect.new("house", Color(1.0, 0.86, 0.5), 26))
+	home_row.add_child(UIKit.label(("Home tonight: %s" % dn) if not is_patrol else ("The runners' home tonight: %s" % dn), 22, Color(1.0, 0.9, 0.62), true))
+	v.add_child(home_row)
 	if my_role != TC.Role.SPECTATOR:
-		var lines := TC.role_lines(my_role, mc.cfg)
+		var lines := TC.role_lines(my_role, mc.cfg, dn)
 		var card := UIKit.styled(lines[0], "body", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
 		card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		card.custom_minimum_size = Vector2(680, 0)
@@ -483,6 +510,41 @@ func stamp_pop(w: Dictionary, count: int, total: int) -> void:
 	tw.tween_callback(p.queue_free)
 
 
+## A collected coin (V6): the chip pulses once and a small "+1" rises from
+## it and fades (no motion with Reduced Motion: it just appears and fades).
+var _plus: Label
+
+
+func coin_pop() -> void:
+	if coin_chip == null:
+		return
+	coin_chip.visible = true
+	if _plus == null:
+		_plus = UIKit.outlined(UIKit.label("+1", 22, Color(1.0, 0.86, 0.45), true, HORIZONTAL_ALIGNMENT_CENTER), 5)
+		_plus.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(_plus)
+	var r := coin_chip.get_global_rect()
+	_plus.position = Vector2(r.end.x + 4.0, r.position.y)
+	_plus.modulate.a = 1.0
+	var tw := _plus.create_tween()
+	if not UIKit.reduced_motion():
+		tw.tween_property(_plus, "position:y", r.position.y - 22.0, 0.6).set_ease(Tween.EASE_OUT)
+		coin_chip.pivot_offset = coin_chip.size * 0.5
+		var tc := coin_chip.create_tween()
+		tc.tween_property(coin_chip, "scale", Vector2(1.12, 1.12), 0.08)
+		tc.tween_property(coin_chip, "scale", Vector2.ONE, 0.16)
+	else:
+		tw.tween_interval(0.5)
+	tw.tween_property(_plus, "modulate:a", 0.0, 0.35)
+
+
+class CoinIcon:
+	extends Control
+
+	func _draw() -> void:
+		CoinView.draw_icon(self, size * 0.5, minf(size.x, size.y) * 0.45)
+
+
 func emote_bubble(slot: int, emote_id: int) -> void:
 	emotes[slot] = {"id": emote_id, "t": 2.2}
 
@@ -499,6 +561,10 @@ func refresh(delta: float) -> void:
 	timer_lbl.add_theme_color_override("font_color", UIKit.AMBER if tl < 30.0 and phase == TC.Phase.PLAYING else UIKit.IVORY)
 	var fin: int = info.get("finished", 0)
 	home_lbl.text = "Home %d/%d" % [fin, mc.cfg.runners_needed]
+	var coins: int = info.get("coins", 0)
+	if coins != _coin_shown:
+		_coin_shown = coins
+		coin_lbl.text = str(coins)
 	role_lbl.text = "Night Watch" if role == TC.Role.PATROL else ("Runner" if role == TC.Role.RUNNER else "Spectating")
 	role_lbl.add_theme_color_override("font_color", UIKit.PATROL if role == TC.Role.PATROL else UIKit.TEAL)
 	if role_icon:
@@ -550,7 +616,7 @@ func refresh(delta: float) -> void:
 			else:
 				overlay_title.text = "Back in %d…" % int(ceil(pen))
 			overlay_sub.text = "Your splashes are safe. You'll be back near %s, protected for %d seconds." % [
-				"your last splash" if int(info.get("stamps", 0)) != 0 else "the dorm", int(mc.cfg.respawn_protect_s)]
+				"your last splash" if int(info.get("stamps", 0)) != 0 else "inside " + CampusDorms.display_name(mc.home_dorm), int(mc.cfg.respawn_protect_s)]
 			var ps := int(ceil(pen))
 			if ps != _last_penalty_sec and ps <= 3 and ps > 0:
 				Sfx.play("tick")
@@ -656,7 +722,7 @@ func _update_coach(delta: float, phase: int, role: int) -> void:
 		["Sprint: %s. It refills quickly." % _hint("sprint"), bool(rs.get("sprinting", false))],
 		["Follow a glowing beam (the chips top-left point the way) and jump into that water!", stamps != 0],
 		["SPLASH! Two more spots to go. Each one has its own shape and colour.", stamps == 7],
-		["All three! Now run home through ANY of the dorm's four doors.", st == TC.PState.FINISHED],
+		["All three! Now run back inside %s through any of its glowing doors." % CampusDorms.display_name(mc.home_dorm), st == TC.PState.FINISHED],
 		["You did the Trifecta! The Night Watch is out now — cheer on your team.", false],
 	]
 	while coach_step < steps.size() - 1 and bool(steps[coach_step][1]):
@@ -843,9 +909,10 @@ class ObjectiveChips:
 		var stamps: int = info.get("stamps", 0)
 		var tg: Array = info.get("targets", [])
 		var L := hud.mc.layout
-		var best: Dictionary = L.dorm_doors[0]
+		var hdoors := L.home_doors(hud.mc.home_dorm)
+		var best: Dictionary = hdoors[0]
 		var bd := 1e9
-		for d in L.dorm_doors:
+		for d in hdoors:
 			var dd := (d["pos"] as Vector2).distance_to(Vector2(pos.x, pos.z))
 			if dd < bd:
 				bd = dd
@@ -854,7 +921,7 @@ class ObjectiveChips:
 			_chip(0, "house", UIKit.TEAL, "Home safe", 0.0, 0.0, true, false)
 			return
 		if role == TC.Role.RUNNER and stamps == 7:
-			_chip(0, "house", UIKit.AMBER, "Return to the dorm", _bearing(pos, best["pos"]), bd, false, true)
+			_chip(0, "house", UIKit.AMBER, "Back inside %s" % CampusDorms.def(hud.mc.home_dorm).get("short", "the dorm"), _bearing(pos, best["pos"]), bd, false, true)
 			return
 		var y0 := 0.0
 		if role == TC.Role.PATROL:
@@ -907,9 +974,10 @@ class Compass:
 		var dist_items: Array = []
 		if home or role == TC.Role.PATROL:
 			# nearest entrance only (keeps the compass readable)
-			var best: Dictionary = hud.mc.layout.dorm_doors[0]
+			var hdoors: Array = hud.mc.layout.home_doors(hud.mc.home_dorm)
+			var best: Dictionary = hdoors[0]
 			var bd := 1e9
-			for d in hud.mc.layout.dorm_doors:
+			for d in hdoors:
 				var dd := (d["pos"] as Vector2).distance_to(Vector2(pos.x, pos.z))
 				if dd < bd:
 					bd = dd
@@ -1006,13 +1074,10 @@ class MapPainter:
 				var w: Dictionary = L.waters[i]
 				out.append({"kind": "target", "pos": to_map.call(w["center"]), "water": i,
 					"done": (stamps & (1 << ti)) != 0 and role == TC.Role.RUNNER})
-		var dorm := Vector2(0, 112)
-		if not L.dorm_doors.is_empty():
-			var sum := Vector2.ZERO
-			for d in L.dorm_doors:
-				sum += d["pos"]
-			dorm = sum / float(L.dorm_doors.size())
-		out.append({"kind": "home", "pos": to_map.call(dorm)})
+		# V6: tonight's home dorm and each of its doors (the way back in)
+		out.append({"kind": "home", "pos": to_map.call(L.dorm_center(hud.mc.home_dorm)), "dorm": hud.mc.home_dorm})
+		for d in L.home_doors(hud.mc.home_dorm):
+			out.append({"kind": "door", "pos": to_map.call(d["pos"]), "normal": d["normal"]})
 		# your team (same role, openly shown); close teammates share one dot
 		var groups: Array = []
 		for slot in hud.mc.roster:
@@ -1085,6 +1150,14 @@ class MapPainter:
 					blocked.append(Rect2(p - Vector2.ONE * (r + 3.0), Vector2.ONE * (r + 3.0) * 2.0))
 					if full:
 						labels.append({"at": p, "text": String(w["short"]) + (" · done" if done else ""), "size": 18, "prio": 3, "col": UIKit.IVORY, "r": r})
+				"door":
+					# a small warm wedge at each home door, pointing out
+					var nn: Vector2 = it["normal"]
+					var dr := (7.0 if full else 4.0)
+					var tip := p + nn * dr * 1.4
+					var sd := Vector2(-nn.y, nn.x) * dr * 0.8
+					ci.draw_colored_polygon(PackedVector2Array([p - sd, p + sd, tip]), Color(1.0, 0.86, 0.5))
+					ci.draw_polyline(PackedVector2Array([p - sd, tip, p + sd]), Color(UIKit.NAVY, 0.85), 1.5, true)
 				"home":
 					var hr := 14.0 * k
 					ci.draw_circle(p, hr + 3.0 * k, Color(UIKit.NAVY, 0.85))
@@ -1092,7 +1165,7 @@ class MapPainter:
 					Icons.draw_shape(ci, "house", p, hr * 0.62, UIKit.NAVY)
 					blocked.append(Rect2(p - Vector2.ONE * (hr + 3.0), Vector2.ONE * (hr + 3.0) * 2.0))
 					if full:
-						labels.append({"at": p, "text": "Home", "size": 18, "prio": 4, "col": Color(1.0, 0.9, 0.62), "r": hr})
+						labels.append({"at": p, "text": String(CampusDorms.def(String(it.get("dorm", ""))).get("short", "Home")), "size": 18, "prio": 4, "col": Color(1.0, 0.9, 0.62), "r": hr})
 				"team":
 					var names: Array = it["names"]
 					var n := names.size()
