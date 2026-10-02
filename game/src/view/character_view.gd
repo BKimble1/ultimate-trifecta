@@ -1344,7 +1344,7 @@ static func gait_rate(speed: float) -> float:
 func _update_face(delta: float, m: String, sprinting: bool, tag_phase: int, spotted: bool) -> void:
 	var tgt := {"blink": 0.0, "squint": 0.0, "smile": 0.0, "open": 0.0, "brow_up": 0.0, "brow_angry": 0.0}
 	match m:
-		"celebrate", "emote_cheer", "emote_laugh", "emote_dance", "arrive", "ready":
+		"celebrate", "emote_cheer", "emote_laugh", "emote_dance", "arrive", "ready", "emote_victory_lap":
 			tgt["squint"] = 1.0
 			tgt["smile"] = 1.0
 			tgt["open"] = 0.55
@@ -1383,6 +1383,21 @@ func _update_face(delta: float, m: String, sprinting: bool, tag_phase: int, spot
 			tgt["open"] = 0.3
 		"emote_shrug":
 			tgt["brow_up"] = 0.8
+		"emote_stargaze":
+			# wonder: lifted brows, a soft open smile
+			tgt["smile"] = 0.6
+			tgt["brow_up"] = 0.7
+			tgt["open"] = 0.3
+		"emote_shush":
+			# sly: half-closed eyes, a small smile
+			tgt["squint"] = 0.55
+			tgt["smile"] = 0.3
+			tgt["brow_up"] = 0.35
+		"emote_moon_shuffle":
+			# cool: easy smile, relaxed lids
+			tgt["smile"] = 0.85
+			tgt["squint"] = 0.6
+			tgt["open"] = 0.15
 		_:
 			tgt["smile"] = 0.35
 			if sprinting or tag_phase > 0:

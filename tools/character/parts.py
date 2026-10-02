@@ -290,6 +290,14 @@ def build_hair():
     return mb
 
 
+def build_hair_hat():
+    """V6: the tuft without its forelock, drawn under hats and headwear that
+    sit on the forehead or hairline (the forelock poked through their bands)."""
+    mb = MeshBuilder('hair_hat')
+    hair_shell(mb, 0.018, hairline_short(1.08), HAIR, rigid('head'))
+    return mb
+
+
 def _shell_point(ang, z, grow):
     """Point on the (reshaped) head shell at height z, around the vertical axis
     (ang 0 = straight back, +pi/2 = the character's left)."""
@@ -1038,7 +1046,7 @@ def build_flippers():
 
 
 ALL_PARTS = [
-    build_base, build_hair, build_hair_bob, build_hair_curly, build_hair_curly_hat, build_hair_buns, build_hair_buns_knots,
+    build_base, build_hair, build_hair_hat, build_hair_bob, build_hair_curly, build_hair_curly_hat, build_hair_buns, build_hair_buns_knots,
     build_freckles,
     build_body_skin, build_pj, build_swim, build_robe, build_duck, build_frog,
     build_watch, build_flashlight, build_mustache,

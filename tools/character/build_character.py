@@ -23,6 +23,7 @@ import geo  # noqa: E402
 import rig  # noqa: E402
 import parts  # noqa: E402
 import anims  # noqa: E402
+import outfits_v6  # noqa: E402
 
 REPO = os.path.abspath(os.path.join(HERE, '..', '..'))
 OUT = sys.argv[-1] if sys.argv[-1].endswith('.glb') else os.path.join(REPO, 'game', 'assets', 'characters', 'runner.glb')
@@ -238,7 +239,7 @@ def main():
     arm_ob = build_armature(scn)
     meshes = {}
     stats = {}
-    for fn in parts.ALL_PARTS:
+    for fn in parts.ALL_PARTS + outfits_v6.ALL:
         mb = fn()
         ob = make_mesh(mb, arm_ob, scn)
         if mb.name == 'base':

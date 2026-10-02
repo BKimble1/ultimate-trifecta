@@ -89,12 +89,28 @@
       "length": 1.2,
       "loop": true
     },
+    "emote_moon_shuffle": {
+      "length": 1.6,
+      "loop": true
+    },
     "emote_point": {
       "length": 1.2,
       "loop": true
     },
     "emote_shrug": {
       "length": 1.4,
+      "loop": true
+    },
+    "emote_shush": {
+      "length": 1.4,
+      "loop": true
+    },
+    "emote_stargaze": {
+      "length": 1.6,
+      "loop": true
+    },
+    "emote_victory_lap": {
+      "length": 1.6,
       "loop": true
     },
     "emote_wave": {
@@ -202,6 +218,14 @@
     "walk": 0.7
   },
   "meshes": {
+    "acc_courier_cap": {
+      "tris": 3090,
+      "verts": 1702
+    },
+    "acc_sleepmask": {
+      "tris": 1956,
+      "verts": 1009
+    },
     "base": {
       "tris": 7298,
       "verts": 3774
@@ -209,6 +233,10 @@
     "body_skin": {
       "tris": 4244,
       "verts": 2145
+    },
+    "courier": {
+      "tris": 15588,
+      "verts": 8187
     },
     "duck": {
       "tris": 8896,
@@ -250,6 +278,10 @@
       "tris": 4048,
       "verts": 2097
     },
+    "hair_hat": {
+      "tris": 1848,
+      "verts": 953
+    },
     "hat_crown": {
       "tris": 820,
       "verts": 420
@@ -270,6 +302,10 @@
       "tris": 2048,
       "verts": 1050
     },
+    "moonlight": {
+      "tris": 10910,
+      "verts": 5650
+    },
     "mustache": {
       "tris": 480,
       "verts": 244
@@ -278,9 +314,17 @@
       "tris": 8576,
       "verts": 4385
     },
+    "raincoat": {
+      "tris": 13948,
+      "verts": 7226
+    },
     "robe": {
       "tris": 7628,
       "verts": 3932
+    },
+    "scout": {
+      "tris": 17608,
+      "verts": 9190
     },
     "shoe_flippers": {
       "tris": 1816,
@@ -294,9 +338,17 @@
       "tris": 3304,
       "verts": 1706
     },
+    "starry": {
+      "tris": 9660,
+      "verts": 5143
+    },
     "swim": {
       "tris": 2088,
       "verts": 1083
+    },
+    "varsity": {
+      "tris": 14412,
+      "verts": 7463
     },
     "watch": {
       "tris": 12712,

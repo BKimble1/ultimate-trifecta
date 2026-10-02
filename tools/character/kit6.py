@@ -58,22 +58,24 @@ def letter_t(w, h, stroke):
     return [(x, y - cy) for x, y in pts], cy
 
 
-def crescent(r, thick=0.55, n=14, tilt=0.0):
-    """Crescent moon as (outer, inner) arcs with matching sample counts (a strip)."""
-    outer, inner = [], []
-    off = r * thick
-    for i in range(n + 1):
-        a = math.radians(-120 + 240 * i / n) + tilt
-        outer.append((math.cos(a) * r, math.sin(a) * r))
-    # inner arc: a circle of the same radius shifted right, clipped to the outer tips
+def crescent(r, inner=0.8, shift=0.45, n=14, tilt=0.0):
+    """Crescent moon (opening to +u before `tilt`) as (outer, inner) arcs
+    with matching sample counts, for strip_decal: the outer circle radius r
+    minus a circle of radius r*inner shifted by r*shift."""
+    ri, d = r * inner, r * shift
+    x = (r * r - ri * ri + d * d) / (2 * d)
+    y = math.sqrt(max(0.0, r * r - x * x))
+    a0 = math.atan2(y, x)
+    b0 = math.atan2(y, x - d)
+    ca, sa = math.cos(tilt), math.sin(tilt)
+    outer, inn = [], []
     for i in range(n + 1):
         t = i / n
-        a = math.radians(-120 + 240 * t) + tilt
-        p0 = outer[i]
-        k = math.sin(math.pi * t)
-        inner.append((p0[0] - math.cos(tilt) * off * k * 1.1 + (0.0), p0[1] - math.sin(tilt) * off * k * 1.1))
-        _ = a
-    return outer, inner
+        a = a0 + (2 * math.pi - 2 * a0) * t
+        b = b0 + (2 * math.pi - 2 * b0) * t
+        for (px, py), lst in (((math.cos(a) * r, math.sin(a) * r), outer), ((d + math.cos(b) * ri, math.sin(b) * ri), inn)):
+            lst.append((px * ca - py * sa, px * sa + py * ca))
+    return outer, inn
 
 
 # ------------------------------------------------------------------ surfaces
@@ -189,10 +191,10 @@ def strip_decal(mb, outer, inner, place, style, wfn, lift=0.0015, thick=0.004, s
         bi.append(mb.vert(pi_ - ni * sink, style, (0, pi_.z), wfn(pi_)))
     for k in range(n - 1):
         mb.face(to[k], to[k + 1], ti[k + 1], ti[k])
-        mb.face(bo[k + 1], bo[k], to[k], to[k + 1])
-        mb.face(bi[k], bi[k + 1], ti[k + 1], ti[k])
-    mb.face(bo[0], bi[0], ti[0], to[0])
-    mb.face(bi[-1], bo[-1], to[-1], ti[-1])
+        mb.face(bo[k], bo[k + 1], to[k + 1], to[k])      # outer wall
+        mb.face(bi[k + 1], bi[k], ti[k], ti[k + 1])      # inner wall
+    mb.face(to[0], ti[0], bi[0], bo[0])
+    mb.face(ti[-1], to[-1], bo[-1], bi[-1])
 
 
 def surface_tube(mb, uv_path, place, radius, style, wfn, lift=0.0, segs=8, flat=1.0, closed=False, cap='round'):
@@ -256,7 +258,7 @@ def skin_leg(mb, side, top_z, bottom_z, skin_style, segs=14, grow=0.0):
     for p0, p1 in ((pts[0], k), (k, a)):
         for i in range(21):
             q = p0.lerp(p1, i / 20.0)
-            if bottom_z <= q.z <= top_z:
+            if bottom_z <= q.z <= top_z and (not poly or (q - poly[-1]).length > 1e-5):
                 poly.append(q)
     poly = _dense_path(poly, 0.02)
     s_hip = []

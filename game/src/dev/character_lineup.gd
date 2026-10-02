@@ -14,7 +14,7 @@ extends Node3D
 ## Each mode saves a lossless PNG and quits when done.
 
 const MODES := ["views", "outfits", "looks", "hairs", "posesheet", "transitions", "closeup", "faces", "cart", "hero", "group", "distance", "parts",
-	"hathair", "menuidle", "steps", "skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes"]
+	"hathair", "menuidle", "steps", "skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom"]
 ## V6 Shop and Season 1 content (modes skip keys the catalog does not have,
 ## so the same file renders the V5 asset for "before" pictures)
 const V6_OUTFITS := ["moonlight_runner", "starry_sleeper", "varsity_sprinter", "raincoat_explorer", "campus_courier", "lantern_scout",
@@ -97,6 +97,8 @@ var _sheet_i := -1
 var _sheet_wait := 0
 var _grabbing := false
 var debug_parts := false
+## --shots-file=FILE (mode "custom"): a JSON list of shots, vectors as [x, y, z]
+var shots_file := ""
 
 
 func _ready() -> void:
@@ -110,6 +112,8 @@ func _ready() -> void:
 			debug_parts = true
 		elif a.begins_with("--light="):
 			lighting = a.split("=")[1]
+		elif a.begins_with("--shots-file="):
+			shots_file = a.split("=")[1]
 	if modes.is_empty():
 		modes = ["views"]
 	if out_dir == "":
@@ -324,7 +328,7 @@ func _next_mode() -> void:
 			_strip_frames.clear()
 			_sheet_i = -1
 			_sheet_wait = 0
-		"skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes":
+		"skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom":
 			_shots = _build_shots(_mode)
 			_strip_frames.clear()
 			_sheet_i = -1
@@ -373,7 +377,7 @@ func _next_mode() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	match _mode:
-		"skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes":
+		"skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom":
 			_run_shots()
 		"parts":
 			if _t < 0.5:
@@ -621,6 +625,19 @@ func _build_shots(m: String) -> Array:
 	var out: Array = []
 	var skins: Array = Cosmetics.keys_of("skin")
 	match m:
+		"custom":
+			var data = JSON.parse_string(FileAccess.get_file_as_string(shots_file))
+			_shot_cols = 4
+			for d in data:
+				var sh: Dictionary = d
+				for k in ["from", "at"]:
+					var a: Array = sh[k]
+					sh[k] = Vector3(a[0], a[1], a[2])
+				if sh.has("cols"):
+					_shot_cols = int(sh["cols"])
+				if sh.has("yaw_deg"):
+					sh["yaw"] = PI + deg_to_rad(float(sh["yaw_deg"]))
+				out.append(sh)
 		"skintones":
 			_shot_cols = 4
 			var hs := ["tuft", "bob", "curly", "buns"]
