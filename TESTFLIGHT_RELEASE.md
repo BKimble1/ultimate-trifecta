@@ -1,6 +1,6 @@
 # TestFlight release: Ultimate Trifecta
 
-Current version: **1.3 (V4)**. It uses the same app, bundle ID, Game Center capability, internal group and lane as 1.0–1.2, including the signed-archive fix from `e39c98c`. V4 adds no new frameworks, permissions, network services or data collection. Its opt-in diagnostics stay on the phone unless the player shares a summary through the existing share sheet. V3 added the UTShare share-sheet framework and the optional game service (`service/`), which is still not deployed.
+Current version: **1.4 (V5)**. It uses the same app, bundle ID, Game Center capability, internal group and lane as 1.0–1.3, including the signed-archive fix from `e39c98c`. V5 adds no new frameworks, permissions, network services or data collection. It changes the launch image to the owner's Idlery Games lockup (requested), and the lane now audits the launch assets before signing. V3 added the UTShare share-sheet framework and the optional game service (`service/`), which is still not deployed.
 
 ## App identity
 
@@ -19,44 +19,41 @@ Current version: **1.3 (V4)**. It uses the same app, bundle ID, Game Center capa
 
 ## Current release state
 
-**State: signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **1.3 (3)**.
+**State: source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **1.4 (4)**.
 
 It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, and nothing was submitted for App Store review.
 
 | | |
 |---|---|
-| Build | `com.idlery.ultimatetrifecta` **1.3 (3)**. App Store Connect build ID `0e2a48cf-c8f9-4845-a2e6-3a86c96e54cc`. |
-| Build number | **3**: the lane read the highest existing build (1.3 (2)) and added one. |
-| Source | Commit `6677eb2`: all V4 work, including the match loading animation. Later commits change only documentation, media and development tools (`src/dev`, which is excluded from the export). |
-| Uploaded | 2026-10-02 08:44:26 UTC, by GitHub Actions run #52 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/36984723213) with `upload=true`. |
-| Apple's processing | `VALID`. The build is `INTERNAL_ONLY` (uploaded with `testFlightInternalTestingOnly`) and declares no non-exempt encryption. |
-| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. What to Test is set from `docs/testflight/what_to_test.txt` (1455 characters, en-US). |
-| Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which is set to receive every build. The lane added no one. TestFlight's automatic notification is on, so that group's members are told the build is ready. |
-| Confirmed by | Apple's API, read by run #52 after processing (09:02 UTC). |
+| Build | `com.idlery.ultimatetrifecta` **1.4 (4)**. App Store Connect build ID `71dd2161-3ae3-406e-a5a8-e56c68a5750b`. |
+| Build number | **4**: the lane read the highest existing build (1.3 (3)) and added one. |
+| Source | Commit `0a41d70`: all V5 work (branding, type and motion, home/party/wardrobe, match loading, campus, map/HUD/results, character motion). Later commits change only documentation and media. |
+| Uploaded | 2026-10-02 16:18:29 UTC, by GitHub Actions run #62 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37031634671) with `upload=true`. |
+| Apple's processing | `VALID`. The build is `INTERNAL_ONLY` and declares no non-exempt encryption. |
+| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. What to Test is set from `docs/testflight/what_to_test.txt` (1404 characters, en-US). |
+| Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which receives every build. The lane added no one. TestFlight's automatic notification is on. |
+| Confirmed by | Apple's API, read by run #62 at 16:36 UTC. |
 
 Earlier builds, all still `VALID` and internal-only:
-- **1.3 (2)** (`c277c020-…`, run #50, commit `4e828da`, uploaded 07:37 UTC): V4 without the loading animation. Test 1.3 (3) instead.
-- **1.2 (1)** (`16d704eb-…`, run #32, commit `e39c98c`, uploaded 03:39 UTC): V3.
+- **1.3 (3)** (`0e2a48cf-…`, run #52, commit `6677eb2`): V4 with the loading animation.
+- **1.3 (2)** (`c277c020-…`, run #50, commit `4e828da`): V4 without the loading animation.
+- **1.2 (1)** (`16d704eb-…`, run #32, commit `e39c98c`): V3.
 
-What the signed archive contains (run #52's build facts):
-- **Binary:** arm64. **Toolchain:** Xcode 26.6 (17F113), iOS SDK 26.5. MinimumOSVersion 17.0; iPhone and iPad; landscape left and right.
-- **Plist:** `ITSAppUsesNonExemptEncryption` false.
+What the signed archive contains (run #62's build facts):
+- **Binary:** arm64, app 285 MB. **Toolchain:** Xcode 26.6 (17F113), iOS SDK 26.5. MinimumOSVersion 17.0; iPhone and iPad; landscape left and right.
+- **Plist:** `ITSAppUsesNonExemptEncryption` false; the Game Center friends purpose string.
 - **Frameworks:** `GodotApplePluginsGameCenter`, `SwiftGodotRuntime` and `UTShare` are embedded; UTShare is arm64.
-- **Entitlements and privacy:** the Game Center entitlement, and `PrivacyInfo.xcprivacy` (no tracking, no collected data, because the game service is off).
-- **Launch audit:** the only launch file is the storyboard. The only text files naming Idlery are build plists carrying the bundle ID. There are no "powered by" strings in the game data.
-- **New in 1.3 (3):** the loading animation ships as one 19-frame texture atlas (about 13.8 MB as ASTC) and a still. There is no video file and no audio.
-
-How it got there:
-- **V3:** run #31 failed at the signed archive before anything was uploaded. The fix in `e39c98c` archives with the development identity and lets the App Store Connect export re-sign for distribution. Run #32 then uploaded 1.2 (1).
-- **V4:** run #50 uploaded 1.3 (2). The loading animation came after it, so run #52 uploaded 1.3 (3) from `6677eb2`. Each upload run tests first; the signing and upload job runs only when every test passes.
+- **Entitlements and privacy:** the Game Center entitlement, and `PrivacyInfo.xcprivacy`.
+- **Launch and branding audit (V5): PASS.** One launch storyboard, on the startup navy; both launch images 2048², opaque, navy corners, with the Idlery teal mark; 0 "powered by" strings; the only text files naming Idlery are build plists carrying the bundle ID.
+- **Simulator:** the cold launch was still running with no crash report and 0 script errors. On this x86_64 OpenGL ES Simulator path the bot-driven round was still preparing at about 1 fps when the window closed (TEST_REPORT V5.7).
 
 ## The owner action that remains
 
 The one-time setup is done: the API key and the four repository secrets, the app record, and an internal group. Nothing needs to be set up again.
 
 What only you can do now:
-1. **Install 1.3 (3)** from the TestFlight app on your iPhone. If it doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing).
-2. **Play it and check the items in What to Test.** For a measurement, turn on **Settings › Diagnostics (beta)**, play a few rounds, then **Share summary** (no names, codes or Game Center IDs). The device checks are listed in `TEST_REPORT.md` V4.8.
+1. **Install 1.4 (4)** from the TestFlight app on your iPhone. If it doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing).
+2. **Play it and check the items in What to Test.** For a measurement, turn on **Settings › Diagnostics (beta)**, play a few rounds, then **Share summary** (no names, codes or Game Center IDs). The device checks are listed in `TEST_REPORT.md` V5.9.
 3. **Optional:** deploy the game service (`service/README.md`) if you want verified profiles and moderated names. Then fill in `game/config/service.cfg` and run the workflow again with **upload**.
 
 For later uploads, run "Build, test and ship (iOS)" with **upload** ticked. The build number follows the highest one in App Store Connect, and the build goes to internal testing only. **asc_status** reads the current state without building anything.

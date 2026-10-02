@@ -1,6 +1,6 @@
 # Test report: Ultimate Trifecta
 
-This report records what was actually run, where, and what each result proves. Version 1.3 (V4) is reported first. The V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
+This report records what was actually run, where, and what each result proves. Version 1.4 (V5) is reported first. The V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
 
 | Label | What it is | What it can prove |
 |---|---|---|
@@ -11,7 +11,233 @@ This report records what was actually run, where, and what each result proves. V
 | **Desktop render** | The game rendered by Godot's Mobile renderer on Mesa **llvmpipe** (software Vulkan) under Xvfb, at device resolutions, with a fixed frame clock (`--fixed-fps 60`, or Movie Maker) | Layout, framing, art, render-path dimensions (render size vs displayed size, MSAA, scale) and engine counters (draw calls, primitives). **Not** frame rate, frame pacing, GPU cost or device smoothness |
 | **CI iOS** | GitHub Actions `macos-26` runner: Xcode project export, unsigned arm64 device archive (or, from V3, a signed archive and TestFlight upload), x86_64 Simulator build and run, App Store Connect API checks | That the iOS project compiles, links, signs and uploads, launches in the Simulator, and what App Store Connect reports for the build; *not* device performance or a device install |
 
-**Not done: no physical iPhone or iPad was available, so nothing in V1–V4 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V4.8. V4 adds an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md).
+**Not done: no physical iPhone or iPad was available, so nothing in V1–V5 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+
+# V5 (version 1.4)
+
+V5 answers the owner's feedback on 1.3 and adds the owner's new branding
+(Idlery Games at startup, the Ultimate Trifecta title). Code is on
+`claude/ultimate-trifecta-testflight-oie9r7`; the build that was uploaded
+is named in V5.7. Implementation notes and the issue register:
+[docs/V5_NOTES.md](docs/V5_NOTES.md). Media index:
+[docs/media/v5/README.md](docs/media/v5/README.md).
+
+Evidence sources are labelled as in the table at the top of this report.
+**No physical iPhone or iPad was available for V5 either**: nothing below
+is a device measurement. V5 changes no rules, simulation or network
+protocol (protocol 5, as V4); the rules copy and the party settings summary
+are shorter.
+
+## V5.1 Automated tests
+
+On the final app code `0a41d70`: **205 tests, 3208 checks, 0 failures**, both
+in CI (upload run #62's headless test job, Ubuntu 24.04, 157 s, which gates
+the signed build) and on this machine (`tools/run_tests.sh`, 258 s:
+`docs/test-data/v5_full_test_run.txt`). V4 had 159 tests and 2742 checks.
+
+| Suite (new in V5) | Tests | What they exercise |
+|---|---|---|
+| `test_motion_layer` | 7 | **Reproduces the V4 press bug** (a release spring outliving the next press) with V4's exact code, then shows the V5 layer holds the pressed scale with at most one tween running; only the face scales, never the hit region; a button hidden while held resets, and one freed mid-animation is clean; a retarget cancels the old animation's callback; Reduced Motion keeps state feedback only; the focus ring and disabled state stay readable; tabular digits |
+| `test_boot_branding` | 4 | The launch image, Godot's boot splash and the curtain's first frame agree (the Idlery Games lockup on the startup navy at the same place); the curtain waits for readiness, not a frame count (a hitch resets the steady count, a steadily slow device counts as steady), and frees itself; the brand marks import cleanly (lossless, mipmapped); no unwanted branding copy ("powered by") in the project |
+| `test_map` | 3 | The baked map and the live markers share one transform; full-map labels never overlap each other or a marker; the map shows only the opponents the rules permit (host-sent last-seen cues) |
+| `test_prep_jobs` | 2 | The nav grid built in slices equals the one-shot grid cell by cell; every preparation job is timed and named, and one over 25 ms marks the diagnostics timeline |
+| `test_wardrobe` | 5 | Every item name fits two lines at the narrowest card with no shrinking or ellipsis (the eight names trimmed in the owner's screenshot by name); one finished picture lands on every card showing that look and a stale one on none (V4 left the equipped card on a placeholder); rapid category switching leaves no stale queued pictures; Apply / Undo say what they will do (Wearing this, Need N more coins, Buy & apply, Apply); the category strip fits a narrow panel with every word whole and every tab a full touch target |
+| `test_lobby_flow` | 1 | Over the loopback network: eight rapid emotes all start and the newest owns the runner; a press storm leaves one animation on the button face; to the wardrobe and back keeps the same character nodes (no rebuild); a guest's outfit change lands on the guest only, in place; Start stops a Try-moves preview at once |
+| `test_loading` | 8 | Rewritten for the game-rig loop: the bundled atlas matches its build data (26 frames at 60 fps, 4×7 grid, 920×540, premultiplied); the layout keeps the runners' feet clear of the status on phone, SE and iPad (never stretched); still first, background load, progress never ahead of preparation, closes when the round is live, releases its textures, hands an unfinished load to `App`; Reduced Motion shows the still; bounded preparation steps; ten rounds stay flat |
+| `test_motion_v5` | 14 | Twelve motion scenarios against V4's measured snaps (start, stop, reversal, kerb, flicker, jump landing, tag miss, cart, correction…); a one-tick floor flicker never shows the air pose; landings and jumps fire once; hitches and teleports don't fling the nightcap; teleports cut and reset history; secondary motion bounded under irregular frames; gait cadence matches ground travel; starts and stops land on a step; LOD hysteresis keeps time; the menu idle API; the V5 clips are in the asset; the camera ignores posts but not walls; a run on the spot keeps its facing; **a new view's first frame faces the sim yaw** (found in integration, V5.8) |
+| `test_results_layout` | 1 | The results actions (Play again, Scoreboard, Menu / Leave) sit outside the scrolling summary and on screen on phone, SE and iPad; on iPad the whole summary shows |
+| `test_campus_art` | 8 | **Collision, nav and layout identical to V4**: 525 collision shapes (type, size, transform, layers, height field), both nav grids cell by cell, and the gameplay layout, against values computed on the V4 commit; the visual build adds no physics; the baked dressing is fresh and visual only; it keeps out of paths, roads, plazas, exits, jump points, pads, doors and gates; 40+ real bot routes and the swim lines into each water are clear; staged build steps are short; the art kit loads with its LODs; Battery Saver is lighter than Standard |
+
+Existing suites still pass, with two deliberate updates from the motion
+work: `test_motion` expects the filtered acceleration (and still guards the
+old always-zero bug), and `test_profile` accepts the curly-hair variant
+drawn under the crown and headphones.
+
+## V5.2 Character motion, before and after (headless sim and desktop render)
+
+The same measuring code ran on the V4 commit and on V5
+(`docs/v5/motion_register.md`, `docs/media/v5/motion/data/`). Largest
+single-frame upper-body snap (cm):
+
+| Scenario | V4 | V5 |
+|---|---|---|
+| Start running | 35.1 | 5.3 |
+| Stop | 25.2 | 3.5 |
+| 180° reversal | 28.6 | 6.8 |
+| Running-jump landing | 56.8 | 9.9 |
+| Kerb drop | 51.3 | 6.8 |
+| One-tick floor-contact flicker | 102.7 | 3.5 |
+| Cart in / out | 35.1 | 5.3 |
+| Prediction-correction stress run | 23.1 | 6.8 |
+
+Also measured: 11 clips with arms 1.4–30 cm inside the head → none over
+1 cm (`tools/character/clip_check.py` in Blender on the real rig); nightcap
+tip 32–41 cm in one frame after a hitch, respawn or jump → ≤ 7.3 cm; camera
+pulled ~3 m closer for one frame by a trunk or lamp post → 0.03 m;
+planted-foot slide in a reversal 1.23 → 0.92 m/s (90° turns 0.69 → 0.78:
+not fixed). The side-by-side reels (`runner_v4_v5.mp4`, `watch_v4_v5.mp4`)
+run on a fixed 30 fps clock: they show poses, not frame rate.
+
+## V5.3 Campus: budgets and gameplay safety (desktop render, headless)
+
+Engine counters on llvmpipe at 1558×720 for the same cameras on V4 and V5
+(`docs/v5/campus_notes.md`): Standard draw calls 43–94 on the seven route
+views (V4 44–86) and 31–83 on the six water views (V4 32–88); visible
+primitives 0.53–1.02× V4. Battery Saver is lighter than Standard
+everywhere. Counters say nothing about GPU time on a phone.
+
+Collision and navigation are proven identical to V4 by `test_campus_art`
+(V5.1); `campus_layout.gd`, `nav_grid.gd`'s output and the collision code
+are unchanged.
+
+## V5.4 Preparation and frame work (desktop CPU; not device numbers)
+
+| Measurement | V4 | V5 |
+|---|---|---|
+| Longest campus build step, rendering (llvmpipe) | 81–83 ms | 30–37 ms (first-use shader compiles, one step each); otherwise 13–14 ms |
+| Campus steps over 16 ms, rendering | 18–22 of 126 | 3 |
+| Longest frame of round preparation, headless | 62–77 ms | 16.4–21.4 ms |
+| Longest non-campus job, headless | ~50 ms (nav grid) | 7.5–9.8 ms (nav grid in 7 slices, longest 9.2–10.2 ms) |
+| Ten rounds in a row | flat | flat (nodes / objects / orphans 45 / 3140 / 190 after rounds 2 and 10; no session connections left) |
+
+A job over 25 ms on a phone is named in the diagnostics timeline
+(`prep_slow:<job>`). The shader compiles can't move off the main thread
+here (it deadlocked the renderer); their phone cost is unknown.
+
+## V5.5 Visual evidence (desktop render)
+
+All renders are the real game on Mesa llvmpipe under Xvfb at device
+resolutions (iPhone 14 Pro class 2532×1170 with its safe area, iPhone SE
+1334×750, 4:3 iPad 2048×1536), made by `tools/capture_v5_media.sh`. They
+show layout, type, art and framing; they are not frame-rate evidence.
+Index: [docs/media/v5/README.md](docs/media/v5/README.md).
+
+- **Startup:** Movie Maker frames of a normal boot (fixed 30 fps game clock):
+  the Idlery Games lockup holds while the home screen and runner get ready,
+  then dissolves into home with no flash and no second logo.
+- **Home, party (1, 2, 4 and 8 players), wardrobe (every category), match
+  loading, Settings, Practice, Play with Friends, How to play** on phone,
+  and home, wardrobe, loading and results on SE and iPad.
+- **Match:** role reveal, HUD, minimap, full map with labels and the side
+  panel, a water entry, results.
+- **Before/after:** V4 and V5 at the same moments (home, party, wardrobe,
+  loading; campus route and waters from the campus work; motion reels).
+
+## V5.6 Networking on V5
+
+The protocol, simulation and rules are unchanged from V4 (protocol 5), so
+the V4 network results (V4.5) still describe the wire. V5 adds a
+presentation-level classification (`src/dev/net_motion_probe.tscn`, host
+plus a predicting client over the shaped in-process link, 720 client frames
+per condition):
+
+| | 0 ms | 120 ms RTT, 3 % loss | 300 ms RTT, 10 % loss |
+|---|---|---|---|
+| Visible correction frames | 0 | 0 | 0 |
+| Reconcile mean / over 25 cm | 0 mm / 0 | 4 mm / 0 | 3 mm / 0 |
+| Terrain/collision deviation frames | 46 | 45 | 45 |
+| Remote characters extrapolating (of ~5,000) | 0 | 25 | 310 |
+| Host ticks without client input | 0 | 0 | 0 |
+
+Terrain and camera counts don't change with the link, so they are not
+network effects. A real-UDP soak between processes (`tools/net_soak.sh`,
+host + 2 bot clients, full rounds) averaged 2.4–2.6 mm corrections
+unshaped and 10.7–11.8 mm at 60 ± 10 ms one way with 3 % loss; the largest
+was about 1 m in both conditions and was not traced (open, M14). `test_lobby_flow`
+(V5.1) runs the new party screen over the loopback network.
+
+## V5.7 iOS build (CI iOS) and TestFlight
+
+**Signed and uploaded:** `com.idlery.ultimatetrifecta` **1.4 (4)**, from
+`0a41d70` (the final V5 app code), went to App Store Connect at 16:18 UTC on
+2 October 2026 (upload run #62,
+https://github.com/BKimble1/ultimate-trifecta/actions/runs/37031634671).
+Apple processed it to `VALID`; it is `INTERNAL_ONLY` and **available to
+internal testers** (`IN_BETA_TESTING`) in the owner's existing internal
+group, which receives every build. The lane set What to Test (1404
+characters). No tester was added, no external testing was requested and
+nothing was submitted for review. Details: `TESTFLIGHT_RELEASE.md`.
+
+| Run | Commit | What happened |
+|---|---|---|
+| #56 | `5eaed77` | Mid-V5 push build: tests, export, the new launch and branding audit (PASS), unsigned device archive, Simulator cold launch (no crash, 0 script errors). |
+| #58 | `49abda2` | Push build after the motion merge: all stages passed. |
+| #62 | `0a41d70` | `upload=true`. Tests passed (205 tests, 3208 checks), export, launch audit PASS (one storyboard on the startup navy; both splash images 2048², opaque, navy corners, the Idlery teal mark; 0 "powered by" strings; the only text files naming Idlery carry the bundle ID), signed archive and upload of **1.4 (4)**, Simulator run, build facts, then Apple's processing: `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING`, What to Test set. Build facts: Xcode 26.6 (17F113), iOS SDK 26.5, arm64, 285 MB app, MinimumOSVersion 17.0, iPhone and iPad, landscape left/right, `ITSAppUsesNonExemptEncryption` false, the three frameworks embedded (UTShare arm64), Game Center entitlement, privacy manifest. |
+
+**The Simulator run, read honestly.** The CI Simulator is an x86_64 runner
+on the OpenGL ES fallback, not a phone's Metal path. Its first screenshot
+took 223.5 s to return; the cold-launch frames (223–290 s) all show the
+Idlery Games lockup on navy, which is the launch screen, the boot splash and
+the curtain alike by design, so they cannot tell which stage was showing.
+In the bot-driven run the screenshots show the V5 match loading screen
+rendering on iOS (title, three runners, "Getting campus ready…", then
+"Placing players…"), but the app ran at about 1 fps and the round was still
+preparing when the 8-minute window closed (status lines: phase LOADING at
+t = 5, 10 and 15 s of game time). V4's run #52 ran at about 5 fps and
+reached its role reveal near the end of the same window. A desktop check on
+Godot's OpenGL (Compatibility) renderer prepared the round and went
+through reveal, countdown and play, so this is slowness on that Simulator
+path, not a stall in the code. It does mean V5's loading is heavier on a
+software GL path than V4's, and it is a device check (V5.9): the owner's V6
+brief reports the loading loop animating and then freezing on a phone.
+
+## V5.8 Found and fixed during V5 validation
+
+- **Press feedback springing back mid-press** (U1): reproduced with V4's
+  code in a test, fixed by the motion layer's single owner per property.
+- **Equipped wardrobe card stuck on a placeholder** (U2), **pictures never
+  arriving** (U3), **trimmed item names** (U4) and **trimmed party names**
+  (U5): see V5_NOTES.
+- **Startup curtain waiting for its 6 s cap** under slow rendering: the
+  first steadiness rule was absolute; now relative to the previous frame.
+- **Full map side panel at the top left for one frame:** laid out in
+  `_ready` now.
+- **iPad wardrobe:** the runner was too large and behind the item panel;
+  the stage now frames the free region.
+- **Emote name bubbles** clipped above the screen on home and results: only
+  in the group lobby now.
+- **Wardrobe teardown** could create the portrait renderer while the screen
+  was closing (cancelling queued pictures): it no longer does.
+- **iPhone SE wardrobe:** the category strip ran off the panel ("Emote:"),
+  and a fitted tab then trimmed "Outfit" inside its own face. The strip
+  fits its panel and a face pads its text by at most its button's padding
+  (test added).
+- **Results on a phone:** Menu / Leave party sat under Play again inside the
+  scrolling summary, so it was only found by scrolling; on iPad a fixed
+  scroll height cut the sheet off with room to spare. The actions are now
+  one row outside the scroll and the summary fits its content
+  (`test_results_layout`, captures on all three sizes).
+- **Found while merging the motion work:** a character view's first frame
+  away from the world origin counted the jump from the origin as travel and
+  started up to 57° off its facing (M19; test added, 0.99 rad without the
+  fix). The same merge would have put two of the three loading-loop
+  runners in step (a start from standing snaps the gait to a step); the
+  loop renderer now starts them moving, and the loop was re-rendered and
+  re-checked (closes exactly).
+- **Found while merging the campus work:** the new name boards preloaded
+  the Fredoka font, which V5 no longer ships, which would have failed to
+  load the campus script; they use Manrope Bold.
+- **Tooling:** `tools/net_soak.sh` wrote no reports for an absolute output
+  directory.
+
+## V5.9 Not verified (exact remaining checks)
+
+- Everything that needs a phone: frame interval, stalls, GPU time and heat
+  after 15 minutes (Settings › Diagnostics (beta) › Share summary), the
+  cost of the three first-use shader compiles, and whether any device
+  sustains 60 fps. No claim is made that every A12 device does.
+- The startup sequence as iOS draws it on a device: launch screen →
+  Godot's boot splash → the curtain → home, with no white flash (the
+  Simulator run and desktop frames are the closest evidence).
+- Touch feel of the new press feedback, the 44 pt targets and the safe
+  areas on real notched and home-button phones; a game controller on the
+  new screens.
+- The game-rig loading loop at the phone's scale and refresh rate.
+- The campus at night on a phone screen (contrast, readability of the
+  water landmarks and the name boards, Battery Saver).
+- Remote players under heavy loss, and the rare ~1 m correction (M14);
+  turn foot slide (M8); slopes and stairs (M18).
+- A friend party and series over Game Center between devices.
 
 # V4 (version 1.3)
 

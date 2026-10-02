@@ -352,5 +352,4 @@ worker pool deadlocked the renderer here); they are isolated in their own
 steps so no other work shares those frames. A phone's compile time is
 unknown: the diagnostics panel will name the step if it stalls.
 
-<!-- V5_MERGED_SECTIONS -->
 
