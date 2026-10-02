@@ -274,5 +274,83 @@ not phone smoothness.
   players extrapolate on ~6 % of frames under heavy loss (300 ms, 10 %),
   and rare ~1 m corrections in the UDP soak were not traced.
 
+## Campus art
+
+Full notes: [v5/campus_notes.md](v5/campus_notes.md) (art direction, the
+light field, materials, budgets, regeneration). Evidence: matched V4/V5
+renders of the same cameras in [media/v5/campus/](media/v5/campus/README.md).
+Regenerate everything with `tools/campus/build.sh` (Blender generator →
+textures → Godot import → dressing bake).
+
+- **Authored tree kit.** Eight species made in Blender by
+  `tools/campus/build_kit.py` (oak, linden, autumn maple, birch, blossom,
+  fir, spruce, stout pine), each with three LODs and baked ambient
+  occlusion; conifers are layered firs, not stacked cones. Species form
+  groves (conifer stands, birch glades, a linden avenue, maples on the quad,
+  blossom by the dorm and Lily Basin). The collider trees stay exactly
+  where V4 had them; only their look changed.
+- **Terrain transitions.** Lawn detail, dry and lush patches and mowing
+  stripes; a darker forest floor under groves; sandy banks at the natural
+  waters; flagstone, gravel and boardwalk paths with ragged lawn edges;
+  kerbed roads; a paved rosette at the fountain plaza. Two tileable 512²
+  detail masks.
+- **Modular building kit.** Recessed windows with varied lit interiors,
+  lintels and sills; roofs with fascia, ridge caps and chimneys; lit
+  entrances with lanterns and porch hoods; fictional name boards and six
+  wayfinding fingerposts; three lamp styles as area cues.
+- **Props and dressing.** ~3,900 baked decorative pieces (understory and
+  foundation shrubs, blooms, grass tufts, reeds, lilies, stones, meadow
+  drifts, a forest beyond the hedges) with no collision. A test keeps every
+  piece off paths, roads, plazas, exits, jump points, pads, doors and
+  gates, puts every taller piece against an existing collider, and keeps
+  them off 40+ real bot routes and the swim lines into each water.
+- **Six distinct water landmarks.** Fountain (jets and ripples), Froggy
+  Pond (reeds, lilies, stepping stones at each exit, the frog statue), Pool
+  (tiles, lane lines, wall lights), Quarry (layered rock fitted to each
+  boulder collider, work lanterns), Lily Basin (carved coping, urns with
+  topiary; flower boxes moved off an exit), Boathouse Inlet (dock, pilings,
+  boathouse doors). Tonight's waters show floating lanterns in their colour
+  and a slimmer edge glow; a stamped water dims.
+- **Lighting and materials.** The V4 light field (ambient occlusion, warm
+  lamp/door/window light, cool pool and fountain light) is now a 161×151
+  texture sampled per pixel on the GPU instead of a CPU vertex bake.
+  Softer moon shadows, a less saturated ambient, leaf translucency, a
+  horizon glow, a moon halo and restrained fog. LightmapGI was considered
+  and not used (the campus is generated at runtime; reasons in the notes).
+  Mobile renderer only: no SDFGI, VoxelGI, SSAO, SSR, volumetric fog or
+  TAA.
+- **Collision, nav and gameplay preserved.** `test_campus_art` compares
+  all 525 collision shapes (type, size, transform, layers, height field),
+  both nav grids cell by cell, and the gameplay layout against values
+  computed on the V4 commit: identical. The visual build adds no physics.
+  `campus_layout.gd` and the collision code are unchanged.
+- **Budgets** (engine counters on llvmpipe at 1558×720, relative only):
+  Standard draw calls 43–94 on the seven route views (V4 44–86; the dorm
+  door view 94 vs 86) and 31–83 on the six water views (V4 32–88); visible
+  primitives 0.53–1.02× V4. Battery Saver stays clearly lighter than
+  Standard and casts no campus shadows; against V4's Battery Saver it has
+  mostly fewer primitives and a few more draw calls.
+
+## Performance and preparation
+
+Round preparation runs in named jobs under the loading screen, one per
+frame. Every job is timed; one over 25 ms marks the diagnostics timeline
+(`prep_slow:<job>`, campus jobs named by their builder step, e.g.
+`campus:paths`). Measured on this desktop (not a phone):
+
+| Measurement | V4 | V5 | Source |
+|---|---|---|---|
+| Longest campus step, rendering (llvmpipe) | 81–83 ms | 30–37 ms (first-use shader compiles, one step each); 13–14 ms otherwise | `dev_shots --route`, two runs each |
+| Campus steps over 16 ms, rendering | 18–22 of 126 | 3 (the shader compiles) | same |
+| Longest campus step, headless | (not measured) | 14.5 ms | `test_campus_art` |
+| Longest non-campus job, headless | ~50 ms (nav grid) | 13 ms; nav slices ≤ 11 ms | `test_prep_jobs` |
+| Longest frame of round preparation, headless | 62–77 ms | 22–24 ms | `test_loading` |
+| Ten rounds in a row | flat | flat (nodes, objects, orphans, signal connections) | `test_loading` |
+
+The first-use shader compiles stay on the main thread (compiling on the
+worker pool deadlocked the renderer here); they are isolated in their own
+steps so no other work shares those frames. A phone's compile time is
+unknown: the diagnostics panel will name the step if it stalls.
+
 <!-- V5_MERGED_SECTIONS -->
 

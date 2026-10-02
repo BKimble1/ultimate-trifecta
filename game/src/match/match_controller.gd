@@ -189,7 +189,7 @@ func _prep_run_one() -> void:
 	var i := _prep_i
 	var nm := String(PREP_NAMES[i]) if i < PREP_NAMES.size() else "job%d" % i
 	if i == 0 and _builder != null:
-		nm = "campus#%s" % str(_builder.get("_step_i"))   # the builder's own step index
+		nm = "campus:" + (String(_builder.call("next_step_name")) if _builder.has_method("next_step_name") else str(_builder.get("_step_i")))
 	var t0 := Time.get_ticks_usec()
 	var again: Variant = _prep[_prep_i].call()
 	var ms := float(Time.get_ticks_usec() - t0) / 1000.0

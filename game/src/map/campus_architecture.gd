@@ -865,7 +865,7 @@ func _prop(pr: Dictionary) -> void:
 ## Fictional name boards (Label3D, warm cream on a dark board): one at each
 ## building's main face and wayfinding fingerposts at the main junctions.
 ## Each label is drawn only near the camera.
-const SIGN_FONT := preload("res://assets/fonts/Fredoka-SemiBold.ttf")
+const SIGN_FONT := preload("res://assets/fonts/Manrope-Bold.ttf")
 func signs() -> void:
 	var names_done := {}
 	for bd in L.buildings:
