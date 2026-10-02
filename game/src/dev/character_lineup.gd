@@ -311,7 +311,7 @@ func _next_mode() -> void:
 			mv.set_appearance(mv.role, mv.cosmetic)   # indoor rim light, as in the dorm
 			if mv.has_method("set_menu_idle"):
 				mv.call("set_menu_idle", true)
-			_aim(Vector3(0.0, 1.1, 3.6), Vector3(0, 0.8, 0), 30)
+			_aim(Vector3(0.0, 1.0, 5.6), Vector3(0, 0.78, 0), 30)
 			_strip_frames.clear()
 			_strip_next = 0.6
 		"steps":

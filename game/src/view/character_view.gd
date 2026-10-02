@@ -208,6 +208,7 @@ var _squash_v := 0.0
 var _fidget := ""
 var _blink_len := 0.16
 var _hat_off := false
+var _travel_f := Vector3.ZERO
 ## total animation time advanced (tests: equals the real elapsed time)
 var anim_time_advanced := 0.0
 
@@ -762,6 +763,7 @@ func reset_motion() -> void:
 	_prev_vel = Vector3.ZERO
 	_squash = 0.0
 	_squash_v = 0.0
+	_travel_f = Vector3.ZERO
 	if secondary:
 		secondary.reset_motion()
 	if hat_spring:
@@ -843,16 +845,17 @@ func _cut_pose() -> void:
 ## Visual facing: follows the sim yaw closely but never snaps (aim-assist
 ## turns, snapshot gaps) and never spins the long way back during a reversal.
 ## V5: in plain ground locomotion the sim is turning its yaw toward the
-## velocity at a capped rate (turn_rate_deg); the drawn body aims at that
-## heading directly, so it does not run sideways for the ~0.2 s of a turn or
-## reversal (planted feet skated at 5-7 m/s there).  Tag phases, dives and
-## other states keep the sim's facing (aim assist, committed dives).
+## velocity at a capped rate (turn_rate_deg); the drawn body aims at the
+## heading of its actual ground travel directly, so it does not run sideways
+## for the ~0.2 s of a turn or reversal (planted feet skated at 5-7 m/s
+## there).  Tag phases, dives, other states and runs on the spot (lobby
+## previews) keep the sim's facing.
 func _update_yaw(delta: float) -> float:
 	var target := float(rs.get("yaw", rotation.y))
 	var follow := 24.0
-	# heading of the filtered velocity (prediction corrections jitter the raw one)
-	var vel: Vector3 = _vel_f if _have_prev else rs.get("vel", Vector3.ZERO)
-	var hv := Vector2(vel.x, vel.z)
+	# heading of the filtered ground travel (prediction corrections jitter the
+	# raw velocity; a run on the spot in the lobby travels nowhere)
+	var hv := Vector2(_travel_f.x, _travel_f.z)
 	if _mode == "ground" and int(rs.get("tag_phase", 0)) == 0 and not bool(rs.get("diving", false)) \
 			and int(rs.get("state", TC.PState.ACTIVE)) == TC.PState.ACTIVE and hv.length() > 0.8:
 		var heading := atan2(-hv.x, -hv.y)
@@ -900,6 +903,8 @@ func _process(delta: float) -> void:
 	# camera distance once per frame (LOD with hysteresis, sounds, effects)
 	_cam_d = _camera_distance()
 	_far = _cam_d > (LOD_NEAR if _far else LOD_FAR)
+	if pose_fade:
+		pose_fade.tracking = is_local or not _far
 
 	# --- teleports: a state change that moved the character (respawn after
 	# capture, resurfacing at a shore exit, cart seat in/out) resets motion
@@ -917,6 +922,13 @@ func _process(delta: float) -> void:
 	if st == TC.PState.SPLASHING and _prev_state != TC.PState.SPLASHING:
 		entered_splash = true
 	_prev_state = st
+	# the character's actual ground travel (filtered): a run on the spot (the
+	# lobby's "Try moves") has a velocity but no travel
+	if delta > 0.0 and not _cut:
+		var travel := (global_position - _last_pos) / delta
+		_travel_f += (Vector3(travel.x, 0.0, travel.z) - _travel_f) * (1.0 - exp(-delta / ACC_TAU))
+	else:
+		_travel_f = Vector3.ZERO
 	_last_pos = global_position
 
 	# --- facing + motion history.  Acceleration is the derivative of a

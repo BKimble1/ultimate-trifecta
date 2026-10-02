@@ -14,15 +14,33 @@ var results: Array = []
 
 
 func _ready() -> void:
+	if OS.get_cmdline_user_args().has("--bench"):
+		await _bench()
+		get_tree().quit()
+		return
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--scenarios="):
 			names = Array(a.split("=")[1].split(","))
 		elif a.begins_with("--out="):
 			out = a.split("=")[1]
 	if names.is_empty():
-		names = MotionRig.SCENARIOS.keys()
+		names = MotionRig.SCENARIOS.keys() + CameraRig.SCENARIOS.keys()
 	await get_tree().process_frame
 	for n in names:
+		if String(n).begins_with("cam_"):
+			var cr := CameraRig.new()
+			add_child(cr)
+			await get_tree().physics_frame
+			cr.start(String(n))
+			await cr.finished
+			var cm := cr.metrics()
+			results.append(cm)
+			print("PROBE %-16s camera jump %.3f m @%.2fs  closest %.2f m  pulled-in frames %d  pivot hidden frames %d / %d" % [
+				n, cm["jump_m"], cm["jump_t"], cm["dist_min"], cm["pull_frames"], cm["blocked_frames"], cm["frames"]])
+			cr.cleanup()
+			cr.queue_free()
+			await get_tree().process_frame
+			continue
 		# three starting gait phases; pops are the worst, slides the mean
 		var mt := {}
 		for ph in [0.0, 0.37, 0.71]:
@@ -58,6 +76,44 @@ func _ready() -> void:
 		var f := FileAccess.open(out, FileAccess.WRITE)
 		f.store_string(JSON.stringify(results, "  "))
 	get_tree().quit()
+
+
+## --bench: 8 characters (4 running in circles, 4 idle) near the camera,
+## 600 frames; prints the mean and 95th percentile of the whole frame's CPU
+## time (desktop, headless).  Relative V4/V5 comparison only.
+func _bench() -> void:
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.current = true
+	cam.position = Vector3(0, 3, 8)
+	var vs: Array[CharacterView] = []
+	for i in 8:
+		var v := CharacterView.new()
+		add_child(v)
+		v.setup(TC.Role.RUNNER if i < 6 else TC.Role.PATROL, _look(), i, "b%d" % i, false, i == 0)
+		v.apply_state({"pos": Vector3(i - 4, 0, 0), "yaw": 0.0, "vel": Vector3.ZERO, "state": TC.PState.ACTIVE, "on_floor": true}, 0.0, true)
+		vs.append(v)
+	var times: Array[float] = []
+	var last := Time.get_ticks_usec()
+	for f in 660:
+		var tt := f / 60.0
+		for i in 8:
+			var a := tt * 1.2 + i
+			var run := i % 2 == 0
+			var vel := Vector3(cos(a), 0, sin(a)) * (5.0 if run else 0.0)
+			vs[i].apply_state({"pos": Vector3(i - 4, 0, 0) + (Vector3(sin(a), 0, -cos(a)) * 4.0 if run else Vector3.ZERO),
+				"yaw": atan2(-vel.x, -vel.z) if run else 0.0, "vel": vel, "state": TC.PState.ACTIVE, "on_floor": true})
+		await get_tree().process_frame
+		var now := Time.get_ticks_usec()
+		if f >= 60:
+			times.append(float(now - last))
+		last = now
+	times.sort()
+	var mean := 0.0
+	for x in times:
+		mean += x
+	mean /= times.size()
+	print("BENCH 8 characters: frame CPU mean %.0f us, p95 %.0f us (desktop headless, relative only)" % [mean, times[int(times.size() * 0.95)]])
 
 
 ## The icon hero: nightcap (spring tip), striped pajamas, slippers.

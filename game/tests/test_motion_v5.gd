@@ -265,3 +265,52 @@ func test_asset_has_the_v5_clips() -> void:
 	t.eq((m["bones"] as Array).size(), 23, "the rig keeps its 23 bones")
 	for k in CharacterView.LOCO_M_PER_CYCLE:
 		t.near(float(m["loco_m_per_cycle"][k]), float(CharacterView.LOCO_M_PER_CYCLE[k]), 1e-4, "%s stride unchanged" % k)
+
+
+func _cam(scenario: String) -> Dictionary:
+	var cr := CameraRig.new()
+	t.add_child(cr)
+	await t.get_tree().physics_frame
+	cr.start(scenario)
+	await cr.finished
+	var m := cr.metrics()
+	cr.cleanup()
+	cr.queue_free()
+	return m
+
+
+func test_camera_ignores_posts_but_not_walls() -> void:
+	# V4: a 14 cm lamp post or a tree trunk crossing the line pulled the
+	# camera ~3 m in within one frame, then it eased back over ~0.7 s
+	for sc in ["cam_lamp", "cam_trunk"]:
+		var m: Dictionary = await _cam(sc)
+		t.check(float(m["jump_m"]) < 0.2, "%s: no camera jump (%.2f m in one frame; V4 ~3 m)" % [sc, m["jump_m"]])
+		t.eq(int(m["pull_frames"]), 0, "%s: the camera keeps its distance" % sc)
+	var w: Dictionary = await _cam("cam_wall")
+	t.check(float(w["dist_min"]) < 3.0, "a wall behind the runner still pulls the camera in (%.2f m)" % w["dist_min"])
+	t.eq(int(w["blocked_frames"]), 0, "and the runner is never hidden behind it")
+	for sc in ["cam_ramp", "cam_hitch", "cam_turn"]:
+		var m2: Dictionary = await _cam(sc)
+		t.check(float(m2["jump_m"]) < 0.1, "%s: camera moves with its pivot (largest extra move %.3f m)" % [sc, m2["jump_m"]])
+
+
+func test_run_on_the_spot_keeps_its_facing() -> void:
+	# the lobby's "Try moves" (DormStage) runs and sprints on the spot with
+	# a velocity that points out of the character's back: no travel, so the
+	# body must keep facing the camera and the legs must still cycle
+	var v := CharacterView.new()
+	v.lighting = "indoor"
+	t.add_child(v)
+	v.setup(TC.Role.RUNNER, Cosmetics.DEFAULT, -1, "", false, true)
+	var yaw := 2.4
+	var back := Vector3(sin(yaw), 0, cos(yaw))
+	v.apply_state({"pos": Vector3(1, 0, 1), "yaw": yaw, "state": TC.PState.ACTIVE, "vel": Vector3.ZERO, "on_floor": true}, 0.0, true)
+	v._process(1.0 / 60.0)
+	var p0 := v._phase
+	for i in 60:
+		v.apply_state({"pos": Vector3(1, 0, 1), "yaw": yaw, "state": TC.PState.ACTIVE, "vel": back * Rules.cfg.runner_sprint_speed,
+			"on_floor": true, "sprinting": true})
+		v._process(1.0 / 60.0)
+	t.near(wrapf(v.rotation.y - yaw, -PI, PI), 0.0, 0.01, "the lobby runner keeps facing the camera")
+	t.check(v._phase - p0 > 1.5, "and its legs keep cycling (%.2f cycles in 1 s)" % (v._phase - p0))
+	v.queue_free()

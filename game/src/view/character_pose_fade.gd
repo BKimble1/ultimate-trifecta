@@ -16,7 +16,7 @@ extends SkeletonModifier3D
 ##
 ## Cost: while idle it copies 23 bone rotations and 2 positions per frame
 ## (the history it needs for velocity); during a fade (typically 0.06-0.3 s)
-## it blends them.  Distant (LOD) characters skip fades: CharacterView cuts.
+## it blends them.  Distant (LOD) characters skip fades and stop tracking.
 
 const HALFLIFE := 0.05
 const LN2 := 0.6931472
@@ -25,6 +25,9 @@ const MOVING_BONES := ["root", "hips"]
 
 ## completed fade starts (tests)
 var fades_started := 0
+## CharacterView turns this off for throttled distant characters (they cut
+## instead of fading), so they pay nothing here
+var tracking := true
 var _n := 0
 var _rot: Array[Quaternion] = []        # pose shown this frame
 var _rot_prev: Array[Quaternion] = []   # pose shown last frame
@@ -102,6 +105,9 @@ func _process_modification_with_delta(delta: float) -> void:
 		return
 	if _n != sk.get_bone_count():
 		_setup(sk)
+	if not tracking and _dur <= 0.0:
+		_hist = 0
+		return
 	var tmp := _rot_prev
 	_rot_prev = _rot
 	_rot = tmp
