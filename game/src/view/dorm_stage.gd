@@ -4,7 +4,8 @@ extends Node3D
 ## three-quarter), wardrobe (one character, larger) and the party lobby (up
 ## to eight characters on stable marks).  Rendered in the root viewport at
 ## native resolution (no SubViewport resampling).  The camera is stationary
-## per mode; switching modes eases over ~200 ms (cut with Reduced Motion).
+## per mode; switching modes eases over ~320 ms (Motion.CAMERA, eased in
+## and out; a cut with Reduced Motion).
 ##
 ## Characters are keyed by a stable identity (player uid) and updated in
 ## place: sync_party() adds arrivals (with one short arrival hop), removes
@@ -46,7 +47,7 @@ var mode := "home"
 var reduced_motion := false
 var _cam_from: Array = []
 var _cam_t := 1.0
-var _cam_dur := 0.2
+var _cam_dur := Motion.CAMERA
 var _t := 0.0
 var _lamp: OmniLight3D
 ## Emotes: who is emoting until when.  The newest emote owns the character
@@ -128,7 +129,7 @@ func _reframe() -> void:
 		return
 	_cam_from = [cam.global_position, cam.global_position - cam.global_transform.basis.z * 3.0, cam.fov]
 	_cam_t = 1.0 if reduced_motion else 0.0
-	_cam_dur = 0.25
+	_cam_dur = Motion.CAMERA
 	if _cam_t >= 1.0:
 		_apply_cam(_cam_for(mode), 1.0)
 	for k in chars:
@@ -154,7 +155,7 @@ func set_mode(m: String, animate: bool = true) -> void:
 	_cam_from = [cam.global_position, cam.global_position - cam.global_transform.basis.z * 3.0, cam.fov]
 	mode = m
 	_cam_t = 0.0 if (animate and not reduced_motion and is_inside_tree()) else 1.0
-	_cam_dur = 0.2
+	_cam_dur = Motion.CAMERA
 	if _cam_t >= 1.0:
 		_apply_cam(_cam_for(m), 1.0)
 	for k in chars:
@@ -166,7 +167,8 @@ func _apply_cam(c: Array, u: float) -> void:
 	var to_at: Vector3 = c[1]
 	var to_fov: float = c[2]
 	if u < 1.0 and not _cam_from.is_empty():
-		var e := 1.0 - pow(1.0 - u, 3.0)
+		# eased in and out: the move starts and lands without a jolt
+		var e := 4.0 * u * u * u if u < 0.5 else 1.0 - pow(-2.0 * u + 2.0, 3.0) * 0.5
 		to_p = (_cam_from[0] as Vector3).lerp(to_p, e)
 		to_at = (_cam_from[1] as Vector3).lerp(to_at, e)
 		to_fov = lerpf(float(_cam_from[2]), to_fov, e)
@@ -184,8 +186,6 @@ func _process(delta: float) -> void:
 	if _cam_t < 1.0:
 		_cam_t = minf(1.0, _cam_t + delta / _cam_dur)
 		_apply_cam(_cam_for(mode), _cam_t)
-	if _lamp:
-		_lamp.light_energy = 1.9 + 0.04 * sin(_t * 1.7)
 
 
 ## entries: [{key, role, cosmetic, name, is_bot, local}] (local first).
@@ -449,10 +449,21 @@ func _build_room() -> void:
 	key.light_color = Color(1.0, 0.86, 0.68)
 	key.light_energy = 1.05
 	key.shadow_enabled = true
-	key.shadow_blur = 1.5
+	key.shadow_blur = 2.2
+	key.shadow_normal_bias = 1.2
 	key.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	key.directional_shadow_max_distance = 14.0
+	# (V5) a tighter range concentrates the one shadow map on the people:
+	# softer, less jagged contact shadows; the far room is out of frame
+	key.directional_shadow_max_distance = 10.0
 	add_child(key)
+	# soft front fill from the camera side: faces, hands and shoes stay
+	# readable for every skin tone without washing them out (no shadow)
+	var fill := DirectionalLight3D.new()
+	fill.rotation_degrees = Vector3(-12, -8, 0)
+	fill.light_color = Color(0.78, 0.82, 1.0)
+	fill.light_energy = 0.22
+	fill.light_specular = 0.0
+	add_child(fill)
 	# cool moonlight through the window
 	var moon := DirectionalLight3D.new()
 	moon.rotation_degrees = Vector3(-25, 168, 0)
@@ -484,24 +495,27 @@ func _build_room() -> void:
 	# framing pulls the camera back, and must never see past the walls)
 	for i in 32:
 		var x := -12.0 + 0.75 * float(i) + 0.375
-		k.box(Vector3(x, -0.05, 4.0), Vector3(0.75, 0.1, 18.0), Color(wood.lightened(0.03 * float(i % 3)) if i % 2 == 0 else wood.darkened(0.05), WOOD))
-	# walls (back + left), skirting, window
-	k.box(Vector3(0, 3.5, -3.6), Vector3(24.4, 7.2, 0.25), wall)
+		var tint := (float((i * 37 + 11) % 7) / 6.0 - 0.5) * 0.05
+		k.box(Vector3(x, -0.05, 4.0), Vector3(0.75, 0.1, 18.0), Color(wood.lightened(tint) if tint > 0.0 else wood.darkened(-tint), WOOD))
+	# walls (back + left), skirting, window.  V5: the back wall has a real
+	# opening; the moonlit campus is seen through it (_build_view)
+	var wx := -0.4
+	var w_l := wx - 1.75
+	var w_r := wx + 1.75
+	k.box(Vector3((-12.2 + w_l) * 0.5, 3.5, -3.6), Vector3(w_l + 12.2, 7.2, 0.25), wall)
+	k.box(Vector3((w_r + 12.2) * 0.5, 3.5, -3.6), Vector3(12.2 - w_r, 7.2, 0.25), wall)
+	k.box(Vector3(wx, 0.65, -3.6), Vector3(3.5, 1.3, 0.25), wall)
+	k.box(Vector3(wx, 5.25, -3.6), Vector3(3.5, 3.7, 0.25), wall)
+	# the opening's reveal (wall depth), a shade darker than the wall
+	var rev := Color(wall.darkened(0.18), PAPER)
+	k.box(Vector3(w_l + 0.02, 2.35, -3.6), Vector3(0.04, 2.1, 0.25), rev)
+	k.box(Vector3(w_r - 0.02, 2.35, -3.6), Vector3(0.04, 2.1, 0.25), rev)
+	k.box(Vector3(wx, 3.38, -3.6), Vector3(3.5, 0.04, 0.25), rev)
 	k.box(Vector3(0, 0.6, -3.46), Vector3(24.4, 1.2, 0.05), wall_lo)
 	k.box(Vector3(0, 1.21, -3.43), Vector3(24.4, 0.06, 0.08), Color("c9b48a"))
 	k.box(Vector3(0, 4.42, -3.45), Vector3(24.4, 0.1, 0.1), Color("c9b48a"))     # picture rail
 	k.box(Vector3(-6.1, 3.5, 4.0), Vector3(0.25, 7.2, 16.0), Color(wall.darkened(0.08), PAPER))
 	k.box(Vector3(-5.96, 0.6, 4.0), Vector3(0.05, 1.2, 16.0), wall_lo.darkened(0.08))
-	# window: frame, night sky panes, moon, distant lit windows
-	var wx := -0.4
-	k.box(Vector3(wx, 2.35, -3.46), Vector3(3.4, 2.1, 0.06), Color("1a2846"), 0.0, 0.0)
-	for gx in [-0.85, 0.85]:
-		for gy in [-0.5, 0.5]:
-			k.box(Vector3(wx + gx, 2.35 + gy, -3.44), Vector3(1.6, 0.95, 0.02), Color("22365e"), 0.0, 0.5)
-	k.blob(Vector3(wx + 1.0, 2.85, -3.42), Vector3(0.19, 0.19, 0.012), Color("fff3cf"), 8, 22, 3.0)
-	for i in 9:
-		var lx := wx - 1.4 + 0.33 * float(i)
-		k.box(Vector3(lx, 1.62 + 0.12 * float(i % 3), -3.425), Vector3(0.09, 0.07, 0.01), Color("ffd27a"), 0.0, 2.2)
 	# (V4: frame, sill and head with softened edges, like painted wood)
 	k.chamfer_box(Vector3(wx, 2.35, -3.40), Vector3(3.5, 0.08, 0.1), Color("e9e2d2"), 0.02)
 	k.chamfer_box(Vector3(wx, 2.35, -3.40), Vector3(0.08, 2.2, 0.1), Color("e9e2d2"), 0.02)
@@ -566,15 +580,160 @@ func _build_room() -> void:
 	k.blob(Vector3(2.4, 2.62, -3.43), Vector3(0.24, 0.24, 0.01), Color("6fd8cc"), 6, 20)
 	k.box(Vector3(2.4, 2.1, -3.43), Vector3(0.62, 0.08, 0.01), Color("11192b"))
 	k.box(Vector3(2.4, 1.98, -3.43), Vector3(0.44, 0.05, 0.01), Color("11192b"))
-	k.box(Vector3(-2.9, 2.5, -3.45), Vector3(0.8, 1.05, 0.03), Color("6fd8cc"))
-	k.box(Vector3(-2.9, 2.5, -3.43), Vector3(0.5, 0.65, 0.01), Color("f4f2ec"))
+	k.box(Vector3(-5.96, 2.45, 0.2), Vector3(0.03, 1.05, 0.8), Color("6fd8cc"))
+	k.box(Vector3(-5.94, 2.45, 0.2), Vector3(0.01, 0.65, 0.5), Color("f4f2ec"))
 	for i in 22:
 		var x := -5.6 + 0.52 * float(i)
 		k.blob(Vector3(x, 3.95 - 0.16 * absf(sin(float(i) * 0.8)), -3.38), Vector3(0.05, 0.06, 0.05),
 			[Color("ffc668"), Color("ff8f8f"), Color("6fd8cc")][i % 3], 2, 5, 2.4)
+	_armchair(k, Vector3(2.85, 0.0, -2.35), -0.55, Color("c46a52", FABRIC), wood_d)
+	# floor cushions by the couch
+	k.soft_blob(Vector3(-2.1, 0.13, -1.55), Vector3(0.42, 0.14, 0.42), Color("f1c75b", FABRIC), 5, 14)
+	k.soft_blob(Vector3(-1.55, 0.12, -1.85), Vector3(0.36, 0.12, 0.36), Color("9a7bd8", FABRIC), 5, 14)
 	var mi := MeshInstance3D.new()
 	mi.mesh = k.commit()
 	var m := ShaderMaterial.new()
 	m.shader = preload("res://assets/shaders/dorm.gdshader")
 	mi.material_override = m
 	add_child(mi)
+	_build_view(wx)
+	# warm lamp light on the floor and the wall behind it, the table lamp's
+	# glow, and the window's cool moonlight across the floor
+	_light_pool(Vector3(3.6, 0.03, -1.6), Vector2(4.4, 4.0), Color(1.0, 0.72, 0.42), 0.16, 0.0)
+	_light_pool(Vector3(3.9, 1.9, -3.45), Vector2(3.2, 3.0), Color(1.0, 0.7, 0.4), 0.12, 0.0, true)
+	_light_pool(Vector3(-2.05, 0.9, -3.45), Vector2(1.8, 1.6), Color(1.0, 0.72, 0.42), 0.12, 0.0, true)
+	_light_pool(Vector3(wx + 0.25, 0.03, -2.25), Vector2(3.4, 2.4), Color(0.55, 0.68, 1.0), 0.09, 1.0)
+
+
+
+## A rounded upholstered armchair: seat, back and arms with soft edges, a
+## cushion and short wooden feet.  `yaw` turns it toward the room.
+func _armchair(k: MeshKit, at: Vector3, yaw: float, cc: Color, feet: Color) -> void:
+	var b := Basis(Vector3.UP, yaw)
+	var p := func(v: Vector3) -> Vector3: return at + b * v
+	k.chamfer_box(p.call(Vector3(0, 0.3, 0)), Vector3(1.05, 0.36, 0.95), cc.darkened(0.1), 0.08, yaw)
+	k.chamfer_box(p.call(Vector3(0, 0.55, 0.06)), Vector3(0.78, 0.18, 0.78), cc, 0.08, yaw)
+	k.chamfer_box(p.call(Vector3(0, 0.88, -0.38)), Vector3(1.05, 0.72, 0.26), cc.darkened(0.05), 0.12, yaw)
+	for sx in [-1.0, 1.0]:
+		k.chamfer_box(p.call(Vector3(sx * 0.46, 0.62, 0.0)), Vector3(0.22, 0.42, 0.95), cc.darkened(0.12), 0.09, yaw)
+		k.soft_blob(p.call(Vector3(sx * 0.46, 0.84, 0.0)), Vector3(0.12, 0.06, 0.46), cc.darkened(0.08), 4, 12)
+		for fz in [-1.0, 1.0]:
+			k.cylinder(p.call(Vector3(sx * 0.42, 0.0, fz * 0.38)), 0.04, 0.12, feet, 10, 0.0, true, 0.03)
+	k.soft_blob(p.call(Vector3(0.12, 0.74, -0.18)), Vector3(0.26, 0.17, 0.09), Color("f4f2ec", FABRIC), 5, 12)
+
+
+## The view through the window (V5): a moonlit sky, the dark rooftops and
+## clock tower of the campus with a few lit windows, and trees.  Unshaded
+## vertex colours: the room's lights never touch it, so it reads as night
+## outside, and it costs one draw call.
+func _build_view(wx: float) -> void:
+	var v := MeshKit.new()
+	var z_sky := -16.0
+	var top := Color("0a1230")
+	var mid := Color("15224a")
+	var hor := Color("2b3f72")
+	var up := Vector3(0, 0, 1)
+	# sky: three bands, darker toward the top (vertex-coloured gradient)
+	var ys := [-1.0, 2.6, 5.5, 11.0]
+	var cs := [hor, hor, mid, top]
+	for i in 3:
+		var y0: float = ys[i]
+		var y1: float = ys[i + 1]
+		var c0: Color = cs[i]
+		var c1: Color = cs[i + 1]
+		var a := Vector3(-14, y0, z_sky)
+		var bb := Vector3(14, y0, z_sky)
+		var c := Vector3(14, y1, z_sky)
+		var d := Vector3(-14, y1, z_sky)
+		v.tri_n(a, bb, c, up, up, up, c0, c0, c1)
+		v.tri_n(a, c, d, up, up, up, c0, c1, c1)
+	# moon with a soft halo: radial vertex-colour fans that fade into the sky
+	var mc := Vector3(wx + 1.25, 4.15, z_sky + 0.2)
+	_fan_v(v, mc, 1.5, Color("53669f"), mid.lerp(hor, 0.4), 40)
+	_fan_v(v, mc + Vector3(0, 0, 0.02), 0.62, Color("a9b8e2"), Color("53669f"), 32)
+	_disc_v(v, mc + Vector3(0, 0, 0.04), 0.36, Color("fff1d2"), 32)
+	_disc_v(v, mc + Vector3(-0.08, 0.06, 0.05), 0.09, Color("efe2c0"), 12)
+	# campus rooftops along the horizon, tall enough to rise above the sill
+	var roof := Color("111c3a")
+	var lit := Color("ffcf7a")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	var x := -9.0
+	while x < 9.0:
+		var w := rng.randf_range(1.6, 3.2)
+		var h := rng.randf_range(2.6, 4.2)
+		var z := z_sky + 3.0 + rng.randf_range(0.0, 1.5)
+		var shade := roof.lerp(Color("18264a"), rng.randf())
+		v.box(Vector3(x + w * 0.5, h * 0.5 - 0.5, z), Vector3(w, h + 1.0, 0.4), shade)
+		# a pitched roof
+		v.tri_n(Vector3(x, h, z + 0.21), Vector3(x + w, h, z + 0.21), Vector3(x + w * 0.5, h + w * 0.28, z + 0.21), up, up, up, shade, shade, shade)
+		for row in 3:
+			for wi in int(w / 0.45):
+				if rng.randf() < 0.22:
+					v.box(Vector3(x + 0.3 + 0.45 * float(wi), h - 0.55 - 0.6 * float(row), z + 0.22), Vector3(0.17, 0.24, 0.02), lit.darkened(rng.randf_range(0.0, 0.4)))
+		x += w + rng.randf_range(0.2, 0.8)
+	# the clock tower (Bellweather Tower) with its lit face
+	var tx := wx - 1.5
+	var tz := z_sky + 2.6
+	v.box(Vector3(tx, 2.6, tz), Vector3(0.9, 6.6, 0.6), roof.lightened(0.03))
+	v.cylinder(Vector3(tx, 5.9, tz), 0.62, 1.2, roof.lightened(0.04), 4, 0.0, true, 0.05)
+	_disc_v(v, Vector3(tx, 5.2, tz + 0.32), 0.26, Color("ffe2a0"), 20)
+	# nearer trees, darker, overlapping the rooftops
+	for i in 9:
+		var tx2 := -6.5 + 1.6 * float(i) + rng.randf_range(-0.4, 0.4)
+		var r := rng.randf_range(0.8, 1.3)
+		v.blob(Vector3(tx2, 0.6 + r * 0.5, z_sky + 6.5 + rng.randf_range(0.0, 2.0)), Vector3(r, r * 1.1, r * 0.6), Color("0d1d2c").lerp(Color("132a35"), rng.randf()), 5, 10)
+	# lawn below the window line
+	v.box(Vector3(0, -0.6, -8.5), Vector3(28, 0.2, 15), Color("0e1a26"))
+	var mi := MeshInstance3D.new()
+	mi.mesh = v.commit()
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.vertex_color_is_srgb = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.name = "WindowView"
+	add_child(mi)
+
+
+## An additive light pool (unshaded quad): on the floor (flat) or on the
+## back wall (`wall` true).  shape 0 round, 1 soft rectangle.
+func _light_pool(center: Vector3, size: Vector2, col: Color, intensity: float, shape: float, wall: bool = false) -> void:
+	var q := QuadMesh.new()
+	q.size = size
+	var mi := MeshInstance3D.new()
+	mi.mesh = q
+	mi.position = center
+	if not wall:
+		mi.rotation_degrees = Vector3(-90, 0, 0)
+	else:
+		mi.position.z += 0.02
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://assets/shaders/dorm_light.gdshader")
+	mat.set_shader_parameter("color", col)
+	mat.set_shader_parameter("intensity", intensity)
+	mat.set_shader_parameter("shape", shape)
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+
+
+## A disc facing +Z (toward the room).
+static func _disc_v(k: MeshKit, c: Vector3, r: float, col: Color, seg: int = 24) -> void:
+	var n := Vector3(0, 0, 1)
+	for i in seg:
+		var a0 := TAU * float(i) / float(seg)
+		var a1 := TAU * float(i + 1) / float(seg)
+		k.tri_n(c, c + Vector3(cos(a0), sin(a0), 0) * r, c + Vector3(cos(a1), sin(a1), 0) * r, n, n, n, col, col, col)
+
+
+## A disc facing +Z whose colour runs from `inner` at the centre to `outer`
+## at the rim (a smooth glow with no rings).
+static func _fan_v(k: MeshKit, c: Vector3, r: float, inner: Color, outer: Color, seg: int = 32) -> void:
+	var n := Vector3(0, 0, 1)
+	for i in seg:
+		var a0 := TAU * float(i) / float(seg)
+		var a1 := TAU * float(i + 1) / float(seg)
+		k.tri_n(c, c + Vector3(cos(a0), sin(a0), 0) * r, c + Vector3(cos(a1), sin(a1), 0) * r, n, n, n, inner, outer, outer)

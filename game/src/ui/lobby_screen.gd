@@ -740,7 +740,9 @@ class SlotCell:
 	var _me := false
 
 	func _init() -> void:
-		UIKit.make_card(self, Vector2(250, maxf(72.0, UIKit.touch_min())), Color(UIKit.SLATE, 0.95))
+		# names up to 16 characters fit whole at 20 units in this width; the
+		# status badge sits in the second line, not in a column of its own
+		UIKit.make_card(self, Vector2(272, maxf(72.0, UIKit.touch_min())), Color(UIKit.SLATE, 0.95))
 		var h := UIKit.hbox(10)
 		h.set_anchors_preset(Control.PRESET_FULL_RECT)
 		h.offset_left = 10
@@ -748,7 +750,7 @@ class SlotCell:
 		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		UIKit.face_of(self).add_child(h)
 		face = Avatar.new()
-		face.custom_minimum_size = Vector2(54, 54)
+		face.custom_minimum_size = Vector2(52, 52)
 		face.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		h.add_child(face)
 		var v := UIKit.vbox(0)
@@ -761,15 +763,19 @@ class SlotCell:
 		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		UIKit.fit_text(name_l, [UIKit.T_LABEL, UIKit.T_CAPTION, 18])
 		v.add_child(name_l)
+		var row := UIKit.hbox(5)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(row)
+		badge = Icons.IconRect.new("check", UIKit.TEAL, 18)
+		badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(badge)
 		sub_l = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
 		sub_l.add_theme_font_size_override("font_size", 18)
+		sub_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		sub_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		sub_l.clip_text = true
 		sub_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		v.add_child(sub_l)
-		badge = Icons.IconRect.new("check", UIKit.TEAL, 28)
-		badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		h.add_child(badge)
+		row.add_child(sub_l)
 
 	func _style(me: bool, open: bool) -> void:
 		var f := UIKit.face_of(self)
