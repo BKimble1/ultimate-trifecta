@@ -32,6 +32,46 @@ const CATALOG := {
 		"robe": {"id": 3, "name": "Fluffy Robe", "cost": 90},
 		"duck": {"id": 4, "name": "Duck Mascot", "cost": 160},
 		"frog": {"id": 5, "name": "Frog Onesie", "cost": 200},
+		# V6 Shop outfits.  "includes" lists exactly what the outfit draws.
+		"moonlight_runner": {"id": 6, "name": "Moonlight Runner", "cost": 900, "includes": [
+			"Midnight track jacket with a stand-up collar and a silver zip",
+			"Track trousers with ribbed ankle cuffs",
+			"Reflective silver piping on the sleeves and legs",
+			"Gold crescent-moon emblem on the chest"]},
+		"starry_sleeper": {"id": 7, "name": "Starry Sleeper", "cost": 750, "includes": [
+			"Indigo star-print pajama top and trousers with cream piping",
+			"Lavender sleep mask worn pushed up on the forehead (hidden under a nightcap, swim cap, beanie or headband)"]},
+		"varsity_sprinter": {"id": 8, "name": "Varsity Sprinter", "cost": 800, "includes": [
+			"Varsity jacket in your colour with ivory sleeves and striped rib trim",
+			"Chenille T letter on the chest and a number 3 on the back",
+			"Track shorts with side stripes, and striped crew socks"]},
+		"raincoat_explorer": {"id": 9, "name": "Raincoat Explorer", "cost": 650, "includes": [
+			"Glossy yellow raincoat with wooden toggles, flap pockets and a folded hood",
+			"Teal rain boots (worn instead of your shoes with this outfit)"]},
+		"campus_courier": {"id": 10, "name": "Campus Courier", "cost": 550, "includes": [
+			"Short-sleeve shirt in your colour under a teal utility vest",
+			"Messenger bag with a cross-body strap",
+			"Cargo shorts and crew socks",
+			"Courier cap (shown when no other hat is worn)"]},
+		"lantern_scout": {"id": 11, "name": "Lantern Scout", "cost": 700, "includes": [
+			"Scout shirt and green vest with five merit badges",
+			"Neckerchief with a woggle",
+			"Belt with a small glowing lantern (decoration only: it lights nothing)",
+			"Shorts and knee socks"]},
+		# V6 Season 1 · After Hours rewards (the pass grants them)
+		"after_hours_hoodie": {"id": 12, "name": "After Hours Hoodie", "cost": 600, "season": 1, "includes": [
+			"Violet hoodie with a gold moon print, kangaroo pocket and folded hood",
+			"Charcoal joggers"]},
+		"night_owl": {"id": 13, "name": "Night Owl Onesie", "cost": 800, "season": 1, "includes": [
+			"Owl onesie with a feathered belly, wing sleeves and tail feathers",
+			"Owl hood with eyes, beak and ear tufts (replaces hat and hair while worn)"]},
+		"glow_jogger": {"id": 14, "name": "Glow Jogger", "cost": 600, "season": 1, "includes": [
+			"Running top and leggings with glowing stripes in your colour",
+			"Running shorts and glowing wristbands"]},
+		"library_cardigan": {"id": 15, "name": "Library Cardigan", "cost": 600, "season": 1, "includes": [
+			"Oatmeal cable-knit cardigan with elbow patches and a pencil in the pocket",
+			"Collared shirt and tie",
+			"Corduroy trousers"]},
 	},
 	"pattern": {
 		"plain": {"id": 1, "name": "Plain", "cost": 0, "per_m": 0.0},
@@ -112,11 +152,19 @@ const CATALOG := {
 		"party": {"id": 4, "name": "Party Hat", "cost": 60, "parts": ["hat_party"]},
 		"headphones": {"id": 5, "name": "Headphones", "cost": 110, "parts": ["hat_headphones"]},
 		"crown": {"id": 6, "name": "Paper Crown", "cost": 240, "parts": ["hat_crown"]},
+		# V6 Season 1 · After Hours
+		"headlamp": {"id": 7, "name": "Headlamp", "cost": 300, "season": 1, "parts": ["hat_headlamp"]},
+		"pompom_beanie": {"id": 8, "name": "Pom-Pom Beanie", "cost": 300, "season": 1, "parts": ["hat_beanie"]},
+		"glow_headband": {"id": 9, "name": "Glow Headband", "cost": 250, "season": 1, "parts": ["hat_glowband"]},
+		"owl_ears": {"id": 10, "name": "Owl Ears", "cost": 300, "season": 1, "parts": ["hat_owlears"]},
 	},
 	"shoes": {
 		"slippers": {"id": 1, "name": "Bunny Slippers", "cost": 0, "parts": ["shoe_slippers"]},
 		"sneakers": {"id": 2, "name": "High-Tops", "cost": 50, "parts": ["shoe_hightops"]},
 		"flippers": {"id": 3, "name": "Flippers", "cost": 130, "parts": ["shoe_flippers"]},
+		# V6 Season 1 · After Hours
+		"glow_sneakers": {"id": 4, "name": "Glow Sneakers", "cost": 350, "season": 1, "parts": ["shoe_glow"]},
+		"moon_boots": {"id": 5, "name": "Moon Boots", "cost": 400, "season": 1, "parts": ["shoe_moonboots"]},
 	},
 	## signature move: played when you ready up in the lobby and at results
 	"emote": {
@@ -126,6 +174,11 @@ const CATALOG := {
 		"shrug": {"id": 4, "name": "Shrug", "cost": 0},
 		"dance": {"id": 5, "name": "Wiggle Dance", "cost": 80},
 		"point": {"id": 6, "name": "Point", "cost": 0},
+		# V6 Season 1 · After Hours (wire value = TC.EMOTES index; ids follow it)
+		"stargaze": {"id": 7, "name": "Stargaze", "cost": 250, "season": 1},
+		"victory_lap": {"id": 8, "name": "Victory Lap", "cost": 250, "season": 1},
+		"shush": {"id": 9, "name": "Shush", "cost": 200, "season": 1},
+		"moon_shuffle": {"id": 10, "name": "Moon Shuffle", "cost": 300, "season": 1},
 	},
 }
 
@@ -139,15 +192,43 @@ const DEFAULT := {
 	"hat": "nightcap", "shoes": "slippers", "emote": "wave",
 }
 
-const OUTFIT_PARTS := {"pj": ["pj"], "swim": ["swim", "body_skin"], "robe": ["robe", "body_skin"], "duck": ["duck"], "frog": ["frog"]}
+const OUTFIT_PARTS := {"pj": ["pj"], "swim": ["swim", "body_skin"], "robe": ["robe", "body_skin"], "duck": ["duck"], "frog": ["frog"],
+	"moonlight_runner": ["moonlight"], "starry_sleeper": ["starry"], "varsity_sprinter": ["varsity"],
+	"raincoat_explorer": ["raincoat"], "campus_courier": ["courier"], "lantern_scout": ["scout"],
+	"after_hours_hoodie": ["hoodie"], "night_owl": ["owl"], "glow_jogger": ["jogger"], "library_cardigan": ["cardigan"]}
 ## hoods replace hats and hair entirely
-const HOOD_OUTFITS := ["duck", "frog"]
+const HOOD_OUTFITS := ["duck", "frog", "night_owl"]
+## V6: outfits whose own footwear replaces the chosen shoes (drawn in the outfit's part)
+const OUTFIT_OWN_SHOES := ["raincoat_explorer"]
+## V6: headwear that comes with an outfit (a separate part), and the hats it
+## is worn with.  With any other hat the chosen hat wins and this is hidden.
+const OUTFIT_HEADWEAR := {
+	"starry_sleeper": {"parts": ["acc_sleepmask"], "with_hats": ["none", "party", "headphones", "crown", "owl_ears"]},
+	"campus_courier": {"parts": ["acc_courier_cap"], "with_hats": ["none"]},
+}
+## Headwear that is worn the way a hat is, for the hair rules below: the
+## courier cap behaves like a cap, the sleep mask like a headband.
+const HEADWEAR_AS_HAT := {"acc_courier_cap": "@cap", "acc_sleepmask": "@mask"}
 ## hair/hat compatibility: which hair parts each hat hides
 const HAT_HIDES_HAIR := {
 	"nightcap": ["hair", "hair_bob", "hair_curly", "hair_buns", "hair_buns_knots"],
 	"swimcap": ["hair", "hair_bob", "hair_curly", "hair_buns", "hair_buns_knots"],
 	"headphones": ["hair_buns_knots"],
 	"crown": ["hair_buns_knots"],
+	"headlamp": ["hair_buns_knots"],
+	"pompom_beanie": ["hair_buns_knots"],
+	"glow_headband": ["hair_buns_knots"],
+	"owl_ears": ["hair_buns_knots"],
+	"@cap": ["hair_buns_knots"],
+	"@mask": ["hair_buns_knots"],
+}
+## V5/V6: hair drawn as its hat variant under a hat, so nothing pokes through
+## the band or shell: the curly crop's smooth-band version (V5) and the tuft
+## without its forelock (V6, `hair_hat`).  Variant name = part + "_hat".
+const HAT_HAIR_VARIANT := {
+	"crown": ["hair_curly"], "headphones": ["hair_curly"],
+	"headlamp": ["hair_curly"], "pompom_beanie": ["hair", "hair_curly"], "glow_headband": ["hair_curly"],
+	"owl_ears": ["hair_curly"], "@cap": ["hair", "hair_curly"], "@mask": ["hair", "hair_curly"],
 }
 ## only these outfits show the pattern (the others are single-material)
 const PATTERNED_OUTFITS := ["pj", "robe"]
@@ -276,16 +357,44 @@ static func runner_parts(c: Dictionary) -> Array:
 	var a := sanitize(c)
 	var want: Array = ["base"]
 	want.append_array(OUTFIT_PARTS[a["outfit"]])
-	want.append_array(entry("shoes", a["shoes"])["parts"])
+	if not a["outfit"] in OUTFIT_OWN_SHOES:
+		want.append_array(entry("shoes", a["shoes"])["parts"])
 	want.append_array(entry("marks", a["marks"])["parts"])
 	if a["outfit"] in HOOD_OUTFITS:
 		return want
 	want.append_array(entry("hat", a["hat"])["parts"])
-	var hidden: Array = HAT_HIDES_HAIR.get(a["hat"], [])
+	want.append_array(headwear_parts(a))
+	var hidden: Array = []
+	var swap: Array = []
+	for k in head_rules(a):
+		hidden.append_array(HAT_HIDES_HAIR.get(k, []))
+		swap.append_array(HAT_HAIR_VARIANT.get(k, []))
 	for p in entry("hair", a["hair"])["parts"]:
 		if not p in hidden:
-			want.append(p)
+			want.append(p + "_hat" if p in swap else p)
 	return want
+
+
+## Parts an outfit's own headwear adds (V6: the sleep mask with no hat or a
+## party hat, headphones, crown or owl ears; the courier cap with no hat).
+static func headwear_parts(c: Dictionary) -> Array:
+	var a := sanitize(c)
+	if a["outfit"] in HOOD_OUTFITS:
+		return []
+	var hw: Dictionary = OUTFIT_HEADWEAR.get(a["outfit"], {})
+	if hw.is_empty() or not a["hat"] in hw["with_hats"]:
+		return []
+	return hw["parts"]
+
+
+## Keys of HAT_HIDES_HAIR / HAT_HAIR_VARIANT in effect: the chosen hat, plus
+## the outfit's own headwear when it is worn ("@cap", "@mask").
+static func head_rules(c: Dictionary) -> Array:
+	var a := sanitize(c)
+	var keys: Array = [a["hat"]]
+	for part in headwear_parts(a):
+		keys.append(HEADWEAR_AS_HAT[part])
+	return keys
 
 
 ## Held face shape-key weights for this appearance.

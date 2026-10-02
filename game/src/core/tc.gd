@@ -63,8 +63,11 @@ const L_CART_BLOCK := 2
 const L_CART := 4
 const L_CHAR := 8
 
-const EMOTES := ["wave", "cheer", "laugh", "shrug", "dance", "point"]
-const EMOTE_LABELS := {"wave": "Wave", "cheer": "Cheer", "laugh": "Ha!", "shrug": "Shrug", "dance": "Dance", "point": "Over here!"}
+## Emote wire values are indices into this list: append only (V6 added the
+## Season 1 emotes after the V4 six).
+const EMOTES := ["wave", "cheer", "laugh", "shrug", "dance", "point", "stargaze", "victory_lap", "shush", "moon_shuffle"]
+const EMOTE_LABELS := {"wave": "Wave", "cheer": "Cheer", "laugh": "Ha!", "shrug": "Shrug", "dance": "Dance", "point": "Over here!",
+	"stargaze": "Stargaze", "victory_lap": "Victory lap", "shush": "Shh!", "moon_shuffle": "Moon shuffle"}
 
 const GADGET_NAMES := {Gadget.TURBO: "Turbo Sneakers", Gadget.DECOY: "Squeaky Decoy", Gadget.SPLASH_BOMB: "Splash Bomb"}
 const GADGET_KEYS := {"turbo": Gadget.TURBO, "decoy": Gadget.DECOY, "splash_bomb": Gadget.SPLASH_BOMB}

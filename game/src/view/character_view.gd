@@ -76,6 +76,7 @@ const STATES := {
 	"stumble": 0.06, "flop": 0.1, "dizzy": 0.3, "tag_windup": 0.05, "tag_lunge": 0.04, "tag_recover": 0.08, "tag_miss": 0.08,
 	"cart_enter": 0.08, "cart": 0.12, "cart_exit": 0.06, "celebrate": 0.15, "arrive": 0.05, "ready": 0.08,
 	"emote_wave": 0.15, "emote_cheer": 0.15, "emote_laugh": 0.15, "emote_shrug": 0.15, "emote_dance": 0.15, "emote_point": 0.15,
+	"emote_stargaze": 0.2, "emote_victory_lap": 0.15, "emote_shush": 0.15, "emote_moon_shuffle": 0.15,
 }
 const UPPER_BODY := ["spine", "chest", "neck", "head", "shoulder.L", "shoulder.R", "upper_arm.L", "upper_arm.R",
 	"forearm.L", "forearm.R", "hand.L", "hand.R"]
@@ -611,13 +612,10 @@ func _apply_cosmetics() -> void:
 		if int(Cosmetics.entry("color", cosmetic["color"])["id"]) % 2 == 1:
 			want.append("mustache")
 	else:
+		# (V5: under a crown or headphones the curly crop is its smooth-band
+		# variant; V6 moved that rule into Cosmetics.runner_parts with the
+		# new hats and the outfits' own headwear)
 		want = Cosmetics.runner_parts(cosmetic)
-		# V5: under a paper crown or headphones the curly crop uses its
-		# variant with a smooth band (the curls poked through the crown band)
-		var hat := String(cosmetic.get("hat", ""))
-		if (hat == "crown" or hat == "headphones") and "hair_curly" in want and parts.has("hair_curly_hat"):
-			want.erase("hair_curly")
-			want.append("hair_curly_hat")
 	visible_parts.clear()
 	for n in parts:
 		var mi: MeshInstance3D = parts[n]

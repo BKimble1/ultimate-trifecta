@@ -108,6 +108,42 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(r * 0.95, r * 0.2), c + Vector2(r * 0.35, -r * 0.3), c + Vector2(r * 0.35, r * 0.7)]), col)
 			ci.draw_circle(c + Vector2(-r * 0.75, r * 0.2), r * 0.24, col)
 			return
+		# --- V6 Season 1 emotes
+		"e_stargaze":
+			# a five-point star over a small crescent moon
+			var sp := PackedVector2Array()
+			for i in 10:
+				var sa := -PI * 0.5 + PI * float(i) / 5.0
+				var sr := r * (0.5 if i % 2 == 0 else 0.21)
+				sp.append(c + Vector2(r * 0.22, -r * 0.3) + Vector2(cos(sa), sin(sa)) * sr)
+			ci.draw_colored_polygon(sp, col)
+			ci.draw_arc(c + Vector2(-r * 0.35, r * 0.35), r * 0.45, PI * 0.35, PI * 1.45, 12, col, r * 0.16, true)
+			return
+		"e_victory_lap":
+			# a lap: an open circle with an arrowhead, and a small flag
+			ci.draw_arc(c, r * 0.72, -PI * 0.35, PI * 1.35, 24, col, r * 0.16, true)
+			var tip := c + Vector2(cos(-PI * 0.35), sin(-PI * 0.35)) * r * 0.72
+			ci.draw_colored_polygon(PackedVector2Array([tip + Vector2(r * 0.3, r * 0.05), tip + Vector2(-r * 0.12, -r * 0.22),
+				tip + Vector2(-r * 0.05, r * 0.3)]), col)
+			ci.draw_line(c + Vector2(0, r * 0.3), c + Vector2(0, -r * 0.35), col, r * 0.1)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(0, -r * 0.35), c + Vector2(r * 0.32, -r * 0.24), c + Vector2(0, -r * 0.12)]), col)
+			return
+		"e_shush":
+			# a face with a finger over the lips
+			ci.draw_arc(c, r * 0.9, 0, TAU, 24, col, r * 0.15, true)
+			ci.draw_circle(c + Vector2(-r * 0.32, -r * 0.2), r * 0.11, col)
+			ci.draw_circle(c + Vector2(r * 0.32, -r * 0.2), r * 0.11, col)
+			ci.draw_line(c + Vector2(-r * 0.22, r * 0.38), c + Vector2(r * 0.22, r * 0.38), col, r * 0.12, true)
+			ci.draw_line(c + Vector2(0, r * 0.95), c + Vector2(0, r * 0.12), col, r * 0.2, true)
+			return
+		"e_moon_shuffle":
+			# a crescent moon and two sliding steps
+			ci.draw_arc(c + Vector2(-r * 0.15, -r * 0.2), r * 0.55, PI * 0.45, PI * 1.75, 16, col, r * 0.2, true)
+			for k in 2:
+				var y := r * (0.55 + 0.28 * float(k))
+				ci.draw_line(c + Vector2(r * 0.1, y), c + Vector2(r * 0.85, y), col, r * 0.12, true)
+				ci.draw_circle(c + Vector2(r * 0.85, y), r * 0.09, col)
+			return
 		# --- move previews
 		"m_run":
 			ci.draw_circle(c + Vector2(r * 0.2, -r * 0.6), r * 0.22, col)
