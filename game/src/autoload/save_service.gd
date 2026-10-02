@@ -177,10 +177,15 @@ func _apply_settings() -> void:
 	QualityPreset.apply(int(s.get("quality", 1)))
 
 
+## The game display name: the service-approved online name when there is
+## one, else the name chosen on this device (never the Game Center alias,
+## which the game doesn't moderate).
 func player_name() -> String:
-	if Social.authenticated and Social.display_name != "":
-		return Social.display_name
-	return String(data["name"])
+	var cp: Dictionary = data.get("cloud_profile", {})
+	var n: Variant = cp.get("display_name")
+	if n != null and String(n) != "":
+		return String(n)
+	return NameRules.safe_display(String(data["name"]))
 
 
 func player_uid() -> String:

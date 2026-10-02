@@ -337,7 +337,12 @@ func host_room_gamekit() -> void:
 		return
 	_close_session()
 	if Cloud.configured():
+		var req := _party_req
 		var r: Dictionary = await Cloud.create_room(8)
+		if req != _party_req:
+			if bool(r.get("ok", false)):
+				Cloud.leave_room(String(r["room"]["code"]))
+			return
 		if not bool(r.get("ok", false)):
 			party_error.emit(Cloud.explain(r), String(r.get("error", "")))
 			return
@@ -372,7 +377,12 @@ func join_room_gamekit(code: String) -> void:
 	var adm := ""
 	var host_gc := ""
 	if Cloud.configured():
+		var req := _party_req
 		var r: Dictionary = await Cloud.join_room(c)
+		if req != _party_req:
+			if bool(r.get("ok", false)):
+				Cloud.leave_room(c)
+			return
 		if not bool(r.get("ok", false)):
 			party_error.emit(Cloud.explain(r), String(r.get("error", "")))
 			return
@@ -415,6 +425,15 @@ func _on_invite_ready(t: GameKitTransport) -> void:
 
 signal party_error(message: String, code: String)
 var party_code := ""
+var _party_req := 0   # bumped by cancel: a cancelled request's result is dropped
+
+
+## The player cancelled while the service / Game Center was still working.
+func cancel_party_request() -> void:
+	_party_req += 1
+	Social.stop_matchmaking()
+	if session and is_instance_valid(session) and session.mode == NetSession.Mode.CLIENT and session.host_peer < 0:
+		_close_session(false)
 var _hb_timer: Timer
 
 

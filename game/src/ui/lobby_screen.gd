@@ -53,15 +53,22 @@ func build() -> void:
 	code_box.add_child(cb)
 	top.add_child(code_box)
 	var copy := UIKit.icon_button("copy")
-	copy.tooltip_text = "Copy room code"
+	copy.tooltip_text = "Copy party code"
 	copy.pressed.connect(func() -> void:
 		DisplayServer.clipboard_set(session.room_code)
 		UIKit.toast(self, "Code %s copied" % session.room_code))
 	top.add_child(copy)
-	top.add_child(UIKit.spacer_h())
+	var share := UIKit.icon_button("share")
+	share.tooltip_text = "Share party code"
+	share.pressed.connect(func() -> void:
+		if not Share.share_text(Share.party_message(session.room_code)):
+			UIKit.toast(self, "Invite message copied — paste it to a friend"))
+	top.add_child(share)
 	invite_btn = UIKit.icon_button("invite", "Invite")
+	invite_btn.tooltip_text = "Invite Game Center friends"
 	invite_btn.pressed.connect(_invite)
 	top.add_child(invite_btn)
+	top.add_child(UIKit.spacer_h())
 
 	# --- middle: stage space (left) + party panel (right)
 	var mid := UIKit.hbox(0)
@@ -75,7 +82,7 @@ func build() -> void:
 	var pv := UIKit.vbox(10)
 	panel.add_child(pv)
 	var ph := UIKit.hbox(10)
-	ph.add_child(UIKit.label("Party", 24, UIKit.IVORY, true))
+	ph.add_child(UIKit.heading("Party", 28))
 	count_lbl = UIKit.label("", 20, UIKit.IVORY_MUTED)
 	count_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	ph.add_child(count_lbl)
@@ -192,7 +199,7 @@ func _refresh() -> void:
 		var bot_txt := "1 bot" if bots == 1 else "%d bots" % bots
 		sub_lbl.text = ("You + " + bot_txt if humans == 1 else "%d players + %s" % [humans, bot_txt]) if bots > 0 else "Full party"
 		if humans == 1:
-			status_lbl.text = "Share the code, or start now — bots fill empty spots."
+			status_lbl.text = "Share the code, or start now."
 		elif not_ready > 0:
 			status_lbl.text = "Waiting for %d to tap Ready" % not_ready
 		else:
@@ -299,13 +306,25 @@ func _role_popover(anchor: Control) -> void:
 func _player_popover(i: int, anchor: Control) -> void:
 	var e: Dictionary = session.roster[i]
 	var uid := String(e["uid"])
+	var pid := String(e.get("pid", ""))
 	var v := UIKit.vbox(10)
-	var nm := UIKit.label(String(e["name"]), 22, UIKit.IVORY, true)
+	var head := UIKit.hbox(12)
+	var pic := TextureRect.new()
+	pic.custom_minimum_size = Vector2(84, 84)
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.texture = Portraits.shared().portrait(e["cosmetic"])
+	head.add_child(pic)
+	var nv := UIKit.vbox(2)
+	var nm := UIKit.label(String(e["name"]), 24, UIKit.IVORY, true)
 	nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	nm.custom_minimum_size = Vector2(280, 0)
-	v.add_child(nm)
+	nm.custom_minimum_size = Vector2(240, 0)
+	nv.add_child(nm)
+	nv.add_child(UIKit.label("Host" if int(e["slot"]) == 0 else ("Ready" if bool(e["ready"]) else "In the party"), 18, UIKit.IVORY_MUTED))
+	head.add_child(nv)
+	v.add_child(head)
 	var muted := session.muted.has(uid)
-	var mb := UIKit.secondary("Show their emotes" if muted else "Hide their emotes", Vector2(300, 72), 22)
+	var mb := UIKit.secondary("Show their emotes" if muted else "Hide their emotes", Vector2(320, 72), 22)
 	mb.pressed.connect(func() -> void:
 		if session.muted.has(uid):
 			session.muted.erase(uid)
@@ -314,13 +333,69 @@ func _player_popover(i: int, anchor: Control) -> void:
 		_close_popover()
 		_refresh())
 	v.add_child(mb)
+	var rb := UIKit.secondary("Report…", Vector2(320, 72), 22)
+	rb.pressed.connect(func() -> void:
+		_close_popover()
+		_report(e))
+	v.add_child(rb)
+	var bb := UIKit.quiet("Block", Vector2(320, 72), 22)
+	bb.pressed.connect(func() -> void:
+		_close_popover()
+		dialog("Block %s? You won't be put in parties together, and they can't join yours." % e["name"],
+			[["Block", func() -> void: _block(e, i)], ["Cancel", Callable()]]))
+	v.add_child(bb)
 	if session.is_host():
-		var kb := UIKit.quiet("Remove from room", Vector2(300, 72), 22)
+		var kb := UIKit.quiet("Remove from party", Vector2(320, 72), 22)
 		kb.pressed.connect(func() -> void:
 			_close_popover()
-			dialog("Remove %s from the room?" % e["name"], [["Remove", func() -> void: session.kick(i)], ["Cancel", Callable()]]))
+			dialog("Remove %s from the party?" % e["name"], [["Remove", func() -> void:
+				if pid != "" and App.party_code != "":
+					Cloud.kick_from_room(App.party_code, pid)
+				session.kick(i)], ["Cancel", Callable()]]))
 		v.add_child(kb)
 	_popover_at(anchor, v, false)
+
+
+const REPORT_REASONS := [["name", "Offensive name"], ["harassment", "Harassment or bullying"], ["cheating", "Cheating"],
+	["inappropriate", "Inappropriate behaviour"], ["other", "Something else"]]
+
+
+func _report(e: Dictionary) -> void:
+	var pid := String(e.get("pid", ""))
+	if not Cloud.configured() or pid == "":
+		dialog("Reports go to the game's moderators through the online service, which isn't available for this player right now. You can block them instead.")
+		return
+	var v := UIKit.vbox(10)
+	v.add_child(UIKit.label("Report %s" % e["name"], 24, UIKit.IVORY, true))
+	v.add_child(UIKit.label("What's wrong?", 19, UIKit.IVORY_MUTED))
+	for rr in REPORT_REASONS:
+		var reason: String = rr[0]
+		var b := UIKit.secondary(String(rr[1]), Vector2(360, 68), 22)
+		b.pressed.connect(func() -> void:
+			_close_popover()
+			var r: Dictionary = await Cloud.report(pid, reason, "", {"room_code": session.room_code, "build": App.build_number()})
+			if bool(r.get("ok", false)):
+				dialog("Thanks — your report was sent to our moderators.\nReceipt: %s" % r.get("receipt", ""))
+			else:
+				dialog("The report couldn't be sent: %s" % Cloud.explain(r)))
+		v.add_child(b)
+	_popover_at(cells[0], v, false)
+
+
+func _block(e: Dictionary, slot: int) -> void:
+	var pid := String(e.get("pid", ""))
+	Save.add_block(pid, String(e["uid"]), String(e["name"]))
+	session.muted[String(e["uid"])] = true
+	var note := "Blocked on this device."
+	if Cloud.configured() and pid != "":
+		var r: Dictionary = await Cloud.block(pid)
+		note = "Blocked." if bool(r.get("ok", false)) else "Blocked on this device (the online block will be retried: %s)." % Cloud.explain(r)
+	if session.is_host():
+		if pid != "" and App.party_code != "":
+			Cloud.kick_from_room(App.party_code, pid)
+		session.kick(slot)
+	UIKit.toast(self, note)
+	_refresh()
 
 
 func _on_events(evs: Array) -> void:
@@ -348,6 +423,8 @@ class SlotCell:
 	extends Button
 	var slot := 0
 	var dot: ColorRect
+	var face: TextureRect
+	var _face_key := ""
 	var name_l: Label
 	var sub_l: Label
 	var badge: Icons.IconRect
@@ -363,10 +440,17 @@ class SlotCell:
 		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(h)
 		dot = ColorRect.new()
-		dot.custom_minimum_size = Vector2(10, 34)
+		dot.custom_minimum_size = Vector2(6, 34)
 		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		h.add_child(dot)
+		face = TextureRect.new()
+		face.custom_minimum_size = Vector2(52, 52)
+		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		face.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		h.add_child(face)
 		var v := UIKit.vbox(0)
 		v.alignment = BoxContainer.ALIGNMENT_CENTER
 		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -387,6 +471,10 @@ class SlotCell:
 		badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		h.add_child(badge)
 
+	func _on_portrait(k: String, tex: Texture2D) -> void:
+		if k == _face_key and is_instance_valid(face):
+			face.texture = tex
+
 	func _style(bg: Color, border: Color) -> void:
 		add_theme_stylebox_override("normal", UIKit.box(bg, UIKit.R_SMALL, 2, border))
 		add_theme_stylebox_override("hover", UIKit.box(bg.lightened(0.06), UIKit.R_SMALL, 2, border))
@@ -397,6 +485,8 @@ class SlotCell:
 		if e == null:
 			_style(Color(UIKit.NAVY, 0.3), Color(UIKit.IVORY, 0.1))
 			dot.color = Color(UIKit.IVORY, 0.1)
+			face.texture = null
+			_face_key = ""
 			name_l.text = "Invite" if can_invite else "Open"
 			name_l.add_theme_color_override("font_color", Color(UIKit.IVORY, 0.45))
 			sub_l.text = ("tap to invite a friend" if can_invite else "share the code") if first_open else ""
@@ -407,6 +497,14 @@ class SlotCell:
 		var ent: Dictionary = e
 		_style(Color(UIKit.SLATE_HI, 0.95) if me else Color(UIKit.SLATE_LO, 0.85), UIKit.AMBER if me else Color(0, 0, 0, 0))
 		dot.color = Cosmetics.color_of(ent["cosmetic"])
+		var role := int(ent.get("role", -1))
+		var key := Portraits.key_of(Cosmetics.sanitize(ent["cosmetic"]), TC.Role.PATROL if role == TC.Role.PATROL else TC.Role.RUNNER)
+		if key != _face_key:
+			_face_key = key
+			var ps := Portraits.shared()
+			face.texture = ps.portrait(ent["cosmetic"], TC.Role.PATROL if role == TC.Role.PATROL else TC.Role.RUNNER)
+			if not ps.portrait_ready.is_connected(_on_portrait):
+				ps.portrait_ready.connect(_on_portrait)
 		name_l.text = String(ent["name"])
 		name_l.add_theme_color_override("font_color", UIKit.IVORY)
 		var bits: Array[String] = []
