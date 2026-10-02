@@ -16,9 +16,6 @@ extends SceneTree
 
 const BAND := 0.16       # nav-distance band (used when no measured times exist)
 const TIME_BAND := 0.12  # measured bot-time band around the median
-## Night Watch pressure: the curated set also drops a combination whose first
-## water the Night Watch (carts from the shed) reaches far sooner than the
-## runners can, relative to the other dorms' choices (see dorm_balance.gd).
 
 
 func _initialize() -> void:

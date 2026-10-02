@@ -140,7 +140,7 @@ func _ready() -> void:
 		_dorm_shots()
 	if args.has("--dorm-area"):
 		for r in DORM_AREA:
-			if r.size() == 3:
+			if r[1] is Vector2:
 				shots.append(_follow_shot(r[0], r[1], r[2]))
 			else:
 				shots.append({"name": r[0], "pos": r[1], "look": r[2], "fov": 62.0})
