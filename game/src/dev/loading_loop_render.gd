@@ -133,6 +133,7 @@ func _build() -> void:
 		if v.name_label:
 			v.name_label.visible = false
 		_views.append(v)
+		_yaws.append(v.rotation.y)
 		# soft contact shadow (premultiplied: black with partial alpha)
 		var sh := MeshInstance3D.new()
 		var q := QuadMesh.new()
@@ -147,13 +148,18 @@ func _build() -> void:
 		sh.material_override = sm
 		sh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_vp.add_child(sh)
-	# start each runner at its phase offset within the cycle
+	# start each runner at its phase offset within the cycle, already moving
+	# at full speed (from a standstill the gait snaps to the nearest step,
+	# which would put two runners in step)
 	for i in _views.size():
 		var v := _views[i]
+		v.set("_move_w", 1.0)
+		v.set("_bs", clampf(_speed, CharacterView.LOCO_POINTS["walk"], CharacterView.LOCO_POINTS["sprint"]))
 		v.set("_phase", float(RUNNERS[i][3]))
 
 
 var _busy := false
+var _yaws: Array[float] = []
 
 
 ## One loop frame per engine frame: advance every runner by exactly 1/fps,
@@ -163,9 +169,11 @@ func _process(_d: float) -> void:
 	if _busy or _views.is_empty():
 		return
 	var dt := 1.0 / float(fps)
-	for v in _views:
-		var fwd := -v.global_transform.basis.z
-		v.apply_state({"pos": v.global_position, "yaw": v.rotation.y, "state": TC.PState.ACTIVE, "vel": fwd * _speed, "on_floor": true})
+	for i in _views.size():
+		var v := _views[i]
+		var yaw: float = _yaws[i]   # fixed: the drawn yaw is never fed back
+		var fwd := Vector3(-sin(yaw), 0.0, -cos(yaw))
+		v.apply_state({"pos": v.global_position, "yaw": yaw, "state": TC.PState.ACTIVE, "vel": fwd * _speed, "on_floor": true})
 		v.set_process(false)
 		if "_blink_t" in v:
 			v.set("_blink_t", 1000.0)   # no blink inside the loop

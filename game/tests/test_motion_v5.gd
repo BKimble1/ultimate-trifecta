@@ -314,3 +314,25 @@ func test_run_on_the_spot_keeps_its_facing() -> void:
 	t.near(wrapf(v.rotation.y - yaw, -PI, PI), 0.0, 0.01, "the lobby runner keeps facing the camera")
 	t.check(v._phase - p0 > 1.5, "and its legs keep cycling (%.2f cycles in 1 s)" % (v._phase - p0))
 	v.queue_free()
+
+
+func test_first_frame_faces_the_sim_yaw_away_from_the_origin() -> void:
+	# a view that appears away from the world origin (a new player's view
+	# gets its first state without a snap, as MatchController sends it) has
+	# no previous position yet: its first frame must not count the jump from
+	# the origin as travel and turn the body along it
+	var v := CharacterView.new()
+	t.add_child(v)
+	v.setup(TC.Role.RUNNER, Cosmetics.DEFAULT, -1, "", false, true)
+	var yaw := 0.4
+	var worst := 0.0
+	for i in 20:
+		v.apply_state({"pos": Vector3(20, 0, -30), "yaw": yaw, "state": TC.PState.ACTIVE, "vel": Vector3.ZERO, "on_floor": true})
+		v._process(1.0 / 60.0)
+		worst = maxf(worst, absf(wrapf(v.rotation.y - yaw, -PI, PI)))
+	t.near(worst, 0.0, 0.01, "the body faces the sim yaw from the first frame (largest error %.2f rad)" % worst)
+	v.reset_motion()
+	v.apply_state({"pos": Vector3(-40, 0, 12), "yaw": yaw, "state": TC.PState.ACTIVE, "vel": Vector3.ZERO, "on_floor": true})
+	v._process(1.0 / 60.0)
+	t.near(wrapf(v.rotation.y - yaw, -PI, PI), 0.0, 0.01, "and after a reset (respawn, teleport)")
+	v.queue_free()

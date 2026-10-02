@@ -198,6 +198,7 @@ var _air_hold := 0.0
 var _air_vis := false
 var _cut := false
 var _last_pos := Vector3.ZERO
+var _have_last := false       # _last_pos is a real previous position
 var _cam_d := INF
 var _far := false
 var _act := ""
@@ -763,6 +764,7 @@ func reset_motion() -> void:
 	_squash = 0.0
 	_squash_v = 0.0
 	_travel_f = Vector3.ZERO
+	_have_last = false
 	if secondary:
 		secondary.reset_motion()
 	if hat_spring:
@@ -919,12 +921,16 @@ func _process(delta: float) -> void:
 	_prev_state = st
 	# the character's actual ground travel (filtered): a run on the spot (the
 	# lobby's "Try moves") has a velocity but no travel
-	if delta > 0.0 and not _cut:
+	# (no previous position yet - the first frame, or after a reset - is
+	# not travel: a view placed away from the origin would otherwise start
+	# facing along the line from the origin and swing back)
+	if delta > 0.0 and not _cut and _have_last:
 		var travel := (global_position - _last_pos) / delta
 		_travel_f += (Vector3(travel.x, 0.0, travel.z) - _travel_f) * (1.0 - exp(-delta / ACC_TAU))
 	else:
 		_travel_f = Vector3.ZERO
 	_last_pos = global_position
+	_have_last = true
 
 	# --- facing + motion history.  Acceleration is the derivative of a
 	# filtered velocity: bounded by (velocity change) / ACC_TAU whatever the
