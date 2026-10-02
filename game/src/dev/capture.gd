@@ -129,12 +129,14 @@ func _creator_tour() -> void:
 		match String(step[1]):
 			"open":
 				App.goto(CreatorScreen)
+				later(1.4, "creator_outfit_tiles")   # thumbnails render a few frames apart
 			"pick":
 				if c and Cosmetics.CATALOG.get(String(step[2]), {}).has(String(step[3])):
 					c._pick(String(step[2]), String(step[3]))
 			"tab":
 				if c:
 					c._step_tab(int(step[2]))
+					later(0.9, "creator_tab_%s" % c.tab)
 			"run":
 				if c:
 					c.run_btn.pressed.emit()

@@ -106,13 +106,27 @@ func build() -> void:
 	mid.add_child(panel)
 	var pvb := UIKit.vbox(12)
 	panel.add_child(pvb)
-	var tabs := HFlowContainer.new()
-	tabs.add_theme_constant_override("h_separation", 8)
-	tabs.add_theme_constant_override("v_separation", 8)
-	pvb.add_child(tabs)
+	# one row of categories; on a narrow panel it scrolls sideways rather
+	# than wrapping a lone tab onto a second line
+	var tab_scroll := ScrollContainer.new()
+	tab_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	tab_scroll.custom_minimum_size = Vector2(0, 64)
+	tab_scroll.follow_focus = true
+	pvb.add_child(tab_scroll)
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 6)
+	tab_scroll.add_child(tabs)
 	tabs.add_child(Glyphs.Hint.new("menu_prev", "", 30.0))
 	for t in TABS:
-		var b := UIKit.quiet(String(t[1]), Vector2(0, 60), 19)
+		var b := UIKit.quiet(String(t[1]), Vector2(0, 60), 18)
+		for side in ["content_margin_left", "content_margin_right"]:
+			for st_name in ["normal", "hover", "pressed", "focus"]:
+				var sb: StyleBox = b.get_theme_stylebox(st_name)
+				if sb:
+					sb = sb.duplicate()
+					sb.set(side, 12)
+					b.add_theme_stylebox_override(st_name, sb)
 		var key: String = t[0]
 		b.pressed.connect(func() -> void:
 			tab = key
@@ -217,6 +231,7 @@ func _rebuild() -> void:
 				b.add_theme_color_override(c, UIKit.IVORY)
 	for c in body.get_children():
 		c.queue_free()
+	_thumb_rects.clear()
 	var fields: Array = []
 	for t in TABS:
 		if t[0] == tab:
@@ -255,22 +270,54 @@ func _state_text(f: String, k: String) -> Array:
 	return ["%d coins" % cost, UIKit.AMBER if afford else UIKit.IVORY_MUTED, not afford]
 
 
+## Picture framing for an item's thumbnail ("" = text-only tile).
+const THUMB_FRAMING := {"outfit": "body", "pattern": "body", "hair": "head", "hat": "head", "shoes": "feet",
+	"face": "head", "brows": "head", "marks": "head"}
+var _thumb_rects: Dictionary = {}   # cache key -> TextureRect waiting for its picture
+
+
 func _tiles(f: String) -> GridContainer:
 	var g := GridContainer.new()
 	g.columns = 3
 	g.add_theme_constant_override("h_separation", 10)
 	g.add_theme_constant_override("v_separation", 10)
+	var framing := String(THUMB_FRAMING.get(f, ""))
 	for k in Cosmetics.keys_of(f):
 		var it: Dictionary = Cosmetics.entry(f, k)
 		var st: Array = _state_text(f, k)
-		var b := UIKit.secondary("", Vector2(190, 96), 20)
+		var b := UIKit.secondary("", Vector2(190, 112 if framing != "" else 96), 20)
+		var hb := UIKit.hbox(8)
+		hb.set_anchors_preset(Control.PRESET_FULL_RECT)
+		hb.offset_left = 8
+		hb.offset_right = -8
+		hb.offset_top = 6
+		hb.offset_bottom = -UIKit.LIP - 4
+		hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if framing != "":
+			# the item on your runner, in this draft's colours: one cached
+			# picture per look, rendered a few frames apart (no live 3D per tile)
+			var app := draft.duplicate()
+			app[f] = k
+			if f == "hair":
+				app["hat"] = "none"   # show the hairstyle itself
+			var pic := TextureRect.new()
+			pic.custom_minimum_size = Vector2(80, 80)
+			pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			pic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var ps := Portraits.shared()
+			var key := Portraits.key_for(app, TC.Role.RUNNER, framing)
+			pic.texture = ps.portrait(app, TC.Role.RUNNER, "tile:%s:%s" % [f, k], framing)
+			_thumb_rects[key] = pic
+			if not ps.portrait_ready.is_connected(_on_thumb):
+				ps.portrait_ready.connect(_on_thumb)
+			hb.add_child(pic)
 		var vb := UIKit.vbox(2)
-		vb.set_anchors_preset(Control.PRESET_FULL_RECT)
-		vb.offset_left = 14
-		vb.offset_right = -10
-		vb.offset_bottom = -UIKit.LIP
+		vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		vb.alignment = BoxContainer.ALIGNMENT_CENTER
 		vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hb.add_child(vb)
 		var sel: bool = String(draft[f]) == k
 		var nm := UIKit.label(String(it["name"]), 21, UIKit.NAVY if sel else UIKit.IVORY, true)
 		nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -284,7 +331,7 @@ func _tiles(f: String) -> GridContainer:
 		sl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(sl)
 		vb.add_child(row)
-		b.add_child(vb)
+		b.add_child(hb)
 		if sel:
 			UIKit._apply(b, UIKit.TEAL, UIKit.NAVY)
 		b.tooltip_text = "%s — %s" % [it["name"], st[0]]
@@ -292,6 +339,15 @@ func _tiles(f: String) -> GridContainer:
 		b.pressed.connect(func() -> void: _pick(f, kk))
 		g.add_child(b)
 	return g
+
+
+## A thumbnail finished: only the tile still showing that exact look takes
+## it (a draft change since then made that request stale).
+func _on_thumb(key: String, tex: Texture2D) -> void:
+	var r: Variant = _thumb_rects.get(key)
+	if r != null and is_instance_valid(r):
+		(r as TextureRect).texture = tex
+	_thumb_rects.erase(key)
 
 
 func _swatches(f: String) -> HFlowContainer:

@@ -58,16 +58,31 @@ static func key_of(app: Dictionary, role: int) -> String:
 
 ## Cached portrait, or a placeholder now and `portrait_ready` later.
 ## `owner` (e.g. a party cell): its newer request replaces its queued one.
-func portrait(app: Dictionary, role: int = TC.Role.RUNNER, owner: String = "") -> Texture2D:
+## `framing`: "head" (portraits, face/hair/hat thumbnails), "body" (outfit
+## thumbnails) or "feet" (shoes).
+func portrait(app: Dictionary, role: int = TC.Role.RUNNER, owner: String = "", framing: String = "head") -> Texture2D:
 	var a := Cosmetics.sanitize(app)
-	var k := key_of(a, role)
+	var k := key_of(a, role) + ("" if framing == "head" else ":" + framing)
 	if _cache.has(k):
 		_order.erase(k)
 		_order.append(k)
 		return _cache[k]
 	if DisplayServer.get_name() != "headless":
-		_enqueue({"key": k, "role": role, "app": a, "owner": owner})
+		_enqueue({"key": k, "role": role, "app": a, "owner": owner, "framing": framing})
 	return placeholder(a)
+
+
+## The cache key `portrait` uses for a look and framing.
+static func key_for(app: Dictionary, role: int, framing: String = "head") -> String:
+	return key_of(Cosmetics.sanitize(app), role) + ("" if framing == "head" else ":" + framing)
+
+
+## Camera per framing: [position, look-at, fov].
+const FRAMINGS := {
+	"head": [Vector3(0.0, 1.25, 1.85), Vector3(0.0, 1.13, 0.0), 24.0],
+	"body": [Vector3(0.0, 0.85, 2.6), Vector3(0.0, 0.8, 0.0), 36.0],
+	"feet": [Vector3(0.35, 0.55, 1.45), Vector3(0.0, 0.1, 0.0), 26.0],
+}
 
 
 func _enqueue(q: Dictionary) -> void:
@@ -210,6 +225,9 @@ func _render(q: Dictionary) -> void:
 			_view.base_mesh.set_blend_shape_value(_view._face_idx[n], float(base[n]))
 	if _view._face_idx.has("smile"):
 		_view.base_mesh.set_blend_shape_value(_view._face_idx["smile"], 0.5)
+	var fr: Array = FRAMINGS.get(String(q.get("framing", "head")), FRAMINGS["head"])
+	_cam.fov = float(fr[2])
+	_cam.look_at_from_position(fr[0], fr[1])
 	# one settle frame: per-instance tints of parts just shown (a new outfit,
 	# hair, the first portrait) reach the renderer a frame later, and a
 	# portrait rendered at once came out with the default grey skin
