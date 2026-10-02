@@ -1,11 +1,12 @@
-1.3 internal beta (V4: phone polish after the first iPhone playtest). Please try, and tell us your iPhone model:
+1.4 internal beta (V5: new look, smoother motion, cleaner menus). Please try, and tell us your iPhone model:
 
-- Buttons: are Jump/Dive, Tag, Gas, Brake and Exit comfortable for your thumbs? Can you tap Pause and the minimap? Settings > Controls > Edit layout lets you move, resize and mirror them; "Try it" previews.
-- Lobby: Emote (Dance, Wave, Ha!...) and Try moves should play every time, on your runner and for friends.
-- Loading: from the app icon and between rounds. The three runners should loop smoothly, sharp and uncropped, then fade straight into the round. Any frozen screen, jump at the loop point, logo or text that isn't the game's own?
-- Outdoors: trees, buildings, lamps and the six waters. Any spot that still looks blocky, or any stutter?
-- Night Watch: chase and tag runners. Tag glows and a ring appears under a runner when a press would land. Too hard, too easy? Practice has a short "Night Watch training".
-- Getting caught as a runner: "Caught by..., back in 6", your splashes kept, then a short "Protected".
-- With friends: the host picks 1/2/3 Night Watch and 1/3/5 rounds. Roles are random each round. Play a 3-round series: round results, Ready for the next round, final standings.
-- Heat and battery: after 10-15 minutes, is the phone hot? Does it slow down?
-- Optional: Settings > Diagnostics (beta) > turn on, play a few rounds, then Share summary and send it to the developer. It has no names, codes or Game Center IDs.
+- Startup: Idlery Games should show at once and fade into the dorm. Any white flash, second logo, or a frozen logo over a menu?
+- Home, party and wardrobe: new text, buttons and room. Is everything easy to read? Do buttons react the moment you tap, even when you tap fast?
+- Wardrobe: every item shows a picture of it on your runner, its full name and Equipped / Owned / a price. Try lots of items, switch categories quickly, then Apply or Undo.
+- Party: names should read in full; settings show as "3 rounds", "2 Night Watch", "4 home to win". Tap a player for details. Emote, Try moves, go to the Wardrobe and back, then Start.
+- Match loading: the new title and three runners. Smooth, sharp, no jump at the loop, and straight into the round.
+- Campus: new trees, buildings, props and all six waters. Any spot that looks blocky, cluttered or hard to read, or a prop you snag on?
+- Movement: start, stop, turn around, jump, dive, land, tag, splash, carts. Anything that pops, slides or jitters? Say if it happens only with friends or in Practice too.
+- Map: tap the minimap. Labels shouldn't overlap; the (i) explains the marks.
+- Heat and smoothness after 15 minutes.
+- Optional: Settings > Diagnostics (beta) > on, play a few rounds, Share summary. It has no names, codes or Game Center IDs.
