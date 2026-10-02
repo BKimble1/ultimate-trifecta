@@ -28,11 +28,16 @@ static func all_combos(n: int = 6) -> Array:
 
 
 ## Curated fair combinations (from route analysis). Falls back to all combos.
-static func curated_combos() -> Array:
+## V6: per home dorm (route_table.json "dorms"); without a dorm, the
+## Puddlesworth Hall set (the V5 table's own list).
+static func curated_combos(dorm_id: String = "") -> Array:
 	var rt := route_table()
-	if rt.has("curated") and (rt["curated"] as Array).size() > 0:
+	var src: Variant = rt.get("curated", [])
+	if dorm_id != "" and rt.get("dorms", {}) is Dictionary and (rt.get("dorms", {}) as Dictionary).has(dorm_id):
+		src = (rt["dorms"][dorm_id] as Dictionary).get("curated", src)
+	if src is Array and (src as Array).size() > 0:
 		var out: Array = []
-		for c in rt["curated"]:
+		for c in src:
 			out.append([int(c[0]), int(c[1]), int(c[2])])
 		return out
 	return all_combos()
@@ -57,6 +62,58 @@ static func _same_set(a: Array, b: Array) -> bool:
 		if not b.has(x):
 			return false
 	return true
+
+
+## The round's gold coins (V6), chosen by the host from the seed: a few of
+## the layout's candidate spots, spread out, clear of tonight's home doors
+## and of the active waters' exits, jump-in points and pads.  Returns
+## [{id, x, z}] (ids are the spot's index: unique within the round).
+static func pick_coins(seed_v: int, layout: CampusLayout, dorm_id: String, targets: Array, cfg: RulesConfig) -> Array:
+	var doors: Array = CampusDorms.geometry(dorm_id).get("doors", [])
+	var cand: Array = []
+	for i in layout.coin_spots.size():
+		var p: Vector2 = layout.coin_spots[i]
+		var ok := true
+		for d in doors:
+			if p.distance_to(d["pos"]) < cfg.coin_door_clearance_m:
+				ok = false
+		for wi in targets:
+			var w: Dictionary = layout.waters[int(wi)]
+			for e in w["exits"]:
+				if p.distance_to(Vector2((e as Vector3).x, (e as Vector3).z)) < cfg.coin_water_clearance_m:
+					ok = false
+			for j in w["jump_points"]:
+				if p.distance_to(j) < cfg.coin_water_clearance_m:
+					ok = false
+			for pad in w["pads"]:
+				if p.distance_to(pad) < cfg.coin_water_clearance_m:
+					ok = false
+		if ok:
+			cand.append(i)
+	# a seeded shuffle, then greedy spacing
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_v ^ 0xC01C
+	for i in range(cand.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmp: int = cand[i]
+		cand[i] = cand[j]
+		cand[j] = tmp
+	var out: Array = []
+	for spacing in [cfg.coin_min_spacing_m, cfg.coin_min_spacing_m * 0.6, 0.0]:
+		for i in cand:
+			if out.size() >= cfg.coin_spawns_per_round:
+				break
+			var p2: Vector2 = layout.coin_spots[i]
+			var clash := false
+			for o in out:
+				if p2.distance_to(Vector2(float(o["x"]), float(o["z"]))) < spacing or int(String(o["id"]).substr(1)) == i:
+					clash = true
+					break
+			if not clash:
+				out.append({"id": "s%02d" % i, "x": p2.x, "z": p2.y})
+		if out.size() >= cfg.coin_spawns_per_round:
+			break
+	return out
 
 
 ## Every order (permutation) a runner could take through three targets.

@@ -104,6 +104,25 @@ func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> 
 	for e in start["roster"]:
 		roster[int(e["slot"])] = e
 	spectator = not roster.has(local_slot)
+	home_dorm = String(start.get("home_dorm", CampusDorms.default_id()))
+	if not CampusDorms.has_dorm(home_dorm):
+		home_dorm = CampusDorms.default_id()
+
+
+## V6: tonight's home dorm (from the round configuration).
+var home_dorm := ""
+
+
+## slot -> spawn index from the round configuration (keys arrive as strings).
+func _spawn_map() -> Dictionary:
+	var out := {}
+	var dm: Dictionary = start.get("dorm", {})
+	var sp: Dictionary = dm.get("spawns", {})
+	for k in sp:
+		out[int(k)] = int(sp[k])
+	if out.is_empty():
+		out = MatchSim.default_spawns(start["roster"])
+	return out
 
 
 # --- staged preparation (V4): the round is made in short steps so the
@@ -312,6 +331,7 @@ func _prep_sim() -> void:
 			{"practice": bool(start.get("practice", false)), "tutorial": bool(start.get("tutorial", false)),
 			"gentle_bots": String(start.get("training", "")) == "watch",
 			"patrol_release_extra_s": 24.0 if bool(start.get("tutorial", false)) else 0.0,
+			"dorm": home_dorm, "spawns": _spawn_map(), "coins": start.get("coins", []),
 			"bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p)})
 		session.attach_sim(sim)
 		sim.event_emitted.connect(func(ev: Dictionary) -> void: _local_events.append(ev))
@@ -425,20 +445,10 @@ func _setup_client_world() -> void:
 		pred.role = int(roster[local_slot]["role"])
 		pred.body = Motor.make_character_body("Pred")
 		client_world.add_child(pred.body)
-		# same spawn assignment as MatchSim.setup (roster order)
-		var ri := 0
-		var pi := 0
-		var sp := Vector2.ZERO
-		for e in start["roster"]:
-			var is_r := int(e["role"]) == TC.Role.RUNNER
-			if int(e["slot"]) == local_slot:
-				sp = layout.runner_spawns[ri % layout.runner_spawns.size()] if is_r else layout.patrol_spawns[pi % layout.patrol_spawns.size()]
-				pred.yaw = 0.0 if is_r else PI
-			if is_r:
-				ri += 1
-			else:
-				pi += 1
-		pred.body.global_position = Vector3(sp.x, 0.05, sp.y)
+		# the same spawn as MatchSim.setup: the round configuration's pad
+		var sp := MatchSim.spawn_point(layout, home_dorm, pred.role, int(_spawn_map().get(local_slot, 0)))
+		pred.body.global_position = sp[0]
+		pred.yaw = sp[1]
 		if pred.is_patrol():
 			pred.state = TC.PState.WAITING
 	for i in cfg.cart_count:

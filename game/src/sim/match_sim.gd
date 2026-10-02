@@ -6,9 +6,19 @@ extends Node3D
 ## Same-tick ordering (documented in RULES.md):
 ##   1. state timers   2. intents (cart seats, tag start, gadgets)
 ##   3. movement       4. finishes   5. splashes   6. tags   7. cart bumps
-##   8. pickups/gadget effects   9. recovery   10. perception   11. win/timeout
-## A runner who reaches the dorm finish boundary in a tick is safe from a tag
+##   8. pickups/gadget effects, coins   9. recovery   10. perception
+##   11. win/timeout
+## A runner who crosses a home door threshold in a tick is safe from a tag
 ## resolved in that same tick. Finishes at or before the deadline tick count.
+##
+## V6: the round has a home dorm (CampusDorms, chosen by the host and carried
+## in the round configuration).  Runners start on pads inside it; a runner
+## with every stamp finishes by crossing one of its door thresholds from
+## outside to inside (swept from the start to the end of the tick's move,
+## with a line-of-sight check, so a fast move counts and a wall never does).
+## Nobody can be tagged inside the home dorm's common room.  The round's
+## gold coins (also from the configuration) go to the first player the host
+## sees reach them.
 
 signal event_emitted(ev: Dictionary)
 
@@ -39,6 +49,13 @@ var tutorial := false
 ## Night Watch training: runner bots jog slower and never sprint
 var gentle_bots := false
 var patrol_release_extra_s := 0.0
+## V6: tonight's home dorm, its doors, and slot -> pad (runner) or patrol
+## spawn index (Night Watch) - all from the round configuration
+var home_dorm := ""
+var home_doors: Array = []
+var spawn_map: Dictionary = {}
+## V6: the round's coins [{id, pos: Vector3, by: slot or -1}]
+var coins: Array = []
 var _space: PhysicsDirectSpaceState3D
 var _cap_shape: CapsuleShape3D
 var _bot_factory: Callable
@@ -55,6 +72,13 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 	gentle_bots = bool(opts.get("gentle_bots", false))
 	patrol_release_extra_s = float(opts.get("patrol_release_extra_s", 0.0))
 	_bot_factory = opts.get("bot_factory", Callable())
+	home_dorm = String(opts.get("dorm", CampusDorms.default_id()))
+	if not CampusDorms.has_dorm(home_dorm):
+		home_dorm = CampusDorms.default_id()
+	home_doors = CampusDorms.geometry(home_dorm)["doors"]
+	spawn_map = opts.get("spawns", {}) if not (opts.get("spawns", {}) as Dictionary).is_empty() else default_spawns(roster)
+	for c in opts.get("coins", []):
+		coins.append({"id": String(c["id"]), "pos": Vector3(float(c["x"]), 0.0, float(c["z"])), "by": -1})
 	var builder := CampusBuilder.new(layout)
 	builder.build_collision(self)
 	_cap_shape = CapsuleShape3D.new()
@@ -75,8 +99,6 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 		c.body.rotation.y = c.yaw
 		carts.append(c)
 
-	var runner_i := 0
-	var patrol_i := 0
 	for entry in roster:
 		var p := SimPlayer.new()
 		p.id = int(entry["slot"])
@@ -88,16 +110,10 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 		p.cosmetic = entry.get("cosmetic", {})
 		p.body = Motor.make_character_body("P%d" % p.id)
 		add_child(p.body)
-		if p.is_runner():
-			var sp: Vector2 = layout.runner_spawns[runner_i % layout.runner_spawns.size()]
-			runner_i += 1
-			p.body.global_position = Vector3(sp.x, 0.05, sp.y)
-			p.yaw = 0.0
-		else:
-			var pp: Vector2 = layout.patrol_spawns[patrol_i % layout.patrol_spawns.size()]
-			patrol_i += 1
-			p.body.global_position = Vector3(pp.x, 0.05, pp.y)
-			p.yaw = PI
+		var sp := spawn_point(layout, home_dorm, p.role, int(spawn_map.get(p.id, spawn_map.get(str(p.id), 0))))
+		p.body.global_position = sp[0]
+		p.yaw = sp[1]
+		if p.is_patrol():
 			p.state = TC.PState.WAITING   # held in the cart shed until the head start ends
 		players.append(p)
 		if p.is_bot and _bot_factory.is_valid():
@@ -115,6 +131,35 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 		for spot in layout.gadget_spots:
 			pickups.append({"pos": Vector3(spot.x, 0.0, spot.y), "type": enabled[rng.randi() % enabled.size()], "respawn": 0.0})
 	_set_phase(TC.Phase.REVEAL)
+
+
+## Where a slot starts: [position, yaw].  Runners stand on the home dorm's
+## pads inside (facing an exit), the Night Watch at the Grounds Shed.  The
+## client uses the same function for its own predicted body.
+static func spawn_point(lay: CampusLayout, dorm_id: String, role: int, index: int) -> Array:
+	if role == TC.Role.RUNNER:
+		var pads: Array = CampusDorms.geometry(dorm_id)["pads"]
+		var pd: Dictionary = pads[posmod(index, pads.size())]
+		var pp: Vector2 = pd["pos"]
+		return [Vector3(pp.x, 0.05, pp.y), float(pd["yaw"])]
+	var ps: Vector2 = lay.patrol_spawns[posmod(index, lay.patrol_spawns.size())]
+	return [Vector3(ps.x, 0.05, ps.y), PI]
+
+
+## slot -> pad / spawn index in roster order (the host publishes it in the
+## round configuration; this is also what a configuration without it means).
+static func default_spawns(roster: Array) -> Dictionary:
+	var out := {}
+	var ri := 0
+	var pi := 0
+	for e in roster:
+		if int(e["role"]) == TC.Role.RUNNER:
+			out[int(e["slot"])] = ri
+			ri += 1
+		else:
+			out[int(e["slot"])] = pi
+			pi += 1
+	return out
 
 
 func player(slot: int) -> SimPlayer:
@@ -275,14 +320,16 @@ func step(inputs: Dictionary) -> void:
 		_intent_tag(p, cmds[p.id])
 		_intent_gadget(p, cmds[p.id])
 
-	# 3. movement
+	# 3. movement (each runner's start point is kept for the threshold sweep)
 	for c in carts:
 		var drv_cmd: InputCmd = null
 		if c.occupant >= 0:
 			drv_cmd = cmds.get(c.occupant)
 		Motor.step_cart(c, drv_cmd, cfg, dt, layout)
 	for p in players:
+		p.prev_pos = p.pos()
 		_move_player(p, cmds[p.id], dt)
+		p.home_safe = p.is_runner() and CampusDorms.in_room(home_dorm, p.pos(), 0.1)
 
 	# 4..9 rules in fixed order
 	if phase == TC.Phase.PLAYING and tick <= end_tick:
@@ -605,7 +652,7 @@ func _respawn(p: SimPlayer) -> void:
 	if p.last_stamp_water >= 0:
 		pads = layout.waters[p.last_stamp_water]["pads"]
 	else:
-		pads = layout.dorm_pads
+		pads = CampusDorms.geometry(home_dorm)["respawn"]   # inside tonight's home dorm
 	var patrol_pos: Array = []
 	for q in players:
 		if q.is_patrol():
@@ -618,6 +665,7 @@ func _respawn(p: SimPlayer) -> void:
 	p.protect = cfg.respawn_protect_s
 	p.sprint = 1.0
 	p.clear_history()
+	p.prev_pos = Vector3.INF
 	_set_state(p, TC.PState.ACTIVE)
 	_emit(TC.Ev.RESPAWN, p.id, -1, 0, p.body.global_position)
 
@@ -630,16 +678,32 @@ func _check_finish(p: SimPlayer) -> void:
 		return
 	if p.stamp_count() < cfg.targets_per_match:
 		return
-	var door := layout.in_finish_zone(p.pos2())
-	if door == "" or p.pos().y > 2.0:
+	var door := home_crossing(p.prev_pos, p.pos())
+	if door.is_empty():
 		return
 	finished_count += 1
 	p.finish_order = finished_count
 	p.finished_tick = tick
+	p.finish_door = String(door["id"])
 	p.vel = Vector3.ZERO
 	Motor.set_body_enabled(p.body, false)
 	_set_state(p, TC.PState.FINISHED)
-	_emit(TC.Ev.FINISH, p.id, -1, finished_count, p.pos())
+	_emit(TC.Ev.FINISH, p.id, home_doors.find(door), finished_count, p.pos())
+
+
+## The home door whose threshold the move a -> b crossed from outside to
+## inside, or {}: the swept test (CampusDorms.crosses: direction, width,
+## height, step length) and a clear line between the two points at chest
+## height, so neither a wall nor a teleport can count as a doorway.
+func home_crossing(a: Vector3, b: Vector3) -> Dictionary:
+	if a == Vector3.INF:
+		return {}
+	for door in home_doors:
+		if CampusDorms.crosses(door, a, b):
+			var rq := PhysicsRayQueryParameters3D.create(a + Vector3(0, 0.9, 0), b + Vector3(0, 0.9, 0), TC.L_WORLD)
+			if space_state().intersect_ray(rq).is_empty():
+				return door
+	return {}
 
 
 func _check_water(p: SimPlayer) -> void:
@@ -694,6 +758,7 @@ func _resurface(p: SimPlayer) -> void:
 	Motor.set_body_enabled(p.body, true)
 	p.splash_water = -1
 	p.clear_history()
+	p.prev_pos = Vector3.INF
 	_set_state(p, TC.PState.ACTIVE)
 
 
@@ -704,7 +769,7 @@ func _check_recover(p: SimPlayer) -> void:
 	if pp.y > -6.0 and CampusLayout.BOUNDS.grow(-0.5).has_point(Vector2(pp.x, pp.z)):
 		return
 	# Out of bounds / fell through: return to a safe pad with no new progress.
-	var pads: Array = layout.dorm_pads
+	var pads: Array = CampusDorms.geometry(home_dorm)["respawn"]
 	if p.is_patrol():
 		pads = layout.patrol_spawns
 	elif p.last_stamp_water >= 0:
@@ -720,6 +785,7 @@ func _check_recover(p: SimPlayer) -> void:
 	p.vel = Vector3.ZERO
 	p.body.velocity = Vector3.ZERO
 	p.clear_history()
+	p.prev_pos = Vector3.INF
 	_emit(TC.Ev.RECOVER, p.id, -1, 0, p.body.global_position)
 
 
@@ -845,6 +911,48 @@ func _update_gadgets(dt: float) -> void:
 					_emit(TC.Ev.BOMB_HIT, int(bm["owner"]), c.id, 1, bm["to"])
 			_emit(TC.Ev.BOMB_HIT, int(bm["owner"]), -1, 0, bm["to"])
 	bombs = bombs.filter(func(bm): return float(bm["t"]) > 0.0)
+
+
+# ---------------------------------------------------------------------------
+# Gold coins (V6): host-decided, once each, worth exactly one Coin
+# ---------------------------------------------------------------------------
+## Each coin goes to the first player the host sees reach it: on foot (either
+## role, bots included), within the pickup radius.  Two in reach on the same
+## tick: the nearer one, then the lower slot.  A taken coin never comes back
+## this round, so nothing (a replayed packet, a reconnect, a second client)
+## can collect it twice.
+func _check_coins() -> void:
+	var r := cfg.coin_pickup_radius_m
+	for ci in coins.size():
+		var c: Dictionary = coins[ci]
+		if int(c["by"]) >= 0:
+			continue
+		var cp: Vector3 = c["pos"]
+		var best: SimPlayer = null
+		var bd := INF
+		for p in players:
+			if p.state != TC.PState.ACTIVE and p.state != TC.PState.STUMBLE and p.state != TC.PState.EXITING:
+				continue
+			var pp := p.pos()
+			if pp.y - cp.y > 1.6 or cp.y - pp.y > 0.8:
+				continue
+			var d := Vector2(pp.x - cp.x, pp.z - cp.z).length()
+			if d <= r and (d < bd - 0.0001 or (absf(d - bd) <= 0.0001 and best != null and p.id < best.id)):
+				bd = d
+				best = p
+		if best != null:
+			c["by"] = best.id
+			best.coins_picked += 1
+			_emit(TC.Ev.COIN_PICKUP, best.id, -1, ci, cp)
+
+
+## Bit i set while coin i is still out (snapshots carry it).
+func coin_mask() -> int:
+	var m := 0
+	for i in mini(coins.size(), 16):
+		if int(coins[i]["by"]) < 0:
+			m |= 1 << i
+	return m
 
 
 ## Explicit emote request (lobby/spectators via reliable message).
@@ -975,10 +1083,15 @@ func build_results() -> Dictionary:
 			"captures": p.captures, "unique_captures": p.captured_ids.size(),
 			"cosmetic": p.cosmetic, "uid": p.uid,
 			"was_human": p.was_human, "present": p.connected, "away_s": float(p.away_ticks) / float(cfg.sim_hz),
+			"coins_picked": p.coins_picked, "finish_door": p.finish_door,
 		})
+	var coin_log: Array = []
+	for c in coins:
+		if int(c["by"]) >= 0:
+			coin_log.append([String(c["id"]), int(c["by"])])
 	return {
 		"match_id": match_id, "outcome": outcome, "players": rows, "fastest_slot": fastest,
 		"fastest_time": fastest_t if fastest >= 0 else -1.0, "finished": finished_count,
 		"needed": cfg.runners_needed, "watch": cfg.patrol_slots, "targets": targets, "practice": practice,
-		"round_time": round_time(),
+		"round_time": round_time(), "home_dorm": home_dorm, "coins_total": coins.size(), "coin_log": coin_log,
 	}

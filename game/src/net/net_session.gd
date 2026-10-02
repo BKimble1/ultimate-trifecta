@@ -48,6 +48,8 @@ var spectators: Dictionary = {} # peer -> {uid, name}
 var phase: int = TC.Phase.LOBBY
 var round_no := 0
 var prev_targets: Array = []
+## V6: last round's home dorm (the next one differs when it can)
+var prev_dorm := ""
 var current_start: Dictionary = {}
 var last_results: Dictionary = {}
 var sim: MatchSim = null
@@ -628,14 +630,27 @@ func host_start_match(seed_override: int = -1) -> void:
 				need -= 1
 	if not role_override.is_empty():
 		roles = _apply_role_override(roles, round_cfg.patrol_slots)
-	var targets := RulesLogic.pick_targets(seed_v, prev_targets)
+	# V6: tonight's home dorm (seeded, never last round's), then targets
+	# from that dorm's fair set, spawn pads and the round's coins: one
+	# immutable round configuration that reconnects and replays keep
+	var dorm_id := CampusDorms.default_id() if tutorial else CampusDorms.pick(seed_v, prev_dorm)
+	prev_dorm = dorm_id
+	var targets := RulesLogic.pick_targets(seed_v, prev_targets, RulesLogic.curated_combos(dorm_id))
 	prev_targets = targets
 	var start_roster: Array = []
 	for e in roster:
 		e["role"] = roles[e["slot"]]
 		e["ready"] = false
 		start_roster.append({"slot": e["slot"], "uid": e["uid"], "name": e["name"], "is_bot": e["is_bot"], "role": e["role"], "cosmetic": e["cosmetic"]})
+	var spawns := {}
+	var sm := MatchSim.default_spawns(start_roster)
+	for k in sm:
+		spawns[str(k)] = int(sm[k])
 	current_start = {
+		"home_dorm": dorm_id,
+		"dorm": {"id": dorm_id, "ver": CampusDorms.VERSION, "geo": CampusDorms.geometry_hash(dorm_id), "spawns": spawns},
+		"coins": RulesLogic.pick_coins(seed_v, CampusLayout.shared(), dorm_id, targets, round_cfg),
+		"timing": {"reveal_s": round_cfg.role_reveal_s, "countdown_s": round_cfg.start_countdown_s, "head_start_s": round_cfg.runner_head_start_s},
 		"match_id": "%s-%d-%08x" % [room_code, round_no, seed_v], "seed": seed_v, "targets": targets,
 		"roster": start_roster, "practice": mode == Mode.OFFLINE, "tutorial": tutorial, "round": round_no,
 		"training": ("watch" if practice_role == "patrol" else "runner") if tutorial else "",
@@ -1063,6 +1078,9 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 		Protocol.M.START:
 			var parsed := Protocol.get_json(b)
 			var fixed := _fix_start(parsed) if not parsed.is_empty() else {}
+			if fixed.has("_incompatible"):
+				_end("version")   # another dorm geometry: this build can't play the round
+				return
 			if not fixed.is_empty():
 				current_start = fixed
 				round_no = int(fixed.get("round", round_no))
@@ -1230,6 +1248,42 @@ func _fix_start(d: Dictionary) -> Dictionary:
 		ro.append({"slot": slot, "uid": String(e.get("uid", "")).substr(0, 64), "name": NameRules.safe_display(String(e.get("name", ""))),
 			"is_bot": bool(e.get("is_bot", false)), "role": role, "cosmetic": Cosmetics.sanitize(c if c is Dictionary else {})})
 	out["roster"] = ro
+	# V6 round configuration: tonight's home dorm must be one this build has,
+	# with the same geometry; spawn pads and coins are bounded and checked
+	var dm: Variant = d.get("dorm", {})
+	if not (dm is Dictionary):
+		return {}
+	var did := String((dm as Dictionary).get("id", ""))
+	if not CampusDorms.has_dorm(did) or int((dm as Dictionary).get("ver", -1)) != CampusDorms.VERSION or String((dm as Dictionary).get("geo", "")) != CampusDorms.geometry_hash(did):
+		return {"_incompatible": true}
+	var pads_n: int = (CampusDorms.geometry(did)["pads"] as Array).size()
+	var sp_in: Variant = (dm as Dictionary).get("spawns", {})
+	var spawns := {}
+	var defaults := MatchSim.default_spawns(ro)
+	for e2 in ro:
+		var sl := int(e2["slot"])
+		var v: Variant = (sp_in as Dictionary).get(str(sl), null) if sp_in is Dictionary else null
+		var lim := pads_n if int(e2["role"]) == TC.Role.RUNNER else CampusLayout.shared().patrol_spawns.size()
+		spawns[str(sl)] = int(v) if (v is float or v is int) and int(v) >= 0 and int(v) < lim else int(defaults[sl])
+	out["home_dorm"] = did
+	out["dorm"] = {"id": did, "ver": CampusDorms.VERSION, "geo": CampusDorms.geometry_hash(did), "spawns": spawns}
+	var coins: Array = []
+	var seen := {}
+	var cin: Variant = d.get("coins", [])
+	if cin is Array:
+		for c in cin:
+			if coins.size() >= 16 or not (c is Dictionary):
+				break
+			var cid := String((c as Dictionary).get("id", "")).substr(0, 8)
+			var x := float((c as Dictionary).get("x", NAN))
+			var z := float((c as Dictionary).get("z", NAN))
+			if cid == "" or seen.has(cid) or not is_finite(x) or not is_finite(z) or not CampusLayout.BOUNDS.has_point(Vector2(x, z)):
+				continue
+			seen[cid] = true
+			coins.append({"id": cid, "x": x, "z": z})
+	out["coins"] = coins
+	var tm: Variant = d.get("timing", {})
+	out["timing"] = tm if tm is Dictionary else {}
 	return out
 
 
@@ -1243,6 +1297,9 @@ func _fix_results(d: Dictionary) -> Dictionary:
 	out["watch"] = clampi(int(d.get("watch", 2)), 1, 3)
 	# the away/eligibility share on guests is measured against it
 	out["round_time"] = clampf(float(d.get("round_time", 0.0)), 0.0, 3600.0)
+	var hd := String(d.get("home_dorm", ""))
+	out["home_dorm"] = hd if CampusDorms.has_dorm(hd) else ""
+	out["coins_total"] = clampi(int(d.get("coins_total", 0)), 0, 16)
 	var rows: Array = []
 	for r in d.get("players", []):
 		if not (r is Dictionary) or rows.size() >= 8:
@@ -1252,6 +1309,7 @@ func _fix_results(d: Dictionary) -> Dictionary:
 			rr["name"] = NameRules.safe_display(String(rr["name"]))
 		for k in ["slot", "role", "stamps", "finish_order", "times_captured", "captures", "unique_captures"]:
 			rr[k] = int(r.get(k, 0))
+		rr["coins_picked"] = clampi(int(r.get("coins_picked", 0)), 0, 16)
 		rr["away_s"] = float(r.get("away_s", 0.0))
 		rr["present"] = bool(r.get("present", true))
 		rr["was_human"] = bool(r.get("was_human", false))

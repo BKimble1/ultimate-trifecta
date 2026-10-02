@@ -121,6 +121,11 @@ func build_collision(root: Node3D) -> void:
 		var size: Vector2 = bd["size"]
 		var h: float = bd["h"]
 		var y0: float = float(bd.get("base_y", 0.0))
+		if bd.has("dorm_id"):
+			# V6 dorm: a shell with a common room and open doorways
+			for bx in CampusDorms.geometry(String(bd["dorm_id"]))["boxes"]:
+				_box(world, bx[0], bx[1])
+			continue
 		if bd["id"] == "shed":
 			# open front (south): back + two side walls + roof slab
 			var hz := size.y * 0.5
@@ -158,6 +163,10 @@ func build_collision(root: Node3D) -> void:
 	for bn in L.benches:
 		var bp: Vector2 = bn["pos"]
 		_box(world, Vector3(bp.x, 0.25, bp.y), Vector3(1.9, 0.5, 0.7), float(bn["rot"]))
+	for so in L.solids:
+		var sp: Vector2 = so["pos"]
+		var ss: Vector3 = so["size"]
+		_box(world, Vector3(sp.x, ss.y * 0.5, sp.y), ss, float(so["rot"]))
 	# Water rims and fountain pedestal
 	for wt in L.waters:
 		var rim: float = float(wt.get("rim_h", 0.0))

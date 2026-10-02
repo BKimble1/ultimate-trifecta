@@ -46,6 +46,7 @@ enum Ev {
 	PLAYER_LEFT,      # a
 	PLAYER_BOT_TAKEOVER, # a
 	PLAYER_RESUMED,   # a
+	COIN_PICKUP,      # V6: a = collector, value = coin index in the round's list
 }
 
 # Input button bits (held state) and edge bits (pressed this tick).

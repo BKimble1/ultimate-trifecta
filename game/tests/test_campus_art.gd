@@ -1,13 +1,21 @@
 extends RefCounted
 ## V5 campus art pass: the look changed, the game did not.
-##  * every collision shape (type, size, transform, layers), both navigation
-##    grids and the gameplay layout data hash to the values recorded on the
-##    V4 code (dcebf4e) - see CampusFingerprint;
+##  * every collision shape (type, size, transform, layers), both
+##    navigation grids and the gameplay layout data hash to the values
+##    recorded on the V4 code (dcebf4e) - see CampusFingerprint;
 ##  * the decorative dressing is visual only, fresh (the baked copy equals a
 ##    regeneration from CampusLayout) and keeps out of running corridors,
 ##    water exits, jump points, pads, doors and the bots' routes;
 ##  * the staged visual build keeps every step short, and the art kit's
 ##    meshes, LODs and textures load.
+##
+## V6 deliberately rebuilt the dorm districts (CampusDorms.DISTRICTS: three
+## dorms with common rooms, their yards and approaches).  So the V4/V5
+## fingerprints now pin the *V5 campus* (CampusLayout.new(true), built by the
+## same code as before the V6 additions), and the V6 campus is proved equal
+## to it everywhere outside the districts: collider by collider, nav cell by
+## nav cell and layout item by layout item.  The V6 fingerprints are pinned
+## too, so any later change shows up here.
 var t
 
 ## Recorded on V4 (dcebf4e) with CampusFingerprint (525 collision shapes).
@@ -15,14 +23,56 @@ const V4_COLLISION := "15d3dc7a8becbc37cd44e17631ee3dbe781bb6ebeedf5112da1298a9e
 const V4_NAV := "79361473a550cd4687026242aa04255c3b1c15df4ee134f70ed5addf5d9b7d4c"
 const V4_LAYOUT := "803fc8acbd99fdb948fb2780957abc9380c53da1a1a1c1b8cdf9cfe31dc5924a"
 const V4_SHAPES := 525
+## Recorded on V6 (CampusDorms.VERSION 1).
+const V6_COLLISION := "97d6c3cbbdc7bef880cb3fb60da24744ed1590d1458230a45fbf51e2d7a92b39"
+const V6_NAV := "c1200154afc8b1b705c4f8beed5d64ade5b45cdb8f7f9978e2dd93132089d141"
+const V6_LAYOUT := "df47df2904c419491f00e9d51e953c54362cecbe39dfc8aa9600eea56b355c8d"
+const V6_SHAPES := 605
 
 
-func test_collision_nav_and_layout_unchanged_from_v4() -> void:
-	var lay := CampusLayout.new()
+func test_v5_campus_is_reproduced_exactly() -> void:
+	var lay := CampusLayout.new(true)
 	t.eq(CampusFingerprint.collision_lines(lay).size(), V4_SHAPES, "same number of collision shapes as V4")
 	t.eq(CampusFingerprint.collision_hash(lay), V4_COLLISION, "every collision shape (type, size, transform, layer) matches V4")
 	t.eq(CampusFingerprint.nav_hash(lay), V4_NAV, "both navigation grids match V4 cell for cell")
 	t.eq(CampusFingerprint.layout_hash(lay), V4_LAYOUT, "waters, exits, pads, spawns, doors and every collider list match V4")
+
+
+## Outside the dorm districts the V6 campus is the V5 campus.
+func test_v6_changes_only_inside_the_dorm_districts() -> void:
+	var v5 := CampusLayout.new(true)
+	var v6 := CampusLayout.new()
+	var c5 := CampusFingerprint.collision_lines_outside(v5)
+	var c6 := CampusFingerprint.collision_lines_outside(v6)
+	t.check(c5.size() > 400, "most of the campus lies outside the districts (%d shapes)" % c5.size())
+	t.eq(c6, c5, "every collision shape outside the dorm districts is unchanged")
+	var n5 := CampusFingerprint.nav_hash_outside(v5)
+	var n6 := CampusFingerprint.nav_hash_outside(v6)
+	t.eq(n6[0], n5[0], "both nav grids are unchanged outside the districts (%d cells)" % int(n5[1]))
+	var l5 := CampusFingerprint.layout_outside(v5)
+	var l6 := CampusFingerprint.layout_outside(v6)
+	for k in l5:
+		if k == "patrol_spawns":
+			continue
+		t.eq(l6[k], l5[k], "layout list '%s' unchanged outside the districts" % k)
+	# the one deliberate change outside: a third Night Watch spawn at the shed
+	var extra: Array = Array(l6["patrol_spawns"]).filter(func(x: String) -> bool: return not (l5["patrol_spawns"] as PackedStringArray).has(x))
+	t.eq(extra.size(), 1, "one extra Night Watch spawn (three watchers no longer share a spot)")
+	print("[campus] V6: %d collision shapes (V5 %d); outside the districts %d shapes, %d nav cells identical" % [
+		CampusFingerprint.collision_lines(v6).size(), V4_SHAPES, c5.size(), int(n5[1])])
+
+
+func test_v6_fingerprints_recorded() -> void:
+	var lay := CampusLayout.new()
+	var shapes := CampusFingerprint.collision_lines(lay).size()
+	var ch := CampusFingerprint.collision_hash(lay)
+	var nh := CampusFingerprint.nav_hash(lay)
+	var lh := CampusFingerprint.layout_hash(lay)
+	print("[campus] V6 fingerprints: shapes %d collision %s nav %s layout %s" % [shapes, ch, nh, lh])
+	t.eq(shapes, V6_SHAPES, "V6 collision shape count")
+	t.eq(ch, V6_COLLISION, "V6 collision fingerprint")
+	t.eq(nh, V6_NAV, "V6 nav fingerprint")
+	t.eq(lh, V6_LAYOUT, "V6 layout fingerprint")
 
 
 func test_visual_build_adds_no_physics() -> void:
@@ -103,23 +153,16 @@ func test_bot_routes_and_swim_lines_are_clear() -> void:
 	var lay := CampusLayout.shared()
 	var nav := NavGrid.shared(lay)
 	var items := _items(CampusDressing.load_baked()).filter(func(it: Array) -> bool: return String(it[0]) in CampusDressing.MID)
-	var start: Vector2 = lay.runner_spawns[0]
 	var on_route := 0
-	var routes := 0
-	for w in lay.waters:
-		for e in w["exits"]:
-			var ep := Vector2(e.x, e.z)
-			for pair in [[start, ep], [ep, lay.dorm_doors[0]["pos"] + Vector2(0, -2.5)]]:
-				var path := nav.find_path(pair[0], pair[1])
-				if path.size() < 2:
-					continue
-				routes += 1
-				for it in items:
-					var p: Vector2 = it[1]
-					for i in path.size() - 1:
-						if CampusLayout._dist_to_segment(p, path[i], path[i + 1]) < 0.35:
-							on_route += 1
-							break
+	var all_routes := CampusDressing.bot_routes(lay)
+	var routes := all_routes.size()
+	for path: PackedVector2Array in all_routes:
+		for it in items:
+			var p: Vector2 = it[1]
+			for i in path.size() - 1:
+				if CampusLayout._dist_to_segment(p, path[i], path[i + 1]) < 0.35:
+					on_route += 1
+					break
 	t.check(routes >= 30, "bot routes computed (%d)" % routes)
 	t.eq(on_route, 0, "no shrub, reed bed or boulder sits on a bot route")
 	var swim := 0

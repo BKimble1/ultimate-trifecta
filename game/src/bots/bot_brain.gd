@@ -43,6 +43,7 @@ var sprint_hold := 0.0
 var prev_pressed := 0
 var reaction := 0.0
 var skill := 1.0
+var coin_i := -1
 
 
 func _init(sim: MatchSim, p: SimPlayer) -> void:
@@ -127,14 +128,31 @@ func _runner(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 	for i in sim.targets.size():
 		if (p.stamps & (1 << i)) == 0:
 			remaining.append(int(sim.targets[i]))
-	if remaining.is_empty():
+	# (a coin detour in progress keeps its goal until the coin is gone)
+	var detour := goal_kind == "coin" and coin_i >= 0 and coin_i < sim.coins.size() and int(sim.coins[coin_i]["by"]) < 0
+	if detour:
+		pass
+	elif remaining.is_empty():
 		if goal_kind != "home" or replan_t <= 0.0:
 			_plan_home(sim, p)
 	elif goal_kind != "water" or not remaining.has(goal_water) or replan_t <= 0.0:
 		_plan_water(sim, p, remaining)
 
+	# a gold coin close to where we are (never while heading into a water)
+	if goal_kind != "coin" and not (goal_kind == "water" and p.pos2().distance_to(goal) < 6.0):
+		var ci := _coin_near(sim, p, 7.0)
+		if ci >= 0:
+			var cpos: Vector3 = sim.coins[ci]["pos"]
+			goal = Vector2(cpos.x, cpos.z)
+			goal_kind = "coin"
+			coin_i = ci
+			_repath(p.pos2(), goal, false)
+	if goal_kind == "coin" and (coin_i < 0 or coin_i >= sim.coins.size() or int(sim.coins[coin_i]["by"]) >= 0):
+		replan_t = 0.0
+		goal_kind = ""
+		coin_i = -1
 	# detour for a nearby gadget if empty-handed
-	if p.gadget == TC.Gadget.NONE and goal_kind != "gadget":
+	if p.gadget == TC.Gadget.NONE and goal_kind != "gadget" and goal_kind != "coin":
 		for pk in sim.pickups:
 			if float(pk["respawn"]) <= 0.0 and (pk["pos"] as Vector3).distance_to(p.pos()) < 9.0:
 				goal = Vector2(pk["pos"].x, pk["pos"].z)
@@ -194,7 +212,7 @@ func _plan_water(sim: MatchSim, p: SimPlayer, remaining: Array) -> void:
 	# best order over remaining targets by straight-line estimate (+ home)
 	var best_first := int(remaining[0])
 	var best_cost := 1e9
-	var dorm := Vector2(0, 112)
+	var dorm := sim.layout.dorm_center(sim.home_dorm)
 	var perms: Array = [remaining]
 	if remaining.size() == 2:
 		perms = [[remaining[0], remaining[1]], [remaining[1], remaining[0]]]
@@ -233,19 +251,21 @@ func _plan_water(sim: MatchSim, p: SimPlayer, remaining: Array) -> void:
 	_repath(p.pos2(), goal, false)
 
 
+## Home: run in through one of tonight's home doors (V6).  The goal is a
+## point just inside the chosen door, so the path goes through the opening
+## and the threshold crossing finishes the round for us.
 func _plan_home(sim: MatchSim, p: SimPlayer) -> void:
-	var best: Vector2 = sim.layout.dorm_doors[0]["pos"]
+	var doors: Array = sim.home_doors
+	var best: Vector2 = (doors[0] as Dictionary)["inside"] if not doors.is_empty() else sim.layout.dorm_center(sim.home_dorm)
 	var bd := 1e9
-	for d in sim.layout.dorm_doors:
-		var dp: Vector2 = d["pos"]
-		var n: Vector2 = d["normal"]
-		var approach := dp + n * 1.0
+	for d in doors:
+		var approach: Vector2 = d["approach"]
 		var cost := p.pos2().distance_to(approach)
 		if threat != Vector3.INF and threat_t > 0.0:
 			cost += 40.0 / maxf(1.0, Vector2(threat.x, threat.z).distance_to(approach)) * 10.0
 		if cost < bd:
 			bd = cost
-			best = approach
+			best = d["inside"]
 	goal = best
 	goal_kind = "home"
 	replan_t = 3.0
@@ -314,7 +334,8 @@ func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 	var target: SimPlayer = null
 	var td := 1e9
 	for r in sim.players:
-		if not r.is_runner() or not r.is_in_play():
+		# (a runner inside the home dorm can't be tagged: not a target)
+		if not r.is_runner() or not r.is_in_play() or r.home_safe:
 			continue
 		var seen := sim.can_see(p, r.pos(), view_yaw, cfg.view_range_m)
 		if not seen and r.pos().distance_to(p.pos()) < 6.0:
@@ -407,6 +428,11 @@ func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 	if p.pos2().distance_to(dest) > 45.0 and _free_cart_near(sim, p, 25.0) >= 0:
 		_go_to_cart(sim, p, cmd, dt)
 		return
+	# a gold coin right beside our route
+	var ci := _coin_near(sim, p, 6.0)
+	if ci >= 0:
+		var cpos: Vector3 = sim.coins[ci]["pos"]
+		dest = Vector2(cpos.x, cpos.z)
 	if goal.distance_to(dest) > 2.0 or path.is_empty() or replan_t <= 0.0:
 		goal = dest
 		goal_kind = "patrol"
@@ -422,8 +448,9 @@ func _make_patrol_route(sim: MatchSim) -> void:
 	for wi in sim.targets:
 		var w: Dictionary = sim.layout.waters[int(wi)]
 		patrol_stops.append(w["center"])
-	patrol_stops.append(Vector2(0, 92))   # dorm front lawn
-	patrol_stops.append(Vector2(0, 131))  # dorm back lawn
+	# tonight's home dorm: outside each of its doors
+	for d in sim.home_doors:
+		patrol_stops.append((d["approach"] as Vector2) + (d["normal"] as Vector2) * 4.0)
 	# shuffle deterministically so two patrol bots split up
 	for i in patrol_stops.size():
 		var j := rng.randi_range(0, patrol_stops.size() - 1)
@@ -431,6 +458,22 @@ func _make_patrol_route(sim: MatchSim) -> void:
 		patrol_stops[i] = patrol_stops[j]
 		patrol_stops[j] = t
 	stop_i = slot % patrol_stops.size()
+
+
+## The nearest coin still out within `radius` (and reachable on the nav
+## grid), or -1.
+func _coin_near(sim: MatchSim, p: SimPlayer, radius: float) -> int:
+	var best := -1
+	var bd := radius
+	for i in sim.coins.size():
+		if int(sim.coins[i]["by"]) >= 0:
+			continue
+		var cp: Vector3 = sim.coins[i]["pos"]
+		var d := p.pos().distance_to(cp)
+		if d < bd and nav.is_walkable(Vector2(cp.x, cp.z)):
+			bd = d
+			best = i
+	return best
 
 
 func _free_cart_near(sim: MatchSim, p: SimPlayer, radius: float) -> int:
