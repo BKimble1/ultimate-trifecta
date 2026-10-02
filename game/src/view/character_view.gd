@@ -466,8 +466,9 @@ func _build_label(display_name: String, is_bot: bool) -> void:
 	name_label.position = Vector3(0, 2.05, 0)
 	name_label.modulate = _label_color()
 	name_label.outline_modulate = Color("11192b")
-	name_label.visibility_range_end = 30.0
-	name_label.visibility_range_end_margin = 8.0
+	# bots' tags only up close (less clutter); players' further out
+	name_label.visibility_range_end = 14.0 if is_bot else 30.0
+	name_label.visibility_range_end_margin = 4.0 if is_bot else 8.0
 	# right next to the camera the label would float high over the HUD, and
 	# the player is plainly visible anyway
 	name_label.visibility_range_begin = 3.5

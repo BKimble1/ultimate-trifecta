@@ -302,6 +302,20 @@ func _render_cart(i: int) -> Dictionary:
 	return out
 
 
+## Stamps the local runner has, counting the water just splashed (the event
+## can arrive a tick before the snapshot that records it).
+func _my_stamp_count(water: int) -> int:
+	var m := int(_player_rs(local_slot).get("stamps", 0))
+	var ti := targets.find(water)
+	if ti >= 0:
+		m |= 1 << ti
+	var n := 0
+	for i in targets.size():
+		if m & (1 << i):
+			n += 1
+	return n
+
+
 func _local_in_cart() -> bool:
 	var rs := _player_rs(local_slot)
 	var st: int = rs.get("state", TC.PState.ACTIVE)
@@ -859,14 +873,14 @@ func _present_event(ev: Dictionary) -> void:
 			Sfx.play("splash_big" if big else "splash", pos)
 			if mine:
 				if big:
-					hud.toast("SPLASH!  %s stamped" % layout.waters[int(ev["b"])]["name"], wcol)
+					hud.stamp_pop(layout.waters[int(ev["b"])], _my_stamp_count(int(ev["b"])), targets.size())
 					_haptic(20)
 				else:
 					var wi: int = ev["b"]
 					hud.toast("Already stamped" if targets.has(wi) else "%s isn't a target tonight" % layout.waters[wi]["short"], Color(0.8, 0.9, 1.0))
-			if big:
+			if big and not mine:
 				var rr: Dictionary = roster.get(a, {})
-				hud.feed("%s splashed into %s" % [rr.get("name", "?"), layout.waters[int(ev["b"])]["short"]], int(rr.get("role", 0)))
+				hud.feed_splash(String(rr.get("name", "?")), String(layout.waters[int(ev["b"])]["short"]), int(rr.get("role", 0)))
 		TC.Ev.CAPTURE:
 			fx.whistle_burst(pos)
 			Sfx.play("whistle", pos)

@@ -329,13 +329,74 @@ func toast(text: String, col: Color = UIKit.TEXT) -> void:
 	toast_t = 2.4
 
 
-func feed(text: String, role: int) -> void:
-	var l := UIKit.outlined(UIKit.label(text, 18, UIKit.TEAL if role == TC.Role.RUNNER else (UIKit.PATROL if role == TC.Role.PATROL else UIKit.IVORY_MUTED), true), 5)
-	l.set_meta("t", 4.0)
-	feed_box.add_child(l)
+## Event feed: at most three short lines on soft pills (legible over any
+## background), fading after 4 s.
+func feed(text: String, role: int) -> PanelContainer:
+	var col := UIKit.TEAL if role == TC.Role.RUNNER else (UIKit.PATROL if role == TC.Role.PATROL else UIKit.IVORY_MUTED)
+	var pill := PanelContainer.new()
+	pill.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.NAVY, 0.5), 14, 0, Color.WHITE, 6))
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var l := UIKit.label(text, 18, col, true)
+	pill.add_child(l)
+	pill.set_meta("t", 4.0)
+	feed_box.add_child(pill)
 	while feed_box.get_child_count() > 3:
-		feed_box.get_child(0).queue_free()
-		feed_box.remove_child(feed_box.get_child(0))
+		var old_c := feed_box.get_child(0)
+		feed_box.remove_child(old_c)
+		old_c.queue_free()
+	return pill
+
+
+## Other runners' splashes into the same water within a few seconds share one
+## line ("Yawn, Snooze +1 splashed into Pool") instead of stacking up.
+var _splash_lines: Dictionary = {}   # water short name -> {pill, names}
+
+
+func feed_splash(who: String, water: String, role: int) -> void:
+	var cur: Dictionary = _splash_lines.get(water, {})
+	var pill: PanelContainer = cur.get("pill")
+	if pill != null and is_instance_valid(pill) and float(pill.get_meta("t", 0.0)) > 0.5:
+		var names: Array = cur["names"]
+		if not names.has(who):
+			names.append(who)
+		var shown := ", ".join(PackedStringArray(names.slice(0, 2))) + (" +%d" % (names.size() - 2) if names.size() > 2 else "")
+		(pill.get_child(0) as Label).text = "%s splashed into %s" % [shown, water]
+		pill.set_meta("t", 4.0)
+		return
+	_splash_lines[water] = {"pill": feed("%s splashed into %s" % [who, water], role), "names": [who]}
+
+
+## Compact stamp celebration under the home counter: the water's icon, its
+## name and progress; a quick pop (none with Reduced Motion), then it fades.
+var _stamp_pop: PanelContainer
+
+
+func stamp_pop(w: Dictionary, count: int, total: int) -> void:
+	if is_instance_valid(_stamp_pop):
+		_stamp_pop.queue_free()
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.SLATE, 0.92), 22, 2, Color(w["color"], 0.9), 12))
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var h := UIKit.hbox(10)
+	h.add_child(Icons.IconRect.new(w["icon"], w["color"], 34))
+	var tv := UIKit.vbox(0)
+	tv.add_child(UIKit.label("%s stamped" % w["short"], 24, UIKit.IVORY, true))
+	tv.add_child(UIKit.label("%d of %d splashes" % [count, total] if count < total else "All splashed — run home!", 17, UIKit.IVORY_MUTED))
+	h.add_child(tv)
+	p.add_child(h)
+	root.add_child(p)
+	var vs := get_viewport().get_visible_rect().size
+	var sz := p.get_combined_minimum_size()
+	p.position = Vector2((vs.x - sz.x) * 0.5, _safe.position.y + 128)
+	p.pivot_offset = sz * 0.5
+	_stamp_pop = p
+	var tw := p.create_tween()
+	if not UIKit.reduced_motion():
+		p.scale = Vector2(0.86, 0.86)
+		tw.tween_property(p, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(1.7)
+	tw.tween_property(p, "modulate:a", 0.0, 0.3)
+	tw.tween_callback(p.queue_free)
 
 
 func emote_bubble(slot: int, emote_id: int) -> void:

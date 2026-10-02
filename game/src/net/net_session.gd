@@ -29,7 +29,8 @@ signal admission_needed(code: String)
 
 enum Mode { OFFLINE, HOST, CLIENT }
 
-const BOT_NAMES := ["Bot Snooze", "Bot Pillow", "Bot Slipper", "Bot Yawn", "Bot Moonbeam", "Bot Sockfoot", "Bot Drowsy", "Bot Pajamarama"]
+## shown with a "BOT" tag everywhere (a tag player names can't contain)
+const BOT_NAMES := ["Snooze", "Pillow", "Slipper", "Yawn", "Moonbeam", "Sockfoot", "Drowsy", "Pajamarama"]
 
 var mode: int = Mode.OFFLINE
 var transport: NetTransport

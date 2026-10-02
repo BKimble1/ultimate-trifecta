@@ -69,7 +69,9 @@ func test_lobby_join_ready_start() -> void:
 	for e in hs["roster"]:
 		if bool(e["is_bot"]):
 			bots += 1
-			t.check(String(e["name"]).begins_with("Bot"), "bots clearly labelled")
+			# shown everywhere with a "BOT" tag driven by is_bot (synced above);
+			# bot names are from the fixed list, never a player's name
+			t.check(NetSession.BOT_NAMES.has(String(e["name"])), "bots clearly labelled")
 		if int(e["role"]) == P:
 			patrol += 1
 	t.eq(bots, 4, "bots fill the 4 empty slots")
