@@ -304,7 +304,10 @@ func apply_results(results: Dictionary, slot: int, practice: bool, uid: String =
 		return {}
 	slot = int(me["slot"])
 	var away := float(me.get("away_s", 0.0))
-	if not bool(me.get("present", true)) or away > (1.0 - PartySeries.PRESENT_SHARE) * maxf(1.0, float(results.get("round_time", 1.0))):
+	var rt := float(results.get("round_time", 0.0))
+	# away for more than the allowed share of a known round length (an unknown
+	# length never takes a reward away)
+	if not bool(me.get("present", true)) or (rt > 0.0 and away > (1.0 - PartySeries.PRESENT_SHARE) * rt):
 		(data["rewarded"] as Array).append(mid)
 		mark()
 		return {"coins": 0, "xp": 0, "lines": [], "away": true}

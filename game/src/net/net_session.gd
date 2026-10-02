@@ -1241,6 +1241,8 @@ func _fix_results(d: Dictionary) -> Dictionary:
 	out["fastest_slot"] = int(d.get("fastest_slot", -1))
 	out["needed"] = clampi(int(d.get("needed", 4)), 1, 7)
 	out["watch"] = clampi(int(d.get("watch", 2)), 1, 3)
+	# the away/eligibility share on guests is measured against it
+	out["round_time"] = clampf(float(d.get("round_time", 0.0)), 0.0, 3600.0)
 	var rows: Array = []
 	for r in d.get("players", []):
 		if not (r is Dictionary) or rows.size() >= 8:

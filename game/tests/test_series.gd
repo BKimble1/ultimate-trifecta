@@ -215,3 +215,90 @@ func test_settings_and_series_over_the_network() -> void:
 	t.eq(patrols, 3, "three Night Watch")
 	t.eq(human_patrol, 2, "two of three humans on the Night Watch (one human runner kept)")
 	rig.queue_free()
+
+
+## A whole 3-round friend series over the loopback network: round
+## boundaries, ready gating between rounds, fair Night Watch rotation,
+## results that can't be counted twice, a guest who leaves and comes back
+## between rounds keeping their standing, then the finish and a reset.
+func test_three_round_series_end_to_end() -> void:
+	var rig := NetRig.new()
+	t.add_child(rig)
+	rig.setup(20, 3, 0.0, 2)
+	await rig.wait_until(func() -> bool: return rig.host.human_count() == 3, 300)
+	t.eq(int(rig.host.settings["rounds"]), PartySeries.DEFAULT_ROUNDS, "friend parties default to 3 rounds")
+	for c in rig.clients:
+		c.set_local_ready(true)
+	await rig.wait_until(func() -> bool: return rig.host.can_start(), 300)
+	var seen_rounds: Array = []
+	for round in [1, 2, 3]:
+		rig.host.host_start_match(100 + round)
+		await rig.wait_until(func() -> bool: return rig.started.has(rig.clients[0]) and int(rig.started[rig.clients[0]]["series"]["round"]) == round, 300)
+		var info: Dictionary = rig.started[rig.clients[0]]
+		seen_rounds.append([int(info["series"]["round"]), int(info["series"]["total"])])
+		t.eq(info["settings"]["watch"], 2, "round %d: the series' locked settings" % round)
+		var hmc := rig.host_mc()
+		await rig.wait_until(func() -> bool: return hmc.sim != null and hmc.sim.phase == TC.Phase.PLAYING, 1200)
+		hmc.sim.end_tick = hmc.sim.tick + 2          # time runs out: Night Watch win
+		var last: NetSession = rig.clients[-1]    # the rejoined guest from round 2 on
+		await rig.wait_until(func() -> bool: return rig.results.has(last) and int(rig.results[last].get("round_index", 0)) == round, 1200)
+		var res: Dictionary = rig.results.get(last, {})
+		t.eq([int(res["round_index"]), int(res["rounds_total"])], [round, 3], "round %d results say Round %d of 3" % [round, round])
+		# the same results again (a repeated packet / reopened screen) change nothing
+		var before := JSON.stringify(rig.host.series.to_dict())
+		rig.host.series.record_round(rig.host.last_results)
+		t.eq(JSON.stringify(rig.host.series.to_dict()), before, "round %d can't be counted twice" % round)
+		if round < 3:
+			rig.host.host_return_to_lobby()
+			await rig.frames(10)
+			t.check(rig.host.series.in_progress(), "the series continues")
+			t.check(not rig.host.can_start(), "the next round waits for the guests to be ready")
+			if round == 1:
+				# a guest drops between rounds and comes back with the same identity
+				rig.client_ts[1].close()
+				await rig.frames(40)
+				var back := rig.add_client("uid-c1", "Client1", "any")
+				await rig.wait_until(func() -> bool: return back.local_slot >= 0, 300)
+			for c in rig.clients:
+				if c.connected and c.local_slot >= 0:
+					c.set_local_ready(true)
+			await rig.wait_until(func() -> bool: return rig.host.can_start(), 300)
+	t.eq(seen_rounds, [[1, 3], [2, 3], [3, 3]], "Round 1 of 3, 2 of 3, 3 of 3")
+	var view: Dictionary = rig.host.series.to_dict()
+	t.check(bool(view["finished"]), "finished after the third round")
+	t.check(not rig.host.can_start(), "the final standings are on show (no accidental start)")
+	var st: Dictionary = view["standings"]
+	var turns := 0
+	for uid in ["uid-host", "uid-c0", "uid-c1"]:
+		t.check(st.has(uid), "%s has one standing for the whole series" % uid)
+		t.eq(int(st[uid]["played"]), 3, "%s played all three rounds (reconnecting kept the standing)" % uid)
+		turns += int(st[uid]["watch_turns"])
+		t.check(int(st[uid]["watch_turns"]) == 2, "%s had two Night Watch turns (fair rotation: 2 human watch x 3 rounds / 3 people)" % uid)
+	t.eq(turns, 6, "two humans on the Night Watch each round")
+	var board := PartySeries.leaderboard_of(st)
+	t.eq(board.size(), 3, "three people on the leaderboard (bots kept out)")
+	# Play again: a fresh series with the same settings
+	rig.host.host_return_to_lobby()
+	t.check(rig.host.series == null, "the finished series is cleared for the next one")
+	t.eq(int(rig.host.settings["rounds"]), 3, "settings are kept")
+	rig.teardown()
+
+
+## Rewards: a short drop-out keeps the round's reward; being away for most
+## of it (a bot covered) gives none; either way the round is recorded once.
+func test_reward_eligibility_and_dedup() -> void:
+	var row := {"slot": 2, "uid": "u-elig", "role": TC.Role.RUNNER, "stamps": 2, "finished": false, "is_bot": false, "present": true, "away_s": 3.0}
+	var res := {"match_id": "ELIG-1-%d" % Time.get_ticks_usec(), "outcome": TC.Outcome.RUNNERS_WIN, "fastest_slot": -1, "round_time": 180.0, "players": [row]}
+	var r1 := Save.apply_results(res, 2, false, "u-elig")
+	t.check(int(r1.get("coins", 0)) > 0 and not r1.has("away"), "a 3 s drop-out in a 180 s round keeps the reward")
+	t.eq(Save.apply_results(res, 2, false, "u-elig"), {}, "the same round never pays twice")
+	var row2 := row.duplicate()
+	row2["away_s"] = 120.0
+	var res2 := {"match_id": "ELIG-2-%d" % Time.get_ticks_usec(), "outcome": TC.Outcome.RUNNERS_WIN, "fastest_slot": -1, "round_time": 180.0, "players": [row2]}
+	var r2 := Save.apply_results(res2, 2, false, "u-elig")
+	t.check(bool(r2.get("away", false)) and int(r2.get("coins", -1)) == 0, "away for two thirds of the round: no reward")
+	# a guest's copy of the results keeps the round length
+	var ns := NetSession.new()
+	var fixed := ns._fix_results(JSON.parse_string(JSON.stringify(res)))
+	ns.free()
+	t.eq(float(fixed.get("round_time", 0.0)), 180.0, "guests' results keep the round length")
