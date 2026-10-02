@@ -38,6 +38,8 @@ jobs:
           key: godot-linux-${{ env.GODOT_VERSION }}
       - name: Fetch Godot
         run: tools/fetch_godot.sh
+      - name: Build native extension (UTShare, Linux)
+        run: GODOT_BIN=$(cat tools/.cache/godot/BIN) tools/build_native.sh
       - name: Run tests
         run: GODOT_BIN=$(cat tools/.cache/godot/BIN) tools/run_tests.sh 2>&1 | tee test-output.txt
       - name: Fail on test failures
@@ -69,6 +71,8 @@ jobs:
         run: tools/fetch_godot.sh --templates
       - name: Fetch pinned plugins
         run: tools/fetch_deps.sh
+      - name: Build native extension (UTShare share sheet, iOS xcframework)
+        run: GODOT_BIN=$(cat tools/.cache/godot/BIN) tools/build_native.sh
       - name: Signing configuration present?
         id: sign
         env:
@@ -208,7 +212,7 @@ jobs:
           [ -n "$APP" ] && { lipo -info "$APP/UltimateTrifecta"; du -sh "$APP";
             for k in CFBundleIdentifier CFBundleShortVersionString CFBundleVersion MinimumOSVersion DTSDKName DTXcode UIDeviceFamily ITSAppUsesNonExemptEncryption NSGKFriendListUsageDescription UISupportedInterfaceOrientations; do
               echo "$k = $(/usr/libexec/PlistBuddy -c "Print :$k" "$APP/Info.plist" 2>/dev/null | tr '\n' ' ')"; done
-            ls "$APP/Frameworks" 2>/dev/null; find "$APP" -name 'PrivacyInfo.xcprivacy' | sed "s|$APP/||"; }
+            ls "$APP/Frameworks" 2>/dev/null; [ -f "$APP/Frameworks/UTShare.framework/UTShare" ] && { echo "UTShare embedded:"; lipo -info "$APP/Frameworks/UTShare.framework/UTShare"; } || echo "UTShare framework NOT embedded"; find "$APP" -name 'PrivacyInfo.xcprivacy' | sed "s|$APP/||"; }
           find build/ios -name '*.entitlements' -maxdepth 3 -exec sh -c 'echo "== $1"; cat "$1"' _ {} \;
           PM=$(find build/ios -maxdepth 3 -name PrivacyInfo.xcprivacy | head -1); [ -n "$PM" ] && { echo "== $PM"; plutil -convert json -o - "$PM"; echo; }
           echo "BUILD_FACTS_END"

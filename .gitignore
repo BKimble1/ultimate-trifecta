@@ -27,3 +27,6 @@ tools/.cache/
 # Python bytecode
 __pycache__/
 *.pyc
+# Native extension binaries (built by tools/build_native.sh)
+game/addons/ut_share/bin/
+native/**/build/

@@ -1,0 +1,16 @@
+; UTShare: native share sheet (UIActivityViewController) for party codes.
+; Source: native/ut_share (plain C + Objective-C, no third-party code).
+; Binaries are built by tools/build_native.sh (CI builds them on every run);
+; the bin/ folder is not committed.
+
+[configuration]
+
+entry_symbol = "ut_share_init"
+compatibility_minimum = "4.7"
+
+[libraries]
+
+ios = "res://addons/ut_share/bin/UTShare.xcframework"
+linux.x86_64 = "res://addons/ut_share/bin/libut_share.linux.x86_64.so"
+linux.arm64 = "res://addons/ut_share/bin/libut_share.linux.arm64.so"
+macos = "res://addons/ut_share/bin/libut_share.macos.dylib"
