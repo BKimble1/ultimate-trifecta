@@ -48,7 +48,7 @@ def app():
 def builds(app_id, limit=20):
     r = call("GET", "/builds", params={"filter[app]": app_id, "sort": "-uploadedDate", "limit": limit,
                                        "include": "preReleaseVersion",
-                                       "fields[builds]": "version,processingState,uploadedDate,expired,usesNonExemptEncryption,buildAudienceType",
+                                       "fields[builds]": "version,processingState,uploadedDate,expired,usesNonExemptEncryption,buildAudienceType,preReleaseVersion",
                                        "fields[preReleaseVersions]": "version"})
     if not r.ok:
         return []
