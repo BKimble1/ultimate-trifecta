@@ -438,9 +438,9 @@ func interior(bd: Dictionary) -> void:
 	for i in nb:
 		var px := r0.x + room.size.x * (float(i) + 0.5) / float(nb)
 		kd.mat = MeshKit.M_METAL
-		kd.box(Vector3(px, C - 0.45, c.y), Vector3(0.03, 0.8, 0.03), IRON)
+		kd.box(Vector3(px, C - 0.3, c.y), Vector3(0.03, 0.5, 0.03), IRON)
 		kd.mat = MeshKit.M_GLASS
-		kd.soft_blob(Vector3(px, C - 0.95, c.y), Vector3(0.3, 0.22, 0.3), Color(1.0, 0.82, 0.52), 3, 8, 0.0, 0.0, 0, 1.6)
+		kd.soft_blob(Vector3(px, C - 0.68, c.y), Vector3(0.28, 0.2, 0.28), Color(1.0, 0.82, 0.52), 3, 8, 0.0, 0.0, 0, 1.6)
 		kd.mat = 0.0
 		B.glow_disc(Vector3(px, 0.06, c.y), 3.0)
 	# a low fireplace on the back wall (its hearth is a collider; the mantel

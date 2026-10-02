@@ -587,3 +587,52 @@ func test_yard_colliders_keep_routes_clear() -> void:
 				t.check(CampusLayout._dist_to_segment(p, pts[i], pts[i + 1]) >= float(pth["w"]) * 0.5 + r - 0.05, "%s at %s stands beside the path, not on it" % [it[0], str(p)])
 		for d in v6.dorm_doors:
 			t.check(p.distance_to(d["approach"]) >= 2.5 + r and p.distance_to(d["pos"]) >= 3.0 + r, "%s at %s keeps clear of %s's %s door" % [it[0], str(p), d["dorm"], d["id"]])
+
+
+## The follow camera never clips into the dorm: from every pad and every
+## door's inside, turned all the way round and pitched from low to high,
+## the real camera's sweep leaves it outside every collider (walls, ceiling,
+## lintels, furniture), under the ceiling while inside the room, and with a
+## clear line to the runner (it may look in through an open doorway).
+func test_camera_never_clips_into_the_dorm() -> void:
+	var h := _h()
+	h.make([R, P])
+	await h.step()
+	var cam := FollowCamera.new()
+	h.sim.add_child(cam)
+	await t.get_tree().process_frame
+	var ss := h.sim.space_state()
+	var probe := SphereShape3D.new()
+	probe.radius = 0.12
+	var worst := INF
+	for d in CampusDorms.ids():
+		var g := CampusDorms.geometry(d)
+		var room: Rect2 = g["room"]
+		var pts: Array = []
+		for pd in g["pads"]:
+			pts.append(pd["pos"])
+		for dr in g["doors"]:
+			pts.append(dr["inside"])
+		for pp in pts:
+			for yi in 8:
+				for pitch in [-0.1, 0.32, 0.9]:
+					var p := Vector3((pp as Vector2).x, 0.05, (pp as Vector2).y)
+					cam.snap_to(p, TAU * float(yi) / 8.0)
+					cam.pitch = pitch
+					cam.target_pos = p
+					for k in 12:
+						cam.update_camera(1.0 / 60.0)
+					var cp := cam.global_position
+					var q := PhysicsShapeQueryParameters3D.new()
+					q.shape = probe
+					q.collision_mask = TC.L_WORLD
+					q.transform = Transform3D(Basis.IDENTITY, cp)
+					var clear := ss.intersect_shape(q, 1).is_empty()
+					var los := ss.intersect_ray(PhysicsRayQueryParameters3D.create(cp, p + Vector3(0, 1.2, 0), TC.L_WORLD)).is_empty()
+					if room.has_point(Vector2(cp.x, cp.z)):
+						worst = minf(worst, CampusDorms.CEIL - cp.y)
+						t.check(cp.y < CampusDorms.CEIL - 0.1, "%s: camera under the ceiling (%s)" % [d, str(cp)])
+					t.check(clear and los, "%s: camera clear of every collider and sees the runner (pad %s, yaw %d/8, pitch %.2f -> %s)" % [d, str(pp), yi, pitch, str(cp)])
+	print("[dorms] closest the camera came to a ceiling: %.2f m" % worst)
+	cam.queue_free()
+	h.free_sim()
