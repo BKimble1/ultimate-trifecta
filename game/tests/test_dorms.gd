@@ -636,3 +636,30 @@ func test_camera_never_clips_into_the_dorm() -> void:
 	print("[dorms] closest the camera came to a ceiling: %.2f m" % worst)
 	cam.queue_free()
 	h.free_sim()
+
+
+## Door camping can't stop a departure: two watchers standing outside two
+## of the home doors; a runner caught before any splash comes back inside on
+## the pad by the third door, can't be tagged until it steps out, and is
+## protected when it does.
+func test_two_door_campers_cant_block_the_way_out() -> void:
+	for d in CampusDorms.ids():
+		var h := _h()
+		h.make([R, P, P], [0, 1, 2], [], 77, {"dorm": d})
+		await h.release_patrol()
+		h.place(0, Vector3(-20, 0.05, 60), 0.0)
+		h.place(1, Vector3(-20, 0.05, 61.2), 0.0)
+		await h.step()
+		h.press(1, TC.BTN_TAG)
+		await h.wait_event(TC.Ev.CAPTURE, 60)
+		var doors: Array = h.sim.home_doors
+		for k in 2:
+			var ap: Vector2 = doors[k]["approach"]
+			h.place(1 + k, Vector3(ap.x, 0.05, ap.y))
+		while h.sim.player(0).state == TC.PState.CAPTURED:
+			await h.step()
+		var r := h.sim.player(0)
+		var third: Vector2 = CampusDorms.geometry(d)["respawn"][2]
+		t.check(r.pos2().distance_to(third) < 0.5, "%s: back on the pad by the uncamped door" % d)
+		t.check(not r.is_taggable(), "%s: safe (inside, protected)" % d)
+		h.free_sim()
