@@ -433,7 +433,7 @@ func interior(bd: Dictionary) -> void:
 	var nb := int(room.size.x / 4.5)
 	for i in nb + 1:
 		var bx := r0.x + room.size.x * float(i) / float(nb)
-		k.box(Vector3(bx, C - 0.06, c.y), Vector3(0.3, 0.12, room.size.y), WOOD_DARK.lightened(0.25))
+		k.box(Vector3(bx, C - 0.06, c.y), Vector3(0.3, 0.12, room.size.y), WOOD_DARK.lightened(0.3), 0.0, 0.22)
 	k.mat = 0.0
 	for i in nb:
 		var px := r0.x + room.size.x * (float(i) + 0.5) / float(nb)
