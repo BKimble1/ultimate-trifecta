@@ -51,6 +51,15 @@ void fragment() {
 	// in the camera's view, so its on-screen size matches the character).
 	// A clean edge, no dither; only in the camera pass (perspective), so tree
 	// shadows on the character stay intact.
+	// Near clear: the vertex parting pushes canopy within PART_R onto a
+	// sphere around the camera, so a camera inside a big canopy saw the
+	// inside of a green bubble with only the circle below open (measured:
+	// 84% of the frame).  Foliage closer than NEAR_CLEAR is cut away instead
+	// (clean spherical edge, no dither; camera pass only).
+	const float NEAR_CLEAR = 3.2;
+	if (PROJECTION_MATRIX[3][3] < 0.5 && length(VERTEX) < NEAR_CLEAR) {
+		discard;
+	}
 	if (focus.w > 0.0 && PROJECTION_MATRIX[3][3] < 0.5) {
 		vec3 fv = (VIEW_MATRIX * vec4(focus.xyz, 1.0)).xyz;
 		if (fv.z < -0.5 && VERTEX.z > fv.z + 0.8) {
