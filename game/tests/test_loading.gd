@@ -124,6 +124,16 @@ func test_loading_loop_assets_agree() -> void:
 	t.eq(still.get_size(), Vector2(fw, fh), "the still is one frame at full size")
 
 
+## Background loads finish in wall-clock time, while the test runner's fixed
+## frame clock can run hundreds of frames in a few milliseconds: wait on the
+## wall clock (frames keep running, so App's reaper and the screen poll).
+func _frames_until(cond: Callable, max_ms: int = 10000) -> void:
+	var t0 := Time.get_ticks_msec()
+	while not cond.call() and Time.get_ticks_msec() - t0 < max_ms:
+		OS.delay_msec(2)
+		await t.get_tree().process_frame
+
+
 func _loading_screen(s: NetSession, mc: MatchController) -> LoadingScreen:
 	var ls := LoadingScreen.new()
 	ls.session = s
@@ -176,10 +186,7 @@ func test_loading_screen_still_loop_progress_and_release() -> void:
 	t.check(not is_instance_valid(ls), "screen freed")
 	t.check(mat.get_shader_parameter("frames") == null, "its textures are let go")
 	# a load still running when the screen went is collected by App
-	var waited := 0
-	while not App._orphan_loads.is_empty() and waited < 300:
-		await t.get_tree().process_frame
-		waited += 1
+	await _frames_until(func() -> bool: return App._orphan_loads.is_empty())
 	t.check(App._orphan_loads.is_empty(), "no background load left behind")
 	_end(mc)
 	await t.get_tree().process_frame
@@ -198,17 +205,11 @@ func test_loading_screen_closed_early_hands_its_load_to_app() -> void:
 		# the next screen takes it over instead of asking twice
 		var ls2 := _loading_screen(s, null)
 		t.check(ls2._atlas_pending, "a new screen picks the load up")
-		var f := 0
-		while not ls2.loop_running() and f < 600:
-			await t.get_tree().process_frame
-			f += 1
+		await _frames_until(func() -> bool: return ls2.loop_running())
 		t.check(ls2.loop_running(), "and runs the loop")
 		ls2.queue_free()
 		await t.get_tree().process_frame
-	var waited := 0
-	while not App._orphan_loads.is_empty() and waited < 300:
-		await t.get_tree().process_frame
-		waited += 1
+	await _frames_until(func() -> bool: return App._orphan_loads.is_empty())
 	t.check(App._orphan_loads.is_empty(), "nothing left loading")
 	s.queue_free()
 

@@ -30,7 +30,12 @@ the device (V4_NOTES, "Five-minute diagnostics check").
 
 On the final app code `6677eb2`: **159 tests, 2742 checks, 0 failures** in 162 s
 (CI run #52's headless test job, Ubuntu 24.04, which gates the iOS build).
-`docs/test-data/v4_full_test_run.txt` is the local run on this machine. V3 had 117 tests and 1254 checks.
+The same suite on this machine (`tools/run_tests.sh`, 214 s):
+`docs/test-data/v4_full_test_run.txt`. That local run includes a later fix
+to one of the new loading tests: under the runner's fixed frame clock, a
+wait counted frames while the atlas loads in wall-clock time, and it failed
+once locally. The waits are now wall-clock bounded; the app code is
+unchanged. V3 had 117 tests and 1254 checks.
 
 | Suite (new in V4) | Tests | What they exercise |
 |---|---|---|
@@ -114,8 +119,38 @@ labelled in [docs/media/v4/README.md](docs/media/v4/README.md):
   standings, ready gating, a drop and rejoin between rounds and Play again
   across three rounds; `test_net` and `test_trust` pass unchanged on
   protocol 5.
-- **Desktop UDP:** see `docs/test-data/v4_net_soak_*` for the multi-round
-  soak over real UDP, if listed there; otherwise it was not run for V4.
+- **Desktop UDP soak** (`tools/net_soak.sh 7 60 10 0.03 3`, protocol 5,
+  `6677eb2` app code). Eight separate Godot processes on this machine (one
+  host and seven clients) play **three rounds in a row** over real UDP
+  (ENet). Each process adds 60 ms one-way latency, 10 ms jitter and 3% loss
+  to its own outbound traffic, for about 150 ms of round-trip time. Reports:
+  `docs/test-data/v4_net_soak_7c_60ms_0.03/`.
+
+  | Round | Outcome (all 8 agree) | Clients' RTT est. | Snapshots per client | Corrections avg / max (per client) | Host packets sent / shaper drops |
+  |---|---|---|---|---|---|
+  | 1 | Night Watch win, 0/4 home | 154–162 ms | 4799–4839 | 1.2–3.7 mm / 0.19–1.43 m | 42362 / 1149 |
+  | 2 | Night Watch win, 1/4 home | 152–163 ms | 4813–4841 | 0.6–2.2 mm / 0.08–0.96 m | 42605 / 1101 |
+  | 3 | Night Watch win, 0/4 home | 150–162 ms | 4814–4829 | 1.2–6.6 mm / 0.30–1.59 m | 42253 / 1142 |
+
+  - **All eight processes** played the three 4:00 rounds together at 60 fps,
+    returning to the room between rounds, with the same outcome each round.
+  - **Logs:** no script errors and no transport errors in any of the
+    eight. The only errors are the engine's exit-time notices; they now
+    include the campus kept for the next round, which is still held when
+    the process quits.
+  - **Host input buffers** (totals over the three rounds and seven
+    clients): it ran short of a client's input on 191 of about
+    302,000 client-ticks (it repeats the last input), and merged inputs 228 times,
+    keeping button presses. The one-round V3 soak had 0 and 46.
+  - **Conditions:** this soak shared the machine's four cores with a
+    low-priority desktop video recording (the series transition clip).
+    Starved and merged ticks depend on how the processes share the CPU, so
+    the counts are not comparable run to run.
+  - **Large corrections:** the maximum is each client's single largest
+    correction in a round; the averages stay in millimetres.
+
+  What this does **not** show: Game Center's transport (GKMatch), real
+  devices, mobile radios or internet paths.
 
 ## V4.6 iOS build (CI iOS) and TestFlight
 

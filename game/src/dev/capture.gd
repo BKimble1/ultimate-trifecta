@@ -27,7 +27,8 @@ extends Node
 ##             Try moves buttons and tiles (Dance, Wave, Ha!, Sprint, Jump)
 ##   transition  the host of a LAN series (--net-host, --expect=2, a
 ##             headless --net-join client): round 1's results, the real
-##             "Next: round 2" button, the party room, then round 2's
+##             "Next: round 2" button, the party room, the host's "Start round 2"
+##             once the guest is ready again, then round 2's
 ##             loading, reveal and countdown (for the multi-round clip)
 ##   series    the final results of a three-round friend series: a recorded
 ##             round (--capture-results=path) is played as round 3 after two
@@ -381,6 +382,10 @@ func _transition() -> void:
 	if _scheduled.has("next") and App.screen is LobbyScreen and not _scheduled.has("party"):
 		_scheduled["party"] = true
 		later(0.8, "transition_party")
+	# the host starts round 2 once the guest is ready again, as a person would
+	if _shots.has("transition_party") and not _scheduled.has("start2") and App.session != null and App.session.can_start():
+		_scheduled["start2"] = _t
+		_press("Start round 2")
 	var mc: MatchController = App.match_ctrl
 	if _scheduled.has("next") and mc != null and is_instance_valid(mc) and mc.round_live() and not _scheduled.has("live2"):
 		_scheduled["live2"] = _t

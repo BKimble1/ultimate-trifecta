@@ -1,0 +1,113 @@
+[
+  {
+    "corr_avg_m": 0.0,
+    "corr_max_m": 0.0,
+    "dropped_by_shaper": 1149,
+    "finished": 0,
+    "fps_avg": 60.0,
+    "host_skipped": {
+      "1": 36,
+      "2": 37,
+      "3": 23,
+      "4": 35,
+      "5": 29,
+      "6": 47,
+      "7": 21
+    },
+    "host_starved": {
+      "1": 28,
+      "2": 29,
+      "3": 26,
+      "4": 21,
+      "5": 35,
+      "6": 31,
+      "7": 21
+    },
+    "humans": 8,
+    "lag_ms": 60.0,
+    "loss": 0.03,
+    "mode": "host",
+    "outcome": 2,
+    "reward_coins": 25,
+    "round": 1,
+    "round_time": 240.0,
+    "rtt_ms": 100.0,
+    "sent": 42362,
+    "slot": 0,
+    "snapshots": 0
+  },
+  {
+    "corr_avg_m": 0.0,
+    "corr_max_m": 0.0,
+    "dropped_by_shaper": 2250,
+    "finished": 1,
+    "fps_avg": 60.0,
+    "host_skipped": {
+      "1": 36,
+      "2": 37,
+      "3": 23,
+      "4": 35,
+      "5": 29,
+      "6": 47,
+      "7": 21
+    },
+    "host_starved": {
+      "1": 28,
+      "2": 29,
+      "3": 26,
+      "4": 21,
+      "5": 35,
+      "6": 31,
+      "7": 21
+    },
+    "humans": 8,
+    "lag_ms": 60.0,
+    "loss": 0.03,
+    "mode": "host",
+    "outcome": 2,
+    "reward_coins": 60,
+    "round": 2,
+    "round_time": 240.0,
+    "rtt_ms": 100.0,
+    "sent": 84967,
+    "slot": 0,
+    "snapshots": 0
+  },
+  {
+    "corr_avg_m": 0.0,
+    "corr_max_m": 0.0,
+    "dropped_by_shaper": 3392,
+    "finished": 0,
+    "fps_avg": 60.0,
+    "host_skipped": {
+      "1": 36,
+      "2": 37,
+      "3": 23,
+      "4": 35,
+      "5": 29,
+      "6": 47,
+      "7": 21
+    },
+    "host_starved": {
+      "1": 28,
+      "2": 29,
+      "3": 26,
+      "4": 21,
+      "5": 35,
+      "6": 31,
+      "7": 21
+    },
+    "humans": 8,
+    "lag_ms": 60.0,
+    "loss": 0.03,
+    "mode": "host",
+    "outcome": 2,
+    "reward_coins": 30,
+    "round": 3,
+    "round_time": 240.0,
+    "rtt_ms": 100.0,
+    "sent": 127220,
+    "slot": 0,
+    "snapshots": 0
+  }
+]
