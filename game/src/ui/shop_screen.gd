@@ -85,8 +85,10 @@ func build() -> void:
 	var mid := UIKit.hbox(16)
 	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(mid)
-	_stage_area = ShopStageDrag.new()
-	(_stage_area as ShopStageDrag).shop = self
+	# the Locker's turn control: one finger owns the turn (test_stage_drag)
+	var drag := CreatorScreen.StageDrag.new()
+	drag.turned.connect(drag_turn)
+	_stage_area = drag
 	_stage_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mid.add_child(_stage_area)
 	_stage_area.add_child(_preview_controls())
@@ -762,25 +764,6 @@ func _spend(id: String) -> void:
 	else:
 		dialog(String(r.get("message", "Something went wrong.")))
 	_refresh_states()
-
-
-## Left area: drag to turn the previewed runner.
-class ShopStageDrag:
-	extends Control
-	var shop: ShopScreen
-	var _last := -1.0
-
-	func _init() -> void:
-		mouse_filter = Control.MOUSE_FILTER_STOP
-
-	func _gui_input(e: InputEvent) -> void:
-		if e is InputEventScreenTouch or e is InputEventMouseButton:
-			var pressed: bool = e.pressed
-			_last = e.position.x if pressed else -1.0
-			shop._drag_from = _last
-		elif (e is InputEventScreenDrag or e is InputEventMouseMotion) and _last >= 0.0:
-			shop.drag_turn(e.position.x - _last)
-			_last = e.position.x
 
 
 ## A Shop card: picture (a cached portrait of your runner wearing it, a
