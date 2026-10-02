@@ -1,0 +1,29 @@
+# Ultimate Trifecta service: Cloudflare Workers + D1.
+# Nothing here is a secret.  Secrets are set with `wrangler secret put` (see
+# README.md); the account and database IDs come from the owner's account.
+name = "trifecta-service"
+main = "src/worker.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+# Room expiry, rate-limit and revocation cleanup.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "trifecta"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"   # printed by: wrangler d1 create trifecta
+migrations_dir = "migrations"
+
+[vars]
+ENVIRONMENT = "sandbox"            # "production" once the App Store build ships
+BUNDLE_ID = "com.idlery.ultimatetrifecta"
+GC_KEY_HOSTS = "static.gc.apple.com"
+ADMISSION_KEY_ID = "adm1"
+MIN_CLIENT_BUILD = "0"
+# Real, monitored contact details only (leave empty until the owner sets them;
+# the game hides empty links instead of showing a placeholder).
+SUPPORT_EMAIL = ""
+SUPPORT_URL = ""
+PRIVACY_URL = ""

@@ -1,0 +1,14 @@
+{
+  "name": "trifecta-service",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Ultimate Trifecta trusted service: Game Center sign-in, profiles, names, blocks, reports, moderation, party rooms and admission.",
+  "type": "module",
+  "main": "src/worker.js",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

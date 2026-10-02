@@ -1,0 +1,5 @@
+# Local development secrets for `wrangler dev` (copy to .dev.vars, never commit).
+# Generate with scripts/gen_keys.sh.
+SESSION_KEY="<at least 32 random characters>"
+ADMIN_TOKEN="<at least 24 random characters>"
+ADMISSION_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
