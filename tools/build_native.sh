@@ -52,6 +52,12 @@ case "$(uname -s)" in
         slices+=("$BUILD/$sdk/UTShare-$target")
       done
       lipo -create "${slices[@]}" -output "$dir/UTShare"
+      # the same toolchain keys an Xcode-built framework carries (App Store validation)
+      local sdkver sdkbuild xcver xcbuild
+      sdkver=$(xcrun --sdk "$sdk" --show-sdk-version)
+      sdkbuild=$(xcrun --sdk "$sdk" --show-sdk-build-version 2>/dev/null || echo "")
+      xcver=$(xcodebuild -version | awk 'NR==1 {split($2, v, "."); printf "%d%d%d", v[1], v[2], (v[3] == "" ? 0 : v[3])}')
+      xcbuild=$(xcodebuild -version | awk 'NR==2 {print $3}')
       cat > "$dir/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -66,6 +72,15 @@ case "$(uname -s)" in
   <key>CFBundleVersion</key><string>1</string>
   <key>CFBundleSupportedPlatforms</key><array><string>$plat</string></array>
   <key>MinimumOSVersion</key><string>$MIN_IOS</string>
+  <key>DTPlatformName</key><string>$sdk</string>
+  <key>DTPlatformVersion</key><string>$sdkver</string>
+  <key>DTSDKName</key><string>$sdk$sdkver</string>
+  <key>DTSDKBuild</key><string>$sdkbuild</string>
+  <key>DTPlatformBuild</key><string>$sdkbuild</string>
+  <key>DTXcode</key><string>$xcver</string>
+  <key>DTXcodeBuild</key><string>$xcbuild</string>
+  <key>DTCompiler</key><string>com.apple.compilers.llvm.clang.1_0</string>
+  <key>UIDeviceFamily</key><array><integer>1</integer><integer>2</integer></array>
 </dict></plist>
 PLIST
       plutil -lint "$dir/Info.plist" >/dev/null
