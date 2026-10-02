@@ -44,6 +44,7 @@ func default_profile() -> Dictionary:
 		"muted": [],
 		"blocked": [],          # [{pid, uid, name}]: persists; also sent to the service when signed in
 		"cloud_profile": {},
+		"onboarded": false,     # first launch: Create Your Runner + name
 	}
 
 

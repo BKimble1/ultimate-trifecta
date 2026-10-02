@@ -13,6 +13,9 @@ var msg: Label
 var save_btn: Button
 var sugg_row: HFlowContainer
 var _busy := false
+## first launch: keep the name on this device; the service checks it the
+## first time you create or join a party (online screen asks again if needed)
+var local_only := false
 
 
 func _init() -> void:
@@ -70,7 +73,12 @@ static func _current() -> String:
 func _on_text(t: String) -> void:
 	var n := NameRules.normalize(t)
 	var err := NameRules.shape_error(n)
-	msg.text = err if err != "" else ("Checked when you save." if Cloud.configured() else "Saved on this device. Online names are checked by the game service when it's set up.")
+	var ok_text := "Checked when you save."
+	if local_only and Cloud.configured():
+		ok_text = "Saved on this device. The game service checks it when you first play online."
+	elif not Cloud.configured():
+		ok_text = "Saved on this device. Online names are checked by the game service when it's set up."
+	msg.text = err if err != "" else ok_text
 	msg.add_theme_color_override("font_color", UIKit.AMBER if err != "" else UIKit.IVORY_MUTED)
 	save_btn.disabled = err != "" or _busy
 
@@ -79,7 +87,7 @@ func _save() -> void:
 	var n := NameRules.normalize(field.text)
 	if NameRules.shape_error(n) != "" or _busy:
 		return
-	if not Cloud.configured():
+	if not Cloud.configured() or local_only:
 		Save.data["name"] = n
 		Save.save_now()
 		done.emit(n)
@@ -111,12 +119,14 @@ func _save() -> void:
 
 
 ## Show the sheet centred over a screen; returns the chosen name ("" = cancelled).
-static func ask(parent: Control) -> String:
+static func ask(parent: Control, on_device_only: bool = false) -> String:
 	var dim := ColorRect.new()
 	dim.color = Color(UIKit.NAVY, 0.72)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	parent.add_child(dim)
 	var s := NameSheet.new()
+	s.local_only = on_device_only
+	s._on_text(s.field.text)
 	parent.add_child(s)
 	s.set_anchors_preset(Control.PRESET_CENTER)
 	s.position = (parent.get_viewport().get_visible_rect().size - s.get_combined_minimum_size()) * 0.5

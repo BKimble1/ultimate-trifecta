@@ -6,6 +6,8 @@ extends Node
 ## game state (screen shown, player state transitions, events), plus a diag
 ## report of the measured render path next to them. Scenarios:
 ##   home      title screen, then the wardrobe
+##   account   first-launch Create Your Runner + name sheet, Settings >
+##             Profile, the Delete Game Profile confirmation (nothing saved)
 ##   lobby     a LAN room; waits for --capture-players=N humans (others are
 ##             headless --net-join processes), then captures the room
 ##   runner    practice as a runner (bot-driven: --local-bot): reveal,
@@ -82,6 +84,8 @@ func _process(delta: float) -> void:
 			_home()
 		"screens":
 			_screens()
+		"account":
+			_account()
 		"lobby":
 			_lobby()
 		"runner", "patrol":
@@ -98,6 +102,27 @@ func _home() -> void:
 		App.goto(CreatorScreen)
 		later(3.0, "wardrobe")
 	elif _t > 12.0 and _shots.has("wardrobe"):
+		get_tree().quit()
+
+
+func _account() -> void:
+	if _t > 5.0 and not _scheduled.has("onboard"):
+		_scheduled["onboard"] = true
+		App._onboarding()
+		later(2.5, "first_run_creator")
+	elif _t > 8.5 and not _scheduled.has("name"):
+		_scheduled["name"] = true
+		NameSheet.ask(App.screen, true)
+		later(1.0, "first_run_name")
+	elif _t > 11.0 and not _scheduled.has("settings"):
+		_scheduled["settings"] = true
+		App.goto(SettingsScreen)
+		later(2.0, "settings_profile")
+	elif _t > 14.0 and not _scheduled.has("delete"):
+		_scheduled["delete"] = true
+		(App.screen as SettingsScreen)._confirm_delete()
+		later(1.0, "delete_confirm")
+	elif _t > 16.5 and _shots.has("delete_confirm"):
 		get_tree().quit()
 
 

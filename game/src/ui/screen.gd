@@ -84,6 +84,27 @@ func spacer(h: float = 10) -> Control:
 	return c
 
 
+## Full-screen "working…" card that blocks input; free the returned node to
+## dismiss it.
+func busy(text: String) -> Control:
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_STOP
+	var dim := ColorRect.new()
+	dim.color = Color(UIKit.NAVY, 0.72)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(dim)
+	var p := UIKit.panel(Color(UIKit.SLATE, 0.99), UIKit.R_PANEL, 30)
+	var l := UIKit.label(text, 26, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER)
+	l.custom_minimum_size = Vector2(480, 0)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	p.add_child(l)
+	root.add_child(p)
+	add_child(root)
+	p.position = (get_viewport().get_visible_rect().size - p.get_combined_minimum_size()) * 0.5
+	return root
+
+
 func dialog(text: String, buttons: Array = [["OK", Callable()]]) -> PanelContainer:
 	var dim := ColorRect.new()
 	dim.color = Color(UIKit.NAVY, 0.72)

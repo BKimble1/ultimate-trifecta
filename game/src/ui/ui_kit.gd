@@ -253,7 +253,9 @@ static func _base_button(text: String, min_size: Vector2, font_size: int) -> But
 	b.add_theme_font_size_override("font_size", font_size)
 	b.add_theme_font_override("font", font_w(600))
 	b.clip_text = false
-	b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	# fixed-width buttons trim long text with an ellipsis; content-sized ones
+	# (min width 0) must not trim, or their minimum width ignores the text
+	b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS if min_size.x > 0.0 else TextServer.OVERRUN_NO_TRIMMING
 	b.pressed.connect(func() -> void: Sfx.play("click"))
 	press_feedback(b)
 	return b

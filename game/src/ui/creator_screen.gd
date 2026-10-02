@@ -58,10 +58,11 @@ func build() -> void:
 	var v := content
 	var top := UIKit.hbox(14)
 	v.add_child(top)
-	var back := UIKit.icon_button("back")
-	back.tooltip_text = "Back"
-	back.pressed.connect(_go_back)
-	top.add_child(back)
+	if not first_run:
+		var back := UIKit.icon_button("back")
+		back.tooltip_text = "Back"
+		back.pressed.connect(_go_back)
+		top.add_child(back)
 	var title := UIKit.heading("Create Your Runner", 40)
 	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(title)
@@ -104,8 +105,7 @@ func build() -> void:
 	tabs.add_theme_constant_override("v_separation", 8)
 	pvb.add_child(tabs)
 	for t in TABS:
-		var b := UIKit.quiet(String(t[1]), Vector2(0, 60), 21)
-		b.custom_minimum_size.x = 0
+		var b := UIKit.quiet(String(t[1]), Vector2(0, 60), 19)
 		var key: String = t[0]
 		b.pressed.connect(func() -> void:
 			tab = key
@@ -135,7 +135,7 @@ func build() -> void:
 	apply_btn.pressed.connect(_on_apply)
 	bottom.add_child(apply_btn)
 	focus_first(tab_btns[tab])
-	back_action = _back
+	back_action = _back if not first_run else func() -> void: pass
 	_rebuild()
 	UIKit.appear(panel, Vector2(40, 0), UIKit.T_SHEET)
 	var lc := App.stage.local_character() if App.stage else null
@@ -331,6 +331,7 @@ func _on_apply() -> void:
 	if int(r["spent"]) > 0:
 		Sfx.play("pickup")
 	App.sync_stage_local()
+	App.sync_cloud_appearance()
 	if App.session and is_instance_valid(App.session) and App.session.phase == TC.Phase.LOBBY and App.session.mode != NetSession.Mode.OFFLINE:
 		App.session.set_local_cosmetic(saved)
 	_rebuild()

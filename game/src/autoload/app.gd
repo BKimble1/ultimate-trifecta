@@ -24,6 +24,8 @@ var _dev_report_rows: Array = []
 var _dev_t := 0.0
 var _dev_shot_i := 0
 var _dev_next_shot := 2.0
+## automation / capture runs skip first-launch onboarding
+var dev_automation := false
 
 
 ## Client version code sent to the service (rooms record it for version
@@ -39,6 +41,7 @@ func _ready() -> void:
 	get_tree().set_auto_accept_quit(true)
 	QualityPreset.apply(int(Save.get_setting("quality", 1)))
 	Social.invite_ready.connect(_on_invite_ready)
+	Social.auth_changed.connect(_on_gc_auth)
 	# automation runs (simulator evidence) skip the Game Center sign-in sheet
 	if not OS.get_cmdline_user_args().has("--no-gamecenter"):
 		Social.authenticate()
@@ -84,6 +87,10 @@ func _ready() -> void:
 		elif a == "--random-cosmetic":
 			# dev/automation: soak and lobby-capture clients wear varied outfits
 			Save.data["cosmetic"] = Cosmetics.bot_cosmetic(hash(Save.player_uid()))
+	for a in OS.get_cmdline_user_args():
+		for p in ["--autoplay=", "--capture=", "--shots=", "--net-", "--report=", "--skip-onboarding"]:
+			if a.begins_with(p):
+				dev_automation = true
 	_dev_tools(OS.get_cmdline_user_args())
 	if OS.get_cmdline_user_args().has("--no-app"):
 		return
@@ -296,6 +303,9 @@ func goto_title(message: String = "") -> void:
 	_end_match_scene()
 	_ensure_background()
 	Sfx.music("menu")
+	if not bool(Save.data.get("onboarded", false)) and not dev_automation:
+		_onboarding(message)
+		return
 	var t := TitleScreen.new()
 	_show(t)
 	if message != "":
@@ -303,6 +313,45 @@ func goto_title(message: String = "") -> void:
 	elif _pending_message != "":
 		t.show_message(_pending_message)
 		_pending_message = ""
+
+
+## First launch: Create Your Runner, then a player name (kept on this device
+## until the service checks it at the first online party).
+func _onboarding(message: String = "") -> void:
+	var c := CreatorScreen.new()
+	c.first_run = true
+	c.on_done = func() -> void:
+		await NameSheet.ask(c, true)
+		Save.data["onboarded"] = true
+		Save.save_now()
+		sync_cloud_appearance()
+		goto_title()
+	_show(c)
+	if message != "":
+		UIKit.toast(c, message, 3.0)
+
+
+## Game Center signed in: sign in to the game service too (verified on the
+## server from Game Center's identity signature).
+func _on_gc_auth(ok: bool) -> void:
+	if ok and Cloud.configured() and not Cloud.signed_in():
+		var r: Dictionary = await Cloud.sign_in()
+		if bool(r.get("ok", false)):
+			sync_cloud_appearance()
+
+
+## The runner's look lives on this device (coins and owned items are local);
+## the service keeps a copy for the profile.  Pushed only when it differs.
+func sync_cloud_appearance() -> void:
+	if not Cloud.signed_in():
+		return
+	var mine := Cosmetics.sanitize(Save.data["cosmetic"])
+	var theirs: Variant = Cloud.profile.get("appearance")
+	if theirs is Dictionary and Cosmetics.sanitize(theirs) == mine:
+		return
+	var r: Dictionary = await Cloud.set_appearance(mine)
+	if bool(r.get("ok", false)):
+		Cloud.profile["appearance"] = mine
 
 
 func goto(screen_class: GDScript) -> void:

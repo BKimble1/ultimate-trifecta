@@ -23,6 +23,8 @@ var last_error := ""
 var _signing_in := false
 ## tests and the dev harness can replace the HTTP layer: func(method, path, body, headers) -> {status, body}
 var transport_override: Callable
+## tests replace Game Center's identity signature: func() -> {ok, player_id, ...}
+var identity_override: Callable
 
 
 func _ready() -> void:
@@ -124,8 +126,14 @@ func sign_in() -> Dictionary:
 	_signing_in = true
 	state = "signing_in"
 	changed.emit()
-	var ident: Dictionary = await Social.identity_signature()
+	var ident: Dictionary
+	if identity_override.is_valid():
+		ident = await identity_override.call()
+	else:
+		ident = await Social.identity_signature()
 	var out: Dictionary
+	var ok := false
+	token = ""
 	if not bool(ident.get("ok", false)):
 		out = {"ok": false, "error": "game_center", "message": String(ident.get("message", "Sign in to Game Center to play online."))}
 	else:
@@ -133,13 +141,15 @@ func sign_in() -> Dictionary:
 			"salt": ident["salt"], "signature": ident["signature"], "public_key_url": ident["public_key_url"]}
 		var r := await _http(HTTPClient.METHOD_POST, "/v1/auth/gamecenter", body, false)
 		out = r["body"]
-		if int(r["status"]) == 200 and bool(out.get("ok", false)):
+		if int(r["status"]) == 200 and bool(out.get("ok", false)) and String(out.get("token", "")) != "":
 			token = String(out["token"])
 			token_exp_ms = int(out.get("expires_at", 0))
+			ok = true
 			_set_profile(out["profile"])
 	_signing_in = false
-	state = "ready" if signed_in() else "error"
-	last_error = "" if signed_in() else String(out.get("message", "Sign-in failed."))
+	# (not signed_in(): that reads `state`, which is still "signing_in" here)
+	state = "ready" if ok else "error"
+	last_error = "" if ok else String(out.get("message", "Sign-in failed."))
 	changed.emit()
 	return out
 
