@@ -64,30 +64,8 @@ static func permutations3(t: Array) -> Array:
 	return [[t[0], t[1], t[2]], [t[0], t[2], t[1]], [t[1], t[0], t[2]], [t[1], t[2], t[0]], [t[2], t[0], t[1]], [t[2], t[1], t[0]]]
 
 
-## Fair role rotation. players: Array of {slot, pref: "runner"/"patrol"/"any",
-## patrol_rounds: int, last_was_patrol: bool, is_bot: bool}.
-## Returns Dictionary slot -> TC.Role. Never forces a runner-preferring human into
-## patrol while a willing player (or a bot) is available.
-static func assign_roles(players: Array, patrol_slots: int, seed_v: int) -> Dictionary:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_v
-	var scored: Array = []
-	for p in players:
-		var pref: String = p.get("pref", "any")
-		var tier := 1
-		if pref == "patrol":
-			tier = 0
-		elif pref == "runner":
-			tier = 3
-		if bool(p.get("is_bot", false)):
-			tier = 2  # bots take patrol before anyone who asked to run
-		var key := [tier, int(p.get("patrol_rounds", 0)), 1 if bool(p.get("last_was_patrol", false)) else 0, rng.randf()]
-		scored.append({"slot": p["slot"], "key": key})
-	scored.sort_custom(func(x, y): return _key_less(x["key"], y["key"]))
-	var roles := {}
-	for i in scored.size():
-		roles[scored[i]["slot"]] = TC.Role.PATROL if i < patrol_slots else TC.Role.RUNNER
-	return roles
+## Roles: friend parties draw them in PartySeries.assign_roles (fair random
+## rotation, preferences ignored); practice uses the player's own choice.
 
 
 static func _key_less(a: Array, b: Array) -> bool:

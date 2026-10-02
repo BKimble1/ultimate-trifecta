@@ -120,10 +120,11 @@ func _match_sync(lat: float, jit: float, loss: float, label: String) -> Dictiona
 	# final agreement: client's predicted pos vs host authoritative pos ~latency ago
 	var host_p := hmc.sim.player(slot).pos()
 	var pred_p := cmc.pred.pos()
-	# remote interpolation error: a teammate runner (always relevant) as seen by the client
+	# remote interpolation error: a teammate (same role: always relevant) as seen by the client
 	var mate := -1
+	var my_role := hmc.sim.player(slot).role
 	for p in hmc.sim.players:
-		if p.is_runner() and p.id != slot:
+		if p.role == my_role and p.id != slot:
 			mate = p.id
 			break
 	var rs := cmc._player_rs(mate)

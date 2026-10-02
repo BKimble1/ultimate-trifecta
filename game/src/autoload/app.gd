@@ -393,7 +393,7 @@ func start_practice(role: String, tutorial: bool) -> void:
 	session = NetSession.new()
 	session.name = "Session"
 	add_child(session)
-	session.start_offline(Save.player_uid(), Save.player_name(), Save.data["cosmetic"], "patrol" if role == "patrol" else "runner", tutorial)
+	session.start_offline(Save.player_uid(), Save.player_name(), Save.data["cosmetic"], role if role in ["runner", "patrol", "random"] else "runner", tutorial)
 	session.match_starting.connect(_on_match_starting)
 	session.results_received.connect(_on_results)
 	session.host_start_match(dev_seed)
@@ -690,7 +690,7 @@ func _on_results(results: Dictionary) -> void:
 func _on_match_finished(results: Dictionary) -> void:
 	last_results = results
 	var practice := session != null and session.mode == NetSession.Mode.OFFLINE
-	var reward := Save.apply_results(results, session.local_slot if session else -1, practice)
+	var reward := Save.apply_results(results, session.local_slot if session else -1, practice, Save.player_uid())
 	_dev_record(results, reward)
 	if dev_report != "":
 		_dev_rounds_done += 1

@@ -25,7 +25,8 @@ func build() -> void:
 	var v := UIKit.vbox(16)
 	body.add_child(v)
 	var cards := UIKit.hbox(20)
-	for c in [["RUNNERS (6)", TC.RUNNER_CARD, UIKit.RUNNER], ["NIGHT WATCH (2)", TC.PATROL_CARD, UIKit.PATROL]]:
+	var cfg := PartySeries.rules_for(Rules.cfg, PartySeries.DEFAULT_WATCH)
+	for c in [["RUNNERS", TC.runner_card(cfg), UIKit.RUNNER], ["NIGHT WATCH", TC.patrol_card(cfg), UIKit.PATROL]]:
 		var p := UIKit.panel(Color(UIKit.NAVY, 0.6), UIKit.R_SMALL, 18)
 		p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var pv := UIKit.vbox(8)

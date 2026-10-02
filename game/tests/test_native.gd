@@ -25,3 +25,18 @@ func test_share_extension_registers_and_falls_back_off_device() -> void:
 	t.eq(Share.available(), on_ios, "Share wrapper agrees")
 	t.eq(Share.share_text(Share.party_message("ACD347")), on_ios, "desktop falls back to the clipboard")
 	t.check(Share.party_message("ACD347").contains("ACD347"), "message carries the code")
+
+
+func test_device_state_for_diagnostics() -> void:
+	if not ClassDB.class_exists("UTShare"):
+		t.check(false, "UTShare missing")
+		return
+	t.check(ClassDB.class_has_method("UTShare", "thermal_state") and ClassDB.class_has_method("UTShare", "low_power_mode"),
+		"thermal_state() and low_power_mode() are bound")
+	var th := int(ClassDB.class_call_static("UTShare", "thermal_state"))
+	var lp := int(ClassDB.class_call_static("UTShare", "low_power_mode"))
+	if OS.get_name() == "iOS":
+		t.check(th >= 0 and th <= 3 and (lp == 0 or lp == 1), "iOS reports real values")
+	else:
+		t.eq([th, lp], [-1, -1], "desktop reports unavailable (-1), never a made-up state")
+	t.eq(Diag.thermal_state(), th, "diagnostics read the same value")

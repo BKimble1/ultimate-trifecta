@@ -70,3 +70,21 @@ int ut_platform_share(const char *text, const char *url) {
 	});
 	return 1;
 }
+
+int ut_platform_thermal_state(void) {
+	switch (NSProcessInfo.processInfo.thermalState) {
+		case NSProcessInfoThermalStateNominal:
+			return 0;
+		case NSProcessInfoThermalStateFair:
+			return 1;
+		case NSProcessInfoThermalStateSerious:
+			return 2;
+		case NSProcessInfoThermalStateCritical:
+			return 3;
+	}
+	return -1;
+}
+
+int ut_platform_low_power(void) {
+	return NSProcessInfo.processInfo.isLowPowerModeEnabled ? 1 : 0;
+}

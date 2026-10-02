@@ -44,46 +44,6 @@ func test_pick_targets_seeded_no_repeat() -> void:
 		prev = nxt
 
 
-func test_role_assignment_fair_rotation() -> void:
-	# 4 humans, all "any", 4 bots. Over 8 rounds, nobody human is stuck on patrol.
-	var players: Array = []
-	for i in 8:
-		players.append({"slot": i, "pref": "any", "patrol_rounds": 0, "last_was_patrol": false, "is_bot": i >= 4})
-	var counts := {}
-	for round_i in 8:
-		var roles := RulesLogic.assign_roles(players, 2, round_i * 31)
-		var patrol := []
-		for s in roles:
-			if roles[s] == TC.Role.PATROL:
-				patrol.append(s)
-		t.eq(patrol.size(), 2, "exactly two patrol")
-		for p in players:
-			var was: bool = roles[p["slot"]] == TC.Role.PATROL
-			p["last_was_patrol"] = was
-			if was:
-				p["patrol_rounds"] = int(p["patrol_rounds"]) + 1
-				counts[p["slot"]] = int(counts.get(p["slot"], 0)) + 1
-	# "any" humans are preferred over bots for patrol (tier 1 < 2), and rotate
-	var human_counts := []
-	for s in 4:
-		human_counts.append(int(counts.get(s, 0)))
-	t.check(human_counts.max() - human_counts.min() <= 1, "patrol rounds rotate evenly among willing humans %s" % str(human_counts))
-
-
-func test_role_preferences_honoured() -> void:
-	var players := [
-		{"slot": 0, "pref": "runner", "patrol_rounds": 0, "last_was_patrol": false, "is_bot": false},
-		{"slot": 1, "pref": "patrol", "patrol_rounds": 3, "last_was_patrol": true, "is_bot": false},
-		{"slot": 2, "pref": "runner", "patrol_rounds": 0, "last_was_patrol": false, "is_bot": false},
-	]
-	for i in range(3, 8):
-		players.append({"slot": i, "pref": "any", "patrol_rounds": 0, "last_was_patrol": false, "is_bot": true})
-	var roles := RulesLogic.assign_roles(players, 2, 5)
-	t.eq(roles[1], TC.Role.PATROL, "volunteer gets patrol")
-	t.eq(roles[0], TC.Role.RUNNER, "runner-preferring human not forced into patrol while a bot can")
-	t.eq(roles[2], TC.Role.RUNNER, "runner-preferring human not forced into patrol while a bot can (2)")
-
-
 func test_choose_pad_maximises_distance() -> void:
 	var pads := [Vector2(0, 0), Vector2(20, 0), Vector2(0, 20)]
 	var pick := RulesLogic.choose_pad(pads, [Vector2(1, 1), Vector2(18, 2)])

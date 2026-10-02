@@ -6,7 +6,10 @@ extends RefCounted
 
 ## 4 (V3): event field m (splash impact), snapshot impact byte, appearance
 ## schema 2 wire format, host-bound control messages.
-const VERSION := 4
+## 5 (V4): party settings (Night Watch count, rounds) and series state in
+## LOBBY, settings + series in START, SERIES standings, load-ready flags,
+## tag-ready/target fields in snapshots.
+const VERSION := 5
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}
@@ -28,10 +31,11 @@ enum M {
 	KICK,           # host -> client
 	MUTE,           # unused on wire (local block list)
 	LOADED,         # client -> host: {round} match scene ready (load ack)
+	SERIES,         # host -> all: series standings and completed rounds (JSON)
 }
 
 ## Messages a client accepts only from its bound host (protocol 4).
-const HOST_ONLY := [M.WELCOME, M.LOBBY, M.START, M.SNAP, M.EVENTS, M.RESULTS, M.HOST_END, M.KICK]
+const HOST_ONLY := [M.WELCOME, M.LOBBY, M.START, M.SNAP, M.EVENTS, M.RESULTS, M.HOST_END, M.KICK, M.SERIES]
 ## Hard upper bounds for reads (bytes)
 const MAX_STR := 64
 const MAX_TOKEN := 4096

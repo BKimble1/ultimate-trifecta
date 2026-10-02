@@ -26,6 +26,8 @@ signal status_changed(text: String)
 ## client (invites): the host announced its code; fetch an admission for it,
 ## then call provide_admission()
 signal admission_needed(code: String)
+## the series (standings, completed rounds) changed
+signal series_changed
 
 enum Mode { OFFLINE, HOST, CLIENT }
 
@@ -50,7 +52,27 @@ var current_start: Dictionary = {}
 var last_results: Dictionary = {}
 var sim: MatchSim = null
 var tutorial := false
+## networking constants (tick rate, snapshot rate, timeouts) - the gameplay
+## rules of a round come from round_cfg
 var cfg: RulesConfig
+## the immutable rules of the current round (PartySeries.rules_for)
+var round_cfg: RulesConfig
+## party settings (host edits them in the pre-series lobby; guests see the
+## host's approved copy) - {watch, rounds, rev}
+var settings: Dictionary = PartySeries.default_settings()
+## host: the series in progress (null before the first Start)
+var series: PartySeries = null
+## everyone: the latest series view (host: its own; client: from the host)
+var series_view: Dictionary = {}
+## client: {active, next_round, total} from the lobby bytes
+var series_brief: Dictionary = {}
+## client: why ready was cleared ("" when nothing to say)
+var settings_note := ""
+## practice: "runner", "patrol" or "random"
+var practice_role := "runner"
+## tests and dev automation only: uid -> TC.Role forced after the fair draw
+## (the Night Watch count is kept by swapping bots)
+var role_override: Dictionary = {}
 
 # host bookkeeping
 var _peer_slot: Dictionary = {}     # peer -> slot
@@ -101,6 +123,7 @@ const RATE_OTHER := 25
 
 func _init() -> void:
 	cfg = Rules.cfg
+	round_cfg = PartySeries.rules_for(Rules.cfg, PartySeries.DEFAULT_WATCH)
 	roster.resize(8)
 
 
@@ -115,6 +138,8 @@ func _ready() -> void:
 func start_offline(uid: String, name: String, cosmetic: Dictionary, pref: String, is_tutorial: bool = false) -> void:
 	mode = Mode.OFFLINE
 	tutorial = is_tutorial
+	practice_role = pref if pref in ["runner", "patrol", "random"] else "runner"
+	settings = {"watch": PartySeries.DEFAULT_WATCH, "rounds": 1, "rev": 0}
 	_set_identity(uid, name, cosmetic, pref)
 	roster.fill(null)
 	roster[0] = _entry(0, uid, name, false, -1, cosmetic, pref)
@@ -182,6 +207,8 @@ func human_count() -> int:
 func can_start() -> bool:
 	if not is_host() or phase != TC.Phase.LOBBY:
 		return false
+	if series != null and series.finished:
+		return false   # the finished series is on show; Play again resets it
 	for e in roster:
 		if e != null and not bool(e["is_bot"]) and int(e["slot"]) != local_slot and not bool(e["ready"]):
 			return false
@@ -346,6 +373,7 @@ func _host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 		Protocol.M.LOADED:
 			if _peer_slot.has(peer) and b.get_available_bytes() >= 2 and b.get_u16() == round_no:
 				_loaded[int(_peer_slot[peer])] = true
+				_broadcast_lobby()   # everyone's loading screen shows who is ready
 		Protocol.M.PING:
 			if b.get_available_bytes() < 8:
 				return
@@ -434,6 +462,8 @@ func _send_welcome(peer: int, slot: int, reason: String) -> void:
 	# the rejoin key goes only to the slot's own player
 	Protocol.put_str(b, String(roster[slot].get("rejoin_key", "")) if slot >= 0 and roster[slot] != null else "", 32)
 	transport.send(peer, b.data_array, true)
+	if not series_view.is_empty() and reason not in ["version", "admission", "not_allowed", "in_use"]:
+		transport.send(peer, _series_bytes(), true)
 
 
 func _host_emote(slot: int, em: int) -> void:
@@ -505,6 +535,14 @@ func _lobby_bytes() -> PackedByteArray:
 	b.put_u8(phase)
 	b.put_u16(round_no)
 	b.put_u8(spectators.size())
+	# protocol 5: party settings and where the series is
+	b.put_u8(int(settings["watch"]))
+	b.put_u8(int(settings["rounds"]))
+	b.put_u16(int(settings["rev"]))
+	var sstate := 0 if series == null else (2 if series.finished else 1)
+	b.put_u8(sstate)
+	b.put_u8(series.next_round() if series != null else 1)
+	b.put_u8(series.rounds_total() if series != null else int(settings["rounds"]))
 	for i in 8:
 		var e: Variant = roster[i]
 		if e == null:
@@ -518,6 +556,7 @@ func _lobby_bytes() -> PackedByteArray:
 		if bool(e["ready"]): flags |= 2
 		if bool(e["connected"]): flags |= 4
 		if i == local_slot: flags |= 8
+		if phase == TC.Phase.LOADING and (_loaded.has(i) or bool(e["is_bot"])): flags |= 16
 		b.put_u8(flags)
 		b.put_u8(["any", "runner", "patrol"].find(String(e["pref"])))
 		b.put_8(int(e.get("role", -1)))
@@ -556,21 +595,39 @@ func host_start_match(seed_override: int = -1) -> void:
 		if roster[i] == null or bool(roster[i]["is_bot"]):
 			roster[i] = _entry(i, "bot-%d" % i, BOT_NAMES[(bot_i + seed_v) % BOT_NAMES.size()], true, -1, Cosmetics.bot_cosmetic(seed_v + i * 13), "any")
 			bot_i += 1
-	var plist: Array = []
-	for e in roster:
-		plist.append({"slot": e["slot"], "pref": e["pref"], "patrol_rounds": e["patrol_rounds"], "last_was_patrol": e["last_was_patrol"], "is_bot": e["is_bot"]})
-	var roles := RulesLogic.assign_roles(plist, cfg.patrol_slots, seed_v)
-	if tutorial:
+	# a friend party plays a series with the settings locked at its start;
+	# practice is one round with the role the player chose
+	if mode != Mode.OFFLINE and (series == null or not series.in_progress()):
+		series = PartySeries.new()
+		series.start(settings, rng)
+		series_view = series.to_dict()
+	var locked: Dictionary = series.settings if series != null else settings
+	if mode == Mode.OFFLINE and tutorial and practice_role == "patrol":
+		locked = {"watch": 1, "rounds": 1, "rev": 0}   # Night Watch training: you are the only watcher
+	round_cfg = PartySeries.rules_for(Rules.cfg, int(locked["watch"]))
+	var roles := {}
+	if mode == Mode.OFFLINE:
+		roles = _practice_roles(seed_v, int(locked["watch"]))
+	else:
+		var plist: Array = []
 		for e in roster:
-			roles[e["slot"]] = TC.Role.RUNNER if int(e["slot"]) == local_slot else (TC.Role.PATROL if int(e["slot"]) <= 2 else TC.Role.RUNNER)
-		if roles.values().count(TC.Role.PATROL) != cfg.patrol_slots:
-			var need := cfg.patrol_slots
-			for e in roster:
-				roles[e["slot"]] = TC.Role.RUNNER
-			for e in roster:
-				if need > 0 and int(e["slot"]) != local_slot:
-					roles[e["slot"]] = TC.Role.PATROL
-					need -= 1
+			plist.append({"slot": e["slot"], "uid": e["uid"], "is_bot": e["is_bot"]})
+		roles = series.assign_roles(plist, seed_v)
+	if tutorial and practice_role == "patrol":
+		# Night Watch training: you watch, everyone else runs
+		for e in roster:
+			roles[e["slot"]] = TC.Role.PATROL if int(e["slot"]) == local_slot else TC.Role.RUNNER
+	elif tutorial:
+		# the runner tutorial: you run, the first other seats are the Night Watch
+		var need := round_cfg.patrol_slots
+		for e in roster:
+			roles[e["slot"]] = TC.Role.RUNNER
+		for e in roster:
+			if need > 0 and int(e["slot"]) != local_slot:
+				roles[e["slot"]] = TC.Role.PATROL
+				need -= 1
+	if not role_override.is_empty():
+		roles = _apply_role_override(roles, round_cfg.patrol_slots)
 	var targets := RulesLogic.pick_targets(seed_v, prev_targets)
 	prev_targets = targets
 	var start_roster: Array = []
@@ -581,6 +638,10 @@ func host_start_match(seed_override: int = -1) -> void:
 	current_start = {
 		"match_id": "%s-%d-%08x" % [room_code, round_no, seed_v], "seed": seed_v, "targets": targets,
 		"roster": start_roster, "practice": mode == Mode.OFFLINE, "tutorial": tutorial, "round": round_no,
+		"training": ("watch" if practice_role == "patrol" else "runner") if tutorial else "",
+		"settings": {"watch": int(locked["watch"]), "rounds": int(locked["rounds"]), "rev": int(locked["rev"])},
+		"series": {"id": series.id if series != null else "", "round": series.next_round() if series != null else 1,
+			"total": series.rounds_total() if series != null else 1},
 	}
 	phase = TC.Phase.LOADING
 	_queues.clear()
@@ -594,6 +655,52 @@ func host_start_match(seed_override: int = -1) -> void:
 			_send_start(peer)
 	_broadcast_lobby()
 	match_starting.emit(current_start)
+
+
+func _apply_role_override(roles: Dictionary, watch: int) -> Dictionary:
+	for e in roster:
+		if e != null and role_override.has(String(e["uid"])):
+			roles[int(e["slot"])] = int(role_override[String(e["uid"])])
+	var n := 0
+	for s2 in roles:
+		if roles[s2] == TC.Role.PATROL:
+			n += 1
+	for e in roster:
+		if e == null or not bool(e["is_bot"]) or n == watch:
+			continue
+		var sl := int(e["slot"])
+		if n > watch and roles[sl] == TC.Role.PATROL:
+			roles[sl] = TC.Role.RUNNER
+			n -= 1
+		elif n < watch and roles[sl] == TC.Role.RUNNER:
+			roles[sl] = TC.Role.PATROL
+			n += 1
+	return roles
+
+
+## Practice: the player's chosen role (Random is a coin flip); bots fill
+## the other Night Watch seats.
+func _practice_roles(seed_v: int, watch: int) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_v ^ 0x51ce
+	var mine := practice_role
+	if mine == "random":
+		mine = "patrol" if rng.randf() < 0.5 else "runner"
+	var roles := {}
+	var others: Array = []
+	for e in roster:
+		if e == null:
+			continue
+		if int(e["slot"]) == local_slot:
+			roles[int(e["slot"])] = TC.Role.PATROL if mine == "patrol" else TC.Role.RUNNER
+		else:
+			roles[int(e["slot"])] = TC.Role.RUNNER
+			others.append({"slot": int(e["slot"]), "r": rng.randf()})
+	others.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["r"] < b["r"])
+	var need := watch - (1 if mine == "patrol" else 0)
+	for i in mini(need, others.size()):
+		roles[int(others[i]["slot"])] = TC.Role.PATROL
+	return roles
 
 
 func _start_bytes() -> PackedByteArray:
@@ -779,6 +886,17 @@ func host_match_finished(results: Dictionary) -> void:
 			e["last_was_patrol"] = int(e["role"]) == TC.Role.PATROL
 			if int(e["role"]) == TC.Role.PATROL:
 				e["patrol_rounds"] = int(e["patrol_rounds"]) + 1
+	if series != null:
+		series.record_round(results)   # idempotent by match id; cancelled rounds don't count
+		series_view = series.to_dict()
+	var start_series: Dictionary = current_start.get("series", {})
+	results["series"] = series_view if series != null else {}
+	results["round_index"] = int(start_series.get("round", 1))
+	results["rounds_total"] = int(start_series.get("total", 1))
+	# readiness for the next round starts over (nobody is rushed off results)
+	for e in roster:
+		if e != null and not bool(e["is_bot"]) and int(e["slot"]) != local_slot:
+			e["ready"] = false
 	if mode == Mode.HOST:
 		var b := Protocol.buf_for(Protocol.M.RESULTS)
 		var u := JSON.stringify(_jsonable(results)).to_utf8_buffer()
@@ -808,9 +926,100 @@ func host_return_to_lobby() -> void:
 		if not bool(e["is_bot"]) and not bool(e["connected"]):
 			roster[i] = null   # disconnected players free their slot between rounds
 			continue
-		e["ready"] = false
+		if not (series != null and series.in_progress()):
+			e["ready"] = false   # between rounds, readiness given on the results screen stands
 		e["role"] = -1
+	if series != null and series.finished:
+		series = null   # Play again: a new series starts with the next Start
+		series_view = {}
 	_broadcast_lobby()
+	series_changed.emit()
+
+
+## Host: change the party settings (pre-series lobby only).  A real change
+## clears everyone's ready and tells the guests.  Returns true if applied.
+func host_set_settings(watch: int, rounds: int) -> bool:
+	if not is_host() or mode == Mode.OFFLINE or phase != TC.Phase.LOBBY:
+		return false
+	if series != null and series.in_progress():
+		return false   # locked mid-series; End series first
+	var s := PartySeries.sanitize_settings({"watch": watch, "rounds": rounds, "rev": int(settings["rev"]) + 1})
+	if s.is_empty() or (int(s["watch"]) == int(settings["watch"]) and int(s["rounds"]) == int(settings["rounds"])):
+		return false
+	settings = s
+	for e in roster:
+		if e != null and not bool(e["is_bot"]) and int(e["slot"]) != local_slot:
+			e["ready"] = false
+	_broadcast_lobby()
+	return true
+
+
+## Host: end the series now (between rounds).  Completed rounds stand.
+func host_end_series() -> void:
+	if not is_host() or series == null or not series.in_progress():
+		return
+	series.end_early()
+	series_view = series.to_dict()
+	_send_series_all()
+	series_changed.emit()
+
+
+func _series_bytes() -> PackedByteArray:
+	var b := Protocol.buf_for(Protocol.M.SERIES)
+	var u := JSON.stringify(_jsonable(series_view)).to_utf8_buffer()
+	b.put_u32(u.size())
+	b.put_data(u)
+	return b.data_array
+
+
+func _send_series_all() -> void:
+	if mode == Mode.HOST and transport != null:
+		transport.broadcast(_series_bytes(), true)
+
+
+## Is a series under way (between rounds included)?  Everyone can ask.
+func series_active() -> bool:
+	if is_host():
+		return series != null and series.in_progress()
+	return int(series_brief.get("state", 0)) == 1
+
+
+## 1-based round number about to be played next.
+func next_round_number() -> int:
+	if is_host():
+		return series.next_round() if series != null and series.in_progress() else 1
+	return int(series_brief.get("next_round", 1)) if series_active() else 1
+
+
+func rounds_total() -> int:
+	if is_host():
+		return series.rounds_total() if series != null else int(settings["rounds"])
+	return int(series_brief.get("total", settings["rounds"]))
+
+
+## Host: this device's own match scene is ready (counts toward the loading
+## screen's "ready" tally).
+func mark_local_loaded() -> void:
+	if is_host() and local_slot >= 0 and not _loaded.has(local_slot):
+		_loaded[local_slot] = true
+		_broadcast_lobby()
+
+
+## Loading progress for the loading screen: [ready, total] connected humans.
+func load_progress() -> Array:
+	var ready := 0
+	var total := 0
+	for e in roster:
+		if e == null or bool(e["is_bot"]) or not bool(e["connected"]):
+			continue
+		total += 1
+		var slot := int(e["slot"])
+		if is_host():
+			if _loaded.has(slot):
+				ready += 1
+		elif bool(e.get("loaded", false)):
+			ready += 1
+	return [ready, total]
 
 
 # ---------------------------------------------------------------------------
@@ -857,6 +1066,8 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			if not fixed.is_empty():
 				current_start = fixed
 				round_no = int(fixed.get("round", round_no))
+				settings = fixed["settings"]
+				round_cfg = PartySeries.rules_for(Rules.cfg, int(settings["watch"]))
 				phase = TC.Phase.LOADING
 				_last_event_id = 0
 				match_starting.emit(current_start)
@@ -879,6 +1090,13 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			if not parsed2.is_empty():
 				var fr := _fix_results(parsed2)
 				if not fr.is_empty():
+					var sv2 := PartySeries.sanitize_view(parsed2.get("series", {}))
+					fr["series"] = sv2
+					fr["round_index"] = clampi(int(parsed2.get("round_index", 1)), 1, 5)
+					fr["rounds_total"] = clampi(int(parsed2.get("rounds_total", 1)), 1, 5)
+					if not sv2.is_empty():
+						series_view = sv2
+						series_changed.emit()
 					last_results = fr
 					phase = TC.Phase.RESULTS
 					results_received.emit(last_results)
@@ -896,6 +1114,11 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			var d := Time.get_ticks_usec() / 1000000.0 - sent
 			if is_finite(d) and d >= 0.0 and d < 10.0:
 				rtt = lerpf(rtt, d, 0.3)
+		Protocol.M.SERIES:
+			var sv := PartySeries.sanitize_view(Protocol.get_json(b))
+			if not sv.is_empty():
+				series_view = sv
+				series_changed.emit()
 		Protocol.M.HOST_END:
 			_end("host_ended")
 		Protocol.M.KICK:
@@ -931,6 +1154,15 @@ func _read_lobby(b: StreamPeerBuffer) -> void:
 	var ph := b.get_u8()
 	round_no = b.get_u16()
 	var nspec := b.get_u8()
+	var s_in := PartySeries.sanitize_settings({"watch": b.get_u8(), "rounds": b.get_u8(), "rev": b.get_u16()})
+	var sstate := b.get_u8()
+	var nxt := b.get_u8()
+	var tot := b.get_u8()
+	if not s_in.is_empty():
+		if int(s_in["rev"]) != int(settings["rev"]) and has_meta("lobby_seen") and ph == TC.Phase.LOBBY:
+			settings_note = "The host changed the party settings: %s. Tap Ready again when you're set." % PartySeries.summary(s_in)
+		settings = s_in
+	series_brief = {"state": sstate, "next_round": clampi(nxt, 1, 5), "total": clampi(tot, 1, 5)}
 	for i in 8:
 		if b.get_u8() == 0:
 			roster[i] = null
@@ -945,6 +1177,7 @@ func _read_lobby(b: StreamPeerBuffer) -> void:
 		e["ready"] = (flags & 2) != 0
 		e["connected"] = (flags & 4) != 0
 		e["is_host"] = (flags & 8) != 0
+		e["loaded"] = (flags & 16) != 0
 		e["role"] = role
 		roster[i] = e
 	if ph == TC.Phase.LOBBY and phase == TC.Phase.RESULTS:
@@ -952,6 +1185,7 @@ func _read_lobby(b: StreamPeerBuffer) -> void:
 	elif ph == TC.Phase.LOBBY:
 		phase = TC.Phase.LOBBY
 	set_meta("spectators", nspec)
+	set_meta("lobby_seen", true)
 	lobby_changed.emit()
 
 
@@ -963,6 +1197,14 @@ func _fix_start(d: Dictionary) -> Dictionary:
 	out["seed"] = int(d["seed"])
 	out["match_id"] = String(d.get("match_id", "")).substr(0, 64)
 	out["round"] = int(d.get("round", 0))
+	var st := PartySeries.sanitize_settings(d.get("settings", {}))
+	if st.is_empty():
+		return {}
+	out["settings"] = st
+	var se: Variant = d.get("series", {})
+	var sd: Dictionary = se if se is Dictionary else {}
+	out["series"] = {"id": String(sd.get("id", "")).substr(0, 16), "round": clampi(int(sd.get("round", 1)), 1, 5),
+		"total": clampi(int(sd.get("total", 1)), 1, 5)}
 	var t: Array = []
 	for x in d["targets"]:
 		if not (x is float or x is int) or int(x) < 0 or int(x) > 5 or t.has(int(x)):
@@ -997,6 +1239,8 @@ func _fix_results(d: Dictionary) -> Dictionary:
 	var out := d.duplicate(true)
 	out["outcome"] = clampi(int(d["outcome"]), 0, TC.Outcome.CANCELLED)
 	out["fastest_slot"] = int(d.get("fastest_slot", -1))
+	out["needed"] = clampi(int(d.get("needed", 4)), 1, 7)
+	out["watch"] = clampi(int(d.get("watch", 2)), 1, 3)
 	var rows: Array = []
 	for r in d.get("players", []):
 		if not (r is Dictionary) or rows.size() >= 8:
@@ -1006,6 +1250,9 @@ func _fix_results(d: Dictionary) -> Dictionary:
 			rr["name"] = NameRules.safe_display(String(rr["name"]))
 		for k in ["slot", "role", "stamps", "finish_order", "times_captured", "captures", "unique_captures"]:
 			rr[k] = int(r.get(k, 0))
+		rr["away_s"] = float(r.get("away_s", 0.0))
+		rr["present"] = bool(r.get("present", true))
+		rr["was_human"] = bool(r.get("was_human", false))
 		rows.append(rr)
 	out["players"] = rows
 	return out

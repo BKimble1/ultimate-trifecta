@@ -62,6 +62,9 @@ func build() -> void:
 	qn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(qn)
 
+	_section(v, "Diagnostics (beta)")
+	_diag_section(v)
+
 	_section(v, "Sound")
 	_slider(v, "Sound effects", "sfx", 0.0, 1.0, 0.05)
 	_slider(v, "Music", "music", 0.0, 1.0, 0.05)
@@ -93,6 +96,75 @@ func build() -> void:
 	v.add_child(UIKit.label("Version %s" % ProjectSettings.get_setting("application/config/version", "1.0"), 16, UIKit.IVORY_MUTED))
 	focus_first(first)
 	_open_at_top(sc)
+
+
+## Opt-in performance diagnostics for the internal beta: collected in memory
+## only, shared as plain text through the share sheet when the player asks.
+func _diag_section(v: VBoxContainer) -> void:
+	var on := CheckButton.new()
+	on.text = "Collect performance diagnostics"
+	on.button_pressed = Diag.enabled
+	on.custom_minimum_size = Vector2(0, maxf(44.0, UIKit.touch_min()))
+	on.add_theme_font_size_override("font_size", 22)
+	v.add_child(on)
+	var ov := CheckButton.new()
+	ov.text = "Show a small frame-time readout"
+	ov.button_pressed = Diag.overlay
+	ov.disabled = not Diag.enabled
+	ov.custom_minimum_size = Vector2(0, maxf(44.0, UIKit.touch_min()))
+	ov.add_theme_font_size_override("font_size", 22)
+	v.add_child(ov)
+	var live := UIKit.label("", 18, UIKit.IVORY_MUTED)
+	live.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(live)
+	var row := UIKit.hbox(12)
+	var share := UIKit.secondary("Share summary", Vector2(260, 72), 22)
+	share.disabled = not Diag.enabled
+	share.pressed.connect(func() -> void:
+		var txt: String = Diag.summary()
+		if not Share.share_text(txt):
+			UIKit.toast(self, "Summary copied — paste it into a message"))
+	row.add_child(share)
+	var clr := UIKit.quiet("Clear", Vector2(180, 72), 22)
+	clr.disabled = not Diag.enabled
+	clr.pressed.connect(func() -> void:
+		Diag.clear()
+		_diag_live(live))
+	row.add_child(clr)
+	v.add_child(row)
+	var note := UIKit.label("While this is on, the game keeps frame timings, short notes such as \"lobby\", \"tag\" or \"splash\", and your phone's model, iOS version and heat level in memory. Nothing is sent anywhere unless you tap Share summary, and the summary has no names, party codes or Game Center IDs. Turning it off or closing the game discards it.", 17, UIKit.IVORY_MUTED)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(note)
+	on.toggled.connect(func(b: bool) -> void:
+		Diag.set_enabled(b)
+		ov.disabled = not b
+		share.disabled = not b
+		clr.disabled = not b
+		if not b:
+			ov.button_pressed = false
+		_diag_live(live))
+	ov.toggled.connect(func(b: bool) -> void: Diag.set_overlay(b))
+	_diag_live(live)
+	var tm := Timer.new()
+	tm.wait_time = 1.0
+	tm.autostart = true
+	tm.timeout.connect(_diag_live.bind(live))
+	add_child(tm)
+
+
+func _diag_live(live: Label) -> void:
+	if not is_instance_valid(live):
+		return
+	if not Diag.enabled:
+		live.text = "Off. Turn it on, play a few rounds, then share the summary with the developer."
+		return
+	var mins := (Time.get_ticks_msec() - Diag._start_ms) / 60000.0
+	var stalls: int = Diag.stalls().size()
+	var parts: PackedStringArray = ["Collecting for %.1f min" % mins, "%d stall%s over 50 ms" % [stalls, "" if stalls == 1 else "s"]]
+	var m: Dictionary = Diag.stats("match")
+	if not m.is_empty() and int(m["n"]) > 0:
+		parts.append("in play p95 %.1f ms" % Diag.percentile(m["hist"], int(m["n"]), 0.95))
+	live.text = " · ".join(parts)
 
 
 static func _privacy_text() -> String:

@@ -69,8 +69,14 @@ const EMOTE_LABELS := {"wave": "Wave", "cheer": "Cheer", "laugh": "Ha!", "shrug"
 const GADGET_NAMES := {Gadget.TURBO: "Turbo Sneakers", Gadget.DECOY: "Squeaky Decoy", Gadget.SPLASH_BOMB: "Splash Bomb"}
 const GADGET_KEYS := {"turbo": Gadget.TURBO, "decoy": Gadget.DECOY, "splash_bomb": Gadget.SPLASH_BOMB}
 
-const RUNNER_CARD := "Splash into all three marked spots. Get back to the dorm. Get four runners home before time runs out."
-const PATROL_CARD := "Find the runners. Use your cart to cut them off. Hop out and tag them before they get home."
+## Role cards from the round's actual rules (the counts vary with the party
+## settings; never hard-code them).
+static func runner_card(cfg: RulesConfig) -> String:
+	return "Splash into all three marked waters, then get back to the dorm. %d runners home before time runs out wins it for everyone. Caught? You keep your splashes and you're back in %d seconds." % [cfg.runners_needed, int(cfg.capture_penalty_s)]
+
+
+static func patrol_card(cfg: RulesConfig) -> String:
+	return "Stop %d runners getting home before time runs out. Cut them off with a cart, hop out and tag. A tag sends a runner out for %d seconds; they keep their splashes." % [cfg.runners_needed, int(cfg.capture_penalty_s)]
 
 
 static func role_name(r: int) -> String:

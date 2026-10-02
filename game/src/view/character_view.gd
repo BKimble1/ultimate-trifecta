@@ -293,6 +293,9 @@ func _build_tree() -> void:
 	# --- state machine (as a Transition)
 	var st := AnimationNodeTransition.new()
 	st.xfade_time = 0.12
+	# only restart_emote() requests the current state again: an emote chosen
+	# twice restarts (the per-frame _set_mode never re-requests a state)
+	st.allow_transition_to_self = true
 	var i := 0
 	for s in STATES:
 		st.add_input(s)
@@ -578,6 +581,24 @@ func play_arrive() -> void:
 ## Ready-up response (lobby).
 func play_ready() -> void:
 	_ready_t = 0.9
+
+
+## A deliberate action (emote, move preview) takes over from the automatic
+## arrival / ready responses.
+func cancel_reactions() -> void:
+	_ready_t = 0.0
+	_arrive_t = 0.0
+
+
+## Restart an emote that is already playing (choosing the same emote again
+## plays it from the start; the state input resets on a self-transition).
+func restart_emote(id: int) -> void:
+	if tree == null or id < 0 or id >= TC.EMOTES.size():
+		return
+	var m := "emote_" + String(TC.EMOTES[id])
+	if _mode == m:
+		tree.set("parameters/state/transition_request", m)
+		_mode_t = 0.0
 
 
 ## The host said this Night Watch's lunge found nobody (TAG_MISS event).

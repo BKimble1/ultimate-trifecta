@@ -33,6 +33,14 @@ func setup(latency_ms: float, jitter_ms: float, loss: float, n_clients: int, pre
 	host.name = "Host"
 	add_child(host)
 	host.start_host(host_t, "TEST1", "uid-host", "Host", {}, prefs[0] if prefs.size() > 0 else "any")
+	# V4 friend parties draw roles fairly at random; tests that need a role
+	# layout ask for it explicitly
+	for i in prefs.size():
+		var uid := "uid-host" if i == 0 else "uid-c%d" % (i - 1)
+		if String(prefs[i]) == "patrol":
+			host.role_override[uid] = TC.Role.PATROL
+		elif String(prefs[i]) == "runner":
+			host.role_override[uid] = TC.Role.RUNNER
 	_wire(host)
 	for i in n_clients:
 		add_client("uid-c%d" % i, "Client%d" % i, prefs[i + 1] if prefs.size() > i + 1 else "any")

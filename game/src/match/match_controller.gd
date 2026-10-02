@@ -86,7 +86,8 @@ var _prev_server_state := -1
 func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> void:
 	session = p_session
 	start = p_start
-	cfg = Rules.cfg
+	# this round's immutable rules (party settings) - never the global default
+	cfg = PartySeries.rules_for(Rules.cfg, int((start.get("settings", {}) as Dictionary).get("watch", PartySeries.DEFAULT_WATCH)))
 	layout = CampusLayout.shared()
 	is_client = session.mode == NetSession.Mode.CLIENT
 	local_slot = session.local_slot

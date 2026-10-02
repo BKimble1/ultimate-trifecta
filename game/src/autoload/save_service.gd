@@ -279,7 +279,11 @@ func equip(field: String, key: Variant) -> void:
 
 ## Applies rewards + stats once per match id. Returns {} if already applied
 ## or if the round was cancelled (host loss etc.).
-func apply_results(results: Dictionary, slot: int, practice: bool) -> Dictionary:
+## Applies one round's rewards and stats once (keyed by match id).  The
+## local row is found by player identity when given (slots can change
+## between rounds); a round the player mostly missed (a bot covered a
+## disconnect) is recorded as seen but pays nothing.
+func apply_results(results: Dictionary, slot: int, practice: bool, uid: String = "") -> Dictionary:
 	var mid := String(results.get("match_id", ""))
 	if mid == "" or (data["rewarded"] as Array).has(mid):
 		return {}
@@ -290,10 +294,20 @@ func apply_results(results: Dictionary, slot: int, practice: bool) -> Dictionary
 	for r in results.get("players", []):
 		if bool(r.get("is_bot", false)):
 			bots += 1
-		if int(r["slot"]) == slot:
+		if uid != "" and String(r.get("uid", "")) == uid:
 			me = r
 	if me.is_empty():
+		for r in results.get("players", []):
+			if int(r["slot"]) == slot and (uid == "" or String(r.get("uid", "")) == "" or String(r.get("uid", "")) == uid):
+				me = r
+	if me.is_empty():
 		return {}
+	slot = int(me["slot"])
+	var away := float(me.get("away_s", 0.0))
+	if not bool(me.get("present", true)) or away > (1.0 - PartySeries.PRESENT_SHARE) * maxf(1.0, float(results.get("round_time", 1.0))):
+		(data["rewarded"] as Array).append(mid)
+		mark()
+		return {"coins": 0, "xp": 0, "lines": [], "away": true}
 	var rew := RulesLogic.compute_rewards(results, slot, Rules.cfg, practice)
 	var st: Dictionary = data["stats"]["practice" if practice else "online"]
 	st["matches"] = int(st["matches"]) + 1

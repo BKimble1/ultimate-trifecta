@@ -187,7 +187,7 @@ func _build_reveal() -> void:
 	var ttl := UIKit.label(title, 40, UIKit.PATROL if is_patrol else UIKit.TEAL, true, HORIZONTAL_ALIGNMENT_CENTER)
 	ttl.add_theme_font_override("font", UIKit.font_w(700))
 	v.add_child(ttl)
-	var card := UIKit.label(TC.PATROL_CARD if is_patrol else TC.RUNNER_CARD, 24, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER)
+	var card := UIKit.label(TC.patrol_card(mc.cfg) if is_patrol else TC.runner_card(mc.cfg), 24, UIKit.IVORY, false, HORIZONTAL_ALIGNMENT_CENTER)
 	card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	card.custom_minimum_size = Vector2(700, 0)
 	v.add_child(card)

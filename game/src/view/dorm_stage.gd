@@ -49,6 +49,18 @@ var _cam_t := 1.0
 var _cam_dur := 0.2
 var _t := 0.0
 var _lamp: OmniLight3D
+## Emotes: who is emoting until when.  The newest emote owns the character
+## (no timers: an older emote can never cancel a newer one), and a repeat of
+## the same emote restarts it.
+var _emote_until: Dictionary = {}   # key -> stage time the emote ends
+var _bubbles: Dictionary = {}       # key -> Label3D (the emote's name over the head)
+## "Try moves": key -> {kind, t, len} local presentation of the player's own runner
+var _preview: Dictionary = {}
+
+## How long each lobby emote plays: two passes of its loop, so a glance
+## catches it (the clips are 1.2-1.4 s loops).
+const EMOTE_S := {"wave": 2.4, "cheer": 2.4, "laugh": 2.4, "shrug": 2.8, "dance": 3.75, "point": 2.4}
+const PREVIEW_S := {"idle": 1.2, "run": 2.4, "sprint": 2.4, "jump": 1.1, "dive": 1.3}
 
 
 func _ready() -> void:
@@ -162,6 +174,11 @@ func _apply_cam(c: Array, u: float) -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	for k in _emote_until.keys():
+		if _t >= float(_emote_until[k]):
+			_end_emote(k)
+	if not _preview.is_empty():
+		_update_preview(delta)
 	if _cam_t < 1.0:
 		_cam_t = minf(1.0, _cam_t + delta / _cam_dur)
 		_apply_cam(_cam_for(mode), _cam_t)
@@ -199,7 +216,9 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 				if mode == "lobby":
 					v.play_arrive()   # a little hop to show the new look
 			var rdy := bool(e.get("ready", false))
-			if rdy and not bool(_ready_of.get(key, false)) and mode == "lobby":
+			# the ready response plays once per change and never over a
+			# deliberate emote or a move preview
+			if rdy and not bool(_ready_of.get(key, false)) and mode == "lobby" and not emoting(key) and not _preview.has(key):
 				v.play_ready()
 			_ready_of[key] = rdy
 		if v.name_label:
@@ -220,6 +239,9 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 			chars.erase(k)
 			_mark_of.erase(k)
 			_ready_of.erase(k)
+			_emote_until.erase(k)
+			_bubbles.erase(k)
+			_preview.erase(k)
 	if _mark_of.size() != marks_before:
 		_reframe()
 
@@ -262,20 +284,129 @@ func _idle_rs(v: CharacterView) -> Dictionary:
 	return {"pos": v.global_position, "yaw": v.rotation.y, "state": TC.PState.ACTIVE, "vel": Vector3.ZERO, "on_floor": true}
 
 
-func emote(key: String, id: int, seconds: float = 2.0) -> void:
+## Plays an emote on a character.  Returns false (and does nothing) when that
+## character isn't on the stage or the id is unknown.
+func emote(key: String, id: int, seconds: float = -1.0) -> bool:
 	var v: CharacterView = chars.get(key)
-	if v == null or not is_instance_valid(v):
-		return
+	if v == null or not is_instance_valid(v) or not v.visible or id < 0 or id >= TC.EMOTES.size():
+		return false
+	_preview.erase(key)
+	var name: String = TC.EMOTES[id]
+	var dur := seconds if seconds > 0.0 else float(EMOTE_S.get(name, 2.4))
 	var rs := v.rs.duplicate()
 	rs["emote"] = id
 	rs["emote_t"] = 1.0
+	rs["vel"] = Vector3.ZERO
+	rs["on_floor"] = true
+	rs.erase("diving")
+	v.cancel_reactions()
 	v.apply_state(rs)
-	get_tree().create_timer(seconds).timeout.connect(func() -> void:
-		if is_instance_valid(v):
-			var r2 := v.rs.duplicate()
-			r2["emote"] = -1
-			r2["emote_t"] = 0.0
-			v.apply_state(r2))
+	v.restart_emote(id)
+	_emote_until[key] = _t + dur
+	_show_bubble(key, v, String(TC.EMOTE_LABELS[name]))
+	return true
+
+
+func emoting(key: String) -> bool:
+	return _emote_until.has(key)
+
+
+func _end_emote(key: String) -> void:
+	_emote_until.erase(key)
+	var v: CharacterView = chars.get(key)
+	if v != null and is_instance_valid(v):
+		var r2 := v.rs.duplicate()
+		r2["emote"] = -1
+		r2["emote_t"] = 0.0
+		v.apply_state(r2)
+	var b: Label3D = _bubbles.get(key)
+	if b != null and is_instance_valid(b):
+		var tw := b.create_tween()
+		tw.tween_property(b, "modulate:a", 0.0, 0.18)
+		tw.tween_callback(func() -> void: b.visible = false)
+
+
+func _show_bubble(key: String, v: CharacterView, text: String) -> void:
+	var b: Label3D = _bubbles.get(key)
+	if b == null or not is_instance_valid(b):
+		b = Label3D.new()
+		b.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		b.no_depth_test = true
+		b.fixed_size = false
+		b.pixel_size = 0.0042
+		b.font_size = 46
+		b.outline_size = 14
+		b.font = UIKit.font_w(700)
+		b.modulate = UIKit.IVORY
+		b.outline_modulate = Color(UIKit.NAVY, 0.92)
+		b.position = Vector3(0, 2.18, 0)
+		b.render_priority = 4
+		v.add_child(b)
+		_bubbles[key] = b
+	b.text = text
+	b.visible = true
+	b.modulate.a = 1.0
+	if not reduced_motion:
+		b.scale = Vector3.ONE * 0.6
+		var tw := b.create_tween()
+		tw.tween_property(b, "scale", Vector3.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## "Try moves": a local presentation of the player's own runner on its mark
+## (running and jumping on the spot).  Nothing is sent to the party; an
+## emote, a new preview or leaving the room ends it.
+func preview_move(key: String, kind: String) -> bool:
+	var v: CharacterView = chars.get(key)
+	if v == null or not is_instance_valid(v) or not PREVIEW_S.has(kind):
+		return false
+	if emoting(key):
+		_end_emote(key)
+	v.cancel_reactions()
+	_preview[key] = {"kind": kind, "t": 0.0, "len": float(PREVIEW_S[kind])}
+	return true
+
+
+func stop_previews() -> void:
+	for k in _preview.keys():
+		var v: CharacterView = chars.get(k)
+		if v != null and is_instance_valid(v):
+			v.apply_state(_idle_rs(v))
+	_preview.clear()
+
+
+func _update_preview(delta: float) -> void:
+	for k in _preview.keys():
+		var v: CharacterView = chars.get(k)
+		var pv: Dictionary = _preview[k]
+		pv["t"] = float(pv["t"]) + delta
+		if v == null or not is_instance_valid(v) or float(pv["t"]) >= float(pv["len"]):
+			_preview.erase(k)
+			if v != null and is_instance_valid(v):
+				v.apply_state(_idle_rs(v))
+			continue
+		var t := float(pv["t"])
+		var rs := _idle_rs(v)
+		var fwd := Vector3(sin(v.rotation.y), 0, cos(v.rotation.y))
+		match String(pv["kind"]):
+			"run":
+				rs["vel"] = fwd * Rules.cfg.runner_speed
+			"sprint":
+				rs["vel"] = fwd * Rules.cfg.runner_sprint_speed
+				rs["sprinting"] = true
+			"jump":
+				# the real jump arc, on the spot
+				var g := Rules.cfg.gravity
+				var v0 := Rules.cfg.jump_velocity
+				var air := t < 2.0 * v0 / g
+				rs["on_floor"] = not air
+				rs["vel"] = Vector3(0, v0 - g * t, 0) if air else Vector3.ZERO
+				var base: Vector3 = MARKS[int(_mark_of.get(k, 0))] if mode == "lobby" else v.position
+				rs["pos"] = to_global(Vector3(base.x, maxf(0.0, v0 * t - 0.5 * g * t * t) if air else 0.0, base.z))
+			"dive":
+				rs["diving"] = t < 0.75
+				rs["on_floor"] = t >= 0.75
+				rs["vel"] = fwd * (Rules.cfg.dive_speed * 0.3) if t < 0.75 else Vector3.ZERO
+		v.apply_state(rs)
 
 
 func local_character() -> CharacterView:

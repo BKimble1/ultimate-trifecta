@@ -11,3 +11,11 @@ int ut_platform_share(const char *text, const char *url) {
 	(void)url;
 	return 0;
 }
+
+int ut_platform_thermal_state(void) {
+	return -1;
+}
+
+int ut_platform_low_power(void) {
+	return -1;
+}

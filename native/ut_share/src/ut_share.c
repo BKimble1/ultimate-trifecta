@@ -3,6 +3,12 @@
  *
  *     ClassDB.class_call_static("UTShare", "available") -> bool
  *     ClassDB.class_call_static("UTShare", "share", text, url) -> bool
+ *     ClassDB.class_call_static("UTShare", "thermal_state") -> int
+ *     ClassDB.class_call_static("UTShare", "low_power_mode") -> int
+ *
+ * thermal_state: 0 nominal, 1 fair, 2 serious, 3 critical (iOS
+ * ProcessInfo.thermalState); low_power_mode: 1 on, 0 off; both -1 where the
+ * platform has no such state (the beta diagnostics report "unavailable").
  *
  * The class is abstract (never instantiated) and only has static methods, so
  * there is no object lifetime to manage. The platform work lives in
@@ -10,6 +16,7 @@
  *
  * gdextension_interface.h is dumped from the pinned engine at build time
  * (tools/build_native.sh), so the binding always matches Godot 4.7.2. */
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -37,6 +44,7 @@ static GDExtensionInterfaceStringToUtf8Chars ut_string_to_utf8;
 static GDExtensionInterfaceVariantGetType ut_variant_get_type;
 static GDExtensionTypeFromVariantConstructorFunc ut_string_from_variant;
 static GDExtensionVariantFromTypeConstructorFunc ut_variant_from_bool;
+static GDExtensionVariantFromTypeConstructorFunc ut_variant_from_int;
 static GDExtensionPtrDestructor ut_string_destroy;
 
 static ut_opaque ut_class_name;      /* "UTShare" */
@@ -44,7 +52,7 @@ static ut_opaque ut_parent_name;     /* "Object" */
 static ut_opaque ut_empty_name;      /* "" (StringName) */
 static ut_opaque ut_empty_string;    /* "" (String) */
 static ut_opaque ut_arg_names[2];    /* "text", "url" */
-static ut_opaque ut_method_names[2]; /* "share", "available" */
+static ut_opaque ut_method_names[4]; /* "share", "available", "thermal_state", "low_power_mode" */
 static int ut_registered;
 
 /* ------------------------------------------------------------- strings */
@@ -143,6 +151,33 @@ static void ut_available_ptrcall(void *userdata, GDExtensionClassInstancePtr ins
 	*(GDExtensionBool *)r_ret = ut_platform_available() ? 1 : 0;
 }
 
+/* thermal_state() / low_power_mode(): no arguments, int result. The method
+ * userdata selects which platform query runs. */
+static int64_t ut_int_query(void *which) {
+	return (intptr_t)which == 0 ? (int64_t)ut_platform_thermal_state() : (int64_t)ut_platform_low_power();
+}
+
+static void ut_int_call(void *userdata, GDExtensionClassInstancePtr instance, const GDExtensionConstVariantPtr *args,
+		GDExtensionInt argc, GDExtensionVariantPtr r_return, GDExtensionCallError *r_error) {
+	(void)instance;
+	(void)args;
+	if (argc > 0) {
+		r_error->error = GDEXTENSION_CALL_ERROR_TOO_MANY_ARGUMENTS;
+		r_error->expected = 0;
+		return;
+	}
+	r_error->error = GDEXTENSION_CALL_OK;
+	GDExtensionInt v = (GDExtensionInt)ut_int_query(userdata);
+	ut_variant_from_int(r_return, &v);
+}
+
+static void ut_int_ptrcall(void *userdata, GDExtensionClassInstancePtr instance, const GDExtensionConstTypePtr *args,
+		GDExtensionTypePtr r_ret) {
+	(void)instance;
+	(void)args;
+	*(GDExtensionInt *)r_ret = (GDExtensionInt)ut_int_query(userdata);
+}
+
 /* Abstract class: Godot never creates or frees instances, but the
  * destructor is mandatory in the creation info. */
 static void ut_free_instance(void *class_userdata, GDExtensionClassInstancePtr instance) {
@@ -173,6 +208,8 @@ static void ut_register(void) {
 	ut_string_name_new(&ut_arg_names[1], "url", 1);
 	ut_string_name_new(&ut_method_names[0], "share", 1);
 	ut_string_name_new(&ut_method_names[1], "available", 1);
+	ut_string_name_new(&ut_method_names[2], "thermal_state", 1);
+	ut_string_name_new(&ut_method_names[3], "low_power_mode", 1);
 
 	GDExtensionClassCreationInfo6 info;
 	memset(&info, 0, sizeof(info));
@@ -219,6 +256,21 @@ static void ut_register(void) {
 	avail.return_value_info = &ret;
 	avail.return_value_metadata = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
 	ut_register_method(ut_library, &ut_class_name, &avail);
+
+	GDExtensionPropertyInfo ret_int = ut_prop(GDEXTENSION_VARIANT_TYPE_INT, &ut_empty_name);
+	for (int q = 0; q < 2; q++) {
+		GDExtensionClassMethodInfo m;
+		memset(&m, 0, sizeof(m));
+		m.name = &ut_method_names[2 + q];
+		m.method_userdata = (void *)(intptr_t)q;
+		m.call_func = ut_int_call;
+		m.ptrcall_func = ut_int_ptrcall;
+		m.method_flags = GDEXTENSION_METHOD_FLAG_NORMAL | GDEXTENSION_METHOD_FLAG_STATIC;
+		m.has_return_value = 1;
+		m.return_value_info = &ret_int;
+		m.return_value_metadata = GDEXTENSION_METHOD_ARGUMENT_METADATA_INT_IS_INT64;
+		ut_register_method(ut_library, &ut_class_name, &m);
+	}
 	ut_registered = 1;
 }
 
@@ -263,8 +315,9 @@ UT_EXPORT GDExtensionBool ut_share_init(GDExtensionInterfaceGetProcAddress get_p
 	UT_LOAD(destructor, GDExtensionInterfaceVariantGetPtrDestructor, "variant_get_ptr_destructor");
 	ut_string_from_variant = to_type(GDEXTENSION_VARIANT_TYPE_STRING);
 	ut_variant_from_bool = from_type(GDEXTENSION_VARIANT_TYPE_BOOL);
+	ut_variant_from_int = from_type(GDEXTENSION_VARIANT_TYPE_INT);
 	ut_string_destroy = destructor(GDEXTENSION_VARIANT_TYPE_STRING);
-	if (ut_string_from_variant == NULL || ut_variant_from_bool == NULL || ut_string_destroy == NULL) {
+	if (ut_string_from_variant == NULL || ut_variant_from_bool == NULL || ut_variant_from_int == NULL || ut_string_destroy == NULL) {
 		return 0;
 	}
 	ut_library = library;

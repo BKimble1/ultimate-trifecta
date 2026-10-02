@@ -80,6 +80,7 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 		p.uid = String(entry.get("uid", ""))
 		p.display_name = String(entry.get("name", "Player"))
 		p.is_bot = bool(entry.get("is_bot", false))
+		p.was_human = not p.is_bot
 		p.role = int(entry["role"])
 		p.cosmetic = entry.get("cosmetic", {})
 		p.body = Motor.make_character_body("P%d" % p.id)
@@ -242,8 +243,10 @@ func step(inputs: Dictionary) -> void:
 	# 1. timers + state machine
 	for p in players:
 		_tick_state(p, dt)
-	# disconnect reservations
+	# disconnect reservations (and time away, for series eligibility)
 	for p in players:
+		if p.was_human and not p.connected:
+			p.away_ticks += 1
 		if not p.connected and not p.is_bot:
 			p.disconnect_t += dt
 			if p.disconnect_t > cfg.disconnect_reserve_s and not p.is_bot:
@@ -907,10 +910,11 @@ func build_results() -> Dictionary:
 			"finish_order": p.finish_order, "times_captured": p.times_captured,
 			"captures": p.captures, "unique_captures": p.captured_ids.size(),
 			"cosmetic": p.cosmetic, "uid": p.uid,
+			"was_human": p.was_human, "present": p.connected, "away_s": float(p.away_ticks) / float(cfg.sim_hz),
 		})
 	return {
 		"match_id": match_id, "outcome": outcome, "players": rows, "fastest_slot": fastest,
 		"fastest_time": fastest_t if fastest >= 0 else -1.0, "finished": finished_count,
-		"needed": cfg.runners_needed, "targets": targets, "practice": practice,
+		"needed": cfg.runners_needed, "watch": cfg.patrol_slots, "targets": targets, "practice": practice,
 		"round_time": round_time(),
 	}
