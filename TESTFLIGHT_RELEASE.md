@@ -137,6 +137,7 @@ These answers are based on what the build actually contains; please confirm them
 > - Play with Friends → Create Party: share the 6-character code with Share (the iOS share sheet should open), Copy or Invite; a friend uses Join on another device. In the party: tap a player for Hide emotes / Report / Block / Remove. Faces should stay visible with 1–8 players.
 > - Game controller (if you have one): menus with the d-pad, the code pad for joining, LB/RB in the creator, jump-then-dive quickly, sprint, cart throttle and brake. Do the button prompts match your controller?
 > - Touch: move + camera drag + jump at once; Settings → Controls options.
+> - Drive or run under the big trees: the view should stay clear, with no green "porthole".
 > - Finish rounds both ways, then Rematch and Leave. Tell us about crashes, stuck controls, heat or frame drops, with your iPhone model.
 
 ## Release labels

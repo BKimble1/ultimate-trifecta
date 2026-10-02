@@ -204,6 +204,10 @@ The service lives in `service/`; see [service/README.md](../service/README.md).
 - **Party lifecycle.** The host heartbeats the room every 15 s, and the room
   service records the state. Switching to another party asks first.
   Leaving releases the player's room membership.
+- **Desktop transport fix.** The ENet transport (desktop and LAN
+  development only) no longer sends to a peer that has left, or to one
+  still waiting for its disconnect, which raised engine errors when
+  several clients dropped at once.
 
 ## Controls
 
