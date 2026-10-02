@@ -47,7 +47,7 @@ case "$(uname -s)" in
       local slices=()
       for target in "$@"; do
         xcrun --sdk "$sdk" clang "${CFLAGS[@]}" "${INC[@]}" -target "$target" -fobjc-arc -dynamiclib \
-          -install_name @rpath/UTShare.framework/UTShare -framework UIKit -framework Foundation \
+          -install_name @rpath/UTShare.framework/UTShare -framework UIKit -framework CoreGraphics -framework Foundation \
           -o "$BUILD/$sdk/UTShare-$target" "$SRC/ut_share.c" "$SRC/ut_share_ios.m"
         slices+=("$BUILD/$sdk/UTShare-$target")
       done
