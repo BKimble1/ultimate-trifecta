@@ -161,9 +161,10 @@ screen height. V5 renders the loop from the game itself:
 - **Exact loop:** the run speed is solved (5.21 m/s) so one gait cycle is
   exactly 26 frames at 60 fps; the runners are offset by fractions of that
   cycle; blinks and fidgets are off; hat springs are pre-rolled. Frame 26
-  equals frame 0 (mean absolute difference 0.0001), and the step from the
-  last frame back to the first is an ordinary step (5.50 against 3.80–5.42
-  between other frames). `tools/make_loading_loop_rig.py` refuses a loop
+  equals frame 0 (mean absolute difference 0.0), and the step from the
+  last frame back to the first is an ordinary rendered step (5.77 against
+  4.22–5.64 between other frames). It was re-rendered from the V5 rig after
+  the motion work (new clips and pose fades). `tools/make_loading_loop_rig.py` refuses a loop
   that doesn't close.
 - **Cost:** 26 frames of 920×540 in one 4×7 atlas: ASTC 4×4 on iOS
   ≈ 12.9 MB of GPU memory (V4: 13.8 MB for 19 frames at 24 fps). The still
@@ -218,6 +219,60 @@ screen height. V5 renders the loop from the game itself:
   shorter.
 - **Settings:** an opaque sheet over a dimmed room, overline sections with
   dividers, choice buttons with the restrained selection.
+
+## Character motion
+
+The full register (M1–M19) with the V4 → V5 numbers is in
+[v5/motion_register.md](v5/motion_register.md); the implementation, the
+asset rebuild, budgets and limits in [v5/motion_notes.md](v5/motion_notes.md);
+media in [media/v5/motion/](media/v5/motion/README.md). Every before/after
+number comes from the same measuring code run on the V4 commit and on V5
+(headless or llvmpipe on a desktop, fixed clock): it measures continuity,
+not phone smoothness.
+
+- **No snaps between states.** Every state change fades from the pose on
+  screen (`CharacterPoseFade`, a skeleton modifier that extrapolates the
+  shown pose and decays it). Largest single-frame upper-body snap, V4 → V5:
+  start 35 → 5 cm, stop 25 → 3.5, 180° reversal 29 → 7, running-jump
+  landing 57 → 10, kerb drop 51 → 7, one-tick floor-contact flicker 103 →
+  3.5, cart in/out 35 → 5, prediction-correction stress run 23 → 7.
+  Teleports (respawn, resurfacing, cart seat) cut instead of fading.
+- **Gait phase and foot contact.** A start begins on a step, a stop
+  finishes the step it is in and holds a planted pose; stride rate follows
+  ground speed at the rule speeds (1.3–8 m/s); the drawn body aims along
+  its actual travel in turns, so it no longer runs sideways for 0.2 s.
+  Planted-foot slide in a reversal 1.23 → 0.92 m/s; 90° turns still slide
+  about as in V4 (no foot locking yet: Partial).
+- **Clips.** Eleven clips had arms 1–30 cm inside the head (yawn,
+  celebrate, cheer, wave, splash…); none over 1 cm now
+  (`tools/character/clip_check.py`). Baked ~22 cm foot jumps in tag
+  recover/miss removed; new cart hop-in and hop-out. The Night Watch
+  wind-up and recovery play on the upper body while the legs keep running;
+  the lunge is a leap instead of a planted stance sliding at 9 m/s.
+- **Secondary impulses.** Springs take the derivative of a filtered
+  velocity, bounded at 55 m/s², so a short frame or a correction can't
+  kick them; the nightcap is simulated in the character's space (hitch,
+  respawn or jump: 32–41 cm whip → ≤ 8 cm); landing squash is a damped
+  spring (≤ 15 %).
+- **Camera.** A tree trunk or lamp post crossing the camera line no longer
+  yanks the camera ~3 m closer for a frame (now 0.03 m); walls still pull
+  it in at once. Dorm camera moves are the UI motion layer's 320 ms.
+- **Resets.** Respawn, teleport, cart seat, reconnect and spectator switch
+  reset all motion history; a new view's first frame doesn't count the jump
+  from the world origin as travel (M19, found in integration).
+- **LOD thresholds.** Distant characters animate at a reduced rate beyond
+  48 m and return to full rate inside 42 m (hysteresis), keeping exact
+  elapsed time; your own character never throttles.
+- **Menus.** A calmer idle in the dorm (slower breathing, a small fidget
+  every 7–12 s, softer blinks, a calmer cap), automatic for indoor
+  lighting; emotes, arrivals, ready responses and Try moves unchanged.
+- **Network classification** (M14): on the shaped in-process link (0, 120
+  and 300 ms round trip) visible correction frames were 0; terrain and
+  camera-collision counts didn't change with the link, so they are not
+  network effects. On real UDP between processes, mean corrections were
+  2.5 mm unshaped and ~11 mm at 60 ± 10 ms / 3 % loss. Still open: remote
+  players extrapolate on ~6 % of frames under heavy loss (300 ms, 10 %),
+  and rare ~1 m corrections in the UDP soak were not traced.
 
 <!-- V5_MERGED_SECTIONS -->
 
