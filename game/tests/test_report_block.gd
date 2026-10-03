@@ -88,3 +88,68 @@ func test_block_hides_and_the_host_removes() -> void:
 	rig.teardown()
 	await t.get_tree().process_frame   # (queued frees happen before the next test)
 	await t.get_tree().process_frame
+
+
+## The chat drawer on a phone held sideways: the Quick Chat phrases are one
+## sideways strip, so the messages keep most of the height; on an iPad they
+## wrap.  Opening a message's actions (Mute, Report, Block) keeps that
+## message in view instead of jumping to the newest one.
+func test_drawer_fits_a_phone_and_keeps_actions_in_view() -> void:
+	var root: Window = t.get_tree().root
+	var saved_size: Vector2i = root.size
+	var rig := NetRig.new()
+	t.add_child(rig)
+	rig.setup(20, 0, 0.0, 1)
+	var c0: NetSession = rig.clients[0]
+	await rig.wait_until(func() -> bool: return c0.local_slot >= 0 and rig.host.human_count() == 2, 300)
+	var chat := rig.host.social.chat
+	for i in 12:
+		var m := chat._make(i + 1, c0.local_slot, QuickChat.Channel.PARTY, SocialProto.Kind.TEXT, 0, "Message number %d" % (i + 1), "")
+		chat._insert(m)
+	for sz in [Vector2i(2532, 1170), Vector2i(1334, 750), Vector2i(2048, 1536)]:
+		root.size = sz
+		await t.get_tree().process_frame
+		var holder := Control.new()
+		holder.set_anchors_preset(Control.PRESET_FULL_RECT)
+		t.add_child(holder)
+		var d := ChatDrawer.open(holder, rig.host, "lobby")
+		for i in 4:
+			await t.get_tree().process_frame
+		var phone: bool = sz.y < 1536
+		t.eq(d.quick_strip != null, phone, "%s: Quick Chat is %s" % [str(sz), "one sideways strip" if phone else "wrapped"])
+		if phone:
+			t.check(d.scroll.size.y >= d.panel.size.y * 0.35, "%s: the messages keep room (%d of %d)" % [str(sz), d.scroll.size.y, d.panel.size.y])
+			t.check(d.quick_box.get_combined_minimum_size().x > d.quick_strip.size.x, "%s: (the strip scrolls sideways)" % str(sz))
+		var sv := d.scroll.get_global_rect()
+		t.check(sv.size.y > 0.0 and d.scroll.scroll_vertical > 0, "%s: the newest message shows first" % str(sz))
+		# actions on the oldest message: it stays in view
+		d._open_actions = 1
+		d._refresh()
+		for i in 4:
+			await t.get_tree().process_frame
+		var report: Button = null
+		for b in _buttons(d):
+			if (b as Button).text == "Report message":
+				report = b
+		t.check(report != null, "%s: the message has its actions" % str(sz))
+		if report != null:
+			var g := report.get_global_rect()
+			t.check(d.scroll.get_global_rect().grow(1.0).encloses(g), "%s: and they are in view (%s in %s)" % [str(sz), str(g), str(d.scroll.get_global_rect())])
+		# a new message arriving doesn't scroll them away
+		chat._insert(chat._make(40, c0.local_slot, QuickChat.Channel.PARTY, SocialProto.Kind.TEXT, 0, "One more", ""))
+		for i in 4:
+			await t.get_tree().process_frame
+		if report != null:
+			var again: Button = null
+			for b in _buttons(d):
+				if (b as Button).text == "Report message":
+					again = b
+			t.check(again != null and d.scroll.get_global_rect().grow(1.0).encloses(again.get_global_rect()), "%s: still in view after a new message" % str(sz))
+		chat.history.pop_back()
+		d.close()
+		holder.queue_free()
+		await t.get_tree().process_frame
+	root.size = saved_size
+	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame

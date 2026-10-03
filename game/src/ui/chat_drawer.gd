@@ -27,8 +27,10 @@ var field: LineEdit
 var send_btn: Button
 var note_lbl: Label
 var title_lbl: Label
-var quick_box: HFlowContainer
+var quick_box: Container     # chips: a flow (tall screens) or one sideways strip (phones)
+var quick_strip: ScrollContainer = null
 var _open_actions := -1       # seq of the message whose actions are showing
+var _show_row: Control = null  # that message's row: kept in view instead of the newest
 var _sending := false
 
 
@@ -42,6 +44,12 @@ static func open(parent: Control, p_session: NetSession, p_context: String, opts
 	if parent is Screen:
 		(parent as Screen).push_modal(d, d.close)
 	return d
+
+
+## Below this panel height in canvas units the Quick Chat phrases sit in one
+## sideways strip.  The canvas is 720 units tall on every phone held sideways
+## (16:9 or wider) and 960 on a 4:3 iPad.
+const SHORT_PANEL := 800.0
 
 
 func _init() -> void:
@@ -149,12 +157,22 @@ func _ready() -> void:
 	list_box = UIKit.vbox(6)
 	list_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(list_box)
-	# quick chat
+	# quick chat: on a phone held sideways the phrases are one strip that
+	# scrolls sideways, so the messages keep most of the height
 	v.add_child(UIKit.styled("Quick Chat", "overline", UIKit.IVORY_MUTED))
-	quick_box = HFlowContainer.new()
-	quick_box.add_theme_constant_override("h_separation", 8)
-	quick_box.add_theme_constant_override("v_separation", 8)
-	v.add_child(quick_box)
+	if panel.size.y < SHORT_PANEL:
+		quick_strip = UIKit.scroll_area(true)
+		quick_strip.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER   # (the cut-off last phrase shows there is more)
+		quick_strip.custom_minimum_size.y = maxf(60.0, UIKit.touch_min()) + 4.0
+		quick_box = UIKit.hbox(8)
+		quick_strip.add_child(quick_box)
+		v.add_child(quick_strip)
+	else:
+		var flow := HFlowContainer.new()
+		flow.add_theme_constant_override("h_separation", 8)
+		flow.add_theme_constant_override("v_separation", 8)
+		quick_box = flow
+		v.add_child(flow)
 	_build_quick()
 	session.social.chat.changed.connect(_refresh)
 	session.social.chat.rejected.connect(_on_rejected)
@@ -247,6 +265,7 @@ func _refresh() -> void:
 		return
 	for c in list_box.get_children():
 		c.queue_free()
+	_show_row = null
 	var msgs := visible_messages()
 	if msgs.is_empty():
 		var e := UIKit.styled("No messages yet. Say hi with Quick Chat.", "caption", UIKit.IVORY_MUTED)
@@ -255,12 +274,23 @@ func _refresh() -> void:
 	for m in msgs:
 		list_box.add_child(_row(m))
 	session.social.chat.unread = 0
-	_scroll_to_end.call_deferred()
+	if _show_row != null:
+		_reveal(_show_row)
+	else:
+		_scroll_to_end.call_deferred()
 
 
 func _scroll_to_end() -> void:
 	if is_instance_valid(scroll):
 		scroll.scroll_vertical = int(scroll.get_v_scroll_bar().max_value)
+
+
+## A message with its actions open stays in view (new messages arriving
+## don't scroll it away), once the list has been laid out.
+func _reveal(row: Control) -> void:
+	await get_tree().process_frame
+	if is_instance_valid(scroll) and is_instance_valid(row) and row.is_inside_tree():
+		scroll.ensure_control_visible(row)
 
 
 func _row(m: Dictionary) -> Control:
@@ -303,6 +333,7 @@ func _row(m: Dictionary) -> Control:
 			_refresh())
 		if _open_actions == seq:
 			box.add_child(_actions(m))
+			_show_row = box
 	return box
 
 
