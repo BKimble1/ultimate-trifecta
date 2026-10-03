@@ -336,3 +336,37 @@ func test_preparing_and_waiting_for_players_are_told_apart() -> void:
 	ls.queue_free()
 	await t.get_tree().process_frame
 	s.queue_free()
+
+
+## V6: when frames are slow anyway, preparation takes a larger share of each
+## (up to half the interval, capped); at 60 fps it stays at 9 ms.
+func test_preparation_budget_follows_a_slow_device() -> void:
+	t.eq(MatchController.prep_budget_us(7000.0), MatchController.PREP_BUDGET_US, "60 fps: the usual 9 ms")
+	t.eq(MatchController.prep_budget_us(0.0), MatchController.PREP_BUDGET_US, "unknown: the usual 9 ms")
+	t.eq(MatchController.prep_budget_us(50000.0), 25000, "a 50 ms frame: half of it")
+	t.eq(MatchController.prep_budget_us(1000000.0), MatchController.PREP_BUDGET_MAX_US, "never more than the cap")
+	# driven: frames that take 60 ms outside preparation
+	MatchController.drop_campus_cache()
+	var s := _offline()
+	var mc := _start(s)
+	var frames := 0
+	while not mc.prepared and frames < 400:
+		OS.delay_msec(60)
+		await t.get_tree().process_frame
+		frames += 1
+	t.check(mc.prepared, "prepared")
+	var slow_frames := frames
+	_end(mc)
+	await t.get_tree().process_frame
+	MatchController.drop_campus_cache()
+	var mc2 := _start(s)
+	frames = 0
+	while not mc2.prepared and frames < 400:
+		await t.get_tree().process_frame
+		frames += 1
+	print("[load] frames to prepare: %d with 60 ms frames, %d with fast frames" % [slow_frames, frames])
+	t.check(slow_frames < frames, "slow frames: fewer of them are needed (%d vs %d)" % [slow_frames, frames])
+	_end(mc2)
+	await t.get_tree().process_frame
+	MatchController.drop_campus_cache()
+	s.queue_free()
