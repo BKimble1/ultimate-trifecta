@@ -364,7 +364,7 @@ Updated: `test_trust`, where names in a service-off party are curated.
 pass unchanged.
 
 Full suite after merging the integrator branch (art, commerce, dorms):
-**339 tests, 87,600 checks, 0 failures** (`tools/run_tests.sh`, headless,
+**339 tests, 87,603 checks, 0 failures** (`tools/run_tests.sh`, headless,
 with captures running on the same 4 shared cores), plus the service's
 `npm test`: **42 tests, 0 failures**. `test_routes_bots` rewrites
 `game/config/route_bot_times.json`; that file is reverted after each run.
