@@ -152,5 +152,5 @@ save("music_chase_calm", music_loop(100, prog, mel), 0.55)  # converted to .ogg 
 prog2 = [("C","M"),("G","M"),("A","m"),("F","M")]
 mel2 = [("C",5),("E",5),("G",5),("C",6),None,("G",5),("E",5),None]*4
 save("music_results", music_loop(120, prog2, mel2, bars=4), 0.55)
-save("music_menu", music_loop(92, [("F","M"),("A","m"),("D","m"),("C","M")], [("A",4),None,("C",5),None,("F",5),None,("E",5),("D",5)]*8), 0.5)
+# music_menu.ogg (the lobby music) is the owner's "Night Campus Loop", built by tools/make_lobby_music.py
 print("audio written to", os.path.abspath(OUT))
