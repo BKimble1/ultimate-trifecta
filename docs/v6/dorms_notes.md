@@ -185,9 +185,11 @@ Eight gold coins per round (`RulesConfig.coin_spawns_per_round`), each worth
   packet, a second client, a late snapshot or a reconnect can't show a coin
   that was taken or count one twice: the view only ever hides coins.
 - **Results.** Every row has `coins_picked` (humans and bots; bots own no
-  wallet — the row says `is_bot`) and the round has `coin_log` [[id, slot]]
-  and `coins_total`. Wallet settlement is the commerce workstream's, once per
-  match id and player identity, from `coins_picked`. **Cancelled rounds settle
+  wallet — the row says `is_bot`) and the round has `coin_log` [[id, slot]],
+  `coins_total` and `coin_spawns` (the same number; the economy clamps each
+  row's `coins_picked` to it — `Economy.coins_picked` credits exactly the
+  row's pickups, tested). Wallet settlement is the commerce workstream's,
+  once per match id and player identity, from `coins_picked`. **Cancelled rounds settle
   nothing** (RULES.md); the row still records the pickups.
 - **Bots.** Runner bots detour for a coin within 7 m of where they are (never
   while lining up a jump into a water); Night Watch bots on patrol take one

@@ -270,3 +270,6 @@ func test_coins_over_the_network_replay_and_reconnect() -> void:
 	t.eq(int(rig.mc_of(c1)._last_snap.get("coins", -1)) & 1, 0, "the taken coin stays gone after reconnecting")
 	t.eq(sp.coins_picked, 1, "no extra credit from reconnecting")
 	rig.teardown()
+	# let the rig's sessions and match controllers go before the next suite
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
