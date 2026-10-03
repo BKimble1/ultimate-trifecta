@@ -87,6 +87,10 @@ def make_mesh(mb, arm_ob, scn):
     me.color_attributes.active_color = col
     for p in me.polygons:
         p.use_smooth = True
+    # V6: crease edges sharper than SHARP_DEG keep a hard normal (decal and
+    # patch rims, flat sleeve ends, sole and crown edges, the hair's tucked
+    # edge) instead of smearing the shading across them
+    me.set_sharp_from_angle(angle=math.radians(SHARP_DEG))
     mat = bpy.data.materials.get('character') or bpy.data.materials.new('character')
     me.materials.append(mat)
     ob = bpy.data.objects.new(mb.name, me)
@@ -110,6 +114,8 @@ def make_mesh(mb, arm_ob, scn):
     mod.object = arm_ob
     return ob
 
+
+SHARP_DEG = 66.0
 
 SHAPE_KEYS = ('blink', 'squint', 'smile', 'open', 'brow_up', 'brow_angry', 'face_bright', 'face_sleepy', 'brow_flat')
 

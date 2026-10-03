@@ -641,6 +641,7 @@ func _apply_cosmetics() -> void:
 		mi.set_instance_shader_parameter("rim_color", rim)
 		mi.set_instance_shader_parameter("rim_strength", 0.14 if lighting == "indoor" else 0.1)
 		mi.set_instance_shader_parameter("wet", _wet)
+		mi.set_instance_shader_parameter("skin_warm", 0.03 if lighting == "indoor" else 0.15)
 	_face_base = Cosmetics.face_keys(cosmetic)
 	# nightcap tip spring only when it is worn
 	var cap := not patrol and "hat_nightcap" in want

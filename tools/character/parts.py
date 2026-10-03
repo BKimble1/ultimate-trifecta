@@ -144,14 +144,16 @@ def build_base():
     # neck stub (hidden by collars, visible in swim)
     lathe(mb, Vector((0, 0.0, 0)), Matrix.Identity(3), [(0.86, 0.0), (0.865, 0.06), (0.90, 0.066), (0.95, 0.07), (0.97, 0.0)],
           SKIN, neck_w, segs=16, ry_scale=0.9)
-    # ears
+    # ears (V6: a little larger, with a deeper inner shade so they read on
+    # every skin tone and under hair)
     for sx in SIDES:
         R = rot_z(-15 * sx)
         ex = rig.head_side_x(1.165, 0.0, -0.005)
-        ellipsoid(mb, Vector(((ex - 0.012) * sx, -0.005, 1.165)), (0.036, 0.05, 0.066), SKIN, hw, segs=14, rings=10, rot=R)
-        ellipsoid(mb, Vector(((ex + 0.012) * sx, 0.004, 1.165)), (0.012, 0.031, 0.043), SKIN.with_col('#e9b9b1'), hw, segs=12, rings=8, rot=R)
-    # nose
-    _feature(mb, 0.0, 1.118, (0.031, 0.024, 0.022), SKIN.with_col('#ffe2d9'), hw, sink=0.008)
+        ellipsoid(mb, Vector(((ex - 0.012) * sx, -0.005, 1.165)), (0.039, 0.054, 0.071), SKIN, hw, segs=14, rings=10, rot=R)
+        ellipsoid(mb, Vector(((ex + 0.014) * sx, 0.004, 1.163)), (0.013, 0.035, 0.048), SKIN.with_col('#d99d94'), hw, segs=12, rings=8,
+                  rot=R)
+    # nose (V6: a touch larger, so it reads at gameplay distance)
+    _feature(mb, 0.0, 1.118, (0.034, 0.026, 0.024), SKIN.with_col('#ffe2d9'), hw, sink=0.008)
     # eyes: sclera, pupil, catch-light.  aux carries the eye frame for the shape keys
     sclera = Style('#fdfcf8', T_NONE, 0.3, MAT_LIT)
     iris = Style('#3a2215', T_NONE, 0.2, MAT_GLOSS)
@@ -169,6 +171,31 @@ def build_base():
         aux = (c.copy(), side_v.copy(), up_v.copy(), n.copy(), sx)
         tag = 'eyeL' if sx < 0 else 'eyeR'
         ellipsoid(mb, c, (0.053, 0.067, 0.02), sclera, hw, segs=20, rings=14, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        # V6: upper lash line hugging the top of the white, thicker toward
+        # the outer corner with a small flick.  It carries the eye's frame,
+        # so blink, squint and the face presets move it with the lid.
+        outer = (Vector((sx, 0.0, 0.0)) - n * n.x * sx).normalized()
+        o_sign = 1.0 if outer.dot(side_v) > 0 else -1.0
+        lpts, lrad = [], []
+        for i in range(13):
+            a = math.radians(18 + 144 * i / 12)
+            f = 0.965
+            dep = 0.02 * math.sqrt(max(0.0, 1.0 - f * f)) + 0.0016
+            q = c + side_v * (0.053 * f * math.cos(a)) + up_v * (0.067 * f * math.sin(a)) + n * dep
+            outness = smoothstep(-0.6, 1.0, o_sign * math.cos(a))
+            lpts.append(q)
+            lrad.append((0.0024, lerp(0.0026, 0.0056, outness)))
+        if o_sign < 0:
+            lpts.reverse()
+            lrad.reverse()
+        # the flick past the outer corner
+        tip = lpts[-1]
+        lpts += [tip + outer * 0.008 + up_v * 0.002, tip + outer * 0.015 + up_v * 0.006]
+        lrad += [(0.0022, 0.0038), (0.0018, 0.0016)]
+        sweep(mb, lpts, lrad, Style('#24171a', T_NONE, 0.55, MAT_CLOTH), hw, segs=8, tag=tag, twist_hint=n)
+        for vi in range(len(mb.aux)):
+            if mb.tag[vi] == tag and mb.aux[vi] is None:
+                mb.aux[vi] = aux
         pc = c + n * 0.0135 - up_v * 0.006 + inward * 0.004
         ellipsoid(mb, pc, (0.041, 0.051, 0.012), iris, hw, segs=18, rings=12, rot=R, tag=tag, aux=aux, cut_below=-0.35)
         ppc = pc + n * 0.006 - up_v * 0.002
@@ -201,7 +228,7 @@ def build_base():
     mup = MR @ Vector((0, 1, 0))
     mc = mp - mn * 0.003
     maux = (mc.copy(), mside.copy(), mup.copy(), mn.copy(), 0)
-    ellipsoid(mb, mc, (0.046, 0.025, 0.008), Style('#5c1f2c', T_NONE, 0.4, MAT_GLOSS), hw, segs=20, rings=10, rot=MR,
+    ellipsoid(mb, mc, (0.05, 0.026, 0.008), Style('#5c1f2c', T_NONE, 0.4, MAT_GLOSS), hw, segs=20, rings=10, rot=MR,
               tag='mouth', aux=maux, cut_below=-0.35)
     ellipsoid(mb, mc - mup * 0.010, (0.022, 0.010, 0.005), Style('#ff8a96', T_NONE, 0.4, MAT_GLOSS), hw, segs=12, rings=8,
               rot=MR, tag='tongue', aux=maux)
@@ -212,9 +239,11 @@ def build_base():
         w = wrist(sx)
         R = rot_align(d, FWD)
         hwf = lambda p, sfx=sfx, w=w, d=d: rig.seg_weights((p - w).dot(d), [('forearm' + sfx, 0.0), ('hand' + sfx, None)], 0.012)
-        ellipsoid(mb, w + d * 0.054, (0.044, 0.054, 0.060), SKIN, hwf, segs=24, rings=16, rot=R, power=2.2)
-        tdir = (d + FWD * 0.9).normalized()
-        ellipsoid(mb, w + d * 0.036 + FWD * 0.044, (0.023, 0.023, 0.034), SKIN, hwf, segs=16, rings=10, rot=rot_align(tdir, UP))
+        # V6: a flatter, longer mitten (a hand rather than a ball) with the
+        # thumb set a little further out
+        ellipsoid(mb, w + d * 0.056, (0.038, 0.056, 0.063), SKIN, hwf, segs=24, rings=16, rot=R, power=2.35)
+        tdir = (d * 0.9 + FWD).normalized()
+        ellipsoid(mb, w + d * 0.034 + FWD * 0.048, (0.022, 0.022, 0.035), SKIN, hwf, segs=16, rings=10, rot=rot_align(tdir, UP))
     return mb
 
 
