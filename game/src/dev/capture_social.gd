@@ -322,9 +322,9 @@ func _show_series() -> void:
 	App._ensure_background()
 	var rsc := ResultsScreen.new()
 	rsc.results = res
-	# (the recorded round was practice: show what the same round pays in a
-	# party, worked out by the game's own reward rules)
-	rsc.reward = RulesLogic.compute_rewards(res, local, Rules.cfg, false)
+	# the round's rewards through the real path (Save.apply_results and the
+	# Wallet): with the game service off in these runs, the Wallet says so
+	rsc.reward = Save.apply_results(res, local, false, me)
 	rsc.session = s
 	App._show(rsc)
 

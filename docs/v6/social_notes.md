@@ -61,9 +61,13 @@ Files: `view/hub_walk.gd`, `view/hub_room.gd`, `ui/hub_stick.gd`,
   and drops every pose on every device.
 
 **Party UX.**
-- The bottom bar holds Wardrobe, Emote (with Try moves inside), Walk and
-  Chat (with an unread count). Captions drop on 4:3 screens so the primary
-  action keeps its size.
+- The bottom row holds the V6 navigation (Play · Locker · Shop · Season
+  Pass, from commerce), Emote (with Try moves inside; Season emotes only
+  once owned), Walk and Chat (with an unread count), then the primary
+  action. The row is measured against the screen: when it wouldn't fit,
+  Emote, Walk and Chat show only their icons (Chat keeps an unread badge)
+  and the navigation shrinks to what is left (`test_hub_walk` checks phone,
+  SE and iPad: on screen, full touch targets, no overlaps).
 - Notes appear when people join ("Comfy Frog joined") and leave ("… left").
 - Chat bubbles appear over heads.
 - Mute (chat and emotes), Report and Block on every player card.
@@ -173,7 +177,9 @@ Files: `core/round_ranking.gd`, `core/round_rewards.gd`,
    - Runners by home order and time, then splashes, then fewer catches;
    - Night Watch by different runners, then tags;
    - You, BOT and "away (no Round Win)" are marked.
-4. Rewards through `RoundRewards`, the adapter for the Wallet.
+4. Rewards from commerce's `Wallet.round_summary` (through
+   `RoundRewards`; below). Coins and Season XP show as added only once the
+   service has settled the round.
 5. The series so far.
 
 **After the series' last round** the primary action is **Final
@@ -253,19 +259,26 @@ Each hook is a few lines; the logic lives in the new files.
 - `dev/capture.gd`: three lines start `dev/capture_social.gd` for
   `--capture=social_*`.
 
-### Wallet adapter (commerce workstream)
+### Rewards on the results screen (commerce's Wallet)
 
-`RoundRewards.summary(match_id, local_reward)` asks an autoload named
-**`Wallet`** for `round_summary(match_id) -> Dictionary` when it exists:
+`RoundRewards.summary(match_id, local_reward)` reads
+`Wallet.round_summary(match_id)` (`docs/ECONOMY.md` §9; also handed over
+by `Save.apply_results` as `reward["wallet"]`), and the card follows
+`Wallet.round_updated(match_id)` in place:
 
-```
-{coins_collected, coins, lines: [[label, amount]],
- season: {xp_gained, tier, xp_in_tier, xp_for_tier, premium},
- pending, away, level_up, level}
-```
+- `settled`: "+N Coins added", the Season XP and the Season tier bar, and
+  the breakdown;
+- `pending`: the wallet's sentence ("Adding your rewards…") and what the
+  round is expected to pay, labelled **not added yet**; never shown as
+  earned;
+- every other state (practice, no service, not eligible, unverified room,
+  capped, mismatch, rejected, cancelled): the wallet's own sentence only;
+- coins picked up on the campus are shown as "picked up" in every state;
+- lifetime level-ups come from `Save.apply_results`.
 
-All fields are optional. Without a Wallet, it shows this device's reward
-from `Save.apply_results`, kept per round ID. Tests stub the Wallet with
+Each round's summary is remembered (32 rounds), so a reopened results
+screen shows the same thing even after the wallet's own history moves on;
+a live wallet answer always wins. Tests stub the Wallet with
 `RoundRewards.wallet_override`.
 
 ### Service
@@ -277,8 +290,9 @@ from `Save.apply_results`, kept per round ID. Tests stub the Wallet with
   `features: ['chat', 'message_reports']` in `/v1/config`, and `evidence =
   NULL` on profile deletion.
 - **Migration** `service/migrations/0002_social_moderation.sql`: report
-  `kind`, `evidence` and `evidence_ref`. Wrangler applies migrations in name
-  order, so a commerce `0002_*.sql` with a different name also applies.
+  `kind`, `evidence` and `evidence_ref`. It sits beside commerce's
+  `0002_commerce.sql`; Wrangler applies both in name order, and they touch
+  different tables. The service tests (42 after the merge) run on both.
 - **Word lists.** `service/tools/build_terms.py` also writes
   `game/src/core/moderation_terms.gd`.
   `service/tools/export_policy_fixture.mjs` writes the parity fixture.
@@ -338,10 +352,10 @@ The new suites and what they cover:
 | `test_moderation` (8 tests) | Parity with the service on 476 names and 622 messages; harmless look-alikes; reasons and suggestions; safe display of received names; curated names (all combinations, including the "Sneaky Seal" case); saved-name revalidation; the name sheet (and it shrinks back when its suggestions go) |
 | `test_chat` (8 tests) | Delivery, order and duplicates; the host's channel, phrase, rate and repeat limits; forged and junk packets; flood caps on receivers; signed, replayed, borrowed, other-room, edited and wrong-channel tokens; a bad host's unsigned and abusive relays; `send_text` showing only approved, normalised text; mute and block suppression; rejoin history; round channels (team only, finished runners only to spectators, everyone after results) |
 | `test_hub_sync` (5 tests) | Walkers seen by everyone; teleport, furniture and bounds clamping; stale, forged and stranger poses ignored; start clears everyone; a hitching or much slower host never removes a walking guest as a flood, while a real flood is still refused |
-| `test_hub_walk` (2 tests) | Menu input never moves anyone; walking and sync on the real stage; the chat drawer and sheets own input and clear stuck touches; a guest's walk on the host's stage with a nameplate and the stroll back; Back leaves walk mode first; leaving the screen and starting a round end walking everywhere |
+| `test_hub_walk` (3 tests) | Menu input never moves anyone; walking and sync on the real stage; the chat drawer and sheets own input and clear stuck touches; a guest's walk on the host's stage with a nameplate and the stroll back; Back leaves walk mode first; leaving the screen and starting a round end walking everywhere; the bottom row with the V6 navigation fits on phone, SE and iPad |
 | `test_match_chat` (2 tests) | The team-only feed and its placement; the drawer owns input (no move, tag or jump, no stale edges); practice has no chat |
 | `test_report_block` (3 tests) | Honest report states with retry; the service-off sheet; blocks by a guest and by a host; the chat drawer at phone, SE and iPad sizes (Quick Chat strip on phones, room for messages, a message's actions stay in view when new messages arrive) |
-| `test_rankings` (4 tests) | Per-team order with no combined score; bots, away and you; a cancelled round with no tables; shared places without name order; the podium; the full results flow (final standings before Return to lobby, no ejection, the same rewards on reopen, wallet summary, cancelled round); repeated and stale RESULTS packets |
+| `test_rankings` (4 tests) | Per-team order with no combined score; bots, away and you; a cancelled round with no tables; shared places without name order; the podium; the full results flow (final standings before Return to lobby, no ejection, the same rewards on reopen, a cancelled round); rewards from the Wallet: pending shows nothing as added, settling updates the card in place, remembered after the wallet forgets, service-off says so; repeated and stale RESULTS packets |
 | Service `npm test` (26 tests) | Including the new `chat.test.mjs`: policy, approval, membership, flood, message reports, forgery, deletion |
 
 Updated: `test_trust`, where names in a service-off party are curated.
