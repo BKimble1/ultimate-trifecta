@@ -30,6 +30,9 @@ discontinuity**, **collision**, **input loss**, **network correction**,
 | D3 | App start | Owner request | Startup | V5 used navy behind Idlery Games | Pure black `#000000` in the launch image, the launch storyboard, Godot's boot splash and the curtain; the CI audit fails on anything else | `test_boot_branding`; the audit passes on a local Godot 4.7.2 iOS export and fails when the storyboard colour is put back to navy |
 | D4 | Match loading | Owner report ("animates, then freezes"); V5 code review | UI/input (loading) | In V5 the bar stopped at full once this device was ready while the round waited on other players or the host's first snapshot: an unknown wait looked like a frozen screen, and "preparing" and "waiting" shared one line. Leave appeared online only, after 25 s; practice had no way out | Two phases told apart: "Preparing campus…" with the real share of preparation done, then "Waiting for players · a/b ready" (or "Starting…") with an indeterminate sweep (still and dimmer with Reduced Motion). Cancel (practice) / Leave party (online) from 0.8 s on, and Back cancels practice. The freed round hands unfinished worker-pool jobs to App, which collects each when it is done (cancel never blocks a frame) | `test_loading`: cancel in the middle of the campus build with its meshes on the worker pool, three times — the round, session and screen go, the jobs are collected, scene nodes and orphans stay flat and objects stay within 1; the next practice round prepares and goes live. Phases and the sweep tested directly. Whether the V5 device freeze was this wait, a render stall or a catch-up spiral (D1) is not proven without a device: Settings › Diagnostics now separates them |
 | D7 | Match loading, from the moment the round's camera exists (step 7 of 9) until the round is live — online, all through "Waiting for players" | Per-frame probe of a rendered practice round (`docs/test-data/v6_loading_probe.txt`, software renderer): loading frames took ~35–40 ms with 9 draw calls until the camera was made, then **17.7 s, 3.4 s, 4.8 s** with **1,803 draw calls / 556k primitives** — the whole campus, behind an opaque screen, from a camera not yet placed (in play the same view is ~245–308 calls) | Render stall (loading) — the likeliest cause of "animates, then freezes" | V5 made the camera current midway through preparation; from then on every frame drew the full campus (and compiled its pipelines on first draw) under the loading screen, and online kept doing so for as long as the round waited for others | 3D drawing is held (`Viewport.disable_3d`) from the camera's creation until the round is prepared; the camera is placed at the start view and **3 frames** are drawn under the still-opaque screen to warm what the round shows first; then held again while waiting; drawn the frame the round goes live; the loading screen fades only after the warm frames, so the costly first frames are never the visible ones; menus get 3D back (also on cancel) | Probe after: held frames 37 ms / 50 calls; no 3D frame before the round is prepared; warm frames from the placed camera (308 calls). `test_loading::test_nothing_is_drawn_behind_the_loading_screen` (held while preparing, 3 warm frames, held while waiting, drawn when live, restored after the round and after a cancel), `test_practice_reveal_waits_for_the_warm_frames`. Device frame times unmeasured |
+| D8 | Match loading with three dorms in the nav grid | Full-suite run on the integrated branch: the `nav` preparation job took 45 ms (limit 40); timed alone, the grid setup took 8–15 ms and each rasterising pass 14–18 ms here | Render stall (loading) | One slice per pass; the dorm interiors made the passes heavier | The grid builds in 17 slices that keep the original order of every write (setup split foot/cart; roads, buildings/hedges/fences, walls/blockers/trees/solids and waters in thirds) | `test_prep_jobs` (staged grid identical to the one-shot grid; 17 slices, longest 10.3 ms), `test_campus_art`, dorm and path suites |
+| D9 | Online round with a slow guest (cold caches, older phone) | Code review against brief §3 | Network/loading | The host started the round 15 s after START whatever the guest was doing, so a guest still legitimately preparing missed the reveal and countdown | The guest reports its preparation progress (an optional byte on LOADED) twice a second; after 15 s the host keeps waiting while that progress moves (4 s stall rule), at most 45 s; a silent or stalled guest still lets the round start at 15 s; repeating a value doesn't count | `test_trust::test_a_slow_guest_still_loading_is_waited_for` (silent → 15 s; progressing → up to 45 s; stops → ≤ 24 s; ack releases at once) |
+| D10 | Visiting the Locker | `test_screen_cycles`: connections on the shared services grew 9 → 17 over eight tours | Memory/connection growth (V5) | The "Drag to turn" hint's lambda only touched a local, so it was bound to the script, not the screen, and was never disconnected | Disconnected when the screen leaves | `test_screen_cycles` (service on and off): nodes, orphans, connections, running tweens flat over ten tours; objects bounded (≈41 small objects per full tour remain, not isolated) |
 | D5 | Every cold campus build (first round; after a quality change) | `weakref` test: the builder was still alive after its build; objects grew by ~78 per build, and by the same per cancelled round | Memory growth | The builder's step closures and its architecture/landmark helpers referred back to it, so the builder and its working data (mesh kits, the light-field kit, tree and decor tables) were never freed | The builder lets go of everything but what the round reads (container, waters, foliage material, step names) when its last step finishes or it is aborted | `test_campus_art`: freed after a full build and after an abort; objects flat across three builds. `test_loading` repeated-cancel counts |
 | D6 | Home button / call / Control Center during play | Code review | Diagnostics accuracy; render scale | The first frame back spans the whole time away: diagnostics counted it as a multi-second stall, and the render-scale governor could treat it (and the slow frames while iOS restores the surface) as a slowdown | Diagnostics start a fresh interval and mark `app_paused`/`app_resumed` on the timeline; the governor drops the interval, skips three frames and waits for a full 3 s window | `test_diag`, `test_quality_governor` |
 
@@ -137,3 +140,99 @@ Pure black `#000000` behind the Idlery Games lockup in the native launch
 image and storyboard, Godot's boot splash and the runtime curtain (one
 picture through all three handoffs). Readiness-driven exit and the Reduced
 Motion fade are unchanged.
+
+## Finger scrolling
+
+Every list in the app (Locker, Shop, Season Pass track, results, settings,
+roster, chat) is a `UIKit.scroll_area()` with `TouchScroll`:
+- **Engine scrolling, reachable from anywhere:** the engine's own touch
+  scrolling, inertia and clamping, reachable from any card, picture, label or
+  blank space.
+- **Tap or swipe:** a touch stays a tap until it moves about 10 pt; a scroll
+  cancels the press under the finger, so lifting never selects, equips,
+  claims or buys.
+- **Nesting:** a nested strip keeps to its own axis.
+- **Focus:** follow-focus is for controller and keyboard only.
+- **Interruptions:** a sheet opening, or the app going to the background,
+  makes lists let go.
+- **One finger:** drag-to-turn is owned by one finger.
+- **Category positions:** each Locker category keeps its scroll position;
+  the newest restore wins, and none is applied under a finger.
+
+Tests: `test_touch_scroll`, `test_stage_drag`, `test_wardrobe`,
+`test_shop_ui`. Clip: `docs/media/v6/clips/v6_finger_swipes.mp4`. Real iOS
+touch on a device is unverified.
+
+## What else V6 adds (details in the workstream notes)
+
+- **Dorms** ([v6/dorms_notes.md](v6/dorms_notes.md)):
+  - Three real dorms: Puddlesworth Hall, Lanternfield House and Moonpenny
+    Lodge. Each has a common room, three doorways, colliders, both nav grids
+    and spawn and respawn pads.
+  - The host picks tonight's home dorm from the round seed and never repeats
+    the last one. It is part of the round configuration (protocol 6: id,
+    geometry version and fingerprint, pads, coins, timing). A guest with
+    other geometry is told to update.
+  - The finish is an inward crossing of a home doorway's threshold, checked
+    by the host each tick: within the opening, at feet height, with a move
+    under 3 m and a clear line. It counts once and beats a same-tick tag.
+  - The round reveal and countdown happen inside the dorm.
+  - Coins: 8 per round from 30 route spots, worth 1 each. The host decides
+    who picks each one up, and the results carry them.
+- **Characters** ([v6/character_notes.md](v6/character_notes.md)):
+  - Six Shop outfits, four Season 1 outfits, four hats, two pairs of shoes
+    and four emotes, all new parts in `runner.glb`.
+  - A foot lock: planted-foot slide in a 90° turn fell from 0.78 to
+    0.04 m/s.
+  - Lash lines, ears, nose, mouth and mittens; warmer skin under moonlight.
+  - Hat thumbnails get their own framing.
+  - The heaviest look stays under V5's heaviest.
+- **Locker, Shop, Season 1, purchases** ([ECONOMY.md](ECONOMY.md),
+  [COMMERCE_SETUP.md](COMMERCE_SETUP.md),
+  [v6/commerce_notes.md](v6/commerce_notes.md)):
+  - Navigation tabs: Play · Locker · Shop · Season Pass.
+  - The Locker shows owned items only, and saving never spends.
+  - The Shop has sections, detail sheets, a Coin confirmation and Restore
+    Purchases.
+  - Season 1 "After Hours" has 30 tiers with Free and Premium tracks;
+    Premium costs 1,500 Coins.
+  - StoreKit 2 comes from the pinned plugin.
+  - The wallet ledger lives in the service: idempotent, atomic and verified.
+  - **None of it is live in 1.5:** no App Store products exist and the
+    service isn't deployed. The Shop and Season Pass say so, and nothing can
+    be bought.
+- **Party room, names, chat, rankings** ([MODERATION.md](MODERATION.md),
+  [v6/social_notes.md](v6/social_notes.md)):
+  - A walkable party room: poses synced at 10 Hz and clamped by the host.
+  - Name moderation, the same policy on the device and the service.
+  - Quick Chat by channel and role.
+  - Typed chat only through the service, each message signed and verified.
+    It is off in 1.5.
+  - Mute, Report and Block everywhere.
+  - Team rankings and final standings before returning.
+- **Lobby music** ([LOBBY_MUSIC.md](LOBBY_MUSIC.md), from the owner's lobby
+  music session): the owner's "Night Campus Loop" as an intro and a
+  sample-exact loop, with cross-fades.
+
+## Limitations (V6)
+
+- **No iPhone or iPad was available.** Not measured on hardware:
+  - frame rate and pacing;
+  - heat;
+  - pipeline compilation on Metal;
+  - real touch;
+  - Game Center timing;
+  - the keyboard;
+  - StoreKit.
+
+  The diagnostics panel records what is needed to measure them.
+- **Not live:** no real or sandbox purchase, restore or refund has been
+  made; App Store products and the service are owner steps
+  (`COMMERCE_SETUP.md`).
+- **Not isolated:** about 41 small objects stay per full Home → Locker →
+  Shop → Season Pass tour (bounded by test, source not found).
+- **CI Simulator:** an x86_64 GL ES fallback, it renders at about 1 fps and
+  never shows a round in its capture window. It is not a phone.
+- **Shader baking:** the editor sometimes crashes while quitting after a
+  successful bake on the CI runner (runs #63 and #78). The export is judged
+  by its output.
