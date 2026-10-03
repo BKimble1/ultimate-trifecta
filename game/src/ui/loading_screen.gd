@@ -208,7 +208,7 @@ func _process(delta: float) -> void:
 		leave_btn.disabled = false
 		Motion.animate(leave_btn, "modulate:a", 1.0, 0.0 if UIKit.reduced_motion() else 0.2)
 	var mc_ok := match_ctrl != null and is_instance_valid(match_ctrl)
-	if mc_ok and match_ctrl.round_live():
+	if mc_ok and match_ctrl.round_live() and match_ctrl.view_ready():
 		_close()
 		return
 	if not mc_ok:

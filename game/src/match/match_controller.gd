@@ -253,6 +253,7 @@ func _prep_campus() -> bool:
 ## the party ended): nothing keeps running for a round that is gone.
 func _exit_tree() -> void:
 	stage_report = Callable()
+	_set_view_held(false)     # menus draw 3D again
 	if prepared:
 		return
 	Diag.mark("prep_cancelled")
@@ -383,8 +384,60 @@ func _prep_rest() -> void:
 
 	camera = FollowCamera.new()
 	camera.reduced_motion = reduced_motion
+	if staged and with_visuals:
+		_view_gating = true
+		_set_view_held(true)
 	add_child(camera)
 	camera.current = true
+
+
+# --- V6: nothing 3D is drawn behind the loading screen ---
+# V5 made the round's camera current midway through preparation, so from
+# then on the whole campus was drawn every frame behind the opaque loading
+# screen, from a camera not yet placed (measured, a rendered practice round
+# on this machine's software renderer: loading frames went from 9 draw calls
+# and ~40 ms to 1,803 draw calls / 556k primitives and 3.4-17.7 s each), and
+# online for as long as the round waited for other players: the loop
+# animating and then freezing.  Now 3D drawing is held until the round is
+# prepared; the camera is placed at the start view and a few frames are
+# drawn to warm what the round shows first; then it is held again until the
+# round goes live (the loading screen starts its fade the same frame).
+const WARM_VIEW_FRAMES := 3
+var _view_gating := false
+var _view_held := false
+var _warm_view_left := 0
+
+
+func _set_view_held(held: bool) -> void:
+	if held == _view_held:
+		return
+	_view_held = held
+	var vp := get_viewport()
+	if vp:
+		vp.disable_3d = held
+	Diag.mark("view_held" if held else "view_drawn")
+
+
+## After the camera has been placed for this frame.
+func _gate_view() -> void:
+	if not _view_gating:
+		return
+	if _warm_view_left > 0:
+		_warm_view_left -= 1
+		_set_view_held(false)
+	elif round_live():
+		_view_gating = false
+		_set_view_held(false)
+	else:
+		_set_view_held(true)
+
+
+## The start view's first frames (the costly ones: first draws compile
+## pipelines) have been drawn, still under the opaque loading screen, so
+## the reveal's first visible frame is an ordinary one.  The loading screen
+## waits for this as well as round_live().
+func view_ready() -> bool:
+	return prepared and (not _view_gating or _warm_view_left == 0)
 
 
 ## (V5) the HUD and the touch controls are separate jobs: together they were
@@ -417,6 +470,7 @@ func _finish_prepare() -> void:
 	if prepared:
 		return
 	prepared = true
+	_warm_view_left = WARM_VIEW_FRAMES
 	prepare_ms = float(Time.get_ticks_usec() - _prep_t0) / 1000.0
 	Diag.mark("campus_prepared")
 	if staged:
@@ -1047,6 +1101,7 @@ func _process(delta: float) -> void:
 	_scan_seen(delta)
 	_update_pickups()
 	_update_camera(delta)
+	_gate_view()
 	if hud:
 		hud.refresh(delta)
 	var info_phase: int = sim.phase if sim else _client_phase
