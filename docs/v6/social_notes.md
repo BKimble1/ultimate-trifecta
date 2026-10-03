@@ -354,7 +354,7 @@ The new suites and what they cover:
 | `test_hub_sync` (5 tests) | Walkers seen by everyone; teleport, furniture and bounds clamping; stale, forged and stranger poses ignored; start clears everyone; a hitching or much slower host never removes a walking guest as a flood, while a real flood is still refused |
 | `test_hub_walk` (3 tests) | Menu input never moves anyone; walking and sync on the real stage; the chat drawer and sheets own input and clear stuck touches; a guest's walk on the host's stage with a nameplate and the stroll back; Back leaves walk mode first; leaving the screen and starting a round end walking everywhere; the bottom row with the V6 navigation fits on phone, SE and iPad |
 | `test_match_chat` (2 tests) | The team-only feed and its placement; the drawer owns input (no move, tag or jump, no stale edges); practice has no chat |
-| `test_report_block` (3 tests) | Honest report states with retry; the service-off sheet; blocks by a guest and by a host; the chat drawer at phone, SE and iPad sizes (Quick Chat strip on phones, room for messages, a message's actions stay in view when new messages arrive) |
+| `test_report_block` (3 tests) | Honest report states with retry; the service-off sheet, centred; blocks by a guest and by a host; the chat drawer at phone, SE and iPad sizes (Quick Chat strip on phones, room for messages, a message's actions stay in view when new messages arrive) |
 | `test_rankings` (4 tests) | Per-team order with no combined score; bots, away and you; a cancelled round with no tables; shared places without name order; the podium; the full results flow (final standings before Return to lobby, no ejection, the same rewards on reopen, a cancelled round); rewards from the Wallet: pending shows nothing as added, settling updates the card in place, remembered after the wallet forgets, service-off says so; repeated and stale RESULTS packets |
 | Service `npm test` (26 tests) | Including the new `chat.test.mjs`: policy, approval, membership, flood, message reports, forgery, deletion |
 
@@ -363,11 +363,35 @@ Updated: `test_trust`, where names in a service-off party are curated.
 `test_results_layout`, `test_series`, `test_touch_scroll` and `test_net`
 pass unchanged.
 
-Full suite: see the commit message of the final commit.
+Full suite after merging the integrator branch (art, commerce, dorms):
+**339 tests, 87,600 checks, 0 failures** (`tools/run_tests.sh`, headless,
+with captures running on the same 4 shared cores), plus the service's
+`npm test`: **42 tests, 0 failures**. `test_routes_bots` rewrites
+`game/config/route_bot_times.json`; that file is reverted after each run.
 
 ## Evidence
 
-See [`docs/media/v6/social/README.md`](../media/v6/social/README.md).
+[`docs/media/v6/social/`](../media/v6/social/README.md): 40 images and the
+owner's report queue, captured from the merged branch on desktop Linux
+(Mobile renderer on llvmpipe, device resolutions; LAN dev rooms with
+scripted headless members; layout and behaviour only, not performance):
+
+- the party room with 1, 2, 4 and 8 players: menu mode, walk mode with the
+  stick, bubbles, the chat drawer, a player card and the service-off report
+  sheet;
+- the name sheet refusing names, with suggestions, and accepting a harmless
+  look-alike;
+- round results and final standings on phone, SE and iPad, with the
+  wallet's honest service-off rewards sentence;
+- the real service code run locally (not deployed): typed chat approved
+  and verified, a refused message, message actions, a message report with
+  its receipt, the owner's queue, and a block.
+
+Faults these captures found and fixed: guests dropped by a slow host
+(rate budget), the cramped phone drawer, message actions scrolled out of
+view, the report sheet pinned to the corner, the name sheet not shrinking,
+the unread count while the drawer is open, "1 wins", and the bottom row
+overflowing once the V6 navigation joined it.
 
 ## Limits and dependencies
 
@@ -384,6 +408,8 @@ See [`docs/media/v6/social/README.md`](../media/v6/social/README.md).
 - **The walk room is the existing DormStage common room.** Its furniture
   collision is a hand-made 2D layout (`HubRoom`). If the art workstream
   moves furniture, that table needs the same change.
+- **Crowding.** With eight people walking at once, nameplates and chat
+  bubbles overlap (`hub_8p_*`). Nothing hides them by distance yet.
 - **Hub poses go through the host** (peer-hosted). A modified host could
   misplace avatars within the room, but can't create avatars for
   non-members or push players outside the floor on other devices.
