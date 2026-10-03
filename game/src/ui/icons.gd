@@ -195,6 +195,41 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 			ci.draw_circle(c + Vector2(-r * 0.3, 0.05 * r), r * 0.15, Color(0.07, 0.1, 0.17))
 			ci.draw_circle(c + Vector2(r * 0.3, 0.05 * r), r * 0.15, Color(0.07, 0.1, 0.17))
 			return
+		# --- V6 social: chat, walking, mute, report, block, medal
+		"chat":
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.9, -r * 0.65), c + Vector2(r * 0.9, -r * 0.65), c + Vector2(r * 0.9, r * 0.35),
+				c + Vector2(-r * 0.05, r * 0.35), c + Vector2(-r * 0.55, r * 0.85), c + Vector2(-r * 0.45, r * 0.35), c + Vector2(-r * 0.9, r * 0.35)]), col)
+			for i in 3:
+				ci.draw_circle(c + Vector2(-r * 0.45 + r * 0.45 * float(i), -r * 0.15), r * 0.11, Color(0.07, 0.1, 0.17))
+			return
+		"walk":
+			for side in [-1.0, 1.0]:
+				var f := c + Vector2(side * r * 0.32, side * r * 0.3)
+				ci.draw_set_transform(f, -0.25 * side, Vector2(0.62, 1.0))
+				ci.draw_circle(Vector2.ZERO, r * 0.42, col)
+				ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+				ci.draw_circle(f + Vector2(0, -r * 0.62), r * 0.16, col)
+			return
+		"mute":
+			ci.draw_arc(c, r * 0.85, 0, TAU, 26, col, r * 0.16, true)
+			ci.draw_line(c + Vector2(-r * 0.6, -r * 0.6), c + Vector2(r * 0.6, r * 0.6), col, r * 0.18, true)
+			ci.draw_circle(c + Vector2(-r * 0.25, -r * 0.05), r * 0.12, col)
+			ci.draw_circle(c + Vector2(r * 0.25, -r * 0.05), r * 0.12, col)
+			return
+		"flag":
+			ci.draw_line(c + Vector2(-r * 0.6, -r * 0.85), c + Vector2(-r * 0.6, r * 0.9), col, r * 0.18, true)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.55, -r * 0.8), c + Vector2(r * 0.8, -r * 0.5), c + Vector2(-r * 0.55, r * 0.05)]), col)
+			return
+		"block":
+			ci.draw_arc(c, r * 0.82, 0, TAU, 28, col, r * 0.2, true)
+			ci.draw_line(c + Vector2(-r * 0.55, r * 0.55), c + Vector2(r * 0.55, -r * 0.55), col, r * 0.2, true)
+			return
+		"medal":
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.55, -r), c + Vector2(-r * 0.15, -r), c + Vector2(r * 0.1, -r * 0.2), c + Vector2(-r * 0.25, -r * 0.1)]), col.darkened(0.25))
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(r * 0.55, -r), c + Vector2(r * 0.15, -r), c + Vector2(-r * 0.1, -r * 0.2), c + Vector2(r * 0.25, -r * 0.1)]), col.darkened(0.25))
+			ci.draw_circle(c + Vector2(0, r * 0.3), r * 0.62, col)
+			ci.draw_arc(c + Vector2(0, r * 0.3), r * 0.42, 0, TAU, 20, col.darkened(0.3), r * 0.1, true)
+			return
 		"star":
 			for i in 10:
 				var a := -PI * 0.5 + TAU * float(i) / 10.0

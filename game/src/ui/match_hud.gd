@@ -5,6 +5,7 @@ extends CanvasLayer
 
 var mc: MatchController
 var root: Control
+var chat: MatchChat
 var timer_lbl: Label
 var home_lbl: Label
 var coin_lbl: Label
@@ -219,6 +220,7 @@ func setup(controller: MatchController) -> void:
 	root.add_child(coach)
 	_build_pause()
 	_build_reveal()
+	chat = MatchChat.attach(self)   # (V6) party rounds: Quick Chat + drawer
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 
@@ -405,6 +407,8 @@ func _reserve_touch_regions() -> void:
 	if mc == null or mc.touch == null or not is_instance_valid(pause_btn):
 		return
 	var rects: Array[Rect2] = [pause_btn.get_global_rect().grow(12), minimap.get_global_rect().grow(6)]
+	if chat != null:
+		rects.append_array(chat.reserved())
 	mc.touch.set_reserved(rects)
 
 

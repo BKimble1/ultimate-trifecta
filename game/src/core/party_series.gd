@@ -229,16 +229,21 @@ func end_early() -> void:
 		ended_early = true
 
 
-## Humans ordered by Round Wins; ties share a place (1, 1, 3 ...).
+## Humans ordered by Round Wins; ties share a place (1, 1, 3 ...) and are
+## marked `tied`.  (V6) Within a tie there is no name order (V5 sorted
+## alphabetically, which read as a ranking): more rounds played first, then
+## who joined earlier, then who was recorded first.
 func leaderboard() -> Array:
 	return leaderboard_of(standings)
 
 
 static func leaderboard_of(st: Dictionary) -> Array:
 	var rows: Array = []
+	var order := 0
 	for uid in st:
 		var s: Dictionary = st[uid]
-		rows.append({"uid": uid, "name": String(s.get("name", "")), "wins": int(s.get("wins", 0)), "played": int(s.get("played", 0)),
+		order += 1
+		rows.append({"uid": uid, "name": String(s.get("name", "")), "wins": int(s.get("wins", 0)), "played": int(s.get("played", 0)), "_i": order,
 			"partial": int(s.get("partial", 0)), "joined_round": int(s.get("joined_round", 1)),
 			"watch_turns": int(s.get("watch_turns", 0)), "runner_turns": int(s.get("runner_turns", 0)),
 			"tags": int(s.get("tags", 0)), "distinct_tagged": int(s.get("distinct_tagged", 0)),
@@ -246,14 +251,23 @@ static func leaderboard_of(st: Dictionary) -> Array:
 	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		if a["wins"] != b["wins"]:
 			return a["wins"] > b["wins"]
-		return String(a["name"]).nocasecmp_to(String(b["name"])) < 0)
+		if a["played"] != b["played"]:
+			return a["played"] > b["played"]
+		if a["joined_round"] != b["joined_round"]:
+			return a["joined_round"] < b["joined_round"]
+		return a["_i"] < b["_i"])
 	var place := 0
 	var prev := -1
+	var at_place: Dictionary = {}
 	for i in rows.size():
 		if int(rows[i]["wins"]) != prev:
 			place = i + 1
 			prev = int(rows[i]["wins"])
 		rows[i]["place"] = place
+		at_place[place] = int(at_place.get(place, 0)) + 1
+		rows[i].erase("_i")
+	for r in rows:
+		r["tied"] = int(at_place[int(r["place"])]) > 1
 	return rows
 
 
@@ -276,7 +290,9 @@ func to_dict() -> Dictionary:
 
 
 ## Client: a checked copy of the host's series (bounded sizes and types), or {}.
-static func sanitize_view(d: Variant) -> Dictionary:
+## `verified`: names were approved by the service (else curated names only,
+## see NameRules.party_display).
+static func sanitize_view(d: Variant, verified: bool = true) -> Dictionary:
 	if not (d is Dictionary):
 		return {}
 	var s := sanitize_settings(d.get("settings", {}))
@@ -294,7 +310,11 @@ static func sanitize_view(d: Variant) -> Dictionary:
 			if pl is Array:
 				for p in (pl as Array).slice(0, SLOTS):
 					if p is Dictionary:
-						plist.append({"uid": String(p.get("uid", "")).substr(0, 64), "name": NameRules.safe_display(String(p.get("name", ""))),
+						var puid := String(p.get("uid", "")).substr(0, 64)
+						var pbot := bool(p.get("is_bot", false))
+						var pname := String(p.get("name", ""))
+						pname = (pname if NetSession.BOT_NAMES.has(pname) else "Bot") if pbot else NameRules.party_display(pname, puid, verified)
+						plist.append({"uid": puid, "name": pname,
 							"is_bot": bool(p.get("is_bot", false)), "role": clampi(int(p.get("role", 0)), 0, 1), "won": bool(p.get("won", false)),
 							"eligible": bool(p.get("eligible", false)), "stamps": clampi(int(p.get("stamps", 0)), 0, 3),
 							"finished": bool(p.get("finished", false)), "finish_order": clampi(int(p.get("finish_order", 0)), 0, SLOTS),
@@ -314,7 +334,7 @@ static func sanitize_view(d: Variant) -> Dictionary:
 			var e := {}
 			for k in ["wins", "played", "partial", "watch_turns", "runner_turns", "joined_round", "tags", "distinct_tagged", "stamps", "homes", "caught"]:
 				e[k] = clampi(int(v.get(k, 0)), 0, 9999)
-			e["name"] = NameRules.safe_display(String(v.get("name", "")))
+			e["name"] = NameRules.party_display(String(v.get("name", "")), String(uid), verified)
 			out["standings"][String(uid).substr(0, 64)] = e
 			n += 1
 	return out

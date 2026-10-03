@@ -9,6 +9,7 @@ import { verifyIdentity } from './gamecenter.js';
 import { issueSession, verifySession, issueAdmission, SESSION_TTL_S } from './tokens.js';
 import { moderate, suggestions, normalizeName } from './names.js';
 import { randomId, newRoomCode, normalizeCode } from './ids.js';
+import { chatCheck, reportMessage } from './chat.js';
 import { routeCommerce, deletionStmts, sweepCommerce } from './commerce.js';
 import CATALOGUE from './catalogue_data.js';
 
@@ -234,7 +235,7 @@ async function deleteMe(req, env) {
     q.stmt("UPDATE room_members SET state = 'left', last_seen = ? WHERE profile_id = ?", t, p.id),
     q.stmt('DELETE FROM blocks WHERE blocker_id = ? OR blocked_id = ?', p.id, p.id),
     q.stmt('UPDATE reports SET reporter_id = NULL WHERE reporter_id = ?', p.id),
-    q.stmt("UPDATE reports SET target_name = NULL, status = CASE WHEN status = 'open' THEN 'dismissed' ELSE status END, resolution = COALESCE(resolution, 'profile deleted') WHERE target_id = ?", p.id),
+    q.stmt("UPDATE reports SET target_name = NULL, evidence = NULL, status = CASE WHEN status = 'open' THEN 'dismissed' ELSE status END, resolution = COALESCE(resolution, 'profile deleted') WHERE target_id = ?", p.id),
     q.stmt('DELETE FROM name_history WHERE profile_id = ?', p.id),
     q.stmt('DELETE FROM identities WHERE profile_id = ?', p.id),
     q.stmt('DELETE FROM profiles WHERE id = ?', p.id),
@@ -619,8 +620,14 @@ function config(env) {
     catalogue_version: CATALOGUE.catalogue_version,
     admission_key_id: env.ADMISSION_KEY_ID || 'adm1',
     session_ttl_s: SESSION_TTL_S,
+    // V6: what this deployment supports (an older deployment has no chat, so
+    // the game keeps typed chat honestly unavailable)
+    features: ['chat', 'message_reports'],
   });
 }
+
+// helpers handed to the V6 social routes (chat.js)
+const SOCIAL_DEPS = { requireUser, db, rateLimit, audit, clock };
 
 // --------------------------------------------------------------- router
 export async function handle(req, env) {
@@ -643,6 +650,9 @@ export async function handle(req, env) {
     if (m === 'DELETE' && (k = path.match(/^\/v1\/blocks\/([A-Za-z0-9_]{3,40})$/))) return await removeBlock(req, env, k[1]);
     if (m === 'POST' && path === '/v1/reports') return await fileReport(req, env);
     if (m === 'GET' && (k = path.match(/^\/v1\/reports\/([A-Za-z0-9_-]{3,40})$/))) return await reportStatus(req, env, k[1]);
+    // V6 social (service/src/chat.js): typed chat approval and message reports
+    if (m === 'POST' && path === '/v1/chat/check') return await chatCheck(req, env, SOCIAL_DEPS);
+    if (m === 'POST' && path === '/v1/reports/message') return await reportMessage(req, env, SOCIAL_DEPS);
     if (m === 'POST' && path === '/v1/rooms') return await createRoom(req, env);
     if ((k = path.match(/^\/v1\/rooms\/([^/]{1,24})(\/[a-z]+)?$/))) {
       const code = decodeURIComponent(k[1]);

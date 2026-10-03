@@ -73,6 +73,14 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if String(a).begins_with("--capture-steps="):
 			Engine.max_physics_steps_per_frame = clampi(int(String(a).get_slice("=", 1)), 1, 30)
+	if scenario.begins_with("social_"):
+		# V6 social evidence (hub, chat, names, rankings): its own driver
+		var sc: Node = (load("res://src/dev/capture_social.gd") as GDScript).new()
+		sc.set("cap", self)
+		sc.set("scenario", scenario)
+		add_child(sc)
+		if scenario == "social_hub" or scenario == "social_service_host":
+			App.dev_expect = 99   # hold the room open for the capture
 
 
 func snap(shot_name: String) -> void:

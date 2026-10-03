@@ -36,12 +36,14 @@ a contact address, URL or policy promise.
 > • Play with friends: start a party and share a six-letter code, or invite Game Center friends. Empty spots are filled by bots, clearly marked BOT.
 > • Practice anytime: full rounds with bots, offline, plus a short tutorial.
 > • Touch controls built for two thumbs, with fixed or floating stick, button size and left-handed layouts; game controllers supported.
-> • Safe by design: no chat, just emotes; names are checked; report, block and remove from any player's card.
+> • Friendly by design: Quick Chat phrases and emotes in every party; typed chat only in private parties and only through the game's moderation service; names are checked; mute, report and block from any player's card or message.
 >
 > A fictional campus, no ads, no tracking. Optional cosmetic in-app purchases (Coins and outfits) never change how anyone plays.
 
-Before using the last paragraph's name-checking and report lines,
-confirm the service is deployed (see "Service status at review").
+Before using the name-checking, typed-chat and report lines, confirm the
+service is deployed (see "Service status at review"). Without it the honest
+line is: "Quick Chat phrases and emotes; names in parties are the game's
+own; mute and block from any player's card."
 
 ## Keywords (≤100)
 
@@ -59,7 +61,7 @@ confirm the service is deployed (see "Service status at review").
 >
 > **Profiles and names.** On first launch the player creates a runner and picks a name. Names are 3–16 letters, numbers, single spaces or underscores. When the game service is enabled, names are checked server-side: offensive terms, impersonation, contact details, with leet and look-alike handling. Approved names get a #1234 tag to tell duplicates apart. Sign-in to the service is verified with Game Center's identity signature; a player ID alone is never accepted.
 >
-> **Safety.** There is no chat: communication is limited to preset emotes. Tap any player in the party to Hide their emotes, Report them (with a reason; you get a receipt), Block them (they can't join your parties) or, as host, Remove them. Reports go to the owner's moderation queue, where the owner can dismiss them, force a rename or suspend a profile.
+> **Communication and safety (V6).** Parties are private (a code or a Game Center invite); there is no public or global chat and no voice. Every party has **Quick Chat**: preset phrases sent as IDs, offered by context (the party room; your own team during a round; finished players only to other spectators, so they can't tip off active players; everyone on the results). **Typed chat** exists only in parties set up through the game's service and only while it is reachable: each message is checked on the device and approved and signed by the service (abuse lists with evasions, links, contact details, markup, spam, length, rate limits); the host and every receiver verify the signature before anything is shown. Tap a player (or a message) to **Mute** (chat and emotes), **Report** the player or the message (a reason; a receipt only once the service confirms it) or **Block** them (their chat, emotes and name are hidden; you aren't put in parties together); a host can **Remove** a player. Reports go to the owner's moderation queue (dismiss, forced rename, suspension; audited). Details: `docs/MODERATION.md`.
 >
 > **Shop and Season Pass (V6, cosmetic only).** Navigation: Play · Locker · Shop · Season Pass. Shop › Coins sells 500 / 1,500 / 3,500 Coins (consumable); Moonlight Runner and Starry Sleeper are permanent outfits bought directly (non-consumable; Shop › Restore Purchases). Other outfits, accessories and Season 1 Premium (1,500 Coins) are bought with Coins after a confirmation showing the balance left. Purchases are delivered by the game's service after StoreKit 2 verification. The Season Pass track is earned by playing online rounds; Premium adds a second reward track and never skips tiers. Nothing bought changes speed, reach or score. Purchases need the game service; a build without it shows them as unavailable.
 >
@@ -76,7 +78,11 @@ The game service (`service/`) is not deployed yet; see
 
 - The shipped build has `game/config/service.cfg` empty.
 - Names are kept on the device. Game Center provides the online identity.
-- Report sends nothing; it explains that and offers Block instead.
+  In parties every player is shown under one of the game's curated names
+  ("Sleepy Otter 42"), so no unreviewed custom name is broadcast.
+- Quick Chat (preset phrases) works; typed chat is unavailable and says so.
+- Report sends nothing; it says reports are unavailable and that nothing was
+  sent, and offers Mute and Block instead.
 - Delete Game Profile erases the device data.
 
 If the owner deploys the service before submission, fill in
@@ -93,19 +99,24 @@ Connect's questionnaire.
 |---|---|---|
 | Cartoon or fantasy violence | None | The Night Watch "tags" a runner with a whistle; no harm is depicted. |
 | Realistic violence, horror, mature themes | None | |
-| Profanity or crude humour | None | Names are filtered when the service is on; there is no chat. |
+| Profanity or crude humour | None | Game content has none. Player names and typed chat are user content, filtered and reportable (below). |
 | Sexual content, nudity | None | Pajamas and swimwear are cartoon outfits. |
 | Alcohol, tobacco, drugs; gambling; contests | None | |
 | Medical or treatment information | None | |
-| User-generated content | Yes: player names only, with report, block and moderation | |
-| Messaging and chat | No. Preset emotes only. | |
+| User-generated content | Yes: player names, and typed chat in private parties when the service is on; filtered, with mute, block, report and moderation | Without the service: none is shared (curated names, preset phrases). |
+| Messaging and chat | Yes: private-party chat. Quick Chat preset phrases always; typed messages only through the moderation service. No public chat, no voice, no messages to strangers. | |
 | Unrestricted web access | No | |
 | Advertising | No | |
 | In-app purchases | Yes (V6): Coin packs (consumable) and two outfits (non-consumable), cosmetic only; Season 1 Premium is bought with Coins. No loot boxes, no random rewards, no gameplay advantage. | |
 | Parental controls | Respects Game Center multiplayer restrictions (Screen Time). | |
 
-Expected result: the lowest age band, subject to Apple's evaluation of the
-user-generated-names answer.
+Expected result: a low age band, subject to Apple's evaluation of the
+user-generated content and messaging answers. App Review Guideline 1.2
+(user-generated content) asks for filtering, reporting with timely
+responses, blocking and published contact information: the first three are
+implemented (`docs/MODERATION.md`); the **owner** must supply the support
+contact (`SUPPORT_EMAIL` / `SUPPORT_URL` in the service config, and the
+Support URL above) and commit to reviewing the report queue.
 
 ## App Privacy ("nutrition label")
 
@@ -122,8 +133,17 @@ user-generated-names answer.
 | User ID: Game Center team player ID, verified, mapped to an opaque profile ID | Yes | Yes | No | App Functionality |
 | Name: chosen display name | Yes | Yes | No | App Functionality |
 | Gameplay Content: runner appearance (item IDs) | Yes | Yes | No | App Functionality |
-| Other User Content: reports you file (reason, optional text, room code, build) | Yes | Yes | No | App Functionality |
+| Other User Content: reports you file (reason, optional text, room code, build) and, for a reported chat message, that message (up to 200 characters) | Yes | Yes | No | App Functionality |
 | Purchases: Purchase History (V6): App Store transaction IDs, products, what they delivered, the Coins ledger, Season progress and rewarded rounds; never payment details | Yes | Yes | No | App Functionality |
+
+Typed chat (V6): each typed message is sent to the service to be checked
+and signed, and is **not stored** unless someone reports it, so ordinary
+chat is processed in real time rather than collected. A reported message is
+kept with the report (above). Conservative option: if the owner prefers to
+declare chat itself, also tick **User Content › Emails or Text Messages**
+(linked, not tracking, App Functionality), and add
+`emails_or_text_messages` to the data types that `tools/export_ios.sh`
+declares when the service is configured.
 
 Not collected: contact info, location, contacts, photos, audio, browsing,
 usage analytics, diagnostics, advertising data or device IDs. Payment is
@@ -140,7 +160,11 @@ owner's account):
 - **Blocks.** Pairs of profile IDs.
 - **Reports.** Reporter profile ID, target profile ID and name at report
   time, reason, optional details (≤500 characters), context (room code,
-  build), status and resolution.
+  build; for a message report also the channel and send time), status and
+  resolution; for a reported chat message, the message (up to 200
+  characters) and its token ID.
+- **Typed chat.** Not stored. The service checks and signs each message
+  and keeps only short-lived rate-limit counters.
 - **Party rooms.** Code, host and member profile IDs, state and
   timestamps. Closed and expired rooms are purged after 24 h.
 - **Moderation audit log.** Owner actions; profile deletions are logged
@@ -149,8 +173,9 @@ owner's account):
   revoked session IDs (purged when they expire).
 
 What deletion removes: Delete Game Profile removes the profile, its
-identity link, name history and blocks. Reports the player filed stay, with
-the reporter link removed. Open reports against the player are closed.
+identity link, name history and blocks, and the quoted text of any reported
+messages the player sent. Reports the player filed stay, with the reporter
+link removed. Open reports against the player are closed.
 
 ## Screenshots
 

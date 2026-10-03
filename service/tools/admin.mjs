@@ -32,7 +32,8 @@ try {
     case 'queue': {
       const j = await api('GET', `/v1/admin/reports?status=${a || 'open'}`);
       for (const r of j.reports) {
-        console.log(`${r.id}  ${new Date(r.created_at).toISOString()}  ${r.reason.padEnd(13)} target=${r.target_id} "${r.target_name ?? ''}" open_for_target=${r.open_for_target}${r.details ? '  — ' + r.details : ''}`);
+        console.log(`${r.id}  ${new Date(r.created_at).toISOString()}  ${(r.kind || 'player').padEnd(8)} ${r.reason.padEnd(13)} target=${r.target_id} "${r.target_name ?? ''}" open_for_target=${r.open_for_target}${r.details ? '  — ' + r.details : ''}`);
+        if (r.evidence) console.log(`    message: "${r.evidence}"  (room ${r.context?.room_code ?? '?'})`);
       }
       console.log(`${j.reports.length} report(s)`);
       break;

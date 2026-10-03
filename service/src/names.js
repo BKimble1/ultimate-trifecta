@@ -58,13 +58,43 @@ export function tokens(name) {
     .map((t) => t.toLowerCase())
     .filter((t) => /[a-z]/.test(t));
   const leet = name.replace(/([a-z])([A-Z])/g, '$1 $2').split(/[\s_]+/)
+    .filter((t) => /[A-Za-z]/.test(t))   // a number is a number ("Otter 99" is not "gg")
     .flatMap((t) => [[...t.toLowerCase()].map((ch) => LEET[ch] ?? ch).join(''), [...t.toLowerCase()].map((ch) => LEET_ALT[ch] ?? LEET[ch] ?? ch).join('')])
     .filter(Boolean);
   return [...new Set([...camel, ...leet])];
 }
 
+// Collapsed forms are matched against the collapsed skeleton only when
+// collapsing kept them distinctive: a term without doubled letters ("sex",
+// "fuck"), or one whose collapsed form still has 4+ letters ("niga").  A
+// term whose collapsed form became a short common fragment ("coon" -> "con",
+// "boob" -> "bob", "xxx" -> "x") is matched as spelled instead, also with
+// stretched letters squeezed to two ("cooooon" -> "coon"): V6 found
+// "Bacon", "Iconic", "Second" and "Bob" rejected by the old rule.
+export function squeeze2(s) {
+  return s.replace(/(.)\1{2,}/g, '$1$1');
+}
 function list(words, tok) {
-  return { sub: words.map(collapse), raw: words, tok };
+  const col = words.filter((w) => collapse(w) === w ? w.length >= 3 : collapse(w).length >= 4).map(collapse);
+  return { col, raw: words.filter((w) => w.length >= 3), tok };
+}
+// The first category of `lists` whose substring terms appear in a word
+// variant (raw spelling and its collapsed skeleton), after harmless ALLOW
+// words spelled out in it are cut out.  null when none.
+export function substringCategory(rawVariant, lists = null) {
+  let s = collapse(rawVariant);
+  let r = rawVariant;
+  for (const w of ALLOW_PAIRS) {
+    if (rawVariant.includes(w.raw)) {
+      s = s.split(w.col).join('|');
+      r = r.split(w.raw).join('|');
+    }
+  }
+  const r2 = squeeze2(r);
+  for (const [cat, l] of Object.entries(lists || LISTS)) {
+    if (l.col.some((term) => s.includes(term)) || l.raw.some((term) => r.includes(term) || r2.includes(term))) return cat;
+  }
+  return null;
 }
 const LISTS = {
   slur: list(dec(T.SLURS), dec(T.SLUR_TOKENS)),
@@ -77,7 +107,7 @@ const LISTS = {
 const ALLOW_PAIRS = [...T.ALLOW].sort((x, y) => y.length - x.length).map((w) => ({ raw: w, col: collapse(w) }));
 
 export const BUILTIN_RESERVED = ['player', 'runner', 'night watch', 'nightwatch', 'anonymous', 'unknown', 'guest', 'host',
-  'you', 'me', 'everyone', 'nobody', 'null', 'undefined', 'test', 'claude'];
+  'you', 'me', 'everyone', 'nobody', 'null', 'undefined', 'test', 'claude', 'blocked player'];
 
 const MESSAGES = {
   length: `Names are ${MIN_LEN}-${MAX_LEN} characters.`,
@@ -96,7 +126,9 @@ const MESSAGES = {
 
 export function normalizeName(raw) {
   if (typeof raw !== 'string') return '';
-  return raw.normalize('NFKC').replace(/[​-‍﻿]/g, '').trim().replace(/\s+/g, ' ');
+  // (V6) every invisible format character goes, not only zero-width spaces:
+  // soft hyphen, joiners, direction marks and overrides
+  return raw.normalize('NFKC').replace(/[\u00AD\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g, '').trim().replace(/\s+/g, ' ');
 }
 
 // Character-level rules (shared with the client). Returns null or an error key.
@@ -123,19 +155,8 @@ export function moderate(raw, reserved = []) {
   for (const v of variants(name)) {
     // harmless words are cut out first, but only when they are really spelled
     // that way (so a collapsed slur can't hide behind a place name)
-    let s = v.col;
-    let r = v.raw;
-    for (const w of ALLOW_PAIRS) {
-      if (v.raw.includes(w.raw)) {
-        s = s.split(w.col).join('|');
-        r = r.split(w.raw).join('|');
-      }
-    }
-    for (const [cat, l] of Object.entries(LISTS)) {
-      if (l.sub.some((term) => term.length >= 3 && s.includes(term)) || l.raw.some((term) => term.length >= 3 && r.includes(term))) {
-        return { ok: false, error: 'name_rejected', reason: cat, message: MESSAGES[cat], name };
-      }
-    }
+    const cat = substringCategory(v.raw);
+    if (cat) return { ok: false, error: 'name_rejected', reason: cat, message: MESSAGES[cat], name };
   }
   const norm = name.toLowerCase();
   const sk0 = skeletons(name)[0];

@@ -1,0 +1,85 @@
+#!/usr/bin/env node
+// Writes game/tests/data/moderation_fixture.json: the service's decisions on
+// a corpus of names and chat messages (ordinary, harmless look-alikes and
+// evasions).  The game's test_moderation checks that NameRules and
+// ChatRules decide every case the same way, so the device's instant
+// feedback and receiver-side checks follow the service policy.
+//   node tools/export_policy_fixture.mjs
+import { writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { moderate } from '../src/names.js';
+import { checkChat } from '../src/chat_rules.js';
+import * as T from '../src/terms.js';
+
+const here = dirname(fileURLToPath(import.meta.url));
+// inputs are base64 (UTF-8) so the fixture doesn't spell the lists out either
+const b64 = (s) => Buffer.from(s, 'utf8').toString('base64');
+const dec = (a) => a.map((s) => Buffer.from(s, 'base64').toString());
+const ZW = String.fromCharCode(0x200b);
+const RLM = String.fromCharCode(0x200f);
+const SHY = String.fromCharCode(0xad);
+const full = (s) => [...s].map((c) => (c >= '!' && c <= '~' ? String.fromCharCode(c.charCodeAt(0) + 0xfee0) : c)).join('');
+const leet = (s) => s.replace(/o/g, '0').replace(/i/g, '1').replace(/e/g, '3').replace(/a/g, '4').replace(/s/g, '5');
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// --- names
+const names = new Set([
+  'Sleepy Otter', 'Sleepy Otter 42', 'Comfy Frog 11', 'Moonlit Koala', 'Snoozy Gecko', 'Hello Kitty', 'Splash Bomb', 'Knight Rider',
+  'Scunthorpe', 'Dickens Fan', 'Peacock', 'Cocktail', 'Hancock', 'Assassin', 'Classy Bass', 'Grass Hopper', 'grape juice',
+  'Drape Cat', 'Skyscraper', 'Raccoon', 'Cocoon', 'Tycoon', 'Sussex Lad', 'Essex Owl', 'Arsenal FC', 'Badminton Pro', 'Cassandra',
+  'Torpedo', 'Speedo', 'Pistachio', 'Mississippi', 'Shiitake', 'Titanic', 'Japan Fan', 'Nigel Otter', 'Swatch', 'Watchful Owl',
+  'Therapist', 'Button Nose', 'Cucumber', 'Document', 'Spicy Taco', 'Pakistan Fan', 'Bob Builder', 'Iconic Otter', 'Second Wind',
+  'Contact Lens', 'Bacon Bits', 'Otter 99', 'Frog 10', 'Cocky Kid', 'Thorny Rose', 'Entity', 'Blue Skys', 'Raccoon 99',
+  'Admin', 'm0d', 'B0t', 'Trifecta Staff', 'Official Team', 'GameCenter', 'discord gg', 'insta me', 'www site', 'site com',
+  'snapchat me', 'Add Me Now', 'Nightwatch', 'Night Watch', 'Player', 'Guest', 'Blocked Player', 'KYS', 'Kill Bill', 'killyou',
+  'Hitler', 'shoot up', 'Big D1ck', 'P0rnStar', 'sexy_time', 'ass', 'Nude Beach', 'FuuuckYou', 'f_u_c_k', 'Sh1tHead',
+  'xX_B1tch_Xx', 'twat', 'ab', 'x'.repeat(17), 'Dot.Name', 'a  b c', '12345a', 'Call 5551234', ' Leading', 'Emoji \u{1F600}',
+  'Sleepy' + ZW + 'Otter', 'Sleepy Otter' + RLM, 'Sle' + SHY + 'epy', full('Sleepy'), 'Comfy\tFrog', 'Snug  Puffin',
+]);
+for (const w of [...dec(T.PROFANITY), ...dec(T.SEXUAL), ...dec(T.SLURS)].slice(0, 60)) {
+  if (w.length < 3) continue;
+  names.add(cap(w).slice(0, 16));
+  names.add(('Mr ' + leet(w)).slice(0, 16));
+  names.add(('x' + w.split('').join('_') + 'x').slice(0, 16));
+  names.add((w.replace(/(.)/, '$1$1$1') + ' 7').slice(0, 16));
+  names.add((cap(w.slice(0, 2)) + ZW + w.slice(2) + ' Fan').slice(0, 16));
+}
+for (const w of T.ALLOW) if (w.length >= 3) names.add(cap(w).slice(0, 16));
+
+// --- chat
+const chat = new Set([
+  'gg', 'gg everyone!', 'Nice run!', 'I got 10 coins', 'Heading home, cover me', 'The Night Watch is by the fountain',
+  'That was a classic assist', 'analysis paralysis', 'second place again', 'bacon', 'raccoon at the pond', 'my therapist says hi',
+  'Scunthorpe united', 'café crème', 'good game, well played', 'grape juice', 'cocky move', 'thorny bush', 'entity',
+  'Is anyone here?', 'wait for me!!', 'Bob is fast', 'Essex vs Sussex', 'passing the class', 'title fight', 'Button mash',
+  'Nigel is ready', 'Japan trip', '3 of 3 splashes', 'Round 2 of 5', 'Shiitake soup', '  spaced   out  ', 'One moment!',
+  'f u c k this', 'sh.it', 'f*ck', 'you are an a$$', "You're an ass!", 'sh!t', 'fuuuuuck', 'sexy', 'kill you', 'I will kill your self',
+  'kys', 'visit www.example.com', 'add me on snap', 'my discord is bob', 'call 555 123 4567', 'discord.gg/abc', 'mail x@y.com',
+  'follow @sleepyotter', 'http://x', 'example dot com', '<b>hi</b>', 'hello [color=red]x[/color]', '{x}', '`code`', 'aaaaaaaaaa',
+  'go go go go go go', 'tiny \u{1F600}', 'hi\u0007there', 'x'.repeat(101), '', '   ', ZW, 'what the f' + ZW + 'u' + ZW + 'ck',
+  full('fuck'), 'S P L A S H time', 'a b c d', 'ok ok ok ok', 'Tag! You are it', 'Watch out, cart incoming',
+]);
+for (const w of [...dec(T.PROFANITY), ...dec(T.SEXUAL), ...dec(T.SLURS), ...dec(T.SEXUAL_TOKENS), ...dec(T.SLUR_TOKENS)]) {
+  chat.add(`you ${w}`);
+  chat.add(`${leet(w)}!`);
+  chat.add(w.split('').join(' '));
+  chat.add(w.split('').join('.'));
+  chat.add(w.replace(/(.)/, '$1$1$1$1'));
+}
+for (const w of T.ALLOW) chat.add(`the ${w} is here`);
+
+const out = {
+  note: 'GENERATED by service/tools/export_policy_fixture.mjs from service/src/names.js and chat_rules.js',
+  names: [...names].map((n) => {
+    const r = moderate(n);
+    return { input: b64(n), ok: r.ok, reason: r.ok ? '' : r.reason, name: r.ok ? b64(r.name) : '' };
+  }),
+  chat: [...chat].map((m) => {
+    const r = checkChat(m);
+    return { input: b64(m), ok: r.ok, reason: r.ok ? '' : r.reason, text: r.ok ? b64(r.text) : '' };
+  }),
+};
+const p = join(here, '..', '..', 'game', 'tests', 'data', 'moderation_fixture.json');
+writeFileSync(p, JSON.stringify(out, null, 1));
+console.log('wrote', p, out.names.length, 'names,', out.chat.length, 'messages');

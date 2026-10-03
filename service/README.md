@@ -26,6 +26,12 @@ the trusted part of online play:
 - **Safety.** Persistent blocks, and reports with receipts. The owner has a
   moderation queue with dismiss, forced rename, suspend and unsuspend, plus an
   audit log.
+- **Typed party chat (V6).** `POST /v1/chat/check` runs the message policy
+  (`src/chat_rules.js`) for a signed-in member of a live room and signs the
+  approved text into a 5-minute RS256 token (the admission key). The host and
+  every receiver verify it before showing anything. Message text isn't
+  stored. `POST /v1/reports/message` files a report with the signed message
+  as evidence. Policy, limits and the workflow: `docs/MODERATION.md`.
 - **Party rooms.**
   - Rooms are created atomically, with 6-character codes from an alphabet
     without look-alikes, and codes are normalised strictly.
@@ -126,6 +132,8 @@ against the deleted profile are closed as "profile deleted".
 | `PUT /v1/me/appearance` | session | Runner look (schema 2 keys) |
 | `GET/POST /v1/blocks`, `DELETE /v1/blocks/:id` | session | Block list |
 | `POST /v1/reports` | session | Report a player (receipt returned) |
+| `POST /v1/chat/check` | session (room member) | V6: check a typed message; returns the approved text and its signed token, or the reason it was refused |
+| `POST /v1/reports/message` | session | V6: report a typed message (the signed token is the evidence) |
 | `POST /v1/rooms` | session | Create a party (code, host binding) |
 | `GET /v1/rooms/:code` | session | Room state |
 | `POST /v1/rooms/:code/join` | session | Reserve a slot and get an admission token |

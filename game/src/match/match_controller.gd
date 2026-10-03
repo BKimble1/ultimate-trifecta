@@ -102,7 +102,9 @@ func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> 
 	staged = bool(settings.get("staged", with_visuals))
 	targets = start["targets"]
 	for e in start["roster"]:
-		roster[int(e["slot"])] = e
+		# (V6) names as this device shows them (a blocked player's is hidden);
+		# the simulation keeps start["roster"] untouched
+		roster[int(e["slot"])] = SocialSafety.display_entry(e)
 	spectator = not roster.has(local_slot)
 	home_dorm = String(start.get("home_dorm", CampusDorms.default_id()))
 	if not CampusDorms.has_dorm(home_dorm):
@@ -696,8 +698,9 @@ func _build_local_cmd() -> InputCmd:
 		_next_seq += 1
 		cmd.quantize()
 		return cmd
-	if hud and hud.pause_panel and hud.pause_panel.visible:
+	if (hud and hud.pause_panel and hud.pause_panel.visible) or InputOwner.menu_owns():
 		# the pause menu owns the controller: its A/Enter is "Resume", not a jump
+		# (V6: so does the chat drawer: typing or a phrase never moves or tags)
 		Controls.clear_edges()
 		cmd.cam_yaw = camera.yaw if camera else 0.0
 		cmd.seq = _next_seq
@@ -1337,7 +1340,7 @@ func _present_event(ev: Dictionary) -> void:
 				hud.toast("Back on campus", Color(0.8, 0.9, 1.0))
 		TC.Ev.EMOTE:
 			var who: Dictionary = roster.get(a, {})
-			if not session.muted.has(String(who.get("uid", ""))):
+			if not SocialSafety.is_hidden(session, String(who.get("uid", "")), String(who.get("pid", ""))):   # (V6: blocked too)
 				hud.emote_bubble(a, int(ev["v"]))
 				Sfx.play("pop")
 		TC.Ev.COIN_PICKUP:
