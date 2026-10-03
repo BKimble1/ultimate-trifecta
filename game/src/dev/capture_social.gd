@@ -43,6 +43,7 @@ func _next(delay: float) -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	_patient()
 	match scenario:
 		"social_hub":
 			_hub()
@@ -56,6 +57,26 @@ func _process(delta: float) -> void:
 			_service_host()
 		"social_service_guest":
 			_service_guest()
+
+
+## The party processes of these runs share a busy desktop, where the
+## software-rendered host can stall for many seconds on one frame (the first
+## frame of a new view compiles its pipelines).  A real client gives up on a
+## host after `host_timeout_s` (6 s) of silence, and ENet after 30 s; the
+## scripted parties wait for the slow host instead, so the shots show the
+## party they set out to show.  Dev evidence only (src/dev/ is not exported).
+func _patient() -> void:
+	var s: NetSession = App.session
+	if s == null or s.transport == null:
+		return
+	Rules.cfg.host_timeout_s = maxf(Rules.cfg.host_timeout_s, 600.0)
+	var et := s.transport as EnetTransport
+	if et == null:
+		return
+	for id in et.peers():
+		var pp := et.peer.get_peer(int(id))
+		if pp != null:
+			pp.set_timeout(64, 120000, 600000)
 
 
 func _lobby() -> LobbyScreen:
@@ -121,6 +142,7 @@ func _hub() -> void:
 					c = cell
 					break
 			if c == null:
+				printerr("SOCIAL no guest seat to show a card for")
 				_step = 20
 				return
 			l._player_popover(c.slot, c)

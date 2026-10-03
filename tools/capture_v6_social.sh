@@ -6,7 +6,10 @@
 # is off in these runs (typed chat and reports say so).
 #
 # Usage: tools/capture_v6_social.sh OUT_DIR [sets...]
-#   sets: hub names results clip (default: all)
+#   sets: hub names results clip service (default: all)
+#   CAPTURE_TIMEOUT (seconds per game, default 900): raise it on a busy
+#   machine, where software rendering can drop to a frame every few seconds
+#   HUB_SIZES (default "1 2 4 8"): party sizes for the hub set
 #   hub      party room with 1/2/4/8 players: menu, walk around, bubbles,
 #            chat drawer, player card, report sheet (phone size)
 #   names    the name sheet refusing names, with suggestions (phone)
@@ -44,14 +47,14 @@ game() { # dir res scale safe args...
 hub() { # N
   local n=$1 dir="$OUT/hub/${1}p" port=$((7900 + RANDOM % 90))
   mkdir -p "$dir"
-  XDG_DATA_HOME=$(mktemp -d) timeout 900 xvfb-run -a -s "-screen 0 2600x1240x24" nice -n 10 tools/gd.sh --path game --resolution 2532x1170 -- \
+  XDG_DATA_HOME=$(mktemp -d) timeout "${CAPTURE_TIMEOUT:-900}" xvfb-run -a -s "-screen 0 2600x1240x24" nice -n 10 tools/gd.sh --path game --resolution 2532x1170 -- \
     --emulate-phone=3 --emulate-safe=59,0,59,21 --net-host=$port --capture=social_hub --capture-players="$n" --capture-dir="$dir" \
     --capture-label="desktop Linux llvmpipe, LAN dev room, $n players, service off" --no-gamecenter --random-cosmetic > "$dir/host.log" 2>&1 &
   local host=$!
   local kids=()
   sleep 8
   for i in $(seq 2 "$n"); do
-    XDG_DATA_HOME=$(mktemp -d) timeout 900 nice -n 15 tools/gd.sh --headless --path game -- --net-join=127.0.0.1:$port \
+    XDG_DATA_HOME=$(mktemp -d) timeout "${CAPTURE_TIMEOUT:-900}" nice -n 15 tools/gd.sh --headless --path game -- --net-join=127.0.0.1:$port \
       --capture=social_bot --capture-dir="$dir/bot$i" --no-gamecenter --random-cosmetic > "$dir/client$i.log" 2>&1 &
     kids+=($!)
     sleep 0.5
@@ -65,7 +68,7 @@ for s in $SETS; do
   echo "== $s"
   case $s in
     hub)
-      for n in 1 2 4 8; do hub "$n"; done;;
+      for n in ${HUB_SIZES:-1 2 4 8}; do hub "$n"; done;;
     names)
       # shellcheck disable=SC2086
       CAPTURE_ARGS="--capture=social_names --skip-onboarding" game "$OUT/names" $PHONE;;
