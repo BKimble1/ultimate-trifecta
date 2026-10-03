@@ -119,6 +119,15 @@ var _clock := 0.0                   # seconds of session time (rate-limit window
 var _loads_done := false
 var _load_wait := 0.0
 const LOAD_TIMEOUT_S := 15.0
+## V6: a guest still preparing (slow phone, cold caches) reports its progress
+## (LOADED with a progress byte); after LOAD_TIMEOUT_S the host keeps waiting
+## for a guest whose progress moved within LOAD_STALL_S, up to LOAD_MAX_S, so
+## slow legitimate preparation isn't mistaken for a lost player; a stalled or
+## silent guest still lets the round start at LOAD_TIMEOUT_S.
+const LOAD_STALL_S := 4.0
+const LOAD_MAX_S := 45.0
+var _load_prog: Dictionary = {}     # slot -> last progress byte (0..254)
+var _load_moved: Dictionary = {}    # slot -> _load_wait when it last advanced
 const RATE_INPUT := 90              # per second
 const RATE_OTHER := 25
 
@@ -374,8 +383,15 @@ func _host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 					_host_emote(slot, int(d["emote"]))
 		Protocol.M.LOADED:
 			if _peer_slot.has(peer) and b.get_available_bytes() >= 2 and b.get_u16() == round_no:
-				_loaded[int(_peer_slot[peer])] = true
-				_broadcast_lobby()   # everyone's loading screen shows who is ready
+				var slot := int(_peer_slot[peer])
+				# V6: an optional progress byte (0..254) while still preparing;
+				# none (or 255) is the load acknowledgement itself
+				var v := b.get_u8() if b.get_available_bytes() >= 1 else 255
+				if v < 255:
+					_note_load_progress(slot, v)
+				elif not _loaded.has(slot):
+					_loaded[slot] = true
+					_broadcast_lobby()   # everyone's loading screen shows who is ready
 		Protocol.M.PING:
 			if b.get_available_bytes() < 8:
 				return
@@ -663,6 +679,8 @@ func host_start_match(seed_override: int = -1) -> void:
 	_last_seq.clear()
 	_pending_events.clear()
 	_loaded.clear()
+	_load_prog.clear()
+	_load_moved.clear()
 	_load_wait = 0.0
 	_loads_done = false
 	if mode == Mode.HOST:
@@ -749,6 +767,25 @@ static func _jsonable(v: Variant) -> Variant:
 	return v
 
 
+## Client (V6): how far our preparation is (0..1), sent while preparing so
+## the host knows a slow guest is still on its way (unreliable; the next one
+## replaces it).
+func send_load_progress(p: float) -> void:
+	if mode == Mode.CLIENT and host_peer >= 0:
+		var b := Protocol.buf_for(Protocol.M.LOADED)
+		b.put_u16(round_no)
+		b.put_u8(clampi(int(p * 254.0), 0, 254))
+		transport.send(host_peer, b.data_array, false)
+
+
+## Host: a guest's progress only counts when it moves forward (repeating the
+## same value can't hold the round).
+func _note_load_progress(slot: int, v: int) -> void:
+	if v > int(_load_prog.get(slot, -1)):
+		_load_prog[slot] = v
+		_load_moved[slot] = _load_wait
+
+
 ## Client: our match scene is ready (load acknowledgement for this round).
 func send_loaded() -> void:
 	if mode == Mode.CLIENT and host_peer >= 0:
@@ -757,19 +794,26 @@ func send_loaded() -> void:
 		transport.send(host_peer, b.data_array, true)
 
 
-## Host: the round starts once every connected player has loaded (or after
-## LOAD_TIMEOUT_S, so one slow device can't hold everyone).  Bots and
-## disconnected players don't count.
+## Host: the round starts once every connected player has loaded.  After
+## LOAD_TIMEOUT_S it starts anyway unless a guest still loading reported
+## progress within LOAD_STALL_S (V6), and after LOAD_MAX_S in any case, so
+## one slow or lost device can't hold everyone.  Bots and disconnected
+## players don't count.
 func loads_complete(delta: float = 0.0) -> bool:
 	if mode != Mode.HOST or _loads_done or current_start.is_empty() or phase == TC.Phase.LOBBY or phase == TC.Phase.RESULTS:
 		return true
 	_load_wait += delta
-	if _load_wait >= LOAD_TIMEOUT_S:
-		_loads_done = true
-		return true
+	var waiting := false
+	var moving := false
 	for e in roster:
 		if e != null and not bool(e["is_bot"]) and bool(e["connected"]) and int(e["slot"]) != local_slot and not _loaded.has(int(e["slot"])):
-			return false
+			waiting = true
+			if _load_moved.has(int(e["slot"])) and _load_wait - float(_load_moved[int(e["slot"])]) < LOAD_STALL_S:
+				moving = true
+	if waiting and _load_wait < LOAD_MAX_S and (_load_wait < LOAD_TIMEOUT_S or moving):
+		return false
+	if waiting:
+		Diag.mark("load_wait_ended")
 	_loads_done = true   # once everyone is in, later reconnects never pause the round
 	return true
 

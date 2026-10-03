@@ -169,6 +169,7 @@ func _ready() -> void:
 ## ready sooner.  At 60 fps the budget stays 9 ms.
 const PREP_BUDGET_MAX_US := 40000
 var _prep_last_us := 0
+var _load_report_us := 0
 var _prep_iv: Array[float] = []     # the last few frame intervals outside our own work
 
 
@@ -189,6 +190,10 @@ func _process_prepare() -> void:
 	prep_frames += 1
 	prep_max_ms = maxf(prep_max_ms, float(Time.get_ticks_usec() - f0) / 1000.0)
 	_prep_last_us = Time.get_ticks_usec()
+	# V6: a guest tells the host it is still on its way (twice a second)
+	if is_client and _prep_last_us - _load_report_us > 500000:
+		_load_report_us = _prep_last_us
+		session.send_load_progress(prep_progress())
 	if _prep_i >= _prep.size():
 		_finish_prepare()
 

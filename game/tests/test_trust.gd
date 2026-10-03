@@ -213,3 +213,63 @@ func test_names_from_the_network_are_sanitised() -> void:
 	await rig.wait_until(func() -> bool: return evil.local_slot >= 0, 300)
 	t.eq(String(rig.host.roster[evil.local_slot]["name"]), "Player", "the host sanitises a typed name")
 	rig.teardown()
+
+
+## V6: a slow guest that keeps reporting progress isn't left behind at 15 s;
+## a silent or stalled one still lets the round start; nobody holds it past
+## LOAD_MAX_S, and repeating the same progress doesn't count.
+func test_a_slow_guest_still_loading_is_waited_for() -> void:
+	var rig := _rig(1)
+	var c: NetSession = rig.clients[0]
+	await rig.wait_until(func() -> bool: return c.local_slot >= 0, 300)
+	# this guest never finishes preparing (its match scene is not made)
+	for conn in c.match_starting.get_connections():
+		c.match_starting.disconnect(conn["callable"])
+	var h: NetSession = rig.host
+	# 1) silent: the round starts at LOAD_TIMEOUT_S as before
+	h.host_start_match(5)
+	await rig.frames(4)
+	var started_at := -1.0
+	for i in 60:
+		if h.loads_complete(1.0):
+			started_at = h._load_wait
+			break
+	t.near(started_at, NetSession.LOAD_TIMEOUT_S, 1.01, "a silent guest: the round starts at %.0f s" % NetSession.LOAD_TIMEOUT_S)
+	# 2) still preparing, progress moving every second: waited for past 15 s
+	h.host_return_to_lobby()
+	await rig.frames(4)
+	h.host_start_match(6)
+	await rig.wait_until(func() -> bool: return c.round_no == h.round_no, 300)
+	started_at = -1.0
+	for i in 60:
+		c.send_load_progress(minf(0.95, 0.02 * i))
+		await rig.frames(2)
+		if h.loads_complete(1.0):
+			started_at = h._load_wait
+			break
+	t.near(started_at, NetSession.LOAD_MAX_S, 1.01, "a guest still progressing is waited for, up to %.0f s (started at %.0f s)" % [NetSession.LOAD_MAX_S, started_at])
+	# 3) progress that stops: the round starts LOAD_STALL_S after it stopped
+	h.host_return_to_lobby()
+	await rig.frames(4)
+	h.host_start_match(7)
+	await rig.wait_until(func() -> bool: return c.round_no == h.round_no, 300)
+	started_at = -1.0
+	for i in 60:
+		# moves until 20 s, then repeats the same value
+		c.send_load_progress(0.02 * mini(i, 20))
+		await rig.frames(2)
+		if h.loads_complete(1.0):
+			started_at = h._load_wait
+			break
+	t.check(started_at > NetSession.LOAD_TIMEOUT_S and started_at <= 20.0 + NetSession.LOAD_STALL_S + 1.01,
+		"progress that stops (or repeats) no longer holds the round (started at %.0f s)" % started_at)
+	# 4) the ack still releases the round at once
+	h.host_return_to_lobby()
+	await rig.frames(4)
+	h.host_start_match(8)
+	await rig.wait_until(func() -> bool: return c.round_no == h.round_no, 300)
+	t.check(not h.loads_complete(1.0), "waiting")
+	c.send_loaded()
+	await rig.frames(4)
+	t.check(h.loads_complete(0.0), "the LOADED ack releases the round")
+	rig.teardown()

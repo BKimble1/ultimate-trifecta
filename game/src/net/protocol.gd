@@ -36,7 +36,7 @@ enum M {
 	HOST_END,       # host -> all: room closing / round cancelled
 	KICK,           # host -> client
 	MUTE,           # unused on wire (local block list)
-	LOADED,         # client -> host: {round} match scene ready (load ack)
+	LOADED,         # client -> host: {round} match scene ready (load ack); V6: {round, progress 0..254} while still preparing
 	SERIES,         # host -> all: series standings and completed rounds (JSON)
 }
 
