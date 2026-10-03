@@ -154,6 +154,11 @@ The full policy is in [`docs/MODERATION.md`](../MODERATION.md). In short:
   three-line team feed sits at the top right, clear of the screen centre and
   the thumbs. The drawer owns input: no move, tag or jump, and nothing is
   left pressed after.
+- **The drawer on a phone held sideways** puts the Quick Chat phrases in one
+  strip that scrolls sideways, so the messages keep most of the height (on
+  an iPad they wrap). The text field is at the top, clear of the keyboard.
+  Opening a message's actions keeps that message in view, even when new
+  messages arrive.
 
 ### Rankings (§14)
 
@@ -225,7 +230,12 @@ Each hook is a few lines; the logic lives in the new files.
 - name handling: `shown_name()` and `names_verified()`, used for LOBBY,
   START, RESULTS and the series;
 - the HELLO curated-name rule;
-- the RESULTS dedupe.
+- the RESULTS dedupe;
+- `_rate_ok`: hub poses count on the stream (input) budget, and a host
+  running slower than real time allows the packets that queued meanwhile
+  (the budget scales with the real seconds a session second took). Without
+  this, a hitching or software-rendered host removed walking guests as a
+  flood. A real flood is still removed.
 
 **Other shared files:**
 - `match/match_controller.gd`: `InputOwner.menu_owns()` in
@@ -325,12 +335,12 @@ The new suites and what they cover:
 
 | Suite | What it covers |
 |---|---|
-| `test_moderation` (8 tests) | Parity with the service on 476 names and 622 messages; harmless look-alikes; reasons and suggestions; safe display of received names; curated names (all combinations, including the "Sneaky Seal" case); saved-name revalidation; the name sheet |
+| `test_moderation` (8 tests) | Parity with the service on 476 names and 622 messages; harmless look-alikes; reasons and suggestions; safe display of received names; curated names (all combinations, including the "Sneaky Seal" case); saved-name revalidation; the name sheet (and it shrinks back when its suggestions go) |
 | `test_chat` (8 tests) | Delivery, order and duplicates; the host's channel, phrase, rate and repeat limits; forged and junk packets; flood caps on receivers; signed, replayed, borrowed, other-room, edited and wrong-channel tokens; a bad host's unsigned and abusive relays; `send_text` showing only approved, normalised text; mute and block suppression; rejoin history; round channels (team only, finished runners only to spectators, everyone after results) |
-| `test_hub_sync` (4 tests) | Walkers seen by everyone; teleport, furniture and bounds clamping; stale, forged and stranger poses ignored; start clears everyone |
+| `test_hub_sync` (5 tests) | Walkers seen by everyone; teleport, furniture and bounds clamping; stale, forged and stranger poses ignored; start clears everyone; a hitching or much slower host never removes a walking guest as a flood, while a real flood is still refused |
 | `test_hub_walk` (2 tests) | Menu input never moves anyone; walking and sync on the real stage; the chat drawer and sheets own input and clear stuck touches; a guest's walk on the host's stage with a nameplate and the stroll back; Back leaves walk mode first; leaving the screen and starting a round end walking everywhere |
 | `test_match_chat` (2 tests) | The team-only feed and its placement; the drawer owns input (no move, tag or jump, no stale edges); practice has no chat |
-| `test_report_block` (2 tests) | Honest report states with retry; the service-off sheet; blocks by a guest and by a host |
+| `test_report_block` (3 tests) | Honest report states with retry; the service-off sheet; blocks by a guest and by a host; the chat drawer at phone, SE and iPad sizes (Quick Chat strip on phones, room for messages, a message's actions stay in view when new messages arrive) |
 | `test_rankings` (4 tests) | Per-team order with no combined score; bots, away and you; a cancelled round with no tables; shared places without name order; the podium; the full results flow (final standings before Return to lobby, no ejection, the same rewards on reopen, wallet summary, cancelled round); repeated and stale RESULTS packets |
 | Service `npm test` (26 tests) | Including the new `chat.test.mjs`: policy, approval, membership, flood, message reports, forgery, deletion |
 
