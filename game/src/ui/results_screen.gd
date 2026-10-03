@@ -177,12 +177,9 @@ func _round_page() -> void:
 	_v.add_child(_team_table("Runners", d["runners"], TC.Role.RUNNER, int(d["winners"]) == TC.Role.RUNNER))
 	_v.add_child(_team_table("Night Watch", d["watch"], TC.Role.PATROL, int(d["winners"]) == TC.Role.PATROL))
 	_v.add_child(_rewards_card())
+	# (after the last round the footer and the Final standings button say so)
 	if _party() and not series_view().is_empty() and not series_over():
 		_series_so_far()
-	elif series_over():
-		var sl := UIKit.styled("That was the last round. See the final standings below.", "caption", UIKit.AMBER)
-		sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_v.add_child(sl)
 
 
 func _final_page() -> void:
@@ -451,7 +448,7 @@ func _podium(rows: Array) -> Control:
 		nl.custom_minimum_size = Vector2(170, 0)
 		col.add_child(nl)
 		var step := UIKit.panel(Color(UIKit.AMBER if int(st["place"]) == 1 else UIKit.SLATE_HI, 0.92), UIKit.R_SMALL, 8)
-		var sl := UIKit.styled(("Tied " if (st["rows"] as Array).size() > 1 else "") + RoundRanking.ordinal(int(st["place"])) + " · %d wins" % int(st["rows"][0]["wins"]),
+		var sl := UIKit.styled(("Tied " if (st["rows"] as Array).size() > 1 else "") + RoundRanking.ordinal(int(st["place"])) + " · %d %s" % [int(st["rows"][0]["wins"]), "win" if int(st["rows"][0]["wins"]) == 1 else "wins"],
 			"label", UIKit.NAVY if int(st["place"]) == 1 else UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
 		step.add_child(sl)
 		col.add_child(step)
@@ -544,7 +541,7 @@ static func standings_table(view: Dictionary, my_uid: String, limit: int = 0) ->
 			pv.add_child(ex)
 		h.add_child(pv)
 		p.add_child(h)
-		p.accessibility_name = "%s, %s, %d Round Wins, %s" % [String(r["label"]), String(r["name"]), int(r["wins"]), played]
+		p.accessibility_name = "%s, %s, %d Round %s, %s" % [String(r["label"]), String(r["name"]), int(r["wins"]), "Win" if int(r["wins"]) == 1 else "Wins", played]
 		box.add_child(p)
 	return box
 
@@ -653,7 +650,7 @@ func _refresh_actions() -> void:
 	if over and page == "round" and not cancelled:
 		_primary.text = "Final standings"
 		UIKit._apply(_primary, UIKit.AMBER, UIKit.NAVY)
-		_status.text = "That was the last round of the series."
+		_status.text = "That was the last round of the series: the final standings are next."
 		return
 	if session.is_host():
 		if over:

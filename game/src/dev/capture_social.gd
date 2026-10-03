@@ -322,7 +322,9 @@ func _show_series() -> void:
 	App._ensure_background()
 	var rsc := ResultsScreen.new()
 	rsc.results = res
-	rsc.reward = d["reward"]
+	# (the recorded round was practice: show what the same round pays in a
+	# party, worked out by the game's own reward rules)
+	rsc.reward = RulesLogic.compute_rewards(res, local, Rules.cfg, false)
 	rsc.session = s
 	App._show(rsc)
 
