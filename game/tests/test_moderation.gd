@@ -140,8 +140,12 @@ func test_name_sheet_explains_and_suggests() -> void:
 	t.check(sheet.msg.text.contains("staff"), "the reason is friendly and specific (%s)" % sheet.msg.text)
 	var sugg := sheet.sugg_row.get_children().filter(func(c: Node) -> bool: return not c.is_queued_for_deletion())
 	t.eq(sugg.size(), 3, "three safe suggestions")
-	(sugg[0] as Button).pressed.emit()
 	await t.get_tree().process_frame
+	var tall := sheet.size.y
+	(sugg[0] as Button).pressed.emit()
+	for i in 3:
+		await t.get_tree().process_frame
+	t.check(sheet.size.y < tall - 40.0, "the sheet shrinks back when the suggestions go (%d < %d)" % [sheet.size.y, tall])
 	t.check(not sheet.save_btn.disabled and NameRules.is_curated(sheet.field.text), "a suggestion is one tap from a valid name (%s)" % sheet.field.text)
 	sheet.field.text = "Bob Builder"
 	sheet._on_text(sheet.field.text)
