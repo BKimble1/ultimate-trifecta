@@ -30,3 +30,5 @@ __pycache__/
 # Native extension binaries (built by tools/build_native.sh)
 game/addons/ut_share/bin/
 native/**/build/
+# Pinned Godot download (tools/fetch_godot.sh); a local directory or link, never tracked
+tools/.cache

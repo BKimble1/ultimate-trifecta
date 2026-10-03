@@ -1,10 +1,10 @@
-# Trifecta Chase: implemented rules (V4)
+# Trifecta Chase: implemented rules (V4, V6 dorms and coins)
 
 All values come from one resource, `game/config/rules_default.tres` (`RulesConfig`, `game/src/config/rules_config.gd`). The party's settings derive each round's own copy (`PartySeries.rules_for`), which the simulation, bots, HUD, tutorial, How to Play and results all read; the global default is never changed while a round uses it. The authority is `MatchSim` (`game/src/sim/match_sim.gd`), which runs on the room host, or locally in practice.
 
-**Runner card** (`TC.runner_card`, values filled in from the round): "Splash into all three marked waters, then get back to the dorm. 4 runners home before time runs out wins it for everyone. Caught? You keep your splashes and you're back in 6 seconds."
+**Runner card** (`TC.role_lines`, values filled in from the round; V6 names tonight's dorm): "Run out, splash into the three marked waters, then run back inside Lanternfield House through one of its doors. 4 home wins it for every runner. Caught? You keep your splashes and you're back in 6 s."
 
-**Night Watch card** (`TC.patrol_card`): "Stop 4 runners getting home before time runs out. Cut them off with a cart, hop out and tag. A tag sends a runner out for 6 seconds; they keep their splashes."
+**Night Watch card**: "Stop 4 runners getting back inside Lanternfield House before time runs out: cut them off in a cart, hop out and tag. A tag sends a runner out for 6 s; they keep their splashes. Nobody can be tagged inside the dorm."
 
 ## Party settings (host, before a series)
 
@@ -17,7 +17,7 @@ All values come from one resource, `game/config/rules_default.tres` (`RulesConfi
 - Eight gameplay slots; bots fill empty seats and stay labelled. `runners = 8 − Night Watch`, `home to win = ceil(2 × runners / 3)` (`PartySeries.required_home`).
 - **Rounds:** 1, 3 (recommended for friends) or 5. The lobby shows one summary line, e.g. "3 rounds · 2 Night Watch · 6 runners · 4 home to win", and Reset to recommended.
 - Only the host can change them, only in the lobby before a series starts. A change bumps a revision, clears guests' Ready and tells them why. Settings lock when the series starts; ending the series (with confirmation) unlocks them. Guests see the host's values read-only.
-- Each round starts from an immutable snapshot of the locked settings carried in START; incompatible clients are refused with "Update the game to join." (protocol 5).
+- Each round starts from an immutable snapshot of the locked settings carried in START; incompatible clients are refused with "Update the game to join." (protocol 6 since V6; a guest whose dorm geometry differs from the round's is refused the same way).
 
 ## Roles
 
@@ -41,13 +41,16 @@ All values come from one resource, `game/config/rules_default.tres` (`RulesConfi
 | Rule | Implemented behavior |
 |---|---|
 | Roster | 8 slots; runners and Night Watch per the party settings. Bots fill empty slots, named `Bot …` and tagged BOT in the lobby, scoreboard and results. |
-| Roles | Shown before play: a 4 s role-reveal card (with "Round x of y"), then a 3 s shared countdown. |
+| Home dorm (V6) | One of three dorms — Puddlesworth Hall, Lanternfield House, Moonpenny Lodge — chosen by the host from the round's seed, never the same as the previous round when another is available (the guided tutorial always uses Puddlesworth Hall). Published in the round configuration with its geometry version and fingerprint, the slot → pad mapping, the targets, the coins and the start timing; reconnects and replays keep it. |
+| Roles | Shown before play, inside the home dorm: a 4 s role-reveal card naming tonight's dorm (with "Round x of y"), then a 3 s shared countdown. Nobody can tag or be tagged during the reveal or the countdown (the simulation runs no intents before GO). |
+| Start | Runners stand on their own pads inside the home dorm's common room, facing one of its three doors, and run out at GO. The Night Watch starts outdoors at the Grounds Shed. |
 | Clock | 240 s round clock starts after the countdown. Server ticks (60 Hz) drive the countdown, penalties and deadline. |
-| Head start | Runners leave the dorm immediately. The Night Watch waits 6 s at the Grounds Shed inside the round clock (30 s in the tutorial). |
+| Head start | The Night Watch waits 6 s at the Grounds Shed inside the round clock (30 s in the tutorial). |
 | Targets | 3 distinct waters out of 6, the same for every runner, from a curated fair set, avoiding an immediate repeat. Targets never move or reroll. |
 | Order | Any order, chosen by each runner. |
 | Stamp | Entering an active target's water volume (jump, dive or walk in) awards that target's stamp once. |
-| Finish | With all 3 stamps, cross the finish zone of any of the 4 dorm doors. |
+| Finish (V6) | With all 3 stamps, run back **inside the home dorm through one of its doors**: the host sees the runner's centre cross the door's threshold (the line across the opening at the wall's inner face) from outside to inside during a tick — within the 3 m opening, at feet height (−0.5…1.6 m), on a move shorter than 3 m, with a clear line between the start and end of the move. Starting inside, running out, coming back without all three stamps, another dorm's door, standing against a wall or tunnelling through it never finish; a finish counts once. Approaching the old exterior finish box does nothing (it no longer exists). |
+| Home is safe (V6) | Nobody can be tagged inside the home dorm's common room (the Night Watch may walk in). Other dorms are ordinary buildings. |
 | Runner win | The round ends the tick the required number of runners (see Party settings) are home. A finish on or before the deadline tick counts. |
 | Night Watch win | The clock expires with fewer runners home than required. Tags never eliminate anyone or win by themselves. |
 | Survival | Not being caught never counts toward winning; only finishes do. |
@@ -56,7 +59,8 @@ All values come from one resource, `game/config/rules_default.tres` (`RulesConfi
 
 The fixed per-tick order is: timers → intents → movement → **finish** → **water/stamps** → **tags** → cart bumps → gadgets → out-of-bounds recovery → perception → win/timeout.
 
-- A runner who reaches a finish zone on the same tick as a valid tag is home; the finish takes precedence.
+- A runner who crosses a home threshold on the same tick as a valid tag is home; the finish takes precedence.
+- Coins (step 8, with the gadgets) are decided after tags, before recovery.
 - Results are built once by the host. Clients never declare their own stamps, finishes or captures, so late or duplicated packets cannot change an outcome.
 
 ## Water
@@ -80,7 +84,7 @@ One explicit contract, shown with the same values on the role reveal, in How to 
 - **Validation (host).** Role, state, cooldown, geometry and line of sight, against the target's position as the tagger saw it up to 150 ms back (lag compensation); the target must also still be within reach + 0.9 m *now*. Protected, finished, splashing and captured runners cannot be tagged; a finish on the same tick wins (finish is resolved before tags).
 - **Penalty.** The runner is held for 6 s and stays a runner with every stamp kept. On screen: "Caught by <name> · back in 6…", then "Back in 5…", with "Your splashes are safe." and where they will return. They can watch teammates meanwhile.
 - **Tagger.** One confirmation: "Tagged <name>! · 2 catches" (their count this round).
-- **Return.** The runner reappears at a pad around their **last stamped water** (the dorm area before the first stamp), the pad farthest from the Night Watch, with 2 s of visible protection ("Protected · 2").
+- **Return.** The runner reappears at a pad around their **last stamped water** — before the first stamp, on one of the pads just inside each door of the **home dorm** — the pad farthest from the Night Watch, with 2 s of visible protection ("Protected · 2"). Out-of-bounds recovery before the first stamp uses the same home-dorm pads.
 
 ## Carts (Night Watch only)
 
@@ -161,7 +165,7 @@ Ground acceleration is high and turning is fast, so movement stays precise while
 
 ## Fair target combinations
 
-`game/tools/route_analysis.gd` builds a route graph from the campus layout and pathfinding grid. `game/config/route_table.json` keeps the combinations whose estimated trip lies within ±12% of the median, and `game/config/route_bot_times.json` adds the measured times of runner bots using the real movement code. 14 of the 20 combinations are curated. The headless route test confirms that runner bots finish every curated combination with no pursuit, with a median of about 2 minutes (see TEST_REPORT.md).
+`game/tools/route_analysis.gd` builds a route graph from the campus layout and pathfinding grid. V6 measures every trip from inside each dorm (out through its nearest door, round the three waters, back in through the door nearest the last water). `game/config/route_table.json` keeps, **per home dorm**, the combinations whose estimated trip lies within ±16% of the median of all dorms' trips and whose measured bot time (`game/config/route_bot_times.json`, from `game/tools/dorm_balance.gd`) is within ±12% of the median; the host picks the targets from tonight's dorm's set. Route lengths, first-contact and first-objective timings per dorm × combination are in `docs/v6/dorms_notes.md`. The headless route test confirms that runner bots finish every curated combination with no pursuit (see TEST_REPORT.md).
 
 ## Rewards (V6: Coins and Season XP, cosmetic only)
 
@@ -196,6 +200,14 @@ Full tables, the earning calculation and the trust model: [docs/ECONOMY.md](docs
   from Coins and is separate from Season 1.
 - **What Coins buy:** outfits and accessories in the Shop, and Season 1
   Premium (1,500 Coins). Everyone has identical abilities.
+
+### Gold coins in the round (V6)
+
+- **Where.** The host picks 8 of the campus's candidate spots from the round's seed: on footpaths and walks (runner routes), at least 28 m apart where possible, at least 14 m from tonight's home doors and 8 m from the active waters' exits, jump-in points and pads; every candidate is reachable on foot from every dorm (tested). Each has a round-scoped id published in the round configuration.
+- **Who.** Anyone on foot — runner or Night Watch, human or bot — who comes within 1.1 m. Not while caught, splashing, home, waiting in the shed or driving a cart. Two on the same tick: the nearer one, then the lower slot.
+- **Worth.** Exactly 1 Coin each, once: a taken coin never comes back that round. The host decides and replicates the pickup (reliable event, plus the coins still out and your own count in every snapshot), so a replayed packet, a second client, a reconnect or reopening results can't add one.
+- **Results.** Every results row carries `coins_picked` (humans and bots; bots own no wallet) and the round's `coin_log`; settling them into a wallet is done once per match id and player identity by the economy code.
+- **Cancelled rounds** (host loss, ended early, abandoned): no settlement — coins picked up in a cancelled round are not paid (the row still records them for the audit).
 
 ## Disconnects
 

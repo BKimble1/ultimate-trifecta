@@ -175,17 +175,19 @@ func _narrow_occluder(from: Vector3, to: Vector3) -> bool:
 			return false
 	else:
 		return true    # only the probe sphere grazes it: the line of sight is open
-	# a wall blocks parallel rays 1 m to both sides; a post or trunk (< 0.9 m
-	# across) at most one of them
+	# a free-standing post or trunk (< 0.9 m across) leaves parallel rays 1 m
+	# to BOTH sides clear.  (V6: a wall's end - a door jamb - leaves one side
+	# clear, through the opening, and must still pull the camera in, or it
+	# would settle behind the wall beside a doorway.)
 	var side := (to - from).cross(Vector3.UP)
 	if side.length() < 1e-4:
 		return false
 	side = side.normalized() * 1.0
 	for sgn in [-1.0, 1.0]:
 		var o: Vector3 = side * sgn
-		if ss.intersect_ray(PhysicsRayQueryParameters3D.create(to + o, from + o, TC.L_WORLD)).is_empty():
-			return true
-	return false
+		if not ss.intersect_ray(PhysicsRayQueryParameters3D.create(to + o, from + o, TC.L_WORLD)).is_empty():
+			return false
+	return true
 
 
 func _update_transform(delta: float) -> void:

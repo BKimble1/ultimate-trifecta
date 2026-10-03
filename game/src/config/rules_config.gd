@@ -112,6 +112,17 @@ extends Resource
 @export var bomb_immunity_s: float = 2.5
 @export var toss_flight_s: float = 0.6
 
+@export_group("Collectible coins (V6)")
+## Gold coins placed per round on the route (RulesLogic.pick_coins), each worth
+## exactly one Coin to whoever the host sees reach it first (either role).
+@export var coin_spawns_per_round: int = 8
+@export var coin_pickup_radius_m: float = 1.1
+## Spacing between the round's coins, and their distance from tonight's
+## home doors and the active waters' approaches.
+@export var coin_min_spacing_m: float = 28.0
+@export var coin_door_clearance_m: float = 14.0
+@export var coin_water_clearance_m: float = 8.0
+
 @export_group("Detection and cues")
 @export var view_range_m: float = 34.0
 @export var view_half_fov_deg: float = 62.0

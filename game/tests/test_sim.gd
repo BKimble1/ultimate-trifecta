@@ -28,10 +28,10 @@ func test_every_curated_combo_all_orders() -> void:
 			if p.stamp_count() != 3 or p.last_stamp_water != int(perms[r][2]):
 				ok = false
 		t.check(ok, "combo %s: every order earns exactly 3 stamps" % str(targets))
-		# everyone can finish through a door
+		# everyone can finish through a door (V6: running in through one of
+		# tonight's home doors)
 		for r in 4:
-			h.place(r, h.door_point(r % 4))
-			await h.step(2)
+			await h.enter_door(r, r % 3)
 		t.eq(h.sim.outcome, TC.Outcome.RUNNERS_WIN, "combo %s: four finishes win" % str(targets))
 		h.free_sim()
 
@@ -124,10 +124,10 @@ func test_capture_before_first_splash_returns_to_dorm() -> void:
 		await h.step()
 	var pos := h.sim.player(0).pos2()
 	var near := false
-	for pad in h.sim.layout.dorm_pads:
+	for pad in CampusDorms.geometry(h.sim.home_dorm)["respawn"]:
 		if pos.distance_to(pad) < 1.5:
 			near = true
-	t.check(near, "no splashes yet -> dorm start area")
+	t.check(near, "no splashes yet -> back inside tonight's home dorm")
 	h.free_sim()
 
 
@@ -217,25 +217,26 @@ func _same_tick_case(stamped: bool) -> Dictionary:
 	var h := _h()
 	h.make([R, P], [0, 1, 2])
 	await h.release_patrol()
-	var d: Dictionary = h.sim.layout.dorm_doors[0]
-	var n2: Vector2 = d["normal"]
-	var dp: Vector2 = d["pos"]
+	# V6: the runner is in the front doorway 6 cm short of the threshold,
+	# running in; the Night Watch lunges from just behind
+	var d: Dictionary = h.sim.home_doors[0]
+	var lp: Vector2 = d["line_p"]
+	var n2: Vector2 = d["n_in"]
 	var n := Vector3(n2.x, 0, n2.y)
+	var at := Vector3(lp.x, 0.05, lp.y)
+	var face := atan2(-n.x, -n.z)
 	var r := h.sim.player(0)
 	var pt := h.sim.player(1)
 	if stamped:
 		r.stamps = 7
-	# runner 2.06 m out (zone edge is 2.0 m), sprinting inward: crosses this tick
-	h.place(0, Vector3(dp.x, 0.05, dp.y) + n * 2.06, atan2(n.x, n.z))
-	r.vel = -n * 6.0
-	r.body.velocity = r.vel
-	h.cmd(0).move = Vector2(-n.x, -n.z)
-	# patrol mid-lunge right behind, facing the door
-	h.place(1, Vector3(dp.x, 0.05, dp.y) + n * 3.1, atan2(n.x, n.z))
+	h.place(0, at - n * 0.5, face)
+	h.place(1, at - n * 1.6, face)
+	h.cmd(0).move = n2
 	await h.step()   # settle on floor
-	h.place(0, Vector3(dp.x, 0.05, dp.y) + n * 2.06, atan2(n.x, n.z))
-	h.place(1, Vector3(dp.x, 0.05, dp.y) + n * 3.1, atan2(n.x, n.z))
-	r.vel = -n * 6.0
+	h.place(0, at - n * 0.06, face)
+	h.place(1, at - n * 1.1, face)
+	r.vel = n * 6.0
+	r.body.velocity = r.vel
 	pt.tag_phase = SimPlayer.TagPhase.LUNGE
 	pt.tag_t = 0.0
 	await h.step()
@@ -259,12 +260,10 @@ func test_fourth_runner_ends_round_immediately() -> void:
 		for wi in [0, 1, 2]:
 			await h.splash_into(r, wi)
 	for r in 3:
-		h.place(r, h.door_point(r))
-		await h.step(2)
+		await h.enter_door(r, r)
 	t.eq(h.sim.finished_count, 3, "three home")
 	t.eq(h.sim.phase, TC.Phase.PLAYING, "round continues at three")
-	h.place(3, h.door_point(3))
-	await h.step()
+	await h.enter_door(3, 0)
 	t.eq(h.sim.outcome, TC.Outcome.RUNNERS_WIN, "fourth valid finish wins")
 	t.eq(h.sim.phase, TC.Phase.RESULTS, "round ends on that tick")
 	var fin_tick := -1
@@ -284,8 +283,7 @@ func test_timeout_and_deadline_finish() -> void:
 		for wi in [0, 1, 2]:
 			await h.splash_into(r, wi)
 	for r in 3:
-		h.place(r, h.door_point(r))
-		await h.step(2)
+		await h.enter_door(r, r)
 	h.sim.end_tick = h.sim.tick + 5
 	await h.step(5)
 	t.eq(h.sim.outcome, TC.Outcome.PATROL_WIN, "time expires with fewer than four home")
@@ -298,14 +296,13 @@ func test_timeout_and_deadline_finish() -> void:
 		for wi in [0, 1, 2]:
 			await h2.splash_into(r, wi)
 	for r in 3:
-		h2.place(r, h2.door_point(r))
-		await h2.step(2)
+		await h2.enter_door(r, r)
 	h2.sim.end_tick = h2.sim.tick + 1
-	h2.place(3, h2.door_point(3))
+	h2.cross_next_tick(3, 0)
 	await h2.step(1)
 	t.eq(h2.sim.outcome, TC.Outcome.RUNNERS_WIN, "finish accepted at the deadline tick counts")
 	# no late result changes after the end
-	h2.place(4, h2.door_point(0))
+	h2.cross_next_tick(4, 0)
 	await h2.step(3)
 	t.eq(h2.sim.finished_count, 4, "nothing changes after the round ended")
 	h2.free_sim()
@@ -514,8 +511,7 @@ func test_finished_runner_is_out_of_play() -> void:
 	await h.release_patrol()
 	for wi in [0, 1, 2]:
 		await h.splash_into(0, wi)
-	h.place(0, h.door_point(1))
-	await h.step(2)
+	await h.enter_door(0, 1)
 	var r := h.sim.player(0)
 	t.eq(r.state, TC.PState.FINISHED, "finished")
 	t.check(not r.is_taggable(), "finished runners are safe")

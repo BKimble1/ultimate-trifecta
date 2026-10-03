@@ -62,13 +62,97 @@ static func count(d: Dictionary) -> int:
 
 
 ## Full generation (offline bake and the test): deterministic.
+## V6: the V5 dressing (generated on the V5 layout) is kept piece for piece
+## outside the rebuilt dorm districts; inside them the same passes run on
+## the V6 layout with their own seed (foundation shrubs along the new
+## dorms, flowers at the new lamps, tufts at the yard paths).
 func generate() -> Dictionary:
+	if L.legacy:
+		return _generate_full(5150)
+	var base := CampusDressing.new(CampusLayout.legacy_shared())._generate_full(5150)
+	var fresh := CampusDressing.new(L)
+	fresh._region = func(p: Vector2) -> bool: return CampusDorms.district_of(p) != ""
+	var inside := fresh._generate_full(6106)
+	items.clear()
+	_occupied.clear()
+	_occ_hash.clear()
+	var dropped := 0
+	# the bots' routes from the new dorms cross ground V5's routes didn't:
+	# a V5 shrub or boulder standing on one of them goes (visual only)
+	var routes := bot_routes(L)
+	var off_route := 0
+	for kind in base:
+		var a: PackedFloat32Array = base[kind]
+		for i in range(0, a.size(), STRIDE):
+			var p := Vector2(a[i], a[i + 2])
+			if kind != FOREST and CampusDorms.district_of(p) != "":
+				dropped += 1
+				continue
+			if kind in MID and _on_route(p, routes, 0.5):
+				off_route += 1
+				continue
+			_append_raw(kind, a, i)
+	for kind in inside:
+		var a2: PackedFloat32Array = inside[kind]
+		for i in range(0, a2.size(), STRIDE):
+			if kind == FOREST:
+				continue
+			if kind in MID and _on_route(Vector2(a2[i], a2[i + 2]), routes, 0.5):
+				off_route += 1
+				continue
+			_append_raw(kind, a2, i)
+	if verbose:
+		print("dressing V6: %d V5 pieces kept, %d inside the dorm districts replaced by %d new, %d off the new bot routes" % [count(items) - count(inside), dropped, count(inside), off_route])
+	return items
+
+
+## The bots' actual routes (V6: from every dorm): nav paths from each dorm's
+## first pad to every exit of every water and from each exit back to the
+## dorm's front door.  The dressing keeps shrubs off them; test_campus_art
+## checks the same routes.
+static func bot_routes(lay: CampusLayout) -> Array:
+	var nav := NavGrid.shared(lay)
+	var out: Array = []
+	for dm in lay.dorms:
+		var start: Vector2 = dm["geo"]["pads"][0]["pos"]
+		var home: Vector2 = dm["geo"]["doors"][0]["approach"]
+		for w in lay.waters:
+			for e in w["exits"]:
+				var ep := Vector2(e.x, e.z)
+				for pair in [[start, ep], [ep, home]]:
+					var path := nav.find_path(pair[0], pair[1])
+					if path.size() >= 2:
+						out.append(path)
+	return out
+
+
+static func _on_route(p: Vector2, routes: Array, dist: float) -> bool:
+	for path: PackedVector2Array in routes:
+		for i in path.size() - 1:
+			if CampusLayout._dist_to_segment(p, path[i], path[i + 1]) < dist:
+				return true
+	return false
+
+
+## Only pieces where this returns true are kept (V6 district planting).
+var _region: Callable
+
+
+func _append_raw(kind: String, a: PackedFloat32Array, i: int) -> void:
+	if not items.has(kind):
+		items[kind] = PackedFloat32Array()
+	var arr: PackedFloat32Array = items[kind]
+	arr.append_array(a.slice(i, i + STRIDE))
+	items[kind] = arr
+
+
+func _generate_full(seed_v: int) -> Dictionary:
 	items.clear()
 	_occupied.clear()
 	_occ_hash.clear()
 	var t0 := Time.get_ticks_msec()
 	_build_masks()
-	_rng.seed = 5150
+	_rng.seed = seed_v
 	var passes := [_understory, _foundations, _banks, _lily_basin, _quarry, _flowers_and_grass, _forest_beyond]
 	var times := []
 	for f: Callable in passes:
@@ -80,6 +164,8 @@ func generate() -> Dictionary:
 
 
 func _add(kind: String, p: Vector2, y: float, yaw: float, s: float, tint: Color = Color(1, 1, 1), custom: Color = Color(1, 1, 1)) -> void:
+	if _region.is_valid() and not _region.call(p):
+		return
 	if not items.has(kind):
 		items[kind] = PackedFloat32Array()
 	var a: PackedFloat32Array = items[kind]
@@ -263,6 +349,9 @@ static func clear_of_gameplay(L: CampusLayout, p: Vector2, r: float, in_water_ok
 	for pr in L.props:
 		if p.distance_to(pr["pos"]) < r + 1.6:
 			return false
+	for so in L.solids:
+		if p.distance_to(so["pos"]) < r + 1.8:
+			return false
 	for t in L.trees:
 		if p.distance_to(t["pos"]) < 0.5 + r * 0.5:
 			return false
@@ -411,7 +500,7 @@ func _foundations() -> void:
 			var x := 1.6
 			while x < length - 1.6:
 				var p := a.lerp(b, x / length) + nrm * 0.42
-				var dorm := id == "dorm"
+				var dorm := bool(bd.get("dorm", false))
 				var kind := "shrub_bloom" if (dorm or _rng.randf() < 0.25) else ("shrub_round" if _rng.randf() < 0.7 else "shrub_tall")
 				var s := _rng.randf_range(0.6, 0.78)
 				var ok := _try_mid(kind, p, s, _leaf_tint(), BLOOMS[_rng.randi() % BLOOMS.size()])

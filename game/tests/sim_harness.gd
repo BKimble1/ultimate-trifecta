@@ -13,14 +13,16 @@ func _init(runner) -> void:
 
 
 ## roles: Array of TC.Role, one per slot. bots: slots driven by BotBrain.
-func make(roles: Array, targets: Array = [0, 1, 2], bots: Array = [], seed_v: int = 11) -> MatchSim:
+## opts (V6): "dorm" (home dorm id, default Puddlesworth Hall), "coins".
+func make(roles: Array, targets: Array = [0, 1, 2], bots: Array = [], seed_v: int = 11, opts: Dictionary = {}) -> MatchSim:
 	sim = MatchSim.new()
 	t.add_child(sim)
 	var roster: Array = []
 	for i in roles.size():
 		roster.append({"slot": i, "uid": "u%d" % i, "name": "P%d" % i, "is_bot": bots.has(i), "role": roles[i], "cosmetic": {}})
-	sim.setup(Rules.cfg, CampusLayout.shared(), roster, seed_v, targets, "test-%d" % seed_v,
-		{"bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p)})
+	var o := {"bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p)}
+	o.merge(opts, true)
+	sim.setup(Rules.cfg, CampusLayout.shared(), roster, seed_v, targets, "test-%d" % seed_v, o)
 	return sim
 
 
@@ -100,10 +102,43 @@ static func drop_offset(w: Dictionary) -> float:
 	return 0.0
 
 
+## Just outside home door i (V6: outside the threshold, nothing happens
+## there; enter_door walks in).
 func door_point(i: int = 0) -> Vector3:
-	var d: Dictionary = sim.layout.dorm_doors[i]
+	var d: Dictionary = sim.home_doors[i % sim.home_doors.size()]
 	var p: Vector2 = (d["pos"] as Vector2) + (d["normal"] as Vector2) * 0.9
 	return Vector3(p.x, 0.05, p.y)
+
+
+## Puts a runner in home door i's opening, 6 cm short of the threshold and
+## running in at 5 m/s: the next tick crosses it.
+func cross_next_tick(slot: int, i: int = 0) -> void:
+	var d: Dictionary = sim.home_doors[i % sim.home_doors.size()]
+	var lp: Vector2 = d["line_p"]
+	var n_in: Vector2 = d["n_in"]
+	var n := Vector3(n_in.x, 0, n_in.y)
+	place(slot, Vector3(lp.x, 0.05, lp.y) - n * 0.06, atan2(-n.x, -n.z))
+	var p := sim.player(slot)
+	p.vel = n * 5.0
+	p.body.velocity = p.vel
+	cmd(slot).move = n_in
+
+
+## Walks a runner in through home door i the way a player would: placed
+## outside, then pushing the stick inward until it is home (or `max_ticks`).
+## Returns true once the runner has finished.
+func enter_door(slot: int, i: int = 0, max_ticks: int = 90) -> bool:
+	var d: Dictionary = sim.home_doors[i % sim.home_doors.size()]
+	var n_in: Vector2 = d["n_in"]
+	place(slot, door_point(i), atan2(-n_in.x, -n_in.y))
+	cmd(slot).move = n_in
+	var p := sim.player(slot)
+	for k in max_ticks:
+		await step()
+		if p.state == TC.PState.FINISHED or sim.phase != TC.Phase.PLAYING:
+			break
+	cmd(slot).move = Vector2.ZERO
+	return p.state == TC.PState.FINISHED
 
 
 func events_of(type: int) -> Array:

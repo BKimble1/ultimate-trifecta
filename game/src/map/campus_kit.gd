@@ -249,6 +249,15 @@ func stamp_buildings() -> void:
 	for bd in _layout.buildings:
 		var pos: Vector2 = bd["pos"]
 		var size: Vector2 = bd["size"]
+		if bd.has("dorm_id"):
+			# V6 dorm: shade around the closed part only; the common room is
+			# lit warm inside (and spills a little out of its doors)
+			var g := CampusDorms.geometry(String(bd["dorm_id"]))
+			var room: Rect2 = g["room"]
+			var fp: Rect2 = g["footprint"]
+			_stamp_rect(ao, Rect2(fp.position.x, room.end.y, fp.size.x, fp.end.y - room.end.y), 3.2, 0.5)
+			_stamp_rect(warm, room, 1.2, 0.95)
+			continue
 		_stamp_rect(ao, Rect2(pos - size * 0.5, size), 3.2, 0.5)
 		# lit windows spill a little warmth onto the ground along the walls
 		if not bd.get("dome", false) and String(bd["id"]) not in ["shed", "tower"]:

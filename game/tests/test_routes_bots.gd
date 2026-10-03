@@ -9,7 +9,7 @@ const P := TC.Role.PATROL
 
 
 func test_bots_complete_every_curated_route() -> void:
-	var combos := RulesLogic.curated_combos()
+	var combos := RulesLogic.curated_combos(CampusDorms.default_id())
 	var all_times: Array = []
 	var per_combo := {}
 	for ci in combos.size():
@@ -66,3 +66,45 @@ func test_bots_complete_every_curated_route() -> void:
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(ordered, "  "))
+
+
+## V6: the other two dorms, three of their curated combinations each (the
+## shortest, a middle one and the longest by route length): runner bots
+## leave the dorm, take every water and come back inside through its doors.
+## (All twenty per dorm are measured by tools/dorm_balance.gd.)
+func test_bots_complete_routes_from_every_dorm() -> void:
+	var rt := RulesLogic.route_table()
+	for d in CampusDorms.ids():
+		if d == CampusDorms.default_id():
+			continue
+		var cur := RulesLogic.curated_combos(d)
+		var lens := {}
+		for cb in ((rt.get("dorms", {}) as Dictionary).get(d, {}) as Dictionary).get("combos", []):
+			lens[str(cb["targets"].map(func(x): return int(x)))] = float(cb["length_m"])
+		cur.sort_custom(func(a: Array, b: Array) -> bool: return float(lens.get(str(a), 0.0)) < float(lens.get(str(b), 0.0)))
+		var pick := [cur[0], cur[cur.size() / 2], cur[-1]]
+		for ci in pick.size():
+			var targets: Array = pick[ci]
+			var h := SimHarness.new(t)
+			h.make([R, R, R, R, R, R, P, P], targets, [0, 1, 2, 3, 4, 5], 300 + ci, {"dorm": d})
+			h.sim.cfg.runners_needed = 7
+			await h.to_playing()
+			var start := h.sim.tick
+			var limit := Rules.cfg.ticks(Rules.cfg.match_duration_s)
+			while h.sim.tick - start < limit:
+				await h.step()
+				var done := 0
+				for p in h.sim.players:
+					if p.is_runner() and p.state == TC.PState.FINISHED:
+						done += 1
+				if done == 6:
+					break
+			var times: Array = []
+			for p in h.sim.players:
+				if p.is_runner() and p.finished_tick >= 0:
+					times.append(snappedf(float(p.finished_tick - start) / 60.0, 0.1))
+			h.sim.cfg.runners_needed = 4
+			var names := targets.map(func(i): return h.sim.layout.waters[i]["short"])
+			print("ROUTE %s %s finished %d/6 times %s" % [d, str(names), times.size(), str(times)])
+			t.check(times.size() >= 5, "%s %s: runner bots leave, splash and come back inside (%d/6)" % [d, str(names), times.size()])
+			h.free_sim()
