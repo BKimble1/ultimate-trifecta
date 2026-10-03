@@ -20,7 +20,7 @@ AuthKey_*.p8
 .env
 .env.*
 # Local tool downloads
-tools/.cache/
+tools/.cache
 # OS
 .DS_Store
 

@@ -32,7 +32,7 @@ const SECTIONS := [
 ]
 const CARD_W := 158.0
 const CARD_GAP := 12.0
-const THUMB_FRAMING := {"outfit": "body", "pattern": "body", "hat": "head", "shoes": "feet"}
+const THUMB_FRAMING := {"outfit": "body", "pattern": "body", "hat": "hat", "shoes": "feet"}
 const SWATCH_FIELDS := ["color", "trim", "hair_color"]
 
 ## deep links (set before NavShell.go("shop")): a section and/or an item
