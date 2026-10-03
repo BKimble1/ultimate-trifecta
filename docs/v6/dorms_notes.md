@@ -397,7 +397,55 @@ pinned too (`test_v6_fingerprints_recorded`).
 
 ## Budgets
 
-TBD-BUDGETS
+Engine counters from `dev_shots` (draw calls / primitives of one frame,
+Mobile renderer on llvmpipe, 1558×720; relative numbers only, not a phone
+measurement). "V5" is the V5 release code rendered with the same cameras.
+
+**Matched views, Standard (V5 → V6).**
+
+| View | V5 draws | V6 draws | V5 prims | V6 prims |
+|---|---:|---:|---:|---:|
+| route_1_dorm_door (start of the V5 route) | 94 | 94 | 245,181 | 260,741 |
+| route_7_return (back at the dorm) | 62 | 63 | 170,127 | 196,465 |
+| dorm_front | 51 | 52 | 129,552 | 157,028 |
+| overview | 66 | 66 | 148,496 | 167,084 |
+| area_puddlesworth_front | 45 | 45 | 112,261 | 140,671 |
+| area_puddlesworth_west | 62 | 62 | 142,607 | 164,813 |
+| area_lanternfield_approach | 33 | 38 | 107,592 | 133,594 |
+| area_lanternfield_yard | 35 | 40 | 115,110 | 141,112 |
+| area_moonpenny_approach | 40 | 47 | 84,449 | 108,065 |
+| area_moonpenny_yard | 44 | 50 | 93,498 | 119,278 |
+| area_south_overview | 60 | 60 | 131,162 | 144,714 |
+
+**Battery Saver (V5 → V6):** route_1 54 → 54 draws (137,435 → 142,361
+prims), route_7 37 → 37 (73,954 → 83,618); the dorm-area views on V6 are
+26–40 draws, 51k–102k prims.
+
+**The new views (V6 only, Standard / Battery Saver).**
+
+<!-- budgets-dorms -->
+
+What the numbers say: where the old campus is in view nothing changed in
+draw calls (the dorm shells, interiors and porches are merged into the
+campus chunks and the existing glow mesh; the yard props share the existing
+kit meshes); primitives grow 10–25 % in views that include a dorm (interior
+furniture, door surrounds, window frames). The new yards add 5–7 draw calls
+where they are in view (their trees, lamps and benches). The heaviest new
+view is a reveal camera inside a common room looking out through the front
+door: 89–100 draws, within the range of the heaviest V5 views (route_1, 94),
+because the campus behind the front wall is still in the frustum (there is
+no occlusion culling). In a round the dorm adds three draw calls of its own
+(the home doors' glow, the beacon, the coins' single MultiMesh).
+
+**Preparation (cold build, this machine under load from three other jobs;
+three runs).** The dorm steps of the staged campus build: windows 38–54 ms
+over three jobs, entrances 15–18 ms, interiors 25–27 ms, yard signs < 1 ms;
+the `home_coins` job ~2 ms. No dorm job is longer than ~20 ms, and the campus
+is cached between rounds. Navigation phases are unchanged in cost
+(~110 ms over six phases on both). Round setup on the host no longer builds
+a campus layout to pick coins and check pads: `CampusLayout.round_data()`
+(waters, spawns, coin spots) takes 0.14 ms the first time, where a full
+`CampusLayout.new()` took 165–236 ms here, on the frame Start is pressed.
 
 ## Tests
 
@@ -445,7 +493,12 @@ the doorway, the pre-first-stamp return checks the home dorm's pads;
 off from the roads); `test_campus_art` pins the V5 campus to the V4 values,
 proves V6 identical outside the districts, pins V6, and checks the dressing
 against every dorm's bot routes; `test_routes_bots` runs Puddlesworth's set
-from inside the dorm and three combinations from each other dorm.
+from inside the dorm and three combinations from each other dorm;
+`test_net`'s scripted Night Watch stops beside the runner before tagging
+(characters pass through each other, so a chaser that kept running overshot
+and its lunge turned toward a runner directly behind it — which way depended
+on millimetres of start position; with runners now starting inside a dorm it
+stopped connecting).
 
 TBD-TESTRUN
 

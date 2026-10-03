@@ -67,6 +67,12 @@ func _ready() -> void:
 	var dg: GDScript = load("res://src/dev/diag.gd")
 	_diag = dg.new()
 	add_child(_diag)
+	# --capture-steps=N (with a low --fixed-fps): up to N fixed 60 Hz ticks
+	# per drawn frame, so a whole round needs fewer software-rendered frames
+	# (the simulation's ticks are the same; only fewer frames are drawn)
+	for a in OS.get_cmdline_user_args():
+		if String(a).begins_with("--capture-steps="):
+			Engine.max_physics_steps_per_frame = clampi(int(String(a).get_slice("=", 1)), 1, 30)
 
 
 func snap(shot_name: String) -> void:
