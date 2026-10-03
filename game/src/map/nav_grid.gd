@@ -140,6 +140,14 @@ func _r_buildings_hedges_fences() -> void:
 		if bd["id"] == "tower":
 			_solid_box(cart, pos, half, cart_inf)
 			continue  # pedestrian arch under the tower
+		if bd.has("dorm_id"):
+			# V6 dorm: walls, the closed block and furniture block walking;
+			# the common room and its doorways are open.  Carts: all solid.
+			for r in CampusDorms.geometry(String(bd["dorm_id"]))["foot"]:
+				var rr: Rect2 = r
+				_solid_box(foot, rr.get_center(), rr.size * 0.5, foot_inf)
+			_solid_box(cart, pos, half, cart_inf)
+			continue
 		if bd["id"] == "shed":
 			var hz := half.y
 			_solid_segment(foot, pos + Vector2(-half.x, -hz), pos + Vector2(half.x, -hz), 0.3, foot_inf)
@@ -181,6 +189,11 @@ func _r_walls_blockers_trees() -> void:
 	for t in layout.trees:
 		_solid_circle(foot, t["pos"], 0.45 + foot_inf)
 		_solid_circle(cart, t["pos"], 0.45 + cart_inf)
+	for so in layout.solids:
+		var ss: Vector3 = so["size"]
+		var r := Vector2(ss.x, ss.z).length() * 0.5
+		_solid_circle(foot, so["pos"], r + foot_inf * 0.5)
+		_solid_circle(cart, so["pos"], r + cart_inf)
 
 
 func _r_rocks() -> void:

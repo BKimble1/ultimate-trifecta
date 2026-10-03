@@ -121,6 +121,11 @@ func build_collision(root: Node3D) -> void:
 		var size: Vector2 = bd["size"]
 		var h: float = bd["h"]
 		var y0: float = float(bd.get("base_y", 0.0))
+		if bd.has("dorm_id"):
+			# V6 dorm: a shell with a common room and open doorways
+			for bx in CampusDorms.geometry(String(bd["dorm_id"]))["boxes"]:
+				_box(world, bx[0], bx[1])
+			continue
 		if bd["id"] == "shed":
 			# open front (south): back + two side walls + roof slab
 			var hz := size.y * 0.5
@@ -158,6 +163,10 @@ func build_collision(root: Node3D) -> void:
 	for bn in L.benches:
 		var bp: Vector2 = bn["pos"]
 		_box(world, Vector3(bp.x, 0.25, bp.y), Vector3(1.9, 0.5, 0.7), float(bn["rot"]))
+	for so in L.solids:
+		var sp: Vector2 = so["pos"]
+		var ss: Vector3 = so["size"]
+		_box(world, Vector3(sp.x, ss.y * 0.5, sp.y), ss, float(so["rot"]))
 	# Water rims and fountain pedestal
 	for wt in L.waters:
 		var rim: float = float(wt.get("rim_h", 0.0))
@@ -329,6 +338,7 @@ var _world_mat: ShaderMaterial
 var kit: CampusKit
 var arch: CampusArchitecture
 var marks: CampusLandmarks
+var dorm_art: DormArt
 var dressing: Dictionary = {}
 var _trees: Dictionary = {}       # chunk key -> {species: [[Transform3D, tint, custom], ...]}
 var _decor: Dictionary = {}       # coarse key -> {kind: [[Transform3D, tint, custom], ...]}
@@ -365,6 +375,7 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_mm_started = false
 	arch = CampusArchitecture.new(self)
 	marks = CampusLandmarks.new(self)
+	dorm_art = DormArt.new(self, arch)
 	_add("kit", func() -> void:
 		CampusKit.load_kit(quality)
 		dressing = CampusDressing.load_baked())
@@ -392,6 +403,11 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 		if CampusArchitecture.has_windows(bd):
 			for face in 4:
 				_add("windows_" + String(bd["id"]), func() -> void: arch.windows(bd, face))
+		if bd.has("dorm_id"):
+			# V6 dorms: one step per part (each a few ms)
+			_add("dorm_windows", func() -> void: dorm_art.windows(bd))
+			_add("dorm_entrances", func() -> void: dorm_art.entrances(bd))
+			_add("dorm_interior", func() -> void: dorm_art.interior(bd))
 	_add("walls", arch.walls)
 	for hi in L.hedges.size():
 		var hl: float = (L.hedges[hi]["a"] as Vector2).distance_to(L.hedges[hi]["b"])
@@ -422,6 +438,7 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 			_add("fountain_jets", func() -> void: marks.fountain_jets(wi))
 	# signs add board geometry to the chunks: before they are committed
 	_add("signs", arch.signs)
+	_add("dorm_signs", dorm_art.yard_signs)
 	_add("commit", _commit_next)
 	_add("multimesh", _mm_next)
 	_add("glow", _glow_mesh)
@@ -469,6 +486,7 @@ func _release() -> void:
 	_steps.clear()
 	arch = null
 	marks = null
+	dorm_art = null
 	kit = null
 	_root = null
 	_rng = null

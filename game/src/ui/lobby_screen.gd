@@ -48,6 +48,7 @@ var walk_btn: Button
 var chat_btn: Button
 var top_bar: Control
 var bottom_bar: Control
+var _chat_dot: PanelContainer
 var _known: Dictionary = {}      # uid -> shown name (join / leave notes)
 var _bubbled := 0                # newest chat sequence shown as a bubble
 
@@ -148,10 +149,10 @@ func build() -> void:
 	var bottom := UIKit.hbox(12)
 	content.add_child(bottom)
 	bottom_bar = bottom
-	var outfit := UIKit.icon_button("shirt", "Wardrobe")
-	outfit.pressed.connect(_open_wardrobe)
-	outfit.size_flags_vertical = Control.SIZE_SHRINK_END
-	bottom.add_child(outfit)
+	# V6: Play · Locker · Shop · Season Pass; the party stays intact meanwhile
+	var nav := NavShell.make("play")
+	nav.size_flags_vertical = Control.SIZE_SHRINK_END
+	bottom.add_child(nav)
 	var emote_b := UIKit.icon_button("smile", "Emote")
 	emote_b.pressed.connect(func() -> void: _emote_popover(emote_b))
 	emote_b.size_flags_vertical = Control.SIZE_SHRINK_END
@@ -203,6 +204,8 @@ func build() -> void:
 	_bubbled = _newest_seq()
 	_compact_bottom.call_deferred()
 	get_viewport().size_changed.connect(_compact_bottom)
+	# (a longer status line changes what fits)
+	pcol.minimum_size_changed.connect(func() -> void: _compact_bottom.call_deferred())
 	_is_ready = session.local_slot >= 0 and session.roster[session.local_slot] != null and bool(session.roster[session.local_slot]["ready"])
 	_refresh()
 	Motion.settle_in(roster_col)
@@ -307,22 +310,60 @@ func _layout_stick() -> void:
 	stick.size = Vector2(vs.x * 0.5, maxf(120.0, bottom - top))
 
 
-## Narrow screens (iPad 4:3, iPhone SE): the bottom actions drop their
-## captions so the primary action keeps its size.
+## The bottom row (navigation, Emote, Walk, Chat, the primary action) must
+## fit: when it wouldn't with captions (iPad 4:3, iPhone SE, and phones once
+## the V6 navigation joined the row), Emote, Walk and Chat show only their
+## icons (names stay in the tooltip and accessibility label; Chat keeps an
+## unread badge), and the navigation shrinks to what is left.
+var _compact := false
+
+
 func _compact_bottom() -> void:
 	if not is_instance_valid(bottom_bar):
 		return
 	var vs := get_viewport().get_visible_rect().size
-	var narrow := vs.x / maxf(1.0, vs.y) < 1.6
+	var avail := vs.x - float(margin.get_theme_constant("margin_left") + margin.get_theme_constant("margin_right"))
+	var sep := float(bottom_bar.get_theme_constant("separation"))
+	var need := 0.0
+	var n := 0
+	for c in bottom_bar.get_children():
+		if not (c is Control) or not (c as Control).visible:
+			continue
+		n += 1
+		if c is NavShell:
+			need += (c as NavShell).needed_width(2)
+		elif c is Button and UIKit.face_of(c) != null and String(UIKit.face_of(c).icon) != "":
+			var cap := String(c.get_meta(&"caption", UIKit.face_of(c).caption))
+			need += UIKit.touch_min() if cap == "" else maxf(maxf(UIKit.touch_min() * 2.0, 150.0),
+				UIKit.touch_min() * 0.95 + UIKit.font_w(600).get_string_size(cap, HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_LABEL).x + 26.0)
+		else:
+			need += (c as Control).get_combined_minimum_size().x
+	need += sep * float(maxi(0, n - 1))
+	_compact = vs.x / maxf(1.0, vs.y) < 1.6 or need > avail
 	for b in bottom_bar.get_children():
 		if b is Button and UIKit.face_of(b) != null and String(UIKit.face_of(b).icon) != "":
 			var f := UIKit.face_of(b)
 			if not b.has_meta(&"caption"):
 				b.set_meta(&"caption", f.caption)
 				b.set_meta(&"min_w", b.custom_minimum_size.x)
-			f.caption = "" if narrow else String(b.get_meta(&"caption"))
-			b.custom_minimum_size.x = UIKit.touch_min() if narrow else float(b.get_meta(&"min_w"))
+			f.caption = "" if _compact else String(b.get_meta(&"caption"))
+			b.custom_minimum_size.x = UIKit.touch_min() if _compact else float(b.get_meta(&"min_w"))
 			f.queue_redraw()
+	# the navigation takes what is left (measured against the screen, not the
+	# row, which an over-wide bar would have stretched)
+	var others := sep * float(maxi(0, n - 1))
+	var nav: NavShell = null
+	for c in bottom_bar.get_children():
+		if c is NavShell:
+			nav = c
+		elif c is Control and (c as Control).visible:
+			others += (c as Control).get_combined_minimum_size().x
+	if nav != null:
+		var level := 0
+		while level < 2 and nav.needed_width(level) > avail - others + 0.5:
+			level += 1
+		nav.apply_level(level)
+	_paint_chat_badge()
 	if hub != null and hub.walking:
 		_layout_stick.call_deferred()
 
@@ -365,13 +406,25 @@ func _paint_chat_badge() -> void:
 		return
 	var n: int = session.social.chat.unread
 	var f := UIKit.face_of(chat_btn)
-	f.caption = ("Chat · %d" % n) if n > 0 else "Chat"
+	var cap := ("Chat · %d" % n) if n > 0 else "Chat"
 	if chat_btn.has_meta(&"caption"):
-		chat_btn.set_meta(&"caption", f.caption)
-		var vs := get_viewport().get_visible_rect().size
-		if vs.x / maxf(1.0, vs.y) < 1.6:
-			f.caption = ""
+		chat_btn.set_meta(&"caption", cap)
+	f.caption = "" if _compact else cap
 	f.queue_redraw()
+	# icon only: a small count in the corner instead
+	if _chat_dot == null:
+		_chat_dot = PanelContainer.new()
+		_chat_dot.add_theme_stylebox_override("panel", UIKit.box(UIKit.AMBER, 999, 0, Color.WHITE, 8))
+		_chat_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var dl := UIKit.label("", 18, UIKit.NAVY, false, HORIZONTAL_ALIGNMENT_CENTER)
+		dl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_chat_dot.add_child(dl)
+		chat_btn.add_child(_chat_dot)
+		chat_btn.resized.connect(_paint_chat_badge)
+	(_chat_dot.get_child(0) as Label).text = str(mini(n, 99))
+	_chat_dot.visible = _compact and n > 0
+	_chat_dot.reset_size()
+	_chat_dot.position = Vector2(chat_btn.size.x - _chat_dot.size.x * 0.75, -_chat_dot.size.y * 0.25)
 	chat_btn.accessibility_name = "Party chat, %d new" % n if n > 0 else "Party chat"
 
 
@@ -569,6 +622,9 @@ func _emote_popover(anchor: Control) -> void:
 	g.add_theme_constant_override("v_separation", 10)
 	for i in TC.EMOTES.size():
 		var idx := i
+		# (as Screen.emote_picker: Season emotes only once owned)
+		if Cosmetics.entry("emote", String(TC.EMOTES[i])).has("season") and not Save.owns("emote", String(TC.EMOTES[i])):
+			continue
 		g.add_child(icon_tile(Icons.emote_icon(i), String(TC.EMOTE_LABELS[TC.EMOTES[i]]), func() -> void:
 			close_popover()
 			_send_emote(idx)))
@@ -781,7 +837,7 @@ func _player_popover(i: int, anchor: Control) -> void:
 			close_popover()
 			_play_own_move())
 		v.add_child(mv)
-		var wb := UIKit.quiet("Wardrobe", Vector2(340, 72))
+		var wb := UIKit.quiet("Locker", Vector2(340, 72))
 		wb.pressed.connect(func() -> void:
 			close_popover()
 			_open_wardrobe())

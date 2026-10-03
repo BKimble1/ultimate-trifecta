@@ -9,7 +9,13 @@ extends RefCounted
 ## 5 (V4): party settings (Night Watch count, rounds) and series state in
 ## LOBBY, settings + series in START, SERIES standings, load-ready flags,
 ## tag-ready/target fields in the private snapshot block.
-const VERSION := 5
+## 6 (V6): the round configuration in START names tonight's home dorm
+## (id, geometry version and fingerprint, slot -> spawn pad), the round's
+## coins and its start timing; snapshots carry the coins still out (u16)
+## and, privately, the recipient's coin count (u8); EVENTS gain
+## COIN_PICKUP.  Message types 60-79 are reserved for the V6 social
+## messages (chat / hub); none of them is defined here.
+const VERSION := 6
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}
@@ -235,6 +241,7 @@ static func encode_snapshot(sim: MatchSim, recipient: SimPlayer, relevant: Array
 	b.put_u32(maxi(sim.round_start_tick, 0))
 	b.put_u8(sim.finished_count)
 	b.put_u32(maxi(ack_seq, 0))
+	b.put_u16(sim.coin_mask())
 	# players
 	b.put_u8(relevant.size())
 	for p in relevant:
@@ -283,6 +290,7 @@ static func encode_snapshot(sim: MatchSim, recipient: SimPlayer, relevant: Array
 		# Night Watch cues: tag-ready and the runner the assist would pick
 		b.put_u8(1 if recipient.tag_ready else 0)
 		b.put_8(recipient.tag_aim)
+		b.put_u8(clampi(recipient.coins_picked, 0, 255))
 		b.put_u8(1 if own_motor else 0)
 		if own_motor:
 			recipient.write_motor(b)
@@ -330,6 +338,7 @@ static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
 	s["round_start"] = b.get_u32()
 	s["finished"] = b.get_u8()
 	s["ack"] = b.get_u32()
+	s["coins"] = b.get_u16()
 	var players := {}
 	var n := b.get_u8()
 	if n > 8:
@@ -381,6 +390,7 @@ static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
 		me["spotted_by_cart"] = b.get_u8() == 1
 		me["tag_ready"] = b.get_u8() == 1
 		me["tag_aim"] = b.get_8()
+		me["coins_picked"] = b.get_u8()
 		var has_motor := b.get_u8() == 1
 		if has_motor:
 			var tmp := SimPlayer.new()

@@ -46,6 +46,7 @@ enum Ev {
 	PLAYER_LEFT,      # a
 	PLAYER_BOT_TAKEOVER, # a
 	PLAYER_RESUMED,   # a
+	COIN_PICKUP,      # V6: a = collector, value = coin index in the round's list
 }
 
 # Input button bits (held state) and edge bits (pressed this tick).
@@ -63,8 +64,11 @@ const L_CART_BLOCK := 2
 const L_CART := 4
 const L_CHAR := 8
 
-const EMOTES := ["wave", "cheer", "laugh", "shrug", "dance", "point"]
-const EMOTE_LABELS := {"wave": "Wave", "cheer": "Cheer", "laugh": "Ha!", "shrug": "Shrug", "dance": "Dance", "point": "Over here!"}
+## Emote wire values are indices into this list: append only (V6 added the
+## Season 1 emotes after the V4 six).
+const EMOTES := ["wave", "cheer", "laugh", "shrug", "dance", "point", "stargaze", "victory_lap", "shush", "moon_shuffle"]
+const EMOTE_LABELS := {"wave": "Wave", "cheer": "Cheer", "laugh": "Ha!", "shrug": "Shrug", "dance": "Dance", "point": "Over here!",
+	"stargaze": "Stargaze", "victory_lap": "Victory lap", "shush": "Shh!", "moon_shuffle": "Moon shuffle"}
 
 const GADGET_NAMES := {Gadget.TURBO: "Turbo Sneakers", Gadget.DECOY: "Squeaky Decoy", Gadget.SPLASH_BOMB: "Splash Bomb"}
 const GADGET_KEYS := {"turbo": Gadget.TURBO, "decoy": Gadget.DECOY, "splash_bomb": Gadget.SPLASH_BOMB}
@@ -80,11 +84,13 @@ static func patrol_card(cfg: RulesConfig) -> String:
 
 
 ## A role in two short lines (V5): what to do, then the one rule to know.
-static func role_lines(r: int, cfg: RulesConfig) -> Array[String]:
+## V6: with tonight's home dorm named ("" keeps the general wording).
+static func role_lines(r: int, cfg: RulesConfig, dorm_name: String = "") -> Array[String]:
+	var home := dorm_name if dorm_name != "" else "the dorm"
 	if r == Role.PATROL:
-		return ["Stop %d runners getting home before time runs out: cut them off in a cart, hop out and tag." % cfg.runners_needed,
-			"A tag sends a runner out for %d s; they keep their splashes." % int(cfg.capture_penalty_s)]
-	return ["Splash into the three marked waters, then race back to the dorm. %d home wins it for every runner." % cfg.runners_needed,
+		return ["Stop %d runners getting back inside %s before time runs out: cut them off in a cart, hop out and tag." % [cfg.runners_needed, home],
+			"A tag sends a runner out for %d s; they keep their splashes. Nobody can be tagged inside the dorm." % int(cfg.capture_penalty_s)]
+	return ["Run out, splash into the three marked waters, then run back inside %s through one of its doors. %d home wins it for every runner." % [home, cfg.runners_needed],
 		"Caught? You keep your splashes and you're back in %d s." % int(cfg.capture_penalty_s)]
 
 

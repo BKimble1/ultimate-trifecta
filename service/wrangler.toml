@@ -17,13 +17,45 @@ database_id = "REPLACE_WITH_D1_DATABASE_ID"   # printed by: wrangler d1 create t
 migrations_dir = "migrations"
 
 [vars]
-ENVIRONMENT = "sandbox"            # "production" once the App Store build ships
+ENVIRONMENT = "sandbox"            # "production" only in [env.production] below
+# V6 commerce: which App Store environment this deployment accepts.  This
+# (default) deployment serves TestFlight builds: Apple's sandbox.  Sandbox
+# and production ledgers never share a database.
+APPLE_ENVIRONMENT = "Sandbox"
 BUNDLE_ID = "com.idlery.ultimatetrifecta"
 GC_KEY_HOSTS = "static.gc.apple.com"
 ADMISSION_KEY_ID = "adm1"
 MIN_CLIENT_BUILD = "0"
 # Real, monitored contact details only (leave empty until the owner sets them;
 # the game hides empty links instead of showing a placeholder).
+SUPPORT_EMAIL = ""
+SUPPORT_URL = ""
+PRIVACY_URL = ""
+
+# V6: the App Store build's deployment (production App Store purchases, its
+# own D1 database).  Not needed for TestFlight.  Deploy with
+#   DEPLOY_ENV=production scripts/deploy.sh
+# after `npx wrangler d1 create trifecta-production` (copy its id here).
+[env.production]
+name = "trifecta-service-production"
+workers_dev = true
+
+[env.production.triggers]
+crons = ["*/5 * * * *"]
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "trifecta-production"
+database_id = "REPLACE_WITH_PRODUCTION_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+APPLE_ENVIRONMENT = "Production"
+BUNDLE_ID = "com.idlery.ultimatetrifecta"
+GC_KEY_HOSTS = "static.gc.apple.com"
+ADMISSION_KEY_ID = "adm1"
+MIN_CLIENT_BUILD = "0"
 SUPPORT_EMAIL = ""
 SUPPORT_URL = ""
 PRIVACY_URL = ""

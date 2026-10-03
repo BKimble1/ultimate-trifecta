@@ -4,6 +4,16 @@ extends RefCounted
 ## Visual meshes, collision, bot navigation grids, route analysis and spawn
 ## logic are all generated from this one description so they cannot drift.
 ## Coordinates: metres, +X east, +Z south (north is -Z). Ground is y = 0.
+##
+## V6: three playable dorms with real common rooms (CampusDorms).  The
+## V5 campus is still built first, exactly as before (`legacy` stops there:
+## tests prove it hashes to the recorded V4/V5 values), then the dorm
+## districts are rebuilt on top of it: Puddlesworth Hall's single box
+## becomes a shell with a common room, Lanternfield House and Moonpenny
+## Lodge go up on the open lawns west and east of it, with their yards,
+## approaches and props.  Everything outside CampusDorms.DISTRICTS stays
+## as V5 had it (test_campus_art checks it collider by collider and cell by
+## cell).
 
 const BOUNDS := Rect2(-160.0, -150.0, 320.0, 300.0)
 const CAMPUS_NAME := "Moonbrook College"
@@ -31,8 +41,18 @@ var patrol_spawns: Array[Vector2] = []
 var cart_spawns: Array[Dictionary] = []
 var gadget_spots: Array[Vector2] = []
 var landmarks: Array[Dictionary] = []
+## V6: the three dorms ({def + "geo": CampusDorms.geometry}) and the
+## candidate spots for the round's collectible coins (the host picks a few)
+var dorms: Array[Dictionary] = []
+var coin_spots: Array[Vector2] = []
+## V6: small static colliders of new props (monument signs):
+## [{pos: Vector2, size: Vector3, rot: float, kind: String}]
+var solids: Array[Dictionary] = []
+## true: the V5 campus only (no V6 dorm districts) - proofs and the dressing
+var legacy := false
 
 static var _shared: CampusLayout
+static var _legacy_shared: CampusLayout
 
 
 static func shared() -> CampusLayout:
@@ -41,7 +61,35 @@ static func shared() -> CampusLayout:
 	return _shared
 
 
-func _init() -> void:
+## The V5 campus (no V6 dorm districts), shared: the V6 dressing keeps the
+## V5 pieces outside the districts, and the proofs compare against it.
+static func legacy_shared() -> CampusLayout:
+	if _legacy_shared == null:
+		_legacy_shared = CampusLayout.new(true)
+	return _legacy_shared
+
+
+## The round-configuration data only (V6): waters, the Night Watch spawns
+## and the coin spots, without the full campus (trees, scatter: ~150 ms).
+## The host picks the round's coins and a guest checks a START with it, on
+## the frame a round is started, without building the campus there.
+static func round_data() -> CampusLayout:
+	if _round_data == null:
+		_round_data = CampusLayout.new(false, true)
+	return _round_data
+
+
+static var _round_data: CampusLayout
+
+
+func _init(p_legacy: bool = false, p_round_data_only: bool = false) -> void:
+	legacy = p_legacy
+	if p_round_data_only:
+		_build_waters()
+		_build_spawns()
+		patrol_spawns.append(Vector2(60, -125))   # as _build_dorm_districts
+		_build_coin_spots()
+		return
 	_build_buildings()
 	_build_waters()
 	_build_roads_and_paths()
@@ -49,6 +97,9 @@ func _init() -> void:
 	_build_dorm()
 	_build_spawns()
 	_build_trees_and_props()
+	if not legacy:
+		_build_dorm_districts()
+		_build_coin_spots()
 
 
 # ---------------------------------------------------------------------------
@@ -455,20 +506,9 @@ func _build_dorm() -> void:
 	dorm_pads = [Vector2(0, 92), Vector2(-10, 94), Vector2(10, 94), Vector2(0, 132), Vector2(-34, 110), Vector2(34, 110)]
 
 
-## Finish boundary: a 3.2 m wide, 2.4 m deep box in front of each door.
-func in_finish_zone(p: Vector2) -> String:
-	for d in dorm_doors:
-		var pos: Vector2 = d["pos"]
-		var n: Vector2 = d["normal"]
-		var t := Vector2(-n.y, n.x)
-		var rel := p - pos
-		var along := rel.dot(n)
-		var side := rel.dot(t)
-		if along >= -0.4 and along <= 2.0 and absf(side) <= 1.6:
-			return String(d["id"])
-	return ""
-
-
+## V5 runner spawns (outdoors on the dorm's front lawn).  V6 replaces them
+## with pads inside every dorm (_build_dorm_districts); they stay here
+## because the V5 tree scatter keeps its distance from them.
 func _build_spawns() -> void:
 	runner_spawns = [Vector2(-6, 96), Vector2(-2, 98), Vector2(2, 98), Vector2(6, 96), Vector2(-4, 92), Vector2(4, 92)]
 	patrol_spawns = [Vector2(50, -125), Vector2(70, -125)]
@@ -627,3 +667,133 @@ func _build_trees_and_props() -> void:
 	props.append({"kind": "gazebo", "pos": Vector2(82, -98), "rot": 0.0})
 	props.append({"kind": "canoe", "pos": Vector2(-36, -132), "rot": 0.4})
 	props.append({"kind": "frog", "pos": Vector2(-108, 52), "rot": 1.0})
+
+
+# ---------------------------------------------------------------------------
+# V6: the dorm districts (CampusDorms)
+# ---------------------------------------------------------------------------
+
+
+func _build_dorm_districts() -> void:
+	# Puddlesworth's V5 box gives way to the three dorm shells
+	var keep: Array[Dictionary] = []
+	for b in buildings:
+		if String(b["id"]) != "dorm":
+			keep.append(b)
+	buildings = keep
+	dorm_doors.clear()
+	dorm_pads.clear()
+	runner_spawns.clear()
+	for d in CampusDorms.DORMS:
+		var id := String(d["id"])
+		var g := CampusDorms.geometry(id)
+		buildings.append({"id": "dorm_" + id, "name": d["name"], "pos": d["pos"], "size": d["size"], "h": d["h"],
+			"wall": d["wall"], "roof": d["roof"], "rot": 0.0, "dorm": true, "dorm_id": id, "warm": d["warm"]})
+		var e: Dictionary = d.duplicate()
+		e["geo"] = g
+		dorms.append(e)
+		dorm_doors.append_array(g["doors"])
+		dorm_pads.append_array(g["respawn"])
+		for pd in g["pads"]:
+			runner_spawns.append(pd["pos"])
+		for cl in g["cart_lines"]:
+			# a raised threshold carts can't cross: no bollards drawn in a doorway
+			cart_blockers.append({"a": cl[0], "b": cl[1], "hidden": true})
+	# nothing V5 put in a district may now stand inside a dorm or in a
+	# doorway (V6 additions below are placed by hand and checked by tests)
+	trees.assign(trees.filter(func(t: Dictionary) -> bool: return not _district_conflict(t["pos"], 1.6)))
+	lamps.assign(lamps.filter(func(l: Vector2) -> bool: return not _district_conflict(l, 0.4)))
+	benches.assign(benches.filter(func(b: Dictionary) -> bool: return not _district_conflict(b["pos"], 0.9)))
+	props.assign(props.filter(func(pr: Dictionary) -> bool: return not _district_conflict(pr["pos"], 0.8)))
+	landmarks.append({"name": "Lanternfield House", "pos": Vector2(-96, 114)})
+	landmarks.append({"name": "Moonpenny Lodge", "pos": Vector2(96, 113)})
+	# a third Night Watch spawn at the shed (V5 put two of three on one spot)
+	patrol_spawns.append(Vector2(60, -125))
+	var stone := Color(0.70, 0.66, 0.60)
+	# Puddlesworth Hall: paved aprons at its three doors
+	plazas.append({"shape": "rect", "center": Vector2(0, 102.25), "size": Vector2(8, 1.5), "color": stone})
+	plazas.append({"shape": "rect", "center": Vector2(-23.6, 108), "size": Vector2(3.2, 5.6), "color": stone})
+	plazas.append({"shape": "rect", "center": Vector2(23.6, 108), "size": Vector2(3.2, 5.6), "color": stone})
+	# the west and east yards are cart-free like Puddlesworth's grounds
+	for sx in [-1.0, 1.0]:
+		_bollards(Vector2(116.4 * sx, 91.8), Vector2(74.4 * sx, 91.8))
+		_bollards(Vector2(116.4 * sx, 91.8), Vector2(116.4 * sx, 136.6))
+		_bollards(Vector2(116.4 * sx, 136.6), Vector2(74.4 * sx, 136.6))
+	# Lanternfield House (west): forecourt, three approaches, lamps, benches
+	plazas.append({"shape": "rect", "center": Vector2(-96, 98.25), "size": Vector2(14, 11.5), "color": stone})
+	_path([Vector2(-89, 98), Vector2(-78, 98)], 3.0, stone)
+	_path([Vector2(-110.5, 109), Vector2(-117, 109)], 2.6, stone)
+	_path([Vector2(-81.5, 109), Vector2(-74.1, 101)], 2.6, stone)
+	# Moonpenny Lodge (east)
+	plazas.append({"shape": "rect", "center": Vector2(96, 96), "size": Vector2(14, 8), "color": stone})
+	_path([Vector2(89, 97), Vector2(78, 98)], 3.0, stone)
+	_path([Vector2(83.5, 105), Vector2(74.1, 101)], 2.6, stone)
+	_path([Vector2(108.5, 105), Vector2(117, 105)], 2.6, stone)
+	for lp in [Vector2(-104.2, 93.4), Vector2(-87.8, 93.4), Vector2(-115.2, 111.6), Vector2(-76.4, 106.3),
+			Vector2(87.8, 92.9), Vector2(104.2, 92.9), Vector2(113.2, 107.0), Vector2(80.0, 100.6)]:
+		lamps.append(lp)
+	for bp in [[Vector2(-101.5, 101.8), 0.0], [Vector2(-90.5, 101.8), 0.0], [Vector2(91.6, 98.2), 0.0], [Vector2(100.4, 98.2), 0.0]]:
+		benches.append({"pos": bp[0], "rot": bp[1]})
+	props.append({"kind": "bike_rack", "pos": Vector2(-106.5, 102.4), "rot": 0.0})
+	props.append({"kind": "bike_rack", "pos": Vector2(86.0, 94.8), "rot": 0.0})
+	# monument name signs at each yard's forecourt (small colliders)
+	solids.append({"pos": Vector2(-105.8, 94.2), "size": Vector3(2.8, 1.25, 0.55), "rot": 0.0, "kind": "dorm_sign", "dorm": "lanternfield"})
+	solids.append({"pos": Vector2(86.0, 93.8), "size": Vector3(2.8, 1.25, 0.55), "rot": 0.0, "kind": "dorm_sign", "dorm": "moonpenny"})
+	# a few yard trees, placed by hand (colliders like every layout tree)
+	for tp in [[Vector2(-113.5, 97.0), "round"], [Vector2(-79.5, 94.0), "round"], [Vector2(-104.0, 130.5), "round"],
+			[Vector2(-89.5, 131.0), "pine"], [Vector2(-113.5, 121.0), "round"],
+			[Vector2(80.5, 94.5), "round"], [Vector2(113.0, 97.0), "round"], [Vector2(89.5, 131.0), "round"],
+			[Vector2(103.0, 131.5), "pine"], [Vector2(112.5, 121.0), "round"]]:
+		var tpos: Vector2 = tp[0]
+		trees.append({"pos": tpos, "r": 1.1, "h": 7.0 + fposmod(tpos.x * 0.37 + tpos.y * 0.11, 1.5), "kind": tp[1], "tint": fposmod(tpos.x * 0.13 + tpos.y * 0.07, 1.0)})
+
+
+## True when p (with clearance r) collides with V6 dorm geometry: a dorm
+## footprint, a door's approach or inside, a pad.  (Only V6 additions are
+## checked, so V5 things outside the dorms never move.)
+func _district_conflict(p: Vector2, r: float) -> bool:
+	if CampusDorms.district_of(p) == "":
+		return false
+	for d in dorms:
+		var g: Dictionary = d["geo"]
+		if (g["footprint"] as Rect2).grow(r + 0.2).has_point(p):
+			return true
+		for dr in g["doors"]:
+			if p.distance_to(dr["approach"]) < r + 2.5 or p.distance_to(dr["pos"]) < r + 2.0:
+				return true
+	return false
+
+
+## The dorm entry by id ({} if unknown): the definition plus "geo".
+func dorm(id: String) -> Dictionary:
+	for d in dorms:
+		if String(d["id"]) == id:
+			return d
+	return {}
+
+
+## Tonight's home doors (all doors of that dorm).
+func home_doors(id: String) -> Array:
+	var d := dorm(id)
+	return (d["geo"] as Dictionary)["doors"] if not d.is_empty() else []
+
+
+func dorm_center(id: String) -> Vector2:
+	var d := dorm(id)
+	return d["pos"] if not d.is_empty() else Vector2(0, 112)
+
+
+## Candidate places for the round's gold coins (V6): on runner routes (the
+## footpaths and walks), away from doors, waters and gadget spots.  The host
+## picks a few per round (RulesLogic.pick_coins); test_dorms checks every one
+## is reachable on foot from every dorm and clear of the places runners
+## must use.
+func _build_coin_spots() -> void:
+	coin_spots = [
+		Vector2(0, 70), Vector2(-24, 44), Vector2(24, 44), Vector2(-30, 3), Vector2(30, 3),
+		Vector2(0, -5), Vector2(0, -48), Vector2(-36, 30), Vector2(36, 30), Vector2(-64, 20),
+		Vector2(64, 20), Vector2(-88, 46), Vector2(-84, 4), Vector2(-90, 77), Vector2(90, 32),
+		Vector2(88, -9), Vector2(-54, -40), Vector2(54, -40), Vector2(20, -80), Vector2(-6, -90),
+		Vector2(118, -47), Vector2(40, -80), Vector2(-75, -115), Vector2(-50, 112), Vector2(50, 112),
+		Vector2(-24.5, 70), Vector2(24.5, 70), Vector2(-118, -47), Vector2(-146, 12), Vector2(116, -88),
+	]

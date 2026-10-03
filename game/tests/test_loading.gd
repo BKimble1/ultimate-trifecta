@@ -370,3 +370,97 @@ func test_preparation_budget_follows_a_slow_device() -> void:
 	await t.get_tree().process_frame
 	MatchController.drop_campus_cache()
 	s.queue_free()
+
+
+## A round whose start the test controls (an online round waiting for
+## other players).
+class WaitingMatch:
+	extends MatchController
+	var live := false
+
+	func round_live() -> bool:
+		return prepared and live
+
+
+## V6: nothing 3D is drawn behind the loading screen: held while the round
+## prepares (V5 drew the whole campus from an unplaced camera from step 7
+## on), a few frames from the start view once prepared, held again while
+## the round waits, drawn when it goes live; menus get 3D back.
+func test_nothing_is_drawn_behind_the_loading_screen() -> void:
+	MatchController.drop_campus_cache()
+	var vp: Viewport = t.get_viewport()
+	var s := _offline()
+	var info := {}
+	var grab := func(i: Dictionary) -> void: info.merge(i, true)
+	s.match_starting.connect(grab, CONNECT_ONE_SHOT)
+	s.host_start_match(4242)
+	var mc := WaitingMatch.new()
+	mc.setup(s, info, {"quality": 0, "staged": true})
+	t.add_child(mc)
+	var drawn_before_ready := 0
+	var frames := 0
+	while not mc.prepared and frames < 600:
+		await t.get_tree().process_frame
+		frames += 1
+		if mc.camera != null and not vp.disable_3d:
+			drawn_before_ready += 1
+	t.check(mc.prepared, "prepared")
+	t.eq(drawn_before_ready, 0, "no 3D frame is drawn while the round prepares")
+	var drawn := 0
+	for i in 8:
+		await t.get_tree().process_frame
+		if not vp.disable_3d:
+			drawn += 1
+	t.eq(drawn, MatchController.WARM_VIEW_FRAMES, "a few frames from the start view warm what the round shows first")
+	t.check(mc.view_ready(), "and the view is ready for the reveal")
+	t.check(vp.disable_3d, "then held while the round waits for other players")
+	t.check(mc.camera.global_position.distance_to(Vector3.ZERO) > 1.0, "the camera was placed before those frames")
+	mc.live = true
+	await t.get_tree().process_frame
+	t.check(not vp.disable_3d, "drawn the frame the round goes live")
+	mc.live = false
+	await t.get_tree().process_frame
+	t.check(not vp.disable_3d, "and never held again in that round")
+	_end(mc)
+	await t.get_tree().process_frame
+	t.check(not vp.disable_3d, "menus draw 3D again")
+	# cancelled while held: 3D comes back too
+	s.host_return_to_lobby()
+	var mc2 := _start(s)
+	while mc2.camera == null and not mc2.prepared:
+		await t.get_tree().process_frame
+	t.check(vp.disable_3d or mc2.prepared, "held once the camera exists")
+	mc2.queue_free()
+	await t.get_tree().process_frame
+	t.check(not vp.disable_3d, "a round cancelled while held gives 3D back")
+	MatchController.drop_campus_cache()
+	s.queue_free()
+
+
+## V6: in practice the round is live as soon as it is prepared; the loading
+## screen still waits for the start view's first (costly) frames, drawn
+## under it, so the fade never shows them.
+func test_practice_reveal_waits_for_the_warm_frames() -> void:
+	MatchController.drop_campus_cache()
+	var s := _offline()
+	var mc := _start(s)
+	var ls := _loading_screen(s, mc)
+	var closed_at := [-1]
+	var frame := [0]
+	ls.done.connect(func() -> void: closed_at[0] = frame[0])
+	var prepared_at := -1
+	var closing_at := -1
+	while frame[0] < 900 and closed_at[0] < 0:
+		await t.get_tree().process_frame
+		frame[0] += 1
+		if mc.prepared and prepared_at < 0:
+			prepared_at = frame[0]
+		if ls._closing and closing_at < 0:
+			closing_at = frame[0]
+	t.check(prepared_at > 0 and closing_at > 0, "prepared, then closed")
+	t.check(closing_at - prepared_at >= MatchController.WARM_VIEW_FRAMES, "the screen began to fade only after the warm frames (%d frames after prepared)" % (closing_at - prepared_at))
+	ls.queue_free()
+	_end(mc)
+	await t.get_tree().process_frame
+	MatchController.drop_campus_cache()
+	s.queue_free()

@@ -30,6 +30,10 @@ instance uniform vec3 rim_color : source_color = vec3(0.55, 0.68, 1.0);
 instance uniform float rim_strength = 0.10;
 // 1 right out of the water, fading to 0: darker, glossier cloth and skin
 instance uniform float wet = 0.0;
+// V6: a little warm self-light on skin (more under cool moonlight than in the
+// warm dorm), so light tones keep their warmth at night instead of going
+// grey-lavender; dark tones keep the V4 lift below
+instance uniform float skin_warm = 0.0;
 
 void fragment() {
 	vec3 base = COLOR.rgb;
@@ -68,6 +72,7 @@ void fragment() {
 		// studio light): a little self-light that grows as the tone darkens
 		float lum = dot(tint_skin, vec3(0.299, 0.587, 0.114));
 		emit += alb * 0.4 * clamp(0.72 - lum, 0.0, 0.5);
+		emit += alb * vec3(1.0, 0.62, 0.42) * skin_warm;
 	} else if (cls < 0.62) {    // rubber / leather
 		SPECULAR = 0.42;
 	} else if (cls < 0.81) {    // gloss: buttons, badges, plastic, irises

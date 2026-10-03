@@ -80,30 +80,37 @@ func test_every_appearance_maps_onto_the_character() -> void:
 					for n in v.parts:
 						if (v.parts[n] as MeshInstance3D).visible:
 							shown[n] = true
-					for part in Cosmetics.OUTFIT_PARTS[o] + Cosmetics.entry("shoes", sh)["parts"]:
+					# (V6: an outfit with its own footwear draws that instead of the shoes)
+					var shoe_parts: Array = [] if o in Cosmetics.OUTFIT_OWN_SHOES else Cosmetics.entry("shoes", sh)["parts"]
+					for part in Cosmetics.OUTFIT_PARTS[o] + shoe_parts:
 						if not shown.has(part):
 							bad.append("%s hidden for %s" % [part, c])
 					var hood: bool = o in Cosmetics.HOOD_OUTFITS
 					for part in Cosmetics.entry("hat", h)["parts"]:
 						if shown.has(part) == hood:
 							bad.append("%s visibility wrong for %s" % [part, c])
-					var hidden: Array = Cosmetics.HAT_HIDES_HAIR.get(h, [])
+					var hidden: Array = []
+					for k in Cosmetics.head_rules(c):
+						hidden.append_array(Cosmetics.HAT_HIDES_HAIR.get(k, []))
 					for part in Cosmetics.entry("hair", hair)["parts"]:
 						var want: bool = not hood and not part in hidden
 						# V5: under a crown or headphones the curly crop is drawn
 						# as its smooth-band variant (CharacterView, parts.py)
-						var drawn: bool = shown.has(part) or shown.has(part + "_hat")
+						# (V6: or its `_low` variant under a cap or beanie)
+						var drawn: bool = shown.has(part) or shown.has(part + "_hat") or shown.has(part + "_low")
 						if drawn != want:
 							bad.append("hair %s visibility wrong for %s" % [part, c])
 					var hair_parts := 0
-					for hp in ["hair", "hair_bob", "hair_curly", "hair_curly_hat", "hair_buns"]:
+					for hp in ["hair", "hair_hat", "hair_bob", "hair_curly", "hair_curly_hat", "hair_curly_low", "hair_buns"]:
 						if shown.has(hp):
 							hair_parts += 1
 					if hair_parts > 1:
 						bad.append("two hairstyles at once for %s" % c)
 					if shown.has("watch"):
 						bad.append("uniform shown on a runner %s" % c)
-	t.eq(combos, 5 * 6 * 3 * 4, "all outfit x hat x shoe x hair combinations checked")
+	t.eq(combos, Cosmetics.keys_of("outfit").size() * Cosmetics.keys_of("hat").size() * Cosmetics.keys_of("shoes").size()
+		* Cosmetics.keys_of("hair").size(), "all outfit x hat x shoe x hair combinations checked")
+	t.check(combos >= 15 * 10 * 5 * 4, "including the V6 outfits, hats and shoes (%d)" % combos)
 	t.eq(bad, [], "each combination shows its parts and applies the hair/hat rules")
 	v.set_appearance(TC.Role.PATROL, Cosmetics.sanitize({"outfit": "duck", "hat": "crown", "shoes": "flippers"}))
 	t.check((v.parts["watch"] as MeshInstance3D).visible and (v.parts["flashlight"] as MeshInstance3D).visible
@@ -187,24 +194,24 @@ func test_catalog_ids_are_explicit_unique_and_pinned() -> void:
 	t.eq([int(Cosmetics.FIELDS["outfit"]), int(Cosmetics.FIELDS["hair_color"]), int(Cosmetics.FIELDS["emote"])], [1, 10, 13], "field IDs pinned")
 
 
-func test_apply_is_atomic_and_idempotent() -> void:
+## V6: the Locker's Save equips owned items only and never spends (buying
+## moved to the Shop, where the service debits and grants atomically).
+func test_apply_never_spends_and_refuses_unowned() -> void:
 	var saved: Dictionary = Save.data.duplicate(true)
 	Save.data["coins"] = 300
-	Save.data["owned"] = []
+	Save.data["owned"] = ["hat:crown"]
 	Save.data["cosmetic"] = Cosmetics.DEFAULT.duplicate()
-	var look := Cosmetics.sanitize({"hat": "crown", "color": "plum"})
-	t.eq(Save.price_of(look), 240 + 30, "price = crown + plum (both unowned)")
-	var short := Save.apply_appearance(Cosmetics.sanitize({"outfit": "frog", "hat": "crown"}))
-	t.check(not bool(short["ok"]) and int(short["short"]) == 140, "too expensive: refused, with the shortfall")
+	var unowned := Save.apply_appearance(Cosmetics.sanitize({"outfit": "frog", "hat": "crown"}))
+	t.check(not bool(unowned["ok"]) and (unowned["missing"] as Array).has("outfit:frog"), "an unowned item is refused, named")
 	t.eq(int(Save.data["coins"]), 300, "nothing was charged")
 	t.eq(Save.data["cosmetic"], Cosmetics.DEFAULT, "and nothing changed")
+	var look := Cosmetics.sanitize({"hat": "crown", "hair": "curly"})
 	var r := Save.apply_appearance(look)
-	t.check(bool(r["ok"]) and int(r["spent"]) == 270, "apply buys and equips in one step")
-	t.eq(int(Save.data["coins"]), 30, "coins charged once")
-	var r2 := Save.apply_appearance(look)
-	t.check(bool(r2["ok"]) and int(r2["spent"]) == 0, "applying again costs nothing")
-	t.eq(int(Save.data["coins"]), 30, "idempotent")
-	t.check(Save.owns("hat", "crown") and Save.owns("color", "plum") and Save.owns("hair", "curly"), "owned: bought + free items")
+	t.check(bool(r["ok"]), "owned + free items: saved")
+	t.eq(String(Save.data["cosmetic"]["hat"]), "crown", "equipped")
+	t.eq(int(Save.data["coins"]), 300, "saving never debits")
+	t.check(not r.has("spent"), "there is no spending path here")
+	t.check(Save.owns("hat", "crown") and Save.owns("hair", "curly") and not Save.owns("color", "plum"), "owned: pre-V6 unlock + free items")
 	Save.data = saved
 
 

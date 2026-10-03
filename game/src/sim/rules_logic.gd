@@ -28,11 +28,16 @@ static func all_combos(n: int = 6) -> Array:
 
 
 ## Curated fair combinations (from route analysis). Falls back to all combos.
-static func curated_combos() -> Array:
+## V6: per home dorm (route_table.json "dorms"); without a dorm, the
+## Puddlesworth Hall set (the V5 table's own list).
+static func curated_combos(dorm_id: String = "") -> Array:
 	var rt := route_table()
-	if rt.has("curated") and (rt["curated"] as Array).size() > 0:
+	var src: Variant = rt.get("curated", [])
+	if dorm_id != "" and rt.get("dorms", {}) is Dictionary and (rt.get("dorms", {}) as Dictionary).has(dorm_id):
+		src = (rt["dorms"][dorm_id] as Dictionary).get("curated", src)
+	if src is Array and (src as Array).size() > 0:
 		var out: Array = []
-		for c in rt["curated"]:
+		for c in src:
 			out.append([int(c[0]), int(c[1]), int(c[2])])
 		return out
 	return all_combos()
@@ -57,6 +62,58 @@ static func _same_set(a: Array, b: Array) -> bool:
 		if not b.has(x):
 			return false
 	return true
+
+
+## The round's gold coins (V6), chosen by the host from the seed: a few of
+## the layout's candidate spots, spread out, clear of tonight's home doors
+## and of the active waters' exits, jump-in points and pads.  Returns
+## [{id, x, z}] (ids are the spot's index: unique within the round).
+static func pick_coins(seed_v: int, layout: CampusLayout, dorm_id: String, targets: Array, cfg: RulesConfig) -> Array:
+	var doors: Array = CampusDorms.geometry(dorm_id).get("doors", [])
+	var cand: Array = []
+	for i in layout.coin_spots.size():
+		var p: Vector2 = layout.coin_spots[i]
+		var ok := true
+		for d in doors:
+			if p.distance_to(d["pos"]) < cfg.coin_door_clearance_m:
+				ok = false
+		for wi in targets:
+			var w: Dictionary = layout.waters[int(wi)]
+			for e in w["exits"]:
+				if p.distance_to(Vector2((e as Vector3).x, (e as Vector3).z)) < cfg.coin_water_clearance_m:
+					ok = false
+			for j in w["jump_points"]:
+				if p.distance_to(j) < cfg.coin_water_clearance_m:
+					ok = false
+			for pad in w["pads"]:
+				if p.distance_to(pad) < cfg.coin_water_clearance_m:
+					ok = false
+		if ok:
+			cand.append(i)
+	# a seeded shuffle, then greedy spacing
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_v ^ 0xC01C
+	for i in range(cand.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmp: int = cand[i]
+		cand[i] = cand[j]
+		cand[j] = tmp
+	var out: Array = []
+	for spacing in [cfg.coin_min_spacing_m, cfg.coin_min_spacing_m * 0.6, 0.0]:
+		for i in cand:
+			if out.size() >= cfg.coin_spawns_per_round:
+				break
+			var p2: Vector2 = layout.coin_spots[i]
+			var clash := false
+			for o in out:
+				if p2.distance_to(Vector2(float(o["x"]), float(o["z"]))) < spacing or int(String(o["id"]).substr(1)) == i:
+					clash = true
+					break
+			if not clash:
+				out.append({"id": "s%02d" % i, "x": p2.x, "z": p2.y})
+		if out.size() >= cfg.coin_spawns_per_round:
+			break
+	return out
 
 
 ## Every order (permutation) a runner could take through three targets.
@@ -123,46 +180,68 @@ static func tag_geometry_ok(patrol_pos: Vector3, facing: Vector3, target_pos: Ve
 	return ang <= cfg.tag_half_angle_deg
 
 
-## Coins/XP for one player from authoritative results. Unique captures only.
+## Rewards for one player from authoritative results (V6: decoupled).
+##   coins      projected Coins for an eligible online round (Economy); the
+##              wallet settles them only after the service verifies the round,
+##              and practice projects nothing (practice isolation)
+##   season_xp  projected Season XP (Economy), also settled by the service
+##   xp         lifetime level XP, local only, from performance (never from
+##              Coins, so purchased Coins can never become XP)
+## Unique captures only; idle survival earns nothing extra; a cancelled round
+## pays nothing.
 static func compute_rewards(results: Dictionary, slot: int, cfg: RulesConfig, practice: bool) -> Dictionary:
 	var me: Dictionary = {}
 	for r in results.get("players", []):
 		if int(r["slot"]) == slot:
 			me = r
 	if me.is_empty() or results.get("outcome", TC.Outcome.NONE) == TC.Outcome.CANCELLED:
-		return {"coins": 0, "xp": 0, "lines": []}
+		return {"coins": 0, "xp": 0, "season_xp": 0, "lines": [], "xp_lines": []}
+	var lx := lifetime_xp(results, me, cfg, practice)
+	if practice:
+		return {"coins": 0, "xp": int(lx["xp"]), "season_xp": 0, "lines": [], "xp_lines": lx["lines"], "practice": true,
+			"coins_picked": int(me.get("coins_picked", 0))}
+	var c := Economy.round_coins(me, results)
+	var s := Economy.round_season_xp(me, results)
+	return {"coins": int(c["coins"]), "xp": int(lx["xp"]), "season_xp": int(s["xp"]), "lines": c["lines"], "xp_lines": lx["lines"],
+		"season_lines": s["lines"], "coins_picked": Economy.coins_picked(me, results)}
+
+
+## Lifetime level XP (local profile level): the V5 performance values
+## (RulesConfig "Rewards" group), practice x0.5.  Independent of Coins.
+static func lifetime_xp(results: Dictionary, me: Dictionary, cfg: RulesConfig, practice: bool) -> Dictionary:
 	var lines: Array = []
-	var coins := cfg.coins_participation
+	var xp := cfg.coins_participation
 	lines.append(["Played the round", cfg.coins_participation])
 	var role: int = me["role"]
 	var outcome: int = results["outcome"]
+	var slot := int(me["slot"])
 	if role == TC.Role.RUNNER:
 		var s := int(me.get("stamps", 0))
 		if s > 0:
-			coins += s * cfg.coins_per_stamp
+			xp += s * cfg.coins_per_stamp
 			lines.append(["Splashes x%d" % s, s * cfg.coins_per_stamp])
 		if bool(me.get("finished", false)):
-			coins += cfg.coins_finish
+			xp += cfg.coins_finish
 			lines.append(["Made it home", cfg.coins_finish])
 		if outcome == TC.Outcome.RUNNERS_WIN:
-			coins += cfg.coins_team_win
+			xp += cfg.coins_team_win
 			lines.append(["Runners win", cfg.coins_team_win])
 		if int(results.get("fastest_slot", -1)) == slot:
-			coins += cfg.coins_fastest_trifecta
+			xp += cfg.coins_fastest_trifecta
 			lines.append(["Fastest Trifecta", cfg.coins_fastest_trifecta])
 	else:
 		var u := int(me.get("unique_captures", 0))
 		if u > 0:
-			coins += u * cfg.coins_unique_capture
+			xp += u * cfg.coins_unique_capture
 			lines.append(["Different runners caught x%d" % u, u * cfg.coins_unique_capture])
 		if outcome == TC.Outcome.PATROL_WIN:
-			coins += cfg.coins_team_win
+			xp += cfg.coins_team_win
 			lines.append(["Night Watch wins", cfg.coins_team_win])
 	if practice:
-		var scaled := int(round(float(coins) * cfg.practice_reward_scale))
-		lines.append(["Practice (x%.1f)" % cfg.practice_reward_scale, scaled - coins])
-		coins = scaled
-	return {"coins": coins, "xp": coins, "lines": lines}
+		var scaled := int(round(float(xp) * cfg.practice_reward_scale))
+		lines.append(["Practice (x%.1f)" % cfg.practice_reward_scale, scaled - xp])
+		xp = scaled
+	return {"xp": xp, "lines": lines}
 
 
 static func xp_for_level(level: int, cfg: RulesConfig) -> int:

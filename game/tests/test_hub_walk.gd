@@ -165,3 +165,53 @@ func test_round_start_cancels_walking_everywhere() -> void:
 	rig.teardown()
 	await t.get_tree().process_frame   # (queued frees happen before the next test)
 	await t.get_tree().process_frame
+
+
+## The party room's bottom bar after V6 navigation joined it (Play · Locker
+## · Shop · Season Pass, then Emote, Walk, Chat and the primary action):
+## everything is on screen, a full touch target, and nothing overlaps, on a
+## phone, an iPhone SE and an iPad.
+func test_bottom_bar_fits_with_navigation() -> void:
+	var rig := NetRig.new()
+	t.add_child(rig)
+	rig.setup(20, 0, 0.0, 1)
+	var guest: NetSession = rig.clients[0]
+	await rig.wait_until(func() -> bool: return guest.local_slot >= 0 and rig.host.human_count() == 2, 300)
+	var saved_uid: Variant = Save.data["uid"]
+	var saved_session := App.session
+	var root: Window = t.get_tree().root
+	var saved_size: Vector2i = root.size
+	Save.data["uid"] = "uid-host"
+	App.session = rig.host
+	for sz in [Vector2i(2532, 1170), Vector2i(1334, 750), Vector2i(2048, 1536)]:
+		root.size = sz
+		await rig.frames(2)
+		var l := _setup(rig)
+		await rig.frames(12)
+		var view := l.get_viewport().get_visible_rect()
+		var items: Array = []
+		for c in l.bottom_bar.get_children():
+			if c is NavShell:
+				for k in (c as NavShell).buttons:
+					items.append([String(k), (c as NavShell).buttons[k]])
+			elif c is Button and (c as Button).visible:
+				items.append([UIKit.face_of(c).caption if UIKit.face_of(c) != null else (c as Button).text, c])
+		items.append(["primary", l.primary_btn])
+		t.check(items.size() >= 8, "%s: navigation, Emote, Walk, Chat and the primary action (%d)" % [str(sz), items.size()])
+		for i in items.size():
+			var r: Rect2 = (items[i][1] as Control).get_global_rect()
+			t.check(view.grow(0.5).encloses(r), "%s: '%s' on screen (%s)" % [str(sz), items[i][0], str(r)])
+			t.check(r.size.x >= UIKit.touch_min() - 0.5 and r.size.y >= UIKit.touch_min() - 0.5, "%s: '%s' a full touch target" % [str(sz), items[i][0]])
+			for j in range(i + 1, items.size()):
+				var r2: Rect2 = (items[j][1] as Control).get_global_rect()
+				t.check(not r.grow(-0.5).intersects(r2.grow(-0.5)), "%s: '%s' and '%s' don't overlap" % [str(sz), items[i][0], items[j][0]])
+		l.queue_free()
+		_stage.queue_free()
+		await rig.frames(2)
+	App.stage = null
+	App.session = saved_session
+	Save.data["uid"] = saved_uid
+	root.size = saved_size
+	rig.teardown()
+	await t.get_tree().process_frame   # (queued frees happen before the next test)
+	await t.get_tree().process_frame

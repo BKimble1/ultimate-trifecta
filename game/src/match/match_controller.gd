@@ -106,6 +106,25 @@ func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> 
 		# the simulation keeps start["roster"] untouched
 		roster[int(e["slot"])] = SocialSafety.display_entry(e)
 	spectator = not roster.has(local_slot)
+	home_dorm = String(start.get("home_dorm", CampusDorms.default_id()))
+	if not CampusDorms.has_dorm(home_dorm):
+		home_dorm = CampusDorms.default_id()
+
+
+## V6: tonight's home dorm (from the round configuration).
+var home_dorm := ""
+
+
+## slot -> spawn index from the round configuration (keys arrive as strings).
+func _spawn_map() -> Dictionary:
+	var out := {}
+	var dm: Dictionary = start.get("dorm", {})
+	var sp: Dictionary = dm.get("spawns", {})
+	for k in sp:
+		out[int(k)] = int(sp[k])
+	if out.is_empty():
+		out = MatchSim.default_spawns(start["roster"])
+	return out
 
 
 # --- staged preparation (V4): the round is made in short steps so the
@@ -136,7 +155,7 @@ static var _campus_cache: Dictionary = {}
 func _ready() -> void:
 	Diag.mark("load_begin")
 	_prep_t0 = Time.get_ticks_usec()
-	_prep = [_prep_campus, _prep_world, _prep_ground, _prep_nav, _prep_sim, _prep_views, _prep_rest, _prep_hud, _prep_touch]
+	_prep = [_prep_campus, _prep_world, _prep_ground, _prep_nav, _prep_sim, _prep_views, _prep_rest, _prep_hud, _prep_touch, _prep_home_and_coins]
 	_prep_i = 0
 	if not staged:
 		while _prep_i < _prep.size():
@@ -183,7 +202,7 @@ func _process_prepare() -> void:
 func prep_progress() -> float:
 	if prepared:
 		return 1.0
-	const W := [0.55, 0.08, 0.07, 0.06, 0.05, 0.16, 0.01, 0.01, 0.01]   # campus, world, ground, nav, sim, views, carts+camera, hud, touch
+	const W := [0.54, 0.08, 0.07, 0.06, 0.05, 0.16, 0.01, 0.01, 0.01, 0.01]   # campus, world, ground, nav, sim, views, carts+camera, hud, touch, home doors + coins
 	var done := 0.0
 	for k in mini(_prep_i, W.size()):
 		done += W[k]
@@ -204,7 +223,7 @@ func prep_progress() -> float:
 ## over PREP_SLOW_MS marks the diagnostics timeline with its name, so a
 ## stall on a phone is attributed to the job that caused it.
 const PREP_SLOW_MS := 25.0
-const PREP_NAMES := ["campus", "world", "ground", "nav", "sim", "views", "carts_camera", "hud", "touch"]
+const PREP_NAMES := ["campus", "world", "ground", "nav", "sim", "views", "carts_camera", "hud", "touch", "home_coins"]
 var prep_jobs: Array = []          # [[name, ms]] in order
 var prep_longest := ["", 0.0]      # [name, ms]
 
@@ -255,6 +274,7 @@ func _prep_campus() -> bool:
 ## the party ended): nothing keeps running for a round that is gone.
 func _exit_tree() -> void:
 	stage_report = Callable()
+	_set_view_held(false)     # menus draw 3D again
 	if prepared:
 		return
 	Diag.mark("prep_cancelled")
@@ -349,6 +369,7 @@ func _prep_sim() -> void:
 			{"practice": bool(start.get("practice", false)), "tutorial": bool(start.get("tutorial", false)),
 			"gentle_bots": String(start.get("training", "")) == "watch",
 			"patrol_release_extra_s": 24.0 if bool(start.get("tutorial", false)) else 0.0,
+			"dorm": home_dorm, "spawns": _spawn_map(), "coins": start.get("coins", []),
 			"bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p)})
 		session.attach_sim(sim)
 		sim.event_emitted.connect(func(ev: Dictionary) -> void: _local_events.append(ev))
@@ -385,8 +406,60 @@ func _prep_rest() -> void:
 
 	camera = FollowCamera.new()
 	camera.reduced_motion = reduced_motion
+	if staged and with_visuals:
+		_view_gating = true
+		_set_view_held(true)
 	add_child(camera)
 	camera.current = true
+
+
+# --- V6: nothing 3D is drawn behind the loading screen ---
+# V5 made the round's camera current midway through preparation, so from
+# then on the whole campus was drawn every frame behind the opaque loading
+# screen, from a camera not yet placed (measured, a rendered practice round
+# on this machine's software renderer: loading frames went from 9 draw calls
+# and ~40 ms to 1,803 draw calls / 556k primitives and 3.4-17.7 s each), and
+# online for as long as the round waited for other players: the loop
+# animating and then freezing.  Now 3D drawing is held until the round is
+# prepared; the camera is placed at the start view and a few frames are
+# drawn to warm what the round shows first; then it is held again until the
+# round goes live (the loading screen starts its fade the same frame).
+const WARM_VIEW_FRAMES := 3
+var _view_gating := false
+var _view_held := false
+var _warm_view_left := 0
+
+
+func _set_view_held(held: bool) -> void:
+	if held == _view_held:
+		return
+	_view_held = held
+	var vp := get_viewport()
+	if vp:
+		vp.disable_3d = held
+	Diag.mark("view_held" if held else "view_drawn")
+
+
+## After the camera has been placed for this frame.
+func _gate_view() -> void:
+	if not _view_gating:
+		return
+	if _warm_view_left > 0:
+		_warm_view_left -= 1
+		_set_view_held(false)
+	elif round_live():
+		_view_gating = false
+		_set_view_held(false)
+	else:
+		_set_view_held(true)
+
+
+## The start view's first frames (the costly ones: first draws compile
+## pipelines) have been drawn, still under the opaque loading screen, so
+## the reveal's first visible frame is an ordinary one.  The loading screen
+## waits for this as well as round_live().
+func view_ready() -> bool:
+	return prepared and (not _view_gating or _warm_view_left == 0)
 
 
 ## (V5) the HUD and the touch controls are separate jobs: together they were
@@ -415,10 +488,31 @@ func _prep_touch() -> void:
 	camera.snap_to(p0.get("pos", Vector3.ZERO), p0.get("yaw", 0.0))
 
 
+## V6: tonight's home-door markers and the round's coins (one MultiMesh,
+## one shared material), warmed under the loading screen.
+var coin_view: CoinView
+var home_view: HomeDoorsView
+
+
+func _prep_home_and_coins() -> void:
+	if not with_visuals:
+		return
+	home_view = HomeDoorsView.new()
+	home_view.name = "HomeDoors"
+	add_child(home_view)
+	home_view.setup(home_dorm)
+	coin_view = CoinView.new()
+	coin_view.name = "CoinView"
+	add_child(coin_view)
+	coin_view.setup(start.get("coins", []))
+	coin_view.warm()
+
+
 func _finish_prepare() -> void:
 	if prepared:
 		return
 	prepared = true
+	_warm_view_left = WARM_VIEW_FRAMES
 	prepare_ms = float(Time.get_ticks_usec() - _prep_t0) / 1000.0
 	Diag.mark("campus_prepared")
 	if staged:
@@ -468,20 +562,10 @@ func _setup_client_world() -> void:
 		pred.role = int(roster[local_slot]["role"])
 		pred.body = Motor.make_character_body("Pred")
 		client_world.add_child(pred.body)
-		# same spawn assignment as MatchSim.setup (roster order)
-		var ri := 0
-		var pi := 0
-		var sp := Vector2.ZERO
-		for e in start["roster"]:
-			var is_r := int(e["role"]) == TC.Role.RUNNER
-			if int(e["slot"]) == local_slot:
-				sp = layout.runner_spawns[ri % layout.runner_spawns.size()] if is_r else layout.patrol_spawns[pi % layout.patrol_spawns.size()]
-				pred.yaw = 0.0 if is_r else PI
-			if is_r:
-				ri += 1
-			else:
-				pi += 1
-		pred.body.global_position = Vector3(sp.x, 0.05, sp.y)
+		# the same spawn as MatchSim.setup: the round configuration's pad
+		var sp := MatchSim.spawn_point(layout, home_dorm, pred.role, int(_spawn_map().get(local_slot, 0)))
+		pred.body.global_position = sp[0]
+		pred.yaw = sp[1]
 		if pred.is_patrol():
 			pred.state = TC.PState.WAITING
 	for i in cfg.cart_count:
@@ -984,6 +1068,14 @@ func local_info() -> Dictionary:
 		var mm: Dictionary = _me.get("motor", {})
 		info["tag_busy"] = _tag_busy(float(mm.get("tag_cd", 0.0)), float(mm.get("tag_lockout", 0.0)))
 	info["targets"] = targets
+	# V6: tonight's home dorm and the coins this player has collected
+	info["home_dorm"] = home_dorm
+	if sim:
+		var me := sim.player(local_slot)
+		info["coins"] = me.coins_picked if me else 0
+	else:
+		info["coins"] = int(_me.get("coins_picked", 0))
+	info["coins_total"] = (start.get("coins", []) as Array).size()
 	return info
 
 
@@ -1049,7 +1141,9 @@ func _process(delta: float) -> void:
 	_update_aim_ring()
 	_scan_seen(delta)
 	_update_pickups()
+	_update_home_and_coins()
 	_update_camera(delta)
+	_gate_view()
 	if hud:
 		hud.refresh(delta)
 	var info_phase: int = sim.phase if sim else _client_phase
@@ -1244,6 +1338,16 @@ func _present_event(ev: Dictionary) -> void:
 			if not SocialSafety.is_hidden(session, String(who.get("uid", "")), String(who.get("pid", ""))):   # (V6: blocked too)
 				hud.emote_bubble(a, int(ev["v"]))
 				Sfx.play("pop")
+		TC.Ev.COIN_PICKUP:
+			# the host decided who got it; a replayed or late event finds the
+			# coin already gone and does nothing
+			var taken := coin_view.take(int(ev["v"])) if coin_view else true
+			if taken:
+				Sfx.play("pickup", pos, -5.0 if not mine else -2.0, 1.55)
+			if mine:
+				if hud:
+					hud.coin_pop()
+				_haptic(12)
 		TC.Ev.PLAYER_BOT_TAKEOVER:
 			hud.feed("%s disconnected — a bot is covering (slot held 20s)" % roster.get(a, {}).get("name", "?"), -1)
 		TC.Ev.PLAYER_RESUMED:
@@ -1429,6 +1533,22 @@ func _update_pickups() -> void:
 		n.position.y = 0.9 + sin(t * 2.0 + float(i)) * 0.12
 		if my_role == TC.Role.PATROL:
 			n.scale = Vector3(0.7, 0.7, 0.7)
+
+
+## Coins still out (the host's state: snapshots on a guest) and how bright
+## tonight's home doors are for this player.
+func _update_home_and_coins() -> void:
+	if coin_view:
+		coin_view.set_mask(sim.coin_mask() if sim else int(_last_snap.get("coins", 0xFFFF)))
+	if home_view:
+		var rs := _player_rs(local_slot) if not spectator else {}
+		var role: int = int(roster[local_slot]["role"]) if roster.has(local_slot) else TC.Role.SPECTATOR
+		var st := 0
+		if role == TC.Role.PATROL:
+			st = 1
+		elif role == TC.Role.RUNNER and int(rs.get("stamps", 0)) == 7 and int(rs.get("state", 0)) != TC.PState.FINISHED:
+			st = 2
+		home_view.set_state(st, reduced_motion)
 
 
 func leave_match() -> void:

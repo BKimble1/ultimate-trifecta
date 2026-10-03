@@ -102,7 +102,18 @@ func test_results_screen_flow_and_idempotence() -> void:
 	guest.local_slot = 0
 	guest.series_view = res["series"]
 	t.add_child(guest)
-	var reward := {"coins": 41, "xp": 41, "lines": [["Played the round", 20], ["Made it home", 21]]}
+	# rewards come from the commerce Wallet (docs/ECONOMY.md §9): a round
+	# waiting on the game service is pending, then settled
+	var lines := [["Played the round", 20], ["Made it home", 21]]
+	var pending := {"match_id": "final-1", "state": "pending", "message": "Adding your rewards… they're checked by the game service and saved once.",
+		"coins_collected": 3, "coins": 0, "coins_projected": 41, "season_xp": 0, "season_xp_projected": 60, "lines": lines,
+		"season_lines": [["Round played", 60]], "tier_before": 3, "tier_after": 4, "frac_before": 0.8, "frac_after": 0.1, "final": false}
+	var settled := pending.duplicate(true)
+	settled.merge({"state": "settled", "message": "Added to your account.", "coins": 41, "season_xp": 60, "final": true}, true)
+	var wallet_state := [pending]
+	RoundRewards.wallet_override = func(mid: String) -> Dictionary:
+		return wallet_state[0] if mid == "final-1" else {"state": "unknown"}
+	var reward := {"xp": 41, "lines": lines, "level_up": false, "wallet": pending}
 	var r := ResultsScreen.new()
 	r.results = res.duplicate(true)
 	r.reward = reward
@@ -114,7 +125,17 @@ func test_results_screen_flow_and_idempotence() -> void:
 	var texts := _texts(r)
 	t.check(texts.has("Runners") or texts.any(func(x: String) -> bool: return x.begins_with("Runners")), "the runners' table")
 	t.check(texts.any(func(x: String) -> bool: return x.begins_with("Night Watch")), "the Night Watch's table, separately")
-	t.check(texts.has("+41"), "the round's coins")
+	t.check(texts.has("3") and texts.has("picked up"), "coins picked up on the campus")
+	t.check(not texts.has("Coins added") and not texts.has("+41"), "pending: nothing is shown as added")
+	t.check(texts.any(func(x: String) -> bool: return x.contains("Expected: +41 Coins") and x.contains("not added yet")), "what it should pay, said to be not added yet")
+	# the service settles the round: the card follows in place
+	wallet_state[0] = settled
+	Wallet.round_updated.emit("final-1")
+	for i in 3:
+		await t.get_tree().process_frame
+	texts = _texts(r)
+	t.check(texts.has("+41") and texts.has("Coins added") and texts.has("+60"), "settled: Coins and Season XP added")
+	t.check(texts.any(func(x: String) -> bool: return x.begins_with("Season tier 4")), "with the Season tier")
 	t.eq(r._primary.text, "Final standings", "after the last round: the final standings come first")
 	r._on_primary()
 	for i in 4:
@@ -134,10 +155,9 @@ func test_results_screen_flow_and_idempotence() -> void:
 	App._show(r2)
 	for i in 6:
 		await t.get_tree().process_frame
-	t.check(_texts(r2).has("+41"), "reopened: the same reward summary (remembered per round)")
-	# the wallet, when present, owns coins and Season XP
-	RoundRewards.wallet_override = func(mid: String) -> Dictionary:
-		return {"coins_collected": 3, "coins": 44, "lines": [["Coins collected", 3]], "season": {"xp_gained": 60, "tier": 4, "xp_in_tier": 120, "xp_for_tier": 300}} if mid == "final-1" else {}
+	t.check(_texts(r2).has("+41"), "reopened: the same reward summary")
+	# the wallet no longer has the round (its history is bounded): remembered
+	wallet_state[0] = {"state": "unknown"}
 	var r3 := ResultsScreen.new()
 	r3.results = res.duplicate(true)
 	r3.reward = {}
@@ -145,8 +165,21 @@ func test_results_screen_flow_and_idempotence() -> void:
 	App._show(r3)
 	for i in 6:
 		await t.get_tree().process_frame
-	var t3 := _texts(r3)
-	t.check(t3.has("3") and t3.has("+44") and t3.any(func(x: String) -> bool: return x.begins_with("Season XP +60")), "coins collected, credited and Season XP from the wallet")
+	t.check(_texts(r3).has("+41") and _texts(r3).has("Coins added"), "remembered per round")
+	# practice and service-off rounds: the wallet's own sentence, nothing added
+	var off := {"match_id": "final-1", "state": "no_service", "coins_collected": 2, "coins_projected": 41,
+		"message": "Coins and Season XP are saved by the game service, which isn't set up in this build, so this round's rewards weren't added."}
+	wallet_state[0] = off
+	var r5 := ResultsScreen.new()
+	r5.results = res.duplicate(true)
+	r5.reward = {}
+	r5.session = guest
+	App._show(r5)
+	for i in 6:
+		await t.get_tree().process_frame
+	var t5 := _texts(r5)
+	t.check(t5.any(func(x: String) -> bool: return x.begins_with("Coins and Season XP are saved by the game service")), "service off: says so")
+	t.check(not t5.has("+41") and not t5.has("Coins added"), "and shows nothing as added")
 	RoundRewards.wallet_override = Callable()
 	# a cancelled round: the cancellation, no tables, no rewards
 	var r4 := ResultsScreen.new()

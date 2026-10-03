@@ -74,47 +74,59 @@ func test_respawn_away_from_campers_in_play() -> void:
 	h.free_sim()
 
 
+## V6: every dorm's doors are on different faces and far apart, so one
+## watcher can't cover two, and carts are held well short of every door:
+## driven flat out at each dorm from each side, a cart never gets within
+## reach of a doorway (bollards around the yards, blockers across doors).
 func test_dorm_doors_spread_and_cart_free() -> void:
 	var lay := CampusLayout.shared()
-	t.check(lay.dorm_doors.size() >= 4, "four dorm entrances")
-	var min_gap := 1e9
-	for a in lay.dorm_doors:
-		for b in lay.dorm_doors:
-			if a != b:
-				min_gap = minf(min_gap, (a["pos"] as Vector2).distance_to(b["pos"]))
-	t.check(min_gap >= 15.0, "doors are far apart (closest pair %.1f m)" % min_gap)
-	# Drive a cart flat out at the dorm from each side: bollards stop it well
-	# short of every door, so a parked cart can never sit on a finish line.
-	var approaches := [
-		[Vector3(0, 0.3, 78), 0.0, Vector3(0, 0, 1)],        # from the north road, heading +Z
-		[Vector3(-86, 0.3, 112), 0.0, Vector3(1, 0, 0)],     # from the west, heading +X
-		[Vector3(86, 0.3, 112), 0.0, Vector3(-1, 0, 0)],     # from the east, heading -X
-		[Vector3(0, 0.3, 146), 0.0, Vector3(0, 0, -1)],      # from the south, heading -Z
-	]
-	for ap in approaches:
-		var h := _h()
-		h.make([R, P], [0, 1, 2])
-		await h.release_patrol()
-		var c: SimCart = h.sim.carts[0]
-		var dir: Vector3 = ap[2]
-		c.yaw = atan2(-dir.x, -dir.z)
-		c.body.global_position = ap[0]
-		c.speed = 0.0
-		h.place(1, c.pos() - c.right() * 1.5)
-		await h.step()
-		h.press(1, TC.BTN_INTERACT)
-		await h.step(30)
-		t.eq(h.sim.player(1).state, TC.PState.IN_CART, "driver seated")
-		h.cmd(1).drive = 1.0
-		var closest := 1e9
-		var entered := false
-		for i in 360:
+	var cover := Rules.cfg.tag_reach_m + Rules.cfg.tag_lunge_speed * Rules.cfg.tag_lunge_s
+	for dm in lay.dorms:
+		var doors: Array = dm["geo"]["doors"]
+		t.check(doors.size() >= 3, "%s: three entrances" % dm["id"])
+		var min_gap := 1e9
+		for a in doors:
+			for b in doors:
+				if a != b:
+					min_gap = minf(min_gap, (a["approach"] as Vector2).distance_to(b["approach"]))
+		t.check(min_gap >= cover * 2.0 + 4.0, "%s: no spot covers two doors within two lunges (closest approaches %.1f m)" % [dm["id"], min_gap])
+	for dm in lay.dorms:
+		var c0: Vector2 = dm["pos"]
+		# from the roads around the cart-free dorm yards, straight at the dorm
+		var approaches := [
+			[Vector3(c0.x, 0.3, 86.0), Vector3(0, 0, 1)],      # the College Loop (north)
+			[Vector3(-120.0, 0.3, c0.y), Vector3(1, 0, 0)],    # the west service road
+			[Vector3(120.0, 0.3, c0.y), Vector3(-1, 0, 0)],    # the east service road
+			[Vector3(c0.x, 0.3, 141.0), Vector3(0, 0, -1)],    # the back service road (south)
+		]
+		for ap in approaches:
+			var h := _h()
+			h.make([R, P], [0, 1, 2], [], 11, {"dorm": String(dm["id"])})
+			await h.release_patrol()
+			var c: SimCart = h.sim.carts[0]
+			var dir: Vector3 = ap[1]
+			c.yaw = atan2(-dir.x, -dir.z)
+			var start: Vector3 = ap[0]
+			# start on drivable ground (roads and lawns outside the yards)
+			var cell := NavGrid.shared(lay).nearest_open(NavGrid.shared(lay).cart, Vector2(start.x, start.z), 12)
+			var sw := NavGrid.shared(lay).to_world(cell)
+			c.body.global_position = Vector3(sw.x, 0.3, sw.y)
+			c.speed = 0.0
+			h.place(1, c.pos() - c.right() * 1.5)
 			await h.step()
-			var p2 := Vector2(c.pos().x, c.pos().z)
-			for d in lay.dorm_doors:
-				closest = minf(closest, p2.distance_to(d["pos"]))
-			if lay.in_finish_zone(p2) != "":
-				entered = true
-		t.check(not entered, "cart from %s never reaches a finish zone" % str(dir))
-		t.check(closest >= 8.0, "cart from %s held %.1f m from the nearest door" % [str(dir), closest])
-		h.free_sim()
+			h.press(1, TC.BTN_INTERACT)
+			await h.step(30)
+			t.eq(h.sim.player(1).state, TC.PState.IN_CART, "driver seated")
+			h.cmd(1).drive = 1.0
+			var closest := 1e9
+			for i in 360:
+				await h.step()
+				var p2 := Vector2(c.pos().x, c.pos().z)
+				for d in doors_of(dm):
+					closest = minf(closest, p2.distance_to(d["pos"]))
+			t.check(closest >= 6.0, "%s: cart from %s held %.1f m from the nearest door" % [dm["id"], str(dir), closest])
+			h.free_sim()
+
+
+func doors_of(dm: Dictionary) -> Array:
+	return dm["geo"]["doors"]

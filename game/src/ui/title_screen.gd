@@ -3,10 +3,12 @@ extends Screen
 ## Home (V5): the dorm common room with the player's own runner as the focus.
 ##   upper left   the Ultimate Trifecta title graphic, modest
 ##   upper right  a compact profile chip (name, level, coins) and Settings
-##   lower left   Wardrobe and Emote, always within reach
+##   lower left   V6: the navigation rail (Play · Locker · Shop · Season
+##                Pass), the Coins chip and Emote; the Locker replaces the
+##                Wardrobe button
 ##   lower right  Play with Friends (the one gold action) and Practice
-## Nothing else: no store, pass, news or empty tabs.  Game Center status is
-## shown only where it matters (the Play with Friends sheet).
+## No news or promotional tiles.  Game Center status is shown only where it
+## matters (the Play with Friends sheet).
 
 var _msg := ""
 var play_btn: Button
@@ -51,14 +53,20 @@ func build() -> void:
 	var bottom := UIKit.hbox(14)
 	bottom.alignment = BoxContainer.ALIGNMENT_END
 	content.add_child(bottom)
-	wardrobe_btn = UIKit.icon_button("shirt", "Wardrobe")
-	wardrobe_btn.pressed.connect(func() -> void: App.goto(CreatorScreen))
-	wardrobe_btn.size_flags_vertical = Control.SIZE_SHRINK_END
-	bottom.add_child(wardrobe_btn)
+	# V6: Play · Locker · Shop · Season Pass as a rail on the left (Play is
+	# this screen), the Coins chip and Emote under it; the runner keeps the
+	# middle of the room
+	var rail := UIKit.vbox(8)
+	rail.size_flags_vertical = Control.SIZE_SHRINK_END
+	rail.add_child(NavShell.make("play", true))
+	var row := UIKit.hbox(8)
+	row.add_child(WalletChip.new())
 	emote_btn = UIKit.icon_button("smile", "Emote")
 	emote_btn.pressed.connect(func() -> void: emote_picker(emote_btn, _emote))
 	emote_btn.size_flags_vertical = Control.SIZE_SHRINK_END
-	bottom.add_child(emote_btn)
+	row.add_child(emote_btn)
+	rail.add_child(row)
+	bottom.add_child(rail)
 	bottom.add_child(UIKit.spacer_h())
 	var col := UIKit.vbox(12)
 	col.alignment = BoxContainer.ALIGNMENT_END

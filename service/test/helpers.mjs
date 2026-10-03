@@ -91,3 +91,68 @@ export async function user(ctx, playerId, name) {
 }
 
 export const ADMIN = { authorization: 'Bearer test-admin-token-0123456789abcdef' };
+
+// ---------------------------------------------------------------- App Store
+// A test-only certificate chain shaped like Apple's (root P-384, intermediate
+// with the WWDR marker OID, leaf P-256 with the App Store marker OID),
+// generated per run with the openssl CLI.  Handed to the service as
+// env.__appleRoots (Uint8Array: never settable from configuration).
+import { createPrivateKey, sign as nodeSign } from 'node:crypto';
+let chains = {};
+function run(args, input) {
+  const r = spawnSync('openssl', args, { input });
+  if (r.status !== 0) throw new Error('openssl ' + args.join(' ') + ': ' + r.stderr);
+  return r.stdout;
+}
+export function appleChain(name = 'good', { leafMarker = true, interMarker = true } = {}) {
+  const key = `${name}:${leafMarker}:${interMarker}`;
+  if (chains[key]) return chains[key];
+  const dir = mkdtempSync(join(tmpdir(), 'asc-'));
+  const p = (f) => join(dir, f);
+  run(['ecparam', '-name', 'secp384r1', '-genkey', '-noout', '-out', p('root.key')]);
+  run(['req', '-x509', '-new', '-key', p('root.key'), '-days', '3650', '-subj', `/CN=Test Root ${name} (NOT APPLE)`, '-sha384', '-out', p('root.pem'),
+    '-addext', 'basicConstraints=critical,CA:TRUE', '-addext', 'keyUsage=critical,keyCertSign,cRLSign']);
+  run(['ecparam', '-name', 'secp384r1', '-genkey', '-noout', '-out', p('inter.key')]);
+  run(['req', '-new', '-key', p('inter.key'), '-subj', `/CN=Test WWDR ${name}`, '-out', p('inter.csr')]);
+  writeFileSync(p('inter.ext'), 'basicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\n' + (interMarker ? '1.2.840.113635.100.6.2.1=ASN1:NULL\n' : ''));
+  run(['x509', '-req', '-in', p('inter.csr'), '-CA', p('root.pem'), '-CAkey', p('root.key'), '-CAcreateserial', '-days', '3650', '-sha384',
+    '-extfile', p('inter.ext'), '-out', p('inter.pem')]);
+  run(['ecparam', '-name', 'prime256v1', '-genkey', '-noout', '-out', p('leaf.key')]);
+  run(['req', '-new', '-key', p('leaf.key'), '-subj', `/CN=Test StoreKit Signing ${name}`, '-out', p('leaf.csr')]);
+  writeFileSync(p('leaf.ext'), 'basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\n' + (leafMarker ? '1.2.840.113635.100.6.11.1=ASN1:NULL\n' : ''));
+  run(['x509', '-req', '-in', p('leaf.csr'), '-CA', p('inter.pem'), '-CAkey', p('inter.key'), '-CAcreateserial', '-days', '3650', '-sha384',
+    '-extfile', p('leaf.ext'), '-out', p('leaf.pem')]);
+  const der = (f) => run(['x509', '-in', p(f), '-outform', 'DER']);
+  const out = {
+    rootDer: new Uint8Array(der('root.pem')),
+    x5c: [der('leaf.pem'), der('inter.pem'), der('root.pem')].map((b) => Buffer.from(b).toString('base64')),
+    leafKey: createPrivateKey(readFileSync(p('leaf.key'))),
+  };
+  chains[key] = out;
+  return out;
+}
+
+const b64u = (b) => Buffer.from(b).toString('base64url');
+export function appleJws(payload, chain = appleChain()) {
+  const h = b64u(JSON.stringify({ alg: 'ES256', x5c: chain.x5c }));
+  const pl = b64u(JSON.stringify(payload));
+  const sig = nodeSign('sha256', Buffer.from(`${h}.${pl}`), { key: chain.leafKey, dsaEncoding: 'ieee-p1363' });
+  return `${h}.${pl}.${b64u(sig)}`;
+}
+
+export function trustTestRoot(ctx, chain = appleChain()) {
+  ctx.env.__appleRoots = [chain.rootDer];
+  ctx.env.__appleRootsOnly = true;
+}
+
+let txSeq = 4000000;
+export function storeTx(ctx, o = {}) {
+  txSeq += 1;
+  return {
+    transactionId: String(o.transactionId ?? txSeq), originalTransactionId: String(o.originalTransactionId ?? o.transactionId ?? txSeq),
+    bundleId: o.bundleId ?? BUNDLE, productId: o.productId ?? 'com.idlery.ultimatetrifecta.coins.1500',
+    type: o.type ?? 'Consumable', environment: o.environment ?? 'Sandbox', purchaseDate: ctx.clock.t - 1000,
+    signedDate: o.signedDate ?? ctx.clock.t, quantity: 1, ...(o.appAccountToken !== undefined ? { appAccountToken: o.appAccountToken } : {}),
+    ...(o.revocationDate ? { revocationDate: o.revocationDate } : {}),
+  };
+}

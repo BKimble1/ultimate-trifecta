@@ -52,9 +52,10 @@ func test_every_emote_from_host_and_guest() -> void:
 	# the host's own emote reaches the guest through the network
 	await rig.wait_until(func() -> bool: return (rig.client_events[guest] as Array).any(func(e: Dictionary) -> bool: return int(e["type"]) == TC.Ev.EMOTE), 300)
 	t.check((rig.client_events[guest] as Array).filter(func(e: Dictionary) -> bool: return int(e["type"]) == TC.Ev.EMOTE).size() == TC.EMOTES.size(),
-		"the guest received all six host emotes")
-	# clean return to idle after the emote's time
-	await rig.frames(int(DormStage.EMOTE_S["point"] * 60) + 30)
+		"the guest received every host emote (%d)" % TC.EMOTES.size())
+	# clean return to idle after the last emote's time (V6: the Season 1
+	# emotes come after the V4 six)
+	await rig.frames(int(DormStage.EMOTE_S[String(TC.EMOTES[-1])] * 60) + 30)
 	t.check(not stage.emoting("uid-host") and hv._mode == "ground", "returns to idle afterwards")
 	host_l.queue_free()
 	# guest: shown at once, and the host's echo doesn't start it twice

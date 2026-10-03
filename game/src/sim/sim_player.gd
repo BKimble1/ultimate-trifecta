@@ -74,6 +74,15 @@ var lag_ticks: int = 0
 var emote: int = -1
 var emote_t: float = 0.0
 var stuck_t: float = 0.0
+## V6: position at the start of this tick's movement (the threshold finish
+## sweeps from here to the end position; INF after a teleport)
+var prev_pos := Vector3.INF
+## V6: inside tonight's home dorm common room (runners can't be tagged there)
+var home_safe := false
+## V6: gold coins this player collected this round (host-decided)
+var coins_picked: int = 0
+## V6: the home door this runner finished through ("" until home)
+var finish_door := ""
 var pos_history: Array[Vector3] = []   # ring buffer of recent positions (lag comp)
 var hist_head: int = 0
 const HIST := 24
@@ -109,7 +118,7 @@ func stamp_count() -> int:
 
 
 func is_taggable() -> bool:
-	return is_runner() and (state == TC.PState.ACTIVE or state == TC.PState.STUMBLE) and protect <= 0.0 and bump_protect <= 0.0
+	return is_runner() and (state == TC.PState.ACTIVE or state == TC.PState.STUMBLE) and protect <= 0.0 and bump_protect <= 0.0 and not home_safe
 
 
 func is_in_play() -> bool:

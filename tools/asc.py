@@ -16,6 +16,16 @@ Commands:
                     Test" text (en-US by default) from FILE (max 4000 chars)
   ensure-bundle  -> register BUNDLE_ID with Game Center if missing (Xcode
                     automatic signing can also do this)
+  iap-plan       -> (no credentials needed) the in-app purchases the game
+                    expects, from game/config/catalogue.json
+  iap-list       -> read only: the app's existing in-app purchases, matched
+                    against the plan (missing / present / unexpected)
+  iap-create --yes -> create the MISSING planned products (type, reference
+                    name, product ID, family sharing off, review note) with
+                    their en-US display name and description.  It never sets
+                    a price, never uploads a review screenshot, never submits
+                    anything for review and never changes existing products:
+                    the account holder chooses prices in App Store Connect
 Never prints the key. Requires: pip install pyjwt cryptography requests
 """
 import json, os, sys, time
@@ -66,8 +76,54 @@ def builds(app_id, limit=20):
     return out
 
 
+# ---------------------------------------------------------------- in-app purchases (V6)
+CATALOGUE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "game", "config", "catalogue.json")
+IAP_TEXT = {
+    # en-US display name / description (App Store limits: 30 / 45 characters)
+    "coin_pack": ("{n} Coins", "{n} Coins for the Shop. Cosmetic only."),
+    "com.idlery.ultimatetrifecta.skin.moonlight_runner": ("Moonlight Runner", "A permanent outfit. Cosmetic only."),
+    "com.idlery.ultimatetrifecta.skin.starry_sleeper": ("Starry Sleeper", "A permanent outfit. Cosmetic only."),
+}
+REVIEW_NOTE = ("Ultimate Trifecta is a cosmetic-only party game. {what} Open Shop (top bar) to see it; "
+               "it is delivered by the game's service after StoreKit 2 verification. No gameplay advantage.")
+
+
+def iap_plan():
+    cat = json.load(open(CATALOGUE))
+    out = []
+    for pid, p in sorted(cat["products"].items()):
+        if p["kind"] == "coin_pack":
+            n = "{:,}".format(p["coins"])
+            name, desc = (t.format(n=n) for t in IAP_TEXT["coin_pack"])
+            what = "This consumable adds %s Coins to the player's wallet." % n
+        else:
+            name, desc = IAP_TEXT[pid]
+            what = "This non-consumable unlocks the %s outfit permanently (restorable)." % name
+        assert len(name) <= 30 and len(desc) <= 45, pid
+        out.append({"productId": pid, "inAppPurchaseType": p["apple_type"], "name": p["reference_name"], "displayName": name,
+                    "description": desc, "reviewNote": REVIEW_NOTE.format(what=what)})
+    return out
+
+
+def iap_existing(app_id):
+    out, url = [], f"/apps/{app_id}/inAppPurchasesV2"
+    params = {"limit": 200, "fields[inAppPurchases]": "name,productId,inAppPurchaseType,state,familySharable"}
+    while url:
+        r = call("GET", url, params=params)
+        if not r.ok:
+            return None
+        js = r.json()
+        out += [{"id": d["id"], **d["attributes"]} for d in js.get("data", [])]
+        url = js.get("links", {}).get("next")
+        params = None
+    return out
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "app"
+    if cmd == "iap-plan":
+        print(json.dumps(iap_plan(), indent=2))
+        return 0
     if cmd == "ensure-bundle":
         r = call("GET", "/bundleIds", params={"filter[identifier]": BUNDLE_ID})
         if r.ok and r.json().get("data"):
@@ -144,6 +200,43 @@ def main():
             out["whatToTest"] = {l["attributes"].get("locale"): (l["attributes"].get("whatsNew") or "")[:80]
                                  for l in rl.json().get("data", [])}
         print(json.dumps(out))
+        return 0
+    if cmd in ("iap-list", "iap-create"):
+        have = iap_existing(a["id"])
+        if have is None:
+            print("could not read in-app purchases (the API key needs App Manager or Admin)")
+            return 1
+        plan = iap_plan()
+        by_pid = {h["productId"]: h for h in have}
+        missing = [p for p in plan if p["productId"] not in by_pid]
+        for p in plan:
+            h = by_pid.get(p["productId"])
+            print("%-52s %-15s %s" % (p["productId"], p["inAppPurchaseType"], ("present, state " + str(h.get("state"))) if h else "MISSING"))
+            if h and h.get("inAppPurchaseType") != p["inAppPurchaseType"]:
+                print("   ! type mismatch: App Store Connect has %s" % h.get("inAppPurchaseType"))
+        planned = {p["productId"] for p in plan}
+        for h in have:
+            if h["productId"] not in planned:
+                print("%-52s %-15s unexpected (not in the catalogue)" % (h["productId"], h.get("inAppPurchaseType")))
+        if cmd == "iap-list" or not missing:
+            return 0
+        if "--yes" not in sys.argv:
+            print("%d missing; run again with --yes to create them (no prices, no submission)" % len(missing))
+            return 0
+        for p in missing:
+            body = {"data": {"type": "inAppPurchases", "attributes": {"name": p["name"], "productId": p["productId"],
+                    "inAppPurchaseType": p["inAppPurchaseType"], "reviewNote": p["reviewNote"], "familySharable": False},
+                    "relationships": {"app": {"data": {"type": "apps", "id": a["id"]}}}}}
+            r = call("POST", "https://api.appstoreconnect.apple.com/v2/inAppPurchases", data=json.dumps(body))
+            if not r.ok:
+                print("could not create %s (HTTP %d)" % (p["productId"], r.status_code))
+                return 1
+            iid = r.json()["data"]["id"]
+            loc = {"data": {"type": "inAppPurchaseLocalizations", "attributes": {"locale": "en-US", "name": p["displayName"],
+                   "description": p["description"]}, "relationships": {"inAppPurchaseV2": {"data": {"type": "inAppPurchases", "id": iid}}}}}
+            rl = call("POST", "/inAppPurchaseLocalizations", data=json.dumps(loc))
+            print("created %s (%s)%s" % (p["productId"], iid, "" if rl.ok else ", localization FAILED (HTTP %d)" % rl.status_code))
+        print("Next (account holder, in App Store Connect): set each product's price, add its review screenshot.")
         return 0
     if cmd == "whats-new":
         build_id, path = sys.argv[2], sys.argv[3]

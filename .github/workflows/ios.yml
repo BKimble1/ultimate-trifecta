@@ -19,6 +19,11 @@ on:
         description: "Only read App Store Connect: app record, recent builds and TestFlight state (no build)"
         type: boolean
         default: false
+      iap:
+        description: "V6 in-app purchases in App Store Connect: list (read only) or create the missing ones (no prices, no submission). No build."
+        type: choice
+        options: [none, list, create]
+        default: none
 
 # an upload or status run never cancels, or is cancelled by, an ordinary build
 concurrency:
@@ -58,10 +63,37 @@ jobs:
           for BID in $(python3 -c 'import json; [print(b["id"]) for b in json.load(open("builds.json"))[:3]]'); do
             echo "build $BID:"; "$PY" tools/asc.py beta "$BID"
           done
+          echo "in-app purchases (V6):"; "$PY" tools/asc.py iap-list || true
+
+  asc-iap:
+    name: App Store Connect in-app purchases (${{ github.event.inputs.iap }})
+    if: github.event.inputs.iap == 'list' || github.event.inputs.iap == 'create'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: In-app purchases from the catalogue
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          MODE: ${{ github.event.inputs.iap }}
+        run: |
+          if [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_ISSUER_ID" ] || [ -z "$ASC_KEY_P8_BASE64" ]; then
+            echo "::error::No App Store Connect API key configured."; exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/keys"
+          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          python3 -m venv "$RUNNER_TEMP/ascenv"
+          "$RUNNER_TEMP/ascenv/bin/pip" install --quiet pyjwt cryptography requests
+          PY="$RUNNER_TEMP/ascenv/bin/python"
+          "$PY" tools/asc.py iap-plan
+          if [ "$MODE" = create ]; then "$PY" tools/asc.py iap-create --yes; else "$PY" tools/asc.py iap-list; fi
 
   tests:
     name: Rules, simulation and network tests (headless)
-    if: github.event.inputs.asc_status != 'true'
+    if: github.event.inputs.asc_status != 'true' && (github.event.inputs.iap == '' || github.event.inputs.iap == 'none' || github.event.inputs.iap == null)
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -295,7 +327,7 @@ jobs:
           [ -n "$APP" ] && { lipo -info "$APP/UltimateTrifecta"; du -sh "$APP";
             for k in CFBundleIdentifier CFBundleShortVersionString CFBundleVersion MinimumOSVersion DTSDKName DTXcode UIDeviceFamily ITSAppUsesNonExemptEncryption NSGKFriendListUsageDescription UISupportedInterfaceOrientations; do
               echo "$k = $(/usr/libexec/PlistBuddy -c "Print :$k" "$APP/Info.plist" 2>/dev/null | tr '\n' ' ')"; done
-            ls "$APP/Frameworks" 2>/dev/null; [ -f "$APP/Frameworks/UTShare.framework/UTShare" ] && { echo "UTShare embedded:"; lipo -info "$APP/Frameworks/UTShare.framework/UTShare"; } || echo "UTShare framework NOT embedded"; find "$APP" -name 'PrivacyInfo.xcprivacy' | sed "s|$APP/||"; }
+            ls "$APP/Frameworks" 2>/dev/null; [ -f "$APP/Frameworks/UTShare.framework/UTShare" ] && { echo "UTShare embedded:"; lipo -info "$APP/Frameworks/UTShare.framework/UTShare"; } || echo "UTShare framework NOT embedded"; [ -d "$APP/Frameworks/GodotApplePluginsStoreKit.framework" ] && echo "StoreKit module embedded (GodotApplePluginsStoreKit)" || echo "StoreKit module NOT embedded"; find "$APP" -name 'PrivacyInfo.xcprivacy' | sed "s|$APP/||"; }
           find build/ios -name '*.entitlements' -maxdepth 3 -exec sh -c 'echo "== $1"; cat "$1"' _ {} \;
           PM=$(find build/ios -maxdepth 3 -name PrivacyInfo.xcprivacy | head -1); [ -n "$PM" ] && { echo "== $PM"; plutil -convert json -o - "$PM"; echo; }
           [ -f build/ios/shader_bake.txt ] && { echo "== shader baker"; cat build/ios/shader_bake.txt; }

@@ -17,6 +17,10 @@ extends Node
 ##             protected (if the bot runner is tagged), results
 ##   patrol    practice as Night Watch (bot-driven): shed, cart driving, an
 ##             on-foot tag, results
+##   dorm      (V6) the runner scenario plus the home dorm: the reveal and
+##             countdown inside it, the first steps out through a door, a
+##             coin pickup (+1), the way home and the crossing back inside
+##             (pick the dorm with --seed; the bot plays every step)
 ##   results   re-displays the results of a recorded round (the runner and
 ##             patrol scenarios save <scenario>_results.var; pass it with
 ##             --capture-results=path) for layout checks at other aspects,
@@ -63,6 +67,12 @@ func _ready() -> void:
 	var dg: GDScript = load("res://src/dev/diag.gd")
 	_diag = dg.new()
 	add_child(_diag)
+	# --capture-steps=N (with a low --fixed-fps): up to N fixed 60 Hz ticks
+	# per drawn frame, so a whole round needs fewer software-rendered frames
+	# (the simulation's ticks are the same; only fewer frames are drawn)
+	for a in OS.get_cmdline_user_args():
+		if String(a).begins_with("--capture-steps="):
+			Engine.max_physics_steps_per_frame = clampi(int(String(a).get_slice("=", 1)), 1, 30)
 	if scenario.begins_with("social_"):
 		# V6 social evidence (hub, chat, names, rankings): its own driver
 		var sc: Node = (load("res://src/dev/capture_social.gd") as GDScript).new()
@@ -115,7 +125,7 @@ func _process(delta: float) -> void:
 			_creator_tour()
 		"lobby":
 			_lobby()
-		"runner", "patrol":
+		"runner", "patrol", "dorm":
 			_match()
 		"results":
 			_results()
@@ -293,6 +303,8 @@ func _match() -> void:
 	if ph == TC.Phase.REVEAL and not _scheduled.has("reveal"):
 		_scheduled["reveal"] = true
 		later(1.5, "%s_reveal" % scenario)
+	if scenario == "dorm":
+		_dorm_shots(mc, info, rs, st, ph)
 	if ph == TC.Phase.PLAYING:
 		if _next_play_shot == 0.0:
 			_next_play_shot = _t + 4.0
@@ -308,7 +320,7 @@ func _match() -> void:
 			get_tree().create_timer(2.5).timeout.connect(func() -> void:
 				if is_instance_valid(mc) and mc.hud:
 					mc.hud.close_map())
-	if scenario == "runner":
+	if scenario == "runner" or scenario == "dorm":
 		if st == TC.PState.SPLASHING and _prev_state != TC.PState.SPLASHING and _splashes < 2:
 			_splashes += 1
 			snap("water_%d_entry" % _splashes)
@@ -340,6 +352,55 @@ func _match() -> void:
 			_tag_shot = true
 			snap("tag_lunge")
 	_prev_state = st
+
+
+## V6 dorm evidence: inside at the countdown, out through a door, a coin,
+## the way back and the crossing in (all from real game state).
+var _was_inside := false
+var _coin_shots := 0
+
+
+func _dorm_shots(mc: MatchController, info: Dictionary, rs: Dictionary, st: int, ph: int) -> void:
+	if not rs.has("pos"):
+		return
+	var p: Vector3 = rs["pos"]
+	var inside := CampusDorms.in_room(mc.home_dorm, p)
+	if ph == TC.Phase.COUNTDOWN and not _scheduled.has("countdown"):
+		_scheduled["countdown"] = true
+		later(0.5, "dorm_%s_countdown" % mc.home_dorm)
+	if ph == TC.Phase.PLAYING:
+		if _was_inside and not inside and not _scheduled.has("departure") and st == TC.PState.ACTIVE:
+			_scheduled["departure"] = true
+			snap("dorm_%s_departure" % mc.home_dorm)
+			later(0.8, "dorm_%s_departure_b" % mc.home_dorm)
+		# a coin still out on the way, a few metres ahead of the runner
+		if not _scheduled.has("coin_route") and mc.coin_view != null:
+			var cl: Array = mc.start.get("coins", [])
+			for ci in cl.size():
+				var cp := Vector2(float(cl[ci]["x"]), float(cl[ci]["z"]))
+				var dd := Vector2(p.x, p.z).distance_to(cp)
+				var cam := get_viewport().get_camera_3d()
+				if mc.coin_view.is_out(ci) and dd > 4.0 and dd < 9.0 and cam != null and cam.is_position_in_frustum(Vector3(cp.x, 1.0, cp.y)):
+					_scheduled["coin_route"] = true
+					snap("dorm_coin_route")
+					break
+		var coins := int(info.get("coins", 0))
+		if coins > _coin_shots and _coin_shots < 2:
+			_coin_shots = coins
+			later(0.2, "dorm_coin_%d" % coins)
+		if int(info.get("stamps", 0)) == 7 and st == TC.PState.ACTIVE:
+			for d in mc.layout.home_doors(mc.home_dorm):
+				var dist := Vector2(p.x, p.z).distance_to(d["pos"])
+				if dist < 14.0 and not _scheduled.has("approach"):
+					_scheduled["approach"] = true
+					snap("dorm_%s_return_approach" % mc.home_dorm)
+				if dist < 3.5 and not _scheduled.has("doorway"):
+					_scheduled["doorway"] = true
+					snap("dorm_%s_return_doorway" % mc.home_dorm)
+		if st == TC.PState.FINISHED and not _scheduled.has("home"):
+			_scheduled["home"] = true
+			snap("dorm_%s_home" % mc.home_dorm)
+	_was_inside = inside
 
 
 ## Results of a recorded round shown again (same ResultsScreen code), then

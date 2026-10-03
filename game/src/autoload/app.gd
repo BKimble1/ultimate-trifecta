@@ -751,6 +751,7 @@ func _close_session(send_leave: bool = true) -> void:
 # ---------------------------------------------------------------------------
 func _on_match_starting(info: Dictionary) -> void:
 	InputOwner.clear()   # (V6) no menu, chat or walk control survives into the round
+	Wallet.round_started(info)   # V6: the host registers the round with the service
 	_end_match_scene()
 	_clear_background()
 	if screen and is_instance_valid(screen):

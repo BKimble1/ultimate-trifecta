@@ -354,47 +354,72 @@ func _player_row(r: Dictionary, role: int, vals: Array) -> Control:
 
 
 func _rewards_card() -> Control:
-	var s := RoundRewards.summary(String(results.get("match_id", "")), reward)
 	var p := UIKit.panel(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 14)
+	var mid := String(results.get("match_id", ""))
+	_fill_rewards(p, mid)
+	# the wallet settles the round with the game service: the card follows
+	Wallet.round_updated.connect(func(m: String) -> void:
+		if m == mid and is_instance_valid(p):
+			_fill_rewards(p, mid), CONNECT_REFERENCE_COUNTED)
+	return p
+
+
+## Coins and Season XP from the Wallet (docs/ECONOMY.md §9): added amounts
+## only once the service has settled the round; while it is pending, what
+## the round is expected to pay, said to be not yet added; otherwise the
+## wallet's own sentence (practice, no service, not eligible, …).
+func _fill_rewards(p: Control, mid: String) -> void:
+	for c in p.get_children():
+		c.queue_free()
+	var s := RoundRewards.summary(mid, reward)
 	var v := UIKit.vbox(4)
+	p.add_child(v)
 	v.add_child(UIKit.styled("Rewards", "overline", UIKit.IVORY_MUTED))
-	if bool(s.get("away", false)):
-		v.add_child(UIKit.styled("You were away for most of this round, so it pays nothing.", "body", UIKit.IVORY_MUTED))
-	elif s.is_empty() or (int(s.get("coins", 0)) == 0 and int(s.get("coins_collected", 0)) == 0 and (s.get("season", {}) as Dictionary).is_empty()):
+	if s.is_empty():
 		v.add_child(UIKit.styled("No rewards for this round.", "body", UIKit.IVORY_MUTED))
-	else:
-		var top := UIKit.hbox(18)
-		if int(s.get("coins_collected", 0)) > 0:
-			top.add_child(_big_number("%d" % int(s["coins_collected"]), "collected on campus"))
-		top.add_child(_big_number("+%d" % int(s.get("coins", 0)), "Coins"))
+		return
+	var top := UIKit.hbox(18)
+	if int(s["coins_collected"]) > 0:
+		top.add_child(_big_number("%d" % int(s["coins_collected"]), "picked up"))
+	if bool(s["settled"]):
+		top.add_child(_big_number("+%s" % Catalogue.format_coins(int(s["coins"])), "Coins added"))
+		if int(s["season_xp"]) > 0:
+			top.add_child(_big_number("+%d" % int(s["season_xp"]), "Season XP"))
+	var msg := String(s["message"])
+	if bool(s["pending"]):
+		msg += " Expected: +%s Coins · +%d Season XP (not added yet)." % [Catalogue.format_coins(int(s["coins_projected"])), int(s["season_xp_projected"])]
+	elif bool(s["away"]) and msg == "":
+		msg = "You were away for most of this round, so it pays nothing."
+	if msg == "" and top.get_child_count() == 0:
+		msg = "No rewards for this round."
+	if msg != "":
+		var ml := UIKit.styled(msg, "caption", UIKit.IVORY if bool(s["settled"]) else UIKit.IVORY_MUTED)
+		ml.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		ml.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		ml.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		top.add_child(ml)
+	v.add_child(top)
+	if bool(s["settled"]) or bool(s["pending"]):
 		var bits: Array[String] = []
-		for line in s.get("lines", []):
+		for line in (s["lines"] as Array) + (s["season_lines"] as Array):
 			bits.append("%s %+d" % [line[0], int(line[1])])
 		if not bits.is_empty():
 			var det := UIKit.styled(" · ".join(bits), "caption", UIKit.IVORY_MUTED)
 			det.add_theme_font_size_override("font_size", 18)
 			det.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			det.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			det.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			top.add_child(det)
-		v.add_child(top)
-		var season: Dictionary = s.get("season", {})
-		if not season.is_empty():
-			v.add_child(UIKit.styled("Season XP +%d · Tier %d" % [int(season["xp_gained"]), int(season["tier"])], "label", UIKit.TEAL))
-			var bar := ProgressBar.new()
-			bar.show_percentage = false
-			bar.max_value = float(season["xp_for_tier"])
-			bar.value = float(season["xp_in_tier"])
-			bar.custom_minimum_size = Vector2(0, 14)
-			v.add_child(bar)
-		if bool(s.get("pending", false)):
-			v.add_child(UIKit.styled("Rewards are being confirmed…", "caption", UIKit.IVORY_MUTED))
-		if bool(s.get("level_up", false)):
-			v.add_child(UIKit.styled("Level up! You're now level %d" % int(s.get("level", 1)), "label", UIKit.TEAL))
-	if bool(results.get("practice", false)):
-		v.add_child(UIKit.styled("Practice round with bots · half rewards", "caption", UIKit.IVORY_MUTED))
-	p.add_child(v)
-	return p
+			v.add_child(det)
+	if bool(s["settled"]) and int(s["season_xp"]) > 0:
+		var tier := int(s["tier_after"])
+		v.add_child(UIKit.styled("Season tier %d%s" % [tier, "  ·  tier up!" if tier > int(s["tier_before"]) else ""], "label", UIKit.TEAL))
+		var bar := ProgressBar.new()
+		bar.show_percentage = false
+		bar.max_value = 1.0
+		bar.step = 0.001
+		bar.value = float(s["frac_after"])
+		bar.custom_minimum_size = Vector2(0, 14)
+		v.add_child(bar)
+	if bool(s["level_up"]):
+		v.add_child(UIKit.styled("Level up! You're now level %d" % int(s["level"]), "label", UIKit.TEAL))
 
 
 func _big_number(n: String, label_text: String) -> Control:

@@ -183,7 +183,11 @@ func test_capture_reaches_client_and_client_patrol_tag() -> void:
 		var me := mc.sim.player(mc.local_slot)
 		var tgt := mc.sim.player(1)
 		var rel := tgt.pos() - me.pos()
-		c.move = Vector2(rel.x, rel.z).normalized()
+		# walk up and stop beside the runner (as a player does): characters
+		# pass through each other, so a chaser that keeps running overshoots
+		# and its lunge turns toward a runner directly behind it - which way
+		# it turns then depends on millimetres
+		c.move = Vector2(rel.x, rel.z).normalized() if Vector2(rel.x, rel.z).length() > 0.9 else Vector2.ZERO
 		c.cam_yaw = atan2(-rel.x, -rel.z)
 		if Vector2(rel.x, rel.z).length() < 1.3 and Engine.get_physics_frames() % 20 == 0:
 			c.pressed |= TC.BTN_TAG
