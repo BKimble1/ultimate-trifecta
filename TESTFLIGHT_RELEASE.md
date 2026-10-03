@@ -1,6 +1,13 @@
 # TestFlight release: Ultimate Trifecta
 
-Current version: **1.4 (V5)**. It uses the same app, bundle ID, Game Center capability, internal group and lane as 1.0–1.3, including the signed-archive fix from `e39c98c`. V5 adds no new frameworks, permissions, network services or data collection. It changes the launch image to the owner's Idlery Games lockup (requested), and the lane now audits the launch assets before signing. V3 added the UTShare share-sheet framework and the optional game service (`service/`), which is still not deployed.
+Current version: **1.5 (V6)**. It uses the same app, bundle ID, Game Center capability, internal group and lane as 1.0–1.4. V6 adds:
+- **Apple's StoreKit 2 module.** It comes from the same pinned GodotApplePlugins release, for the Shop's App Store items. No product exists in App Store Connect yet, so nothing can be bought.
+- **Commerce, chat and moderation endpoints in the optional game service** (`service/`), which is still not deployed. This build ships with the service off.
+- **A pure-black startup**, in the launch storyboard, launch image, boot splash and curtain; the launch audit now requires it.
+- **Shader baking** for Metal in the export.
+- **The owner's lobby music.**
+
+No new permission is requested.
 
 ## App identity
 
@@ -9,12 +16,12 @@ Current version: **1.4 (V5)**. It uses the same app, bundle ID, Game Center capa
 | App name | Ultimate Trifecta |
 | App icon | The owner's "Pajama Dash" artwork (`Ultimate Trifecta_ Pajama Dash.png`), as `game/assets/icon/icon.png` at 1024×1024, opaque. Godot's export generates every other icon size from it. |
 | Bundle ID | `com.idlery.ultimatetrifecta`. It is registered on your team: the App Store Connect app record below uses it. |
-| Marketing version | `1.4` for V5 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot`, the export preset and `tools/export_ios.sh`). V4 was `1.3`, V3 `1.2`, V2 `1.1`, V1 `1.0`. |
+| Marketing version | `1.5` for V6 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot`, the export preset and `tools/export_ios.sh`). V5 was `1.4`, V4 `1.3`, V3 `1.2`, V2 `1.1`, V1 `1.0`. Before choosing it, the read-only status run #75 showed builds 1–4 in App Store Connect (latest 1.4 (4), `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING`) and no 1.5. |
 | Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`), so it always increases past anything already uploaded; without it, the GitHub run number (V1's last unsigned build was 10; V2's are 12 and up). It can be overridden with the `build_number` workflow input. |
 | Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape left/right. Godot also adds `UIRequiredDeviceCapabilities` `iphone-ipad-minimum-performance-a12`, which means A12 (iPhone XS/XR) or newer. All verified in the CI archive's Info.plist. |
-| Capabilities | Game Center (`com.apple.developer.game-center`) |
+| Capabilities | Game Center (`com.apple.developer.game-center`). In-App Purchase needs no entitlement key; App Store Connect enables it for every app ID. |
 | App Store Connect record | **Exists** (seen by the CI lane's API check in run #26): app ID `6818346960`, name "Ultimate Trifecta", bundle `com.idlery.ultimatetrifecta`, SKU `ULTIMATETRIFECTA1`, primary locale en-US. No build had been uploaded before V3: the lane's next-build check returned 1 in runs #26 and #28. |
-| Embedded frameworks | `GodotApplePluginsGameCenter`, `SwiftGodotRuntime` (Game Center bindings) and `UTShare` (share sheet; built from `native/ut_share` by `tools/build_native.sh`). All three are embedded and arm64 in the CI archive (run #26). |
+| Embedded frameworks | `GodotApplePluginsGameCenter`, `SwiftGodotRuntime` (Game Center bindings) and `UTShare` (share sheet; built from `native/ut_share` by `tools/build_native.sh`). All three are embedded and arm64 in the CI archive (run #26). V6 adds `GodotApplePluginsStoreKit` (StoreKit 2, from the same pinned, sha256-checked release); the build facts report whether it is embedded. |
 | Toolchain | Godot 4.7.2-stable export; Xcode 26.6 (17F113) with the iOS 26 SDK on the `macos-26` GitHub runner (verified in CI run 3). Apple requires the iOS 26 SDK for uploads from April 28, 2026. |
 
 ## Current release state
@@ -68,18 +75,37 @@ For later uploads, run "Build, test and ship (iOS)" with **upload** ticked. The 
 | Signed App Store archive and export/upload | `tools/build_ios.sh signed`: `xcodebuild archive` with `-allowProvisioningUpdates` and API-key auth, then `-exportArchive` with `method=app-store-connect`, `destination=upload` |
 | Bundle ID registration, app check, build numbers, processing wait, internal groups, TestFlight state | `tools/asc.py` (ES256 JWT; never prints the key). Adding a build to an internal group reports Apple's answer; groups set to receive every build are left alone. |
 | TestFlight "What to Test" (V4) | After processing, `tools/asc.py whats-new BUILD_ID docs/testflight/what_to_test.txt` sets the build's en-US beta notes (App Store Connect beta build localization) for the internal testers. |
-| Launch and branding audit (V5) | Right after the Xcode export, before any signing or upload, `tools/launch_audit.py` fails the run on: no launch storyboard or more than one; a storyboard background that isn't the startup navy `#0C1324` (white-flash risk); a launch image that is missing, not opaque, not on navy or without the Idlery teal mark; any "powered by" text in the game data or project text. It lists the text files naming Idlery (expected: the bundle ID). The Simulator step then captures six launch frames, and the build facts print the audit and a sheet of those frames. |
+| Launch and branding audit (V5; black since V6) | Right after the Xcode export, before any signing or upload, `tools/launch_audit.py` fails the run on: no launch storyboard or more than one; a storyboard background that isn't pure black `#000000` (V5: the startup navy); a launch image that is missing, not opaque, not on black or without the Idlery teal mark; any "powered by" text in the game data or project text. It lists the text files naming Idlery (expected: the bundle ID). The Simulator step then captures six launch frames, and the build facts print the audit and a sheet of those frames. |
+| Shader baking (V6) | With `SHADER_BAKE=1` (set in CI) on macOS, `tools/export_ios.sh` first exports with Godot's shader baker running the Mobile renderer on Metal. The result is judged by its output: the project and game data must exist and carry `shader_cache` entries. Otherwise the ordinary export is used. `shader_bake.txt` in the build facts records which, with the count. Runs #66 and #67 baked 40 entries (exit code 0). A bake reduces shader compilation on the phone; it does not replace the driver's own pipeline preparation. |
+| In-app purchases (V6, opt-in) | The workflow input **iap** = `list` (read only) or `create` (creates only the missing catalogue products: no prices, screenshots or submission). Default `none`: an ordinary run never touches them. |
 | Read-only status check | Run the workflow with **asc_status** ticked: it prints the app record, recent builds with their processing state, and each build's internal/external TestFlight state and What to Test text. It builds and uploads nothing. |
 
 The same steps run locally on a Mac with Xcode 26:
 
 ```sh
 export APPLE_TEAM_ID=… ASC_KEY_ID=… ASC_ISSUER_ID=… ASC_KEY_PATH=~/keys/AuthKey_….p8
-export BUILD_NUMBER=$(python3 tools/asc.py next-build) MARKETING_VERSION=1.4
+export BUILD_NUMBER=$(python3 tools/asc.py next-build) MARKETING_VERSION=1.5
 tools/fetch_godot.sh --templates && tools/fetch_deps.sh && tools/export_ios.sh
 EXPORT_DESTINATION=upload INTERNAL_ONLY=true tools/build_ios.sh signed
-python3 tools/asc.py wait 1.4 "$BUILD_NUMBER" 2400
+python3 tools/asc.py wait 1.5 "$BUILD_NUMBER" 2400
 ```
+
+## In-app purchases (V6): prepared, not set up
+
+The catalogue (`game/config/catalogue.json`, `docs/ECONOMY.md`) names five App Store products:
+- Coin packs (consumable): `com.idlery.ultimatetrifecta.coins.500`, `.coins.1500` and `.coins.3500`.
+- Outfits (non-consumable): `.skin.moonlight_runner` and `.skin.starry_sleeper`.
+
+Status run #75 read them from App Store Connect: all five are **MISSING**. This build therefore shows them as **Unavailable**.
+
+Coins and Season XP are also not added, because the game service isn't deployed, and the Shop says so. The exact setup steps are in `docs/COMMERCE_SETUP.md`:
+1. **The account holder** accepts the Paid Applications agreement and completes tax and banking.
+2. **Create the products:** run the workflow with **iap = list** (read only), then **iap = create**. It creates only missing products and sets no prices.
+3. **In App Store Connect,** set each product's price and add a review screenshot.
+4. **Deploy the sandbox service** and fill in `game/config/service.cfg`.
+5. **Test with a Sandbox account** on a TestFlight build, following `COMMERCE_SETUP.md` §4.
+
+The lane has done none of these. No purchase has been made, in sandbox or otherwise.
 
 ## Compliance and privacy answers
 
@@ -99,20 +125,36 @@ These answers are based on what the build actually contains; please confirm them
 - **Data handling** (for the App Privacy questionnaire, needed before any App Store submission but not for internal TestFlight; full answers and the policy inventory are in `docs/APP_STORE.md`):
   - With the service off (as shipped): no developer server, analytics, ads or crash reporting.
   - With the service deployed: user ID, name, gameplay content (the runner's look) and reports, linked to the player, for app functionality only, never tracking. `tools/export_ios.sh` then declares these in the privacy manifest automatically.
+  - **V6, with the service deployed:**
+    - **Purchases:** the service keeps purchase history (App Store transaction IDs and what they delivered, never payment details), linked to the player, to deliver each purchase once and restore it. Declared as Purchase History.
+    - **Chat:** typed messages pass through the service to be checked and signed, and are **not stored**. A reported message is kept with that report (up to 200 characters, Other User Content) and removed if its sender deletes their profile.
+    - Whether to also declare typed chat as "Emails or Text Messages" is your call; `docs/APP_STORE.md` sets out both options.
+    - Without the service, chat stays inside the party's Game Center connection as preset phrase IDs.
   - Game Center identity (player ID and display name) is used on-device and shared with the other players in your room through Game Center.
   - Diagnostics (V4): only when the player turns them on in Settings › Diagnostics (beta). They are held in memory, never written to disk or sent to a server. They leave the phone only if the player taps Share summary, which opens the iOS share sheet with plain text that has no names, party codes or Game Center IDs. This adds no collected data type.
   - Settings, stats and cosmetics are stored on the device. Settings › Profile › **Delete Game Profile** erases them, and the online profile too when the service is on.
   - You make the final declaration.
-- **Content.** Cartoon chase with no violence, nudity, gambling or purchases. Player names are user-generated; they are checked by the service when it is deployed, and every player card has Report and Block. There is no chat, only preset emotes.
+- **Content.** Cartoon chase with no violence, nudity or gambling. Communication is private-party only.
+  - **Quick Chat** preset phrases are always available.
+  - **Typed chat** is available only in parties set up through the game service, and only while it is reachable. Each message is checked on the device, approved and signed by the service, then verified by the host and every receiver.
+  - **Names** are checked against the same policy on the device and on the service. Without the service, parties show curated names only.
+  - Every player card and message has **Mute, Report and Block**. Reports go to the owner's moderation queue (`docs/MODERATION.md`).
+  - **In-app purchases (V6):** cosmetic only. Coin packs and two outfits are App Store products, none set up yet. Everything else costs Coins, earned in online rounds or bought; Coins never buy gameplay advantage.
 
 ## Running services
 
 - **Online rooms.** Online rooms use Apple's Game Center matchmaking and `GKMatch` relay.
-- **Game service (V3, optional, not deployed).** `service/` adds verified profiles, moderated names, reports, blocks and party rooms with admission tokens. Until the owner deploys it to their Cloudflare account (see `service/README.md`) and fills in `game/config/service.cfg`:
+- **Game service (V3, optional, not deployed).** `service/` adds:
+  - verified profiles, moderated names, reports, blocks and party rooms with admission tokens;
+  - (V6) the wallet ledger, App Store transaction verification, Season claims, verified round rewards, typed-chat approval and the moderation queue.
+
+  Until the owner deploys it to their Cloudflare account (see `service/README.md` and `docs/COMMERCE_SETUP.md`) and fills in `game/config/service.cfg`:
   - The build ships with the service off.
   - Names stay on the device.
   - Report explains it is unavailable and offers Block.
   - Nothing claims a verified profile.
+  - Typed chat says it is unavailable, while Quick Chat works.
+  - The Shop and Season Pass say they need the service; no Coins or Season XP are added and nothing can be bought.
 - **Game Center environment.** TestFlight builds use Game Center's sandbox environment automatically. All players in a room must run TestFlight builds of the app.
 - **Review access.** App Review or a tester without Game Center can play **Solo practice** and the tutorial fully offline. No login or demo account is needed.
 
@@ -122,7 +164,22 @@ These answers are based on what the build actually contains; please confirm them
 
 > Ultimate Trifecta is a playful 3 a.m. campus chase. Runners splash into three marked waters around a fictional campus and race back to the dorm; the Night Watch hunts them on foot and in golf carts. Get four runners home before the 4-minute clock runs out — or, as the Night Watch, stop them. Create your runner, play solo with bots, or start a private party with friends through Game Center.
 
-**What to Test (1.4)**. The lane sets this text on the build from `docs/testflight/what_to_test.txt`:
+**What to Test (1.5)**. The lane sets this text on the build from `docs/testflight/what_to_test.txt` (1675 characters):
+
+> 1.5 internal beta (V6: steadier play, real dorms, Locker/Shop/Season 1, party room, rankings). Please tell us your iPhone model:
+>
+> - Smoothness: play several whole rounds, Practice and with friends. 1.4 could run smoothly and then suddenly turn very glitchy. Does that still happen? If anything stutters, turn on Settings > Diagnostics (beta), play, then Share summary (no names or codes).
+> - Startup: pure black behind Idlery Games, then home with the new lobby music. Any gap or click when it loops (about every 34 s)? It should fade out when a round starts and come back after.
+> - Loading: the three runners should keep moving until you appear inside a dorm. Cancel (Practice) / Leave party works at any point.
+> - Dorms: each round starts inside one of three dorms (named on the reveal card). Splash the three waters, then finish by running back in through one of that dorm's doors.
+> - Coins: 8 per round on the campus. Pick them up (+1).
+> - Finger scrolling: swipe the Locker, Shop, Season Pass, results and settings lists, starting on a card. Lists should move, and lifting your finger should never select, buy or claim. A tap still selects.
+> - Locker, Shop and Season Pass: browse the new outfits, hats, shoes and emotes. The game service and App Store products aren't set up in this build, so Coins and Season XP aren't added and purchases say Unavailable. That's expected; please don't try to buy anything.
+> - Party room: tap Walk to walk around with friends. Quick Chat, and Mute / Report / Block on a player card. Typed chat is off in this build.
+> - Results: each team's rankings, then final standings before you return to the party.
+> - Heat and battery after 15-20 minutes.
+
+**What to Test (1.4)**, kept for reference:
 
 > 1.4 internal beta (V5: new look, smoother motion, cleaner menus). Please try, and tell us your iPhone model:
 >

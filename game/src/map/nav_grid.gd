@@ -21,7 +21,18 @@ const FOOT_INF := 0.45
 const CART_INF := 1.25
 ## The rasterisation in slices of similar cost (each ~12 ms or less on the
 ## desktop test machine; V4 built it in one ~50 ms block).
-const PHASES := ["_r_roads", "_r_buildings_hedges_fences", "_r_walls_blockers_trees", "_r_rocks", "_r_waters", "_r_edges"]
+## [method, part, parts]: V6 splits the setup and the heavy passes into
+## slices that keep the original order of every write (the finished grid is
+## identical; test_prep_jobs), so no single loading step holds a frame for
+## long (each pass was 14-18 ms here, the grid setup up to 15 ms; a phone is
+## slower).
+const PHASES := [["_r_setup", 0, 2], ["_r_setup", 1, 2],
+	["_r_roads", 0, 3], ["_r_roads", 1, 3], ["_r_roads", 2, 3],
+	["_r_buildings_hedges_fences", 0, 3], ["_r_buildings_hedges_fences", 1, 3], ["_r_buildings_hedges_fences", 2, 3],
+	["_r_walls_blockers_trees", 0, 3], ["_r_walls_blockers_trees", 1, 3], ["_r_walls_blockers_trees", 2, 3],
+	["_r_rocks", 0, 1],
+	["_r_waters", 0, 3], ["_r_waters", 1, 3], ["_r_waters", 2, 3],
+	["_r_edges", 0, 1]]
 var _phase := 0
 
 
@@ -54,7 +65,8 @@ static func build_step(lay: CampusLayout) -> bool:
 
 func step() -> bool:
 	if _phase < PHASES.size():
-		call(PHASES[_phase])
+		var ph: Array = PHASES[_phase]
+		call(String(ph[0]), int(ph[1]), int(ph[2]))
 		_phase += 1
 	return _phase < PHASES.size()
 
@@ -63,18 +75,28 @@ func _init(lay: CampusLayout, staged: bool = false) -> void:
 	layout = lay
 	origin = CampusLayout.BOUNDS.position
 	dims = Vector2i(int(CampusLayout.BOUNDS.size.x), int(CampusLayout.BOUNDS.size.y))
-	for g in [foot, cart]:
-		g.region = Rect2i(Vector2i.ZERO, dims)
-		g.cell_size = Vector2(CELL, CELL)
-		g.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
-		g.default_compute_heuristic = AStarGrid2D.HEURISTIC_OCTILE
-		g.default_estimate_heuristic = AStarGrid2D.HEURISTIC_OCTILE
-		g.update()
-	# grass costs carts more than road (V5: one native region fill instead of
-	# 96,000 single-cell calls)
-	cart.fill_weight_scale_region(Rect2i(Vector2i.ZERO, dims), 1.8)
 	if not staged:
 		_rasterize()
+
+
+## The grids themselves: the foot grid in the first slice, the cart grid
+## (with grass costing carts more than road: V5's one native region fill
+## instead of 96,000 single-cell calls) in the second.
+func _r_setup(part: int, _parts: int) -> void:
+	var g: AStarGrid2D = foot if part == 0 else cart
+	g.region = Rect2i(Vector2i.ZERO, dims)
+	g.cell_size = Vector2(CELL, CELL)
+	g.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	g.default_compute_heuristic = AStarGrid2D.HEURISTIC_OCTILE
+	g.default_estimate_heuristic = AStarGrid2D.HEURISTIC_OCTILE
+	g.update()
+	if part == 1:
+		cart.fill_weight_scale_region(Rect2i(Vector2i.ZERO, dims), 1.8)
+
+
+## Slice `part` of `parts` over n items, in order.
+static func _slice(n: int, part: int, parts: int) -> Vector2i:
+	return Vector2i(n * part / parts, n * (part + 1) / parts)
 
 
 func to_cell(p: Vector2) -> Vector2i:
@@ -121,8 +143,10 @@ func _rasterize() -> void:
 		pass
 
 
-func _r_roads() -> void:
-	for r in layout.roads:
+func _r_roads(part: int, parts: int) -> void:
+	var sl := _slice(layout.roads.size(), part, parts)
+	for ri in range(sl.x, sl.y):
+		var r: Dictionary = layout.roads[ri]
 		var pts: PackedVector2Array = r["pts"]
 		for i in pts.size() - 1:
 			var rect := Rect2(pts[i], Vector2.ZERO).expand(pts[i + 1]).grow(float(r["w"]) * 0.5 + 1.0)
@@ -131,10 +155,14 @@ func _r_roads() -> void:
 					cart.set_point_weight_scale(c, 1.0)
 
 
-func _r_buildings_hedges_fences() -> void:
+func _r_buildings_hedges_fences(part: int, parts: int) -> void:
+	var nb := layout.buildings.size()
+	var nh := layout.hedges.size()
+	var sl := _slice(nb + nh + layout.fences.size(), part, parts)
 	var foot_inf := FOOT_INF
 	var cart_inf := CART_INF
-	for bd in layout.buildings:
+	for bi in range(sl.x, mini(sl.y, nb)):
+		var bd: Dictionary = layout.buildings[bi]
 		var half: Vector2 = bd["size"] * 0.5
 		var pos: Vector2 = bd["pos"]
 		if bd["id"] == "tower":
@@ -157,10 +185,12 @@ func _r_buildings_hedges_fences() -> void:
 			continue
 		_solid_box(foot, pos, half, foot_inf)
 		_solid_box(cart, pos, half, cart_inf)
-	for s in layout.hedges:
+	for hi in range(maxi(sl.x, nb), mini(sl.y, nb + nh)):
+		var s: Dictionary = layout.hedges[hi - nb]
 		_solid_segment(foot, s["a"], s["b"], float(s["t"]) * 0.5, foot_inf)
 		_solid_segment(cart, s["a"], s["b"], float(s["t"]) * 0.5, cart_inf)
-	for s in layout.fences:
+	for fi in range(maxi(sl.x, nb + nh), sl.y):
+		var s: Dictionary = layout.fences[fi - nb - nh]
 		var h: float = s["h"]
 		if h <= 1.05:
 			# split-rail: hop-able for runners (costly), solid for carts
@@ -174,29 +204,37 @@ func _r_buildings_hedges_fences() -> void:
 		_solid_segment(cart, s["a"], s["b"], 0.15, cart_inf)
 
 
-func _r_walls_blockers_trees() -> void:
+func _r_walls_blockers_trees(part: int, parts: int) -> void:
+	var nw := layout.walls.size()
+	var nb := layout.cart_blockers.size()
+	var nt := layout.trees.size()
+	var sl := _slice(nw + nb + nt + layout.solids.size(), part, parts)
 	var foot_inf := FOOT_INF
 	var cart_inf := CART_INF
-	for s in layout.walls:
+	for wi in range(sl.x, mini(sl.y, nw)):
+		var s: Dictionary = layout.walls[wi]
 		var rect2 := Rect2(s["a"], Vector2.ZERO).expand(s["b"]).grow(1.2)
 		for c in _cells_in_rect(rect2):
 			if CampusLayout._dist_to_segment(to_world(c), s["a"], s["b"]) <= float(s["t"]) * 0.5 + 0.4:
 				foot.set_point_weight_scale(c, 4.0)
 				low_wall_cells[c] = true
 		_solid_segment(cart, s["a"], s["b"], float(s["t"]) * 0.5, cart_inf)
-	for s in layout.cart_blockers:
+	for bi in range(maxi(sl.x, nw), mini(sl.y, nw + nb)):
+		var s: Dictionary = layout.cart_blockers[bi - nw]
 		_solid_segment(cart, s["a"], s["b"], 0.25, cart_inf)
-	for t in layout.trees:
+	for ti in range(maxi(sl.x, nw + nb), mini(sl.y, nw + nb + nt)):
+		var t: Dictionary = layout.trees[ti - nw - nb]
 		_solid_circle(foot, t["pos"], 0.45 + foot_inf)
 		_solid_circle(cart, t["pos"], 0.45 + cart_inf)
-	for so in layout.solids:
+	for si in range(maxi(sl.x, nw + nb + nt), sl.y):
+		var so: Dictionary = layout.solids[si - nw - nb - nt]
 		var ss: Vector3 = so["size"]
 		var r := Vector2(ss.x, ss.z).length() * 0.5
 		_solid_circle(foot, so["pos"], r + foot_inf * 0.5)
 		_solid_circle(cart, so["pos"], r + cart_inf)
 
 
-func _r_rocks() -> void:
+func _r_rocks(_part: int, _parts: int) -> void:
 	for rk in layout.rocks:
 		var rp: Vector3 = rk["pos"]
 		var rs: Vector3 = rk["size"]
@@ -206,8 +244,10 @@ func _r_rocks() -> void:
 		_solid_circle(cart, lp, 0.2 + CART_INF)
 
 
-func _r_waters() -> void:
-	for w in layout.waters:
+func _r_waters(part: int, parts: int) -> void:
+	var sl := _slice(layout.waters.size(), part, parts)
+	for wi in range(sl.x, sl.y):
+		var w: Dictionary = layout.waters[wi]
 		var c2: Vector2 = w["center"]
 		var ext := 16
 		for cell in _cells_in_rect(Rect2(c2 - Vector2(ext, ext), Vector2(ext, ext) * 2.0)):
@@ -218,7 +258,7 @@ func _r_waters() -> void:
 				cart.set_point_solid(cell, true)
 
 
-func _r_edges() -> void:
+func _r_edges(_part: int, _parts: int) -> void:
 	# docks / ledge platforms are walkable over the pit
 	for p in layout.platforms:
 		var pc: Vector3 = p["center"]
