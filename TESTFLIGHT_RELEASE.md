@@ -26,42 +26,60 @@ No new permission is requested.
 
 ## Current release state
 
-**State: source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **1.4 (4)**.
+**State: source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **1.5 (5)**.
 
-It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, and nothing was submitted for App Store review.
+It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, nothing was submitted for App Store review, and no purchase of any kind was made.
 
 | | |
 |---|---|
-| Build | `com.idlery.ultimatetrifecta` **1.4 (4)**. App Store Connect build ID `71dd2161-3ae3-406e-a5a8-e56c68a5750b`. |
-| Build number | **4**: the lane read the highest existing build (1.3 (3)) and added one. |
-| Source | Commit `0a41d70`: all V5 work (branding, type and motion, home/party/wardrobe, match loading, campus, map/HUD/results, character motion). Later commits change only documentation and media. |
-| Uploaded | 2026-10-02 16:18:29 UTC, by GitHub Actions run #62 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37031634671) with `upload=true`. |
+| Build | `com.idlery.ultimatetrifecta` **1.5 (5)**. App Store Connect build ID `3d9ab76f-8a83-4613-ba72-f533af4ae674`. |
+| Build number | **5**: the lane read the highest existing build (1.4 (4)) and added one. Status run #75 had shown builds 1–4 and no 1.5 beforehand. |
+| Source | Commit `434fcd4`: all V6 work (the stall, loading and scrolling fixes; dorms; characters; Locker, Shop, Season 1 and StoreKit, prepared; party room, chat and moderation; rankings; lobby music). Later commits change only documentation. |
+| Uploaded | 2026-10-03 17:08:11 UTC, by GitHub Actions run #80 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37138538266) with `upload=true`. The headless tests gate the build: **348 tests, 87,672 checks, 0 failures**. |
 | Apple's processing | `VALID`. The build is `INTERNAL_ONLY` and declares no non-exempt encryption. |
-| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. What to Test is set from `docs/testflight/what_to_test.txt` (1404 characters, en-US). |
+| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. What to Test is set from `docs/testflight/what_to_test.txt` (1674 characters, en-US). |
 | Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which receives every build. The lane added no one. TestFlight's automatic notification is on. |
-| Confirmed by | Apple's API, read by run #62 at 16:36 UTC. |
+| Confirmed by | Apple's API, read by run #80 at 17:23 UTC. |
 
 Earlier builds, all still `VALID` and internal-only:
-- **1.3 (3)** (`0e2a48cf-…`, run #52, commit `6677eb2`): V4 with the loading animation.
-- **1.3 (2)** (`c277c020-…`, run #50, commit `4e828da`): V4 without the loading animation.
-- **1.2 (1)** (`16d704eb-…`, run #32, commit `e39c98c`): V3.
+- **1.4 (4)** (`71dd2161-…`, run #62, commit `0a41d70`): V5.
+- **1.3 (3)** and **1.3 (2)**: V4.
+- **1.2 (1)**: V3.
 
-What the signed archive contains (run #62's build facts):
-- **Binary:** arm64, app 285 MB. **Toolchain:** Xcode 26.6 (17F113), iOS SDK 26.5. MinimumOSVersion 17.0; iPhone and iPad; landscape left and right.
+What the signed archive contains (run #80's build facts):
+- **Binary:** arm64, app 296 MB. **Toolchain:** Xcode 26.6 (17F113), iOS SDK 26.5. MinimumOSVersion 17.0; iPhone and iPad; landscape left and right.
 - **Plist:** `ITSAppUsesNonExemptEncryption` false; the Game Center friends purpose string.
-- **Frameworks:** `GodotApplePluginsGameCenter`, `SwiftGodotRuntime` and `UTShare` are embedded; UTShare is arm64.
-- **Entitlements and privacy:** the Game Center entitlement, and `PrivacyInfo.xcprivacy`.
-- **Launch and branding audit (V5): PASS.** One launch storyboard, on the startup navy; both launch images 2048², opaque, navy corners, with the Idlery teal mark; 0 "powered by" strings; the only text files naming Idlery are build plists carrying the bundle ID.
-- **Simulator:** the cold launch was still running with no crash report and 0 script errors. On this x86_64 OpenGL ES Simulator path the bot-driven round was still preparing at about 1 fps when the window closed (TEST_REPORT V5.7).
+- **Frameworks:** `GodotApplePluginsGameCenter`, `GodotApplePluginsStoreKit` (new), `SwiftGodotRuntime` and `UTShare` are embedded; UTShare is arm64.
+  - Xcode warned that the StoreKit framework has no dSYM, so symbol upload failed for that framework only. Crash reports inside it would not be symbolicated; the upload itself succeeded.
+- **Entitlements and privacy:** the Game Center entitlement, and `PrivacyInfo.xcprivacy`. The service is off, so no service data types are declared.
+- **Launch and branding audit: PASS.**
+  - One launch storyboard, on **black**.
+  - Both launch images are 2048², opaque, with black corners and the Idlery teal mark.
+  - 0 "powered by" strings.
+- **Shader baking:** the baking export was used (exit code 0); the game data carries **40 `shader_cache` entries** for Metal.
+- **Simulator:**
+  - The cold launch was still running, with no crash report and 0 script errors.
+  - On this x86_64 OpenGL ES Simulator path the bot-driven round was still preparing when the window closed, as in V5 (TEST_REPORT V5.7/V6.7). This Simulator is not a phone.
 
 ## The owner action that remains
 
 The one-time setup is done: the API key and the four repository secrets, the app record, and an internal group. Nothing needs to be set up again.
 
 What only you can do now:
-1. **Install 1.4 (4)** from the TestFlight app on your iPhone. If it doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing).
-2. **Play it and check the items in What to Test.** For a measurement, turn on **Settings › Diagnostics (beta)**, play a few rounds, then **Share summary** (no names, codes or Game Center IDs). The device checks are listed in `TEST_REPORT.md` V5.9.
-3. **Optional:** deploy the game service (`service/README.md`) if you want verified profiles and moderated names. Then fill in `game/config/service.cfg` and run the workflow again with **upload**.
+1. **Install 1.5 (5)** from the TestFlight app on your iPhone. If it doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing).
+2. **Play it and check the items in What to Test.**
+   - Most important: whether play still turns glitchy after a while, and whether loading still freezes.
+   - For a measurement, turn on **Settings › Diagnostics (beta)**, play a few rounds, then **Share summary** (no names, codes or Game Center IDs). Its new sections show catch-up spirals, draw-time pipeline compilation and counts at each round start.
+   - The device checks are listed in `TEST_REPORT.md` V6.8.
+3. **Purchases, when you want them live** (`docs/COMMERCE_SETUP.md`):
+   1. Accept the Paid Applications agreement and complete tax and banking (account holder).
+   2. Run the workflow with **iap = create**.
+   3. Set each product's price and review screenshot in App Store Connect.
+   4. Deploy the sandbox service.
+   5. Fill in `game/config/service.cfg`.
+   6. Upload again.
+   7. Test with a Sandbox account.
+4. **Typed chat, verified names and reports** need the same service deployment. Also choose whether to declare chat as "Emails or Text Messages" (`docs/APP_STORE.md`).
 
 For later uploads, run "Build, test and ship (iOS)" with **upload** ticked. The build number follows the highest one in App Store Connect, and the build goes to internal testing only. **asc_status** reads the current state without building anything.
 

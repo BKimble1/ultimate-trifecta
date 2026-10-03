@@ -111,6 +111,53 @@ Software-renderer times, not a phone's; the mechanism is the same on Metal.
 - **The party room's new navigation row** pushed Start off screen; the row now measures itself. Fixed by the social workstream.
 - **Shader baking:** run #63 shipped 0 baked shaders because the editor crashed while quitting after a finished bake. The script now judges the export by its output; runs #66, #67 and #78 shipped 40 entries.
 
+## V6.7 iOS build (CI iOS) and TestFlight
+
+**Signed and uploaded:** `com.idlery.ultimatetrifecta` **1.5 (5)** from `434fcd4`, the final V6 app code (later commits change only documentation).
+- **Uploaded:** to App Store Connect at 17:08 UTC on 3 October 2026, by upload run #80 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37138538266).
+- **Apple's processing:** `VALID`. The build is `INTERNAL_ONLY` and **available to internal testers** (`IN_BETA_TESTING`) in the owner's existing internal group, which receives every build.
+- **What to Test:** set by the lane (1,674 characters).
+- **Not done:** no tester was added, no external testing was requested, nothing was submitted for review, and **no purchase was made**. Details: `TESTFLIGHT_RELEASE.md`.
+
+| Run | Commit | What happened |
+|---|---|---|
+| #63 | `c3daf59` | First V6 push build. All stages passed. The black launch audit passed. **The shader-baking export crashed while quitting, so 0 baked shaders shipped** (V6.6). |
+| #66, #67 | `662294f`, `139e361` | All stages passed. The baking export was used: 40 `shader_cache` entries. Simulator: the new loading screen with Cancel and "Preparing campus…" renders, and the round was still loading when the window closed (~1 fps). |
+| #75 | `8cdddc8` | `asc_status` (read only): builds 1–4 exist (latest 1.4 (4), `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING`); no 1.5; all five catalogue in-app purchases are `MISSING`. |
+| #78 | `8c93b30` | Push build with art, commerce, dorms and music merged. All stages passed. 1.5 (5) stamped; StoreKit embedded; the bake exited 250 (crash while quitting) but carried 40 entries and was kept (V6.6); Simulator 0 script errors. |
+| #80 | `434fcd4` | `upload=true`. Tests: **348 tests, 87,672 checks, 0 failures**. Export, launch audit PASS (black), signed archive and upload of **1.5 (5)**, Simulator run, build facts, then Apple's processing: `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING`, What to Test set. Build facts below. |
+
+**Run #80's build facts:**
+- Xcode 26.6 (17F113), iOS SDK 26.5, arm64; 296 MB app; MinimumOSVersion 17.0; iPhone and iPad; landscape left and right; `ITSAppUsesNonExemptEncryption` false.
+- Frameworks: Game Center, **StoreKit** (new), SwiftGodotRuntime and UTShare (arm64) are embedded. Xcode warned that the StoreKit framework has no dSYM, so its symbols were not uploaded.
+- 40 baked Metal shaders.
+
+**The Simulator, read honestly.** The CI Simulator is an x86_64 runner on the OpenGL ES fallback, not a phone's Metal path. In run #80:
+- The cold launch's frames show the Idlery Games lockup on black.
+- The app was still running with no crash report and 0 script errors.
+- The bot-driven round was still preparing when the capture window closed, as in V5 (status at t = 5 s of game time, phase LOADING, about 1 fps).
+
+The adaptive preparation budget (V6.3) did not change that in CI; frames there take seconds. A desktop render of the same flow goes from loading into the round inside the dorm (`docs/media/v6/clips/v6_loading_into_dorm.mp4`).
+
+## V6.8 Not verified (exact remaining checks)
+
+**On an iPhone (none was available):**
+- frame rate, pacing and heat over 20–30 minutes;
+- whether play still turns glitchy (Diagnostics' Simulation and Pipelines sections answer this);
+- loading from a cold start into a dorm without the loop pausing;
+- finger swipes on Locker, Shop, Season Pass and results;
+- the party room on 2–8 devices with Game Center;
+- keyboard and notch on the name and chat sheets;
+- the lobby music loop on device speakers.
+
+**Shader baking on Metal:** whether the 40 baked entries are used on a device, and how many draw-time pipelines remain (Diagnostics).
+
+**Purchases:** StoreKit purchase sheet, delivery, restore, pending/Ask to Buy, refunds, and sandbox/production behaviour. Nothing can be checked until the products exist, the service is deployed and a Sandbox account is used (`docs/COMMERCE_SETUP.md` §4).
+
+**The service:** wallet, Season claims, verified rewards, typed chat, the moderation queue and server-side names. Its code passes 42 tests locally and has not been deployed.
+
+**Remaining object growth:** about 41 small objects per full Home → Locker → Shop → Season Pass tour. Bounded by test; source not isolated.
+
 # V5 (version 1.4)
 
 V5 answers the owner's feedback on 1.3 and adds the owner's new branding
