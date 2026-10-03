@@ -453,6 +453,14 @@ a campus layout to pick coins and check pads: `CampusLayout.round_data()`
 (waters, spawns, coin spots) takes 0.14 ms the first time, where a full
 `CampusLayout.new()` took 165–236 ms here, on the frame Start is pressed.
 
+## Media
+
+[`docs/media/v6/dorms/`](../media/v6/dorms/README.md): real practice rounds
+in each dorm (reveal and countdown inside, the first steps out through a
+door, a coin on the way, the full map with tonight's home and its doors, the
+way back, the doorway, home), every dorm's exterior and common room, matched
+V5/V6 views of the dorm districts, and Standard/Battery Saver pairs.
+
 ## Tests
 
 New suites (all in `tools/run_tests.sh`):
@@ -527,12 +535,16 @@ combination from inside the dorm, three from each other dorm), `test_net`
   counters; frame time, GPU cost and heat on an iPhone are unmeasured.
 - **Bot balance, not people.** The contact and first-objective numbers are
   one seed per dorm × combination with BotBrain on both sides; outcomes vary
-  by seed. They show the dorms behave alike (first contact medians within a
-  second or two of each other) and catch outliers; real playtests should
-  confirm them.
-- **The Night Watch spawn is the shed for every dorm.** Contact timings came
-  out comparable, so per-dorm watch spawns weren't needed; the yards make the
-  last stretch to Lanternfield and Moonpenny on foot, as at Puddlesworth.
+  by seed. They show the dorms behave alike (route, trip and first-stamp
+  medians within a few seconds; first contact within 6 s) and catch
+  outliers; real playtests should confirm them.
+- **The Night Watch spawn is the shed for every dorm.** First contact comes
+  about 6 s later when Lanternfield is home (it is the furthest dorm from
+  the shed); first stamps, trips and the watch's first water are the same.
+  Per-dorm watch spawns were not added; if playtests find Lanternfield
+  rounds easier, moving the watch's spawn per dorm is the lever (the round
+  configuration already carries a spawn mapping). The yards make the last
+  stretch to Lanternfield and Moonpenny on foot, as at Puddlesworth.
 - **Doorway glow and beacon are presentation.** The finish is the host's
   threshold test; a guest's prediction shows the runner stepping in a few
   ticks before the host's FINISH event arrives.
