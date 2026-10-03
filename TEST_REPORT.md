@@ -135,9 +135,12 @@ Software-renderer times, not a phone's; the mechanism is the same on Metal.
 **The Simulator, read honestly.** The CI Simulator is an x86_64 runner on the OpenGL ES fallback, not a phone's Metal path. In run #80:
 - The cold launch's frames show the Idlery Games lockup on black.
 - The app was still running with no crash report and 0 script errors.
-- The bot-driven round was still preparing when the capture window closed, as in V5 (status at t = 5 s of game time, phase LOADING, about 1 fps).
+- **For the first time since V4, the bot-driven round finished preparing on that Simulator.**
+  - The session's status line reads phase `REVEAL` (2) at t = 5 s of game time; runs #62 (V5) and #67 read `LOADING` (1).
+  - The last screenshots show the loading screen at **"Starting…"**: prepared, and drawing the start view's warm frames under it. Each 3D frame takes seconds on that path, so the window closed before the reveal appeared.
+  - Earlier runs never left "Placing players…".
 
-The adaptive preparation budget (V6.3) did not change that in CI; frames there take seconds. A desktop render of the same flow goes from loading into the round inside the dorm (`docs/media/v6/clips/v6_loading_into_dorm.mp4`).
+This fits D7 (no campus drawn behind the screen during preparation), D8 (nav grid in slices) and the adaptive budget. It is still not phone evidence. A desktop render of the same flow goes from loading into the round inside the dorm (`docs/media/v6/clips/v6_loading_into_dorm.mp4`).
 
 ## V6.8 Not verified (exact remaining checks)
 

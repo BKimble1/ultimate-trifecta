@@ -59,7 +59,8 @@ What the signed archive contains (run #80's build facts):
 - **Shader baking:** the baking export was used (exit code 0); the game data carries **40 `shader_cache` entries** for Metal.
 - **Simulator:**
   - The cold launch was still running, with no crash report and 0 script errors.
-  - On this x86_64 OpenGL ES Simulator path the bot-driven round was still preparing when the window closed, as in V5 (TEST_REPORT V5.7/V6.7). This Simulator is not a phone.
+  - On this x86_64 OpenGL ES Simulator path the bot-driven round **finished preparing** for the first time since V4: status phase `REVEAL`, screen at "Starting…".
+  - The window closed while the slow 3D warm frames were drawing, before the reveal (TEST_REPORT V6.7). This Simulator is not a phone.
 
 ## The owner action that remains
 
