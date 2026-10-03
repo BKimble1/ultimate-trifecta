@@ -213,8 +213,11 @@ The lobby emote picker lists a Season 1 emote only once the player owns it
 ## Thumbnails and preview
 
 The Locker/Shop cards and the preview use the same `Portraits` renderer and
-`CharacterView` as before; the framings (`body` outfits, `head` hats,
-`feet` shoes) fit every new item without change. `src/dev/thumb_sheet.tscn`
+`CharacterView` as before. The `head` framing cut off tall hats (V5's party
+hat and crown too, and the new pompom and owl ears), so `Portraits.FRAMINGS`
+has a new `hat` framing and the wardrobe's `THUMB_FRAMING` uses it for
+hats (the Shop/Locker should request hats with `"hat"`); `body` (outfits)
+and `feet` (shoes) fit every new item unchanged. `src/dev/thumb_sheet.tscn`
 renders the real cached thumbnails through `Portraits` for every outfit,
 hat and shoe (`thumbnails.jpg`). The interactive preview is the dorm
 stage's character; the outfit sheet shows each new outfit in idle, run,

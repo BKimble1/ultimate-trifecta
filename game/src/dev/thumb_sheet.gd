@@ -6,7 +6,7 @@ extends Node
 ##   tools/gd.sh --path game res://src/dev/thumb_sheet.tscn -- --out=FILE.png [--fields=outfit,hat,shoes] [--keys=a,b]
 ## Needs a display (xvfb-run on Linux): Portraits never renders headless.
 
-const FRAMING := {"outfit": "body", "hat": "head", "shoes": "feet"}
+const FRAMING := {"outfit": "body", "hat": "hat", "shoes": "feet"}
 ## the look each item is shown on (the default runner, no hat for outfits,
 ## so an outfit's own headwear shows as it does on a bare-headed runner)
 const BASE := {"hat": "none"}
