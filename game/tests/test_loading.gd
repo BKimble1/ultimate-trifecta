@@ -290,7 +290,11 @@ func test_practice_can_be_cancelled_mid_preparation_and_the_next_round_works() -
 		t.check(not (App.screen is LoadingScreen) and not is_instance_valid(ls), "back to the title")
 		await _frames_until(func() -> bool: return App._orphan_tasks.is_empty() and App._orphan_loads.is_empty())
 		t.check(App._orphan_tasks.is_empty(), "the build's background jobs were collected")
-		await t.get_tree().process_frame
+		# the title's fade, greeting wave and music cross-fade finish, and
+		# deferred frees happen, before counting (counting mid-transition
+		# saw +17/+18 objects that were about to go)
+		for k in 240:
+			await t.get_tree().process_frame
 		counts.append([Performance.get_monitor(Performance.OBJECT_NODE_COUNT), Performance.get_monitor(Performance.OBJECT_COUNT), Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)])
 	print("[load] nodes/objects/orphans after each cancel: %s" % [counts])
 	t.eq(int(counts[2][0]), int(counts[1][0]), "cancelling again leaves no scene nodes behind")
