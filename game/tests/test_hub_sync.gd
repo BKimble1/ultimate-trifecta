@@ -164,6 +164,28 @@ func test_a_hitching_host_never_takes_poses_for_a_flood() -> void:
 			ok += 1
 	t.eq(ok, 60, "six seconds of poses in one window are within the stream budget")
 	t.check(rig.host.roster[c0.local_slot] != null, "and the guest stays in the party")
+	# a host far slower than real time (software rendering on a busy machine:
+	# one session second takes 20 real seconds) gets 20 s of everything
+	var r: Dictionary = rig.host._rate[peer]
+	r["t0"] = Time.get_ticks_msec() - 20000
+	r["input"] = 0
+	r["other"] = 0
+	ok = 0
+	for i in 200:
+		if rig.host._rate_ok(peer, SocialProto.HUB_POSE):
+			ok += 1
+	for i in 40:
+		if rig.host._rate_ok(peer, SocialProto.CHAT_SEND):
+			ok += 1
+	t.eq(ok, 240, "twenty real seconds of poses and chat in one slow window are no flood")
+	# a real flood is still a flood
+	r["t0"] = Time.get_ticks_msec()
+	r["other"] = 0
+	ok = 0
+	for i in 200:
+		if rig.host._rate_ok(peer, SocialProto.CHAT_SEND):
+			ok += 1
+	t.check(ok <= 26, "a burst of 200 messages in a real second is refused past the budget (%d accepted)" % ok)
 	rig.teardown()
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame

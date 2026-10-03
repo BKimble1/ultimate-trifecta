@@ -287,13 +287,15 @@ func _on_packet(peer: int, data: PackedByteArray) -> void:
 ## keeps flooding for three seconds is removed.
 func _rate_ok(peer: int, type: int) -> bool:
 	var now := int(_clock)   # session time (physics frames), not the wall clock
-	var r: Dictionary = _rate.get(peer, {"w": now, "input": 0, "other": 0, "strikes": 0, "struck": false})
+	var wall := Time.get_ticks_msec()
+	var r: Dictionary = _rate.get(peer, {"w": now, "t0": wall, "input": 0, "other": 0, "strikes": 0, "struck": false})
 	if int(r["w"]) != now:
 		if bool(r["struck"]):
 			r["strikes"] = int(r["strikes"]) + 1
 		else:
 			r["strikes"] = 0
 		r["w"] = now
+		r["t0"] = wall
 		r["input"] = 0
 		r["other"] = 0
 		r["struck"] = false
@@ -302,7 +304,11 @@ func _rate_ok(peer: int, type: int) -> bool:
 	# never mistakes them for a flood
 	var key := "input" if type == Protocol.M.INPUT or type == Protocol.M.PONG or type == Protocol.M.PING or type == SocialProto.HUB_POSE else "other"
 	r[key] = int(r[key]) + 1
-	var ok := int(r[key]) <= (RATE_INPUT if key == "input" else RATE_OTHER)
+	# (V6) a host running slower than real time (a session second spanning
+	# several real seconds) allows those seconds' packets: what queued up
+	# while it was busy is not a flood
+	var span := maxf(1.0, float(wall - int(r.get("t0", wall))) / 1000.0)
+	var ok := int(r[key]) <= int(float(RATE_INPUT if key == "input" else RATE_OTHER) * span)
 	if not ok:
 		r["struck"] = true
 	_rate[peer] = r
