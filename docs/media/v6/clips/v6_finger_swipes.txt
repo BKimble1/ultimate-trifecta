@@ -1,0 +1,10 @@
+REEL locker: swipe up, starting on a card
+REEL locker: swipe back down
+REEL locker selection unchanged by swipes: true
+REEL locker: tap a card (selects)
+REEL shop: swipe up on an outfit card (no detail opens, nothing is bought)
+REEL shop: App Store purchase sheets opened by the swipes: 0
+REEL shop: tap a card (opens its detail)
+REEL season: swipe the track left, starting on a reward (nothing is claimed)
+REEL season: swipe back
+REEL-DONE frames=646
