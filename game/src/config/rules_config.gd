@@ -140,6 +140,9 @@ extends Resource
 @export var host_timeout_s: float = 6.0
 
 @export_group("Rewards")
+## V6: these values are lifetime level XP only (RulesLogic.lifetime_xp, local).
+## Coins and Season XP come from config/catalogue.json "economy" (Economy),
+## settled by the service; the old coins -> XP coupling is gone.
 @export var coins_participation: int = 20
 @export var coins_per_stamp: int = 5
 @export var coins_finish: int = 15

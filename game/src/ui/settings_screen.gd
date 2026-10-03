@@ -186,9 +186,9 @@ func _diag_live(live: Label) -> void:
 
 
 static func _privacy_text() -> String:
-	var t := "Settings, coins, unlocked items, level and stats are stored on this device. The game has no ads, tracking, chat or analytics. Online parties use Game Center for invitations and matchmaking."
+	var t := "Settings, level and stats are stored on this device. The game has no ads, tracking or analytics. Online parties use Game Center for invitations and matchmaking. App Store purchases are handled by Apple; the game never sees your payment details."
 	if Cloud.configured():
-		t += " When you play online, the Ultimate Trifecta service stores your player name, runner look, a Game Center-linked account ID, your block list and any reports you send, so parties and safety tools work. Delete Game Profile removes it."
+		t += " When you play online, the Ultimate Trifecta service stores your player name, runner look, a Game Center-linked account ID, your block list and any reports you send, so parties and safety tools work. It also keeps your Coins, purchases (App Store transaction IDs, never payment details), Season progress and rewarded rounds, so they're delivered once and restore on any device. Delete Game Profile removes it."
 	return t
 
 
@@ -291,10 +291,10 @@ func _blocked_sheet() -> void:
 
 
 func _confirm_delete() -> void:
-	var t := "Delete your game profile? This removes your player name, runner, coins, unlocked items, level, stats and block list from this device"
+	var t := "Delete your game profile? This removes your player name, runner, level, stats, block list, Coins and unlocked items from this device"
 	if Cloud.configured():
-		t += ", and deletes your online profile from the Ultimate Trifecta service (Game Center confirms it's you first)"
-	t += ". This can't be undone."
+		t += ", and deletes your online profile from the Ultimate Trifecta service (Game Center confirms it's you first): your Coins (earned and purchased), Coin-bought items, Season 1 progress, Premium access and claimed rewards are deleted with it and can't be restored"
+	t += ". Skins bought directly from the App Store stay with your Apple Account: Shop › Restore Purchases brings them back. This can't be undone."
 	dialog(t, [["Cancel", Callable()], ["Delete", _delete_profile]])
 
 
@@ -311,6 +311,7 @@ func _delete_profile() -> void:
 		App._close_session()
 	Save.data = Save.default_profile()
 	Save.save_now()
+	Wallet.reset_local()
 	App.sync_stage_local()
 	App.goto_title("Game profile deleted.")
 

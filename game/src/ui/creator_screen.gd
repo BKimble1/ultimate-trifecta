@@ -1,22 +1,29 @@
 class_name CreatorScreen
 extends Screen
-## The wardrobe (V5; "Create Your Runner" on first launch).
+## The Locker (V6; "Create Your Runner" on first launch).  Migrated from the
+## V5 wardrobe: the same runner, categories and portrait cards, but it shows
+## only what the player owns (free base options, pre-V6 unlocks, everything
+## bought or earned on the account) and it never spends.  Buying moved to the
+## Shop; each category ends with a "View in Shop" / "Season Pass" link for
+## what isn't owned yet.
 ##
+##   top     the navigation bar (Play · Locker · Shop · Season Pass) and the
+##           Coins chip
 ##   left    the player's runner in the dorm (App.stage, "wardrobe"
 ##           framing, head to shoes): drag to turn, Idle / Run preview
 ##   right   a category strip (Outfit, Colors, Face, Hair, Hat, Shoes,
-##           Emotes) over portrait item cards: the item's picture on your
-##           runner, its name below in full (two lines when needed, never
-##           trimmed), and a state row: Equipped, Owned, or its price (with
-##           a lock when you can't afford it yet).  The draft's choice has a
+##           Emotes, Profile) over portrait item cards: the item's picture on
+##           your runner, its name below in full (two lines when needed,
+##           never trimmed), and Equipped / Owned.  The draft's choice has a
 ##           restrained teal edge and a check.  Colours are round swatches.
-##   bottom  what Apply will do, Undo, and the primary action, which always
-##           says why it is unavailable ("Wearing this", "Need 40 more coins")
+##           Profile holds name cards and badges (UI-only).
+##   bottom  what Save will do, Undo, and Save (never a price: nothing here
+##           costs anything)
 ##
-## The draft is only a preview until Apply (nothing is charged for trying).
-## Leaving with unapplied changes asks first.  Picking an item updates the
-## live runner at once, with a short hop.  Cards are updated in place; the
-## category's scroll position is kept per category.
+## The draft is only a preview until Save.  Leaving with unsaved changes asks
+## first (also when switching tabs).  Picking an item updates the live runner
+## at once, with a short hop.  Cards are updated in place; the category's
+## scroll position is kept per category.
 ##
 ## Pictures: rendered off-screen one at a time through the shared portrait
 ## atlas (no live 3D per card, no GPU readback), cached by look, requested
@@ -32,15 +39,18 @@ const TABS := [
 	["hat", "Hat", ["hat"]],
 	["shoes", "Shoes", ["shoes"]],
 	["move", "Emotes", ["emote"]],
+	["profile", "Profile", ["card", "badge"]],
 ]
 const FIELD_TITLES := {
 	"outfit": "Outfit", "pattern": "Pattern", "color": "Main color", "trim": "Trim", "skin": "Skin tone",
 	"face": "Eyes", "brows": "Brows", "marks": "Cheeks", "hair": "Hairstyle", "hair_color": "Hair color",
 	"hat": "Hat", "shoes": "Shoes", "emote": "Your move · plays when you ready up",
+	"card": "Name card · shown with your name", "badge": "Badge",
 }
+const PROFILE_FIELDS := ["card", "badge"]
 const SWATCH_FIELDS := ["color", "trim", "skin", "hair_color"]
 ## Picture framing for an item's card ("" = an icon card).
-const THUMB_FRAMING := {"outfit": "body", "pattern": "body", "hair": "head", "hat": "head", "shoes": "feet",
+const THUMB_FRAMING := {"outfit": "body", "pattern": "body", "hair": "head", "hat": "hat", "shoes": "feet",
 	"face": "head", "brows": "head", "marks": "head"}
 const CARD_W := 158.0
 const CARD_GAP := 12.0
@@ -53,6 +63,10 @@ var back_action_override: Callable
 
 var draft: Dictionary = {}
 var saved: Dictionary = {}
+## name card + badge (UI-only profile cosmetics): draft and saved
+var draft_style: Dictionary = {}
+var saved_style: Dictionary = {}
+var discover: Array[Button] = []
 var tab := "outfit"
 var tab_btns: Dictionary = {}
 var body: VBoxContainer
@@ -64,7 +78,7 @@ var undo_btn: Button
 var preview_run := false
 var run_btn: Button
 var panel: PanelContainer
-var cards: Array[ItemCard] = []
+var cards: Array = []            # ItemCard / ProfileCard
 var swatches: Array[Swatch] = []
 var _notes: Dictionary = {}       # field -> Label (hair hidden / pattern note)
 var _picked: Dictionary = {}      # swatch field -> Label naming the chosen colour
@@ -79,6 +93,8 @@ var _stage_area: Control
 func build() -> void:
 	saved = Cosmetics.sanitize(Save.data["cosmetic"])
 	draft = saved.duplicate()
+	saved_style = Save.profile_style()
+	draft_style = saved_style.duplicate()
 	if App.stage:
 		App.stage.set_mode("wardrobe")
 		App.sync_stage_local()
@@ -94,15 +110,16 @@ func build() -> void:
 		back.accessibility_name = "Back"
 		back.pressed.connect(_go_back)
 		top.add_child(back)
-	var title := UIKit.styled("Create Your Runner" if first_run else "Wardrobe", "title")
-	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	top.add_child(title)
-	top.add_child(UIKit.spacer_h())
-	var coin_chip := UIKit.scrim(999, 18, 0.7)
-	coin_chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	coins_lbl = UIKit.styled("", "num", UIKit.AMBER)
-	coin_chip.add_child(coins_lbl)
-	top.add_child(coin_chip)
+		var nav := NavShell.make("locker")
+		nav.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		top.add_child(nav)
+		top.add_child(WalletChip.new())
+	else:
+		var title := UIKit.styled("Create Your Runner", "title")
+		title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		top.add_child(title)
+		top.add_child(UIKit.spacer_h())
+	coins_lbl = null
 
 	var mid := UIKit.hbox(16)
 	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -165,7 +182,7 @@ func build() -> void:
 	undo_btn = UIKit.quiet("Undo" if not first_run else "Surprise me", Vector2(190, 84))
 	undo_btn.pressed.connect(_on_cancel)
 	bottom.add_child(undo_btn)
-	apply_btn = UIKit.primary("Apply" if not first_run else "That's me!", Vector2(320, 90), 28)
+	apply_btn = UIKit.primary("Save look" if not first_run else "That's me!", Vector2(320, 90), 28)
 	apply_btn.pressed.connect(_on_apply)
 	bottom.add_child(apply_btn)
 	focus_first(tab_btns[tab])
@@ -332,6 +349,7 @@ func _build_tab() -> void:
 		c.queue_free()
 	cards.clear()
 	swatches.clear()
+	discover.clear()
 	_notes.clear()
 	var fields: Array = []
 	for t in TABS:
@@ -355,6 +373,8 @@ func _build_tab() -> void:
 			hdr.free()
 		if f in SWATCH_FIELDS:
 			body.add_child(_swatches(f))
+		elif f in PROFILE_FIELDS:
+			body.add_child(_profile_cards(f, cols))
 		else:
 			body.add_child(_cards(f, cols))
 		if f == "hair" or f == "pattern":
@@ -389,33 +409,144 @@ func _columns() -> int:
 	return clampi(int(floor((w + CARD_GAP) / (CARD_W + CARD_GAP))), 3, 6)
 
 
+## The keys of a field shown in the Locker: everything owned, plus the
+## saved choice (always wearable, even if ownership changed meanwhile).
+func shown_keys(f: String) -> Array:
+	return Cosmetics.keys_of(f).filter(func(k: String) -> bool: return Wallet.owns(f, k) or String(saved.get(f, "")) == k)
+
+
+## Unowned items of a field, by where they come from: {shop: n, season: n}.
+func not_owned(f: String) -> Dictionary:
+	var out := {"shop": 0, "season": 0}
+	var keys: Array = Cosmetics.keys_of(f) if not f in PROFILE_FIELDS else \
+		Catalogue.all_items().filter(func(it: Dictionary) -> bool: return String(it["id"]).begins_with(f + ":")).map(func(it: Dictionary) -> String: return String(Catalogue.split(String(it["id"]))[1]))
+	for k in keys:
+		var id := Catalogue.id_for(f, String(k))
+		if Wallet.owns_id(id) or (not f in PROFILE_FIELDS and Wallet.owns(f, String(k))):
+			continue
+		match Catalogue.source_of(id):
+			"shop", "apple":
+				if Catalogue.has_art(id):
+					out["shop"] += 1
+			"season":
+				if Catalogue.has_art(id):
+					out["season"] += 1
+	return out
+
+
 func _cards(f: String, cols: int) -> GridContainer:
 	var g := GridContainer.new()
 	g.columns = cols
 	g.add_theme_constant_override("h_separation", int(CARD_GAP))
 	g.add_theme_constant_override("v_separation", int(CARD_GAP))
 	var w := (panel.custom_minimum_size.x - 40.0 - CARD_GAP * float(cols - 1)) / float(cols)
-	for k in Cosmetics.keys_of(f):
+	for k in shown_keys(f):
 		var card := ItemCard.new()
 		card.setup(self, f, String(k), maxf(CARD_W, w), String(THUMB_FRAMING.get(f, "")))
 		card.pressed.connect(_pick.bind(f, String(k)))
 		g.add_child(card)
 		cards.append(card)
+	if not first_run:
+		var more := _discover_card(f, maxf(CARD_W, w))
+		if more:
+			g.add_child(more)
 	return g
+
+
+## The last card of a category: what isn't owned yet and where it comes from
+## ("4 more in the Shop" → the Shop; "2 in the Season Pass" → the pass).
+func _discover_card(f: String, w: float) -> Button:
+	var n := not_owned(f)
+	if int(n["shop"]) == 0 and int(n["season"]) == 0:
+		return null
+	var to_shop := int(n["shop"]) > 0
+	var b := UIKit.card_button(Vector2(w, w - 24.0 + 116.0), Color(UIKit.NAVY, 0.55))
+	b.name = "Discover_" + f
+	var v := UIKit.vbox(8)
+	v.set_anchors_preset(Control.PRESET_FULL_RECT)
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ic := CommerceArt.Pic.new("glyph", "bag" if to_shop else "pass", UIKit.AMBER, 54)
+	ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	v.add_child(ic)
+	var txt := ("%d more in the Shop" % int(n["shop"])) if to_shop else ("%d in the Season Pass" % int(n["season"]))
+	var l := UIKit.styled(txt, "label", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size.x = w - 24.0
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(l)
+	var link := UIKit.styled("View in Shop ›" if to_shop else "Open Season Pass ›", "caption", UIKit.TEAL, HORIZONTAL_ALIGNMENT_CENTER)
+	link.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(link)
+	UIKit.face_of(b).add_child(v)
+	b.accessibility_name = "%s. %s" % [txt, "View in Shop" if to_shop else "Open Season Pass"]
+	b.pressed.connect(func() -> void:
+		if to_shop:
+			ShopScreen.focus_section = "outfits" if f == "outfit" else "accessories"
+			NavShell.go("shop")
+		else:
+			NavShell.go("pass"))
+	discover.append(b)
+	return b
 
 
 func _swatches(f: String) -> HFlowContainer:
 	var h := HFlowContainer.new()
 	h.add_theme_constant_override("h_separation", 12)
 	h.add_theme_constant_override("v_separation", 12)
-	for k in Cosmetics.keys_of(f):
+	for k in shown_keys(f):
 		var sw := Swatch.new()
 		sw.field = f
 		sw.key = String(k)
 		sw.pressed.connect(_pick.bind(f, String(k)))
 		h.add_child(sw)
 		swatches.append(sw)
+	if not first_run and int(not_owned(f)["shop"]) > 0:
+		var more := UIKit.quiet("+%d in Shop" % int(not_owned(f)["shop"]), Vector2(0, maxf(UIKit.touch_min(), 72.0)), UIKit.T_CAPTION)
+		more.name = "Discover_" + f
+		more.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		more.accessibility_name = "%d more %s in the Shop. View in Shop" % [int(not_owned(f)["shop"]), String(FIELD_TITLES[f]).to_lower()]
+		more.pressed.connect(func() -> void:
+			ShopScreen.focus_section = "accessories"
+			NavShell.go("shop"))
+		h.add_child(more)
+		discover.append(more)
 	return h
+
+
+## Name cards and badges: "None" plus every owned one, previewed with the
+## player's own name.
+func _profile_cards(f: String, cols: int) -> GridContainer:
+	var g := GridContainer.new()
+	g.columns = maxi(2, cols - 1) if f == "card" else cols
+	g.add_theme_constant_override("h_separation", int(CARD_GAP))
+	g.add_theme_constant_override("v_separation", int(CARD_GAP))
+	var inner := panel.custom_minimum_size.x - 40.0
+	var w := (inner - CARD_GAP * float(g.columns - 1)) / float(g.columns)
+	var ids: Array = [""]
+	for it in Catalogue.all_items():
+		var id := String(it["id"])
+		if id.begins_with(f + ":") and Wallet.owns_id(id):
+			ids.append(id)
+	for id in ids:
+		var pc := ProfileCard.new()
+		pc.setup(self, f, String(id), w)
+		pc.pressed.connect(_pick_style.bind(f, String(id)))
+		g.add_child(pc)
+		cards.append(pc)
+	if not first_run:
+		var more := _discover_card(f, w)
+		if more:
+			g.add_child(more)
+	return g
+
+
+func _pick_style(f: String, id: String) -> void:
+	if String(draft_style.get(f, "")) == id:
+		return
+	draft_style[f] = id
+	Sfx.play("pop")
+	_refresh()
 
 
 ## Everything that depends on the draft: card states and pictures, swatch
@@ -464,21 +595,23 @@ func _paint_swatch(sw: Swatch) -> void:
 
 
 ## An item's state for its card: {text, col, owned, equipped, locked, cost}.
+## The Locker shows only owned items, so there is never a price here.
 func state_of(f: String, k: String) -> Dictionary:
-	var owned := Save.owns(f, k)
-	var cost := Cosmetics.cost(f, k)
-	var equipped: bool = String(saved[f]) == k
-	var afford := int(Save.data["coins"]) >= cost
-	var out := {"owned": owned, "equipped": equipped, "cost": cost, "locked": not owned and not afford}
+	var equipped: bool
+	var owned: bool
+	if f in PROFILE_FIELDS:
+		equipped = String(saved_style.get(f, "")) == k
+		owned = k == "" or Wallet.owns_id(k)
+	else:
+		equipped = String(saved[f]) == k
+		owned = Wallet.owns(f, k)
+	var out := {"owned": owned, "equipped": equipped, "cost": 0, "locked": false}
 	if equipped:
 		out["text"] = "Equipped"
 		out["col"] = UIKit.TEAL
-	elif owned:
-		out["text"] = "Owned"
-		out["col"] = UIKit.IVORY_MUTED
 	else:
-		out["text"] = "%d coins" % cost
-		out["col"] = UIKit.AMBER if afford else UIKit.IVORY_MUTED
+		out["text"] = "Owned" if owned else "Not owned"
+		out["col"] = UIKit.IVORY_MUTED
 	return out
 
 
@@ -500,46 +633,43 @@ func _pick(f: String, k: String) -> void:
 	_refresh()
 
 
+func changed() -> bool:
+	return draft != saved or draft_style != saved_style
+
+
 func _update_footer() -> void:
-	var coins := int(Save.data["coins"])
-	coins_lbl.text = "%d ¢" % coins
-	var price := Save.price_of(draft)
-	var changed: bool = draft != saved
-	var short := price - coins
-	undo_btn.visible = changed or first_run
+	var ch := changed()
+	undo_btn.visible = ch or first_run
 	if first_run:
 		apply_btn.text = "That's me!"
-		apply_btn.disabled = short > 0
-		price_lbl.text = "You can change this any time in the Wardrobe."
-	elif not changed:
+		apply_btn.disabled = false
+		price_lbl.text = "You can change this any time in the Locker."
+	elif not ch:
 		apply_btn.text = "Wearing this"
 		apply_btn.disabled = true
-		price_lbl.text = "Try anything on: nothing is charged until you apply."
-	elif short > 0:
-		apply_btn.text = "Need %d more coins" % short
-		apply_btn.disabled = true
-		price_lbl.text = "This look costs %d coins. Play rounds to earn more." % price
-	elif price > 0:
-		apply_btn.text = "Buy & apply · %d ¢" % price
-		apply_btn.disabled = false
-		price_lbl.text = "New items are yours to keep."
+		price_lbl.text = "Everything here is yours. New items are in the Shop and the Season Pass."
 	else:
-		apply_btn.text = "Apply"
+		apply_btn.text = "Save look"
 		apply_btn.disabled = false
-		price_lbl.text = "Everything here is yours."
+		price_lbl.text = "Saving never costs anything."
 	apply_btn.accessibility_name = apply_btn.text
 
 
+## Save: equips the draft.  Never spends (Save.apply_appearance refuses
+## anything not owned; buying is in the Shop).
 func _on_apply() -> void:
 	var r := Save.apply_appearance(draft)
 	if not bool(r["ok"]):
-		dialog("You need %d more coins for this look. Play a few rounds, or try a different item." % int(r["short"]))
+		var names: Array = (r["missing"] as Array).map(func(id: String) -> String: return Catalogue.display_name(id))
+		dialog("%s isn't in your Locker any more, so this look can't be saved. Pick something else." % ", ".join(names))
 		return
+	for k in draft_style:
+		Save.set_profile_style(String(k), String(draft_style[k]))
 	saved = Cosmetics.sanitize(Save.data["cosmetic"])
+	saved_style = Save.profile_style()
+	draft_style = saved_style.duplicate()
 	Diag.mark("appearance_applied")
 	Save.save_now()
-	if int(r["spent"]) > 0:
-		Sfx.play("pickup")
 	App.sync_stage_local()
 	App.sync_cloud_appearance()
 	if App.session and is_instance_valid(App.session) and App.session.phase == TC.Phase.LOBBY and App.session.mode != NetSession.Mode.OFFLINE:
@@ -548,15 +678,15 @@ func _on_apply() -> void:
 	if first_run and on_done.is_valid():
 		on_done.call()
 		return
-	UIKit.toast(self, "Looking good!" if int(r["spent"]) == 0 else "Bought and applied (%d coins)" % int(r["spent"]))
+	UIKit.toast(self, "Looking good!")
 
 
 func _on_cancel() -> void:
 	if first_run:
 		var r := Cosmetics.bot_cosmetic(randi())
-		# only free items for a random start
+		# only owned (free) items for a random start
 		for f in Cosmetics.ORDER:
-			if Cosmetics.cost(f, String(r[f])) > 0:
+			if not Wallet.owns(f, String(r[f])):
 				r[f] = Cosmetics.DEFAULT[f]
 		draft = Cosmetics.sanitize(r)
 		var v := App.stage.local_character() if App.stage else null
@@ -565,6 +695,7 @@ func _on_cancel() -> void:
 		_refresh()
 		return
 	draft = saved.duplicate()
+	draft_style = saved_style.duplicate()
 	App.sync_stage_local()
 	var v2 := App.stage.local_character() if App.stage else null
 	if v2:
@@ -573,10 +704,25 @@ func _on_cancel() -> void:
 
 
 func _back() -> void:
-	if draft != saved and not first_run:
-		dialog("Leave without applying your new look?", [["Keep editing", Callable()], ["Leave", _leave]])
+	confirm_leave(_leave)
+
+
+## NavShell and Back: unsaved changes ask first; `go` runs after leaving.
+func confirm_leave(go: Callable) -> void:
+	if changed() and not first_run:
+		dialog("Leave without saving your new look?", [["Keep editing", Callable()], ["Leave", func() -> void:
+			_restore_stage()
+			go.call()]])
 		return
-	_leave()
+	_restore_stage()
+	go.call()
+
+
+func _restore_stage() -> void:
+	Portraits.cancel_shared("tile:")
+	var v := App.stage.local_character() if App.stage else null
+	if v:
+		v.set_appearance(TC.Role.RUNNER, saved)
 
 
 func _leave() -> void:
@@ -766,6 +912,69 @@ class ItemCard:
 		if not UIKit.reduced_motion():
 			pic.modulate.a = 0.0
 			Motion.animate(pic, "modulate:a", 1.0, 0.16)
+
+
+## A name card or badge in the Locker's Profile category ("" = none),
+## previewed with the player's own name.
+class ProfileCard:
+	extends Button
+	var creator: CreatorScreen
+	var field := ""
+	var key := ""
+	var pic_key := ""
+	var art: Control
+	var name_l: Label
+	var state_l: Label
+	var check: Control
+
+	func setup(c: CreatorScreen, f: String, id: String, w: float) -> void:
+		creator = c
+		field = f
+		key = id
+		var h := 78.0 if f == "card" else w - 24.0
+		UIKit.make_card(self, Vector2(w, h + 96.0), Color(UIKit.SLATE_HI, 0.96))
+		var v := UIKit.vbox(6)
+		v.set_anchors_preset(Control.PRESET_FULL_RECT)
+		v.offset_left = 10
+		v.offset_right = -10
+		v.offset_top = 10
+		v.offset_bottom = -8
+		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		UIKit.face_of(self).add_child(v)
+		if id == "":
+			art = CommerceArt.Pic.new("glyph", "close", UIKit.IVORY_DIM, h * 0.5)
+		elif f == "card":
+			art = CommerceArt.Pic.new("card", id, Color.WHITE, h)
+			(art as CommerceArt.Pic).text = Save.player_name()
+			art.custom_minimum_size = Vector2(w - 20.0, h)
+		else:
+			art = CommerceArt.Pic.new("badge", id, Color.WHITE, minf(h, 110.0))
+		art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		art.custom_minimum_size.y = h
+		v.add_child(art)
+		name_l = UIKit.styled("None" if id == "" else Catalogue.display_name(id), "label", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
+		name_l.add_theme_font_size_override("font_size", 20)
+		name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		name_l.custom_minimum_size = Vector2(w - 20.0, 28.0)
+		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(name_l)
+		state_l = UIKit.styled("", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+		state_l.add_theme_font_size_override("font_size", 18)
+		state_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(state_l)
+		check = CheckBadge.new()
+		check.position = Vector2(w - 38.0, 8.0)
+		check.visible = false
+		UIKit.face_of(self).add_child(check)
+
+	func refresh() -> void:
+		var st: Dictionary = creator.state_of(field, key)
+		state_l.text = String(st["text"])
+		state_l.add_theme_color_override("font_color", st["col"])
+		var sel: bool = String(creator.draft_style.get(field, "")) == key
+		UIKit.set_selected(self, sel)
+		check.visible = sel
+		accessibility_name = "%s %s, %s%s" % [name_l.text, "name card" if field == "card" else "badge", st["text"], ", selected" if sel else ""]
 
 
 ## The picture's well: a soft rounded backdrop, and until the picture is

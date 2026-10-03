@@ -8,7 +8,7 @@ GODOT="${GODOT_BIN:-$(cat tools/.cache/godot/BIN)}"
 TEAM="${APPLE_TEAM_ID:-TEAMID0000}"
 BUILD="${BUILD_NUMBER:-1}"
 VERSION="${MARKETING_VERSION:-1.4}"
-[ -d game/addons/GodotApplePluginsGameCenter ] || tools/fetch_deps.sh
+{ [ -d game/addons/GodotApplePluginsGameCenter ] && [ -d game/addons/GodotApplePluginsStoreKit ]; } || tools/fetch_deps.sh
 # stamp identity into a temporary copy of the preset (the committed file keeps placeholders)
 cp game/export_presets.cfg build_export_presets.bak
 trap 'mv build_export_presets.bak game/export_presets.cfg' EXIT
@@ -48,6 +48,17 @@ s = s.replace(anchor, anchor + sys.argv[1].replace("\\n", "\n"), 1)
 open(p, "w").write(s)
 PY
   echo "Privacy manifest: declaring service data (user ID, name, gameplay content, reports) for app functionality"
+  # V6: the service keeps purchases (App Store transaction IDs and what they
+  # delivered, never payment details) to deliver them once and restore them
+  python3 - <<'PY2'
+p = "game/export_presets.cfg"
+s = open(p).read()
+anchor = "privacy/tracking_domains=PackedStringArray()\n"
+add = "".join("privacy/collected_data/purchase_history/%s\n" % kv for kv in ["collected=true", "linked_to_user=true", "used_for_tracking=false", "collection_purposes=2"])
+s = s.replace(anchor, anchor + add, 1)
+open(p, "w").write(s)
+PY2
+  echo "Privacy manifest: declaring purchase history (App Store purchases, app functionality)"
 fi
 rm -rf build/ios && mkdir -p build/ios
 "$GODOT" --headless --path game --import >/dev/null 2>&1 || true

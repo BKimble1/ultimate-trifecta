@@ -1,0 +1,94 @@
+{
+  "identifier": "B50D70EB-5532-502B-A426-A5C0A03DDE9B",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "0CE583D7",
+      "localizations": [
+        {
+          "description": "1,500 Coins for the Shop. Cosmetic only.",
+          "displayName": "1,500 Coins",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.idlery.ultimatetrifecta.coins.1500",
+      "referenceName": "Coins 1500 (local test)",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "9E222E5F",
+      "localizations": [
+        {
+          "description": "3,500 Coins for the Shop. Cosmetic only.",
+          "displayName": "3,500 Coins",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.idlery.ultimatetrifecta.coins.3500",
+      "referenceName": "Coins 3500 (local test)",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "906DCA19",
+      "localizations": [
+        {
+          "description": "500 Coins for the Shop. Cosmetic only.",
+          "displayName": "500 Coins",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.idlery.ultimatetrifecta.coins.500",
+      "referenceName": "Coins 500 (local test)",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "1.99",
+      "familyShareable": false,
+      "internalID": "29F2E520",
+      "localizations": [
+        {
+          "description": "A permanent outfit. Cosmetic only.",
+          "displayName": "Moonlight Runner",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.idlery.ultimatetrifecta.skin.moonlight_runner",
+      "referenceName": "Skin Moonlight Runner (local test)",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "1.99",
+      "familyShareable": false,
+      "internalID": "4D17E580",
+      "localizations": [
+        {
+          "description": "A permanent outfit. Cosmetic only.",
+          "displayName": "Starry Sleeper",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.idlery.ultimatetrifecta.skin.starry_sleeper",
+      "referenceName": "Skin Starry Sleeper (local test)",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_applicationInternalID": "6818346960",
+    "_developerTeamID": "",
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}

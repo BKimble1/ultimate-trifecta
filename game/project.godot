@@ -25,6 +25,8 @@ Sfx="*res://src/autoload/audio_service.gd"
 Social="*res://src/autoload/social_service.gd"
 Save="*res://src/autoload/save_service.gd"
 Cloud="*res://src/autoload/cloud_service.gd"
+Wallet="*res://src/autoload/wallet_service.gd"
+Purchases="*res://src/autoload/purchase_service.gd"
 Diag="*res://src/core/beta_diag.gd"
 App="*res://src/autoload/app.gd"
 

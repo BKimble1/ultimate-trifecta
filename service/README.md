@@ -132,6 +132,23 @@ against the deleted profile are closed as "profile deleted".
 | `POST /v1/rooms/:code/heartbeat` | host session | Keep alive, report state and connected players |
 | `POST /v1/rooms/:code/leave`, `/kick`, `DELETE /v1/rooms/:code` | session / host | Leave, remove, close |
 | `/v1/admin/*` | `ADMIN_TOKEN` | Reports, profiles, actions, reserved names, audit |
+| `GET /v1/wallet` | session | V6: Coins, debt, revision, appAccountToken, entitlements, Season progress/claims, recent round settlements |
+| `POST /v1/wallet/spend` | session | V6: buy a Coin item or Season Premium (`item_id`, `price`, `idempotency_key`): atomic debit + entitlement |
+| `POST /v1/wallet/apple` | session | V6: deliver a StoreKit 2 transaction (`jws`) once; refunds/revocations |
+| `POST /v1/wallet/legacy-import` | session | V6: the one-time, bounded import of a pre-V6 device balance |
+| `POST /v1/season/:id/claim` | session | V6: claim Season rewards (idempotent) |
+| `POST /v1/rounds`, `POST /v1/rounds/:id/report` | room host | V6: register a round's admitted players; report its result (bounds-checked) |
+| `POST /v1/rounds/:id/ack`, `GET /v1/rounds/:id/me` | session | V6: confirm the row your game received; settlement status |
+| `POST /v1/appstore/notifications` | Apple-signed | V6: App Store Server Notifications V2 (refunds, revocations) |
+| `GET /v1/admin/wallets/:id`, `POST …/adjust` | `ADMIN_TOKEN` | V6: wallet, ledger and App Store rows; support grants / forgive debt |
+
+V6 commerce (wallet, ledger, App Store verification, Season 1, round
+settlement): see [docs/ECONOMY.md](../docs/ECONOMY.md) and
+[docs/COMMERCE_SETUP.md](../docs/COMMERCE_SETUP.md). Vars: `APPLE_ENVIRONMENT`
+(`Sandbox` for the default/TestFlight deployment, `Production` in
+`[env.production]`). Optional secrets: `ASC_IAP_KEY_ID`, `ASC_IAP_ISSUER_ID`,
+`ASC_IAP_PRIVATE_KEY` (App Store Server API), uploaded by `deploy.sh` from
+`.secrets/` when present.
 
 ## Why parties can't form without their host
 

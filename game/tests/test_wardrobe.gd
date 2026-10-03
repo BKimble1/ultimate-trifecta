@@ -110,28 +110,59 @@ func test_rapid_category_switching_drops_stale_work() -> void:
 func test_apply_and_undo_say_what_they_do() -> void:
 	var saved_cos: Variant = Save.data["cosmetic"]
 	var saved_coins: Variant = Save.data["coins"]
+	var saved_owned: Variant = Save.data["owned"]
 	Save.data["cosmetic"] = Cosmetics.sanitize({})
 	Save.data["coins"] = 0
+	Save.data["owned"] = []
 	var c := _open()
 	await _frames(2)
 	t.eq(c.apply_btn.text, "Wearing this", "unchanged: the button says so")
 	t.check(c.apply_btn.disabled and not c.undo_btn.visible, "and is unavailable, with nothing to undo")
-	c._pick("hat", "crown")    # costs coins
-	t.check(c.apply_btn.disabled and c.apply_btn.text.begins_with("Need "), "unaffordable: '%s'" % c.apply_btn.text)
+	c._pick("hat", "none")     # free
+	t.eq(c.apply_btn.text, "Save look", "a change: Save look (never a price)")
+	t.check(not c.apply_btn.disabled, "available")
 	t.check(c.undo_btn.visible, "Undo appears")
-	var dis := UIKit.face_of(c.apply_btn).styles["disabled"] as StyleBoxFlat
-	t.check(dis.bg_color.a > 0.95, "the unavailable button stays solid (it explains, it doesn't fade)")
 	c._on_cancel()
 	t.eq(c.draft, c.saved, "Undo returns to the saved look")
-	c._pick("hat", "none")     # free
-	t.eq(c.apply_btn.text, "Apply", "a free change: Apply")
-	t.check(not c.apply_btn.disabled, "available")
+	c._pick("hat", "none")
 	c._on_apply()
-	t.eq(String(Cosmetics.sanitize(Save.data["cosmetic"])["hat"]), "none", "applied and saved")
+	t.eq(String(Cosmetics.sanitize(Save.data["cosmetic"])["hat"]), "none", "saved")
+	t.eq(int(Save.data["coins"]), 0, "saving never spends")
 	t.eq(c.apply_btn.text, "Wearing this", "and the button returns to its resting state")
 	await _close(c)
 	Save.data["cosmetic"] = saved_cos
 	Save.data["coins"] = saved_coins
+	Save.data["owned"] = saved_owned
+
+
+## V6 Locker: only owned and free items are shown; what isn't owned is a
+## "View in Shop" link, never a price; nothing in the Locker can spend.
+func test_locker_shows_only_owned_items() -> void:
+	var saved_owned: Variant = Save.data["owned"]
+	var saved_cos: Variant = Save.data["cosmetic"]
+	Save.data["owned"] = ["hat:crown"]
+	Save.data["cosmetic"] = Cosmetics.sanitize({})
+	var c := _open()
+	await _frames(2)
+	c._select_tab("hat")
+	await _frames(2)
+	var keys: Array = c.cards.map(func(x: Variant) -> String: return String(x.key))
+	t.check(keys.has("crown") and keys.has("none") and keys.has("nightcap"), "owned (pre-V6 crown) and free hats shown: %s" % [keys])
+	t.check(not keys.has("headphones") and not keys.has("party"), "unowned hats are not in the Locker")
+	t.check(c.discover.size() == 1 and c.discover[0].accessibility_name.contains("View in Shop"), "one 'View in Shop' link for the rest")
+	for card in c.cards:
+		t.check(not String(card.state_l.text).contains("coin") and not String(card.state_l.text).contains("¢"), "%s shows no price" % card.key)
+	c._select_tab("colours")
+	await _frames(2)
+	t.check(c.swatches.all(func(sw: Variant) -> bool: return Wallet.owns(sw.field, sw.key)), "only owned colours")
+	t.check(c.discover.size() >= 1, "more colours: a Shop link")
+	c._select_tab("profile")
+	await _frames(2)
+	t.check(c.cards.size() >= 2, "Profile: 'None' for the name card and the badge")
+	t.check(c.cards.all(func(x: Variant) -> bool: return x.key == "" or Wallet.owns_id(String(x.key))), "only owned name cards / badges")
+	await _close(c)
+	Save.data["owned"] = saved_owned
+	Save.data["cosmetic"] = saved_cos
 
 
 func test_category_strip_fits_narrow_panels() -> void:

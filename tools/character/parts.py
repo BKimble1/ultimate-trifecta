@@ -38,12 +38,12 @@ def _dense_path(points, step=0.02):
     return out
 
 
-def _arm_path(side, s0=-0.01, s1=None):
+def _arm_path(side, s0=-0.01, s1=None, step=0.018):
     s1 = s1 if s1 is not None else rig.UPPER_LEN + rig.FORE_LEN
     sh = shoulder(side)
     d = arm_dir(side)
     pts = []
-    n = int(math.ceil((s1 - s0) / 0.018))
+    n = int(math.ceil((s1 - s0) / step))
     for i in range(n + 1):
         pts.append(sh + d * (s0 + (s1 - s0) * i / n))
     return pts
@@ -144,14 +144,16 @@ def build_base():
     # neck stub (hidden by collars, visible in swim)
     lathe(mb, Vector((0, 0.0, 0)), Matrix.Identity(3), [(0.86, 0.0), (0.865, 0.06), (0.90, 0.066), (0.95, 0.07), (0.97, 0.0)],
           SKIN, neck_w, segs=16, ry_scale=0.9)
-    # ears
+    # ears (V6: a little larger, with a deeper inner shade so they read on
+    # every skin tone and under hair)
     for sx in SIDES:
         R = rot_z(-15 * sx)
         ex = rig.head_side_x(1.165, 0.0, -0.005)
-        ellipsoid(mb, Vector(((ex - 0.012) * sx, -0.005, 1.165)), (0.036, 0.05, 0.066), SKIN, hw, segs=14, rings=10, rot=R)
-        ellipsoid(mb, Vector(((ex + 0.012) * sx, 0.004, 1.165)), (0.012, 0.031, 0.043), SKIN.with_col('#e9b9b1'), hw, segs=12, rings=8, rot=R)
-    # nose
-    _feature(mb, 0.0, 1.118, (0.031, 0.024, 0.022), SKIN.with_col('#ffe2d9'), hw, sink=0.008)
+        ellipsoid(mb, Vector(((ex - 0.012) * sx, -0.005, 1.165)), (0.039, 0.054, 0.071), SKIN, hw, segs=14, rings=10, rot=R)
+        ellipsoid(mb, Vector(((ex + 0.014) * sx, 0.004, 1.163)), (0.013, 0.035, 0.048), SKIN.with_col('#d99d94'), hw, segs=12, rings=8,
+                  rot=R)
+    # nose (V6: a touch larger, so it reads at gameplay distance)
+    _feature(mb, 0.0, 1.118, (0.034, 0.026, 0.024), SKIN.with_col('#ffe2d9'), hw, sink=0.008)
     # eyes: sclera, pupil, catch-light.  aux carries the eye frame for the shape keys
     sclera = Style('#fdfcf8', T_NONE, 0.3, MAT_LIT)
     iris = Style('#3a2215', T_NONE, 0.2, MAT_GLOSS)
@@ -169,6 +171,31 @@ def build_base():
         aux = (c.copy(), side_v.copy(), up_v.copy(), n.copy(), sx)
         tag = 'eyeL' if sx < 0 else 'eyeR'
         ellipsoid(mb, c, (0.053, 0.067, 0.02), sclera, hw, segs=20, rings=14, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        # V6: upper lash line hugging the top of the white, thicker toward
+        # the outer corner with a small flick.  It carries the eye's frame,
+        # so blink, squint and the face presets move it with the lid.
+        outer = (Vector((sx, 0.0, 0.0)) - n * n.x * sx).normalized()
+        o_sign = 1.0 if outer.dot(side_v) > 0 else -1.0
+        lpts, lrad = [], []
+        for i in range(13):
+            a = math.radians(18 + 144 * i / 12)
+            f = 0.965
+            dep = 0.02 * math.sqrt(max(0.0, 1.0 - f * f)) + 0.0016
+            q = c + side_v * (0.053 * f * math.cos(a)) + up_v * (0.067 * f * math.sin(a)) + n * dep
+            outness = smoothstep(-0.6, 1.0, o_sign * math.cos(a))
+            lpts.append(q)
+            lrad.append((0.0024, lerp(0.0026, 0.0056, outness)))
+        if o_sign < 0:
+            lpts.reverse()
+            lrad.reverse()
+        # the flick past the outer corner
+        tip = lpts[-1]
+        lpts += [tip + outer * 0.008 + up_v * 0.002, tip + outer * 0.015 + up_v * 0.006]
+        lrad += [(0.0022, 0.0038), (0.0018, 0.0016)]
+        sweep(mb, lpts, lrad, Style('#24171a', T_NONE, 0.55, MAT_CLOTH), hw, segs=8, tag=tag, twist_hint=n)
+        for vi in range(len(mb.aux)):
+            if mb.tag[vi] == tag and mb.aux[vi] is None:
+                mb.aux[vi] = aux
         pc = c + n * 0.0135 - up_v * 0.006 + inward * 0.004
         ellipsoid(mb, pc, (0.041, 0.051, 0.012), iris, hw, segs=18, rings=12, rot=R, tag=tag, aux=aux, cut_below=-0.35)
         ppc = pc + n * 0.006 - up_v * 0.002
@@ -201,7 +228,7 @@ def build_base():
     mup = MR @ Vector((0, 1, 0))
     mc = mp - mn * 0.003
     maux = (mc.copy(), mside.copy(), mup.copy(), mn.copy(), 0)
-    ellipsoid(mb, mc, (0.046, 0.025, 0.008), Style('#5c1f2c', T_NONE, 0.4, MAT_GLOSS), hw, segs=20, rings=10, rot=MR,
+    ellipsoid(mb, mc, (0.05, 0.026, 0.008), Style('#5c1f2c', T_NONE, 0.4, MAT_GLOSS), hw, segs=20, rings=10, rot=MR,
               tag='mouth', aux=maux, cut_below=-0.35)
     ellipsoid(mb, mc - mup * 0.010, (0.022, 0.010, 0.005), Style('#ff8a96', T_NONE, 0.4, MAT_GLOSS), hw, segs=12, rings=8,
               rot=MR, tag='tongue', aux=maux)
@@ -212,9 +239,11 @@ def build_base():
         w = wrist(sx)
         R = rot_align(d, FWD)
         hwf = lambda p, sfx=sfx, w=w, d=d: rig.seg_weights((p - w).dot(d), [('forearm' + sfx, 0.0), ('hand' + sfx, None)], 0.012)
-        ellipsoid(mb, w + d * 0.054, (0.044, 0.054, 0.060), SKIN, hwf, segs=24, rings=16, rot=R, power=2.2)
-        tdir = (d + FWD * 0.9).normalized()
-        ellipsoid(mb, w + d * 0.036 + FWD * 0.044, (0.023, 0.023, 0.034), SKIN, hwf, segs=16, rings=10, rot=rot_align(tdir, UP))
+        # V6: a flatter, longer mitten (a hand rather than a ball) with the
+        # thumb set a little further out
+        ellipsoid(mb, w + d * 0.056, (0.038, 0.056, 0.063), SKIN, hwf, segs=24, rings=16, rot=R, power=2.35)
+        tdir = (d * 0.9 + FWD).normalized()
+        ellipsoid(mb, w + d * 0.034 + FWD * 0.048, (0.022, 0.022, 0.035), SKIN, hwf, segs=16, rings=10, rot=rot_align(tdir, UP))
     return mb
 
 
@@ -290,6 +319,14 @@ def build_hair():
     return mb
 
 
+def build_hair_hat():
+    """V6: the tuft without its forelock, drawn under hats and headwear that
+    sit on the forehead or hairline (the forelock poked through their bands)."""
+    mb = MeshBuilder('hair_hat')
+    hair_shell(mb, 0.018, hairline_short(1.08), HAIR, rigid('head'))
+    return mb
+
+
 def _shell_point(ang, z, grow):
     """Point on the (reshaped) head shell at height z, around the vertical axis
     (ang 0 = straight back, +pi/2 = the character's left)."""
@@ -358,6 +395,11 @@ def build_hair_curly_hat():
     return build_hair_curly('hair_curly_hat', 1.34)
 
 
+def build_hair_curly_low():
+    """V6: curls only below a cap or beanie's edge (the nape and sides)."""
+    return build_hair_curly('hair_curly_low', 1.2)
+
+
 def build_hair_buns():
     """Centre-parted short hair; the two buns are a separate part so they can
     be hidden under headphones and crowns."""
@@ -420,12 +462,15 @@ def build_body_skin():
 
 
 # ================================================================== shared clothing pieces
-def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff_tube=0.016, inner_style=None):
+def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff_tube=0.016, inner_style=None, lod=0):
     """inner_style: leave the end open with a shaded funnel down to the wrist
-    (a wide bell sleeve read as a lid with a flat end disc)."""
+    (a wide bell sleeve read as a lid with a flat end disc).
+    lod=1 (V6 outfits): the same shapes with fewer segments on the shoulder
+    cap and cuff, and rings every 2.4 cm instead of 1.8 cm."""
+    step = 0.024 if lod else 0.018
     for sx in SIDES:
         sfx = '.L' if sx < 0 else '.R'
-        path = _arm_path(sx, -0.015, s1)
+        path = _arm_path(sx, -0.015, s1, step)
         s = _path_s(path)
         total = s[-1]
         radii = []
@@ -445,13 +490,14 @@ def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff
         # (V4: a little lower and flatter on top, so it rounds into the sleeve
         # instead of standing up as a shoulder pad)
         ellipsoid(mb, sh + Vector((0.004 * sx, 0, -0.002)), (0.066 + grow, 0.065 + grow, 0.055 + grow), style,
-                  lambda p, sfx=sfx: {'upper_arm' + sfx: 0.55, 'shoulder' + sfx: 0.45}, segs=20, rings=12, world_v=True)
+                  lambda p, sfx=sfx: {'upper_arm' + sfx: 0.55, 'shoulder' + sfx: 0.45}, segs=16 if lod else 20,
+                  rings=10 if lod else 12, world_v=True)
         if cuff_style is not None:
             d = arm_dir(sx)
             end = sh + d * (total - 0.015)
             r = radii[-1][0]
-            lathe(mb, end - d * cuff_tube * 0.4, rot_align(d, FWD), torus_profile(0.0, r + 0.002, cuff_tube, 10, 0.85), cuff_style,
-                  lambda p, sx=sx: arm_w(p, sx), segs=20, closed_profile=True)
+            lathe(mb, end - d * cuff_tube * 0.4, rot_align(d, FWD), torus_profile(0.0, r + 0.002, cuff_tube, 7 if lod else 10, 0.85),
+                  cuff_style, lambda p, sx=sx: arm_w(p, sx), segs=16 if lod else 20, closed_profile=True)
         if inner_style is not None:
             d = arm_dir(sx)
             end = sh + d * (total - 0.015)
@@ -601,8 +647,28 @@ def _hood(mb, base, rim_style, extra_grow=0.035):
                 return False
         return True
     hw = lambda p: rig.seg_weights(p.z, [('neck', 0.95), ('head', None)], 0.03)
+    f0 = len(mb.f)
     ellipsoid(mb, HEAD_C, (HEAD_R[0] + extra_grow, HEAD_R[1] + extra_grow, HEAD_R[2] + extra_grow), base, hw,
               segs=36, rings=26, power=HEAD_P, keep=keep, deform=rig.head_deform(extra_grow))
+    # V6: the face opening was cut by dropping whole quads, a stepped edge
+    # that showed skin in blocks beside the rim (duck, frog).  Slide the
+    # opening's boundary vertices onto the rim's ellipse.
+    uses = {}
+    for f in mb.f[f0:]:
+        for a, b in zip(f, f[1:] + f[:1]):
+            e = (min(a, b), max(a, b))
+            uses[e] = uses.get(e, 0) + 1
+    edge_v = {i for e, n in uses.items() if n == 1 for i in e}
+    for i in edge_v:
+        p = mb.v[i]
+        if p.y <= 0.0 or p.z < 0.95:
+            continue
+        u, w = p.x / 0.228, (p.z - 1.145) / 0.19
+        r = math.hypot(u, w)
+        if r < 1e-6 or r > 1.8:
+            continue
+        x, z = 0.228 * u / r, 1.145 + 0.19 * w / r
+        mb.v[i] = Vector((x, head_front_y(x, z, extra_grow), z))
     # rim
     pts = []
     for i in range(32):
@@ -1038,7 +1104,7 @@ def build_flippers():
 
 
 ALL_PARTS = [
-    build_base, build_hair, build_hair_bob, build_hair_curly, build_hair_curly_hat, build_hair_buns, build_hair_buns_knots,
+    build_base, build_hair, build_hair_hat, build_hair_bob, build_hair_curly, build_hair_curly_hat, build_hair_curly_low, build_hair_buns, build_hair_buns_knots,
     build_freckles,
     build_body_skin, build_pj, build_swim, build_robe, build_duck, build_frog,
     build_watch, build_flashlight, build_mustache,

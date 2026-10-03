@@ -128,10 +128,10 @@ func build() -> void:
 	# --- bottom: secondary actions (left) + primary action (right)
 	var bottom := UIKit.hbox(12)
 	content.add_child(bottom)
-	var outfit := UIKit.icon_button("shirt", "Wardrobe")
-	outfit.pressed.connect(_open_wardrobe)
-	outfit.size_flags_vertical = Control.SIZE_SHRINK_END
-	bottom.add_child(outfit)
+	# V6: Play · Locker · Shop · Season Pass; the party stays intact meanwhile
+	var nav := NavShell.make("play")
+	nav.size_flags_vertical = Control.SIZE_SHRINK_END
+	bottom.add_child(nav)
 	var emote_b := UIKit.icon_button("smile", "Emote")
 	emote_b.pressed.connect(func() -> void: _emote_popover(emote_b))
 	emote_b.size_flags_vertical = Control.SIZE_SHRINK_END
@@ -570,7 +570,7 @@ func _player_popover(i: int, anchor: Control) -> void:
 			close_popover()
 			_play_own_move())
 		v.add_child(mv)
-		var wb := UIKit.quiet("Wardrobe", Vector2(340, 72))
+		var wb := UIKit.quiet("Locker", Vector2(340, 72))
 		wb.pressed.connect(func() -> void:
 			close_popover()
 			_open_wardrobe())

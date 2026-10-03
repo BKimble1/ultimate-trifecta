@@ -66,9 +66,12 @@ func test_rewards_unique_captures_no_idle_survival() -> void:
 		{"slot": 1, "role": TC.Role.RUNNER, "stamps": 0, "finished": false},
 	]}
 	var r0 := RulesLogic.compute_rewards(res, 0, cfg, false)
-	t.eq(int(r0["coins"]), cfg.coins_participation + 2 * cfg.coins_unique_capture + cfg.coins_team_win, "patrol paid per unique runner, not per capture")
+	var rc: Dictionary = Catalogue.economy()["round_coins"]
+	t.eq(int(r0["xp"]), cfg.coins_participation + 2 * cfg.coins_unique_capture + cfg.coins_team_win, "patrol XP per unique runner, not per capture")
+	t.eq(int(r0["coins"]), int(rc["completed"]) + 2 * int(rc["watch_distinct_tag"]) + int(rc["team_win"]), "V6 Coins per unique runner, not per capture")
 	var r1 := RulesLogic.compute_rewards(res, 1, cfg, false)
-	t.eq(int(r1["coins"]), cfg.coins_participation, "idle survival earns nothing extra")
+	t.eq(int(r1["xp"]), cfg.coins_participation, "idle survival earns nothing extra (XP)")
+	t.eq(int(r1["coins"]), int(rc["completed"]), "idle survival earns nothing extra (Coins)")
 	var cancelled := res.duplicate(true)
 	cancelled["outcome"] = TC.Outcome.CANCELLED
 	t.eq(int(RulesLogic.compute_rewards(cancelled, 0, cfg, false)["coins"]), 0, "cancelled rounds pay nothing")
