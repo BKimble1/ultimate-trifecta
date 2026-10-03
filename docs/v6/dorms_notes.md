@@ -423,7 +423,13 @@ prims), route_7 37 → 37 (73,954 → 83,618); the dorm-area views on V6 are
 
 **The new views (V6 only, Standard / Battery Saver).**
 
-<!-- budgets-dorms -->
+| View | Puddlesworth | Lanternfield | Moonpenny |
+|---|---|---|---|
+| exterior from the forecourt | 45 / 26 draws · 142,192 / 63,111 prims | 44 / 31 draws · 142,451 / 67,147 prims | 47 / 32 draws · 127,984 / 63,584 prims |
+| reveal camera on a pad, facing the front door | 100 / 58 draws · 261,709 / 144,500 prims | 89 / 64 draws · 230,076 / 132,316 prims | 100 / 66 draws · 223,736 / 134,108 prims |
+| common room, corner view | 61 / 38 draws · 168,967 / 87,678 prims | 72 / 48 draws · 206,440 / 127,134 prims | 42 / 28 draws · 103,428 / 57,339 prims |
+| leaving by the west door | 59 / 40 draws · 175,080 / 96,066 prims | 40 / 28 draws · 121,281 / 55,424 prims | 83 / 49 draws · 221,832 / 132,221 prims |
+| coming home to the front door | 35 / 24 draws · 119,048 / 61,921 prims | 34 / 26 draws · 121,126 / 60,607 prims | 44 / 32 draws · 141,579 / 68,947 prims |
 
 What the numbers say: where the old campus is in view nothing changed in
 draw calls (the dorm shells, interiors and porches are merged into the
@@ -500,7 +506,20 @@ and its lunge turned toward a runner directly behind it — which way depended
 on millimetres of start position; with runners now starting inside a dorm it
 stopped connecting).
 
-TBD-TESTRUN
+**Full run on the merged branch** (`tools/run_tests.sh`, after merging the
+integrator's d691002): **254 tests, 85,834 checks, 1 failure** in 888 s on
+this shared machine (load average ~20). The failure,
+`test_controls::test_mixed_sources_keep_arrival_order`, compares input
+presses against a time-to-live; it passes alone (9 tests, 47 checks, 0
+failures, twice) and touches nothing in this workstream. Earlier in the
+same session `test_loading`'s "no long freeze while loading" read 385–390 ms
+twice under load; alone, the longest preparation step was 45–103 ms over
+three runs and the test passes (it passed in the full run above too).
+Suites this workstream added or changed, all passing in that run:
+`test_dorms` 17 tests, `test_coins` 8, `test_campus_art` 11, `test_sim` 21,
+`test_camping` 3, `test_routes_bots` 2 (every curated Puddlesworth
+combination from inside the dorm, three from each other dorm), `test_net`
+14, `test_loading` 13. The log is `docs/test-data/v6_dorms_full_test_run.txt`.
 
 ## Limits
 
