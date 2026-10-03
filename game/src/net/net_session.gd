@@ -1300,6 +1300,8 @@ func _fix_results(d: Dictionary) -> Dictionary:
 	var hd := String(d.get("home_dorm", ""))
 	out["home_dorm"] = hd if CampusDorms.has_dorm(hd) else ""
 	out["coins_total"] = clampi(int(d.get("coins_total", 0)), 0, 16)
+	# the economy clamps each row's pickups to the round's spawns
+	out["coin_spawns"] = clampi(int(d.get("coin_spawns", out["coins_total"])), 0, 16)
 	var rows: Array = []
 	for r in d.get("players", []):
 		if not (r is Dictionary) or rows.size() >= 8:

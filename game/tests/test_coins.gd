@@ -122,6 +122,10 @@ func test_first_valid_collector_and_no_double_credit() -> void:
 	t.eq(int(rows[2]["coins_picked"]), 0, "results row: coins_picked (none)")
 	t.eq(res["coin_log"], [["s01", 0], ["s02", 1]], "the round's coin log names each coin's collector once")
 	t.eq(int(res["coins_total"]), 2, "coins in the round")
+	# the economy (commerce) reads coins_picked, clamped to the round's spawns
+	t.eq(int(res["coin_spawns"]), 2, "results carry the round's coin spawns for the economy")
+	for r in res["players"]:
+		t.eq(Economy.coins_picked(r, res), int(r["coins_picked"]), "the economy credits exactly the coins this row picked up")
 	t.eq(String(res["home_dorm"]), h.sim.home_dorm, "results name the round's home dorm")
 	h.free_sim()
 

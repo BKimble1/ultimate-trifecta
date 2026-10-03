@@ -1125,5 +1125,5 @@ func build_results() -> Dictionary:
 		"match_id": match_id, "outcome": outcome, "players": rows, "fastest_slot": fastest,
 		"fastest_time": fastest_t if fastest >= 0 else -1.0, "finished": finished_count,
 		"needed": cfg.runners_needed, "watch": cfg.patrol_slots, "targets": targets, "practice": practice,
-		"round_time": round_time(), "home_dorm": home_dorm, "coins_total": coins.size(), "coin_log": coin_log,
+		"round_time": round_time(), "home_dorm": home_dorm, "coins_total": coins.size(), "coin_spawns": coins.size(), "coin_log": coin_log,
 	}
