@@ -8,10 +8,33 @@ extends Node3D
 ##        the wardrobe's clipping risk), menuidle (a menu-idle character under
 ##        indoor light, one frame every 1.2 s for 24 s), steps (start, stop and
 ##        a reversal from the side, one frame every 0.1 s).
+## V6: skintones (all eight skin tones, head and shoulders), and
+##        --light=dorm (the real dorm room and its lights, as on home, the
+##        wardrobe and the lobby) besides studio and campus (the game's night).
 ## Each mode saves a lossless PNG and quits when done.
 
 const MODES := ["views", "outfits", "looks", "hairs", "posesheet", "transitions", "closeup", "faces", "cart", "hero", "group", "distance", "parts",
-	"hathair", "menuidle", "steps"]
+	"hathair", "menuidle", "steps", "skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom"]
+## V6 Shop and Season 1 content (modes skip keys the catalog does not have,
+## so the same file renders the V5 asset for "before" pictures)
+const V6_OUTFITS := ["moonlight_runner", "starry_sleeper", "varsity_sprinter", "raincoat_explorer", "campus_courier", "lantern_scout",
+	"after_hours_hoodie", "night_owl", "glow_jogger", "library_cardigan"]
+const V6_HATS := ["headlamp", "pompom_beanie", "glow_headband", "owl_ears"]
+const V6_SHOES := ["glow_sneakers", "moon_boots"]
+const V6_EMOTES := ["stargaze", "victory_lap", "shush", "moon_shuffle"]
+## how each new outfit is shown in the Shop pictures (shoes, hair, skin, colour)
+const SHOWCASE := {
+	"moonlight_runner": {"shoes": "sneakers", "hair": "tuft", "hair_color": "dark_brown", "skin": "tone5", "color": "navy"},
+	"starry_sleeper": {"shoes": "slippers", "hair": "bob", "hair_color": "black", "skin": "tone3", "color": "grape"},
+	"varsity_sprinter": {"shoes": "sneakers", "hair": "curly", "hair_color": "black", "skin": "tone7", "color": "coral"},
+	"raincoat_explorer": {"shoes": "sneakers", "hair": "buns", "hair_color": "ginger", "skin": "tone2", "color": "sunny"},
+	"campus_courier": {"shoes": "sneakers", "hair": "tuft", "hair_color": "brown", "skin": "tone6", "color": "sunny"},
+	"lantern_scout": {"shoes": "sneakers", "hair": "bob", "hair_color": "auburn", "skin": "tone4", "color": "lime"},
+	"after_hours_hoodie": {"shoes": "glow_sneakers", "hair": "curly", "hair_color": "espresso", "skin": "tone8", "color": "plum"},
+	"night_owl": {"shoes": "slippers", "hair": "tuft", "hair_color": "brown", "skin": "tone1", "color": "tangerine"},
+	"glow_jogger": {"shoes": "glow_sneakers", "hair": "buns", "hair_color": "black", "skin": "tone6", "color": "mint", "hat": "glow_headband"},
+	"library_cardigan": {"shoes": "moon_boots", "hair": "bob", "hair_color": "blonde", "skin": "tone3", "color": "sunny", "hat": "pompom_beanie"},
+}
 ## hats that leave hair visible (nightcap and swim cap hide it) x hair styles
 const HATHAIR_HATS := ["party", "headphones", "crown"]
 const HATHAIR_HAIRS := ["tuft", "bob", "curly", "buns"]
@@ -74,6 +97,8 @@ var _sheet_i := -1
 var _sheet_wait := 0
 var _grabbing := false
 var debug_parts := false
+## --shots-file=FILE (mode "custom"): a JSON list of shots, vectors as [x, y, z]
+var shots_file := ""
 
 
 func _ready() -> void:
@@ -87,6 +112,8 @@ func _ready() -> void:
 			debug_parts = true
 		elif a.begins_with("--light="):
 			lighting = a.split("=")[1]
+		elif a.begins_with("--shots-file="):
+			shots_file = a.split("=")[1]
 	if modes.is_empty():
 		modes = ["views"]
 	if out_dir == "":
@@ -97,6 +124,18 @@ func _ready() -> void:
 
 
 func _build_world() -> void:
+	if lighting == "dorm":
+		# V6: the real dorm room behind the menus (its own lights, rug, window)
+		var ds := DormStage.new()
+		add_child(ds)
+		cam = Camera3D.new()
+		cam.fov = 30
+		add_child(cam)
+		cam.current = true
+		stage = Node3D.new()
+		stage.position = Vector3(0.0, 0.0, 0.5)
+		add_child(stage)
+		return
 	if lighting == "campus":
 		# the game's own night: environment, moon and a lawn-coloured floor
 		add_child(EnvFactory.make_environment(1))
@@ -164,6 +203,8 @@ func _clear() -> void:
 
 func _add(role: int, cos: Dictionary, x: float, z: float = 0.0, yaw: float = PI, label: String = "") -> CharacterView:
 	var v := CharacterView.new()
+	# the dorm's warm rim light, as on the menu stages
+	v.lighting = "indoor" if lighting == "dorm" else "outdoor"
 	stage.add_child(v)
 	v.setup(role, cos, -1, label, false, false)
 	v.apply_state({"pos": Vector3(x, 0, z), "yaw": yaw, "state": TC.PState.ACTIVE, "vel": Vector3.ZERO, "on_floor": true}, 0.0, true)
@@ -217,11 +258,12 @@ func _next_mode() -> void:
 			var hats := ["nightcap", "none", "swimcap", "party", "headphones", "crown"]
 			var shoes := ["slippers", "sneakers", "flippers", "sneakers", "slippers", "sneakers"]
 			var pats := ["stripes", "plain", "plain", "bands", "plain", "plain"]
-			for i in outfits.size():
+			# (V6: the five V5 outfits; the new ones have their own modes)
+			for i in mini(outfits.size(), 5):
 				_add(TC.Role.RUNNER, look({"outfit": outfits[i], "pattern": pats[i], "hat": hats[i], "shoes": shoes[i], "color": colors[i],
 					"skin": skins[(i * 3) % skins.size()], "hair": ["tuft", "bob", "curly", "buns", "tuft"][i % 5]}), -4.5 + i * 1.5, 0.0, PI + 0.35, String(outfits[i]))
-			_add(TC.Role.PATROL, look({"color": "bubblegum", "skin": "tone4"}), 4.5, 0.0, PI + 0.35, "night watch")
-			_aim(Vector3(0, 1.5, 13.5), Vector3(0, 0.85, 0), 32)
+			_add(TC.Role.PATROL, look({"color": "bubblegum", "skin": "tone4"}), 3.0, 0.0, PI + 0.35, "night watch")
+			_aim(Vector3(-0.75, 1.5, 13.0), Vector3(-0.75, 0.85, 0), 32)
 		"looks", "skins":
 			# hairstyles x hair colours, faces, brows, freckles, skin tones
 			var hairs := ["tuft", "bob", "curly", "buns"]
@@ -286,6 +328,11 @@ func _next_mode() -> void:
 			_strip_frames.clear()
 			_sheet_i = -1
 			_sheet_wait = 0
+		"skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom":
+			_shots = _build_shots(_mode)
+			_strip_frames.clear()
+			_sheet_i = -1
+			_sheet_wait = 0
 		"closeup":
 			_add(TC.Role.RUNNER, d, -0.45, 0.0, PI + 0.35)
 			_add(TC.Role.PATROL, look({"color": "sky", "skin": "tone7"}), 0.45, -0.3, PI - 0.3)
@@ -330,6 +377,8 @@ func _next_mode() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	match _mode:
+		"skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom":
+			_run_shots()
 		"parts":
 			if _t < 0.5:
 				return
@@ -557,3 +606,144 @@ func _save_strip(n: String, cols: int, labels: Array) -> void:
 		var f2 := FileAccess.open(out_dir.path_join("lineup_%s.txt" % n), FileAccess.WRITE)
 		f2.store_string("\n".join(PackedStringArray(labels)))
 	printerr("LINEUP %s %dx%d frames=%d" % [p, sheet.get_width(), sheet.get_height(), _strip_frames.size()])
+
+
+# ---------------------------------------------------------------- V6 shot sequences
+## A shot: {label, look (overrides of the hero look), role, yaw, from, at,
+## fov, clip, t (pose time), hide (parts), x (character offset)}.  Each is
+## posed, framed, rendered and added to a grid saved as lineup_<mode>.png
+## (labels in lineup_<mode>.txt).
+var _shots: Array = []
+var _shot_cols := 4
+
+
+func _has(field: String, key: String) -> bool:
+	return Cosmetics.CATALOG.get(field, {}).has(key)
+
+
+func _build_shots(m: String) -> Array:
+	var out: Array = []
+	var skins: Array = Cosmetics.keys_of("skin")
+	match m:
+		"custom":
+			var data = JSON.parse_string(FileAccess.get_file_as_string(shots_file))
+			_shot_cols = 4
+			for d in data:
+				var sh: Dictionary = d
+				for k in ["from", "at"]:
+					var a: Array = sh[k]
+					sh[k] = Vector3(a[0], a[1], a[2])
+				if sh.has("cols"):
+					_shot_cols = int(sh["cols"])
+				if sh.has("yaw_deg"):
+					sh["yaw"] = PI + deg_to_rad(float(sh["yaw_deg"]))
+				out.append(sh)
+		"skintones":
+			_shot_cols = 4
+			var hs := ["tuft", "bob", "curly", "buns"]
+			var hc := ["brown", "black", "auburn", "dark_brown", "blonde", "espresso", "black", "ginger"]
+			var cols := ["sky", "bubblegum", "lime", "sunny", "grape", "teal", "tangerine", "cloud"]
+			for i in skins.size():
+				out.append({"label": "%s (%s hair)" % [skins[i], hc[i]], "look": {"skin": skins[i], "outfit": "pj", "pattern": "plain",
+					"color": cols[i], "hat": "none", "hair": hs[i % 4], "hair_color": hc[i]}, "yaw": PI + 0.35,
+					"from": Vector3(0.0, 1.2, 2.0), "at": Vector3(0, 1.08, 0), "fov": 30.0})
+		"shop", "season":
+			_shot_cols = 3 if m == "shop" else 4
+			var keys: Array = V6_OUTFITS.slice(0, 6) if m == "shop" else V6_OUTFITS.slice(6)
+			for k in keys:
+				if not _has("outfit", k):
+					continue
+				var o: Dictionary = {"outfit": k, "hat": "none"}
+				o.merge(SHOWCASE.get(k, {}), true)
+				for side in [0, 1]:
+					out.append({"label": "%s (%s)" % [k, "front" if side == 0 else "back"], "look": o,
+						"yaw": PI + (0.4 if side == 0 else PI - 0.5), "from": Vector3(0.0, 1.0, 3.6), "at": Vector3(0, 0.76, 0), "fov": 30.0})
+		"outfitsheet":
+			_shot_cols = 4
+			for k in V6_OUTFITS:
+				if not _has("outfit", k):
+					continue
+				var o: Dictionary = {"outfit": k, "hat": "none"}
+				o.merge(SHOWCASE.get(k, {}), true)
+				out.append({"label": k + " idle", "look": o, "yaw": PI + 0.4, "from": Vector3(0.0, 1.0, 3.6), "at": Vector3(0, 0.76, 0), "fov": 30.0})
+				out.append({"label": k + " run", "look": o, "yaw": PI + 1.25, "clip": "run", "t": 0.3, "from": Vector3(0.0, 1.0, 3.6),
+					"at": Vector3(0, 0.76, 0), "fov": 30.0})
+				out.append({"label": k + " sprint", "look": o, "yaw": PI - 1.1, "clip": "sprint", "t": 0.62, "from": Vector3(0.0, 1.0, 3.6),
+					"at": Vector3(0, 0.76, 0), "fov": 30.0})
+				var em: String = "emote_" + (V6_EMOTES[V6_OUTFITS.find(k) % 4] if _has("emote", V6_EMOTES[0]) else "cheer")
+				out.append({"label": k + " " + em, "look": o, "yaw": PI + 0.3, "clip": em, "t": 0.45, "from": Vector3(0.0, 1.0, 3.6),
+					"at": Vector3(0, 0.76, 0), "fov": 30.0})
+		"newhats":
+			_shot_cols = 4
+			var hairs := ["tuft", "bob", "curly", "buns"]
+			for i in V6_HATS.size():
+				var h: String = V6_HATS[i]
+				if not _has("hat", h):
+					continue
+				for j in 4:
+					out.append({"label": "%s + %s" % [h, hairs[j]], "look": {"hat": h, "hair": hairs[j], "outfit": "pj", "pattern": "plain",
+						"hair_color": ["brown", "black", "auburn", "blonde"][j], "skin": skins[(i * 2 + j) % 8], "color": "teal"},
+						"yaw": PI + (0.5 if j % 2 == 0 else PI - 0.7), "from": Vector3(0.0, 1.45, 2.1), "at": Vector3(0, 1.3, 0), "fov": 32.0})
+		"newshoes":
+			_shot_cols = 4
+			for sh in V6_SHOES:
+				if not _has("shoes", sh):
+					continue
+				for j in 2:
+					out.append({"label": "%s (%s)" % [sh, "front" if j == 0 else "side"], "look": {"shoes": sh, "outfit": "pj", "pattern": "plain"},
+						"yaw": PI + (0.6 if j == 0 else 1.5), "from": Vector3(0.0, 0.34, 1.0), "at": Vector3(0, 0.1, 0), "fov": 34.0})
+		"hatgrid":
+			# every outfit x every hat, head close-ups (clipping review)
+			_shot_cols = Cosmetics.keys_of("hat").size()
+			for o in Cosmetics.keys_of("outfit"):
+				for h in Cosmetics.keys_of("hat"):
+					out.append({"label": "%s + %s" % [o, h], "look": {"outfit": o, "hat": h, "hair": ["tuft", "bob", "curly", "buns"][(out.size() / 3) % 4]},
+						"yaw": PI + 0.55, "from": Vector3(0.0, 1.35, 2.3), "at": Vector3(0, 1.15, 0), "fov": 34.0})
+		"emotes":
+			_shot_cols = 8
+			for e in V6_EMOTES:
+				if not _has("emote", e):
+					continue
+				var o2: Dictionary = {"outfit": V6_OUTFITS[V6_EMOTES.find(e)], "hat": "none"}
+				o2.merge(SHOWCASE.get(o2["outfit"], {}), true)
+				for i in 8:
+					out.append({"label": "%s %d/8" % [e, i], "look": o2, "yaw": PI + 0.35, "clip": "emote_" + e, "t": i * 0.2,
+						"from": Vector3(0.0, 1.0, 3.6), "at": Vector3(0, 0.78, 0), "fov": 30.0})
+	return out
+
+
+func _run_shots() -> void:
+	if _t < 0.5:
+		return
+	if _sheet_wait > 0:
+		_sheet_wait -= 1
+		return
+	if _grabbing:
+		return
+	if _sheet_i >= 0:
+		_grabbing = true
+		await RenderingServer.frame_post_draw
+		_strip_frames.append(get_viewport().get_texture().get_image())
+		_grabbing = false
+	_sheet_i += 1
+	if _sheet_i >= _shots.size():
+		_save_grid(_mode, _shot_cols, _shots.map(func(p: Dictionary) -> String: return String(p["label"])))
+		_next_mode()
+		return
+	var sh: Dictionary = _shots[_sheet_i]
+	_clear()
+	var role: int = int(sh.get("role", TC.Role.RUNNER))
+	var over: Dictionary = {"outfit": "pj", "pattern": "stripes", "color": "sky", "skin": "tone3"}
+	over.merge(sh.get("look", {}), true)
+	var pv := _add(role, look(over), float(sh.get("x", 0.0)), 0.0, float(sh.get("yaw", PI)))
+	var clip := String(sh.get("clip", "idle"))
+	_pose(pv, clip, float(sh.get("t", 0.0)))
+	# the expression that state shows in play (no blink mid-shot)
+	pv._blink_t = 99.0
+	pv._update_face(1.0, clip if clip.begins_with("emote_") else "ground", false, 0, false)
+	for part in sh.get("hide", []):
+		if pv.parts.has(part):
+			pv.parts[part].visible = false
+	_aim(sh["from"], sh["at"], float(sh.get("fov", 30.0)))
+	_sheet_wait = 6
+

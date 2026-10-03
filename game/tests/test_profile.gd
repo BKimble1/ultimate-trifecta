@@ -80,30 +80,37 @@ func test_every_appearance_maps_onto_the_character() -> void:
 					for n in v.parts:
 						if (v.parts[n] as MeshInstance3D).visible:
 							shown[n] = true
-					for part in Cosmetics.OUTFIT_PARTS[o] + Cosmetics.entry("shoes", sh)["parts"]:
+					# (V6: an outfit with its own footwear draws that instead of the shoes)
+					var shoe_parts: Array = [] if o in Cosmetics.OUTFIT_OWN_SHOES else Cosmetics.entry("shoes", sh)["parts"]
+					for part in Cosmetics.OUTFIT_PARTS[o] + shoe_parts:
 						if not shown.has(part):
 							bad.append("%s hidden for %s" % [part, c])
 					var hood: bool = o in Cosmetics.HOOD_OUTFITS
 					for part in Cosmetics.entry("hat", h)["parts"]:
 						if shown.has(part) == hood:
 							bad.append("%s visibility wrong for %s" % [part, c])
-					var hidden: Array = Cosmetics.HAT_HIDES_HAIR.get(h, [])
+					var hidden: Array = []
+					for k in Cosmetics.head_rules(c):
+						hidden.append_array(Cosmetics.HAT_HIDES_HAIR.get(k, []))
 					for part in Cosmetics.entry("hair", hair)["parts"]:
 						var want: bool = not hood and not part in hidden
 						# V5: under a crown or headphones the curly crop is drawn
 						# as its smooth-band variant (CharacterView, parts.py)
-						var drawn: bool = shown.has(part) or shown.has(part + "_hat")
+						# (V6: or its `_low` variant under a cap or beanie)
+						var drawn: bool = shown.has(part) or shown.has(part + "_hat") or shown.has(part + "_low")
 						if drawn != want:
 							bad.append("hair %s visibility wrong for %s" % [part, c])
 					var hair_parts := 0
-					for hp in ["hair", "hair_bob", "hair_curly", "hair_curly_hat", "hair_buns"]:
+					for hp in ["hair", "hair_hat", "hair_bob", "hair_curly", "hair_curly_hat", "hair_curly_low", "hair_buns"]:
 						if shown.has(hp):
 							hair_parts += 1
 					if hair_parts > 1:
 						bad.append("two hairstyles at once for %s" % c)
 					if shown.has("watch"):
 						bad.append("uniform shown on a runner %s" % c)
-	t.eq(combos, 5 * 6 * 3 * 4, "all outfit x hat x shoe x hair combinations checked")
+	t.eq(combos, Cosmetics.keys_of("outfit").size() * Cosmetics.keys_of("hat").size() * Cosmetics.keys_of("shoes").size()
+		* Cosmetics.keys_of("hair").size(), "all outfit x hat x shoe x hair combinations checked")
+	t.check(combos >= 15 * 10 * 5 * 4, "including the V6 outfits, hats and shoes (%d)" % combos)
 	t.eq(bad, [], "each combination shows its parts and applies the hair/hat rules")
 	v.set_appearance(TC.Role.PATROL, Cosmetics.sanitize({"outfit": "duck", "hat": "crown", "shoes": "flippers"}))
 	t.check((v.parts["watch"] as MeshInstance3D).visible and (v.parts["flashlight"] as MeshInstance3D).visible

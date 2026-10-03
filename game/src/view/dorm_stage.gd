@@ -65,7 +65,8 @@ var emote_starts: Dictionary = {}
 
 ## How long each lobby emote plays: two passes of its loop, so a glance
 ## catches it (the clips are 1.2-1.4 s loops).
-const EMOTE_S := {"wave": 2.4, "cheer": 2.4, "laugh": 2.4, "shrug": 2.8, "dance": 3.75, "point": 2.4}
+const EMOTE_S := {"wave": 2.4, "cheer": 2.4, "laugh": 2.4, "shrug": 2.8, "dance": 3.75, "point": 2.4,
+	"stargaze": 3.2, "victory_lap": 3.2, "shush": 2.8, "moon_shuffle": 3.2}
 const PREVIEW_S := {"idle": 1.2, "run": 2.4, "sprint": 2.4, "jump": 1.1, "dive": 1.3}
 
 

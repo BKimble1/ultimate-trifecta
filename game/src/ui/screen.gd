@@ -292,7 +292,8 @@ func popover_at(anchor: Control, body: Control, side: String = "above") -> Panel
 	return p
 
 
-## The emote picker: six big tiles; `on_pick(id)` runs after it closes.
+## The emote picker: a big tile per emote the player owns (V6: Season 1
+## emotes only once earned); `on_pick(id)` runs after it closes.
 func emote_picker(anchor: Control, on_pick: Callable, side: String = "above") -> void:
 	var v := UIKit.vbox(12)
 	v.add_child(UIKit.styled("Emote", "headline"))
@@ -302,6 +303,8 @@ func emote_picker(anchor: Control, on_pick: Callable, side: String = "above") ->
 	g.add_theme_constant_override("v_separation", 10)
 	for i in TC.EMOTES.size():
 		var idx := i
+		if Cosmetics.entry("emote", String(TC.EMOTES[i])).has("season") and not Save.owns("emote", String(TC.EMOTES[i])):
+			continue
 		g.add_child(icon_tile(Icons.emote_icon(i), String(TC.EMOTE_LABELS[TC.EMOTES[i]]), func() -> void:
 			close_popover()
 			on_pick.call(idx)))

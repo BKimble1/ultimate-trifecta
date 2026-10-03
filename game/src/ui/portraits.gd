@@ -60,8 +60,8 @@ static func key_of(app: Dictionary, role: int) -> String:
 
 ## Cached portrait, or a placeholder now and `portrait_ready` later.
 ## `owner` (e.g. a party cell): its newer request replaces its queued one.
-## `framing`: "head" (portraits, face/hair/hat thumbnails), "body" (outfit
-## thumbnails) or "feet" (shoes).
+## `framing`: "head" (portraits, face/hair thumbnails), "hat" (V6: hat
+## thumbnails, room for tall hats), "body" (outfit thumbnails) or "feet" (shoes).
 func portrait(app: Dictionary, role: int = TC.Role.RUNNER, owner: String = "", framing: String = "head") -> Texture2D:
 	var a := Cosmetics.sanitize(app)
 	var k := key_of(a, role) + ("" if framing == "head" else ":" + framing)
@@ -84,6 +84,9 @@ const FRAMINGS := {
 	"head": [Vector3(0.0, 1.25, 1.85), Vector3(0.0, 1.13, 0.0), 24.0],
 	"body": [Vector3(0.0, 0.85, 2.6), Vector3(0.0, 0.8, 0.0), 36.0],
 	"feet": [Vector3(0.35, 0.55, 1.45), Vector3(0.0, 0.1, 0.0), 26.0],
+	# V6: hat cards (the head framing cut off tall hats: party hat, crown,
+	# pompom, owl ears)
+	"hat": [Vector3(0.0, 1.33, 2.15), Vector3(0.0, 1.27, 0.0), 26.0],
 }
 
 

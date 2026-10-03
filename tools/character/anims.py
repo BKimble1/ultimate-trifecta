@@ -98,9 +98,13 @@ def blend_pose(a, b, t):
         if 'ik' in va and 'ik' in vb:
             # V5: interpolate IK targets (V4 switched them at t = 0.5, so a
             # blend between two IK stances jumped the feet ~20 cm mid-clip)
-            (ta, xa), (tb, xb) = va['ik'], vb['ik']
+            ia, ib = va['ik'], vb['ik']
+            (ta, xa), (tb, xb) = ia[:2], ib[:2]
             if isinstance(xa, (int, float)):
                 nv['ik'] = (Vector(ta).lerp(Vector(tb), t), lerp(xa, xb, t))
+                # V6: optional third element, the foot's yaw (degrees)
+                if len(ia) > 2 or len(ib) > 2:
+                    nv['ik'] = nv['ik'] + (lerp(ia[2] if len(ia) > 2 else 0.0, ib[2] if len(ib) > 2 else 0.0, t),)
             else:
                 nv['ik'] = (Vector(ta).lerp(Vector(tb), t), Vector(xa).lerp(Vector(xb), t))
         elif 'ik' in va or 'ik' in vb:
@@ -161,6 +165,11 @@ class Rig:
         """pose -> {bone: (local_quat, local_loc)} and armature-space matrices."""
         P = {}
         L = {}
+        # V6: a turning frame.  FK deltas are written in armature axes; when a
+        # clip turns the whole body with the root (the victory lap), the
+        # deltas of every bone below the root are turned with it.
+        fyaw = pose.get('_frame', {}).get('yaw', 0.0)
+        Rf = Matrix.Rotation(fyaw * D2R, 3, 'Z') if fyaw else None
         for n in self.order:
             b = self.bones[n]
             rest = self.rest[n]
@@ -176,16 +185,21 @@ class Rig:
                 q_local = Quaternion()
             else:
                 W = qe(*spec.get('rot', (0, 0, 0))).to_matrix()
+                if Rf is not None and b.parent is not None:
+                    W = Rf @ W @ Rf.transposed()
                 q_local = (O3.inverted() @ W @ O3).to_quaternion()
             loc_local = Vector((0, 0, 0))
             if 'loc' in spec:
-                loc_local = O3.inverted() @ Vector(spec['loc'])
+                lv = Vector(spec['loc'])
+                if Rf is not None and b.parent is not None:
+                    lv = Rf @ lv
+                loc_local = O3.inverted() @ lv
             Lm = Matrix.Translation(loc_local) @ q_local.to_matrix().to_4x4()
             P[n] = O @ Lm
             L[n] = [q_local, loc_local]
         return P, L
 
-    def leg_ik(self, P, L, side, ankle_target, foot_pitch_deg=0.0, pole=Vector((0, 1, 0))):
+    def leg_ik(self, P, L, side, ankle_target, foot_pitch_deg=0.0, pole=Vector((0, 1, 0)), yaw_deg=0.0):
         sfx = '.L' if side < 0 else '.R'
         th, sh, ft = 'thigh' + sfx, 'shin' + sfx, 'foot' + sfx
         hips = self.bones[th].parent.name
@@ -194,6 +208,8 @@ class Rig:
         a = (self.bones[th].tail_local - self.bones[th].head_local).length
         b = (self.bones[sh].tail_local - self.bones[sh].head_local).length
         A = Vector(ankle_target)
+        Ryaw = Matrix.Rotation(yaw_deg * D2R, 3, 'Z')
+        pole = Ryaw @ Vector(pole)
         d_vec = A - H
         d = d_vec.length
         d = max(abs(a - b) + 1e-4, min(a + b - 1e-4, d))
@@ -224,7 +240,7 @@ class Rig:
         # foot: world orientation = rest orientation pitched about X
         O_ft = P[sh] @ self.rest[sh].inverted() @ self.rest[ft]
         O3 = O_ft.to_3x3().normalized()
-        Dw = Matrix.Rotation(foot_pitch_deg * D2R, 3, 'X') @ self.rest[ft].to_3x3().normalized()
+        Dw = Ryaw @ Matrix.Rotation(foot_pitch_deg * D2R, 3, 'X') @ self.rest[ft].to_3x3().normalized()
         q = (O3.inverted() @ Dw).to_quaternion()
         L[ft] = [q, Vector((0, 0, 0))]
         P[ft] = O_ft @ q.to_matrix().to_4x4()
@@ -269,11 +285,18 @@ class Rig:
             sfx = '.L' if side < 0 else '.R'
             spec = pose.get('foot' + sfx, {})
             if 'ik' in spec:
-                tgt, pitch = spec['ik']
-                self.leg_ik(P, L, side, tgt, pitch)
+                tgt, pitch = spec['ik'][:2]
+                yaw = spec['ik'][2] if len(spec['ik']) > 2 else 0.0
+                self.leg_ik(P, L, side, tgt, pitch, yaw_deg=yaw)
             hs = pose.get('hand' + sfx, {})
             if 'ik' in hs:
-                tgt, pole = hs['ik']
+                tgt, pole = hs['ik'][:2]
+                if len(hs['ik']) > 2:
+                    # V6: a target given in another bone's rest space (the
+                    # shush puts the mitten in front of the lips wherever
+                    # the head is turned)
+                    sp = hs['ik'][2]
+                    tgt = P[sp] @ self.rest[sp].inverted() @ Vector(tgt)
                 self.arm_ik(P, L, side, tgt, pole)
         return L
 
@@ -965,6 +988,159 @@ def emote(name, t):
     return pose
 
 
+# ------------------------------------------------------------------ V6 Season 1 emotes
+STARGAZE_L = 1.6
+LAP_L = 1.6
+SHUSH_L = 1.4
+SHUFFLE_L = 1.6
+
+
+def clip_stargaze(t):
+    """Stargaze (1.6 s loop): leans back and looks up, the right arm points
+    up and out at the sky and traces from star to star, the left mitten
+    rests on the chest; the weight sways gently.  The pointing arm stays in
+    the cheer's V so it clears the big head."""
+    a = 2 * math.pi * t / STARGAZE_L
+    sw = math.sin(a)
+    pose = stand(-0.012 + 0.004 * math.cos(2 * a))
+    pose['hips']['loc'] = (0.012 * sw, 0, pose['hips']['loc'][2])
+    pose['hips']['rot'] = (2.0, -2.0 * sw, 0)
+    pose['spine'] = {'rot': (5.0, 1.5 * sw, 0)}
+    pose['chest'] = {'rot': (4.0, 0, -4.0 + 3.0 * sw)}
+    pose['neck'] = {'rot': (8.0, 0, 0)}
+    pose['head'] = {'rot': (22.0 + 2.0 * math.cos(2 * a), -3.0 * sw, -10.0 + 9.0 * sw)}
+    # pointing arm: up and out, tracing a small loop of stars
+    pose['shoulder.R'] = {'rot': (0, -8, 0)}
+    pose['upper_arm.R'] = {'rot': (24 + 12 * math.cos(a), -84 + 8 * sw, 0)}
+    pose['forearm.R'] = {'rot': (10 + 6 * math.sin(2 * a), 6, 0)}
+    pose['hand.R'] = {'rot': (-8, 0, 0)}
+    # the other mitten on the chest
+    pose['upper_arm.L'] = {'rot': (30, -4, 0)}
+    pose['forearm.L'] = {'rot': (96, 18, 0)}
+    pose['hand.L'] = {'rot': (8, 0, 0)}
+    return pose
+
+
+LAP_R = 0.12      # radius of the little circle the victory lap jogs (m)
+LAP_STEPS = 3     # gait cycles per lap (6 steps)
+
+
+def clip_victory_lap(t):
+    """Victory lap (1.6 s loop): a little jog round a tight circle to the
+    left (one lap, six steps) with the right fist pumping overhead in the
+    cheer's V.  The root carries the body round the circle and turns it;
+    planted feet stay put on the floor (IK targets in armature space, with
+    the foot's yaw), so the lap does not skate."""
+    u = (t / LAP_L) % 1.0
+    phi = 2 * math.pi * u                    # body angle round the circle
+    c = Vector((-LAP_R, 0.0, 0.0))           # centre to the character's left
+    pos = c + Vector((math.cos(phi), math.sin(phi), 0.0)) * LAP_R
+    yaw = math.degrees(phi)
+    ph = (u * LAP_STEPS) % 1.0
+    bob = 0.012 * math.cos(4 * math.pi * ph)
+    pose = {'root': {'loc': (pos.x, pos.y, 0.0), 'rot': (0, 0, yaw)}, '_frame': {'yaw': yaw}}
+    pose['hips'] = {'loc': (0, 0, -0.035 - bob), 'rot': (-4.0, 0, 5.0 * math.sin(2 * math.pi * ph))}
+    pose['spine'] = {'rot': (-5.0, 3.0, -4.0 * math.sin(2 * math.pi * ph))}
+    pose['chest'] = {'rot': (-2.0, 0, -3.0 * math.sin(2 * math.pi * ph))}
+    pose['head'] = {'rot': (8.0, 0, 10.0)}           # looks a little into the turn
+    # feet: each plants on its own circle (left inside, right outside) once
+    # per gait cycle; duty 0.55, so one is always down (a jog, not a run)
+    duty = 0.55
+    step = 2 * math.pi / LAP_STEPS
+    for side, ph0 in ((-1, 0.0), (1, 0.5)):
+        sfx = '.L' if side < 0 else '.R'
+        rr = LAP_R + side * (rig.HIP_X + 0.012)
+        fph = (u * LAP_STEPS + ph0 + duty * 0.5) % 1.0      # 0 = touch-down
+        k = math.floor(u * LAP_STEPS + ph0 + duty * 0.5)
+        # this cycle's plant angle: the body passes over it at mid-stance
+        a_plant = (k - ph0) * step
+        if fph < duty:
+            a = a_plant
+            z = rig.ANKLE_Z
+            pitch = 0.0
+        else:
+            w = (fph - duty) / (1.0 - duty)
+            e = w * w * (3 - 2 * w)
+            a = a_plant + step * e
+            z = rig.ANKLE_Z + 0.075 * math.sin(math.pi * w)
+            pitch = -18.0 * math.sin(math.pi * w)
+        fp = c + Vector((math.cos(a), math.sin(a), 0.0)) * rr
+        pose['foot' + sfx] = {'ik': (Vector((fp.x, fp.y, z)), pitch, math.degrees(a))}
+    # arms: right fist pumps in a V overhead, left arm swings with the jog
+    pump = math.sin(4 * math.pi * ph)
+    pose['upper_arm.R'] = {'rot': (10, -88 + 4 * pump, 0)}
+    pose['forearm.R'] = {'rot': (34 + 22 * pump, 22, 0)}
+    pose['hand.R'] = {'rot': (10, 0, 0)}
+    swl = math.sin(2 * math.pi * ph)
+    pose['upper_arm.L'] = {'rot': (30 * swl, 14, 0)}
+    pose['forearm.L'] = {'rot': (78 + 10 * swl, 0, 0)}
+    pose['hand.L'] = {'rot': (8, 0, 0)}
+    return pose
+
+
+def clip_shush(t):
+    """Shush (1.4 s loop): a sneaky "shh!": leans in, the face turns to the
+    right and dips, and the right mitten comes up in front of the lips (arm
+    IK in head space, 5 cm in front of the mouth; the short chibi arm only
+    reaches a face turned toward it); a small glance either way; the other
+    arm tucks in."""
+    a = 2 * math.pi * t / SHUSH_L
+    look = math.sin(a)
+    pose = stand(-0.02)
+    pose['hips']['rot'] = (-2.0, 0, 3.0 * look)
+    # the glance turns the spine, so the head and the mitten move together
+    pose['spine'] = {'rot': (-3.0, 0, 3.0 + 7.0 * look)}
+    pose['chest'] = {'rot': (-2.0, 0, 6.0)}
+    pose['neck'] = {'rot': (-2.0, 0, 0)}
+    # the head turns to the mitten (the chibi arm reaches the lips only when
+    # the face turns toward it)
+    pose['head'] = {'rot': (-9.0, -4.0, -28.0)}
+    pose['shoulder.R'] = {'rot': (0, -6, 16)}
+    pose['hand.R'] = {'ik': (Vector(SHUSH_WRIST), (0.9, -0.2, -0.8), 'head')}
+    pose['upper_arm.L'] = {'rot': (14, -16, 0)}
+    pose['forearm.L'] = {'rot': (44, 0, 0)}
+    return pose
+
+
+SHUSH_WRIST = (0.05, 0.33, 1.03)   # wrist, head rest space: the mitten in front of the lips
+
+
+def clip_moon_shuffle(t):
+    """Moon shuffle (1.6 s loop): a smooth backslide in place.  One foot is
+    flat and glides back while the other rises onto its toes, then they
+    swap (four glides per loop); the body bobs on the beat, the shoulders
+    roll and the bent arms sway."""
+    u = (t / SHUFFLE_L) % 1.0
+    beat = (u * 4.0) % 1.0
+    k = int(u * 4.0) % 2
+    e = beat * beat * (3 - 2 * beat)
+    pose = stand(-0.028 + 0.016 * math.cos(2 * math.pi * beat))
+    glide = 0.09
+    for side in (-1, 1):
+        sfx = '.L' if side < 0 else '.R'
+        sliding = (side < 0) == (k == 0)
+        if sliding:
+            # flat, gliding from in front to behind
+            y = lerp(glide * 0.5, -glide * 0.5, e)
+            pose['foot' + sfx] = {'ik': (REST_ANKLE[side] + Vector((0, y, 0)), 0.0)}
+        else:
+            # on the toes, coming forward to the start of its own glide
+            y = lerp(-glide * 0.5, glide * 0.5, e)
+            lift = 0.035 * math.sin(math.pi * beat) + 0.02
+            pose['foot' + sfx] = {'ik': (REST_ANKLE[side] + Vector((0, y, lift)), -38.0)}
+    sway = math.sin(2 * math.pi * u * 2)
+    roll = math.sin(2 * math.pi * beat)
+    pose['hips']['rot'] = (0, 3.0 * sway, 6.0 * sway)
+    pose['spine'] = {'rot': (-2.0, -2.0 * sway, -5.0 * sway)}
+    pose['chest'] = {'rot': (0, 2.0 * roll, -3.0 * sway)}
+    pose['head'] = {'rot': (4.0 + 3.0 * math.cos(2 * math.pi * beat), 0, 6.0 * sway)}
+    pose.update(sym({'shoulder.L': {'rot': (0, 4.0 + 3.0 * roll, 0)}, 'upper_arm.L': {'rot': (22 + 14 * sway, -2, 0)},
+                     'forearm.L': {'rot': (82, 0, 0)}, 'hand.L': {'rot': (6, 0, 0)}}))
+    pose['upper_arm.R']['rot'] = (22 - 14 * sway, 2, 0)
+    pose['shoulder.R']['rot'] = (0, -4.0 + 3.0 * roll, 0)
+    return pose
+
+
 def clip_arrive(t):
     # lobby arrival: crouch, hop, land with a little ta-da (0.9 s)
     if t < 0.15:
@@ -1036,4 +1212,9 @@ def library():
     }
     for e, L in (('wave', 1.2), ('cheer', 1.2), ('laugh', 1.2), ('shrug', 1.4), ('dance', 1.25), ('point', 1.2)):
         lib['emote_' + e] = (L, True, (lambda name: (lambda t: emote(name, t)))(e))
+    # V6 Season 1 emotes
+    lib['emote_stargaze'] = (STARGAZE_L, True, clip_stargaze)
+    lib['emote_victory_lap'] = (LAP_L, True, clip_victory_lap)
+    lib['emote_shush'] = (SHUSH_L, True, clip_shush)
+    lib['emote_moon_shuffle'] = (SHUFFLE_L, True, clip_moon_shuffle)
     return lib

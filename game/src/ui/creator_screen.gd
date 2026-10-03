@@ -40,7 +40,7 @@ const FIELD_TITLES := {
 }
 const SWATCH_FIELDS := ["color", "trim", "skin", "hair_color"]
 ## Picture framing for an item's card ("" = an icon card).
-const THUMB_FRAMING := {"outfit": "body", "pattern": "body", "hair": "head", "hat": "head", "shoes": "feet",
+const THUMB_FRAMING := {"outfit": "body", "pattern": "body", "hair": "head", "hat": "hat", "shoes": "feet",
 	"face": "head", "brows": "head", "marks": "head"}
 const CARD_W := 158.0
 const CARD_GAP := 12.0

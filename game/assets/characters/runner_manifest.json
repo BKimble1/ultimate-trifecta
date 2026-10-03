@@ -89,12 +89,28 @@
       "length": 1.2,
       "loop": true
     },
+    "emote_moon_shuffle": {
+      "length": 1.6,
+      "loop": true
+    },
     "emote_point": {
       "length": 1.2,
       "loop": true
     },
     "emote_shrug": {
       "length": 1.4,
+      "loop": true
+    },
+    "emote_shush": {
+      "length": 1.4,
+      "loop": true
+    },
+    "emote_stargaze": {
+      "length": 1.6,
+      "loop": true
+    },
+    "emote_victory_lap": {
+      "length": 1.6,
       "loop": true
     },
     "emote_wave": {
@@ -202,13 +218,29 @@
     "walk": 0.7
   },
   "meshes": {
+    "acc_courier_cap": {
+      "tris": 3090,
+      "verts": 1702
+    },
+    "acc_sleepmask": {
+      "tris": 1956,
+      "verts": 1009
+    },
     "base": {
-      "tris": 7298,
-      "verts": 3774
+      "tris": 8034,
+      "verts": 4146
     },
     "body_skin": {
       "tris": 4244,
       "verts": 2145
+    },
+    "cardigan": {
+      "tris": 9090,
+      "verts": 4733
+    },
+    "courier": {
+      "tris": 9946,
+      "verts": 5341
     },
     "duck": {
       "tris": 8896,
@@ -250,9 +282,29 @@
       "tris": 4048,
       "verts": 2097
     },
+    "hair_curly_low": {
+      "tris": 2448,
+      "verts": 1265
+    },
+    "hair_hat": {
+      "tris": 1848,
+      "verts": 953
+    },
+    "hat_beanie": {
+      "tris": 3452,
+      "verts": 1785
+    },
     "hat_crown": {
       "tris": 820,
       "verts": 420
+    },
+    "hat_glowband": {
+      "tris": 1150,
+      "verts": 581
+    },
+    "hat_headlamp": {
+      "tris": 1852,
+      "verts": 938
     },
     "hat_headphones": {
       "tris": 1620,
@@ -262,6 +314,10 @@
       "tris": 4188,
       "verts": 2111
     },
+    "hat_owlears": {
+      "tris": 1448,
+      "verts": 746
+    },
     "hat_party": {
       "tris": 568,
       "verts": 288
@@ -270,33 +326,73 @@
       "tris": 2048,
       "verts": 1050
     },
+    "hoodie": {
+      "tris": 7402,
+      "verts": 3943
+    },
+    "jogger": {
+      "tris": 5860,
+      "verts": 3099
+    },
+    "moonlight": {
+      "tris": 7566,
+      "verts": 3978
+    },
     "mustache": {
       "tris": 480,
       "verts": 244
+    },
+    "owl": {
+      "tris": 11126,
+      "verts": 6159
     },
     "pj": {
       "tris": 8576,
       "verts": 4385
     },
+    "raincoat": {
+      "tris": 10476,
+      "verts": 5482
+    },
     "robe": {
       "tris": 7628,
       "verts": 3932
+    },
+    "scout": {
+      "tris": 10182,
+      "verts": 5438
     },
     "shoe_flippers": {
       "tris": 1816,
       "verts": 934
     },
+    "shoe_glow": {
+      "tris": 2660,
+      "verts": 1430
+    },
     "shoe_hightops": {
       "tris": 2212,
       "verts": 1186
+    },
+    "shoe_moonboots": {
+      "tris": 2820,
+      "verts": 1506
     },
     "shoe_slippers": {
       "tris": 3304,
       "verts": 1706
     },
+    "starry": {
+      "tris": 7868,
+      "verts": 4247
+    },
     "swim": {
       "tris": 2088,
       "verts": 1083
+    },
+    "varsity": {
+      "tris": 8588,
+      "verts": 4575
     },
     "watch": {
       "tris": 12712,

@@ -76,6 +76,7 @@ const STATES := {
 	"stumble": 0.06, "flop": 0.1, "dizzy": 0.3, "tag_windup": 0.05, "tag_lunge": 0.04, "tag_recover": 0.08, "tag_miss": 0.08,
 	"cart_enter": 0.08, "cart": 0.12, "cart_exit": 0.06, "celebrate": 0.15, "arrive": 0.05, "ready": 0.08,
 	"emote_wave": 0.15, "emote_cheer": 0.15, "emote_laugh": 0.15, "emote_shrug": 0.15, "emote_dance": 0.15, "emote_point": 0.15,
+	"emote_stargaze": 0.2, "emote_victory_lap": 0.15, "emote_shush": 0.15, "emote_moon_shuffle": 0.15,
 }
 const UPPER_BODY := ["spine", "chest", "neck", "head", "shoulder.L", "shoulder.R", "upper_arm.L", "upper_arm.R",
 	"forearm.L", "forearm.R", "hand.L", "hand.R"]
@@ -135,6 +136,8 @@ var anim: AnimationPlayer
 var tree: AnimationTree
 var secondary: CharacterSecondary
 var pose_fade: CharacterPoseFade
+## V6: pins the stance foot in turns, stops and reversals (CharacterFootLock)
+var foot_lock: CharacterFootLock
 var hat_spring: SpringBoneSimulator3D
 var parts: Dictionary = {}          # name -> MeshInstance3D
 var visible_parts: Array[MeshInstance3D] = []
@@ -209,6 +212,7 @@ var _fidget := ""
 var _blink_len := 0.16
 var _hat_off := false
 var _travel_f := Vector3.ZERO
+var _spot_t := 0.0            # how long the character has run without travelling
 ## total animation time advanced (tests: equals the real elapsed time)
 var anim_time_advanced := 0.0
 
@@ -295,6 +299,9 @@ func _build_model() -> void:
 	skeleton.add_child(pose_fade)
 	secondary = CharacterSecondary.new()
 	skeleton.add_child(secondary)
+	foot_lock = CharacterFootLock.new()
+	foot_lock.name = "FootLock"
+	skeleton.add_child(foot_lock)
 	_build_tree()
 	_build_effects()
 
@@ -611,13 +618,10 @@ func _apply_cosmetics() -> void:
 		if int(Cosmetics.entry("color", cosmetic["color"])["id"]) % 2 == 1:
 			want.append("mustache")
 	else:
+		# (V5: under a crown or headphones the curly crop is its smooth-band
+		# variant; V6 moved that rule into Cosmetics.runner_parts with the
+		# new hats and the outfits' own headwear)
 		want = Cosmetics.runner_parts(cosmetic)
-		# V5: under a paper crown or headphones the curly crop uses its
-		# variant with a smooth band (the curls poked through the crown band)
-		var hat := String(cosmetic.get("hat", ""))
-		if (hat == "crown" or hat == "headphones") and "hair_curly" in want and parts.has("hair_curly_hat"):
-			want.erase("hair_curly")
-			want.append("hair_curly_hat")
 	visible_parts.clear()
 	for n in parts:
 		var mi: MeshInstance3D = parts[n]
@@ -637,6 +641,7 @@ func _apply_cosmetics() -> void:
 		mi.set_instance_shader_parameter("rim_color", rim)
 		mi.set_instance_shader_parameter("rim_strength", 0.14 if lighting == "indoor" else 0.1)
 		mi.set_instance_shader_parameter("wet", _wet)
+		mi.set_instance_shader_parameter("skin_warm", 0.03 if lighting == "indoor" else 0.15)
 	_face_base = Cosmetics.face_keys(cosmetic)
 	# nightcap tip spring only when it is worn
 	var cap := not patrol and "hat_nightcap" in want
@@ -767,6 +772,8 @@ func reset_motion() -> void:
 	_have_last = false
 	if secondary:
 		secondary.reset_motion()
+	if foot_lock:
+		foot_lock.reset()
 	if hat_spring:
 		hat_spring.reset()
 		hat_spring.external_force = Vector3.ZERO
@@ -1052,6 +1059,8 @@ func _process(delta: float) -> void:
 	else:
 		_still_t = 0.0
 		tree.set("parameters/loco_seek/seek_request", fposmod(_phase, 1.0))
+		if foot_lock:
+			foot_lock.weight = 0.0
 	if m == "air":
 		tree.set("parameters/air/blend_position", clampf(vel.y, AIR_POINTS["air_fall"], AIR_POINTS["air_rise"]))
 	elif m == "cart":
@@ -1192,6 +1201,17 @@ func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sp
 	tree.set("parameters/loco/blend_position", _bs)
 	tree.set("parameters/move/blend_amount", _move_w)
 	tree.set("parameters/loco_seek/seek_request", fposmod(_phase, 1.0))
+	# V6 foot lock: on for ground locomotion that really travels (not a run
+	# on the spot in the lobby, not a throttled distant character)
+	if foot_lock:
+		# "on the spot" only when it lasts (a reversal passes through zero
+		# travel for a moment and keeps the lock)
+		var travel := Vector2(_travel_f.x, _travel_f.z).length()
+		_spot_t = _spot_t + delta if speed > 0.5 and travel < speed * 0.3 else 0.0
+		var on_spot := _spot_t > 0.25
+		foot_lock.weight = _move_w if on_floor and not on_spot and _act == "" and not (_far and not is_local) else 0.0
+		foot_lock.phase = fposmod(_phase, 1.0)
+		foot_lock.duty = _duty(_bs)
 	# footsteps at the gait's own foot strikes (left at 1 - duty/2, right at
 	# 0.5 - duty/2 of the cycle): the sound is where the foot meets the ground
 	var duty := _duty(_bs)
@@ -1346,7 +1366,7 @@ static func gait_rate(speed: float) -> float:
 func _update_face(delta: float, m: String, sprinting: bool, tag_phase: int, spotted: bool) -> void:
 	var tgt := {"blink": 0.0, "squint": 0.0, "smile": 0.0, "open": 0.0, "brow_up": 0.0, "brow_angry": 0.0}
 	match m:
-		"celebrate", "emote_cheer", "emote_laugh", "emote_dance", "arrive", "ready":
+		"celebrate", "emote_cheer", "emote_laugh", "emote_dance", "arrive", "ready", "emote_victory_lap":
 			tgt["squint"] = 1.0
 			tgt["smile"] = 1.0
 			tgt["open"] = 0.55
@@ -1385,6 +1405,21 @@ func _update_face(delta: float, m: String, sprinting: bool, tag_phase: int, spot
 			tgt["open"] = 0.3
 		"emote_shrug":
 			tgt["brow_up"] = 0.8
+		"emote_stargaze":
+			# wonder: lifted brows, a soft open smile
+			tgt["smile"] = 0.6
+			tgt["brow_up"] = 0.7
+			tgt["open"] = 0.3
+		"emote_shush":
+			# sly: half-closed eyes, a small smile
+			tgt["squint"] = 0.55
+			tgt["smile"] = 0.3
+			tgt["brow_up"] = 0.35
+		"emote_moon_shuffle":
+			# cool: easy smile, relaxed lids
+			tgt["smile"] = 0.85
+			tgt["squint"] = 0.6
+			tgt["open"] = 0.15
 		_:
 			tgt["smile"] = 0.35
 			if sprinting or tag_phase > 0:
