@@ -49,6 +49,7 @@ var chat_btn: Button
 var top_bar: Control
 var bottom_bar: Control
 var _chat_dot: PanelContainer
+var _drawer: ChatDrawer
 var _known: Dictionary = {}      # uid -> shown name (join / leave notes)
 var _bubbled := 0                # newest chat sequence shown as a bubble
 
@@ -375,7 +376,10 @@ func _open_chat() -> void:
 	if hub != null and hub.walking:
 		stick.release()
 	var d := ChatDrawer.open(self, session, "results" if session.phase == TC.Phase.RESULTS else "party")
-	d.closed.connect(_paint_chat_badge)
+	_drawer = d
+	d.closed.connect(func() -> void:
+		_drawer = null
+		_paint_chat_badge())
 	_paint_chat_badge()
 
 
@@ -404,7 +408,8 @@ func _on_chat() -> void:
 func _paint_chat_badge() -> void:
 	if not is_instance_valid(chat_btn):
 		return
-	var n: int = session.social.chat.unread
+	# (nothing is unread while the drawer is open: it shows everything)
+	var n: int = 0 if is_instance_valid(_drawer) else session.social.chat.unread
 	var f := UIKit.face_of(chat_btn)
 	var cap := ("Chat · %d" % n) if n > 0 else "Chat"
 	if chat_btn.has_meta(&"caption"):

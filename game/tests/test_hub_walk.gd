@@ -77,6 +77,10 @@ func test_walk_mode_input_ownership_and_sync() -> void:
 	await rig.frames(30)
 	t.check(hv.position.distance_to(before) < 0.05, "nothing moves while chat is open")
 	t.eq(l.hub.moved_frames, mf, "(no movement read)")
+	# a message arriving while the drawer is open isn't counted as unread
+	rig.host.social.chat.unread = 3
+	l._on_chat()
+	t.check(not UIKit.face_of(l.chat_btn).caption.contains("·") and (l._chat_dot == null or not l._chat_dot.visible), "no unread count while the drawer is open")
 	Controls.touch_move = Vector2(1, 0)   # a finger that was on the stick when the drawer opened
 	var drawer: ChatDrawer = l.find_children("*", "ChatDrawer", true, false)[0]
 	drawer.close()
