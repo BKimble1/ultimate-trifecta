@@ -142,6 +142,12 @@ func build() -> void:
 		if is_instance_valid(turn_lbl):
 			turn_lbl.text = "Right stick to turn" if k == "gamepad" else "Drag to turn"
 	Controls.device_changed.connect(on_dev)
+	# V6: the lambda only touches a local, so it is bound to the script, not
+	# this screen, and was never disconnected: every Locker visit left one
+	# more connection and closure behind (test_screen_cycles)
+	tree_exiting.connect(func() -> void:
+		if Controls.device_changed.is_connected(on_dev):
+			Controls.device_changed.disconnect(on_dev), CONNECT_ONE_SHOT)
 	on_dev.call(Controls.device)
 	run_btn = UIKit.quiet("Run", Vector2(130, 0))
 	run_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
