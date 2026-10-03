@@ -57,6 +57,12 @@ func test_report_states_are_honest() -> void:
 	await t.get_tree().process_frame
 	t.eq(u.state, "unavailable", "no service: reports are unavailable")
 	t.check(_labels(u).contains("Nothing has been sent"), "and it says nothing was sent")
+	for i in 30:   # (past its entry animation)
+		await t.get_tree().process_frame
+	var pr := u._panel.get_global_rect()
+	var vr := u.get_global_rect()
+	t.check(absf(pr.get_center().x - vr.get_center().x) < 2.0 and absf(pr.get_center().y - vr.get_center().y) < 2.0,
+		"the sheet is centred on screen (%s in %s)" % [str(pr), str(vr)])
 	Cloud.base_url = saved_url
 	host.queue_free()
 

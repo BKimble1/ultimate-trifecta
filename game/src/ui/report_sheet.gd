@@ -80,7 +80,7 @@ func _ready() -> void:
 		_show_unavailable()
 	else:
 		_show_choose()
-	Motion.appear(_panel, 8.0, UIKit.T_FAST)
+	Motion.settle_in(_panel, UIKit.T_FAST)   # (inside a CenterContainer: its position is the container's)
 
 
 func close() -> void:
