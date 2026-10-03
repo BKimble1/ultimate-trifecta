@@ -359,6 +359,17 @@ func _dorm_shots(mc: MatchController, info: Dictionary, rs: Dictionary, st: int,
 			_scheduled["departure"] = true
 			snap("dorm_%s_departure" % mc.home_dorm)
 			later(0.8, "dorm_%s_departure_b" % mc.home_dorm)
+		# a coin still out on the way, a few metres ahead of the runner
+		if not _scheduled.has("coin_route") and mc.coin_view != null:
+			var cl: Array = mc.start.get("coins", [])
+			for ci in cl.size():
+				var cp := Vector2(float(cl[ci]["x"]), float(cl[ci]["z"]))
+				var dd := Vector2(p.x, p.z).distance_to(cp)
+				var cam := get_viewport().get_camera_3d()
+				if mc.coin_view.is_out(ci) and dd > 4.0 and dd < 9.0 and cam != null and cam.is_position_in_frustum(Vector3(cp.x, 1.0, cp.y)):
+					_scheduled["coin_route"] = true
+					snap("dorm_coin_route")
+					break
 		var coins := int(info.get("coins", 0))
 		if coins > _coin_shots and _coin_shots < 2:
 			_coin_shots = coins

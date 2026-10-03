@@ -206,7 +206,141 @@ Eight gold coins per round (`RulesConfig.coin_spawns_per_round`), each worth
 
 ## Route, contact and first-objective analysis (every dorm × combination)
 
-TBD-BALANCE
+Two tools, both on the real campus data:
+
+- **`tools/route_analysis.gd`** — nav-grid path lengths. A trip is measured
+  from the dorm's middle pad out through its best door, round the three
+  waters in the best order (jump points), and back in through the best door
+  to just inside. Writes `config/route_table.json` (per dorm: all twenty
+  combinations, best order, length, the first water's distance, the
+  measured bot time, the curated set).
+- **`tools/dorm_balance.gd`** — the real `MatchSim`, Jolt physics and
+  `BotBrain`, headless at a fixed 60 Hz, one seed per dorm × combination
+  (60 of each mode):
+  - *trip*: six runner bots, the Night Watch held in the shed; the median
+    time from GO to home (six of six finished in every run). These feed
+    `config/route_bot_times.json` → `"dorms"`.
+  - *contact*: six runner bots against two Night Watch bots (carts from the
+    shed), a whole round: **first contact** (a runner first spotted by the
+    Night Watch), first capture, **the runners' first objective** (first
+    stamp), **the Night Watch's first objective** (first arrival within 20 m
+    of an active water), runners home, who won.
+
+**Curation per dorm.** A combination is in a dorm's fair set when its route
+is within ±16 % of the median of all 60 routes (602 m) *and* its measured
+bot trip is within ±12 % of the median of all 60 trips. Each dorm keeps
+15–16 of 20. What drops out is mostly the short trips, three waters bunched
+on the dorm's side of campus: Fountain · Pond · Pool from every dorm;
+Fountain · Pond · Quarry and Fountain · Quarry · Inlet from Puddlesworth and
+Lanternfield; Fountain · Pool · Garden from Puddlesworth and Moonpenny;
+Fountain · Pond · Inlet and Pond · Quarry · Inlet from Lanternfield (the west
+waters are close to it); Fountain · Pool · Inlet from Moonpenny — and one
+long one, Moonpenny's Pond · Garden · Inlet (697 m, across the campus).
+`RulesLogic.curated_combos(dorm)` reads the set; the host draws tonight's
+targets from the home dorm's.
+
+<!-- balance:begin -->
+Over each dorm's curated set (medians; seconds from GO):
+
+| Home dorm | Curated | Route (median) | Bot trip, no pursuit | First contact | First capture | Runners' first stamp | Night Watch at a water | Runners won | First contact, all 20 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Puddlesworth Hall | 16/20 | 593 m | 120.7 s | 21.3 s | 36.1 s | 24.6 s | 15.2 s | 16/16 | 21.3 s |
+| Lanternfield House | 15/20 | 630 m | 123.3 s | 27.7 s | 40.2 s | 22.6 s | 15.2 s | 13/15 | 27.8 s |
+| Moonpenny Lodge | 16/20 | 616 m | 120.8 s | 21.8 s | 33.9 s | 21.3 s | 15.2 s | 13/16 | 21.8 s |
+
+<details><summary>Every dorm × combination (60 rows)</summary>
+
+**Puddlesworth Hall** (16 of 20 curated)
+
+| Waters (best order) | Route | First water | Bot trip, no pursuit | First contact | First capture | First stamp | Watch at a water | Home | Won by | Curated |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
+| Pool · Fountain · Pond | 454 m | 134 m | 96.6 s (6/6) | 20.9 | 31.6 | 24.6 | 24.1 | 4/6 | Runners | no |
+| Fountain · Quarry · Pond | 445 m | 80 m | 91.0 s (6/6) | 35.9 | 50.2 | 15.4 | 25.7 | 4/6 | Runners | no |
+| Fountain · Garden · Pond | 570 m | 80 m | 120.5 s (6/6) | 20.3 | 33.2 | 14.0 | 10.8 | 4/6 | Runners | yes |
+| Fountain · Inlet · Pond | 529 m | 80 m | 108.2 s (6/6) | 25.9 | 37.3 | 14.7 | 15.2 | 4/6 | Runners | yes |
+| Fountain · Quarry · Pool | 565 m | 80 m | 111.6 s (6/6) | 31.8 | 48.6 | 14.0 | 27.1 | 4/6 | Runners | yes |
+| Fountain · Garden · Pool | 438 m | 80 m | 91.4 s (6/6) | 20.3 | 30.9 | 13.9 | 10.8 | 4/6 | Runners | no |
+| Fountain · Inlet · Pool | 539 m | 80 m | 108.0 s (6/6) | 42.7 | 56.9 | 14.0 | 61.5 | 4/6 | Runners | yes |
+| Fountain · Garden · Quarry | 601 m | 80 m | 118.1 s (6/6) | 20.0 | 33.3 | 13.9 | 10.8 | 4/6 | Runners | yes |
+| Fountain · Inlet · Quarry | 514 m | 80 m | 95.6 s (6/6) | 26.9 | 36.0 | 14.0 | 27.2 | 4/6 | Runners | no |
+| Garden · Inlet · Fountain | 547 m | 221 m | 108.4 s (6/6) | 19.7 | 28.9 | 13.9 | 40.6 | 4/6 | Runners | yes |
+| Pool · Quarry · Pond | 594 m | 134 m | 121.4 s (6/6) | 21.1 | 35.0 | 24.6 | 24.6 | 4/6 | Runners | yes |
+| Pool · Garden · Pond | 591 m | 134 m | 121.1 s (6/6) | 20.9 | 39.3 | 24.7 | 10.8 | 4/6 | Runners | yes |
+| Pool · Inlet · Pond | 637 m | 134 m | 124.6 s (6/6) | 21.5 | 65.8 | 24.5 | 15.2 | 4/6 | Runners | yes |
+| Garden · Quarry · Pond | 619 m | 221 m | 120.8 s (6/6) | 24.1 | 32.3 | 27.5 | 10.8 | 4/6 | Runners | yes |
+| Inlet · Quarry · Pond | 542 m | 238 m | 110.1 s (6/6) | 34.1 | 47.8 | 27.5 | 15.2 | 4/6 | Runners | yes |
+| Garden · Inlet · Pond | 632 m | 221 m | 125.8 s (6/6) | 54.9 | 67.4 | 25.6 | 15.2 | 4/6 | Runners | yes |
+| Quarry · Garden · Pool | 614 m | 224 m | 121.7 s (6/6) | 20.9 | 31.0 | 24.7 | 10.8 | 4/6 | Runners | yes |
+| Quarry · Inlet · Pool | 613 m | 224 m | 120.9 s (6/6) | 20.9 | 34.3 | 24.6 | 15.2 | 4/6 | Runners | yes |
+| Inlet · Garden · Pool | 566 m | 238 m | 116.3 s (6/6) | 20.9 | 30.3 | 24.7 | 15.2 | 4/6 | Runners | yes |
+| Garden · Inlet · Quarry | 617 m | 221 m | 122.4 s (6/6) | 54.3 | 68.4 | 38.4 | 15.2 | 4/6 | Runners | yes |
+
+**Lanternfield House** (15 of 20 curated)
+
+| Waters (best order) | Route | First water | Bot trip, no pursuit | First contact | First capture | First stamp | Watch at a water | Home | Won by | Curated |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
+| Pond · Fountain · Pool | 483 m | 61 m | 95.9 s (6/6) | 58.3 | 73.9 | 11.2 | 46.3 | 4/6 | Runners | no |
+| Pond · Quarry · Fountain | 436 m | 61 m | 86.5 s (6/6) | 36.7 | 48.6 | 11.0 | 48.4 | 4/6 | Runners | no |
+| Pond · Garden · Fountain | 560 m | 61 m | 107.8 s (6/6) | 29.8 | 44.6 | 11.0 | 10.8 | 4/6 | Runners | yes |
+| Pond · Inlet · Fountain | 520 m | 61 m | 96.0 s (6/6) | 24.3 | 33.6 | 11.0 | 44.9 | 4/6 | Runners | no |
+| Quarry · Fountain · Pool | 642 m | 189 m | 127.2 s (6/6) | 40.1 | 51.2 | 23.3 | 48.6 | 4/6 | Runners | yes |
+| Fountain · Garden · Pool | 582 m | 129 m | 114.2 s (6/6) | 29.1 | 40.2 | 22.6 | 10.8 | 3/6 | Night Watch | yes |
+| Inlet · Pool · Fountain | 682 m | 260 m | 128.8 s (6/6) | 26.9 | 37.1 | 22.6 | 15.2 | 2/6 | Night Watch | yes |
+| Quarry · Garden · Fountain | 615 m | 189 m | 118.9 s (6/6) | 29.4 | 40.4 | 23.3 | 10.8 | 4/6 | Runners | yes |
+| Quarry · Inlet · Fountain | 528 m | 189 m | 100.1 s (6/6) | 29.3 | 43.5 | 23.3 | 15.2 | 3/6 | Night Watch | no |
+| Inlet · Garden · Fountain | 623 m | 260 m | 120.2 s (6/6) | 25.5 | 39.4 | 23.2 | 15.2 | 4/6 | Runners | yes |
+| Pond · Quarry · Pool | 623 m | 61 m | 122.8 s (6/6) | 27.7 | 34.9 | 11.2 | 32.9 | 4/6 | Runners | yes |
+| Pond · Garden · Pool | 620 m | 61 m | 120.4 s (6/6) | 47.7 | 57.4 | 11.0 | 10.8 | 4/6 | Runners | yes |
+| Pond · Inlet · Pool | 665 m | 61 m | 123.3 s (6/6) | 24.4 | 34.4 | 11.0 | 74.9 | 4/6 | Runners | yes |
+| Pond · Quarry · Garden | 616 m | 61 m | 118.3 s (6/6) | 27.8 | 34.2 | 11.0 | 10.8 | 4/6 | Runners | yes |
+| Pond · Quarry · Inlet | 507 m | 61 m | 100.3 s (6/6) | 27.7 | 34.2 | 11.0 | 32.3 | 3/6 | Night Watch | no |
+| Pond · Inlet · Garden | 630 m | 61 m | 123.5 s (6/6) | 26.1 | 44.6 | 11.0 | 33.3 | 4/6 | Runners | yes |
+| Quarry · Garden · Pool | 675 m | 189 m | 129.7 s (6/6) | 27.6 | 40.4 | 33.5 | 10.8 | 4/6 | Runners | yes |
+| Quarry · Inlet · Pool | 674 m | 189 m | 130.7 s (6/6) | 27.5 | 33.6 | 33.1 | 15.2 | 4/6 | Runners | yes |
+| Inlet · Garden · Pool | 683 m | 260 m | 132.6 s (6/6) | 40.9 | 49.6 | 38.1 | 15.2 | 4/6 | Runners | yes |
+| Quarry · Inlet · Garden | 638 m | 189 m | 128.4 s (6/6) | 27.5 | 36.8 | 33.5 | 15.2 | 4/6 | Runners | yes |
+
+**Moonpenny Lodge** (16 of 20 curated)
+
+| Waters (best order) | Route | First water | Bot trip, no pursuit | First contact | First capture | First stamp | Watch at a water | Home | Won by | Curated |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
+| Pool · Fountain · Pond | 482 m | 66 m | 100.3 s (6/6) | 60.9 | 95.0 | 11.9 | 72.9 | 4/6 | Runners | no |
+| Fountain · Quarry · Pond | 587 m | 125 m | 112.0 s (6/6) | 47.2 | 77.6 | 21.3 | 33.3 | 4/6 | Runners | yes |
+| Garden · Fountain · Pond | 638 m | 189 m | 122.7 s (6/6) | 17.3 | 29.9 | 21.8 | 10.8 | 4/6 | Runners | yes |
+| Fountain · Inlet · Pond | 671 m | 125 m | 123.9 s (6/6) | 33.5 | 45.3 | 21.3 | 15.2 | 4/6 | Runners | yes |
+| Pool · Quarry · Fountain | 552 m | 66 m | 110.6 s (6/6) | 24.2 | 32.6 | 12.2 | 46.6 | 4/6 | Runners | yes |
+| Pool · Garden · Fountain | 424 m | 66 m | 87.8 s (6/6) | 21.3 | 32.1 | 11.9 | 10.8 | 4/6 | Runners | no |
+| Pool · Inlet · Fountain | 526 m | 66 m | 105.5 s (6/6) | 23.4 | 33.2 | 12.2 | 142.3 | 3/6 | Night Watch | no |
+| Garden · Quarry · Fountain | 613 m | 189 m | 114.3 s (6/6) | 17.4 | 21.9 | 21.6 | 10.8 | 4/6 | Runners | yes |
+| Fountain · Quarry · Inlet | 598 m | 125 m | 111.9 s (6/6) | 17.9 | 27.8 | 21.8 | 15.2 | 4/6 | Runners | yes |
+| Garden · Inlet · Fountain | 558 m | 189 m | 110.5 s (6/6) | 17.4 | 30.1 | 21.6 | 15.2 | 3/6 | Night Watch | yes |
+| Pool · Quarry · Pond | 623 m | 66 m | 121.4 s (6/6) | 25.6 | 39.9 | 12.0 | 60.2 | 3/6 | Night Watch | yes |
+| Pool · Garden · Pond | 620 m | 66 m | 124.1 s (6/6) | 21.7 | 34.8 | 12.1 | 10.8 | 4/6 | Runners | yes |
+| Pool · Inlet · Pond | 665 m | 66 m | 126.0 s (6/6) | 26.5 | 38.0 | 11.9 | -1.0 | 4/6 | Runners | yes |
+| Garden · Quarry · Pond | 684 m | 189 m | 128.8 s (6/6) | 17.4 | 30.7 | 37.2 | 10.8 | 3/6 | Night Watch | yes |
+| Inlet · Quarry · Pond | 670 m | 270 m | 127.5 s (6/6) | 17.8 | 28.9 | 39.3 | 15.2 | 4/6 | Runners | yes |
+| Garden · Inlet · Pond | 697 m | 189 m | 137.2 s (6/6) | 17.4 | 30.8 | 37.3 | 15.2 | 4/6 | Runners | no |
+| Pool · Garden · Quarry | 602 m | 66 m | 117.7 s (6/6) | 21.9 | 33.0 | 12.4 | 10.8 | 4/6 | Runners | yes |
+| Pool · Inlet · Quarry | 602 m | 66 m | 120.3 s (6/6) | 24.0 | 44.9 | 11.8 | 41.3 | 4/6 | Runners | yes |
+| Pool · Garden · Inlet | 537 m | 66 m | 112.0 s (6/6) | 23.5 | 36.3 | 12.0 | 40.3 | 4/6 | Runners | yes |
+| Garden · Inlet · Quarry | 634 m | 189 m | 126.4 s (6/6) | 17.5 | 35.2 | 48.1 | 15.2 | 4/6 | Runners | yes |
+
+</details>
+<!-- balance:end -->
+
+**Reading it.** Over the curated sets the three dorms give the same round:
+route medians 593–630 m (within 6 %), no-pursuit bot trips 120.7–123.3 s,
+the runners' first stamp 21–25 s after GO, and the Night Watch at an active
+water first, at 15.2 s for every dorm (it starts at the shed whichever dorm
+is home, so its first objective doesn't depend on the dorm). First contact
+is 21–22 s at Puddlesworth and Moonpenny and about 6 s later at Lanternfield
+(27.7 s): the watch's carts come from the shed on the north edge, east of
+the middle (about 285 m from Lanternfield, 240 m from the other two); first
+capture follows the same order (34–40 s). The outcome column is one seed per combination with
+bots on both sides, and a round ends at the fourth runner home, so one
+capture flips it — read it as a sanity check (no dorm is a walkover either
+way: the Night Watch took 2 of 15 at Lanternfield and 3 of 16 at Moonpenny,
+none at Puddlesworth), not as a win rate.
 
 ## Campus around the dorms
 
