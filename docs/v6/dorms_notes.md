@@ -517,14 +517,16 @@ on millimetres of start position; with runners now starting inside a dorm it
 stopped connecting).
 
 **Full run on the merged branch** (`tools/run_tests.sh`, after merging the
-integrator's d691002): **254 tests, 85,834 checks, 1 failure** in 888 s on
-this shared machine (load average ~20). The failure,
-`test_controls::test_mixed_sources_keep_arrival_order`, compares input
-presses against a time-to-live; it passes alone (9 tests, 47 checks, 0
-failures, twice) and touches nothing in this workstream. Earlier in the
-same session `test_loading`'s "no long freeze while loading" read 385–390 ms
-twice under load; alone, the longest preparation step was 45–103 ms over
-three runs and the test passes (it passed in the full run above too).
+integrator branch at 2654add — commerce and art included): **306 tests,
+86,884 checks, 0 failures** in 601 s on this shared machine. Two earlier
+runs each had one failure in `test_controls`
+(`test_mixed_sources_keep_arrival_order` lost queued presses): it runs right
+after `test_coins`, whose network test returned before its rig's sessions
+had gone; that test now waits two frames after tearing the rig down. Under
+load earlier in the session `test_loading`'s "no long freeze while loading"
+read 385–390 ms twice; alone the longest preparation step was 45–103 ms
+over three runs, and the test passes in the full runs.
+
 Suites this workstream added or changed, all passing in that run:
 `test_dorms` 17 tests, `test_coins` 8, `test_campus_art` 11, `test_sim` 21,
 `test_camping` 3, `test_routes_bots` 2 (every curated Puddlesworth
