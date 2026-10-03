@@ -163,25 +163,39 @@ Ground acceleration is high and turning is fast, so movement stays precise while
 
 `game/tools/route_analysis.gd` builds a route graph from the campus layout and pathfinding grid. `game/config/route_table.json` keeps the combinations whose estimated trip lies within ±12% of the median, and `game/config/route_bot_times.json` adds the measured times of runner bots using the real movement code. 14 of the 20 combinations are curated. The headless route test confirms that runner bots finish every curated combination with no pursuit, with a median of about 2 minutes (see TEST_REPORT.md).
 
-## Rewards (cosmetic coins only)
+## Rewards (V6: Coins and Season XP, cosmetic only)
 
-- **Coin awards.**
+Full tables, the earning calculation and the trust model: [docs/ECONOMY.md](docs/ECONOMY.md).
 
-  | Source | Coins |
-  |---|---|
-  | Taking part | 20 |
-  | Each stamp | 5 |
-  | Finishing | 15 |
-  | Team win | 15 |
-  | Each *distinct* runner captured | 10 (the same runner twice pays once) |
-  | Fastest Trifecta (first runner home) | 10 |
+- **Coins** (one currency for earned and purchased Coins) and **Season XP**
+  are paid only for an eligible, completed online round that the game
+  service has verified: registered by the room's host with its admitted
+  players, a plausible result reported by the host and confirmed by each
+  player's own game, at least two present human players, and at most 40
+  rewarded rounds per player per day.
 
-- **Scaling and limits.**
-  - Practice pays ×0.5.
-  - There is nothing for idle survival time.
-  - Rewards are paid once per match ID (and per player identity in a series), and not at all for a round you were mostly away from (see Series).
-  - An interrupted round, such as one ended by host loss, pays nothing.
-- **What coins buy.** Coins buy outfits only. Everyone has identical abilities.
+  | Coins | | Season XP | |
+  |---|---|---|---|
+  | Completed the round | 10 | Completed the round | 50 |
+  | Each coin picked up | 1 | Runner: each splash | 10 (max 3) |
+  | Team win | 4 | Runner: home | 20 |
+  | Runner: home | 3 | Night Watch: each *different* runner tagged | 15 (max 3) |
+  | First runner home | 2 | Team win | 15 |
+  | Night Watch: each *different* runner tagged | 1 (max 3) | | |
+
+- **Not paid:** practice (isolated: it settles nothing into the wallet or
+  the Season), cancelled or interrupted rounds (host loss included), a round
+  you were mostly away from, rounds with you and bots only, rooms made
+  without the game service, and any round when the build has no service (the
+  results say which). Idle survival earns nothing; tagging the same runner
+  again earns nothing more.
+- **Once:** each round pays each player once (by match ID and profile, on the
+  service), whatever packets are repeated or results reopened.
+- **Lifetime level** (the "Lv" on your profile) still comes from the V4/V5
+  performance values, practice ×0.5, kept on this device; it never comes
+  from Coins and is separate from Season 1.
+- **What Coins buy:** outfits and accessories in the Shop, and Season 1
+  Premium (1,500 Coins). Everyone has identical abilities.
 
 ## Disconnects
 
