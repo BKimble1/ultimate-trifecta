@@ -1,6 +1,6 @@
 # Test report: Ultimate Trifecta
 
-This report records what was actually run, where, and what each result proves. Version 1.4 (V5) is reported first. The V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
+This report records what was actually run, where, and what each result proves. Version 1.5 (V6) is reported first. The V5 (1.4), V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
 
 | Label | What it is | What it can prove |
 |---|---|---|
@@ -11,7 +11,105 @@ This report records what was actually run, where, and what each result proves. V
 | **Desktop render** | The game rendered by Godot's Mobile renderer on Mesa **llvmpipe** (software Vulkan) under Xvfb, at device resolutions, with a fixed frame clock (`--fixed-fps 60`, or Movie Maker) | Layout, framing, art, render-path dimensions (render size vs displayed size, MSAA, scale) and engine counters (draw calls, primitives). **Not** frame rate, frame pacing, GPU cost or device smoothness |
 | **CI iOS** | GitHub Actions `macos-26` runner: Xcode project export, unsigned arm64 device archive (or, from V3, a signed archive and TestFlight upload), x86_64 Simulator build and run, App Store Connect API checks | That the iOS project compiles, links, signs and uploads, launches in the Simulator, and what App Store Connect reports for the build; *not* device performance or a device install |
 
-**Not done: no physical iPhone or iPad was available, so nothing in V1–V5 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+**Not done: no physical iPhone or iPad was available, so nothing in V1–V6 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+
+# V6 (version 1.5)
+
+V6 answers the owner's report on 1.4: play turned suddenly very glitchy after running smoothly, match loading animated and then froze, finger swipes did not scroll the wardrobe, and results looked dated. It also adds:
+- three real dorms, with doorway starts and finishes;
+- coins;
+- Locker, Shop, Season 1 and StoreKit (prepared, not live);
+- a walkable party room, name moderation, Quick Chat (typed chat via the service) and report/block;
+- rankings;
+- the owner's lobby music.
+
+Code is on `claude/ultimate-trifecta-testflight-oie9r7`. Notes and the measured defect register: [docs/V6_NOTES.md](docs/V6_NOTES.md). **No physical iPhone or iPad was available for V6 either.**
+
+## V6.1 Automated tests
+
+**On this machine, after integrating every workstream** (`tools/run_tests.sh`):
+- **348 tests, 87,670 checks, 1 failure.** The failure was the `nav` preparation job at 45 ms against a 40 ms limit; it led to D8, which splits the grid into 17 ordered slices (longest 10.3 ms).
+- After the fix, every suite touching navigation and loading passes.
+- The service's own tests: 42 of 42 pass (`cd service && npm test`).
+
+CI's gating run is in V6.7. V5 had 205 tests and 3,208 checks.
+
+**Contention.** Four workstreams shared this 4-core machine, and wall-clock checks ("no long freeze while loading") failed several times under load averages of 16–23. Each one passed when re-run alone and in CI. They are reported here, not hidden.
+
+| Suite (new or extended in V6) | What it exercises |
+|---|---|
+| `test_path_budget`, `test_diag`, `test_quality_governor` | D1: at most one path search per tick, reuse within a neighbourhood, unreachable goals remembered. Diagnostics record catch-up spirals, pipeline counts, stall context, counts at each round start, and background/resume (not counted as a stall). The render-scale governor (one hitch changes nothing, a sustained slow pace steps down, back-off, thermal, resume) |
+| `test_loading` | Cancel at any point, including mid-build with meshes on the worker pool, three times: flat to the object. "Preparing campus…" and "Waiting for players" with an indeterminate sweep. **Nothing 3D drawn behind the loading screen; three warm frames of the placed start view; held while waiting; restored after the round and after a cancel** (D7). The reveal waits for the warm frames. Adaptive preparation budget |
+| `test_trust` | D9: a slow guest that keeps reporting progress is waited for (up to 45 s); a silent or stalled one is not |
+| `test_campus_art`, `test_prep_jobs` | The campus builder is freed after a build and after an abort (D5). The nav grid in 17 ordered slices equals the one-shot grid |
+| `test_touch_scroll`, `test_stage_drag`, `test_wardrobe`, `test_shop_ui`, `test_screen_cycles` | Real GUI events with touch emulated as on iOS. Swipes from card pictures scroll and select nothing; a tap selects once; nested axes; a sheet opening makes the list behind let go (both checks fail without the fix); one finger owns drag-to-turn; category positions survive rapid switching. Ten tours of Home/Locker/Shop/Season Pass: nodes, orphans, connections and tweens flat, with the service on and off |
+| `test_boot_branding` | Pure black `#000000` in the launch image, storyboard, boot splash and curtain |
+| Dorms suites (see [docs/v6/dorms_notes.md](docs/v6/dorms_notes.md)) | All dorms and objective combinations. Spawn overlap; doors, collision, nav and bots. No exterior finish; threshold direction, height and high-speed crossing; the three-stamp requirement; finish beats a same-tick tag. Coin contention and de-duplication. Protocol 6 round configuration and incompatible geometry |
+| `test_outfits_v6`, `test_motion_v6`, `test_profile` | Every new outfit through start, stop, reversal, turn, jump, capture, splash and emote. Foot lock. All 3,000 outfit × hat × shoe × hair combinations. Cosmetic looks leave the simulation unchanged |
+| `test_catalogue`, `test_wallet`, `test_purchases`, `test_shop_ui` + service tests | Product matching and verification; success, cancel, pending and error; duplicate callbacks; interruption before and after a durable grant; transaction finishing; restore; account mismatch; sandbox/production separation; refunds; offline recovery. Atomic concurrent spends, migration twice, Season Free/Premium, Claim all repeated, practice isolation, earning limits, replayed results. **Against test doubles: no real StoreKit or deployed service** |
+| `test_moderation`, `test_chat`, `test_hub_sync`, `test_hub_walk`, `test_match_chat`, `test_report_block`, `test_rankings` | Name and chat evasion with harmless exceptions; forged, markup, over-long and rate-limited messages; mute, block and report delivery; reconnect; spectator channels. Hub pose sync and walking. Rankings with ties, partial players and bots, and repeated result delivery |
+| `test_lobby_music` | Sample-exact loop, one track across menus, fade out and back for a round, volume, interruptions |
+
+## V6.2 The smooth-to-glitchy spiral (headless sim)
+
+Same profiler (`src/dev/sim_profile.tscn`), same 8-bot round, before and after (`docs/test-data/v6_sim_profile_{before,after}.txt`):
+
+| | V5 code | V6 |
+|---|---|---|
+| Bot thinking per tick | 11.9 ms (97 % of a tick) | 0.55 ms |
+| Tick p50 / p95 / p99 / max | 16.8 / 26.8 / 35.8 / 60.8 ms | 1.36 / 2.24 / 3.70 / 25.6 ms |
+| Ticks over 16 ms per round | 3,589 of 6,204 | 10 |
+
+A headless soak on the V5 code showed windows where every frame ran the engine's maximum of 6 ticks (`docs/test-data/v6_soak_before.txt`). These are desktop CPU numbers; an A12 phone is slower, so the old spiral would start sooner there. **Unmeasured on a phone.**
+
+## V6.3 Loading (desktop render, llvmpipe)
+
+A per-frame probe of a rendered practice round (`docs/test-data/v6_loading_probe.txt`) measured the loading screen, step by step.
+
+| Loading phase | Before (V5/V6 up to `139e361`) | After (D7) |
+|---|---|---|
+| Steps 0–6 (no camera yet) | ~35–40 ms per frame, 9 draw calls | ~35–40 ms per frame, 9 draw calls (no change) |
+| From step 7 (the round's camera made current) to prepared | 17.7 s, 3.4 s and 4.8 s frames at 1,803 draw calls / 556k primitives: the whole campus, drawn from an unplaced camera behind the opaque screen | 37 ms and 50 calls while held |
+| Once prepared | Same full-campus drawing; online, through the whole wait for other players | 3 warm frames from the placed start view (308 calls), still under the opaque screen, then held until the round is live |
+
+Software-renderer times, not a phone's; the mechanism is the same on Metal.
+
+**Pipeline counters (Vulkan on llvmpipe, not Metal).** During loading, 48 surface, 27 specialization, 7 canvas and 2 mesh pipelines were compiled. **During the round, 0 draw-time pipelines** and 21 specialization pipelines, which the engine compiles in the background (`docs/test-data/v6_beta_diag_llvmpipe_round.txt`).
+
+**Clip.** `docs/media/v6/clips/v6_loading_into_dorm.mp4` (Movie Maker, fixed 30 fps clock) goes from Home through the loading loop into the reveal inside Moonpenny Lodge, then countdown, GO, and out of the door.
+
+## V6.4 Visual and behavioural evidence (desktop render, labelled)
+
+| Set | Where | What |
+|---|---|---|
+| V6 clips | `docs/media/v6/clips/` | Black cold launch; loading into the home dorm; finger swipes on Locker, Shop and Season Pass using real touch events (the Locker selection was unchanged by swipes, and swipes opened 0 App Store sheets) |
+| Dorms | `docs/media/v6/dorms/` (56 JPEGs) | Every dorm's exterior and common room, bot-played rounds, door departures and returns (Moonpenny's runner never got home in its round; fixed views cover it), matched V5/V6 views, Battery Saver |
+| Characters | `docs/media/v6/characters/` (18 JPEGs) | Before/after close-ups and skin tones in studio, campus and dorm light; every new item; poses; emotes; cached thumbnails; foot trails before/after |
+| Commerce | `docs/media/v6/commerce/{phone,se,ipad}/` (19 each) | Home rail, Locker, Shop sections, detail, Coin confirmation, Season Pass, and the service-off states, **with test adapters ("(test price)")** |
+| Social | `docs/media/v6/social/` (40 JPEGs) | Party room at 1, 2, 4 and 8 players; name refusals and harmless look-alikes; results and final standings on phone, SE and iPad; a local run of the real service code (not deployed): approved typed chat, a refusal, a report with receipt, the owner's queue, a block |
+| Lobby music | `docs/media/v6/lobby_music/` | Loop-wrap verification |
+
+**Not produced, and why:**
+- **The Apple sandbox purchase sheet, delivery, restore and pending/error on StoreKit:** no products exist and no device or Sandbox account was available.
+- **Real-device clips:** no device.
+
+## V6.5 Networking on V6
+
+- **Loopback.** The host/guest suites (`test_net`, `test_series`, `test_trust`, `test_lobby_flow`) pass on the integrated branch. Protocol 6 adds the round configuration (dorm, pads, coins, timing) to START; a guest with other dorm geometry is told to update. The social messages use IDs 60–65.
+- **Slow host.** The rate budget now scales with real elapsed time, so a host running slower than real time no longer removes its guests as a flood; a real flood is still refused.
+- **Game Center on devices:** not tested (no devices).
+
+## V6.6 Found and fixed during V6 integration
+
+- **D5:** the campus builder leaked on every cold build; on a cancelled round it leaked its worker-pool jobs too.
+- **D10:** the Locker leaked one connection per visit (a V5 leak).
+- **The cancel test** counted objects mid-transition, so it failed intermittently with +17/+18; it now counts once the screen has settled. Reported by the lobby-music session.
+- **The Shop** asked for hat thumbnails in the head framing; tall hats were cut off.
+- **A committed symlink** to the shared tools cache arrived with a merge and deleted the real cache (the pinned Godot binary). The cache was re-fetched, the link untracked, and `.gitignore` now matches a link as well as a directory.
+- **A dorm-art helper and the builder** pointed at each other, so the builder wasn't freed on the dorms branch. Fixed by the dorms workstream.
+- **`test_net`'s scripted Night Watch** missed its tag once runners started inside dorms; fixed by the dorms workstream.
+- **The party room's new navigation row** pushed Start off screen; the row now measures itself. Fixed by the social workstream.
+- **Shader baking:** run #63 shipped 0 baked shaders because the editor crashed while quitting after a finished bake. The script now judges the export by its output; runs #66, #67 and #78 shipped 40 entries.
 
 # V5 (version 1.4)
 
