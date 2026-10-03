@@ -104,8 +104,13 @@ Premium in the Shop, Wear it in the Locker). No countdown.
 | `game/tests/test_profile.gd`, `test_rules.gd` (updated) | Equip-only apply; Coins vs lifetime XP |
 | `service/test/commerce.test.mjs` | Catalogue copy current, economy parity, JWS chain (untrusted root, missing marker, tampering, future date), Coin delivery once (duplicates, races, account mismatch), bundle/environment/product/type checks, production separation, skins (other profile, restore after deletion, refund), refund debt, Server Notifications, App Store Server API, atomic spends (races, overdraw), legacy import (bound, once per account and Game Center player), Season claims, round registration/report/confirmation/settlement, implausible/mismatch/cancelled/away/few-humans/daily cap, deletion, request bounds |
 
-Results of the final runs are in the workstream report; the art-dependent
-check is the only expected failure before the merge.
+**Final runs (2026-10-03, after merging the integrator branch at 139e361):**
+the full game suite ran 267 tests / 4,121 checks with 3 failures:
+`test_catalogue::test_every_referenced_item_exists_in_cosmetics` (expected
+until the art workstream's `Cosmetics` entries merge: it lists the 20
+missing runner items) and two `test_loading` timing/count checks that pass
+when re-run alone (11 tests, 111 checks, 0 failures: CPU contention from
+other agents sharing 4 cores). The service suite: 37 tests, 0 failures.
 
 ## Evidence
 
