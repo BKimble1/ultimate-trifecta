@@ -81,6 +81,12 @@ func _ready() -> void:
 		add_child(sc)
 		if scenario == "social_hub" or scenario == "social_service_host":
 			App.dev_expect = 99   # hold the room open for the capture
+	elif scenario == "v7_screens":
+		# V7 screens evidence (Friends, Settings, home, party, results,
+		# dialogs) with measured layout: its own driver
+		var v7: Node = (load("res://src/dev/capture_v7_screens.gd") as GDScript).new()
+		v7.set("cap", self)
+		add_child(v7)
 
 
 func snap(shot_name: String) -> void:
