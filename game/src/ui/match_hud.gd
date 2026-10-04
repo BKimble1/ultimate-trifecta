@@ -51,6 +51,7 @@ var _coach_flash := 0.0
 func setup(controller: MatchController) -> void:
 	mc = controller
 	layer = 5
+	process_mode = Node.PROCESS_MODE_ALWAYS   # the pause menu runs while Practice is paused
 	root = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -288,23 +289,90 @@ func _build_reveal() -> void:
 	reveal.add_child(v)
 
 
+# --- V7: the pause menu and one owner for every match overlay ---------------
+#
+# V6's pause panel sat on the HUD layer (5) under the full-screen gameplay
+# touch surface (layer 6), which only stepped aside for the Pause button,
+# the minimap and chat: on a phone every tap on Resume, the slider or Leave
+# match went to the surface instead (test_pause_input reproduces it with
+# real touches).  Now:
+#  - the menu lives on its own modal layer above gameplay input, behind a
+#    dim backdrop that stops touches reaching the round;
+#  - every match overlay (pause, the leave confirmation, the map, the chat
+#    drawer) is registered here; gameplay touch input is hidden while any
+#    is open, and every change cancels held fingers, queued presses and
+#    look/sprint/throttle state, so one overlay closing never re-enables
+#    controls under another;
+#  - Practice and the tutorial really pause (the scene tree: sim, bots,
+#    physics, timers, animation); an online round keeps running for
+#    everyone, and says so.
+const MODAL_LAYER := 8
+## frames after the last overlay closes during which the round reads
+## neutral input (the press that chose Resume never becomes a jump)
+const INPUT_GRACE_FRAMES := 3
+
+var modal: CanvasLayer
+var _backdrop: ColorRect
+var _pause_main: Control
+var _pause_confirm: Control
+var _confirm_text: Label
+var _status_lbl: Label
+var _overlays: Array[String] = []
+var _grace := 0
+var _froze_tree := false
+var _leaving := false
+var _round_over := false
+var _last_toggle_frame := -1
+var pause_opens := 0        # tests: each open and close fires once
+var pause_closes := 0
+
+
 func _build_pause() -> void:
-	pause_panel = UIKit.panel(Color(UIKit.SLATE, 0.98), UIKit.R_PANEL, 28)
+	modal = CanvasLayer.new()
+	modal.name = "Modal"
+	modal.layer = MODAL_LAYER
+	modal.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(modal)
+	var mroot := Control.new()
+	mroot.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mroot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mroot.theme = UIKit.theme()
+	modal.add_child(mroot)
+	_backdrop = ColorRect.new()
+	_backdrop.color = Color(0, 0, 0, 0.5)
+	_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP      # nothing reaches the round
+	_backdrop.visible = false
+	mroot.add_child(_backdrop)
+	pause_panel = UIKit.panel(Color(UIKit.SLATE, 0.98), UIKit.R_PANEL, 24)
 	pause_panel.visible = false
-	pause_panel.process_mode = Node.PROCESS_MODE_ALWAYS
-	var v := UIKit.vbox(16)
-	v.add_child(UIKit.heading("Paused", 34))
-	v.add_child(UIKit.label("The round keeps running for everyone else.", 18, UIKit.IVORY_MUTED))
+	pause_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	mroot.add_child(pause_panel)
+	var stack := UIKit.vbox(0)
+	pause_panel.add_child(stack)
+	var bw := 440.0
+	var row_h := maxf(52.0, UIKit.touch_min())
+	# main view: title, status, the two useful quick settings, Resume, Leave
+	var v := UIKit.vbox(12)
+	_pause_main = v
+	stack.add_child(v)
+	var online := mc != null and mc.session != null and mc.session.mode != NetSession.Mode.OFFLINE
+	v.add_child(UIKit.heading("Menu" if online else "Paused", 32))
+	_status_lbl = UIKit.label("Online match continues." if online else "The round is paused.", 18, UIKit.IVORY_MUTED)
+	v.add_child(_status_lbl)
 	var sens_row := UIKit.hbox(12)
-	var sl_l := UIKit.label("Camera sensitivity", 21)
+	var sl_l := UIKit.label("Camera", 20)
 	sl_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	sl_l.custom_minimum_size = Vector2(110, 0)
 	sens_row.add_child(sl_l)
 	var sl := HSlider.new()
 	sl.min_value = 0.3
 	sl.max_value = 2.5
 	sl.step = 0.05
 	sl.value = Controls.sensitivity
-	sl.custom_minimum_size = Vector2(280, maxf(44.0, UIKit.touch_min()))
+	sl.custom_minimum_size = Vector2(bw - 122, row_h)
+	sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sl.accessibility_name = "Camera sensitivity"
 	sl.value_changed.connect(func(val: float) -> void:
 		Controls.sensitivity = val
 		Save.set_setting("sensitivity", val))
@@ -313,38 +381,259 @@ func _build_pause() -> void:
 	var rm := CheckButton.new()
 	rm.text = "Reduced motion"
 	rm.button_pressed = mc.reduced_motion
-	rm.custom_minimum_size = Vector2(0, maxf(44.0, UIKit.touch_min()))
+	rm.custom_minimum_size = Vector2(bw, row_h)
 	rm.toggled.connect(func(on: bool) -> void:
 		mc.reduced_motion = on
 		Save.set_setting("reduced_motion", on))
 	v.add_child(rm)
-	var resume := UIKit.primary("Resume", Vector2(420, 88), 28)
-	resume.pressed.connect(_toggle_pause)
+	var resume := UIKit.primary("Resume", Vector2(bw, maxf(76.0, row_h)), 26)
+	resume.pressed.connect(close_pause)
 	v.add_child(resume)
-	var leave := UIKit.quiet("Leave match", Vector2(420, 72), 22)
-	leave.pressed.connect(func() -> void: mc.leave_match())
+	var leave := UIKit.quiet("Leave match", Vector2(bw, row_h), 20)
+	leave.pressed.connect(_ask_leave)
 	v.add_child(leave)
-	pause_panel.add_child(v)
-	root.add_child(pause_panel)
+	# leave confirmation, in place of the main view (one overlay at a time)
+	var c := UIKit.vbox(14)
+	_pause_confirm = c
+	c.visible = false
+	stack.add_child(c)
+	c.add_child(UIKit.heading("Leave match?", 30))
+	_confirm_text = UIKit.label("", 19, UIKit.IVORY_MUTED)
+	_confirm_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_confirm_text.custom_minimum_size = Vector2(bw, 0)
+	c.add_child(_confirm_text)
+	var stay := UIKit.primary("Stay", Vector2(bw, maxf(72.0, row_h)), 24)
+	stay.pressed.connect(_cancel_leave)
+	c.add_child(stay)
+	var go := UIKit.quiet("Leave", Vector2(bw, row_h), 20)
+	go.pressed.connect(_confirm_leave)
+	c.add_child(go)
 	pause_panel.set_meta("resume", resume)
+	pause_panel.set_meta("leave", leave)
+	pause_panel.set_meta("stay", stay)
+	pause_panel.set_meta("go", go)
+	pause_panel.set_meta("slider", sl)
+	pause_panel.set_meta("reduced", rm)
 
 
+## Tests and tools: the pause menu's state and its controls.
+func paused() -> bool:
+	return pause_panel != null and pause_panel.visible
+
+
+func resume_button() -> Button:
+	return pause_panel.get_meta("resume") as Button
+
+
+func leave_button() -> Button:
+	return pause_panel.get_meta("leave") as Button
+
+
+func confirm_leave_button() -> Button:
+	return pause_panel.get_meta("go") as Button
+
+
+func cancel_leave_button() -> Button:
+	return pause_panel.get_meta("stay") as Button
+
+
+func confirming_leave() -> bool:
+	return paused() and _pause_confirm.visible
+
+
+func game_frozen() -> bool:
+	return _froze_tree
+
+
+## An overlay opened (pause, confirm, map, chat): gameplay input goes away.
+func overlay_opened(who: String) -> void:
+	if not _overlays.has(who):
+		_overlays.append(who)
+	_gate_input()
+
+
+## An overlay closed: gameplay input comes back only when none is left.
+func overlay_closed(who: String) -> void:
+	_overlays.erase(who)
+	_gate_input()
+	if _overlays.is_empty():
+		_grace = INPUT_GRACE_FRAMES
+
+
+func overlays() -> Array[String]:
+	return _overlays.duplicate()
+
+
+## The round reads neutral input while an overlay owns the screen, and for a
+## few frames after the last one closes.
+func blocks_gameplay_input() -> bool:
+	return not _overlays.is_empty() or _grace > 0
+
+
+func _gate_input() -> void:
+	var any := not _overlays.is_empty()
+	if mc != null and is_instance_valid(mc) and mc.touch != null:
+		mc.touch.cancel_all()          # every held finger, stick, look, sprint, throttle
+		mc.touch.visible = not any
+	Controls.clear_edges()             # queued presses
+	Controls.reset_touch()
+
+
+func open_pause() -> void:
+	if paused() or _leaving or _round_over or Engine.get_process_frames() == _last_toggle_frame:
+		return
+	_last_toggle_frame = Engine.get_process_frames()
+	if map_view != null:
+		close_map()                   # pause comes first; the map closes under it
+	Diag.mark("pause_open")
+	pause_opens += 1
+	_pause_main.visible = true
+	_pause_confirm.visible = false
+	_backdrop.visible = true
+	pause_panel.visible = true
+	_fit_pause()
+	overlay_opened("pause")
+	_freeze(true)
+	(pause_panel.get_meta("resume") as Button).grab_focus()
+
+
+func close_pause() -> void:
+	if not paused() or Engine.get_process_frames() == _last_toggle_frame:
+		return
+	_last_toggle_frame = Engine.get_process_frames()
+	Diag.mark("pause_close")
+	pause_closes += 1
+	if _pause_confirm.visible:      # closed from under a confirmation (results)
+		_pause_confirm.visible = false
+		_overlays.erase("confirm")
+	pause_panel.visible = false
+	_backdrop.visible = false
+	_freeze(false)
+	overlay_closed("pause")
+
+
+## The round has ended (results arrived): the menu, a leave confirmation and
+## the map close under the results banner, and Pause stays shut for the
+## few seconds before the results screen.  Nothing reopens later.
+func round_over() -> void:
+	if _round_over:
+		return
+	_round_over = true
+	if paused():
+		_last_toggle_frame = -1
+		close_pause()
+	close_map()
+	pause_btn.disabled = true
+
+
+## Compatibility: the pause action and the HUD button toggle.
 func _toggle_pause() -> void:
-	pause_panel.visible = not pause_panel.visible
-	if pause_panel.visible and mc and mc.touch:
-		# a finger that was moving/holding when the menu opened must not keep acting
-		mc.touch.cancel_all()
-	Controls.clear_edges()
-	if pause_panel.visible:
-		(pause_panel.get_meta("resume") as Button).grab_focus()
+	if paused():
+		if confirming_leave():
+			_cancel_leave()
+		else:
+			close_pause()
+	else:
+		open_pause()
+
+
+## Practice and the tutorial (offline) really stop: the scene tree pauses
+## (the sim, bots, physics, timers, animation and particles of the round all
+## stop together), while the HUD and this menu keep running (ALWAYS).  An
+## online round is shared: it is never paused from here.
+func _freeze(on: bool) -> void:
+	var offline := mc != null and is_instance_valid(mc) and mc.session != null and mc.session.mode == NetSession.Mode.OFFLINE
+	if on and offline and not _froze_tree:
+		_froze_tree = true
+		get_tree().paused = true
+	elif not on and _froze_tree:
+		_froze_tree = false
+		get_tree().paused = false
+
+
+func _ask_leave() -> void:
+	if _leaving or not paused():
+		return
+	var online := mc.session != null and mc.session.mode != NetSession.Mode.OFFLINE
+	if not online:
+		_confirm_text.text = "This practice round ends. Nothing is earned."
+	elif mc.session.is_host():
+		_confirm_text.text = "You're hosting: leaving ends the match and the party for everyone."
+	else:
+		_confirm_text.text = "You'll leave the party. The others play on, and this round earns you nothing."
+	_pause_main.visible = false
+	_pause_confirm.visible = true
+	overlay_opened("confirm")
+	_fit_pause()
+	(pause_panel.get_meta("stay") as Button).grab_focus()
+
+
+func _cancel_leave() -> void:
+	if not confirming_leave():
+		return
+	_pause_confirm.visible = false
+	_pause_main.visible = true
+	overlay_closed("confirm")
+	_fit_pause()
+	(pause_panel.get_meta("leave") as Button).grab_focus()
+
+
+func _confirm_leave() -> void:
+	if _leaving or not confirming_leave():
+		return
+	_leaving = true                   # fires once, however it is pressed
+	Diag.mark("pause_leave")
+	_freeze(false)                    # the next screen starts unpaused
+	pause_panel.visible = false
+	_backdrop.visible = false
+	_overlays.clear()
+	_gate_input()
+	mc.leave_match()
+
+
+## The panel sits centred in the safe area and never larger than it.
+func _fit_pause() -> void:
+	if pause_panel == null:
+		return
+	var vs := get_viewport().get_visible_rect().size
+	var sm := UIKit.safe_margins(get_viewport())
+	var area := Rect2(sm.position, vs - sm.position - sm.size)
+	pause_panel.reset_size()
+	var ps := pause_panel.get_combined_minimum_size()
+	pause_panel.size = ps
+	pause_panel.position = (area.position + (area.size - ps) * 0.5).floor()
+
+
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT:
+			# Practice: the app going to the background pauses the round
+			if mc != null and is_instance_valid(mc) and mc.prepared and mc.session != null \
+					and mc.session.mode == NetSession.Mode.OFFLINE and not paused() and not _leaving:
+				open_pause()
+		NOTIFICATION_EXIT_TREE:
+			if _froze_tree:
+				_froze_tree = false
+				get_tree().paused = false
+
+
+func _process(_delta: float) -> void:
+	if _grace > 0:
+		_grace -= 1
+	_reserve_touch_regions()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
-		if map_view != null:
+		if paused():
+			_toggle_pause()
+		elif map_view != null:
 			close_map()
 		else:
-			_toggle_pause()
+			open_pause()
+		get_viewport().set_input_as_handled()
+	elif paused() and event.is_action_pressed("ui_cancel"):
+		_toggle_pause()              # Back: confirm -> menu -> round
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("map") or (map_view != null and event.is_action_pressed("ui_cancel")):
 		if map_view != null:
@@ -362,10 +651,7 @@ func open_map() -> void:
 	if map_view != null or pause_panel.visible:
 		return
 	Diag.mark("map_open")
-	if mc.touch:
-		mc.touch.cancel_all()
-		mc.touch.visible = false   # no stray finger moves or turns you under the map
-	Controls.clear_edges()
+	overlay_opened("map")   # no stray finger moves or turns you under the map
 	map_view = FullMap.new()
 	map_view.hud = self
 	map_view.build()
@@ -378,9 +664,7 @@ func close_map() -> void:
 		return
 	map_view.queue_free()
 	map_view = null
-	if mc.touch:
-		mc.touch.visible = true
-	Controls.clear_edges()
+	overlay_closed("map")
 
 
 func _layout() -> void:
@@ -398,15 +682,20 @@ func _layout() -> void:
 				c.position = _safe.position + Vector2(4, 0)
 			"top_right":
 				c.position = Vector2(vs.x - _safe.size.x - cs.x, _safe.position.y)
-	pause_panel.position = (vs - pause_panel.get_combined_minimum_size()) * 0.5
-	call_deferred("_reserve_touch_regions")
+	_fit_pause()
 
 
-## Touches on the pause button and minimap must never start the stick or camera.
+## Touches on the pause button and minimap must never start the stick or
+## camera.  V7: measured every frame from the settled layout (V6 measured
+## once, deferred from a resize, before containers had sorted), and exactly
+## the buttons' own rects: V6 grew them by 12 units, so a touch in that ring
+## fell through the gameplay surface onto nothing and was lost.  Both layers
+## are untransformed, so the HUD's canvas rects are the surface's local
+## coordinates.
 func _reserve_touch_regions() -> void:
 	if mc == null or mc.touch == null or not is_instance_valid(pause_btn):
 		return
-	var rects: Array[Rect2] = [pause_btn.get_global_rect().grow(12), minimap.get_global_rect().grow(6)]
+	var rects: Array[Rect2] = [pause_btn.get_global_rect(), minimap.get_global_rect()]
 	if chat != null:
 		rects.append_array(chat.reserved())
 	mc.touch.set_reserved(rects)
@@ -1026,9 +1315,18 @@ class Minimap:
 		tooltip_text = "Map"
 		accessibility_name = "Map"
 
-	## Tap (or click) the minimap: the full map.
+	## Tap (or click) the minimap: the full map.  V7: from any finger (the
+	## engine emulates the mouse from the first finger only, so a second
+	## finger's tap while steering used to do nothing); the first finger's
+	## emulated mouse twin is ignored, so a tap opens the map once.
 	func _gui_input(e: InputEvent) -> void:
-		if e is InputEventMouseButton and (e as InputEventMouseButton).pressed and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		var tap := false
+		if e is InputEventScreenTouch:
+			tap = (e as InputEventScreenTouch).pressed
+		elif e is InputEventMouseButton and e.device != InputEvent.DEVICE_ID_EMULATION:
+			var mb := e as InputEventMouseButton
+			tap = mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT
+		if tap:
 			accept_event()
 			hud.open_map()
 

@@ -103,12 +103,8 @@ func _round_state() -> Dictionary:
 func open_drawer() -> void:
 	if drawer != null and is_instance_valid(drawer):
 		return
-	var mc := hud.mc
-	if mc.touch:
-		mc.touch.cancel_all()
-		mc.touch.visible = false
-	Controls.clear_edges()
-	drawer = ChatDrawer.open(hud.root, mc.session, "round", _round_state())
+	hud.overlay_opened("chat")   # V7: one owner list for every match overlay
+	drawer = ChatDrawer.open(hud.root, hud.mc.session, "round", _round_state())
 	drawer.closed.connect(_on_closed)
 	for it in _items:
 		if is_instance_valid(it["node"]):
@@ -118,11 +114,8 @@ func open_drawer() -> void:
 
 func _on_closed() -> void:
 	_paint_badge.call_deferred()
-	var mc := hud.mc
-	if mc != null and is_instance_valid(mc) and mc.touch:
-		mc.touch.cancel_all()
-		mc.touch.visible = true
-	Controls.clear_edges()
+	if is_instance_valid(hud):
+		hud.overlay_closed("chat")
 
 
 func is_open() -> bool:

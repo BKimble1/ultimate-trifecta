@@ -698,7 +698,7 @@ func _build_local_cmd() -> InputCmd:
 		_next_seq += 1
 		cmd.quantize()
 		return cmd
-	if (hud and hud.pause_panel and hud.pause_panel.visible) or InputOwner.menu_owns():
+	if (hud and hud.blocks_gameplay_input()) or InputOwner.menu_owns():
 		# the pause menu owns the controller: its A/Enter is "Resume", not a jump
 		# (V6: so does the chat drawer: typing or a phrase never moves or tags)
 		Controls.clear_edges()
@@ -1160,6 +1160,8 @@ func _process(delta: float) -> void:
 	var res: Dictionary = sim.results if sim else _client_results
 	if done_phase and not res.is_empty() and not _finish_sent:
 		_finish_sent = true
+		if hud:
+			hud.round_over()   # V7: no menu or map left over the results
 		Sfx.music("results")
 		get_tree().create_timer(cfg.results_hold_s).timeout.connect(func() -> void: finished.emit(res))
 	if info_phase < TC.Phase.PLAYING:

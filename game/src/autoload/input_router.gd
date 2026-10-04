@@ -338,6 +338,7 @@ func queue_press(bit: int) -> void:
 
 
 func push_edge(bit: int) -> void:
+	edges_pushed += 1
 	if _edges.size() >= MAX_EDGES:
 		_edges.pop_front()
 	_edges.append({"bit": bit, "ms": Time.get_ticks_msec()})
@@ -358,6 +359,9 @@ func consume_pressed() -> int:
 		b |= bit
 		_edges.pop_front()
 	return b
+
+
+var edges_pushed := 0   # every press edge ever queued (tests: a menu tap queues none)
 
 
 func pending_edges() -> int:
