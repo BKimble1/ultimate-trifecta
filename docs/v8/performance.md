@@ -167,6 +167,68 @@ ten-round run below checks whether that settles.
 
 </details>
 
+## Confirmation on the final code
+
+The table above compares `cb3c48a` with `01277a9`. The final game code
+(`5e96387`) adds the underrun recovery, the loss-burst fix, hidden idle
+emitters and the filtered layers. It was benched twice more (Standard, the
+same seeds; `docs/v8/data/final_std60_run{1,2}.json`) **on a different
+machine**: the session's worker was restarted onto a host whose CPU
+sections all measure ~30 % faster (tick mean 1.56 ms vs 2.30), so these runs
+confirm the shape, not the size, of the result and are not set against
+build 6.
+
+| | run 1 | run 2 |
+|---|---|---|
+| p95 / p99 | 17.20 / 18.07 | 17.21 / 18.07 |
+| frames > 33.3 / > 50 / > 100 | 1 / 1 / 1 | 0 / 0 / 0 |
+| worst frame | 191.2 ms (round 1, frame 1) | 32.8 ms |
+| bot thinking, worst frame | 6.3 ms | 15.8 ms |
+| main thread waited for a worker search | 0 times | 0 times |
+
+The 191 ms frame is the first frame of play of the first round of the first
+run after the machine started; instrumented game work in it was ~12 ms
+(six catch-up ticks included). It did not recur in run 2. That fits a cold
+disk cache, but the cause was not traced, so it is listed as open: a phone
+on its first round after a cold start could see such a read too.
+
+Run 2's worst frame (32.8 ms) spent 15.8 ms in bot thinking in one tick,
+more than any earlier V8 run (4.3–9.0 ms) although this machine is faster.
+It did not wait for a path search (0 waits; the same 589 searches as every
+V8 run); the bench does not break bot thinking down further, so this frame
+is not attributed. It is listed as open.
+
+**HUD refresh.** A few frames per run spend 15–21 ms refreshing the HUD
+(V8 runs: 14.8, 17.9, 21.4 ms; build 6's section maximum was 18.4 ms, so it
+is not new). Those frames stayed under 33.3 ms here; the cause (possibly
+first use of glyphs at a size) is not attributed.
+
+## Draw calls (desktop render)
+
+`RENDER=1 tools/match_bench.sh … --rounds=1 --round-secs=40 --seed=7`: the
+same bench on the Mobile renderer over llvmpipe under Xvfb at 1280×720,
+sampling the renderer's own counters about once a second (37 samples).
+llvmpipe draws a frame in about 2 s, so these runs say nothing about frame
+time; they count what is submitted.
+
+| | draw calls, mean (min–max) | objects, mean (max) | primitives, mean |
+|---|---|---|---|
+| build 6 (`cb3c48a`) | 243 (196–298) | 323 (486) | 369,611 |
+| V8, first measurement | 256 (192–316) | 338 (504) | 355,093 |
+| V8, final code | DRAWFINAL_PLACEHOLDER | | |
+
+The first V8 measurement showed about 18 more draw calls and objects from
+the very first sample. They were the warmed effect pool (V8 warms three
+sets, up to 43 emitters, below the campus, where a camera looking down
+still has them in its frustum) and the runners' drip emitters made at load:
+an idle CPU particle emitter is still a rendered object. Idle emitters are
+now hidden until they fire and hide again when their last particle dies
+(`test_v8_hot_paths`). Primitives are lower in V8 on average because the
+scenes differ: build 6 answered a bot's path search at once, V8 six ticks
+later, so the bots (and the followed camera) take different routes. Nothing
+was simplified.
+The heaviest character look is still 7 draw calls (motion.md).
+
 ## Network presentation
 
 `src/dev/net_motion_probe.tscn` (V5, extended in V8): a host and one

@@ -71,4 +71,90 @@ cost rather than for average time.
 - **Additive layers never touch the pelvis** (it moves the planted feet:
   measured 0.36–0.69 m/s of slide in the first version).
 
-RESULTS_PLACEHOLDER
+- **Rejected after measurement:** an eased (zero-slope) cross-fade into the
+  planted stop changed its worst pop by 0.02 cm, so it was left out; the
+  first terrain-contact version measured the ankle against the moving origin
+  (7.7 cm off the slope, worse than none) and was rewritten to hold the
+  sampled world height; the first turn lead chose its side from velocity
+  and flipped at 180° (a 38.5 cm pop), so the side comes from the turn rate
+  and is kept until the lead has eased off.
+- **Campus lighting** was reviewed in fixed views of the current campus
+  (V6/V7 already bake lamp and door light into the ground, add lamp pools
+  and a character rim). Without a device to judge brightness on, it was not
+  retuned; the change made is the relief anti-aliasing of distant paving.
+- **Water and cart animation** were reviewed for regressions (motion probe
+  `splash`, `cart`) but not re-authored: the authored work went to starts,
+  stops, turns, run/sprint, jump/landing and the Night Watch's tag.
+
+## Results
+
+All measured on desktop Linux (see the first paragraph). Details and raw
+data: [performance.md](v8/performance.md), [motion.md](v8/motion.md).
+
+**Frame time** (gameplay bench, 3 runs each, median; the same seeds and
+presets on both builds):
+
+| | Standard (60 fps cap) before → after | Battery Saver (30 fps cap) before → after |
+|---|---|---|
+| p99 interval | 21.5 → **19.0** ms | 43.3 → **37.1** ms |
+| frames > 33.3 ms (225 s of play) | 43 → **5** | (on-time at 30 fps) |
+| frames > 50 ms | 4 → 2 | 42 → **2** |
+| simulation tick p99 | 6.3 → 4.2 ms | 15.0 → 7.3 ms |
+| bot thinking, worst frame | 40.9 → 7.9 ms | 58.8 → 9.1 ms |
+
+The cause of build 6's spikes (one bot path search per worst frame) is
+gone from the main thread; the machine's own noise floor (an empty scene)
+is 2 frames over 33.3 ms in 180 s. Character work costs about 0.2 ms more
+per frame for eight characters (the new layers and terrain contact).
+A **confirmation on the final code** (`5e96387`, two Standard runs) ran
+after the session moved to another machine, whose CPU sections all measure
+~30 % faster, so it is not compared with the table above. On it: p99 18.1 ms
+in both runs; frames over 33.3 ms 1 and 0. The one long frame was 191 ms at
+the first frame of the first round, with ~12 ms of instrumented game work;
+it was the first run after that machine started and did not recur in the
+second run (worst frame 32.8 ms), consistent with a cold disk cache, which
+is not proven.
+
+**Draw calls** (llvmpipe render bench): build 6 drew 243 calls per sampled frame on average (one 40 s round, the same seed); the first V8 measurement drew 256, about 18 of them idle effect emitters (the warmed pool below the campus and the runners' drips), which are now hidden; the final code's measurement is in performance.md (draw calls).
+
+**Network presentation** (loopback probe): on a clean link other players
+are drawn ~54 ms behind instead of ~117; at 80 ms RTT, ~74; at 300 ms RTT
+with 10 % loss the frames with nothing to draw fell from 117 to 2 (more
+delay, ~200 ms, in exchange); never a backward step; 0.3 s outages no longer
+cut every remote (D12) and are rejoined smoothly (D11). Hermite curves stay
+on (smoother than linear in every condition at the same error).
+
+**Motion**: new and refined clips as listed in motion.md; the motion probe
+keeps every scenario inside the V5/V6 bounds; terrain contact halves the
+planted ankle's error on a 20 % ramp (5.9 → 2.6 cm) with ~12 rays per 1.6 s.
+
+**Character art**: GLB rebuilt (art `v8-528149faa87b`, so portraits
+regenerate); heaviest look 32,506 → 32,834 triangles, still 7 draw calls
+and one material; GLB 12.36 MB.
+
+**Lifecycle**: ten rounds back to back, nodes flat, no orphans, static
+memory +1.2 MB over nine rounds once the bench keeps no records.
+
+**Tests**: CI run #97 on `5e96387` (the final game code): **418 tests,
+99,344 checks, 0 failures**; export, launch/branding audit and unsigned
+device archive passed.
+
+## Open, and not verified
+
+- **Everything on a phone**: frame rate, presentation pacing, GPU time,
+  heat and battery, touch feel, Game Center between two devices. The
+  diagnostics summary now says whether slow windows were CPU- or GPU-bound
+  and how remote presentation behaved, so a shared summary from a
+  15-minute session is the next evidence.
+- Objects rise by about 4 a round over ten rounds (nodes flat): not
+  attributed (performance.md, lifecycle).
+- One 191 ms first frame of play in the first run on a fresh machine (not
+  repeated), one 15.8 ms bot-thinking tick, and occasional 15–21 ms HUD
+  refreshes (build 6 too): not attributed (performance.md, confirmation).
+- The Night Watch's return from a lunge into the run lets the lower ankle
+  skim the ground for two frames (in build 6 too; motion.md).
+- Livelier arms raise the count of frames with a > 3 cm mitten pop
+  (sprint 3 → 32) within the bounds; whether they read better or busier at
+  phone scale is a device judgement.
+- During the deeper wind-up, the flashlight pool lands beside the Night
+  Watch's feet for ~0.2 s.

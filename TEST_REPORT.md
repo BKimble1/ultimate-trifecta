@@ -1,6 +1,6 @@
 # Test report: Ultimate Trifecta
 
-This report records what was actually run, where, and what each result proves. Version 1.6 (V7) is reported first. The V6 (1.5), V5 (1.4), V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
+This report records what was actually run, where, and what each result proves. Version 1.7 (V8) is reported first. The V7 (1.6), V6 (1.5), V5 (1.4), V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
 
 | Label | What it is | What it can prove |
 |---|---|---|
@@ -11,7 +11,100 @@ This report records what was actually run, where, and what each result proves. V
 | **Desktop render** | The game rendered by Godot's Mobile renderer on Mesa **llvmpipe** (software Vulkan) under Xvfb, at device resolutions, with a fixed frame clock (`--fixed-fps 60`, or Movie Maker) | Layout, framing, art, render-path dimensions (render size vs displayed size, MSAA, scale) and engine counters (draw calls, primitives). **Not** frame rate, frame pacing, GPU cost or device smoothness |
 | **CI iOS** | GitHub Actions `macos-26` runner: Xcode project export, unsigned arm64 device archive (or, from V3, a signed archive and TestFlight upload), x86_64 Simulator build and run, App Store Connect API checks | That the iOS project compiles, links, signs and uploads, launches in the Simulator, and what App Store Connect reports for the build; *not* device performance or a device install |
 
-**Not done: no physical iPhone or iPad was available, so nothing in V1–V7 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+**Not done: no physical iPhone or iPad was available, so nothing in V1–V8 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+
+# V8 (version 1.7)
+
+V8 is the smoothness, animation and finish pass on 1.6 (6): bot path
+searches off the main thread, one owner of character visibility, a remote
+jitter buffer with a monotonic presentation clock, authored starts, stops,
+turn leads, run/sprint, jump/landing and Night Watch tag motion, terrain
+contact for planted feet, smoother eye and lens shading with satin and metal
+materials, and a governor that tells CPU-bound from GPU-bound windows.
+Notes, defect register and results: [docs/V8_NOTES.md](docs/V8_NOTES.md);
+measurements: [docs/v8/performance.md](docs/v8/performance.md),
+[docs/v8/motion.md](docs/v8/motion.md); pictures and clips:
+[docs/media/v8/](docs/media/v8/README.md). **No physical iPhone or iPad
+was available for V8 either**: every number below is desktop Linux.
+
+## V8.1 Automated tests
+
+**CI gating run #97** (commit `5e96387`, the final game code; later commits
+change documentation and evidence only): **418 tests, 99,344 checks, 0
+failures**; export, launch and branding audit, unsigned device archive and
+Simulator run passed.
+
+| Suite (new or extended in V8) | What it exercises |
+|---|---|
+| `test_v8_hot_paths` (6) | A network-pruned opponent stays hidden and comes back at its real place (build 6: shown for 119 frames after pruning, then slid 116 m); far characters animate ~20 times a second at 30, 60 and 120 fps, at most 4 of 8 on one frame; effects: bounded warm-up, simultaneous bursts reuse warm emitters, one colour ramp per colour, bounded ramp cache, idle emitters hidden and a runner's drips shown only while dripping; the governor's ring window; the governor's CPU/GPU attribution |
+| `test_v8_timing` (6) | The presentation clock never steps back and keeps delay and underruns bounded in three seeded conditions; curves only where safe; start-up hold, bounded extrapolation stopped short of walls, airborne hold, cart start-up/bracket/underrun; **underrun recovery** (fails with the blend off: a 0.82 m one-frame jump); **a loss burst is not a re-seen slot** (fails on the first rule); a correction offset does not turn the body; remote cosmetic beats wait for the drawn time |
+| `test_v8_motion` (5) | The V8 clips are in the asset; a stop from a run plants once, after the body has stopped, with the brake first, and a walk does not; a start drives then lets go; reversals and 90° turns are led on one side and ease off; terrain contact on a 20 % ramp halves the planted ankle's error with one ground sample per step |
+| `test_path_budget` (extended) | Searches answer on their scheduled tick even with a 400 ms worker; requesting costs under 2 ms |
+| `test_diag` (extended) | The governor and remote-presentation lines reach the shareable summary, one line per key, and clear with the rest |
+| route bots | 96/96 + 36/36 routes finished with worker searches (an early version lost paths while a search was in flight: 3/6 and 4/6) |
+
+## V8.2 Performance, network presentation and motion (desktop)
+
+Summarised in V8_NOTES "Results"; full tables in performance.md and
+motion.md. Headline (gameplay bench, 3 runs each, build 6 → V8): Standard
+p99 21.5 → 19.0 ms and frames over 33.3 ms 43 → 5 in 225 s of play;
+Battery Saver p99 43.3 → 37.1 ms and frames over 50 ms 42 → 2; bot thinking
+in the worst frame 40.9 → 7.9 ms. Network probe: other players drawn ~54 ms
+behind on a clean link (build 6 ~117 ms); at 300 ms RTT with 10 % loss,
+frames with nothing to draw 117 → 2; 0 backward steps anywhere. Motion
+probe: every scenario inside the V5/V6 bounds.
+
+A confirmation on the final code (`5e96387`, two Standard runs) ran
+after the session moved to another machine, whose CPU sections all measure
+~30 % faster, so it is not compared with the table above. On it: p99 18.1 ms
+in both runs; frames over 33.3 ms 1 and 0. The one long frame was 191 ms at
+the first frame of the first round, with ~12 ms of instrumented game work;
+it was the first run after that machine started and did not recur in the
+second run (worst frame 32.8 ms), consistent with a cold disk cache, which
+is not proven.
+
+## V8.3 Visual and behavioural evidence (desktop render, labelled)
+
+| What | Where | Shows |
+|---|---|---|
+| Motion, before/after (Movie Maker, fixed 30 fps, 960×540, normal speed) | `docs/media/v8/motion/` | The motion-test scenarios on both builds; a stop filmstrip |
+| Characters, before/after (900² cells, campus and dorm light) | `docs/media/v8/characters/` | Eyes, goggle lenses, satin, metal, Night Watch, gameplay distance |
+| Campus, before/after (1280×720, Standard preset) | `docs/media/v8/campus/` | Unchanged layout and lighting; calmer distant paving |
+
+## V8.4 Found and fixed during V8 integration
+
+- Bots dropped their current path while a worker search was in flight
+  (route bots 3/6 and 4/6): they now keep it if it leads to the same goal.
+- The additive layers first moved the pelvis (planted-foot slide 0.36–0.69
+  m/s); they no longer touch it.
+- The turn lead flipped sides at 180° (a 38.5 cm pop); its side now comes
+  from the turn rate and is kept until it has eased off.
+- The drive and brake layers reacted to reconcile noise (frames with a
+  > 3 cm pop in the `correction` scenario 70 → 198); they now read a
+  filtered, dead-zoned acceleration (84).
+- The planted stop could fire during the Night Watch's miss recovery; it
+  no longer fires while the tag owns the body.
+- The brake layer's release kicked the arms when the stop fired (9.6 cm,
+  bound 9); it now hands off from zero slope (8.3).
+- The re-seen rule (D2) cut every remote after a burst of lost snapshots
+  (15 snap frames): only a slot missing from snapshots that did arrive is
+  re-seen now; held runners rejoin their path smoothly (D11, D12).
+- The warmed effect pool and runners' drip emitters were drawn while idle
+  (+18 draw calls and objects in the render bench): idle emitters are
+  hidden.
+
+## V8.5 iOS build (CI iOS) and TestFlight
+
+RELEASE_REPORT_PLACEHOLDER
+
+## V8.6 Not verified (exact remaining checks)
+
+- Everything on a real iPhone/iPad: frame rate and presentation pacing on
+  Standard and Battery Saver, GPU time, heat over 15 minutes, battery,
+  touch feel, whether the livelier arms read well at phone scale.
+- Game Center between two devices (the jitter buffer was measured on
+  seeded loopback conditions only).
+- Open items listed in V8_NOTES "Open, and not verified".
 
 # V7 (version 1.6)
 

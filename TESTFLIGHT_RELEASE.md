@@ -1,6 +1,6 @@
 # TestFlight release: Ultimate Trifecta
 
-Current version: **1.6 (V7)**. It uses the same app, bundle ID, Game Center capability, internal group and lane as 1.0–1.5. V7 is a repair and refinement pass: Pause/Resume/Leave by touch, forward runs that stay straight on the touch stick, compact Locker/Emotes/Season Pass/Shop/Friends/Settings, rebuilt goggles and refined characters, and music about 3 dB louder. It adds no module, entitlement, permission or service: the frameworks, entitlements and privacy manifest are the same as 1.5's. The game service stays off and no App Store product exists, so nothing can be bought.
+Current version: **1.7 (V8)**. It uses the same app, bundle ID, Game Center capability, internal group and lane as 1.0–1.6. V8 is a smoothness, animation and finish pass: bot path searches off the main thread, one owner of character visibility, a jitter buffer and presentation clock for other players and carts, new authored starts, stops, turn leads, run/sprint, jumps and Night Watch tags, terrain contact for planted feet, smoother eyes and lenses with satin and metal materials, and CPU/GPU attribution in the quality governor. It adds no module, entitlement, permission or service: the frameworks, entitlements and privacy manifest are the same as 1.6's. The game service stays off and no App Store product exists, so nothing can be bought.
 
 ## App identity
 
@@ -9,7 +9,7 @@ Current version: **1.6 (V7)**. It uses the same app, bundle ID, Game Center capa
 | App name | Ultimate Trifecta |
 | App icon | The owner's "Pajama Dash" artwork (`Ultimate Trifecta_ Pajama Dash.png`), as `game/assets/icon/icon.png` at 1024×1024, opaque. Godot's export generates every other icon size from it. |
 | Bundle ID | `com.idlery.ultimatetrifecta`. It is registered on your team: the App Store Connect app record below uses it. |
-| Marketing version | `1.6` for V7 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot`, the export preset and `tools/export_ios.sh`). V6 was `1.5`, V5 `1.4`, V4 `1.3`, V3 `1.2`, V2 `1.1`, V1 `1.0`. Before choosing it, the read-only status run #87 showed builds 1–5 in App Store Connect (latest 1.5 (5), `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING`) and no 1.6. |
+| Marketing version | `1.7` for V8 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot`, the export preset and `tools/export_ios.sh`). V7 was `1.6`, V6 `1.5`, V5 `1.4`, V4 `1.3`, V3 `1.2`, V2 `1.1`, V1 `1.0`. Before choosing it, the read-only status run #98 showed builds 1–6 in App Store Connect (latest 1.6 (6), `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING`) and no 1.7. |
 | Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`), so it always increases past anything already uploaded; without it, the GitHub run number (V1's last unsigned build was 10; V2's are 12 and up). It can be overridden with the `build_number` workflow input. |
 | Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape left/right. Godot also adds `UIRequiredDeviceCapabilities` `iphone-ipad-minimum-performance-a12`, which means A12 (iPhone XS/XR) or newer. All verified in the CI archive's Info.plist. |
 | Capabilities | Game Center (`com.apple.developer.game-center`). In-App Purchase needs no entitlement key; App Store Connect enables it for every app ID. |
@@ -19,7 +19,9 @@ Current version: **1.6 (V7)**. It uses the same app, bundle ID, Game Center capa
 
 ## Current release state
 
-**State: source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **1.6 (6)**.
+**1.7 (V8): source prepared · project compiled and tested (CI run #97: 418 tests, 99,344 checks, 0 failures) · signed archive and upload: in progress.** This section is updated with Apple's processing state once the upload run reports it. Until then the latest available build is **1.6 (6)**, described below.
+
+**1.6 (6): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.**
 
 It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, nothing was submitted for App Store review, and no purchase of any kind was made.
 
