@@ -116,19 +116,27 @@ func test_apply_and_undo_say_what_they_do() -> void:
 	Save.data["owned"] = []
 	var c := _open()
 	await _frames(2)
-	t.eq(c.apply_btn.text, "Wearing this", "unchanged: the button says so")
-	t.check(c.apply_btn.disabled and not c.undo_btn.visible, "and is unavailable, with nothing to undo")
+	# V7: no giant disabled "Wearing this" button: an unchanged look shows a
+	# small Equipped state, and Save look / Undo appear only for a change
+	t.check(not c.apply_btn.visible and not c.undo_btn.visible, "unchanged: no Save look and nothing to undo")
+	t.eq(c.sel_state.text, "Equipped", "the footer says the selected item is equipped")
+	t.check(c.footer.get_parent().get_parent() == c.panel, "the footer is inside the item panel")
+	c._select_tab("hat")
+	await _frames(1)
 	c._pick("hat", "none")     # free
 	t.eq(c.apply_btn.text, "Save look", "a change: Save look (never a price)")
-	t.check(not c.apply_btn.disabled, "available")
+	t.check(c.apply_btn.visible and not c.apply_btn.disabled, "available")
 	t.check(c.undo_btn.visible, "Undo appears")
+	t.eq(c.sel_state.text, "Not saved yet", "and the footer says the change isn't saved")
 	c._on_cancel()
 	t.eq(c.draft, c.saved, "Undo returns to the saved look")
+	t.check(not c.apply_btn.visible and not c.undo_btn.visible, "and the actions go away")
 	c._pick("hat", "none")
 	c._on_apply()
 	t.eq(String(Cosmetics.sanitize(Save.data["cosmetic"])["hat"]), "none", "saved")
 	t.eq(int(Save.data["coins"]), 0, "saving never spends")
-	t.eq(c.apply_btn.text, "Wearing this", "and the button returns to its resting state")
+	t.check(not c.apply_btn.visible, "and the actions return to their resting state (hidden)")
+	t.eq(c.sel_state.text, "Equipped", "the saved item reads Equipped")
 	await _close(c)
 	Save.data["cosmetic"] = saved_cos
 	Save.data["coins"] = saved_coins

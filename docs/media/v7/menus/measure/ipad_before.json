@@ -1,0 +1,1395 @@
+{
+ "01_svcon_test_locker_outfit": {
+  "view": [
+   1280.0,
+   960.0
+  ],
+  "safe": [
+   16.0,
+   30.0,
+   1248.0,
+   905.0
+  ],
+  "touch_min": 54.9999991804361,
+  "tab": "outfit",
+  "panel": [
+   472.0,
+   126.0,
+   768.0,
+   687.0
+  ],
+  "scroll": [
+   488.0,
+   206.0,
+   736.0,
+   599.0
+  ],
+  "columns": 4,
+  "card_count": 7,
+  "apply_btn": {
+   "rect": [
+    920.0,
+    829.0,
+    320.0,
+    90.0
+   ],
+   "text": "Wearing this",
+   "disabled": true,
+   "visible": true
+  },
+  "undo_btn": {
+   "rect": [
+    40.0,
+    829.0,
+    190.0,
+    84.0
+   ],
+   "visible": false
+  },
+  "art_outside_well": [],
+  "pressables_cut_off": [],
+  "categories": [
+   {
+    "tab": "outfit",
+    "rect": [
+     488.0,
+     134.0,
+     87.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "colours",
+    "rect": [
+     581.0,
+     134.0,
+     93.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "face",
+    "rect": [
+     680.0,
+     134.0,
+     73.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "hair",
+    "rect": [
+     759.0,
+     134.0,
+     66.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "hat",
+    "rect": [
+     831.0,
+     134.0,
+     61.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "shoes",
+    "rect": [
+     898.0,
+     134.0,
+     90.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "move",
+    "rect": [
+     994.0,
+     134.0,
+     103.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "profile",
+    "rect": [
+     1103.0,
+     134.0,
+     93.0,
+     56.0
+    ],
+    "whole": true
+   }
+  ]
+ },
+ "02_svcon_test_locker_emotes": {
+  "view": [
+   1280.0,
+   960.0
+  ],
+  "safe": [
+   16.0,
+   30.0,
+   1248.0,
+   905.0
+  ],
+  "touch_min": 54.9999991804361,
+  "tab": "move",
+  "panel": [
+   472.0,
+   126.0,
+   768.0,
+   687.0
+  ],
+  "scroll": [
+   488.0,
+   206.0,
+   736.0,
+   599.0
+  ],
+  "columns": 4,
+  "card_count": 7,
+  "apply_btn": {
+   "rect": [
+    920.0,
+    829.0,
+    320.0,
+    90.0
+   ],
+   "text": "Wearing this",
+   "disabled": true,
+   "visible": true
+  },
+  "undo_btn": {
+   "rect": [
+    40.0,
+    829.0,
+    190.0,
+    84.0
+   ],
+   "visible": false
+  },
+  "art_outside_well": [
+   {
+    "key": "wave",
+    "well": [
+     500.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     604.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "cheer",
+    "well": [
+     685.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     789.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "laugh",
+    "well": [
+     870.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     974.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "shrug",
+    "well": [
+     1055.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     1159.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "dance",
+    "well": [
+     500.0,
+     528.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     604.3,
+     632.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "point",
+    "well": [
+     685.0,
+     528.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     789.3,
+     632.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "stargaze",
+    "well": [
+     870.0,
+     528.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     974.3,
+     632.3,
+     89.4,
+     89.4
+    ]
+   }
+  ],
+  "pressables_cut_off": [],
+  "categories": [
+   {
+    "tab": "outfit",
+    "rect": [
+     488.0,
+     134.0,
+     87.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "colours",
+    "rect": [
+     581.0,
+     134.0,
+     93.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "face",
+    "rect": [
+     680.0,
+     134.0,
+     73.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "hair",
+    "rect": [
+     759.0,
+     134.0,
+     66.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "hat",
+    "rect": [
+     831.0,
+     134.0,
+     61.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "shoes",
+    "rect": [
+     898.0,
+     134.0,
+     90.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "move",
+    "rect": [
+     994.0,
+     134.0,
+     103.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "profile",
+    "rect": [
+     1103.0,
+     134.0,
+     93.0,
+     56.0
+    ],
+    "whole": true
+   }
+  ],
+  "emote_cards": [
+   {
+    "key": "wave",
+    "card": [
+     488.0,
+     241.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     500.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     604.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "cheer",
+    "card": [
+     673.0,
+     241.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     685.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     789.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "laugh",
+    "card": [
+     858.0,
+     241.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     870.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     974.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "shrug",
+    "card": [
+     1043.0,
+     241.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     1055.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     1159.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "dance",
+    "card": [
+     488.0,
+     518.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     500.0,
+     528.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     604.3,
+     632.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "point",
+    "card": [
+     673.0,
+     518.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     685.0,
+     528.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     789.3,
+     632.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "stargaze",
+    "card": [
+     858.0,
+     518.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     870.0,
+     528.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     974.3,
+     632.3,
+     89.4,
+     89.4
+    ]
+   }
+  ]
+ },
+ "03_svcon_test_locker_emote_selected": {
+  "view": [
+   1280.0,
+   960.0
+  ],
+  "safe": [
+   16.0,
+   30.0,
+   1248.0,
+   905.0
+  ],
+  "touch_min": 54.9999991804361,
+  "tab": "move",
+  "panel": [
+   472.0,
+   126.0,
+   768.0,
+   687.0
+  ],
+  "scroll": [
+   488.0,
+   206.0,
+   736.0,
+   599.0
+  ],
+  "columns": 4,
+  "card_count": 7,
+  "apply_btn": {
+   "rect": [
+    920.0,
+    829.0,
+    320.0,
+    90.0
+   ],
+   "text": "Save look",
+   "disabled": false,
+   "visible": true
+  },
+  "undo_btn": {
+   "rect": [
+    716.0,
+    829.0,
+    190.0,
+    90.0
+   ],
+   "visible": true
+  },
+  "art_outside_well": [
+   {
+    "key": "wave",
+    "well": [
+     500.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     604.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "cheer",
+    "well": [
+     685.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     789.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "laugh",
+    "well": [
+     870.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     974.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "shrug",
+    "well": [
+     1055.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     1159.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "dance",
+    "well": [
+     500.0,
+     528.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     604.3,
+     632.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "point",
+    "well": [
+     685.0,
+     528.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     789.3,
+     632.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "stargaze",
+    "well": [
+     870.0,
+     528.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     974.3,
+     632.3,
+     89.4,
+     89.4
+    ]
+   }
+  ],
+  "pressables_cut_off": [],
+  "categories": [
+   {
+    "tab": "outfit",
+    "rect": [
+     488.0,
+     134.0,
+     87.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "colours",
+    "rect": [
+     581.0,
+     134.0,
+     93.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "face",
+    "rect": [
+     680.0,
+     134.0,
+     73.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "hair",
+    "rect": [
+     759.0,
+     134.0,
+     66.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "hat",
+    "rect": [
+     831.0,
+     134.0,
+     61.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "shoes",
+    "rect": [
+     898.0,
+     134.0,
+     90.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "move",
+    "rect": [
+     994.0,
+     134.0,
+     103.0,
+     56.0
+    ],
+    "whole": true
+   },
+   {
+    "tab": "profile",
+    "rect": [
+     1103.0,
+     134.0,
+     93.0,
+     56.0
+    ],
+    "whole": true
+   }
+  ],
+  "emote_cards": [
+   {
+    "key": "wave",
+    "card": [
+     488.0,
+     241.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     500.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     604.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "cheer",
+    "card": [
+     673.0,
+     241.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     685.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     789.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "laugh",
+    "card": [
+     858.0,
+     241.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     870.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     974.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "shrug",
+    "card": [
+     1043.0,
+     241.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     1055.0,
+     251.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     1159.3,
+     355.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "dance",
+    "card": [
+     488.0,
+     518.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     500.0,
+     528.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     604.3,
+     632.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "point",
+    "card": [
+     673.0,
+     518.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     685.0,
+     528.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     789.3,
+     632.3,
+     89.4,
+     89.4
+    ]
+   },
+   {
+    "key": "stargaze",
+    "card": [
+     858.0,
+     518.0,
+     173.0,
+     265.0
+    ],
+    "well": [
+     870.0,
+     528.0,
+     149.0,
+     149.0
+    ],
+    "art": [
+     974.3,
+     632.3,
+     89.4,
+     89.4
+    ]
+   }
+  ]
+ },
+ "10_svcon_test_pass_first_free": {
+  "view": [
+   1280.0,
+   960.0
+  ],
+  "safe": [
+   16.0,
+   30.0,
+   1248.0,
+   905.0
+  ],
+  "touch_min": 54.9999991804361,
+  "free_row": {
+   "top": 384.0,
+   "bottom": 606.0,
+   "cell_h": 222.0,
+   "columns_in_view": 4,
+   "vertically_whole": 4,
+   "inside_viewport": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 616.0,
+   "bottom": 838.0,
+   "cell_h": 222.0,
+   "columns_in_view": 4,
+   "vertically_whole": 4,
+   "inside_viewport": true,
+   "inside_track": true
+  },
+  "detail_action": {
+   "rect": [
+    912.0,
+    826.0,
+    310.0,
+    84.0
+   ],
+   "text": "Wear it in the Locker",
+   "disabled": false,
+   "inside_viewport": true,
+   "fully_visible": true
+  },
+  "claim_all": {
+   "rect": [
+    622.0,
+    184.0,
+    240.0,
+    84.0
+   ],
+   "text": "Claim all (4)",
+   "disabled": false,
+   "visible": true
+  },
+  "track_scroll": [
+   151.0,
+   343.0,
+   717.0,
+   570.0
+  ],
+  "detail_panel": [
+   894.0,
+   126.0,
+   346.0,
+   793.0
+  ],
+  "banner": "",
+  "detail_state_text": "Claimed. It's yours to keep, in your Locker.",
+  "focus": [
+   1,
+   "free"
+  ],
+  "pressables_cut_off": []
+ },
+ "11_svcon_test_pass_first_premium": {
+  "view": [
+   1280.0,
+   960.0
+  ],
+  "safe": [
+   16.0,
+   30.0,
+   1248.0,
+   905.0
+  ],
+  "touch_min": 54.9999991804361,
+  "free_row": {
+   "top": 384.0,
+   "bottom": 606.0,
+   "cell_h": 222.0,
+   "columns_in_view": 4,
+   "vertically_whole": 4,
+   "inside_viewport": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 616.0,
+   "bottom": 838.0,
+   "cell_h": 222.0,
+   "columns_in_view": 4,
+   "vertically_whole": 4,
+   "inside_viewport": true,
+   "inside_track": true
+  },
+  "detail_action": {
+   "rect": [
+    907.0,
+    826.0,
+    318.0,
+    84.0
+   ],
+   "text": "Get Premium in the Shop",
+   "disabled": false,
+   "inside_viewport": true,
+   "fully_visible": true
+  },
+  "claim_all": {
+   "rect": [
+    617.0,
+    184.0,
+    240.0,
+    84.0
+   ],
+   "text": "Claim all (4)",
+   "disabled": false,
+   "visible": true
+  },
+  "track_scroll": [
+   151.0,
+   343.0,
+   712.0,
+   570.0
+  ],
+  "detail_panel": [
+   889.0,
+   126.0,
+   354.0,
+   793.0
+  ],
+  "banner": "",
+  "detail_state_text": "You've reached this tier. Unlock Premium (1,500 Coins in the Shop) to claim it \u2014 every Premium reward you've earned becomes claimable.",
+  "focus": [
+   1,
+   "premium"
+  ],
+  "pressables_cut_off": []
+ },
+ "13_svcon_test_pass_mid_premium": {
+  "view": [
+   1280.0,
+   960.0
+  ],
+  "safe": [
+   16.0,
+   30.0,
+   1248.0,
+   905.0
+  ],
+  "touch_min": 54.9999991804361,
+  "free_row": {
+   "top": 384.0,
+   "bottom": 606.0,
+   "cell_h": 222.0,
+   "columns_in_view": 5,
+   "vertically_whole": 5,
+   "inside_viewport": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 616.0,
+   "bottom": 838.0,
+   "cell_h": 222.0,
+   "columns_in_view": 5,
+   "vertically_whole": 5,
+   "inside_viewport": true,
+   "inside_track": true
+  },
+  "detail_action": {
+   "rect": [
+    907.0,
+    826.0,
+    318.0,
+    84.0
+   ],
+   "text": "Get Premium in the Shop",
+   "disabled": false,
+   "inside_viewport": true,
+   "fully_visible": true
+  },
+  "claim_all": {
+   "rect": [
+    617.0,
+    184.0,
+    240.0,
+    84.0
+   ],
+   "text": "Claim all (4)",
+   "disabled": false,
+   "visible": true
+  },
+  "track_scroll": [
+   151.0,
+   343.0,
+   712.0,
+   570.0
+  ],
+  "detail_panel": [
+   889.0,
+   126.0,
+   354.0,
+   793.0
+  ],
+  "banner": "",
+  "detail_state_text": "You've reached this tier. Unlock Premium (1,500 Coins in the Shop) to claim it \u2014 every Premium reward you've earned becomes claimable.",
+  "focus": [
+   15,
+   "premium"
+  ],
+  "pressables_cut_off": []
+ },
+ "15_svcon_test_pass_last_premium": {
+  "view": [
+   1280.0,
+   960.0
+  ],
+  "safe": [
+   16.0,
+   30.0,
+   1248.0,
+   905.0
+  ],
+  "touch_min": 54.9999991804361,
+  "free_row": {
+   "top": 384.0,
+   "bottom": 606.0,
+   "cell_h": 222.0,
+   "columns_in_view": 4,
+   "vertically_whole": 4,
+   "inside_viewport": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 616.0,
+   "bottom": 838.0,
+   "cell_h": 222.0,
+   "columns_in_view": 4,
+   "vertically_whole": 4,
+   "inside_viewport": true,
+   "inside_track": true
+  },
+  "detail_action": {
+   "shown": false
+  },
+  "claim_all": {
+   "rect": [
+    622.0,
+    184.0,
+    240.0,
+    84.0
+   ],
+   "text": "Claim all (4)",
+   "disabled": false,
+   "visible": true
+  },
+  "track_scroll": [
+   151.0,
+   343.0,
+   717.0,
+   570.0
+  ],
+  "detail_panel": [
+   894.0,
+   126.0,
+   346.0,
+   793.0
+  ],
+  "banner": "",
+  "detail_state_text": "Reach Tier 30 to unlock (4,850 more Season XP).",
+  "focus": [
+   30,
+   "premium"
+  ],
+  "pressables_cut_off": []
+ },
+ "20_svcon_test_shop_featured": {
+  "view": [
+   1280.0,
+   960.0
+  ],
+  "safe": [
+   16.0,
+   30.0,
+   1248.0,
+   905.0
+  ],
+  "touch_min": 54.9999991804361,
+  "banner": "",
+  "panel": [
+   472.0,
+   126.0,
+   768.0,
+   793.0
+  ],
+  "scroll": [
+   488.0,
+   204.0,
+   736.0,
+   707.0
+  ],
+  "section": "featured",
+  "pressables_cut_off": []
+ },
+ "24_svcon_test_shop_detail_outfit": {
+  "view": [
+   1280.0,
+   960.0
+  ],
+  "safe": [
+   16.0,
+   30.0,
+   1248.0,
+   905.0
+  ],
+  "touch_min": 54.9999991804361,
+  "detail_action": {
+   "rect": [
+    894.0,
+    823.0,
+    330.0,
+    88.0
+   ],
+   "text": "Buy for 1,200 Coins",
+   "disabled": false,
+   "inside_viewport": true
+  },
+  "banner": "",
+  "panel": [
+   472.0,
+   126.0,
+   768.0,
+   793.0
+  ],
+  "scroll": [
+   488.0,
+   204.0,
+   736.0,
+   707.0
+  ],
+  "section": "outfits",
+  "pressables_cut_off": []
+ },
+ "30_svcoff_pass_first_free": {
+  "view": [
+   1280.0,
+   960.0
+  ],
+  "safe": [
+   16.0,
+   30.0,
+   1248.0,
+   905.0
+  ],
+  "touch_min": 54.9999991804361,
+  "free_row": {
+   "top": 452.0,
+   "bottom": 664.0,
+   "cell_h": 212.0,
+   "columns_in_view": 4,
+   "vertically_whole": 4,
+   "inside_viewport": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 674.0,
+   "bottom": 886.0,
+   "cell_h": 212.0,
+   "columns_in_view": 4,
+   "vertically_whole": 4,
+   "inside_viewport": true,
+   "inside_track": true
+  },
+  "detail_action": {
+   "rect": [
+    912.0,
+    826.0,
+    310.0,
+    84.0
+   ],
+   "text": "Claim",
+   "disabled": true,
+   "inside_viewport": true,
+   "fully_visible": true
+  },
+  "claim_all": {
+   "rect": [
+    622.0,
+    184.0,
+    240.0,
+    84.0
+   ],
+   "text": "Claim all (1)",
+   "disabled": true,
+   "visible": true
+  },
+  "track_scroll": [
+   151.0,
+   411.0,
+   717.0,
+   502.0
+  ],
+  "detail_panel": [
+   894.0,
+   126.0,
+   346.0,
+   793.0
+  ],
+  "banner": "The Shop, Coins and Season Pass need the game service, which isn't set up in this build. Your items and Coins are safe.",
+  "detail_state_text": "Ready to claim. It goes straight to your Locker.",
+  "focus": [
+   1,
+   "free"
+  ],
+  "pressables_cut_off": []
+ },
+ "33_svcoff_pass_mid_premium": {
+  "view": [
+   1280.0,
+   960.0
+  ],
+  "safe": [
+   16.0,
+   30.0,
+   1248.0,
+   905.0
+  ],
+  "touch_min": 54.9999991804361,
+  "free_row": {
+   "top": 452.0,
+   "bottom": 664.0,
+   "cell_h": 212.0,
+   "columns_in_view": 5,
+   "vertically_whole": 5,
+   "inside_viewport": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 674.0,
+   "bottom": 886.0,
+   "cell_h": 212.0,
+   "columns_in_view": 5,
+   "vertically_whole": 5,
+   "inside_viewport": true,
+   "inside_track": true
+  },
+  "detail_action": {
+   "shown": false
+  },
+  "claim_all": {
+   "rect": [
+    622.0,
+    184.0,
+    240.0,
+    84.0
+   ],
+   "text": "Claim all (1)",
+   "disabled": true,
+   "visible": true
+  },
+  "track_scroll": [
+   151.0,
+   411.0,
+   717.0,
+   502.0
+  ],
+  "detail_panel": [
+   894.0,
+   126.0,
+   346.0,
+   793.0
+  ],
+  "banner": "The Shop, Coins and Season Pass need the game service, which isn't set up in this build. Your items and Coins are safe.",
+  "detail_state_text": "Reach Tier 15 to unlock (3,300 more Season XP).",
+  "focus": [
+   15,
+   "premium"
+  ],
+  "pressables_cut_off": []
+ }
+}

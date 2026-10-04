@@ -135,6 +135,8 @@ static func emulate_phone() -> bool:
 
 
 static func emulated_point_scale() -> float:
+	if emulation.has("scale"):
+		return float(emulation["scale"])
 	for a in OS.get_cmdline_user_args():
 		if a == "--emulate-phone":
 			return 3.0
@@ -721,12 +723,185 @@ static func units_per_point() -> float:
 ## --emulate-safe=L,T,R,B (points): desktop captures of notched phones,
 ## e.g. 59,0,59,21 for a Dynamic Island iPhone in landscape.
 static func emulated_safe_points() -> Rect2:
+	if emulation.has("safe"):
+		return emulation["safe"]
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--emulate-safe="):
 			var v := a.get_slice("=", 1).split(",")
 			if v.size() == 4:
 				return Rect2(Vector2(v[0].to_float(), v[1].to_float()), Vector2(v[2].to_float(), v[3].to_float()))
 	return Rect2()
+
+
+# ---------------------------------------------------------------------------
+# V7 compact layout system
+# ---------------------------------------------------------------------------
+# Every menu lays out inside the screen's allocated safe content rect
+# (content_rect): the viewport minus the safe area minus a small edge
+# padding.  Navigation and actions are placed first at their natural height
+# (one row: touch_min(), 44 pt); whatever height is left goes to content,
+# which scrolls in its own region or sizes itself to it (region()).  Grids
+# pick their column count from their final allocated width (AutoGrid), never
+# from a requested minimum size.  Text keeps the type scale above: nothing is
+# shrunk to make it fit.
+
+## Spacing scale (canvas units; a phone in landscape has ~1.85 units per pt).
+const SP_XS := 4
+const SP_S := 8
+const SP_M := 12
+const SP_L := 16
+const SP_XL := 24
+## Screen padding inside the safe area: sides, top and bottom.
+const EDGE_X := 20
+const EDGE_Y := 12
+## Padding of compact panels (the Locker, Shop and Pass panels).
+const PAD_PANEL := 12
+## Grid gap between cards.
+const GAP_CARD := 10
+
+## Test seam: emulate a device's point scale and safe area (in points)
+## without command-line arguments, e.g. {"scale": 3.0, "safe":
+## Rect2(47, 0, 47, 21)} (left, top, right, bottom).  Empty = off.
+static var emulation: Dictionary = {}
+
+
+## Height of one row of controls (a tab bar, an action row): 44 pt.
+static func row_h() -> float:
+	return touch_min()
+
+
+## The allocated safe content rect of a screen in canvas units: the
+## viewport minus the safe area minus the edge padding.  Layout derives
+## from this, never from screenshot pixels.
+static func content_rect(vp: Viewport) -> Rect2:
+	var view := vp.get_visible_rect().size
+	var s := safe_margins(vp)
+	var pos := s.position + Vector2(EDGE_X, EDGE_Y)
+	return Rect2(pos, view - pos - s.size - Vector2(EDGE_X, EDGE_Y))
+
+
+## How many cells at least `min_w` wide fit `avail` with `gap` between them.
+static func columns_for(avail: float, min_w: float, gap: float = GAP_CARD, min_cols: int = 1, max_cols: int = 8) -> int:
+	return clampi(int(floor((avail + gap) / maxf(1.0, min_w + gap))), min_cols, max_cols)
+
+
+## The width of each of `cols` cells sharing `avail` with `gap` between them.
+static func cell_width(avail: float, cols: int, gap: float = GAP_CARD) -> float:
+	return floorf((avail - gap * float(maxi(cols, 1) - 1)) / float(maxi(cols, 1)))
+
+
+## A region that takes the space its parent gives it and never asks for
+## more: `child` fills it, and the child's minimum size never grows the
+## parent past the screen (V6's Season track forced its parents below the
+## safe area this way).  Content that must fit sizes itself from the
+## region's size; anything that may not fit scrolls inside.
+static func region(child: Control, clip: bool = true) -> Control:
+	var r := Control.new()
+	r.name = "Region"
+	r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	r.clip_contents = clip
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	child.set_anchors_preset(Control.PRESET_FULL_RECT)
+	r.add_child(child)
+	return r
+
+
+## A compact text link ("6 more in the Shop ›"): no slab, teal text, a full
+## 44 pt hit area, content-sized.
+static func link(t: String, font_size: int = T_LABEL) -> Button:
+	var b := _base_button(t, Vector2(0, 0), font_size)
+	var f := face_of(b)
+	var n := box(Color(0, 0, 0, 0), 999, 0, Color.WHITE)
+	f.styles = {"normal": n, "hover": box(Color(IVORY, 0.06), 999), "pressed": box(Color(IVORY, 0.1), 999),
+		"disabled": n, "selected": n}
+	f.fg = {"normal": TEAL, "hover": TEAL.lightened(0.2), "disabled": IVORY_DIM}
+	return b
+
+
+## A grid whose column count comes from its final allocated width: as many
+## cells of at least `min_cell` as fit (within min_cols..max_cols), each
+## exactly `cell_w` wide.  Children that implement fit_cell(w, lines) lay
+## themselves out for that width; `lines` is the most lines any child's name
+## needs at that width (name_lines(w)), so every card's state row lines up.
+## Re-fits only when the width really changes (no relayout while scrolling).
+class AutoGrid:
+	extends GridContainer
+	var min_cell := 140.0
+	var min_cols := 2
+	var max_cols := 6
+	var gap := float(UIKit.GAP_CARD)
+	var cell_w := 0.0
+	var lines := 1
+	var _w := -1.0
+
+	func _init(min_cell_w: float = 140.0, min_c: int = 2, max_c: int = 6, g: float = float(UIKit.GAP_CARD)) -> void:
+		min_cell = min_cell_w
+		min_cols = min_c
+		max_cols = max_c
+		gap = g
+		columns = min_c
+		add_theme_constant_override("h_separation", int(g))
+		add_theme_constant_override("v_separation", int(g))
+		size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		child_entered_tree.connect(_on_child)
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_RESIZED:
+			refit()
+
+	## Lay the cells out for the current width (`force`: even if unchanged).
+	func refit(force: bool = false) -> void:
+		var w := size.x
+		if w < 1.0 or (not force and absf(w - _w) < 0.5):
+			return
+		_w = w
+		var cols := UIKit.columns_for(w, min_cell, gap, min_cols, max_cols)
+		cell_w = UIKit.cell_width(w, cols, gap)
+		columns = cols
+		lines = 1
+		for c in get_children():
+			if c.has_method("name_lines"):
+				lines = maxi(lines, int(c.call("name_lines", cell_w)))
+		for c in get_children():
+			_apply(c)
+
+	func _apply(c: Node) -> void:
+		if not (c is Control) or cell_w <= 0.0:
+			return
+		if c.has_method("fit_cell"):
+			c.call("fit_cell", cell_w, lines)
+		else:
+			(c as Control).custom_minimum_size.x = cell_w
+
+	func _on_child(c: Node) -> void:
+		if cell_w > 0.0:
+			if c.has_method("name_lines") and int(c.call("name_lines", cell_w)) > lines:
+				refit(true)
+			else:
+				_apply(c)
+
+
+## Entry for a panel of controls: a fade only.  Its hit targets are where
+## they are drawn from the first frame (a scale settle moves them for a
+## moment, and its pivot isn't known before the first layout).
+static func fade_in(c: Control, dur: float = T_SHEET) -> void:
+	if c == null or not is_instance_valid(c):
+		return
+	c.modulate.a = 0.0
+	Motion.animate(c, "modulate:a", 1.0, dur, Tween.TRANS_QUAD, Tween.EASE_OUT)
+
+
+## Lines a text needs at a width (word wrap, no trimming).
+static func lines_for(t: String, f: Font, font_size: int, width: float) -> int:
+	if t == "" or width <= 1.0:
+		return 1
+	var para := TextParagraph.new()
+	para.add_string(t, f, font_size)
+	para.width = width
+	para.break_flags = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND
+	return maxi(1, para.get_line_count())
 
 
 ## The look of a UIKit button: a style per state, its text (or icon and
