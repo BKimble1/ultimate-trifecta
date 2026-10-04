@@ -271,7 +271,8 @@ static func name_card(ci: CanvasItem, rect: Rect2, card_id: String, player_name:
 		for i in 12:
 			var p := rect.position + Vector2(rng.randf_range(0.45, 0.97) * rect.size.x, rng.randf_range(0.14, 0.86) * h)
 			ci.draw_circle(p, rng.randf_range(0.7, 1.6) * maxf(1.0, h / 60.0), Color(1, 1, 1, rng.randf_range(0.3, 0.75)))
-	if motif != "stars" or not bool(it.get("stars", false)):
+	# with a badge, the badge is the emblem: the motif steps aside for the name
+	if badge_id == "" and (motif != "stars" or not bool(it.get("stars", false))):
 		glyph(ci, motif, Vector2(rect.end.x - h * 0.42, rect.get_center().y), h * 0.26, Color(accent, 0.45))
 	# badge slot and the name
 	var x0 := rect.position.x + maxf(10.0, h * 0.22)
@@ -281,7 +282,7 @@ static func name_card(ci: CanvasItem, rect: Rect2, card_id: String, player_name:
 		x0 += br * 2.0 + h * 0.14
 	var nm := card_name(player_name)
 	var f := UIKit.font_w(800)
-	var room := rect.end.x - x0 - h * 0.74
+	var room := rect.end.x - x0 - (h * 0.74 if badge_id == "" else h * 0.2)
 	# the plate shows the whole name: a long one is set a little smaller (it
 	# is a picture of the card), and only a very long one is trimmed
 	var fs := clampi(font_size, 12, int(maxf(12.0, h * 0.4)))

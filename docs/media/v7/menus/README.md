@@ -18,7 +18,7 @@ final allocated rects measured in each run, and the reward art sheet.
 - **Before:** source at `d2d0749`, the V6 integration this branch starts
   from, run from a frozen copy with the same capture scene.
 - **After:** this branch.
-- **Images:** scaled to 1280 px wide (JPEG q82). `art_sheet.png` is full
+- **Images:** scaled to 1280 px wide (JPEG q82). `art_sheet.jpg` is full
   size.
 - **Owner screenshots:** IMG_3016-3020 were not available to this
   workstream. The defects were reproduced from the brief's table at the
@@ -89,7 +89,7 @@ RESULTS_PLACEHOLDER
 
 ## Reward art
 
-![art sheet](art_sheet.png)
+![art sheet](art_sheet.jpg)
 
 The sheet (`game/src/dev/menus_art_sheet.tscn`) shows:
 
