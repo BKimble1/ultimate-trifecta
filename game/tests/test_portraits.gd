@@ -33,3 +33,22 @@ func test_headless_gets_placeholder_without_work() -> void:
 	t.check(tex is GradientTexture2D, "placeholder")
 	t.eq(p.pending(), 0, "nothing queued without a display")
 	p.free()
+
+
+## V7: every key carries the art version (the runner.glb build, generated
+## with the asset, plus the renderer's look), so a build with new character
+## art can never show a cached picture of the old one.
+func test_keys_carry_the_art_version() -> void:
+	var m: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/characters/runner_manifest.json"))
+	t.eq(CharacterArt.VERSION, String(m.get("art_version", "")), "CharacterArt matches runner_manifest.json (rebuilt together)")
+	t.eq(FileAccess.get_sha256("res://assets/characters/runner.glb"), CharacterArt.GLB_SHA256,
+		"CharacterArt names the committed runner.glb (rebuild with tools/character/build.sh)")
+	var v := Portraits.art_version()
+	t.check(v.begins_with(CharacterArt.VERSION), "the art version starts with the asset's (%s)" % v)
+	var k := Portraits.key_of(Cosmetics.DEFAULT, TC.Role.RUNNER)
+	t.check(k.begins_with(v + ":"), "a portrait key starts with the art version (%s)" % k)
+	t.check(Portraits.key_for(Cosmetics.DEFAULT, TC.Role.RUNNER, "body").begins_with(v + ":"), "so does every framing's key")
+	var v6_key := "%d:%s" % [TC.Role.RUNNER, Cosmetics.encode(Cosmetics.DEFAULT).hex_encode()]
+	t.check(k != v6_key and not k.begins_with(v6_key), "a V6-style key (no version) never matches")
+	t.check(Portraits.key_of(Cosmetics.DEFAULT, TC.Role.RUNNER) != Portraits.key_of(Cosmetics.DEFAULT, TC.Role.PATROL),
+		"roles still have their own pictures")
