@@ -1,4 +1,5 @@
 {
+  "art_version": "v7-525ab2b160a0",
   "bones": [
     "root",
     "hips",
@@ -211,6 +212,21 @@
     }
   },
   "forward": "Godot -Z (glTF -Z); built facing Blender +Y",
+  "glb_sha256": "525ab2b160a0bbe2ebac178bada440c2da3065dda66bacff6b49fbe2f01d7b27",
+  "head": {
+    "cap_grow": 0.013,
+    "center": [
+      0.0,
+      1.184999942779541,
+      -0.014999999664723873
+    ],
+    "power": 2.4,
+    "radii": [
+      0.31,
+      0.285,
+      0.3
+    ]
+  },
   "height_m": 1.5,
   "loco_m_per_cycle": {
     "run": 2.2,
@@ -227,24 +243,24 @@
       "verts": 1009
     },
     "base": {
-      "tris": 8034,
-      "verts": 4146
+      "tris": 9226,
+      "verts": 4746
     },
     "body_skin": {
-      "tris": 4244,
-      "verts": 2145
+      "tris": 4692,
+      "verts": 2369
     },
     "cardigan": {
-      "tris": 9090,
-      "verts": 4733
+      "tris": 9186,
+      "verts": 4859
     },
     "courier": {
-      "tris": 9946,
-      "verts": 5341
+      "tris": 10258,
+      "verts": 5565
     },
     "duck": {
-      "tris": 8896,
-      "verts": 4849
+      "tris": 9584,
+      "verts": 5287
     },
     "flashlight": {
       "tris": 140,
@@ -255,8 +271,8 @@
       "verts": 312
     },
     "frog": {
-      "tris": 8816,
-      "verts": 4803
+      "tris": 9504,
+      "verts": 5241
     },
     "hair": {
       "tris": 2388,
@@ -323,44 +339,44 @@
       "verts": 288
     },
     "hat_swimcap": {
-      "tris": 2048,
-      "verts": 1050
+      "tris": 3576,
+      "verts": 1903
     },
     "hoodie": {
-      "tris": 7402,
-      "verts": 3943
+      "tris": 7498,
+      "verts": 4069
     },
     "jogger": {
-      "tris": 5860,
-      "verts": 3099
+      "tris": 5956,
+      "verts": 3225
     },
     "moonlight": {
-      "tris": 7566,
-      "verts": 3978
+      "tris": 7662,
+      "verts": 4104
     },
     "mustache": {
       "tris": 480,
       "verts": 244
     },
     "owl": {
-      "tris": 11126,
-      "verts": 6159
+      "tris": 11670,
+      "verts": 6509
     },
     "pj": {
-      "tris": 8576,
-      "verts": 4385
+      "tris": 8272,
+      "verts": 4421
     },
     "raincoat": {
-      "tris": 10476,
-      "verts": 5482
+      "tris": 10572,
+      "verts": 5608
     },
     "robe": {
       "tris": 7628,
       "verts": 3932
     },
     "scout": {
-      "tris": 10182,
-      "verts": 5438
+      "tris": 10494,
+      "verts": 5662
     },
     "shoe_flippers": {
       "tris": 1816,
@@ -383,20 +399,20 @@
       "verts": 1706
     },
     "starry": {
-      "tris": 7868,
-      "verts": 4247
+      "tris": 7964,
+      "verts": 4373
     },
     "swim": {
       "tris": 2088,
       "verts": 1083
     },
     "varsity": {
-      "tris": 8588,
-      "verts": 4575
+      "tris": 9132,
+      "verts": 4925
     },
     "watch": {
-      "tris": 12712,
-      "verts": 6656
+      "tris": 12600,
+      "verts": 6694
     }
   },
   "shape_keys": [

@@ -14,8 +14,12 @@ uses), it reports:
     the foot cannot reach its target and slides).
   * step: the largest per-sample move of any joint (cm at 60 Hz) inside a
     clip, a check for pops baked into a clip itself.
+  * goggles (V7): deepest penetration of the sleeves and mittens into the
+    swim cap's goggles (cups, bridge, clips, strap): the real vertices of
+    parts.build_swimcap(), which is rigid on the head bone.
 
-Exit status is non-zero when a clip penetrates the head by more than 1 cm.
+Exit status is non-zero when a clip penetrates the head by more than 1 cm,
+or the goggles by more than 1 cm.
 """
 import json
 import math
@@ -30,7 +34,27 @@ from mathutils import Matrix, Vector  # noqa: E402
 
 import anims  # noqa: E402
 import build_character  # noqa: E402
+import geo  # noqa: E402
+import parts  # noqa: E402
 import rig  # noqa: E402
+from mathutils import kdtree  # noqa: E402
+
+
+def goggle_tree():
+    """KD-tree of the goggles' vertices (not the cap shell: the head check
+    covers that), in head rest space (the part is rigid on the head)."""
+    mb = parts.build_swimcap()
+    pts = [mb.v[i] for i in range(len(mb.v)) if mb.col[i][3] != geo.T_PRIMARY]
+    kd = kdtree.KDTree(len(pts))
+    for i, p in enumerate(pts):
+        kd.insert(p, i)
+    kd.balance()
+    return kd
+
+
+def goggle_depth(kd, p_rest, radius):
+    _, _, d = kd.find(p_rest)
+    return max(0.0, radius - d)
 
 ARM_POINTS = [  # (bone, fraction along the bone, limb radius)
     ('forearm', 0.0, 0.045), ('forearm', 0.5, 0.045), ('hand', 0.0, 0.045), ('hand', 0.6, 0.05),
@@ -90,12 +114,14 @@ def check(fps=60):
     arm_ob = build_character.build_armature(scn)
     R = anims.Rig(arm_ob)
     head_inv = R.rest['head']
+    kd = goggle_tree()
     out = {}
     for name, (length, loop, fn) in anims.library().items():
         n = max(2, int(round(length * fps)))
         worst_head = (0.0, 0.0, '')
         worst_torso = (0.0, 0.0, '')
         worst_step = (0.0, 0.0, '')
+        worst_gog = (0.0, 0.0, '')
         reach = 0.0
         prev = None
         for f in range(n + 1):
@@ -111,6 +137,9 @@ def check(fps=60):
                     d = head_depth(to_head @ p, rad)
                     if d > worst_head[0]:
                         worst_head = (d, t, bone + side)
+                    dg = goggle_depth(kd, to_head @ p, rad)
+                    if dg > worst_gog[0]:
+                        worst_gog = (dg, t, bone + side)
                     if bone == 'hand':
                         dt_ = torso_depth(to_chest @ p, rad)
                         if dt_ > worst_torso[0]:
@@ -132,6 +161,7 @@ def check(fps=60):
             'torso_cm': round(worst_torso[0] * 100, 1), 'torso_part': worst_torso[2],
             'reach_m': round(reach, 3), 'step_cm': round(worst_step[0], 1), 'step_at': round(worst_step[1], 3),
             'step_joint': worst_step[2],
+            'goggles_cm': round(worst_gog[0] * 100, 1), 'goggles_part': worst_gog[2],
         }
     return out
 
@@ -139,15 +169,17 @@ def check(fps=60):
 def main():
     res = check()
     bad = 0
-    print('%-16s %7s %-12s %8s %8s %8s' % ('clip', 'head cm', 'part', 'torso cm', 'reach m', 'step cm'))
+    print('%-16s %7s %-12s %8s %8s %8s %8s' % ('clip', 'head cm', 'part', 'torso cm', 'reach m', 'step cm', 'goggles'))
     for k, v in res.items():
-        flag = ' <' if v['head_cm'] > 1.0 else ''
-        bad += 1 if v['head_cm'] > 1.0 else 0
-        print('%-16s %7.1f %-12s %8.1f %8.3f %8.1f%s' % (k, v['head_cm'], v['head_part'], v['torso_cm'], v['reach_m'], v['step_cm'], flag))
+        over = v['head_cm'] > 1.0 or v['goggles_cm'] > 1.0
+        flag = ' <' if over else ''
+        bad += 1 if over else 0
+        print('%-16s %7.1f %-12s %8.1f %8.3f %8.1f %8.1f%s' % (k, v['head_cm'], v['head_part'], v['torso_cm'], v['reach_m'], v['step_cm'],
+                                                         v['goggles_cm'], flag))
     if '--json' in sys.argv:
         with open(sys.argv[sys.argv.index('--json') + 1], 'w') as f:
             json.dump(res, f, indent=1, sort_keys=True)
-    print('clips with the arms > 1 cm inside the head:', bad)
+    print('clips with the arms > 1 cm inside the head or the goggles:', bad)
     sys.exit(1 if bad else 0)
 
 

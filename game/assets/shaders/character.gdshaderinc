@@ -10,7 +10,8 @@
 //              4 dark, 5 primary.  albedo = base * tint
 //   UV         x = stripe flag, 1 - y = stripe coordinate in metres
 //   UV2        x = roughness, 1 - y = material class (0 cloth, .25 skin,
-//              .5 rubber, .75 gloss, .875 lit gloss, 1 emissive)
+//              .5 rubber, .6875 tinted lens (V7), .75 gloss, .875 lit gloss,
+//              1 emissive)
 // Characters cast shadows but do not receive them: at gameplay shadow-map
 // resolution self-shadowing (collar on shirt, cap on face) breaks up into
 // stipple and jaggies where the wrap lighting meets the shadow terminator.
@@ -75,6 +76,13 @@ void fragment() {
 		emit += alb * vec3(1.0, 0.62, 0.42) * skin_warm;
 	} else if (cls < 0.62) {    // rubber / leather
 		SPECULAR = 0.42;
+	} else if (cls < 0.72) {    // V7 tinted lens (goggles): opaque, no blending
+		// or sorting.  The tint gradient and glint are baked in COLOR; a
+		// fresnel sheen in the scene's rim colour and a little self-light
+		// make it read as glass at night without a bright, flickery highlight.
+		SPECULAR = 0.6;
+		float fres = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.0);
+		emit += alb * 0.28 + rim_color * fres * 0.4;
 	} else if (cls < 0.81) {    // gloss: buttons, badges, plastic, irises
 		SPECULAR = 0.55;
 	} else if (cls < 0.94) {    // lit gloss: eye whites keep a little self-light so

@@ -57,6 +57,12 @@ def arm_radius(s):
     return lerp(0.048, 0.041, smoothstep(e, e + rig.FORE_LEN, s))
 
 
+def bare_arm_radius(s):
+    """A bare arm's radius: arm_radius, easing into the mitten's wrist (V7)."""
+    e = rig.UPPER_LEN + rig.FORE_LEN
+    return lerp(arm_radius(s), 0.0325, smoothstep(e - 0.07, e - 0.005, s))
+
+
 def _leg_path(side, top=0.545, bottom_z=None):
     pts = rig.leg_path(side, top)
     if bottom_z is not None:
@@ -124,6 +130,9 @@ def _feature(mb, x, z, radii, style, wfn, sink=0.0, grow=0.0, tag='', aux=None, 
 
 
 # ================================================================== BASE: head, face, hands
+EYE_D = 0.0125      # V7: depth of the eye white's dome (V6: 0.02)
+
+
 def build_base():
     mb = MeshBuilder('base')
     hw = rigid('head')
@@ -144,14 +153,33 @@ def build_base():
     # neck stub (hidden by collars, visible in swim)
     lathe(mb, Vector((0, 0.0, 0)), Matrix.Identity(3), [(0.86, 0.0), (0.865, 0.06), (0.90, 0.066), (0.95, 0.07), (0.97, 0.0)],
           SKIN, neck_w, segs=16, ry_scale=0.9)
-    # ears (V6: a little larger, with a deeper inner shade so they read on
-    # every skin tone and under hair)
+    # ears.  V7: the V6 ear was a disc with a darker disc pushed through
+    # its face (an orange slit on light tones, a sticker from three-quarter).
+    # Now a body sunk into the head at its front edge, the bowl shaded into
+    # it by vertex colour (no second surface) and a helix rim round the top
+    # and back, so it reads as an ear on every tone and attaches cleanly.
+    ear_in = Vector(srgb('#d58f86'))
     for sx in SIDES:
         R = rot_z(-15 * sx)
         ex = rig.head_side_x(1.165, 0.0, -0.005)
-        ellipsoid(mb, Vector(((ex - 0.012) * sx, -0.005, 1.165)), (0.039, 0.054, 0.071), SKIN, hw, segs=14, rings=10, rot=R)
-        ellipsoid(mb, Vector(((ex + 0.014) * sx, 0.004, 1.163)), (0.013, 0.035, 0.048), SKIN.with_col('#d99d94'), hw, segs=12, rings=8,
-                  rot=R)
+        ec = Vector(((ex - 0.010) * sx, -0.007, 1.164))
+        er = (0.036, 0.053, 0.07)
+
+        def ear_col(p, lp, sx=sx):
+            out = smoothstep(0.004, 0.026, lp.x * sx)
+            g = math.exp(-((lp.y + 0.004) / 0.03) ** 2 - ((lp.z + 0.004) / 0.044) ** 2) * out
+            c = Vector((1.0, 1.0, 1.0)).lerp(ear_in, min(1.0, g * 1.1))
+            return (c.x, c.y, c.z)
+        ellipsoid(mb, ec, er, SKIN, hw, segs=16, rings=12, rot=R, colfn=ear_col)
+        hp, hr = [], []
+        for i in range(13):
+            a = math.radians(lerp(62, 262, i / 12.0))
+            ly, lz = er[1] * 0.8 * math.cos(a), er[2] * 0.8 * math.sin(a)
+            lx = er[0] * math.sqrt(max(0.0, 1.0 - 0.64)) * sx
+            hp.append(ec + R @ Vector((lx, ly, lz)))
+            t = i / 12.0
+            hr.append((lerp(0.0075, 0.0105, math.sin(math.pi * min(1.0, t * 1.3))), 0.0085))
+        sweep(mb, hp, hr, SKIN, hw, segs=8, twist_hint=Vector((sx, 0, 0)))
     # nose (V6: a touch larger, so it reads at gameplay distance)
     _feature(mb, 0.0, 1.118, (0.034, 0.026, 0.024), SKIN.with_col('#ffe2d9'), hw, sink=0.008)
     # eyes: sclera, pupil, catch-light.  aux carries the eye frame for the shape keys
@@ -167,10 +195,13 @@ def build_base():
         side_v = R @ Vector((1, 0, 0))
         up_v = R @ Vector((0, 1, 0))
         inward = Vector((-sx, 0, 0))
-        c = p - n * 0.004
+        # V7: the white is a shallower dome (it stood 1.6 cm proud, so the far
+        # eye broke the cheek's silhouette in three-quarter views); the lash
+        # line, iris, pupil and catch-lights follow its new depth (EYE_D)
+        c = p - n * 0.003
         aux = (c.copy(), side_v.copy(), up_v.copy(), n.copy(), sx)
         tag = 'eyeL' if sx < 0 else 'eyeR'
-        ellipsoid(mb, c, (0.053, 0.067, 0.02), sclera, hw, segs=20, rings=14, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        ellipsoid(mb, c, (0.053, 0.067, EYE_D), sclera, hw, segs=20, rings=14, rot=R, tag=tag, aux=aux, cut_below=-0.35)
         # V6: upper lash line hugging the top of the white, thicker toward
         # the outer corner with a small flick.  It carries the eye's frame,
         # so blink, squint and the face presets move it with the lid.
@@ -180,7 +211,7 @@ def build_base():
         for i in range(13):
             a = math.radians(18 + 144 * i / 12)
             f = 0.965
-            dep = 0.02 * math.sqrt(max(0.0, 1.0 - f * f)) + 0.0016
+            dep = EYE_D * math.sqrt(max(0.0, 1.0 - f * f)) + 0.0016
             q = c + side_v * (0.053 * f * math.cos(a)) + up_v * (0.067 * f * math.sin(a)) + n * dep
             outness = smoothstep(-0.6, 1.0, o_sign * math.cos(a))
             lpts.append(q)
@@ -196,14 +227,15 @@ def build_base():
         for vi in range(len(mb.aux)):
             if mb.tag[vi] == tag and mb.aux[vi] is None:
                 mb.aux[vi] = aux
-        pc = c + n * 0.0135 - up_v * 0.006 + inward * 0.004
-        ellipsoid(mb, pc, (0.041, 0.051, 0.012), iris, hw, segs=18, rings=12, rot=R, tag=tag, aux=aux, cut_below=-0.35)
-        ppc = pc + n * 0.006 - up_v * 0.002
-        ellipsoid(mb, ppc, (0.027, 0.034, 0.0068), pupil, hw, segs=14, rings=10, rot=R, tag=tag, aux=aux, cut_below=-0.35)
-        hc = pc + n * 0.0105 + up_v * 0.017 - inward * 0.012
-        ellipsoid(mb, hc, (0.0145, 0.0155, 0.004), shine, hw, segs=10, rings=6, rot=R, tag=tag, aux=aux, cut_below=-0.35)
-        hc2 = pc + n * 0.0095 - up_v * 0.019 + inward * 0.011
-        ellipsoid(mb, hc2, (0.006, 0.006, 0.003), shine, hw, segs=8, rings=4, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        k = EYE_D / 0.02
+        pc = c + n * (0.0135 * k) - up_v * 0.006 + inward * 0.004
+        ellipsoid(mb, pc, (0.041, 0.051, 0.012 * k), iris, hw, segs=18, rings=12, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        ppc = pc + n * (0.006 * k) - up_v * 0.002
+        ellipsoid(mb, ppc, (0.027, 0.034, 0.0068 * k), pupil, hw, segs=14, rings=10, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        hc = pc + n * (0.0105 * k) + up_v * 0.017 - inward * 0.012
+        ellipsoid(mb, hc, (0.0145, 0.0155, 0.004 * k), shine, hw, segs=10, rings=6, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        hc2 = pc + n * (0.0095 * k) - up_v * 0.019 + inward * 0.011
+        ellipsoid(mb, hc2, (0.006, 0.006, 0.003 * k), shine, hw, segs=8, rings=4, rot=R, tag=tag, aux=aux, cut_below=-0.35)
         # brow: short arched bar on the surface
         bpts = []
         for i in range(7):
@@ -232,29 +264,46 @@ def build_base():
               tag='mouth', aux=maux, cut_below=-0.35)
     ellipsoid(mb, mc - mup * 0.010, (0.022, 0.010, 0.005), Style('#ff8a96', T_NONE, 0.4, MAT_GLOSS), hw, segs=12, rings=8,
               rot=MR, tag='tongue', aux=maux)
-    # hands (mittens with a thumb), skin
+    # hands (mittens with a thumb), skin.  V7: a wrist neck into the sleeve
+    # or forearm (the cuffs are open now and bare arms end in it), a palm
+    # tapered at the wrist and a little cupped, and a thumb that branches
+    # from the side of the palm (V6: a dome stuck on its face)
     for sx in SIDES:
         sfx = '.L' if sx < 0 else '.R'
         d = arm_dir(sx)
         w = wrist(sx)
         R = rot_align(d, FWD)
+        X = R @ Vector((1, 0, 0))   # palm normal (toward the body)
+        Y = R @ Vector((0, 1, 0))   # forward
         hwf = lambda p, sfx=sfx, w=w, d=d: rig.seg_weights((p - w).dot(d), [('forearm' + sfx, 0.0), ('hand' + sfx, None)], 0.012)
-        # V6: a flatter, longer mitten (a hand rather than a ball) with the
-        # thumb set a little further out
-        ellipsoid(mb, w + d * 0.056, (0.038, 0.056, 0.063), SKIN, hwf, segs=24, rings=16, rot=R, power=2.35)
-        tdir = (d * 0.9 + FWD).normalized()
-        ellipsoid(mb, w + d * 0.034 + FWD * 0.048, (0.022, 0.022, 0.035), SKIN, hwf, segs=16, rings=10, rot=rot_align(tdir, UP))
+        neck = [w + d * t for t in (-0.04, -0.02, 0.0, 0.02, 0.035)]
+        sweep(mb, neck, [(0.031, 0.029), (0.031, 0.029), (0.030, 0.028), (0.031, 0.029), (0.032, 0.03)], SKIN,
+              lambda p, sv, i, hwf=hwf: hwf(p), segs=14, twist_hint=Y)
+
+        def palm(lp):
+            t = lp.z / 0.065
+            narrow = 1.0 - 0.16 * smoothstep(0.1, -1.0, t)
+            cup = 0.007 * max(0.0, t) ** 2
+            return Vector((lp.x * (1.0 - 0.1 * max(0.0, t)) + cup, lp.y * narrow, lp.z))
+        ellipsoid(mb, w + d * 0.058, (0.034, 0.051, 0.065), SKIN, hwf, segs=22, rings=16, rot=R, power=2.3, deform=palm)
+        tdir = (d * 0.62 + Y * 0.66 + X * 0.42).normalized()
+        t0 = w + d * 0.036 + Y * 0.026 + X * 0.007
+        tp = [t0 + tdir * (0.042 * i / 4.0) for i in range(5)]
+        sweep(mb, tp, [(lerp(0.0185, 0.0155, i / 4.0),) * 2 for i in range(5)], SKIN, lambda p, sv, i, hwf=hwf: hwf(p), segs=12,
+              twist_hint=X)
     return mb
 
 
-def hair_shell(mb, g, hairline, style, wfn, segs=56, rows=16, tuck=0.014):
+def hair_shell(mb, g, hairline, style, wfn, segs=56, rows=16, tuck=0.014, bulge=None):
     """Hair cap over the (reshaped) head whose lower edge follows `hairline`
     exactly: hairline(ang) -> z, ang 0 = straight back, +pi/2 = the
     character's left, +-pi = the forehead.  Rings run from the hairline up to
     the crown, so the edge is a smooth curve rather than whole mesh triangles
     dropped by a mask (V3: the V2 masks left a stepped hairline).  A row tucked
-    under the edge gives the hair some thickness."""
+    under the edge gives the hair some thickness.  bulge(ang, z) -> extra
+    grow lets the hair lie over something (V7: the bob over the ears)."""
     rz = HEAD_R[2] + g
+    gx = (lambda a, z: g + bulge(a, z)) if bulge is not None else (lambda a, z: g)
     ztop = HEAD_C.z + rz * 0.9995
     rows_idx = []
     angs = [-math.pi + 2.0 * math.pi * k / segs for k in range(segs)]
@@ -263,7 +312,7 @@ def hair_shell(mb, g, hairline, style, wfn, segs=56, rows=16, tuck=0.014):
     # tucked row (under the edge, toward the scalp)
     row = []
     for a, z0 in zip(angs, edge):
-        q = _shell_point(a, z0 + 0.004, g - tuck)
+        q = _shell_point(a, z0 + 0.004, gx(a, z0 + 0.004) - tuck)
         row.append(mb.vert(q, style, (0, q.z), wfn(q)))
     rows_idx.append(row)
     for r in range(rows):
@@ -274,7 +323,7 @@ def hair_shell(mb, g, hairline, style, wfn, segs=56, rows=16, tuck=0.014):
             t0 = math.acos(max(-1.0, min(1.0, (z0 - HEAD_C.z) / rz)))
             t = t0 * (1.0 - u)
             z = HEAD_C.z + rz * math.cos(t)
-            q = _shell_point(a, min(z, ztop), g)
+            q = _shell_point(a, min(z, ztop), gx(a, min(z, ztop)))
             row.append(mb.vert(q, style, (0, q.z), wfn(q)))
         rows_idx.append(row)
     top = Vector((HEAD_C.x, HEAD_C.y, HEAD_C.z + rz))
@@ -339,12 +388,19 @@ def _shell_point(ang, z, grow):
     return Vector((HEAD_C.x + dx * t, HEAD_C.y + dy * t, z))
 
 
+def ear_bulge(ang, z, amount=0.014):
+    """Extra grow for a hair shell over the ears (base ears sit at |ang| 1.5
+    rad, z 1.164, and stand ~2.8 cm off the skin)."""
+    return amount * math.exp(-((abs(ang) - 1.5) / 0.24) ** 2 - ((z - 1.168) / 0.08) ** 2)
+
+
 def build_hair_bob():
     """Chin-length bob with straight bangs; the face stays open."""
     mb = MeshBuilder('hair_bob')
     hw = rigid('head')
     g = 0.024
-    angs, edge = hair_shell(mb, g, hairline_bob, HAIR, hw, segs=64, rows=18, tuck=0.018)
+    # V7: the bob lies over the ears (they poked through it in slivers)
+    angs, edge = hair_shell(mb, g, hairline_bob, HAIR, hw, segs=64, rows=18, tuck=0.018, bulge=ear_bulge)
     # rolled ends: a soft tube along the lower edge (back and sides)
     pts = [_shell_point(math.radians(a), hairline_bob(math.radians(a)) + 0.013, g - 0.006) for a in range(-100, 101, 5)]
     sweep(mb, pts, [(0.016, 0.013)] * len(pts), HAIR, hw, segs=12, twist_hint=UP)
@@ -452,8 +508,10 @@ def build_body_skin():
     for sx in SIDES:
         path = _arm_path(sx, -0.02)
         s = _path_s(path)
-        sweep(mb, path, [(arm_radius(v), arm_radius(v)) for v in s], SKIN, lambda p, sv, i, sx=sx: arm_w(p, sx),
-              segs=14, cap_start='round', cap_end='flat', twist_hint=FWD)
+        # V7: the forearm narrows into the wrist and ends round inside the
+        # mitten's wrist (V6: a hard-edged flat disc at the wrist)
+        sweep(mb, path, [(bare_arm_radius(v - 0.02),) * 2 for v in s], SKIN, lambda p, sv, i, sx=sx: arm_w(p, sx),
+              segs=16, cap_start='round', cap_end='round', twist_hint=FWD)
         lp = _leg_path(sx)
         ls = _path_s(lp)
         sweep(mb, lp, [(leg_radius(v), leg_radius(v) * 0.95) for v in ls], SKIN, lambda p, sv, i, sx=sx: leg_w(p, sx),
@@ -481,7 +539,7 @@ def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff
         if band:
             colfn = lambda p, sv, a, band=band: band[2] if band[0] <= sv <= band[1] else None
         sweep(mb, path, radii, style, lambda p, sv, i, sx=sx: arm_w(p, sx), segs=16, cap_start=None,
-              cap_end=None if inner_style is not None else 'flat', twist_hint=FWD, colfn=colfn)
+              cap_end=None, twist_hint=FWD, colfn=colfn)
         # shoulder cap fills the joint
         sh = shoulder(sx)
         # stripes by world height so the cap continues the torso's stripes where
@@ -492,7 +550,16 @@ def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff
         ellipsoid(mb, sh + Vector((0.004 * sx, 0, -0.002)), (0.066 + grow, 0.065 + grow, 0.055 + grow), style,
                   lambda p, sfx=sfx: {'upper_arm' + sfx: 0.55, 'shoulder' + sfx: 0.45}, segs=16 if lod else 20,
                   rings=10 if lod else 12, world_v=True)
-        if cuff_style is not None:
+        if inner_style is None:
+            # V7: an open hem.  V6 closed the sleeve with a flat disc and put a
+            # torus round it (a donut the hand came out of); now a slim cuff
+            # band (or just a rolled lip) and a shaded lining leading in to
+            # the wrist or the bare arm
+            d = arm_dir(sx)
+            end = sh + d * (total - 0.015)
+            _sleeve_hem(mb, end, d, radii[-1][0], arm_radius(total - 0.015), style, cuff_style, cuff_tube,
+                        lambda p, sx=sx: arm_w(p, sx), 16 if lod else 20)
+        elif cuff_style is not None:
             d = arm_dir(sx)
             end = sh + d * (total - 0.015)
             r = radii[-1][0]
@@ -508,18 +575,43 @@ def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff
                   inner_style, lambda p, sx=sx: arm_w(p, sx), segs=16)
 
 
+def lining_of(style, k=0.5):
+    """The same fabric in shadow: a hem's inside."""
+    return Style(tuple(c * k for c in style.col), style.tint, min(1.0, style.rough + 0.05), style.mat)
+
+
+def _sleeve_hem(mb, end, d, r, limb_r, style, cuff_style, cuff_tube, wfn, segs, ry=1.0):
+    """Open end of a tube round a limb (V7): a cuff band in cuff_style (or a
+    rolled lip in the tube's own style), then a lining in shadow that turns
+    in and runs back inside to just round the limb (radius limb_r).  ry: the
+    tube's elliptic y scale (trouser legs)."""
+    R = rot_align(d, FWD)
+    band = cuff_style or style
+    proud = cuff_tube * 0.36 if cuff_style is not None else 0.0012
+    L = max(0.02, cuff_tube * 1.7) if cuff_style is not None else 0.008
+    prof = [(-L, r - 0.002), (-L + 0.004, r + proud * 0.8), (-L + 0.008, r + proud), (-0.006, r + proud),
+            (-0.0015, r + proud * 0.6), (0.0015, r - 0.0015)]
+    lathe(mb, end, R, prof, band, wfn, segs=segs, ry_scale=ry)
+    wr = limb_r + 0.004
+    lin = [(0.0015, r - 0.0015), (0.0, r - 0.0065), (-0.008, lerp(r - 0.008, wr, 0.55)), (-0.02, wr + 0.001), (-0.04, wr)]
+    lathe(mb, end, R, lin, lining_of(cuff_style or style), wfn, segs=segs, ry_scale=ry)
+
+
 def pant_legs(mb, style, grow, bottom_z=None, cuff_style=None, flat_end=True):
     for sx in SIDES:
         lp = _leg_path(sx, 0.55, bottom_z)
         ls = _path_s(lp)
         radii = [(leg_radius(v) + grow, (leg_radius(v) + grow) * 0.96) for v in ls]
         sweep(mb, lp, radii, style, lambda p, sv, i, sx=sx: leg_w(p, sx), segs=16, cap_start=None,
-              cap_end='flat' if flat_end else None, twist_hint=FWD)
+              cap_end=None if cuff_style is not None else ('flat' if flat_end else None), twist_hint=FWD)
         if cuff_style is not None:
+            # V7: an open hem with a slim cuff band (V6: a torus round a flat end)
             k, e = lp[-2], lp[-1]
             d = (e - k).normalized()
-            lathe(mb, e - d * 0.006, rot_align(d, FWD), torus_profile(0.0, radii[-1][0] + 0.002, 0.016, 10, 0.85), cuff_style,
-                  lambda p, sx=sx: leg_w(p, sx), segs=22, closed_profile=True)
+            # (the leg's section is 4 % narrower side to side than front to
+            # back; lathe scales local y, which is forward here)
+            _sleeve_hem(mb, e, d, radii[-1][1], leg_radius(ls[-1]) * 0.96, style, cuff_style, 0.016, lambda p, sx=sx: leg_w(p, sx), 20,
+                        ry=1.0 / 0.96)
 
 
 def pelvis(mb, style, grow, z_top, extra=None):
@@ -918,28 +1010,204 @@ def build_nightcap():
     return mb
 
 
-def build_swimcap():
-    mb = MeshBuilder('hat_swimcap')
-    rub = Style('#ffffff', T_PRIMARY, 0.35, MAT_RUBBER)
+# ------------------------------------------------------------------ V7 swim cap + goggles
+# Everything below is placed on the shared head shell (rig.head_* /
+# _shell_point / kit6.head_project at the cap's grow), so the fit follows the
+# head geometry instead of hand-placed offsets.  V6 and earlier: the strap was
+# a planar ring tilted 14 deg round HEAD_C that floated 1.5-6 cm off the cap
+# (a halo crossing the face at brow height, below the lenses), the lenses were
+# two unconnected buttons with no bridge, the cap's edge was a staircase of
+# dropped quads and the brows poked through it (docs/v7/character_notes.md).
+CAP_GROW = 0.013
+CAP_EDGE_FRONT = 1.305      # above the brows, raised brows included
+GOG_Z = 1.350               # lens centres (forehead, goggles pushed up)
+GOG_X = 0.0625
+GOG_A = 0.0445              # cup half-width
+GOG_B_IN, GOG_B_OUT = 0.029, 0.0355    # cup half-height at the nose / temple side
+GOG_TILT = 11.0             # lens plane turned this far down from the forehead's slope (reads from the front)
+GOG_H = 0.0105              # lens-plane height above the cap at the cup's centre
+GOG_N = 24                  # outline samples per cup
+STRAP_W, STRAP_T = 0.0118, 0.0028
+STRAP_Z_BACK = 1.27
+LENS_DEEP = srgb('#1f6f8f')
+LENS_SKY = srgb('#86dbe8')
+LENS_GLINT = srgb('#e9fbff')
+GOG_FRAME = Style('#2b2f3a', T_NONE, 0.45, MAT_RUBBER)
+GOG_STRAP = Style('#2b2f3a', T_NONE, 0.62, MAT_RUBBER)
+GOG_LENS = Style('#ffffff', T_NONE, 0.2, geo.MAT_LENS)
 
-    def keep(p):
-        return p.z > 1.05 + 0.45 * (p.y + 0.27) * 0.6 + 0.04 * (abs(p.x) / 0.3) ** 2 + 0.02
-    ellipsoid(mb, HEAD_C, (HEAD_R[0] + 0.012, HEAD_R[1] + 0.012, HEAD_R[2] + 0.014), rub, rigid('head'), segs=36, rings=26,
-              power=HEAD_P, keep=keep, deform=rig.head_deform(0.014))
-    # goggles pushed up on the forehead
-    strap = Style('#2a2d36', T_NONE, 0.6, MAT_RUBBER)
-    strap_r = rig.head_side_x(HEAD_C.z + 0.03, 0.014) + 0.006
-    lathe(mb, HEAD_C + Vector((0, 0, 0.0)), rot_x(-14), torus_profile(0.13, strap_r, 0.011, 6, 1.6), strap, rigid('head'),
-          segs=32, closed_profile=True, ry_scale=0.93)
-    for sx in SIDES:
-        p = head_point(0.085 * sx, 1.335, 0.02)
-        n = head_normal(p, 0.02)
-        R = rot_align(n, UP)
-        ellipsoid(mb, p + n * 0.008, (0.048, 0.04, 0.016), Style('#6fd8cc', T_NONE, 0.08, MAT_GLOSS), rigid('head'), segs=14,
-                  rings=8, rot=R)
-        lathe(mb, p + n * 0.006, R, torus_profile(0.0, 0.046, 0.009, 6), strap, rigid('head'), segs=16, closed_profile=True,
-              ry_scale=0.85)
-    mb.compact()
+
+def _cos_series(pts, terms=6):
+    """Even cosine series z(a) = sum c_k cos(k a) through (a, z) control
+    points (least squares): a smooth, periodic, left/right-symmetric edge."""
+    import numpy as np
+    A = np.array([[math.cos(k * a) for k in range(terms)] for a, _ in pts])
+    z = np.array([v for _, v in pts])
+    c = np.linalg.lstsq(A, z, rcond=None)[0]
+    return lambda ang: float(sum(ck * math.cos(k * ang) for k, ck in enumerate(c)))
+
+
+# |ang| (0 = nape, pi/2 = above the ear, pi = forehead) -> edge height
+swimcap_edge = _cos_series([(0.0, 1.075), (0.3, 1.08), (0.6, 1.105), (0.85, 1.15), (1.1, 1.205), (1.3, 1.243), (1.5, 1.258),
+                            (1.7, 1.262), (2.0, 1.272), (2.3, 1.288), (2.6, 1.300), (2.85, 1.304), (math.pi, CAP_EDGE_FRONT)], 9)
+
+
+def _cup_outline():
+    """(u, v) outline of the right cup (u toward the temple, v up), starting
+    at the temple side and running counter-clockwise as seen from the front
+    (the character's right is the viewer's left, so the angle decreases):
+    a rounded superellipse, taller at the temple side."""
+    out = []
+    for k in range(GOG_N):
+        a = -2.0 * math.pi * k / GOG_N
+        c, s_ = math.cos(a), math.sin(a)
+        e = 2.0 / 2.7
+        u = math.copysign(abs(c) ** e, c) * GOG_A
+        b = lerp(GOG_B_IN, GOG_B_OUT, 0.5 + 0.5 * (u / GOG_A))
+        v = math.copysign(abs(s_) ** e, s_) * b
+        out.append((u, v))
+    return out
+
+
+def _cup_frame():
+    """Centre, frame axes (u to the temple, v up, n out) of the right cup."""
+    import kit6 as K
+    c0 = head_point(GOG_X, GOG_Z, CAP_GROW)
+    n0 = head_normal(c0, CAP_GROW)
+    u = n0.cross(UP).normalized()
+    tilt = Matrix.Rotation(math.radians(-GOG_TILT), 3, u)
+    n0 = (tilt @ n0).normalized()
+    v = u.cross(n0).normalized()
+    return c0, u, v, n0, K.head_project(CAP_GROW)
+
+
+def _goggle_cup(mb):
+    """One goggle cup on the cap (right side): a rubber gasket whose back edge
+    follows the cap and whose top is a plane, and a slightly domed tinted lens
+    inside it.  Returns the outer (temple-side) attachment point and normal."""
+    hw = rigid('head')
+    c0, U, V, N, prj = _cup_frame()
+    outline = _cup_outline()
+    m = len(outline)
+    rows = []
+    surf = []
+    for k, (u, v) in enumerate(outline):
+        q = c0 + U * u + V * v
+        s_, ns = prj(q)
+        # outward direction of the outline in the lens plane
+        u0, v0 = outline[k - 1]
+        u1, v1 = outline[(k + 1) % m]
+        t = (U * (u1 - u0) + V * (v1 - v0)).normalized()
+        w = t.cross(N).normalized()
+        if w.dot(q - c0) < 0.0:
+            w = -w
+        surf.append((q, s_, ns, w))
+    # gasket profile from the cap (sunk 1.5 mm, so no gap at grazing angles)
+    # up the outer wall, over the rounded rim and down to the lens
+    def prof(q, s_, ns, w, t):
+        top = q + N * GOG_H
+        if t == 0:
+            return s_ - ns * 0.0015 + w * 0.0005
+        if t == 1:
+            return s_ + ns * 0.0022 + w * 0.0026
+        if t == 2:
+            return s_.lerp(top, 0.55) + w * 0.0028
+        if t == 3:
+            return top + w * 0.0008 - N * 0.0012
+        if t == 4:
+            return top + N * 0.0006 - w * 0.0024
+        if t == 5:
+            return top - w * 0.0055 - N * 0.0002
+        return top - w * 0.0068 - N * 0.0022
+    for t in range(7):
+        rows.append([mb.vert(prof(q, s_, ns, w, t), GOG_FRAME, (0, 0), hw(None)) for (q, s_, ns, w) in surf])
+    mb.grid(rows, True)
+    # lens: its own vertices at the lip (a crisp frame/lens edge), rings to a
+    # domed centre.  Colour: deep at the bottom, sky toward the top, a soft
+    # glint at the upper temple side (baked, so nothing flickers)
+    def lens_col(u, v):
+        fu, fv = u / GOG_A, v / GOG_B_OUT
+        c = Vector(LENS_DEEP).lerp(Vector(LENS_SKY), smoothstep(-0.9, 0.9, fv) * 0.85)
+        g = math.exp(-((fu - 0.32) ** 2 / 0.09 + (fv - 0.42) ** 2 / 0.05))
+        c = c.lerp(Vector(LENS_GLINT), min(1.0, g * 0.8))
+        return (c.x, c.y, c.z)
+    lip = [q + N * GOG_H - w * 0.0068 - N * 0.0022 for (q, s_, ns, w) in surf]
+    lc = c0 + N * (GOG_H - 0.0022)
+    lrows = []
+    for f in (0.0, 0.28, 0.55, 0.8):
+        row = []
+        for k in range(m):
+            p = lip[k].lerp(lc, f) + N * (0.0024 * (1.0 - (1.0 - f) ** 2))
+            d = p - c0
+            row.append(mb.vert(p, GOG_LENS, (0, 0), hw(None), col_override=lens_col(d.dot(U), d.dot(V))))
+        lrows.append(row)
+    pc = lc + N * 0.0024
+    pole = mb.vert(pc, GOG_LENS, (0, 0), hw(None), col_override=lens_col(0.0, 0.0))
+    mb.grid(lrows, True, None, pole)
+    # the strap's attachment: the outer side of the outline (u = +A, v = 0)
+    q, s_, ns, w = surf[0]
+    return s_, ns, w, c0, U, V, N
+
+
+def _buckle(mb, p, n, along):
+    """Small rounded clip where the strap meets a cup (sits on the cap)."""
+    R = rot_align(n, along)
+    ellipsoid(mb, p + n * 0.0035, (0.0128, 0.0092, 0.0046), GOG_FRAME, rigid('head'), segs=12, rings=6, rot=R, power=3.0)
+
+
+def build_swimcap():
+    import kit6 as K
+    mb = MeshBuilder('hat_swimcap')
+    hw = rigid('head')
+    rub = Style('#ffffff', T_PRIMARY, 0.35, MAT_RUBBER)
+    # V7: the cap is a shell whose edge follows a smooth line (above the
+    # brows, arched over the ears, low at the nape), built like the hair
+    # shells; a rolled bead gives the edge its thickness
+    edge = lambda ang: swimcap_edge(abs(ang))
+    hair_shell(mb, CAP_GROW, edge, rub, hw, segs=48, rows=13, tuck=0.010)
+    bead, bn = [], []
+    for k in range(48):
+        ang = -math.pi + 2 * math.pi * k / 48
+        q = _shell_point(ang, edge(ang) + 0.003, CAP_GROW - 0.002)
+        bead.append(q)
+        bn.append(head_normal(q, CAP_GROW))
+    K.ribbon(mb, bead, bn, 0.0042, 0.0034, rub, hw, segs=6)
+    # goggles: one cup (and its clip) built on the right and mirrored, so the
+    # pair is exactly symmetric
+    half = MeshBuilder('gog_half')
+    s_out, n_out, w_out, c0, U, V, N = _goggle_cup(half)
+    clip_p = _shell_point(math.atan2(-(s_out + w_out * 0.006).x, -((s_out + w_out * 0.006).y - HEAD_C.y)),
+                          s_out.z, CAP_GROW)
+    clip_n = head_normal(clip_p, CAP_GROW)
+    # the strap leaves the clip along the head band (tangent of the loop)
+    a_clip = math.atan2(-clip_p.x, -(clip_p.y - HEAD_C.y))
+    nxt = _shell_point(a_clip + 0.05, clip_p.z, CAP_GROW)
+    _buckle(half, clip_p, clip_n, (nxt - clip_p).normalized())
+    mb.merge(half)
+    mb.merge_mirrored_x(half)
+    # bridge: a short band from inside one cup's inner wall to the other's,
+    # lying on the cap across the middle of the forehead
+    inner = c0 + U * (-GOG_A + 0.006)
+    bpts, bnrm = [], []
+    for i in range(11):
+        x = lerp(inner.x, -inner.x, i / 10.0)
+        q, nq = K.head_project(CAP_GROW)(Vector((x, inner.y, inner.z)))
+        bpts.append(q)
+        bnrm.append(nq)
+    K.ribbon(mb, bpts, bnrm, 0.0052, 0.0024, GOG_STRAP, hw, closed=False, segs=6, lift=0.0032)
+    # strap: from the right clip round the back of the head to the left clip,
+    # lying on the cap; it eases from the clips' height down to STRAP_Z_BACK
+    a0 = a_clip
+    n = 37
+    spts, snrm = [], []
+    for i in range(n):
+        a = lerp(a0, -a0, i / (n - 1.0))
+        f = (0.5 - 0.5 * math.cos(a)) / (0.5 - 0.5 * math.cos(a0))
+        z = lerp(STRAP_Z_BACK, clip_p.z, smoothstep(0.0, 1.0, f))
+        q = _shell_point(a, z, CAP_GROW)
+        spts.append(q)
+        snrm.append(head_normal(q, CAP_GROW))
+    K.ribbon(mb, spts, snrm, STRAP_W, STRAP_T, GOG_STRAP, hw, closed=False, segs=6)
     return mb
 
 
