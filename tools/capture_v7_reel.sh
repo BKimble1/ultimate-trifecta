@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # V7 evidence clips: a src/dev reel (stick | pause) recorded with Godot's Movie
 # Maker at a fixed 30 fps clock on the Mobile renderer over llvmpipe (software
-# Vulkan) under Xvfb, at the phone shape 1560x720 (812x375 pt), then encoded
+# Vulkan) under Xvfb, in a 1040x480 window (the phone shape: the game's canvas
+# is 1560x720 = 812x375 pt, drawn at 2/3 size to keep llvmpipe affordable),
+# with the Low quality preset, then encoded
 # to H.264 with a label burned in.  Normal speed (no speed-up, no frame
 # interpolation); scripted emulated touches; not frame-rate, GPU or device
 # evidence.
@@ -22,12 +24,12 @@ case $REEL in
   pause) WHAT="Pause, Resume and Leave";;
   *) echo "unknown reel $REEL"; exit 1;;
 esac
-PLAT="Godot 4.7.2 Mobile renderer, desktop Linux llvmpipe, 1560x720 (812x375 pt phone shape), fixed 30 fps Movie Maker clock, scripted emulated touches, not device footage"
+PLAT="Godot 4.7.2 Mobile renderer (Low preset), desktop Linux llvmpipe, 1040x480 window (812x375 pt phone shape), fixed 30 fps Movie Maker clock, scripted emulated touches, not device footage"
 tools/gd.sh --headless --path "$ROOT/game" --import >/dev/null 2>&1 || true
 # Movie Maker records the window size and ignores --resolution: a temporary
 # override.cfg makes the window the phone shape
 [ -e "$ROOT/game/override.cfg" ] && { echo "override.cfg exists in $ROOT/game; not touching it"; exit 1; }
-printf '[display]\n\nwindow/size/window_width_override=1560\nwindow/size/window_height_override=720\n' > "$ROOT/game/override.cfg"
+printf '[display]\n\nwindow/size/window_width_override=1040\nwindow/size/window_height_override=480\n' > "$ROOT/game/override.cfg"
 trap 'rm -f "$ROOT/game/override.cfg"' EXIT
 mkdir -p "$OUT/${REEL}_${NAME}_stills"
 XDG_DATA_HOME=$(mktemp -d) timeout "${CAPTURE_TIMEOUT:-7200}" xvfb-run -a -s "-screen 0 1700x800x24" \

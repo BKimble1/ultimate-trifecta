@@ -13,7 +13,7 @@ extends Node
 ##
 ##   tools/gd.sh --path game --resolution 1560x720 --write-movie OUT.avi --fixed-fps 30 \
 ##     res://src/dev/stick_reel.tscn -- --emulate-phone=1.92 --no-gamecenter
-## (tools/capture_v7_stick.sh runs it on both builds and labels the MP4s.)
+## (tools/capture_v7_reel.sh OUT stick NAME [ROOT] records and labels it.)
 
 const FPS := 30.0
 const Round := preload("res://tests/test_stick_round.gd")
@@ -118,7 +118,7 @@ func _run() -> void:
 	Controls.device = "touch"
 	get_tree().root.notification(Window.NOTIFICATION_WM_MOUSE_ENTER)   # GUI input without a pointer in the window
 	if DisplayServer.get_name() == "headless":
-		get_tree().root.size = Vector2i(1560, 720)                      # (smoke runs)
+		get_tree().root.size = Vector2i(1560, 720)          # (smoke runs; movies use a 1040x480 window = the same canvas)                      # (smoke runs)
 	_caption.text = "Preparing a Practice round (not part of the comparison)"
 	var s := NetSession.new()
 	add_child(s)
@@ -127,7 +127,7 @@ func _run() -> void:
 	s.match_starting.connect(func(i: Dictionary) -> void: info.merge(i, true), CONNECT_ONE_SHOT)
 	s.host_start_match(5150)
 	mc = MatchController.new()
-	mc.setup(s, info, {"staged": false})
+	mc.setup(s, info, {"staged": false, "quality": 0})   # Low preset: affordable on llvmpipe
 	get_tree().root.add_child(mc)
 	for i in 3600:
 		await get_tree().process_frame

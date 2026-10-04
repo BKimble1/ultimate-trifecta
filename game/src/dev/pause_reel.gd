@@ -152,7 +152,7 @@ func _run() -> void:
 	Controls.device = "touch"
 	get_tree().root.notification(Window.NOTIFICATION_WM_MOUSE_ENTER)
 	if DisplayServer.get_name() == "headless":
-		get_tree().root.size = Vector2i(1560, 720)
+		get_tree().root.size = Vector2i(1560, 720)          # (smoke runs; movies use a 1040x480 window = the same canvas)
 	_caption.text = "Preparing a Practice round (not part of the comparison)"
 	var s := NetSession.new()
 	add_child(s)
@@ -161,7 +161,7 @@ func _run() -> void:
 	s.match_starting.connect(func(i: Dictionary) -> void: info.merge(i, true), CONNECT_ONE_SHOT)
 	s.host_start_match(4242)
 	mc = MatchController.new()
-	mc.setup(s, info, {"staged": false})
+	mc.setup(s, info, {"staged": false, "quality": 0})   # Low preset: affordable on llvmpipe
 	mc.quit_requested.connect(func() -> void: _quits += 1)
 	get_tree().root.add_child(mc)
 	for i in 3600:
