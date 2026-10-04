@@ -32,6 +32,7 @@ mini-motor through `CharacterView.apply_state` (reel), not a live round.
 | `goggles_reel_before_after.mp4` | 13 s side by side: start, 90° turn, running jump, splash, emote (`tests/motion_rig.gd` scenarios), the camera circling the head once (front, side, back, side) |
 | `goggles_reel_after.gif`, `goggles_reel_strip_after.jpg`, `goggles_reel_strip_before.jpg` | The same run: a small GIF of "after", and a frame every 0.25 s of each |
 | `refinements_dorm.jpg`, `refinements_campus.jpg` | Face front, 3/4 (bob over the ear) and side (ear), eyes close, pajama cuff and mitten, bare wrist and mitten, collar and buttons, robe, nightcap, beanie, bunny slippers and pajama hem, high-tops and trouser hem |
+| `thumbnails_v7.jpg` | V7 only: the real cached item thumbnails rendered through `Portraits` with the new versioned keys (`src/dev/thumb_sheet.tscn`, 1280×720 window, 240 px cells); the swim cap card shows the fitted goggles. V6's are in `../../v6/characters/thumbnails.jpg` |
 | `cuffs_all_outfits_dorm.jpg` | Every outfit's sleeve end and mitten (the camera on the right hand) and the Night Watch: open hems instead of a torus round a flat disc |
 
 ## Data
