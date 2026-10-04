@@ -115,6 +115,36 @@ written against public state so it also runs on the old build, where it
 fails: touchdown 1.00, 17 m sideways in both layouts, a 5° lean swings the
 camera −34° in 5 s — `docs/v7/stick/test_stick_round_on_prefix_build.txt`).
 
+## Characters and goggles
+
+Full notes: `docs/v7/character_notes.md`; before/after renders and a reel in
+`docs/media/v7/characters/` (same shots, cameras and light; "before" from an
+untouched 1.5 copy).
+
+- **Goggles** (swim cap, the only item with goggles), measured against the
+  shared head surface: the 1.5 strap was a flat tilted ring floating 15–61 mm
+  off the head and crossing the face at brow height; the lenses were two
+  separate ellipsoids with a 7.4 cm gap and no bridge, half buried in the cap;
+  the cap's front edge sat below the brows, so brows poked through. Rebuilt on
+  the head shell: a smooth cap edge above the brows (raised brows included),
+  one mirrored lens cup (symmetric within 1 mm), a bridge, temple clips and a
+  strap lying on the cap; tinted lens glass inside the existing shader (no
+  new material or draw call).
+- **Broader pass:** shallower eye domes, ears with a bowl and rim, mittens
+  with a wrist and thumb, tapered forearms, open sleeve/trouser hems with a
+  cuff band (every outfit with sleeves), bob hair over the ears.
+- **Budgets** (1.5 → 1.6): heaviest look 31,334 → 32,506 triangles (+3.7 %),
+  7 draw calls and 2 material variants unchanged, `runner.glb` 11.78 →
+  12.12 MB.
+- **Thumbnails:** portrait cache keys start with the character art version
+  (generation + the GLB's SHA-256, plus a look version), so 1.6 never shows a
+  cached 1.5 picture.
+- **Tests:** `test_characters_v7` (lens/frame distance from the head, frames on
+  the cap, symmetry, lenses facing out, strap closing on the cap, brows under
+  the cap edge for every brow/face preset; 15 of its checks fail on the 1.5
+  asset), `test_portraits::test_keys_carry_the_art_version`; `clip_check.py`:
+  no clip puts an arm > 1 cm into the head or goggles.
+
 ## Music: about 3 dB louder
 
 One central trim, `Sfx.MUSIC_TRIM_DB`, moves from −6 dB to **−3 dB**: every
