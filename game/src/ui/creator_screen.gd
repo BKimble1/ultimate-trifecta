@@ -1,35 +1,38 @@
 class_name CreatorScreen
 extends Screen
-## The Locker (V6; "Create Your Runner" on first launch).  Migrated from the
-## V5 wardrobe: the same runner, categories and portrait cards, but it shows
-## only what the player owns (free base options, pre-V6 unlocks, everything
-## bought or earned on the account) and it never spends.  Buying moved to the
-## Shop; each category ends with a "View in Shop" / "Season Pass" link for
-## what isn't owned yet.
+## The Locker (V6; "Create Your Runner" on first launch).  It shows only what
+## the player owns (free base options, pre-V6 unlocks, everything bought or
+## earned on the account) and it never spends.  Buying is in the Shop; each
+## category ends with a short link to what isn't owned yet.
 ##
-##   top     the navigation bar (Play · Locker · Shop · Season Pass) and the
-##           Coins chip
-##   left    the player's runner in the dorm (App.stage, "wardrobe"
-##           framing, head to shoes): drag to turn, Idle / Run preview
-##   right   a category strip (Outfit, Colors, Face, Hair, Hat, Shoes,
-##           Emotes, Profile) over portrait item cards: the item's picture on
-##           your runner, its name below in full (two lines when needed,
-##           never trimmed), and Equipped / Owned.  The draft's choice has a
-##           restrained teal edge and a check.  Colours are round swatches.
-##           Profile holds name cards and badges (UI-only).
-##   bottom  what Save will do, Undo, and Save (never a price: nothing here
-##           costs anything)
+##   top     Back, the navigation bar (Play · Locker · Shop · Season Pass) and
+##           the Coins chip (one 44 pt row)
+##   left    the player's runner in the dorm (App.stage, "wardrobe" framing):
+##           fitted between the top row and the bottom edge, hat to shoes;
+##           drag to turn, Idle / Run preview
+##   right   one panel: the category strip (Outfit, Colors, Face, Hair, Hat,
+##           Shoes, Emotes, Profile), the item grid, and a footer row with
+##           the selected item, its state, and Undo / Save look (shown only
+##           when the look has changed)
+##
+## V7 (owner screenshots IMG_3016/3018): cards are compact and laid out for
+## the panel's final width (UIKit.AutoGrid), per content type: full-body
+## outfits, close-up hats/faces/hair, feet-framed shoes, short emote cards
+## whose glyph is centred in its well by anchors (V6 offset it by a positive
+## position from a centre anchor, so it sat past the well's corner).  A small
+## "Equipped" line replaces V6's giant disabled "Wearing this" button; the
+## footer prose and the "N more in the Shop" card are gone (a compact link
+## ends the list).  Outfit pictures show the outfit with no hat and plain
+## shoes (CommerceArt.preview_look), not the player's own nightcap and
+## slippers; the live runner always wears the real draft.  Picking an emote
+## plays it on the runner (again on a second tap).
 ##
 ## The draft is only a preview until Save.  Leaving with unsaved changes asks
-## first (also when switching tabs).  Picking an item updates the live runner
-## at once, with a short hop.  Cards are updated in place; the category's
-## scroll position is kept per category.
-##
-## Pictures: rendered off-screen one at a time through the shared portrait
-## atlas (no live 3D per card, no GPU readback), cached by look, requested
-## only for the visible category; a category change cancels the previous
-## category's queued requests, and a finished picture lands on every card
-## still showing exactly that look.
+## first (also when switching tabs).  Cards are updated in place; each
+## category keeps its scroll position.  Pictures: rendered off-screen one at
+## a time through the shared portrait atlas (no live 3D per card), cached by
+## look, requested only for the visible category; a category change cancels
+## the previous category's queued requests.
 
 const TABS := [
 	["outfit", "Outfit", ["outfit", "pattern"]],
@@ -49,11 +52,23 @@ const FIELD_TITLES := {
 }
 const PROFILE_FIELDS := ["card", "badge"]
 const SWATCH_FIELDS := ["color", "trim", "skin", "hair_color"]
-## Picture framing for an item's card ("" = an icon card).
+## Picture framing for an item's card ("" = an emote glyph card).
 const THUMB_FRAMING := {"outfit": "body", "pattern": "body", "hair": "head", "hat": "hat", "shoes": "feet",
 	"face": "head", "brows": "head", "marks": "head"}
-const CARD_W := 158.0
-const CARD_GAP := 12.0
+## The narrowest card the layout makes (AutoGrid never goes below it).
+const CARD_W := 144.0
+const CARD_GAP := float(UIKit.GAP_CARD)
+## Card padding, gap between its rows, the state row and the name size.
+const PAD := 8.0
+const ROW_GAP := 6.0
+const STATE_H := 22.0
+const NAME_FS := 20
+## The picture well's height per content type, as a share of its width.
+const WELL := {"body": 1.04, "hat": 0.9, "head": 0.84, "feet": 0.66, "emote": 0.64, "card": 0.4, "badge": 0.72}
+## Smallest card per content type (name cards are wide plates).
+const CARD_MIN := {"card": 240.0}
+## The item panel's share of the width beside the runner (stage 1 : panel 1.6).
+const PANEL_RATIO := 1.6
 
 ## when true (first launch / profile setup), Apply continues with `on_done`
 var first_run := false
@@ -72,17 +87,21 @@ var tab_btns: Dictionary = {}
 var body: VBoxContainer
 var scroll: ScrollContainer
 var coins_lbl: Label
-var price_lbl: Label
+var sel_name: Label
+var sel_state: Label
 var apply_btn: Button
 var undo_btn: Button
+var footer: HBoxContainer
 var preview_run := false
 var run_btn: Button
 var panel: PanelContainer
 var cards: Array = []            # ItemCard / ProfileCard
+var grids: Array = []            # AutoGrid per field shown
 var swatches: Array[Swatch] = []
 var _notes: Dictionary = {}       # field -> Label (hair hidden / pattern note)
 var _picked: Dictionary = {}      # swatch field -> Label naming the chosen colour
 var _scroll_of: Dictionary = {}   # tab -> scroll position
+var _last_field := ""
 var _yaw := 0.0
 var _drag_from := -1.0
 var _spin := 0.0
@@ -100,38 +119,31 @@ func build() -> void:
 		App.sync_stage_local()
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	TitleScreen.add_shades(self, 0.45, 0.0)
-	var view := get_viewport().get_visible_rect().size
-	var v := content
-	var top := UIKit.hbox(14)
-	v.add_child(top)
+	content.add_theme_constant_override("separation", UIKit.SP_M)
 	if not first_run:
-		var back := UIKit.icon_button("back")
-		back.tooltip_text = "Back"
-		back.accessibility_name = "Back"
-		back.pressed.connect(_go_back)
-		top.add_child(back)
-		var nav := NavShell.make("locker")
-		nav.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		top.add_child(nav)
-		top.add_child(WalletChip.new())
+		nav_bar("locker")
 	else:
+		var top := UIKit.hbox(14)
+		top.custom_minimum_size.y = UIKit.row_h()
 		var title := UIKit.styled("Create Your Runner", "title")
 		title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		top.add_child(title)
 		top.add_child(UIKit.spacer_h())
+		content.add_child(top)
 	coins_lbl = null
 
-	var mid := UIKit.hbox(16)
+	var mid := UIKit.hbox(UIKit.SP_L)
 	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	v.add_child(mid)
+	content.add_child(mid)
 	# left: the stage area (drag to turn) + preview controls
 	var stage_area := StageDrag.new()
 	_stage_area = stage_area
 	stage_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stage_area.size_flags_stretch_ratio = 1.0
 	stage_area.creator = self
 	mid.add_child(stage_area)
 	# preview controls stacked in the corner, clear of the runner
-	var pv := UIKit.vbox(8)
+	var pv := UIKit.vbox(UIKit.SP_S)
 	stage_area.add_child(pv)
 	var turn_hint := UIKit.chip("Drag to turn", Color(UIKit.NAVY, 0.6), UIKit.IVORY_MUTED, 18)
 	turn_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -159,38 +171,30 @@ func build() -> void:
 	pv.move_child(run_btn, 0)
 	stage_area.resized.connect(func() -> void: pv.position = Vector2(0, stage_area.size.y - pv.get_combined_minimum_size().y))
 
-	# right: categories + cards.  The panel takes ~58% of a wide phone and a
-	# little more of a 4:3 iPad, so the runner keeps its full height.
-	panel = UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 16)
-	var aspect := view.x / maxf(1.0, view.y)
-	panel.custom_minimum_size = Vector2(clampf(view.x * (0.56 if aspect > 1.7 else 0.6), 560.0, 900.0), 0)
+	# right: one panel with categories, the grid and the footer.  Its width
+	# is a share of the row (stretch ratio), from the allocated rect.
+	panel = UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, UIKit.PAD_PANEL)
+	panel.name = "ItemPanel"
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_stretch_ratio = PANEL_RATIO
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	mid.add_child(panel)
-	var pvb := UIKit.vbox(12)
+	var pvb := UIKit.vbox(UIKit.SP_S)
 	panel.add_child(pvb)
 	pvb.add_child(_category_strip())
 	scroll = UIKit.scroll_area()
+	scroll.name = "Items"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# the bar's room is always kept, so the grid's width never flips when a
+	# list becomes long enough to scroll
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_RESERVE
 	scroll.follow_focus = true
 	pvb.add_child(scroll)
-	body = UIKit.vbox(10)
+	body = UIKit.vbox(UIKit.SP_S)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(body)
-
-	# bottom: what Apply does · Undo · Apply
-	var bottom := UIKit.hbox(14)
-	v.add_child(bottom)
-	bottom.add_child(UIKit.spacer_h())
-	price_lbl = UIKit.styled("", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
-	price_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	bottom.add_child(price_lbl)
-	undo_btn = UIKit.quiet("Undo" if not first_run else "Surprise me", Vector2(190, 84))
-	undo_btn.pressed.connect(_on_cancel)
-	bottom.add_child(undo_btn)
-	apply_btn = UIKit.primary("Save look" if not first_run else "That's me!", Vector2(320, 90), 28)
-	apply_btn.pressed.connect(_on_apply)
-	bottom.add_child(apply_btn)
+	pvb.add_child(_footer())
 	focus_first(tab_btns[tab])
 	back_action = _back if not first_run else func() -> void: pass
 	_build_tab()
@@ -202,17 +206,57 @@ func build() -> void:
 	_yaw = lc.rotation.y if lc else 0.0
 
 
-## Tell the stage where the free space left of the item panel is.
+## The panel's footer: the selected item and its state on the left; Undo and
+## Save look on the right, only while the look differs from the saved one
+## (first launch: Surprise me / That's me!).  One 44 pt row, always there, so
+## nothing moves when the buttons appear.
+func _footer() -> Control:
+	footer = UIKit.hbox(UIKit.SP_M)
+	footer.name = "Footer"
+	footer.custom_minimum_size.y = UIKit.row_h()
+	var info := UIKit.vbox(0)
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.alignment = BoxContainer.ALIGNMENT_CENTER
+	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sel_name = UIKit.styled("", "label")
+	sel_name.clip_text = true
+	sel_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	info.add_child(sel_name)
+	sel_state = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
+	sel_state.clip_text = true
+	sel_state.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	info.add_child(sel_state)
+	footer.add_child(info)
+	undo_btn = UIKit.quiet("Undo" if not first_run else "Surprise me", Vector2(0, UIKit.row_h()))
+	undo_btn.name = "Undo"
+	undo_btn.custom_minimum_size.x = maxf(UIKit.row_h() * 1.6, 0.0)
+	undo_btn.pressed.connect(_on_cancel)
+	footer.add_child(undo_btn)
+	apply_btn = UIKit.primary("Save look" if not first_run else "That's me!", Vector2(0, UIKit.row_h()), 24)
+	apply_btn.name = "SaveLook"
+	apply_btn.custom_minimum_size.x = maxf(UIKit.row_h() * 2.2, 0.0)
+	apply_btn.pressed.connect(_on_apply)
+	footer.add_child(apply_btn)
+	return footer
+
+
+## Tell the stage where the free space left of the item panel is: across, a
+## little right of centre (the preview controls sit in the left corner); and
+## down, the band between the top row and the bottom edge, so the runner's
+## hat never runs under the tabs and the shoes stay above the edge.
 func _frame_stage() -> void:
 	if App.stage and is_instance_valid(_stage_area) and _stage_area.is_inside_tree():
-		var w := get_viewport().get_visible_rect().size.x
+		var vs := get_viewport().get_visible_rect().size
 		var r := _stage_area.get_global_rect()
-		# a little right of centre: the preview controls sit in the left corner
-		App.stage.set_wardrobe_region((r.get_center().x + r.size.x * 0.12) / maxf(1.0, w), r.size.x / maxf(1.0, w))
+		if r.size.x < 2.0 or r.size.y < 2.0:
+			return
+		App.stage.set_wardrobe_region((r.get_center().x + r.size.x * 0.12) / maxf(1.0, vs.x), r.size.x / maxf(1.0, vs.x),
+			r.position.y / maxf(1.0, vs.y), r.end.y / maxf(1.0, vs.y))
 
 
 func _category_strip() -> Control:
 	var tab_scroll := UIKit.scroll_area(true)
+	tab_scroll.name = "Categories"
 	tab_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	tab_scroll.follow_focus = true
@@ -222,7 +266,8 @@ func _category_strip() -> Control:
 	tabs.add_child(Glyphs.Hint.new("menu_prev", "", 30.0))
 	for t in TABS:
 		var b := UIKit.quiet(String(t[1]), Vector2(0, 0), UIKit.T_LABEL)
-		b.custom_minimum_size.y = maxf(56.0, UIKit.touch_min())
+		b.name = "Cat_" + String(t[0])
+		b.custom_minimum_size.y = UIKit.row_h()
 		var f := UIKit.face_of(b)
 		var sel := UIKit.box(Color(UIKit.TEAL, 0.16), 999, 0, Color.WHITE)
 		sel.set_border_width_all(2)
@@ -236,7 +281,7 @@ func _category_strip() -> Control:
 		tabs.add_child(b)
 		tab_btns[key] = b
 	tabs.add_child(Glyphs.Hint.new("menu_next", "", 30.0))
-	tab_scroll.custom_minimum_size.y = maxf(56.0, UIKit.touch_min()) + 4.0
+	tab_scroll.custom_minimum_size.y = UIKit.row_h()
 	tab_scroll.resized.connect(_fit_tabs.bind(tab_scroll, tabs))
 	return tab_scroll
 
@@ -347,6 +392,27 @@ func drag_turn(dx: float) -> void:
 	_yaw = wrapf(_yaw + dx * 0.012, -PI, PI)
 
 
+func _tab_fields(key: String) -> Array:
+	for t in TABS:
+		if t[0] == key:
+			return t[2]
+	return []
+
+
+## The width the grids get: the list's final width less its scrollbar's
+## reserved room (before the first layout, the share of the content rect the
+## panel will get).  Grids still re-fit to their own final width.
+func grid_width() -> float:
+	var w := scroll.size.x if is_instance_valid(scroll) else 0.0
+	if w < 2.0:
+		var cw := content_size().x
+		if cw < 2.0:
+			cw = get_viewport().get_visible_rect().size.x * 0.8 if is_inside_tree() else 1000.0
+		w = (cw - UIKit.SP_L) * PANEL_RATIO / (1.0 + PANEL_RATIO) - UIKit.PAD_PANEL * 2.0
+	var bar := scroll.get_v_scroll_bar().get_combined_minimum_size().x if is_instance_valid(scroll) else 8.0
+	return maxf(CARD_W, w - bar - 2.0)
+
+
 ## Build the current category's cards (only on a category change).
 func _build_tab() -> void:
 	for k in tab_btns:
@@ -354,14 +420,12 @@ func _build_tab() -> void:
 	for c in body.get_children():
 		c.queue_free()
 	cards.clear()
+	grids.clear()
 	swatches.clear()
 	discover.clear()
 	_notes.clear()
-	var fields: Array = []
-	for t in TABS:
-		if t[0] == tab:
-			fields = t[2]
-	var cols := _columns()
+	var fields: Array = _tab_fields(tab)
+	var gw := grid_width()
 	_picked.clear()
 	for f in fields:
 		# section header: the field and, for colours, the chosen one's name
@@ -380,14 +444,19 @@ func _build_tab() -> void:
 		if f in SWATCH_FIELDS:
 			body.add_child(_swatches(f))
 		elif f in PROFILE_FIELDS:
-			body.add_child(_profile_cards(f, cols))
+			body.add_child(_profile_cards(f, gw))
 		else:
-			body.add_child(_cards(f, cols))
+			body.add_child(_cards(f, gw))
 		if f == "hair" or f == "pattern":
 			var note := UIKit.styled("", "caption", UIKit.AMBER)
 			note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			note.custom_minimum_size.x = gw * 0.9
 			_notes[f] = note
 			body.add_child(note)
+	if not first_run:
+		var link := _discover_link(fields)
+		if link:
+			body.add_child(link)
 	_refresh()
 	# V6: the category's own position, applied once its cards have laid out.
 	# Only the newest request is kept (rapid tab switching restores the tab
@@ -409,10 +478,12 @@ func _restore_scroll() -> void:
 	scroll.scroll_vertical = at
 
 
-## Cards per row for the panel's width (3 on a phone, more on wide panels).
+## Cards per row: from each grid's final width (AutoGrid), never from a
+## requested minimum size.  The current category's first grid's count.
 func _columns() -> int:
-	var w := panel.custom_minimum_size.x - 40.0
-	return clampi(int(floor((w + CARD_GAP) / (CARD_W + CARD_GAP))), 3, 6)
+	for g in grids:
+		return (g as GridContainer).columns
+	return UIKit.columns_for(grid_width(), CARD_W, CARD_GAP, 2, 6)
 
 
 ## The keys of a field shown in the Locker: everything owned, plus the
@@ -440,55 +511,47 @@ func not_owned(f: String) -> Dictionary:
 	return out
 
 
-func _cards(f: String, cols: int) -> GridContainer:
-	var g := GridContainer.new()
-	g.columns = cols
-	g.add_theme_constant_override("h_separation", int(CARD_GAP))
-	g.add_theme_constant_override("v_separation", int(CARD_GAP))
-	var w := (panel.custom_minimum_size.x - 40.0 - CARD_GAP * float(cols - 1)) / float(cols)
+## A grid of item cards for one field, laid out for its final width.
+func _cards(f: String, gw: float) -> GridContainer:
+	var kind := "emote" if not THUMB_FRAMING.has(f) else String(THUMB_FRAMING[f])
+	var g := UIKit.AutoGrid.new(float(CARD_MIN.get(kind, CARD_W)), 2, 6, CARD_GAP)
+	g.name = "Grid_" + f
+	var cols := UIKit.columns_for(gw, g.min_cell, CARD_GAP, 2, 6)
+	var w := UIKit.cell_width(gw, cols, CARD_GAP)
 	for k in shown_keys(f):
 		var card := ItemCard.new()
-		card.setup(self, f, String(k), maxf(CARD_W, w), String(THUMB_FRAMING.get(f, "")))
+		card.setup(self, f, String(k), w, String(THUMB_FRAMING.get(f, "")))
 		card.pressed.connect(_pick.bind(f, String(k)))
 		g.add_child(card)
 		cards.append(card)
-	if not first_run:
-		var more := _discover_card(f, maxf(CARD_W, w))
-		if more:
-			g.add_child(more)
+	g.columns = cols
+	grids.append(g)
 	return g
 
 
-## The last card of a category: what isn't owned yet and where it comes from
-## ("4 more in the Shop" → the Shop; "2 in the Season Pass" → the pass).
-func _discover_card(f: String, w: float) -> Button:
-	var n := not_owned(f)
-	if int(n["shop"]) == 0 and int(n["season"]) == 0:
+## The end of a category's list: what isn't owned yet and where it comes
+## from, as one compact link ("4 more in the Shop ›" → the Shop; "2 more in
+## the Season Pass ›" → the pass).  Never a card competing with owned items.
+func _discover_link(fields: Array) -> Button:
+	var shop := 0
+	var season := 0
+	for f in fields:
+		var n := not_owned(String(f))
+		shop += int(n["shop"])
+		season += int(n["season"])
+	if shop == 0 and season == 0:
 		return null
-	var to_shop := int(n["shop"]) > 0
-	var b := UIKit.card_button(Vector2(w, w - 24.0 + 116.0), Color(UIKit.NAVY, 0.55))
-	b.name = "Discover_" + f
-	var v := UIKit.vbox(8)
-	v.set_anchors_preset(Control.PRESET_FULL_RECT)
-	v.alignment = BoxContainer.ALIGNMENT_CENTER
-	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var ic := CommerceArt.Pic.new("glyph", "bag" if to_shop else "pass", UIKit.AMBER, 54)
-	ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	v.add_child(ic)
-	var txt := ("%d more in the Shop" % int(n["shop"])) if to_shop else ("%d in the Season Pass" % int(n["season"]))
-	var l := UIKit.styled(txt, "label", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.custom_minimum_size.x = w - 24.0
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(l)
-	var link := UIKit.styled("View in Shop ›" if to_shop else "Open Season Pass ›", "caption", UIKit.TEAL, HORIZONTAL_ALIGNMENT_CENTER)
-	link.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(link)
-	UIKit.face_of(b).add_child(v)
+	var to_shop := shop > 0
+	var txt := ("%d more in the Shop" % shop) if to_shop else ("%d more in the Season Pass" % season)
+	var b := UIKit.link(txt + "  ›", UIKit.T_LABEL)
+	b.name = "Discover_" + tab
+	b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	b.accessibility_name = "%s. %s" % [txt, "View in Shop" if to_shop else "Open Season Pass"]
+	b.tooltip_text = "View in Shop" if to_shop else "Open Season Pass"
+	var first := String(fields[0]) if not fields.is_empty() else ""
 	b.pressed.connect(func() -> void:
 		if to_shop:
-			ShopScreen.focus_section = "outfits" if f == "outfit" else "accessories"
+			ShopScreen.focus_section = "outfits" if first == "outfit" else "accessories"
 			NavShell.go("shop")
 		else:
 			NavShell.go("pass"))
@@ -498,6 +561,7 @@ func _discover_card(f: String, w: float) -> Button:
 
 func _swatches(f: String) -> HFlowContainer:
 	var h := HFlowContainer.new()
+	h.name = "Swatches_" + f
 	h.add_theme_constant_override("h_separation", 12)
 	h.add_theme_constant_override("v_separation", 12)
 	for k in shown_keys(f):
@@ -507,28 +571,17 @@ func _swatches(f: String) -> HFlowContainer:
 		sw.pressed.connect(_pick.bind(f, String(k)))
 		h.add_child(sw)
 		swatches.append(sw)
-	if not first_run and int(not_owned(f)["shop"]) > 0:
-		var more := UIKit.quiet("+%d in Shop" % int(not_owned(f)["shop"]), Vector2(0, maxf(UIKit.touch_min(), 72.0)), UIKit.T_CAPTION)
-		more.name = "Discover_" + f
-		more.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		more.accessibility_name = "%d more %s in the Shop. View in Shop" % [int(not_owned(f)["shop"]), String(FIELD_TITLES[f]).to_lower()]
-		more.pressed.connect(func() -> void:
-			ShopScreen.focus_section = "accessories"
-			NavShell.go("shop"))
-		h.add_child(more)
-		discover.append(more)
 	return h
 
 
-## Name cards and badges: "None" plus every owned one, previewed with the
-## player's own name.
-func _profile_cards(f: String, cols: int) -> GridContainer:
-	var g := GridContainer.new()
-	g.columns = maxi(2, cols - 1) if f == "card" else cols
-	g.add_theme_constant_override("h_separation", int(CARD_GAP))
-	g.add_theme_constant_override("v_separation", int(CARD_GAP))
-	var inner := panel.custom_minimum_size.x - 40.0
-	var w := (inner - CARD_GAP * float(g.columns - 1)) / float(g.columns)
+## Name cards and badges: "None" plus every owned one, previewed as they
+## appear when equipped (the player's name, the chosen badge).
+func _profile_cards(f: String, gw: float) -> GridContainer:
+	var kind := "card" if f == "card" else "badge"
+	var g := UIKit.AutoGrid.new(float(CARD_MIN.get(kind, CARD_W)), 2, 6, CARD_GAP)
+	g.name = "Grid_" + f
+	var cols := UIKit.columns_for(gw, g.min_cell, CARD_GAP, 2, 6)
+	var w := UIKit.cell_width(gw, cols, CARD_GAP)
 	var ids: Array = [""]
 	for it in Catalogue.all_items():
 		var id := String(it["id"])
@@ -540,15 +593,15 @@ func _profile_cards(f: String, cols: int) -> GridContainer:
 		pc.pressed.connect(_pick_style.bind(f, String(id)))
 		g.add_child(pc)
 		cards.append(pc)
-	if not first_run:
-		var more := _discover_card(f, w)
-		if more:
-			g.add_child(more)
+	g.columns = cols
+	grids.append(g)
 	return g
 
 
 func _pick_style(f: String, id: String) -> void:
+	_last_field = f
 	if String(draft_style.get(f, "")) == id:
+		_update_footer()
 		return
 	draft_style[f] = id
 	Sfx.play("pop")
@@ -564,14 +617,15 @@ func _refresh() -> void:
 		_paint_swatch(sw)
 	for f in _picked:
 		var k := String(draft[f])
-		(_picked[f] as Label).text = "·  %s  ·  %s" % [Cosmetics.entry(f, k)["name"], state_of(f, k)["text"]]
+		var st := state_of(f, k)
+		(_picked[f] as Label).text = "·  %s%s" % [Cosmetics.entry(f, k)["name"], "  ·  Equipped" if bool(st["equipped"]) else ""]
 	if _notes.has("hair"):
 		var hid: Array = Cosmetics.HAT_HIDES_HAIR.get(String(draft["hat"]), [])
 		var hood := String(draft["outfit"]) in Cosmetics.HOOD_OUTFITS
 		var parts: Array = Cosmetics.entry("hair", String(draft["hair"]))["parts"]
 		var covered := hood or parts.any(func(p: String) -> bool: return p in hid)
 		var why := "the hood" if hood else String(Cosmetics.entry("hat", String(draft["hat"]))["name"])
-		(_notes["hair"] as Label).text = ("Your hairstyle is tucked under %s. Choose No Hat to show it." % why) if covered else ""
+		(_notes["hair"] as Label).text = ("Tucked under %s. Choose No Hat to show it." % why) if covered else ""
 		(_notes["hair"] as Label).visible = covered
 	if _notes.has("pattern"):
 		var no_pattern := not String(draft["outfit"]) in Cosmetics.PATTERNED_OUTFITS
@@ -622,7 +676,14 @@ func state_of(f: String, k: String) -> Dictionary:
 
 
 func _pick(f: String, k: String) -> void:
+	_last_field = f
+	if f == "emote":
+		# a pick (and a second tap) plays the move on the big runner
+		var id := TC.EMOTES.find(k)
+		if id >= 0 and App.stage:
+			App.stage.emote(Save.player_uid(), id)
 	if String(draft[f]) == k:
+		_update_footer()
 		return
 	draft[f] = k
 	draft = Cosmetics.sanitize(draft)
@@ -631,10 +692,6 @@ func _pick(f: String, k: String) -> void:
 		v.set_appearance(TC.Role.RUNNER, draft)
 		if f in ["outfit", "hat", "shoes", "hair", "pattern"] and not UIKit.reduced_motion():
 			v.play_arrive()   # a little hop to show the new look
-		if f == "emote":
-			var id := TC.EMOTES.find(k)
-			if id >= 0 and App.stage:
-				App.stage.emote(Save.player_uid(), id)
 	Sfx.play("pop")
 	_refresh()
 
@@ -643,22 +700,44 @@ func changed() -> bool:
 	return draft != saved or draft_style != saved_style
 
 
+## The field the footer describes: the last one picked in this category, or
+## the category's first.
+func _footer_field() -> String:
+	var fields := _tab_fields(tab)
+	if _last_field in fields:
+		return _last_field
+	return String(fields[0]) if not fields.is_empty() else ""
+
+
 func _update_footer() -> void:
 	var ch := changed()
 	undo_btn.visible = ch or first_run
-	if first_run:
-		apply_btn.text = "That's me!"
-		apply_btn.disabled = false
-		price_lbl.text = "You can change this any time in the Locker."
-	elif not ch:
-		apply_btn.text = "Wearing this"
-		apply_btn.disabled = true
-		price_lbl.text = "Everything here is yours. New items are in the Shop and the Season Pass."
-	else:
-		apply_btn.text = "Save look"
-		apply_btn.disabled = false
-		price_lbl.text = "Saving never costs anything."
+	apply_btn.visible = ch or first_run
+	apply_btn.disabled = false
+	apply_btn.text = "That's me!" if first_run else "Save look"
 	apply_btn.accessibility_name = apply_btn.text
+	var f := _footer_field()
+	var nm := ""
+	var same := true
+	if f in PROFILE_FIELDS:
+		var id := String(draft_style.get(f, ""))
+		nm = ("No %s" % ("name card" if f == "card" else "badge")) if id == "" else Catalogue.display_name(id)
+		same = id == String(saved_style.get(f, ""))
+	elif f != "":
+		nm = String(Cosmetics.entry(f, String(draft[f])).get("name", ""))
+		if f in SWATCH_FIELDS:
+			nm = "%s: %s" % [FIELD_TITLES[f], nm]
+		same = String(draft[f]) == String(saved[f])
+	sel_name.text = nm
+	if first_run:
+		sel_state.text = "Change it any time later"
+		sel_state.add_theme_color_override("font_color", UIKit.IVORY_MUTED)
+	elif same:
+		sel_state.text = "Equipped"
+		sel_state.add_theme_color_override("font_color", UIKit.TEAL)
+	else:
+		sel_state.text = "Not saved yet"
+		sel_state.add_theme_color_override("font_color", UIKit.AMBER)
 
 
 ## Save: equips the draft.  Never spends (Save.apply_appearance refuses
@@ -799,89 +878,135 @@ class StageDrag:
 			release()
 
 
-## A portrait-oriented item card: the item's picture on your runner (or an
-## icon for moves), the full name below, and a state row.
+## One card layout for every Locker item (V7): a picture well, the name
+## (the grid's line count, so every card's state row lines up) and a state
+## row ("Equipped"), with PAD on every side.  The well's height is a share of
+## the card's width per content type (WELL).  The selected card has the teal
+## edge and a check in its corner: one ring, never two.
+static func name_line_h() -> float:
+	return ceilf(UIKit.font_w(600).get_height(NAME_FS)) - 2.0
+
+
+static func card_height(kind: String, w: float, lines: int) -> float:
+	var well := roundf((w - PAD * 2.0) * float(WELL.get(kind, 1.0)))
+	return PAD + well + ROW_GAP + float(lines) * name_line_h() + ROW_GAP + STATE_H + PAD
+
+
+## The card's column: well, name, state.
+static func card_column(face: Control) -> VBoxContainer:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", int(ROW_GAP))
+	v.set_anchors_preset(Control.PRESET_FULL_RECT)
+	v.offset_left = PAD
+	v.offset_right = -PAD
+	v.offset_top = PAD
+	v.offset_bottom = -PAD
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	face.add_child(v)
+	return v
+
+
+static func name_label(t: String) -> Label:
+	var l := UIKit.styled(t, "label", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.add_theme_constant_override("line_spacing", -2)
+	l.add_theme_font_size_override("font_size", NAME_FS)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return l
+
+
+static func state_label() -> Label:
+	var l := UIKit.styled("", "overline", UIKit.TEAL, HORIZONTAL_ALIGNMENT_CENTER)
+	l.custom_minimum_size.y = STATE_H
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return l
+
+
+## An item card: the item's picture on your look (a cached portrait, framed
+## for its type), or the emote's glyph centred in its well; the full name;
+## the state row.
 class ItemCard:
 	extends Button
 	var creator: CreatorScreen
 	var field := ""
 	var key := ""
 	var framing := ""
+	var kind := ""
 	var pic: TextureRect
+	var glyph: Icons.IconRect
 	var holder: Control
 	var name_l: Label
 	var state_l: Label
-	var lock_i: Icons.IconRect
 	var check: Control
 	var pic_key := ""
 	var has_pic := false
+	var lines := 1
 
 	func setup(c: CreatorScreen, f: String, k: String, w: float, fr: String) -> void:
 		creator = c
 		field = f
 		key = k
 		framing = fr
+		kind = fr if fr != "" else "emote"
+		name = "Item_%s_%s" % [f, k]
 		var it: Dictionary = Cosmetics.entry(f, k)
-		var img := w - 24.0
-		UIKit.make_card(self, Vector2(w, img + 116.0), Color(UIKit.SLATE_HI, 0.96))
-		var v := UIKit.vbox(4)
-		v.set_anchors_preset(Control.PRESET_FULL_RECT)
-		v.offset_left = 10
-		v.offset_right = -10
-		v.offset_top = 10
-		v.offset_bottom = -8
-		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		UIKit.face_of(self).add_child(v)
+		UIKit.make_card(self, Vector2(w, 0), Color(UIKit.SLATE_HI, 0.96))
+		var v := CreatorScreen.card_column(UIKit.face_of(self))
 		holder = PicHolder.new()
-		holder.custom_minimum_size = Vector2(img, img)
-		holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		holder.name = "Well"
+		holder.size_flags_horizontal = Control.SIZE_FILL
 		v.add_child(holder)
 		if fr != "":
 			pic = TextureRect.new()
+			pic.name = "Picture"
 			pic.set_anchors_preset(Control.PRESET_FULL_RECT)
 			pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			# cover the well (the portrait is square; body wells are a little
+			# taller, close-ups a little wider): no letterbox bars
+			pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 			pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			holder.add_child(pic)
 		else:
+			# centred by anchors in the well, inset on every side (V6: a
+			# centre anchor plus a positive position pushed it past the corner)
 			var id := TC.EMOTES.find(k)
-			var ic := Icons.IconRect.new(Icons.emote_icon(id) if id >= 0 else "smile", UIKit.AMBER, img * 0.6)
-			ic.set_anchors_preset(Control.PRESET_CENTER)
-			ic.position = Vector2(img * 0.2, img * 0.2)
-			holder.add_child(ic)
+			glyph = Icons.IconRect.new(Icons.emote_icon(id) if id >= 0 else "smile", UIKit.AMBER, 8.0)
+			glyph.name = "Glyph"
+			glyph.custom_minimum_size = Vector2.ZERO
+			glyph.set_anchors_preset(Control.PRESET_FULL_RECT)
+			glyph.offset_left = PicHolder.INSET
+			glyph.offset_top = PicHolder.INSET
+			glyph.offset_right = -PicHolder.INSET
+			glyph.offset_bottom = -PicHolder.INSET
+			holder.add_child(glyph)
 			(holder as PicHolder).placeholder = false
-		name_l = UIKit.styled(String(it["name"]), "label", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
-		name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		name_l.max_lines_visible = 2
-		name_l.add_theme_constant_override("line_spacing", -2)
-		name_l.add_theme_font_size_override("font_size", 20)
-		# two lines are always reserved, so every card's state row lines up
-		name_l.custom_minimum_size = Vector2(w - 20.0, 54.0)
-		name_l.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		name_l = CreatorScreen.name_label(String(it["name"]))
 		v.add_child(name_l)
-		var row := UIKit.hbox(4)
-		row.alignment = BoxContainer.ALIGNMENT_CENTER
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		lock_i = Icons.IconRect.new("lock", UIKit.IVORY_MUTED, 18)
-		lock_i.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		row.add_child(lock_i)
-		state_l = UIKit.styled("", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-		state_l.add_theme_font_size_override("font_size", 18)
-		state_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(state_l)
-		v.add_child(row)
+		state_l = CreatorScreen.state_label()
+		v.add_child(state_l)
 		check = CheckBadge.new()
-		check.position = Vector2(w - 38.0, 8.0)
-		check.visible = false
 		UIKit.face_of(self).add_child(check)
+		fit_cell(w, name_lines(w))
+
+	func name_lines(w: float) -> int:
+		return mini(2, UIKit.lines_for(name_l.text, UIKit.font_w(600), NAME_FS, w - PAD * 2.0))
+
+	## Lay the card out for a cell `w` wide with `n` name lines.
+	func fit_cell(w: float, n: int) -> void:
+		lines = n
+		var iw := w - PAD * 2.0
+		holder.custom_minimum_size = Vector2(0, roundf(iw * float(WELL.get(kind, 1.0))))
+		name_l.custom_minimum_size = Vector2(iw, float(n) * CreatorScreen.name_line_h())
+		name_l.max_lines_visible = n
+		custom_minimum_size = Vector2(w, CreatorScreen.card_height(kind, w, n))
+		check.position = Vector2(w - PAD - check.size.x - 2.0, PAD + 2.0)
 
 	func refresh() -> void:
 		var st: Dictionary = creator.state_of(field, key)
 		var it: Dictionary = Cosmetics.entry(field, key)
-		state_l.text = String(st["text"])
-		state_l.add_theme_color_override("font_color", st["col"])
-		lock_i.visible = bool(st["locked"])
+		state_l.text = "Equipped" if bool(st["equipped"]) else ""
 		var sel: bool = String(creator.draft[field]) == key
 		UIKit.set_selected(self, sel)
 		check.visible = sel
@@ -889,12 +1014,10 @@ class ItemCard:
 		if framing != "":
 			_request()
 
-	## The item on the draft's look, in this card's framing.
+	## The item on the draft's look with neutral accessories, in this
+	## card's framing (CommerceArt.preview_look).
 	func _request() -> void:
-		var app: Dictionary = creator.draft.duplicate()
-		app[field] = key
-		if field == "hair":
-			app["hat"] = "none"   # show the hairstyle itself
+		var app: Dictionary = CommerceArt.preview_look(creator.draft, field, key)
 		var k := Portraits.key_for(app, TC.Role.RUNNER, framing)
 		if k == pic_key and has_pic:
 			return
@@ -920,77 +1043,94 @@ class ItemCard:
 			Motion.animate(pic, "modulate:a", 1.0, 0.16)
 
 
-## A name card or badge in the Locker's Profile category ("" = none),
-## previewed with the player's own name.
+## A name card or badge in the Locker's Profile category ("" = none), drawn
+## as it appears when equipped: the card with the player's name and the
+## chosen badge.  Same layout as ItemCard.
 class ProfileCard:
 	extends Button
 	var creator: CreatorScreen
 	var field := ""
 	var key := ""
+	var kind := ""
 	var pic_key := ""
+	var holder: Control
 	var art: Control
 	var name_l: Label
 	var state_l: Label
 	var check: Control
+	var lines := 1
 
 	func setup(c: CreatorScreen, f: String, id: String, w: float) -> void:
 		creator = c
 		field = f
 		key = id
-		var h := 78.0 if f == "card" else w - 24.0
-		UIKit.make_card(self, Vector2(w, h + 96.0), Color(UIKit.SLATE_HI, 0.96))
-		var v := UIKit.vbox(6)
-		v.set_anchors_preset(Control.PRESET_FULL_RECT)
-		v.offset_left = 10
-		v.offset_right = -10
-		v.offset_top = 10
-		v.offset_bottom = -8
-		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		UIKit.face_of(self).add_child(v)
+		kind = "card" if f == "card" else "badge"
+		name = "Profile_%s_%s" % [f, id.replace(":", "_")]
+		UIKit.make_card(self, Vector2(w, 0), Color(UIKit.SLATE_HI, 0.96))
+		var v := CreatorScreen.card_column(UIKit.face_of(self))
+		holder = PicHolder.new()
+		holder.name = "Well"
+		(holder as PicHolder).placeholder = false
+		v.add_child(holder)
 		if id == "":
-			art = CommerceArt.Pic.new("glyph", "close", UIKit.IVORY_DIM, h * 0.5)
+			art = CommerceArt.Pic.new("glyph", "close", UIKit.IVORY_DIM, 8.0)
 		elif f == "card":
-			art = CommerceArt.Pic.new("card", id, Color.WHITE, h)
+			art = CommerceArt.Pic.new("card", id, Color.WHITE, 8.0)
 			(art as CommerceArt.Pic).text = Save.player_name()
-			art.custom_minimum_size = Vector2(w - 20.0, h)
 		else:
-			art = CommerceArt.Pic.new("badge", id, Color.WHITE, minf(h, 110.0))
-		art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		art.custom_minimum_size.y = h
-		v.add_child(art)
-		name_l = UIKit.styled("None" if id == "" else Catalogue.display_name(id), "label", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
-		name_l.add_theme_font_size_override("font_size", 20)
-		name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		name_l.custom_minimum_size = Vector2(w - 20.0, 28.0)
-		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			art = CommerceArt.Pic.new("badge", id, Color.WHITE, 8.0)
+		art.name = "Art"
+		art.custom_minimum_size = Vector2.ZERO
+		art.set_anchors_preset(Control.PRESET_FULL_RECT)
+		var inset := PicHolder.INSET if id == "" or f == "badge" else PicHolder.INSET * 0.5
+		art.offset_left = inset
+		art.offset_top = inset
+		art.offset_right = -inset
+		art.offset_bottom = -inset
+		holder.add_child(art)
+		name_l = CreatorScreen.name_label("None" if id == "" else Catalogue.display_name(id))
 		v.add_child(name_l)
-		state_l = UIKit.styled("", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-		state_l.add_theme_font_size_override("font_size", 18)
-		state_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		state_l = CreatorScreen.state_label()
 		v.add_child(state_l)
 		check = CheckBadge.new()
-		check.position = Vector2(w - 38.0, 8.0)
-		check.visible = false
 		UIKit.face_of(self).add_child(check)
+		fit_cell(w, name_lines(w))
+
+	func name_lines(w: float) -> int:
+		return mini(2, UIKit.lines_for(name_l.text, UIKit.font_w(600), NAME_FS, w - PAD * 2.0))
+
+	func fit_cell(w: float, n: int) -> void:
+		lines = n
+		var iw := w - PAD * 2.0
+		holder.custom_minimum_size = Vector2(0, roundf(iw * float(WELL.get(kind, 1.0))))
+		name_l.custom_minimum_size = Vector2(iw, float(n) * CreatorScreen.name_line_h())
+		name_l.max_lines_visible = n
+		custom_minimum_size = Vector2(w, CreatorScreen.card_height(kind, w, n))
+		check.position = Vector2(w - PAD - check.size.x - 2.0, PAD + 2.0)
 
 	func refresh() -> void:
 		var st: Dictionary = creator.state_of(field, key)
-		state_l.text = String(st["text"])
-		state_l.add_theme_color_override("font_color", st["col"])
+		state_l.text = "Equipped" if bool(st["equipped"]) else ""
 		var sel: bool = String(creator.draft_style.get(field, "")) == key
 		UIKit.set_selected(self, sel)
 		check.visible = sel
+		if art is CommerceArt.Pic and field == "card":
+			(art as CommerceArt.Pic).badge_id = String(creator.draft_style.get("badge", ""))
+			art.queue_redraw()
 		accessibility_name = "%s %s, %s%s" % [name_l.text, "name card" if field == "card" else "badge", st["text"], ", selected" if sel else ""]
 
 
 ## The picture's well: a soft rounded backdrop, and until the picture is
-## ready a faint runner silhouette (no spinning or pulsing).
+## ready a faint runner silhouette (no spinning or pulsing).  Its children
+## fill it (anchors), so art is centred by construction.
 class PicHolder:
 	extends Control
+	const INSET := 8.0
 	var placeholder := true
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		clip_contents = true
 
 	func _draw() -> void:
 		var r := Rect2(Vector2.ZERO, size)
@@ -1010,11 +1150,12 @@ class CheckBadge:
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
-		size = Vector2(28, 28)
+		size = Vector2(26, 26)
 
 	func _draw() -> void:
-		draw_circle(size * 0.5, 14.0, UIKit.TEAL)
-		Icons.draw_shape(self, "check", size * 0.5, 8.5, UIKit.NAVY)
+		draw_circle(size * 0.5, 13.0, UIKit.TEAL, true, -1.0, true)
+		draw_arc(size * 0.5, 13.0, 0, TAU, 24, Color(UIKit.NAVY, 0.6), 1.5, true)
+		Icons.draw_shape(self, "check", size * 0.5, 8.0, UIKit.NAVY)
 
 
 ## Round colour swatch: selected ring, equipped dot, lock or price badge.

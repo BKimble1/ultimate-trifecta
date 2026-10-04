@@ -36,13 +36,41 @@ func build() -> void:
 	pass
 
 
+## V7: the content sits in the allocated safe content rect
+## (UIKit.content_rect): the safe area plus a small edge padding (V6 used
+## 24/16 units on top of the safe area, which cost a phone ~8% of its height).
 func _apply_safe() -> void:
 	var s := UIKit.safe_margins(get_viewport())
-	margin.add_theme_constant_override("margin_left", int(s.position.x) + 24)
-	margin.add_theme_constant_override("margin_top", int(s.position.y) + 16)
-	margin.add_theme_constant_override("margin_right", int(s.size.x) + 24)
-	margin.add_theme_constant_override("margin_bottom", int(s.size.y) + 16)
+	margin.add_theme_constant_override("margin_left", int(s.position.x) + UIKit.EDGE_X)
+	margin.add_theme_constant_override("margin_top", int(s.position.y) + UIKit.EDGE_Y)
+	margin.add_theme_constant_override("margin_right", int(s.size.x) + UIKit.EDGE_X)
+	margin.add_theme_constant_override("margin_bottom", int(s.size.y) + UIKit.EDGE_Y)
 	margin.position = Vector2.ZERO
+
+
+## The allocated safe content rect (canvas units), from the viewport and the
+## safe area only: children can never inflate it.
+func content_size() -> Vector2:
+	return UIKit.content_rect(get_viewport()).size if is_inside_tree() else Vector2.ZERO
+
+
+## The commerce screens' top row (Locker, Shop, Season Pass): Back, the
+## navigation bar and the Coins chip, one 44 pt row.
+func nav_bar(tab: String) -> HBoxContainer:
+	var top := UIKit.hbox(UIKit.SP_M)
+	top.name = "TopBar"
+	var back := UIKit.icon_button("back")
+	back.name = "Back"
+	back.tooltip_text = "Back"
+	back.accessibility_name = "Back"
+	back.pressed.connect(_go_back)
+	top.add_child(back)
+	var nav := NavShell.make(tab)
+	nav.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(nav)
+	top.add_child(WalletChip.new())
+	content.add_child(top)
+	return top
 
 
 ## Wrapped labels report huge heights until their width is known, so the
