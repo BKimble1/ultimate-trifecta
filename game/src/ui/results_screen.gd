@@ -149,6 +149,13 @@ func _build_page() -> void:
 	else:
 		_round_page()
 	_refresh_actions()
+	# V8: the page arrives in reading order (title, celebration, teams,
+	# rewards), 50 ms apart; buttons and rows are live at once
+	var parts: Array = []
+	for c in _v.get_children():
+		if not c.is_queued_for_deletion():
+			parts.append(c)
+	Motion.stagger(parts)
 
 
 func _round_page() -> void:

@@ -465,6 +465,12 @@ func _on_primary() -> void:
 	_is_ready = not _is_ready
 	session.set_local_ready(_is_ready)
 	_refresh()
+	if _is_ready:
+		# V8: a clear "you're in": the button's face swells and sheens once
+		var f := UIKit.face_of(primary_btn)
+		Motion.confirm(f)
+		if f != null and f.has_method("flash"):
+			f.call("flash")
 
 
 func _on_status(txt: String) -> void:

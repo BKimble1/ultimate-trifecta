@@ -57,6 +57,7 @@ func setup(controller: MatchController) -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.theme = UIKit.theme()
 	add_child(root)
+	_build_stamp_pop()
 	draw_layer = DrawLayer.new()
 	(draw_layer as DrawLayer).hud = self
 	draw_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -781,32 +782,64 @@ func feed_splash(who: String, water: String, role: int) -> void:
 var _stamp_pop: PanelContainer
 
 
-func stamp_pop(w: Dictionary, count: int, total: int) -> void:
-	if is_instance_valid(_stamp_pop):
-		_stamp_pop.queue_free()
+## V8: built once with the HUD and reused (V6-V7 built a new panel on every
+## stamp: the first splash also paid for its layout and font glyphs).  It
+## animates through the single-owner motion layer: a quick fade and settle
+## in, a hold, a fade out; a new stamp retargets it from where it is.
+var _stamp_icon: Icons.IconRect
+var _stamp_title: Label
+var _stamp_sub: Label
+var _stamp_sb: StyleBoxFlat
+
+
+func _build_stamp_pop() -> void:
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.SLATE, 0.92), 22, 2, Color(w["color"], 0.9), 12))
+	_stamp_sb = UIKit.box(Color(UIKit.SLATE, 0.92), 22, 2, Color(0.5, 0.8, 1.0, 0.9), 12)
+	p.add_theme_stylebox_override("panel", _stamp_sb)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var h := UIKit.hbox(10)
-	h.add_child(Icons.IconRect.new(w["icon"], w["color"], 34))
+	_stamp_icon = Icons.IconRect.new("drop", Color.WHITE, 34)
+	h.add_child(_stamp_icon)
 	var tv := UIKit.vbox(0)
-	tv.add_child(UIKit.label("%s stamped" % w["short"], 24, UIKit.IVORY, true))
-	tv.add_child(UIKit.label("%d of %d splashes" % [count, total] if count < total else "All splashed — run home!", 17, UIKit.IVORY_MUTED))
+	_stamp_title = UIKit.label("Stamped", 24, UIKit.IVORY, true)
+	_stamp_sub = UIKit.label("0 of 3 splashes", 17, UIKit.IVORY_MUTED)
+	tv.add_child(_stamp_title)
+	tv.add_child(_stamp_sub)
 	h.add_child(tv)
 	p.add_child(h)
+	p.modulate.a = 0.0
 	root.add_child(p)
+	_stamp_pop = p
+
+
+func stamp_pop(w: Dictionary, count: int, total: int) -> void:
+	if _stamp_pop == null:
+		_build_stamp_pop()
+	var p := _stamp_pop
+	if _stamp_sb is StyleBoxFlat:
+		(_stamp_sb as StyleBoxFlat).border_color = Color(w["color"], 0.9)
+	_stamp_icon.kind = String(w["icon"])
+	_stamp_icon.col = w["color"]
+	_stamp_icon.queue_redraw()
+	_stamp_title.text = "%s stamped" % w["short"]
+	_stamp_sub.text = "%d of %d splashes" % [count, total] if count < total else "All splashed — run home!"
+	p.reset_size()
 	var vs := get_viewport().get_visible_rect().size
 	var sz := p.get_combined_minimum_size()
 	p.position = Vector2((vs.x - sz.x) * 0.5, _safe.position.y + 128)
 	p.pivot_offset = sz * 0.5
-	_stamp_pop = p
+	Motion.stop(p, "modulate:a")
 	var tw := p.create_tween()
-	if not UIKit.reduced_motion():
-		p.scale = Vector2(0.86, 0.86)
-		tw.tween_property(p, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(p, "modulate:a", 1.0, 0.08)
 	tw.tween_interval(1.7)
 	tw.tween_property(p, "modulate:a", 0.0, 0.3)
-	tw.tween_callback(p.queue_free)
+	Motion.own(p, "modulate:a", tw)
+	if not UIKit.reduced_motion():
+		p.scale = Vector2(0.86, 0.86)
+		Motion.animate(p, "scale", Vector2.ONE, 0.2, Tween.TRANS_BACK, Tween.EASE_OUT)
+	else:
+		p.scale = Vector2.ONE
+	Motion.confirm(_stamp_icon)
 
 
 ## A collected coin (V6): the chip pulses once and a small "+1" rises from

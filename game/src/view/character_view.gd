@@ -190,7 +190,11 @@ var _face_base := {}
 var _face_idx := {}
 var _squash := 0.0
 var _t := 0.0
-var _anim_skip := 0
+## V8: distant characters' animation clock (see _process_view)
+const FAR_ANIM_STEP := 1.0 / 20.0
+var _far_clock := 0.0
+var _far_stagger := 0.0
+var _face_acc := 0.0
 var _anim_acc := 0.0
 # V5 motion state
 var _move_w := 0.0            # locomotion weight shown (0 idle .. 1 moving)
@@ -212,7 +216,26 @@ var _fidget := ""
 var _blink_len := 0.16
 var _hat_off := false
 var _travel_f := Vector3.ZERO
+var _last_base := Vector3.ZERO
 var _spot_t := 0.0            # how long the character has run without travelling
+# V8 authored transitions (drive / brake / turn lead layers, planted stop)
+const ACCEL_REF := 30.0       # m/s^2 of forward acceleration that shows the full drive pose
+const STOP_FROM := 3.0        # m/s: a stop from at least this pace plants
+var _fwd_acc := 0.0           # filtered forward acceleration (m/s^2, + = speeding up)
+var _start_t := 9.0           # since the gait began from a standstill
+var _accel_w := 0.0
+var _brake_w := 0.0
+var _lead_w := 0.0
+var _lead_sign := 0.0
+var _lead_pos := 0.0          # shown side (-1 right .. +1 left), eased (never flips in a frame)
+var _run_mem := 0.0           # recent ground speed (decays), for stop planting
+var _stop_on := false
+var _stop_t := 0.0
+const STOP_LEN := 0.5         # == anims.STOP_L
+var stat_stops := 0           # planted stops played (tests)
+## V8: set by the match controller: feet follow the real ground (steps, ramps)
+var terrain_contact := false
+var ground_fn: Callable       # tests: an analytic ground instead of the physics ray
 ## total animation time advanced (tests: equals the real elapsed time)
 var anim_time_advanced := 0.0
 
@@ -235,6 +258,8 @@ func setup(p_role: int, p_cosmetic: Dictionary, p_slot: int, display_name: Strin
 	slot = p_slot
 	is_local = local
 	_rng.seed = hash(str(p_slot) + display_name + str(get_instance_id()))
+	_far_stagger = fposmod(float(maxi(p_slot, 0)) * 0.381966, 1.0)
+	_far_clock = _far_stagger * FAR_ANIM_STEP
 	_idle_off = _rng.randf() * IDLE_LEN
 	_idle_clock = _idle_off
 	_phase = _rng.randf()
@@ -367,12 +392,50 @@ func _build_tree() -> void:
 	bt.add_node("turn_r", _anim_node("turn_r"))
 	bt.connect_node("turn_dir", 0, "turn_l")
 	bt.connect_node("turn_dir", 1, "turn_r")
+	# V8: planted stop (a one-shot over the gait/idle blend, from running)
+	var sdir := AnimationNodeTransition.new()
+	sdir.add_input("l")
+	sdir.add_input("r")
+	sdir.xfade_time = 0.0
+	bt.add_node("stop_dir", sdir)
+	bt.add_node("a_stop_l", _anim_node("stop_l"))
+	bt.add_node("a_stop_r", _anim_node("stop_r"))
+	bt.connect_node("stop_dir", 0, "a_stop_l")
+	bt.connect_node("stop_dir", 1, "a_stop_r")
+	var stop := AnimationNodeOneShot.new()
+	stop.fadein_time = 0.1
+	stop.fadeout_time = 0.15
+	bt.add_node("stop", stop)
+	bt.connect_node("stop", 0, "move")
+	bt.connect_node("stop", 1, "stop_dir")
 	var turn := AnimationNodeOneShot.new()
 	turn.fadein_time = 0.08
 	turn.fadeout_time = 0.12
 	bt.add_node("turn", turn)
-	bt.connect_node("turn", 0, "move")
+	bt.connect_node("turn", 0, "stop")
 	bt.connect_node("turn", 1, "turn_dir")
+	# V8 additive layers on the ground pose (FK deltas, legs' IK untouched):
+	# drive (phase-aligned with the gait), brake, and the turn lead
+	bt.add_node("a_accel", _anim_node("loco_accel"))
+	bt.add_node("accel_seek", _seek_node())
+	bt.connect_node("accel_seek", 0, "a_accel")
+	bt.add_node("accel_add", AnimationNodeAdd2.new())
+	bt.connect_node("accel_add", 0, "turn")
+	bt.connect_node("accel_add", 1, "accel_seek")
+	bt.add_node("a_brake", _anim_node("loco_brake"))
+	bt.add_node("brake_add", AnimationNodeAdd2.new())
+	bt.connect_node("brake_add", 0, "accel_add")
+	bt.connect_node("brake_add", 1, "a_brake")
+	var lead := AnimationNodeBlendSpace1D.new()
+	lead.min_space = -1.0
+	lead.max_space = 1.0
+	lead.add_blend_point(_anim_node("lead_r"), -1.0, -1, "r")
+	lead.add_blend_point(_anim_node("add_zero"), 0.0, -1, "zero")
+	lead.add_blend_point(_anim_node("lead_l"), 1.0, -1, "l")
+	bt.add_node("lead_bs", lead)
+	bt.add_node("lead_add", AnimationNodeAdd2.new())
+	bt.connect_node("lead_add", 0, "brake_add")
+	bt.connect_node("lead_add", 1, "lead_bs")
 	# --- air: vertical-velocity blend space
 	var air := AnimationNodeBlendSpace1D.new()
 	air.min_space = -9.0
@@ -419,7 +482,7 @@ func _build_tree() -> void:
 	i = 0
 	for s in STATES:
 		match s:
-			"ground": bt.connect_node("state", i, "turn")
+			"ground": bt.connect_node("state", i, "lead_add")
 			"air": bt.connect_node("state", i, "air")
 			"splash": bt.connect_node("state", i, "splash_seek")
 			"cart": bt.connect_node("state", i, "cart_bs")
@@ -524,6 +587,33 @@ func _build_effects() -> void:
 	bubble.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	bubble.visible = false
 	add_child(bubble)
+
+
+## V8: the caller hides a view it has nothing to show for (an opponent out
+## of this client's interest set, a finished runner); hidden, it does no work.
+## Showing it again is a discontinuity: the caller passes snap to apply_state.
+func hide_view() -> void:
+	visible = false
+	if drips:
+		drips.emitting = false
+
+
+## The ground height under a foot (world y), or NAN: a short ray against
+## the static world (never characters, carts or water).
+func _probe_ground(p: Vector3) -> float:
+	if ground_fn.is_valid():
+		return ground_fn.call(p)
+	var space := get_world_3d().direct_space_state
+	if space == null:
+		return NAN
+	var q := PhysicsRayQueryParameters3D.create(p + Vector3(0, 0.4, 0), p - Vector3(0, 0.4, 0), TC.L_WORLD)
+	var hit := space.intersect_ray(q)
+	return float((hit["position"] as Vector3).y) if not hit.is_empty() else NAN
+
+
+## Loading time (V8): effect nodes this character will need, made now.
+func prewarm_fx() -> void:
+	_ensure_drips()
 
 
 func _ensure_drips() -> void:
@@ -781,7 +871,7 @@ func reset_motion() -> void:
 
 ## rs keys: pos, yaw, vel, state, state_t, on_floor, diving, sprinting,
 ## tag_phase, protect, bump_protect, spotted, cart_id, steer, emote, emote_t,
-## celebrate, show_finished, visible, impact.  The caller supplies render-time
+## celebrate, visible, impact.  The caller supplies render-time
 ## values (already interpolated); this view does not smooth position again.
 ## snap: the caller saw a discontinuity (respawn, resurfacing, cart seat,
 ## reconnect, a big correction).  Histories reset when the character really
@@ -842,8 +932,9 @@ func _cut_pose() -> void:
 	_cut = false
 	if pose_fade:
 		pose_fade.cut()
-	for os in ["land_f", "land_u", "fidget", "turn"]:
+	for os in ["land_f", "land_u", "fidget", "turn", "stop"]:
 		tree.set("parameters/%s/request" % os, AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)
+	_stop_on = false
 	_fidget_on = false
 	_act_w = 0.0
 	tree.set("parameters/act/blend_amount", 0.0)
@@ -887,6 +978,10 @@ func _update_yaw(delta: float) -> float:
 
 
 func _process(delta: float) -> void:
+	# V8: visibility has one owner, the caller (MatchController.view_shown);
+	# a hidden view does no animation or effects work
+	if not visible:
+		return
 	if not Prof.on:
 		_process_view(delta)
 		return
@@ -913,7 +1008,6 @@ func _process_view(delta: float) -> void:
 	var captured := st == TC.PState.CAPTURED
 	var emote: int = rs.get("emote", -1)
 	var emote_t: float = rs.get("emote_t", 0.0)
-	visible = not finished or bool(rs.get("show_finished", false))
 	# camera distance once per frame (LOD with hysteresis, sounds, effects)
 	_cam_d = _camera_distance()
 	_far = _cam_d > (LOD_NEAR if _far else LOD_FAR)
@@ -941,12 +1035,17 @@ func _process_view(delta: float) -> void:
 	# (no previous position yet - the first frame, or after a reset - is
 	# not travel: a view placed away from the origin would otherwise start
 	# facing along the line from the origin and swing back)
+	# V8: travel is measured without the caller's presentation correction
+	# (rs "corr": the local player's decaying reconcile offset), which is not
+	# movement: a sideways correction turned the body and nudged cadence
+	var base := global_position - (rs.get("corr", Vector3.ZERO) as Vector3)
 	if delta > 0.0 and not _cut and _have_last:
-		var travel := (global_position - _last_pos) / delta
+		var travel := (base - _last_base) / delta
 		_travel_f += (Vector3(travel.x, 0.0, travel.z) - _travel_f) * (1.0 - exp(-delta / ACC_TAU))
 	else:
 		_travel_f = Vector3.ZERO
 	_last_pos = global_position
+	_last_base = base
 	_have_last = true
 
 	# --- facing + motion history.  Acceleration is the derivative of a
@@ -966,6 +1065,7 @@ func _process_view(delta: float) -> void:
 	_prev_vel = vel
 	_have_prev = true
 	var accel_local := global_transform.basis.inverse() * accel
+	_fwd_acc = -accel_local.z
 	var calm := 0.6 if menu_idle else 1.0
 	if secondary:
 		secondary.accel = accel_local
@@ -1067,6 +1167,7 @@ func _process_view(delta: float) -> void:
 	if m == "ground":
 		_update_ground(delta, vel, speed, on_floor, sprinting, yaw_rate)
 	else:
+		_clear_layers()
 		_still_t = 0.0
 		tree.set("parameters/loco_seek/seek_request", fposmod(_phase, 1.0))
 		if foot_lock:
@@ -1109,25 +1210,37 @@ func _process_view(delta: float) -> void:
 		_drip_t = maxf(0.0, _drip_t - delta)
 		drips.emitting = _drip_t > 0.0 and visible
 
-	# --- face (distant characters: at their animation rate)
+	# --- schedule (V8): distant characters animate on an elapsed-time clock,
+	# FAR_ANIM_STEP apart at any frame rate (V5-V7 counted rendered frames:
+	# every third frame was 20 Hz at 60 fps but 10 Hz at 30), staggered per
+	# slot so they don't all advance on the same frame
 	var far := _far and not is_local
-	if not far or _anim_skip >= 2:
-		_update_face(delta if not far else delta * 3.0, m, sprinting, tag_phase, bool(rs.get("spotted", false)))
+	var due := true
+	if far and not cut_now:
+		_far_clock += delta
+		due = _far_clock >= FAR_ANIM_STEP
+		if due:
+			_far_clock = minf(_far_clock - FAR_ANIM_STEP, FAR_ANIM_STEP)
+	else:
+		_far_clock = _far_stagger * FAR_ANIM_STEP
+	# --- face (distant characters: at their animation rate)
+	_face_acc += delta
+	if due:
+		_update_face(_face_acc, m, sprinting, tag_phase, bool(rs.get("spotted", false)))
+		_face_acc = 0.0
 
 	# --- animate (manual advance: distant characters update at a lower rate,
 	# with the real elapsed time accumulated so they keep the right pace)
 	if not tree.active:
 		return
 	_anim_acc += delta
-	_anim_skip += 1
-	if not far or _anim_skip >= 3 or cut_now:
+	if due:
 		var ta := Prof.t()
 		tree.advance(_anim_acc)
 		Prof.add("anim_advance", ta)
 		Prof.count("anim_advances")
 		anim_time_advanced += _anim_acc
 		_anim_acc = 0.0
-		_anim_skip = 0
 	if hat_spring and _hat_off:
 		_hat_off = false
 		hat_spring.active = true
@@ -1172,6 +1285,70 @@ func _squash_step(delta: float) -> void:
 	_squash = clampf(_squash, -0.08, 0.15)
 
 
+## V8: the authored transition layers on the ground pose.  Drive: a start
+## from a standstill holds the push-off posture for ~0.25 s, and any hard
+## forward acceleration shows it, in step with the gait.  Brake: hard
+## deceleration from a run sits the body back.  Turn lead: while the body
+## turns fast (a sharp turn or a 180), the head and chest lead the turn and
+## the hips stay with the gait; the side is chosen when the lead starts and
+## kept until it has eased off (~0.25 s after the turn), so a reversal that
+## passes through 180 degrees never flips it.  All follow the
+## character's real motion (its velocity and facing); none moves the body.
+func _update_layers(delta: float, speed: float, want: float, yaw_rate: float) -> void:
+	var rm := 0.5 if reduced_motion else 1.0
+	# an upper-body action (the Night Watch's tag) owns the torso and arms:
+	# the layers yield (the lunge's 9 m/s burst is not a start, its end not a brake)
+	var free := 0.0 if (_act != "" or int(rs.get("tag_phase", 0)) != 0) else 1.0
+	_run_mem = maxf(speed, _run_mem * exp(-delta / 0.35))
+	_start_t += delta
+	var run_k := smoothstep(1.5, 3.5, maxf(speed, _bs * _move_w))
+	var start_env := 1.0 - smoothstep(0.22, 0.55, _start_t)
+	var drive := maxf(start_env, clampf(_fwd_acc / ACCEL_REF, 0.0, 1.0)) * run_k * _move_w * free
+	_accel_w += (drive - _accel_w) * (1.0 - exp(-delta / (0.04 if drive > _accel_w else 0.12)))
+	var brake := 0.0 if _stop_on else clampf(-_fwd_acc / ACCEL_REF, 0.0, 1.0) * smoothstep(1.5, 3.5, _run_mem) * free
+	_brake_w += (brake - _brake_w) * (1.0 - exp(-delta / (0.04 if brake > _brake_w else 0.15)))
+	if _lead_w < 0.15 and absf(yaw_rate) > 1.5:
+		_lead_sign = signf(yaw_rate)
+	var lt := smoothstep(2.0, 7.0, absf(yaw_rate)) * smoothstep(1.0, 3.0, speed) * want * free
+	if signf(yaw_rate) != _lead_sign:
+		lt = 0.0
+	_lead_w += (lt - _lead_w) * (1.0 - exp(-delta / (0.05 if lt > _lead_w else 0.25)))
+	_lead_pos += (_lead_sign - _lead_pos) * (1.0 - exp(-delta / 0.06))
+	if _stop_on:
+		_stop_t -= delta
+		if _stop_t <= 0.0:
+			_stop_on = false
+	tree.set("parameters/accel_seek/seek_request", fposmod(_phase, 1.0))
+	tree.set("parameters/accel_add/add_amount", _accel_w * rm)
+	tree.set("parameters/brake_add/add_amount", _brake_w * rm)
+	tree.set("parameters/lead_bs/blend_position", _lead_pos)
+	tree.set("parameters/lead_add/add_amount", _lead_w * rm)
+
+
+## The stop from a run plants: the foot that is coming through at the
+## settle point (right at phase 0, left at 0.5) reaches out and takes it.
+func _begin_stop() -> void:
+	if _run_mem < STOP_FROM or _stop_on or (_far and not is_local):
+		return
+	var side := "r" if is_zero_approx(fposmod(_settle_to, 1.0)) else "l"
+	tree.set("parameters/stop_dir/transition_request", side)
+	tree.set("parameters/stop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	_stop_on = true
+	_stop_t = STOP_LEN
+	stat_stops += 1
+
+
+func _clear_layers() -> void:
+	_accel_w = 0.0
+	_brake_w = 0.0
+	_lead_w = 0.0
+	if _stop_on:
+		tree.set("parameters/stop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)
+		_stop_on = false
+	for n in ["accel_add", "brake_add", "lead_add"]:
+		tree.set("parameters/%s/add_amount" % n, 0.0)
+
+
 func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sprinting: bool, yaw_rate: float) -> void:
 	# while the body turns, the gait advances with the forward part of the
 	# ground speed (no moonwalk while the facing catches up in a reversal).
@@ -1191,6 +1368,11 @@ func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sp
 		_step_init = false
 		_settle_to = -1.0
 		_bs = clampf(speed, LOCO_POINTS["walk"], LOCO_POINTS["sprint"])
+		_start_t = 0.0
+	if want > 0.3 and _stop_on:
+		# moving again before the stop finished: hand back to the gait
+		tree.set("parameters/stop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
+		_stop_on = false
 	# the sim reaches full speed in ~0.1 s: blend the legs in fast, out a
 	# little slower, never in one frame
 	_move_w += (want - _move_w) * (1.0 - exp(-delta / (0.045 if want > _move_w else 0.085)))
@@ -1207,6 +1389,7 @@ func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sp
 		# cycle (one foot planted under the body, the other beside it)
 		if _settle_to < 0.0:
 			_settle_to = ceilf(_phase * 2.0) * 0.5
+			_begin_stop()
 		_phase = minf(_phase + delta * maxf(rate, 2.4), _settle_to)
 	else:
 		_settle_to = -1.0
@@ -1214,6 +1397,7 @@ func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sp
 	tree.set("parameters/loco/blend_position", _bs)
 	tree.set("parameters/move/blend_amount", _move_w)
 	tree.set("parameters/loco_seek/seek_request", fposmod(_phase, 1.0))
+	_update_layers(delta, speed, want, yaw_rate)
 	# V6 foot lock: on for ground locomotion that really travels (not a run
 	# on the spot in the lobby, not a throttled distant character)
 	if foot_lock:
@@ -1223,6 +1407,11 @@ func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sp
 		_spot_t = _spot_t + delta if speed > 0.5 and travel < speed * 0.3 else 0.0
 		var on_spot := _spot_t > 0.25
 		foot_lock.weight = _move_w if on_floor and not on_spot and _act == "" and not (_far and not is_local) else 0.0
+		# V8 terrain contact: nearby characters in a match sample the ground
+		# under each foot at touch-down (one ray a step)
+		var probe := terrain_contact and not (_far and not is_local) and is_inside_tree()
+		if probe != foot_lock.ground_probe.is_valid():
+			foot_lock.ground_probe = _probe_ground if probe else Callable()
 		foot_lock.phase = fposmod(_phase, 1.0)
 		foot_lock.duty = _duty(_bs)
 	# footsteps at the gait's own foot strikes (left at 1 - duty/2, right at

@@ -14,10 +14,18 @@ extends SkeletonModifier3D
 ## foot (cadence = ground speed / stride), so the correction stays near zero;
 ## it acts in turns, reversals, stops and speed changes.
 ##
-## Cost: two two-bone solves per nearby character per frame, no physics
-## queries (the feet follow the character origin's plane, as before; slopes
-## and stairs keep the V5 behaviour).  Distant (animation-LOD) characters, the
-## Night Watch in a cart, the air and every non-ground state run without it.
+## Cost: two two-bone solves per nearby character per frame.  Distant
+## (animation-LOD) characters, the Night Watch in a cart, the air and every
+## non-ground state run without it.
+##
+## V8 terrain contact (nearby characters; `ground_probe` set): V6 kept the
+## feet on the character origin's plane, so on a ramp or a step the front
+## foot sank into the ground and the back one floated.  Now, once per
+## touch-down, the ground under that ankle is sampled (one ray, the caller's
+## probe) and the planted ankle is held at that height (bounded by
+## GROUND_MAX); the pelvis drops by the lower foot's deficit (bounded by
+## PELVIS_MAX) so the leg can reach.  It eases out in the air like the pull.
+## Presentation only: the capsule, collision and navigation never move.
 
 ## clamp of the pin's pull (m): beyond it the foot is released
 const MAX_PULL := 0.26
@@ -28,9 +36,16 @@ const FADE := 0.12
 const PLANT_H := 0.108
 ## largest yaw a planted foot is held against the body's turn (rad)
 const MAX_TWIST := 0.6
+## V8 terrain contact: largest ground height correction of a foot, and of
+## the pelvis (m); a sample further off than GROUND_MAX is ignored (a wall
+## edge, a gap: not a step to stand on)
+const GROUND_MAX := 0.16
+const PELVIS_MAX := 0.1
+const GROUND_TAU := 0.05
 
 ## set by CharacterView every frame
 var weight := 0.0          # 0 off .. 1 full (ground locomotion, travelling)
+var ground_probe: Callable  # V8: f(world ankle) -> ground height (world y) or NAN; unset = flat
 var phase := 0.0           # gait phase of the pose shown
 var duty := 0.2            # stance fraction of the pose shown
 ## measurements (tests; `profile` makes the modifier time itself, for
@@ -49,6 +64,10 @@ var _off_v := [Vector3.ZERO, Vector3.ZERO]        # its rate of change
 var _twist := [0.0, 0.0]
 var _was := [false, false]
 var _w := 0.0
+var _gy := [NAN, NAN]      # V8: world ground height sampled at each foot's touch-down
+var _gw := [0.0, 0.0]      # its eased weight (in at touch-down, out in the air)
+var _pelvis := 0.0
+var ground_samples := 0    # rays cast (tests, cost)
 
 
 ## Teleport / respawn / any cut: forget the pins.
@@ -60,6 +79,9 @@ func reset() -> void:
 		_twist[i] = 0.0
 		pinned[i] = false
 		pull[i] = Vector3.ZERO
+		_gy[i] = NAN
+		_gw[i] = 0.0
+	_pelvis = 0.0
 	_w = 0.0
 
 
@@ -99,12 +121,46 @@ func _modify(delta: float) -> void:
 	var inv := xf.affine_inverse()
 	var body_yaw := xf.basis.orthonormalized().get_euler().y
 	var decay := exp(-maxf(delta, 0.0) / FADE)
+	# --- stance from the animated pose (before any pelvis change)
+	var probing := ground_probe.is_valid()
+	var gk := 1.0 - exp(-maxf(delta, 0.0) / GROUND_TAU)
+	var stances := [false, false]
+	var anim_ankles := [Vector3.ZERO, Vector3.ZERO]
+	for side in 2:
+		var ft0 := sk.get_bone_global_pose(int(_bones[side][2]))
+		anim_ankles[side] = xf * ft0.origin
+		var ph := fposmod(phase + (0.0 if side == 0 else 0.5) + duty * 0.5, 1.0)
+		stances[side] = ph < duty and ft0.origin.y < PLANT_H and weight > 0.0
+		if probing and stances[side] and not _was[side]:
+			# V8: the ground under this ankle, once per step (world height)
+			ground_samples += 1
+			var gy: float = ground_probe.call(anim_ankles[side])
+			_gy[side] = gy if not is_nan(gy) and absf(gy - xf.origin.y) <= GROUND_MAX else NAN
+	# --- V8 terrain contact: each planted ankle is held at its sampled
+	# ground height (world), i.e. lifted by (ground - the origin's current
+	# height); the weight eases in at touch-down and out in the air
+	var lifts := [0.0, 0.0]
+	var drop := 0.0
+	for side in 2:
+		var valid: bool = probing and stances[side] and not is_nan(float(_gy[side]))
+		# (in almost at once: a running stance lasts under 0.1 s; out gently in the air)
+		var gw_to := 1.0 if valid else 0.0
+		_gw[side] = float(_gw[side]) + (gw_to - float(_gw[side])) * (1.0 - exp(-maxf(delta, 0.0) / (0.012 if gw_to > float(_gw[side]) else GROUND_TAU)))
+		if not is_nan(float(_gy[side])):
+			lifts[side] = clampf(float(_gy[side]) - xf.origin.y, -GROUND_MAX, GROUND_MAX) * float(_gw[side]) * _w
+		drop = maxf(drop, -float(lifts[side]))
+	drop = minf(drop, PELVIS_MAX)
+	_pelvis += (drop - _pelvis) * gk
+	var hip_drop := Vector3(0, -_pelvis, 0)
+	if _pelvis > 1e-4:
+		# the pelvis drops so the leg on the lower ground can reach it
+		var hip := int(_bones[0][3])
+		sk.set_bone_pose_position(hip, sk.get_bone_pose_position(hip) + inv.basis * hip_drop)
 	for side in 2:
 		var b: Array = _bones[side]
 		var ft := sk.get_bone_global_pose(int(b[2]))
 		var ankle_w := xf * ft.origin
-		var ph := fposmod(phase + (0.0 if side == 0 else 0.5) + duty * 0.5, 1.0)
-		var stance := ph < duty and ft.origin.y < PLANT_H and weight > 0.0
+		var stance: bool = stances[side]
 		if stance and not _was[side]:
 			# touch-down: pin here (keeping any pull still easing out)
 			_pin[side] = ankle_w + (_off[side] as Vector3)
@@ -136,10 +192,13 @@ func _modify(delta: float) -> void:
 			_off_v[side] = ov
 			_twist[side] = float(_twist[side]) * decay
 		pull[side] = (_off[side] as Vector3) * _w
-		if (_off[side] as Vector3).length_squared() < 1e-8 and absf(float(_twist[side])) < 1e-4:
+		# the height: the planted foot's ground lift; any foot gets back what
+		# the pelvis drop took from it (the swing foot keeps its clearance)
+		var lift: float = float(lifts[side]) + _pelvis
+		if (_off[side] as Vector3).length_squared() < 1e-8 and absf(float(_twist[side])) < 1e-4 and absf(lift) < 1e-4:
 			continue
 		var off: Vector3 = _off[side]
-		var target: Vector3 = inv * (ankle_w + off * _w)
+		var target: Vector3 = inv * (ankle_w + off * _w + Vector3(0, lift, 0))
 		_solve(sk, b, target, float(_twist[side]) * _w)
 
 

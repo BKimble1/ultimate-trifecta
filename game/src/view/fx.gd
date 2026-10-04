@@ -14,6 +14,13 @@ const RIPPLE_LIFE := 1.8
 static var _soft_tex: GradientTexture2D
 static var _ring_tex: GradientTexture2D
 static var _drop_mats: Dictionary = {}
+## V8: colour ramps, the size curve and the drip mesh are built once and
+## shared (V4-V7 allocated a new Gradient for every burst and a Curve for
+## every emitter); the ramp cache is bounded
+const RAMP_CACHE_MAX := 48
+static var _ramps: Dictionary = {}
+static var _shrink: Curve
+static var _drip_mesh: QuadMesh
 
 var _pools: Dictionary = {}       # kind -> Array[CPUParticles3D]
 var _busy_until: Dictionary = {}  # emitter -> msec
@@ -90,19 +97,27 @@ static func drop_material(emission: float = 0.6) -> StandardMaterial3D:
 
 
 static func _fade_ramp(col: Color, a: float = 0.75) -> Gradient:
-	var g := Gradient.new()
+	var key := Color(snappedf(col.r, 0.004), snappedf(col.g, 0.004), snappedf(col.b, 0.004), snappedf(a, 0.004))
+	var g: Gradient = _ramps.get(key)
+	if g != null:
+		return g
+	if _ramps.size() >= RAMP_CACHE_MAX:
+		_ramps.clear()
+	g = Gradient.new()
 	g.set_color(0, Color(col, a))
 	g.set_color(1, Color(col, 0.0))
 	g.add_point(0.6, Color(col, a * 0.8))
+	_ramps[key] = g
 	return g
 
 
 static func _shrink_curve() -> Curve:
-	var c := Curve.new()
-	c.add_point(Vector2(0.0, 1.0))
-	c.add_point(Vector2(0.7, 0.8))
-	c.add_point(Vector2(1.0, 0.25))
-	return c
+	if _shrink == null:
+		_shrink = Curve.new()
+		_shrink.add_point(Vector2(0.0, 1.0))
+		_shrink.add_point(Vector2(0.7, 0.8))
+		_shrink.add_point(Vector2(1.0, 0.25))
+	return _shrink
 
 
 ## A continuous emitter for water dripping off a runner (CharacterView owns
@@ -114,9 +129,10 @@ static func make_drip_emitter() -> CPUParticles3D:
 	p.lifetime = 0.55
 	p.explosiveness = 0.0
 	p.randomness = 0.6
-	var q := QuadMesh.new()
-	q.size = Vector2(0.06, 0.08)
-	p.mesh = q
+	if _drip_mesh == null:
+		_drip_mesh = QuadMesh.new()
+		_drip_mesh.size = Vector2(0.06, 0.08)
+	p.mesh = _drip_mesh
 	p.material_override = drop_material(0.4)
 	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
 	p.emission_box_extents = Vector3(0.22, 0.45, 0.16)
@@ -132,7 +148,12 @@ static func make_drip_emitter() -> CPUParticles3D:
 	return p
 
 
-func _emitter(kind: String, pos: Vector3, amount: int, life: float, col: Color, emission: float = 0.6) -> CPUParticles3D:
+## A pooled one-shot emitter of this kind.  V8: a property is only written
+## when it changes (setting `amount` reallocates the particle buffers and the
+## renderer's multimesh even when unchanged; a material write is a renderer
+## call), so a reused emitter of a kind costs no allocation.
+func _emitter(kind: String, pos: Vector3, amount: int, life: float, col: Color, emission: float = 0.6,
+		ramp_a: float = 0.75, mat: Material = null, mesh: Mesh = null) -> CPUParticles3D:
 	var pool: Array = _pools.get(kind, [])
 	_pools[kind] = pool
 	var now := Time.get_ticks_msec()
@@ -157,10 +178,20 @@ func _emitter(kind: String, pos: Vector3, amount: int, life: float, col: Color, 
 			p.scale_amount_curve = _shrink_curve()
 			add_child(p)
 			pool.append(p)
-	p.amount = maxi(1, amount)
-	p.lifetime = life
-	p.material_override = drop_material(emission)
-	p.color_ramp = _fade_ramp(col)
+	var n := maxi(1, amount)
+	if p.amount != n:
+		p.amount = n
+	if p.lifetime != life:
+		p.lifetime = life
+	var want_mat: Material = mat if mat != null else drop_material(emission)
+	if p.material_override != want_mat:
+		p.material_override = want_mat
+	var want_mesh: Mesh = mesh if mesh != null else _drop_mesh
+	if p.mesh != want_mesh:
+		p.mesh = want_mesh
+	var ramp := _fade_ramp(col, ramp_a)
+	if p.color_ramp != ramp:
+		p.color_ramp = ramp
 	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_POINT
 	p.gravity = Vector3(0, -9.8, 0)
 	p.global_position = pos
@@ -170,22 +201,38 @@ func _emitter(kind: String, pos: Vector3, amount: int, life: float, col: Color, 
 	return p
 
 
-## Loading-time warm-up (V4): every effect kind fires once far below the
-## campus, out of every camera's view.  Their pooled nodes then exist and
-## the renderer has met each particle/foam material before the first real
-## splash, tag or finish, instead of compiling on that frame.
-func warm(at: Vector3 = Vector3(0, -80, 0)) -> void:
-	for kind in [TC.Impact.WALK, TC.Impact.JUMP, TC.Impact.DIVE]:
-		splash_impact(at, kind, Color(0.4, 0.8, 1.0))
-	duck_under(at)
-	shore_pop(at)
-	whistle_burst(at)
-	confetti(at)
-	bump(at)
-	poof(at)
-	turbo(at)
+## Loading-time warm-up (V4): every effect kind fires far below the campus,
+## out of every camera's view.  Their pooled nodes then exist and the
+## renderer has met each particle/foam material before the first real
+## splash, tag or finish, instead of compiling on that frame.  V8: a bounded
+## number of each kind (WARM_SETS rounds: a crowded first chase starts
+## several splashes at once, which V4-V7 met by creating emitters mid-round),
+## with their ramps cached; at most WARM_SETS * 13 emitters and POOL_MAX foam
+## rings.
+const WARM_SETS := 3
+func warm(at: Vector3 = Vector3(0, -80, 0), sets: int = WARM_SETS) -> void:
+	for k in sets:
+		for kind in [TC.Impact.WALK, TC.Impact.JUMP, TC.Impact.DIVE]:
+			splash_impact(at, kind, Color(0.4, 0.8, 1.0))
+		duck_under(at)
+		shore_pop(at)
+		bump(at)
+		poof(at)
+		turbo(at)
+		if k == 0:
+			whistle_burst(at)
+			confetti(at)
 	# the next real effect may reuse these at once
 	_busy_until.clear()
+
+
+## Emitters pooled per kind (diagnostics and tests).
+func pooled() -> Dictionary:
+	var out := {}
+	for k in _pools:
+		out[k] = (_pools[k] as Array).size()
+	out["foam"] = _foam_pool.size()
+	return out
 
 
 ## Flat soft foam ring on the water surface, expanding and fading.
@@ -233,8 +280,7 @@ func splash_impact(pos: Vector3, kind: int, col: Color, reduced: bool = false) -
 	var tint := col.lerp(Color(0.8, 0.91, 0.98), 0.7)
 	var k := 0.6 if reduced else 1.0
 	# soft white burst: a few large, faint puffs where the body went in
-	var mist := _emitter("mist", pos + Vector3(0, 0.25, 0), int(10 * k), 0.55, Color(0.9, 0.96, 1.0), 0.2)
-	mist.color_ramp = _fade_ramp(Color(0.9, 0.96, 1.0), 0.32)
+	var mist := _emitter("mist", pos + Vector3(0, 0.25, 0), int(10 * k), 0.55, Color(0.9, 0.96, 1.0), 0.2, 0.32)
 	mist.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
 	mist.emission_sphere_radius = 0.35
 	mist.direction = Vector3.UP
@@ -410,9 +456,7 @@ func whistle_burst(pos: Vector3) -> void:
 
 func confetti(pos: Vector3) -> void:
 	for col in [Color(1.0, 0.4, 0.5), Color(0.4, 0.8, 1.0), Color(1.0, 0.9, 0.3), Color(0.5, 1.0, 0.5)]:
-		var p := _emitter("confetti", pos + Vector3(0, 1.5, 0), 14, 1.6, col, 0.8)
-		p.mesh = _quad
-		p.material_override = _confetti_mat()
+		var p := _emitter("confetti", pos + Vector3(0, 1.5, 0), 14, 1.6, col, 0.8, 0.75, _confetti_mat(), _quad)
 		p.direction = Vector3.UP
 		p.spread = 60.0
 		p.initial_velocity_min = 3.0

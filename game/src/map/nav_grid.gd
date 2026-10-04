@@ -343,6 +343,20 @@ func find_path(a: Vector2, b: Vector2, for_cart: bool = false, smooth: bool = tr
 ## in one simulation tick and the rest wait a tick (the bot steers straight
 ## at its goal meanwhile).  Direct find_path() calls (tools, tests) are
 ## unchanged.
+##
+## V8: one search was still the stall.  Measured (src/dev/match_bench.tscn,
+## whole bot-driven Practice rounds on the desktop test machine), single
+## searches took 20-42 ms (long weighted foot routes, cart routes over the
+## lawn), clustered about a second apart while a bot re-planned a far goal,
+## and were 15 of the 15 worst frames.  A search now runs on a worker thread
+## (one search per grid at a time: AStarGrid2D keeps per-search state in
+## its points) and its answer is used on a tick fixed when it was asked:
+## ASYNC_DELAY ticks later, and ASYNC_SPACING after the previous queued
+## answer for that grid.  If the worker hasn't finished by then, that tick
+## waits for it, so the bots' decisions, and every seeded round, are the
+## same on every machine (only how long a wait is varies).  The main thread
+## only reads the grids' solid/weight cells meanwhile (string-pulling,
+## nearest open cell), which a search never writes.
 const CACHE_MAX := 192
 const CACHE_BUCKET := 6          # start cells per cache key bucket (6 m)
 var budget_per_tick := 1
@@ -357,10 +371,37 @@ var _unreachable: Dictionary = {} # key -> physics frame of the failed search
 var debug_slow_searches = null
 var _budget_frame := -1
 var _budget_used := 0
+## V8: background searches (async_search = false: the V6 budgeted search on
+## the calling thread, for tools)
+const ASYNC_DELAY := 6           # ticks from request to answer (100 ms)
+const ASYNC_SPACING := 2         # ticks between answers on one grid
+const QUEUE_MAX := 8             # queued searches per grid (more: asked again next tick)
+var async_search := true
+var _queues := {false: [], true: []}   # for_cart -> Array[PathJob], oldest first
+var _grid_lock := {false: Mutex.new(), true: Mutex.new()}
+var stat_waited_us := 0          # main-thread time spent waiting at delivery
+var debug_job_sleep_ms := 0      # tests: a slow worker
+var stat_wait_n := 0
+
+
+## One background search: written only by its worker until it completes.
+class PathJob:
+	extends RefCounted
+	var key: Vector4i
+	var ukey: Vector4i
+	var cart := false
+	var due := 0
+	var task := -1
+	var a: Vector2
+	var b: Vector2
+	var out := PackedVector2Array()
+	var us := 0
 
 
 func find_path_budgeted(a: Vector2, b: Vector2, for_cart: bool = false) -> PackedVector2Array:
 	deferred = false
+	if async_search:
+		_collect(for_cart, Engine.get_physics_frames())
 	var g := cart if for_cart else foot
 	var ca := nearest_open(g, a)
 	var cb := nearest_open(g, b)
@@ -391,6 +432,20 @@ func find_path_budgeted(a: Vector2, b: Vector2, for_cart: bool = false) -> Packe
 			out[0] = to_world(ca)
 			return out
 	var f := Engine.get_physics_frames()
+	if async_search:
+		# queued (now or earlier): steer at the goal until the answer is
+		# due, then it is in the cache
+		deferred = true
+		var q: Array = _queues[for_cart]
+		for j: PathJob in q:
+			if j.key == key:
+				path_stats["deferred"] += 1
+				return PackedVector2Array()
+		if q.size() >= QUEUE_MAX:
+			path_stats["deferred"] += 1
+			return PackedVector2Array()
+		_start_job(key, ukey, a, b, for_cart, f)
+		return PackedVector2Array()
 	if f != _budget_frame:
 		_budget_frame = f
 		_budget_used = 0
@@ -406,6 +461,11 @@ func find_path_budgeted(a: Vector2, b: Vector2, for_cart: bool = false) -> Packe
 		var us := Time.get_ticks_usec() - ts
 		if us > 8000 and debug_slow_searches.size() < 60:
 			debug_slow_searches.append([snapped(a, Vector2(0.1, 0.1)), snapped(b, Vector2(0.1, 0.1)), for_cart, us / 1000.0, path.size()])
+	_file(key, ukey, path, f)
+	return path
+
+
+func _file(key: Vector4i, ukey: Vector4i, path: PackedVector2Array, f: int) -> void:
 	if path.is_empty():
 		if _unreachable.size() > CACHE_MAX:
 			_unreachable.clear()
@@ -416,7 +476,69 @@ func find_path_budgeted(a: Vector2, b: Vector2, for_cart: bool = false) -> Packe
 			if _cache_keys.size() > CACHE_MAX:
 				_cache.erase(_cache_keys.pop_front())
 		_cache[key] = path
-	return path
+
+
+func _start_job(key: Vector4i, ukey: Vector4i, a: Vector2, b: Vector2, for_cart: bool, f: int) -> void:
+	var job := PathJob.new()
+	job.key = key
+	job.ukey = ukey
+	job.cart = for_cart
+	job.a = a
+	job.b = b
+	var q: Array = _queues[for_cart]
+	job.due = f + ASYNC_DELAY
+	if not q.is_empty():
+		job.due = maxi(job.due, (q[-1] as PathJob).due + ASYNC_SPACING)
+	path_stats["search"] += 1
+	q.append(job)
+	job.task = WorkerThreadPool.add_task(_run_job.bind(job), false, "path search")
+
+
+## Worker thread: the search only (reads the grid, writes the job).  One
+## search per grid at a time.
+func _run_job(job: PathJob) -> void:
+	var m: Mutex = _grid_lock[job.cart]
+	m.lock()
+	var ts := Time.get_ticks_usec()
+	if debug_job_sleep_ms > 0:
+		OS.delay_msec(debug_job_sleep_ms)
+	job.out = find_path(job.a, job.b, job.cart)
+	job.us = Time.get_ticks_usec() - ts
+	m.unlock()
+
+
+## The answers due by tick `f` on this grid, in order: waits for a worker
+## that is not done yet, then files each path in the cache (or its goal as
+## unreachable), where the request will find it.
+func _collect(for_cart: bool, f: int) -> void:
+	var q: Array = _queues[for_cart]
+	while not q.is_empty() and (q[0] as PathJob).due <= f:
+		var job: PathJob = q.pop_front()
+		if not WorkerThreadPool.is_task_completed(job.task):
+			stat_wait_n += 1
+		var tw := Time.get_ticks_usec()
+		WorkerThreadPool.wait_for_task_completion(job.task)
+		stat_waited_us += Time.get_ticks_usec() - tw
+		if debug_slow_searches != null and job.us > 8000 and debug_slow_searches.size() < 60:
+			debug_slow_searches.append([snapped(job.a, Vector2(0.1, 0.1)), snapped(job.b, Vector2(0.1, 0.1)), job.cart, job.us / 1000.0, job.out.size()])
+		_file(job.key, job.ukey, job.out, job.due)
+
+
+## Searches still queued (both grids).
+func pending() -> int:
+	return (_queues[false] as Array).size() + (_queues[true] as Array).size()
+
+
+static func settle_shared() -> void:
+	if _shared != null:
+		_shared.settle()
+
+
+## Finish every background search now and file the answers (a round
+## ending, tests).
+func settle() -> void:
+	_collect(false, 1 << 62)
+	_collect(true, 1 << 62)
 
 
 func path_length(path: PackedVector2Array) -> float:

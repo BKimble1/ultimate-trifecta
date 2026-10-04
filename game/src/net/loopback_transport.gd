@@ -12,6 +12,9 @@ class Hub:
 	var latency_ms := 0.0            # one-way base latency
 	var jitter_ms := 0.0
 	var loss := 0.0                  # unreliable loss probability
+	var duplicate := 0.0             # V8: chance an unreliable packet also arrives a second time
+	var burst_period_s := 0.0        # V8: every this long, all unreliable traffic is lost for burst_s
+	var burst_s := 0.0
 	var frozen: Dictionary = {}      # endpoint id -> true: app frozen (sends/receives nothing)
 	var rng := RandomNumberGenerator.new()
 	var sent := 0
@@ -74,9 +77,15 @@ func send(peer: int, data: PackedByteArray, reliable: bool) -> void:
 	if not reliable and hub.loss > 0.0 and hub.rng.randf() < hub.loss:
 		hub.dropped += 1
 		return
+	if not reliable and hub.burst_period_s > 0.0 and fmod(hub.time, hub.burst_period_s) < hub.burst_s:
+		hub.dropped += 1
+		return
 	var delay := (hub.latency_ms + hub.rng.randf_range(-hub.jitter_ms, hub.jitter_ms)) / 1000.0
 	var t := hub.time + maxf(0.0, delay)
 	var dst: LoopbackTransport = hub.endpoints[peer]
+	if not reliable and hub.duplicate > 0.0 and hub.rng.randf() < hub.duplicate:
+		var t2 := hub.time + maxf(0.0, (hub.latency_ms + hub.rng.randf_range(-hub.jitter_ms, hub.jitter_ms)) / 1000.0)
+		dst._queue.append({"t": t2, "from": id, "data": data})
 	if reliable:
 		var key := "%d>%d" % [id, peer]
 		t = maxf(t, float(_last_reliable_t.get(key, 0.0)))

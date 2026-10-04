@@ -9,9 +9,9 @@
 //   COLOR.a    tint selector: round(a*5) 0 none, 1 hair, 2 skin, 3 secondary,
 //              4 dark, 5 primary.  albedo = base * tint
 //   UV         x = stripe flag, 1 - y = stripe coordinate in metres
-//   UV2        x = roughness, 1 - y = material class (0 cloth, .25 skin,
-//              .5 rubber, .6875 tinted lens (V7), .75 gloss, .875 lit gloss,
-//              1 emissive)
+//   UV2        x = roughness, 1 - y = material class (0 cloth, .125 satin
+//              (V8), .25 skin, .5 rubber, .5625 metal (V8), .6875 tinted lens
+//              (V7), .75 gloss, .875 lit gloss, 1 emissive)
 // Characters cast shadows but do not receive them: at gameplay shadow-map
 // resolution self-shadowing (collar on shirt, cap on face) breaks up into
 // stipple and jaggies where the wrap lighting meets the shadow terminator.
@@ -54,16 +54,19 @@ void fragment() {
 		alb = mix(alb, base * tint_secondary, band * 0.9);
 	}
 	float cls = 1.0 - UV2.y;
-	float soak = wet * (cls < 0.37 ? (cls < 0.12 ? 1.0 : 0.45) : 0.2);
+	float soak = wet * (cls < 0.37 ? (cls < 0.19 ? 1.0 : 0.45) : 0.2);
 	alb *= 1.0 - 0.28 * soak;
 	ALBEDO = alb;
 	ROUGHNESS = clamp(UV2.x * (1.0 - 0.55 * soak), 0.05, 1.0);
 	SPECULAR = 0.3;
 	vec3 emit = vec3(0.0);
 	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
-	if (cls < 0.12) {           // matte cloth: low spec, soft sheen at grazing angles
+	if (cls < 0.06) {           // matte cloth: low spec, soft sheen at grazing angles
 		SPECULAR = 0.18;
 		emit += rim_color * rim * rim_strength * (0.6 + 0.4 * alb);
+	} else if (cls < 0.19) {    // V8 satin (sashes, lapels, track fabric): a broad,
+		SPECULAR = 0.36;        // soft highlight and a stronger grazing sheen than cotton
+		emit += rim_color * rim * rim_strength * (0.9 + 0.6 * alb);
 	} else if (cls < 0.37) {    // skin: warm wrap, a little transmission, matte
 		SPECULAR = 0.22;
 		BACKLIGHT = alb * 0.22;
@@ -74,8 +77,12 @@ void fragment() {
 		float lum = dot(tint_skin, vec3(0.299, 0.587, 0.114));
 		emit += alb * 0.4 * clamp(0.72 - lum, 0.0, 0.5);
 		emit += alb * vec3(1.0, 0.62, 0.42) * skin_warm;
-	} else if (cls < 0.62) {    // rubber / leather
+	} else if (cls < 0.53) {    // rubber / leather
 		SPECULAR = 0.42;
+	} else if (cls < 0.62) {    // V8 metal (buttons, badges, zips, the flashlight): the
+		METALLIC = 0.8;         // albedo tints the reflection; a little self-light keeps
+		SPECULAR = 0.5;         // small parts readable at night without blooming
+		emit += alb * 0.1 + rim_color * rim * rim_strength * 0.8;
 	} else if (cls < 0.72) {    // V7 tinted lens (goggles): opaque, no blending
 		// or sorting.  The tint gradient and glint are baked in COLOR; a
 		// fresnel sheen in the scene's rim colour and a little self-light

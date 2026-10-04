@@ -126,8 +126,22 @@ func clear() -> void:
 	_stick_s.clear()
 
 
+## V8: the quality governor also asks for the renderer's GPU timing during a
+## round (to tell a GPU-bound pace from a CPU-bound one); it is on while
+## either wants it.
+var _timing_requests := 0
+
+
+static func request_render_timing(on: bool) -> void:
+	var n := _node()
+	if n == null:
+		return
+	n.set("_timing_requests", maxi(0, int(n.get("_timing_requests")) + (1 if on else -1)))
+	n.call("_apply_measuring")
+
+
 func _apply_measuring() -> void:
-	var want := enabled
+	var want := enabled or _timing_requests > 0
 	if want == _measuring or not is_inside_tree():
 		return
 	_measuring = want

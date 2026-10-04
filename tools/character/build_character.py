@@ -33,7 +33,7 @@ DEFAULT_OUT = os.path.join(REPO, 'game', 'assets', 'characters', 'runner.glb')
 OUT = sys.argv[-1] if sys.argv[-1].endswith('.glb') else DEFAULT_OUT
 ART_SCRIPT = os.path.join(REPO, 'game', 'src', 'view', 'character_art.gd')
 ## The art generation (V7); the version string adds the GLB's SHA-256.
-ART_GEN = 7
+ART_GEN = 8      # V8: authored transition clips, eye/lens normals, satin and metal materials
 
 
 def reset():
@@ -98,6 +98,10 @@ def make_mesh(mb, arm_ob, scn):
     # patch rims, flat sleeve ends, sole and crown edges, the hair's tucked
     # edge) instead of smearing the shading across them
     me.set_sharp_from_angle(angle=math.radians(SHARP_DEG))
+    if mb.nrm:
+        # V8: analytic normals where the part supplies them (eye domes, goggle
+        # lenses); zero = Blender's own smooth/sharp normal elsewhere
+        me.normals_split_custom_set_from_vertices([tuple(mb.nrm[i]) if i in mb.nrm else (0.0, 0.0, 0.0) for i in range(len(mb.v))])
     mat = bpy.data.materials.get('character') or bpy.data.materials.new('character')
     me.materials.append(mat)
     ob = bpy.data.objects.new(mb.name, me)

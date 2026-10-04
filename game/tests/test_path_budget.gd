@@ -5,11 +5,16 @@ extends RefCounted
 ## pushed the 60 Hz loop into catch-up).  Now: a clear line needs no search,
 ## at most one search per simulation tick, nearby starts to the same goal
 ## reuse a path, and an unreachable goal is not searched again at once.
+## V8: a search runs on a worker thread and its answer is used on a tick
+## fixed when it was asked (the tick waits for a slow worker): no search
+## runs on the main thread, and seeded rounds stay deterministic.
 var t
 
 
 func _nav() -> NavGrid:
 	var nav := NavGrid.shared(CampusLayout.shared())
+	nav.settle()
+	nav.debug_job_sleep_ms = 0
 	nav.path_stats = {"search": 0, "direct": 0, "cache": 0, "deferred": 0, "unreachable": 0}
 	nav._cache.clear()
 	nav._cache_keys.clear()
@@ -17,21 +22,69 @@ func _nav() -> NavGrid:
 	return nav
 
 
-func test_one_search_per_tick_then_the_next_waits() -> void:
+## Ask every tick until answered (as a waiting bot does); [path, ticks].
+func _ask(nav: NavGrid, a: Vector2, b: Vector2, cart := false) -> Array:
+	for i in 60:
+		var p := nav.find_path_budgeted(a, b, cart)
+		if not nav.deferred:
+			return [p, i]
+		await t.get_tree().physics_frame
+	return [PackedVector2Array(), 60]
+
+
+func test_searches_run_off_the_main_thread_on_a_fixed_schedule() -> void:
 	var nav := _nav()
 	await t.get_tree().physics_frame
 	var lay := CampusLayout.shared()
 	var a: Vector2 = lay.waters[0]["center"]
 	var b: Vector2 = lay.waters[3]["center"]
 	var c: Vector2 = lay.waters[5]["center"]
+	var direct_us := Time.get_ticks_usec()
+	var ref := nav.find_path(b + Vector2(-12, 0), c + Vector2(0, -12))
+	direct_us = Time.get_ticks_usec() - direct_us
+	var f0 := Engine.get_physics_frames()
+	var t0 := Time.get_ticks_usec()
 	var p1 := nav.find_path_budgeted(a + Vector2(0, 12), b + Vector2(0, 12))
-	t.check(p1.size() >= 2 and not nav.deferred, "the first search of the tick runs")
 	var p2 := nav.find_path_budgeted(b + Vector2(-12, 0), c + Vector2(0, -12))
-	t.check(nav.deferred and p2.is_empty(), "a second search in the same tick waits")
+	var ask_us := Time.get_ticks_usec() - t0
+	t.check(p1.is_empty() and p2.is_empty() and nav.deferred, "both requests are queued, not searched on this thread")
+	t.check(ref.size() >= 0, "(direct reference search: %d points)" % ref.size())
+	t.eq(nav.pending(), 2, "two searches queued for the foot grid")
+	t.check(ask_us < maxi(2000, direct_us / 2), "asking costs %.2f ms here (one search on this thread: %.2f ms)" % [ask_us / 1000.0, direct_us / 1000.0])
+	var got1 := -1
+	var got2 := -1
+	for i in NavGrid.ASYNC_DELAY + NavGrid.ASYNC_SPACING + 3:
+		await t.get_tree().physics_frame
+		if got1 < 0:
+			var p := nav.find_path_budgeted(a + Vector2(0, 12), b + Vector2(0, 12))
+			if not nav.deferred:
+				got1 = Engine.get_physics_frames() - f0
+				t.check(p.size() >= 2, "the first answer is a path (%d points)" % p.size())
+		if got2 < 0:
+			var q := nav.find_path_budgeted(b + Vector2(-12, 0), c + Vector2(0, -12))
+			if not nav.deferred:
+				got2 = Engine.get_physics_frames() - f0
+				t.eq(q.size(), ref.size(), "the background answer is the direct search's path (%d points)" % ref.size())
+	t.eq(got1, NavGrid.ASYNC_DELAY, "the first answer is used %d ticks after the request" % NavGrid.ASYNC_DELAY)
+	t.eq(got2, NavGrid.ASYNC_DELAY + NavGrid.ASYNC_SPACING, "the next one on the same grid %d ticks after that" % NavGrid.ASYNC_SPACING)
+	t.eq(int(nav.path_stats["search"]), 2, "two real searches (waiting requests don't search again)")
+
+
+## A worker slower than the schedule: the tick the answer is due waits for
+## it, so the answer still arrives on exactly that tick on any machine.
+func test_a_slow_worker_is_waited_for_on_the_due_tick() -> void:
+	var nav := _nav()
 	await t.get_tree().physics_frame
-	var p3 := nav.find_path_budgeted(b + Vector2(-12, 0), c + Vector2(0, -12))
-	t.check(not nav.deferred, "and runs on the next tick (%d points)" % p3.size())
-	t.eq(int(nav.path_stats["search"]), 2, "two real searches in two ticks")
+	var lay := CampusLayout.shared()
+	var a: Vector2 = lay.waters[1]["center"] + Vector2(0, 14)
+	var b: Vector2 = lay.waters[4]["center"] + Vector2(12, 0)
+	nav.debug_job_sleep_ms = 400
+	var waits := nav.stat_wait_n
+	var r: Array = await _ask(nav, a, b)
+	nav.debug_job_sleep_ms = 0
+	t.eq(int(r[1]), NavGrid.ASYNC_DELAY, "answered on the scheduled tick despite a 400 ms worker")
+	t.check((r[0] as PackedVector2Array).size() >= 2, "with the path")
+	t.eq(nav.stat_wait_n, waits + 1, "the due tick waited for the worker")
 
 
 func test_clear_line_and_nearby_start_need_no_search() -> void:
@@ -48,7 +101,7 @@ func test_clear_line_and_nearby_start_need_no_search() -> void:
 	# cell in the next tick (a start a few metres away reuses it only when its
 	# first leg is clear - checked, not assumed)
 	var far: Vector2 = lay.waters[4]["center"] + Vector2(10, 10)
-	var p1 := nav.find_path_budgeted(from, far)
+	var p1: PackedVector2Array = (await _ask(nav, from, far))[0]
 	await t.get_tree().physics_frame
 	var searches := int(nav.path_stats["search"])
 	var p2 := nav.find_path_budgeted(from + Vector2(0.2, 0.15), far)
@@ -71,8 +124,8 @@ func test_unreachable_goal_is_not_searched_every_tick() -> void:
 	for w in lay.waters:
 		var cand: Vector2 = (w["center"] as Vector2) + Vector2(0, 2)
 		await t.get_tree().physics_frame
-		var p := nav.find_path_budgeted(start, cand, true)
-		if p.is_empty() and not nav.deferred:
+		var r: Array = await _ask(nav, start, cand, true)
+		if (r[0] as PackedVector2Array).is_empty() and int(r[1]) < 60:
 			pocket = cand
 			break
 	if pocket == Vector2.INF:

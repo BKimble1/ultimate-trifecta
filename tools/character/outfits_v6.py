@@ -13,7 +13,8 @@ from mathutils import Vector, Matrix
 
 import rig
 from geo import (MeshBuilder, Style, sweep, ellipsoid, lathe, slab, torus_profile, rot_align, rot_x, rot_y, rot_z, smoothstep, lerp,
-                 T_NONE, T_SKIN, T_SECOND, T_DARK, T_PRIMARY, MAT_CLOTH, MAT_RUBBER, MAT_GLOSS, MAT_LIT, MAT_EMIT)
+                 T_NONE, T_SKIN, T_SECOND, T_DARK, T_PRIMARY, MAT_CLOTH, MAT_RUBBER, MAT_GLOSS, MAT_LIT, MAT_EMIT,
+                 MAT_SATIN, MAT_METAL)
 from rig import torso_w, skirt_w, arm_w, leg_w, rigid, torso_r, shoulder, arm_dir, HEAD_C, TORSO_RY, TORSO_CY
 import parts as P
 from parts import SKIN, UP, FWD, SIDES, torso_lathe, sleeves, pelvis, collar, placket_and_buttons, _dense_path, _smooth_path
@@ -90,11 +91,11 @@ def leg_skin_and_socks(mb, top_z, sock_top, sock, stripes=None, rib=None, segs=1
 
 
 # ================================================================== MOONLIGHT RUNNER
-MID = S('#222c5c', rough=0.5)          # midnight satin track fabric
+MID = S('#222c5c', rough=0.5, mat=MAT_SATIN)   # midnight satin track fabric (V8: satin sheen)
 MID_RIB = S('#171e42', rough=0.8)
 PIPING = S('#e6ebf6', rough=0.25, mat=MAT_LIT)   # reflective: keeps a little light at night
-ZIP = S('#c7ccd8', rough=0.25, mat=MAT_GLOSS)
-GOLD = S('#f3cf6a', rough=0.3, mat=MAT_GLOSS)
+ZIP = S('#c7ccd8', rough=0.25, mat=MAT_METAL)
+GOLD = S('#f3cf6a', rough=0.3, mat=MAT_METAL)
 
 
 def build_moonlight():
@@ -162,7 +163,7 @@ INDIGO = S('#2d3072', rough=0.85)
 CREAM = S('#fbf1d6', rough=0.8)
 STAR_GOLD = S('#ffd56b', rough=0.4, mat=MAT_LIT)
 STAR_CREAM = S('#fff6dc', rough=0.6, mat=MAT_LIT)
-BTN_GOLD = S('#f1c75a', rough=0.3, mat=MAT_GLOSS)
+BTN_GOLD = S('#f1c75a', rough=0.3, mat=MAT_METAL)
 
 # torso stars (x, z, size, rotation): front then back (the placket and pocket stay clear)
 STARRY_FRONT = [(0.11, 0.80, 0.022, 0.3), (0.145, 0.63, 0.019, 0.9), (0.065, 0.70, 0.016, 0.1), (-0.14, 0.665, 0.021, 0.5),
@@ -262,7 +263,7 @@ WOOL = S('#ffffff', T_PRIMARY, 0.95)
 WOOL_D = S('#ffffff', T_DARK, 0.9)
 IVORY_LEATHER = S('#f3eee2', rough=0.45, mat=MAT_RUBBER)
 IVORY = S('#f6f1e4', rough=0.8)
-SNAP = S('#efe7d2', rough=0.3, mat=MAT_GLOSS)
+SNAP = S('#efe7d2', rough=0.3, mat=MAT_METAL)
 SHORTS_NAVY = S('#27305e', rough=0.75)
 SOCK_WHITE = S('#f7f5ef', rough=0.95)
 

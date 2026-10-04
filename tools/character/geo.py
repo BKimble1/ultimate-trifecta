@@ -18,8 +18,10 @@ from mathutils import Vector, Matrix, Quaternion
 
 # material classes (UV1.v)
 MAT_CLOTH = 0.0
+MAT_SATIN = 0.125   # V8: satin trims/sashes and track fabric: a soft sheen, still cloth
 MAT_SKIN = 0.25
 MAT_RUBBER = 0.5
+MAT_METAL = 0.5625  # V8: buttons, badges, zips, the flashlight: metallic, not plastic gloss
 MAT_LENS = 0.6875   # V7: tinted lens (opaque, glossy, a fresnel sheen and a little self-light)
 MAT_GLOSS = 0.75
 MAT_LIT = 0.875     # gloss with a little self-light (eye whites stay white at night)
@@ -74,6 +76,7 @@ class MeshBuilder:
         self.tag = []      # str tags (for shape keys)
         self.aux = []      # per-vertex aux data (e.g. feature centre)
         self.f = []        # tuples of vertex indices (CCW seen from outside)
+        self.nrm = {}      # V8: vertex index -> analytic normal (eyes, lenses); others auto
 
     # -- low level -------------------------------------------------------
     def vert(self, p, style, uv, weights, tag='', aux=None, col_override=None):
@@ -105,6 +108,8 @@ class MeshBuilder:
         self.tag += other.tag
         self.aux += other.aux
         self.f += [tuple(i + base for i in fc) for fc in other.f]
+        for k, n in other.nrm.items():
+            self.nrm[k + base] = n
         return self
 
     def merge_mirrored_x(self, other, weight_map=None):
@@ -124,6 +129,8 @@ class MeshBuilder:
             self.tag.append(other.tag[i])
             self.aux.append(other.aux[i])
         self.f += [tuple(i + base for i in reversed(fc)) for fc in other.f]
+        for k, n in other.nrm.items():
+            self.nrm[k + base] = Vector((-n.x, n.y, n.z))
         return self
 
     def face_if(self, keep, *idx):
@@ -161,6 +168,7 @@ class MeshBuilder:
             arr = getattr(self, attr)
             setattr(self, attr, [arr[i] for i in used])
         self.f = [tuple(remap[i] for i in f) for f in self.f]
+        self.nrm = {remap[k]: n for k, n in self.nrm.items() if k in remap}
         return self
 
 
@@ -256,7 +264,8 @@ def sweep(mb, path, radii, style, weightfn, segs=16, cap_start='round', cap_end=
 
 
 def ellipsoid(mb, center, radii, style, weightfn, segs=20, rings=14, rot=None, power=2.0,
-              colfn=None, tag='', aux=None, uv_scale=1.0, cut_below=None, keep=None, deform=None, world_v=False):
+              colfn=None, tag='', aux=None, uv_scale=1.0, cut_below=None, keep=None, deform=None, world_v=False,
+              normals=False):
     """(Super)ellipsoid. power>2 gives a boxier, rounder-cornered shape.
     rot: Matrix(3x3) orientation.  cut_below: optional local-z (unit sphere
     space) under which rings are dropped (makes a dome, open at the bottom).
@@ -289,10 +298,18 @@ def ellipsoid(mb, center, radii, style, weightfn, segs=20, rings=14, rot=None, p
                 lp = deform(lp)
             p = c + R @ lp
             col = colfn(p, lp) if colfn else None
-            row.append(mb.vert(p, style, (k / segs, p.z if world_v else (z * radii[2]) * uv_scale), weightfn(p), tag, aux, col))
+            vi = mb.vert(p, style, (k / segs, p.z if world_v else (z * radii[2]) * uv_scale), weightfn(p), tag, aux, col)
+            if normals:
+                # V8: the surface's own normal (gradient of the ellipsoid), not
+                # one averaged from the faces: a shallow dome's highlight is
+                # round instead of following its polygon
+                mb.nrm[vi] = (R @ Vector((lp.x / radii[0] ** 2, lp.y / radii[1] ** 2, lp.z / radii[2] ** 2))).normalized()
+            row.append(vi)
         rows.append(row)
     pt = c + R @ Vector((0, 0, radii[2]))
     top = mb.vert(pt, style, (0, pt.z if world_v else radii[2]), weightfn(pt), tag, aux, colfn(pt, Vector((0, 0, radii[2]))) if colfn else None)
+    if normals:
+        mb.nrm[top] = (R @ Vector((0, 0, 1))).normalized()
     if cut_below is None:
         pb = c + R @ Vector((0, 0, -radii[2]))
         bottom = mb.vert(pb, style, (0, pb.z if world_v else -radii[2]), weightfn(pb), tag, aux, colfn(pb, Vector((0, 0, -radii[2]))) if colfn else None)

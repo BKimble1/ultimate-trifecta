@@ -74,7 +74,7 @@ func think(sim: MatchSim, p: SimPlayer) -> InputCmd:
 func _think(sim: MatchSim, p: SimPlayer) -> InputCmd:
 	var cmd := InputCmd.new()
 	var dt := sim.cfg.dt()
-	if _path_wait != Vector2.INF and path.is_empty():
+	if _path_wait != Vector2.INF:
 		_repath(p.pos2(), _path_wait, _path_wait_cart)
 	jump_cool = maxf(0.0, jump_cool - dt)
 	replan_t -= dt
@@ -529,8 +529,12 @@ func _drive_to(sim: MatchSim, p: SimPlayer, c: SimCart, dest: Vector2, cmd: Inpu
 		goal = dest
 		path_cart = true
 		replan_t = 1.0 if urgent else 2.5
-		path = nav.find_path_budgeted(Vector2(c.pos().x, c.pos().z), dest, true)   # V6: bounded
-		path_i = 0
+		# V6: bounded; V8: while a background search runs, a path already
+		# leading to this destination is kept
+		var np := nav.find_path_budgeted(Vector2(c.pos().x, c.pos().z), dest, true)
+		if not nav.deferred or not _leads_to(dest, true):
+			path = np
+			path_i = 0
 	var cp := Vector2(c.pos().x, c.pos().z)
 	# pure pursuit: aim ~6 m ahead along the path
 	var aim := dest
@@ -567,12 +571,27 @@ func _drive_to(sim: MatchSim, p: SimPlayer, c: SimCart, dest: Vector2, cmd: Inpu
 
 func _repath(from: Vector2, to: Vector2, cart: bool) -> void:
 	# V6: bounded per tick (NavGrid.find_path_budgeted); a request that has
-	# to wait is retried next tick while the bot steers at its goal
-	path = nav.find_path_budgeted(from, to, cart)
+	# to wait is retried next tick while the bot steers at its goal.
+	# V8: the search runs in the background for a few ticks: a bot that
+	# already follows a path to (about) the same goal keeps following it
+	# meanwhile instead of dropping it and walking straight at the goal
+	var np := nav.find_path_budgeted(from, to, cart)
+	_path_wait_cart = cart
+	if nav.deferred:
+		_path_wait = to
+		if not _leads_to(to, cart):
+			path = PackedVector2Array()
+			path_i = 0
+		return
+	_path_wait = Vector2.INF
+	path = np
 	path_cart = cart
 	path_i = 1 if path.size() > 1 else 0
-	_path_wait = to if nav.deferred else Vector2.INF
-	_path_wait_cart = cart
+
+
+## The current path ends near `to` (and is of the same kind).
+func _leads_to(to: Vector2, cart: bool) -> bool:
+	return path.size() >= 2 and path_cart == cart and path[path.size() - 1].distance_to(to) < 3.0
 
 
 func _follow(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float, _cart: bool) -> void:

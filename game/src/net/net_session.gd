@@ -1419,6 +1419,12 @@ func client_send_inputs(window: Array, emote: int = -1) -> void:
 	transport.send(host_peer, Protocol.encode_inputs(window, emote), false)
 
 
+## Session time (s), advanced by the physics ticks that poll the transport:
+## the clock snapshot arrivals are measured on (V8 jitter buffer).
+func clock_s() -> float:
+	return _clock
+
+
 func leave() -> void:
 	if transport != null:
 		if mode == Mode.CLIENT and host_peer >= 0:

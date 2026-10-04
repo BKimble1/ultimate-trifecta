@@ -25,11 +25,21 @@ extends Node
 ##   input loss        host ticks with no input from the client (starved)
 ## Headless numbers on a desktop: they classify, they do not measure phone
 ## smoothness.  No claim about live Game Center links follows from them.
+##
+## V8 adds, for the remote characters: the drawn time's backward steps,
+## presentation underruns (drawn time past the newest snapshot), the
+## displayed delay, the error against the host's own path at the drawn time
+## (p50/p95), and the acceleration noise of the nearest remote character's
+## drawn path (rms of its second difference: interpolation kinks show here).
+## --interp=linear|hermite|both runs the V8 curve A/B (V8 builds only).
 
-const CONDITIONS := [["lan", 0.0, 0.0, 0.0], ["rtt120_j10_loss3", 60.0, 10.0, 0.03], ["rtt300_j30_loss10", 150.0, 30.0, 0.10]]
+const CONDITIONS := [["lan", 0.0, 0.0, 0.0, 0.0, 0.0], ["rtt80_j8", 40.0, 8.0, 0.0, 0.0, 0.0],
+	["rtt160_j25_loss3_dup5", 80.0, 25.0, 0.03, 0.05, 0.0], ["rtt250_j40_loss5_burst", 125.0, 40.0, 0.05, 0.0, 0.3],
+	["rtt300_j30_loss10", 150.0, 30.0, 0.10, 0.0, 0.0]]
 const UPPER := ["hips", "chest", "head", "hand.L", "hand.R", "forearm.L", "forearm.R"]
 
 var out := ""
+var interp := "both"
 var results: Array = []
 var _rec: Dictionary = {}       # view -> Array of PackedVector3Array
 
@@ -38,11 +48,19 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			out = a.split("=")[1]
+		elif a.begins_with("--interp="):
+			interp = a.split("=")[1]
 	await get_tree().process_frame
+	var modes: Array = ["default"]
+	var probe_mc := MatchController.new()
+	if probe_mc.get("interp_hermite") != null:
+		modes = ["hermite", "linear"] if interp == "both" else [interp]
+	probe_mc.free()
 	for c in CONDITIONS:
-		var r: Dictionary = await _run(String(c[0]), float(c[1]), float(c[2]), float(c[3]))
-		results.append(r)
-		print("NETMOTION " + JSON.stringify(r))
+		for m in modes:
+			var r: Dictionary = await _run(String(c[0]), float(c[1]), float(c[2]), float(c[3]), float(c[4]), float(c[5]), m)
+			results.append(r)
+			print("NETMOTION " + JSON.stringify(r))
 	if out != "":
 		var f := FileAccess.open(out, FileAccess.WRITE)
 		f.store_string(JSON.stringify(results, "  "))
@@ -90,10 +108,29 @@ func _pops(frames: Array) -> int:
 	return n
 
 
-func _run(label: String, lat: float, jit: float, loss: float) -> Dictionary:
+func _remote_time(cmc: MatchController) -> float:
+	return cmc.remote_time() if cmc.has_method("remote_time") else cmc._est_tick - cmc._interp_ticks
+
+
+static func _pct(a: Array, q: float) -> float:
+	if a.is_empty():
+		return -1.0
+	var s := a.duplicate()
+	s.sort()
+	return float(s[mini(s.size() - 1, int(q * s.size()))])
+
+
+func _run(label: String, lat: float, jit: float, loss: float, dup: float, burst: float, mode: String) -> Dictionary:
 	var rig := NetRig.new()
 	add_child(rig)
 	rig.setup(lat, jit, loss, 1, ["patrol", "runner"])
+	if rig.hub.get("duplicate") != null:
+		rig.hub.duplicate = dup
+		if burst > 0.0:
+			rig.hub.burst_period_s = 4.0
+			rig.hub.burst_s = burst
+	elif dup > 0.0 or burst > 0.0:
+		label += "(no dup/burst in this build)"
 	var client: NetSession = rig.clients[0]
 	rig.inputs[client] = _input_runner
 	await rig.wait_until(func() -> bool: return client.local_slot >= 0, 300)
@@ -103,8 +140,17 @@ func _run(label: String, lat: float, jit: float, loss: float) -> Dictionary:
 	await rig.wait_until(func() -> bool: return rig.mcs.size() == 2, 300)
 	var hmc := rig.host_mc()
 	var cmc := rig.mc_of(client)
+	if mode != "default":
+		cmc.interp_hermite = mode == "hermite"
 	await rig.wait_until(func() -> bool: return hmc.sim.phase == TC.Phase.PLAYING and cmc.prepared, 1200)
 	await rig.frames(60)
+	var back := 0
+	var last_rt := -INF
+	var errs: Array = []
+	var delays: Array = []
+	var underrun := 0
+	var acc: Array = []
+	var hist_near: Array = []
 	_rec.clear()
 	var me: CharacterView = cmc.views.get(client.local_slot)
 	_hook(me)
@@ -167,8 +213,15 @@ func _run(label: String, lat: float, jit: float, loss: float) -> Dictionary:
 				nearest = v
 			var rr := cmc._interp_player(slot)
 			var arr: Array = cmc._bufs.get(slot, [])
-			if not arr.is_empty() and cmc._est_tick - cmc._interp_ticks >= float(arr[arr.size() - 1]["tick"]):
+			if not arr.is_empty() and _remote_time(cmc) >= float(arr[arr.size() - 1]["tick"]):
 				st["remote_extrapolating"] += 1
+			# error against the host's path at the drawn time
+			var rt := _remote_time(cmc)
+			var hh: Dictionary = rig.host_positions.get(slot, {})
+			var kk := int(floor(rt))
+			if hh.has(kk) and hh.has(kk + 1) and int(rr.get("state", 0)) == TC.PState.ACTIVE:
+				var truth: Vector3 = (hh[kk] as Vector3).lerp(hh[kk + 1], rt - kk)
+				errs.append(Vector2(v.global_position.x - truth.x, v.global_position.z - truth.z).length())
 			if prev_remote.has(slot):
 				var rv: Vector3 = rr.get("vel", Vector3.ZERO)
 				var e: Vector3 = (prev_remote[slot] as Vector3) + Vector3(rv.x, 0, rv.z) * dt
@@ -178,6 +231,21 @@ func _run(label: String, lat: float, jit: float, loss: float) -> Dictionary:
 			prev_remote[slot] = v.global_position
 		if i == 30 and nearest:
 			_hook(nearest)
+		var rt_now := _remote_time(cmc)
+		if rt_now < last_rt - 1e-6:
+			back += 1
+		last_rt = rt_now
+		if _last_snap_tick(cmc) >= 0 and rt_now > float(_last_snap_tick(cmc)):
+			underrun += 1
+		delays.append((cmc._est_tick - rt_now) / 60.0 * 1000.0)
+		# acceleration noise of the nearest remote character's drawn path
+		if nearest:
+			hist_near.append(nearest.global_position)
+			if hist_near.size() >= 3:
+				var n3 := hist_near.size()
+				var a3: Vector3 = (hist_near[n3 - 1] - 2.0 * hist_near[n3 - 2] + hist_near[n3 - 3]) / (dt * dt)
+				if a3.length() < 400.0:      # (a cut/teleport is not noise)
+					acc.append(Vector2(a3.x, a3.z).length())
 	var starved1: int = int(rig.host.stat_starved.values().reduce(func(a, b): return a + b, 0)) if not rig.host.stat_starved.is_empty() else 0
 	var corr: Array = cmc.stat_corrections.slice(corr0)
 	var big := corr.filter(func(e): return e > 0.25).size()
@@ -190,7 +258,17 @@ func _run(label: String, lat: float, jit: float, loss: float) -> Dictionary:
 	for v in _rec:
 		pops += _pops(_rec[v])
 		pop_frames += (_rec[v] as Array).size()
-	var r := {"condition": label, "rtt_ms": lat * 2.0, "jitter_ms": jit, "loss": loss, "client_frames": st["frames"],
+	var rms := 0.0
+	for x in acc:
+		rms += float(x) * float(x)
+	rms = sqrt(rms / maxf(1.0, acc.size()))
+	var r := {"condition": label, "interp": mode, "rtt_ms": lat * 2.0, "jitter_ms": jit, "loss": loss, "dup": dup, "burst_s": burst,
+		"client_frames": st["frames"],
+		"remote_time_backward_frames": back, "presentation_underrun_frames": underrun,
+		"displayed_delay_ms_p50": snappedf(_pct(delays, 0.5), 0.1), "displayed_delay_ms_p95": snappedf(_pct(delays, 0.95), 0.1),
+		"remote_err_m_p50": snappedf(_pct(errs, 0.5), 0.001), "remote_err_m_p95": snappedf(_pct(errs, 0.95), 0.001),
+		"remote_accel_rms": snappedf(rms, 0.01),
+		"net_presentation": cmc.net_presentation() if cmc.has_method("net_presentation") else {},
 		"render_stall_frames": st["render_stall"], "correction_frames": st["correction"], "terrain_frames": st["terrain"],
 		"camera_jitter_frames": st["camera_jitter"], "camera_collision_frames": st["camera_collision"],
 		"remote_snap_frames": st["remote_snap"], "remote_extrapolating_frames": st["remote_extrapolating"],
@@ -200,3 +278,7 @@ func _run(label: String, lat: float, jit: float, loss: float) -> Dictionary:
 	rig.teardown()
 	await get_tree().process_frame
 	return r
+
+
+func _last_snap_tick(cmc: MatchController) -> int:
+	return int(cmc._last_snap.get("tick", -1))

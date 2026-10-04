@@ -35,7 +35,7 @@ const SCENARIOS := {
 	"start": 1.6, "stop": 2.0, "walk_start_stop": 3.0, "reverse": 2.2, "turn90": 2.0, "speeds": 5.0,
 	"jump_run": 2.2, "jump_idle": 2.0, "dive": 2.6, "kerb": 2.0, "flicker": 2.4, "tag_miss": 2.0, "tag_hit": 2.2,
 	"splash": 3.4, "cart": 3.4, "emote": 3.6, "hitch": 3.0, "jitter": 3.0, "respawn": 3.0, "correction": 3.0,
-	"lod": 6.0, "menu_idle": 24.0, "nw_run": 2.0, "sprint": 2.0,
+	"lod": 6.0, "menu_idle": 24.0, "nw_run": 2.0, "sprint": 2.0, "ramp": 2.4,
 }
 
 
@@ -64,9 +64,10 @@ class MiniMotor:
 	var flicker := false     # report on_floor = false for this tick (slope crest / correction)
 	var ledge_x := INF       # ground drops by ledge_h beyond x (kerb scenario)
 	var ledge_h := 0.0
+	var slope := 0.0         # V8 ramp scenario: the ground rises this much per metre forward (-z)
 
 	func ground(p: Vector3) -> float:
-		return -ledge_h if p.x > ledge_x else 0.0
+		return (-ledge_h if p.x > ledge_x else 0.0) + slope * -p.z
 
 	func facing() -> Vector3:
 		return Basis(Vector3.UP, yaw) * Vector3(0, 0, -1)
@@ -203,6 +204,8 @@ func start(p_scenario: String, p_cosmetic: Dictionary = {}, phase0: float = 0.0)
 	if scenario == "kerb":
 		m.ledge_x = 3.0
 		m.ledge_h = 0.45
+	if scenario == "ramp":
+		m.slope = 0.2
 	cam = Camera3D.new()
 	add_child(cam)
 	cam.current = true
@@ -273,7 +276,7 @@ func _scenario_input(t: float) -> Dictionary:
 			return {"move": fwd}
 		"sprint":
 			return {"move": fwd, "sprint": true}
-		"nw_run":
+		"nw_run", "ramp":
 			return {"move": fwd}
 		"jump_run":
 			return {"move": fwd, "jump": _edge(t, 0.8)}

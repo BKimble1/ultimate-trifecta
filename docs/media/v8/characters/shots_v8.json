@@ -1,0 +1,14 @@
+[
+ {"label": "eyes front (tone 2)", "look": {"skin": "tone2", "hat": "none", "hair": "bob", "outfit": "pj", "color": "sky"}, "yaw_deg": 0, "from": [0.0, 1.17, 0.62], "at": [0, 1.15, 0], "fov": 24.0, "cols": 4},
+ {"label": "eyes 3/4 (tone 2)", "look": {"skin": "tone2", "hat": "none", "hair": "bob", "outfit": "pj", "color": "sky"}, "yaw_deg": 35, "from": [0.0, 1.17, 0.62], "at": [0, 1.15, 0], "fov": 24.0},
+ {"label": "eyes front (tone 7)", "look": {"skin": "tone7", "hat": "none", "hair": "curly", "outfit": "pj", "color": "lime"}, "yaw_deg": 0, "from": [0.0, 1.17, 0.62], "at": [0, 1.15, 0], "fov": 24.0},
+ {"label": "eyes 3/4 (tone 7)", "look": {"skin": "tone7", "hat": "none", "hair": "curly", "outfit": "pj", "color": "lime"}, "yaw_deg": -35, "from": [0.0, 1.17, 0.62], "at": [0, 1.15, 0], "fov": 24.0},
+ {"label": "goggle lenses front", "look": {"skin": "tone4", "outfit": "swim", "hat": "swimcap", "shoes": "flippers", "color": "sky"}, "yaw_deg": 0, "from": [0.0, 1.42, 0.62], "at": [0, 1.32, 0], "fov": 26.0},
+ {"label": "goggle lenses 3/4", "look": {"skin": "tone4", "outfit": "swim", "hat": "swimcap", "shoes": "flippers", "color": "sky"}, "yaw_deg": 40, "from": [0.0, 1.42, 0.62], "at": [0, 1.32, 0], "fov": 26.0},
+ {"label": "robe lapels and sash", "look": {"skin": "tone3", "outfit": "robe", "hat": "none", "hair": "tuft", "color": "grape", "pattern": "plain"}, "yaw_deg": 25, "from": [0.0, 0.85, 1.25], "at": [0, 0.72, 0], "fov": 28.0},
+ {"label": "varsity zip and buttons", "look": {"skin": "tone5", "outfit": "varsity_sprinter", "hat": "none", "hair": "buns"}, "yaw_deg": 20, "from": [0.0, 0.85, 1.25], "at": [0, 0.72, 0], "fov": 28.0},
+ {"label": "Night Watch badge and buttons", "role": 1, "look": {"skin": "tone6", "color": "lime"}, "yaw_deg": 15, "from": [0.0, 1.0, 1.3], "at": [0, 0.85, 0], "fov": 28.0},
+ {"label": "Night Watch flashlight", "role": 1, "look": {"skin": "tone6", "color": "lime"}, "yaw_deg": -70, "from": [0.0, 0.85, 1.3], "at": [0.15, 0.7, 0], "fov": 26.0},
+ {"label": "gameplay distance: runner", "look": {"skin": "tone3", "outfit": "pj", "hat": "nightcap", "shoes": "slippers", "color": "sky", "pattern": "stripes"}, "yaw_deg": 30, "clip": "run", "t": 0.3, "from": [0.0, 2.3, 5.6], "at": [0, 0.8, 0], "fov": 50.0},
+ {"label": "gameplay distance: Night Watch", "role": 1, "look": {"skin": "tone6", "color": "lime"}, "yaw_deg": -30, "clip": "run", "t": 0.6, "from": [0.0, 2.3, 5.6], "at": [0, 0.8, 0], "fov": 50.0}
+]

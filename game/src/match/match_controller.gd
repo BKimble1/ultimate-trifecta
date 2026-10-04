@@ -51,10 +51,51 @@ var _me: Dictionary = {}
 var _smooth := Vector3.ZERO
 var _client_phase: int = TC.Phase.REVEAL
 var _client_results: Dictionary = {}
-var _interp_ticks := 7.0
+var _interp_ticks := 7.0     # displayed remote delay behind _est_tick (diagnostics; V8: derived)
 var _snap_gap_avg := 3.0
 var _last_snap_tick := -1
 var _seen_tick: Dictionary = {}
+# --- V8: remote jitter buffer.  Remote players and carts are drawn at a
+# presentation time (server ticks) that advances smoothly and never goes
+# backward: it follows a target = newest snapshot expected now (from the
+# arrival times of recent snapshots, on the session's tick clock) minus a
+# delay that covers the measured arrival spread and snapshot gaps.  The
+# clock speeds up or slows down a little (JB_RATE_*) to follow the target;
+# only a resync after a long gap (JB_RESYNC) jumps, and then cuts the
+# remote poses.  The delay rises at once when the clock runs past the
+# newest snapshot (an underrun) and relaxes slowly after a stable stretch.
+# V4-V7 drew remote players at _est_tick - _interp_ticks, both corrected
+# per snapshot (rt could step back) with a delay from tick gaps only.
+# Local prediction does not use any of this.
+const JB_WINDOW := 60          # snapshot arrivals remembered (~3 s at 20 Hz)
+const JB_MIN := 4.0            # delay bounds (ticks)
+const JB_MAX := 20.0
+const JB_GAIN := 0.04          # rate change per tick of error
+const JB_RATE_MIN := 0.86
+const JB_RATE_MAX := 1.12
+const JB_RESYNC := 30.0        # ticks of error that resync (cut) instead of slewing
+const JB_STABLE_S := 6.0       # without an underrun before the delay relaxes
+const JB_RELAX := 0.5          # ticks per second the delay relaxes by
+const JB_UNDERRUN_STEP := 0.5  # ticks the delay rises per underrun tick
+const EXTRAP_MAX_S := 0.1      # an underrun extrapolates at most this far, then holds
+const RESEEN_GAP := 18         # ticks absent from snapshots = out of interest
+var interp_hermite := true     # V8 A/B: velocity-aware curves where safe
+var _jb_off := PackedFloat64Array()   # tick - arrival tick, per snapshot
+var _jb_gap := PackedFloat64Array()   # tick gaps between consecutive snapshots
+var _jb_off_hi := 0.0
+var _jb_floor := 7.0
+var _jb_delay := 7.0
+var _jb_stable_t := 0.0
+var _pres_tick := 0.0
+var _pres_ok := false
+var _pres_rate := 1.0
+var stat_underrun_ticks := 0
+var stat_pres_resyncs := 0
+var stat_pres_backward := 0    # must stay 0 (checked by tests)
+var stat_extrap_clamped := 0
+var _beats: Array = []         # V8: remote cosmetic event beats waiting for the presentation time
+var _beat_ids: Dictionary = {} # event id -> true (presented once)
+var stat_beats_shown := 0
 
 # presentation
 var views: Dictionary = {}     # slot -> CharacterView
@@ -280,6 +321,7 @@ func _prep_campus() -> bool:
 func _exit_tree() -> void:
 	stage_report = Callable()
 	_set_view_held(false)     # menus draw 3D again
+	NavGrid.settle_shared()   # V8: no bot path search left running on a worker
 	if prepared:
 		return
 	Diag.mark("prep_cancelled")
@@ -397,6 +439,9 @@ func _prep_views() -> bool:
 	v.water_at = _water_info
 	add_child(v)
 	v.setup(int(e["role"]), e["cosmetic"], slot, String(e["name"]), bool(e["is_bot"]), slot == local_slot)
+	if int(e["role"]) == TC.Role.RUNNER:
+		v.prewarm_fx()      # V8: drips exist before the first splash, not created on it
+	v.terrain_contact = true
 	views[slot] = v
 	return not _view_queue.is_empty()
 
@@ -655,6 +700,8 @@ func _render_rs(slot: int, frac: float = -1.0) -> Dictionary:
 	out["yaw"] = lerp_angle(float(prev.get("yaw", 0.0)), float(cur.get("yaw", 0.0)), f)
 	if prev.has("steer") and cur.has("steer"):
 		out["steer"] = lerpf(float(prev["steer"]), float(cur["steer"]), f)
+	if prev.has("corr") and cur.has("corr"):
+		out["corr"] = (prev["corr"] as Vector3).lerp(cur["corr"], f)
 	return out
 
 
@@ -751,6 +798,7 @@ func _host_tick(cmd: InputCmd, delta: float) -> void:
 
 func _client_tick(cmd: InputCmd, delta: float) -> void:
 	_est_tick += delta * cfg.sim_hz
+	_advance_presentation(delta)
 	if not spectator and pred != null:
 		_pending.append(cmd)
 		if _pending.size() > 120:
@@ -837,6 +885,7 @@ func _on_snapshot(s: Dictionary) -> void:
 		return   # late or duplicate snapshot: never let it override newer state
 	if _last_snap_tick >= 0:
 		_snap_gap_avg = lerpf(_snap_gap_avg, float(tick - _last_snap_tick), 0.1)
+	_jb_arrival(tick, session.clock_s() * cfg.sim_hz if session != null else 0.0)
 	_last_snap_tick = tick
 	_last_snap = s
 	_client_phase = int(s["phase"])
@@ -847,8 +896,12 @@ func _on_snapshot(s: Dictionary) -> void:
 		_have_clock = true
 	else:
 		_est_tick += (target - _est_tick) * 0.06
-	_interp_ticks = clampf(_snap_gap_avg * 2.0 + 1.0, 6.0, 14.0)
 	for slot in s["players"]:
+		if _seen_tick.has(int(slot)) and tick - int(_seen_tick[int(slot)]) >= RESEEN_GAP:
+			# back in this client's interest set after a gap: what the buffer
+			# holds is from before it left; start again (a cut, not a slide)
+			_bufs[int(slot)] = []
+			_discont[int(slot)] = true
 		var arr: Array = _bufs.get(int(slot), [])
 		arr.append({"tick": tick, "e": s["players"][slot]})
 		while arr.size() > 24:
@@ -945,6 +998,7 @@ func _player_rs(slot: int) -> Dictionary:
 		var srv: Dictionary = _last_snap["players"][slot]
 		var rs: Dictionary = srv.duplicate()
 		rs["pos"] = pred.pos() + _smooth
+		rs["corr"] = _smooth      # V8: the presentation offset in pos (not travel)
 		rs["yaw"] = pred.yaw
 		rs["vel"] = pred.vel
 		rs["on_floor"] = pred.on_floor
@@ -962,37 +1016,193 @@ func _interp_player(slot: int) -> Dictionary:
 	var arr: Array = _bufs.get(slot, [])
 	if arr.is_empty():
 		return {}
-	var rt := _est_tick - _interp_ticks
+	var rt := remote_time()
 	var newest: Dictionary = arr[arr.size() - 1]
-	var vis := (int(_last_snap.get("tick", 0)) - int(_seen_tick.get(slot, -999))) < 18
+	var vis := (int(_last_snap.get("tick", 0)) - int(_seen_tick.get(slot, -999))) < RESEEN_GAP
+	var out: Dictionary
 	if rt >= float(newest["tick"]):
-		var e: Dictionary = (newest["e"] as Dictionary).duplicate()
-		var ex := clampf((rt - float(newest["tick"])) / cfg.sim_hz, 0.0, 0.1)
-		e["pos"] = (e["pos"] as Vector3) + Vector3((e["vel"] as Vector3).x, 0, (e["vel"] as Vector3).z) * ex
-		e["visible"] = vis
+		# underrun (or the newest sample exactly): a short, safe extrapolation
+		out = _extrapolate_player(newest, rt)
+	elif rt <= float(arr[0]["tick"]):
+		# startup / just back in view: hold the oldest sample until time
+		# reaches it (never show a newer state and then step back)
+		out = (arr[0]["e"] as Dictionary).duplicate()
+	else:
+		out = {}
+		for i in range(arr.size() - 1, 0, -1):
+			var a: Dictionary = arr[i - 1]
+			var b: Dictionary = arr[i]
+			if float(a["tick"]) <= rt and rt <= float(b["tick"]):
+				out = _blend_player(a, b, rt)
+				break
+		if out.is_empty():
+			out = (newest["e"] as Dictionary).duplicate()
+	out["visible"] = vis
+	return out
+
+
+func _blend_player(a: Dictionary, b: Dictionary, rt: float) -> Dictionary:
+	var span := maxf(1.0, float(b["tick"]) - float(a["tick"]))
+	var t := clampf((rt - float(a["tick"])) / span, 0.0, 1.0)
+	var ea: Dictionary = a["e"]
+	var eb: Dictionary = b["e"]
+	var out: Dictionary = (eb if t > 0.5 else ea).duplicate()
+	if int(ea["state"]) == int(eb["state"]):
+		out["state_t"] = lerpf(float(ea["state_t"]), float(eb["state_t"]), t)
+	var pa: Vector3 = ea["pos"]
+	var pb: Vector3 = eb["pos"]
+	if pa.distance_to(pb) < 8.0:
+		var curve := interp_hermite and int(ea["state"]) == TC.PState.ACTIVE and int(eb["state"]) == TC.PState.ACTIVE
+		out["pos"] = _curve_pos(pa, pb, ea["vel"], eb["vel"], span / cfg.sim_hz, t, curve,
+			bool(ea.get("on_floor", true)) or bool(eb.get("on_floor", true)))
+		out["yaw"] = lerp_angle(float(ea["yaw"]), float(eb["yaw"]), t)
+		out["vel"] = (ea["vel"] as Vector3).lerp(eb["vel"], t)
+	else:
+		out["pos"] = pb if t > 0.5 else pa
+	return out
+
+
+## V8: position between two samples.  A cubic Hermite through both samples
+## with their velocities (snapshots already carry them) where that is safe -
+## continuous movement whose velocities agree with the displacement, no
+## sharp reversal, a bend of under 25 cm - else the V7 straight line.  On
+## the floor the height stays linear (a curve could dip under a step).
+static func _curve_pos(pa: Vector3, pb: Vector3, va: Vector3, vb: Vector3, span_s: float, t: float, curve: bool, grounded: bool) -> Vector3:
+	var lin := pa.lerp(pb, t)
+	if not curve or span_s <= 0.0:
+		return lin
+	var d := pb - pa
+	# the velocities must explain the displacement (a wall stop, a bump or a
+	# state change does not)
+	if (d - (va + vb) * 0.5 * span_s).length() > 0.35:
+		return lin
+	var ha := Vector2(va.x, va.z)
+	var hb := Vector2(vb.x, vb.z)
+	if ha.length() > 0.5 and hb.length() > 0.5 and ha.dot(hb) < 0.0:
+		return lin
+	var t2 := t * t
+	var t3 := t2 * t
+	var h00 := 2.0 * t3 - 3.0 * t2 + 1.0
+	var h10 := t3 - 2.0 * t2 + t
+	var h01 := -2.0 * t3 + 3.0 * t2
+	var h11 := t3 - t2
+	var c := pa * h00 + va * (span_s * h10) + pb * h01 + vb * (span_s * h11)
+	# bounded bend: never more than 25 cm off the chord
+	var mid := pa * 0.5 + pb * 0.5 + (va - vb) * (span_s * 0.125)
+	if mid.distance_to(pa.lerp(pb, 0.5)) > 0.25:
+		return lin
+	if grounded:
+		c.y = lin.y
+	return c
+
+
+## Underrun policy (players): extrapolate along the last horizontal velocity
+## for at most EXTRAP_MAX_S, only in plain grounded running (no airborne
+## arc, dive, tag action or other state is guessed), stopped short of a
+## wall by a ray against this client's campus collision; then hold.
+func _extrapolate_player(newest: Dictionary, rt: float) -> Dictionary:
+	var e: Dictionary = (newest["e"] as Dictionary).duplicate()
+	var ex := clampf((rt - float(newest["tick"])) / cfg.sim_hz, 0.0, EXTRAP_MAX_S)
+	if ex <= 0.0:
 		return e
-	for i in range(arr.size() - 1, 0, -1):
-		var a: Dictionary = arr[i - 1]
-		var b: Dictionary = arr[i]
-		if float(a["tick"]) <= rt and rt <= float(b["tick"]):
-			var span := maxf(1.0, float(b["tick"]) - float(a["tick"]))
-			var t := (rt - float(a["tick"])) / span
-			var ea: Dictionary = a["e"]
-			var eb: Dictionary = b["e"]
-			var out: Dictionary = (eb if t > 0.5 else ea).duplicate()
-			if int(ea["state"]) == int(eb["state"]):
-				out["state_t"] = lerpf(float(ea["state_t"]), float(eb["state_t"]), t)
-			if (ea["pos"] as Vector3).distance_to(eb["pos"]) < 8.0:
-				out["pos"] = (ea["pos"] as Vector3).lerp(eb["pos"], t)
-				out["yaw"] = lerp_angle(float(ea["yaw"]), float(eb["yaw"]), t)
-				out["vel"] = (ea["vel"] as Vector3).lerp(eb["vel"], t)
-			else:
-				out["pos"] = eb["pos"] if t > 0.5 else ea["pos"]
-			out["visible"] = vis
-			return out
-	var oldest: Dictionary = (arr[0]["e"] as Dictionary).duplicate()
-	oldest["visible"] = vis
-	return oldest
+	if int(e["state"]) != TC.PState.ACTIVE or not bool(e.get("on_floor", true)) or bool(e.get("diving", false)) \
+			or int(e.get("tag_phase", 0)) != 0:
+		return e
+	var v: Vector3 = e["vel"]
+	var p: Vector3 = e["pos"]
+	e["pos"] = _clamp_motion(p, p + Vector3(v.x, 0.0, v.z) * ex, TC.L_WORLD, 0.35)
+	return e
+
+
+## The end of a straight move from `a` to `b` stopped `margin` short of the
+## first static obstacle (a ray at knee height in this controller's world).
+func _clamp_motion(a: Vector3, b: Vector3, mask: int, margin: float) -> Vector3:
+	var d := b - a
+	if d.length() < 0.01 or not is_inside_tree():
+		return b
+	var space := get_world_3d().direct_space_state
+	var up := Vector3(0, 0.5, 0)
+	var q := PhysicsRayQueryParameters3D.create(a + up, b + up + d.normalized() * margin, mask)
+	var hit := space.intersect_ray(q)
+	if hit.is_empty():
+		return b
+	stat_extrap_clamped += 1
+	var stop := maxf(0.0, a.distance_to((hit["position"] as Vector3) - up) - margin)
+	return a + d.normalized() * minf(stop, d.length())
+
+
+## The time remote players and carts are drawn at (server ticks).
+func remote_time() -> float:
+	return _pres_tick if _pres_ok else _est_tick - _interp_ticks
+
+
+## Arrival statistics of the accepted snapshot `tick`, received at session
+## tick time `arr_t`.
+func _jb_arrival(tick: int, arr_t: float) -> void:
+	_jb_off.append(float(tick) - arr_t)
+	if _jb_off.size() > JB_WINDOW:
+		_jb_off.remove_at(0)
+	if _last_snap_tick >= 0:
+		_jb_gap.append(float(tick - _last_snap_tick))
+		if _jb_gap.size() > JB_WINDOW:
+			_jb_gap.remove_at(0)
+	var off := _jb_off.duplicate()
+	off.sort()
+	_jb_off_hi = off[off.size() - 1]
+	var spread := _jb_off_hi - off[int(0.1 * float(off.size() - 1))]
+	var gap_hi := float(cfg.snapshot_every_ticks)
+	if not _jb_gap.is_empty():
+		var g := _jb_gap.duplicate()
+		g.sort()
+		gap_hi = maxf(gap_hi, g[int(0.9 * float(g.size() - 1))])
+	_jb_floor = clampf(gap_hi + spread + 1.0, JB_MIN, JB_MAX)
+	if _jb_delay < _jb_floor:
+		_jb_delay = _jb_floor       # more spread or gaps: more delay at once
+
+
+## One physics tick of the presentation clock (clients).
+func _advance_presentation(delta: float) -> void:
+	if _jb_off.is_empty() or session == null:
+		return
+	var target := session.clock_s() * cfg.sim_hz + _jb_off_hi - _jb_delay
+	if not _pres_ok or absf(target - _pres_tick) > JB_RESYNC:
+		if _pres_ok:
+			stat_pres_resyncs += 1
+			Diag.mark("remote_resync")
+			for slot in _bufs:
+				if int(slot) != local_slot:
+					_discont[int(slot)] = true
+		_pres_tick = target
+		_pres_ok = true
+		_interp_ticks = _est_tick - _pres_tick
+		return
+	_pres_rate = clampf(1.0 + (target - _pres_tick) * JB_GAIN, JB_RATE_MIN, JB_RATE_MAX)
+	var before := _pres_tick
+	_pres_tick += delta * cfg.sim_hz * _pres_rate
+	if _pres_tick < before:
+		stat_pres_backward += 1
+	if _last_snap_tick >= 0 and _pres_tick > float(_last_snap_tick):
+		# ran past the newest snapshot: hold more from now on
+		stat_underrun_ticks += 1
+		_jb_stable_t = 0.0
+		_jb_delay = minf(JB_MAX, _jb_delay + JB_UNDERRUN_STEP)
+	else:
+		_jb_stable_t += delta
+		if _jb_stable_t > JB_STABLE_S and _jb_delay > _jb_floor:
+			_jb_delay = maxf(_jb_floor, _jb_delay - JB_RELAX * delta)
+	_interp_ticks = _est_tick - _pres_tick
+
+
+## Network presentation numbers for diagnostics and tests.
+func net_presentation() -> Dictionary:
+	var spread := 0.0
+	if not _jb_off.is_empty():
+		var off := _jb_off.duplicate()
+		off.sort()
+		spread = off[off.size() - 1] - off[0]
+	return {"delay_ticks": _jb_delay, "floor_ticks": _jb_floor, "displayed_delay_ms": _interp_ticks / cfg.sim_hz * 1000.0,
+		"arrival_spread_ms": spread / cfg.sim_hz * 1000.0, "rate": _pres_rate, "underrun_ticks": stat_underrun_ticks,
+		"resyncs": stat_pres_resyncs, "backward": stat_pres_backward, "extrap_clamped": stat_extrap_clamped}
 
 
 func _cart_rs(i: int) -> Dictionary:
@@ -1000,23 +1210,53 @@ func _cart_rs(i: int) -> Dictionary:
 		var c: SimCart = sim.carts[i]
 		return {"pos": c.pos(), "yaw": c.yaw, "speed": c.speed, "steer": c.steer_s, "occupied": c.occupant >= 0, "slowed": c.slowed_t > 0.0, "occupant": c.occupant}
 	if i == pred_cart_id and pred_cart != null:
-		return {"pos": pred_cart.pos() + _smooth, "yaw": pred_cart.yaw, "speed": pred_cart.speed, "steer": pred_cart.steer_s, "occupied": true, "slowed": pred_cart.slowed_t > 0.0, "occupant": local_slot}
+		return {"pos": pred_cart.pos() + _smooth, "yaw": pred_cart.yaw, "speed": pred_cart.speed, "steer": pred_cart.steer_s, "occupied": true, "slowed": pred_cart.slowed_t > 0.0, "occupant": local_slot,
+			"corr": _smooth}
 	var arr: Array = _cart_bufs[i] if i < _cart_bufs.size() else []
 	if arr.is_empty():
 		return {}
-	var rt := _est_tick - _interp_ticks
+	var rt := remote_time()
+	var newest: Dictionary = arr[arr.size() - 1]
+	if rt >= float(newest["tick"]):
+		# underrun: a short extrapolation along the cart's heading, stopped
+		# short of walls and bollards, then hold
+		var e: Dictionary = newest["e"]
+		var out := _cart_out(e)
+		var ex := clampf((rt - float(newest["tick"])) / cfg.sim_hz, 0.0, EXTRAP_MAX_S)
+		if ex > 0.0 and absf(float(e["speed"])) > 0.2:
+			var fw := Vector3(-sin(float(e["yaw"])), 0.0, -cos(float(e["yaw"])))
+			out["pos"] = _clamp_motion(e["pos"], (e["pos"] as Vector3) + fw * float(e["speed"]) * ex, TC.L_WORLD | TC.L_CART_BLOCK, 1.0)
+		return out
+	if rt <= float(arr[0]["tick"]):
+		# startup: hold the oldest (V4-V7 showed the newest here, then
+		# stepped back once time reached the buffer)
+		return _cart_out(arr[0]["e"])
 	for k in range(arr.size() - 1, 0, -1):
 		var a: Dictionary = arr[k - 1]
 		var b: Dictionary = arr[k]
 		if float(a["tick"]) <= rt and rt <= float(b["tick"]):
-			var t := (rt - float(a["tick"])) / maxf(1.0, float(b["tick"]) - float(a["tick"]))
+			var span := maxf(1.0, float(b["tick"]) - float(a["tick"]))
+			var t := clampf((rt - float(a["tick"])) / span, 0.0, 1.0)
 			var ea: Dictionary = a["e"]
 			var eb: Dictionary = b["e"]
-			return {"pos": (ea["pos"] as Vector3).lerp(eb["pos"], t), "yaw": lerp_angle(float(ea["yaw"]), float(eb["yaw"]), t),
-				"speed": lerpf(float(ea["speed"]), float(eb["speed"]), t), "steer": float(eb["steer"]),
-				"occupied": int(eb["occupant"]) >= 0, "slowed": bool(eb["slowed"]), "occupant": int(eb["occupant"])}
-	var last: Dictionary = arr[arr.size() - 1]["e"]
-	return {"pos": last["pos"], "yaw": last["yaw"], "speed": last["speed"], "steer": last["steer"], "occupied": int(last["occupant"]) >= 0, "slowed": last["slowed"], "occupant": int(last["occupant"])}
+			var out := _cart_out(eb)
+			var pa: Vector3 = ea["pos"]
+			var pb: Vector3 = eb["pos"]
+			if pa.distance_to(pb) < 8.0:
+				var va := Vector3(-sin(float(ea["yaw"])), 0.0, -cos(float(ea["yaw"]))) * float(ea["speed"])
+				var vb := Vector3(-sin(float(eb["yaw"])), 0.0, -cos(float(eb["yaw"]))) * float(eb["speed"])
+				out["pos"] = _curve_pos(pa, pb, va, vb, span / cfg.sim_hz, t, interp_hermite, true)
+			else:
+				out["pos"] = pb if t > 0.5 else pa
+			out["yaw"] = lerp_angle(float(ea["yaw"]), float(eb["yaw"]), t)
+			out["speed"] = lerpf(float(ea["speed"]), float(eb["speed"]), t)
+			return out
+	return _cart_out(newest["e"])
+
+
+static func _cart_out(e: Dictionary) -> Dictionary:
+	return {"pos": e["pos"], "yaw": e["yaw"], "speed": e["speed"], "steer": e["steer"], "occupied": int(e["occupant"]) >= 0,
+		"slowed": e["slowed"], "occupant": int(e["occupant"])}
 
 
 ## HUD-facing state for the local player (works for host and client).
@@ -1106,6 +1346,14 @@ func _reveal_end_tick() -> float:
 # ---------------------------------------------------------------------------
 # Presentation
 # ---------------------------------------------------------------------------
+## V8: the one owner of a character view's visibility (the view no longer
+## decides it from its own last state, which re-showed opponents this client
+## stopped receiving as frozen ghosts): hidden with nothing to show, out of
+## this client's interest set or not seen lately, or finished.
+static func view_shown(rs: Dictionary) -> bool:
+	return not rs.is_empty() and bool(rs.get("visible", true)) and int(rs.get("state", 0)) != TC.PState.FINISHED
+
+
 func _process(delta: float) -> void:
 	if not prepared:
 		_process_prepare()
@@ -1116,21 +1364,27 @@ func _process(delta: float) -> void:
 	_local_events = []
 	var tp := Prof.t()
 	for ev in evs:
+		var wait := _beat_waits(ev)
+		if wait:
+			_beats.append({"ev": ev, "ms": Time.get_ticks_msec()})
 		if Prof.on:
 			var te := Prof.t()
-			_present_event(ev)
+			_present_event(ev, true, not wait)
 			Prof.add("ev_" + str(TC.Ev.find_key(int(ev["type"]))), te)
 		else:
-			_present_event(ev)
+			_present_event(ev, true, not wait)
+	_present_due_beats()
 	Prof.add("mc_events", tp)
 	# characters
 	tp = Prof.t()
 	for slot in views:
 		var v: CharacterView = views[slot]
 		var rs := _render_rs(slot)
-		if rs.is_empty() or not bool(rs.get("visible", true)):
-			v.visible = false
+		if not view_shown(rs):
+			if v.visible:
+				v.hide_view()
 			continue
+		var reshown := not v.visible
 		v.visible = true
 		var st: int = rs.get("state", 0)
 		if st == TC.PState.IN_CART or st == TC.PState.ENTERING:
@@ -1143,7 +1397,7 @@ func _process(delta: float) -> void:
 					rs["pos"] = seat
 					rs["yaw"] = cy
 					rs["steer"] = crs.get("steer", 0.0)
-		var snap := bool(_discont.get(slot, false))
+		var snap := bool(_discont.get(slot, false)) or reshown
 		_discont.erase(slot)
 		v.apply_state(rs, delta, snap)
 		v.reduced_motion = reduced_motion
@@ -1282,20 +1536,65 @@ func _haptic(ms: int) -> void:
 		Input.vibrate_handheld(ms, 0.5)
 
 
-func _present_event(ev: Dictionary) -> void:
+## V8: an event's presentation has two parts.  `ui`: the HUD, haptics and
+## diagnostics - authoritative feedback, always shown when the event
+## arrives.  `world`: the beat in the 3D scene (effects, positional sound,
+## a coin vanishing, a remote tagger's miss) - on a client, for another
+## player's event, it waits until the presentation time reaches the event's
+## tick (_beats), so the splash or whistle meets that player where they are
+## drawn instead of ~150-250 ms ahead of them.  Each event's world beat is
+## shown once (keyed by event id).
+const BEAT_HOLD_MS := 500      # a beat never waits longer than this
+const _WORLD_BEATS := [TC.Ev.SPLASH_STAMP, TC.Ev.SPLASH_NOSTAMP, TC.Ev.CAPTURE, TC.Ev.TAG_MISS, TC.Ev.FINISH,
+	TC.Ev.BUMP, TC.Ev.CART_ENTER, TC.Ev.CART_EXIT, TC.Ev.GADGET_PICKUP, TC.Ev.GADGET_USE, TC.Ev.BOMB_HIT,
+	TC.Ev.RESPAWN, TC.Ev.RECOVER, TC.Ev.EMOTE, TC.Ev.COIN_PICKUP]
+
+
+func _beat_waits(ev: Dictionary) -> bool:
+	return is_client and _pres_ok and int(ev["a"]) != local_slot and ev.has("t") \
+		and float(ev["t"]) > _pres_tick and int(ev["type"]) in _WORLD_BEATS
+
+
+func _present_due_beats() -> void:
+	if _beats.is_empty():
+		return
+	var now := Time.get_ticks_msec()
+	var keep: Array = []
+	for b in _beats:
+		var ev: Dictionary = b["ev"]
+		if float(ev["t"]) <= _pres_tick or now - int(b["ms"]) >= BEAT_HOLD_MS:
+			_present_event(ev, false, true)
+		else:
+			keep.append(b)
+	_beats = keep
+
+
+func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void:
 	var type: int = ev["type"]
 	var a: int = ev["a"]
 	var pos: Vector3 = ev["pos"]
 	var mine := a == local_slot
+	if world and int(ev.get("id", 0)) > 0:      # (id 0: local-only events, e.g. an emote echo)
+		var id := int(ev["id"])
+		if _beat_ids.has(id):
+			world = false
+		else:
+			_beat_ids[id] = true
+			if _beat_ids.size() > 256:
+				_beat_ids.erase(_beat_ids.keys()[0])
+	if world:
+		stat_beats_shown += 1
 	match type:
 		TC.Ev.SPLASH_STAMP, TC.Ev.SPLASH_NOSTAMP:
 			# the spray, foam and ripples are beats of the runner's splash
 			# sequence (CharacterView, driven by its time in the water); the
 			# event carries the one sound and the HUD feedback
 			var big := type == TC.Ev.SPLASH_STAMP
+			if world:
+				Sfx.play("splash_big" if big else "splash", pos)
+			if not ui:
+				return
 			Diag.mark("splash")
-			var wcol: Color = layout.waters[int(ev["b"])]["color"] if int(ev["b"]) >= 0 else Color.CYAN
-			Sfx.play("splash_big" if big else "splash", pos)
 			if mine:
 				if big:
 					hud.stamp_pop(layout.waters[int(ev["b"])], _my_stamp_count(int(ev["b"])), targets.size())
@@ -1307,9 +1606,12 @@ func _present_event(ev: Dictionary) -> void:
 				var rr: Dictionary = roster.get(a, {})
 				hud.feed_splash(String(rr.get("name", "?")), String(layout.waters[int(ev["b"])]["short"]), int(rr.get("role", 0)))
 		TC.Ev.CAPTURE:
+			if world:
+				fx.whistle_burst(pos)
+				Sfx.play("whistle", pos)
+			if not ui:
+				return
 			Diag.mark("tag")
-			fx.whistle_burst(pos)
-			Sfx.play("whistle", pos)
 			var r: Dictionary = roster.get(a, {})
 			var by: Dictionary = roster.get(int(ev["b"]), {})
 			hud.feed("%s caught %s!" % [by.get("name", "?"), r.get("name", "?")], TC.Role.PATROL)
@@ -1322,67 +1624,85 @@ func _present_event(ev: Dictionary) -> void:
 				hud.toast("Tagged %s! · %d catch%s" % [r.get("name", "?"), my_catches, "" if my_catches == 1 else "es"], Color(1.0, 0.8, 0.3))
 				_haptic(20)
 		TC.Ev.TAG_MISS:
-			Diag.mark("tag_miss")
-			Sfx.play("whoosh", pos)
-			if views.has(a):
-				(views[a] as CharacterView).tag_missed()
+			if world:
+				Sfx.play("whoosh", pos)
+				if views.has(a):
+					(views[a] as CharacterView).tag_missed()
+			if ui:
+				Diag.mark("tag_miss")
 		TC.Ev.FINISH:
-			fx.confetti(pos)
-			Sfx.play("cheer", pos)
+			if world:
+				fx.confetti(pos)
+				Sfx.play("cheer", pos)
+			if not ui:
+				return
 			var r2: Dictionary = roster.get(a, {})
 			hud.feed("%s made it home! (%d/%d)" % [r2.get("name", "?"), int(ev["v"]), cfg.runners_needed], TC.Role.RUNNER)
 			if mine:
 				# (the HOME SAFE overlay says it; no second toast)
 				_haptic(40)
 		TC.Ev.BUMP:
-			fx.bump(pos)
-			Sfx.play("boing", pos)
-			if mine and _shake_cd <= 0.0:
+			if world:
+				fx.bump(pos)
+				Sfx.play("boing", pos)
+			if ui and mine and _shake_cd <= 0.0:
 				_haptic(15)
 				_shake_cd = 0.6
 		TC.Ev.CART_ENTER:
-			Sfx.play("cart_start", pos)
+			if world:
+				Sfx.play("cart_start", pos)
 		TC.Ev.CART_EXIT:
-			Sfx.play("hop", pos)
+			if world:
+				Sfx.play("hop", pos)
 		TC.Ev.GADGET_PICKUP:
-			Sfx.play("pickup", pos)
-			if mine:
+			if world:
+				Sfx.play("pickup", pos)
+			if ui and mine:
 				hud.toast("Got %s!" % TC.GADGET_NAMES.get(int(ev["v"]), "a gadget"), Color(1.0, 0.9, 0.4))
 		TC.Ev.GADGET_USE:
-			var g: int = ev["v"]
-			Sfx.play("squeak" if g == TC.Gadget.DECOY else ("turbo" if g == TC.Gadget.TURBO else "toss"), pos)
-			if g == TC.Gadget.TURBO:
-				fx.turbo(pos)
+			if world:
+				var g: int = ev["v"]
+				Sfx.play("squeak" if g == TC.Gadget.DECOY else ("turbo" if g == TC.Gadget.TURBO else "toss"), pos)
+				if g == TC.Gadget.TURBO:
+					fx.turbo(pos)
 		TC.Ev.BOMB_HIT:
-			fx.splash(pos, Color(0.4, 0.8, 1.0), int(ev["v"]) == 1)
-			Sfx.play("splash", pos)
+			if world:
+				fx.splash(pos, Color(0.4, 0.8, 1.0), int(ev["v"]) == 1)
+				Sfx.play("splash", pos)
 		TC.Ev.RESPAWN:
-			fx.poof(pos)
+			if world:
+				fx.poof(pos)
 		TC.Ev.RECOVER:
-			fx.poof(pos)
-			if mine:
+			if world:
+				fx.poof(pos)
+			if ui and mine:
 				hud.toast("Back on campus", Color(0.8, 0.9, 1.0))
 		TC.Ev.EMOTE:
-			var who: Dictionary = roster.get(a, {})
-			if not SocialSafety.is_hidden(session, String(who.get("uid", "")), String(who.get("pid", ""))):   # (V6: blocked too)
-				hud.emote_bubble(a, int(ev["v"]))
-				Sfx.play("pop")
+			if world:
+				var who: Dictionary = roster.get(a, {})
+				if not SocialSafety.is_hidden(session, String(who.get("uid", "")), String(who.get("pid", ""))):   # (V6: blocked too)
+					hud.emote_bubble(a, int(ev["v"]))
+					Sfx.play("pop")
 		TC.Ev.COIN_PICKUP:
 			# the host decided who got it; a replayed or late event finds the
 			# coin already gone and does nothing
-			var taken := coin_view.take(int(ev["v"])) if coin_view else true
-			if taken:
-				Sfx.play("pickup", pos, -5.0 if not mine else -2.0, 1.55)
-			if mine:
+			if world:
+				var taken := coin_view.take(int(ev["v"])) if coin_view else true
+				if taken:
+					Sfx.play("pickup", pos, -5.0 if not mine else -2.0, 1.55)
+			if ui and mine:
 				if hud:
 					hud.coin_pop()
 				_haptic(12)
 		TC.Ev.PLAYER_BOT_TAKEOVER:
-			hud.feed("%s disconnected — a bot is covering (slot held 20s)" % roster.get(a, {}).get("name", "?"), -1)
+			if ui:
+				hud.feed("%s disconnected — a bot is covering (slot held 20s)" % roster.get(a, {}).get("name", "?"), -1)
 		TC.Ev.PLAYER_RESUMED:
-			hud.feed("%s reconnected" % roster.get(a, {}).get("name", "?"), -1)
+			if ui:
+				hud.feed("%s reconnected" % roster.get(a, {}).get("name", "?"), -1)
 		TC.Ev.PLAYER_LEFT:
-			hud.feed("%s left — bot keeps their spot this round" % roster.get(a, {}).get("name", "?"), -1)
+			if ui:
+				hud.feed("%s left — bot keeps their spot this round" % roster.get(a, {}).get("name", "?"), -1)
 
 
 func _build_beacons() -> void:

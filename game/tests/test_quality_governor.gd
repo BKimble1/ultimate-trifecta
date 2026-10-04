@@ -91,7 +91,7 @@ func test_coming_back_from_the_background_is_not_a_slowdown() -> void:
 	g.notification(Node.NOTIFICATION_APPLICATION_PAUSED)
 	g.notification(Node.NOTIFICATION_APPLICATION_RESUMED)
 	t.eq(g._last_us, 0, "the interval across the time away is dropped")
-	t.check(g._window.is_empty(), "a fresh window starts")
+	t.eq(g._n, 0, "a fresh window starts (V8: the ring is empty)")
 	# a few slow frames while iOS restores the surface, then a normal pace
 	for i in 4:
 		g.feed(60.0, 1.0 / 60.0)

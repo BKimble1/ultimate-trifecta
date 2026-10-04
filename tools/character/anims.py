@@ -38,8 +38,10 @@ LOCO = {
     #       arm swing (deg), elbow (deg), bob (m), gait ('walk' = vaulting, highest
     #       at mid-stance; 'run' = bouncing, lowest at mid-stance)
     'walk': dict(speed=0.70, duty=0.58, lift=0.065, drop=0.04, lean=-4.0, arm=20.0, elbow=26.0, bob=0.012, gait='walk'),
-    'run': dict(speed=2.20, duty=0.20, lift=0.15, drop=0.06, lean=-11.0, arm=44.0, elbow=86.0, bob=0.024, gait='run'),
-    'sprint': dict(speed=2.75, duty=0.165, lift=0.19, drop=0.07, lean=-18.0, arm=58.0, elbow=96.0, bob=0.026, gait='run'),
+    # V8: a little more bob (a readable flight between steps) and a deeper
+    # sprint knee drive; strides, cadence and duty unchanged
+    'run': dict(speed=2.20, duty=0.20, lift=0.15, drop=0.06, lean=-11.0, arm=44.0, elbow=86.0, bob=0.026, gait='run'),
+    'sprint': dict(speed=2.75, duty=0.165, lift=0.205, drop=0.07, lean=-18.0, arm=58.0, elbow=96.0, bob=0.031, gait='run'),
 }
 # foot-strike phases (left, right) of each cycle, for footstep timing in the game
 def strike_phases(name):
@@ -345,6 +347,9 @@ def loco_pose(name, phase):
     pose['chest'] = {'rot': (c['lean'] * 0.3, -roll * 0.3, -twist * 0.8)}
     pose['neck'] = {'rot': (-c['lean'] * 0.5, 0, twist * 0.3)}
     pose['head'] = {'rot': (-c['lean'] * 0.45, -roll * 0.2, twist * 0.25)}
+    # V8: running feet push off harder (the toe-off pitch), so push-off,
+    # flight and contact read at gameplay distance
+    toe = 28.0 if walk else 36.0
     for side, ph0 in ((-1, 0.0), (1, 0.5)):
         sfx = '.L' if side < 0 else '.R'
         ph = (phase + ph0 + duty * 0.5) % 1.0     # 0 = foot strike, duty = toe-off
@@ -355,7 +360,7 @@ def loco_pose(name, phase):
             # heel strike -> flat -> heel rise: the ankle rides a little higher at
             # both ends of the stance (heel/toe roll), which also keeps it reachable
             z = rig.ANKLE_Z + 0.014 * (1.0 - smoothstep(0.0, 0.3, u)) + 0.022 * smoothstep(0.7, 1.0, u)
-            pitch = 8.0 * (1.0 - smoothstep(0.0, 0.25, u)) - 28.0 * smoothstep(0.7, 1.0, u)
+            pitch = 8.0 * (1.0 - smoothstep(0.0, 0.25, u)) - toe * smoothstep(0.7, 1.0, u)
         else:
             u = (ph - duty) / (1 - duty)
             if walk:
@@ -372,24 +377,34 @@ def loco_pose(name, phase):
                 y = lerp(-sweep * 0.5, reach, e)
                 kick = math.sin(math.pi * min(1.0, u / 0.92) ** 0.65) ** 0.7   # peaks early: heel kicks up behind
                 z = rig.ANKLE_Z + lerp(0.022, 0.014, u) + c['lift'] * kick * (1.0 - 0.2 * u)
-                pitch = lerp(-28.0, 8.0, smoothstep(0.35, 0.9, u)) - 14.0 * math.sin(math.pi * min(1.0, u / 0.6))
+                pitch = lerp(-toe, 8.0, smoothstep(0.35, 0.9, u)) - 14.0 * math.sin(math.pi * min(1.0, u / 0.6))
         # IK targets are in armature space; hips twist moves the hip joints,
         # ankles stay where the gait puts them (the solver reaches for them)
         pose['foot' + sfx] = {'ik': (Vector((x, y, z)), pitch)}
         # arms swing opposite to the legs: each arm is at its forward peak when
         # its own leg is furthest back (toe-off) and crosses the middle at mid-stance
-        sw = c['arm'] * math.sin(2 * math.pi * (phase + ph0))
-        pose['upper_arm' + sfx] = {'rot': (sw, (-10 if walk else -14) * side, 4 * side * max(0.0, sw) / max(1.0, c['arm']))}
+        # V8: a touch of asymmetry (the left arm swings a little wider, the
+        # right elbow is a little more bent) so the loop doesn't read as a
+        # mirror; running arms travel in an arc (in across the body going
+        # forward, a little out going back) rather than a flat hinge
+        asym = (1.0 if walk else (1.03 if side < 0 else 0.97))
+        sw = c['arm'] * asym * math.sin(2 * math.pi * (phase + ph0))
+        fz = max(0.0, sw) / max(1.0, c['arm'])
+        bz = max(0.0, -sw) / max(1.0, c['arm'])
+        arc = 4 * side * fz if walk else 9 * side * fz - 3 * side * bz
+        pose['upper_arm' + sfx] = {'rot': (sw, (-10 if walk else -14) * side, arc)}
         # V5: the forearm and mitten follow the upper arm a beat late
         # (overlapping action), so the arm swing whips instead of hinging
         lagf = math.sin(2 * math.pi * (phase + ph0 - 0.07))
         lagh = math.sin(2 * math.pi * (phase + ph0 - 0.12))
-        pose['forearm' + sfx] = {'rot': (c['elbow'] + 0.18 * c['arm'] * lagf + 0.12 * max(0.0, sw), 0, 0)}
+        ebias = 0.0 if walk else (2.5 if side > 0 else -1.0)
+        pose['forearm' + sfx] = {'rot': (c['elbow'] + ebias + 0.18 * c['arm'] * lagf + 0.12 * max(0.0, sw), 0, 0)}
         pose['hand' + sfx] = {'rot': (6 + (4 if walk else 7) * lagh, 0, 0)}
         pose['shoulder' + sfx] = {'rot': (0, 0, -3 * side * math.sin(2 * math.pi * (phase + ph0)))}
     # V5: the head gives a little at each foot strike (twice per cycle) and
     # the hips' bob is a touch rounder: bouncy, not stiff
-    nod = (1.0 if walk else -2.2) * math.cos(4 * math.pi * (phase - 0.04))   # + = back
+    # V8: running heads are steadier (-1.3, V5: -2.2): the eyes stay on the route
+    nod = (1.0 if walk else -1.3) * math.cos(4 * math.pi * (phase - 0.04))   # + = back
     hx, hy, hz = pose['head']['rot']
     pose['head']['rot'] = (hx + nod, hy, hz)
     return pose
@@ -410,6 +425,110 @@ def reach_report():
                 worst = max(worst, d)
         out[name] = round(worst, 4)
     return out, leg
+
+
+# ------------------------------------------------------------------ V8 locomotion layers
+# Additive clips: CharacterView adds them on top of the ground pose
+# (AnimationNodeAdd2: each holds deltas from the rest pose, FK only).  None
+# touches the hips: the legs hang from them, so a pelvis turn or drop would
+# move the planted feet (measured: 0.6 m/s of slide in turns) - the
+# posture is carried by the spine, chest, head and arms, and the drive's
+# knee lift only acts on the swinging leg.  Weights come from the
+# character's actual motion; none changes the capsule or the controls.
+
+def clip_accel_add(phase):
+    """Drive (1.0 s, phase-aligned with run/sprint: seeked with the gait
+    phase).  Accelerating from a stop or a slow pace: the body pitches into
+    the push, the swing knee drives higher, the arms pump harder in time
+    with the legs, and the stance foot extends through toe-off."""
+    duty = LOCO['run']['duty']
+    pose = {'spine': {'rot': (-10.0, 0, 0)}, 'chest': {'rot': (-5.0, 0, 0)},
+            'neck': {'rot': (6.0, 0, 0)}, 'head': {'rot': (7.0, 0, 0)}}
+    for side, ph0 in ((-1, 0.0), (1, 0.5)):
+        sfx = '.L' if side < 0 else '.R'
+        ph = (phase + ph0 + duty * 0.5) % 1.0
+        sw = math.sin(2 * math.pi * (phase + ph0))
+        pose['upper_arm' + sfx] = {'rot': (18.0 * sw, -4.0 * side, 0)}
+        pose['forearm' + sfx] = {'rot': (8.0 + 6.0 * max(0.0, sw), 0, 0)}
+        if ph >= duty:
+            u = (ph - duty) / (1.0 - duty)
+            pose['thigh' + sfx] = {'rot': (14.0 * math.sin(math.pi * min(1.0, u / 0.85)), 0, 0)}
+            pose['shin' + sfx] = {'rot': (-10.0 * math.sin(math.pi * min(1.0, u / 0.6)), 0, 0)}
+            # the toe-off extension relaxes in the first part of the swing
+            pose['foot' + sfx] = {'rot': (-10.0 * (1.0 - smoothstep(0.0, 0.3, u)), 0, 0)}
+        else:
+            u = ph / duty
+            pose['foot' + sfx] = {'rot': (-10.0 * smoothstep(0.5, 1.0, u), 0, 0)}
+    return pose
+
+
+def clip_brake_add(_t):
+    """Brake (static): leaning back against the stop - the spine and chest
+    sit back, the head stays level, the arms swing forward and out to
+    balance."""
+    pose = {'spine': {'rot': (12.0, 0, 0)}, 'chest': {'rot': (6.0, 0, 0)},
+            'neck': {'rot': (-5.0, 0, 0)}, 'head': {'rot': (-7.0, 0, 0)}}
+    pose.update(sym({'upper_arm.L': {'rot': (26.0, 10.0, 0)}, 'forearm.L': {'rot': (18.0, 0, 0)}}))
+    return pose
+
+
+def clip_lead(direction):
+    """Turn lead (static; direction +1 = turning left): while the body turns
+    the head looks further into the new direction, the chest and spine
+    follow and the hips (and the planted feet) stay with the gait, so a
+    sharp turn or a 180 is distributed through the body instead of spinning
+    it as one block; the torso dips into the plant, the inside arm opens
+    back and the outside arm swings across."""
+    d = float(direction)
+    pose = {'spine': {'rot': (-4.0, -2.0 * d, 8.0 * d)}, 'chest': {'rot': (-2.0, -1.5 * d, 12.0 * d)},
+            'neck': {'rot': (2.0, 0, 10.0 * d)}, 'head': {'rot': (2.0, 1.5 * d, 16.0 * d)}}
+    inside, outside = ('.L', '.R') if d > 0 else ('.R', '.L')
+    si = -1 if inside == '.L' else 1
+    so = -si
+    pose['upper_arm' + inside] = {'rot': (-16.0, -12.0 * si, 0)}
+    pose['forearm' + inside] = {'rot': (10.0, 0, 0)}
+    pose['upper_arm' + outside] = {'rot': (22.0, 4.0 * so, -10.0 * so)}
+    pose['forearm' + outside] = {'rot': (14.0, 0, 0)}
+    return pose
+
+
+STOP_L = 0.5
+
+
+def clip_stop(t, side):
+    """Planted stop (0.5 s; side -1: the left foot plants in front).  It
+    starts where a stopping run settles: one foot under the body (it stays
+    planted the whole clip) and the other coming through.  That one comes
+    down heel first a stride-length ahead, the knees take the stop, the
+    chest sits back and the arms swing forward; then the body rebounds a
+    touch and the front foot steps back beside the other (lifted: a step,
+    not a slide) into the idle stance.  Played once the body has stopped."""
+    u = min(1.0, t / STOP_L)
+    f, b = side, -side
+    sf = '.L' if f < 0 else '.R'
+    sb = '.L' if b < 0 else '.R'
+    sink = math.sin(math.pi * min(1.0, u / 0.55))
+    settle = smoothstep(0.55, 1.0, u)
+    reb = math.sin(math.pi * smoothstep(0.35, 0.8, u))
+    # the legs are straight at the rest height: the hips stay a little low
+    # through the whole stop so the staggered feet are within reach
+    pose = stand(-0.03 - 0.045 * sink + 0.018 * settle)
+    land = smoothstep(0.0, 0.3, u)                       # the swing comes down onto its spot
+    s2 = min(1.0, max(0.0, (u - 0.62) / 0.33))           # then steps back under the body
+    fwd = lerp(0.06, 0.12, smoothstep(0.0, 0.6, land)) * (1.0 - smoothstep(0.2, 0.8, s2))
+    lift = 0.035 * (1.0 - land) + 0.03 * math.sin(math.pi * s2)
+    pose['foot' + sf] = {'ik': (REST_ANKLE[f] + Vector((0, fwd, lift)), lerp(14.0, 0.0, smoothstep(0.15, 0.5, u)) - 8.0 * math.sin(math.pi * s2))}
+    pose['foot' + sb] = {'ik': (REST_ANKLE[b].copy(), 0.0)}
+    lean = 9.0 * sink * (1.0 - settle) - 3.0 * reb
+    pose['hips']['rot'] = (0, 0, 0)
+    pose['spine'] = {'rot': (lean, 0, 0)}
+    pose['chest'] = {'rot': (lean * 0.4, 0, 0)}
+    pose['neck'] = {'rot': (-lean * 0.35, 0, 0)}
+    pose['head'] = {'rot': (-lean * 0.45 + 2.0 * settle, 0, 0)}
+    a = sink * (1.0 - settle)
+    pose.update(sym({'upper_arm.L': {'rot': (lerp(4.0, 30.0, a), lerp(-11.0, 2.0, a), 0)},
+                     'forearm.L': {'rot': (lerp(16.0, 34.0, a), 0, 0)}, 'hand.L': {'rot': (4, 0, 0)}}))
+    return blend_pose(pose, clip_idle(0.0), smoothstep(0.85, 1.0, u))
 
 
 # ------------------------------------------------------------------ clip library
@@ -556,21 +675,37 @@ def _air(tuck_l, tuck_r, arm_raise, arm_fwd, elbow, spine, head, flap=0.0):
 # Air poses form a blend space over vertical velocity (CharacterView): rising
 # (+5.5 m/s), apex (0) and falling (-7).  Each is a gentle 1 s loop so the
 # blend never pops at the top of the arc.
+# V8: a bound instead of a hop.  Rise: the takeoff - the lead knee drives
+# up, the trailing leg extends behind through a pointed toe, the opposite
+# arm drives forward and up and the other swings back.  Apex: both knees
+# tuck under, the arms open for balance.  Fall: the legs reach down for the
+# ground (toes up a touch, ready to take the landing), the arms stay up and
+# out (<= 84 deg: outside the big head).
 def clip_air_rise(t):
     w = math.sin(2 * math.pi * t)
-    return _air((52, -72, -25), (22, -38, -30), 24 + 3 * w, 38, 55, -6, -6, 3 * w)
+    p = _air((72, -92, -15), (-14, -26, -42), 0, 0, 0, -5, 4, 0)
+    p['upper_arm.R'] = {'rot': (70 + 2 * w, -18, 0)}
+    p['forearm.R'] = {'rot': (60, 0, 0)}
+    p['upper_arm.L'] = {'rot': (-24 - 2 * w, 16, 0)}
+    p['forearm.L'] = {'rot': (40, 0, 0)}
+    p['chest'] = {'rot': (-2, 0, 5)}
+    p['hips']['rot'] = (0, 0, -4)
+    return p
 
 
 def clip_air_apex(t):
     w = math.sin(2 * math.pi * t)
-    return _air((40, -62, -18), (30, -50, -18), 78 + 3 * w, 4, 26, 2, 4, 4 * w)
+    p = _air((58, -84, -20), (46, -74, -20), 62 + 3 * w, 10, 34, 2, 4, 4 * w)
+    p['hips']['loc'] = (0, 0, 0.04)
+    return p
 
 
 def clip_air_fall(t):
     w = math.sin(2 * math.pi * t)
     # V5: arms up and out (85 deg, not 100) so the flailing forearms stay
     # outside the head
-    return _air((16 + 6 * w, -26, -8), (24 - 6 * w, -34, -8), 84 + 5 * w, 16, 30, 5, 9, 12 * w)
+    p = _air((22 + 4 * w, -26, 6), (12 - 4 * w, -18, 4), 80 + 3 * w, 18, 30, 4, 6, 10 * w)
+    return p
 
 
 def _land(t, L, depth, lean, arms):
@@ -580,7 +715,8 @@ def _land(t, L, depth, lean, arms):
     u = min(1.0, t / L)
     dip = math.sin(math.pi * min(1.0, u / 0.6)) if u < 0.6 else 0.14 * math.sin(math.pi * (u - 0.6) / 0.4)
     drop = smoothstep(0.0, 0.45, u)          # arms come down from the fall
-    pose = stand(-depth * dip, 0.012 * dip)
+    # V8: the feet land a little staggered (as they reach in the fall pose)
+    pose = stand(-depth * dip, 0.012 * dip, (0.035, -0.02))
     pose['hips']['rot'] = (-lean * 0.3 * dip, 0, 0)
     pose['spine'] = {'rot': (-lean * dip, 0, 0)}
     pose['neck'] = {'rot': (lean * 0.4 * dip, 0, 0)}
@@ -596,7 +732,7 @@ def clip_land_soft(t):
 
 
 def clip_land_hard(t):
-    return _land(t, 0.45, 0.15, 20, 78)
+    return _land(t, 0.45, 0.17, 24, 78)
 
 
 def clip_dive(t):
@@ -783,16 +919,18 @@ def clip_tag_windup(t):
     it and the body drops.  Also played on the upper body alone while the
     Night Watch keeps running."""
     u = smoothstep(0.0, 0.12, t)
-    p = stand(-0.06 * u, 0.02 * u, (0.05 * u, -0.07 * u))
-    p['hips']['rot'] = (-4 * u, 0, -6 * u)
-    p['spine'] = {'rot': (-6 * u, 0, -12 * u)}
-    p['chest'] = {'rot': (-3 * u, 0, -9 * u)}
-    p['head'] = {'rot': (8 * u, 0, 14 * u)}
-    p['upper_arm.L'] = {'rot': (lerp(4, -38, u), lerp(-11, 22, u), 0)}
-    p['forearm.L'] = {'rot': (lerp(16, 92, u), 0, 0)}
-    p['hand.L'] = {'rot': (-12 * u, 0, 0)}
-    p['upper_arm.R'] = {'rot': (lerp(4, 30, u), 11, 0)}
-    p['forearm.R'] = {'rot': (lerp(16, 50, u), 0, 0)}
+    # V8: a deeper, clearer coil (lower, more turned, the hand further back)
+    # so the wind-up reads at gameplay distance; same 0.14 s
+    p = stand(-0.08 * u, 0.024 * u, (0.05 * u, -0.08 * u))
+    p['hips']['rot'] = (-5 * u, 0, -8 * u)
+    p['spine'] = {'rot': (-8 * u, 0, -16 * u)}
+    p['chest'] = {'rot': (-4 * u, 0, -12 * u)}
+    p['head'] = {'rot': (9 * u, 0, 22 * u)}
+    p['upper_arm.L'] = {'rot': (lerp(4, -50, u), lerp(-11, 26, u), 0)}
+    p['forearm.L'] = {'rot': (lerp(16, 100, u), 0, 0)}
+    p['hand.L'] = {'rot': (-16 * u, 0, 0)}
+    p['upper_arm.R'] = {'rot': (lerp(4, 34, u), 11, 0)}
+    p['forearm.R'] = {'rot': (lerp(16, 54, u), 0, 0)}
     return p
 
 
@@ -802,19 +940,22 @@ def clip_tag_lunge(t):
     stance across the ground).  Ease-out: full reach almost at once."""
     v = min(1.0, t / 0.11)
     u = 1.0 - (1.0 - v) ** 2
-    p = {'hips': {'loc': (0, 0.03 * u, -0.05 * u + 0.03 * u), 'rot': (-14 * u, 0, 8 * u)}}
+    # V8: one long committed line from the trailing toe to the reaching
+    # mitten (V5 reached 98 deg with a bent body): the reach arm straight,
+    # the torso long and low, the flashlight arm thrown back as a counter
+    p = {'hips': {'loc': (0, 0.03 * u, -0.06 * u + 0.03 * u), 'rot': (-18 * u, 0, 9 * u)}}
     # right leg drives forward (knee up), left leg trails extended
-    p['foot.R'] = {'ik': (REST_ANKLE[1] + Vector((0.0, 0.20 * u, 0.10 * u)), lerp(0, 18, u))}
-    p['foot.L'] = {'ik': (REST_ANKLE[-1] + Vector((0.0, -0.26 * u, 0.13 * u)), lerp(0, -48, u))}
-    p['spine'] = {'rot': (-16 * u, 0, 8 * u)}
-    p['chest'] = {'rot': (-8 * u, 0, 6 * u)}
-    p['neck'] = {'rot': (10 * u, 0, 0)}
-    p['head'] = {'rot': (14 * u, 0, -10 * u)}
-    p['upper_arm.L'] = {'rot': (lerp(-38, 98, u), lerp(22, -4, u), 0)}
-    p['forearm.L'] = {'rot': (lerp(92, 6, u), 0, 0)}
-    p['hand.L'] = {'rot': (lerp(-12, -14, u), 0, 0)}
-    p['upper_arm.R'] = {'rot': (lerp(30, -42, u), lerp(11, 16, u), 0)}
-    p['forearm.R'] = {'rot': (lerp(50, 34, u), 0, 0)}
+    p['foot.R'] = {'ik': (REST_ANKLE[1] + Vector((0.0, 0.21 * u, 0.11 * u)), lerp(0, 18, u))}
+    p['foot.L'] = {'ik': (REST_ANKLE[-1] + Vector((0.0, -0.29 * u, 0.15 * u)), lerp(0, -56, u))}
+    p['spine'] = {'rot': (-20 * u, 0, 9 * u)}
+    p['chest'] = {'rot': (-9 * u, 0, 7 * u)}
+    p['neck'] = {'rot': (12 * u, 0, 0)}
+    p['head'] = {'rot': (18 * u, 0, -12 * u)}
+    p['upper_arm.L'] = {'rot': (lerp(-50, 104, u), lerp(26, -4, u), 0)}
+    p['forearm.L'] = {'rot': (lerp(100, 2, u), 0, 0)}
+    p['hand.L'] = {'rot': (lerp(-16, -10, u), 0, 0)}
+    p['upper_arm.R'] = {'rot': (lerp(34, -54, u), lerp(11, 18, u), 0)}
+    p['forearm.R'] = {'rot': (lerp(54, 30, u), 0, 0)}
     return p
 
 
@@ -826,6 +967,15 @@ def clip_tag_recover(t):
     dip = math.sin(math.pi * min(1.0, t / 0.3)) * 0.05
     hl = p['hips'].get('loc', (0, 0, 0))
     p['hips']['loc'] = (hl[0], hl[1], hl[2] - dip)
+    # V8: contact - the reaching mitten closes and pulls back toward the
+    # chest ("got you") before the arm settles
+    g = math.sin(math.pi * min(1.0, t / 0.26)) * (1.0 - u)
+    ua = p['upper_arm.L']['rot']
+    fa = p['forearm.L']['rot']
+    p['upper_arm.L'] = {'rot': (ua[0] - 26 * g, ua[1] + 6 * g, ua[2])}
+    p['forearm.L'] = {'rot': (fa[0] + 58 * g, fa[1], fa[2])}
+    p['hand.L'] = {'rot': (-20 * g, 0, 0)}
+    p['chest'] = {'rot': (p.get('chest', {}).get('rot', (0, 0, 0))[0] + 4 * g, 0, 6 * g)}
     return p
 
 
@@ -833,16 +983,19 @@ def clip_tag_miss(t):
     """Lunge that finds nobody (0.5 s, same window as tag_recover): the arm
     sweeps through empty air and the body wobbles back to balance."""
     u = smoothstep(0.0, 0.45, t)
-    over = math.sin(math.pi * min(1.0, t / 0.3))
+    # V8: the sweep's envelope ends with zero slope (sin^2; sin's kink at
+    # 0.3 s read as a snap of the flashlight hand once the V8 swing was wider)
+    over = math.sin(math.pi * min(1.0, t / 0.3)) ** 2
     p = blend_pose(clip_tag_lunge(0.22), clip_idle(0.0), u)
     dip = math.sin(math.pi * min(1.0, t / 0.3)) * 0.05
     hl = p['hips'].get('loc', (0, 0, 0))
     p['hips']['loc'] = (hl[0], hl[1], hl[2] - dip)
-    p['upper_arm.L'] = {'rot': (lerp(98, 4, u) - 24 * over, lerp(-4, -11, u) + 34 * over, 0)}
-    p['forearm.L'] = {'rot': (lerp(6, 16, u) + 30 * over, 0, 0)}
-    p['upper_arm.R'] = {'rot': (lerp(-42, 4, u) + 18 * over, lerp(16, 11, u) - 30 * over, 0)}
-    p['spine'] = {'rot': (lerp(-16, 0, u), 0, 10 * over)}
-    p['head'] = {'rot': (lerp(14, 0, u), 0, -14 * over)}
+    # (V8: starts from the V8 lunge's end pose, so lunge -> miss is continuous)
+    p['upper_arm.L'] = {'rot': (lerp(104, 4, u) - 24 * over, lerp(-4, -11, u) + 34 * over, 0)}
+    p['forearm.L'] = {'rot': (lerp(2, 16, u) + 30 * over, 0, 0)}
+    p['upper_arm.R'] = {'rot': (lerp(-54, 4, u) + 18 * over, lerp(18, 11, u) - 30 * over, 0)}
+    p['spine'] = {'rot': (lerp(-20, 0, u), 0, 10 * over)}
+    p['head'] = {'rot': (lerp(18, 0, u), 0, -14 * over)}
     return p
 
 
@@ -1197,6 +1350,14 @@ def library():
         'stumble': (0.55, False, clip_stumble),
         'flop': (0.9, False, clip_flop),
         'dizzy': (2.0, True, clip_dizzy),
+        # V8 locomotion layers (additive) and planted stops
+        'loco_accel': (1.0, True, clip_accel_add),
+        'loco_brake': (1.0, True, clip_brake_add),
+        'lead_l': (1.0, True, lambda t: clip_lead(1)),
+        'lead_r': (1.0, True, lambda t: clip_lead(-1)),
+        'add_zero': (1.0, True, lambda t: {}),
+        'stop_l': (STOP_L, False, lambda t: clip_stop(t, -1)),
+        'stop_r': (STOP_L, False, lambda t: clip_stop(t, 1)),
         'tag_windup': (0.14, False, clip_tag_windup),
         'tag_lunge': (0.22, False, clip_tag_lunge),
         'tag_recover': (0.5, False, clip_tag_recover),

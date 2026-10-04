@@ -118,6 +118,44 @@ static func press(visual: Control, down: bool) -> void:
 		animate(visual, "scale", Vector2.ONE, PRESS_OUT, Tween.TRANS_BACK, Tween.EASE_OUT)
 
 
+## Register a sequence tween built by the caller as the owner of `prop`
+## (stopped by the next animate/stop of that property, freed with the node).
+static func own(node: Node, prop: String, tw: Tween) -> void:
+	if node == null or not is_instance_valid(node) or tw == null:
+		return
+	var owners := _owners(node)
+	owners[prop] = tw
+	tw.finished.connect(_release.bind(node.get_instance_id(), prop, tw), CONNECT_ONE_SHOT)
+
+
+## V8: a confirmed choice (Ready, a stamp): the visual swells 4 % and settles
+## back (0.26 s); nothing with Reduced Motion (the state change says it).
+static func confirm(visual: Control) -> void:
+	if visual == null or not is_instance_valid(visual) or reduced():
+		return
+	visual.pivot_offset = visual.size * 0.5
+	stop(visual, "scale")
+	visual.scale = Vector2.ONE
+	var tw := visual.create_tween()
+	tw.tween_property(visual, "scale", Vector2.ONE * 1.04, 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(visual, "scale", Vector2.ONE, 0.17).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	own(visual, "scale", tw)
+
+
+## V8: a group arriving in order (results cards): each fades in `step` after
+## the one before.  Opacity only: containers own the layout and every hit
+## region is in place from the first frame.  Reduced Motion: one plain fade.
+static func stagger(items: Array, step: float = 0.05, dur: float = PANEL) -> void:
+	var i := 0
+	for it in items:
+		var c := it as Control
+		if c == null or not is_instance_valid(c):
+			continue
+		c.modulate.a = 0.0
+		animate(c, "modulate:a", 1.0, dur, Tween.TRANS_QUAD, Tween.EASE_OUT, 0.0 if reduced() else i * step)
+		i += 1
+
+
 ## Fade in, with a short rise (none with Reduced Motion).  `visual` must be
 ## free to move: a child the containers don't position, or a top-level sheet.
 static func appear(visual: Control, rise: float = 10.0, dur: float = PANEL) -> void:

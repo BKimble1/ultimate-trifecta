@@ -264,6 +264,8 @@ func _finish() -> void:
 		worst.append(r)
 	summary["worst_frames"] = worst
 	summary["slow_searches"] = _slow
+	summary["nav"] = {"path_stats": _nav.path_stats.duplicate(), "waits": _nav.get("stat_wait_n"),
+		"waited_ms": float(_nav.get("stat_waited_us")) / 1000.0 if _nav.get("stat_waited_us") != null else null}
 	var txt := JSON.stringify(summary, " ")
 	if out_path != "":
 		var f := FileAccess.open(out_path, FileAccess.WRITE)
@@ -294,7 +296,7 @@ func _finish() -> void:
 		else:
 			foot_n += 1
 		worst_ms = maxf(worst_ms, float(e[5]))
-	printerr("BENCH slow path searches (>8 ms): foot %d cart %d worst %.1f ms" % [foot_n, cart_n, worst_ms])
+	printerr("BENCH slow path searches (>8 ms): foot %d cart %d worst %.1f ms; %s" % [foot_n, cart_n, worst_ms, JSON.stringify(summary["nav"])])
 	printerr("BENCH DONE")
 	get_tree().quit()
 

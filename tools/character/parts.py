@@ -9,7 +9,7 @@ from mathutils import Vector, Matrix
 import geo
 from geo import (MeshBuilder, Style, sweep, ellipsoid, lathe, slab, torus_profile, rot_align, rot_x, rot_y, rot_z, MAT_LIT,
                  smoothstep, lerp, srgb, T_NONE, T_HAIR, T_SKIN, T_SECOND, T_DARK, T_PRIMARY,
-                 MAT_CLOTH, MAT_SKIN, MAT_RUBBER, MAT_GLOSS, MAT_EMIT)
+                 MAT_CLOTH, MAT_SKIN, MAT_RUBBER, MAT_GLOSS, MAT_EMIT, MAT_SATIN, MAT_METAL)
 import rig
 from rig import (torso_w, skirt_w, arm_w, leg_w, rigid, torso_r, torso_front_y, head_point, head_normal, head_front_y,
                  shoulder, elbow, wrist, arm_dir, hip, knee, ankle, HEAD_C, HEAD_R, HEAD_P, TORSO_RY, TORSO_CY)
@@ -201,7 +201,12 @@ def build_base():
         c = p - n * 0.003
         aux = (c.copy(), side_v.copy(), up_v.copy(), n.copy(), sx)
         tag = 'eyeL' if sx < 0 else 'eyeR'
-        ellipsoid(mb, c, (0.053, 0.067, EYE_D), sclera, hw, segs=20, rings=14, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        # V8: the eye parts carry their analytic normals (round highlights on
+        # the shallow domes; V7's followed the 20-gon) and the iris, pupil and
+        # catch-lights have a few more segments (their outlines are seen up
+        # close in menus and portraits)
+        ellipsoid(mb, c, (0.053, 0.067, EYE_D), sclera, hw, segs=20, rings=14, rot=R, tag=tag, aux=aux, cut_below=-0.35,
+                  normals=True)
         # V6: upper lash line hugging the top of the white, thicker toward
         # the outer corner with a small flick.  It carries the eye's frame,
         # so blink, squint and the face presets move it with the lid.
@@ -229,13 +234,17 @@ def build_base():
                 mb.aux[vi] = aux
         k = EYE_D / 0.02
         pc = c + n * (0.0135 * k) - up_v * 0.006 + inward * 0.004
-        ellipsoid(mb, pc, (0.041, 0.051, 0.012 * k), iris, hw, segs=18, rings=12, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        ellipsoid(mb, pc, (0.041, 0.051, 0.012 * k), iris, hw, segs=24, rings=12, rot=R, tag=tag, aux=aux, cut_below=-0.35,
+                  normals=True)
         ppc = pc + n * (0.006 * k) - up_v * 0.002
-        ellipsoid(mb, ppc, (0.027, 0.034, 0.0068 * k), pupil, hw, segs=14, rings=10, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        ellipsoid(mb, ppc, (0.027, 0.034, 0.0068 * k), pupil, hw, segs=18, rings=10, rot=R, tag=tag, aux=aux, cut_below=-0.35,
+                  normals=True)
         hc = pc + n * (0.0105 * k) + up_v * 0.017 - inward * 0.012
-        ellipsoid(mb, hc, (0.0145, 0.0155, 0.004 * k), shine, hw, segs=10, rings=6, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        ellipsoid(mb, hc, (0.0145, 0.0155, 0.004 * k), shine, hw, segs=16, rings=6, rot=R, tag=tag, aux=aux, cut_below=-0.35,
+                  normals=True)
         hc2 = pc + n * (0.0095 * k) - up_v * 0.019 + inward * 0.011
-        ellipsoid(mb, hc2, (0.006, 0.006, 0.003 * k), shine, hw, segs=8, rings=4, rot=R, tag=tag, aux=aux, cut_below=-0.35)
+        ellipsoid(mb, hc2, (0.006, 0.006, 0.003 * k), shine, hw, segs=12, rings=4, rot=R, tag=tag, aux=aux, cut_below=-0.35,
+                  normals=True)
         # brow: short arched bar on the surface
         bpts = []
         for i in range(7):
@@ -697,7 +706,8 @@ def build_swim():
 def build_robe():
     mb = MeshBuilder('robe')
     robe = Style('#ffffff', T_SECOND, 0.95, MAT_CLOTH)
-    trim = Style('#f4f2ec', T_NONE, 0.95, MAT_CLOTH)
+    trim = Style('#f4f2ec', T_NONE, 0.5, MAT_SATIN)          # V8: satin lapels and cuffs
+    sash = Style('#ffffff', T_PRIMARY, 0.45, MAT_SATIN)       # V8: a satin sash
     prof = [(0.33, 0.20), (0.30, 0.255), (0.305, 0.27), (0.34, 0.262), (0.40, 0.252), (0.46, 0.245), (0.52, 0.244)]
     z = 0.55
     while z <= 0.86:
@@ -719,13 +729,13 @@ def build_robe():
         sweep(mb, pts, [(0.009, 0.036)] * len(pts), trim, lambda p, sv, i: torso_w(p), segs=10, twist_hint=UP)
     # sash belt + knot + tails
     lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), torus_profile(0.6, torso_r(0.6) + 0.042, 0.017, 10),
-          CLOTH_P_PLAIN, lambda p: torso_w(p), segs=26, closed_profile=True, ry_scale=TORSO_RY)
+          sash, lambda p: torso_w(p), segs=26, closed_profile=True, ry_scale=TORSO_RY)
     p, n = on_torso(-0.07, 0.6, 0.06)
-    ellipsoid(mb, p, (0.03, 0.026, 0.022), CLOTH_P_PLAIN, lambda q: torso_w(q), segs=10, rings=8, rot=rot_align(n, UP))
+    ellipsoid(mb, p, (0.03, 0.026, 0.022), sash, lambda q: torso_w(q), segs=10, rings=8, rot=rot_align(n, UP))
     for dx in (-0.02, 0.02):
         top, n2 = on_torso(-0.07 + dx, 0.585, 0.058)
         pts = _dense_path([top, top + Vector((dx * 0.8, 0.01, -0.07)), top + Vector((dx * 1.4, 0.005, -0.13))], 0.02)
-        sweep(mb, pts, [(0.016, 0.006)] * len(pts), CLOTH_P_PLAIN, lambda p, sv, i: skirt_w(p), segs=8, twist_hint=FWD)
+        sweep(mb, pts, [(0.016, 0.006)] * len(pts), sash, lambda p, sv, i: skirt_w(p), segs=8, twist_hint=FWD)
     return mb
 
 
@@ -843,10 +853,10 @@ def build_frog():
 NAVY = Style('#2b3a66', T_NONE, 0.88, MAT_CLOTH)
 NAVY_D = Style('#1f2a4a', T_NONE, 0.88, MAT_CLOTH)
 HIVIS = Style('#ffc93c', T_NONE, 0.35, MAT_GLOSS)
-GOLD = Style('#f2c14e', T_NONE, 0.3, MAT_GLOSS)
+GOLD = Style('#f2c14e', T_NONE, 0.3, MAT_METAL)
 LEATHER = Style('#22242c', T_NONE, 0.45, MAT_RUBBER)
 SOLE_DARK = Style('#141519', T_NONE, 0.7, MAT_RUBBER)
-SILVER = Style('#cfd3dc', T_NONE, 0.25, MAT_GLOSS)
+SILVER = Style('#cfd3dc', T_NONE, 0.25, MAT_METAL)
 
 
 def build_watch():
@@ -921,7 +931,7 @@ def build_flashlight():
     d = arm_dir(side)
     c = w + d * 0.052
     R = rot_align(FWD, UP)
-    body = Style('#2a2d36', T_NONE, 0.35, MAT_GLOSS)
+    body = Style('#2a2d36', T_NONE, 0.4, MAT_METAL)    # V8: anodised metal
     prof = [(-0.07, 0.0), (-0.07, 0.019), (0.02, 0.02), (0.05, 0.03), (0.09, 0.032), (0.095, 0.0)]
     lathe(mb, c, R, prof, body, rigid('hand.R'), segs=14)
     lathe(mb, c, R, [(0.096, 0.0), (0.096, 0.026), (0.1, 0.0)], Style('#fff4c8', T_NONE, 0.1, MAT_EMIT), rigid('hand.R'),
@@ -1140,10 +1150,18 @@ def _goggle_cup(mb):
         for k in range(m):
             p = lip[k].lerp(lc, f) + N * (0.0024 * (1.0 - (1.0 - f) ** 2))
             d = p - c0
-            row.append(mb.vert(p, GOG_LENS, (0, 0), hw(None), col_override=lens_col(d.dot(U), d.dot(V))))
+            vi = mb.vert(p, GOG_LENS, (0, 0), hw(None), col_override=lens_col(d.dot(U), d.dot(V)))
+            # V8: the dome's own normal (height 2.4 mm * (1 - r^2), r the
+            # fraction toward the lip): the glass shades as one smooth curve
+            out = lip[k] - lc
+            rk = max(1e-6, out.length)
+            slope = 0.0024 * 2.0 * (1.0 - f) / rk
+            mb.nrm[vi] = (N + out.normalized() * slope).normalized()
+            row.append(vi)
         lrows.append(row)
     pc = lc + N * 0.0024
     pole = mb.vert(pc, GOG_LENS, (0, 0), hw(None), col_override=lens_col(0.0, 0.0))
+    mb.nrm[pole] = N.normalized()
     mb.grid(lrows, True, None, pole)
     # the strap's attachment: the outer side of the outline (u = +A, v = 0)
     q, s_, ns, w = surf[0]
@@ -1247,7 +1265,7 @@ def build_headphones():
 
 def build_crown():
     mb = MeshBuilder('hat_crown')
-    gold = Style('#ffc94a', T_NONE, 0.3, MAT_GLOSS)
+    gold = Style('#ffc94a', T_NONE, 0.3, MAT_METAL)
     segs = 40
     rings = []
     zb = 1.39
