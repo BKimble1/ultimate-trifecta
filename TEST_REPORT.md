@@ -96,7 +96,22 @@ is not proven.
 
 ## V8.5 iOS build (CI iOS) and TestFlight
 
-RELEASE_REPORT_PLACEHOLDER
+- **Gating CI:** push run #97 (commit `5e96387`, the final game code)
+  green: 418 tests, 99,344 checks, 0 failures; upload run #99 (commit
+  `00dc652`, the same code plus documentation): **418 tests, 99,343 checks,
+  0 failures**; signed archive and upload, `CFBundleShortVersionString` 1.7,
+  `CFBundleVersion` 7; launch and branding audit **PASS**; 40 Metal
+  `shader_cache` entries.
+- **Simulator (x86_64, ~1 fps):** cold launch running, no crash report, 0
+  script errors, 23 screenshots; the bot round was still preparing
+  (phase 1) when the window closed. Not a phone.
+- **TestFlight:** **1.7 (7)** uploaded 2026-10-04 23:00:18 UTC; App Store
+  Connect build `3a68fdfb-043d-4e2f-882d-793e09dd7956`, processing `VALID`,
+  `INTERNAL_ONLY`, internal state `IN_BETA_TESTING` (external
+  `NOT_APPLICABLE`), What to Test set (1806 characters); the existing
+  internal group receives every build automatically. Read from Apple's API
+  by run #99 at 23:18 UTC. No testers added, nothing submitted, no purchase
+  made.
 
 ## V8.6 Not verified (exact remaining checks)
 

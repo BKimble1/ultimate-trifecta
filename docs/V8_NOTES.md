@@ -139,6 +139,10 @@ memory +1.2 MB over nine rounds once the bench keeps no records.
 99,344 checks, 0 failures**; export, launch/branding audit and unsigned
 device archive passed.
 
+**Release**: **1.7 (7)** from commit `00dc652` (run #99): Apple's
+processing `VALID`, internal `IN_BETA_TESTING`, What to Test set, the
+existing internal group only. Details in TESTFLIGHT_RELEASE.md.
+
 ## Open, and not verified
 
 - **Everything on a phone**: frame rate, presentation pacing, GPU time,

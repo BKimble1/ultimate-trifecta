@@ -19,11 +19,24 @@ Current version: **1.7 (V8)**. It uses the same app, bundle ID, Game Center capa
 
 ## Current release state
 
-**1.7 (V8): source prepared · project compiled and tested (CI run #97: 418 tests, 99,344 checks, 0 failures) · signed archive and upload: in progress.** This section is updated with Apple's processing state once the upload run reports it. Until then the latest available build is **1.6 (6)**, described below.
-
-**1.6 (6): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.**
+**State: source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **1.7 (7)**.
 
 It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, nothing was submitted for App Store review, and no purchase of any kind was made.
+
+| | |
+|---|---|
+| Build | `com.idlery.ultimatetrifecta` **1.7 (7)**. App Store Connect build ID `3a68fdfb-043d-4e2f-882d-793e09dd7956`. |
+| Build number | **7**: the lane read the highest existing build (1.6 (6)) and added one. Status run #98 had shown builds 1–6 and no 1.7 beforehand, and no other session was working on this app. |
+| Source | Commit `00dc652`: all V8 code as of `5e96387` (tested by push run #97) plus documentation. Later commits change only documentation and evidence. |
+| Uploaded | 2026-10-04 23:00:18 UTC, by GitHub Actions run #99 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37241343086) with `upload=true`. The headless tests gate the build: **418 tests, 99,343 checks, 0 failures**. |
+| Apple's processing | `VALID`. The build is `INTERNAL_ONLY` and declares no non-exempt encryption. |
+| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. What to Test is set from `docs/testflight/what_to_test.txt` (1806 characters, en-US). |
+| Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which receives every build. The lane added no one. TestFlight's automatic notification is on. |
+| Confirmed by | Apple's API, read by run #99 at 23:18 UTC. |
+
+What the signed archive contains (run #99's build facts): arm64, app 297 MB (1.6: 296 MB); Xcode 26.6 (17F113), iOS SDK 26.5; `CFBundleIdentifier` `com.idlery.ultimatetrifecta`, `CFBundleShortVersionString` 1.7, `CFBundleVersion` 7, MinimumOSVersion 17.0, iPhone and iPad, landscape left and right; `ITSAppUsesNonExemptEncryption` false; the Game Center entitlement and friends purpose string; `GodotApplePluginsGameCenter`, `GodotApplePluginsStoreKit`, `SwiftGodotRuntime` and `UTShare` (arm64) embedded; the privacy manifest. What run #99 checked besides the upload: the launch and branding audit **PASS** (one black launch storyboard; both 2048² launch images opaque with black corners and the Idlery teal mark; 0 "powered by" strings); the shader-baking export (exit code 0, **40 `shader_cache` entries**); and the x86_64 Simulator (cold launch still running, no crash report, 0 script errors, 23 screenshots; at about 1 fps it was still preparing the bot round, phase 1, when the window closed, as with 1.6). The Simulator says nothing about device speed.
+
+The previous build, **1.6 (6)**, as recorded when it shipped:
 
 | | |
 |---|---|
