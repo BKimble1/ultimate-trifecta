@@ -115,6 +115,47 @@ written against public state so it also runs on the old build, where it
 fails: touchdown 1.00, 17 m sideways in both layouts, a 5° lean swings the
 camera −34° in 5 s — `docs/v7/stick/test_stick_round_on_prefix_build.txt`).
 
+## The five screens from the owner's screenshots
+
+The screenshots (IMG_3016–3020) were not attached to this work; each defect
+was reproduced from the brief's table on the same screens and states, at
+seven landscape shapes (667×375, 812×375, 844×390, 926×428 pt phones, a
+1024×768 pt iPad, and the 2048×946 / 1536×710 screenshot aspects), and
+measured from the running layout (final allocated rects, never minimum
+sizes). Full registers: `docs/v7/menus_notes.md` (M1–M13) and
+`docs/v7/screens_notes.md` (S1–S11). Matched before/after captures:
+`docs/media/v7/menus/` and `docs/media/v7/screens/` (llvmpipe, emulated
+point scale and safe area; service-on states use the labelled test
+adapters, service-off is the shipped configuration).
+
+| Screen | Before (measured, 844×390 pt unless noted) | After |
+|---|---|---|
+| IMG_3016 Emotes | Every emote glyph centred (+88, +88) units off its well, past the card edge; cards 199×291 in a 320-unit list; a 320×90 disabled "Wearing this" and a caption under the panel | Glyphs centred by construction (0, 0 offset at every size) in one redrawn icon set; 5 columns of 149×163 cards, all 10 emotes in view; a small Equipped line; Save look / Undo appear only when the look changed, inside the panel |
+| IMG_3017 Season Pass | Service off: the Premium row ran to y 750 on a 720-unit screen and Claim was 65 % visible ("Ready to claim" over a dead button); 812×375 service on: Premium 5 units past the safe bottom; name cards an empty strip | A one-row header; the track takes the height left (the 132-unit cell minimum is gone) so Free and Premium are whole at every size; the detail action sits outside its scroll; "Rewards unavailable right now" and "Earned at Tier N, not claimed yet" with the reason above a visibly disabled Claim; name cards with the player's name and badge, hat/feet/full-body framing, medallion badges, Coin piles, emotes on a small live runner |
+| IMG_3018 Locker Outfit | Tall cards cropping the next row; a filler "more in the Shop" card; every outfit thumbnail wearing the player's nightcap and slippers | Columns from the panel's final width with per-type wells; a one-line "N more in the Shop ›" link; outfits pictured with no hat and plain shoes (the runner keeps the real look) |
+| IMG_3019 Settings | One panel: a profile paragraph and a strip of 240–300-unit buttons (Delete among them); Sound 2.9 screens down; Sprint choices at the bottom edge | Grouped cards of compact rows under a fixed header: Profile, Controls, Sound (1.5 screens down), Camera & comfort, Graphics, Diagnostics, Privacy, How to play, Credits, then Delete game profile on its own (confirmation unchanged); same saved keys and values |
+| IMG_3020 Play with Friends | A 600-unit column: the friends entry cut off on every phone; a 320×88 field and 200×88 Join; with the keyboard open the code row (bottom y 547) sat under the keyboard (top 334) | A header with the player's identity, then Start a party and Join with a code side by side (field and Join one height and type size) and the Game Center friends card, all whole in the first view; the code row ends at y ≈ 253, above typical landscape keyboards, and moves by exactly the overlap if a taller keyboard would cover it; Back never moves |
+
+Also swept: confirmations "Leave this party?" and "End this series now?"
+now take Back (it did nothing); with 4+ players the party room no longer
+frames a runner behind the roster; results and final standings show their
+first table rows in the first view on small phones; long blocked-player and
+standings lists scroll inside their sheets; entries fade instead of scaling
+(no hit-target shift in the first frames). Shop: the Locker's card system,
+one short unavailable line, status right above the action; purchase,
+confirmation, Restore and pending flows unchanged. IDs, prices, XP, unlocks
+and entitlements are unchanged; nothing is granted or faked.
+
+Tests: `test_menus_layout` (10 tests: Pass rows and detail action at every
+size, service off, Free/Premium/claim states, Locker and Shop bounds at every
+size, neutral outfit pictures, swipes from glyphs/portraits/labels never
+select, one centred emote set, controller focus, entry never moves hit
+targets) and `test_v7_screens` (10 tests at seven sizes: Friends first view,
+keyboard, code messages, Game Center states, Settings sections, finger
+scrolling keeps values, Delete still confirmed, party room 1/4/8 players,
+results/standings, long lists); `tools/check_v7_screens.sh` runs the
+screens file at each device's real point scale and safe area.
+
 ## Characters and goggles
 
 Full notes: `docs/v7/character_notes.md`; before/after renders and a reel in
