@@ -65,7 +65,16 @@ func snap(shot: String) -> void:
 	var img := get_viewport().get_texture().get_image()
 	img.save_png(out_dir.path_join(shot + ".png"))
 	measures[shot] = _measure()
+	_write_measures()
 	printerr("CAPTURE %s %dx%d" % [shot, img.get_width(), img.get_height()])
+
+
+## Written after every shot, so a run cut short keeps what it measured.
+func _write_measures() -> void:
+	var f := FileAccess.open(out_dir.path_join("measure.json"), FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(measures, "  ", false))
+		f.close()
 
 
 # ------------------------------------------------------------------ measuring
@@ -395,8 +404,6 @@ func _run() -> void:
 	(App.screen as CreatorScreen)._select_tab("move")
 	await _wait(0.5)
 	await snap("43_svcoff_locker_emotes")
-	var f := FileAccess.open(out_dir.path_join("measure.json"), FileAccess.WRITE)
-	f.store_string(JSON.stringify(measures, "  ", false))
-	f.close()
+	_write_measures()
 	printerr("CAPTURE-DONE")
 	get_tree().quit()

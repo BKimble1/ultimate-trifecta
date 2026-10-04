@@ -29,7 +29,7 @@ for d in $DEVICES; do
   esac
   w=${res%x*}; h=${res#*x}
   mkdir -p "$OUT/$d"
-  XDG_DATA_HOME=$(mktemp -d) timeout "${CAPTURE_TIMEOUT:-1200}" nice -n 10 xvfb-run -a -s "-screen 0 $((w + 64))x$((h + 64))x24" \
+  XDG_DATA_HOME=$(mktemp -d) timeout "${CAPTURE_TIMEOUT:-5400}" nice -n 10 xvfb-run -a -s "-screen 0 $((w + 64))x$((h + 64))x24" \
     tools/gd.sh --path game --resolution "$res" res://src/dev/menus_capture.tscn -- \
     --capture-dir="$OUT/$d" --emulate-phone="$scale" --emulate-safe="$safe" --no-gamecenter ${CAPTURE_ARGS:-} > "$OUT/$d/log.txt" 2>&1 || true
   echo "== $d $res @${scale} safe $safe: $(grep -c '^CAPTURE ' "$OUT/$d/log.txt" || true) shots"

@@ -432,7 +432,7 @@ func _fit_detail() -> void:
 		return
 	for k in ["name", "state", "reason"]:
 		(_d[k] as Control).custom_minimum_size.x = w
-	(_d["art"] as Control).custom_minimum_size.y = clampf(w * 0.56, 130.0, 240.0)
+	(_d["art"] as Control).custom_minimum_size.y = clampf(w * 0.58, 130.0, 260.0)
 	if is_instance_valid(_preview):
 		_preview.custom_minimum_size = Vector2(0, (_d["art"] as Control).custom_minimum_size.y)
 
@@ -460,16 +460,16 @@ func _refresh_detail() -> void:
 	var xp := int(Wallet.season_state(sid)["xp"])
 	var need := int(Catalogue.season_tiers(sid)[focus_tier - 1]["xp"]) - xp
 	var into := "wallet" if r.has("coins") else "Locker"
-	var lead := ("No Free reward at Tier %d; this is its Premium reward. " % focus_tier) if _from_empty else ""
+	var lead := ("No Free reward at Tier %d. " % focus_tier) if _from_empty else ""
 	match st:
 		"empty":
 			state_l.text = "The Free track skips this tier."
 			action.visible = false
 		"locked":
-			state_l.text = lead + "Reach Tier %d to unlock it: %s more Season XP from online rounds. No tier skips." % [focus_tier, Catalogue.format_coins(maxi(0, need))]
+			state_l.text = lead + "Reach Tier %d: %s more Season XP from online rounds. No tier skips." % [focus_tier, Catalogue.format_coins(maxi(0, need))]
 			action.visible = false
 		"premium_locked":
-			state_l.text = lead + "You've reached this tier. Premium unlocks it (%s Coins in the Shop), with every Premium reward you've earned." % Catalogue.format_coins(Catalogue.price(String(Catalogue.season(sid).get("premium_item", ""))))
+			state_l.text = lead + "Reached. Premium (%s Coins in the Shop) unlocks it and every Premium reward you've earned." % Catalogue.format_coins(Catalogue.price(String(Catalogue.season(sid).get("premium_item", ""))))
 			action.text = "Get Premium in the Shop" if bool(cs["ok"]) else "See Premium in the Shop"
 			if not bool(cs["ok"]):
 				reason_l.text = "Rewards unavailable right now. " + String(cs["reason"])
@@ -604,8 +604,8 @@ class RewardCell:
 		if reward.is_empty():
 			# a blank Free slot: quiet, aligned, still tappable (it explains
 			# the tier's Premium reward)
-			var q := UIKit.box(Color(UIKit.SLATE_LO, 0.35), UIKit.R_CARD, 1, Color(UIKit.IVORY, 0.06), 0)
-			var qs := UIKit.box(Color(UIKit.SLATE_LO, 0.5), UIKit.R_CARD, 2, UIKit.TEAL, 0)
+			var q := UIKit.box(Color(UIKit.SLATE_LO, 0.18), UIKit.R_CARD, 0, Color.WHITE, 0)
+			var qs := UIKit.box(Color(UIKit.SLATE_LO, 0.4), UIKit.R_CARD, 2, UIKit.TEAL, 0)
 			f.styles = {"normal": q, "hover": q, "pressed": q, "disabled": q, "selected": qs}
 		elif tr == "premium":
 			var bg := UIKit.SLATE_HI.lerp(Color("6a5226"), 0.2)
@@ -695,7 +695,7 @@ class RewardArt:
 		if reward.is_empty():
 			# a quiet dash, centred
 			var c0 := size * 0.5
-			draw_line(c0 + Vector2(-9, 0), c0 + Vector2(9, 0), UIKit.IVORY_DIM, 3.0, true)
+			draw_line(c0 + Vector2(-8, 0), c0 + Vector2(8, 0), Color(UIKit.IVORY, 0.25), 3.0, true)
 			return
 		var dim := state == "locked"
 		var ar := art_rect()
@@ -719,9 +719,15 @@ class RewardArt:
 			elif kind == "emote":
 				var eid := TC.EMOTES.find(String(Catalogue.split(id)[1]))
 				var col := UIKit.AMBER.lerp(Color("8d8a86"), 0.4) if dim else UIKit.AMBER
-				Icons.draw_shape(self, Icons.emote_icon(eid) if eid >= 0 else "smile", c, s * 0.4, col)
+				Icons.draw_shape(self, Icons.emote_icon(eid) if eid >= 0 else "smile", c, s * (0.36 if cell else 0.4), col)
 			elif tex != null:
-				_draw_cover(tex, ar, Color(0.84, 0.84, 0.88) if dim else Color.WHITE)
+				# a cell crops the portrait to fill it; the detail shows the
+				# whole picture (the full figure, hat to shoes)
+				var mod := Color(0.84, 0.84, 0.88) if dim else Color.WHITE
+				if cell:
+					_draw_cover(tex, ar, mod)
+				else:
+					draw_texture_rect(tex, Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s)), false, mod)
 			else:
 				var col2 := Color(UIKit.IVORY, 0.1)
 				draw_circle(c + Vector2(0, -s * 0.16), s * 0.13, col2)

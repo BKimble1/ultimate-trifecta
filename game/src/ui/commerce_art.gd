@@ -279,9 +279,9 @@ static func name_card(ci: CanvasItem, rect: Rect2, card_id: String, player_name:
 		var br := h * 0.32
 		badge(ci, badge_id, Vector2(x0 + br, rect.get_center().y), br)
 		x0 += br * 2.0 + h * 0.14
-	var nm := player_name if player_name.strip_edges() != "" else SAMPLE_NAME
+	var nm := card_name(player_name)
 	var f := UIKit.font_w(800)
-	var room := rect.end.x - x0 - h * 0.62
+	var room := rect.end.x - x0 - h * 0.74
 	# the plate shows the whole name: a long one is set a little smaller (it
 	# is a picture of the card), and only a very long one is trimmed
 	var fs := clampi(font_size, 12, int(maxf(12.0, h * 0.4)))
@@ -298,6 +298,12 @@ static func name_card(ci: CanvasItem, rect: Rect2, card_id: String, player_name:
 	# a short accent rule under the name
 	var w := f.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	ci.draw_line(Vector2(x0, base_y + desc + h * 0.06), Vector2(x0 + w * 0.42, base_y + desc + h * 0.06), accent, maxf(1.5, h * 0.035), true)
+
+
+## The name a card shows: the player's, or the sample name when there is
+## none yet (a card is never drawn as an empty strip).
+static func card_name(player_name: String) -> String:
+	return player_name.strip_edges() if player_name.strip_edges() != "" else SAMPLE_NAME
 
 
 ## A filled rounded rect; two colours make a diagonal blend.

@@ -971,9 +971,9 @@ class ShopCard:
 		var iw := w - CreatorScreen.PAD * 2.0
 		var wh := roundf(iw * ShopCard.well_of(id))
 		art.custom_minimum_size = Vector2(0, wh)
-		name_l.custom_minimum_size = Vector2(iw, float(n) * CreatorScreen.name_line_h())
+		name_l.custom_minimum_size = Vector2(iw, CreatorScreen.name_block_h(n))
 		name_l.max_lines_visible = n
-		custom_minimum_size = Vector2(w, CreatorScreen.PAD * 2.0 + wh + CreatorScreen.ROW_GAP * 2.0 + float(n) * CreatorScreen.name_line_h() + CreatorScreen.STATE_H)
+		custom_minimum_size = Vector2(w, CreatorScreen.PAD * 2.0 + wh + CreatorScreen.ROW_GAP * 2.0 + CreatorScreen.name_block_h(n) + CreatorScreen.STATE_H)
 
 	func refresh() -> void:
 		var st: Dictionary = shop.state_of(id)
@@ -1054,7 +1054,7 @@ class ShopPic:
 			var vis := size / k
 			draw_texture_rect_region(tex, r, Rect2((src - vis) * 0.5, vis))
 		elif coins > 0:
-			CommerceArt.coin_pile(self, c, s * 0.3, coins)
+			CommerceArt.coin_pile(self, c, s * 0.36, coins)
 		elif swatch.a > 0.0:
 			draw_circle(c + Vector2(0, 2), s * 0.32, swatch.darkened(0.4), true, -1.0, true)
 			draw_circle(c, s * 0.32, swatch, true, -1.0, true)

@@ -261,7 +261,9 @@ func _category_strip() -> Control:
 	tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	tab_scroll.follow_focus = true
 	var tabs := HBoxContainer.new()
-	tabs.add_theme_constant_override("separation", 6)
+	# pills sit edge to edge (each keeps its whole 44 pt target): eight fit
+	# an iPhone SE panel without scrolling
+	tabs.add_theme_constant_override("separation", 2)
 	tab_scroll.add_child(tabs)
 	tabs.add_child(Glyphs.Hint.new("menu_prev", "", 30.0))
 	for t in TABS:
@@ -884,12 +886,18 @@ class StageDrag:
 ## the card's width per content type (WELL).  The selected card has the teal
 ## edge and a check in its corner: one ring, never two.
 static func name_line_h() -> float:
-	return ceilf(UIKit.font_w(600).get_height(NAME_FS)) - 2.0
+	return UIKit.font_w(600).get_height(NAME_FS) - 2.0
+
+
+## Height of a name set in `n` lines (the label's own line height and its
+## -2 line spacing between lines), so every card's state row lines up.
+static func name_block_h(n: int) -> float:
+	return ceilf(float(n) * UIKit.font_w(600).get_height(NAME_FS) - 2.0 * float(maxi(n - 1, 0)))
 
 
 static func card_height(kind: String, w: float, lines: int) -> float:
 	var well := roundf((w - PAD * 2.0) * float(WELL.get(kind, 1.0)))
-	return PAD + well + ROW_GAP + float(lines) * name_line_h() + ROW_GAP + STATE_H + PAD
+	return PAD + well + ROW_GAP + name_block_h(lines) + ROW_GAP + STATE_H + PAD
 
 
 ## The card's column: well, name, state.
@@ -998,7 +1006,7 @@ class ItemCard:
 		lines = n
 		var iw := w - PAD * 2.0
 		holder.custom_minimum_size = Vector2(0, roundf(iw * float(WELL.get(kind, 1.0))))
-		name_l.custom_minimum_size = Vector2(iw, float(n) * CreatorScreen.name_line_h())
+		name_l.custom_minimum_size = Vector2(iw, CreatorScreen.name_block_h(n))
 		name_l.max_lines_visible = n
 		custom_minimum_size = Vector2(w, CreatorScreen.card_height(kind, w, n))
 		check.position = Vector2(w - PAD - check.size.x - 2.0, PAD + 2.0)
@@ -1103,7 +1111,7 @@ class ProfileCard:
 		lines = n
 		var iw := w - PAD * 2.0
 		holder.custom_minimum_size = Vector2(0, roundf(iw * float(WELL.get(kind, 1.0))))
-		name_l.custom_minimum_size = Vector2(iw, float(n) * CreatorScreen.name_line_h())
+		name_l.custom_minimum_size = Vector2(iw, CreatorScreen.name_block_h(n))
 		name_l.max_lines_visible = n
 		custom_minimum_size = Vector2(w, CreatorScreen.card_height(kind, w, n))
 		check.position = Vector2(w - PAD - check.size.x - 2.0, PAD + 2.0)
