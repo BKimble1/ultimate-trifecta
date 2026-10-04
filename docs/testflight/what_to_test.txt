@@ -1,12 +1,13 @@
-1.5 internal beta (V6: steadier play, real dorms, Locker/Shop/Season 1, party room, rankings). Please tell us your iPhone model:
+1.6 internal beta (V7: Pause, straighter running, compact Locker/Pass/Friends/Settings, goggles, louder music). Please tell us your iPhone model:
 
-- Smoothness: play several whole rounds, Practice and with friends. 1.4 could run smoothly and then suddenly turn very glitchy. Does that still happen? If anything stutters, turn on Settings > Diagnostics (beta), play, then Share summary (no names or codes).
-- Startup: pure black behind Idlery Games, then home with the new lobby music. Any gap or click when it loops (about every 34 s)? It should fade out when a round starts and come back after.
-- Loading: the three runners should keep moving until you appear inside a dorm. Cancel (Practice) / Leave party works at any point.
-- Dorms: each round starts inside one of three dorms (named on the reveal card). Splash the three waters, then finish by running back in through one of that dorm's doors.
-- Coins: 8 per round on the campus. Pick them up (+1).
-- Finger scrolling: swipe the Locker, Shop, Season Pass, results and settings lists, starting on a card. Lists should move, and lifting your finger should never select, buy or claim. A tap still selects.
-- Locker, Shop and Season Pass: browse the new outfits, hats, shoes and emotes. The game service and App Store products aren't set up in this build, so Coins and Season XP aren't added and purchases say Unavailable. That's expected; please don't try to buy anything.
-- Party room: tap Walk to walk around with friends. Quick Chat, and Mute / Report / Block on a player card. Typed chat is off in this build.
-- Results: each team's rankings, then final standings before you return to the party.
-- Heat and battery after 15-20 minutes.
+- Pause: while steering with one thumb, tap Pause with another finger. The menu should open every time, and Resume, the camera slider, Reduced motion and Leave match should all take normal taps. Try it many times in a row.
+- Practice: Pause really stops the round (clock, bots, everyone). Resume carries on from the same moment, with no jump. Putting the app in the background also pauses Practice.
+- Party rounds: the menu says "Online match continues." and the round keeps going for everyone (you can still be caught).
+- Leave match asks first and says what happens (as host it ends the party for everyone). Stay goes back; Leave leaves once.
+- Running straight: push the stick straight up and hold, from the middle of the left side and from near the bottom-left corner. You should run straight; the view should not drift round. Small sideways thumb wobble should not steer. Deliberate turns, diagonals, strafing and reverse should still feel normal. Lift your thumb: you stop.
+- Season Pass: both the Free and the Premium rows are fully visible at every tier, with clear reward pictures. The service and App Store products aren't set up in this build, so rewards say they're unavailable. That's expected; please don't try to buy anything.
+- Locker and Emotes: compact cards, emote icons centred in their circles, a small Equipped mark.
+- Friends and Settings: Create Party and Join are visible straight away; settings rows are compact. Check the code field with the keyboard open.
+- Characters: goggles should sit properly on every runner.
+- Music is a little louder and should still loop with no gap or click (about every 34 s).
+- If running ever curves or Pause misbehaves, turn on Settings > Diagnostics (beta), play, then Share summary. It records the stick and camera numbers, but no names or codes.
