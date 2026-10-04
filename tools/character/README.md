@@ -5,25 +5,27 @@
 ```sh
 python3.11 -m venv tools/.cache/bpyenv
 tools/.cache/bpyenv/bin/pip install bpy==4.5.4     # Blender as a Python module, GPL, build-time only
-tools/character/build.sh                            # writes runner.glb + runner_manifest.json (about 10 s)
+tools/character/build.sh                            # writes runner.glb, runner_manifest.json and src/view/character_art.gd
 BPY_PYTHON=/other/venv/bin/python tools/character/build.sh [out.glb]   # another venv / output path
 tools/.cache/bpyenv/bin/python tools/character/clip_check.py          # clip checks (below); exit 0 = no arm in the head
 tools/gd.sh --headless --path game --import                          # re-import after a rebuild
 ```
 
-The build takes about 40 s on a shared desktop (V5: ~10 s; V6 has 45 parts and 46 clips).
+The build takes about 40-60 s on a shared desktop (V5: ~10 s; V6 has 45 parts and 46 clips). It is deterministic:
+the same sources and bpy 4.5.4 give a byte-identical GLB. `tools/.cache` is shared and not committed; if the venv is
+missing, recreate it with the first two lines above.
 
 | File | What it holds |
 |---|---|
-| `geo.py` | Parametric mesh kit: ellipsoids, sweeps, lathes, slabs. Also the vertex-data contract (colour, tint selector, stripe UVs, material class). |
+| `geo.py` | Parametric mesh kit: ellipsoids, sweeps, lathes, slabs. Also the vertex-data contract (colour, tint selector, stripe UVs, material class; V7 adds `MAT_LENS`, the tinted lens). `MeshBuilder.merge_mirrored_x` (V7) mirrors a half so paired parts are exactly symmetric. |
 | `rig.py` | Proportions, bone table, skin-weight functions. |
-| `parts.py` | Each mesh: base (head, face with lash lines, hands), hair and its hat variants (`hair_hat`, `hair_curly_hat`, `hair_curly_low`), body skin, the V2-V5 outfits, Night Watch uniform with flashlight and mustache, the V2-V5 hats and shoes. `sleeves(..., lod=1)` is the lighter sleeve the V6 outfits use. |
+| `parts.py` | Each mesh: base (head, face with lash lines, ears, mittens with a wrist neck), hair and its hat variants (`hair_hat`, `hair_curly_hat`, `hair_curly_low`), body skin, the V2-V5 outfits, Night Watch uniform with flashlight and mustache, the V2-V5 hats and shoes. `sleeves(..., lod=1)` is the lighter sleeve the V6 outfits use; V7 sleeves and the pajama trousers end in an open hem (`_sleeve_hem`: cuff band and shaded lining). V7: the swim cap and its goggles (`build_swimcap`, "V7 swim cap + goggles"), placed on the head shell at `CAP_GROW`. |
 | `outfits_v6.py` | V6: the six Shop outfits and their headwear (`acc_sleepmask`, `acc_courier_cap`), and the Season 1 · After Hours outfits, hats and shoes. One function per part; names match `Cosmetics.OUTFIT_PARTS` / `OUTFIT_HEADWEAR` / item `parts`. |
 | `kit6.py` | V6 helpers: decals projected onto the garment (stars, badges, letters, crescents), strips, tubes along surfaces, ribbons lying on the head (straps, bands, cuffs), open shells (vests, cardigans), leg tubes clipped by height, skin limbs, knit ribs, knobbly pompoms. |
 | `anims.py` | 46 clips authored as code: FK deltas in armature axes, plus analytic two-bone leg IK for locomotion. `blend_pose` interpolates IK targets (V5). V6: leg IK takes an optional foot yaw, a `_frame` yaw turns every delta with the root (the victory lap), and arm IK takes a target in another bone's rest space (the shush). |
 | `plot_foot_trail.py` | V6: top-down plot of planted-foot trails from `src/dev/foot_trail.tscn` (Pillow only). |
-| `clip_check.py` | V5: evaluates every clip on the real rig at 60 Hz: sleeves/mittens inside the head shell, mittens inside the torso, IK leg reach (> 0.44 m clamps), the largest in-clip joint jump. |
-| `build_character.py` | Builds the armature, meshes, vertex groups and face shape keys. It also bakes the actions and exports the GLB. |
+| `clip_check.py` | V5: evaluates every clip on the real rig at 60 Hz: sleeves/mittens inside the head shell, mittens inside the torso, IK leg reach (> 0.44 m clamps), the largest in-clip joint jump. V7: sleeves/mittens inside the goggles (their real vertices; exit 1 over 1 cm). |
+| `build_character.py` | Builds the armature, meshes, vertex groups and face shape keys. It also bakes the actions and exports the GLB. V7: writes `game/src/view/character_art.gd` (`CharacterArt.VERSION` = generation + the GLB's SHA-256, which the portrait cache keys on) and the head surface into the manifest (for `test_characters_v7`). Commit all three with the GLB. |
 
 ## Conventions
 
@@ -43,10 +45,10 @@ The build takes about 40 s on a shared desktop (V5: ~10 s; V6 has 45 parts and 4
   - Shape keys on `base`: `blink`, `squint`, `smile`, `open`, `brow_up`, `brow_angry`.
   - The neutral mouth (a closed smile) is baked into the basis.
 - **Budgets.**
-  - A typical outfit (base + pajamas + nightcap + slippers) is about 24.1k triangles at LOD0 (V5: 23.4k; V3: 19.7k). Godot generates LODs on import. All 45 parts together: 211k triangles (only the worn ones are drawn).
+  - A typical outfit (base + pajamas + nightcap + slippers) is about 24.5k triangles at LOD0 (V6: 24.1k; V5: 23.4k; V3: 19.7k). Godot generates LODs on import. All 45 parts together: 217k triangles (only the worn ones are drawn). The heaviest look (robe + body + bob + beanie + slippers + freckles) is 32.5k (V6: 31.3k), 7 draw calls. `src/dev/char_budget.tscn` measures all of this from the asset (`--portraits` also times the portrait renderer).
   - V6 outfits: 5.9k-11.1k triangles each; the heaviest look that can be worn with any V6 item stays under the heaviest V5 look (`test_outfits_v6`). Measure a part with `build.sh` (it prints every part's count) and see `docs/v6/character_notes.md`.
-  - Each visible part is one draw call with one shared `ShaderMaterial`; per-character colours are instance uniforms. Parts listed in `CharacterView.TWO_SIDED` (the nightcap) use a second, double-sided material with the same shader body (`character.gdshaderinc`).
-- **Checking changes.** `src/dev/character_lineup.tscn -- --lineup=parts` renders 12 fixed close-ups (nightcap, collar, cuff and hand, robe hem, each shoe, hair edges, Night Watch cap); `--parts-debug` hides the head to inspect the cap alone. Render it before and after a change and compare.
+  - Each visible part is one draw call with one shared `ShaderMaterial`; per-character colours are instance uniforms. Parts listed in `CharacterView.TWO_SIDED` (the nightcap) use a second, double-sided material with the same shader body (`character.gdshaderinc`). The V7 goggle lenses are a material class inside that shader (opaque; tint and glint baked in vertex colour), not a new material.
+- **Checking changes.** `src/dev/character_lineup.tscn -- --lineup=parts` renders 12 fixed close-ups (nightcap, collar, cuff and hand, robe hem, each shoe, hair edges, Night Watch cap); `--parts-debug` hides the head to inspect the cap alone. Render it before and after a change and compare. V7: `--lineup=custom --shots-file=F.json` renders any list of shots (a shot with `"bone"` frames that bone wherever the pose puts it), and `--lineup=reel` runs gameplay scenarios from `tests/motion_rig.gd` back to back with the camera circling the head (record it with `--write-movie`).
   - Distant characters advance their AnimationTree at a third of the rate (V5: beyond 48 m, back to full rate inside 42 m).
 - **Overhead arms (V5).** The head is 0.31 m wide over shoulders 0.17 m from the centre, so an arm raised much past ~85° from the A-pose goes into the head. Open raises into a V with bent elbows and run `clip_check.py`.
 - **Hats and curly hair (V5).** `hair_curly_hat` is the curly crop with a smooth band from z 1.34 m; `CharacterView` shows it instead of `hair_curly` under the crown and headphones. `--lineup=hathair` renders every hat that leaves hair visible × every hair style.
