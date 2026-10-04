@@ -1,6 +1,6 @@
 # Test report: Ultimate Trifecta
 
-This report records what was actually run, where, and what each result proves. Version 1.5 (V6) is reported first. The V5 (1.4), V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
+This report records what was actually run, where, and what each result proves. Version 1.6 (V7) is reported first. The V6 (1.5), V5 (1.4), V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
 
 | Label | What it is | What it can prove |
 |---|---|---|
@@ -11,7 +11,92 @@ This report records what was actually run, where, and what each result proves. V
 | **Desktop render** | The game rendered by Godot's Mobile renderer on Mesa **llvmpipe** (software Vulkan) under Xvfb, at device resolutions, with a fixed frame clock (`--fixed-fps 60`, or Movie Maker) | Layout, framing, art, render-path dimensions (render size vs displayed size, MSAA, scale) and engine counters (draw calls, primitives). **Not** frame rate, frame pacing, GPU cost or device smoothness |
 | **CI iOS** | GitHub Actions `macos-26` runner: Xcode project export, unsigned arm64 device archive (or, from V3, a signed archive and TestFlight upload), x86_64 Simulator build and run, App Store Connect API checks | That the iOS project compiles, links, signs and uploads, launches in the Simulator, and what App Store Connect reports for the build; *not* device performance or a device install |
 
-**Not done: no physical iPhone or iPad was available, so nothing in V1–V6 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+**Not done: no physical iPhone or iPad was available, so nothing in V1–V7 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+
+# V7 (version 1.6)
+
+V7 is a focused repair and refinement pass on 1.5: Pause, Resume and Leave
+match (priority zero); forward runs wandering left/right on the touch stick;
+compact Locker, Emotes, Season Pass, Shop, Play with Friends and Settings;
+goggles and character refinement; music about 3 dB louder. Notes and the
+measured registers: [docs/V7_NOTES.md](docs/V7_NOTES.md),
+[docs/v7/menus_notes.md](docs/v7/menus_notes.md),
+[docs/v7/screens_notes.md](docs/v7/screens_notes.md),
+[docs/v7/character_notes.md](docs/v7/character_notes.md). **No physical iPhone
+or iPad was available for V7 either.** Touches in every test and clip below
+are **emulated**: `InputEventScreenTouch`/`ScreenDrag` parsed by `Input` at the
+controls' rendered coordinates, as iOS delivers them.
+
+## V7.1 Automated tests
+
+**On this machine, on the fully integrated tree** (`tools/run_tests.sh`):
+**399 tests, 99,186 checks, 0 failures** (load average ~14 from captures
+running alongside). `tools/check_v7_screens.sh` (the screens file at each
+device's real point scale, safe area and pixel size): 10 tests at each of
+seven sizes, 0 failures. CI's gating run is in V7.5.
+
+One CI run (#91) failed on a pre-existing race in
+`test_loading::test_practice_can_be_cancelled_mid_preparation…`: on the fast
+runner the round finished preparing inside the 0.8 s before Cancel enables,
+and the loading screen was freed under the test. The test now holds the
+controller's preparation step (its worker-pool jobs keep running) so it
+always cancels mid-build.
+
+| Suite (new in V7) | What it exercises |
+|---|---|
+| `test_pause_input` (9) | Real touches: Pause with one finger and with a second finger while the first steers; Resume, slider, Leave, Stay, Leave-confirm take taps; Practice freezes (sim tick frozen 120 frames, nothing moves) and resumes with ≤ 2 ticks/frame; 20 × (open → slider → Resume) and (open → Leave → Stay), 40 opens/40 closes/0 quits, then Leave twice-tapped quits once and the next match pauses normally; a finger held from before never moves the runner, a fresh one does; Night Watch cart throttle released and not resumed; Pause/Resume queue no Jump/Tag; map/back/pause-key/background policy; the Pause region equals the button (standard and mirrored, ≥ 44 pt) |
+| `test_pause_online` (2) | Loopback rig: the host's and a guest's menu never pause the round (host +50 ticks / 60 frames, guest snapshots keep arriving), input neutral, no immunity; the honest leave text per role; guest Leave once, no finish/result/reward; results close the menu and confirmation; Pause stays shut over results |
+| `test_stick_drift` (11) | Neutral touchdown and exact vertical everywhere in the zone (5 canvases, both notch sides, standard/mirrored/large/custom layouts); knob drawn at ring + real offset; fixed stick contract; base-follow continuity; straight-ahead tolerance continuous, monotonic, magnitude-preserving; spare-finger slop; pad drift ignored under touch; camera closed loop (leans 0–6° held 10 s, a wall slide) ≤ 0.5°; deliberate 15° follow identical at 30/60/120 fps; cart recentering; bounded diagnostics trace |
+| `test_stick_round` (3) | Real touches in a Practice round on a clear straight: corner touchdown neutral and straight in both layouts, release stops; a 5° lean doesn't curve; a guest's straight commands stay straight on host and guest. **Run on the pre-fix build it fails 8 checks** (`docs/v7/stick/test_stick_round_on_prefix_build.txt`) |
+| `test_menus_layout` (10) | Season Pass rows and detail action whole at seven sizes, service on and off; claim states; Locker and Shop bounds at every size; neutral outfit pictures; swipes from glyphs/portraits/labels never select; one centred emote set; controller focus; entries never move hit targets |
+| `test_v7_screens` (10) | Friends first view, keyboard, short messages, Game Center states; Settings sections whole and aligned; finger scrolling keeps values; Delete still confirmed; party room with 1/4/8 players; results/standings first rows; long lists inside their sheets; every visible control on screen, in the safe area, ≥ a touch target, untrimmed and reached by a pointer |
+| `test_characters_v7` (4) | Goggles against the head surface, symmetry, lens facing, strap closure, brows under the cap edge for every brow/face preset. **Fails 15 checks on the 1.5 asset** |
+| `test_lobby_music` (extended) | One central −3 dB trim, levels at two slider values, mute, one Master limiter |
+
+## V7.2 Forward drift, measured (headless, emulated touches)
+
+`tools/stick_probe.sh`: a Practice round on an 812×375 pt canvas, the runner
+on the longest clear straight (nav grid open, physics swept), bots idle,
+scripted touches through the real touch → command → sim → camera path; the
+same probe file on the pre-fix build and after. Selected rows (all rows in
+docs/V7_NOTES.md and `docs/v7/stick/`):
+
+| Case | Before | After |
+|---|---|---|
+| Bottom-left corner touchdown, exact vertical, 6 s | touchdown output 1.00; 31.1 m sideways, 5.3 m forward | 0.00; 0.0 m sideways, 37.3 m forward |
+| 6° lean + wobble, recentering on, 6 s | camera −107°, runner circled (6.2 m forward) | camera 0°, 0.8 m sideways over 37.3 m |
+| Dorm start, out of the door, 4° lean, 8 s | camera −147°, 4.2 m forward | camera 0°, 49.1 m forward |
+| 3° lean held 15 s | camera −81° | 0° (88.7 m straight) |
+| Thumb in dead zone + pad drifting 0.25 | walked 1.4 m, camera −10° | nothing |
+| Deliberate 15° / 45° / 90° / 180° | 15 / 45 / 90 / −180° | 15 / 45 / 90 / −180° |
+
+Same results at 30 and 120 fps render (physics 60 Hz).
+
+## V7.3 Visual and behavioural evidence (desktop render, labelled)
+
+_Pending: the before/after clips (Pause, forward drift) are still being recorded; links are added when they finish._
+
+## V7.4 Found and fixed during V7 integration
+
+- The pause and drift clip reels first injected touches in canvas units into
+  a smaller movie window (they landed 1.5× too far out); fixed by converting
+  to window pixels before any clip used here was recorded.
+- `test_loading` cancel race on fast runners (V7.1).
+
+## V7.5 iOS build (CI iOS) and TestFlight
+
+_Pending: the gating CI run and the 1.6 upload are recorded here once they complete._
+
+## V7.6 Not verified (exact remaining checks)
+
+- Everything on a real iPhone/iPad: Pause with another finger on real
+  multi-touch, straight runs from the owner's own thumb (the 6°/16°
+  tolerance, 4° follow threshold and 24 px slop come from scripted traces),
+  the real iOS keyboard over Join, Dynamic Type, touch feel, frame rate and
+  heat.
+- Game Center sign-in and friends on hardware; the game service and App
+  Store products remain off/unconfigured (unchanged).
+- The goggles stay pushed up on the forehead (as designed); one head shape.
 
 # V6 (version 1.5)
 
