@@ -59,7 +59,7 @@ func build() -> void:
 		if hub != null and hub.walking:
 			_set_walk(false)   # Back first returns to the menu
 			return
-		dialog("Leave this party?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]])
+		UIKit.v7_back_chooses(self, dialog("Leave this party?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]]))
 	Diag.context("lobby")
 	if App.stage:
 		App.stage.set_mode("lobby")
@@ -210,7 +210,10 @@ func build() -> void:
 	_is_ready = session.local_slot >= 0 and session.roster[session.local_slot] != null and bool(session.roster[session.local_slot]["ready"])
 	_refresh()
 	Motion.settle_in(roster_col)
-	roster_col.resized.connect(_frame_stage.bind(roster_col))
+	# (V7) the roster moves left as it gains a column without always changing
+	# size first: follow its rect, not just its size, or the stage frames
+	# the party for a roster that is no longer there (runners behind cards)
+	roster_col.item_rect_changed.connect(_frame_stage.bind(roster_col))
 	get_viewport().size_changed.connect(_frame_stage.bind(roster_col))
 	_frame_stage.call_deferred(roster_col)
 
@@ -775,9 +778,9 @@ func _settings_sheet() -> void:
 		var endb := UIKit.quiet("End series", Vector2(240, 68))
 		endb.pressed.connect(func() -> void:
 			close_popover()
-			dialog("End this series now? Rounds already played still count; there's no prize for the rest.", [["End series", func() -> void:
+			UIKit.v7_back_chooses(self, dialog("End this series now? Rounds already played still count; there's no prize for the rest.", [["End series", func() -> void:
 				session.host_end_series()
-				App.show_series_final()], ["Keep playing", Callable()]]))
+				App.show_series_final()], ["Keep playing", Callable()]])))
 		foot.add_child(endb)
 	foot.add_child(UIKit.spacer_h())
 	var done := UIKit.secondary("Done", Vector2(180, 68))
@@ -805,7 +808,10 @@ func _standings_sheet() -> void:
 	var v := UIKit.vbox(10)
 	v.custom_minimum_size = Vector2(560, 0)
 	v.add_child(UIKit.styled("Standings", "headline"))
-	v.add_child(ResultsScreen.standings_table(session.series_view, Save.player_uid()))
+	# (V7) up to eight friends: the table scrolls inside the sheet on a phone
+	var vh := get_viewport().get_visible_rect().size.y
+	v.add_child(UIKit.v7_capped_list(ResultsScreen.standings_table(session.series_view, Save.player_uid()),
+		maxf(160.0, vh - UIKit.touch_min() * 2.0 - 190.0)))
 	var done := UIKit.secondary("Close", Vector2(180, 68))
 	done.pressed.connect(close_popover)
 	v.add_child(done)

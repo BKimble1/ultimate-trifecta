@@ -2,8 +2,7 @@ class_name ShopScreen
 extends Screen
 ## The Shop (V6): every purchase in the game, and nothing else.
 ##
-##   top     the navigation bar (Play · Locker · Shop · Season Pass) and the
-##           Coins chip
+##   top     Back, the navigation bar and the Coins chip (one 44 pt row)
 ##   left    the runner in the dorm, wearing whatever item is selected: drag
 ##           to turn, Idle / Run / Emote.  This is the one interactive 3D
 ##           preview (the dorm stage already on screen); cards use cached
@@ -11,9 +10,15 @@ extends Screen
 ##   right   sections (Featured · Outfits · Accessories · Coins · Season 1)
 ##           over item cards: a picture, the full name, and the exact price
 ##           (Coins, or the App Store's localized price) or Owned.  Tapping
-##           a card previews it on the runner and opens its detail sheet:
-##           what it is, exactly what it includes, the price, its state and
-##           one purchase action (+ Back).
+##           a card previews it on the runner and opens its detail: what it
+##           is, exactly what it includes, the price, its state, why an
+##           action is unavailable (right above it) and one action.
+##
+## V7: the Locker's card system (UIKit.AutoGrid, CreatorScreen card layout):
+## columns from the panel's final width, per-type picture wells, outfits
+## pictured with no hat and plain shoes (CommerceArt.preview_look), one short
+## unavailable line instead of a paragraph, and the detail's status and
+## action fixed at its bottom.
 ##
 ## Coins: a confirmation shows the item, its cost and the balance left, then
 ## the service debits and grants atomically (Wallet.spend).  Apple: the tap
@@ -30,10 +35,12 @@ const SECTIONS := [
 	["coins", "Coins"],
 	["season", "Season 1"],
 ]
-const CARD_W := 158.0
-const CARD_GAP := 12.0
+const CARD_W := 144.0
+const CARD_GAP := float(UIKit.GAP_CARD)
 const THUMB_FRAMING := {"outfit": "body", "pattern": "body", "hat": "hat", "shoes": "feet"}
 const SWATCH_FIELDS := ["color", "trim", "hair_color"]
+## picture wells beyond the Locker's (CreatorScreen.WELL)
+const WELL := {"swatch": 0.62, "coins": 0.62, "glyph": 0.62}
 
 ## deep links (set before NavShell.go("shop")): a section and/or an item
 static var focus_section := ""
@@ -68,21 +75,11 @@ func build() -> void:
 		App.sync_stage_local()
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	TitleScreen.add_shades(self, 0.45, 0.0)
-	var view := get_viewport().get_visible_rect().size
 	back_action = _go_hub
-	var top := UIKit.hbox(14)
-	content.add_child(top)
-	var back := UIKit.icon_button("back")
-	back.tooltip_text = "Back"
-	back.accessibility_name = "Back"
-	back.pressed.connect(_go_back)
-	top.add_child(back)
-	var nav := NavShell.make("shop")
-	nav.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(nav)
-	top.add_child(WalletChip.new())
+	content.add_theme_constant_override("separation", UIKit.SP_M)
+	nav_bar("shop")
 
-	var mid := UIKit.hbox(16)
+	var mid := UIKit.hbox(UIKit.SP_L)
 	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(mid)
 	# the Locker's turn control: one finger owns the turn (test_stage_drag)
@@ -90,26 +87,32 @@ func build() -> void:
 	drag.turned.connect(drag_turn)
 	_stage_area = drag
 	_stage_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_stage_area.size_flags_stretch_ratio = 1.0
 	mid.add_child(_stage_area)
 	_stage_area.add_child(_preview_controls())
 
-	panel = UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 16)
-	var aspect := view.x / maxf(1.0, view.y)
-	panel.custom_minimum_size = Vector2(clampf(view.x * (0.56 if aspect > 1.7 else 0.6), 560.0, 900.0), 0)
+	panel = UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, UIKit.PAD_PANEL)
+	panel.name = "ShopPanel"
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_stretch_ratio = CreatorScreen.PANEL_RATIO
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	mid.add_child(panel)
-	var pvb := UIKit.vbox(10)
+	var pvb := UIKit.vbox(UIKit.SP_S)
 	pvb.name = "GridView"
 	panel.add_child(pvb)
 	pvb.add_child(_section_strip())
 	banner = UIKit.styled("", "caption", UIKit.AMBER)
-	banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	banner.name = "Unavailable"
+	banner.clip_text = true
+	banner.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	pvb.add_child(banner)
 	scroll = UIKit.scroll_area()
+	scroll.name = "Items"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_RESERVE
 	scroll.follow_focus = true
 	pvb.add_child(scroll)
-	body = UIKit.vbox(12)
+	body = UIKit.vbox(UIKit.SP_M)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(body)
 
@@ -122,7 +125,7 @@ func build() -> void:
 		focus_item = ""
 		_open_detail.call_deferred(fi)
 	focus_first(strip_btns[section])
-	Motion.settle_in(panel)
+	UIKit.fade_in(panel)
 	_stage_area.resized.connect(_frame_stage)
 	get_viewport().size_changed.connect(_frame_stage)
 	_frame_stage.call_deferred()
@@ -164,18 +167,21 @@ func _exit_tree() -> void:
 
 func _frame_stage() -> void:
 	if App.stage and is_instance_valid(_stage_area) and _stage_area.is_inside_tree():
-		var w := get_viewport().get_visible_rect().size.x
+		var vs := get_viewport().get_visible_rect().size
 		var r := _stage_area.get_global_rect()
-		App.stage.set_wardrobe_region((r.get_center().x + r.size.x * 0.12) / maxf(1.0, w), r.size.x / maxf(1.0, w))
+		if r.size.x < 2.0 or r.size.y < 2.0:
+			return
+		App.stage.set_wardrobe_region((r.get_center().x + r.size.x * 0.12) / maxf(1.0, vs.x), r.size.x / maxf(1.0, vs.x),
+			r.position.y / maxf(1.0, vs.y), r.end.y / maxf(1.0, vs.y))
 
 
 # ------------------------------------------------------------------ preview
 ## Idle / Run / Emote stacked in the stage's lower-left corner, clear of the
 ## runner (who stands right of centre), with the turn hint under them.
 func _preview_controls() -> Control:
-	var pv := UIKit.vbox(8)
+	var pv := UIKit.vbox(UIKit.SP_S)
 	for spec in [["idle", "Idle"], ["run", "Run"], ["emote", "Emote"]]:
-		var b := UIKit.quiet(String(spec[1]), Vector2(130, 0), UIKit.T_CAPTION)
+		var b := UIKit.quiet(String(spec[1]), Vector2(120, 0), UIKit.T_CAPTION)
 		b.name = "Preview_" + String(spec[0])
 		b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		var kind: String = spec[0]
@@ -269,7 +275,7 @@ func _section_strip() -> Control:
 		var key: String = spec[0]
 		var b := UIKit.quiet(String(spec[1]), Vector2(0, 0), UIKit.T_LABEL)
 		b.name = "Section_" + key
-		b.custom_minimum_size.y = maxf(56.0, UIKit.touch_min())
+		b.custom_minimum_size.y = UIKit.row_h()
 		var f := UIKit.face_of(b)
 		var sel := UIKit.box(Color(UIKit.TEAL, 0.16), 999, 0, Color.WHITE)
 		sel.set_border_width_all(2)
@@ -281,8 +287,36 @@ func _section_strip() -> Control:
 		b.pressed.connect(func() -> void: select_section(key))
 		row.add_child(b)
 		strip_btns[key] = b
-	sc.custom_minimum_size.y = maxf(56.0, UIKit.touch_min()) + 4.0
+	sc.custom_minimum_size.y = UIKit.row_h()
+	sc.name = "Sections"
+	sc.resized.connect(_fit_strip.bind(sc, row))
 	return sc
+
+
+## The section strip fits its panel like the Locker's categories: tighter
+## padding, then a size smaller, before a section would be cut off.
+func _fit_strip(strip: ScrollContainer, row: HBoxContainer) -> void:
+	var avail := strip.size.x
+	if avail <= 0.0:
+		return
+	var f := UIKit.font_w(600)
+	var pick: Array = CreatorScreen.TAB_FITS[CreatorScreen.TAB_FITS.size() - 1]
+	for opt in CreatorScreen.TAB_FITS:
+		var need := 0.0
+		for b in strip_btns.values():
+			need += maxf(ceilf(f.get_string_size((b as Button).text, HORIZONTAL_ALIGNMENT_LEFT, -1, int(opt[0])).x) + 2.0 * float(opt[1]), UIKit.touch_min())
+		need += float(row.get_theme_constant("separation")) * float(strip_btns.size() - 1)
+		if need <= avail:
+			pick = opt
+			break
+	for b in strip_btns.values():
+		var btn := b as Button
+		btn.add_theme_font_size_override("font_size", int(pick[0]))
+		var st := btn.get_theme_stylebox("normal")
+		st.content_margin_left = float(pick[1])
+		st.content_margin_right = float(pick[1])
+		btn.update_minimum_size()
+		UIKit.face_of(btn).queue_redraw()
 
 
 func select_section(key: String) -> void:
@@ -294,12 +328,27 @@ func select_section(key: String) -> void:
 	Portraits.cancel_shared("shop:")
 	section = key
 	_build_section()
-	Motion.settle_in(body, UIKit.T_FAST)
+	UIKit.fade_in(body, UIKit.T_FAST)
 
 
+## The grid's width: the list's final width less its scrollbar's room.
+func grid_width() -> float:
+	var w := scroll.size.x if is_instance_valid(scroll) else 0.0
+	if w < 2.0:
+		var cw := content_size().x
+		if cw < 2.0:
+			cw = get_viewport().get_visible_rect().size.x * 0.8 if is_inside_tree() else 1000.0
+		w = (cw - UIKit.SP_L) * CreatorScreen.PANEL_RATIO / (1.0 + CreatorScreen.PANEL_RATIO) - UIKit.PAD_PANEL * 2.0
+	var bar := scroll.get_v_scroll_bar().get_combined_minimum_size().x if is_instance_valid(scroll) else 8.0
+	return maxf(CARD_W, w - bar - 2.0)
+
+
+## Cards per row of the current grid: from its final width (AutoGrid).
 func _columns() -> int:
-	var w := panel.custom_minimum_size.x - 40.0
-	return clampi(int(floor((w + CARD_GAP) / (CARD_W + CARD_GAP))), 3, 6)
+	for c in cards:
+		if is_instance_valid(c) and (c as Control).get_parent() is GridContainer:
+			return ((c as Control).get_parent() as GridContainer).columns
+	return UIKit.columns_for(grid_width(), CARD_W, CARD_GAP, 2, 6)
 
 
 func _build_section() -> void:
@@ -316,35 +365,32 @@ func _build_section() -> void:
 		items = unowned + owned
 	var intro := ""
 	match section:
-		"featured":
-			intro = "Season 1 · After Hours and this season's outfits."
-		"outfits":
-			intro = "Every outfit in the Shop. Prices are exact; everything is cosmetic."
-		"accessories":
-			intro = "Hats, shoes, colours, patterns and emotes."
 		"coins":
-			intro = "Coins buy anything in the Shop, including Season 1 Premium. Purchased Coins never expire and never add XP."
+			intro = "Coins buy anything in the Shop. They never expire and never add XP."
 		"season":
-			intro = "Season 1 · After Hours: 30 tiers you earn by playing. Premium adds a second track of rewards."
-	var il := UIKit.styled(intro, "caption", UIKit.IVORY_MUTED)
-	il.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.add_child(il)
+			intro = "30 tiers you earn by playing. Premium adds a second track of rewards."
+	if intro != "":
+		var il := UIKit.styled(intro, "caption", UIKit.IVORY_MUTED)
+		il.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		il.custom_minimum_size.x = grid_width() * 0.95
+		body.add_child(il)
+	var gw := grid_width()
 	if section == "season" or section == "featured":
 		# Season 1 Premium leads Featured too (a real offer, never a timer)
-		body.add_child(_season_offer())
+		body.add_child(_season_offer(gw))
 	if section != "season":
-		var cols := _columns()
-		var g := GridContainer.new()
-		g.columns = cols if section != "coins" else mini(cols, 3)
-		g.add_theme_constant_override("h_separation", int(CARD_GAP))
-		g.add_theme_constant_override("v_separation", int(CARD_GAP))
-		var w := (panel.custom_minimum_size.x - 40.0 - CARD_GAP * float(g.columns - 1)) / float(g.columns)
+		var min_cell := 190.0 if section == "coins" else CARD_W
+		var g := UIKit.AutoGrid.new(min_cell, 2, 6 if section != "coins" else 3, CARD_GAP)
+		g.name = "Grid_" + section
+		var cols := UIKit.columns_for(gw, min_cell, CARD_GAP, 2, g.max_cols)
+		var w := UIKit.cell_width(gw, cols, CARD_GAP)
 		for it in items:
 			var card := ShopCard.new()
-			card.setup(self, String(it["id"]), maxf(CARD_W, w))
+			card.setup(self, String(it["id"]), w)
 			card.pressed.connect(_open_detail.bind(String(it["id"])))
 			g.add_child(card)
 			cards.append(card)
+		g.columns = cols
 		body.add_child(g)
 		if items.is_empty() and section != "featured":
 			body.add_child(UIKit.styled("Nothing here right now.", "body", UIKit.IVORY_MUTED))
@@ -354,15 +400,17 @@ func _build_section() -> void:
 	var at := int(_scroll_of.get(section, 0))
 	(func() -> void:
 		await get_tree().process_frame
-		if is_instance_valid(scroll):
+		if is_instance_valid(scroll) and not TouchScroll.is_dragging(scroll):
 			scroll.scroll_vertical = at).call()
 
 
 func _restore_row() -> Control:
-	var row := UIKit.hbox(12)
-	var l := UIKit.styled("Bought a skin from the App Store on another device?", "caption", UIKit.IVORY_MUTED)
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var row := UIKit.hbox(UIKit.SP_M)
+	var l := UIKit.styled("Bought a skin on another device?", "caption", UIKit.IVORY_MUTED)
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	l.clip_text = true
+	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(l)
 	var b := UIKit.quiet("Restore Purchases", Vector2(0, 0), UIKit.T_CAPTION)
 	b.name = "Restore"
@@ -386,10 +434,10 @@ func _on_restore_finished(summary: Dictionary) -> void:
 
 ## Season 1 Premium: what it is and exactly what it adds (counted from the
 ## Season table, not a slogan), with one card to open.
-func _season_offer() -> Control:
+func _season_offer(gw: float) -> Control:
 	var id := String(Catalogue.season(Catalogue.current_season_id()).get("premium_item", "season:s1:premium"))
 	var card := ShopCard.new()
-	card.setup(self, id, panel.custom_minimum_size.x - 40.0)
+	card.setup(self, id, gw)
 	card.pressed.connect(_open_detail.bind(id))
 	cards.append(card)
 	return card
@@ -426,14 +474,31 @@ static func premium_summary(sid: String) -> String:
 func _refresh_states() -> void:
 	if not is_inside_tree():
 		return
-	var can := Wallet.can_transact()
-	banner.text = "" if bool(can["ok"]) else String(can["message"])
+	banner.text = unavailable_line()
 	banner.visible = banner.text != ""
 	for c in cards:
 		if is_instance_valid(c):
 			c.refresh()
 	if detail != null:
 		_refresh_detail()
+
+
+## One short line when buying can't work right now ("" when it can); the
+## detail repeats it with the reason right above the unavailable action.
+func unavailable_line() -> String:
+	var can := Wallet.can_transact()
+	if bool(can["ok"]):
+		return ""
+	match Wallet.service_state():
+		"off":
+			return "Buying is unavailable right now: the game service isn't set up in this build."
+		"signed_out":
+			return "Buying is unavailable right now: sign in with Game Center."
+		"syncing":
+			return "Checking your wallet…"
+		"offline":
+			return "Buying is unavailable right now: you're offline."
+	return String(can["message"])
 
 
 func _on_purchase_state(pid: String) -> void:
@@ -485,7 +550,7 @@ func _open_detail(id: String) -> void:
 	grid_view.visible = false
 	detail = _detail_sheet(id)
 	panel.add_child(detail)
-	Motion.settle_in(detail, UIKit.T_FAST)
+	UIKit.fade_in(detail, UIKit.T_FAST)
 	_refresh_detail()
 	UIKit.soft_focus.call_deferred(_d["action"])
 
@@ -506,7 +571,8 @@ func _close_detail() -> void:
 
 
 func _detail_sheet(id: String) -> Control:
-	var v := UIKit.vbox(10)
+	var gw := grid_width()
+	var v := UIKit.vbox(UIKit.SP_S)
 	v.name = "Detail"
 	var top := UIKit.hbox(10)
 	var back := UIKit.quiet("‹ Back to Shop", Vector2(0, 0), UIKit.T_CAPTION)
@@ -516,21 +582,26 @@ func _detail_sheet(id: String) -> Control:
 	top.add_child(UIKit.spacer_h())
 	v.add_child(top)
 	var sc := UIKit.scroll_area()
+	sc.name = "DetailInfo"
 	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(sc)
-	var inner := UIKit.vbox(10)
+	var inner := UIKit.vbox(UIKit.SP_S)
 	inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sc.add_child(inner)
-	var head := UIKit.hbox(16)
+	var head := UIKit.hbox(UIKit.SP_L)
 	inner.add_child(head)
-	var art := ShopCard.art_for(self, id, 150.0, "shop:detail")
+	var art_w := clampf(gw * 0.27, 120.0, 200.0)
+	var art := ShopCard.art_for(self, id, art_w, "shop:detail")
+	art.custom_minimum_size.y = roundf(art_w * ShopCard.well_of(id))
 	head.add_child(art)
 	var hv := UIKit.vbox(4)
 	hv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hv.alignment = BoxContainer.ALIGNMENT_CENTER
 	head.add_child(hv)
 	hv.add_child(UIKit.styled(Catalogue.type_label(id) + _kind_note(id), "overline", UIKit.IVORY_MUTED))
 	var name_l := UIKit.styled(Catalogue.display_name(id), "headline")
 	name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_l.custom_minimum_size.x = maxf(80.0, gw - art_w - UIKit.SP_L - 10.0)
 	hv.add_child(name_l)
 	var price_row := UIKit.hbox(8)
 	var coin := CommerceArt.Pic.new("coin", "", Color.WHITE, 30)
@@ -546,22 +617,31 @@ func _detail_sheet(id: String) -> Control:
 	if bl != "":
 		var b := UIKit.styled(bl, "body", UIKit.IVORY)
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		b.custom_minimum_size.x = gw - 10.0
 		inner.add_child(b)
 	var inc := UIKit.styled(_includes_text(id), "caption", UIKit.IVORY_MUTED)
 	inc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	inc.custom_minimum_size.x = gw - 10.0
 	inner.add_child(inc)
+	# the state and why an action is unavailable sit right above the action,
+	# outside the scroll: never hidden below the fold
 	var status := UIKit.styled("", "caption", UIKit.AMBER)
+	status.name = "DetailStatus"
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	inner.add_child(status)
-	var act_row := UIKit.hbox(12)
+	status.custom_minimum_size.x = gw - 10.0
+	v.add_child(status)
+	var act_row := UIKit.hbox(UIKit.SP_M)
+	act_row.custom_minimum_size.y = UIKit.row_h()
 	v.add_child(act_row)
-	var second := UIKit.quiet("", Vector2(200, 84))
+	var second := UIKit.quiet("", Vector2(0, UIKit.row_h()), UIKit.T_LABEL)
 	second.name = "DetailSecondary"
+	second.custom_minimum_size.x = UIKit.row_h() * 2.0
 	second.pressed.connect(_on_secondary)
 	act_row.add_child(second)
 	act_row.add_child(UIKit.spacer_h())
-	var action := UIKit.primary("", Vector2(330, 88), 26)
+	var action := UIKit.primary("", Vector2(0, UIKit.row_h()), 24)
 	action.name = "DetailAction"
+	action.custom_minimum_size.x = UIKit.row_h() * 3.0
 	action.pressed.connect(_on_action)
 	act_row.add_child(action)
 	_d = {"price": price_l, "coin": coin, "status": status, "action": action, "second": second}
@@ -633,7 +713,7 @@ func _refresh_detail() -> void:
 			elif not bool(can["ok"]):
 				action.text = "Unavailable"
 				action.disabled = true
-				status.text = String(can["message"])
+				status.text = unavailable_line()
 			elif not bool(st["afford"]):
 				var short := int(st["coins"]) - Wallet.balance()
 				action.text = "Need %s more Coins" % Catalogue.format_coins(short)
@@ -650,7 +730,7 @@ func _refresh_detail() -> void:
 			price_l.add_theme_color_override("font_color", UIKit.IVORY)
 			action.text = ("Buy for %s" % String(st["price"])) if bool(st["can_buy"]) else String(st["text"])
 			action.disabled = not bool(st["can_buy"])
-			status.text = String(st["message"])
+			status.text = unavailable_line() if String(st.get("state", "")) == "service" else String(st["message"])
 			if Catalogue.kind(id) == "apple_skin":
 				second.text = "Restore"
 				second.visible = true
@@ -658,6 +738,7 @@ func _refresh_detail() -> void:
 			price_l.text = ""
 			action.text = "Not sold"
 			action.disabled = true
+	status.visible = status.text != ""
 	action.accessibility_name = "%s, %s" % [Catalogue.display_name(id), action.text]
 
 
@@ -766,60 +847,107 @@ func _spend(id: String) -> void:
 	_refresh_states()
 
 
-## A Shop card: picture (a cached portrait of your runner wearing it, a
-## swatch, an emote icon, Coins or the Season emblem), the full name, and
-## the exact price or Owned.
+## A Shop card, laid out like the Locker's (CreatorScreen card helpers):
+## the picture well (a cached portrait of your runner wearing it with
+## neutral accessories, a swatch, the emote's glyph, a Coin pile, the Season
+## emblem), the full name (the grid's line count) and the price row (exact
+## price, or Owned).  Season 1 Premium is one wide card.
 class ShopCard:
 	extends Button
 	var shop: ShopScreen
 	var id := ""
+	var kind := ""
 	var name_l: Label
 	var price_l: Label
 	var coin: Control
 	var art: Control
+	var lines := 1
+	var wide := false
+	var _sum: Label
+	var _row: Control
+	var _wide_w := 0.0
+
+	## The picture well's height per item (a share of its width).
+	static func well_of(item_id: String) -> float:
+		var k := ShopCard.kind_of(item_id)
+		return float(ShopScreen.WELL.get(k, CreatorScreen.WELL.get(k, 1.0)))
+
+	static func kind_of(item_id: String) -> String:
+		var k := Catalogue.kind(item_id)
+		var f := String(Catalogue.split(item_id)[0])
+		if k == "coin_pack":
+			return "coins"
+		if k == "season_premium":
+			return "glyph"
+		if f in ShopScreen.SWATCH_FIELDS:
+			return "swatch"
+		if f == "emote":
+			return "emote"
+		return String(ShopScreen.THUMB_FRAMING.get(f, "glyph"))
 
 	func setup(s: ShopScreen, item_id: String, w: float) -> void:
 		shop = s
 		id = item_id
 		name = "Card_" + item_id.replace(":", "_")
-		var wide := Catalogue.kind(id) == "season_premium"
-		var img := (w - 24.0) if not wide else 150.0
-		if Catalogue.kind(id) == "coin_pack":
-			img = minf(img, 150.0)
-		UIKit.make_card(self, Vector2(w, (img + 112.0) if not wide else 210.0), Color(UIKit.SLATE_HI, 0.96))
-		var box: BoxContainer = UIKit.vbox(4) if not wide else UIKit.hbox(18)
-		box.set_anchors_preset(Control.PRESET_FULL_RECT)
-		box.offset_left = 10
-		box.offset_right = -10
-		box.offset_top = 10
-		box.offset_bottom = -8
-		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		UIKit.face_of(self).add_child(box)
-		art = ShopCard.art_for(s, id, img, "shop:%s" % id)
-		art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		box.add_child(art)
-		var tv := UIKit.vbox(4)
-		tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		kind = ShopCard.kind_of(id)
+		wide = Catalogue.kind(id) == "season_premium"
+		UIKit.make_card(self, Vector2(w, 0), Color(UIKit.SLATE_HI, 0.96))
+		var face := UIKit.face_of(self)
+		if wide:
+			_setup_wide(face, w)
+			return
+		var v := CreatorScreen.card_column(face)
+		art = ShopCard.art_for(s, id, 0.0, "shop:%s" % id)
+		art.name = "Well"
+		art.size_flags_horizontal = Control.SIZE_FILL
+		v.add_child(art)
+		name_l = CreatorScreen.name_label(Catalogue.display_name(id))
+		v.add_child(name_l)
+		var row := UIKit.hbox(6)
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.custom_minimum_size.y = CreatorScreen.STATE_H
+		coin = CommerceArt.Pic.new("coin", "", Color.WHITE, 20)
+		coin.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(coin)
+		price_l = UIKit.styled("", "num", UIKit.AMBER)
+		price_l.add_theme_font_size_override("font_size", 20)
+		price_l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		price_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(price_l)
+		v.add_child(row)
+		fit_cell(w, name_lines(w))
+
+	## Season 1 Premium: the emblem, the name, what it adds (counted from the
+	## Season table) and the price, in one compact row-shaped card.
+	func _setup_wide(face: Control, w: float) -> void:
+		var h := UIKit.hbox(UIKit.SP_L)
+		h.set_anchors_preset(Control.PRESET_FULL_RECT)
+		h.offset_left = 12
+		h.offset_right = -12
+		h.offset_top = 10
+		h.offset_bottom = -10
+		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.add_child(h)
+		art = ShopCard.art_for(shop, id, 96.0, "shop:%s" % id)
+		art.name = "Well"
+		art.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(art)
+		var tv := UIKit.vbox(2)
 		tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tv.alignment = BoxContainer.ALIGNMENT_CENTER
-		box.add_child(tv)
-		name_l = UIKit.styled(Catalogue.display_name(id), "label" if not wide else "headline", UIKit.IVORY,
-			HORIZONTAL_ALIGNMENT_CENTER if not wide else HORIZONTAL_ALIGNMENT_LEFT)
-		name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		name_l.max_lines_visible = 2
-		if not wide:
-			name_l.add_theme_font_size_override("font_size", 20)
-			name_l.custom_minimum_size = Vector2(w - 20.0, 54.0)
-		name_l.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+		tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		h.add_child(tv)
+		name_l = UIKit.styled(Catalogue.display_name(id), "label", UIKit.IVORY)
+		name_l.clip_text = true
+		name_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tv.add_child(name_l)
-		if wide:
-			var sum := UIKit.styled(ShopScreen.premium_summary(String(Catalogue.item(id).get("season", "s1"))), "caption", UIKit.IVORY_MUTED)
-			sum.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			sum.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			tv.add_child(sum)
+		_sum = UIKit.styled(ShopScreen.premium_summary(String(Catalogue.item(id).get("season", "s1"))), "caption", UIKit.IVORY_MUTED)
+		_sum.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_sum.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tv.add_child(_sum)
 		var row := UIKit.hbox(6)
-		row.alignment = BoxContainer.ALIGNMENT_CENTER if not wide else BoxContainer.ALIGNMENT_BEGIN
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		coin = CommerceArt.Pic.new("coin", "", Color.WHITE, 22)
 		coin.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -829,6 +957,36 @@ class ShopCard:
 		price_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(price_l)
 		tv.add_child(row)
+		_row = h
+		_wide_w = w
+		# the text's height is known once it is themed in the tree
+		h.minimum_size_changed.connect(func() -> void: _fit_wide(_wide_w))
+		_fit_wide(w)
+
+	## The wide card is as tall as its text needs at this width (the art is
+	## centred beside it): nothing spills past the card.
+	func _fit_wide(w: float) -> void:
+		_wide_w = w
+		_sum.custom_minimum_size.x = maxf(100.0, w - 96.0 - UIKit.SP_L - 24.0 - 4.0)
+		var need := maxf(96.0, _row.get_combined_minimum_size().y)
+		custom_minimum_size = Vector2(w, maxf(UIKit.row_h(), need + 20.0))
+
+	func name_lines(w: float) -> int:
+		if wide:
+			return 1
+		return mini(2, UIKit.lines_for(name_l.text, UIKit.font_w(600), CreatorScreen.NAME_FS, w - CreatorScreen.PAD * 2.0))
+
+	func fit_cell(w: float, n: int) -> void:
+		if wide:
+			_fit_wide(w)
+			return
+		lines = n
+		var iw := w - CreatorScreen.PAD * 2.0
+		var wh := roundf(iw * ShopCard.well_of(id))
+		art.custom_minimum_size = Vector2(0, wh)
+		name_l.custom_minimum_size = Vector2(iw, CreatorScreen.name_block_h(n))
+		name_l.max_lines_visible = n
+		custom_minimum_size = Vector2(w, CreatorScreen.PAD * 2.0 + wh + CreatorScreen.ROW_GAP * 2.0 + CreatorScreen.name_block_h(n) + CreatorScreen.STATE_H)
 
 	func refresh() -> void:
 		var st: Dictionary = shop.state_of(id)
@@ -839,7 +997,8 @@ class ShopCard:
 			", " + String(st["text"]) + (" Coins" if String(st["kind"]) == "coins" else "")]
 
 	## The picture for an item: runner items are cached portraits of your
-	## runner wearing it; colours are swatches; emotes an icon; packs Coins.
+	## runner wearing it (neutral accessories for outfits); colours are
+	## swatches; emotes their glyph; packs a Coin pile; Premium the pass.
 	static func art_for(s: ShopScreen, item_id: String, size_u: float, owner: String) -> Control:
 		var holder := ShopPic.new()
 		holder.custom_minimum_size = Vector2(size_u, size_u)
@@ -863,7 +1022,8 @@ class ShopCard:
 		return holder
 
 
-## The picture well (as in the Locker): a portrait, or drawn art.
+## The picture well (as in the Locker): a portrait cropped to cover the
+## well, or drawn art centred in it.
 class ShopPic:
 	extends Control
 	var tex: Texture2D
@@ -872,10 +1032,12 @@ class ShopPic:
 	var glyph := ""
 	var swatch := Color(0, 0, 0, 0)
 
+	func _init() -> void:
+		clip_contents = true
+
 	func request(s: ShopScreen, item_id: String, framing: String, owner: String) -> void:
-		var look: Dictionary = s.saved.duplicate()
 		var parts := Catalogue.split(item_id)
-		look[String(parts[0])] = String(parts[1])
+		var look := CommerceArt.preview_look(s.saved, String(parts[0]), String(parts[1]))
 		var ps := Portraits.shared()
 		pic_key = Portraits.key_for(look, TC.Role.RUNNER, framing)
 		var t := ps.portrait(look, TC.Role.RUNNER, owner, framing)
@@ -900,18 +1062,18 @@ class ShopPic:
 		var c := size * 0.5
 		var s := minf(size.x, size.y)
 		if tex != null:
-			draw_texture_rect(tex, Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s)), false)
+			var src := tex.get_size()
+			var k := maxf(size.x / maxf(1.0, src.x), size.y / maxf(1.0, src.y))
+			var vis := size / k
+			draw_texture_rect_region(tex, r, Rect2((src - vis) * 0.5, vis))
 		elif coins > 0:
-			# a stack that grows with the pack (no number: the name says it)
-			var n := 1 if coins <= 500 else (2 if coins <= 1500 else 3)
-			for i in n:
-				CommerceArt.coin(self, c + Vector2((float(i) - float(n - 1) * 0.5) * s * 0.24, float(i % 2) * s * 0.06 - s * 0.02), s * 0.24)
+			CommerceArt.coin_pile(self, c, s * 0.36, coins)
 		elif swatch.a > 0.0:
-			draw_circle(c + Vector2(0, 2), s * 0.3, swatch.darkened(0.4))
-			draw_circle(c, s * 0.3, swatch)
-			draw_circle(c + Vector2(-s * 0.09, -s * 0.1), s * 0.06, Color(1, 1, 1, 0.22))
+			draw_circle(c + Vector2(0, 2), s * 0.32, swatch.darkened(0.4), true, -1.0, true)
+			draw_circle(c, s * 0.32, swatch, true, -1.0, true)
+			draw_circle(c + Vector2(-s * 0.1, -s * 0.11), s * 0.07, Color(1, 1, 1, 0.22), true, -1.0, true)
 		elif glyph != "":
-			CommerceArt.glyph(self, glyph, c, s * 0.28, UIKit.AMBER)
+			CommerceArt.glyph(self, glyph, c, s * 0.34, UIKit.AMBER)
 		else:
 			# until the portrait is ready: a faint runner silhouette
 			var col := Color(UIKit.IVORY, 0.1)

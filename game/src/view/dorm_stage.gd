@@ -44,6 +44,13 @@ var lobby_free_frac := 0.62
 ## the wardrobe's free region left of its item panel, as fractions of the
 ## screen width: [centre, width] (set by CreatorScreen, V5)
 var wardrobe_region := Vector2(0.27, 0.44)
+## (V7) the wardrobe's free band as fractions of the screen height [top,
+## bottom]: below the navigation bar, above the bottom edge.  The runner, hat
+## to shoes, is fitted inside it (V6 let a tall hat run under the tabs).
+var wardrobe_band := Vector2(0.0, 1.0)
+## the runner's height with the tallest hat, metres, and a margin above/below
+const WARDROBE_FIG_H := 1.78
+const WARDROBE_FIG_PAD := 0.05
 var cam: Camera3D
 var chars: Dictionary = {}       # key -> CharacterView
 var _mark_of: Dictionary = {}    # key -> mark index
@@ -114,6 +121,15 @@ func _cam_for(m: String) -> Array:
 		# any aspect: a 4:3 iPad gives the panel more of the width
 		x_frac = wardrobe_region.x
 		height_m = maxf(height_m, 1.45 / maxf(0.1, aspect * wardrobe_region.y))
+		var band := clampf(wardrobe_band.y - wardrobe_band.x, 0.3, 1.0)
+		if band < 0.999:
+			# (V7) fit the whole figure in the band: feet just above its
+			# bottom, the tallest hat just below its top
+			height_m = maxf(height_m, (WARDROBE_FIG_H + WARDROBE_FIG_PAD * 2.0) / band)
+			var feet_y := -WARDROBE_FIG_PAD - (height_m * band - WARDROBE_FIG_H - WARDROBE_FIG_PAD * 2.0) * 0.5
+			var look_y := feet_y + height_m * (wardrobe_band.y - 0.5)
+			cam_h += look_y - subject.y
+			subject.y = look_y
 	if m == "lobby":
 		# frame the marks actually in use (1 to 8 players), centred in the free
 		# area left of the party panel, on any aspect (phone 19.5:9 ... iPad 4:3)
@@ -162,11 +178,13 @@ func _reframe() -> void:
 		_place(k)
 
 
-func set_wardrobe_region(center_frac: float, width_frac: float) -> void:
+func set_wardrobe_region(center_frac: float, width_frac: float, top_frac: float = 0.0, bottom_frac: float = 1.0) -> void:
 	var r := Vector2(clampf(center_frac, 0.12, 0.6), clampf(width_frac, 0.2, 0.9))
-	if r.distance_to(wardrobe_region) < 0.01:
+	var b := Vector2(clampf(top_frac, 0.0, 0.5), clampf(bottom_frac, 0.5, 1.0))
+	if r.distance_to(wardrobe_region) < 0.01 and b.distance_to(wardrobe_band) < 0.005:
 		return
 	wardrobe_region = r
+	wardrobe_band = b
 	if mode == "wardrobe" and _cam_t >= 1.0:
 		_apply_cam(_cam_for(mode), 1.0)
 		for k in chars:

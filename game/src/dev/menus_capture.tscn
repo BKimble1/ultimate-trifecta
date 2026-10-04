@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/dev/menus_capture.gd" id="1"]
+
+[node name="MenusCapture" type="Node"]
+script = ExtResource("1")
