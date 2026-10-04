@@ -74,7 +74,17 @@ Same results at 30 and 120 fps render (physics 60 Hz).
 
 ## V7.3 Visual and behavioural evidence (desktop render, labelled)
 
-_Pending: the before/after clips (Pause, forward drift) are still being recorded; links are added when they finish._
+All are the real game on desktop Linux with emulated touches, labelled in
+the image or file; nothing is sped up or interpolated; none is device
+footage or frame-rate evidence.
+
+| What | Where | Shows |
+|---|---|---|
+| Pause, before/after (Desktop render, Movie Maker 30 fps, 1040×480 phone-shaped window) | `docs/media/v7/pause/` | 1.5: the menu never takes a tap and stays open, the Practice clock runs on; V7: dimmed modal, the clock stops, slider, Resume, Leave → Stay, Leave once |
+| Forward drift, before/after (same) | `docs/media/v7/stick/` | Corner touchdown 24.8 m sideways → 0.0; a 6° lean turned the camera +94° → 0°; long push −32° → 0° |
+| Locker, Emotes, Season Pass, Shop (Desktop render at seven device shapes, measured rects) | `docs/media/v7/menus/` | Before `d2d0749` / after; service-on with the labelled test adapters, service-off as shipped |
+| Friends, Settings, home, party room, results, confirmations (same, emulated keyboard) | `docs/media/v7/screens/` | Matched pairs and measured layout facts at seven sizes |
+| Goggles and characters (Desktop render, 900² per cell; reel 1280×720 at 30 fps) | `docs/media/v7/characters/` | Close-ups, views, poses, faces, before/after reel, thumbnails, budgets |
 
 ## V7.4 Found and fixed during V7 integration
 
