@@ -215,15 +215,20 @@ time; they count what is submitted.
 |---|---|---|---|
 | build 6 (`cb3c48a`) | 243 (196–298) | 323 (486) | 369,611 |
 | V8, first measurement | 256 (192–316) | 338 (504) | 355,093 |
-| V8, final code | DRAWFINAL_PLACEHOLDER | | |
+| V8, final code (`5e96387`) | **236** (191–275) | 318 (463) | 354,328 |
 
-The first V8 measurement showed about 18 more draw calls and objects from
-the very first sample. They were the warmed effect pool (V8 warms three
+The first V8 measurement showed 18 more draw calls than build 6 on average
+and from the very first sample. At that first sample the first and the final
+V8 runs show the same view (the same 456,463 primitives): 316 draw calls and
+504 objects before the fix, 275 and 463 after it, so 41 draw calls were idle
+emitters. They were the warmed effect pool (V8 warms three
 sets, up to 43 emitters, below the campus, where a camera looking down
 still has them in its frustum) and the runners' drip emitters made at load:
 an idle CPU particle emitter is still a rendered object. Idle emitters are
 now hidden until they fire and hide again when their last particle dies
-(`test_v8_hot_paths`). Primitives are lower in V8 on average because the
+(`test_v8_hot_paths`). Build 6 drew its smaller warmed set the same way;
+with them hidden, V8 averages 236 draw calls against build 6's 243
+(`docs/v8/data/render_{before,after,final}.json`). Primitives are lower in V8 on average because the
 scenes differ: build 6 answered a bot's path search at once, V8 six ticks
 later, so the bots (and the followed camera) take different routes. Nothing
 was simplified.

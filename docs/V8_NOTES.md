@@ -115,7 +115,7 @@ it was the first run after that machine started and did not recur in the
 second run (worst frame 32.8 ms), consistent with a cold disk cache, which
 is not proven.
 
-**Draw calls** (llvmpipe render bench): build 6 drew 243 calls per sampled frame on average (one 40 s round, the same seed); the first V8 measurement drew 256, about 18 of them idle effect emitters (the warmed pool below the campus and the runners' drips), which are now hidden; the final code's measurement is in performance.md (draw calls).
+**Draw calls** (llvmpipe render bench): build 6 averaged 243 per sampled frame (one 40 s round, the same seed); the first V8 measurement 256, of which 41 at the same view were idle effect emitters (the warmed pool below the campus, the runners' drips); with idle emitters hidden the final code averages **236**.
 
 **Network presentation** (loopback probe): on a clean link other players
 are drawn ~54 ms behind instead of ~117; at 80 ms RTT, ~74; at 300 ms RTT

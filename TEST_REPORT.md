@@ -90,8 +90,9 @@ is not proven.
   (15 snap frames): only a slot missing from snapshots that did arrive is
   re-seen now; held runners rejoin their path smoothly (D11, D12).
 - The warmed effect pool and runners' drip emitters were drawn while idle
-  (+18 draw calls and objects in the render bench): idle emitters are
-  hidden.
+  (41 draw calls at the same view in the render bench; the mean was 18
+  above build 6's): idle emitters are hidden, and the final code averages
+  236 draw calls against build 6's 243.
 
 ## V8.5 iOS build (CI iOS) and TestFlight
 

@@ -1,0 +1,1035 @@
+{
+ "contexts": {
+  "loading": {
+   "frames": 53,
+   "over100": 9,
+   "over33": 53,
+   "over50": 28,
+   "worst": 783.259
+  },
+  "match_other": {
+   "frames": 85,
+   "over100": 85,
+   "over33": 85,
+   "over50": 85,
+   "worst": 18928.796
+  },
+  "menu": {
+   "frames": 119,
+   "over100": 43,
+   "over33": 44,
+   "over50": 43,
+   "worst": 1431.069
+  },
+  "playing": {
+   "frames": 400,
+   "over100": 400,
+   "over33": 400,
+   "over50": 400,
+   "worst": 2365.562
+  }
+ },
+ "engine": "4.7.2-stable (official)",
+ "first_events": {},
+ "fps": 60,
+ "frames": 400,
+ "interval": {
+  "clusters": {
+   "longest_ms": 477385.799865723,
+   "runs": 1
+  },
+  "max": 2365.56201171875,
+  "over100": 400,
+  "over33": 400,
+  "over50": 400,
+  "p50": 1156.15795898438,
+  "p95": 1554.14001464844,
+  "p99": 1870.85498046875
+ },
+ "nav": {
+  "path_stats": {
+   "cache": 219,
+   "deferred": 768,
+   "direct": 208,
+   "search": 166,
+   "unreachable": 0
+  },
+  "waited_ms": 468.978,
+  "waits": 2
+ },
+ "quality": 1,
+ "render": [
+  {
+   "draw": 275,
+   "objects": 463,
+   "prims": 456463
+  },
+  {
+   "draw": 268,
+   "objects": 448,
+   "prims": 457704
+  },
+  {
+   "draw": 274,
+   "objects": 454,
+   "prims": 408306
+  },
+  {
+   "draw": 273,
+   "objects": 453,
+   "prims": 395252
+  },
+  {
+   "draw": 274,
+   "objects": 454,
+   "prims": 395128
+  },
+  {
+   "draw": 264,
+   "objects": 324,
+   "prims": 400886
+  },
+  {
+   "draw": 267,
+   "objects": 327,
+   "prims": 409700
+  },
+  {
+   "draw": 260,
+   "objects": 320,
+   "prims": 409180
+  },
+  {
+   "draw": 259,
+   "objects": 319,
+   "prims": 390019
+  },
+  {
+   "draw": 258,
+   "objects": 318,
+   "prims": 397647
+  },
+  {
+   "draw": 260,
+   "objects": 342,
+   "prims": 390455
+  },
+  {
+   "draw": 260,
+   "objects": 349,
+   "prims": 392565
+  },
+  {
+   "draw": 253,
+   "objects": 343,
+   "prims": 382779
+  },
+  {
+   "draw": 244,
+   "objects": 334,
+   "prims": 363398
+  },
+  {
+   "draw": 243,
+   "objects": 333,
+   "prims": 348030
+  },
+  {
+   "draw": 244,
+   "objects": 305,
+   "prims": 354572
+  },
+  {
+   "draw": 239,
+   "objects": 300,
+   "prims": 341400
+  },
+  {
+   "draw": 239,
+   "objects": 300,
+   "prims": 348646
+  },
+  {
+   "draw": 236,
+   "objects": 297,
+   "prims": 345451
+  },
+  {
+   "draw": 234,
+   "objects": 295,
+   "prims": 349053
+  },
+  {
+   "draw": 234,
+   "objects": 294,
+   "prims": 359297
+  },
+  {
+   "draw": 236,
+   "objects": 296,
+   "prims": 340463
+  },
+  {
+   "draw": 237,
+   "objects": 297,
+   "prims": 332513
+  },
+  {
+   "draw": 234,
+   "objects": 294,
+   "prims": 320464
+  },
+  {
+   "draw": 223,
+   "objects": 283,
+   "prims": 331695
+  },
+  {
+   "draw": 221,
+   "objects": 281,
+   "prims": 330252
+  },
+  {
+   "draw": 202,
+   "objects": 262,
+   "prims": 301465
+  },
+  {
+   "draw": 199,
+   "objects": 259,
+   "prims": 302543
+  },
+  {
+   "draw": 199,
+   "objects": 259,
+   "prims": 303110
+  },
+  {
+   "draw": 201,
+   "objects": 261,
+   "prims": 308512
+  },
+  {
+   "draw": 202,
+   "objects": 262,
+   "prims": 314406
+  },
+  {
+   "draw": 204,
+   "objects": 264,
+   "prims": 310255
+  },
+  {
+   "draw": 200,
+   "objects": 260,
+   "prims": 306433
+  },
+  {
+   "draw": 200,
+   "objects": 260,
+   "prims": 315757
+  },
+  {
+   "draw": 191,
+   "objects": 251,
+   "prims": 305795
+  },
+  {
+   "draw": 204,
+   "objects": 286,
+   "prims": 274964
+  },
+  {
+   "draw": 201,
+   "objects": 304,
+   "prims": 315589
+  }
+ ],
+ "renderer": "X11",
+ "round_secs": 40.0,
+ "round_starts": [
+  {
+   "nodes": 1655.0,
+   "objects": 5690.0,
+   "orphans": 0.0,
+   "round": 1,
+   "static_mb": 210.495923042297
+  }
+ ],
+ "rounds": 1,
+ "sections": {
+  "adv_n": {
+   "max": 8.0,
+   "mean": 8.0,
+   "p95": 8.0,
+   "p99": 8.0
+  },
+  "anim_advance": {
+   "max": 0.994000017642975,
+   "mean": 0.409917500466108,
+   "p95": 0.564000010490417,
+   "p99": 0.712999999523163
+  },
+  "ev_BOMB_HIT": {
+   "max": 0.49099999666214,
+   "mean": 0.00122749999165535,
+   "p95": 0.0,
+   "p99": 0.0
+  },
+  "ev_CAPTURE": {
+   "max": 1.2039999961853,
+   "mean": 0.00300999999046326,
+   "p95": 0.0,
+   "p99": 0.0
+  },
+  "ev_CART_ENTER": {
+   "max": 0.488999992609024,
+   "mean": 0.00138249998912215,
+   "p95": 0.0,
+   "p99": 0.0
+  },
+  "ev_CART_EXIT": {
+   "max": 0.382999986410141,
+   "mean": 0.00112749997526407,
+   "p95": 0.0,
+   "p99": 0.0
+  },
+  "ev_GADGET_PICKUP": {
+   "max": 0.453000009059906,
+   "mean": 0.00113250002264976,
+   "p95": 0.0,
+   "p99": 0.0
+  },
+  "ev_GADGET_USE": {
+   "max": 0.453999996185303,
+   "mean": 0.00113499999046326,
+   "p95": 0.0,
+   "p99": 0.0
+  },
+  "ev_PHASE": {
+   "max": 0.017000000923872,
+   "mean": 0.00004250000230968,
+   "p95": 0.0,
+   "p99": 0.0
+  },
+  "ev_SPLASH_STAMP": {
+   "max": 1.65699994564056,
+   "mean": 0.00815999992191791,
+   "p95": 0.0,
+   "p99": 0.127000004053116
+  },
+  "fx": {
+   "max": 0.0469999983906746,
+   "mean": 0.00542500008130446,
+   "p95": 0.017000000923872,
+   "p99": 0.025000000372529
+  },
+  "governor": {
+   "max": 0.52700001001358,
+   "mean": 0.0434500001743436,
+   "p95": 0.063000001013279,
+   "p99": 0.104000002145767
+  },
+  "hud_process": {
+   "max": 0.0610000006854534,
+   "mean": 0.0186500000976957,
+   "p95": 0.0240000002086163,
+   "p99": 0.0520000010728836
+  },
+  "hud_refresh": {
+   "max": 1.71899998188019,
+   "mean": 0.293157499209046,
+   "p95": 0.476999998092651,
+   "p99": 0.623000025749207
+  },
+  "mc_apply": {
+   "max": 0.883000016212463,
+   "mean": 0.260167499892414,
+   "p95": 0.349999994039536,
+   "p99": 0.549000024795532
+  },
+  "mc_camera": {
+   "max": 0.705999970436096,
+   "mean": 0.113504999773577,
+   "p95": 0.171000003814697,
+   "p99": 0.245000004768372
+  },
+  "mc_events": {
+   "max": 1.66799998283386,
+   "mean": 0.0207500002940651,
+   "p95": 0.00800000037997961,
+   "p99": 0.623000025749207
+  },
+  "mc_world": {
+   "max": 0.601000010967255,
+   "mean": 0.136245000232011,
+   "p95": 0.196999996900558,
+   "p99": 0.250999987125397
+  },
+  "mod_footlock": {
+   "max": 1.19099998474121,
+   "mean": 0.260689999754541,
+   "p95": 0.414000004529953,
+   "p99": 0.635999977588654
+  },
+  "mod_posefade": {
+   "max": 0.0839999988675117,
+   "mean": 0.0322900001704693,
+   "p95": 0.0520000010728836,
+   "p99": 0.0729999989271164
+  },
+  "mod_secondary": {
+   "max": 0.25900000333786,
+   "mean": 0.0852850002981722,
+   "p95": 0.128000006079674,
+   "p99": 0.167999997735023
+  },
+  "sim_bots": {
+   "max": 472.315002441406,
+   "mean": 4.02867000952363,
+   "p95": 4.68200016021729,
+   "p99": 7.2189998626709
+  },
+  "sim_carts": {
+   "max": 4.42399978637695,
+   "mean": 1.57028249429539,
+   "p95": 2.63000011444092,
+   "p99": 3.25300002098083
+  },
+  "sim_intents": {
+   "max": 472.545989990234,
+   "mean": 4.19283997163177,
+   "p95": 4.8899998664856,
+   "p99": 7.55600023269653
+  },
+  "sim_move": {
+   "max": 7.04500007629395,
+   "mean": 1.74975500017405,
+   "p95": 2.44099998474121,
+   "p99": 3.71399998664856
+  },
+  "sim_perception": {
+   "max": 0.187999993562698,
+   "mean": 0.0498225001548417,
+   "p95": 0.0879999995231628,
+   "p99": 0.138999998569489
+  },
+  "sim_rules": {
+   "max": 6.3730001449585,
+   "mean": 0.869995000548661,
+   "p95": 1.20000004768372,
+   "p99": 1.78400003910065
+  },
+  "sim_tag_cues": {
+   "max": 0.426999986171722,
+   "mean": 0.17896499988623,
+   "p95": 0.307000011205673,
+   "p99": 0.368999987840652
+  },
+  "tick": {
+   "max": 478.390991210938,
+   "mean": 9.93098497629166,
+   "p95": 12.9079999923706,
+   "p99": 18.2569999694824
+  },
+  "ticks": {
+   "max": 6.0,
+   "mean": 6.0,
+   "p95": 6.0,
+   "p99": 6.0
+  },
+  "views": {
+   "max": 3.26999998092651,
+   "mean": 1.22173250108957,
+   "p95": 1.72099995613098,
+   "p99": 2.3050000667572
+  },
+  "views_n": {
+   "max": 8.0,
+   "mean": 8.0,
+   "p95": 8.0,
+   "p99": 8.0
+  }
+ },
+ "seed": 7,
+ "slow_searches": [
+  [
+   69,
+   1,
+   "(66.0, -122.0)",
+   "(-126.5, 54.5)",
+   true,
+   15.283,
+   16
+  ],
+  [
+   70,
+   1,
+   "(66.0, -121.9)",
+   "(-126.5, 54.5)",
+   true,
+   15.259,
+   16
+  ],
+  [
+   95,
+   1,
+   "(54.4, -108.1)",
+   "(-75.5, 88.0)",
+   true,
+   11.194,
+   8
+  ],
+  [
+   112,
+   1,
+   "(64.0, -107.4)",
+   "(-126.5, 54.5)",
+   true,
+   14.46,
+   16
+  ],
+  [
+   113,
+   1,
+   "(54.9, -96.4)",
+   "(-126.5, 54.5)",
+   true,
+   13.648,
+   15
+  ],
+  [
+   114,
+   1,
+   "(54.9, -95.9)",
+   "(-126.5, 54.5)",
+   true,
+   13.888,
+   15
+  ],
+  [
+   139,
+   1,
+   "(59.9, -82.2)",
+   "(-126.5, 54.5)",
+   true,
+   13.579,
+   16
+  ],
+  [
+   146,
+   1,
+   "(55.3, -78.9)",
+   "(-126.5, 54.5)",
+   true,
+   12.969,
+   15
+  ],
+  [
+   164,
+   1,
+   "(50.6, -57.7)",
+   "(-126.5, 54.5)",
+   true,
+   12.772,
+   14
+  ],
+  [
+   171,
+   1,
+   "(55.6, -62.5)",
+   "(-126.5, 54.5)",
+   true,
+   11.907,
+   15
+  ],
+  [
+   189,
+   1,
+   "(23.0, -55.9)",
+   "(-126.5, 54.5)",
+   true,
+   13.293,
+   15
+  ],
+  [
+   196,
+   1,
+   "(31.9, -56.1)",
+   "(-126.5, 54.5)",
+   true,
+   9.501,
+   15
+  ],
+  [
+   221,
+   1,
+   "(4.2, -56.2)",
+   "(-126.5, 54.5)",
+   true,
+   8.402,
+   15
+  ]
+ ],
+ "worst_frames": [
+  {
+   "adv_n": 8,
+   "anim_advance": 0.423,
+   "first_events": [],
+   "fx": 0.002,
+   "governor": 0.037,
+   "hud_process": 0.023,
+   "hud_refresh": 0.245,
+   "index": 69,
+   "iv": 2365.562,
+   "mc_apply": 0.241,
+   "mc_camera": 0.137,
+   "mc_events": 0.002,
+   "mc_world": 0.116,
+   "mod_footlock": 0.2,
+   "mod_posefade": 0.032,
+   "mod_secondary": 0.133,
+   "round": 1,
+   "sim_bots": 472.315,
+   "sim_carts": 1.649,
+   "sim_intents": 472.546,
+   "sim_move": 1.717,
+   "sim_perception": 0.032,
+   "sim_rules": 0.791,
+   "sim_tag_cues": 0.167,
+   "slow_paths_ms": [
+    15.283
+   ],
+   "tick": 478.391,
+   "ticks": 6,
+   "views": 1.257,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.381,
+   "first_events": [],
+   "fx": 0.003,
+   "governor": 0.049,
+   "hud_process": 0.045,
+   "hud_refresh": 0.217,
+   "index": 274,
+   "iv": 1994.649,
+   "mc_apply": 0.201,
+   "mc_camera": 0.088,
+   "mc_events": 0.004,
+   "mc_world": 0.149,
+   "mod_footlock": 0.4,
+   "mod_posefade": 0.033,
+   "mod_secondary": 0.113,
+   "round": 1,
+   "sim_bots": 2.659,
+   "sim_carts": 1.754,
+   "sim_intents": 2.854,
+   "sim_move": 1.802,
+   "sim_perception": 0.078,
+   "sim_rules": 0.911,
+   "sim_tag_cues": 0.146,
+   "tick": 8.939,
+   "ticks": 6,
+   "views": 1.105,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.547,
+   "first_events": [],
+   "fx": 0.003,
+   "governor": 0.033,
+   "hud_process": 0.02,
+   "hud_refresh": 0.457,
+   "index": 5,
+   "iv": 1952.82,
+   "mc_apply": 0.314,
+   "mc_camera": 0.155,
+   "mc_events": 0.003,
+   "mc_world": 0.12,
+   "mod_footlock": 0.088,
+   "mod_posefade": 0.053,
+   "mod_secondary": 0.077,
+   "round": 1,
+   "sim_bots": 2.083,
+   "sim_carts": 1.653,
+   "sim_intents": 2.288,
+   "sim_move": 2.968,
+   "sim_perception": 0.026,
+   "sim_rules": 1.199,
+   "sim_tag_cues": 0.232,
+   "tick": 10.134,
+   "ticks": 6,
+   "views": 1.483,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.373,
+   "first_events": [],
+   "fx": 0.003,
+   "governor": 0.024,
+   "hud_process": 0.015,
+   "hud_refresh": 0.477,
+   "index": 7,
+   "iv": 1951.512,
+   "mc_apply": 0.234,
+   "mc_camera": 0.134,
+   "mc_events": 0.004,
+   "mc_world": 0.121,
+   "mod_footlock": 0.17,
+   "mod_posefade": 0.035,
+   "mod_secondary": 0.078,
+   "round": 1,
+   "sim_bots": 1.195,
+   "sim_carts": 1.121,
+   "sim_intents": 1.324,
+   "sim_move": 1.932,
+   "sim_perception": 0.02,
+   "sim_rules": 0.688,
+   "sim_tag_cues": 0.128,
+   "tick": 6.539,
+   "ticks": 6,
+   "views": 1.175,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.486,
+   "first_events": [],
+   "fx": 0.004,
+   "governor": 0.034,
+   "hud_process": 0.021,
+   "hud_refresh": 0.519,
+   "index": 6,
+   "iv": 1870.855,
+   "mc_apply": 0.332,
+   "mc_camera": 0.228,
+   "mc_events": 0.004,
+   "mc_world": 0.231,
+   "mod_footlock": 0.27,
+   "mod_posefade": 0.054,
+   "mod_secondary": 0.144,
+   "round": 1,
+   "sim_bots": 1.423,
+   "sim_carts": 1.198,
+   "sim_intents": 1.577,
+   "sim_move": 2.109,
+   "sim_perception": 0.039,
+   "sim_rules": 0.794,
+   "sim_tag_cues": 0.143,
+   "tick": 7.131,
+   "ticks": 6,
+   "views": 1.528,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.326,
+   "ev_BOMB_HIT": 0.491,
+   "ev_CART_EXIT": 0.383,
+   "first_events": [],
+   "fx": 0.003,
+   "governor": 0.042,
+   "hud_process": 0.015,
+   "hud_refresh": 0.209,
+   "index": 273,
+   "iv": 1868.197,
+   "mc_apply": 0.291,
+   "mc_camera": 0.088,
+   "mc_events": 0.884,
+   "mc_world": 0.109,
+   "mod_footlock": 0.31,
+   "mod_posefade": 0.03,
+   "mod_secondary": 0.087,
+   "round": 1,
+   "sim_bots": 1.908,
+   "sim_carts": 1.281,
+   "sim_intents": 2.013,
+   "sim_move": 1.315,
+   "sim_perception": 0.03,
+   "sim_rules": 0.582,
+   "sim_tag_cues": 0.103,
+   "tick": 6.301,
+   "ticks": 6,
+   "views": 0.932,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.39,
+   "first_events": [],
+   "fx": 0.004,
+   "governor": 0.03,
+   "hud_process": 0.019,
+   "hud_refresh": 0.422,
+   "index": 8,
+   "iv": 1849.082,
+   "mc_apply": 0.277,
+   "mc_camera": 0.125,
+   "mc_events": 0.003,
+   "mc_world": 0.141,
+   "mod_footlock": 0.24,
+   "mod_posefade": 0.035,
+   "mod_secondary": 0.081,
+   "round": 1,
+   "sim_bots": 1.485,
+   "sim_carts": 1.402,
+   "sim_intents": 1.67,
+   "sim_move": 2.451,
+   "sim_perception": 0.038,
+   "sim_rules": 1.078,
+   "sim_tag_cues": 0.16,
+   "tick": 8.329,
+   "ticks": 6,
+   "views": 1.271,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.546,
+   "first_events": [],
+   "fx": 0.003,
+   "governor": 0.029,
+   "hud_process": 0.017,
+   "hud_refresh": 0.446,
+   "index": 3,
+   "iv": 1814.915,
+   "mc_apply": 0.206,
+   "mc_camera": 0.129,
+   "mc_events": 0.003,
+   "mc_world": 0.137,
+   "mod_footlock": 0.164,
+   "mod_posefade": 0.03,
+   "mod_secondary": 0.074,
+   "round": 1,
+   "sim_bots": 1.74,
+   "sim_carts": 1.099,
+   "sim_intents": 1.904,
+   "sim_move": 2.275,
+   "sim_perception": 0.02,
+   "sim_rules": 0.905,
+   "sim_tag_cues": 0.147,
+   "tick": 7.674,
+   "ticks": 6,
+   "views": 1.853,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.355,
+   "first_events": [],
+   "fx": 0.003,
+   "governor": 0.061,
+   "hud_process": 0.016,
+   "hud_refresh": 0.231,
+   "index": 70,
+   "iv": 1811.632,
+   "mc_apply": 0.549,
+   "mc_camera": 0.108,
+   "mc_events": 0.004,
+   "mc_world": 0.205,
+   "mod_footlock": 0.099,
+   "mod_posefade": 0.027,
+   "mod_secondary": 0.067,
+   "round": 1,
+   "sim_bots": 3.128,
+   "sim_carts": 2.432,
+   "sim_intents": 3.296,
+   "sim_move": 1.725,
+   "sim_perception": 0.068,
+   "sim_rules": 0.726,
+   "sim_tag_cues": 0.135,
+   "slow_paths_ms": [
+    15.259
+   ],
+   "tick": 9.664,
+   "ticks": 6,
+   "views": 0.994,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.713,
+   "first_events": [],
+   "fx": 0.004,
+   "governor": 0.031,
+   "hud_process": 0.017,
+   "hud_refresh": 0.499,
+   "index": 4,
+   "iv": 1777.618,
+   "mc_apply": 0.244,
+   "mc_camera": 0.136,
+   "mc_events": 0.003,
+   "mc_world": 0.109,
+   "mod_footlock": 0.128,
+   "mod_posefade": 0.037,
+   "mod_secondary": 0.081,
+   "round": 1,
+   "sim_bots": 1.403,
+   "sim_carts": 2.238,
+   "sim_intents": 1.56,
+   "sim_move": 2.119,
+   "sim_perception": 0.037,
+   "sim_rules": 0.747,
+   "sim_tag_cues": 0.133,
+   "tick": 8.35,
+   "ticks": 6,
+   "views": 1.492,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.517,
+   "first_events": [],
+   "fx": 0.004,
+   "governor": 0.037,
+   "hud_process": 0.021,
+   "hud_refresh": 0.583,
+   "index": 9,
+   "iv": 1776.399,
+   "mc_apply": 0.336,
+   "mc_camera": 0.163,
+   "mc_events": 0.003,
+   "mc_world": 0.14,
+   "mod_footlock": 0.169,
+   "mod_posefade": 0.071,
+   "mod_secondary": 0.097,
+   "round": 1,
+   "sim_bots": 2.572,
+   "sim_carts": 3.779,
+   "sim_intents": 2.911,
+   "sim_move": 3.975,
+   "sim_perception": 0.026,
+   "sim_rules": 1.736,
+   "sim_tag_cues": 0.239,
+   "tick": 15.353,
+   "ticks": 6,
+   "views": 1.389,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.535,
+   "first_events": [],
+   "fx": 0.004,
+   "governor": 0.027,
+   "hud_process": 0.018,
+   "hud_refresh": 0.546,
+   "index": 11,
+   "iv": 1772.524,
+   "mc_apply": 0.883,
+   "mc_camera": 0.192,
+   "mc_events": 0.004,
+   "mc_world": 0.209,
+   "mod_footlock": 0.178,
+   "mod_posefade": 0.032,
+   "mod_secondary": 0.078,
+   "round": 1,
+   "sim_bots": 1.177,
+   "sim_carts": 1.818,
+   "sim_intents": 1.313,
+   "sim_move": 1.983,
+   "sim_perception": 0.018,
+   "sim_rules": 0.685,
+   "sim_tag_cues": 0.145,
+   "tick": 7.113,
+   "ticks": 6,
+   "views": 1.304,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.429,
+   "ev_PHASE": 0.017,
+   "first_events": [],
+   "fx": 0.004,
+   "governor": 0.032,
+   "hud_process": 0.022,
+   "hud_refresh": 0.876,
+   "index": 1,
+   "iv": 1766.998,
+   "mc_apply": 0.249,
+   "mc_camera": 0.195,
+   "mc_events": 0.024,
+   "mc_world": 0.172,
+   "mod_footlock": 0.348,
+   "mod_posefade": 0.063,
+   "mod_secondary": 0.134,
+   "round": 1,
+   "sim_bots": 1.993,
+   "sim_carts": 0.422,
+   "sim_intents": 2.173,
+   "sim_move": 3.341,
+   "sim_perception": 0.026,
+   "sim_rules": 1.011,
+   "sim_tag_cues": 0.138,
+   "tick": 8.739,
+   "ticks": 6,
+   "views": 1.297,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.616,
+   "first_events": [],
+   "fx": 0.004,
+   "governor": 0.029,
+   "hud_process": 0.02,
+   "hud_refresh": 1.719,
+   "index": 2,
+   "iv": 1765.8,
+   "mc_apply": 0.241,
+   "mc_camera": 0.166,
+   "mc_events": 0.003,
+   "mc_world": 0.112,
+   "mod_footlock": 0.15,
+   "mod_posefade": 0.034,
+   "mod_secondary": 0.083,
+   "round": 1,
+   "sim_bots": 2.111,
+   "sim_carts": 2.218,
+   "sim_intents": 2.262,
+   "sim_move": 2.3,
+   "sim_perception": 0.031,
+   "sim_rules": 0.772,
+   "sim_tag_cues": 0.187,
+   "tick": 9.311,
+   "ticks": 6,
+   "views": 1.432,
+   "views_n": 8
+  },
+  {
+   "adv_n": 8,
+   "anim_advance": 0.379,
+   "first_events": [],
+   "fx": 0.003,
+   "governor": 0.034,
+   "hud_process": 0.021,
+   "hud_refresh": 0.325,
+   "index": 0,
+   "iv": 1747.659,
+   "mc_apply": 0.229,
+   "mc_camera": 0.137,
+   "mc_events": 0.004,
+   "mc_world": 0.144,
+   "mod_footlock": 0.024,
+   "mod_posefade": 0.042,
+   "mod_secondary": 0.051,
+   "round": 1,
+   "sim_bots": 0.92,
+   "sim_carts": 0.107,
+   "sim_intents": 0.963,
+   "sim_move": 0.521,
+   "sim_perception": 0.018,
+   "sim_rules": 0.172,
+   "sim_tag_cues": 0.038,
+   "tick": 5.239,
+   "ticks": 6,
+   "views": 1.551,
+   "views_n": 8
+  }
+ ]
+}
