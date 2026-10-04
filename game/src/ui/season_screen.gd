@@ -291,7 +291,7 @@ func claim_status() -> Dictionary:
 	var reason := ""
 	match Wallet.service_state():
 		"off":
-			reason = "This test build has no game service, so rewards can't be claimed yet. Browsing works."
+			reason = "This test build has no game service, so rewards can't be claimed yet."
 		"signed_out":
 			reason = "Sign in with Game Center to claim rewards."
 		"syncing":
@@ -408,11 +408,12 @@ func _build_detail() -> void:
 	var state_l := UIKit.styled("", "body", UIKit.IVORY)
 	state_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_box.add_child(state_l)
+	# why the action is unavailable, and the action itself, stay at the
+	# bottom of the panel, outside the scroll: never below the fold
 	var reason_l := UIKit.styled("", "caption", UIKit.AMBER)
 	reason_l.name = "Reason"
 	reason_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail_box.add_child(reason_l)
-	# the action stays at the bottom of the panel, outside the scroll
+	v.add_child(reason_l)
 	var action := UIKit.secondary("", Vector2(0, UIKit.row_h()), UIKit.T_LABEL + 2)
 	action.name = "DetailAction"
 	action.pressed.connect(_on_detail_action)
@@ -472,14 +473,14 @@ func _refresh_detail() -> void:
 			state_l.text = lead + "Reached. Premium (%s Coins in the Shop) unlocks it and every Premium reward you've earned." % Catalogue.format_coins(Catalogue.price(String(Catalogue.season(sid).get("premium_item", ""))))
 			action.text = "Get Premium in the Shop" if bool(cs["ok"]) else "See Premium in the Shop"
 			if not bool(cs["ok"]):
-				reason_l.text = "Rewards unavailable right now. " + String(cs["reason"])
+				reason_l.text = String(cs["reason"])
 		"claimable":
 			state_l.text = lead + "Earned at Tier %d. Claim it to add it to your %s." % [focus_tier, into]
 			action.text = "Claim"
 			action.disabled = _busy
 		"earned":
 			state_l.text = lead + "Earned at Tier %d, not claimed yet." % focus_tier
-			reason_l.text = "Rewards unavailable right now. " + String(cs["reason"])
+			reason_l.text = String(cs["reason"])
 			action.text = "Claim"
 			action.disabled = true
 		"claimed":

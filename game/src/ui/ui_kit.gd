@@ -819,23 +819,6 @@ static func link(t: String, font_size: int = T_LABEL) -> Button:
 	return b
 
 
-## A small state tag ("Equipped", "Owned", "Premium"): a tinted pill with
-## tracked capitals.  Never the only signal: callers pair it with a shape
-## (check, lock) or a position.
-static func tag(t: String, col: Color = TEAL) -> PanelContainer:
-	var p := PanelContainer.new()
-	var sb := box(Color(col, 0.16), 999, 0, Color.WHITE, 10)
-	sb.content_margin_top = 2
-	sb.content_margin_bottom = 2
-	p.add_theme_stylebox_override("panel", sb)
-	var l := styled(t, "overline", col)
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.add_child(l)
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return p
-
-
 ## A grid whose column count comes from its final allocated width: as many
 ## cells of at least `min_cell` as fit (within min_cols..max_cols), each
 ## exactly `cell_w` wide.  Children that implement fit_cell(w, lines) lay

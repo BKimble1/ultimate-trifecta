@@ -155,7 +155,10 @@ func test_pass_service_off_is_honest_and_still_fits() -> void:
 		var state_t := (sp._d["state"] as Label).text
 		var reason_t := (sp._d["reason"] as Label).text
 		t.check(not state_t.contains("Ready to claim"), "%s: never 'Ready to claim' over a dead button" % key)
-		t.check(reason_t.begins_with("Rewards unavailable right now.") and reason_t.contains("game service"), "%s: the reason is in the detail: %s" % [key, reason_t])
+		t.check(reason_t.contains("game service"), "%s: the reason is in the detail: %s" % [key, reason_t])
+		var rr := (sp._d["reason"] as Control).get_global_rect()
+		t.check(rr.end.y <= (sp._d["action"] as Control).get_global_rect().position.y + 0.5 and _inside(rr, sp.detail_panel.get_global_rect()),
+			"%s: the reason sits whole right above the action" % key)
 		t.check((sp._d["action"] as Button).disabled, "%s: Claim is visibly unavailable" % key)
 		t.check(_inside((sp._d["action"] as Control).get_global_rect(), safe), "%s: and on screen" % key)
 		for c in sp.cells:
