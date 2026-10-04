@@ -279,6 +279,7 @@ func test_friends_first_view_shows_identity_create_join_and_friends() -> void:
 		t.near(f.size.y, j.size.y, 0.5, "%s: field and Join are the same height" % tag)
 		t.near(f.position.y, j.position.y, 0.5, "%s: field and Join share a top edge (and so a centre line)" % tag)
 		t.check(j.position.x >= f.end.x + 8.0, "%s: Join follows the field with a gap" % tag)
+		t.eq(s.code_edit.get_theme_font_size("font_size"), s.join_btn.get_theme_font_size("font_size"), "%s: one type size, so one baseline" % tag)
 		t.check(f.size.x >= UIKit.v7_text_width(s.code_edit, "ACE-347") + 24.0, "%s: a whole code fits the field" % tag)
 		# the code row sits well above where a phone keyboard starts (no jump when it opens)
 		t.check(j.end.y <= _view().size.y * 0.5, "%s: the code row is in the upper half (%.0f of %.0f)" % [tag, j.end.y, _view().size.y])

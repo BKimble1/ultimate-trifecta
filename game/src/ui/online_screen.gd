@@ -42,6 +42,8 @@ var _kb_from := -1
 var _friends_hint: Label
 
 const HINT := "Ask the host for their 6-character code."
+## the code field's and Join's type size
+const CODE_FS := 28
 
 
 func build() -> void:
@@ -114,14 +116,15 @@ func build() -> void:
 	code_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	code_edit.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	code_edit.add_theme_font_override("font", UIKit.font_w(700))
-	code_edit.add_theme_font_size_override("font_size", 34)
+	code_edit.add_theme_font_size_override("font_size", CODE_FS)
 	code_edit.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_DEFAULT
 	code_edit.editable = ready
 	code_edit.accessibility_name = "Party code"
 	code_edit.text_changed.connect(_on_code_text)
 	code_edit.text_submitted.connect(func(_t: String) -> void: _join())
 	join_row.add_child(code_edit)
-	join_btn = UIKit.secondary("Join", Vector2(150, tm), 26)
+	# the same height and type size as the field: one centre line, one baseline
+	join_btn = UIKit.secondary("Join", Vector2(150, tm), CODE_FS)
 	join_btn.disabled = true
 	join_btn.pressed.connect(_join)
 	join_row.add_child(join_btn)
