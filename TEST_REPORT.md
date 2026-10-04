@@ -85,7 +85,22 @@ _Pending: the before/after clips (Pause, forward drift) are still being recorded
 
 ## V7.5 iOS build (CI iOS) and TestFlight
 
-_Pending: the gating CI run and the 1.6 upload are recorded here once they complete._
+- **Gating CI:** push run #93 (commit `d7c5bd2`) green; upload run #94
+  (commit `4de97c7`, the same code plus documentation): headless tests
+  **399 tests, 99,188 checks, 0 failures**; Xcode 26.6 (17F113), iOS SDK 26.5;
+  signed arm64 archive (app 296 MB), `CFBundleShortVersionString` 1.6,
+  `CFBundleVersion` 6, iOS 17.0+, iPhone and iPad, landscape; Game Center,
+  StoreKit, SwiftGodotRuntime and UTShare embedded; privacy manifest; launch
+  and branding audit **PASS**; 40 Metal `shader_cache` entries.
+- **Simulator (x86_64, OpenGL ES, ~1 fps):** cold launch running after 92 s,
+  no crash report, 0 script errors, 23 screenshots; the bot-driven round was
+  still preparing (phase 1) when the window closed. Not a phone.
+- **TestFlight:** **1.6 (6)** uploaded 2026-10-04 17:40:08 UTC; App Store
+  Connect build `811b7ee6-9c27-4308-a84f-d33b74a8cdd9`, processing `VALID`,
+  `INTERNAL_ONLY`, internal state `IN_BETA_TESTING` (external
+  `NOT_APPLICABLE`), What to Test set (1954 characters); the existing internal
+  group receives every build automatically. Read from Apple's API by run #94
+  at 17:57 UTC. No testers added, nothing submitted, no purchase made.
 
 ## V7.6 Not verified (exact remaining checks)
 
