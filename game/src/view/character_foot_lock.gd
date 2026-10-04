@@ -70,11 +70,12 @@ func _setup(sk: Skeleton3D) -> void:
 
 
 func _process_modification_with_delta(delta: float) -> void:
-	if profile:
+	if profile or Prof.on:
 		var t0 := Time.get_ticks_usec()
 		_modify(delta)
 		profile_us += Time.get_ticks_usec() - t0
 		profile_calls += 1
+		Prof.add("mod_footlock", t0)
 	else:
 		_modify(delta)
 

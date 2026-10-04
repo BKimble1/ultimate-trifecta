@@ -100,6 +100,15 @@ func _setup(sk: Skeleton3D) -> void:
 
 
 func _process_modification_with_delta(delta: float) -> void:
+	if Prof.on:
+		var t0 := Prof.t()
+		_modify(delta)
+		Prof.add("mod_posefade", t0)
+		return
+	_modify(delta)
+
+
+func _modify(delta: float) -> void:
 	var sk := get_skeleton()
 	if sk == null:
 		return

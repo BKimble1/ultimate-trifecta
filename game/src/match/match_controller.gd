@@ -594,12 +594,15 @@ func _setup_client_world() -> void:
 func _physics_process(delta: float) -> void:
 	if not prepared:
 		return
+	var tp := Prof.t()
 	var cmd := _build_local_cmd()
 	if is_client:
 		_client_tick(cmd, delta)
 	else:
 		_host_tick(cmd, delta)
 	_capture_tick()
+	Prof.add("tick", tp)
+	Prof.count("ticks")
 
 
 const _TELEPORT_STATES := [TC.PState.CAPTURED, TC.PState.SPLASHING, TC.PState.ENTERING, TC.PState.EXITING]
@@ -1111,9 +1114,12 @@ func _process(delta: float) -> void:
 	# events -> effects/sounds/HUD
 	var evs := _local_events
 	_local_events = []
+	var tp := Prof.t()
 	for ev in evs:
 		_present_event(ev)
+	Prof.add("mc_events", tp)
 	# characters
+	tp = Prof.t()
 	for slot in views:
 		var v: CharacterView = views[slot]
 		var rs := _render_rs(slot)
@@ -1142,15 +1148,22 @@ func _process(delta: float) -> void:
 		var crs2 := _render_cart(i)
 		if not crs2.is_empty():
 			cart_views[i].apply_state(crs2, delta)
+	Prof.add("mc_apply", tp)
+	tp = Prof.t()
 	_update_beacons(delta)
 	_update_aim_ring()
 	_scan_seen(delta)
 	_update_pickups()
 	_update_home_and_coins()
+	Prof.add("mc_world", tp)
+	tp = Prof.t()
 	_update_camera(delta)
 	_gate_view()
+	Prof.add("mc_camera", tp)
+	tp = Prof.t()
 	if hud:
 		hud.refresh(delta)
+	Prof.add("hud_refresh", tp)
 	var info_phase: int = sim.phase if sim else _client_phase
 	if info_phase != _phase_seen:
 		_phase_seen = info_phase

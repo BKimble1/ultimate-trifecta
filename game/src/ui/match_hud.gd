@@ -618,6 +618,12 @@ func _notification(what: int) -> void:
 
 
 func _process(_delta: float) -> void:
+	var tp := Prof.t()
+	_process_hud()
+	Prof.add("hud_process", tp)
+
+
+func _process_hud() -> void:
 	if _grace > 0:
 		_grace -= 1
 	_reserve_touch_regions()

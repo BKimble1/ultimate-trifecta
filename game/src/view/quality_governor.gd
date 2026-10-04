@@ -63,6 +63,12 @@ func _notification(what: int) -> void:
 
 
 func _process(delta: float) -> void:
+	var tp := Prof.t()
+	_process_gov(delta)
+	Prof.add("governor", tp)
+
+
+func _process_gov(delta: float) -> void:
 	var now := Time.get_ticks_usec()
 	if _resume_skip > 0:
 		_resume_skip -= 1

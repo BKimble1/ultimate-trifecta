@@ -887,6 +887,16 @@ func _update_yaw(delta: float) -> float:
 
 
 func _process(delta: float) -> void:
+	if not Prof.on:
+		_process_view(delta)
+		return
+	var t0 := Prof.t()
+	_process_view(delta)
+	Prof.add("views", t0)
+	Prof.count("views_processed")
+
+
+func _process_view(delta: float) -> void:
 	if model == null or rs.is_empty():
 		return
 	_t += delta
@@ -1111,7 +1121,10 @@ func _process(delta: float) -> void:
 	_anim_acc += delta
 	_anim_skip += 1
 	if not far or _anim_skip >= 3 or cut_now:
+		var ta := Prof.t()
 		tree.advance(_anim_acc)
+		Prof.add("anim_advance", ta)
+		Prof.count("anim_advances")
 		anim_time_advanced += _anim_acc
 		_anim_acc = 0.0
 		_anim_skip = 0

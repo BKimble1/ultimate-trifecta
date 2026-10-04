@@ -375,6 +375,12 @@ func _push_ripples(mat: ShaderMaterial, arr: Array) -> void:
 
 
 func _process(delta: float) -> void:
+	var tp := Prof.t()
+	_process_fx(delta)
+	Prof.add("fx", tp)
+
+
+func _process_fx(delta: float) -> void:
 	for mat in _ripples.keys():
 		var arr: Array = _ripples[mat]
 		var keep: Array = []
