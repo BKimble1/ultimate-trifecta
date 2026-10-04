@@ -76,11 +76,11 @@ What the signed archive contains (run #94's build facts):
 The one-time setup is done: the API key and the four repository secrets, the app record, and an internal group. Nothing needs to be set up again.
 
 What only you can do now:
-1. **Install 1.6 (6)** from the TestFlight app on your iPhone. If it doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing).
+1. **Install 1.7 (7)** from the TestFlight app on your iPhone. If it doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing).
 2. **Play it and check the items in What to Test.**
-   - Most important: Pause with another finger down (Resume and Leave must take taps), and whether running straight up from the bottom-left of the stick now stays straight without the view drifting round.
-   - If running still curves or Pause misbehaves, turn on **Settings › Diagnostics (beta)**, play, then **Share summary** (no names, codes or Game Center IDs). V7 adds a short stick/camera trace (the last 12 stick gestures and the newest at 10 Hz) so the straight-ahead tolerance can be tuned to your thumb.
-   - The device checks are listed in `TEST_REPORT.md` V7.6.
+   - Most important: whether crowded chases, the first splashes and tags, and later rounds stay smooth, and whether the new starts, stops, turns, jumps and tags look better at normal distance. Straight running and Pause with another finger down should be as in 1.6.
+   - Play about 15 minutes on Standard, then on Battery Saver, with **Settings › Diagnostics (beta)** on, then **Share summary** (no names, codes or Game Center IDs). V8 adds whether slow stretches were CPU- or GPU-bound and how other players were drawn (delay, gaps).
+   - The device checks are listed in `TEST_REPORT.md` V8.6.
 3. **Purchases, when you want them live** (`docs/COMMERCE_SETUP.md`):
    1. Accept the Paid Applications agreement and complete tax and banking (account holder).
    2. Run the workflow with **iap = create**.
