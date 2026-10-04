@@ -95,7 +95,7 @@ func build() -> void:
 		if _practice():
 			App.goto_title()
 		else:
-			dialog("Leave this party?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]]))
+			UIKit.v7_back_chooses(self, dialog("Leave this party?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]])))
 	_btns.add_child(leave)
 	leave_btn = leave
 	outer.add_child(_btns)

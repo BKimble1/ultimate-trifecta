@@ -839,3 +839,59 @@ class Face:
 		var asc := f.get_ascent(fs)
 		var desc := f.get_descent(fs)
 		draw_string(f, Vector2(ih * 1.02, h * 0.5 + (asc - desc) * 0.5), caption, HORIZONTAL_ALIGNMENT_LEFT, size.x - ih * 1.08, fs, col)
+
+
+# ---------------------------------------------------------------------------
+# V7 screens (Play with Friends, Settings and the screens swept with them).
+# Append-only helpers; nothing above this block depends on them.
+# ---------------------------------------------------------------------------
+## Desktop captures and tests: an emulated on-screen keyboard height in
+## points (below 0: off, the device's own keyboard is read instead).
+static var v7_emulated_keyboard_pt := -1.0
+
+
+## The on-screen keyboard's height in canvas units (0 while it is hidden).
+## iOS reports it in pixels (DisplayServer.virtual_keyboard_get_height());
+## the canvas is scaled to the window by the root's final transform.
+static func v7_keyboard_height(vp: Viewport) -> float:
+	var view_h := vp.get_visible_rect().size.y if vp != null else 720.0
+	if v7_emulated_keyboard_pt >= 0.0:
+		return clampf(v7_emulated_keyboard_pt * units_per_point(), 0.0, view_h)
+	var px := DisplayServer.virtual_keyboard_get_height()
+	if px <= 0 or vp == null:
+		return 0.0
+	var c2px := vp.get_final_transform().get_scale().y
+	if c2px <= 0.0:
+		return 0.0
+	return clampf(float(px) / c2px, 0.0, view_h)
+
+
+## Width of a single line of text in a control's own theme font and size.
+static func v7_text_width(c: Control, text: String, font_name: StringName = &"font", size_name: StringName = &"font_size") -> float:
+	var f: Font = c.get_theme_font(font_name)
+	var fs: int = c.get_theme_font_size(size_name)
+	return f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x if f != null else 0.0
+
+
+## True when a UIKit button's label is drawn whole (its Face trims text that
+## doesn't fit the button minus the Face's side padding).
+static func v7_button_text_fits(b: Button) -> bool:
+	if b.text == "":
+		return true
+	var f := face_of(b)
+	var pad := f.text_pad() if f != null else 8.0
+	return v7_text_width(b, b.text) <= b.size.x - pad * 2.0 + 0.5
+
+
+## Back (Escape, controller B) on a confirmation takes its safe choice.
+## Screen.dialog() maps Back only for a fixed set of words ("Cancel", "OK",
+## "Done", …), so a confirmation whose safe choice reads "Stay" or "Keep
+## playing" ignored Back.  `choice` runs after it closes (optional).
+static func v7_back_chooses(screen: Screen, dlg: Control, choice: Callable = Callable()) -> void:
+	for m in screen._modals:
+		if m["node"] == dlg:
+			m["cancel"] = func() -> void:
+				if is_instance_valid(dlg):
+					dlg.queue_free()
+				if choice.is_valid():
+					choice.call()
