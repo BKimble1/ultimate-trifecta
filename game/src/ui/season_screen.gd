@@ -131,7 +131,7 @@ func build() -> void:
 	if Cloud.signed_in():
 		Wallet.refresh()
 	focus_first(claim_all_btn if claim_all_btn.visible else _cell(focus_tier, focus_track))
-	Motion.settle_in(track_panel)
+	UIKit.fade_in(track_panel)
 
 
 ## One row: the season, tier and Premium state, the bar with the XP to the

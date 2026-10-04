@@ -28,8 +28,10 @@ func _ready() -> void:
 	build()
 	if _first_focus:
 		UIKit.soft_focus.call_deferred(_first_focus)
-	# entry transition: 180 ms fade (plus a small rise unless Reduced Motion)
-	UIKit.appear(margin, Vector2.ZERO, 0.18)
+	# entry transition: a 180 ms fade.  V7: no scale settle, so every control
+	# is hit where it is drawn from the first frame (a tap during the entry
+	# lands on what the finger is over)
+	UIKit.fade_in(margin, 0.18)
 
 
 func build() -> void:

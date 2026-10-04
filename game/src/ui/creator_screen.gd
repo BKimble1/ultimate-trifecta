@@ -198,7 +198,7 @@ func build() -> void:
 	focus_first(tab_btns[tab])
 	back_action = _back if not first_run else func() -> void: pass
 	_build_tab()
-	Motion.settle_in(panel)
+	UIKit.fade_in(panel)
 	_stage_area.resized.connect(_frame_stage)
 	get_viewport().size_changed.connect(_frame_stage)
 	_frame_stage.call_deferred()
@@ -381,7 +381,7 @@ func _select_tab(key: String) -> void:
 	Portraits.cancel_shared("tile:")
 	tab = key
 	_build_tab()
-	Motion.settle_in(body, UIKit.T_FAST)
+	UIKit.fade_in(body, UIKit.T_FAST)
 
 
 func drag_turn(dx: float) -> void:

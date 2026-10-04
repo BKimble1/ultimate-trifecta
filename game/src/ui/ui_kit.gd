@@ -885,6 +885,16 @@ class AutoGrid:
 				_apply(c)
 
 
+## Entry for a panel of controls: a fade only.  Its hit targets are where
+## they are drawn from the first frame (a scale settle moves them for a
+## moment, and its pivot isn't known before the first layout).
+static func fade_in(c: Control, dur: float = T_SHEET) -> void:
+	if c == null or not is_instance_valid(c):
+		return
+	c.modulate.a = 0.0
+	Motion.animate(c, "modulate:a", 1.0, dur, Tween.TRANS_QUAD, Tween.EASE_OUT)
+
+
 ## Lines a text needs at a width (word wrap, no trimming).
 static func lines_for(t: String, f: Font, font_size: int, width: float) -> int:
 	if t == "" or width <= 1.0:

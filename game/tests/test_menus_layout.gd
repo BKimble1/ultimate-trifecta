@@ -541,3 +541,20 @@ func test_controller_focus_lands_in_each_screen() -> void:
 			t.check(f != null and App.screen.is_ancestor_of(f) and f.is_visible_in_tree(),
 				"%s (service %s) opens with a visible focused control (%s)" % [App.screen.get_script().get_global_name(), with_service, f.name if f else "none"])
 		await _end()
+
+
+## Entry animations fade only: from the first frame every control is hit
+## where it is drawn (a scale settle shifted targets for a moment).
+func test_entry_never_moves_hit_targets() -> void:
+	await _begin()
+	for cls in [SeasonScreen, ShopScreen, CreatorScreen]:
+		if cls == CreatorScreen:
+			NavShell.open("locker")
+		else:
+			App.goto(cls)
+		await _frames(1)
+		var scr := App.screen as Screen
+		t.eq(scr.margin.scale, Vector2.ONE, "%s: the screen isn't scaled during its entry" % scr.name)
+		for p in scr.find_children("*", "PanelContainer", true, false):
+			t.eq((p as Control).scale, Vector2.ONE, "%s: %s isn't scaled during its entry" % [scr.name, p.name])
+	await _end()

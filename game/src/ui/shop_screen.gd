@@ -125,7 +125,7 @@ func build() -> void:
 		focus_item = ""
 		_open_detail.call_deferred(fi)
 	focus_first(strip_btns[section])
-	Motion.settle_in(panel)
+	UIKit.fade_in(panel)
 	_stage_area.resized.connect(_frame_stage)
 	get_viewport().size_changed.connect(_frame_stage)
 	_frame_stage.call_deferred()
@@ -328,7 +328,7 @@ func select_section(key: String) -> void:
 	Portraits.cancel_shared("shop:")
 	section = key
 	_build_section()
-	Motion.settle_in(body, UIKit.T_FAST)
+	UIKit.fade_in(body, UIKit.T_FAST)
 
 
 ## The grid's width: the list's final width less its scrollbar's room.
@@ -550,7 +550,7 @@ func _open_detail(id: String) -> void:
 	grid_view.visible = false
 	detail = _detail_sheet(id)
 	panel.add_child(detail)
-	Motion.settle_in(detail, UIKit.T_FAST)
+	UIKit.fade_in(detail, UIKit.T_FAST)
 	_refresh_detail()
 	UIKit.soft_focus.call_deferred(_d["action"])
 
