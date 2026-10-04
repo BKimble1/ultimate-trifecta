@@ -863,6 +863,9 @@ class ShopCard:
 	var art: Control
 	var lines := 1
 	var wide := false
+	var _sum: Label
+	var _row: Control
+	var _wide_w := 0.0
 
 	## The picture well's height per item (a share of its width).
 	static func well_of(item_id: String) -> float:
@@ -940,12 +943,10 @@ class ShopCard:
 		name_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tv.add_child(name_l)
-		var sum := UIKit.styled(ShopScreen.premium_summary(String(Catalogue.item(id).get("season", "s1"))), "caption", UIKit.IVORY_MUTED)
-		sum.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		sum.max_lines_visible = 2
-		sum.custom_minimum_size.x = maxf(100.0, w - 96.0 - UIKit.SP_L - 30.0)
-		sum.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tv.add_child(sum)
+		_sum = UIKit.styled(ShopScreen.premium_summary(String(Catalogue.item(id).get("season", "s1"))), "caption", UIKit.IVORY_MUTED)
+		_sum.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_sum.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tv.add_child(_sum)
 		var row := UIKit.hbox(6)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		coin = CommerceArt.Pic.new("coin", "", Color.WHITE, 22)
@@ -956,7 +957,19 @@ class ShopCard:
 		price_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(price_l)
 		tv.add_child(row)
-		custom_minimum_size = Vector2(w, maxf(UIKit.row_h(), 96.0) + 20.0)
+		_row = h
+		_wide_w = w
+		# the text's height is known once it is themed in the tree
+		h.minimum_size_changed.connect(func() -> void: _fit_wide(_wide_w))
+		_fit_wide(w)
+
+	## The wide card is as tall as its text needs at this width (the art is
+	## centred beside it): nothing spills past the card.
+	func _fit_wide(w: float) -> void:
+		_wide_w = w
+		_sum.custom_minimum_size.x = maxf(100.0, w - 96.0 - UIKit.SP_L - 24.0 - 4.0)
+		var need := maxf(96.0, _row.get_combined_minimum_size().y)
+		custom_minimum_size = Vector2(w, maxf(UIKit.row_h(), need + 20.0))
 
 	func name_lines(w: float) -> int:
 		if wide:
@@ -965,7 +978,7 @@ class ShopCard:
 
 	func fit_cell(w: float, n: int) -> void:
 		if wide:
-			custom_minimum_size.x = w
+			_fit_wide(w)
 			return
 		lines = n
 		var iw := w - CreatorScreen.PAD * 2.0

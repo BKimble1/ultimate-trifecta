@@ -126,6 +126,7 @@ func test_pass_rows_and_detail_action_fit_every_device() -> void:
 				t.check(_inside(act.get_global_rect(), sp.detail_panel.get_global_rect()), "%s: detail action inside its panel" % key)
 				t.check(act.get_global_rect().size.y >= UIKit.touch_min() - 0.5, "%s: detail action is 44 pt" % key)
 		t.check(_inside(sp.claim_all_btn.get_global_rect(), safe), "%s: Claim all on screen" % key)
+		_check_top_row(sp, key)
 		t.check(_inside(sp.track_region.get_global_rect(), safe), "%s: the track region inside the safe area" % key)
 		t.check(_inside(sp.detail_panel.get_global_rect(), safe), "%s: the detail panel inside the safe area" % key)
 		var fr: Rect2 = sp._cell(15, "free").get_global_rect()
@@ -222,6 +223,20 @@ func test_pass_free_premium_and_claim_states() -> void:
 	await _end()
 
 
+## Back, every navigation tab and the Coins chip: whole, inside the safe
+## area, full touch targets.
+func _check_top_row(scr: Screen, key: String) -> void:
+	var safe := _safe()
+	var top := scr.find_child("TopBar", true, false) as Control
+	t.check(top != null, "%s: the top row exists" % key)
+	if top == null:
+		return
+	for b in top.find_children("*", "BaseButton", true, false):
+		var r := (b as Control).get_global_rect()
+		t.check(_inside(r, safe), "%s %s: %s inside the safe area (%s)" % [key, scr.name, b.name, r])
+		t.check(r.size.y >= UIKit.touch_min() - 0.5 and r.size.x >= UIKit.touch_min() - 0.5, "%s: %s is a full touch target" % [key, b.name])
+
+
 # ------------------------------------------------------------------ Locker
 func test_locker_bounds_at_every_device() -> void:
 	await _begin()
@@ -233,6 +248,7 @@ func test_locker_bounds_at_every_device() -> void:
 		var c := App.screen as CreatorScreen
 		var safe := _safe()
 		t.check(_inside(c.panel.get_global_rect(), safe), "%s: the item panel inside the safe area" % key)
+		_check_top_row(c, key)
 		var strip := (c.tab_btns["outfit"] as Control).get_parent().get_parent() as Control
 		for k in c.tab_btns:
 			t.check(_inside((c.tab_btns[k] as Control).get_global_rect(), strip.get_global_rect()), "%s: category %s whole" % [key, k])
@@ -283,6 +299,48 @@ func test_locker_bounds_at_every_device() -> void:
 			t.check((b as Control).get_global_rect().size.y >= UIKit.touch_min() - 0.5, "%s: %s is 44 pt" % [key, (b as Button).text])
 		c._on_cancel()
 		await _frames(1)
+	await _end()
+
+
+# ------------------------------------------------------------------ Shop
+func test_shop_bounds_at_every_device() -> void:
+	await _begin()
+	for key in DEVICES:
+		await _device(key)
+		App.goto(ShopScreen)
+		await _frames(6)
+		var shop := App.screen as ShopScreen
+		var safe := _safe()
+		t.check(_inside(shop.panel.get_global_rect(), safe), "%s: the Shop panel inside the safe area" % key)
+		_check_top_row(shop, key)
+		for sec in ["featured", "outfits", "accessories", "coins"]:
+			shop.select_section(sec)
+			await _frames(4)
+			for b in shop.strip_btns.values():
+				t.check(_inside((b as Control).get_global_rect(), (b as Control).get_parent().get_parent().get_global_rect()), "%s: section %s whole" % [key, (b as Button).text])
+			var grid: UIKit.AutoGrid = null
+			for c in shop.cards:
+				if (c as Control).get_parent() is UIKit.AutoGrid:
+					grid = (c as Control).get_parent()
+			if grid != null:
+				t.eq(grid.columns, UIKit.columns_for(grid.size.x, grid.min_cell, grid.gap, grid.min_cols, grid.max_cols), "%s %s: columns from the final width" % [key, sec])
+				t.check(grid.size.x <= shop.scroll.size.x + 0.5, "%s %s: the grid fits the list" % [key, sec])
+			for c in shop.cards:
+				var cr := (c as Control).get_global_rect()
+				t.check(cr.size.x <= shop.scroll.size.x + 0.5, "%s %s: card fits the list's width" % [key, sec])
+				var art: Control = (c as ShopScreen.ShopCard).art
+				t.check(cr.grow(0.5).encloses(art.get_global_rect()), "%s %s: %s picture inside its card (%s in %s)" % [key, sec, c.id, art.get_global_rect(), cr])
+		for id in ["outfit:duck", "coins:1500", "season:s1:premium"]:
+			shop._open_detail(id)
+			await _frames(4)
+			var act: Button = shop._d["action"]
+			var st: Label = shop._d["status"]
+			t.check(_inside(act.get_global_rect(), safe) and _inside(act.get_global_rect(), shop.panel.get_global_rect()), "%s %s: the action inside the panel and the safe area" % [key, id])
+			t.check(act.get_global_rect().size.y >= UIKit.touch_min() - 0.5, "%s %s: the action is 44 pt" % [key, id])
+			if st.visible:
+				t.check(st.get_global_rect().end.y <= act.get_global_rect().position.y + 0.5, "%s %s: its status sits right above it" % [key, id])
+			shop._close_detail()
+			await _frames(2)
 	await _end()
 
 
