@@ -1,9 +1,10 @@
 extends RefCounted
 ## Lobby music ("Night Campus Loop", music_menu.ogg): an intro, then a 12-bar
 ## loop that the mixer wraps sample for sample (no gap, no click). One track
-## runs on through home, wardrobe and settings without restarting, fades out
-## when a round starts and back in afterwards, follows the music volume and
-## mute, holds its place in the background, and never doubles up.
+## runs on through home, Locker, Shop, Season Pass and settings without
+## restarting, fades out when a round starts and back in afterwards, follows
+## the music volume and mute, holds its place in the background, and never
+## doubles up.
 var t
 
 const SR := 44100
@@ -93,7 +94,7 @@ func test_lobby_track_loops_sample_for_sample() -> void:
 	t.check(at_wrap <= music, "no click at the wrap (edge %.4f, the music itself %.4f)" % [at_wrap, music])
 
 
-func test_one_track_runs_on_through_home_wardrobe_and_settings() -> void:
+func test_one_track_runs_on_through_home_locker_shop_pass_and_settings() -> void:
 	var was_onboarded: Variant = Save.data.get("onboarded", false)
 	Save.data["onboarded"] = true
 	_begin()
@@ -103,8 +104,10 @@ func test_one_track_runs_on_through_home_wardrobe_and_settings() -> void:
 	t.check(Sfx._music.rate > 0.0 and Sfx._music.level < 1.0, "fading in")
 	var id := _playback_id()
 	var player: AudioStreamPlayer = Sfx._music.player
-	App.goto(CreatorScreen)
-	await t.get_tree().process_frame
+	for tab: String in ["locker", "shop", "pass", "play"]:   # the tab bar: wardrobe, Shop, Season Pass, home
+		NavShell.open(tab)
+		await t.get_tree().process_frame
+		t.eq(Sfx.current_music(), "menu", "the lobby music plays on in the %s tab" % tab)
 	App.goto(SettingsScreen)
 	await t.get_tree().process_frame
 	App.goto_title()

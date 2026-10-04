@@ -5,11 +5,11 @@ extends Node
 ##
 ## Music plays on two voices so a change of track is a cross-fade. Asking for
 ## the track that is already playing never restarts it (the lobby music runs on
-## through home, party, wardrobe and settings), and asking for a track that is
-## still fading out brings it back from where it is. Loops are gapless: the
-## stream itself loops in the mixer (Ogg Vorbis loop + loop_offset from the
-## import), never a timer. The lobby track ("menu") plays its intro once, then
-## loops 12 bars (tools/make_lobby_music.py).
+## through home, party, Locker, Shop, Season Pass and settings), and asking for
+## a track that is still fading out brings it back from where it is. Loops
+## are gapless: the stream itself loops in the mixer (Ogg Vorbis loop +
+## loop_offset from the import), never a timer. The lobby track ("menu") plays
+## its intro once, then loops 12 bars (tools/make_lobby_music.py).
 
 const SFX_DIR := "res://assets/audio/"
 ## Seconds a track takes to fade in when it starts. Tracks not listed start

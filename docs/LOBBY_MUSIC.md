@@ -1,7 +1,8 @@
 # Lobby music: "Night Campus Loop" (V6)
 
 The owner's track "Night Campus Loop" replaces the synthesized menu music. It
-plays on home, party, wardrobe, settings and results. It fades in when you
+plays on home, party, Locker (wardrobe), Shop, Season Pass, settings and
+results. It fades in when you
 arrive, keeps playing when you move between those screens, fades out when a
 round starts, and comes back afterwards.
 
@@ -137,7 +138,8 @@ own output, described below.
 - **Tests:** `test_lobby_music` (6 tests, 50 checks), on the TestFlight
   branch head:
   - The loop is exact sample for sample, with no gap or click at the wrap.
-  - One playback runs through home → wardrobe → settings → home + party.
+  - One playback runs through the real tab bar (home → Locker → Shop →
+    Season Pass → home), then settings and the party room.
   - A real practice round: the lobby music carries on while the round
     prepares, the chase music takes over and the lobby fades out, the lobby
     fades back in on return, and a quick return picks up the same playback.
@@ -154,8 +156,8 @@ These need an iPhone or iPad with the TestFlight build:
    headphones (about 6 minutes in the lobby). The first wrap comes 54.6 s
    after the music starts, then every 34.3 s, on a downbeat just after a
    bright cymbal swell.
-2. Home → wardrobe → settings → party → home: the music never restarts or
-   dips.
+2. Home → Locker → Shop → Season Pass → settings → party → home: the music
+   never restarts or dips.
 3. Start a practice round: the music carries on through loading and fades
    as the round appears. Finish or leave: it fades back in from the intro.
 4. Settings › Music: drag to 0 (silence, paused), then back up (it continues).
@@ -186,9 +188,10 @@ For the session that owns the TestFlight archive and upload:
    fades in on home, plays on through wardrobe and settings, fades out when a
    round starts and comes back after. Listen for any gap or click when it
    loops (about every 34 s)."
-5. Please don't call `Sfx.music()` from new menu screens (such as a shop).
-   The lobby track keeps playing by itself. A screen that should have its
-   own music can call `Sfx.music(name)`, and it will cross-fade.
+5. Please don't call `Sfx.music()` from new menu screens. The lobby track
+   keeps playing by itself through the Shop and Season Pass. A screen that
+   should have its own music can call `Sfx.music(name)`, and it will
+   cross-fade.
 
 ## Rebuilding or replacing the track
 
