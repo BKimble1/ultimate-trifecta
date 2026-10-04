@@ -28,13 +28,15 @@ PLAT="Godot 4.7.2 Mobile renderer (Low preset), desktop Linux llvmpipe, 1040x480
 tools/gd.sh --headless --path "$ROOT/game" --import >/dev/null 2>&1 || true
 # Movie Maker records the window size and ignores --resolution: a temporary
 # override.cfg makes the window the phone shape
+# (another reel recording from the same checkout holds it: wait, up to an hour)
+for i in $(seq 180); do [ -e "$ROOT/game/override.cfg" ] || break; sleep 20; done
 [ -e "$ROOT/game/override.cfg" ] && { echo "override.cfg exists in $ROOT/game; not touching it"; exit 1; }
 printf '[display]\n\nwindow/size/window_width_override=1040\nwindow/size/window_height_override=480\n' > "$ROOT/game/override.cfg"
 trap 'rm -f "$ROOT/game/override.cfg"' EXIT
 mkdir -p "$OUT/${REEL}_${NAME}_stills"
 XDG_DATA_HOME=$(mktemp -d) timeout "${CAPTURE_TIMEOUT:-7200}" xvfb-run -a -s "-screen 0 1700x800x24" \
   tools/gd.sh --path "$ROOT/game" --write-movie "$OUT/${REEL}_$NAME.avi" --fixed-fps 30 \
-  res://src/dev/${REEL}_reel.tscn -- --emulate-phone=1.92 --no-gamecenter --shots="$OUT/${REEL}_${NAME}_stills" \
+  res://src/dev/${REEL}_reel.tscn -- --emulate-phone=1.92 --no-gamecenter --reel-stills="$OUT/${REEL}_${NAME}_stills" \
   > "$OUT/${REEL}_$NAME.log" 2>&1 || true
 grep -E "^REEL" "$OUT/${REEL}_$NAME.log" > "$OUT/v7_${REEL}_$NAME.txt" || true
 tools/label_movie.sh "$OUT/${REEL}_$NAME.avi" "$OUT/v7_${REEL}_$NAME.mp4" "V7 $WHAT, $NAME - $PLAT"

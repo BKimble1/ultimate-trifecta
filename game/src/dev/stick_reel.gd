@@ -77,10 +77,17 @@ func _frames(n: int) -> void:
 		await get_tree().process_frame
 
 
+## Events arrive in window pixels, as iOS delivers them; the reel's
+## positions are canvas units (where the controls are drawn).  The movie's
+## window is smaller than the canvas, so convert (identity when equal).
+func _win(p: Vector2) -> Vector2:
+	return get_viewport().get_final_transform() * p
+
+
 func _touch(at: Vector2, down: bool) -> void:
 	var e := InputEventScreenTouch.new()
 	e.index = 0
-	e.position = at
+	e.position = _win(at)
 	e.pressed = down
 	Input.parse_input_event(e)
 	Input.flush_buffered_events()
@@ -94,10 +101,10 @@ func _touch(at: Vector2, down: bool) -> void:
 func _drag(from: Vector2, to: Vector2) -> void:
 	var e := InputEventScreenDrag.new()
 	e.index = 0
-	e.position = to
-	e.relative = to - from
-	e.screen_relative = to - from
-	e.velocity = (to - from) * FPS
+	e.position = _win(to)
+	e.relative = _win(to) - _win(from)
+	e.screen_relative = _win(to) - _win(from)
+	e.velocity = (_win(to) - _win(from)) * FPS
 	Input.parse_input_event(e)
 	Input.flush_buffered_events()
 	_finger_at = to
@@ -116,6 +123,7 @@ func _run() -> void:
 	Save.set_setting("touch_layout_v2", null)
 	Save.set_setting("stick_mode", "dynamic")
 	Controls.device = "touch"
+	printerr("REEL canvas %s, canvas->window %s" % [str(get_viewport().get_visible_rect().size), str(get_viewport().get_final_transform())])
 	get_tree().root.notification(Window.NOTIFICATION_WM_MOUSE_ENTER)   # GUI input without a pointer in the window
 	if DisplayServer.get_name() == "headless":
 		get_tree().root.size = Vector2i(1560, 720)          # (smoke runs; movies use a 1040x480 window = the same canvas)                      # (smoke runs)
