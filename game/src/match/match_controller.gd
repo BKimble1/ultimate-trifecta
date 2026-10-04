@@ -78,6 +78,10 @@ const JB_STABLE_S := 6.0       # without an underrun before the delay relaxes
 const JB_RELAX := 0.5          # ticks per second the delay relaxes by
 const JB_UNDERRUN_STEP := 0.5  # ticks the delay rises per underrun tick
 const EXTRAP_MAX_S := 0.1      # an underrun extrapolates at most this far, then holds
+const RECOVER_TAU_S := 0.12    # back from an underrun: the held gap closes with this time constant
+const RECOVER_MAX := 3.0       # m: a larger gap is a cut, not a blend
+var _rec: Dictionary = {}      # slot -> {off, pt, held, at}: underrun recovery
+var stat_recoveries := 0
 const RESEEN_GAP := 18         # ticks absent from snapshots = out of interest
 var interp_hermite := true     # V8 A/B: velocity-aware curves where safe
 var _jb_off := PackedFloat64Array()   # tick - arrival tick, per snapshot
@@ -93,6 +97,7 @@ var stat_underrun_ticks := 0
 var stat_pres_resyncs := 0
 var stat_pres_backward := 0    # must stay 0 (checked by tests)
 var stat_extrap_clamped := 0
+var _note_t := 0.0
 var _beats: Array = []         # V8: remote cosmetic event beats waiting for the presentation time
 var _beat_ids: Dictionary = {} # event id -> true (presented once)
 var stat_beats_shown := 0
@@ -886,6 +891,7 @@ func _on_snapshot(s: Dictionary) -> void:
 	if _last_snap_tick >= 0:
 		_snap_gap_avg = lerpf(_snap_gap_avg, float(tick - _last_snap_tick), 0.1)
 	_jb_arrival(tick, session.clock_s() * cfg.sim_hz if session != null else 0.0)
+	var prev_tick := _last_snap_tick
 	_last_snap_tick = tick
 	_last_snap = s
 	_client_phase = int(s["phase"])
@@ -897,9 +903,12 @@ func _on_snapshot(s: Dictionary) -> void:
 	else:
 		_est_tick += (target - _est_tick) * 0.06
 	for slot in s["players"]:
-		if _seen_tick.has(int(slot)) and tick - int(_seen_tick[int(slot)]) >= RESEEN_GAP:
+		var seen := int(_seen_tick.get(int(slot), -1))
+		if seen >= 0 and seen != prev_tick and tick - seen >= RESEEN_GAP:
 			# back in this client's interest set after a gap: what the buffer
-			# holds is from before it left; start again (a cut, not a slide)
+			# holds is from before it left; start again (a cut, not a slide).
+			# Only if it was missing from snapshots that did arrive: lost or
+			# late snapshots (a burst) drop every slot and are not a re-seen
 			_bufs[int(slot)] = []
 			_discont[int(slot)] = true
 		var arr: Array = _bufs.get(int(slot), [])
@@ -1020,6 +1029,7 @@ func _interp_player(slot: int) -> Dictionary:
 	var newest: Dictionary = arr[arr.size() - 1]
 	var vis := (int(_last_snap.get("tick", 0)) - int(_seen_tick.get(slot, -999))) < RESEEN_GAP
 	var out: Dictionary
+	var held := rt > float(newest["tick"])
 	if rt >= float(newest["tick"]):
 		# underrun (or the newest sample exactly): a short, safe extrapolation
 		out = _extrapolate_player(newest, rt)
@@ -1038,6 +1048,37 @@ func _interp_player(slot: int) -> Dictionary:
 		if out.is_empty():
 			out = (newest["e"] as Dictionary).duplicate()
 	out["visible"] = vis
+	return _recover(slot, out, held)
+
+
+## V8: back from an underrun (extrapolated, then held), a remote runner
+## rejoins its real path over RECOVER_TAU_S of presentation time instead of
+## jumping there in one frame.  Horizontal only (the height stays the real
+## path's: no foot under a step).  Not across a cut: a re-seen slot, a
+## resync, a state other than plain running, a gap of RECOVER_MAX or more.
+func _recover(slot: int, out: Dictionary, held: bool) -> Dictionary:
+	var r: Dictionary = _rec.get(slot, {})
+	if not out.has("pos") or bool(_discont.get(slot, false)) or int(out.get("state", 0)) != TC.PState.ACTIVE:
+		_rec.erase(slot)
+		return out
+	var pos: Vector3 = out["pos"]
+	var off: Vector3 = r.get("off", Vector3.ZERO)
+	if off != Vector3.ZERO:
+		var dt := maxf(0.0, _pres_tick - float(r.get("pt", _pres_tick))) / cfg.sim_hz
+		off *= exp(-dt / RECOVER_TAU_S)
+		if off.length() < 0.005:
+			off = Vector3.ZERO
+	if not held and bool(r.get("held", false)):
+		var at: Vector3 = r["at"]
+		var gap := Vector3(at.x - pos.x, 0.0, at.z - pos.z)
+		if gap.length() > 0.02 and gap.length() < RECOVER_MAX:
+			off = gap
+			stat_recoveries += 1
+		else:
+			off = Vector3.ZERO
+	var drawn := pos + off
+	out["pos"] = drawn
+	_rec[slot] = {"off": off, "pt": _pres_tick, "held": held, "at": drawn}
 	return out
 
 
@@ -1191,6 +1232,12 @@ func _advance_presentation(delta: float) -> void:
 		if _jb_stable_t > JB_STABLE_S and _jb_delay > _jb_floor:
 			_jb_delay = maxf(_jb_floor, _jb_delay - JB_RELAX * delta)
 	_interp_ticks = _est_tick - _pres_tick
+	_note_t -= delta
+	if _note_t <= 0.0:
+		_note_t = 2.0
+		var np := net_presentation()
+		Diag.note("Remote presentation", "delay %.0f ms (target %.1f ticks), arrival spread %.0f ms, underrun ticks %d, resyncs %d" % [
+			float(np["displayed_delay_ms"]), float(np["delay_ticks"]), float(np["arrival_spread_ms"]), int(np["underrun_ticks"]), int(np["resyncs"])])
 
 
 ## Network presentation numbers for diagnostics and tests.
@@ -1202,7 +1249,8 @@ func net_presentation() -> Dictionary:
 		spread = off[off.size() - 1] - off[0]
 	return {"delay_ticks": _jb_delay, "floor_ticks": _jb_floor, "displayed_delay_ms": _interp_ticks / cfg.sim_hz * 1000.0,
 		"arrival_spread_ms": spread / cfg.sim_hz * 1000.0, "rate": _pres_rate, "underrun_ticks": stat_underrun_ticks,
-		"resyncs": stat_pres_resyncs, "backward": stat_pres_backward, "extrap_clamped": stat_extrap_clamped}
+		"resyncs": stat_pres_resyncs, "backward": stat_pres_backward, "extrap_clamped": stat_extrap_clamped,
+		"recoveries": stat_recoveries}
 
 
 func _cart_rs(i: int) -> Dictionary:

@@ -150,7 +150,9 @@ func _run(label: String, lat: float, jit: float, loss: float, dup: float, burst:
 	var delays: Array = []
 	var underrun := 0
 	var acc: Array = []
+	var jumps := 0
 	var hist_near: Array = []
+	var hist_who: CharacterView = null
 	_rec.clear()
 	var me: CharacterView = cmc.views.get(client.local_slot)
 	_hook(me)
@@ -240,12 +242,18 @@ func _run(label: String, lat: float, jit: float, loss: float, dup: float, burst:
 		delays.append((cmc._est_tick - rt_now) / 60.0 * 1000.0)
 		# acceleration noise of the nearest remote character's drawn path
 		if nearest:
+			# a different character became the nearest: its path starts here
+			if nearest != hist_who:
+				hist_near.clear()
+				hist_who = nearest
 			hist_near.append(nearest.global_position)
 			if hist_near.size() >= 3:
 				var n3 := hist_near.size()
 				var a3: Vector3 = (hist_near[n3 - 1] - 2.0 * hist_near[n3 - 2] + hist_near[n3 - 3]) / (dt * dt)
 				if a3.length() < 400.0:      # (a cut/teleport is not noise)
 					acc.append(Vector2(a3.x, a3.z).length())
+				elif maxf((hist_near[n3 - 1] - hist_near[n3 - 2]).length(), (hist_near[n3 - 2] - hist_near[n3 - 3]).length()) < 2.5:
+					jumps += 1                # counted instead: a one-frame jump of the drawn path (a teleport is not one)
 	var starved1: int = int(rig.host.stat_starved.values().reduce(func(a, b): return a + b, 0)) if not rig.host.stat_starved.is_empty() else 0
 	var corr: Array = cmc.stat_corrections.slice(corr0)
 	var big := corr.filter(func(e): return e > 0.25).size()
@@ -268,6 +276,7 @@ func _run(label: String, lat: float, jit: float, loss: float, dup: float, burst:
 		"displayed_delay_ms_p50": snappedf(_pct(delays, 0.5), 0.1), "displayed_delay_ms_p95": snappedf(_pct(delays, 0.95), 0.1),
 		"remote_err_m_p50": snappedf(_pct(errs, 0.5), 0.001), "remote_err_m_p95": snappedf(_pct(errs, 0.95), 0.001),
 		"remote_accel_rms": snappedf(rms, 0.01),
+		"remote_jump_frames": jumps,
 		"net_presentation": cmc.net_presentation() if cmc.has_method("net_presentation") else {},
 		"render_stall_frames": st["render_stall"], "correction_frames": st["correction"], "terrain_frames": st["terrain"],
 		"camera_jitter_frames": st["camera_jitter"], "camera_collision_frames": st["camera_collision"],

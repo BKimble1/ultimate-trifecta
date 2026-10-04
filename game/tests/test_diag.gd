@@ -55,6 +55,28 @@ func test_summary_has_no_identifiers() -> void:
 	Diag.enabled = was
 
 
+## V8: the quality governor's slow-window causes and the remote
+## presentation line reach the shareable summary (one line per key, newest
+## text wins) and clear with the rest.
+func test_v8_notes_in_the_summary() -> void:
+	var was: bool = Diag.enabled
+	Diag.clear()
+	Diag.enabled = true
+	Diag.context("match")
+	for i in 30:
+		Diag._record(16.7)
+	Diag.note("Quality governor", "render scale 1.00; slow windows by cause: cpu 1")
+	Diag.note("Quality governor", "render scale 1.00; slow windows by cause: cpu 2")
+	Diag.note("Remote presentation", "delay 80 ms (target 4.0 ticks), arrival spread 17 ms, underrun ticks 0, resyncs 0")
+	var txt: String = Diag.summary()
+	t.check(txt.contains("Quality governor: render scale 1.00; slow windows by cause: cpu 2"), "the governor's causes, newest text")
+	t.check(not txt.contains("cause: cpu 1"), "one line per key")
+	t.check(txt.contains("Remote presentation: delay 80 ms"), "the remote presentation line")
+	Diag.clear()
+	t.check(not Diag.summary().contains("Quality governor"), "cleared with the rest")
+	Diag.enabled = was
+
+
 ## V6: physics catch-up frames, a sustained run counted as a spiral (and
 ## marked on the timeline), the stall context, bounded timeline, summary text.
 func test_v6_catchup_spiral_and_stall_context() -> void:

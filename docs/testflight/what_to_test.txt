@@ -1,13 +1,10 @@
-1.6 internal beta (V7: Pause, straighter running, compact Locker/Pass/Friends/Settings, goggles, louder music). Please tell us your iPhone model:
+1.7 internal beta (V8: steadier matches, better running and actions, cleaner characters). Please tell us your iPhone model:
 
-- Pause: while steering with one thumb, tap Pause with another finger. The menu should open every time, and Resume, the camera slider, Reduced motion and Leave match should all take normal taps. Try it many times in a row.
-- Practice: Pause really stops the round (clock, bots, everyone). Resume carries on from the same moment, with no jump. Putting the app in the background also pauses Practice.
-- Party rounds: the menu says "Online match continues." and the round keeps going for everyone (you can still be caught).
-- Leave match asks first and says what happens (as host it ends the party for everyone). Stay goes back; Leave leaves once.
-- Running straight: push the stick straight up and hold, from the middle of the left side and from near the bottom-left corner. You should run straight; the view should not drift round. Small sideways thumb wobble should not steer. Deliberate turns, diagonals, strafing and reverse should still feel normal. Lift your thumb: you stop.
-- Season Pass: both the Free and the Premium rows are fully visible at every tier, with clear reward pictures. The service and App Store products aren't set up in this build, so rewards say they're unavailable. That's expected; please don't try to buy anything.
-- Locker and Emotes: compact cards, emote icons centred in their circles, a small Equipped mark.
-- Friends and Settings: Create Party and Join are visible straight away; settings rows are compact. Check the code field with the keyboard open.
-- Characters: goggles should sit properly on every runner.
-- Music is a little louder and should still loop with no gap or click (about every 34 s).
-- If running ever curves or Pause misbehaves, turn on Settings > Diagnostics (beta), play, then Share summary. It records the stick and camera numbers, but no names or codes.
+- Straight running and quick turns: push the stick straight up and hold, then turn left and right quickly and reverse. You should run straight, the view should not wander, and turns should feel immediate.
+- Pause, Resume and Leave with another finger still on the stick: the menu opens every time and every button takes a normal tap.
+- Crowded chases: play a few Practice rounds back to back with several runners and the Night Watch close together. It should stay smooth, including the first splashes and tags of a round and the later rounds. If it stutters, tell us when.
+- Animation: starting off (a push), stopping from a run (a foot plants), sharp turns and reversals (head and chest lead), jumps and landings, and the Night Watch's tag (wind-up, lunge, then a grab or a miss). Water entries and riding a cart use the same animation as 1.6; tell us if anything there looks off.
+- Looks at normal play distance: characters and campus. Eyes, goggles, satin robe trim and metal buttons and badges should look cleaner, and distant paving should shimmer less.
+- A 15-minute session: play on Standard, then on Battery Saver (Settings > Graphics > Quality). Turn on Settings > Diagnostics (beta) first, then tap Share summary at the end. It shows frame pacing, any slowdowns, and whether the phone was limited by its processor or its graphics. It has no names or codes.
+- Party rounds: other players and carts should move smoothly and never step backward, even on a weak connection. Splashes and tags should show where you see that player.
+- Season Pass rewards still say unavailable (no service or App Store products in this build). That's expected; please don't try to buy anything.

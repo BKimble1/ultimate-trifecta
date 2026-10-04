@@ -318,6 +318,12 @@ void fragment() {
 		rough = 0.9;
 		spec = 0.06;
 	}
+	// V8: the relief comes from screen-space derivatives of a fine pattern:
+	// once a pixel covers more than a few centimetres of surface (distance,
+	// grazing angles: the dorm roofs, long walls) it aliases into moire and
+	// shimmers as the camera moves.  It fades out by the pixel's footprint.
+	float px_m = max(length(dFdx(v_wp)), length(dFdy(v_wp)));
+	relief *= 1.0 - smoothstep(0.03, 0.08, px_m);
 	if (relief > 0.0 && fade > 0.01) {
 		n = bump_normal(n, VERTEX, h, relief * fade);
 	}

@@ -49,6 +49,11 @@ var _prev_prof := {}
 var _render_samples: Array = []
 var _render_t := 0.0
 var _nav: NavGrid
+## --lifecycle: keep only a compact interval per frame (no per-frame
+## records), so memory read at each round start is the game's own: the full
+## records are ~2.5 KB a frame and grow the process by ~11 MB per 75 s round
+var lifecycle := false
+var _iv_only := PackedFloat32Array()
 var _slow: Array = []            # [frame, round, from, to, cart, ms, points]
 
 
@@ -69,6 +74,8 @@ func _ready() -> void:
 			quality = int(v)
 		elif a.begins_with("--out="):
 			out_path = v
+		elif a == "--lifecycle":
+			lifecycle = true
 	Save.set_setting("quality", quality)
 	Save.data["onboarded"] = true
 	QualityPreset.apply(quality)
@@ -139,7 +146,10 @@ func _process(delta: float) -> void:
 				_slow.append([_frames.size(), _round, str(e[0]), str(e[1]), e[2], e[3], e[4]])
 			rec["slow_paths_ms"] = mine
 			sl.clear()
-		_frames.append(rec)
+		if lifecycle:
+			_iv_only.append(iv)
+		else:
+			_frames.append(rec)
 	if DisplayServer.get_name() != "headless" and ctx == "playing":
 		_render_t += delta
 		if _render_t >= 1.0:
@@ -216,6 +226,8 @@ func _finish() -> void:
 	_done = true
 	var iv := PackedFloat32Array()
 	var sections := {}
+	if lifecycle:
+		iv = _iv_only
 	for r in _frames:
 		iv.append(float(r["iv"]))
 		for k in r:

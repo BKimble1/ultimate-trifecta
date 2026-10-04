@@ -182,6 +182,7 @@ var _splash_beats := 0
 var _splash_pos := Vector3.ZERO
 var _wet := 0.0
 var _drip_t := 0.0
+var _drip_show_t := 0.0
 var _blink_t := 2.0
 var _blink := 0.0
 var _rng := RandomNumberGenerator.new()
@@ -222,9 +223,13 @@ var _spot_t := 0.0            # how long the character has run without travellin
 const ACCEL_REF := 30.0       # m/s^2 of forward acceleration that shows the full drive pose
 const STOP_FROM := 3.0        # m/s: a stop from at least this pace plants
 var _fwd_acc := 0.0           # filtered forward acceleration (m/s^2, + = speeding up)
+var _fwd_acc_f := 0.0         # slower, for the drive/brake layers
+const ACCEL_DEAD := 8.0       # m/s^2 of filtered acceleration the layers ignore
+const BRAKE_REF := 20.0       # filtered deceleration that shows the brake fully (a stop from a run: ~23)
 var _start_t := 9.0           # since the gait began from a standstill
 var _accel_w := 0.0
 var _brake_w := 0.0
+var _brake_hold := 0.0        # the brake weight when the planted stop fired
 var _lead_w := 0.0
 var _lead_sign := 0.0
 var _lead_pos := 0.0          # shown side (-1 right .. +1 left), eased (never flips in a frame)
@@ -621,6 +626,7 @@ func _ensure_drips() -> void:
 		return
 	drips = Fx.make_drip_emitter()
 	drips.position = Vector3(0, 0.9, 0)
+	drips.visible = false
 	add_child(drips)
 
 
@@ -860,6 +866,7 @@ func reset_motion() -> void:
 	_squash_v = 0.0
 	_travel_f = Vector3.ZERO
 	_have_last = false
+	_fwd_acc_f = 0.0
 	if secondary:
 		secondary.reset_motion()
 	if foot_lock:
@@ -1066,6 +1073,9 @@ func _process_view(delta: float) -> void:
 	_have_prev = true
 	var accel_local := global_transform.basis.inverse() * accel
 	_fwd_acc = -accel_local.z
+	# the layers read a slower, dead-zoned acceleration: a reconcile's
+	# velocity noise (a few m/s^2, alternating) is not a start or a brake
+	_fwd_acc_f += (_fwd_acc - _fwd_acc_f) * (1.0 - exp(-maxf(delta, 0.0) / 0.1))
 	var calm := 0.6 if menu_idle else 1.0
 	if secondary:
 		secondary.accel = accel_local
@@ -1209,6 +1219,10 @@ func _process_view(delta: float) -> void:
 	if drips:
 		_drip_t = maxf(0.0, _drip_t - delta)
 		drips.emitting = _drip_t > 0.0 and visible
+		# shown only while it drips and its last drops fall (an idle emitter
+		# is still a rendered object and a draw call)
+		_drip_show_t = drips.lifetime + 0.1 if drips.emitting else maxf(0.0, _drip_show_t - delta)
+		drips.visible = _drip_show_t > 0.0
 
 	# --- schedule (V8): distant characters animate on an elapsed-time clock,
 	# FAR_ANIM_STEP apart at any frame rate (V5-V7 counted rendered frames:
@@ -1303,10 +1317,15 @@ func _update_layers(delta: float, speed: float, want: float, yaw_rate: float) ->
 	_start_t += delta
 	var run_k := smoothstep(1.5, 3.5, maxf(speed, _bs * _move_w))
 	var start_env := 1.0 - smoothstep(0.22, 0.55, _start_t)
-	var drive := maxf(start_env, clampf(_fwd_acc / ACCEL_REF, 0.0, 1.0)) * run_k * _move_w * free
+	var drive := maxf(start_env, clampf((_fwd_acc_f - ACCEL_DEAD) / (ACCEL_REF - ACCEL_DEAD), 0.0, 1.0)) * run_k * _move_w * free
 	_accel_w += (drive - _accel_w) * (1.0 - exp(-delta / (0.04 if drive > _accel_w else 0.12)))
-	var brake := 0.0 if _stop_on else clampf(-_fwd_acc / ACCEL_REF, 0.0, 1.0) * smoothstep(1.5, 3.5, _run_mem) * free
-	_brake_w += (brake - _brake_w) * (1.0 - exp(-delta / (0.04 if brake > _brake_w else 0.15)))
+	if _stop_on:
+		# the planted stop takes over the lean: hand it off from zero slope
+		# (an exponential decay would kick the arms the frame the stop fires)
+		_brake_w = _brake_hold * (1.0 - smoothstep(0.0, 0.3, STOP_LEN - _stop_t))
+	else:
+		var brake := clampf((-_fwd_acc_f - ACCEL_DEAD) / (BRAKE_REF - ACCEL_DEAD), 0.0, 1.0) * smoothstep(1.5, 3.5, _run_mem) * free
+		_brake_w += (brake - _brake_w) * (1.0 - exp(-delta / (0.04 if brake > _brake_w else 0.15)))
 	if _lead_w < 0.15 and absf(yaw_rate) > 1.5:
 		_lead_sign = signf(yaw_rate)
 	var lt := smoothstep(2.0, 7.0, absf(yaw_rate)) * smoothstep(1.0, 3.0, speed) * want * free
@@ -1328,13 +1347,16 @@ func _update_layers(delta: float, speed: float, want: float, yaw_rate: float) ->
 ## The stop from a run plants: the foot that is coming through at the
 ## settle point (right at phase 0, left at 0.5) reaches out and takes it.
 func _begin_stop() -> void:
-	if _run_mem < STOP_FROM or _stop_on or (_far and not is_local):
+	# (not from an action: the Night Watch's lunge burst is not a run, and the
+	# miss's recovery stopping the body is not a planted stop)
+	if _run_mem < STOP_FROM or _stop_on or (_far and not is_local) or _act != "" or int(rs.get("tag_phase", 0)) != 0:
 		return
 	var side := "r" if is_zero_approx(fposmod(_settle_to, 1.0)) else "l"
 	tree.set("parameters/stop_dir/transition_request", side)
 	tree.set("parameters/stop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	_stop_on = true
 	_stop_t = STOP_LEN
+	_brake_hold = _brake_w
 	stat_stops += 1
 
 

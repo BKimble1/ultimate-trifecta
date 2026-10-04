@@ -108,6 +108,7 @@ func set_overlay(on: bool) -> void:
 
 
 func clear() -> void:
+	_notes.clear()
 	_stats.clear()
 	_marks.clear()
 	_counts.clear()
@@ -124,6 +125,20 @@ func clear() -> void:
 	_stick_g.clear()
 	_stick_cur = {}
 	_stick_s.clear()
+
+
+## V8: short status lines the summary prints as they were last set
+## ("Remote presentation", "Quality governor"); bounded, numbers only.
+var _notes: Dictionary = {}
+
+
+static func note(key: String, text: String) -> void:
+	var n := _node()
+	if n == null or not bool(n.get("enabled")):
+		return
+	var d: Dictionary = n.get("_notes")
+	if d.size() < 12 or d.has(key):
+		d[key] = text.substr(0, 200)
 
 
 ## V8: the quality governor also asks for the renderer's GPU timing during a
@@ -533,6 +548,11 @@ func summary() -> String:
 		L.append("Network: round trip avg %.0f ms, max %.0f ms · corrections avg %.3f m, max %.2f m, over 25 cm %d" % [
 			float(_net["rtt_sum"]) / maxi(1, int(_net["rtt_n"])), float(_net["rtt_max"]),
 			float(_net["corr_sum"]) / maxi(1, int(_net["corr_n"])), float(_net["corr_max"]), int(_net["big"])])
+	# V8: what the round's subsystems last reported (no names, codes or ids)
+	var nk := _notes.keys()
+	nk.sort()
+	for k in nk:
+		L.append("%s: %s" % [k, _notes[k]])
 	if not _stick_g.is_empty() or not _stick_cur.is_empty():
 		L.append("")
 		L.append("Move stick, last gestures (forward-held part): secs · ring offset px · sideways/forward out · largest lean deg · camera turn deg (of which follow, look) · base moves · travel sideways/forward")

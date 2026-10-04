@@ -176,6 +176,10 @@ func _emitter(kind: String, pos: Vector3, amount: int, life: float, col: Color, 
 			p.local_coords = false
 			p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			p.scale_amount_curve = _shrink_curve()
+			# idle, it is hidden: an emitter with no live particles is still a
+			# rendered object and a draw call wherever a camera's frustum
+			# reaches (the warmed pool sits below the campus)
+			p.finished.connect(p.hide)
 			add_child(p)
 			pool.append(p)
 	var n := maxi(1, amount)
@@ -195,6 +199,7 @@ func _emitter(kind: String, pos: Vector3, amount: int, life: float, col: Color, 
 	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_POINT
 	p.gravity = Vector3(0, -9.8, 0)
 	p.global_position = pos
+	p.visible = true
 	_busy_until[p] = now + int((life + 0.2) * 1000.0)
 	# restart after the caller has set direction/spread/velocities this frame
 	p.restart.call_deferred()

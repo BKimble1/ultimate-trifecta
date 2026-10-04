@@ -12,7 +12,7 @@ extends Node3D
 ## Desktop rendering of scripted input, not device footage.
 
 const SCENARIOS := ["start", "stop", "reverse", "turn90", "sprint", "jump_run", "tag_miss", "tag_hit", "splash", "cart"]
-const LOOK := {"outfit": "pajamas", "hat": "nightcap", "shoes": "slippers", "pattern": "stripes", "skin": "tone3", "color": "sky"}
+const LOOK := {"outfit": "pj", "hat": "nightcap", "shoes": "slippers", "pattern": "stripes", "skin": "tone3", "color": "sky"}
 
 var scenarios: Array = SCENARIOS.duplicate()
 var views: Array = ["game", "side"]

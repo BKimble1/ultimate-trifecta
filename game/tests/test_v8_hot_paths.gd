@@ -149,7 +149,55 @@ func test_fx_reuse_and_bounded_prewarm() -> void:
 	for i in Fx.RAMP_CACHE_MAX + 20:
 		Fx._fade_ramp(Color(float(i) / 300.0, 0.3, 0.6))
 	t.check(Fx._ramps.size() <= Fx.RAMP_CACHE_MAX, "the ramp cache is bounded (%d)" % Fx._ramps.size())
+	# a firing emitter is shown; once its last particle is gone it is hidden
+	# (idle, it was still a rendered object and a draw call: the bench's
+	# draw count rose by the warmed pool below the campus)
+	var shown := func() -> int:
+		var n := 0
+		for k in fx._pools:
+			for e in fx._pools[k]:
+				if (e as CPUParticles3D).visible:
+					n += 1
+		return n
+	t.check(int(shown.call()) > 0, "firing emitters are shown (%d)" % shown.call())
+	var waited := 0
+	while int(shown.call()) > 0 and waited < 600:
+		await _frames(1)
+		waited += 1
+	t.eq(int(shown.call()), 0, "and hidden once their bursts end (after %d frames)" % waited)
 	fx.queue_free()
+	# a runner's drips (the motion rig's splash: in, under, out, dripping):
+	# hidden while dry, shown while it drips and its drops fall
+	var rig := MotionRig.new()
+	t.add_child(rig)
+	rig.start("splash", Cosmetics.sanitize(Cosmetics.DEFAULT), 0.0)
+	var dry_shown := 0
+	var drip_frames := 0
+	var drip_hidden := 0
+	var max_after := 0.0
+	var since := -1.0
+	while rig.running:
+		await _frames(1)
+		var d: CPUParticles3D = rig.view.drips
+		if d == null:
+			continue
+		if d.emitting:
+			drip_frames += 1
+			since = 0.0
+			if not d.visible:
+				drip_hidden += 1
+		elif since >= 0.0:
+			since += 1.0 / 60.0
+			if d.visible:
+				max_after = maxf(max_after, since)
+		elif d.visible:
+			dry_shown += 1
+	t.check(drip_frames > 10, "the runner dripped (%d frames)" % drip_frames)
+	t.eq(drip_hidden, 0, "the drips are shown while dripping")
+	t.eq(dry_shown, 0, "and hidden before, while dry")
+	t.check(max_after <= rig.view.drips.lifetime + 0.15, "and hidden once the last drop has fallen (%.2f s after)" % max_after)
+	rig.cleanup()
+	rig.queue_free()
 
 
 ## The governor's window is a fixed ring: bounded, and its percentiles are

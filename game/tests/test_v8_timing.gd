@@ -177,6 +177,44 @@ func test_startup_and_underrun_policies() -> void:
 	air["on_floor"] = false
 	cmc._bufs[slot] = [{"tick": 100, "e": base.duplicate()}, {"tick": 103, "e": air}]
 	t.check((cmc._interp_player(slot)["pos"] as Vector3).distance_to(from) < 1e-4, "airborne: holds (no guessed arc)")
+	# back from the underrun: the runner rejoins its real path over a few
+	# frames from where it was held (it jumped there in one frame before)
+	var away := Vector3(nrm.x, 0, nrm.y)
+	var path := func(k: float) -> Vector3: return from + away * 7.0 * (k - 100.0) / 60.0
+	var run := base.duplicate()
+	run["vel"] = away * 7.0
+	var mk := func(k: int) -> Dictionary:
+		var e: Dictionary = run.duplicate()
+		e["pos"] = path.call(float(k))
+		return {"tick": k, "e": e}
+	cmc._rec.erase(slot)
+	cmc._discont.erase(slot)
+	cmc._bufs[slot] = [mk.call(100), mk.call(103)]
+	cmc._pres_tick = 115.0
+	var held: Vector3 = cmc._interp_player(slot)["pos"]
+	var arrived: Array = []
+	for k in range(106, 172, 3):
+		arrived.append(mk.call(k))
+	cmc._bufs[slot] = arrived
+	var prev := held
+	var worst := 0.0
+	var first := true
+	var first_step := 0.0
+	for i in 40:
+		cmc._pres_tick = 116.0 + i
+		var p: Vector3 = cmc._interp_player(slot)["pos"]
+		var stp := Vector2(p.x - prev.x, p.z - prev.z).length()
+		if first:
+			first_step = stp
+			first = false
+		worst = maxf(worst, stp)
+		prev = p
+	var jump := Vector2(held.x - (path.call(116.0) as Vector3).x, held.z - (path.call(116.0) as Vector3).z).length()
+	t.check(jump > 0.5, "the held runner is behind its real path (%.2f m)" % jump)
+	t.check(first_step < 0.15, "recovery: the first frame continues from the held place (%.2f m)" % first_step)
+	t.check(worst < 0.3, "and no frame jumps (largest step %.2f m at 7 m/s: 0.12 per tick)" % worst)
+	t.check(prev.distance_to(path.call(155.0)) < 0.03, "it is back on the real path (%.3f m)" % prev.distance_to(path.call(155.0)))
+	t.check(cmc.stat_recoveries >= 1, "recovery counted")
 	# carts: startup holds the oldest (V4-V7 showed the newest, then stepped back)
 	var ce := {"pos": Vector3(1, 0, 1), "yaw": 0.0, "speed": 0.0, "steer": 0.0, "occupant": -1, "slowed": false}
 	var ce2 := ce.duplicate()
@@ -191,6 +229,45 @@ func test_startup_and_underrun_policies() -> void:
 	cmc._pres_tick = 230.0
 	var cx: Vector3 = cmc._cart_rs(0)["pos"]
 	t.check(cx.distance_to(Vector3(1, 0, -2)) <= 6.0 * MatchController.EXTRAP_MAX_S + 1e-3, "cart underrun: bounded extrapolation, then hold")
+	rig.teardown()
+
+
+## A burst of lost or late snapshots drops every slot at once: that is the
+## network, not an opponent leaving this client's interest set, so the
+## buffers carry on (the underrun policy and its recovery handle the gap).
+## Only a slot missing from snapshots that did arrive is re-seen (a cut).
+func test_a_loss_burst_is_not_a_re_seen_slot() -> void:
+	var rig := _rig(30, 3, 0.0, ["patrol", "runner"])
+	var ok: bool = await _start(rig)
+	t.check(ok, "round started")
+	var client: NetSession = rig.clients[0]
+	var cmc := rig.mc_of(client)
+	await rig.frames(30)
+	var snap: Dictionary = cmc._last_snap.duplicate(true)
+	snap.erase("me")
+	var slots: Array = (snap["players"] as Dictionary).keys()
+	var other := -1
+	for s2 in slots:
+		if int(s2) != client.local_slot:
+			other = int(s2)
+	t.check(other >= 0, "a remote slot in the snapshots")
+	var tick0 := int(snap["tick"])
+	var feed := func(dt: int, without: int) -> void:
+		var s3: Dictionary = snap.duplicate(true)
+		s3["tick"] = tick0 + dt
+		if without >= 0:
+			(s3["players"] as Dictionary).erase(without)
+		cmc._discont.clear()
+		cmc._on_snapshot(s3)
+	# a 0.35 s outage, every slot present on both sides
+	feed.call(MatchController.RESEEN_GAP + 3, -1)
+	t.check(not cmc._discont.has(other), "after a burst the remote is not cut")
+	t.check((cmc._bufs[other] as Array).size() > 1, "and its buffer carries on (%d samples)" % (cmc._bufs[other] as Array).size())
+	# the slot leaves the interest set (absent from an arriving snapshot), then comes back
+	feed.call(MatchController.RESEEN_GAP + 6, other)
+	feed.call(MatchController.RESEEN_GAP * 3, -1)
+	t.check(cmc._discont.has(other), "a slot back after being left out is still a re-seen cut")
+	t.eq((cmc._bufs[other] as Array).size(), 1, "with a fresh buffer")
 	rig.teardown()
 
 

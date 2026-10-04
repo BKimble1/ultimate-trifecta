@@ -151,6 +151,7 @@ func feed(ms: float, delta: float, gpu_ms: float = -1.0) -> void:
 			if _t - _cpu_mark_t >= COOLDOWN_S:
 				_cpu_mark_t = _t
 				Diag.mark("slow_cpu")
+				_note()
 			_steady = 0.0
 			return
 	if (slow or (hot and level < 1)) and level < steps.size() - 1 and since >= COOLDOWN_S:
@@ -202,6 +203,14 @@ func _set_level(l: int, why: String) -> void:
 	if _root != null and is_instance_valid(_root):
 		_root.scaling_3d_scale = scale()
 	Diag.mark("render_scale_%.2f_%s" % [scale(), why])
+	_note()
+
+
+func _note() -> void:
+	var parts: PackedStringArray = []
+	for k in stat_causes:
+		parts.append("%s %d" % [k, int(stat_causes[k])])
+	Diag.note("Quality governor", "render scale %.2f; slow windows by cause: %s" % [scale(), ", ".join(parts) if not parts.is_empty() else "none"])
 
 
 func _sorted_window() -> PackedFloat32Array:
