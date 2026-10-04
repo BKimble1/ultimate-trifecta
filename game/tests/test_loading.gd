@@ -280,7 +280,14 @@ func test_practice_can_be_cancelled_mid_preparation_and_the_next_round_works() -
 			t.check(on_pool, "with campus work on the worker pool")
 			t.eq(ls.stage_lbl.text, "Preparing campus…", "the stage says the campus is being prepared")
 			t.check(not ls.bar.indeterminate, "with the real share done")
-		await _frames_until(func() -> bool: return ls._t >= LoadingScreen.LEAVE_AFTER_S, 3000)
+		# hold the preparation where it is (its worker-pool jobs keep running)
+		# while Cancel becomes available: on a fast machine the round could
+		# otherwise finish preparing inside the 0.8 s and its loading screen go
+		mc.set_process(false)
+		await _frames_until(func() -> bool: return not is_instance_valid(ls) or ls._t >= LoadingScreen.LEAVE_AFTER_S, 3000)
+		t.check(is_instance_valid(ls) and not mc.prepared, "the round is still preparing when Cancel becomes available")
+		if not is_instance_valid(ls):
+			return
 		t.check(not ls.leave_btn.disabled, "Cancel is usable while the round prepares")
 		ls.leave_btn.pressed.emit()
 		await t.get_tree().process_frame
