@@ -85,7 +85,46 @@ same 1558×720 canvas as a notched phone.
 All rects below are canvas units. A phone in landscape is 720 units tall,
 about 1.85 units per point.
 
-RESULTS_PLACEHOLDER
+The full register (cause, fix and test per item) is in
+[../../../v7/menus_notes.md](../../../v7/menus_notes.md).
+
+| Owner report | Before (`before/p14/…`) | After (`after/p14/…`) |
+|---|---|---|
+| IMG_3016, Emotes: glyphs past their wells, oversized cards, giant disabled "Wearing this", long footer | `02`: each glyph centred (+88, +88) units off its well, past the card edge (all 7); cards 199×291 in a 320-unit list; a 320×90 disabled button and a caption below the panel | `02`/`03`: glyph centred exactly in its well (0.0, 0.0); cards 149×163, all emotes in view; a small Equipped line; Save look / Undo only after a pick (`03`), inside the panel; picking plays the move on the runner |
+| IMG_3018, Outfit: tall cards, "more in the Shop" card, footer action outside the panel, nightcap and slippers in every thumbnail | `01` | `01`: 5 columns from the panel's final width; outfits pictured with no hat and plain shoes (the runner keeps the real look); a one-line "N more in the Shop ›" link at the end of the list; footer inside the panel |
+| IMG_3017, Season Pass: Premium row and Claim below the screen, big header and paragraph, empty name-card strips | `30`/`33` (service off): Premium row y 606-750 on a 720-unit screen, Claim 65% visible, "Ready to claim" over a disabled button; `13`: the name card an empty strip | `10`-`15` and `30`-`35`: both rows whole at every size (table below), the action fixed in the detail, a one-row header; service off: "Rewards unavailable right now" in the header, "Earned at Tier 1, not claimed yet" with the reason above a visibly disabled Claim; name cards with the player's name, close hat framing, full-body outfits, medallion badges, Coin piles; an emote previewed on a small live runner (`16`) |
+| Shop (same card and art problems) | `20`-`26`, `40`-`42` | the same card system, one short unavailable line, status right above the action; purchase flow unchanged (`26`) |
+
+Season Pass after the fix, service on, measured by
+`test_menus_layout::test_pass_rows_and_detail_action_fit_every_device`
+(canvas units):
+
+| Device | Free row y | Premium row y | Cell | Safe bottom | Detail action y |
+|---|---|---|---|---|---|
+| se | 281-481 | 489-689 | 160×200 | 708 | 603-688 |
+| x | 281-467 | 475-661 | 148×186 | 680 | 575-660 |
+| p14, s2048, s1536 | 275-465 | 473-663 | 152×190 | 681 | 580-662 |
+| pmax | 261-459 | 467-665 | 158×198 | 685 | 590-665 |
+| ipad | 265-505 | 513-753 | 192×240 | 935 | 860-915 |
+
+Before, from `measure/*_before.json`:
+
+- **x (812×375), service on:** the Premium row ended at y 685, below the
+  safe bottom (680).
+- **se, x and p14, service off:** the Premium row ended at y 750-753, below
+  the 720-unit screen.
+
+Locker after the fix, measured by
+`test_menus_layout::test_locker_bounds_at_every_device`:
+
+| Device | Item panel | Columns | Outfit card | Emote card | Glyph offset from well centre |
+|---|---|---|---|---|---|
+| se, ipad | 734 wide | 4 | 168×262 | 168×175 | 0, 0 |
+| x, p14, pmax, s2048, s1536 | 818-827 wide | 5 | 149-151 × 242-244 | 149-151 × 163-164 | 0, 0 |
+
+Outfit cards here reserve two name lines, because every item is granted
+and long names like "After Hours Hoodie" are present. With short names
+they are one line shorter.
 
 ## Reward art
 

@@ -827,7 +827,6 @@ static func link(t: String, font_size: int = T_LABEL) -> Button:
 ## Re-fits only when the width really changes (no relayout while scrolling).
 class AutoGrid:
 	extends GridContainer
-	signal fitted(cell_w: float, cols: int)
 	var min_cell := 140.0
 	var min_cols := 2
 	var max_cols := 6
@@ -867,7 +866,6 @@ class AutoGrid:
 				lines = maxi(lines, int(c.call("name_lines", cell_w)))
 		for c in get_children():
 			_apply(c)
-		fitted.emit(cell_w, cols)
 
 	func _apply(c: Node) -> void:
 		if not (c is Control) or cell_w <= 0.0:
