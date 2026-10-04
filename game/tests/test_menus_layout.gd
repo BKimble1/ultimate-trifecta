@@ -241,6 +241,7 @@ func _check_top_row(scr: Screen, key: String) -> void:
 func test_locker_bounds_at_every_device() -> void:
 	await _begin()
 	await _grant_everything()
+	var report: Array = []
 	for key in DEVICES:
 		await _device(key)
 		NavShell.open("locker")
@@ -281,6 +282,13 @@ func test_locker_bounds_at_every_device() -> void:
 					var rad := minf(gr.size.x, gr.size.y) * 0.45 * Icons.E_EXTENT
 					t.check(wr.grow(-2.0).encloses(Rect2(gr.get_center() - Vector2(rad, rad), Vector2(rad, rad) * 2.0)),
 						"%s: %s drawn emote inside the well with padding" % [key, card.key])
+				if tab in ["outfit", "move"] and card == c.cards[0]:
+					var g0 := (card as Control).get_parent() as GridContainer
+					var off := Vector2.ZERO
+					if g2 is Control:
+						off = (g2 as Control).get_global_rect().get_center() - wr.get_center()
+					report.append("%s %s: panel %.0fx%.0f, %d columns, card %.0fx%.0f, well %.0fx%.0f, glyph offset from well centre (%.1f, %.1f)" % [
+						key, tab, panel_r.size.x, panel_r.size.y, g0.columns, cr.size.x, cr.size.y, wr.size.x, wr.size.y, off.x, off.y])
 				var row_y := snappedf(cr.position.y, 1.0)
 				var sy := snappedf((card.state_l as Control).get_global_rect().position.y, 0.1)
 				if rows.has(row_y):
@@ -299,6 +307,8 @@ func test_locker_bounds_at_every_device() -> void:
 			t.check((b as Control).get_global_rect().size.y >= UIKit.touch_min() - 0.5, "%s: %s is 44 pt" % [key, (b as Button).text])
 		c._on_cancel()
 		await _frames(1)
+	for line in report:
+		print("[locker bounds] " + line)
 	await _end()
 
 
