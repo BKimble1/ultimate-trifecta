@@ -1,13 +1,6 @@
 # TestFlight release: Ultimate Trifecta
 
-Current version: **1.5 (V6)**. It uses the same app, bundle ID, Game Center capability, internal group and lane as 1.0–1.4. V6 adds:
-- **Apple's StoreKit 2 module.** It comes from the same pinned GodotApplePlugins release, for the Shop's App Store items. No product exists in App Store Connect yet, so nothing can be bought.
-- **Commerce, chat and moderation endpoints in the optional game service** (`service/`), which is still not deployed. This build ships with the service off.
-- **A pure-black startup**, in the launch storyboard, launch image, boot splash and curtain; the launch audit now requires it.
-- **Shader baking** for Metal in the export.
-- **The owner's lobby music.**
-
-No new permission is requested.
+Current version: **1.6 (V7)**. It uses the same app, bundle ID, Game Center capability, internal group and lane as 1.0–1.5. V7 is a repair and refinement pass: Pause/Resume/Leave by touch, forward runs that stay straight on the touch stick, compact Locker/Emotes/Season Pass/Shop/Friends/Settings, rebuilt goggles and refined characters, and music about 3 dB louder. It adds no module, entitlement, permission or service: the frameworks, entitlements and privacy manifest are the same as 1.5's. The game service stays off and no App Store product exists, so nothing can be bought.
 
 ## App identity
 
@@ -16,7 +9,7 @@ No new permission is requested.
 | App name | Ultimate Trifecta |
 | App icon | The owner's "Pajama Dash" artwork (`Ultimate Trifecta_ Pajama Dash.png`), as `game/assets/icon/icon.png` at 1024×1024, opaque. Godot's export generates every other icon size from it. |
 | Bundle ID | `com.idlery.ultimatetrifecta`. It is registered on your team: the App Store Connect app record below uses it. |
-| Marketing version | `1.5` for V6 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot`, the export preset and `tools/export_ios.sh`). V5 was `1.4`, V4 `1.3`, V3 `1.2`, V2 `1.1`, V1 `1.0`. Before choosing it, the read-only status run #75 showed builds 1–4 in App Store Connect (latest 1.4 (4), `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING`) and no 1.5. |
+| Marketing version | `1.6` for V7 (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot`, the export preset and `tools/export_ios.sh`). V6 was `1.5`, V5 `1.4`, V4 `1.3`, V3 `1.2`, V2 `1.1`, V1 `1.0`. Before choosing it, the read-only status run #87 showed builds 1–5 in App Store Connect (latest 1.5 (5), `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING`) and no 1.6. |
 | Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`), so it always increases past anything already uploaded; without it, the GitHub run number (V1's last unsigned build was 10; V2's are 12 and up). It can be overridden with the `build_number` workflow input. |
 | Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape left/right. Godot also adds `UIRequiredDeviceCapabilities` `iphone-ipad-minimum-performance-a12`, which means A12 (iPhone XS/XR) or newer. All verified in the CI archive's Info.plist. |
 | Capabilities | Game Center (`com.apple.developer.game-center`). In-App Purchase needs no entitlement key; App Store Connect enables it for every app ID. |
@@ -26,30 +19,31 @@ No new permission is requested.
 
 ## Current release state
 
-**State: source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **1.5 (5)**.
+**State: source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **1.6 (6)**.
 
 It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, nothing was submitted for App Store review, and no purchase of any kind was made.
 
 | | |
 |---|---|
-| Build | `com.idlery.ultimatetrifecta` **1.5 (5)**. App Store Connect build ID `3d9ab76f-8a83-4613-ba72-f533af4ae674`. |
-| Build number | **5**: the lane read the highest existing build (1.4 (4)) and added one. Status run #75 had shown builds 1–4 and no 1.5 beforehand. |
-| Source | Commit `434fcd4`: all V6 work (the stall, loading and scrolling fixes; dorms; characters; Locker, Shop, Season 1 and StoreKit, prepared; party room, chat and moderation; rankings; lobby music). Later commits change only documentation. |
-| Uploaded | 2026-10-03 17:08:11 UTC, by GitHub Actions run #80 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37138538266) with `upload=true`. The headless tests gate the build: **348 tests, 87,672 checks, 0 failures**. |
+| Build | `com.idlery.ultimatetrifecta` **1.6 (6)**. App Store Connect build ID `811b7ee6-9c27-4308-a84f-d33b74a8cdd9`. |
+| Build number | **6**: the lane read the highest existing build (1.5 (5)) and added one. Status run #87 had shown builds 1–5 and no 1.6 beforehand. |
+| Source | Commit `4de97c7`: all V7 code (Pause/Resume/Leave; forward drift; menus; screens; characters; music) as of `d7c5bd2`, plus documentation. Later commits change only documentation and evidence. |
+| Uploaded | 2026-10-04 17:40:08 UTC, by GitHub Actions run #94 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37220347907) with `upload=true`. The headless tests gate the build: **399 tests, 99,188 checks, 0 failures**. |
 | Apple's processing | `VALID`. The build is `INTERNAL_ONLY` and declares no non-exempt encryption. |
-| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. What to Test is set from `docs/testflight/what_to_test.txt` (1674 characters, en-US). |
+| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. What to Test is set from `docs/testflight/what_to_test.txt` (1954 characters, en-US). |
 | Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which receives every build. The lane added no one. TestFlight's automatic notification is on. |
-| Confirmed by | Apple's API, read by run #80 at 17:23 UTC. |
+| Confirmed by | Apple's API, read by run #94 at 17:57 UTC. |
 
 Earlier builds, all still `VALID` and internal-only:
+- **1.5 (5)** (`3d9ab76f-…`, run #80, commit `434fcd4`): V6.
 - **1.4 (4)** (`71dd2161-…`, run #62, commit `0a41d70`): V5.
 - **1.3 (3)** and **1.3 (2)**: V4.
 - **1.2 (1)**: V3.
 
-What the signed archive contains (run #80's build facts):
+What the signed archive contains (run #94's build facts):
 - **Binary:** arm64, app 296 MB. **Toolchain:** Xcode 26.6 (17F113), iOS SDK 26.5. MinimumOSVersion 17.0; iPhone and iPad; landscape left and right.
 - **Plist:** `ITSAppUsesNonExemptEncryption` false; the Game Center friends purpose string.
-- **Frameworks:** `GodotApplePluginsGameCenter`, `GodotApplePluginsStoreKit` (new), `SwiftGodotRuntime` and `UTShare` are embedded; UTShare is arm64.
+- **Frameworks:** `GodotApplePluginsGameCenter`, `GodotApplePluginsStoreKit`, `SwiftGodotRuntime` and `UTShare` are embedded; UTShare is arm64.
   - Xcode warned that the StoreKit framework has no dSYM, so symbol upload failed for that framework only. Crash reports inside it would not be symbolicated; the upload itself succeeded.
 - **Entitlements and privacy:** the Game Center entitlement, and `PrivacyInfo.xcprivacy`. The service is off, so no service data types are declared.
 - **Launch and branding audit: PASS.**
@@ -58,20 +52,20 @@ What the signed archive contains (run #80's build facts):
   - 0 "powered by" strings.
 - **Shader baking:** the baking export was used (exit code 0); the game data carries **40 `shader_cache` entries** for Metal.
 - **Simulator:**
-  - The cold launch was still running, with no crash report and 0 script errors.
-  - On this x86_64 OpenGL ES Simulator path the bot-driven round **finished preparing** for the first time since V4: status phase `REVEAL`, screen at "Starting…".
-  - The window closed while the slow 3D warm frames were drawing, before the reveal (TEST_REPORT V6.7). This Simulator is not a phone.
+  - The cold launch was still running after 92 s, with no crash report and 0 script errors; 23 screenshots.
+  - On this x86_64 OpenGL ES Simulator path (about 1 fps) the bot-driven round's last status line was phase 1 (`LOADING`): it had not finished preparing when the window closed. This Simulator is not a phone and says nothing about device speed.
+- **Launch and branding audit: PASS** (one black launch storyboard; both 2048² launch images opaque with black corners; 0 "powered by" strings). **Shader baking:** 40 `shader_cache` entries.
 
 ## The owner action that remains
 
 The one-time setup is done: the API key and the four repository secrets, the app record, and an internal group. Nothing needs to be set up again.
 
 What only you can do now:
-1. **Install 1.5 (5)** from the TestFlight app on your iPhone. If it doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing).
+1. **Install 1.6 (6)** from the TestFlight app on your iPhone. If it doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing).
 2. **Play it and check the items in What to Test.**
-   - Most important: whether play still turns glitchy after a while, and whether loading still freezes.
-   - For a measurement, turn on **Settings › Diagnostics (beta)**, play a few rounds, then **Share summary** (no names, codes or Game Center IDs). Its new sections show catch-up spirals, draw-time pipeline compilation and counts at each round start.
-   - The device checks are listed in `TEST_REPORT.md` V6.8.
+   - Most important: Pause with another finger down (Resume and Leave must take taps), and whether running straight up from the bottom-left of the stick now stays straight without the view drifting round.
+   - If running still curves or Pause misbehaves, turn on **Settings › Diagnostics (beta)**, play, then **Share summary** (no names, codes or Game Center IDs). V7 adds a short stick/camera trace (the last 12 stick gestures and the newest at 10 Hz) so the straight-ahead tolerance can be tuned to your thumb.
+   - The device checks are listed in `TEST_REPORT.md` V7.6.
 3. **Purchases, when you want them live** (`docs/COMMERCE_SETUP.md`):
    1. Accept the Paid Applications agreement and complete tax and banking (account holder).
    2. Run the workflow with **iap = create**.
