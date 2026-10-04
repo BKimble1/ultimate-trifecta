@@ -40,7 +40,9 @@ func test_second_finger_in_stick_zone_never_moves() -> void:
 	r.drag(1, Vector2(150, 300), Vector2(-150, -100))
 	t.eq(r.stick_index, 0, "the first finger keeps the stick")
 	t.eq(r.move_vector(), before, "second finger does not move the character")
-	t.eq(r.take_look_px(), Vector2(-150, -100), "second finger becomes a camera drag")
+	var v := Vector2(-150, -100)
+	t.check(r.take_look_px().distance_to(v - v.normalized() * TouchRouter.LOOK_SLOP_PX) < 0.01,
+		"second finger becomes a camera drag (V7: beyond a ~3 mm slop, so a resting spare finger can't turn the view)")
 	r.touch_up(1)
 	t.eq(r.stick_index, 0, "lifting the second finger leaves the stick alone")
 

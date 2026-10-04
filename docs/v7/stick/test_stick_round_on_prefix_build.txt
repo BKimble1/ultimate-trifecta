@@ -1,0 +1,12 @@
+[FAIL] test_stick_round::test_corner_touchdown_runs_straight_both_layouts (11103 ms)
+[FAIL] test_stick_round::test_a_thumb_lean_does_not_curve_the_run (8604 ms)
+[ok] test_stick_round::test_online_straight_commands_stay_straight (8095 ms)
+3 tests, 20 checks, 8 failures in 33.7s
+  FAIL: test_stick_round::test_corner_touchdown_runs_straight_both_layouts: standard: a thumb landing near the corner doesn't move the runner (1.00)
+  FAIL: test_stick_round::test_corner_touchdown_runs_straight_both_layouts: standard: an exact vertical push runs straight (17.09 m sideways)
+  FAIL: test_stick_round::test_corner_touchdown_runs_straight_both_layouts: standard: and forward (2.7 m)
+  FAIL: test_stick_round::test_corner_touchdown_runs_straight_both_layouts: mirrored: a thumb landing near the corner doesn't move the runner (1.00)
+  FAIL: test_stick_round::test_corner_touchdown_runs_straight_both_layouts: mirrored: an exact vertical push runs straight (17.04 m sideways)
+  FAIL: test_stick_round::test_corner_touchdown_runs_straight_both_layouts: mirrored: and forward (2.7 m)
+  FAIL: test_stick_round::test_a_thumb_lean_does_not_curve_the_run: a held lean doesn't swing the camera round (-34.3 deg in 5 s)
+  FAIL: test_stick_round::test_a_thumb_lean_does_not_curve_the_run: the run stays straight (8.55 m sideways over 5 m)

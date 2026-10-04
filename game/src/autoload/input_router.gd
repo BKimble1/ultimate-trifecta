@@ -48,6 +48,7 @@ var touch_sprint_enabled := true
 var touch_move := Vector2.ZERO   # x right, y forward (screen up); radial dead zone applied
 var touch_look_px := Vector2.ZERO  # accumulated camera drag, UNSCALED screen pixels
 var touch_held := 0
+var touch_stick_owned := false   # a finger is on the move stick (even inside its dead zone)
 var touch_sprint := false        # edge-sprint (with hysteresis) or the hold-to-sprint button
 var touch_drive := 0.0
 var touch_steer := 0.0
@@ -273,13 +274,16 @@ static func move_curve(m: float) -> float:
 
 
 ## Screen-space move: x right, y forward. Analog magnitude preserved.
-## A finger on the touch stick owns movement outright (a drifting pad can't
-## pull against it); otherwise the active controller, then keys.
+## A finger on the touch stick owns movement outright, even while its output
+## is zero (V7: a pad drifting under a thumb resting in the dead zone used to
+## walk the runner); otherwise the active controller, then keys.  While touch
+## is the device, controller sticks are not read at all: a deliberate push
+## (STICK_SWITCH) or any button hands the controls to the controller first.
 func get_move() -> Vector2:
-	if touch_move != Vector2.ZERO:
+	if touch_stick_owned or touch_move != Vector2.ZERO:
 		return touch_move.limit_length(1.0)
 	var j := Vector2.ZERO
-	if active_joy >= 0:
+	if active_joy >= 0 and device != "touch":
 		j = radial(Vector2(Input.get_joy_axis(active_joy, JOY_AXIS_LEFT_X), -Input.get_joy_axis(active_joy, JOY_AXIS_LEFT_Y)), MOVE_INNER, MOVE_OUTER)
 		if j != Vector2.ZERO:
 			j = j.normalized() * move_curve(j.length())
@@ -295,7 +299,7 @@ func consume_look(delta: float) -> Vector2:
 	var pts := touch_look_px / maxf(1.0, DisplayServer.screen_get_scale())
 	out += Vector2(pts.x, pts.y * 0.85) * TOUCH_RAD_PER_PT * sensitivity
 	touch_look_px = Vector2.ZERO
-	if active_joy >= 0:
+	if active_joy >= 0 and device != "touch":   # V7: a drifting pad never turns a touch player's camera
 		out += stick_look(Vector2(Input.get_joy_axis(active_joy, JOY_AXIS_RIGHT_X), Input.get_joy_axis(active_joy, JOY_AXIS_RIGHT_Y)), delta) * sensitivity
 	var kx := Input.get_axis("cam_left", "cam_right")
 	var ky := Input.get_axis("cam_up", "cam_down")
@@ -409,6 +413,7 @@ func get_steer() -> float:
 
 func reset_touch() -> void:
 	touch_move = Vector2.ZERO
+	touch_stick_owned = false
 	touch_look_px = Vector2.ZERO
 	touch_held = 0
 	touch_sprint = false

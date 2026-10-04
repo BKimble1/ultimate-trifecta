@@ -37,6 +37,12 @@ var pitch: float = 0.32
 var in_cart := false
 var reduced_motion := false
 var auto_recenter := true
+## On-foot follow (V7): turn rate per radian of intended steering, and the
+## steering band it applies in (wider = a strafe/turn, the camera stays put).
+const FOLLOW_GAIN := 0.8
+const FOLLOW_BAND := deg_to_rad(22.0)
+const FOLLOW_MIN := deg_to_rad(4.0)   # steering below this (after the stick's straight-ahead tolerance) never turns the camera
+var last_recenter := 0.0           # yaw the follow added this frame (diagnostics)
 
 var _dist: float = 6.2
 var _height: float = 1.55
@@ -106,18 +112,31 @@ func update_camera(delta: float) -> void:
 	_height = damp(_height, 2.2 if in_cart else 1.55, blend_tau, delta)
 	_fov = damp(_fov, 68.0 if in_cart else 66.0, blend_tau, delta)
 	fov = _fov
-	# gradual recentering behind the direction of travel
+	# gradual recentering behind the runner or cart
 	var flat_v := Vector2(target_vel.x, target_vel.z)
 	var spd := flat_v.length()
 	var delay := 0.6 if in_cart else 1.4
-	var forwardish := in_cart or (move_input.length() > 0.2 and absf(move_input.x) < 0.38 * move_input.length() and move_input.y > 0.0)
-	if auto_recenter and _manual_t > delay and spd > 1.5 and forwardish:
-		var heading := atan2(-flat_v.x, -flat_v.y)
-		var rate := (0.7 if reduced_motion else 1.4) * clampf(spd / 6.0, 0.3, 1.4)
+	var yaw_before := yaw
+	if auto_recenter and _manual_t > delay and spd > 1.5:
+		var sf := clampf(spd / 6.0, 0.3, 1.4)
 		if in_cart:
-			rate *= 1.5
-		yaw = rotate_toward(yaw, heading, rate * delta)
-		pitch = move_toward(pitch, 0.38 if in_cart else 0.32, 0.3 * delta)
+			# a cart steers itself (not camera-relative): swing behind its heading
+			var heading := atan2(-flat_v.x, -flat_v.y)
+			yaw = rotate_toward(yaw, heading, (0.7 if reduced_motion else 1.4) * sf * 1.5 * delta)
+			pitch = move_toward(pitch, 0.38, 0.3 * delta)
+		elif move_input.length() > 0.2 and move_input.y > 0.0:
+			# On foot the stick is camera-relative, so the camera follows the
+			# steering the player INTENDS (the stick's angle off straight
+			# ahead), in proportion.  V7: it used to turn at a fixed rate
+			# toward the travel velocity: a few degrees of thumb lean then
+			# swung camera and runner round together (a 6 degree lean turned
+			# 100 degrees in 6 s) and wall slides became a new heading.
+			var steer := atan2(move_input.x, move_input.y)      # + = right of straight ahead
+			var w := clampf((FOLLOW_BAND - absf(steer)) / (FOLLOW_BAND * 0.35), 0.0, 1.0)
+			var eff := signf(steer) * maxf(0.0, absf(steer) - FOLLOW_MIN)   # a slight lean is not a turn
+			yaw -= eff * FOLLOW_GAIN * w * sf * (0.5 if reduced_motion else 1.0) * delta
+			pitch = move_toward(pitch, 0.32, 0.3 * delta)
+	last_recenter = angle_difference(yaw_before, yaw)
 	# look-ahead (none with Reduced Motion)
 	var ahead_want := Vector3.ZERO
 	if not reduced_motion:

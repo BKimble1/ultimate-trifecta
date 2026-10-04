@@ -71,6 +71,14 @@ var _growth: Array = []          # {t, nodes, objects, orphans, static_mb}
 ## V6: the same counts as each round goes live (the same moment in every
 ## round, so a leak across rounds shows as a steady climb); first + last 11
 var _round_starts: Array = []
+## V7 stick traces: one summary line per move-stick gesture (the last
+## STICK_GESTURES) and the newest gesture sampled at 10 Hz (at most
+## STICK_SAMPLES).  Numbers only.
+const STICK_GESTURES := 12
+const STICK_SAMPLES := 60
+var _stick_g: Array = []
+var _stick_cur: Dictionary = {}
+var _stick_s: Array = []
 var _growth_t := 0.0
 
 
@@ -113,6 +121,9 @@ func clear() -> void:
 	_growth.clear()
 	_round_starts.clear()
 	_catchup_run = 0
+	_stick_g.clear()
+	_stick_cur = {}
+	_stick_s.clear()
 
 
 func _apply_measuring() -> void:
@@ -171,6 +182,49 @@ static func net_sample(rtt_s: float, correction_m: float) -> void:
 		d._net["corr_max"] = maxf(d._net["corr_max"], correction_m)
 		if correction_m > 0.25:
 			d._net["big"] += 1
+
+
+## Per frame while playing (MatchController, only when enabled): the move
+## stick's ownership, ring-vs-origin offset, raw and final vectors (x right,
+## y forward), camera yaw, manual look and follow added this frame, travel
+## velocity and base-follow count.
+static func stick_tick(dt: float, owned: bool, ring_off: Vector2, raw: Vector2, out: Vector2, cam_yaw: float,
+		look: float, follow: float, vel: Vector3, follows: int) -> void:
+	var d := _node()
+	if d == null or not d.enabled:
+		return
+	var g: Dictionary = d._stick_cur
+	if not owned:
+		if not g.is_empty():
+			d._stick_g.append(g)
+			if d._stick_g.size() > STICK_GESTURES:
+				d._stick_g.pop_front()
+			d._stick_cur = {}
+		return
+	if g.is_empty():
+		g = {"t0": Time.get_ticks_msec() - d._start_ms, "dur": 0.0, "ring": ring_off.length(), "n": 0, "fx": 0.0, "fy": 0.0,
+			"lean": 0.0, "yaw0": cam_yaw, "look": 0.0, "follow": 0.0, "follows": 0, "tlat": 0.0, "tfwd": 0.0, "k": 0}
+		d._stick_cur = g
+		d._stick_s.clear()
+	g["dur"] = float(g["dur"]) + dt
+	g["look"] = float(g["look"]) + absf(look)
+	g["follow"] = float(g["follow"]) + follow
+	g["follows"] = follows
+	if out.y > 0.5:                     # held mostly forward
+		g["n"] = int(g["n"]) + 1
+		g["fx"] = float(g["fx"]) + absf(out.x)
+		g["fy"] = float(g["fy"]) + out.y
+		g["lean"] = maxf(float(g["lean"]), absf(rad_to_deg(atan2(raw.x, raw.y))))
+		var fwd := Vector2(-sin(cam_yaw), -cos(cam_yaw))
+		var hv := Vector2(vel.x, vel.z)
+		g["tfwd"] = float(g["tfwd"]) + maxf(0.0, hv.dot(fwd)) * dt
+		g["tlat"] = float(g["tlat"]) + absf(hv.dot(Vector2(-fwd.y, fwd.x))) * dt
+	g["yaw1"] = cam_yaw
+	g["k"] = int(g["k"]) + 1
+	if int(g["k"]) % 6 == 1 and d._stick_s.size() < STICK_SAMPLES:
+		var hv2 := Vector2(vel.x, vel.z)
+		var rel := rad_to_deg(angle_difference(-cam_yaw, -atan2(-hv2.x, -hv2.y))) if hv2.length() > 0.5 else 0.0
+		d._stick_s.append([float(g["dur"]), raw.x, raw.y, out.x, out.y, rad_to_deg(cam_yaw), rad_to_deg(look), rad_to_deg(follow) / maxf(dt, 1e-3), rel, hv2.length()])
 
 
 static func _node() -> Node:
@@ -465,6 +519,19 @@ func summary() -> String:
 		L.append("Network: round trip avg %.0f ms, max %.0f ms · corrections avg %.3f m, max %.2f m, over 25 cm %d" % [
 			float(_net["rtt_sum"]) / maxi(1, int(_net["rtt_n"])), float(_net["rtt_max"]),
 			float(_net["corr_sum"]) / maxi(1, int(_net["corr_n"])), float(_net["corr_max"]), int(_net["big"])])
+	if not _stick_g.is_empty() or not _stick_cur.is_empty():
+		L.append("")
+		L.append("Move stick, last gestures (forward-held part): secs · ring offset px · sideways/forward out · largest lean deg · camera turn deg (of which follow, look) · base moves · travel sideways/forward")
+		for g in _stick_g + ([_stick_cur] if not _stick_cur.is_empty() else []):
+			var n := maxi(1, int(g["n"]))
+			var turn := rad_to_deg(angle_difference(float(g["yaw0"]), float(g.get("yaw1", g["yaw0"]))))
+			L.append("  %s  %4.1f s  %3.0f  %.3f  %4.1f  %+6.1f (%+.1f, %.1f)  %d  %.3f" % [_clock(int(g["t0"])), float(g["dur"]), float(g["ring"]),
+				float(g["fx"]) / maxf(float(g["fy"]), 1e-3), float(g["lean"]), turn, rad_to_deg(float(g["follow"])),
+				rad_to_deg(float(g["look"])), int(g["follows"]), float(g["tlat"]) / maxf(float(g["tfwd"]), 1e-3)])
+		if not _stick_s.is_empty():
+			L.append("Newest gesture at 10 Hz: t · raw x,y · out x,y · camera yaw · look deg · follow deg/s · travel off camera deg · speed")
+			for r in _stick_s:
+				L.append("  %4.1f  %+.2f,%+.2f  %+.2f,%+.2f  %+7.1f  %+5.1f  %+5.1f  %+6.1f  %4.1f" % r)
 	L.append("")
 	L.append("Stalls over %d ms (newest last; attributed to a marker in the %.0f s before)" % [int(STALL_MS), ATTRIBUTE_S])
 	for st in _stalls.slice(maxi(0, _stalls.size() - 25)):

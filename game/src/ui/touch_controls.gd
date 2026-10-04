@@ -298,6 +298,9 @@ class TouchSurface:
 				"cheer":
 					Controls.request_emote(1)
 		var mv := router.move_vector()
+		# a finger on the stick owns movement even at zero output (inside the
+		# dead zone): a drifting pad can't move the runner under it
+		Controls.touch_stick_owned = router.stick_active()
 		if c["in_cart"]:
 			Controls.touch_steer = mv.x
 			Controls.touch_move = Vector2.ZERO
@@ -385,7 +388,7 @@ class TouchSurface:
 		var base: Vector2 = router.stick_center if active else (router.fixed_center if router.fixed_stick else _idle_stick())
 		var knob := base
 		if active:
-			knob = router.stick_center + (router.stick_pos - router.stick_center).limit_length(R)
+			knob = router.knob_pos()   # the ring as drawn + the real offset
 		var runner_foot: bool = c.get("role", 0) == TC.Role.RUNNER and not bool(c.get("in_cart", false))
 		TouchControls.draw_stick(self, base, knob, R, float(res["knob_r"]), opacity, active,
 			router.sprint_on if runner_foot and router.edge_sprint else 0.0, Controls.touch_sprint,

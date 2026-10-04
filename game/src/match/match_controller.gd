@@ -1221,6 +1221,10 @@ func _update_camera(delta: float) -> void:
 		_foliage_mat.set_shader_parameter("focus", Vector4.ZERO)
 	camera.update_camera(delta)
 	hud.set_spectating(follow_slot if follow_slot != local_slot else -1)
+	if Diag.enabled and touch != null and follow_slot == local_slot:
+		var r := touch.surface.router
+		Diag.stick_tick(delta, r.stick_active(), r.stick_center - r.stick_origin, r.raw_vector(), Controls.touch_move,
+			camera.yaw, look.x, camera.last_recenter, rs.get("vel", Vector3.ZERO), r.follows)
 
 
 ## Water under a point, for splash beats: {mat, center, color} or {}.

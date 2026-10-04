@@ -18,6 +18,17 @@ extends RefCounted
 ##  * cancel_all() clears everything (focus loss, backgrounding, pause,
 ##    scene change, controller takes over).
 ##  * Camera drags accumulate *unscaled* screen pixels (screen_relative).
+##  * V7 (forward drift): the dynamic stick's *logical* origin is where the
+##    thumb touched down, so a touchdown is always neutral.  The ring is
+##    drawn at that origin clamped on screen (stick_center), and the knob at
+##    ring + the real offset (knob_pos()), so what is drawn is what is read.
+##    Before V7 the origin itself was clamped: a thumb resting near the
+##    bottom-left corner started at full deflection, and an exact vertical
+##    push ran mostly sideways.
+##  * A narrow, continuous straight-ahead tolerance around forward and back
+##    absorbs a thumb's lean and wobble (see straighten()).
+##  * A spare finger resting in the stick zone (a look pointer started there)
+##    turns the camera only after it has clearly moved (LOOK_SLOP_PX).
 
 const KIND_NONE := 0
 const KIND_STICK := 1
@@ -33,7 +44,20 @@ var stick_zone := Rect2()
 var stick_radius := 92.0             # canvas units
 var fixed_stick := false
 var fixed_center := Vector2(200, 520)
+var follow_at := 1.6                 # dynamic base follows beyond this many radii
 var dead_zone := 0.12                # radial, fraction of the radius
+## Straight-ahead tolerance (degrees from the forward/back axis): inside
+## STRAIGHT_DEG the direction is exactly forward/back; from there to
+## STRAIGHT_BLEND_DEG it blends back continuously to the thumb's own angle;
+## beyond, untouched.  Magnitude is never changed.  Chosen from the probe
+## traces (tools/stick_probe.sh): a 4-6 degree thumb lean, the measured
+## source of curving, falls inside; a deliberate 15 degree heading is kept.
+const STRAIGHT_DEG := 6.0
+const STRAIGHT_BLEND_DEG := 16.0
+var straight_assist := true
+## Unscaled screen pixels a look pointer that started in the stick zone must
+## travel before it turns the camera (about 3 mm on a phone).
+const LOOK_SLOP_PX := 24.0
 var sprint_on := 0.88                # edge-sprint hysteresis (fraction of radius)
 var sprint_off := 0.76
 var edge_sprint := true
@@ -42,8 +66,10 @@ var reserved: Array[Rect2] = []      # HUD regions that are not camera/stick
 
 var owners: Dictionary = {}          # pointer index -> {"kind": int, "btn": String}
 var stick_index := -1
-var stick_center := Vector2.ZERO
+var stick_center := Vector2.ZERO     # where the ring is DRAWN (dynamic: the origin clamped on screen)
+var stick_origin := Vector2.ZERO     # where deflection is measured FROM (dynamic: the touchdown point)
 var stick_pos := Vector2.ZERO
+var follows := 0                     # base-follow steps this gesture (diagnostics)
 var sprinting := false
 var look_px := Vector2.ZERO          # unscaled screen pixels since last consume
 var _edges: Array[String] = []       # button press edges, consumed once
@@ -100,11 +126,17 @@ func touch_down(index: int, p: Vector2) -> void:
 	if zone().has_point(p) and stick_index < 0:
 		owners[index] = {"kind": KIND_STICK, "btn": ""}
 		stick_index = index
+		# fixed stick: deflection from its fixed centre (a touch off-centre is
+		# deliberate); dynamic: the touchdown is neutral wherever the ring is drawn
+		stick_origin = fixed_center if fixed_stick else p
 		stick_center = spawn_center_for(p)
 		stick_pos = p
 		sprinting = false
+		follows = 0
 		return
-	owners[index] = {"kind": KIND_LOOK, "btn": ""}
+	# a look pointer that starts in the stick zone (a spare finger near the
+	# stick) needs a clear movement before it turns the camera
+	owners[index] = {"kind": KIND_LOOK, "btn": "", "slop": LOOK_SLOP_PX if zone().has_point(p) else 0.0, "net": Vector2.ZERO}
 
 
 func touch_up(index: int) -> void:
@@ -125,12 +157,39 @@ func drag(index: int, p: Vector2, screen_relative: Vector2) -> void:
 		KIND_STICK:
 			stick_pos = p
 			if not fixed_stick:
-				# the base follows a thumb that drifts far away
-				var off := stick_pos - stick_center
-				if off.length() > stick_radius * 1.6:
-					stick_center = stick_pos - off.normalized() * stick_radius * 1.6
+				# the base follows a thumb that drifts far away: along the
+				# thumb's own direction, so the direction read never jumps
+				var off := stick_pos - stick_origin
+				if off.length() > stick_radius * follow_at:
+					stick_origin = stick_pos - off.normalized() * stick_radius * follow_at
+					stick_center = spawn_center_for(stick_origin)
+					follows += 1
 		KIND_LOOK:
+			var slop := float(o.get("slop", 0.0))
+			if slop > 0.0:
+				# net travel from where it landed (touch-screen jitter cancels out)
+				var net: Vector2 = o["net"] + screen_relative
+				o["net"] = net
+				if net.length() < slop:
+					return
+				o["slop"] = 0.0      # from here on every pixel turns the camera;
+				# only the travel beyond the slop counts (no jump on crossing it)
+				look_px += net - net.normalized() * slop
+				return
 			look_px += screen_relative
+
+
+## Deflection before the dead zone and straight-ahead tolerance (diagnostics).
+func raw_vector() -> Vector2:
+	if stick_index < 0:
+		return Vector2.ZERO
+	var raw := (stick_pos - stick_origin) / stick_radius
+	return Vector2(raw.x, -raw.y)
+
+
+## The knob as drawn: the ring plus the real offset (never beyond the rim).
+func knob_pos() -> Vector2:
+	return stick_center + (stick_pos - stick_origin).limit_length(stick_radius)
 
 
 func cancel_all() -> void:
@@ -181,7 +240,7 @@ func take_look_px() -> Vector2:
 func move_vector() -> Vector2:
 	if stick_index < 0:
 		return Vector2.ZERO
-	var raw := (stick_pos - stick_center) / stick_radius
+	var raw := (stick_pos - stick_origin) / stick_radius
 	var m := raw.length()
 	if m <= dead_zone:
 		_update_sprint(0.0)
@@ -189,7 +248,28 @@ func move_vector() -> Vector2:
 	var out_m := clampf((m - dead_zone) / (1.0 - dead_zone), 0.0, 1.0)
 	_update_sprint(minf(m, 1.0))
 	var dir := raw / m
-	return Vector2(dir.x, -dir.y) * out_m
+	var v := Vector2(dir.x, -dir.y) * out_m
+	return straighten(v) if straight_assist else v
+
+
+## Straight-ahead tolerance around forward and back (x right, y forward):
+## within STRAIGHT_DEG of the axis the direction is exactly on it, then it
+## blends linearly back to the thumb's own angle at STRAIGHT_BLEND_DEG.
+## Continuous (no snap, no hysteresis to reset), magnitude kept, sideways and
+## diagonals untouched.
+static func straighten(v: Vector2) -> Vector2:
+	var m := v.length()
+	if m <= 0.0:
+		return v
+	var a := atan2(v.x, absf(v.y))       # signed angle off the forward/back axis
+	var aa := absf(a)
+	var b := deg_to_rad(STRAIGHT_DEG)
+	var e := deg_to_rad(STRAIGHT_BLEND_DEG)
+	if aa >= e:
+		return v
+	var na := 0.0 if aa <= b else (aa - b) * e / (e - b)
+	na *= signf(a)
+	return Vector2(sin(na), cos(na) * (1.0 if v.y >= 0.0 else -1.0)) * m
 
 
 func _update_sprint(m: float) -> void:

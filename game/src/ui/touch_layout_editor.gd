@@ -300,7 +300,7 @@ class EditorCanvas:
 		var active := try_mode and router.stick_active()
 		if active:
 			base = router.stick_center
-			knob = router.stick_center + (router.stick_pos - router.stick_center).limit_length(R)
+			knob = router.knob_pos()
 		var runner := ed.ctx == "runner"
 		TouchControls.draw_stick(self, base, knob, R, float(res["knob_r"]), opacity, active or _drag == "move",
 			router.sprint_on if runner and router.edge_sprint else 0.0, try_mode and router.sprinting, 1.0 if runner else -1.0)

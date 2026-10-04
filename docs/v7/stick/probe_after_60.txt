@@ -1,0 +1,28 @@
+BEGIN
+corridor 110 m, R=107, zone=[P: (0.0, 129.6), S: (701.55, 590.4)], view=(1559.0, 720.0), fps=60
+1 centre, exact vertical                     d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 37.3 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +0.0 st=0 spd=5.0 y=+0.00 sprint=0.11
+1b centre, exact vertical, recenter off      d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 37.3 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +0.0 st=0 spd=5.0 y=+0.00 sprint=0.11
+1c centre, 60% vertical (jog)                d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 16.0 stop=4  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +0.0 st=0 spd=2.7 y=+0.00 sprint=1.00
+2 bottom-left corner, exact vertical         d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 37.3 stop=7  origin-touch=(0.0, 0.0) visual-touch=(91.0, -91.0)  rel=  +0.0 st=0 spd=5.0 y=+0.00 sprint=0.11
+2b left edge mid, exact vertical             d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 37.3 stop=7  origin-touch=(0.0, 0.0) visual-touch=(91.0, 0.0)  rel=  +0.0 st=0 spd=5.0 y=+0.00 sprint=0.11
+3 centre, forward + wobble                   d0=0.00 lat=0.000 dev= +0.01 peak= 0.01 yaw=   +0.0 head=   +0.0 fwd= 37.3 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +0.0 st=0 spd=5.0 y=+0.00 sprint=0.11
+3b centre, forward + 6deg lean + wobble      d0=0.00 lat=0.021 dev= +0.77 peak= 0.77 yaw=   -0.0 head=   +0.0 fwd= 37.3 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +1.2 st=0 spd=5.0 y=+0.00 sprint=0.11
+3c 6deg lean, recenter off                   d0=0.00 lat=0.021 dev= +0.77 peak= 0.77 yaw=   +0.0 head=   +0.0 fwd= 37.3 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +1.2 st=0 spd=5.0 y=+0.00 sprint=0.11
+4 long push past base-follow, ease back      d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 22.0 stop=1  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  -0.2 st=0 spd=0.0 y=+0.02 sprint=0.81
+4b push along the rim side to side           d0=0.00 lat=0.183 dev= +1.50 peak= 1.98 yaw=   -4.4 head=   +6.9 fwd= 36.3 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  -0.0 st=0 spd=5.0 y=+0.00 sprint=0.10
+5 forward 15 s, 3deg lean, recenter on       d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 88.7 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +0.0 st=0 spd=5.0 y=+0.00 sprint=0.08
+5b forward 15 s, 3deg lean, recenter off     d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 88.7 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +0.0 st=0 spd=5.0 y=+0.00 sprint=0.08
+6 forward + spare finger, jitter, creep 0.05 px/f d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 26.4 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +0.0 st=0 spd=5.0 y=+0.00 sprint=0.00
+6 forward + spare finger, jitter, creep 0.40 px/f d0=0.00 lat=0.000 dev= +2.36 peak= 2.36 yaw=  -13.0 head=  -12.7 fwd= 26.2 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  -0.2 st=0 spd=5.0 y=+0.00 sprint=0.00
+4c long push, base never follows (comparison) d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 35.5 stop=6  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +0.0 st=0 spd=4.4 y=+0.00 sprint=0.08
+7 thumb resting in dead zone + drifting pad  d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd=  0.0 stop=1  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +0.0 st=0 spd=0.0 y=+0.00 sprint=1.00
+7b forward + drifting pad                    d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 20.5 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +0.0 st=0 spd=5.0 y=+0.00 sprint=0.00
+8 deliberate 15 deg (stick angle)            d0=0.00 lat=0.257 dev= +6.64 peak= 6.64 yaw=   +0.0 head=   -0.0 fwd= 25.5 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel= +14.6 st=0 spd=5.0 y=+0.00 sprint=0.00
+8 deliberate 45 deg (stick angle)            d0=0.00 lat=1.000 dev=+18.66 peak=18.66 yaw=   +0.0 head=   +0.0 fwd= 18.7 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel= +45.0 st=0 spd=5.0 y=+0.00 sprint=0.00
+8 deliberate 90 deg (stick angle)            d0=0.00 lat=235464646.108 dev=+26.26 peak=26.26 yaw=   +0.0 head=   +0.0 fwd=  0.0 stop=1  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel= +90.0 st=2 spd=0.0 y=-0.45 sprint=0.00
+8 deliberate 180 deg (stick angle)           d0=0.00 lat=0.000 dev=+23.77 peak=24.36 yaw=   +0.0 head=   +0.0 fwd= -2.0 stop=1  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=-180.0 st=0 spd=0.0 y=-0.03 sprint=0.00
+8e left-right flicks every 0.5 s             d0=0.00 lat=237159090.895 dev= +2.10 peak= 4.13 yaw=   +0.0 head= +180.0 fwd=  0.0 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +0.8 st=0 spd=5.0 y=+0.00 sprint=0.00
+8f 15 deg held, recenter on (camera follows) d0=0.00 lat=0.257 dev=+13.86 peak=13.86 yaw=  -36.0 head=  -32.1 fwd= 21.9 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel= +14.2 st=0 spd=5.0 y=+0.00 sprint=0.00
+2m mirrored, bottom-right corner, exact vertical d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 37.3 stop=7  origin-touch=(0.0, 0.0) visual-touch=(-91.0, -91.0)  rel=  +0.0 st=0 spd=5.0 y=+0.00 sprint=0.11
+1m mirrored, centre, exact vertical          d0=0.00 lat=0.000 dev= -0.00 peak= 0.00 yaw=   +0.0 head=   +0.0 fwd= 37.3 stop=7  origin-touch=(0.0, 0.0) visual-touch=(0.0, 0.0)  rel=  +0.0 st=0 spd=5.0 y=+0.00 sprint=0.11
+END
