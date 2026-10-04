@@ -160,7 +160,8 @@ func test_profile_section_offers_rename_and_delete() -> void:
 	for b in s.find_children("*", "Button", true, false):
 		labels.append((b as Button).text)
 	t.check("Change name" in labels and "Delete Game Profile" in labels, "Profile section has Change name and Delete Game Profile")
-	t.check(" ".join(_texts(s, [])).contains("Player name:"), "shows the player name")
+	var shown := " ".join(_texts(s, []))
+	t.check(shown.contains("Player name") and shown.contains(Save.player_name()), "shows the player name")
 	await _end()
 
 
