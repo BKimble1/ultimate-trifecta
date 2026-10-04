@@ -31,3 +31,4 @@ __pycache__/
 game/addons/ut_share/bin/
 native/**/build/
 # Pinned Godot download (tools/fetch_godot.sh); a local directory or link, never tracked
+game/override.cfg
