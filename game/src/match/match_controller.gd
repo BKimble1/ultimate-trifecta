@@ -1116,7 +1116,12 @@ func _process(delta: float) -> void:
 	_local_events = []
 	var tp := Prof.t()
 	for ev in evs:
-		_present_event(ev)
+		if Prof.on:
+			var te := Prof.t()
+			_present_event(ev)
+			Prof.add("ev_" + str(TC.Ev.find_key(int(ev["type"]))), te)
+		else:
+			_present_event(ev)
 	Prof.add("mc_events", tp)
 	# characters
 	tp = Prof.t()

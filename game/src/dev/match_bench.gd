@@ -14,6 +14,9 @@ extends Node
 ## view, world, camera and HUD passes, effects, the governor; MatchSim.prof:
 ## the simulation's sections).  It notes the frame each event type first
 ## shows (cold caches) and reads objects/nodes/memory at every round start.
+## Every frame also lists the events it presented (and the match
+## controller's time per event type, ev_*), and bot path searches over 8 ms
+## (NavGrid.debug_slow_searches) are kept with the frame they ran in.
 ##
 ## Headless (the dummy renderer) this measures the CPU side of a frame on the
 ## machine it runs on; with a window it also reads the renderer's draw calls
@@ -45,6 +48,8 @@ var _state := "boot"
 var _prev_prof := {}
 var _render_samples: Array = []
 var _render_t := 0.0
+var _nav: NavGrid
+var _slow: Array = []            # [frame, round, from, to, cart, ms, points]
 
 
 func _ready() -> void:
@@ -72,6 +77,8 @@ func _ready() -> void:
 	Prof.on = true
 	MatchSim.prof_on = true
 	MatchSim.prof = {}
+	_nav = NavGrid.shared(CampusLayout.shared())
+	_nav.debug_slow_searches = []
 	printerr("BENCH start fps=%d rounds=%d round_secs=%.0f seed=%d quality=%d renderer=%s" % [fps, rounds, round_secs, seed_v, quality, DisplayServer.get_name()])
 
 
@@ -115,11 +122,23 @@ func _process(delta: float) -> void:
 			rec[k] = float(p["us"][k]) / 1000.0
 		for k in sim_d:
 			rec["sim_" + k] = float(sim_d[k]) / 1000.0
+		var names: Array = []
 		for ev in _pending_events:
 			var key := "%d:%d" % [_round, int(ev)]
 			if not _first_events.has(key):
 				_first_events[key] = _frames.size()
+			names.append(str(TC.Ev.find_key(int(ev))))
 		_pending_events.clear()
+		if not names.is_empty():
+			rec["events"] = names
+		var sl: Array = _nav.debug_slow_searches
+		if not sl.is_empty():
+			var mine: Array = []
+			for e in sl:
+				mine.append(e[3])
+				_slow.append([_frames.size(), _round, str(e[0]), str(e[1]), e[2], e[3], e[4]])
+			rec["slow_paths_ms"] = mine
+			sl.clear()
 		_frames.append(rec)
 	if DisplayServer.get_name() != "headless" and ctx == "playing":
 		_render_t += delta
@@ -200,7 +219,7 @@ func _finish() -> void:
 	for r in _frames:
 		iv.append(float(r["iv"]))
 		for k in r:
-			if k in ["iv", "round"]:
+			if k in ["iv", "round", "events", "slow_paths_ms"]:
 				continue
 			if not sections.has(k):
 				sections[k] = PackedFloat32Array()
@@ -244,6 +263,7 @@ func _finish() -> void:
 		r["first_events"] = firsts
 		worst.append(r)
 	summary["worst_frames"] = worst
+	summary["slow_searches"] = _slow
 	var txt := JSON.stringify(summary, " ")
 	if out_path != "":
 		var f := FileAccess.open(out_path, FileAccess.WRITE)
@@ -259,11 +279,22 @@ func _finish() -> void:
 	for r in summary["worst_frames"]:
 		var parts: PackedStringArray = []
 		for k in r:
-			if k in ["iv", "index", "round", "first_events", "views_n", "adv_n"]:
+			if k in ["iv", "index", "round", "first_events", "views_n", "adv_n", "events", "slow_paths_ms"]:
 				continue
 			if float(r[k]) >= 0.5:
 				parts.append("%s %.1f" % [k, float(r[k])])
-		printerr("BENCH worst %6.1f ms  round %d frame %d  %s  %s" % [r["iv"], r["round"], r["index"], " ".join(parts), str(r["first_events"])])
+		printerr("BENCH worst %6.1f ms  round %d frame %d  %s  %s %s %s" % [r["iv"], r["round"], r["index"], " ".join(parts), str(r["first_events"]),
+			str(r.get("events", "")), ("paths " + str(r["slow_paths_ms"])) if r.has("slow_paths_ms") else ""])
+	var cart_n := 0
+	var foot_n := 0
+	var worst_ms := 0.0
+	for e in _slow:
+		if bool(e[4]):
+			cart_n += 1
+		else:
+			foot_n += 1
+		worst_ms = maxf(worst_ms, float(e[5]))
+	printerr("BENCH slow path searches (>8 ms): foot %d cart %d worst %.1f ms" % [foot_n, cart_n, worst_ms])
 	printerr("BENCH DONE")
 	get_tree().quit()
 
