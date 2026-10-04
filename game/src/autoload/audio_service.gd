@@ -27,6 +27,14 @@ const _SILENT_DB := -80.0
 
 var sfx_volume := 0.9
 var music_volume := 0.6
+## The one music trim under Settings › Music (all tracks).  V7: -6 -> -3 dB,
+## about 3 dB louder at every slider position (saved values are untouched).
+## Headroom: the tracks' true peaks are -5.0 dBFS (chase, results) and
+## -10.9 (lobby), so music peaks at -8 dBFS at the top of the slider.
+const MUSIC_TRIM_DB := -3.0
+## Effects (peaks to -1.3 dBFS) and music sum on Master: a hard limiter there
+## (ceiling -0.3 dB) only acts on a rare coincident peak instead of clipping.
+const MASTER_CEILING_DB := -0.3
 var _cache: Dictionary = {}
 var _pool2d: Array[AudioStreamPlayer] = []
 var _pool3d: Array[AudioStreamPlayer3D] = []
@@ -62,6 +70,7 @@ class MusicVoice:
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_ensure_master_limiter()
 	for i in 10:
 		var p := AudioStreamPlayer.new()
 		p.bus = "Master"
@@ -210,8 +219,18 @@ func _process(delta: float) -> void:
 		_apply_music_volume()
 
 
+func _ensure_master_limiter() -> void:
+	var master := AudioServer.get_bus_index("Master")
+	for i in AudioServer.get_bus_effect_count(master):
+		if AudioServer.get_bus_effect(master, i) is AudioEffectHardLimiter:
+			return
+	var lim := AudioEffectHardLimiter.new()
+	lim.ceiling_db = MASTER_CEILING_DB
+	AudioServer.add_bus_effect(master, lim)
+
+
 func _apply_music_volume() -> void:
-	var base := linear_to_db(maxf(music_volume, 0.0001)) - 6.0
+	var base := linear_to_db(maxf(music_volume, 0.0001)) + MUSIC_TRIM_DB
 	for v: MusicVoice in [_music, _music_out]:
 		var g := v.gain()
 		v.player.volume_db = base + linear_to_db(g) if g > 0.0001 else _SILENT_DB

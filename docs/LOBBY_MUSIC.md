@@ -69,7 +69,7 @@ How the loop is built:
 - **Not used:** the leading silence, the preview's fade-out, and the video.
 - **Level:** the loop is set to −23 LUFS, the same as the menu music it
   replaces (chase and results are −22). The in-game balance against sound
-  effects and the existing `−6 dB` music trim stays as designed.
+  effects and the central music trim (`MUSIC_TRIM_DB`, −6 dB in 1.5, **−3 dB from V7**) applies to every track.
 
 ## How it plays (`audio_service.gd`)
 
@@ -93,7 +93,7 @@ How the loop is built:
   | Chase music leaving | 0.4 s, close to the old cut but without a click. The results sting still starts at full level. |
 
 - **Volume and mute:** the level follows Settings › Music, as before
-  (`linear_to_db(music) − 6 dB`). At 0 the stream pauses instead of decoding
+  (`linear_to_db(music) + MUSIC_TRIM_DB`; −3 dB from V7, about 3 dB louder than 1.5 at every slider position; saved slider values and mute are untouched). Headroom: true peaks are −10.9 dBFS (lobby) and −5.0 (chase, results), so music peaks at −8 dBFS at the top of the slider; a hard limiter on Master (ceiling −0.3 dB) catches a rare music + effect (−1.3 dBFS) coincidence instead of clipping. At 0 the stream pauses instead of decoding
   silence. Raising the slider continues the same playback.
 - **Backgrounding and interruptions** (`APPLICATION_PAUSED`/`FOCUS_OUT`,
   which Godot's iOS layer also sends for audio-session interruptions such as

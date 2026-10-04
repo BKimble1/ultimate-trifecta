@@ -108,6 +108,22 @@ written against public state so it also runs on the old build, where it
 fails: touchdown 1.00, 17 m sideways in both layouts, a 5° lean swings the
 camera −34° in 5 s — `docs/v7/stick/test_stick_round_on_prefix_build.txt`).
 
+## Music: about 3 dB louder
+
+One central trim, `Sfx.MUSIC_TRIM_DB`, moves from −6 dB to **−3 dB**: every
+music track (lobby, chase, results) is ~3 dB louder at every Settings › Music
+position. Saved slider values and mute are untouched; the slider is not
+forced up and the system volume is not touched. Loop points, the no-restart
+behaviour, fades and the iOS audio session are unchanged.
+
+Headroom (ffmpeg EBU R128, true peak): lobby −23.4 LUFS / −10.9 dBFS, chase
+−22.2 / −5.0, results −22.0 / −5.1. Music now peaks at −8 dBFS at the top of
+the slider (−12.4 at the default 0.6). Effects peak at up to −1.3 dBFS
+(`splash_big`), so a rare coincidence of both could exceed full scale at
+high slider settings (it already could in 1.5, by ~0.5 dB): a hard limiter on
+Master (ceiling −0.3 dB) now catches that instead of clipping. `test_lobby_music`
+checks the trim, the level at two slider values, mute, and the single limiter.
+
 ## Still needs a device
 
 - The owner's own thumb on an iPhone: forward runs, edge starts, long holds

@@ -183,7 +183,15 @@ func test_music_volume_and_mute_are_respected() -> void:
 	_step(3.0)
 	var id := _playback_id()
 	Sfx.set_volumes(0.9, 0.6)
-	t.near(Sfx._music.player.volume_db, linear_to_db(0.6) - 6.0, 0.01, "the music setting sets the level")
+	t.near(Sfx._music.player.volume_db, linear_to_db(0.6) + Sfx.MUSIC_TRIM_DB, 0.01, "the music setting sets the level")
+	t.near(Sfx.MUSIC_TRIM_DB, -3.0, 0.001, "V7: one central trim, 3 dB louder than 1.5's -6 dB")
+	var master := AudioServer.get_bus_index("Master")
+	var lims := 0
+	for i in AudioServer.get_bus_effect_count(master):
+		if AudioServer.get_bus_effect(master, i) is AudioEffectHardLimiter:
+			lims += 1
+			t.near((AudioServer.get_bus_effect(master, i) as AudioEffectHardLimiter).ceiling_db, -0.3, 0.001, "master ceiling -0.3 dB")
+	t.eq(lims, 1, "one limiter on Master guards music + effects headroom")
 	Sfx.set_volumes(0.9, 0.0)
 	t.check(Sfx._music.player.stream_paused, "muted music holds its place (not decoding silence)")
 	t.eq(Sfx.current_music(), "menu", "and is still the lobby music")
@@ -191,7 +199,7 @@ func test_music_volume_and_mute_are_respected() -> void:
 	t.eq(_voices_holding("menu"), 1, "asking again while muted adds nothing")
 	Sfx.set_volumes(0.9, 0.3)
 	t.check(not Sfx._music.player.stream_paused and _playback_id() == id, "unmuted, the same playback continues")
-	t.near(Sfx._music.player.volume_db, linear_to_db(0.3) - 6.0, 0.01, "at the new level")
+	t.near(Sfx._music.player.volume_db, linear_to_db(0.3) + Sfx.MUSIC_TRIM_DB, 0.01, "at the new level")
 	t.near(Sfx.sfx_volume, 0.9, 0.0001, "sound effects keep their own level")
 	_reset()
 
