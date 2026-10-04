@@ -62,12 +62,12 @@ func build() -> void:
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(row)
 	row.add_child(UIKit.spacer_h())
-	var sheet := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 24)
+	var sheet := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 20)
 	sheet.custom_minimum_size = Vector2(minf(720.0, get_viewport().get_visible_rect().size.x * 0.6), 0)
 	sheet.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(sheet)
 	# the summary scrolls by finger (UIKit.scroll_area); the actions never do
-	var outer := UIKit.vbox(14)
+	var outer := UIKit.vbox(10)
 	sheet.add_child(outer)
 	_sc = UIKit.scroll_area()
 	_sc.follow_focus = true
@@ -81,16 +81,19 @@ func build() -> void:
 	_btns = HFlowContainer.new()   # one row; wraps only on a narrow sheet
 	_btns.add_theme_constant_override("h_separation", 10)
 	_btns.add_theme_constant_override("v_separation", 10)
-	_primary = UIKit.primary("", Vector2(280, 92), 28)
+	# (V7) actions one touch target tall (they were 92 units: the summary
+	# above them showed two table rows on a 667x375 phone)
+	var tm := UIKit.touch_min()
+	_primary = UIKit.primary("", Vector2(260, tm), 26)
 	_primary.pressed.connect(_on_primary)
 	_btns.add_child(_primary)
 	if _party():
 		chat_btn = UIKit.icon_button("chat", "Chat")
 		chat_btn.accessibility_name = "Chat with everyone"
-		chat_btn.custom_minimum_size.y = 92
+		chat_btn.custom_minimum_size.y = tm
 		chat_btn.pressed.connect(_open_chat)
 		_btns.add_child(chat_btn)
-	var leave := UIKit.quiet("Menu" if _practice() else "Leave", Vector2(0, 92))
+	var leave := UIKit.quiet("Menu" if _practice() else "Leave", Vector2(0, tm))
 	leave.pressed.connect(func() -> void:
 		if _practice():
 			App.goto_title()
@@ -187,7 +190,7 @@ func _final_page() -> void:
 	var head := UIKit.vbox(2)
 	head.add_child(UIKit.styled("Series over" + (" · ended early" if bool(view.get("ended_early", false)) else ""), "overline", UIKit.IVORY_MUTED))
 	head.add_child(UIKit.styled("Final standings", "display", UIKit.AMBER))
-	var sub := UIKit.styled("Ranked by Round Wins: a Round Win for everyone on the winning team of each round. Ties share a place.", "caption", UIKit.IVORY_MUTED)
+	var sub := UIKit.styled("Each winning team member earns a Round Win. Ties share a place.", "caption", UIKit.IVORY_MUTED)
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	head.add_child(sub)
 	_v.add_child(head)
@@ -449,7 +452,7 @@ func _podium(rows: Array) -> Control:
 	var steps := RoundRanking.podium(rows)
 	var h := UIKit.hbox(14)
 	h.alignment = BoxContainer.ALIGNMENT_CENTER
-	var heights := {1: 0.0, 2: 26.0, 3: 44.0}
+	var heights := {1: 0.0, 2: 16.0, 3: 28.0}
 	for st in steps:
 		var col := UIKit.vbox(6)
 		col.alignment = BoxContainer.ALIGNMENT_END
@@ -460,7 +463,7 @@ func _podium(rows: Array) -> Control:
 		faces.alignment = BoxContainer.ALIGNMENT_CENTER
 		for r in (st["rows"] as Array).slice(0, 3):
 			var av := LobbyScreen.Avatar.new()
-			av.custom_minimum_size = Vector2(64, 64)
+			av.custom_minimum_size = Vector2(56, 56)
 			var cos: Dictionary = _cosmetic_of(String(r["uid"]))
 			av.set_entry(cos, TC.Role.RUNNER, "pod%d_%s" % [get_instance_id(), String(r["uid"])])
 			faces.add_child(av)
@@ -653,8 +656,15 @@ func _open_chat() -> void:
 func _fit_sheet() -> void:
 	if not is_instance_valid(_sc):
 		return
-	var avail := get_viewport().get_visible_rect().size.y - 120.0 - _btns.get_combined_minimum_size().y \
-		- (_status.get_combined_minimum_size().y + 14.0 if _status.visible else 0.0) - 14.0
+	# (V7) what the screen really leaves: its safe margins and the sheet's
+	# own padding (V6 reserved a fixed 120 units, ~40 too many on an SE)
+	var sheet := _sc.get_parent().get_parent() as Control
+	var pad := 24.0
+	if sheet is PanelContainer:
+		var sb := (sheet as PanelContainer).get_theme_stylebox("panel")
+		pad = sb.get_margin(SIDE_TOP) + sb.get_margin(SIDE_BOTTOM)
+	var avail := get_viewport().get_visible_rect().size.y - float(margin.get_theme_constant("margin_top") + margin.get_theme_constant("margin_bottom")) \
+		- pad - _btns.get_combined_minimum_size().y - (_status.get_combined_minimum_size().y + 10.0 if _status.visible else 0.0) - 10.0 - 2.0
 	_sc.custom_minimum_size.y = clampf(_v.get_combined_minimum_size().y, 0.0, maxf(160.0, avail))
 
 
@@ -675,12 +685,12 @@ func _refresh_actions() -> void:
 	if over and page == "round" and not cancelled:
 		_primary.text = "Final standings"
 		UIKit._apply(_primary, UIKit.AMBER, UIKit.NAVY)
-		_status.text = "That was the last round of the series: the final standings are next."
+		_status.text = "That was the last round. Final standings next."
 		return
 	if session.is_host():
 		if over:
 			_primary.text = "Return to lobby"
-			_status.text = "Everyone goes back to the party room when they're ready; a new series uses the same settings."
+			_status.text = "Everyone returns to the party room. A new series keeps these settings."
 		else:
 			_primary.text = "Next: round %d" % session.next_round_number()
 			_status.text = "Back to the party room · round %d starts when everyone's ready." % session.next_round_number()

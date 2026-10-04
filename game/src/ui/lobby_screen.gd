@@ -808,7 +808,10 @@ func _standings_sheet() -> void:
 	var v := UIKit.vbox(10)
 	v.custom_minimum_size = Vector2(560, 0)
 	v.add_child(UIKit.styled("Standings", "headline"))
-	v.add_child(ResultsScreen.standings_table(session.series_view, Save.player_uid()))
+	# (V7) up to eight friends: the table scrolls inside the sheet on a phone
+	var vh := get_viewport().get_visible_rect().size.y
+	v.add_child(UIKit.v7_capped_list(ResultsScreen.standings_table(session.series_view, Save.player_uid()),
+		maxf(160.0, vh - UIKit.touch_min() * 2.0 - 190.0)))
 	var done := UIKit.secondary("Close", Vector2(180, 68))
 	done.pressed.connect(close_popover)
 	v.add_child(done)

@@ -363,8 +363,13 @@ func _blocked_sheet() -> void:
 		return
 	var v: VBoxContainer = p.get_child(0)
 	var box := UIKit.vbox(10)
-	v.add_child(box)
-	v.move_child(box, 1)
+	# (V7) a long block list scrolls inside the dialog instead of running off
+	# the screen
+	var vh := get_viewport().get_visible_rect().size.y
+	var cap := maxf(160.0, vh - UIKit.touch_min() * 2.0 - 220.0)
+	var list_sc := UIKit.v7_capped_list(box, cap)
+	v.add_child(list_sc)
+	v.move_child(list_sc, 1)
 	for b in list:
 		var row := UIKit.hbox(12)
 		var nm := UIKit.label(NameRules.safe_display(String(b.get("name", "Player"))), 22, UIKit.IVORY)
@@ -384,6 +389,10 @@ func _blocked_sheet() -> void:
 			row.queue_free())
 		row.add_child(un)
 		box.add_child(row)
+	list_sc.custom_minimum_size.y = minf(box.get_combined_minimum_size().y, cap)
+	# (V7) re-centre for the rows: the dialog's entrance tween would otherwise
+	# put it back where it was centred without them (half off a phone screen)
+	Motion.stop(p, "position")
 	p.position = (get_viewport().get_visible_rect().size - p.get_combined_minimum_size()) * 0.5
 
 

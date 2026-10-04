@@ -587,10 +587,19 @@ func test_home_results_and_standings_fit_every_device() -> void:
 		r2.session = host
 		await _show(r2)
 		await _audit(tag + " Series round", r2)
+		# the first view reaches the round's table: its first row is shown whole
+		var first: Control = null
+		for pc in r2._v.find_children("*", "PanelContainer", true, false):
+			if String((pc as Control).accessibility_name).contains(": "):
+				first = pc
+				break
+		t.check(first != null and _fully_shown(first), "%s: the round's first table row is in the first view (%s)" % [tag, str(first.get_global_rect()) if first else "none"])
 		t.eq(r2._primary.text, "Final standings", "%s: the last round leads to Final standings" % tag)
 		await _click(r2._primary)
 		await _frames(4)
 		t.eq(r2.page, "final", "%s: Final standings shown" % tag)
+		var first_row := (r2._v.get_child(2) as Control).get_child(1) as Control
+		t.check(_fully_shown(first_row), "%s: the first standings row is in the first view (%s)" % [tag, str(first_row.get_global_rect())])
 		await _audit(tag + " Final standings", r2)
 		r2._sc.scroll_vertical = 100000
 		await _frames(3)
@@ -659,6 +668,66 @@ func test_party_room_with_one_four_and_eight_players_fits() -> void:
 			rig.teardown()
 			rig.queue_free()
 			await _frames(2)
+	Save.data["uid"] = saved_uid
+	await _end()
+
+
+## Sheets whose rows grow with the data stay on screen: a long block list
+## (Settings › Blocked players) and eight friends' series standings (the
+## party room's Standings) scroll inside their sheet.
+func test_long_lists_stay_inside_their_sheets() -> void:
+	await _begin()
+	var saved_uid: Variant = Save.data["uid"]
+	for d in _devices():
+		var tag := String(d[0])
+		await _size(d[1])
+		var blocked: Array = []
+		for i in 14:
+			blocked.append({"pid": "", "uid": "u%d" % i, "name": "Comfy Frog %d" % i})
+		Save.data["blocked"] = blocked
+		var s: SettingsScreen = await _show(SettingsScreen.new())
+		s._blocked_sheet()
+		await _frames(4)
+		var dlg: Control = s._modals[-1]["node"]
+		t.check(_safe().grow(0.5).encloses(dlg.get_global_rect()), "%s: 14 blocked players: the sheet fits (%s in %s)" % [tag, str(dlg.get_global_rect()), str(_safe())])
+		var lists := dlg.find_children("*", "ScrollContainer", true, false)
+		t.check(lists.size() == 1 and (lists[0] as ScrollContainer).get_v_scroll_bar().max_value > (lists[0] as ScrollContainer).size.y, "%s: and its list scrolls" % tag)
+		await _audit(tag + " blocked players", dlg)
+		Save.data["blocked"] = []
+		await _close()
+		# eight friends in a series: the party room's Standings sheet
+		var rig := NetRig.new()
+		t.add_child(rig)
+		rig.setup(0, 0, 0.0, 1)
+		await rig.wait_until(func() -> bool: return rig.host.human_count() == 2, 300)
+		Save.data["uid"] = "uid-host"
+		var ps := PartySeries.new()
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 5
+		ps.start({"watch": 2, "rounds": 3}, rng)
+		for k in 2:
+			var rk := _results("uid-host", false)
+			for row in rk["players"]:
+				(row as Dictionary)["is_bot"] = false
+				(row as Dictionary)["uid"] = "uid-host" if int(row["slot"]) == 0 else "friend-%d" % int(row["slot"])
+			rk["match_id"] = "v7-st-%d" % k
+			ps.record_round(rk)
+		rig.host.series_view = ps.to_dict()
+		App.session = rig.host
+		App.show_lobby()
+		await _frames(8)
+		var l := App.screen as LobbyScreen
+		l._standings_sheet()
+		await _frames(4)
+		var root: Control = l._modals[-1]["node"]
+		var sheet := root.get_child(1) as Control
+		t.check(_safe().grow(0.5).encloses(sheet.get_global_rect()), "%s: eight friends' standings fit (%s in %s)" % [tag, str(sheet.get_global_rect()), str(_safe())])
+		await _audit(tag + " standings sheet", sheet)
+		await _close()
+		App.session = null
+		rig.teardown()
+		rig.queue_free()
+		await _frames(2)
 	Save.data["uid"] = saved_uid
 	await _end()
 

@@ -895,3 +895,18 @@ static func v7_back_chooses(screen: Screen, dlg: Control, choice: Callable = Cal
 					dlg.queue_free()
 				if choice.is_valid():
 					choice.call()
+
+
+## A list as tall as its content up to `max_h`, then scrolled by finger:
+## for sheets and dialogs whose rows grow with the data (blocked players,
+## series standings) and must still fit on a phone.
+static func v7_capped_list(content: Control, max_h: float) -> ScrollContainer:
+	var sc := scroll_area()
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sc.add_child(content)
+	var fit := func() -> void:
+		if is_instance_valid(sc) and is_instance_valid(content):
+			sc.custom_minimum_size.y = minf(content.get_combined_minimum_size().y, max_h)
+	content.minimum_size_changed.connect(fit)
+	fit.call()
+	return sc
