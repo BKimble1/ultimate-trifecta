@@ -303,3 +303,54 @@ func test_diagnostics_stick_trace_is_bounded() -> void:
 	t.check(samples <= Diag.STICK_SAMPLES and samples > 0, "and a short sampled trace (%d lines)" % samples)
 	Diag.clear()
 	Diag.set_enabled(was)
+
+
+## Every phone scale, safe-area side (both landscape directions), standard,
+## mirrored, larger controls and a custom stick anchor: a touchdown anywhere
+## in the resolved stick zone is neutral, and a vertical push stays vertical.
+func test_neutral_and_vertical_on_every_canvas_and_layout() -> void:
+	# canvases from the 720-high stretch: SE 667x375, X/11 Pro 812x375,
+	# 14 844x390, Pro Max 926x428, iPad 1024x768 (wider, 4:3 grows the height)
+	# [canvas, notch inset (canvas units), units per point]
+	var cases := [
+		[Vector2(1280, 720), 0.0, 720.0 / 375.0],
+		[Vector2(1559, 720), 85.0, 720.0 / 375.0],
+		[Vector2(1558, 720), 90.0, 720.0 / 390.0],
+		[Vector2(1558, 720), 79.0, 720.0 / 428.0],
+		[Vector2(1280, 960), 0.0, 960.0 / 768.0],
+	]
+	var layouts := {
+		"standard": TouchLayout.sanitize(null),
+		"mirrored": TouchLayout.sanitize(null, 1.0, true),
+		"large": TouchLayout.sanitize({"size": 1.3}),
+		"custom": TouchLayout.sanitize({"move": [0.08, 0.92]}),
+	}
+	var checked := 0
+	var worst_d0 := 0.0
+	var worst_x := 0.0
+	for c in cases:
+		var view: Vector2 = c[0]
+		var inset: float = c[1]
+		var upp: float = c[2]
+		for side in [-1.0, 1.0]:          # the notch on the left or on the right
+			var safe := Rect2(Vector2(inset if side < 0.0 else 0.0, 0.0), view - Vector2(inset, 40.0 if inset > 0.0 else 0.0))
+			for name in layouts:
+				var res := TouchLayout.resolve(layouts[name], "runner", view, safe, upp)
+				var r := TouchRouter.new()
+				r.view_size = view
+				r.stick_zone = res["zone"]
+				r.stick_radius = float(res["stick_r"])
+				var z: Rect2 = res["zone"]
+				for f in [Vector2(0.01, 0.99), Vector2(0.99, 0.99), Vector2(0.01, 0.02), Vector2(0.5, 0.5), Vector2(0.99, 0.5)]:
+					var p: Vector2 = z.position + z.size * f
+					r.touch_down(0, p)
+					worst_d0 = maxf(worst_d0, r.move_vector().length())
+					var to := p + Vector2(0, -r.stick_radius)
+					r.drag(0, to, to - p)
+					var mv := r.move_vector()
+					worst_x = maxf(worst_x, absf(mv.x) if mv.y > 0.9 else INF)
+					r.cancel_all()
+					checked += 1
+	t.check(checked >= 200, "%d touchdowns over 5 canvases, both notch sides, 4 layouts" % checked)
+	t.eq(worst_d0, 0.0, "every touchdown is neutral")
+	t.check(worst_x < 1e-6, "every vertical push is vertical (worst sideways %.5f)" % worst_x)
