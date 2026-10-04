@@ -20,6 +20,7 @@ from mathutils import Vector, Matrix, Quaternion
 MAT_CLOTH = 0.0
 MAT_SKIN = 0.25
 MAT_RUBBER = 0.5
+MAT_LENS = 0.6875   # V7: tinted lens (opaque, glossy, a fresnel sheen and a little self-light)
 MAT_GLOSS = 0.75
 MAT_LIT = 0.875     # gloss with a little self-light (eye whites stay white at night)
 MAT_EMIT = 1.0
@@ -104,6 +105,25 @@ class MeshBuilder:
         self.tag += other.tag
         self.aux += other.aux
         self.f += [tuple(i + base for i in fc) for fc in other.f]
+        return self
+
+    def merge_mirrored_x(self, other, weight_map=None):
+        """Append `other` mirrored across x = 0 (V7: paired parts such as the
+        goggle cups are built once and mirrored, so the pair is exactly
+        symmetric).  Faces are re-wound so they still face outward.
+        weight_map renames bones in the weights ('.L' <-> '.R')."""
+        base = len(self.v)
+        for i in range(len(other.v)):
+            p = other.v[i]
+            self.v.append(Vector((-p.x, p.y, p.z)))
+            self.col.append(other.col[i])
+            self.uv.append(other.uv[i])
+            self.uv2.append(other.uv2[i])
+            w = other.w[i]
+            self.w.append({(weight_map or {}).get(k, k): v for k, v in w.items()})
+            self.tag.append(other.tag[i])
+            self.aux.append(other.aux[i])
+        self.f += [tuple(i + base for i in reversed(fc)) for fc in other.f]
         return self
 
     def face_if(self, keep, *idx):

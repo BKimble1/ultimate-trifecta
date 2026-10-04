@@ -54,8 +54,21 @@ static func shared() -> Portraits:
 	return _inst
 
 
+## V7: the look this renderer gives a portrait (framing, lights, the
+## character shader's treatment).  Bump it when those change; the asset's own
+## version (CharacterArt.VERSION, generated with runner.glb) changes by itself.
+const LOOK_VERSION := 1
+
+
+## The art a cached picture shows: the character asset build plus this
+## renderer's look.  Part of every key, so pictures of an older asset or look
+## are never reused for the current one.
+static func art_version() -> String:
+	return "%s.%d" % [CharacterArt.VERSION, LOOK_VERSION]
+
+
 static func key_of(app: Dictionary, role: int) -> String:
-	return "%d:%s" % [role, Cosmetics.encode(app).hex_encode()]
+	return "%s:%d:%s" % [art_version(), role, Cosmetics.encode(app).hex_encode()]
 
 
 ## Cached portrait, or a placeholder now and `portrait_ready` later.

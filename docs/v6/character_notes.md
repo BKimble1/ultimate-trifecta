@@ -1,5 +1,8 @@
 # V6 character notes: refined runner, Shop outfits, Season 1 items, foot lock
 
+V7 changes to the shared character (goggles, ears, eyes, mittens, cuffs and
+hems, the portrait cache key) are in [../v7/character_notes.md](../v7/character_notes.md).
+
 Work stream: the shared character asset and rig (brief §5 "Characters"),
 the art behind the Shop (§9) and Season 1 · After Hours (§12), and their
 tests (§16). Media: [../media/v6/characters/](../media/v6/characters/README.md).

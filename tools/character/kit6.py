@@ -241,11 +241,13 @@ def open_shell(mb, zs, grow_fn, gap_fn, style, wfn, segs=32, colfn=None, rib=Non
 
 def skin_arm(mb, side, s0, skin_style, segs=12):
     """Bare arm from s0 (m from the shoulder) to the wrist (hands are on base)."""
-    from parts import _arm_path, _path_s, arm_radius
+    from parts import _arm_path, _path_s, bare_arm_radius
     path = _arm_path(side, s0, rig.UPPER_LEN + rig.FORE_LEN - 0.005)
     s = _path_s(path)
-    sweep(mb, path, [(arm_radius(s0 + v) - 0.002, arm_radius(s0 + v) - 0.002) for v in s], skin_style,
-          lambda p, sv, i: rig.arm_w(p, side), segs=segs, cap_start=None, cap_end=None, twist_hint=FWD)
+    # V7: narrows into the mitten's wrist and ends round inside it (V6 left
+    # the tube open there, a ring of skin round the wrist)
+    sweep(mb, path, [(bare_arm_radius(s0 + v) - 0.002,) * 2 for v in s], skin_style,
+          lambda p, sv, i: rig.arm_w(p, side), segs=segs, cap_start=None, cap_end='round', twist_hint=FWD)
 
 
 def _clip_leg(pts, top_z, bottom_z):

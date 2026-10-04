@@ -1,0 +1,175 @@
+{
+ "after_v7": {
+  "all_parts_tris": 216682,
+  "art_version": "v7-703df93d5218",
+  "default_look_parts": [
+   "base",
+   "pj",
+   "shoe_slippers",
+   "hat_nightcap"
+  ],
+  "default_look_tris": 24522,
+  "heaviest_look_draw_calls": 7,
+  "heaviest_look_materials": [
+   "res://assets/shaders/character.gdshader"
+  ],
+  "heaviest_look_parts": [
+   "base",
+   "robe",
+   "body_skin",
+   "shoe_slippers",
+   "freckles",
+   "hat_beanie",
+   "hair_bob"
+  ],
+  "heaviest_look_tris": 32506,
+  "looks": 6000,
+  "material_variants_in_asset": 2,
+  "max_parts_per_runner": 8,
+  "night_watch_max_tris": 22554,
+  "part_tris": {
+   "base": 8758,
+   "body_skin": 4692,
+   "hair_bob": 4096,
+   "hair_curly": 5848,
+   "hat_swimcap": 3576,
+   "pj": 8272,
+   "robe": 7628,
+   "watch": 12600
+  },
+  "parts_in_asset": 45,
+  "swim_goggles_look_tris": 20930
+ },
+ "before_d2d0749": {
+  "all_parts_tris": 210734,
+  "art_version": "(none)",
+  "default_look_parts": [
+   "base",
+   "pj",
+   "shoe_slippers",
+   "hat_nightcap"
+  ],
+  "default_look_tris": 24102,
+  "heaviest_look_draw_calls": 7,
+  "heaviest_look_materials": [
+   "res://assets/shaders/character.gdshader"
+  ],
+  "heaviest_look_parts": [
+   "base",
+   "robe",
+   "body_skin",
+   "shoe_slippers",
+   "freckles",
+   "hat_beanie",
+   "hair_bob"
+  ],
+  "heaviest_look_tris": 31334,
+  "looks": 6000,
+  "material_variants_in_asset": 2,
+  "max_parts_per_runner": 8,
+  "night_watch_max_tris": 21942,
+  "part_tris": {
+   "base": 8034,
+   "body_skin": 4244,
+   "hair_bob": 4096,
+   "hair_curly": 5848,
+   "hat_swimcap": 2048,
+   "pj": 8576,
+   "robe": 7628,
+   "watch": 12712
+  },
+  "parts_in_asset": 45,
+  "swim_goggles_look_tris": 18230
+ },
+ "note": "src/dev/char_budget.tscn on both trees; portrait timings on llvmpipe under Xvfb at load average ~30 (shared machine): frames per portrait are exact, milliseconds are noise-dominated",
+ "portrait_timing_llvmpipe": {
+  "after_1": {
+   "frames_per_portrait": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "ms_per_portrait": 349.649916666667,
+   "note": "desktop software rendering (llvmpipe) under Xvfb: relative numbers only",
+   "rendered": 12,
+   "renders": 12,
+   "requested": 12,
+   "total_ms": 4195.799
+  },
+  "after_2": {
+   "frames_per_portrait": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "ms_per_portrait": 420.56125,
+   "note": "desktop software rendering (llvmpipe) under Xvfb: relative numbers only",
+   "rendered": 12,
+   "renders": 12,
+   "requested": 12,
+   "total_ms": 5046.735
+  },
+  "before_1": {
+   "frames_per_portrait": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "ms_per_portrait": 227.9515,
+   "note": "desktop software rendering (llvmpipe) under Xvfb: relative numbers only",
+   "rendered": 12,
+   "renders": 12,
+   "requested": 12,
+   "total_ms": 2735.418
+  },
+  "before_2": {
+   "frames_per_portrait": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "ms_per_portrait": 476.555916666667,
+   "note": "desktop software rendering (llvmpipe) under Xvfb: relative numbers only",
+   "rendered": 12,
+   "renders": 12,
+   "requested": 12,
+   "total_ms": 5718.671
+  }
+ }
+}

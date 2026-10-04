@@ -14,7 +14,13 @@ extends Node3D
 ## Each mode saves a lossless PNG and quits when done.
 
 const MODES := ["views", "outfits", "looks", "hairs", "posesheet", "transitions", "closeup", "faces", "cart", "hero", "group", "distance", "parts",
-	"hathair", "menuidle", "steps", "skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom"]
+	"hathair", "menuidle", "steps", "skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom", "reel"]
+## V7 "reel": gameplay scenarios from the motion tests (tests/motion_rig.gd:
+## the 60 Hz mini-motor -> apply_state path) back to back on one look, the
+## camera circling the head; frames every 0.25 s go into lineup_reel.png and
+## --write-movie records the whole run.  --reel-look=JSON overrides the look.
+const REEL := ["start", "turn90", "jump_run", "splash", "emote"]
+const REEL_LOOK := {"outfit": "swim", "hat": "swimcap", "shoes": "flippers", "pattern": "plain", "skin": "tone5", "color": "sky"}
 ## V6 Shop and Season 1 content (modes skip keys the catalog does not have,
 ## so the same file renders the V5 asset for "before" pictures)
 const V6_OUTFITS := ["moonlight_runner", "starry_sleeper", "varsity_sprinter", "raincoat_explorer", "campus_courier", "lantern_scout",
@@ -99,6 +105,13 @@ var _grabbing := false
 var debug_parts := false
 ## --shots-file=FILE (mode "custom"): a JSON list of shots, vectors as [x, y, z]
 var shots_file := ""
+var reel_look: Dictionary = REEL_LOOK
+var _reel_i := -1
+var _reel_rig: MotionRig
+var _reel_t := 0.0
+var _reel_labels: Array = []
+var _cam_at := Vector3.ZERO
+var _lawn: MeshInstance3D
 
 
 func _ready() -> void:
@@ -114,6 +127,8 @@ func _ready() -> void:
 			lighting = a.split("=")[1]
 		elif a.begins_with("--shots-file="):
 			shots_file = a.split("=")[1]
+		elif a.begins_with("--reel-look="):
+			reel_look = JSON.parse_string(a.substr(a.find("=") + 1))
 	if modes.is_empty():
 		modes = ["views"]
 	if out_dir == "":
@@ -141,6 +156,7 @@ func _build_world() -> void:
 		add_child(EnvFactory.make_environment(1))
 		add_child(EnvFactory.make_moon(1))
 		var lawn := MeshInstance3D.new()
+		_lawn = lawn
 		var lp := PlaneMesh.new()
 		lp.size = Vector2(60, 60)
 		lawn.mesh = lp
@@ -328,6 +344,16 @@ func _next_mode() -> void:
 			_strip_frames.clear()
 			_sheet_i = -1
 			_sheet_wait = 0
+		"reel":
+			# no lawn: the splash sinks the runner as into water
+			if _lawn:
+				_lawn.visible = false
+			_strip_frames.clear()
+			_reel_labels.clear()
+			_reel_i = -1
+			_strip_next = 0.0
+			_reel_t = 0.0
+			_next_reel()
 		"skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom":
 			_shots = _build_shots(_mode)
 			_strip_frames.clear()
@@ -374,9 +400,57 @@ func _next_mode() -> void:
 			_aim(Vector3(0.6, 2.6, 5.8), Vector3(0, 0.9, -3.0), 62)
 
 
+func _next_reel() -> void:
+	if _reel_rig:
+		_reel_rig.cleanup()
+		_reel_rig.queue_free()
+		_reel_rig = null
+	_reel_i += 1
+	if _reel_i >= REEL.size():
+		_save_grid("reel", 6, _reel_labels)
+		_next_mode()
+		return
+	_reel_rig = MotionRig.new()
+	stage.add_child(_reel_rig)
+	_reel_rig.start(REEL[_reel_i], look(reel_look), 0.0)
+	_reel_rig.cam.current = false
+	cam.current = true
+	_reel_t = 0.0
+
+
+## The camera rides with the character (its body yaw, not the bobbing head)
+## and circles it once over the reel at 1.35 m, starting in front: front, side, back,
+## other side.  It looks at the head, lightly smoothed (30 ms), so the
+## goggles stay in frame however fast the runner moves.
+func _reel_camera(delta: float) -> void:
+	var v := _reel_rig.view
+	var head := v.skeleton.global_transform * v.skeleton.get_bone_global_pose(v.skeleton.find_bone("head"))
+	var target := head * Vector3(0.0, 0.2, 0.0)
+	if _cam_at == Vector3.ZERO or target.distance_to(_cam_at) > 1.0:
+		_cam_at = target
+	_cam_at = _cam_at.lerp(target, 1.0 - exp(-delta / 0.03))
+	var a := 0.5 + _t * TAU / 13.0
+	var off := v.global_transform.basis * Vector3(sin(a) * 1.35, 0.14, -cos(a) * 1.35)
+	cam.fov = 36.0
+	cam.look_at_from_position(_cam_at + off, _cam_at)
+
+
 func _process(delta: float) -> void:
 	_t += delta
 	match _mode:
+		"reel":
+			if _reel_rig == null:
+				return
+			_reel_t += delta
+			_reel_camera(delta)
+			if _t >= _strip_next:
+				_strip_next += 0.25
+				await RenderingServer.frame_post_draw
+				_strip_frames.append(get_viewport().get_texture().get_image())
+				_reel_labels.append("%s %.2f s" % [REEL[_reel_i] if _reel_i < REEL.size() else "", _reel_t])
+			if _reel_rig != null and not _reel_rig.running:
+				_next_reel()
+			return
 		"skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom":
 			_run_shots()
 		"parts":
@@ -744,6 +818,13 @@ func _run_shots() -> void:
 	for part in sh.get("hide", []):
 		if pv.parts.has(part):
 			pv.parts[part].visible = false
-	_aim(sh["from"], sh["at"], float(sh.get("fov", 30.0)))
+	if sh.has("bone"):
+		# V7: frame a bone wherever the pose put it ("from" and "at" are
+		# offsets from the bone's head in world space)
+		var bi := pv.skeleton.find_bone(String(sh["bone"]))
+		var bp: Vector3 = (pv.skeleton.global_transform * pv.skeleton.get_bone_global_pose(bi)).origin
+		_aim(bp + (sh["from"] as Vector3), bp + (sh["at"] as Vector3), float(sh.get("fov", 30.0)))
+	else:
+		_aim(sh["from"], sh["at"], float(sh.get("fov", 30.0)))
 	_sheet_wait = 6
 
