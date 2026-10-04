@@ -70,7 +70,22 @@ From the captures' `<shot>_layout.json` (every visible control's final
 allocated rect in canvas units; the canvas is 720 units tall, 960 on the
 iPad). "Whole" = inside the screen and not cut by its list.
 
-FACTS
+| Device | | Play with Friends, first view | Keyboard open on the code | Settings, first view |
+|---|---|---|---|---|
+| iPhone SE class, 667x375 pt @2x, safe 0,0,0,0 | before | Create whole, field whole, Join whole, friends cut, field 320x88 / Join 200x88 | keyboard top 348; covered: field, Join; row bottom 550 | sections in the first view: Profile, Controls; Sound starts 2.9 screens down; Sprint row at the list's bottom edge |
+|  | after | Create whole, field whole, Join whole, friends whole, field 432x85 / Join 150x85 | keyboard top 348; field and Join above it; row bottom 259 | sections in the first view: Profile, Controls; Sound starts 1.5 screens down; Sprint row at the list's bottom edge |
+| 812x375 pt @3x, safe 44,0,44,21 | before | Create whole, field whole, Join whole, friends cut, field 320x88 / Join 200x88 | keyboard top 319; covered: field, Join; row bottom 550 | sections in the first view: Profile, Controls; Sound starts 2.9 screens down; Sprint row at the list's bottom edge |
+|  | after | Create whole, field whole, Join whole, friends whole, field 509x85 / Join 150x85 | keyboard top 319; field and Join above it; row bottom 259 | sections in the first view: Profile, Controls; Sound starts 1.5 screens down; Sprint row below the first view |
+| 844x390 pt @3x, safe 47,0,47,21 | before | Create whole, field whole, Join whole, friends cut, field 320x88 / Join 200x88 | keyboard top 334; covered: field, Join; row bottom 547 | sections in the first view: Profile, Controls; Sound starts 2.9 screens down; Sprint row at the list's bottom edge |
+|  | after | Create whole, field whole, Join whole, friends whole, field 506x82 / Join 150x82 | keyboard top 334; field and Join above it; row bottom 253 | sections in the first view: Profile, Controls; Sound starts 1.5 screens down; Sprint row at the list's bottom edge |
+| 926x428 pt @3x, safe 47,0,47,21 | before | Create whole, field whole, Join whole, friends cut, field 320x88 / Join 200x88 | keyboard top 368; covered: field, Join; row bottom 540 | sections in the first view: Profile, Controls; Sound starts 2.7 screens down; Sprint row fully shown |
+|  | after | Create whole, field whole, Join whole, friends whole, field 513x75 / Join 150x75 | keyboard top 368; field and Join above it; row bottom 239 | sections in the first view: Profile, Controls; Sound starts 1.4 screens down; Sprint row at the list's bottom edge |
+| iPad 1024x768 pt @2x, safe 0,24,0,20 | before | Create whole, field whole, Join whole, friends whole, field 320x88 / Join 200x88 | keyboard top 463; covered: field, Join; row bottom 543 | sections in the first view: Profile, Controls; Sound starts 1.9 screens down; Sprint row fully shown |
+|  | after | Create whole, field whole, Join whole, friends whole, field 432x57 / Join 150x57 | keyboard top 463; field and Join above it; row bottom 219 | sections in the first view: Profile, Controls, Sound; Sound starts 0.8 screens down; Sprint row fully shown |
+| 2048x946 px (owner screenshot aspect) as an 844x390 pt phone, @2.4265, safe 47,0,47,21 | before | Create whole, field whole, Join whole, friends cut, field 320x88 / Join 200x88 | keyboard top 334; covered: field, Join; row bottom 547 | sections in the first view: Profile, Controls; Sound starts 2.9 screens down; Sprint row at the list's bottom edge |
+|  | after | Create whole, field whole, Join whole, friends whole, field 506x82 / Join 150x82 | keyboard top 334; field and Join above it; row bottom 253 | sections in the first view: Profile, Controls; Sound starts 1.5 screens down; Sprint row at the list's bottom edge |
+| 1536x710 px (owner screenshot aspect) as an 812x375 pt phone, @1.8916, safe 44,0,44,21 | before | Create whole, field whole, Join whole, friends cut, field 320x88 / Join 200x88 | keyboard top 319; covered: field, Join; row bottom 550 | sections in the first view: Profile, Controls; Sound starts 2.9 screens down; Sprint row at the list's bottom edge |
+|  | after | Create whole, field whole, Join whole, friends whole, field 508x85 / Join 150x85 | keyboard top 319; field and Join above it; row bottom 259 | sections in the first view: Profile, Controls; Sound starts 1.5 screens down; Sprint row below the first view |
 
 ## Reproduce
 
