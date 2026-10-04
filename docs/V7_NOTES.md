@@ -202,6 +202,27 @@ high slider settings (it already could in 1.5, by ~0.5 dB): a hard limiter on
 Master (ceiling −0.3 dB) now catches that instead of clipping. `test_lobby_music`
 checks the trim, the level at two slider values, mute, and the single limiter.
 
+## Release and evidence
+
+- **1.6 (6)**: uploaded by run #94 from `4de97c7` (code as of `d7c5bd2`),
+  App Store Connect build `811b7ee6-9c27-4308-a84f-d33b74a8cdd9`, `VALID`,
+  internal-only, `IN_BETA_TESTING` for the existing internal group, What to
+  Test set (TESTFLIGHT_RELEASE.md). Gate: 399 tests, 99,188 checks, 0 failures.
+- **Pause:** `docs/media/v7/pause/` (before/after clips at normal speed, menu
+  and leave stills).
+- **Forward drift:** `docs/media/v7/stick/` (before/after clips of the same
+  gestures and route) and the probe tables in `docs/v7/stick/`.
+- **Menus:** `docs/media/v7/menus/` (matched before/after at seven sizes,
+  measured rects, the reward art sheet).
+- **Friends, Settings, sweep:** `docs/media/v7/screens/` (matched pairs at
+  seven sizes, measured layout facts).
+- **Characters and goggles:** `docs/media/v7/characters/` (close-ups, views,
+  poses, faces, a before/after reel, thumbnails, budgets).
+
+Every clip and capture is the real game on desktop Linux (llvmpipe or
+headless) with emulated touches and labelled as such; nothing is sped up or
+interpolated.
+
 ## Still needs a device
 
 - The owner's own thumb on an iPhone: forward runs, edge starts, long holds
