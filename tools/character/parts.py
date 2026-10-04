@@ -277,8 +277,9 @@ def build_base():
         Y = R @ Vector((0, 1, 0))   # forward
         hwf = lambda p, sfx=sfx, w=w, d=d: rig.seg_weights((p - w).dot(d), [('forearm' + sfx, 0.0), ('hand' + sfx, None)], 0.012)
         neck = [w + d * t for t in (-0.04, -0.02, 0.0, 0.02, 0.035)]
+        # (its start is always inside a sleeve or a forearm: left open)
         sweep(mb, neck, [(0.031, 0.029), (0.031, 0.029), (0.030, 0.028), (0.031, 0.029), (0.032, 0.03)], SKIN,
-              lambda p, sv, i, hwf=hwf: hwf(p), segs=14, twist_hint=Y)
+              lambda p, sv, i, hwf=hwf: hwf(p), segs=14, twist_hint=Y, cap_start=None)
 
         def palm(lp):
             t = lp.z / 0.065
@@ -290,7 +291,7 @@ def build_base():
         t0 = w + d * 0.036 + Y * 0.026 + X * 0.007
         tp = [t0 + tdir * (0.042 * i / 4.0) for i in range(5)]
         sweep(mb, tp, [(lerp(0.0185, 0.0155, i / 4.0),) * 2 for i in range(5)], SKIN, lambda p, sv, i, hwf=hwf: hwf(p), segs=12,
-              twist_hint=X)
+              twist_hint=X, cap_start=None)   # its root is inside the palm
     return mb
 
 
