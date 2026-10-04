@@ -74,6 +74,8 @@ Before → after (60 fps; full rows in the files above):
 | 4c long push, base never follows (comparison) | n/a → **0.00** | n/a → **0.0 m** | n/a → **+0°** | n/a → **35.5 m** | n/a → **+0°** | n/a → **6** |
 | 7 thumb resting in dead zone + drifting pad | 0.00 → **0.00** | 1.4 m → **0.0 m** | -10° → **+0°** | -0.1 m → **0.0 m** | +0° → **+0°** | -1 → **1** |
 | 7b forward + drifting pad | 0.00 → **0.00** | 1.8 m → **0.0 m** | -10° → **+0°** | 20.4 m → **20.5 m** | -0° → **+0°** | -1 → **7** |
+| 9 dorm start, exact forward out of the door, 8 s | 0.00 → **0.00** | 0.0 m → **0.0 m** | +0° → **+0°** | 49.1 m → **49.1 m** | +0° → **+0°** | 7 → **7** |
+| 9b dorm start, forward + 4deg lean, 8 s | 0.00 → **0.00** | 15.4 m → **0.0 m** | -147° → **+0°** | 4.2 m → **49.1 m** | -0° → **+0°** | 7 → **7** |
 | 8 deliberate 15 deg (stick angle) | 0.00 → **0.00** | 6.8 m → **6.6 m** | +0° → **+0°** | 25.5 m → **25.5 m** | +15° → **+15°** | 7 → **7** |
 | 8 deliberate 45 deg (stick angle) | 0.00 → **0.00** | 18.7 m → **18.7 m** | +0° → **+0°** | 18.7 m → **18.7 m** | +45° → **+45°** | 7 → **7** |
 | 8 deliberate 90 deg (stick angle) | 0.00 → **0.00** | 26.3 m → **26.3 m** | +0° → **+0°** | 0.0 m → **0.0 m** | +90° → **+90°** | 1 → **1** |
@@ -82,6 +84,11 @@ Before → after (60 fps; full rows in the files above):
 | 8f 15 deg held, recenter on (camera follows) | 0.00 → **0.00** | 8.4 m → **13.9 m** | +165° → **-36°** | -2.0 m → **21.9 m** | +65° → **+14°** | 4 → **7** |
 | 2m mirrored, bottom-right corner, exact vertical | 1.00 → **0.00** | 26.0 m → **0.0 m** | +0° → **+0°** | 4.3 m → **37.3 m** | +80° → **+0°** | 1 → **7** |
 | 1m mirrored, centre, exact vertical | 0.00 → **0.00** | 24.4 m → **0.0 m** | +17° → **+0°** | 43.2 m → **37.3 m** | +0° → **+0°** | 7 → **7** |
+
+The owner's complaint reproduces from the very first run of a round: out of
+the home dorm's door with a 4° lean, the pre-fix build turned the camera
+−147° in 8 s and the runner circled (row 9b). Rows with "n/a" exist only
+after the fix (a comparison the old code can't express).
 
 Release clears movement on the next update in every case (the 7 ticks are
 the runner's own deceleration to < 0.3 m/s). Deliberate steering is kept:

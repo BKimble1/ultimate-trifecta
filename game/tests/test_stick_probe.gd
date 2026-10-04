@@ -23,6 +23,8 @@ var zone := Rect2()
 var corridor := {}
 var mirrored := false
 var out: Array[String] = []
+var use_spawn := false        # place at the round's own start (inside the home dorm) instead of the straight
+var spawn := {}
 
 
 func _frames(n: int) -> void:
@@ -81,6 +83,8 @@ func _begin(p_mirrored: bool) -> void:
 		await t.get_tree().physics_frame
 		if mc.prepared and mc.sim.phase == TC.Phase.PLAYING:
 			break
+	var sp0 := mc.sim.player(mc.local_slot)
+	spawn = {"pos": sp0.body.global_position, "yaw": sp0.yaw, "cam": mc.camera.yaw}
 	mc.sim.bots.clear()          # bots stand still, and nothing parked is in the way
 	for bp: SimPlayer in mc.sim.players:
 		if bp.is_bot:
@@ -167,6 +171,17 @@ func _clear_length(s: Vector2, d: Vector2, n: Vector2, L: float) -> float:
 
 func _place() -> void:
 	var p := mc.sim.player(mc.local_slot)
+	if use_spawn:
+		p.body.global_position = spawn["pos"]
+		p.vel = Vector3.ZERO
+		p.body.velocity = Vector3.ZERO
+		p.yaw = spawn["yaw"]
+		p.sprint = 1.0
+		p.clear_history()
+		mc.camera.snap_to(p.body.global_position, spawn["cam"])
+		mc.camera.pitch = 0.32
+		mc.camera.set("_manual_t", 10.0)
+		return
 	var s: Vector2 = corridor["start"]
 	var yaw: float = corridor["yaw"]
 	var ground := 0.05
@@ -195,7 +210,7 @@ func _case(name: String, at: Vector2, secs: float, path: Callable, recenter := t
 	await t.get_tree().physics_frame
 	var p := mc.sim.player(mc.local_slot)
 	var p0 := p.body.global_position
-	var yaw0: float = corridor["yaw"]
+	var yaw0: float = mc.camera.yaw if use_spawn else float(corridor["yaw"])
 	var fwd := Vector2(-sin(yaw0), -cos(yaw0))
 	var nrm := Vector2(-fwd.y, fwd.x)
 	var cam0 := mc.camera.yaw
@@ -357,6 +372,13 @@ func test_stick_probe() -> void:
 	Input.parse_input_event(jl)
 	Input.flush_buffered_events()
 	Controls.active_joy = -1
+	# a real route: the round's own start inside the home dorm, out through
+	# its doorway (walls and door frames deflect the runner)
+	use_spawn = true
+	await _case("9 dorm start, exact forward out of the door, 8 s", centre, 8.0, full)
+	await _case("9b dorm start, forward + 4deg lean, 8 s", centre, 8.0,
+		func(tt: float) -> Vector2: return _straight(tt).rotated(deg_to_rad(4.0)))
+	use_spawn = false
 	# deliberate steering stays as asked (rel = travel direction off the camera's forward)
 	for a in [15.0, 45.0, 90.0, 180.0]:
 		await _case("8 deliberate %d deg (stick angle)" % int(a), centre, 4.0,
