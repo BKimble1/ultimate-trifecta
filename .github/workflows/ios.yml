@@ -31,9 +31,11 @@ on:
         default: none
 
 # an upload or status run never cancels, or is cancelled by, an ordinary build
+# (an App Store Connect product run - iap list/create - has its own group too:
+# a push must never cancel it half way)
 concurrency:
-  group: ios-${{ github.ref }}-${{ github.event.inputs.upload == 'true' && 'upload' || (github.event.inputs.asc_status == 'true' && 'status' || 'build') }}
-  cancel-in-progress: ${{ github.event.inputs.upload != 'true' }}
+  group: ios-${{ github.ref }}-${{ github.event.inputs.upload == 'true' && 'upload' || (github.event.inputs.asc_status == 'true' && 'status' || ((github.event.inputs.iap == 'list' || github.event.inputs.iap == 'create') && 'iap' || 'build')) }}
+  cancel-in-progress: ${{ github.event.inputs.upload != 'true' && github.event.inputs.asc_status != 'true' && github.event.inputs.iap != 'list' && github.event.inputs.iap != 'create' }}
 
 env:
   GODOT_VERSION: "4.7.2"
