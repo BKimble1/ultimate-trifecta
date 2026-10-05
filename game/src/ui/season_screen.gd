@@ -1,51 +1,54 @@
 class_name SeasonScreen
 extends Screen
-## Season Pass (V6): Season 1 · After Hours.  V7 layout (owner screenshot
-## IMG_3017: the header and a service paragraph pushed the Premium row and
-## Claim below the screen; name cards were empty strips).
+## Season Pass (V6): Season 1 · After Hours.  Final release sweep layout
+## (docs/final/season.md; the owner's screenshot IMG_3043 showed Record
+## Breaker as a small swaying figure in the side panel above long state
+## text, a dense header row, a description running below the panel, and the
+## dorm's own runner barely visible behind the track):
 ##
 ##   top     Back, the navigation bar and the Coins chip (one 44 pt row)
-##   header  one row: the season, your tier, the progress bar with the XP to
-##           the next tier, and Claim all (n), or "Rewards unavailable right
-##           now" when claiming can't work
-##   track   the tiers on one horizontal track (finger swipes scroll it from
+##   stage   the left column is the dorm stage the Shop and Locker use
+##           (App.stage, "wardrobe" framing): the selected reward on the
+##           player's runner, head to shoes, at about twice the old preview's
+##           height on a phone or more.  It starts in a well-lit
+##           three-quarter view; drag sideways to turn it (StageTurn: one
+##           finger owns the turn, a vertical drag or a tap does nothing);
+##           under it three quiet tools: Run / Idle (an emote reward: Play),
+##           a quarter Turn and Reset view.  The controller's right stick
+##           turns it, R3 resets.  A slow sway shows the sides until the
+##           player first turns it, never under Reduced Motion.  Coins,
+##           badges, name cards and progress runs are drawn big in the same
+##           place instead (the runner steps aside).  Previewing never
+##           changes the saved look, inventory or a purchase: the saved look
+##           is put back on the runner when the screen goes.
+##   side    the selected reward next to the stage (Reward), or the
+##           Challenges page (two 44 pt tabs): the tier and track, the name,
+##           a state chip (Locked, Needs Premium, Ready to claim, Earned,
+##           Claiming…, Claimed, Equipped), the requirements from the account
+##           ("15,300 XP to unlock", "Needs Premium · 1,500 Coins"), the
+##           flavour text lower in a finger-scrollable area, and
+##           one action fixed at the bottom (Claim, Get / View Premium,
+##           Equip, View in Locker, Show Tier N)
+##   pass    one panel: the season (name, tier, XP to the next tier, Free
+##           track or Premium) with Claim all; when claiming can't work, one
+##           restrained status line under it ("Rewards unavailable right
+##           now" and why, said once); the navigation chips (You're at, Next
+##           reward, 30 / 50 / 100: a shorter form on a narrow panel); and the
+##           tiers on one horizontal track (finger swipes scroll it from
 ##           anywhere; a swipe never claims): every tier column has its Free
 ##           reward above and its Premium reward below, both rows always
-##           whole.  The track lives in a region that takes the height the
-##           header leaves and never asks for more; the cells size themselves
-##           from it (V6 kept a 132-unit minimum that guaranteed overflow)
-##   Pass 9  100 tiers (docs/pass9/season.md):
-##           nav    one 44 pt row on top of the track: "You're at Tier 37"
-##                  (scrolls to your tier), "Next reward · Tier 40 · 1,050
-##                  XP" (scrolls to it), and the milestone shortcuts 30, 50
-##                  and 100; 50 and 100 show their featured skin's face (the
-##                  real portrait when the skin's art is in the build, a
-##                  neutral head otherwise)
-##           runs   a run of progress tiers (no reward on either track) is
-##                  one narrow column ("36–39", a step per tier): the track
-##                  shows every tier honestly and never advertises a reward
-##                  that isn't there (58 columns for 100 tiers)
-##           detail a featured skin adds its description, what it includes
-##                  and a live preview slowly swaying around its three-quarter
-##                  view (still under Reduced Motion); a progress run explains itself and offers the
-##                  next reward; a claim waiting for the service, or a tier
-##                  the game service doesn't have yet, says so
-##   detail  the selected reward: its picture (an emote plays on a small live
-##           runner), name, type, tier and track, its state, why an action is
-##           unavailable, and one action fixed at the bottom
-##   Pass 8  the same side panel has two pages, "Challenges" and "Reward":
-##           Challenges · Earn Season XP (three daily and three weekly goals,
-##           their progress, +XP and local reset time, one pinned goal) opens
-##           first; tapping a reward shows its detail.  The header and the
-##           track are untouched, so Free and Premium stay whole.
+##           whole, sized from the height the panel leaves.  A run of
+##           progress tiers (no reward on either track) is one narrow column
+##           of numbered steps.
 ##
 ## States kept apart: progression (locked / earned), Premium entitlement,
 ## claimed, and whether claiming works right now (the service).  A reward can
 ## be earned while claiming is unavailable: it then reads "Earned", never
 ## "Ready to claim" over a dead button.  Rules shown and enforced by the
-## service: XP only from eligible online rounds (never from Coins), no paid
-## tier skips, Premium bought later lets you claim every Premium reward
-## already earned, claiming is idempotent, claimed rewards are permanent.
+## service: XP only from eligible online rounds and challenges (never from
+## Coins), no paid tier skips, Premium bought later lets you claim every
+## Premium reward already earned, claiming is idempotent, claimed rewards
+## are permanent.
 
 ## V6's fixed cell size (kept for callers); V7 cells size from the region.
 const CELL := 132.0
@@ -57,22 +60,40 @@ const CELL_MAX_H := 240.0
 ## the caption under a cell's art ("Outfit", "50 Coins")
 const CAPTION_H := 24.0
 const CAPTION_FS := 19
-## the detail panel's share of the row beside the track (track 2.7 : 1)
-const TRACK_RATIO := 2.7
+## the width of a run column relative to a reward column
+const RUN_ASPECT := 0.56
+## the stage column and the side panel's share of the content width
+const FIG_SHARE := 0.23
+const SIDE_SHARE := 0.25
+## the figure's width (metres, arms and a run's stride) that must fit the
+## stage column; the dorm stage fits the tallest look's height to the column
+const FIG_W := 1.0
+## the three-quarter start pose: radians from facing the camera
+const START_TURN := 0.42
+## the right stick's turn rate (radians a second at full tilt)
+const STICK_TURN := 2.6
+## reward kinds worn by the runner (shown on the stage)
+const WORN := ["outfit", "hat", "shoes", "hair", "emote"]
 
 var sid := "s1"
 var track_scroll: ScrollContainer
 var track_region: Control
+## the pass panel: the season header, its status line, the navigation and
+## the track
 var track_panel: PanelContainer
 var columns: Dictionary = {}          # tier -> Control
 var cells: Array = []                 # RewardCell
+var title_l: Label
 var tier_lbl: Label
 var xp_lbl: Label
 var bar: ProgressBar
+## "Season 1 · Premium" / "Season 1 · Free track"
 var premium_chip: Label
 var claim_all_btn: Button
-## the header's short status when claiming is unavailable
+## the status line when claiming is unavailable: its short headline and why
+var status_row: Control
 var banner: Label
+var status_l: Label
 var detail_box: VBoxContainer
 var detail_panel: PanelContainer
 var _legend: Array = []
@@ -82,13 +103,26 @@ var focus_tier := 1
 var focus_track := "free"
 var _busy := false
 var _d: Dictionary = {}
-var _preview: Preview3D
-var _preview_view: CharacterView
+## the stage column: the turn area (StageTurn) over the preview tools
+var fig_zone: VBoxContainer
+var turn: StageTurn
+var plate: RewardArt
+var tools: HBoxContainer
+var pose_btn: Button
+var turn_btn: Button
+var reset_btn: Button
+## the saved look when the screen opened (put back on the runner when it goes)
+var saved: Dictionary = {}
+## the item on the stage's runner ("" = none: the runner shows the saved look
+## or steps aside for a picture)
+var preview_id := ""
+var preview_run := false
 var _preview_emote := -1
 var _preview_t := 0.0
-## Pass 8: the side panel's pages ("challenges" | "reward") and the
+var _restored := false
+## Pass 8: the side panel's pages ("reward" | "challenges") and the
 ## Challenges page's parts (ChallengeCard per goal, the group headers)
-var side_page := "challenges"
+var side_page := "reward"
 var _side: VBoxContainer
 var _tabs: Dictionary = {}
 var challenge_page: VBoxContainer
@@ -96,52 +130,61 @@ var challenge_cards: Array = []
 var _ch: Dictionary = {}
 var _ch_timer: Timer
 ## Pass 9: the navigation row (NavChip: now, next reward, milestones by
-## tier), the progress-run columns (ProgressRun), every column once in
-## track order, and the featured skin on the live preview ("" = none)
+## tier), the progress-run columns (ProgressRun) and every column once in
+## track order
 var nav_row: HBoxContainer
 var now_chip: NavChip
 var next_chip: NavChip
 var milestone_chips: Dictionary = {}
 var runs: Array = []
 var _cols: Array = []
-var _preview_skin := ""
-var _turn := 0.0
-## the width of a run column relative to a reward column
-const RUN_ASPECT := 0.56
-## the featured preview's slow sway around its three-quarter view (phase
-## radians a second; how far it turns each way): the face and both sides,
-## always in the key light; still under Reduced Motion
-const TURN_RATE := 0.55
-const TURN_SWING := 0.85
+## the region the pass panel lives in (its width never grows)
+var pass_host: Control
 
 
 func build() -> void:
 	sid = Catalogue.current_season_id()
+	saved = Cosmetics.sanitize(Save.data["cosmetic"])
 	if App.stage:
-		App.stage.set_mode("home")
+		App.stage.set_mode("wardrobe")
 		App.sync_stage_local()
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	TitleScreen.add_shades(self, 0.6, 0.45)
-	back_action = func() -> void: NavShell.go_hub()
+	TitleScreen.add_shades(self, 0.45, 0.0)
+	back_action = _go_hub
 	content.add_theme_constant_override("separation", UIKit.SP_M)
 	nav_bar("pass")
 
 	var mid := UIKit.hbox(UIKit.SP_L)
 	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(mid)
-	var left := UIKit.vbox(UIKit.SP_M)
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.size_flags_stretch_ratio = TRACK_RATIO
-	mid.add_child(left)
-	left.add_child(_header())
+	mid.add_child(_figure_zone())
+
+	detail_panel = UIKit.panel(Color(UIKit.SLATE, 0.96), UIKit.R_PANEL, UIKit.PAD_PANEL + 2)
+	detail_panel.name = "DetailPanel"
+	var side_host := UIKit.region(detail_panel)
+	side_host.name = "SideRegion"
+	side_host.size_flags_horizontal = Control.SIZE_FILL
+	mid.add_child(side_host)
+	_build_detail()
+	_build_challenges()
+
 	track_panel = UIKit.panel(Color(UIKit.SLATE, 0.93), UIKit.R_PANEL, UIKit.PAD_PANEL)
 	track_panel.name = "TrackPanel"
-	var tw := UIKit.vbox(UIKit.SP_S)
-	track_panel.add_child(tw)
-	tw.add_child(_nav_row())
+	var pv := UIKit.vbox(UIKit.SP_S)
+	pv.name = "PassColumn"
+	track_panel.add_child(pv)
+	pv.add_child(_header())
+	pv.add_child(_status_line())
+	# the chips never widen the panel: they take a shorter form on a narrow
+	# panel (_fit_nav), and scroll sideways only as a last resort
+	var nav_strip := UIKit.scroll_area(true)
+	nav_strip.name = "NavStrip"
+	nav_strip.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	nav_strip.custom_minimum_size.y = UIKit.row_h()
+	nav_strip.add_child(_nav_row())
+	pv.add_child(nav_strip)
 	var tv := UIKit.hbox(UIKit.SP_S)
-	tv.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	tw.add_child(tv)
+	tv.name = "TrackView"
 	tv.add_child(_track_legend())
 	track_scroll = UIKit.scroll_area(true)
 	track_scroll.name = "Track"
@@ -166,22 +209,19 @@ func build() -> void:
 			past = int(run_at[n][1])
 		else:
 			row.add_child(_column(t))
-	# the track takes the height the header leaves, and never more
-	track_region = UIKit.region(track_panel)
+	# the track takes the height the header, status and navigation leave,
+	# and never more
+	track_region = UIKit.region(tv)
 	track_region.name = "TrackRegion"
-	left.add_child(track_region)
+	pv.add_child(track_region)
 	track_region.resized.connect(_fit_cells)
-
-	detail_panel = UIKit.panel(Color(UIKit.SLATE, 0.96), UIKit.R_PANEL, 16)
-	detail_panel.name = "DetailPanel"
-	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	detail_panel.size_flags_stretch_ratio = 1.0
-	detail_panel.custom_minimum_size.x = 280.0
-	mid.add_child(UIKit.region(detail_panel))
-	(detail_panel.get_parent() as Control).size_flags_stretch_ratio = 1.0
-	(detail_panel.get_parent() as Control).custom_minimum_size.x = 280.0
-	_build_detail()
-	_build_challenges()
+	track_scroll.resized.connect(_fit_cells)
+	pass_host = UIKit.region(track_panel)
+	pass_host.name = "PassRegion"
+	mid.add_child(pass_host)
+	pass_host.resized.connect(_fit_pass)
+	mid.resized.connect(_fit_layout)
+	_fit_layout()
 
 	var st := season()
 	var tier := maxi(1, Economy.tier_for_xp(sid, int(st["xp"])))
@@ -194,50 +234,336 @@ func build() -> void:
 		var at := nxt if nxt > 0 else Economy.max_tier(sid)
 		focus(at, best_track(at))
 	_refresh()
-	show_side("challenges")
+	show_side("reward")
 	_scroll_to.call_deferred(focus_tier)
 	Wallet.changed.connect(_refresh)
 	Wallet.challenge_completed.connect(_on_challenge_completed)
+	Cloud.changed.connect(_refresh)
 	if Cloud.signed_in():
 		Wallet.refresh()
 	focus_first(claim_all_btn if claim_all_btn.visible else _cell(focus_tier, focus_track))
 	UIKit.fade_in(track_panel)
+	UIKit.fade_in(detail_panel)
+	turn.resized.connect(_frame_stage)
+	get_viewport().size_changed.connect(_frame_stage)
+	_frame_stage.call_deferred()
 
 
-## One row: the season, tier and Premium state, the bar with the XP to the
-## next tier, and Claim all (or the short unavailable status).
+## Column widths from the allocated content width (never from what a child
+## asks for): the stage column and the side panel take their shares, the
+## pass panel the rest.  A 2D picture or a figure is fitted to the stage
+## column; the side panel's labels wrap to its width.
+func _fit_layout() -> void:
+	var cw := content_size().x
+	if cw < 10.0 or not is_instance_valid(fig_zone):
+		return
+	fig_zone.custom_minimum_size.x = clampf(roundf(cw * FIG_SHARE), 250.0, 380.0)
+	(detail_panel.get_parent() as Control).custom_minimum_size.x = clampf(roundf(cw * SIDE_SHARE), 270.0, 380.0)
+
+
+## The pass panel's inner width, from the region it lives in (never from
+## the panel or its rows, which could keep a once-widened panel wide).
+func pass_w() -> float:
+	if not is_instance_valid(pass_host) or pass_host.size.x < 2.0:
+		return 0.0
+	var sb := track_panel.get_theme_stylebox("panel")
+	return pass_host.size.x - sb.get_margin(SIDE_LEFT) - sb.get_margin(SIDE_RIGHT)
+
+
+## Rows of the pass panel that size from its width: the navigation chips'
+## form and the status line's wrapping width.
+func _fit_pass() -> void:
+	var w := pass_w()
+	if w < 10.0:
+		return
+	_fit_nav()
+	status_l.custom_minimum_size.x = maxf(10.0, w - 60.0)
+
+
+# ------------------------------------------------------------------ stage
+## The stage column: the turn area (the runner stands in it on the dorm
+## stage; StageTurn owns the drag) with the big 2D picture for rewards that
+## aren't worn, and the three preview tools under it.
+func _figure_zone() -> Control:
+	fig_zone = UIKit.vbox(UIKit.SP_S)
+	fig_zone.name = "FigureZone"
+	fig_zone.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	turn = StageTurn.new()
+	turn.name = "StageTurn"
+	turn.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	turn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	turn.tooltip_text = "Drag to turn"
+	turn.touched_first.connect(_on_turn_touched)
+	turn.turned.connect(func(_d: float) -> void: _refresh_tools())
+	fig_zone.add_child(turn)
+	plate = RewardArt.new()
+	plate.name = "Plate"
+	plate.screen = self
+	plate.big = true
+	plate.set_anchors_preset(Control.PRESET_FULL_RECT)
+	plate.visible = false
+	turn.add_child(plate)
+	tools = UIKit.hbox(UIKit.SP_S)
+	tools.name = "PreviewTools"
+	tools.alignment = BoxContainer.ALIGNMENT_CENTER
+	# the row keeps its height when its tools are hidden (a picture has
+	# nothing to turn): the stage framing never jumps between rewards
+	tools.custom_minimum_size.y = UIKit.row_h()
+	pose_btn = _tool("Run", "PreviewPose", _on_pose)
+	turn_btn = _tool("Turn", "PreviewTurn", func() -> void: turn.step(1))
+	reset_btn = _tool("Reset", "PreviewReset", func() -> void: turn.reset())
+	for b in [pose_btn, turn_btn, reset_btn]:
+		tools.add_child(b)
+	fig_zone.add_child(tools)
+	return fig_zone
+
+
+## A quiet tool under the stage (the Shop's Idle / Run / Emote style): a
+## short word on a whole 44 pt target.
+func _tool(text: String, nm: String, act: Callable) -> Button:
+	# content-sized (never trimmed), at least a 44 pt square
+	var b := UIKit.quiet(text, Vector2(0, UIKit.row_h()), UIKit.T_CAPTION)
+	b.name = nm
+	b.pressed.connect(act)
+	return b
+
+
+## Tell the dorm stage where the stage column is: the runner is centred in
+## it and fitted, hat to shoes, between its top and the tools (the tallest
+## look's height), and narrow enough for the column's width.
+func _frame_stage() -> void:
+	if not App.stage or not is_instance_valid(turn) or not turn.is_inside_tree():
+		return
+	var vs := get_viewport().get_visible_rect().size
+	var r := turn.get_global_rect()
+	if r.size.x < 2.0 or r.size.y < 2.0:
+		return
+	var zw := r.size.x / maxf(1.0, vs.x)
+	# DormStage fits a 1.45 m wide figure to the width share it is given:
+	# give it the share at which an FIG_W wide figure fills the column
+	var w := zw * 1.45 / FIG_W
+	App.stage.set_wardrobe_region(r.get_center().x / maxf(1.0, vs.x), w, (r.position.y + UIKit.SP_S) / maxf(1.0, vs.y),
+		(r.end.y - UIKit.SP_XS) / maxf(1.0, vs.y))
+
+
+func _stage_char() -> CharacterView:
+	return App.stage.local_character() if App.stage and is_instance_valid(App.stage) else null
+
+
+## The saved look with `id` on (a hat, shoes, an outfit: the Shop's
+## "try it on"); an emote plays on the saved look.
+func preview_look(id: String) -> Dictionary:
+	var look := saved.duplicate()
+	if id != "" and Catalogue.is_runner_item(id) and not id.begins_with("emote:"):
+		var s := Catalogue.split(id)
+		look[String(s[0])] = String(s[1])
+	return Cosmetics.sanitize(look)
+
+
+## Is this reward shown on the runner (worn, with its art in the build)?
+func worn_on_stage(r: Dictionary) -> bool:
+	var id := String(r.get("item", ""))
+	if id == "" or not Catalogue.is_runner_item(id):
+		return false
+	return WORN.has(String(Catalogue.split(id)[0])) and Catalogue.has_art(id) and _stage_char() != null
+
+
+## Show the selected reward in the stage column: worn items on the runner
+## (the turn and the tools work), anything else as a big picture (the
+## runner steps aside), a progress run as its steps.
+func _stage_show(r: Dictionary, run: Array = []) -> void:
+	var v := _stage_char()
+	var wear := run.is_empty() and worn_on_stage(r)
+	plate.reward = {} if wear else r
+	plate.run = run
+	plate.state = "" if not run.is_empty() else display_state(focus_tier, focus_track)
+	plate.visible = not wear
+	plate.request()
+	turn.enabled = wear
+	for b in [pose_btn, turn_btn, reset_btn]:
+		(b as Control).visible = wear
+	if not wear:
+		turn.release()
+		preview_id = ""
+		_preview_emote = -1
+		if v:
+			v.visible = false
+		_refresh_tools()
+		return
+	var id := String(r["item"])
+	v.visible = true
+	var look := preview_look(id)
+	if v.cosmetic != look:
+		v.set_appearance(TC.Role.RUNNER, look)
+		turn.settle()
+	preview_id = id
+	var eid := TC.EMOTES.find(String(Catalogue.split(id)[1])) if id.begins_with("emote:") else -1
+	if eid != _preview_emote:
+		_preview_emote = eid
+		_preview_t = 0.0
+		if eid >= 0:
+			preview_run = false
+			_play_emote()
+	_refresh_tools()
+
+
+func _play_emote() -> void:
+	if _preview_emote >= 0 and App.stage and _stage_char() != null:
+		App.stage.emote(Save.player_uid(), _preview_emote)
+
+
+## Run / Idle for a worn item; an emote reward plays again.
+func _on_pose() -> void:
+	if _preview_emote >= 0:
+		_preview_t = 0.0
+		_play_emote()
+	else:
+		preview_run = not preview_run
+	Sfx.play("click")
+	_refresh_tools()
+
+
+func _on_turn_touched() -> void:
+	_refresh_tools()
+
+
+func _refresh_tools() -> void:
+	if not is_instance_valid(pose_btn):
+		return
+	if _preview_emote >= 0:
+		pose_btn.text = "Play"
+		pose_btn.accessibility_name = "Play the emote again"
+	else:
+		pose_btn.text = "Idle" if preview_run else "Run"
+		pose_btn.accessibility_name = "Idle preview" if preview_run else "Run preview"
+	turn_btn.accessibility_name = "Turn a quarter"
+	reset_btn.accessibility_name = "Reset view"
+	reset_btn.disabled = turn.at_start()
+	for b in [pose_btn, turn_btn, reset_btn]:
+		UIKit.face_of(b).queue_redraw()
+
+
+func _process(delta: float) -> void:
+	var v := _stage_char()
+	if v == null or _restored:
+		return
+	if not turn.enabled:
+		# a picture is shown: the runner stays aside (the stage re-places its
+		# characters when its framing changes)
+		v.visible = false
+		return
+	v.visible = true
+	if has_modal():
+		turn.release()
+	elif Controls.active_joy >= 0:
+		# controller: the right stick turns the runner (as in the Shop and Locker)
+		var rx := InputRouter.radial(Vector2(Input.get_joy_axis(Controls.active_joy, JOY_AXIS_RIGHT_X), 0.0), 0.2, 0.95).x
+		if rx != 0.0:
+			turn.turn_by(rx * STICK_TURN * delta)
+	var cam := App.stage.cam
+	var base := atan2(-(cam.global_position.x - v.global_position.x), -(cam.global_position.z - v.global_position.z))
+	v.set_facing(turn.facing(base + START_TURN))
+	if _preview_emote >= 0:
+		# the emote plays again every few seconds (Reduced Motion: once)
+		_preview_t += delta
+		var dur := float(DormStage.EMOTE_S.get(String(TC.EMOTES[_preview_emote]), 2.4)) + 1.2
+		if _preview_t >= dur and not UIKit.reduced_motion():
+			_preview_t = 0.0
+			_play_emote()
+		return
+	if App.stage.emoting(Save.player_uid()):
+		return
+	var rs := v.rs.duplicate()
+	rs["vel"] = (Basis(Vector3.UP, v.rotation.y) * Vector3(0, 0, -5.0)) if preview_run else Vector3.ZERO
+	rs["state"] = TC.PState.ACTIVE
+	rs["on_floor"] = true
+	rs["pos"] = v.global_position
+	v.apply_state(rs)
+
+
+## Controller: R3 resets the view; the shoulders (Q / E) switch the side
+## panel's pages.
+func _unhandled_input(event: InputEvent) -> void:
+	if not has_modal():
+		if event is InputEventJoypadButton and (event as InputEventJoypadButton).pressed \
+				and (event as InputEventJoypadButton).button_index == JOY_BUTTON_RIGHT_STICK and turn.enabled:
+			turn.reset()
+			get_viewport().set_input_as_handled()
+			return
+		for dir in ["menu_prev", "menu_next"]:
+			if event.is_action_pressed(dir):
+				show_side("challenges" if side_page == "reward" else "reward")
+				UIKit.soft_focus(_tabs[side_page] as Button)
+				get_viewport().set_input_as_handled()
+				return
+	super(event)
+
+
+## Give the runner its saved look back (and its place, standing still): on
+## Back, on any navigation away and when the screen goes for any other
+## reason (a party invite, a match starting).  Previewing never saved
+## anything; this only undoes the presentation.
+func restore_stage() -> void:
+	if _restored:
+		return
+	_restored = true
+	turn.release()
+	var v := _stage_char()
+	if v == null:
+		return
+	v.visible = true
+	v.set_appearance(TC.Role.RUNNER, Cosmetics.sanitize(Save.data["cosmetic"]))
+	var rs := v.rs.duplicate()
+	rs["vel"] = Vector3.ZERO
+	rs["emote"] = -1
+	v.apply_state(rs)
+
+
+func _go_hub() -> void:
+	restore_stage()
+	NavShell.go_hub()
+
+
+func confirm_leave(go: Callable) -> void:
+	restore_stage()
+	go.call()
+
+
+func _exit_tree() -> void:
+	restore_stage()
+
+
+# ------------------------------------------------------------------ header
+## The season in a compact hierarchy: "Season 1 · Premium" over the
+## season's name and the tier, the bar with the XP to the next tier, and
+## Claim all beside it.
 func _header() -> Control:
-	var p := UIKit.panel(Color(UIKit.SLATE, 0.93), UIKit.R_PANEL, 18)
-	p.name = "Header"
-	var h := UIKit.hbox(UIKit.SP_L)
-	p.add_child(h)
-	var em := CommerceArt.Pic.new("glyph", "moon", UIKit.AMBER, 46)
-	em.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	h.add_child(em)
-	var v := UIKit.vbox(6)
+	var h := UIKit.hbox(UIKit.SP_M)
+	h.name = "Header"
+	var v := UIKit.vbox(2)
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	h.add_child(v)
 	var s: Dictionary = Catalogue.season(sid)
+	premium_chip = UIKit.styled("", "overline", UIKit.IVORY_MUTED)
+	premium_chip.name = "TrackLine"
+	UIKit.fit_text(premium_chip, [UIKit.T_OVERLINE, 15, 14])
+	v.add_child(premium_chip)
 	var tr := UIKit.hbox(UIKit.SP_M)
-	var title := UIKit.styled("Season %d · %s" % [int(s.get("number", 1)), String(s.get("name", ""))], "headline")
-	title.clip_text = true
-	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.size_flags_stretch_ratio = 0.01
-	tr.add_child(title)
-	tier_lbl = UIKit.styled("", "num", UIKit.TEAL)
+	title_l = UIKit.styled(String(s.get("name", "")), "headline")
+	title_l.name = "SeasonName"
+	title_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UIKit.fit_text(title_l, [UIKit.T_HEADLINE, 24, 22])
+	tr.add_child(title_l)
+	tier_lbl = UIKit.styled("", "num", UIKit.TEAL, HORIZONTAL_ALIGNMENT_RIGHT)
 	tier_lbl.add_theme_font_size_override("font_size", 24)
-	tier_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	tier_lbl.size_flags_vertical = Control.SIZE_SHRINK_END
 	tr.add_child(tier_lbl)
-	premium_chip = UIKit.styled("", "label", UIKit.AMBER)
-	premium_chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	tr.add_child(premium_chip)
 	v.add_child(tr)
-	var br := UIKit.hbox(UIKit.SP_M)
+	var br := UIKit.hbox(UIKit.SP_S)
 	bar = ProgressBar.new()
 	bar.show_percentage = false
-	bar.custom_minimum_size = Vector2(0, 10)
+	bar.custom_minimum_size = Vector2(40, 10)
 	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	bar.add_theme_stylebox_override("background", UIKit.box(Color(UIKit.NAVY, 0.7), 5, 0, Color.WHITE, 0))
@@ -249,19 +575,41 @@ func _header() -> Control:
 	xp_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	br.add_child(xp_lbl)
 	v.add_child(br)
-	claim_all_btn = UIKit.primary("Claim all", Vector2(0, UIKit.row_h()), 24)
+	claim_all_btn = UIKit.primary("Claim all", Vector2(0, UIKit.row_h()), UIKit.T_LABEL + 1)
 	claim_all_btn.name = "ClaimAll"
-	claim_all_btn.custom_minimum_size.x = UIKit.row_h() * 2.4
+	claim_all_btn.custom_minimum_size.x = UIKit.row_h() * 2.1
 	claim_all_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	claim_all_btn.pressed.connect(_claim_all)
 	h.add_child(claim_all_btn)
-	banner = UIKit.styled("Rewards unavailable right now", "label", UIKit.AMBER, HORIZONTAL_ALIGNMENT_RIGHT)
+	return h
+
+
+## Claiming unavailable: one restrained line under the header, said once
+## ("Rewards unavailable right now" and the reason).  The Reward page then
+## only says what it means for that reward ("It stays earned").
+func _status_line() -> Control:
+	var p := PanelContainer.new()
+	p.name = "Status"
+	p.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.AMBER, 0.1), UIKit.R_SMALL, 0, Color.WHITE, 8))
+	var h := UIKit.hbox(UIKit.SP_S)
+	p.add_child(h)
+	var ic := Icons.IconRect.new("info", UIKit.AMBER, 20)
+	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(ic)
+	var v := UIKit.vbox(0)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(v)
+	banner = UIKit.styled("Rewards unavailable right now", "label", UIKit.AMBER)
 	banner.name = "Unavailable"
-	banner.custom_minimum_size.y = UIKit.row_h()
-	banner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	banner.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	banner.visible = false
-	h.add_child(banner)
+	banner.add_theme_font_size_override("font_size", 19)
+	v.add_child(banner)
+	status_l = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
+	status_l.name = "StatusReason"
+	status_l.add_theme_font_size_override("font_size", 17)
+	status_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(status_l)
+	p.visible = false
+	status_row = p
 	return p
 
 
@@ -279,8 +627,8 @@ func _track_legend() -> Control:
 
 
 ## Cells fill the track's height exactly: both rows, the tier numbers, the
-## gaps and the scrollbar fit the region the header (and, Pass 9, the
-## navigation row) leaves (phone and iPad alike); width follows the height.
+## gaps and the scrollbar fit the region the header, the status line and the
+## navigation row leave (phone and iPad alike); width follows the height.
 ## No minimum beyond a 44 pt target.
 func _fit_cells() -> void:
 	if not is_instance_valid(track_region):
@@ -288,14 +636,15 @@ func _fit_cells() -> void:
 	var h := track_region.size.y
 	if h < 2.0:
 		return
-	var sb := track_panel.get_theme_stylebox("panel")
-	var inner := h - sb.get_margin(SIDE_TOP) - sb.get_margin(SIDE_BOTTOM)
-	if is_instance_valid(nav_row):
-		inner -= nav_row.get_combined_minimum_size().y + UIKit.SP_S
 	var hbar := track_scroll.get_h_scroll_bar().get_combined_minimum_size().y
-	var c := floorf((inner - hbar - TIER_H - GAP * 2.0 - 2.0) * 0.5)
+	var c := floorf((h - hbar - TIER_H - GAP * 2.0 - 2.0) * 0.5)
 	c = clampf(c, UIKit.touch_min(), CELL_MAX_H)
 	var w := floorf(clampf(c * CELL_ASPECT, UIKit.touch_min(), 210.0))
+	# a narrow, tall track (the iPad, beside the stage and the side panel)
+	# keeps three reward columns or more in view: cells get taller, not wider
+	var tw := track_scroll.size.x
+	if tw > 2.0:
+		w = floorf(maxf(UIKit.touch_min(), minf(w, (tw + GAP) / 3.4 - GAP)))
 	if absf(c - cell_size) < 1.0 and absf(w - cell_w) < 1.0:
 		return
 	cell_size = c
@@ -309,8 +658,6 @@ func _fit_cells() -> void:
 	for col in _cols:
 		((col as Control).get_meta(&"tier_label") as Control).custom_minimum_size.x = run_w() if (col as Control).has_meta(&"run") else w
 	_scroll_to.call_deferred(focus_tier)
-
-
 ## Pass 9: a progress-run column's width (narrower than a reward, never
 ## under 44 pt).
 func run_w() -> float:
@@ -403,20 +750,34 @@ func _scroll_to(tier: int, animate: bool = false) -> void:
 		return
 	var col: Control = columns[tier]
 	var room := track_scroll.get_h_scroll_bar().max_value - track_scroll.size.x
-	var to := int(clampf(col.position.x - track_scroll.size.x * 0.35, 0.0, maxf(0.0, room)))
+	var to := clampf(col.position.x - track_scroll.size.x * 0.35, 0.0, maxf(0.0, room))
+	# start at a column's edge: no half-cut column at the left of the track
+	if to > 0.0 and to < room:
+		var edge := 0.0
+		for c in _cols:
+			var cx := (c as Control).position.x
+			if cx <= to + 1.0:
+				edge = cx
+		to = edge
+	to = roundf(to)
 	if animate and not UIKit.reduced_motion() and is_inside_tree():
-		Motion.animate(track_scroll, "scroll_horizontal", to, Motion.CAMERA)
+		Motion.animate(track_scroll, "scroll_horizontal", int(to), Motion.CAMERA)
 	else:
 		Motion.stop(track_scroll, "scroll_horizontal")
-		track_scroll.scroll_horizontal = to
+		track_scroll.scroll_horizontal = int(to)
 
 
 # ------------------------------------------------------------------ navigation
 ## Pass 9: the row above the track.  Every chip is a whole 44 pt target and
-## only moves the track and the detail (no claim, no purchase here).
+## only moves the track and the detail (no claim, no purchase here).  Final
+## sweep: on a narrow pass panel the chips take a shorter form (one line:
+## the flag and your tier, the star and the next reward's tier, the
+## milestone's picture and number) rather than run off the panel; their
+## accessibility names keep the whole sentence.
 func _nav_row() -> Control:
 	nav_row = UIKit.hbox(UIKit.SP_S)
 	nav_row.name = "TrackNav"
+	nav_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	now_chip = NavChip.new()
 	now_chip.setup(self, "NavNow", "You're at", "Tier 1", "flag")
 	now_chip.pressed.connect(jump_current)
@@ -437,7 +798,25 @@ func _nav_row() -> Control:
 		chip.pressed.connect(jump_to.bind(int(m)))
 		nav_row.add_child(chip)
 		milestone_chips[int(m)] = chip
+	nav_row.resized.connect(_fit_nav)
 	return nav_row
+
+
+## The chips' form for the row's width: the full two-line chips when they
+## fit, else shorter ones.
+func _fit_nav() -> void:
+	var avail := pass_w()
+	if not is_instance_valid(nav_row) or avail < 2.0:
+		return
+	var chips: Array = [now_chip, next_chip] + milestone_chips.values()
+	for level in [0, 1, 2]:
+		var need := float(nav_row.get_theme_constant("separation")) * float(nav_row.get_child_count() - 1)
+		for c in chips:
+			need += (c as NavChip).width_at(level)
+		if need <= avail or level == 2:
+			for c in chips:
+				(c as NavChip).set_level(level)
+			return
 
 
 ## The wallet's Season state, read once per frame (a refresh of 88 cells
@@ -505,15 +884,15 @@ func _refresh_nav() -> void:
 	var st := season()
 	var xp := int(st["xp"])
 	var tier := current_tier()
-	now_chip.set_text_lines("You're at", "Tier %d" % tier)
+	now_chip.set_text_lines("You're at", "Tier %d" % tier, "", "%d" % tier)
 	now_chip.accessibility_name = "Go to your tier, Season Pass Tier %d of %d" % [tier, Economy.max_tier(sid)]
 	var n := Economy.next_reward_tier(sid, tier, bool(st["premium"]))
 	if n > 0:
 		var need := maxi(0, Economy.tier_xp(sid, n) - xp)
-		next_chip.set_text_lines("Next reward", "Tier %d · %s XP" % [n, Catalogue.format_coins(need)])
+		next_chip.set_text_lines("Next reward", "Tier %d · %s XP" % [n, Catalogue.format_coins(need)], "Tier %d" % n, "%d" % n)
 		next_chip.accessibility_name = "Go to the next reward, Tier %d, %s Season XP away" % [n, Catalogue.format_coins(need)]
 	else:
-		next_chip.set_text_lines("Next reward", "All reached")
+		next_chip.set_text_lines("Next reward", "All reached", "", "All")
 		next_chip.accessibility_name = "Every reward tier reached. Go to Tier %d" % Economy.max_tier(sid)
 	for m in milestone_chips:
 		var chip: NavChip = milestone_chips[m]
@@ -522,6 +901,7 @@ func _refresh_nav() -> void:
 		chip.reached = tier >= int(m)
 		chip.accessibility_name = "Go to Tier %d: %s%s" % [int(m), what, ", reached" if tier >= int(m) else ""]
 		chip.queue_redraw()
+	_fit_nav()
 
 
 ## "Library Cardigan and Season 1 Finisher" (a tier's rewards, for screen readers).
@@ -535,8 +915,9 @@ func _tier_summary(tier: int) -> String:
 
 
 # ------------------------------------------------------------------ state
-## Can rewards be claimed right now?  {ok, message}; the reason is short and
-## product-facing (the full technical reason is in the release notes).
+## Can rewards be claimed right now?  {ok, reason}: the reason is short and
+## player-facing, said once on the status line (the release notes keep the
+## technical cause: a build with no service URL is "off").
 func claim_status() -> Dictionary:
 	var can := Wallet.can_transact()
 	if bool(can["ok"]):
@@ -544,13 +925,18 @@ func claim_status() -> Dictionary:
 	var reason := ""
 	match Wallet.service_state():
 		"off":
-			reason = "This test build has no game service, so rewards can't be claimed yet."
+			reason = "Season rewards and progress aren't available in this version."
 		"signed_out":
 			reason = "Sign in with Game Center to claim rewards."
 		"syncing":
 			reason = "Checking your account…"
 		"offline":
-			reason = "You're offline. Claiming comes back when you reconnect."
+			# the last sign-in failed: no network (the game's own "Check your
+			# connection" message), or Game Center didn't sign in
+			if Cloud.state == "error" and not Cloud.last_error.contains("connection"):
+				reason = "Game Center didn't sign in. Your rewards are kept; try again later."
+			else:
+				reason = "You're offline. Claiming comes back when you reconnect."
 		_:
 			reason = String(can["message"])
 	return {"ok": false, "reason": reason}
@@ -563,6 +949,7 @@ func _refresh() -> void:
 	var st := season()
 	var xp := int(st["xp"])
 	var prog := Economy.tier_progress(sid, xp)
+	var s: Dictionary = Catalogue.season(sid)
 	tier_lbl.text = "Tier %d / %d" % [maxi(1, int(prog["tier"])), Economy.max_tier(sid)]
 	bar.value = float(prog["frac"])
 	if int(prog["next"]) < 0:
@@ -570,14 +957,19 @@ func _refresh() -> void:
 	else:
 		xp_lbl.text = "%s / %s XP" % [Catalogue.format_coins(int(prog["into"])), Catalogue.format_coins(int(prog["into"]) + int(prog["need"]))]
 	var prem := bool(st["premium"])
-	premium_chip.text = "Premium" if prem else "Free track"
+	premium_chip.text = "Season %d · %s" % [int(s.get("number", 1)), "Premium" if prem else "Free track"]
 	premium_chip.add_theme_color_override("font_color", UIKit.AMBER if prem else UIKit.IVORY_MUTED)
+	title_l.accessibility_name = "Season %d, %s" % [int(s.get("number", 1)), String(s.get("name", ""))]
 	var n := Wallet.claimable(sid).size()
-	var ok := bool(claim_status()["ok"])
+	var cs := claim_status()
+	var ok := bool(cs["ok"])
 	claim_all_btn.visible = ok
+	status_row.visible = not ok
 	banner.visible = not ok
+	status_l.text = String(cs["reason"])
 	claim_all_btn.text = ("Claim all (%d)" % n) if n > 0 else "Nothing to claim"
 	claim_all_btn.disabled = n == 0 or _busy
+	claim_all_btn.accessibility_name = ("Claim all, %d rewards" % n) if n > 0 else "Nothing to claim"
 	tier_lbl.accessibility_name = "Season Pass tier %d of %d" % [maxi(1, int(prog["tier"])), Economy.max_tier(sid)]
 	var tier := int(prog["tier"])
 	for col in _cols:
@@ -638,12 +1030,15 @@ static func reward_caption(r: Dictionary) -> String:
 	return reward_type(r)
 
 
+
+
 # ------------------------------------------------------------------ detail
 var _from_empty := false
 
 
 ## Select a reward cell (or, Pass 9, a progress tier: track "progress",
-## also chosen for any tier without a reward) and show its detail.
+## also chosen for any tier without a reward): the stage shows it and the
+## side panel says what it is and needs.
 func focus(tier: int, track: String, from_empty: bool = false) -> void:
 	if not Economy.has_reward(sid, tier):
 		track = "progress"
@@ -660,11 +1055,42 @@ func focus(tier: int, track: String, from_empty: bool = false) -> void:
 	show_side("reward")
 
 
+## The Reward page: the tier and track, the name, a state chip, the
+## requirements from the account, then (finger-scrollable) the description,
+## what it includes and the rules; the reason an action is unavailable and
+## the one action stay at the bottom, outside the scroll.
 func _build_detail() -> void:
-	var v := UIKit.vbox(UIKit.SP_M)
+	var v := UIKit.vbox(UIKit.SP_S)
 	v.name = "RewardPage"
 	v.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_side_box().add_child(v)
+	var over := UIKit.styled("", "overline", UIKit.IVORY_MUTED)
+	over.name = "TierTrack"
+	# (one line that never widens the panel: "Tiers 41–44 · Progress")
+	UIKit.fit_text(over, [UIKit.T_OVERLINE, 15, 14])
+	v.add_child(over)
+	var name_l := UIKit.styled("", "headline")
+	name_l.name = "RewardName"
+	name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(name_l)
+	var row := UIKit.hbox(UIKit.SP_S)
+	row.name = "StateRow"
+	var chip := StateChip.new()
+	chip.name = "StateChip"
+	chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(chip)
+	var type_l := UIKit.styled("", "caption", UIKit.IVORY_MUTED)
+	type_l.name = "RewardType"
+	type_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	type_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	UIKit.fit_text(type_l, [UIKit.T_CAPTION, 18, 16])
+	row.add_child(type_l)
+	v.add_child(row)
+	var state_l := UIKit.styled("", "body", UIKit.IVORY)
+	state_l.name = "Requirement"
+	state_l.add_theme_font_size_override("font_size", 21)
+	state_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(state_l)
 	var sc := UIKit.scroll_area()
 	sc.name = "DetailInfo"
 	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -672,59 +1098,43 @@ func _build_detail() -> void:
 	detail_box = UIKit.vbox(UIKit.SP_S)
 	detail_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sc.add_child(detail_box)
-	var over := UIKit.styled("", "overline", UIKit.IVORY_MUTED)
-	# (one line that never widens the panel: "Tiers 41–44 · Progress")
-	UIKit.fit_text(over, [UIKit.T_OVERLINE, 15, 14])
-	detail_box.add_child(over)
-	var art := RewardArt.new()
-	art.name = "DetailArt"
-	art.custom_minimum_size = Vector2(0, 180)
-	art.screen = self
-	detail_box.add_child(art)
-	# Pass 9: a featured skin whose art isn't in this build says so plainly,
-	# drawn inside its neutral picture (art.note); the label keeps the text
-	# for screen readers and tests
-	var note := UIKit.styled("", "caption", UIKit.IVORY_MUTED)
-	note.name = "ArtNote"
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note.add_theme_font_size_override("font_size", 18)
-	note.visible = false
-	detail_box.add_child(note)
-	var name_l := UIKit.styled("", "headline")
-	name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail_box.add_child(name_l)
-	var type_l := UIKit.styled("", "caption", UIKit.IVORY_MUTED)
-	detail_box.add_child(type_l)
-	var state_l := UIKit.styled("", "body", UIKit.IVORY)
-	state_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail_box.add_child(state_l)
-	# Pass 9: a featured skin's description and what it includes (after the
-	# state, so its lock reason stays in view on the smallest phone)
 	var blurb_l := UIKit.styled("", "body", UIKit.AMBER_HI)
 	blurb_l.name = "Blurb"
+	blurb_l.add_theme_font_size_override("font_size", 21)
 	blurb_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_box.add_child(blurb_l)
 	var incl_l := UIKit.styled("", "caption", UIKit.IVORY_MUTED)
 	incl_l.name = "Includes"
 	incl_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_box.add_child(incl_l)
+	var rule_l := UIKit.styled("", "caption", UIKit.IVORY_DIM)
+	rule_l.name = "Rules"
+	rule_l.add_theme_font_size_override("font_size", 18)
+	rule_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_box.add_child(rule_l)
+	# Pass 9: a featured skin whose art isn't in this build says so plainly
+	# (drawn in the stage column's neutral picture); the label keeps the
+	# text for screen readers and tests
+	var note := UIKit.styled("", "caption", UIKit.IVORY_MUTED)
+	note.name = "ArtNote"
+	note.visible = false
+	detail_box.add_child(note)
 	# why the action is unavailable, and the action itself, stay at the
 	# bottom of the panel, outside the scroll: never below the fold
 	var reason_l := UIKit.styled("", "caption", UIKit.AMBER)
 	reason_l.name = "Reason"
 	reason_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(reason_l)
-	var action := UIKit.secondary("", Vector2(0, UIKit.row_h()), UIKit.T_LABEL + 2)
+	var action := UIKit.secondary("", Vector2(0, UIKit.row_h()), UIKit.T_LABEL + 1)
 	action.name = "DetailAction"
 	action.pressed.connect(_on_detail_action)
 	v.add_child(action)
-	_d = {"over": over, "art": art, "note": note, "name": name_l, "type": type_l, "blurb": blurb_l, "includes": incl_l, "state": state_l,
-		"reason": reason_l, "action": action, "scroll": sc, "page": v}
+	_d = {"over": over, "art": plate, "note": note, "name": name_l, "type": type_l, "chip": chip, "blurb": blurb_l, "includes": incl_l,
+		"rules": rule_l, "state": state_l, "reason": reason_l, "action": action, "scroll": sc, "page": v}
 	# wrapping labels get their width from the panel's allocated width, so
 	# they never report a first-frame height for an unknown width
 	detail_panel.resized.connect(_fit_detail)
 	(detail_panel.get_parent() as Control).resized.connect(_fit_detail)
-	# the picture's height follows the page's (laid out once it is shown)
 	v.resized.connect(_fit_detail)
 
 
@@ -747,28 +1157,16 @@ func _fit_detail() -> void:
 	var w := _side_w()
 	if w < 10.0:
 		return
-	for k in ["name", "state", "reason", "note", "blurb", "includes"]:
+	for k in ["name", "state", "reason"]:
 		(_d[k] as Control).custom_minimum_size.x = w
-	# the picture leaves the state and its reason in view on a short panel
-	# (iPhone SE: 466 units for the whole Reward page)
-	var page := (_d["page"] as Control).size.y
-	var h := clampf(w * 0.58, 120.0, 260.0)
-	if page > 1.0:
-		h = clampf(minf(h, page * 0.3), 110.0, 260.0)
-		# a featured skin's live preview gets a taller picture where the
-		# panel has room (iPad, large phones), never at the state's expense
-		if _preview_skin != "" and page >= 540.0:
-			h = clampf(minf(w * 0.95, page * 0.38), h, 300.0)
-	if focus_track == "progress":
-		h = clampf(minf(w * 0.48, maxf(page, 1.0) * 0.28), 100.0, 200.0)
-	(_d["art"] as Control).custom_minimum_size.y = h
-	if is_instance_valid(_preview):
-		_preview.custom_minimum_size = Vector2(0, h)
+	# the scroll keeps room for its bar
+	for k in ["blurb", "includes", "rules", "note"]:
+		(_d[k] as Control).custom_minimum_size.x = w - 14.0
 	# the action's label is set a little smaller rather than widening the
-	# panel ("Get Premium in the Shop" on a 323-unit SE panel)
+	# panel
 	var action: Button = _d["action"]
 	var f := action.get_theme_font("font")
-	for fs in [UIKit.T_LABEL + 2, UIKit.T_LABEL, UIKit.T_CAPTION, 18]:
+	for fs in [UIKit.T_LABEL + 1, UIKit.T_LABEL, UIKit.T_CAPTION, 18]:
 		action.add_theme_font_size_override("font_size", fs)
 		if f.get_string_size(action.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 40.0 <= w + 10.0:
 			break
@@ -778,39 +1176,46 @@ func _refresh_detail() -> void:
 	if _d.is_empty():
 		return
 	var action: Button = _d["action"]
-	var state_l: Label = _d["state"]
 	var reason_l: Label = _d["reason"]
-	var art: RewardArt = _d["art"]
 	action.visible = true
 	action.disabled = false
 	reason_l.text = ""
-	for k in ["note", "blurb", "includes"]:
+	for k in ["note", "blurb", "includes", "rules"]:
 		(_d[k] as Label).text = ""
 	if focus_track == "progress":
 		_refresh_progress_detail()
 	else:
 		_refresh_reward_detail()
-	for k in ["blurb", "includes"]:
+	for k in ["blurb", "includes", "rules"]:
 		(_d[k] as Label).visible = (_d[k] as Label).text != ""
-	art.note = (_d["note"] as Label).text
-	art.accessibility_name = art.note
+	plate.note = (_d["note"] as Label).text
+	plate.accessibility_name = plate.note
 	reason_l.visible = reason_l.text != ""
+	UIKit._apply(action, UIKit.AMBER if action.text == "Claim" and not action.disabled else UIKit.SLATE_HI,
+		UIKit.NAVY if action.text == "Claim" and not action.disabled else UIKit.IVORY)
 	action.accessibility_name = "%s, %s%s" % [(_d["name"] as Label).text, action.text, ", unavailable" if action.disabled else ""]
-	art.queue_redraw()
+	plate.queue_redraw()
 	_fit_detail()
+
+
+## Is a claimed item on the player now (their saved look or profile)?
+func is_equipped(id: String) -> bool:
+	var parts := Catalogue.split(id)
+	var field := String(parts[0])
+	if Catalogue.is_profile_item(id):
+		return String(Save.profile_style().get(field, "")) == id
+	return Catalogue.is_runner_item(id) and String(Cosmetics.sanitize(Save.data["cosmetic"]).get(field, "")) == String(parts[1])
 
 
 func _refresh_reward_detail() -> void:
 	var r := Economy.reward_at(sid, focus_tier, focus_track)
 	var st := display_state(focus_tier, focus_track)
 	var cs := claim_status()
-	(_d["over"] as Label).text = "Tier %d · %s" % [focus_tier, "Premium track" if focus_track == "premium" else "Free track"]
-	var art: RewardArt = _d["art"]
-	art.reward = r
-	art.run = []
-	art.state = st
-	art.request()
-	_show_preview(r)
+	var prem_track := focus_track == "premium"
+	var over: Label = _d["over"]
+	over.text = "Tier %d · %s" % [focus_tier, "Premium track" if prem_track else "Free track"]
+	over.add_theme_color_override("font_color", UIKit.AMBER if prem_track else UIKit.IVORY_MUTED)
+	_stage_show(r)
 	(_d["name"] as Label).text = reward_name(r) if not r.is_empty() else "No Free reward at this tier"
 	(_d["type"] as Label).text = reward_type(r) if not r.is_empty() else ""
 	var id := String(r.get("item", ""))
@@ -823,51 +1228,72 @@ func _refresh_reward_detail() -> void:
 	var action: Button = _d["action"]
 	var state_l: Label = _d["state"]
 	var reason_l: Label = _d["reason"]
+	var chip: StateChip = _d["chip"]
 	var xp := int(season()["xp"])
 	var need := Economy.tier_xp(sid, focus_tier) - xp
 	var into := "wallet" if r.has("coins") else "Locker"
 	var lead := ("No Free reward at Tier %d. " % focus_tier) if _from_empty else ""
+	var premium_line := "Needs Premium · %s Coins" % Catalogue.format_coins(Catalogue.price(String(Catalogue.season(sid).get("premium_item", ""))))
+	var rules := "Season XP comes from online rounds and challenges. Tiers can't be bought."
 	match st:
 		"empty":
+			chip.set_state("", "No reward", UIKit.IVORY_MUTED)
 			state_l.text = "The Free track skips this tier."
 			action.visible = false
 		"locked":
-			state_l.text = lead + "Reach Tier %d: %s more Season XP from online rounds. No tier skips." % [focus_tier, Catalogue.format_coins(maxi(0, need))]
-			if focus_track == "premium" and not bool(season()["premium"]):
-				state_l.text += " Premium track: needs Premium too."
-			action.visible = false
+			chip.set_state("lock", "Locked", UIKit.IVORY_MUTED)
+			var lines: Array = [lead + "%s XP to unlock" % Catalogue.format_coins(maxi(0, need))]
+			if prem_track and not bool(season()["premium"]):
+				lines.append(premium_line)
+				action.text = "View Premium"
+			else:
+				action.visible = false
+			state_l.text = "\n".join(lines)
+			(_d["rules"] as Label).text = rules
 		"premium_locked":
-			# (three lines on the iPhone SE: the whole reason stays in view;
-			# the Shop's Premium page says it unlocks everything earned)
-			state_l.text = lead + "Reached. Premium (%s Coins in the Shop) unlocks it." % Catalogue.format_coins(Catalogue.price(String(Catalogue.season(sid).get("premium_item", ""))))
-			action.text = "Get Premium in the Shop" if bool(cs["ok"]) else "See Premium in the Shop"
+			# reached: Premium (bought later too) unlocks it; the Shop's
+			# Premium page says it unlocks everything already earned
+			chip.set_state("lock", "Needs Premium", UIKit.AMBER)
+			state_l.text = lead + "Reached Tier %d.\n%s" % [focus_tier, premium_line]
+			action.text = "Get Premium" if bool(cs["ok"]) else "View Premium"
 			if not bool(cs["ok"]):
-				reason_l.text = String(cs["reason"])
+				reason_l.text = "Premium can't be bought right now."
 		"claimable":
+			chip.set_state("plus", "Ready to claim", UIKit.AMBER)
 			state_l.text = lead + "Earned at Tier %d. Claim it to add it to your %s." % [focus_tier, into]
 			action.text = "Claim"
 			action.disabled = _busy
 		"earned":
-			state_l.text = lead + "Earned at Tier %d, not claimed yet." % focus_tier
-			reason_l.text = String(cs["reason"])
+			# claiming is unavailable (the status line says why, once): the
+			# reward is not lost
+			chip.set_state("check", "Earned", UIKit.TEAL)
+			state_l.text = lead + "Earned at Tier %d. It stays earned: claim it when rewards are available." % focus_tier
 			action.text = "Claim"
 			action.disabled = true
 		"pending":
-			state_l.text = lead + "Earned at Tier %d. Your claim is on its way: it finishes by itself when the game service answers, and never twice." % focus_tier
+			chip.set_state("rotate", "Claiming…", UIKit.AMBER)
+			state_l.text = lead + "Earned at Tier %d. Your claim is on its way and finishes by itself, never twice." % focus_tier
 			action.text = "Claiming…"
 			action.disabled = true
 		"service_update":
+			chip.set_state("check", "Earned", UIKit.TEAL)
 			state_l.text = lead + "Earned at Tier %d, not claimed yet. It stays earned." % focus_tier
-			reason_l.text = "The game service hasn't been updated for this tier yet, so it can't be claimed right now."
+			reason_l.text = "Claiming for this tier isn't open yet."
 			action.text = "Claim"
 			action.disabled = true
 		"claimed":
 			if r.has("coins"):
+				chip.set_state("check", "Claimed", UIKit.TEAL)
 				state_l.text = lead + "Claimed: added to your Coins."
 				action.visible = false
+			elif is_equipped(id):
+				chip.set_state("check", "Equipped", UIKit.TEAL)
+				state_l.text = lead + "Claimed. You're using it now."
+				action.text = "View in Locker"
 			else:
+				chip.set_state("check", "Claimed", UIKit.TEAL)
 				state_l.text = lead + "Claimed. It's yours to keep, in your Locker."
-				action.text = "Wear it in the Locker"
+				action.text = "Equip" if Catalogue.is_runner_item(id) or Catalogue.is_profile_item(id) else "View in Locker"
 
 
 ## Pass 9: a progress tier: no reward here, what it leads to, where you are.
@@ -875,20 +1301,21 @@ func _refresh_progress_detail() -> void:
 	var r := run_of(focus_tier)
 	var first := r.first if r != null else focus_tier
 	var last := r.last if r != null else focus_tier
-	(_d["over"] as Label).text = ("Tiers %d–%d · Progress" % [first, last]) if last > first else "Tier %d · Progress" % first
-	var art: RewardArt = _d["art"]
-	art.reward = {}
-	art.run = [first, last]
-	art.state = ""
-	art.request()
-	_show_preview({})
-	# the selected run column already shows its steps on the track; on a
-	# short panel the words matter more than a second picture of them
-	art.visible = (_d["page"] as Control).size.y >= 560.0
+	var over: Label = _d["over"]
+	over.text = ("Tiers %d–%d · Progress" % [first, last]) if last > first else "Tier %d · Progress" % first
+	over.add_theme_color_override("font_color", UIKit.IVORY_MUTED)
+	_stage_show({}, [first, last])
 	(_d["name"] as Label).text = "Progress tiers" if last > first else "Progress tier"
-	(_d["type"] as Label).text = "No reward on either track"
+	(_d["type"] as Label).text = "No reward"
 	var xp := int(season()["xp"])
 	var tier := current_tier()
+	var chip: StateChip = _d["chip"]
+	if tier > last:
+		chip.set_state("check", "Reached", UIKit.TEAL)
+	elif tier >= first:
+		chip.set_state("flag", "You're here", UIKit.TEAL)
+	else:
+		chip.set_state("lock", "Ahead", UIKit.IVORY_MUTED)
 	var nxt := last + 1 if last < Economy.max_tier(sid) else -1
 	var leads := ""
 	if nxt > 0:
@@ -897,7 +1324,7 @@ func _refresh_progress_detail() -> void:
 			var w := Economy.reward_at(sid, nxt, track)
 			if not w.is_empty():
 				parts.append("%s (%s)" % [reward_name(w), "Free" if track == "free" else "Premium"])
-		leads = "They count toward Tier %d: %s." % [nxt, " and ".join(parts)] if last > first else "It counts toward Tier %d: %s." % [nxt, " and ".join(parts)]
+		leads = ("They count toward Tier %d: %s." if last > first else "It counts toward Tier %d: %s.") % [nxt, " and ".join(parts)]
 	var where := ""
 	if tier > last:
 		where = "Reached."
@@ -913,99 +1340,6 @@ func _refresh_progress_detail() -> void:
 	action.text = "Show Tier %d" % nxt
 
 
-## Emote rewards play on one small live runner in the detail (created on
-## first use, hidden and not rendered otherwise; one per screen).  Pass 9:
-## a featured skin sways slowly on the same runner when its art is in the
-## build (swaying around its three-quarter view; still under Reduced
-## Motion); without the art the detail keeps its neutral picture.
-func _show_preview(r: Dictionary) -> void:
-	var art: Control = _d["art"]
-	var id := String(r.get("item", ""))
-	var eid := TC.EMOTES.find(String(Catalogue.split(id)[1])) if id.begins_with("emote:") else -1
-	var skin := id if id.begins_with("outfit:") and Catalogue.season_featured(sid).has(focus_tier) and Catalogue.has_art(id) else ""
-	if eid < 0 and skin == "":
-		if is_instance_valid(_preview):
-			_preview.visible = false
-			if _preview_skin != "":
-				# give the runner its own look back (the next emote shows on it)
-				_preview_skin = ""
-				_preview_view.set_appearance(TC.Role.RUNNER, Cosmetics.sanitize(Save.data["cosmetic"]))
-				_preview_view.set_facing(PI + 0.3)
-				_preview.cam.fov = 32.0
-				_preview.aim(Vector3(0, 1.0, 3.4), Vector3(0, 0.82, 0))
-		art.visible = true
-		_preview_emote = -1
-		return
-	if not is_instance_valid(_preview):
-		_preview = Preview3D.new(Vector2i(64, 64))
-		_preview.name = "EmotePreview"
-		_preview.vp.msaa_3d = get_tree().root.msaa_3d
-		_preview.aim(Vector3(0, 1.0, 3.4), Vector3(0, 0.82, 0))
-		detail_box.add_child(_preview)
-		detail_box.move_child(_preview, art.get_index() + 1)
-		_preview_view = _preview.show_character(TC.Role.RUNNER, Cosmetics.sanitize(Save.data["cosmetic"]), Vector3.ZERO, PI + 0.3)
-		_preview_view.fidgets = false
-	_preview.custom_minimum_size = Vector2(0, art.custom_minimum_size.y)
-	_preview.visible = true
-	art.visible = false
-	if skin != "":
-		_preview_emote = -1
-		if _preview_skin != skin:
-			_preview_skin = skin
-			_turn = 0.0
-			_preview_view.set_appearance(TC.Role.RUNNER, CommerceArt.preview_look(Save.data["cosmetic"], "outfit", String(Catalogue.split(skin)[1])))
-			var rs := _preview_view.rs.duplicate()
-			rs["emote"] = -1
-			rs["emote_t"] = 0.0
-			_preview_view.apply_state(rs)
-			# the whole figure, head to shoes, filling the picture's height
-			_preview.cam.fov = 36.0
-			_preview.aim(Vector3(0, 0.76, 2.5), Vector3(0, 0.7, 0))
-		_preview_view.set_facing(PI + 0.35)
-		return
-	if _preview_skin != "":
-		_preview_skin = ""
-		_preview_view.set_appearance(TC.Role.RUNNER, Cosmetics.sanitize(Save.data["cosmetic"]))
-		_preview_view.set_facing(PI + 0.3)
-		_preview.cam.fov = 32.0
-		_preview.aim(Vector3(0, 1.0, 3.4), Vector3(0, 0.82, 0))
-	if _preview_emote != eid:
-		_preview_emote = eid
-		_preview_t = 0.0
-		_play_preview()
-
-
-func _play_preview() -> void:
-	if not is_instance_valid(_preview_view) or _preview_emote < 0:
-		return
-	var rs := _preview_view.rs.duplicate()
-	rs["emote"] = _preview_emote
-	rs["emote_t"] = 1.0
-	rs["vel"] = Vector3.ZERO
-	rs["on_floor"] = true
-	_preview_view.apply_state(rs)
-	_preview_view.restart_emote(_preview_emote)
-
-
-func _process(delta: float) -> void:
-	if not is_instance_valid(_preview) or not _preview.is_visible_in_tree():
-		return
-	# Pass 9: a featured skin sways slowly (Reduced Motion: it stays put)
-	if _preview_skin != "":
-		if not UIKit.reduced_motion() and is_instance_valid(_preview_view):
-			_turn += delta * TURN_RATE
-			_preview_view.set_facing(PI + 0.35 + TURN_SWING * sin(_turn))
-		return
-	# the preview replays its move every few seconds (Reduced Motion: once)
-	if _preview_emote < 0:
-		return
-	_preview_t += delta
-	var dur := float(DormStage.EMOTE_S.get(String(TC.EMOTES[_preview_emote]), 2.4)) + 0.8
-	if _preview_t >= dur and not UIKit.reduced_motion():
-		_preview_t = 0.0
-		_play_preview()
-
-
 func _on_detail_action() -> void:
 	if focus_track == "progress":
 		var r := run_of(focus_tier)
@@ -1014,15 +1348,48 @@ func _on_detail_action() -> void:
 			jump_to(nxt)
 		return
 	var st := display_state(focus_tier, focus_track)
+	var id := String(Economy.reward_at(sid, focus_tier, focus_track).get("item", ""))
 	match st:
-		"premium_locked":
-			ShopScreen.focus_section = "season"
-			ShopScreen.focus_item = String(Catalogue.season(sid).get("premium_item", ""))
-			NavShell.go("shop")
+		"premium_locked", "locked":
+			if (_d["action"] as Button).text.ends_with("Premium"):
+				ShopScreen.focus_section = "season"
+				ShopScreen.focus_item = String(Catalogue.season(sid).get("premium_item", ""))
+				NavShell.go("shop")
 		"claimable":
 			_claim([{"tier": focus_tier, "track": focus_track}])
 		"claimed":
-			NavShell.open("locker")
+			if (_d["action"] as Button).text == "Equip":
+				equip(id)
+			else:
+				NavShell.go("locker")
+
+
+## Equip a claimed reward from the pass: the Locker's own save path (owned
+## items only; never spends), the party sees it, the stage shows it.
+func equip(id: String) -> void:
+	if id == "" or not Wallet.owns_id(id):
+		return
+	var parts := Catalogue.split(id)
+	if Catalogue.is_profile_item(id):
+		Save.set_profile_style(String(parts[0]), id)
+	elif Catalogue.is_runner_item(id):
+		var look := Cosmetics.sanitize(Save.data["cosmetic"]).duplicate()
+		look[String(parts[0])] = String(parts[1])
+		var r := Save.apply_appearance(look)
+		if not bool(r["ok"]):
+			dialog("%s isn't in your Locker any more." % Catalogue.display_name(id))
+			return
+		saved = Cosmetics.sanitize(Save.data["cosmetic"])
+		App.sync_stage_local()
+		App.sync_cloud_appearance()
+		if App.session and is_instance_valid(App.session) and App.session.phase == TC.Phase.LOBBY and App.session.mode != NetSession.Mode.OFFLINE:
+			App.session.set_local_cosmetic(saved)
+	else:
+		return
+	Save.save_now()
+	Sfx.play("pickup")
+	UIKit.toast(self, "Equipped", 1.6)
+	_refresh_detail()
 
 
 func _claim_all() -> void:
@@ -1056,6 +1423,41 @@ func _claim(which: Array) -> void:
 		dialog(String(r.get("message", "")))
 	_refresh()
 
+
+## The selected reward's state on the Reward page: a small pill with an icon
+## and a word (shape and word, never colour alone).
+class StateChip:
+	extends PanelContainer
+	var icon: Icons.IconRect
+	var text_l: Label
+	var col := UIKit.IVORY
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var h := UIKit.hbox(6)
+		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(h)
+		icon = Icons.IconRect.new("lock", UIKit.IVORY, 18)
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(icon)
+		text_l = UIKit.styled("", "label", UIKit.IVORY)
+		text_l.add_theme_font_size_override("font_size", 19)
+		h.add_child(text_l)
+		set_state("lock", "", UIKit.IVORY)
+
+	func set_state(kind: String, t: String, c: Color) -> void:
+		col = c
+		icon.visible = kind != ""
+		icon.kind = kind if kind != "" else "lock"
+		icon.col = c
+		icon.queue_redraw()
+		text_l.text = t
+		text_l.add_theme_color_override("font_color", c)
+		var sb := UIKit.box(Color(c, 0.14), 999, 1, Color(c, 0.4), 10)
+		sb.content_margin_top = 4
+		sb.content_margin_bottom = 4
+		add_theme_stylebox_override("panel", sb)
+		accessibility_name = t
 
 ## One reward cell on the track: its picture, what it is, and a small state
 ## mark in the corner (lock, plus, check).  Premium cells carry a thin gold
@@ -1112,15 +1514,18 @@ class RewardCell:
 		accessibility_name = "Tier %d %s: %s, %s" % [tier, track, SeasonScreen.reward_name(r) if not r.is_empty() else "none", label]
 
 
-## A reward's picture (cell or detail): a cached portrait of the real runner
-## for outfits (full body), hats (close) and shoes (feet), the refined emote
-## glyph, the badge, the name card as equipped (your name), or a Coin pile;
-## in a cell also its caption and state mark.  Locked art stays readable
-## (slightly muted), never darkened out.
+## A reward's picture (cell or the stage column's plate): a cached portrait
+## of the real runner for outfits (full body), hats (close) and shoes
+## (feet), the refined emote glyph, the badge, the name card as equipped
+## (your name), or a Coin pile; in a cell also its caption and state mark.
+## Locked art stays readable (slightly muted), never darkened out.  Final
+## sweep: `big` is the stage column's picture for rewards that aren't worn
+## (and progress runs): drawn large on a soft scrim over the dorm.
 class RewardArt:
 	extends Control
 	var screen: SeasonScreen
 	var cell: Button
+	var big := false
 	var reward: Dictionary = {}
 	## Pass 9: a progress run [first, last] (the detail's picture of it), and
 	## a line drawn at the foot of the detail's picture ("Preview not
@@ -1149,7 +1554,7 @@ class RewardArt:
 				var look := CommerceArt.preview_look(Save.data["cosmetic"], f, String(parts[1]))
 				var ps := Portraits.shared()
 				pic_key = Portraits.key_for(look, TC.Role.RUNNER, framing)
-				var t := ps.portrait(look, TC.Role.RUNNER, "pass:%s%s" % [id, "" if cell else ":detail"], framing)
+				var t := ps.portrait(look, TC.Role.RUNNER, "pass:%s%s" % [id, "" if cell else ":plate"], framing)
 				if ps.has_picture(pic_key):
 					tex = t
 				elif not ps.portrait_ready.is_connected(_on_pic):
@@ -1161,34 +1566,52 @@ class RewardArt:
 			tex = t
 			queue_redraw()
 
-	## The art's rect: the cell minus its padding and caption; the whole
-	## control in the detail.
+	## The art's rect: the cell minus its padding and caption; on the stage
+	## column a centred picture well (room above for the hat line, below
+	## for the note).
 	func art_rect() -> Rect2:
 		if cell == null:
-			return Rect2(Vector2.ZERO, size)
+			if not big:
+				return Rect2(Vector2.ZERO, size)
+			# a well shaped for what it holds: a name card is a wide plate, a
+			# progress run tall, everything else about square
+			var w := size.x * 0.88
+			var h := minf(size.y * 0.78, w * 1.25)
+			if not run.is_empty():
+				h = size.y * 0.86
+			elif String(reward.get("item", "")).begins_with("card:"):
+				h = minf(h, w * 0.62)
+			elif not reward.is_empty():
+				h = minf(h, w * 1.0)
+			return Rect2(Vector2((size.x - w) * 0.5, (size.y - h) * 0.44), Vector2(w, h))
 		var pad := 8.0
 		return Rect2(Vector2(pad, pad), Vector2(size.x - pad * 2.0, size.y - pad * 2.0 - SeasonScreen.CAPTION_H))
 
 	func _draw() -> void:
 		var r := Rect2(Vector2.ZERO, size)
 		if cell == null:
-			draw_style_box(UIKit.box(Color(UIKit.NAVY, 0.38), UIKit.R_SMALL), r)
+			r = art_rect()
+			draw_style_box(UIKit.box(Color(UIKit.NAVY, 0.5 if big else 0.38), UIKit.R_PANEL if big else UIKit.R_SMALL), r)
 		if not run.is_empty() and screen != null:
-			SeasonScreen.draw_steps(self, r.grow(-10.0), int(run[0]), int(run[1]), screen.current_tier(), true)
+			# the run's steps, tall, centred in the well
+			var sr := r.grow(-14.0)
+			var sw := minf(sr.size.x, 150.0)
+			SeasonScreen.draw_steps(self, Rect2(Vector2(sr.get_center().x - sw * 0.5, sr.position.y), Vector2(sw, sr.size.y)),
+				int(run[0]), int(run[1]), screen.current_tier(), true)
 			return
 		if cell == null and note != "":
 			var nf := UIKit.font_w(500)
 			var nfs := 17
-			while nfs > 13 and nf.get_string_size(note, HORIZONTAL_ALIGNMENT_LEFT, -1, nfs).x > size.x - 16.0:
+			while nfs > 13 and nf.get_string_size(note, HORIZONTAL_ALIGNMENT_LEFT, -1, nfs).x > r.size.x - 16.0:
 				nfs -= 1
-			draw_string(nf, Vector2(8.0, size.y - 10.0), note, HORIZONTAL_ALIGNMENT_CENTER, size.x - 16.0, nfs, UIKit.IVORY_MUTED)
+			draw_string(nf, Vector2(r.position.x + 8.0, r.end.y - 10.0), note, HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 16.0, nfs, UIKit.IVORY_MUTED)
 		if reward.is_empty():
 			# a quiet dash, centred
 			var c0 := size * 0.5
 			draw_line(c0 + Vector2(-8, 0), c0 + Vector2(8, 0), Color(UIKit.IVORY, 0.25), 3.0, true)
 			return
 		var dim := state == "locked"
-		var ar := art_rect()
+		var ar := art_rect() if not big else art_rect().grow(-18.0)
 		var c := ar.get_center()
 		var s := minf(ar.size.x, ar.size.y)
 		if reward.has("coins"):
@@ -1199,7 +1622,7 @@ class RewardArt:
 			if kind == "badge":
 				CommerceArt.badge(self, id, c, s * 0.44, dim)
 			elif kind == "card":
-				var w := ar.size.x * (0.96 if cell else 0.86)
+				var w := ar.size.x * (0.96 if cell else 0.92)
 				var h := minf(w / 2.5, ar.size.y * 0.8)
 				var nm := Save.player_name()
 				CommerceArt.name_card(self, Rect2(c - Vector2(w, h) * 0.5, Vector2(w, h)), id, nm,
@@ -1229,8 +1652,11 @@ class RewardArt:
 		var f := UIKit.font_w(600)
 		var cap := SeasonScreen.reward_caption(reward)
 		var fs := SeasonScreen.CAPTION_FS
+		# a narrow cell sets the caption a size or two smaller, never trimmed
+		while fs > 15 and f.get_string_size(cap, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > size.x - 10.0:
+			fs -= 1
 		var cy := size.y - 8.0 - SeasonScreen.CAPTION_H * 0.5 + (f.get_ascent(fs) - f.get_descent(fs)) * 0.5
-		draw_string(f, Vector2(6.0, cy), cap, HORIZONTAL_ALIGNMENT_CENTER, size.x - 12.0, fs,
+		draw_string(f, Vector2(5.0, cy), cap, HORIZONTAL_ALIGNMENT_CENTER, size.x - 10.0, fs,
 			UIKit.IVORY if state != "locked" else UIKit.IVORY_MUTED)
 		# state marks (shape + colour, never colour alone)
 		var corner := Vector2(size.x - 18.0, 18.0)
@@ -1314,9 +1740,11 @@ static func draw_steps(ci: CanvasItem, rect: Rect2, first: int, last: int, tier:
 
 
 ## Pass 9: one column for a run of progress tiers (no reward on either
-## track), as tall as both reward rows: a quiet card with a step per tier
-## and "No reward" at the foot.  A tap explains it in the detail; a swipe
-## that starts on it scrolls the track.
+## track), as tall as both reward rows: a quiet card with a numbered step
+## per tier (final sweep: without a "No reward" line in every run; the
+## missing picture, the steps and the tap-through detail say it, and so does
+## its accessibility name).  A tap explains it in the detail; a swipe that
+## starts on it scrolls the track.
 class ProgressRun:
 	extends Button
 	var screen: SeasonScreen
@@ -1349,19 +1777,7 @@ class ProgressRun:
 
 	func _draw_art() -> void:
 		var r := Rect2(Vector2.ZERO, art.size)
-		var f := UIKit.font_w(600)
-		var room := r.size.x - 10.0
-		var fs := 17
-		while fs > 13 and f.get_string_size("No reward", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > room:
-			fs -= 1
-		# a narrow column says it on two lines rather than trimming it
-		var lines := ["No reward"] if f.get_string_size("No reward", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= room else ["No", "reward"]
-		var lh := f.get_height(fs)
-		var foot := 14.0 + lh * float(lines.size())
-		SeasonScreen.draw_steps(art, Rect2(r.position + Vector2(6, 10), r.size - Vector2(12, 10 + foot)), first, last, screen.current_tier())
-		for i in lines.size():
-			var cy := r.end.y - foot + 4.0 + lh * float(i) + f.get_ascent(fs)
-			art.draw_string(f, Vector2(4.0, cy), String(lines[i]), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 8.0, fs, UIKit.IVORY_DIM)
+		SeasonScreen.draw_steps(art, Rect2(r.position + Vector2(6, 12), r.size - Vector2(12, 24)), first, last, screen.current_tier())
 
 
 ## Pass 9: a navigation chip on the row above the track: a small picture
@@ -1386,6 +1802,7 @@ class NavChip:
 		skin = skin_id
 		UIKit.make_card(self, Vector2(UIKit.touch_min(), UIKit.row_h()), Color(UIKit.SLATE_HI, 0.96))
 		var m := MarginContainer.new()
+		margins = m
 		m.set_anchors_preset(Control.PRESET_FULL_RECT)
 		m.add_theme_constant_override("margin_left", 10)
 		m.add_theme_constant_override("margin_right", 14)
@@ -1412,13 +1829,56 @@ class NavChip:
 		m.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		for n in m.find_children("*", "Control", true, false):
 			(n as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
-		UIKit.fit_card(self, m, 0.0)
+		forms = [[top, main], [top, main], ["", main]]
+		_apply_level()
 		if skin != "":
 			_request()
 
-	func set_text_lines(top: String, main: String) -> void:
-		top_l.text = top
-		main_l.text = main
+	## The chip's text at each level: [caption, line] for 0 (the whole
+	## thing), 1 (shorter: "Next reward" / "Tier 45"), 2 (one short line on a
+	## narrow row: "45").
+	var forms: Array = []
+	var level := 0
+	var margins: MarginContainer
+
+	## The picture's side and the chip's side margins at a level (the
+	## one-line form is tighter).
+	func pic_side(l: int) -> float:
+		return clampf(UIKit.row_h() * (0.62 if l < 2 else 0.48), 26.0, 52.0)
+
+	func pads(l: int) -> Vector2:
+		return Vector2(10, 14) if l < 2 else Vector2(8, 10)
+
+	func set_text_lines(top: String, main: String, mid: String = "", short: String = "") -> void:
+		forms = [[top, main], [top, mid if mid != "" else main], ["", short if short != "" else main]]
+		_apply_level()
+
+	func set_level(l: int) -> void:
+		level = clampi(l, 0, 2)
+		_apply_level()
+
+	func _apply_level() -> void:
+		if forms.is_empty():
+			return
+		var f: Array = forms[level]
+		top_l.text = String(f[0])
+		top_l.visible = String(f[0]) != ""
+		main_l.text = String(f[1])
+		pic.custom_minimum_size = Vector2.ONE * pic_side(level)
+		margins.add_theme_constant_override("margin_left", int(pads(level).x))
+		margins.add_theme_constant_override("margin_right", int(pads(level).y))
+		custom_minimum_size.x = width_at(level)
+
+	## The chip's width at a level (the row picks the largest that fits).
+	func width_at(l: int) -> float:
+		if forms.is_empty():
+			return UIKit.touch_min()
+		var f: Array = forms[clampi(l, 0, 2)]
+		var tw := main_l.get_theme_font("font").get_string_size(String(f[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, main_l.get_theme_font_size("font_size")).x
+		if String(f[0]) != "":
+			tw = maxf(tw, top_l.get_theme_font("font").get_string_size(String(f[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, top_l.get_theme_font_size("font_size")).x)
+		var pd := pads(l)
+		return maxf(UIKit.touch_min(), ceilf(pd.x + pic_side(l) + 8.0 + tw + pd.y + 2.0))
 
 	## The featured skin's face: the cached head portrait when its art is
 	## in the build (Portraits), a neutral head otherwise.
@@ -1459,7 +1919,8 @@ class NavChip:
 
 # ------------------------------------------------------------------ challenges
 ## Pass 8 (docs/ECONOMY.md §10).  The side panel: a two-page switch
-## ("Challenges" | "Reward", one 44 pt row) over its pages.
+## ("Reward" | "Challenges", one 44 pt row of whole finger targets) over its
+## pages.  Final sweep: Reward first (it names what the stage shows).
 func _side_box() -> VBoxContainer:
 	if _side != null:
 		return _side
@@ -1469,8 +1930,8 @@ func _side_box() -> VBoxContainer:
 	var row := UIKit.hbox(UIKit.SP_S)
 	row.name = "SideTabs"
 	_side.add_child(row)
-	for spec in [["challenges", "Challenges"], ["reward", "Reward"]]:
-		var b := UIKit.quiet(String(spec[1]), Vector2(0, UIKit.row_h()), UIKit.T_CAPTION + 1)
+	for spec in [["reward", "Reward"], ["challenges", "Challenges"]]:
+		var b := UIKit.quiet(String(spec[1]), Vector2(0, UIKit.row_h()), UIKit.T_LABEL)
 		b.name = "Tab_" + String(spec[0])
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.pressed.connect(show_side.bind(String(spec[0])))
@@ -1570,6 +2031,10 @@ func _refresh_challenges() -> void:
 	var st := Wallet.challenge_status()
 	var status: Label = _ch["status"]
 	status.text = String(st["text"])
+	if Wallet.service_state() == "off":
+		# the pass's status line already says why; this page says what it
+		# means here (no developer wording on screen)
+		status.text = "Preview only. No progress or Season XP is added right now."
 	status.visible = status.text != ""
 	var cards := Wallet.challenge_cards()
 	var now := Wallet.server_now()

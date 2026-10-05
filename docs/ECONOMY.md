@@ -781,17 +781,21 @@ all (`service/migrations/0004_challenges.sql`):
 ### In the game
 
 - **Season Pass:** (Pass 9: the track has a navigation row above it and
-  shows progress tiers as compact runs; docs/pass9/season.md) the side panel has two pages, **Challenges** and
-  **Reward**. "Challenges · Earn Season XP" opens first: the role line,
+  shows progress tiers as compact runs; docs/pass9/season.md. Final
+  sweep: the selected reward stands on the dorm stage at the left, the side
+  panel names it, docs/final/season.md) the side panel has two pages,
+  **Reward** and **Challenges**. The Reward page opens first (it names
+  what the stage shows); "Challenges · Earn Season XP": the role line,
   Daily and Weekly with their local reset time, one card per goal (name,
   task, progress bar and "4/6", "+50 Season XP", a check when done) and one
   optional pin (tap a goal; one at a time, kept on this device). Tapping a
-  reward shows its detail. The header and the track are unchanged: Free
-  and Premium stay whole, Claim all stays where it was.
-- **Service unavailable:** one short status ("Preview: no game service in
-  this build. No progress or Season XP is added.", or signed out /
-  offline / checking) and readable goal previews without progress bars,
-  counts, completion marks or claim buttons.
+  reward shows its detail. Free and Premium stay whole on the track, Claim
+  all stays beside the season header.
+- **Service unavailable:** the pass says why once, on one status line
+  under its header; the Challenges page says "Preview only. No progress or
+  Season XP is added right now." (or signed out / offline / checking) and
+  shows readable goal previews without progress bars, counts, completion
+  marks or claim buttons.
 - **Results:** "Campus Contribution complete · +50 Season XP" (marked
   "(pending)" until the service settles the round), the other goals the
   round moved, an honest line when it didn't count, then the Season tier

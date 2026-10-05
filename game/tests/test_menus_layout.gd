@@ -154,12 +154,14 @@ func test_pass_service_off_is_honest_and_still_fits() -> void:
 		await _frames(2)
 		t.eq(sp.display_state(1, "free"), "earned", "%s: tier 1 is earned, not claimable while the service is off" % key)
 		var state_t := (sp._d["state"] as Label).text
-		var reason_t := (sp._d["reason"] as Label).text
 		t.check(not state_t.contains("Ready to claim"), "%s: never 'Ready to claim' over a dead button" % key)
-		t.check(reason_t.contains("game service"), "%s: the reason is in the detail: %s" % [key, reason_t])
-		var rr := (sp._d["reason"] as Control).get_global_rect()
-		t.check(rr.end.y <= (sp._d["action"] as Control).get_global_rect().position.y + 0.5 and _inside(rr, sp.detail_panel.get_global_rect()),
-			"%s: the reason sits whole right above the action" % key)
+		t.check(state_t.contains("It stays earned"), "%s: an earned reward doesn't look lost: %s" % [key, state_t])
+		t.eq((sp._d["chip"] as Control).get("text_l").text, "Earned", "%s: the state chip says Earned" % key)
+		# the reason is said once, on the pass's status line (not repeated in the detail)
+		t.check(sp.status_l.text.contains("aren't available in this version"), "%s: the status line says why: %s" % [key, sp.status_l.text])
+		t.check(not (sp._d["reason"] as Label).visible, "%s: no second copy of it in the detail" % key)
+		var sr := sp.status_row.get_global_rect()
+		t.check(_inside(sr, sp.track_panel.get_global_rect()) and _inside(sr, safe), "%s: the status line whole in the pass panel" % key)
 		t.check((sp._d["action"] as Button).disabled, "%s: Claim is visibly unavailable" % key)
 		t.check(_inside((sp._d["action"] as Control).get_global_rect(), safe), "%s: and on screen" % key)
 		for c in sp.cells:
@@ -176,8 +178,11 @@ func test_pass_service_off_is_honest_and_still_fits() -> void:
 		sp.focus(1, "premium")
 		await _frames(1)
 		t.eq(sp.display_state(1, "premium"), "premium_locked", "%s: tier 1 Premium is reached, needs Premium" % key)
-		t.eq((sp._d["action"] as Button).text, "See Premium in the Shop", "%s: Premium resolves in the Shop, honestly worded" % key)
-		t.check((sp._d["reason"] as Label).visible, "%s: with the reason" % key)
+		t.eq((sp._d["action"] as Button).text, "View Premium", "%s: Premium resolves in the Shop, honestly worded" % key)
+		t.check((sp._d["reason"] as Label).visible and (sp._d["reason"] as Label).text.contains("can't be bought right now"), "%s: with the reason" % key)
+		var rr := (sp._d["reason"] as Control).get_global_rect()
+		t.check(rr.end.y <= (sp._d["action"] as Control).get_global_rect().position.y + 0.5 and _inside(rr, sp.detail_panel.get_global_rect()),
+			"%s: the reason sits whole right above the action" % key)
 	await _end()
 
 
@@ -197,11 +202,14 @@ func test_pass_free_premium_and_claim_states() -> void:
 	t.check(not (sp._d["action"] as Button).disabled and not (sp._d["reason"] as Label).visible, "available, no reason shown")
 	sp.focus(4, "premium")
 	t.eq(sp.display_state(4, "premium"), "premium_locked", "reached, needs Premium")
-	t.eq((sp._d["action"] as Button).text, "Get Premium in the Shop", "Premium in the Shop")
+	t.eq((sp._d["action"] as Button).text, "Get Premium", "Premium in the Shop")
 	sp.focus(20, "premium")
 	t.eq(sp.display_state(20, "premium"), "locked", "not reached")
-	t.check(not (sp._d["action"] as Button).visible, "no action for a locked tier")
-	t.check((sp._d["state"] as Label).text.contains("more Season XP"), "it says what's needed")
+	t.eq((sp._d["action"] as Button).text, "View Premium", "a locked Premium reward without Premium: the requirement is never hidden")
+	t.check((sp._d["state"] as Label).text.contains("XP to unlock") and (sp._d["state"] as Label).text.contains("Needs Premium"), "it says what's needed")
+	sp.focus(19, "free")
+	t.eq(sp.display_state(19, "free"), "locked", "a Free reward not reached")
+	t.check(not (sp._d["action"] as Button).visible, "no action for a locked Free tier (nothing to buy, nothing to claim)")
 	sp._on_cell(2, "free")
 	t.eq([sp.focus_tier, sp.focus_track], [2, "premium"], "a blank Free slot selects the tier's Premium reward")
 	t.check((sp._d["state"] as Label).text.begins_with("No Free reward at Tier 2"), "and says so")

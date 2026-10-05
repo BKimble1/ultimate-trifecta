@@ -378,7 +378,11 @@ func test_season_pass_challenges_fit_with_both_rows_whole() -> void:
 		await _frames(8)
 		var sp := App.screen as SeasonScreen
 		var safe := _safe()
-		t.eq(sp.side_page, "challenges", "%s: the Challenges page opens with the screen" % key)
+		# final sweep: the screen opens on the reward the stage shows; the
+		# Challenges tab is one tap away
+		t.eq(sp.side_page, "reward", "%s: the Reward page opens with the screen" % key)
+		await _tap((sp._tabs["challenges"] as Control).get_global_rect().get_center())
+		t.eq(sp.side_page, "challenges", "%s: the Challenges tab opens the goals" % key)
 		t.check(sp.challenge_page.is_visible_in_tree(), "%s: and is shown" % key)
 		var head := sp._ch["head"] as Label
 		t.eq(head.text, "Challenges · Earn Season XP", "%s: the heading" % key)
@@ -459,8 +463,11 @@ func test_season_pass_challenges_service_off_is_an_honest_preview() -> void:
 		await _frames(8)
 		var sp := App.screen as SeasonScreen
 		var safe := _safe()
+		sp.show_side("challenges")
+		await _frames(2)
 		var status := sp._ch["status"] as Label
-		t.check(status.visible and status.text.contains("game service") and status.text.contains("No progress or Season XP"), "%s: %s" % [key, status.text])
+		t.check(status.is_visible_in_tree() and status.text.contains("No progress or Season XP"), "%s: %s" % [key, status.text])
+		t.check(not status.text.contains("build") and not status.text.contains("game service"), "%s: no developer wording on screen" % key)
 		t.check(_inside(status.get_global_rect(), sp.detail_panel.get_global_rect()), "%s: the status sits whole in the panel" % key)
 		for cc in sp.challenge_cards:
 			t.check(not cc.bar.visible and not cc.count_l.visible, "%s: %s shows no progress it doesn't have" % [key, cc.id])
