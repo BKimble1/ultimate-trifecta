@@ -959,7 +959,13 @@ func _includes_text(id: String) -> String:
 		# Pass 8: say what the outfit replaces (hood: hat and hair; its own
 		# footwear: shoes) instead of promising the Locker's shoes stay
 		var rep := Cosmetics.outfit_replaces(String(Catalogue.split(id)[1]))
-		if "hair" in rep and "shoes" in rep:
+		var ok := String(Catalogue.split(id)[1])
+		if Cosmetics.is_complete_skin(ok):
+			# Pass 9: a complete skin: what it shows, and what it replaces
+			for line in Cosmetics.entry("outfit", ok).get("includes", []):
+				t += " " + String(line)
+			t += " " + Cosmetics.override_note(ok)
+		elif "hair" in rep and "shoes" in rep:
 			t += " Its hood covers your hair and hat, and it's worn with its own footwear instead of your shoes; your colours stay as you set them in the Locker."
 		elif "hair" in rep:
 			t += " Its hood covers your hair and hat; your shoes stay as you set them in the Locker."
