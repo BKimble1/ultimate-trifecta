@@ -1388,15 +1388,18 @@ func return_place() -> String:
 	var tg: Array = info.get("targets", [])
 	if stamps == 0 or tg.is_empty():
 		return "inside " + CampusDorms.display_name(mc.home_dorm)
-	# the host knows the last stamped water; a guest sees the order of its
-	# own stamp events - the HUD uses the authoritative bit set and the
-	# most recent stamp it was told about
-	var wi := mc.last_stamp_water if mc.last_stamp_water >= 0 else -1
-	if wi < 0:
-		for i in range(tg.size() - 1, -1, -1):
-			if stamps & (1 << i):
-				wi = int(tg[i])
-				break
+	# the host reads the simulation's own return rule (its last stamped
+	# water, or the dorm when it has none); a guest knows its latest stamp
+	# event (none after a reconnect: then it doesn't guess a water)
+	var wi := -1
+	if mc.sim != null:
+		var p := mc.sim.player(mc.local_slot)
+		if p != null:
+			if p.last_stamp_water < 0:
+				return "inside " + CampusDorms.display_name(mc.home_dorm)
+			wi = p.last_stamp_water
+	elif mc.last_stamp_water >= 0:
+		wi = mc.last_stamp_water
 	return String(mc.layout.waters[wi]["short"]) if wi >= 0 else "your last splash"
 
 

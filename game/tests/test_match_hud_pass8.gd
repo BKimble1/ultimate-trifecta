@@ -155,6 +155,7 @@ func test_runner_card_in_every_state() -> void:
 	# caught: countdown, stamps kept, where you come back, protection
 	p.stamps = 3
 	mc.last_stamp_water = int(mc.targets[1])
+	p.last_stamp_water = int(mc.targets[1])   # (the simulation's own return point)
 	p.state = TC.PState.CAPTURED
 	p.penalty = 4.2
 	tx = _texts(mc)

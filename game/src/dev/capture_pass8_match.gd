@@ -151,6 +151,13 @@ func _water_view(stamps: int) -> void:
 	if at == Vector3.INF:
 		at = Vector3(c.x, 0.1, c.y + 20.0)
 	me.stamps = stamps
+	# the simulation's invariant: the last stamped water is where a caught
+	# runner returns
+	me.last_stamp_water = -1
+	for i in tg.size():
+		if stamps & (1 << i):
+			me.last_stamp_water = int(tg[i])
+	mc.last_stamp_water = me.last_stamp_water
 	_stand(at, _yaw_to(at, Vector3(c.x, 0, c.y)))
 	_hold = func() -> void:
 		var m := _me()
@@ -216,8 +223,14 @@ func _runner_danger() -> float:
 	return 2.4
 
 
+var _seen_copy: Dictionary = {}
+
+
 func _runner_map() -> float:
-	_mc().hud.open_map()
+	var mc := _mc()
+	mc.hud.open_map()
+	if _watch != null and mc.last_seen.has(_watch.id):
+		_seen_copy = (mc.last_seen[_watch.id] as Dictionary).duplicate()
 	get_tree().create_timer(1.0).timeout.connect(_snap.bind("map_runner_watch_in_sight"))
 	return 1.6
 
@@ -242,12 +255,23 @@ func _runner_map_lost() -> float:
 			break
 	if hidden == Vector3.INF:
 		hidden = Vector3(0, 0.1, -140)
+	# llvmpipe frames take seconds here and the sighting clock is wall time,
+	# so the sighting recorded while in plain sight is pinned at 2 s old
+	# every frame (DETERMINISTIC DEV STATE: its place stays where the Watch
+	# was seen; the Watch itself is hidden behind a building)
+	var seen := _seen_copy.duplicate()
 	_hold = func() -> void:
 		var m := _me()
 		if m:
 			m.stamps = 3
 		_put(w, hidden, 0.0)
-	get_tree().create_timer(2.2).timeout.connect(_snap.bind("map_runner_last_seen_2s"))
+		var mm := _mc()
+		if mm != null and not seen.is_empty():
+			var e := seen.duplicate()
+			e["live"] = false
+			e["ms"] = Time.get_ticks_msec() - 2000
+			mm.last_seen[w.id] = e
+	get_tree().create_timer(1.6).timeout.connect(_snap.bind("map_runner_last_seen_2s"))
 	return 2.8
 
 
