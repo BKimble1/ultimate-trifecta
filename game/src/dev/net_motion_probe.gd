@@ -73,8 +73,9 @@ func _input_runner(_mc: MatchController) -> InputCmd:
 	c.move = [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)][(tk / 90) % 4]
 	if tk % 70 == 0:
 		c.pressed |= TC.BTN_JUMP
-	if (tk / 45) % 3 == 0:
-		c.held |= TC.BTN_SPRINT
+	# (Pass 9: no sprint; vary the input magnitude instead: jog, then full)
+	if (tk / 45) % 3 != 0:
+		c.move *= 0.6
 	return c
 
 

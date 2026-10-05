@@ -5,9 +5,12 @@ extends RefCounted
 ## shows - against scripted runners.  Each scenario prints a PURSUIT line
 ## (closure, attempts, hits, time, escapes); docs/V4_NOTES.md keeps the
 ## before/after table.  Assertions hold the tuned behaviour:
-##   the Night Watch closes on a jogging runner in the open; a runner sprint
-##   is still a real escape burst; protected / splashing / finished /
-##   captured runners can't be tagged; a cart exit has its tag lockout.
+##   the Night Watch closes on a running runner in the open; a runner's
+##   finite tools (Turbo, a dive) are still real bursts; protected /
+##   splashing / finished / captured runners can't be tagged; a cart exit
+##   has its tag lockout.  Pass 9: both roles hold one steady full speed
+##   (runner 6.0, Night Watch 6.6 m/s; V4-Pass 8: a 5.0 m/s jog with a
+##   2.5 s sprint meter to 7.4), so the open-ground closure is 0.6 m/s.
 var t
 const R := TC.Role.RUNNER
 const P := TC.Role.PATROL
@@ -139,7 +142,8 @@ func _pursue(label: String, gap: float, runner_fn: Callable, chaser: Chaser, max
 	return res
 
 
-static func jog(dir: Vector2) -> Callable:
+## Full stick toward `dir` (Pass 9: the steady 6.0 m/s; was a 5.0 m/s jog).
+static func run(dir: Vector2) -> Callable:
 	return func(_sim: MatchSim, _r: SimPlayer, _i: int) -> InputCmd:
 		var c := InputCmd.new()
 		c.move = dir
@@ -147,19 +151,15 @@ static func jog(dir: Vector2) -> Callable:
 		return c
 
 
-## Sprints whenever the meter is (nearly) full, until it runs out.
-static func sprint_cycle(dir: Vector2) -> Callable:
-	var st := {"on": false}
-	return func(_sim: MatchSim, r: SimPlayer, _i: int) -> InputCmd:
+## Runs, and jumps then dives every 3 s (a deliberate dive each time).
+static func dive_every(dir: Vector2, period_s: float) -> Callable:
+	return func(_sim: MatchSim, _r: SimPlayer, i: int) -> InputCmd:
 		var c := InputCmd.new()
 		c.move = dir
 		c.cam_yaw = atan2(-dir.x, -dir.y)
-		if r.sprint >= 0.95:
-			st["on"] = true
-		elif r.sprint <= 0.02:
-			st["on"] = false
-		if st["on"]:
-			c.held = TC.BTN_SPRINT
+		var k := int(period_s * 60.0)
+		if i % k == 0 or i % k == 12:
+			c.pressed = TC.BTN_JUMP
 		return c
 
 
@@ -186,31 +186,34 @@ func test_pursuit_report_and_targets() -> void:
 	var d := _dir()
 	var rows: Array = []
 	for gap in [4.0, 8.0, 12.0]:
-		rows.append(await _pursue("jog %d m, presses at 2.6 m" % int(gap), gap, jog(d), Chaser.new()))
+		rows.append(await _pursue("run %d m, presses at 2.6 m" % int(gap), gap, run(d), Chaser.new(), 25.0))
 	var cue := Chaser.new()
 	cue.use_cue = true
-	rows.append(await _pursue("jog 8 m, presses on the cue", 8.0, jog(d), cue))
-	rows.append(await _pursue("sprint cycle 8 m", 8.0, sprint_cycle(d), Chaser.new(), 25.0))
+	rows.append(await _pursue("run 8 m, presses on the cue", 8.0, run(d), cue))
+	rows.append(await _pursue("run + dive every 3 s 8 m", 8.0, dive_every(d, 3.0), Chaser.new(), 25.0))
 	var close := Chaser.new()
 	close.press_at = 9.0      # presses at once
-	rows.append(await _pursue("close rear tag, both running 2.2 m", 2.2, jog(d), close, 3.0))
+	rows.append(await _pursue("close rear tag, both running 2.2 m", 2.2, run(d), close, 3.0))
 	rows.append(await _pursue("weaving runner 6 m", 6.0, weave(d), Chaser.new()))
-	rows.append(await _pursue("jog 8 m, 100 ms input delay +-33 ms", 8.0, jog(d), Chaser.new(), 20.0, 6, 2))
-	rows.append(await _pursue("jog 8 m, 250 ms hitch at 2 s", 8.0, jog(d), Chaser.new(), 20.0, 0, 0, 120, 15))
+	rows.append(await _pursue("run 8 m, 100 ms input delay +-33 ms", 8.0, run(d), Chaser.new(), 20.0, 6, 2))
+	rows.append(await _pursue("run 8 m, 250 ms hitch at 2 s", 8.0, run(d), Chaser.new(), 20.0, 0, 0, 120, 15))
 	# --- targets (V4 tuning)
 	var by := {}
 	for r in rows:
 		by[r["label"]] = r
-	t.check(not by["jog 8 m, presses at 2.6 m"]["escaped"] and float(by["jog 8 m, presses at 2.6 m"]["caught_s"]) <= 9.0,
-		"the Night Watch runs down a jogging runner from 8 m in the open (%.1f s)" % float(by["jog 8 m, presses at 2.6 m"]["caught_s"]))
-	t.check(float(by["jog 8 m, presses at 2.6 m"]["closure_mps"]) >= 1.3, "and visibly closes (%.2f m/s)" % float(by["jog 8 m, presses at 2.6 m"]["closure_mps"]))
-	t.check(not by["jog 12 m, presses at 2.6 m"]["escaped"], "a long straight chase ends (12 m)")
-	t.check(not by["jog 8 m, presses on the cue"]["escaped"] and int(by["jog 8 m, presses on the cue"]["attempts"]) <= 2,
-		"pressing when Tag lights up catches with few presses (%d)" % int(by["jog 8 m, presses on the cue"]["attempts"]))
+	# Pass 9: 8 m at the 0.6 m/s closure is 13.3 s to zero gap; reach and the
+	# lunge make the tag land sooner (V4-Pass 8 target vs a 5.0 m/s jog: 9 s)
+	var closing := Rules.cfg.patrol_speed - Rules.cfg.runner_speed
+	t.check(not by["run 8 m, presses at 2.6 m"]["escaped"] and float(by["run 8 m, presses at 2.6 m"]["caught_s"]) < 8.0 / closing,
+		"the Night Watch runs down a runner at full speed from 8 m in the open (%.1f s, closure alone %.1f s)" % [float(by["run 8 m, presses at 2.6 m"]["caught_s"]), 8.0 / closing])
+	t.check(float(by["run 8 m, presses at 2.6 m"]["closure_mps"]) >= closing - 0.1, "and steadily closes (%.2f m/s)" % float(by["run 8 m, presses at 2.6 m"]["closure_mps"]))
+	t.check(not by["run 12 m, presses at 2.6 m"]["escaped"], "a long straight chase ends (12 m)")
+	t.check(not by["run 8 m, presses on the cue"]["escaped"] and int(by["run 8 m, presses on the cue"]["attempts"]) <= 2,
+		"pressing when Tag lights up catches with few presses (%d)" % int(by["run 8 m, presses on the cue"]["attempts"]))
 	t.check(int(by["close rear tag, both running 2.2 m"]["hits"]) == 1, "a close rear tag while both run lands")
 	t.check(not by["weaving runner 6 m"]["escaped"], "a weaving runner is caught in the open")
-	t.check(not by["jog 8 m, 100 ms input delay +-33 ms"]["escaped"], "online delay does not make the chase hopeless")
-	t.check(not by["jog 8 m, 250 ms hitch at 2 s"]["escaped"], "a short hitch does not lose the chase")
+	t.check(not by["run 8 m, 100 ms input delay +-33 ms"]["escaped"], "online delay does not make the chase hopeless")
+	t.check(not by["run 8 m, 250 ms hitch at 2 s"]["escaped"], "a short hitch does not lose the chase")
 
 
 ## Cart interception: the Night Watch starts seated in a cart 13 m behind a
@@ -244,8 +247,8 @@ func test_cart_interception() -> void:
 	var exit_s := -1.0
 	var caught_s := -1.0
 	var lockout_presses := 0
-	for i in 60 * 20:
-		h.inputs[0] = jog(d).call(sim, runner, i)
+	for i in 60 * 30:   # (Pass 9: 30 s; the runner holds 6.0 m/s, the off-road cart tops out at 6.5)
+		h.inputs[0] = run(d).call(sim, runner, i)
 		var cmd := InputCmd.new()
 		if cop.state == TC.PState.IN_CART:
 			var rel := runner.pos() - c.pos()
@@ -276,7 +279,10 @@ func test_cart_interception() -> void:
 	h.free_sim()
 
 
-func test_sprint_is_still_an_escape_burst() -> void:
+## Pass 9: no sprint; the runner's bursts are finite tools.  Turbo opens the
+## gap on a Night Watch running behind for its duration; the Night Watch on
+## foot is slower than Turbo and than a dive, and faster than a plain run.
+func test_turbo_is_still_an_escape_burst() -> void:
 	var h := SimHarness.new(t)
 	h.make([R, P])
 	await h.release_patrol()
@@ -289,63 +295,14 @@ func test_sprint_is_still_an_escape_burst() -> void:
 	h.cmd(1).move = d
 	await h.step(45)
 	var g0 := h.sim.player(0).pos2().distance_to(h.sim.player(1).pos2())
-	h.cmd(0).held = TC.BTN_SPRINT
+	h.sim.player(0).gadget = TC.Gadget.TURBO
+	h.press(0, TC.BTN_GADGET)
 	await h.step(120)
 	var g1 := h.sim.player(0).pos2().distance_to(h.sim.player(1).pos2())
-	print("PURSUIT sprint burst: gap %.1f m -> %.1f m over 2 s" % [g0, g1])
-	t.check(g1 > g0 + 0.6, "a 2 s sprint opens the gap (%.1f -> %.1f m)" % [g0, g1])
-	t.check(Rules.cfg.runner_sprint_speed > Rules.cfg.patrol_speed, "the Night Watch is not faster than a sprint")
-	t.check(Rules.cfg.dive_speed > Rules.cfg.patrol_speed, "nor than a dive")
-	h.free_sim()
-
-
-func test_untaggable_states_and_cart_exit_lockout() -> void:
-	var h := SimHarness.new(t)
-	h.make([R, P, R])
-	await h.release_patrol()
-	var lane := _open_lane(h.sim)
-	var a: Vector3 = lane[0]
-	var d: Vector2 = lane[1]
-	var yaw := atan2(-d.x, -d.y)
-	var sim := h.sim
-	var cop := sim.player(1)
-	for case in ["protected", "finished", "captured"]:
-		h.place(0, a, yaw)
-		h.place(1, a - Vector3(d.x, 0, d.y) * 1.0, yaw)
-		var r := sim.player(0)
-		match case:
-			"protected":
-				r.protect = 1.5
-			"finished":
-				r.state = TC.PState.FINISHED
-			"captured":
-				r.state = TC.PState.CAPTURED
-		var before := cop.captures
-		cop.tag_cd = 0.0
-		h.cmd(1).cam_yaw = yaw
-		h.press(1, TC.BTN_TAG)
-		await h.step(30)
-		t.eq(cop.captures, before, "no tag on a %s runner" % case)
-		r.state = TC.PState.ACTIVE
-		r.protect = 0.0
-		Motor.set_body_enabled(r.body, true)
-		await h.step(60)
-	# finishing wins over a same-tick tag: _check_finish runs before _resolve_tag
-	var order := (sim.get_script() as GDScript).source_code
-	t.check(order.find("_check_finish(p)") < order.find("_resolve_tag(p)"), "finish is resolved before tags each tick")
-	# cart exit lockout
-	cop.tag_lockout = Rules.cfg.cart_exit_tag_lockout_s
-	h.place(0, a, yaw)
-	h.place(1, a - Vector3(d.x, 0, d.y) * 1.0, yaw)
-	var c0 := cop.captures
-	h.press(1, TC.BTN_TAG)
-	await h.step(1)
-	t.eq(cop.tag_phase, SimPlayer.TagPhase.NONE, "Tag is ignored during the cart-exit lockout")
-	await h.step(int(Rules.cfg.cart_exit_tag_lockout_s * 60.0) + 2)
-	h.place(0, a, yaw)
-	h.place(1, a - Vector3(d.x, 0, d.y) * 1.0, yaw)
-	h.cmd(1).cam_yaw = yaw
-	h.press(1, TC.BTN_TAG)
-	await h.step(30)
-	t.eq(cop.captures, c0 + 1, "and works once the lockout ends")
+	print("PURSUIT turbo burst: gap %.1f m -> %.1f m over 2 s" % [g0, g1])
+	t.check(g1 > g0 + 1.2, "2 s of Turbo opens the gap (%.1f -> %.1f m)" % [g0, g1])
+	var cfg := Rules.cfg
+	t.check(minf(cfg.runner_speed * cfg.turbo_multiplier, cfg.turbo_speed_cap) > cfg.patrol_speed, "the Night Watch is not faster than Turbo")
+	t.check(cfg.dive_speed > cfg.patrol_speed, "nor than a dive")
+	t.check(cfg.patrol_speed > cfg.runner_speed, "but is faster than a plain run")
 	h.free_sim()

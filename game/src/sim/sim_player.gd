@@ -24,10 +24,11 @@ var vel := Vector3.ZERO
 var yaw: float = 0.0
 var state: int = TC.PState.ACTIVE
 var state_t: float = 0.0
-var sprint: float = 1.0
-var sprint_delay: float = 0.0
-var sprinting := false
-var sprint_exhausted := false   # Pass 8: ran the meter dry; no sprint until released and refilled (sprint_rearm_fraction)
+## Pass 9: moving at or near the role's full-input speed on the ground
+## (derived each tick from the actual speed: footstep noise, animation,
+## expressions and bots read it). The sprint meter, its refill and the Pass 8
+## exhausted latch are gone.
+var fast := false
 var coyote: float = 0.0
 var jump_buf: float = 0.0
 var on_floor := true
@@ -169,13 +170,12 @@ func write_motor(buf: StreamPeerBuffer) -> void:
 	buf.put_float(yaw)
 	buf.put_u8(state)
 	buf.put_float(state_t)
-	buf.put_float(sprint)
-	buf.put_float(sprint_delay)
+	# flags: 1 fast, 2 on_floor, 4 diving; 8 is retired (Pass 8's exhausted
+	# latch) and stays unused
 	var flags := 0
-	if sprinting: flags |= 1
+	if fast: flags |= 1
 	if on_floor: flags |= 2
 	if diving: flags |= 4
-	if sprint_exhausted: flags |= 8
 	buf.put_u8(flags)
 	buf.put_float(coyote)
 	buf.put_float(jump_buf)
@@ -198,13 +198,10 @@ func read_motor(buf: StreamPeerBuffer) -> Dictionary:
 	d["yaw"] = buf.get_float()
 	d["state"] = buf.get_u8()
 	d["state_t"] = buf.get_float()
-	d["sprint"] = buf.get_float()
-	d["sprint_delay"] = buf.get_float()
 	var flags := buf.get_u8()
-	d["sprinting"] = (flags & 1) != 0
+	d["fast"] = (flags & 1) != 0
 	d["on_floor"] = (flags & 2) != 0
 	d["diving"] = (flags & 4) != 0
-	d["sprint_exhausted"] = (flags & 8) != 0
 	d["coyote"] = buf.get_float()
 	d["jump_buf"] = buf.get_float()
 	d["dive_land"] = buf.get_float()
@@ -229,12 +226,9 @@ func apply_motor(d: Dictionary) -> void:
 	yaw = d["yaw"]
 	state = d["state"]
 	state_t = d["state_t"]
-	sprint = d["sprint"]
-	sprint_delay = d["sprint_delay"]
-	sprinting = d["sprinting"]
+	fast = d.get("fast", false)
 	on_floor = d["on_floor"]
 	diving = d["diving"]
-	sprint_exhausted = d.get("sprint_exhausted", false)
 	coyote = d["coyote"]
 	jump_buf = d["jump_buf"]
 	dive_land = d["dive_land"]

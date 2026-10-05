@@ -180,7 +180,8 @@ func _place() -> void:
 	p.vel = Vector3.ZERO
 	p.body.velocity = Vector3.ZERO
 	p.yaw = yaw
-	p.sprint = 1.0
+	if "sprint" in p:   # (builds before Pass 9 had a sprint meter)
+		p.set("sprint", 1.0)
 	p.clear_history()
 	mc.camera.snap_to(p.body.global_position, yaw)
 	mc.camera.set("_manual_t", 10.0)

@@ -1,10 +1,10 @@
-1.8 internal beta (pass 8: steadier sprint, fairer dives, clearer matches, rotating Shop skins, challenges). Please tell us your iPhone model:
+1.9 internal beta (pass 9: one steady full speed, Season Pass to tier 100 with two new skins, better-fitting outfits). Please tell us your iPhone model:
 
-- Sprint: on a straight, push the stick to its edge (or hold Sprint) and keep holding. You should get one steady burst, then a normal run once the meter is empty, with "Sprint empty · ease off to recharge". Ease off for a moment and push again: it sprints at once. Tell us if it ever pulses fast and slow.
-- Dive: jump, then press jump again in the air. One dive per jump, then a short landing before the next jump. Spamming jump and dive should no longer outrun the Night Watch; a single well-timed dive still helps.
-- In a round: the top bar shows the team goal and the clock ("Team home 2/4 · Need 2 more"), your card says what to do next, and runners see "Runner pace: 3rd/6". Tell us if anything takes more than a glance to understand.
-- Map: the Night Watch shows only while you can actually see them, then as a hollow "last seen" mark for a few seconds. The legend says what each mark is.
-- Results: the outcome and why come first, then what you did, the series, and rewards.
-- Startup: the Idlery Games logo should stay perfectly still and crisp from the launch screen until it fades. If it doesn't, a screenshot (not a screen recording) helps.
-- Shop > All skins: preview the six new outfits (Midnight Mechanic, Moonwalk Cadet, Pumpkin Pajamas, Arcade Sprinter, Cloud Nine, Bedtime Bandit) with Idle, Run and Emote. Season Pass > Challenges lists the daily and weekly goals; pin one and look for it in the pause menu.
-- The game service and App Store products are not set up yet, so rotating offers, buying and challenge progress say they're unavailable in this build. That's expected; please don't try to buy anything.
+- Running: push the stick all the way and hold it. You keep one steady full speed for as long as you hold it. There is no Sprint button, meter or recharge any more. A gentle push walks (silent), a part push jogs (quieter). On a controller or keyboard: left stick all the way, or WASD. Tell us if the speed ever dips or pulses, or if full speed is hard to reach with your thumb.
+- Night Watch: you are a little faster than a runner on foot, so on a straight you close in slowly. Press Tag when it lights up. Tell us if chases feel too long or too short, and who wins most rounds.
+- Dive: unchanged. One dive per jump, then a short landing.
+- Turbo Sneakers are now a real escape for 3 seconds. Tell us if they feel too strong.
+- Season Pass: now 100 tiers. Your Season XP, claims and Premium are kept. Try "You're at", "Next reward" and the 30, 50 and 100 shortcuts above the track. Record Breaker is the Premium reward at tier 50 and Dr. Doom at tier 100. Open them to preview.
+- Outfits: watch for clothes floating off the body, gaps, or anything poking through while running, turning, jumping, diving and splashing. A screenshot helps.
+- Online: everyone in a party needs 1.9. Older versions are asked to update.
+- The game service and App Store products are still not set up, so buying, claiming and challenge progress say they're unavailable in this build. That's expected; please don't try to buy anything.

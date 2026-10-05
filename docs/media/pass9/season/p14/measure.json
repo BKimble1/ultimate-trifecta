@@ -1,0 +1,2299 @@
+{
+ "01_svcon_test_pass_open_tier43": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 43 / 100",
+  "header_xp": "150 / 350 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     148.0,
+     82.0
+    ],
+    "text": "You're at / Tier 43",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     274.0,
+     236.0,
+     227.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 45 \u00b7 550 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [
+   {
+    "tiers": "31-34",
+    "rect": [
+     212.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "36-39",
+    "rect": [
+     425.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "41-44",
+    "rect": [
+     638.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "46-49",
+    "rect": [
+     851.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   }
+  ],
+  "focus": [
+   40.0,
+   "free",
+   "claimable"
+  ],
+  "side_page": "challenges",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "Claim all (2)"
+ },
+ "02_svcon_test_nav_current_run": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 43 / 100",
+  "header_xp": "150 / 350 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     148.0,
+     82.0
+    ],
+    "text": "You're at / Tier 43",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     274.0,
+     236.0,
+     227.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 45 \u00b7 550 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [
+   {
+    "tiers": "36-39",
+    "rect": [
+     301.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "41-44",
+    "rect": [
+     514.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "46-49",
+    "rect": [
+     727.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "51-54",
+    "rect": [
+     940.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   }
+  ],
+  "focus": [
+   43.0,
+   "progress",
+   "progress"
+  ],
+  "side_page": "reward",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "Claim all (2)",
+  "detail": {
+   "over": "Tiers 41\u201344 \u00b7 Progress",
+   "name": "Progress tiers",
+   "state": "They count toward Tier 45: 50 Coins (Free) and 75 Coins (Premium). You're at Tier 43. 550 more Season XP to Tier 45.",
+   "reason": "",
+   "blurb": "",
+   "includes": "",
+   "note": "",
+   "action": "Show Tier 45",
+   "action_disabled": false,
+   "action_rect": [
+    1108.0,
+    580.0,
+    328.0,
+    82.0
+   ],
+   "action_in_safe": true
+  }
+ },
+ "03_svcon_test_milestone_50_record_breaker": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 43 / 100",
+  "header_xp": "150 / 350 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     148.0,
+     82.0
+    ],
+    "text": "You're at / Tier 43",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     274.0,
+     236.0,
+     227.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 45 \u00b7 550 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [
+   {
+    "tiers": "41-44",
+    "rect": [
+     212.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "46-49",
+    "rect": [
+     425.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "51-54",
+    "rect": [
+     638.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "56-59",
+    "rect": [
+     851.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   }
+  ],
+  "focus": [
+   50.0,
+   "premium",
+   "locked"
+  ],
+  "side_page": "reward",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "Claim all (2)",
+  "detail": {
+   "over": "Tier 50 \u00b7 Premium track",
+   "name": "Record Breaker",
+   "state": "Reach Tier 50: 2,300 more Season XP from online rounds. No tier skips.",
+   "reason": "",
+   "blurb": "The clock has a new problem.",
+   "includes": "Includes: Signature tousled curls, white athletic shorts, green wristband, and brown sandals.",
+   "note": "Preview not available in this build.",
+   "action": "",
+   "action_disabled": false,
+   "action_rect": [],
+   "action_in_safe": true
+  }
+ },
+ "04_svcon_test_milestone_100_dr_doom": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 43 / 100",
+  "header_xp": "150 / 350 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     148.0,
+     82.0
+    ],
+    "text": "You're at / Tier 43",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     274.0,
+     236.0,
+     227.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 45 \u00b7 550 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [
+   {
+    "tiers": "81-84",
+    "rect": [
+     220.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "86-89",
+    "rect": [
+     433.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "91-94",
+    "rect": [
+     646.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "96-99",
+    "rect": [
+     859.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   }
+  ],
+  "focus": [
+   100.0,
+   "premium",
+   "locked"
+  ],
+  "side_page": "reward",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "Claim all (2)",
+  "detail": {
+   "over": "Tier 100 \u00b7 Premium track",
+   "name": "Dr. Doom",
+   "state": "Reach Tier 100: 19,800 more Season XP from online rounds. No tier skips.",
+   "reason": "",
+   "blurb": "Office hours are over. His rounds aren't.",
+   "includes": "Includes: Signature bald crown and side fringe, brown suit, striped shirt, gold striped tie, and formal shoes.",
+   "note": "Preview not available in this build.",
+   "action": "",
+   "action_disabled": false,
+   "action_rect": [],
+   "action_in_safe": true
+  }
+ },
+ "05_svcon_test_tier40_claimable": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 43 / 100",
+  "header_xp": "150 / 350 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     148.0,
+     82.0
+    ],
+    "text": "You're at / Tier 43",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     274.0,
+     236.0,
+     227.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 45 \u00b7 550 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [
+   {
+    "tiers": "31-34",
+    "rect": [
+     212.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "36-39",
+    "rect": [
+     425.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "41-44",
+    "rect": [
+     638.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "46-49",
+    "rect": [
+     851.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   }
+  ],
+  "focus": [
+   40.0,
+   "premium",
+   "claimable"
+  ],
+  "side_page": "reward",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "Claim all (2)",
+  "detail": {
+   "over": "Tier 40 \u00b7 Premium track",
+   "name": "Big Dive",
+   "state": "Earned at Tier 40. Claim it to add it to your Locker.",
+   "reason": "",
+   "blurb": "",
+   "includes": "",
+   "note": "",
+   "action": "Claim",
+   "action_disabled": false,
+   "action_rect": [
+    1108.0,
+    580.0,
+    328.0,
+    82.0
+   ],
+   "action_in_safe": true
+  }
+ },
+ "06_svcon_test_tier40_claimed": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 43 / 100",
+  "header_xp": "150 / 350 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     148.0,
+     82.0
+    ],
+    "text": "You're at / Tier 43",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     274.0,
+     236.0,
+     227.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 45 \u00b7 550 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [
+   {
+    "tiers": "31-34",
+    "rect": [
+     212.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "36-39",
+    "rect": [
+     425.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "41-44",
+    "rect": [
+     638.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "46-49",
+    "rect": [
+     851.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   }
+  ],
+  "focus": [
+   40.0,
+   "premium",
+   "claimed"
+  ],
+  "side_page": "reward",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "Claim all (1)",
+  "detail": {
+   "over": "Tier 40 \u00b7 Premium track",
+   "name": "Big Dive",
+   "state": "Claimed. It's yours to keep, in your Locker.",
+   "reason": "",
+   "blurb": "",
+   "includes": "",
+   "note": "",
+   "action": "Wear it in the Locker",
+   "action_disabled": false,
+   "action_rect": [
+    1108.0,
+    580.0,
+    328.0,
+    82.0
+   ],
+   "action_in_safe": true
+  }
+ },
+ "07_svcon_test_free_tier52_record_breaker_premium_locked": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 52 / 100",
+  "header_xp": "0 / 350 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     148.0,
+     82.0
+    ],
+    "text": "You're at / Tier 52",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     274.0,
+     236.0,
+     241.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 55 \u00b7 1,050 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [
+   {
+    "tiers": "41-44",
+    "rect": [
+     212.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "46-49",
+    "rect": [
+     425.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "51-54",
+    "rect": [
+     638.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "56-59",
+    "rect": [
+     851.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   }
+  ],
+  "focus": [
+   50,
+   "premium",
+   "premium_locked"
+  ],
+  "side_page": "reward",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "Claim all (1)",
+  "detail": {
+   "over": "Tier 50 \u00b7 Premium track",
+   "name": "Record Breaker",
+   "state": "Reached. Premium (1,500 Coins in the Shop) unlocks it.",
+   "reason": "",
+   "blurb": "The clock has a new problem.",
+   "includes": "Includes: Signature tousled curls, white athletic shorts, green wristband, and brown sandals.",
+   "note": "Preview not available in this build.",
+   "action": "Get Premium in the Shop",
+   "action_disabled": false,
+   "action_rect": [
+    1108.0,
+    580.0,
+    328.0,
+    82.0
+   ],
+   "action_in_safe": true
+  }
+ },
+ "08_svcon_test_free_tier50_badge_claimable": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 52 / 100",
+  "header_xp": "0 / 350 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     148.0,
+     82.0
+    ],
+    "text": "You're at / Tier 52",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     274.0,
+     236.0,
+     241.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 55 \u00b7 1,050 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [
+   {
+    "tiers": "41-44",
+    "rect": [
+     212.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "46-49",
+    "rect": [
+     425.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "51-54",
+    "rect": [
+     638.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "56-59",
+    "rect": [
+     851.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   }
+  ],
+  "focus": [
+   50.0,
+   "free",
+   "claimable"
+  ],
+  "side_page": "reward",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "Claim all (1)",
+  "detail": {
+   "over": "Tier 50 \u00b7 Free track",
+   "name": "Record Pace",
+   "state": "Earned at Tier 50. Claim it to add it to your Locker.",
+   "reason": "",
+   "blurb": "",
+   "includes": "",
+   "note": "",
+   "action": "Claim",
+   "action_disabled": false,
+   "action_rect": [
+    1108.0,
+    580.0,
+    328.0,
+    82.0
+   ],
+   "action_in_safe": true
+  }
+ },
+ "09_svcon_test_tier100_dr_doom_claimed": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 100 / 100",
+  "header_xp": "Every tier reached",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     159.0,
+     82.0
+    ],
+    "text": "You're at / Tier 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     285.0,
+     236.0,
+     190.0,
+     82.0
+    ],
+    "text": "Next reward / All reached",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [
+   {
+    "tiers": "81-84",
+    "rect": [
+     220.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "86-89",
+    "rect": [
+     433.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "91-94",
+    "rect": [
+     646.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "96-99",
+    "rect": [
+     859.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   }
+  ],
+  "focus": [
+   100.0,
+   "premium",
+   "claimed"
+  ],
+  "side_page": "reward",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "Nothing to claim",
+  "detail": {
+   "over": "Tier 100 \u00b7 Premium track",
+   "name": "Dr. Doom",
+   "state": "Claimed. It's yours to keep, in your Locker.",
+   "reason": "",
+   "blurb": "Office hours are over. His rounds aren't.",
+   "includes": "Includes: Signature bald crown and side fringe, brown suit, striped shirt, gold striped tie, and formal shoes.",
+   "note": "Preview not available in this build.",
+   "action": "Wear it in the Locker",
+   "action_disabled": false,
+   "action_rect": [
+    1108.0,
+    580.0,
+    328.0,
+    82.0
+   ],
+   "action_in_safe": true
+  }
+ },
+ "10_svcon_test_claim_pending": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 50 / 100",
+  "header_xp": "100 / 350 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     149.0,
+     82.0
+    ],
+    "text": "You're at / Tier 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     275.0,
+     236.0,
+     241.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 55 \u00b7 1,650 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [
+   {
+    "tiers": "41-44",
+    "rect": [
+     212.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "46-49",
+    "rect": [
+     425.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "51-54",
+    "rect": [
+     638.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "56-59",
+    "rect": [
+     851.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   }
+  ],
+  "focus": [
+   50.0,
+   "premium",
+   "pending"
+  ],
+  "side_page": "reward",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "Claim all (1)",
+  "detail": {
+   "over": "Tier 50 \u00b7 Premium track",
+   "name": "Record Breaker",
+   "state": "Earned at Tier 50. Your claim is on its way: it finishes by itself when the game service answers, and never twice.",
+   "reason": "",
+   "blurb": "The clock has a new problem.",
+   "includes": "Includes: Signature tousled curls, white athletic shorts, green wristband, and brown sandals.",
+   "note": "Preview not available in this build.",
+   "action": "Claiming\u2026",
+   "action_disabled": true,
+   "action_rect": [
+    1108.0,
+    580.0,
+    328.0,
+    82.0
+   ],
+   "action_in_safe": true
+  }
+ },
+ "11_svcon_test_old_service_tier50": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 50 / 100",
+  "header_xp": "100 / 350 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     149.0,
+     82.0
+    ],
+    "text": "You're at / Tier 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     275.0,
+     236.0,
+     241.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 55 \u00b7 1,650 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [
+   {
+    "tiers": "41-44",
+    "rect": [
+     212.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "46-49",
+    "rect": [
+     425.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "51-54",
+    "rect": [
+     638.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "56-59",
+    "rect": [
+     851.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   }
+  ],
+  "focus": [
+   50.0,
+   "premium",
+   "service_update"
+  ],
+  "side_page": "reward",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "Nothing to claim",
+  "detail": {
+   "over": "Tier 50 \u00b7 Premium track",
+   "name": "Record Breaker",
+   "state": "Earned at Tier 50, not claimed yet. It stays earned.",
+   "reason": "The game service hasn't been updated for this tier yet, so it can't be claimed right now.",
+   "blurb": "The clock has a new problem.",
+   "includes": "Includes: Signature tousled curls, white athletic shorts, green wristband, and brown sandals.",
+   "note": "Preview not available in this build.",
+   "action": "Claim",
+   "action_disabled": true,
+   "action_rect": [
+    1108.0,
+    580.0,
+    328.0,
+    82.0
+   ],
+   "action_in_safe": true
+  }
+ },
+ "12_svcon_test_featured_preview_path_standin": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 15 / 100",
+  "header_xp": "100 / 300 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     148.0,
+     82.0
+    ],
+    "text": "You're at / Tier 15",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     274.0,
+     236.0,
+     225.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 16 \u00b7 200 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_15",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 15",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [],
+  "focus": [
+   15.0,
+   "premium",
+   "claimable"
+  ],
+  "side_page": "reward",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "Claim all (23)",
+  "detail": {
+   "over": "Tier 15 \u00b7 Premium track",
+   "name": "Glow Jogger",
+   "state": "Earned at Tier 15. Claim it to add it to your Locker.",
+   "reason": "",
+   "blurb": "",
+   "includes": "",
+   "note": "",
+   "action": "Claim",
+   "action_disabled": false,
+   "action_rect": [
+    1108.0,
+    580.0,
+    328.0,
+    82.0
+   ],
+   "action_in_safe": true
+  }
+ },
+ "20_svcoff_pass_preview": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 1 / 100",
+  "header_xp": "0 / 200 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     148.0,
+     82.0
+    ],
+    "text": "You're at / Tier 1",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     274.0,
+     236.0,
+     216.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 3 \u00b7 400 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [],
+  "focus": [
+   3.0,
+   "free",
+   "locked"
+  ],
+  "side_page": "challenges",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": ""
+ },
+ "21_svcoff_milestone_100": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   86.7620010375977,
+   12.0,
+   1384.47607421875,
+   669.234008789062
+  ],
+  "touch_min": 81.224,
+  "pressables_cut_off": [],
+  "header_tier": "Tier 1 / 100",
+  "header_xp": "0 / 200 XP",
+  "nav_row": [
+   118.0,
+   236.0,
+   946.0,
+   82.0
+  ],
+  "nav_chips": [
+   {
+    "name": "NavNow",
+    "rect": [
+     118.0,
+     236.0,
+     148.0,
+     82.0
+    ],
+    "text": "You're at / Tier 1",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "NavNext",
+    "rect": [
+     274.0,
+     236.0,
+     216.0,
+     82.0
+    ],
+    "text": "Next reward / Tier 3 \u00b7 400 XP",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_30",
+    "rect": [
+     706.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 30",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_50",
+    "rect": [
+     826.0,
+     236.0,
+     112.0,
+     82.0
+    ],
+    "text": "Tier / 50",
+    "whole_in_safe": true,
+    "touch_ok": true
+   },
+   {
+    "name": "Milestone_100",
+    "rect": [
+     946.0,
+     236.0,
+     118.0,
+     82.0
+    ],
+    "text": "Tier / 100",
+    "whole_in_safe": true,
+    "touch_ok": true
+   }
+  ],
+  "free_row": {
+   "top": 365.0,
+   "bottom": 510.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 518.0,
+   "bottom": 663.0,
+   "cell": [
+    116.0,
+    145.0
+   ],
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "runs_in_view": [
+   {
+    "tiers": "81-84",
+    "rect": [
+     220.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "86-89",
+    "rect": [
+     433.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "91-94",
+    "rect": [
+     646.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   },
+   {
+    "tiers": "96-99",
+    "rect": [
+     859.0,
+     365.0,
+     81.0,
+     298.0
+    ]
+   }
+  ],
+  "focus": [
+   100.0,
+   "premium",
+   "locked"
+  ],
+  "side_page": "reward",
+  "side_panel": [
+   1092.0,
+   118.0,
+   360.0,
+   552.0
+  ],
+  "claim_all": "",
+  "detail": {
+   "over": "Tier 100 \u00b7 Premium track",
+   "name": "Dr. Doom",
+   "state": "Reach Tier 100: 32,800 more Season XP from online rounds. No tier skips. Premium track: needs Premium too.",
+   "reason": "",
+   "blurb": "Office hours are over. His rounds aren't.",
+   "includes": "Includes: Signature bald crown and side fringe, brown suit, striped shirt, gold striped tie, and formal shoes.",
+   "note": "Preview not available in this build.",
+   "action": "",
+   "action_disabled": false,
+   "action_rect": [],
+   "action_in_safe": true
+  }
+ }
+}

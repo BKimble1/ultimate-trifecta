@@ -213,10 +213,9 @@ Desktop keys are for testing only:
 
 | Key | Action |
 |---|---|
-| WASD | Move |
+| WASD | Move (held: full speed; there is no Sprint key) |
 | Mouse or IJKL | Camera |
 | Space | Jump; press again in the air to dive |
-| Shift | Sprint |
 | F | Tag |
 | E | Cart in or out |
 | Q | Gadget |

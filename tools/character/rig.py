@@ -188,11 +188,21 @@ def mix(*pairs):
     return {k: v / tot for k, v in out.items() if v > 1e-4}
 
 
+HIP_THIGH = 0.55     # the thigh's share of the lower torso at the hip (torso_w)
+
+
+def hip_thigh_share(p):
+    """The thigh's share of the weights at a point of the hip zone, used by
+    the lower torso (torso_w) and, since Pass 9, the top of the legs
+    (leg_w): one function on both sides of the pelvis/leg overlap."""
+    return smoothstep(0.57, 0.47, p.z) * smoothstep(0.02, 0.11, abs(p.x)) * HIP_THIGH
+
+
 def torso_w(p):
     w = seg_weights(p.z, [('hips', 0.60), ('spine', 0.725), ('chest', 0.875), ('neck', None)], 0.04)
     side = '.L' if p.x < 0 else '.R'
     # lower torso follows the thighs a little so the crotch deforms with strides
-    f = smoothstep(0.57, 0.47, p.z) * smoothstep(0.02, 0.11, abs(p.x)) * 0.55
+    f = hip_thigh_share(p)
     # shoulder region follows the clavicle
     g = smoothstep(0.11, 0.19, abs(p.x)) * smoothstep(0.74, 0.83, p.z) * 0.5
     parts = [(w, 1.0 - f - g)]
@@ -250,10 +260,16 @@ def leg_w(p, side):
     kl = (knee(side) - hip(side)).length
     al = kl + (ankle(side) - knee(side)).length
     w = seg_weights(s, [('thigh' + sfx, kl), ('shin' + sfx, al), ('foot' + sfx, None)], 0.04)
-    # top of the thigh blends into the hips so the pelvis does not crease
-    f = smoothstep(0.05, -0.02, s) * 0.5
-    if f > 0:
-        w = mix((w, 1.0 - f), ({'hips': 1.0}, f))
+    # Pass 9: the top of the leg, where the pelvis shell overlaps it, carries
+    # the lower torso's own hip blend (hip_thigh_share), so a trouser leg and
+    # the pelvis over it move as one surface: V4-V8 had the leg there on the
+    # thigh alone while the pelvis carried 53 % thigh, and the two parted by
+    # up to 7 cm at the front of the hip in every running stride (fit_check
+    # seams).  Below the overlap it is the leg's own chain.
+    q = smoothstep(0.45, 0.485, p.z)
+    if q > 0:
+        h = hip_thigh_share(p)
+        w = mix((w, 1.0 - q), ({'hips': 1.0 - h, 'thigh' + sfx: h}, q))
     return w
 
 

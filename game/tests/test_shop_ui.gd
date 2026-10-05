@@ -163,7 +163,12 @@ func test_season_track_swipes_and_claims() -> void:
 	App.goto(SeasonScreen)
 	await _frames(6)
 	var sp := App.screen as SeasonScreen
-	t.eq(sp.cells.size(), 60, "30 tiers x Free/Premium")
+	# Pass 9: a column per reward tier (Free and Premium), one per run of
+	# progress tiers: 30 + 14 reward tiers, 14 runs
+	var reward_tiers := Catalogue.season_tiers("s1").filter(func(tr: Dictionary) -> bool: return Economy.has_reward("s1", int(tr["tier"]))).size()
+	t.eq(reward_tiers, 44, "44 tiers with a reward")
+	t.eq(sp.cells.size(), reward_tiers * 2, "reward tiers x Free/Premium")
+	t.eq(sp.runs.size(), Economy.progress_runs("s1").size(), "one column per run of progress tiers")
 	t.check(sp.track_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED, "a horizontal track")
 	t.check(sp.track_scroll.has_meta(&"touch_scroll"), "made with UIKit.scroll_area (finger scrolling)")
 	sp.track_scroll.scroll_horizontal = 0

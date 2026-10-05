@@ -176,7 +176,6 @@ func _place() -> void:
 		p.vel = Vector3.ZERO
 		p.body.velocity = Vector3.ZERO
 		p.yaw = spawn["yaw"]
-		p.sprint = 1.0
 		p.clear_history()
 		mc.camera.snap_to(p.body.global_position, spawn["cam"])
 		mc.camera.pitch = 0.32
@@ -193,7 +192,6 @@ func _place() -> void:
 	p.vel = Vector3.ZERO
 	p.body.velocity = Vector3.ZERO
 	p.yaw = yaw
-	p.sprint = 1.0
 	p.clear_history()
 	mc.camera.snap_to(p.body.global_position, yaw)
 	mc.camera.pitch = 0.32
@@ -264,7 +262,7 @@ func _case(name: String, at: Vector2, secs: float, path: Callable, recenter := t
 	var head_end := atan2(-hv_end.x, -hv_end.y) if hv_end.length() > 0.5 else head_start
 	var yaw_end := mc.camera.yaw
 	var rel_deg := rad_to_deg(rel_sum / maxi(1, rel_n))
-	var end_note := "rel=%+6.1f st=%d spd=%.1f y=%+.2f sprint=%.2f" % [rel_deg, p.state, Vector2(p.vel.x, p.vel.z).length(), p.body.global_position.y - p0.y, p.sprint]
+	var end_note := "rel=%+6.1f st=%d spd=%.1f y=%+.2f fast=%s" % [rel_deg, p.state, Vector2(p.vel.x, p.vel.z).length(), p.body.global_position.y - p0.y, str(p.fast)]
 	_touch(0, last, false)
 	var stop := -1
 	for i in 60:

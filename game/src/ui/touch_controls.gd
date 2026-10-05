@@ -59,9 +59,9 @@ static func saved_layout() -> Dictionary:
 
 ## Labels per button name (the editor shows the same ones).
 const LABELS := {"jump": "Jump", "tag": "Tag", "gadget": "Gadget", "cart": "Drive", "gas": "Gas", "brake": "Brake",
-	"next": "Next", "cheer": "Cheer", "sprint": "Sprint"}
-const ICONS := {"tag": "whistle", "cart": "cart", "next": "eye", "cheer": "star", "sprint": "bolt"}
-const COLORS := {"jump": "teal", "tag": "patrol", "gadget": "amber", "gas": "good", "brake": "bad", "cart": "patrol", "sprint": "amber"}
+	"next": "Next", "cheer": "Cheer"}
+const ICONS := {"tag": "whistle", "cart": "cart", "next": "eye", "cheer": "star"}
+const COLORS := {"jump": "teal", "tag": "patrol", "gadget": "amber", "gas": "good", "brake": "bad", "cart": "patrol"}
 
 
 static func button_color(name: String) -> Color:
@@ -107,31 +107,15 @@ static func draw_button(ci: CanvasItem, b: Dictionary, name: String, label: Stri
 	ci.draw_string(f, center + Vector2(-tw * 0.5, r * 0.46 if icon != "" else fs * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, text_col)
 
 
-## The stick: base ring, the sprint threshold ring (runners, edge sprint)
-## and the knob.  Pass 8: `latched` (the sprint-exhausted latch) draws the
-## meter ring coral and dashed, and the stick never shows sprint as on while
-## the latch keeps it off (the caller passes `sprinting` false then).
+## The stick: base ring and knob.  Pass 9: no sprint ring or meter (one
+## steady full speed); the knob lights up while the stick is at full speed,
+## so a thumb can feel where full speed starts without looking for a ring.
 static func draw_stick(ci: CanvasItem, base: Vector2, knob: Vector2, R: float, knob_r: float, opacity: float, active: bool,
-		sprint_ring: float = 0.0, sprinting: bool = false, meter: float = -1.0, latched: bool = false) -> void:
+		full: bool = false) -> void:
 	var a := (0.9 if active else 0.42) * opacity
 	ci.draw_circle(base, R, Color(UIKit.NAVY, 0.3 * a))
 	ci.draw_arc(base, R, 0, TAU, 56, Color(UIKit.IVORY, 0.42 * a), 2.5, true)
-	if sprint_ring > 0.0:
-		# where edge-sprint begins: a dotted ring inside the rim
-		var rr := R * sprint_ring
-		for i in 24:
-			var a0 := TAU * float(i) / 24.0
-			ci.draw_arc(base, rr, a0, a0 + TAU / 48.0, 4, Color(UIKit.AMBER if sprinting else UIKit.IVORY, (0.8 if sprinting else 0.32) * a), 2.0, true)
-	if meter >= 0.0 and latched:
-		# recharging: the filled part in short coral dashes (not colour alone)
-		var n := maxi(1, int(round(36.0 * meter)))
-		for i in n:
-			var a0 := -PI * 0.5 + TAU * meter * float(i) / float(n)
-			ci.draw_arc(base, R + 8, a0, a0 + TAU * meter / float(n) * 0.6, 4, Color(UIKit.BAD, 0.7 * opacity), 5.0, true)
-	elif meter >= 0.0:
-		var col := UIKit.AMBER if meter > 0.15 else UIKit.BAD
-		ci.draw_arc(base, R + 8, -PI * 0.5, -PI * 0.5 + TAU * meter, 48, Color(col, (0.75 if sprinting else 0.4) * opacity), 5.0, true)
-	ci.draw_circle(knob, knob_r, Color(UIKit.AMBER, 0.9 * opacity) if sprinting else Color(UIKit.IVORY, (0.45 * a + 0.2)))
+	ci.draw_circle(knob, knob_r, Color(UIKit.TEAL, 0.85 * opacity) if full else Color(UIKit.IVORY, (0.45 * a + 0.2)))
 
 
 class TouchSurface:
@@ -144,7 +128,6 @@ class TouchSurface:
 	var res: Dictionary = {}          # TouchLayout.resolve result in use
 	var _sig := ""
 	var _was_in_cart := false
-	var _hold_sprint := false
 	var _reserved: Array[Rect2] = []
 	var _ctx_cache: Dictionary = {}
 	var layout_builds := 0            # tests: how often the layout was recomputed
@@ -156,10 +139,6 @@ class TouchSurface:
 
 	func _read_settings() -> void:
 		router.fixed_stick = String(Save.get_setting("stick_mode", "dynamic")) == "fixed"
-		_hold_sprint = String(Save.get_setting("sprint_mode", "edge")) == "hold"
-		router.edge_sprint = not _hold_sprint and bool(Save.get_setting("touch_sprint", true))
-		router.sprint_on = float(Save.get_setting("sprint_threshold", 0.88))
-		router.sprint_off = router.sprint_on - 0.12
 		var l := TouchControls.saved_layout()
 		if l != layout:
 			layout = l
@@ -249,8 +228,6 @@ class TouchSurface:
 		var r := ["jump"]
 		if c["gadget"] != TC.Gadget.NONE:
 			r.append("gadget")
-		if _hold_sprint:
-			r.append("sprint")
 		return r
 
 	func _layout_buttons(c: Dictionary) -> void:
@@ -326,7 +303,6 @@ class TouchSurface:
 		if held.has("jump"):
 			h |= TC.BTN_JUMP
 		Controls.touch_held = h
-		Controls.touch_sprint = (router.sprinting or held.has("sprint")) and c["role"] == TC.Role.RUNNER and not c["in_cart"]
 		Controls.touch_look_px += router.take_look_px()
 		Controls.set_touch_points(router.owners.size())
 
@@ -335,7 +311,7 @@ class TouchSurface:
 			Input.vibrate_handheld(ms, 0.4)
 
 	const HINT_ACTIONS := {"jump": "jump", "tag": "tag", "gadget": "gadget", "cart": "interact", "gas": "accelerate",
-		"brake": "brake", "next": "spectate_next", "cheer": "emote_1", "sprint": "sprint"}
+		"brake": "brake", "next": "spectate_next", "cheer": "emote_1"}
 
 	func label_of(name: String, c: Dictionary) -> String:
 		match name:
@@ -360,10 +336,8 @@ class TouchSurface:
 		var c := _ctx_cache
 		var rows: Array = []
 		for name in router.buttons:
-			if HINT_ACTIONS.has(name) and not (name == "sprint"):
+			if HINT_ACTIONS.has(name):
 				rows.append([HINT_ACTIONS[name], label_of(name, c)])
-		if c.get("role", 0) == TC.Role.RUNNER and not bool(c.get("in_cart", false)) and c.get("phase", 0) == TC.Phase.PLAYING and not bool(c.get("watching", false)):
-			rows.append(["sprint", "Sprint"])
 		if rows.is_empty():
 			return
 		var safe := UIKit.safe_margins(get_viewport())
@@ -382,14 +356,13 @@ class TouchSurface:
 			draw_string(f, Vector2(x + gw + 10.0, y + h * 0.5 + fs * 0.36), String(r[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UIKit.IVORY)
 			y += h + gap
 
-	## What the stick shows for sprint (Pass 8): on only while sprint is really
-	## running; `latched` while the exhausted latch keeps it off.
-	func stick_sprint_state() -> Dictionary:
+	## Whether the stick shows full speed (Pass 9): the thumb is at or past
+	## the router's full-speed radius on foot (in a cart the stick steers).
+	func stick_at_full() -> bool:
 		var c := _ctx_cache
-		var info: Dictionary = mc.hud.info if mc != null and mc.hud else {}
-		var runner_foot: bool = c.get("role", 0) == TC.Role.RUNNER and not bool(c.get("in_cart", false))
-		var latched := runner_foot and bool(info.get("sprint_exhausted", false))
-		return {"sprinting": Controls.touch_sprint and not latched, "latched": latched}
+		if bool(c.get("in_cart", false)) or not router.stick_active():
+			return false
+		return router.move_vector().length() >= 0.999
 
 	func _draw() -> void:
 		if not _show():
@@ -406,11 +379,7 @@ class TouchSurface:
 		var knob := base
 		if active:
 			knob = router.knob_pos()   # the ring as drawn + the real offset
-		var runner_foot: bool = c.get("role", 0) == TC.Role.RUNNER and not bool(c.get("in_cart", false))
-		var spr := stick_sprint_state()
-		TouchControls.draw_stick(self, base, knob, R, float(res["knob_r"]), opacity, active,
-			router.sprint_on if runner_foot and router.edge_sprint else 0.0, bool(spr["sprinting"]),
-			float(info.get("sprint", 1.0)) if runner_foot else -1.0, bool(spr["latched"]))
+		TouchControls.draw_stick(self, base, knob, R, float(res["knob_r"]), opacity, active, stick_at_full())
 		if bool(c.get("in_cart", false)):
 			var f0 := UIKit.font_w(650)
 			draw_string(f0, base + Vector2(-30, R + 34), "Steer", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(UIKit.IVORY, 0.75 * opacity))

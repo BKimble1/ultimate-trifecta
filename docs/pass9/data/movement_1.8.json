@@ -1,0 +1,134 @@
+[
+  {
+    "avg_mps": 1.5,
+    "dives": 0,
+    "drop_ticks": 0,
+    "fast_s": 0.0,
+    "jumps": 0,
+    "label": "walk (30 % input)",
+    "max_mps": 1.5,
+    "min_steady_mps": -1.0,
+    "secs": 20.0
+  },
+  {
+    "avg_mps": 3.0,
+    "dives": 0,
+    "drop_ticks": 0,
+    "fast_s": 0.0,
+    "jumps": 0,
+    "label": "jog (60 % input)",
+    "max_mps": 3.0,
+    "min_steady_mps": -1.0,
+    "secs": 20.0
+  },
+  {
+    "avg_mps": 5.0,
+    "dives": 0,
+    "drop_ticks": 0,
+    "fast_s": 0.0,
+    "jumps": 0,
+    "label": "full input held 60 s",
+    "max_mps": 5.0,
+    "min_steady_mps": 5.0,
+    "secs": 60.0
+  },
+  {
+    "avg_mps": 5.09,
+    "dives": 0,
+    "drop_ticks": 0,
+    "fast_s": 2.5,
+    "jumps": 0,
+    "label": "full input + Sprint held 60 s",
+    "max_mps": 7.4,
+    "min_steady_mps": 5.0,
+    "secs": 60.0
+  },
+  {
+    "avg_mps": 4.99,
+    "dives": 0,
+    "drop_ticks": 0,
+    "fast_s": 0.0,
+    "jumps": 0,
+    "label": "full input, diagonal stick",
+    "max_mps": 5.0,
+    "min_steady_mps": 5.0,
+    "secs": 30.0
+  },
+  {
+    "avg_mps": 4.99,
+    "dives": 0,
+    "drop_ticks": 0,
+    "fast_s": 0.0,
+    "jumps": 0,
+    "label": "full input, direction wobble ±4°",
+    "max_mps": 5.0,
+    "min_steady_mps": 5.0,
+    "secs": 30.0
+  },
+  {
+    "avg_mps": 5.98,
+    "dives": 0,
+    "drop_ticks": 0,
+    "fast_s": 12.5,
+    "jumps": 0,
+    "label": "Sprint release / re-press at 50 %",
+    "max_mps": 7.4,
+    "min_steady_mps": 5.0,
+    "secs": 30.0
+  },
+  {
+    "avg_mps": 4.97,
+    "dives": 0,
+    "drop_ticks": 0,
+    "fast_s": 0.0,
+    "jumps": 38,
+    "label": "jump whenever possible",
+    "max_mps": 5.0,
+    "min_steady_mps": 5.0,
+    "secs": 25.0
+  },
+  {
+    "avg_mps": 5.52,
+    "dives": 23,
+    "drop_ticks": 0,
+    "fast_s": 0.0,
+    "jumps": 23,
+    "label": "jump/dive taps 10/s",
+    "max_mps": 8.0,
+    "min_steady_mps": -1.0,
+    "secs": 25.0
+  },
+  {
+    "avg_mps": 5.23,
+    "dives": 23,
+    "drop_ticks": 0,
+    "fast_s": 0.0,
+    "jumps": 23,
+    "label": "best jump/dive chain",
+    "max_mps": 8.0,
+    "min_steady_mps": -1.0,
+    "secs": 25.0
+  },
+  {
+    "avg_mps": 5.23,
+    "dives": 23,
+    "drop_ticks": 0,
+    "fast_s": 3.27,
+    "jumps": 23,
+    "label": "best jump/dive chain + Sprint",
+    "max_mps": 8.0,
+    "min_steady_mps": -1.0,
+    "secs": 25.0
+  },
+  {
+    "avg_mps": 5.06,
+    "dives": 9,
+    "drop_ticks": 32,
+    "fast_s": 0.0,
+    "jumps": 9,
+    "label": "run + one dive every 3 s",
+    "max_mps": 8.0,
+    "min_steady_mps": 2.52,
+    "secs": 25.0
+  }
+]

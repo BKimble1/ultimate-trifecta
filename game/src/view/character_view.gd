@@ -56,7 +56,13 @@ const SHADER_TWO_SIDED := preload("res://assets/shaders/character_two_sided.gdsh
 ## through the crease.
 const TWO_SIDED := ["hat_nightcap"]
 
-## m/s at which each locomotion clip is blended in (blend-space positions)
+## m/s at which each locomotion clip is blended in (blend-space positions).
+## Pass 9: measured for the steady full-input speeds (no sprint bursts) and
+## kept: the runner's 6.0 m/s shows the run and fast-run ("sprint") clips
+## half and half (2.42 cycles/s), the Night Watch's 6.6 m/s 80 % fast-run
+## (2.55 cycles/s).  Points at 4.2/6.6 (the fast-run clip at full input)
+## doubled the reversal's hand snap and the stop's planted-foot slide in the
+## motion rig (docs/pass9/fit.md, "Gait blend").
 const LOCO_POINTS := {"walk": 1.3, "run": 5.0, "sprint": 7.0}
 ## metres per 1.0 s cycle at rate 1 and stance fraction (runner_manifest.json,
 ## tools/character/anims.py LOCO).  gait rate = speed / metres-per-cycle.
@@ -242,6 +248,21 @@ var _run_mem := 0.0           # recent ground speed (decays), for stop planting
 var _stop_on := false
 var _stop_t := 0.0
 const STOP_LEN := 0.5         # == anims.STOP_L
+## Pass 9: a planted stop needs the body to stay stopped this long (and over
+## two frames): a 180-degree reversal at the steady 6 m/s passes through
+## zero ground speed for a single tick, which fired the stop clip for one
+## frame and aborted it the next (a 24 cm hand snap in the "reverse" probe)
+const STOP_DEBOUNCE := 0.03
+var _low_t := 0.0
+var _low_frames := 0
+var _stop_fired := false      # this stop has played its planted stop
+## Pass 9: the drive/brake/lead layer weights move as critically damped
+## springs (continuous rate): a first-order ease started at full rate and
+## kicked the hands at the onset of a brake or a turn lead
+var _accel_v := 0.0
+var _brake_v := 0.0
+var _lead_v := 0.0
+var _act_v := 0.0
 var stat_stops := 0           # planted stops played (tests)
 ## V8: set by the match controller: feet follow the real ground (steps, ramps)
 var terrain_contact := false
@@ -362,6 +383,13 @@ func _prepare_animations() -> void:
 	lib.set_meta("ut_prepared", true)
 
 
+func _one_shot(fade_in: float, fade_out: float) -> AnimationNodeOneShot:
+	var os := AnimationNodeOneShot.new()
+	os.fadein_time = fade_in
+	os.fadeout_time = fade_out
+	return os
+
+
 func _anim_node(n: String) -> AnimationNodeAnimation:
 	var a := AnimationNodeAnimation.new()
 	a.animation = n
@@ -419,15 +447,11 @@ func _build_tree() -> void:
 	bt.add_node("a_stop_r", _anim_node("stop_r"))
 	bt.connect_node("stop_dir", 0, "a_stop_l")
 	bt.connect_node("stop_dir", 1, "a_stop_r")
-	var stop := AnimationNodeOneShot.new()
-	stop.fadein_time = 0.1
-	stop.fadeout_time = 0.15
+	var stop := _one_shot(0.1, 0.15)
 	bt.add_node("stop", stop)
 	bt.connect_node("stop", 0, "move")
 	bt.connect_node("stop", 1, "stop_dir")
-	var turn := AnimationNodeOneShot.new()
-	turn.fadein_time = 0.08
-	turn.fadeout_time = 0.12
+	var turn := _one_shot(0.08, 0.12)
 	bt.add_node("turn", turn)
 	bt.connect_node("turn", 0, "stop")
 	bt.connect_node("turn", 1, "turn_dir")
@@ -529,9 +553,7 @@ func _build_tree() -> void:
 	bt.add_node("fidget_pick", fid)
 	for k in FIDGETS.size():
 		bt.connect_node("fidget_pick", k, "a_" + FIDGETS[k])
-	var fidget := AnimationNodeOneShot.new()
-	fidget.fadein_time = 0.45
-	fidget.fadeout_time = 0.5
+	var fidget := _one_shot(0.45, 0.5)
 	bt.add_node("fidget", fidget)
 	bt.connect_node("fidget", 0, "act")
 	bt.connect_node("fidget", 1, "fidget_pick")
@@ -543,18 +565,14 @@ func _build_tree() -> void:
 		bt.add_node("a_land_hard_" + variant, _anim_node("land_hard"))
 		bt.connect_node("land_mix_" + variant, 0, "a_land_soft_" + variant)
 		bt.connect_node("land_mix_" + variant, 1, "a_land_hard_" + variant)
-		var os := AnimationNodeOneShot.new()
-		os.fadein_time = 0.03
-		os.fadeout_time = 0.16
+		var os := _one_shot(0.03, 0.16)
 		if variant == "u":
 			_filtered(os)
 		bt.add_node("land_" + variant, os)
 		bt.connect_node("land_" + variant, 0, prev)
 		bt.connect_node("land_" + variant, 1, "land_mix_" + variant)
 		prev = "land_" + variant
-	var rec := AnimationNodeOneShot.new()
-	rec.fadein_time = 0.06
-	rec.fadeout_time = 0.2
+	var rec := _one_shot(0.06, 0.2)
 	_filtered(rec)
 	bt.add_node("a_recover", _anim_node("recover"))
 	bt.add_node("recover", rec)
@@ -911,7 +929,7 @@ func reset_motion() -> void:
 		hat_spring.external_force = Vector3.ZERO
 
 
-## rs keys: pos, yaw, vel, state, state_t, on_floor, diving, sprinting,
+## rs keys: pos, yaw, vel, state, state_t, on_floor, diving, fast,
 ## tag_phase, protect, bump_protect, spotted, cart_id, steer, emote, emote_t,
 ## celebrate, visible, impact.  The caller supplies render-time
 ## values (already interpolated); this view does not smooth position again.
@@ -1043,7 +1061,9 @@ func _process_view(delta: float) -> void:
 	var speed := Vector2(vel.x, vel.z).length()
 	var on_floor: bool = rs.get("on_floor", true)
 	var diving: bool = rs.get("diving", false)
-	var sprinting: bool = rs.get("sprinting", false)
+	# Pass 9: "fast" = at or near full speed (the render state's "sprinting"
+	# until then; there is no sprint any more)
+	var fast: bool = rs.get("fast", false)
 	var tag_phase: int = rs.get("tag_phase", 0)
 	var state_t: float = rs.get("state_t", 0.0)
 	var finished := st == TC.PState.FINISHED
@@ -1210,9 +1230,14 @@ func _process_view(delta: float) -> void:
 	_idle_clock += delta * (0.8 if menu_idle else 1.0)
 	tree.set("parameters/idle_seek/seek_request", fmod(_idle_clock, IDLE_LEN))
 	if m == "ground":
-		_update_ground(delta, vel, speed, on_floor, sprinting, yaw_rate)
+		_update_ground(delta, vel, speed, on_floor, fast, yaw_rate)
 	else:
 		_clear_layers()
+		# (Pass 9: a stop made in another state belongs to it: back on the
+		# ground from an emote, a landing or a dive recovery the body is
+		# already standing, and a planted stop from the remembered run pace
+		# played late from a standstill)
+		_run_mem = speed
 		_still_t = 0.0
 		tree.set("parameters/loco_seek/seek_request", fposmod(_phase, 1.0))
 		if foot_lock:
@@ -1275,7 +1300,7 @@ func _process_view(delta: float) -> void:
 	# --- face (distant characters: at their animation rate)
 	_face_acc += delta
 	if due:
-		_update_face(_face_acc, m, sprinting, tag_phase, bool(rs.get("spotted", false)))
+		_update_face(_face_acc, m, fast, tag_phase, bool(rs.get("spotted", false)))
 		_face_acc = 0.0
 
 	# --- animate (manual advance: distant characters update at a lower rate,
@@ -1311,11 +1336,27 @@ func _update_act(act: String, delta: float) -> void:
 		tree.set("parameters/act_pick/transition_request", act)
 		_act = act
 		_act_w = 1.0
-	var want := 1.0 if act != "" else 0.0
-	_act_w += (want - _act_w) * (1.0 - exp(-delta / 0.09))
-	if want == 0.0 and _act_w < 0.01:
-		_act_w = 0.0
-		_act = ""
+		_act_v = 0.0
+	if act == "" and _act != "":
+		if _mode_t > 0.0 and _act_w >= 1.0:
+			# Pass 9: the action hands back the way it started, from the pose
+			# on screen: the V8 exponential fade-out began at full rate and
+			# kicked the arms (a 16 cm hand snap as a Night Watch's recovery
+			# ended at 6.6 m/s)
+			_fade_from_shown(0.15)
+			_act_w = 0.0
+			_act_v = 0.0
+			_act = ""
+		else:
+			# into a full-body state (the lunge) or mid-fade: ease out under
+			# that state's own fade (a critically damped weight)
+			var sa := _spring(_act_w, _act_v, 0.0, 0.09, delta)
+			_act_w = sa.x
+			_act_v = sa.y
+			if _act_w < 0.01:
+				_act_w = 0.0
+				_act_v = 0.0
+				_act = ""
 	tree.set("parameters/act/blend_amount", _act_w)
 
 
@@ -1353,20 +1394,26 @@ func _update_layers(delta: float, speed: float, want: float, yaw_rate: float) ->
 	var run_k := smoothstep(1.5, 3.5, maxf(speed, _bs * _move_w))
 	var start_env := 1.0 - smoothstep(0.22, 0.55, _start_t)
 	var drive := maxf(start_env, clampf((_fwd_acc_f - ACCEL_DEAD) / (ACCEL_REF - ACCEL_DEAD), 0.0, 1.0)) * run_k * _move_w * free
-	_accel_w += (drive - _accel_w) * (1.0 - exp(-delta / (0.04 if drive > _accel_w else 0.12)))
+	var sa := _spring(_accel_w, _accel_v, drive, 0.04 if drive > _accel_w else 0.12, delta)
+	_accel_w = sa.x
+	_accel_v = sa.y
 	if _stop_on:
 		# the planted stop takes over the lean: hand it off from zero slope
 		# (an exponential decay would kick the arms the frame the stop fires)
 		_brake_w = _brake_hold * (1.0 - smoothstep(0.0, 0.3, STOP_LEN - _stop_t))
 	else:
 		var brake := clampf((-_fwd_acc_f - ACCEL_DEAD) / (BRAKE_REF - ACCEL_DEAD), 0.0, 1.0) * smoothstep(1.5, 3.5, _run_mem) * free
-		_brake_w += (brake - _brake_w) * (1.0 - exp(-delta / (0.04 if brake > _brake_w else 0.15)))
+		var sb := _spring(_brake_w, _brake_v, brake, 0.04 if brake > _brake_w else 0.15, delta)
+		_brake_w = sb.x
+		_brake_v = sb.y
 	if _lead_w < 0.15 and absf(yaw_rate) > 1.5:
 		_lead_sign = signf(yaw_rate)
 	var lt := smoothstep(2.0, 7.0, absf(yaw_rate)) * smoothstep(1.0, 3.0, speed) * want * free
 	if signf(yaw_rate) != _lead_sign:
 		lt = 0.0
-	_lead_w += (lt - _lead_w) * (1.0 - exp(-delta / (0.05 if lt > _lead_w else 0.25)))
+	var sl := _spring(_lead_w, _lead_v, lt, 0.05 if lt > _lead_w else 0.25, delta)
+	_lead_w = sl.x
+	_lead_v = sl.y
 	_lead_pos += (_lead_sign - _lead_pos) * (1.0 - exp(-delta / 0.06))
 	if _stop_on:
 		_stop_t -= delta
@@ -1379,6 +1426,21 @@ func _update_layers(delta: float, speed: float, want: float, yaw_rate: float) ->
 	tree.set("parameters/lead_add/add_amount", _lead_w * rm)
 
 
+## A layer weight eased toward `target` as a critically damped spring with
+## the time constant `tau` (s): the weight and its rate stay continuous, so
+## no layer starts or stops at full rate.  Returns (weight, rate); fixed
+## sub-steps keep it stable at any frame rate.
+static func _spring(x: float, v: float, target: float, tau: float, delta: float) -> Vector2:
+	var om := 1.0 / maxf(tau * 0.5, 1e-3)
+	var t := minf(maxf(delta, 0.0), 0.1)
+	while t > 0.0:
+		var h := minf(t, 1.0 / 120.0)
+		v += (-(x - target) * om * om - v * 2.0 * om) * h
+		x += v * h
+		t -= h
+	return Vector2(clampf(x, 0.0, 1.0), v)
+
+
 ## The stop from a run plants: the foot that is coming through at the
 ## settle point (right at phase 0, left at 0.5) reaches out and takes it.
 func _begin_stop() -> void:
@@ -1387,9 +1449,14 @@ func _begin_stop() -> void:
 	if _run_mem < STOP_FROM or _stop_on or (_far and not is_local) or _act != "" or int(rs.get("tag_phase", 0)) != 0:
 		return
 	var side := "r" if is_zero_approx(fposmod(_settle_to, 1.0)) else "l"
+	# (Pass 9: from the pose on screen, with its own motion carried: the
+	# stop's linear fade-in met the running arms at full swing, a 10 cm hand
+	# snap stopping from the steady 6 m/s)
+	_fade_from_shown(0.14)
 	tree.set("parameters/stop_dir/transition_request", side)
 	tree.set("parameters/stop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	_stop_on = true
+	_stop_fired = true
 	_stop_t = STOP_LEN
 	_brake_hold = _brake_w
 	stat_stops += 1
@@ -1399,6 +1466,9 @@ func _clear_layers() -> void:
 	_accel_w = 0.0
 	_brake_w = 0.0
 	_lead_w = 0.0
+	_accel_v = 0.0
+	_brake_v = 0.0
+	_lead_v = 0.0
 	if _stop_on:
 		tree.set("parameters/stop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)
 		_stop_on = false
@@ -1406,7 +1476,7 @@ func _clear_layers() -> void:
 		tree.set("parameters/%s/add_amount" % n, 0.0)
 
 
-func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sprinting: bool, yaw_rate: float) -> void:
+func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, fast: bool, yaw_rate: float) -> void:
 	# while the body turns, the gait advances with the forward part of the
 	# ground speed (no moonwalk while the facing catches up in a reversal).
 	# Without a turn in progress (a run on the spot in the lobby) speed rules.
@@ -1427,7 +1497,9 @@ func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sp
 		_bs = clampf(speed, LOCO_POINTS["walk"], LOCO_POINTS["sprint"])
 		_start_t = 0.0
 	if want > 0.3 and _stop_on:
-		# moving again before the stop finished: hand back to the gait
+		# moving again before the stop finished: hand back to the gait (from
+		# the pose on screen)
+		_fade_from_shown(0.14)
 		tree.set("parameters/stop/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
 		_stop_on = false
 	# the sim reaches full speed in ~0.1 s: blend the legs in fast, out a
@@ -1441,15 +1513,25 @@ func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sp
 	# stride of the pose shown, so planted feet move at ground speed.
 	_bs += (clampf(speed, LOCO_POINTS["walk"], LOCO_POINTS["sprint"]) - _bs) * (1.0 - exp(-delta / BS_TAU))
 	var rate := fwd_speed / _m_per_cycle(_bs) if speed > 0.05 else 0.0
+	if want < 0.02:
+		_low_t += delta
+		_low_frames += 1
+	else:
+		_low_t = 0.0
+		_low_frames = 0
 	if want < 0.02 and _move_w > 0.02:
 		# stopping: finish the step in progress and hold on the next half
 		# cycle (one foot planted under the body, the other beside it)
 		if _settle_to < 0.0:
 			_settle_to = ceilf(_phase * 2.0) * 0.5
+		# (the planted stop only once the body has really stopped, not as a
+		# reversal passes through zero)
+		if not _stop_fired and _low_t >= STOP_DEBOUNCE and _low_frames >= 2:
 			_begin_stop()
 		_phase = minf(_phase + delta * maxf(rate, 2.4), _settle_to)
 	else:
 		_settle_to = -1.0
+		_stop_fired = false
 		_phase += delta * rate
 	tree.set("parameters/loco/blend_position", _bs)
 	tree.set("parameters/move/blend_amount", _move_w)
@@ -1481,7 +1563,7 @@ func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sp
 	if k != _step_k:
 		if on_floor and speed > 1.0 and k > _step_k and _near_camera(30.0):
 			var walk := speed < 3.0
-			var db := (-12.0 if walk else -6.0) + (4.0 if sprinting else 0.0) + (2.0 if role == TC.Role.PATROL else 0.0)
+			var db := (-12.0 if walk else -6.0) + (4.0 if fast else 0.0) + (2.0 if role == TC.Role.PATROL else 0.0)
 			Sfx.play("step", global_position, db, 0.9 if role == TC.Role.PATROL else 1.1)
 		_step_k = k
 	# turn in place
@@ -1622,7 +1704,7 @@ static func gait_rate(speed: float) -> float:
 	return r
 
 
-func _update_face(delta: float, m: String, sprinting: bool, tag_phase: int, spotted: bool) -> void:
+func _update_face(delta: float, m: String, fast: bool, tag_phase: int, spotted: bool) -> void:
 	var tgt := {"blink": 0.0, "squint": 0.0, "smile": 0.0, "open": 0.0, "brow_up": 0.0, "brow_angry": 0.0}
 	match m:
 		"celebrate", "emote_cheer", "emote_laugh", "emote_dance", "arrive", "ready", "emote_victory_lap":
@@ -1681,7 +1763,7 @@ func _update_face(delta: float, m: String, sprinting: bool, tag_phase: int, spot
 			tgt["open"] = 0.15
 		_:
 			tgt["smile"] = 0.35
-			if sprinting or tag_phase > 0:
+			if fast or tag_phase > 0:
 				tgt["brow_angry"] = 0.8
 				tgt["smile"] = 0.0
 	if _fidget_on and _fidget == "fidget_yawn":

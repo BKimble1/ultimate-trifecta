@@ -530,20 +530,65 @@ def build_body_skin():
 
 
 # ================================================================== shared clothing pieces
-def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff_tube=0.016, inner_style=None, lod=0):
+# Pass 9: a sleeve that ends on a wrist or a bare forearm gathers into its
+# cuff over the last CUFF_EASE_LEN instead of standing off the limb at its
+# full ease to the very edge (the V7 hems stood 2-4 cm off the wrist, and
+# their dark lining read as a detached ring round the hand).  The fitted
+# cuff keeps CUFF_EASE of air round the limb it opens onto (the mitten's
+# wrist neck, or the bare arm).  Loose sleeves (the robe's bell, a coat)
+# pass their own ease; None keeps the full width to the edge.
+CUFF_EASE = 0.009
+CUFF_EASE_LEN = 0.06
+
+
+def sleeve_r(s, grow, s_end=None, cuff_ease=CUFF_EASE, bell_r=0.0):
+    """Outer radius of a sleeve at arm parameter s (m from the shoulder joint)
+    that ends at s_end (default: the wrist)."""
+    s_end = rig.UPPER_LEN + rig.FORE_LEN if s_end is None else s_end
+    r0 = arm_radius(s) + grow + bell_r
+    if cuff_ease is None:
+        return r0
+    t = smoothstep(s_end - CUFF_EASE_LEN, s_end, s)
+    return lerp(r0, min(r0, bare_arm_radius(s) + cuff_ease), t)
+
+
+def shoulder_cap_w(p, side):
+    """Pass 9: the shoulder cap's weights follow the surface under it: the
+    torso's (torso_w) on the body side, the sleeve's (arm_w) on the arm side,
+    blended across the joint.  V4-V8 gave every cap vertex a fixed
+    55 % upper arm / 45 % shoulder, so in a raised-arm pose (dive, cheer,
+    the splash shake-off) the cap lagged the sleeve by up to 7 cm and stood
+    off the shoulder (fit_check seams)."""
+    # (out along the arm, and out past the chest wall: the cap's inner edge
+    # lies on the chest, where arm_s is about 0 as well)
+    k = smoothstep(-0.08, 0.0, rig.arm_s(p, side)) * smoothstep(0.12, 0.17, abs(p.x))
+    # (the torso side as the chest wall below it where the cap stands out
+    # beside the neck, where torso_w would hand it to the neck bone; next to
+    # the collar it keeps the torso's own neck share)
+    q = Vector((p.x, p.y, lerp(p.z, min(p.z, 0.84), smoothstep(0.11, 0.16, abs(p.x)))))
+    return rig.mix((torso_w(q), 1.0 - k), (arm_w(p, side), k))
+
+
+def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff_tube=0.016, inner_style=None, lod=0,
+            cuff_ease=CUFF_EASE):
     """inner_style: leave the end open with a shaded funnel down to the wrist
     (a wide bell sleeve read as a lid with a flat end disc).
     lod=1 (V6 outfits): the same shapes with fewer segments on the shoulder
-    cap and cuff, and rings every 2.4 cm instead of 1.8 cm."""
+    cap and cuff, and rings every 2.4 cm instead of 1.8 cm.
+    cuff_ease (Pass 9): the air the open hem keeps round the limb it opens
+    onto (see CUFF_EASE); None = the full ease to the edge (bell sleeves)."""
     step = 0.024 if lod else 0.018
+    if inner_style is not None:
+        cuff_ease = None
     for sx in SIDES:
         sfx = '.L' if sx < 0 else '.R'
         path = _arm_path(sx, -0.015, s1, step)
         s = _path_s(path)
         total = s[-1]
+        s_end = total - 0.015
         radii = []
         for v in s:
-            r = arm_radius(v - 0.015) + grow + bell * smoothstep(total * 0.4, total, v)
+            r = sleeve_r(v - 0.015, grow, s_end, cuff_ease, bell * smoothstep(total * 0.4, total, v))
             radii.append((r, r))
         colfn = None
         if band:
@@ -558,26 +603,26 @@ def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff
         # (V4: a little lower and flatter on top, so it rounds into the sleeve
         # instead of standing up as a shoulder pad)
         ellipsoid(mb, sh + Vector((0.004 * sx, 0, -0.002)), (0.066 + grow, 0.065 + grow, 0.055 + grow), style,
-                  lambda p, sfx=sfx: {'upper_arm' + sfx: 0.55, 'shoulder' + sfx: 0.45}, segs=16 if lod else 20,
+                  lambda p, sx=sx: shoulder_cap_w(p, sx), segs=16 if lod else 20,
                   rings=10 if lod else 12, world_v=True)
         if inner_style is None:
             # V7: an open hem.  V6 closed the sleeve with a flat disc and put a
             # torus round it (a donut the hand came out of); now a slim cuff
-            # band (or just a rolled lip) and a shaded lining leading in to
-            # the wrist or the bare arm
+            # band (or just a rolled lip) and a lining leading in to the
+            # wrist or the bare arm (Pass 9: to the limb's own surface)
             d = arm_dir(sx)
-            end = sh + d * (total - 0.015)
-            _sleeve_hem(mb, end, d, radii[-1][0], arm_radius(total - 0.015), style, cuff_style, cuff_tube,
+            end = sh + d * s_end
+            _sleeve_hem(mb, end, d, radii[-1][0], bare_arm_radius(s_end), style, cuff_style, cuff_tube,
                         lambda p, sx=sx: arm_w(p, sx), 16 if lod else 20)
         elif cuff_style is not None:
             d = arm_dir(sx)
-            end = sh + d * (total - 0.015)
+            end = sh + d * s_end
             r = radii[-1][0]
             lathe(mb, end - d * cuff_tube * 0.4, rot_align(d, FWD), torus_profile(0.0, r + 0.002, cuff_tube, 7 if lod else 10, 0.85),
                   cuff_style, lambda p, sx=sx: arm_w(p, sx), segs=16 if lod else 20, closed_profile=True)
         if inner_style is not None:
             d = arm_dir(sx)
-            end = sh + d * (total - 0.015)
+            end = sh + d * s_end
             r = radii[-1][0]
             wr = arm_radius(total) + 0.004
             # inner face of the opening (profile ordered so the faces look in)
@@ -585,8 +630,10 @@ def sleeves(mb, style, grow, s1=None, cuff_style=None, bell=0.0, band=None, cuff
                   inner_style, lambda p, sx=sx: arm_w(p, sx), segs=16)
 
 
-def lining_of(style, k=0.5):
-    """The same fabric in shadow: a hem's inside."""
+def lining_of(style, k=0.72):
+    """The same fabric a little in shadow: a hem's inside.  (Pass 9: 0.72;
+    V7's 0.5 made every cuff's inside a near-black ring round the wrist that
+    read as a gap between the sleeve and the hand.)"""
     return Style(tuple(c * k for c in style.col), style.tint, min(1.0, style.rough + 0.05), style.mat)
 
 
@@ -603,12 +650,16 @@ def _sleeve_hem(mb, end, d, r, limb_r, style, cuff_style, cuff_tube, wfn, segs, 
             (-0.0015, r + proud * 0.6), (0.0015, r - 0.0015)]
     lathe(mb, end, R, prof, band, wfn, segs=segs, ry_scale=ry)
     wr = limb_r + 0.004
-    lin = [(0.0015, r - 0.0015), (0.0, r - 0.0065), (-0.008, lerp(r - 0.008, wr, 0.55)), (-0.02, wr + 0.001), (-0.04, wr)]
+    # (Pass 9: a fitted cuff is only ~1 cm off the limb: the lining never
+    # turns in past the limb's own surface)
+    lin = [(0.0015, r - 0.0015), (0.0, max(r - 0.0065, wr + 0.0015)), (-0.008, max(lerp(r - 0.008, wr, 0.55), wr + 0.001)),
+           (-0.02, wr + 0.001), (-0.04, wr)]
     lathe(mb, end, R, lin, lining_of(cuff_style or style), wfn, segs=segs, ry_scale=ry)
 
 
 def pant_legs(mb, style, grow, bottom_z=None, cuff_style=None, flat_end=True):
     for sx in SIDES:
+        start = len(mb.v)
         lp = _leg_path(sx, 0.55, bottom_z)
         ls = _path_s(lp)
         radii = [(leg_radius(v) + grow, (leg_radius(v) + grow) * 0.96) for v in ls]
@@ -622,6 +673,7 @@ def pant_legs(mb, style, grow, bottom_z=None, cuff_style=None, flat_end=True):
             # back; lathe scales local y, which is forward here)
             _sleeve_hem(mb, e, d, radii[-1][1], leg_radius(ls[-1]) * 0.96, style, cuff_style, 0.016, lambda p, sx=sx: leg_w(p, sx), 20,
                         ry=1.0 / 0.96)
+        geo.clamp_midline(mb, start, sx)
 
 
 def pelvis(mb, style, grow, z_top, extra=None):
@@ -688,11 +740,13 @@ def build_swim():
         return None
     torso_lathe(mb, CLOTH_P_PLAIN, 0.014, 0.47, 0.615, bottom_pole=True, colfn=stripe)
     for sx in SIDES:
+        start = len(mb.v)
         lp = _leg_path(sx, 0.55, 0.40)
         ls = _path_s(lp)
         radii = [(leg_radius(v) + 0.028, (leg_radius(v) + 0.028) * 0.96) for v in ls]
         sweep(mb, lp, radii, CLOTH_P_PLAIN, lambda p, sv, i, sx=sx: leg_w(p, sx), segs=18, cap_start=None, cap_end='flat',
               twist_hint=FWD, colfn=lambda p, sv, a: CLOTH_S if (abs(p.x) > 0.16 and abs(p.y) < 0.03) else None)
+        geo.clamp_midline(mb, start, sx)
     # waistband + drawstring bow
     lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), torus_profile(0.612, torso_r(0.612) + 0.016, 0.011, 10),
           Style('#f4f2ec', T_NONE, 0.8, MAT_CLOTH), lambda p: torso_w(p), segs=24, closed_profile=True, ry_scale=TORSO_RY)
@@ -885,7 +939,9 @@ def build_watch():
     # epaulettes
     for sx in SIDES:
         c = shoulder(sx) + Vector((-0.03 * sx, 0, 0.055))
-        ellipsoid(mb, c, (0.06, 0.035, 0.012), NAVY_D, lambda q, sx=sx: {'shoulder' + ('.L' if sx < 0 else '.R'): 1.0},
+        # (Pass 9: the epaulette follows the shoulder cap it lies on; rigid on
+        # the shoulder bone it lifted off the cap by up to 7 cm with the arm up)
+        ellipsoid(mb, c, (0.06, 0.035, 0.012), NAVY_D, lambda q, sx=sx: shoulder_cap_w(q, sx),
                   segs=12, rings=8, rot=rot_z(0))
     # trousers + belt
     pelvis(mb, NAVY_D, 0.014, 0.60)
@@ -1388,7 +1444,7 @@ def build_flippers():
             w = lerp(0.06, 0.1, smoothstep(0.02, 0.4, y))
             outline.append((cx + math.cos(a) * w, y))
         slab(mb, outline, 0.004, 0.018, fin, fw, bevel=0.006)
-        lathe(mb, Vector((cx, -0.005, 0)), Matrix.Identity(3), torus_profile(0.1, 0.062, 0.016, 10), blue,
+        lathe(mb, Vector((cx, -0.002, 0)), Matrix.Identity(3), torus_profile(0.1, 0.057, 0.016, 10), blue,   # (Pass 9: hugs the ankle)
               lambda p, sfx=sfx: rig.seg_weights(p.z, [('foot' + sfx, 0.11), ('shin' + sfx, None)], 0.03), segs=18,
               closed_profile=True)
     return mb

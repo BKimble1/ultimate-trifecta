@@ -95,8 +95,8 @@ func test_activity_evidence_rule() -> void:
 	c.pressed = TC.BTN_JUMP
 	t.check(m._evidence(0, c, p, dt), "a button press: evidence")
 	c.pressed = 0
-	c.held = TC.BTN_SPRINT
-	t.check(m._evidence(0, c, p, dt), "starting to hold sprint: evidence")
+	c.held = TC.BTN_TAG
+	t.check(m._evidence(0, c, p, dt), "starting to hold a button: evidence")
 	t.check(not m._evidence(0, c, p, dt), "still holding it, not moving: nothing")
 	p.body.queue_free()
 

@@ -37,7 +37,7 @@ const HIT_PAD := 12.0               # extra touch radius when there is room
 ## The right thumb pivots near the bottom-right corner: "inner" sits along
 ## the arc to the left and a little lower, "upper" above and a little right.
 const SLOTS := {
-	"runner": {"jump": [0.0, 0.0, 42.0], "gadget": [-112.0, 26.0, 32.0], "sprint": [8.0, -104.0, 30.0]},
+	"runner": {"jump": [0.0, 0.0, 42.0], "gadget": [-112.0, 26.0, 32.0]},   # (Pass 9: no Sprint button)
 	"patrol": {"tag": [0.0, 0.0, 44.0], "jump": [-114.0, 26.0, 33.0], "cart": [8.0, -106.0, 30.0]},
 	# Exit is small and well apart from Gas/Brake: no exit while steering
 	"cart": {"gas": [0.0, 0.0, 44.0], "brake": [-112.0, 24.0, 34.0], "cart": [14.0, -132.0, 26.0]},

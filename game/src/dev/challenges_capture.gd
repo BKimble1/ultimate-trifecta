@@ -161,7 +161,7 @@ func _online() -> void:
 	var pid := Cloud.profile_id()
 	svc.grant(pid, 1650)
 	var s1: Dictionary = svc.wallet(pid)["season"]["s1"]
-	s1["xp"] = 3450        # tier 15 of 30
+	s1["xp"] = 3450        # tier 15 (of 100 since Pass 9)
 	s1["claimed"] = ["1:free", "3:free", "5:free", "9:free"]
 	for id in ["card:after_hours", "hat:pompom_beanie", "emote:stargaze", "outfit:after_hours_hoodie"]:
 		svc.wallet(pid)["entitlements"][id] = {"source": "season"}

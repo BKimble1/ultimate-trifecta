@@ -107,10 +107,7 @@ class MiniMotor:
 		var control := 0.35 if dive_land > 0.0 else 1.0
 		var move: Vector2 = inp.get("move", Vector2.ZERO)
 		var mag := minf(move.length(), 1.0)
-		sprinting = role == TC.Role.RUNNER and bool(inp.get("sprint", false)) and mag > 0.3
 		var top := cfg.runner_speed if role == TC.Role.RUNNER else cfg.patrol_speed
-		if sprinting:
-			top = cfg.runner_sprint_speed
 		var target := move.normalized() * top * mag * control if mag > 0.01 else Vector2.ZERO
 		if tag_phase == 1:
 			target *= cfg.tag_anticipation_move_scale
@@ -149,10 +146,12 @@ class MiniMotor:
 			pos.y = g     # floor snap (CharacterBody3D floor_snap_length)
 		else:
 			on_floor = false
+		# the motor's "fast" flag: on the ground at (near) the role's full speed
+		sprinting = on_floor and not diving and Vector2(vel.x, vel.z).length() >= top * cfg.fast_fraction
 
 	func rs() -> Dictionary:
 		return {"pos": pos, "yaw": yaw, "vel": vel, "state": state, "state_t": state_t, "on_floor": on_floor and not flicker,
-			"diving": diving, "sprinting": sprinting, "tag_phase": tag_phase, "protect": protect, "bump_protect": 0.0,
+			"diving": diving, "fast": sprinting, "tag_phase": tag_phase, "protect": protect, "bump_protect": 0.0,
 			"spotted": false, "cart_id": cart_id, "steer": steer, "emote": emote, "emote_t": emote_t, "visible": true,
 			"impact": impact, "stamped": false}
 
@@ -271,12 +270,10 @@ func _scenario_input(t: float) -> Dictionary:
 			if t < 1.6:
 				return {"move": fwd * 0.3}
 			if t < 2.8:
-				return {"move": fwd}
-			if t < 4.0:
-				return {"move": fwd, "sprint": true}
+				return {"move": fwd * 0.6}
 			return {"move": fwd}
-		"sprint":
-			return {"move": fwd, "sprint": true}
+		"sprint":   # Pass 9: no sprint meter; full stick input is the steady top speed
+			return {"move": fwd}
 		"nw_run", "ramp":
 			return {"move": fwd}
 		"jump_run":

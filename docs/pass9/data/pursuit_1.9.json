@@ -1,0 +1,42 @@
+{
+  "bursts": {
+    "attempts": 2,
+    "caught_s": 10.6,
+    "closure_mps": 0.58,
+    "escaped": false,
+    "hits": 1,
+    "label": "sprint bursts (1.8) 8 m"
+  },
+  "dive": {
+    "attempts": 2,
+    "caught_s": 5.9,
+    "closure_mps": 0.83,
+    "escaped": false,
+    "hits": 1,
+    "label": "dive loop 8 m"
+  },
+  "full 12": {
+    "attempts": 2,
+    "caught_s": 17.3,
+    "closure_mps": 0.58,
+    "escaped": false,
+    "hits": 1,
+    "label": "full input 12 m"
+  },
+  "full 4": {
+    "attempts": 2,
+    "caught_s": 3.9,
+    "closure_mps": 0.74,
+    "escaped": false,
+    "hits": 1,
+    "label": "full input 4 m"
+  },
+  "full 8": {
+    "attempts": 2,
+    "caught_s": 10.6,
+    "closure_mps": 0.58,
+    "escaped": false,
+    "hits": 1,
+    "label": "full input 8 m"
+  }
+}

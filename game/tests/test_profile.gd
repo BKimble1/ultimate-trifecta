@@ -37,8 +37,32 @@ func test_v1_profile_loads_with_progress_and_new_defaults() -> void:
 	t.eq(int(s["quality"]), 0, "Battery Saver choice kept")
 	t.eq(String(s["role_pref"]), "patrol", "role preference kept")
 	t.eq(String(s["stick_mode"]), "dynamic", "new setting gets its default")
-	t.eq(String(s["sprint_mode"]), "edge", "new setting gets its default")
+	t.check(not s.has("sprint_mode") and not s.has("sprint_threshold") and not s.has("touch_sprint"), "retired sprint settings dropped (Pass 9)")
 	t.check(bool(s["haptics"]), "new setting gets its default")
+
+
+## Pass 9 removed the sprint meter: a 1.8 profile's sprint settings
+## (Settings > Sprint, the old threshold and touch-sprint flags) are dropped
+## on load; every other control, layout, accessibility and audio preference
+## and the rest of the profile are kept, and loading again changes nothing.
+func test_pass8_profile_drops_sprint_settings_and_keeps_the_rest() -> void:
+	var layout := {"runner": {"stick": [0.18, 0.74], "jump": [0.9, 0.78], "tag": [0.8, 0.86]}}
+	var v18 := {
+		"version": 4, "uid": "local-00aa11bb22cc33dd", "name": "Night Owl",
+		"settings": {"sensitivity": 0.7, "invert_y": false, "reduced_motion": true, "sfx": 0.3, "music": 0.55,
+			"quality": 1, "stick_mode": "fixed", "sprint_mode": "hold", "sprint_threshold": 0.9, "touch_sprint": true,
+			"button_size": 1.25, "touch_layout": "mirrored", "touch_layout_v2": layout, "haptics": false, "role_pref": "runner"},
+		"coins": 1200, "level": 9, "xp": 40,
+	}
+	var p: Dictionary = Save.migrate(v18.duplicate(true))
+	var s: Dictionary = p["settings"]
+	for k in Save.RETIRED_SETTINGS:
+		t.check(not s.has(k), "'%s' dropped" % k)
+	for k in ["sensitivity", "invert_y", "reduced_motion", "sfx", "music", "quality", "stick_mode", "button_size", "touch_layout", "haptics", "role_pref"]:
+		t.eq(s[k], v18["settings"][k], "'%s' kept" % k)
+	t.eq(s["touch_layout_v2"], layout, "the custom touch layout is kept as it was")
+	t.eq([int(p["coins"]), int(p["level"])], [1200, 9], "progress kept")
+	t.eq(Save.migrate(p.duplicate(true))["settings"], s, "migrating again changes nothing")
 
 
 func test_v2_striped_and_plain_pajamas_keep_their_pattern() -> void:

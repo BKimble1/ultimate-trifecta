@@ -415,7 +415,7 @@ func _build_section() -> void:
 			_intro("Coins buy anything in the Shop. They never expire and never add XP. Prices come from the App Store.", gw)
 			body.add_child(_grid("coins", Catalogue.shop_items("coins"), gw, PACK_W, 1, 3))
 		"season":
-			_intro("30 tiers you earn by playing. Premium adds a second track of rewards.", gw)
+			_intro("%d tiers you earn by playing. Premium adds a second track of rewards." % Economy.max_tier(Catalogue.current_season_id()), gw)
 			body.add_child(_season_offer(gw))
 	if section in ["featured", "outfits", "coins"]:
 		body.add_child(_restore_row())
@@ -698,7 +698,7 @@ static func premium_summary(sid: String) -> String:
 			if k == "Shoes":
 				plural = "pair of shoes" if c == 1 else "pairs of shoes"
 			parts.append("%d %s" % [c, plural.to_lower()])
-	return "%d Premium rewards over 30 tiers: %s, and %s Coins." % [n, ", ".join(parts), Catalogue.format_coins(coins)]
+	return "%d Premium rewards over %d tiers: %s, and %s Coins." % [n, Economy.max_tier(sid), ", ".join(parts), Catalogue.format_coins(coins)]
 
 
 # ------------------------------------------------------------------ states

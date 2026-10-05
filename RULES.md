@@ -17,13 +17,13 @@ All values come from one resource, `game/config/rules_default.tres` (`RulesConfi
 - Eight gameplay slots; bots fill empty seats and stay labelled. `runners = 8 − Night Watch`, `home to win = ceil(2 × runners / 3)` (`PartySeries.required_home`).
 - **Rounds:** 1, 3 (recommended for friends) or 5. The lobby shows one summary line, e.g. "3 rounds · 2 Night Watch · 6 runners · 4 home to win", and Reset to recommended.
 - Only the host can change them, only in the lobby before a series starts. A change bumps a revision, clears guests' Ready and tells them why. Settings lock when the series starts; ending the series (with confirmation) unlocks them. Guests see the host's values read-only.
-- Each round starts from an immutable snapshot of the locked settings carried in START; incompatible clients are refused with "Update the game to join." (protocol 7 since Pass 8; a guest whose dorm geometry differs from the round's is refused the same way).
+- Each round starts from an immutable snapshot of the locked settings carried in START; incompatible clients are refused with "Update the game to join." (protocol 8 since Pass 9, when sprint was removed; protocol 7 was Pass 8; a guest whose dorm geometry differs from the round's is refused the same way).
 
 ## Roles
 
 - **Friend parties:** drawn on the host at each round from a seeded random draw. Round 1 gives every human an equal chance; later rounds prefer whoever has had fewer Night Watch turns, ties broken at random. With two or more humans at least one human stays a runner and up to min(Night Watch, humans − 1) humans go on the Night Watch; bots take the remaining Night Watch seats. Saved role preferences play no part.
 - **One human in a party:** Night Watch with probability (Night Watch count ÷ 8), otherwise runner. Solo practice is the way to pick a role.
-- **Solo practice:** Runner, Night Watch or Random, plus a guided runner tutorial and a guided Night Watch exercise (find a runner, wait for Tag to light, tag, the capture and protection rules, a cart and a hop-out tag; runner bots jog slower and never sprint there). The choice is stored for practice only.
+- **Solo practice:** Runner, Night Watch or Random, plus a guided runner tutorial and a guided Night Watch exercise (find a runner, wait for Tag to light, tag, the capture and protection rules, a cart and a hop-out tag; runner bots jog slower there). The choice is stored for practice only.
 - A reconnecting player keeps the same seat and role for the current round. Spectators and newcomers join at a round boundary and never inherit anyone's score.
 
 ## Series
@@ -113,11 +113,10 @@ One explicit contract, shown with the same values on the role reveal, in How to 
 
 | Move | Value |
 |---|---|
-| Run | 5 m/s |
-| Sprint | 7.4 m/s, from a meter of 2.5 s that regenerates fully in 3.6 s after a 0.35 s delay. Running the meter dry leaves sprint off ("Sprint empty · ease off to recharge") until sprint is released (button up, or the thumb eased back from the stick's edge) and the meter is back to 45 %; the next press sprints at once |
+| Move | The stick (or keys) sets the speed: a gentle push walks or sneaks (under 3.2 m/s footsteps are silent), more jogs, and a full push holds the runner's full speed, **6.0 m/s**, for as long as it is held. There is no sprint button, meter or recharge (Pass 9). Touch reaches full at 90 % of the stick's radius; keyboard keys and a controller pushed to its edge are full input too |
 | Jump | Jump with 0.12 s coyote time and a 0.13 s jump buffer |
 | Dive | Press jump again in the air: an 8.0 m/s forward dive, one per jump, then a 0.45 s landing recovery before the next jump (a press in its last 0.13 s jumps as it ends) |
-| Night Watch on foot | 6.6 m/s (see the tuning note) |
+| Night Watch on foot | 6.6 m/s at full input, steady (see the tuning notes) |
 
 Ground acceleration is high and turning is fast, so movement stays precise while the animation is silly.
 
@@ -143,6 +142,8 @@ Ground acceleration is high and turning is fast, so movement stays precise while
 
 **Pass 8 note (sprint pulsing and the dive loop).** Holding sprint used to restart it on every 15 % of refill, and a jump pressed during a dive fired on the landing tick and could dive again, so chained jump→dives held 8.05–8.45 m/s and out-ran the Night Watch. Now a held sprint stays off once the meter runs dry until it is released and back to 45 %, a dive is one per jump at 8.0 m/s, and its 0.45 s landing recovery can't be skipped. On flat ground the best dive loop averages 5.2 m/s, below sprinting in released-and-repressed bursts (6.0 m/s) and the Watch (6.6 m/s); in the pursuit scenario the Watch catches a dive-looping runner from 8 m in 4.5 s (it escaped before). Details and traces: `docs/pass8/movement.md`.
 
+**Pass 9 note (sprint removed).** The 2.5 s meter to 7.4 m/s over a 5.0 m/s run (and the Pass 8 latch) are gone: one steady full speed per role, runner 6.0 and Night Watch 6.6 m/s, on every device, with nothing to manage. On a straight the Night Watch closes at 0.6 m/s: the scripted chaser of `test_pursuit` catches a full-speed runner from 4, 8 and 12 m in 3.9, 10.6 and 17.2 s (1.8: 1.3, 3.8, 6.3 s against a runner holding the stick without sprinting; 11.1 s from 8 m against one sprinting in bursts). A press at a "looks close" 2.6 m behind a full-speed runner falls just short (the lunge gains 0.65 m on a 6.0 m/s runner); pressing when Tag lights up lands first time (9.9 s from 8 m). Jump/dive chains average 5.4 m/s, slower than running; Turbo is now 7.5 m/s for 3 s, a real escape on its own. A seeded bot-round matrix (12 rounds per team size) found the movement change itself outcome-neutral at 2 and 3 Night Watch when the bots steer as in 1.8; the Pass 9 bot path fixes make runner bots faster on their routes. Details: `docs/pass9/movement.md`.
+
 ## Gadgets (runners)
 
 - **Pickups.** There are 9 pickup spots, set slightly off the fastest lines. Each respawns 25 s after it is taken.
@@ -151,7 +152,7 @@ Ground acceleration is high and turning is fast, so movement stays precise while
 
 | Gadget | Effect |
 |---|---|
-| Turbo Sneakers | ×1.25 speed for 3 s. Combined with sprint, speed is capped at 8 m/s. |
+| Turbo Sneakers | ×1.25 speed for 3 s (7.5 m/s at full input), capped at 8 m/s. |
 | Squeaky Decoy | Assisted toss up to 9 m, camera-relative. It wanders and emits runner-like footstep noise and the matching visual cue for 5 s. |
 | Splash Bomb | Toss up to 11 m, with assist toward a cart within a 35° cone and 15 m. A hit caps a cart at 4 m/s for 2 s; the cart is then immune for 2.5 s. No screen blinding, no stun on players. |
 
@@ -159,7 +160,7 @@ Ground acceleration is high and turning is fast, so movement stays precise while
 
 - **Night Watch sight.** Line of sight within 34 m and a ±62° view cone (cone ignored within 4 m). Buildings, walls and carts block sight.
 - **Spotted cue.** A spotted runner gets a restrained vignette and icon for 2.2 s, from the host's actual detection.
-- **Noise.** Each side receives anonymous noise directions (chevrons and sound): runner sprint 24 m, jog 14 m (walking softly is silent), Night Watch steps 12 m, carts 45 m.
+- **Noise.** Each side receives anonymous noise directions (chevrons and sound): runner at full speed 24 m, jogging 14 m (walking softly, under 3.2 m/s, is silent), Night Watch steps 12 m, carts 45 m.
 - **Splashes.** A stamp marks that water for the Night Watch for 3 s: the place, never the runner.
 - **Maps (V4).** The minimap and the full map (tap the minimap, or Map on a controller / M) show your own team openly, tonight's waters, the dorm and, for the Night Watch, carts and splash markers. Opponents appear only as **last seen**: solid while actually in line of sight and view range from your own head, then a fading ring labelled with its age for 5 s, then gone. Losing sight stops tracking; there are no live dots through walls. Spectating follows the same rules. Pass 8: an opponent in sight shows as a role badge with a facing tick; when sight is lost the mark stays where they were last seen, hollow, with its age on the full map, for 5 s. Caught or home, sightings come from the teammate you are watching. A guest's sightings stop when its snapshots are more than 0.6 s old. The full map's legend reads You · Team · Watch in sight · Last seen; while the Night Watch is in sight a runner's HUD says "Night Watch in sight · N m".
 - **Match HUD (Pass 8).** One goal line and one clock: runners see "Team home n/N · Need k more", the Night Watch "Runners home n/N · Hold until m:ss" (amber under 30 s, coral under 10 s). Below it one personal next action: the waters still to stamp and "Next: <water>" with its direction and distance, "Return inside <dorm>", "Caught by X · back in 6", "Protected", or "Home · 2nd to finish · Waiting for team"; the Night Watch reads "You: 3 tags · 2 different runners". A pinned challenge shows in the pause menu and the expanded map.

@@ -39,8 +39,11 @@ var unstick_dir := Vector2.ZERO
 var reverse_t := 0.0
 var last_pos := Vector3.ZERO
 var pref_cart := -1
-var sprint_hold := 0.0
 var prev_pressed := 0
+## Measurement switch for game/tools/p9_balance.gd only (false = the 1.8
+## path steering, to separate the Pass 9 bot fixes from the movement
+## change in the balance matrix).  Always true in the game.
+static var pass9_nav := true
 var reaction := 0.0
 var _path_wait := Vector2.INF     # goal of a path request waiting for budget
 var _path_wait_cart := false
@@ -64,10 +67,9 @@ func _init(sim: MatchSim, p: SimPlayer) -> void:
 
 func think(sim: MatchSim, p: SimPlayer) -> InputCmd:
 	var cmd := _think(sim, p)
-	# Night Watch training: runner bots jog a little slower and never sprint
+	# Night Watch training: runner bots jog a little slower
 	if sim.gentle_bots and p.is_runner():
 		cmd.move *= 0.8
-		cmd.held &= ~TC.BTN_SPRINT
 	return cmd
 
 
@@ -182,14 +184,12 @@ func _runner(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 		return
 	_follow(sim, p, cmd, dt, false)
 	_separate(sim, p, cmd)
-	# pacing: sprint on long straights in bursts, keep a reserve for chases
-	var remaining_d := p.pos2().distance_to(goal)
-	if p.sprint > 0.75 and remaining_d > 25.0:
-		sprint_hold = 1.4
-	sprint_hold = maxf(0.0, sprint_hold - dt)
-	# (Pass 8: an exhausted meter needs a release before it re-arms)
-	if not p.sprint_exhausted and (sprint_hold > 0.0 or (goal_kind == "home" and remaining_d < 30.0)):
-		cmd.held |= TC.BTN_SPRINT
+	# (Pass 9: no sprint to pace: a full move input is the steady full speed)
+	# Pass 9: paths may cross a low wall (weighted, not solid, on the foot
+	# grid) and only the Night Watch and a fleeing runner hopped it; a runner
+	# heading for a water or home pushed into it until the stuck hop
+	if pass9_nav:
+		_hop_obstacles(sim, p, cmd)
 
 
 ## Runners pass through each other, so without this bots sharing a nav path
@@ -303,8 +303,6 @@ func _flee(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 			best = cand
 	cmd.move = best
 	var d := p.pos2().distance_to(Vector2(threat.x, threat.z))
-	if p.sprint > 0.05 and not p.sprint_exhausted:
-		cmd.held |= TC.BTN_SPRINT
 	if p.gadget == TC.Gadget.TURBO and d < 8.0:
 		cmd.pressed |= TC.BTN_GADGET
 		cmd.cam_yaw = atan2(-best.x, -best.y)
@@ -395,8 +393,10 @@ func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 		else:
 			_follow(sim, p, cmd, dt, false)
 		reaction -= dt
-		# a sprinting runner outpaces the wind-up: wait until closer before lunging
-		var slack := TAG_TRIGGER_SLACK if not target.sprinting else 0.05
+		# a runner faster than the Night Watch on foot (Turbo, a dive; Pass 8
+		# and earlier: a sprint) outpaces the wind-up: wait until closer
+		var outpaces := Vector2(target.vel.x, target.vel.z).length() > cfg.patrol_speed + 0.05
+		var slack := TAG_TRIGGER_SLACK if not outpaces else 0.05
 		if td < cfg.tag_reach_m + slack and p.tag_cd <= 0.0 and p.tag_lockout <= 0.0:
 			if reaction <= 0.0:
 				cmd.pressed |= TC.BTN_TAG
@@ -615,7 +615,7 @@ func _follow(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float, _cart: bool)
 	var wp := path[mini(path_i, path.size() - 1)]
 	var dir := wp - pp
 	if dir.length() > 0.05:
-		cmd.move = dir.normalized()
+		cmd.move = _along_walls(sim, p, dir.normalized())
 	# stuck detection (horizontal progress only: hopping in place is still stuck)
 	var moved := Vector2(p.pos().x - last_pos.x, p.pos().z - last_pos.z).length()
 	if moved < 0.02 and cmd.move.length() > 0.5:
@@ -636,6 +636,35 @@ func _follow(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float, _cart: bool)
 		stuck_t = 0.0
 		stuck_count = 0
 	last_pos = p.pos()
+
+
+## Pass 9: a long path segment that passes a wall closer than the capsule
+## (or a bot pushed a little off its line) ran into the wall at a shallow
+## angle and slid along it at cos(angle) of its speed, slowing for seconds
+## (the same on 1.8).  Like a person, run along a tall wall's face instead,
+## at full input, until past it.  A low wall (hoppable: nothing at 1.25 m)
+## is left to the hop, head-on contact to the stuck detection.  Applies to
+## every bot, either role.
+func _along_walls(sim: MatchSim, p: SimPlayer, want: Vector2) -> Vector2:
+	if not pass9_nav or not p.on_floor or p.state != TC.PState.ACTIVE:
+		return want
+	var b := p.body
+	for k in b.get_slide_collision_count():
+		var c := b.get_slide_collision(k)
+		var n3 := c.get_normal()
+		var n := Vector2(n3.x, n3.z)
+		if absf(n3.y) > 0.7 or n.length() < 0.5:
+			continue
+		n = n.normalized()
+		var into := want.dot(n)
+		if into >= -0.05 or into <= -0.9:
+			continue
+		var at := p.pos() + Vector3(0, 1.25, 0)
+		var tall := sim.space_state().intersect_ray(PhysicsRayQueryParameters3D.create(at, at - Vector3(n.x, 0, n.y) * 1.0, TC.L_WORLD))
+		if tall.is_empty():
+			continue
+		return (want - n * into).normalized()
+	return want
 
 
 func _hop_obstacles(sim: MatchSim, p: SimPlayer, cmd: InputCmd) -> void:

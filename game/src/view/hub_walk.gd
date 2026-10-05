@@ -167,7 +167,7 @@ func _process(delta: float) -> void:
 			var prev: Vector2 = _last.get(k, p)
 			var vel := (p - prev) / maxf(delta, 0.001) if delta > 0.0 else Vector2.ZERO
 			if vel.length() > HubRoom.WALK_SPEED * 2.0:
-				vel = Vector2.ZERO   # a correction: no sprint pose for it
+				vel = Vector2.ZERO   # a correction: no full-speed pose for it
 			_draw(k, p, float(s["yaw"]), vel)
 		elif stage.free_roam.has(k) and not _returning.has(k):
 			_returning[k] = true
@@ -208,4 +208,4 @@ func _draw(k: String, p: Vector2, yaw: float, vel: Vector2) -> void:
 		v.position = Vector3(p.x, 0, p.y)
 		return
 	v.apply_state({"pos": stage.to_global(Vector3(p.x, 0.0, p.y)), "yaw": yaw, "vel": Vector3(vel.x, 0.0, vel.y),
-		"on_floor": true, "state": TC.PState.ACTIVE, "sprinting": false})
+		"on_floor": true, "state": TC.PState.ACTIVE, "fast": false})
