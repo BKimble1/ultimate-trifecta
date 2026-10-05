@@ -70,6 +70,14 @@ def hsh(*k):
     return x - math.floor(x)
 
 
+def mark(mb, name, i0):
+    """Record the vertex range [i0, now) of a named piece (skins_check.py
+    tests the layers of a garment with these: build-time only)."""
+    if not hasattr(mb, 'groups'):
+        mb.groups = {}
+    mb.groups[name] = (i0, len(mb.v))
+
+
 def neck_w(p):
     return rig.seg_weights(p.z, [('neck', 0.93), ('head', None)], 0.03)
 
@@ -106,8 +114,9 @@ class HeadShape:
                 out += n * (push * w)
             else:
                 out += Vector(push) * w
-        # the neck stub and the very bottom of the head stay put
-        return out * smoothstep(0.90, 0.965, p.z)
+        # the neck stub and the bottom of the head (over the shoulders, where
+        # raised arms pass) stay put
+        return out * smoothstep(0.93, 1.01, p.z)
 
 
 # ================================================================== parametric builder
@@ -434,7 +443,7 @@ def crease(mb, pts, depth, height, col, wfn=HW):
     sweep(mb, pts, rad, skin(col), wfn, segs=4, twist_hint=nn)
 
 
-def head_shell(mb, colfn, segs=44, rings=30):
+def head_shell(mb, colfn, segs=42, rings=28):
     i0 = len(mb.v)
     ellipsoid(mb, HEAD_C, HEAD_R, skin(), neck_w, segs=segs, rings=rings, power=rig.HEAD_P, colfn=colfn, deform=rig.head_deform(0.0))
     lathe(mb, Vector((0, 0.0, 0)), Matrix.Identity(3), [(0.86, 0.0), (0.865, 0.06), (0.90, 0.066), (0.95, 0.07), (0.97, 0.0)],
@@ -481,7 +490,7 @@ def mitten_hands(mb, style):
             narrow = 1.0 - 0.16 * smoothstep(0.1, -1.0, t)
             cup = 0.007 * max(0.0, t) ** 2
             return Vector((lp.x * (1.0 - 0.1 * max(0.0, t)) + cup, lp.y * narrow, lp.z))
-        ellipsoid(mb, w + d * 0.058, (0.034, 0.051, 0.065), style, hwf, segs=20, rings=14, rot=R, power=2.3, deform=palm)
+        ellipsoid(mb, w + d * 0.058, (0.034, 0.051, 0.065), style, hwf, segs=18, rings=12, rot=R, power=2.3, deform=palm)
         tdir = (d * 0.62 + Y * 0.66 + X * 0.42).normalized()
         t0 = w + d * 0.036 + Y * 0.026 + X * 0.007
         tp = [t0 + tdir * (0.042 * i / 4.0) for i in range(5)]
@@ -632,10 +641,9 @@ def build_rb_head():
 
 # ================================================================== DR. DOOM: head
 DD_SHAPE = HeadShape([
-    ((0.66, 0.48, -0.46), 0.28, 0.015),                    # broad, full lower cheeks
-    ((-0.66, 0.48, -0.46), 0.28, 0.015),
+    ((0.60, 0.58, -0.40), 0.26, 0.013),                    # broad, full lower cheeks (forward of the shoulders)
+    ((-0.60, 0.58, -0.40), 0.26, 0.013),
     ((0.0, 0.72, -0.68), 0.20, (0.0, 0.007, -0.004)),      # a soft, rounded chin
-    ((0.0, 0.30, -0.95), 0.25, 0.006),                     # and the soft line under it
     ((0.0, -0.10, 1.0), 0.36, 0.010),                      # a high, rounded crown
     ((0.0, 0.75, 0.62), 0.30, 0.006),                      # a broad forehead
     ((0.90, 0.20, 0.30), 0.25, -0.004),
@@ -758,7 +766,7 @@ def build_dd_head():
     i0 = head_shell(mb, col)
     i1 = len(mb.v)
     cheeks(mb, i0, i1, [(0.15, 1.085, 0.045), (-0.15, 1.085, 0.045)], P0, push=0.0075)
-    ears(mb, scale=1.3, out_deg=27.0, dz=-0.004, inner='#d38377')
+    ears(mb, scale=1.26, out_deg=24.0, dz=-0.004, inner='#d38377')
     for sx in SIDES:
         eye(mb, sx, DD_EYE, P0)
         brow(mb, sx, {'x0': 0.036, 'x1': 0.150, 'z': lambda t: 1.236 + 0.012 * math.sin(math.pi * min(1.0, t * 1.35)) - 0.022 * t,
@@ -781,7 +789,7 @@ def build_dd_head():
               'wing_sink': 0.006, 'col': '#ffe0d6', 'tip_col': '#ffcdbf'})
     _dd_mouth(mb, P0)
     # a soft chin form
-    feat(mb, 0.0, 1.002, (0.040, 0.026, 0.010), col, sink=0.006, segs=14, rings=8)
+    feat(mb, 0.0, 1.004, (0.034, 0.020, 0.007), col, sink=0.0055, segs=12, rings=6)
     return finish_head(mb, DD_SHAPE, P0, DD_KEYS)
 
 
@@ -902,8 +910,14 @@ def _rb_clumps(g):
         sideness = abs(math.sin(a)) * (1.0 - top)
         big = max(top, frontal)
         h = [hsh(i, k) for k in range(11, 18)]
-        la = lerp(0.030, 0.050, big) * lerp(0.85, 1.2, h[0])
-        lc = lerp(0.017, 0.024, h[1]) * lerp(1.0, 0.85, sideness)
+        # each clump turned off the flow a little and its centre nudged
+        # along the scalp, so no regular pattern shows
+        side0 = nn.cross(flow).normalized()
+        ang = lerp(-0.55, 0.55, hsh(i, 31))
+        flow = (flow * math.cos(ang) + side0 * math.sin(ang)).normalized()
+        q = q + side0 * lerp(-0.012, 0.012, hsh(i, 32)) + flow * lerp(-0.012, 0.012, hsh(i, 33))
+        la = lerp(0.030, 0.050, big) * lerp(0.75, 1.3, h[0])
+        lc = lerp(0.016, 0.026, h[1]) * lerp(1.0, 0.85, sideness)
         amp = lerp(0.009, 0.030, big) * lerp(0.75, 1.15, h[2]) * lerp(1.0, 0.65, sideness)
         if q.x < 0 and top > 0.4:
             amp *= 1.15          # fuller on the left of the crown: an asymmetric silhouette
@@ -1014,7 +1028,7 @@ def build_rb_hair():
 DD_LOW = [(0.0, 0.985), (0.7, 1.005), (1.10, 1.075), (1.36, 1.190), (1.60, 1.208), (1.76, 1.172), (1.88, 1.178), (1.97, 1.212)]
 DD_HIGH = [(0.0, 1.238), (0.8, 1.248), (1.2, 1.262), (1.6, 1.264), (1.80, 1.248), (1.92, 1.228), (1.97, 1.214)]
 DD_END = 1.97
-FRINGE = [srgb('#958677'), srgb('#b5a796'), srgb('#d6ccbf')]
+FRINGE = [srgb('#8f7766'), srgb('#b19883'), srgb('#d5c2ae')]
 
 
 def dd_high(a):
@@ -1028,20 +1042,22 @@ def build_dd_fringe():
     the scalp along an uneven upper edge; fine streaks and feathered tufts
     give it the look of short combed-back hair."""
     mb = MeshBuilder('dd_fringe')
-    nc = 64
+    nc = 56
     nr = 10
     angs = [lerp(-DD_END, DD_END, k / float(nc - 1)) for k in range(nc)]
     rows = []
     for r in range(-1, nr):
         row = []
         for k, a in enumerate(angs):
-            lo, hi = table(DD_LOW, abs(a)), dd_high(a)
+            lo, hi = table(DD_LOW, abs(a)) + 0.004 * math.sin(13.0 * a + 0.7), dd_high(a)
             hi = max(hi, lo + 0.004)
             f = max(0.0, r) / (nr - 1)
             z = lerp(lo, hi, f) + (0.004 if r < 0 else 0.0)
             end = smoothstep(DD_END, DD_END - 0.3, abs(a))
             puff = 0.0035 * math.exp(-((abs(a) - 1.45) / 0.35) ** 2)        # fuller above and behind the ears
             gr = (0.0012 + (0.0036 + puff) * math.sin(math.pi * min(1.0, f * 1.1 + 0.12))) * lerp(0.3, 1.0, end)
+            if 0 < r < nr - 1:
+                gr += 0.0011 * (hsh(k, r, 5) - 0.5)          # a fine, uneven surface
             if r == nr - 1:
                 gr = -0.0015
             if r < 0:
@@ -1061,8 +1077,8 @@ def build_dd_fringe():
             mb.face(a_[k], b_[k], b_[k + 1], a_[k + 1])
     # feathered tufts break the upper edge (short, lying back and up), a few
     # at the nape and over the ears
-    for k in range(34):
-        a = lerp(-DD_END + 0.12, DD_END - 0.12, (k + 0.5) / 34.0) + 0.03 * math.sin(k * 2.7)
+    for k in range(26):
+        a = lerp(-DD_END + 0.12, DD_END - 0.12, (k + 0.5) / 26.0) + 0.03 * math.sin(k * 2.7)
         hi = dd_high(a) - lerp(0.004, 0.016, hsh(k, 2))
         q = P._shell_point(a, hi, 0.003)
         nn = head_normal(q, 0.003)
@@ -1072,6 +1088,19 @@ def build_dd_fringe():
         pts = [q - nn * 0.002, q + back * L * 0.5 + nn * 0.0022, q + back * L + nn * 0.0006]
         c = Vector(FRINGE[1]).lerp(Vector(FRINGE[2]), 0.25 + 0.5 * hsh(k, 4))
         sweep(mb, pts, [(0.0018, 0.0052), (0.0015, 0.0044), (0.0007, 0.0018)], S(tuple(c), rough=0.85), HW, segs=4, cap_start=None,
+              cap_end='round', twist_hint=nn)
+    # short tufts along the lower edge (pointing down at the nape and back at the sides)
+    for k in range(16):
+        a = lerp(-DD_END + 0.25, DD_END - 0.25, (k + 0.5) / 16.0) + 0.02 * math.sin(k * 3.1)
+        lo = table(DD_LOW, abs(a)) + 0.004 * math.sin(13.0 * a + 0.7) + lerp(0.003, 0.010, hsh(k, 7))
+        q = P._shell_point(a, lo, 0.003)
+        nn = head_normal(q, 0.003)
+        down = Vector((0.0, -0.6 * (1.0 - abs(math.sin(a))), -1.0))
+        down = (down - nn * down.dot(nn)).normalized()
+        L = lerp(0.010, 0.018, hsh(k, 8))
+        pts = [q - nn * 0.002, q + down * L * 0.5 + nn * 0.0016, q + down * L]
+        c = Vector(FRINGE[0]).lerp(Vector(FRINGE[1]), 0.3 + 0.5 * hsh(k, 9))
+        sweep(mb, pts, [(0.0016, 0.0046), (0.0013, 0.0038), (0.0006, 0.0015)], S(tuple(c), rough=0.85), HW, segs=4, cap_start=None,
               cap_end='round', twist_hint=nn)
     return reshape(mb, DD_SHAPE)
 
@@ -1199,8 +1228,10 @@ def build_rb_body():
         prof.append((z, rb_r(z)))
         z += 0.0155
     prof.append((0.885, rb_r(0.885)))
+    i0 = len(mb.v)
     lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, sk, torso_w, segs=32, ry_scale=RB_RY, colfn=tcol,
           rfn=lambda r, th, z: r + rb_pec(th, z))
+    mark(mb, 'torso_skin', i0)
     # navel and collarbones
     p, n = rb_ang(math.pi / 2, 0.650)
     ellipsoid(mb, p - n * 0.0012, (0.0055, 0.0075, 0.0022), skin('#d39b86'), torso_w, segs=10, rings=5, rot=rot_align(n, UP))
@@ -1233,7 +1264,9 @@ def build_rb_body():
     lathe(mb, shoulder(1) + d * s_c, rot_align(d, FWD), prof, WRISTBAND, lambda q: arm_w(q, 1), segs=22)
     # ---- legs and feet
     for sx in SIDES:
-        pts = K._clip_leg(rig.leg_path(sx, 0.55), 0.53, rig.ANKLE_Z)
+        # (the leg starts inside the shorts' leg, 6 cm above the hem: nothing
+        # hidden under the seat that a stride could push through it)
+        pts = K._clip_leg(rig.leg_path(sx, 0.55), 0.45, rig.ANKLE_Z)
         k_, a_ = rig.knee(sx), rig.ankle(sx)
         pts.append(a_ + (a_ - k_).normalized() * 0.028)
         pts = _dense_path(pts, 0.024)
@@ -1244,7 +1277,9 @@ def build_rb_body():
             r += 0.004 * math.exp(-((ls - 0.29) / 0.05) ** 2)                    # calf
             r = lerp(r, 0.040, smoothstep(0.39, 0.45, ls))                       # into the ankle
             rad.append((r, r * 0.95))
+        i0 = len(mb.v)
         sweep(mb, pts, rad, sk, lambda q, sv, i, sx=sx: leg_w(q, sx), segs=16, cap_start=None, cap_end='round', twist_hint=FWD)
+        mark(mb, 'leg_skin' + ('.L' if sx < 0 else '.R'), i0)
         bare_foot(mb, sx, sk)
         _sandal(mb, sx)
     _boxer_shorts(mb)
@@ -1294,7 +1329,9 @@ def _boxer_shorts(mb):
         prof.append((z, rb_r(z) + g))
         z += 0.013
     prof.append((0.598, rb_r(0.598) + g))
+    i0 = len(mb.v)
     lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, SHORTS, torso_w, segs=40, ry_scale=RB_RY)
+    mark(mb, 'shorts_seat', i0)
     # the waistband: soft ribs, a rolled top edge and its inside
     zb0, zb1 = 0.590, 0.628
     rbase = lambda z: rb_r(z) + g + 0.002
@@ -1325,7 +1362,9 @@ def _boxer_shorts(mb):
         # snug at the hip (the leg's top stays inside the seat), easing
         # looser toward the hem
         grow = lambda z: lerp(0.002, 0.013, smoothstep(0.55, 0.47, z)) + 0.007 * smoothstep(0.45, 0.39, z)
+        i0 = len(mb.v)
         poly, radii = K.leg_tube(mb, sx, 0.565, 0.384, grow, SHORTS, segs=20)
+        mark(mb, 'shorts_leg' + ('.L' if sx < 0 else '.R'), i0)
         # side seam: down the seat's side, then the leg's outside to the hem
         seam = []
         for z in (0.586, 0.572, 0.558):
@@ -1343,9 +1382,27 @@ def _boxer_shorts(mb):
 
 
 # ================================================================== DR. DOOM: suit
+def dd_tw(p):
+    """The suit's torso weights: rig.torso_w with a wider hips-to-spine blend
+    (0.535-0.665 m instead of 0.56-0.64).  Every layer of the suit (shirt,
+    tie, trousers, belt, jacket) uses it, so layers a couple of centimetres
+    apart that meet the blend at slightly different heights bend together
+    instead of crossing in a crouch."""
+    w = torso_w(p)
+    if p.z >= 0.665 or p.z <= 0.50:
+        return w
+    soft = rig.seg_weights(p.z, [('hips', 0.60), ('spine', None)], 0.065)
+    # keep torso_w's thigh share (below 0.57) and replace its hips/spine split
+    th = {k: v for k, v in w.items() if k.startswith('thigh')}
+    rest = 1.0 - sum(th.values())
+    out = {k: v * rest for k, v in soft.items()}
+    out.update(th)
+    return out
+
+
 SUIT = srgb('#93673f')
 SUIT_EDGE = S('#6f4a2d', rough=0.85)
-SUIT_LINING = S('#4a3020', rough=0.6, mat=MAT_SATIN)
+SUIT_LINING = S('#6a4a30', rough=0.6, mat=MAT_SATIN)
 SHIRT = srgb('#d6e4f3')
 SHIRT_STRIPE = srgb('#93b0d6')
 SHIRT_COLLAR = S('#d9e6f4', rough=0.85)
@@ -1365,11 +1422,11 @@ def tweed(p, k=1.0, base=SUIT):
     or cool fleck, in vertex colour (no texture, no fine geometry)."""
     h1 = hsh(round(p.x * 211.0), round(p.y * 197.0), round(p.z * 223.0))
     h2 = hsh(round(p.x * 157.0) + 3, round(p.y * 173.0), round(p.z * 149.0))
-    c = Vector(base) * (1.0 + 0.085 * k * (h1 - 0.5))
-    if h2 > 0.92:
-        c = c.lerp(Vector(srgb('#a07650')), 0.35 * k)
-    elif h2 < 0.06:
-        c = c.lerp(Vector(srgb('#4e3420')), 0.3 * k)
+    c = Vector(base) * (1.0 + 0.05 * k * (h1 - 0.5))
+    if h2 > 0.965:
+        c = c.lerp(Vector(srgb('#b08660')), 0.18 * k)
+    elif h2 < 0.03:
+        c = c.lerp(Vector(srgb('#5a3d26')), 0.15 * k)
     return (c.x, c.y, c.z)
 
 
@@ -1408,12 +1465,39 @@ def jacket_gap(z):
                   (0.86, 0.60), (0.888, 0.66)], z)
 
 
+def jacket_base(z):
+    """The jacket's own line below the waist: it hangs over the hips and
+    the tops of the trouser legs (a little flare), never pinched in under
+    them like the torso's own profile."""
+    return max(torso_r(z), 0.196 + 0.028 * smoothstep(0.57, 0.45, z))
+
+
 def jacket_at(th, z, lift=0.0):
-    return dd_at(th, z, jacket_grow(z) + lift)
+    return dd_at(th, z, jacket_grow(z) + lift + jacket_base(z) - max(torso_r(z), 0.06))
+
+
+def lower_w(p):
+    """One weight field for everything round the hips under the jacket (the
+    trousers' seat, the tops of the trouser legs and the jacket's skirt):
+    the torso's at the waist, riding more and more on the thighs toward the
+    hem, fully in front and at the sides, less at the back.  The layers lie
+    one over the other at different radii, so with the same field they bend
+    together and none can push through another (skins_check.py measures it
+    in every clip)."""
+    w = dd_tw(p)
+    k = smoothstep(0.60, 0.45, p.z)
+    if k <= 0.0:
+        return w
+    r = max(1e-6, math.hypot(p.x, (p.y - TORSO_CY) / TORSO_RY))
+    ny = (p.y - TORSO_CY) / TORSO_RY / r          # +1 front, -1 back
+    k *= lerp(0.4, 0.95, smoothstep(-0.6, 0.4, ny))
+    lx = smoothstep(-0.10, 0.10, p.x)
+    return rig.mix((w, 1.0 - k), ({'thigh.L': 1.0 - lx, 'thigh.R': lx}, k))
 
 
 def jw(p):
-    return skirt_w(p) if p.z < 0.53 else torso_w(p)
+    """Jacket weights: the torso's above the waist, the hips' field (lower_w) below."""
+    return lower_w(p) if p.z < 0.60 else dd_tw(p)
 
 
 def build_dd_suit():
@@ -1449,6 +1533,7 @@ def _dd_shirt(mb):
         th += w
         k += 1
     zs = [0.575 + 0.0235 * i for i in range(13)] + [0.876]
+    i0 = len(mb.v)
     for th0, th1, stripe in edges:
         col = SHIRT_STRIPE if stripe else SHIRT
         st = Style(col, T_NONE, 0.85, MAT_CLOTH)
@@ -1458,7 +1543,7 @@ def _dd_shirt(mb):
             row = []
             for t in cols:
                 p, n = dd_at(t, z, SHIRT_G - 0.012 * smoothstep(0.84, 0.876, z))
-                i = mb.vert(p, st, (0, p.z), torso_w(p))
+                i = mb.vert(p, st, (0, p.z), dd_tw(p))
                 mb.nrm[i] = n
                 row.append(i)
             rows.append(row)
@@ -1466,17 +1551,20 @@ def _dd_shirt(mb):
             for c in range(len(cols) - 1):
                 # th ascends toward -x: seen from the front this winding faces out
                 mb.face(rows[r][c], rows[r][c + 1], rows[r + 1][c + 1], rows[r + 1][c])
+    mark(mb, 'shirt', i0)
     P.collar(mb, 0.012, SHIRT_COLLAR, z=0.874)
     # a placket line and two small buttons below the knot
     for z in (0.79, 0.73):
         p, n = dd_at(math.pi / 2 + 0.035, z, SHIRT_G + 0.001)
-        ellipsoid(mb, p, (0.0055, 0.0055, 0.0022), S('#f2f5f8', rough=0.3, mat=MAT_GLOSS), torso_w, segs=8, rings=4, rot=rot_align(n, UP))
+        ellipsoid(mb, p, (0.0055, 0.0055, 0.0022), S('#f2f5f8', rough=0.3, mat=MAT_GLOSS), dd_tw, segs=8, rings=4, rot=rot_align(n, UP))
     # cuffs out of the jacket sleeves
     for sx in SIDES:
         d = arm_dir(sx)
         s0 = rig.UPPER_LEN + rig.FORE_LEN
-        r = P.arm_radius(s0) + 0.010
-        prof = [(-0.040, r - 0.004), (-0.036, r), (-0.004, r + 0.0005), (0.0, r - 0.001), (0.002, r - 0.006), (-0.004, 0.031)]
+        # wide enough to fill the jacket sleeve's opening (seen down the sleeve
+        # the cuff shows, not the sleeve's dark lining)
+        r = P.arm_radius(s0) + 0.016
+        prof = [(-0.060, r - 0.004), (-0.056, r), (-0.004, r + 0.0005), (0.0, r - 0.001), (0.002, r - 0.007), (-0.006, 0.031)]
         lathe(mb, shoulder(sx) + d * (s0 - 0.004), rot_align(d, FWD), prof, SHIRT_COLLAR, lambda q, sx=sx: arm_w(q, sx), segs=18)
 
 
@@ -1508,7 +1596,7 @@ def _dd_tie(mb):
     def v_end(u):
         return 1.0 - 0.11 * abs(u)
 
-    def pos(u, v, lift=0.0042):
+    def pos(u, v, lift=0.0050):
         v = max(0.0, min(v_end(u), v))
         x = u * half_w(v)
         z = z0 - v * L
@@ -1526,6 +1614,7 @@ def _dd_tie(mb):
                 bounds.append(q + f)
         q += 1.0
     bounds = [qmin] + bounds + [qmax]
+    i0 = len(mb.v)
     for b0, b1 in zip(bounds, bounds[1:]):
         if b1 - b0 < 1e-6:
             continue
@@ -1537,20 +1626,21 @@ def _dd_tie(mb):
             for u in us:
                 v = (qq * period - u * half_w(0.6) * slope) / L
                 p, n = pos(u, v)
-                i = mb.vert(p, st, (0, p.z), torso_w(p))
+                i = mb.vert(p, st, (0, p.z), dd_tw(p))
                 mb.nrm[i] = n
                 row.append(i)
             rows.append(row)
         for c in range(len(us) - 1):
             mb.face(rows[0][c], rows[0][c + 1], rows[1][c + 1], rows[1][c])
+    mark(mb, 'tie_blade', i0)
     # the blade's edges: a thin wall down to the shirt
     for side in (-1.0, 1.0):
         vs = [i / 30.0 for i in range(31)]
         top = [pos(side, v)[0] for v in vs]
         bot = [pos(side, v, 0.0005)[0] for v in vs]
-        ti = [mb.vert(p, Style(_tie_colour((v * L + side * half_w(v) * slope) / period), T_NONE, 0.5, MAT_SATIN), (0, p.z), torso_w(p))
+        ti = [mb.vert(p, Style(_tie_colour((v * L + side * half_w(v) * slope) / period), T_NONE, 0.5, MAT_SATIN), (0, p.z), dd_tw(p))
               for p, v in zip(top, vs)]
-        bi = [mb.vert(p, Style(TIE_GOLD, T_NONE, 0.5, MAT_SATIN), (0, p.z), torso_w(p)) for p in bot]
+        bi = [mb.vert(p, Style(TIE_GOLD, T_NONE, 0.5, MAT_SATIN), (0, p.z), dd_tw(p)) for p in bot]
         for k in range(30):
             if side > 0:
                 mb.face(ti[k], bi[k], bi[k + 1], ti[k + 1])
@@ -1563,7 +1653,7 @@ def _dd_tie(mb):
     def kd(lp):
         t = (lp.z + 0.016) / 0.032
         return Vector((lp.x * lerp(1.0, 0.62, t), lp.y, lp.z))
-    ellipsoid(mb, p, (0.021, 0.0105, 0.0175), S('#ffffff', rough=0.5, mat=MAT_SATIN), torso_w, segs=16, rings=10, rot=R @ rot_x(90.0),
+    ellipsoid(mb, p, (0.021, 0.0105, 0.0175), S('#ffffff', rough=0.5, mat=MAT_SATIN), dd_tw, segs=16, rings=10, rot=R @ rot_x(90.0),
               power=2.6, deform=kd, colfn=lambda q, lp: _tie_colour(((z0 + 0.03 - q.z) + (q.x) * slope * 0.8) / period))
 
 
@@ -1575,11 +1665,15 @@ def _dd_trousers(mb):
     prof = [(0.462, 0.0)]
     z = 0.47
     while z < 0.612:
-        prof.append((z, max(torso_r(z), 0.06) + g))
+        # (slimmer under the jacket's skirt, which rides on the thighs: room
+        # for a stride; full at the waist, where the opening shows it)
+        prof.append((z, max(torso_r(z), 0.06) + g - 0.008 * smoothstep(0.585, 0.53, z)))
         z += 0.0125
     prof.append((0.612, torso_r(0.612) + g))
-    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), torso_w, segs=30, ry_scale=TORSO_RY,
+    i0 = len(mb.v)
+    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), lower_w, segs=30, ry_scale=TORSO_RY,
           colfn=lambda p, z, th: suit_style(p), rfn=lambda r, th, z: r + 0.6 * dd_belly(th, z))
+    mark(mb, 'trousers_seat', i0)
     # fly seam
     pts = []
     for i in range(7):
@@ -1589,14 +1683,24 @@ def _dd_trousers(mb):
         th = math.pi / 2 - math.atan2(x, 0.2)
         q, n = dd_at(th, z, g + 0.0009 - 0.4 * dd_belly(th, z))     # on the seat (0.6 of the belly)
         pts.append(q)
-    K.path_tube(mb, pts, 0.0012, SUIT_EDGE, torso_w, segs=4, hint=FWD)
+    K.path_tube(mb, pts, 0.0012, SUIT_EDGE, dd_tw, segs=4, hint=FWD)
     for sx in SIDES:
         def crease(p, sv, a):
             c = suit_style(p, 0.8)
             k = math.exp(-(a / 0.22) ** 2) if a < math.pi else math.exp(-((a - 2 * math.pi) / 0.22) ** 2)
             return Style(tuple(min(1.0, x * (1.0 + 0.07 * k)) for x in c.col), T_NONE, 0.9, MAT_CLOTH)
-        grow = lambda z: 0.026 + 0.004 * smoothstep(0.30, 0.12, z)
-        poly, radii = K.leg_tube(mb, sx, 0.56, 0.088, grow, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), segs=18, colfn=crease, step=0.03)
+        grow = lambda z: lerp(0.005, 0.026, smoothstep(0.48, 0.40, z)) + 0.004 * smoothstep(0.30, 0.12, z)
+        i0 = len(mb.v)
+        # (the legs leave the seat just above the crotch, under the jacket's
+        # skirt, which rides on the thighs there: a leg tube reaching up
+        # inside the seat would push through it, and the jacket, in a stride)
+        poly, radii = K.leg_tube(mb, sx, 0.50, 0.088, grow, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), segs=18, colfn=crease, step=0.03)
+        mark(mb, 'trousers_leg' + ('.L' if sx < 0 else '.R'), i0)
+        # the leg's top, under the seat and the jacket, joins the hips' field
+        for i in range(i0, len(mb.v)):
+            k = smoothstep(0.445, 0.475, mb.v[i].z)
+            if k > 0.0:
+                mb.w[i] = rig.mix((mb.w[i], 1.0 - k), (lower_w(mb.v[i]), k))
         e = poly[-1]
         dd = (poly[-1] - poly[-2]).normalized()
         P._sleeve_hem(mb, e, dd, radii[-1][1], P.leg_radius(rig.leg_s(e, sx)) * 0.96, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), None, 0.012,
@@ -1605,21 +1709,21 @@ def _dd_trousers(mb):
     zb0, zb1 = 0.594, 0.616
     rb = lambda z: max(torso_r(z), 0.06) + g + 0.0035
     lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), [(zb0 - 0.002, rb(zb0) - 0.004), (zb0, rb(zb0)), (zb1, rb(zb1)),
-                                                           (zb1 + 0.002, rb(zb1) - 0.004)], BELT, torso_w, segs=40, ry_scale=TORSO_RY,
+                                                           (zb1 + 0.002, rb(zb1) - 0.004)], BELT, dd_tw, segs=40, ry_scale=TORSO_RY,
           rfn=lambda r, th, z: r + 0.6 * dd_belly(th, z))
     p, n = dd_at(math.pi / 2, 0.605, g + 0.007 + 0.6 * dd_belly(math.pi / 2, 0.605) - dd_belly(math.pi / 2, 0.605))
     R = rot_align(n, UP)
     outer = K.rounded_rect(0.036, 0.026, 0.004)
     inner = K.rounded_rect(0.026, 0.016, 0.003)
     place = K.place_planar(p, n, UP)
-    K.decal(mb, outer, place, BUCKLE, torso_w, lift=0.0, thick=0.0035)
-    K.decal(mb, inner, place, BELT, torso_w, lift=0.0032, thick=0.0012)
+    K.decal(mb, outer, place, BUCKLE, dd_tw, lift=0.0, thick=0.0035)
+    K.decal(mb, inner, place, BELT, dd_tw, lift=0.0032, thick=0.0012)
     K.path_tube(mb, [p + R @ Vector((-0.0005, -0.009, 0.0)) + n * 0.005, p + R @ Vector((0.0015, 0.009, 0.0)) + n * 0.005], 0.0016, BUCKLE,
-                torso_w, segs=5, hint=n)
+                dd_tw, segs=5, hint=n)
     for th in (math.pi / 2 - 0.62, math.pi / 2 + 0.62, -math.pi / 2 - 0.45, -math.pi / 2 + 0.45):
         q0, nn = dd_at(th, 0.590, g + 0.0035 + 0.6 * dd_belly(th, 0.59) - dd_belly(th, 0.59))
         q1, _ = dd_at(th, 0.620, g + 0.0035 + 0.6 * dd_belly(th, 0.62) - dd_belly(th, 0.62))
-        K.path_tube(mb, [q0 + nn * 0.004, q1 + nn * 0.004], 0.0038, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), torso_w, segs=6, hint=nn, flat=0.5)
+        K.path_tube(mb, [q0 + nn * 0.004, q1 + nn * 0.004], 0.0038, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), dd_tw, segs=6, hint=nn, flat=0.5)
 
 
 def _dd_jacket(mb):
@@ -1628,18 +1732,23 @@ def _dd_jacket(mb):
     lapels and a collar, a finished front edge and hem with a dark lining
     showing inside, flap pockets, a breast pocket, two horn buttons, and
     sleeves with cuff buttons over the shirt cuffs."""
-    zs = [0.448 + 0.0205 * i for i in range(20)] + [0.858, 0.872, 0.884]
-    segs = 44
+    # rows every 2 cm, every 1 cm through the hips-to-spine blend (so the faces
+    # follow the weights the shirt under them has)
+    zs = sorted(set([round(0.448 + 0.0205 * i, 4) for i in range(20)] + [0.4585, 0.4795, 0.4995, 0.52, 0.54, 0.56, 0.575, 0.585, 0.595,
+                                                                          0.605, 0.6155, 0.625, 0.645])) + [0.858, 0.872, 0.884]
+    segs = 40
     rows = []
+    i0 = len(mb.v)
     for z in zs:
         g = jacket_gap(z)
         row = []
         for k in range(segs + 1):
             th = math.pi / 2 + g + (2 * math.pi - 2 * g) * k / segs
-            p, n = dd_at(th, z, jacket_grow(z))
+            p, n = jacket_at(th, z)
             row.append(mb.vert(p, suit_style(p), (0, p.z), jw(p)))
         rows.append(row)
     mb.grid(rows, closed_u=False)
+    mark(mb, 'jacket_shell', i0)
     # facing and lining: the inside of the front edges and of the hem, in shadow
     for side in (0, 1):
         strip = []
@@ -1647,8 +1756,8 @@ def _dd_jacket(mb):
             g = jacket_gap(z)
             th0 = math.pi / 2 + g if side == 0 else math.pi / 2 - g + 2 * math.pi
             th1 = th0 + (0.16 if side == 0 else -0.16)
-            a, _ = dd_at(th0, z, jacket_grow(z) - 0.003)
-            b, _ = dd_at(th1, z, jacket_grow(z) - 0.006)
+            a, _ = jacket_at(th0, z, -0.003)
+            b, _ = jacket_at(th1, z, -0.006)
             strip.append((mb.vert(a, SUIT_LINING, (0, a.z), jw(a)), mb.vert(b, SUIT_LINING, (0, b.z), jw(b))))
         for k in range(len(strip) - 1):
             (a0, b0), (a1, b1) = strip[k], strip[k + 1]
@@ -1660,8 +1769,8 @@ def _dd_jacket(mb):
     for k in range(segs + 1):
         g = jacket_gap(zs[0])
         th = math.pi / 2 + g + (2 * math.pi - 2 * g) * k / segs
-        a, _ = dd_at(th, zs[0], jacket_grow(zs[0]) - 0.003)
-        b, _ = dd_at(th, zs[0] + 0.028, jacket_grow(zs[0] + 0.028) - 0.007)
+        a, _ = jacket_at(th, zs[0], -0.003)
+        b, _ = jacket_at(th, zs[0] + 0.028, -0.007)
         hem.append((mb.vert(a, SUIT_LINING, (0, a.z), jw(a)), mb.vert(b, SUIT_LINING, (0, b.z), jw(b))))
     for k in range(segs):
         (a0, b0), (a1, b1) = hem[k], hem[k + 1]
@@ -1671,14 +1780,14 @@ def _dd_jacket(mb):
         pts = []
         for z in [zs[0] + 0.002] + zs[1:-2]:
             g = jacket_gap(z)
-            p, n = dd_at(math.pi / 2 + side * g, z, jacket_grow(z) - 0.0015)
+            p, n = jacket_at(math.pi / 2 + side * g, z, -0.0015)
             pts.append(p)
         K.path_tube(mb, pts, 0.0032, SUIT_EDGE, jw, segs=6, hint=FWD, cap='round')
     pts = []
     for k in range(segs + 1):
         g = jacket_gap(zs[0])
         th = math.pi / 2 + g + (2 * math.pi - 2 * g) * k / segs
-        p, n = dd_at(th, zs[0] + 0.002, jacket_grow(zs[0]) - 0.0015)
+        p, n = jacket_at(th, zs[0] + 0.002, -0.0015)
         pts.append(p)
     K.path_tube(mb, pts, 0.0032, SUIT_EDGE, jw, segs=6, hint=UP, cap='round')
     # lapels: from the gorge down to the roll at the top button, notched
@@ -1694,17 +1803,17 @@ def _dd_jacket(mb):
             w = 0.052 * math.sin(math.pi * min(1.0, t * 1.15) * 0.92) * (1.0 - 0.45 * smoothstep(0.80, 1.0, t))
             if 0.80 < t < 0.88:
                 w *= 0.55       # the notch
-            r = max(torso_r(z), 0.06) + jacket_grow(z)
+            r = jacket_base(z) + jacket_grow(z)
             th_in = math.pi / 2 + side * g
             th_out = th_in + side * (w / r)
             inner.append((th_in, z))
             outer.append((th_out, z))
         o, i_ = (outer, inner) if side > 0 else (list(reversed(outer)), list(reversed(inner)))
-        K.strip_decal(mb, o, i_, lapel_place, suit_style(Vector((side, 0.5, 0.7)), 0.6, srgb('#875d38')), torso_w, lift=0.0005,
+        K.strip_decal(mb, o, i_, lapel_place, suit_style(Vector((side, 0.5, 0.7)), 0.6, srgb('#875d38')), dd_tw, lift=0.0005,
                       thick=0.0045, sink=0.001)
         # the lapel's edge
         pts = [jacket_at(th, z, 0.0052)[0] for th, z in outer]
-        K.path_tube(mb, pts, 0.0024, SUIT_EDGE, torso_w, segs=5, hint=FWD)
+        K.path_tube(mb, pts, 0.0024, SUIT_EDGE, dd_tw, segs=5, hint=FWD)
     # collar round the back of the neck, folded down
     pts, nrm = [], []
     for k in range(25):
@@ -1715,7 +1824,7 @@ def _dd_jacket(mb):
         out = Vector((math.cos(a), math.sin(a), 0.0))
         pts.append(p)
         nrm.append((out * 0.75 + UP * 0.66).normalized())
-    K.ribbon(mb, pts, nrm, 0.020, 0.0042, S('#875d38', rough=0.9), torso_w, closed=False, segs=8)
+    K.ribbon(mb, pts, nrm, 0.020, 0.0042, S('#875d38', rough=0.9), dd_tw, closed=False, segs=8)
     # pockets: flaps at the hips, a breast welt on the left chest
     for side in (1.0, -1.0):
         th = math.pi / 2 + side * 0.80
@@ -1723,13 +1832,13 @@ def _dd_jacket(mb):
         K.decal(mb, K.rounded_rect(0.080, 0.028, 0.004), place, suit_style(Vector((side, 0.3, 0.5)), 0.6, srgb('#875d38')), jw, lift=0.0,
                 thick=0.004, side_style=SUIT_EDGE)
     place = (lambda u, v: jacket_at(math.pi / 2 + 0.80 + u / 0.25, 0.765 + v, 0.0008))
-    K.decal(mb, K.rounded_rect(0.056, 0.011, 0.002), place, suit_style(Vector((0.1, 0.2, 0.3)), 0.6, srgb('#875d38')), torso_w, lift=0.0,
+    K.decal(mb, K.rounded_rect(0.056, 0.011, 0.002), place, suit_style(Vector((0.1, 0.2, 0.3)), 0.6, srgb('#875d38')), dd_tw, lift=0.0,
             thick=0.0035, side_style=SUIT_EDGE)
     # two horn buttons on the left front edge
     for z in (0.645, 0.585):
         th = math.pi / 2 + jacket_gap(z) + 0.075
         p, n = jacket_at(th, z, 0.003)
-        ellipsoid(mb, p, (0.0105, 0.0105, 0.0035), HORN, torso_w if z > 0.53 else jw, segs=12, rings=5, rot=rot_align(n, UP),
+        ellipsoid(mb, p, (0.0105, 0.0105, 0.0035), HORN, dd_tw if z > 0.53 else jw, segs=12, rings=5, rot=rot_align(n, UP),
                   colfn=lambda q, lp: S('#22160e', rough=0.5) if abs(abs(lp.x) - 0.003) < 0.0016 and abs(abs(lp.y) - 0.003) < 0.0016 else None)
     # sleeves (shoulders fitted by their caps), ending above the shirt cuffs
     P.sleeves(mb, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), 0.026, s1=rig.UPPER_LEN + rig.FORE_LEN - 0.020, cuff_style=None, lod=1)
