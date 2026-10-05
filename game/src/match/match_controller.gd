@@ -653,6 +653,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var tp := Prof.t()
 	var cmd := _build_local_cmd()
+	last_local_held = cmd.held
 	if is_client:
 		_client_tick(cmd, delta)
 	else:
@@ -1399,7 +1400,22 @@ func local_info() -> Dictionary:
 	info["finish_order"] = my_finish_order
 	info["tags"] = my_catches
 	info["distinct"] = my_tagged.size()
+	# Pass 8 sprint latch (the integrator's SimPlayer.sprint_exhausted, read
+	# defensively): the host's own player, or a guest's predicted one
+	info["sprint_exhausted"] = _sprint_latched()
+	info["sprint_held"] = (last_local_held & TC.BTN_SPRINT) != 0
 	return info
+
+
+## The buttons of this device's latest command (sprint held or not).
+var last_local_held := 0
+
+
+func _sprint_latched() -> bool:
+	var p: SimPlayer = sim.player(local_slot) if sim else pred
+	if p == null or not ("sprint_exhausted" in p):
+		return false
+	return bool(p.get("sprint_exhausted"))
 
 
 ## Runners in tonight's roster (bots included: they help decide the round).

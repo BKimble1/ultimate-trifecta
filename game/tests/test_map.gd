@@ -267,7 +267,9 @@ func test_a_dead_link_adds_no_sightings() -> void:
 	g.scan_seen_now()
 	t.check(g.last_seen.has(watch.id) and bool(g.last_seen[watch.id]["live"]), "the guest sees it from fresh snapshots")
 	rig.pass_through = false       # the link goes dead
-	await rig.frames(50)
+	var t0 := Time.get_ticks_msec()     # (wall time: the TTL and staleness are wall-clock)
+	while Time.get_ticks_msec() - t0 < MatchController.SEEN_STALE_MS + 200:
+		await t.get_tree().process_frame
 	g.scan_seen_now()
 	t.check(not g.last_seen.has(watch.id) or not bool(g.last_seen[watch.id]["live"]), "stale snapshots never keep a Watch 'in sight'")
 	rig.pass_through = true

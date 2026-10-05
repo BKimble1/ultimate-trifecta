@@ -87,6 +87,12 @@ func _ready() -> void:
 		var v7: Node = (load("res://src/dev/capture_v7_screens.gd") as GDScript).new()
 		v7.set("cap", self)
 		add_child(v7)
+	elif scenario == "pass8_match":
+		# Pass 8 match clarity evidence (HUD states, map, results) with
+		# measured HUD rects: its own driver (--p8-part=runner|patrol|results)
+		var p8: Node = (load("res://src/dev/capture_pass8_match.gd") as GDScript).new()
+		p8.set("cap", self)
+		add_child(p8)
 
 
 func snap(shot_name: String) -> void:
