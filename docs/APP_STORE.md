@@ -55,7 +55,7 @@ Two things decide which text applies:
 >
 > PLAY WITH FRIENDS
 > • Friends shows which of your Game Center friends are online in Ultimate Trifecta, in a party or in a round, and lets you invite them straight into your party.
-> • Or share a six-letter party code, or use Game Center's invite sheet.
+> • Or share a six-character party code, or use Game Center's invite sheet.
 > • Parties are private: there's no matchmaking with strangers and no voice chat.
 >
 > MAKE IT YOURS
@@ -128,11 +128,11 @@ prices, screenshots or submission):
 >
 > **Play without other people.** Home › Practice: full rounds with bots, offline, as Runner, Night Watch or Random, plus a guided tutorial for each role.
 >
-> **Online parties.** Home › Play with Friends › Create Party gives a six-letter code; a second device signed in to a different Game Center account joins with Join and that code. The host can also tap Invite to use Game Center's invite sheet. Parties are private (no matchmaking with strangers). Empty spots are filled by bots labelled BOT. Party settings (host only): 1, 2 or 3 Night Watch; 1, 3 or 5 rounds.
+> **Online parties.** Home › Play with Friends › Create Party gives a six-character code; a second device signed in to a different Game Center account joins with Join and that code. The host can also tap Invite to use Game Center's invite sheet. Parties are private (no matchmaking with strangers). Empty spots are filled by bots labelled BOT. Party settings (host only): 1, 2 or 3 Night Watch; 1, 3 or 5 rounds.
 >
-> **Friends.** Home or the party › Friends. It asks for Game Center friends access the first time. A friend appears as Online, In a party or In a round only when both of you have Ultimate Trifecta, have allowed friends access, and have each other as Game Center friends; otherwise the status says it's unavailable rather than guessing. Invite sends an invitation for your current party; the friend sees it in the game and taps Accept to join the same party (the same checks as a typed code). Party codes and Game Center's invite sheet always work as alternatives. **owner:** if possible, add a link to a short screen recording of two devices doing this, because the reviewer's account won't have mutual friends.
+> **Friends.** Friends is on Home (top right) and on the Friends button in a party. It lists the reviewer's Game Center friends (it asks for friends access the first time) and shows who is playing Ultimate Trifecta right now: Online, In a party or In a round. Status appears only for friends who also have the game, have allowed friends access and list you as a Game Center friend too; otherwise it says it's unavailable rather than guessing. Invite sends an invitation to your current party (from Home it creates one first); the friend gets a small Accept/Decline card and joins the same party, with the same checks as a typed code. Friends never appears during a round, and "Show when I'm playing" at the end of the list turns your own status off. Party codes and Apple's Game Center invite sheet work without Friends. **owner:** if possible, add a link to a short screen recording of two devices doing this, because the reviewer's account won't have mutual friends.
 >
-> **Purchases (cosmetic only).** Shop (top bar): Coins packs (250 to 7,500, consumable); Moonlight Runner and Starry Sleeper (permanent outfits, non-consumable; Shop › Restore Purchases). Outfits, accessories and Season 1 Premium are bought with Coins after a confirmation showing the price and the balance left. Purchases are verified with StoreKit 2 and Apple's signed transaction on our server before anything is delivered. Purchases made during review use Apple's sandbox; the game keeps sandbox purchases in a separate test economy and never mixes them with real ones. Nothing bought changes speed, reach or score.
+> **Purchases (cosmetic only).** Shop (top bar) › Coins has six Coin packs (250 to 7,500, consumable). Shop › Featured › Always available (also Shop › All skins, marked "App Store") has the two permanent outfits Moonlight Runner and Starry Sleeper (non-consumable); Restore Purchases is at the bottom of Featured, All skins and Coins and on each outfit's page. Other outfits, accessories and Season 1 Premium (Shop › Season 1) are bought with Coins after a confirmation showing the price and the balance left. Every purchase is verified with StoreKit 2 and Apple's signed transaction on our server before anything is delivered. Purchases made during review use Apple's sandbox: the game recognises this by itself (the first purchase may take a few seconds longer) and keeps review purchases in a separate sandbox economy, never mixed with customers'. Online parties match players of the same economy: to test a party on two devices, test it before making purchases, or make a purchase on both devices first. Nothing bought changes speed, reach or score.
 >
 > **Season Pass.** Season Pass (top bar): 100 tiers earned by playing online rounds and daily/weekly challenges. Premium (1,500 Coins) adds a second reward track; earned rewards are claimed with Claim or Claim all. Record Breaker (tier 50) and Dr. Doom (tier 100) are Premium rewards and can be previewed from the tier shortcuts above the track.
 >
@@ -191,6 +191,11 @@ or Text Messages and add `emails_or_text_messages` to the types in
 
 Not collected: email, phone, address, location, photos, audio, browsing or
 search history, advertising data, device IDs, crash or performance data.
+On the device only: `user://service_route.cfg` remembers which deployment
+(sandbox or production) this install uses; the game reads only the *name*
+of the App Store receipt file (TestFlight's is "sandboxReceipt"), never its
+contents. The appAccountToken sent to Apple with a purchase is derived by the
+service from the player's verified Game Center ID (purchase history, above).
 Payment is handled by Apple. The optional Settings › Diagnostics summary
 stays on the device unless the player shares it themselves.
 
@@ -206,12 +211,15 @@ and App Review's sandbox):
 - **Wallet and purchases:** Coins balance and ledger, entitlements, Season
   progress and claims, challenge progress, settled rounds, App Store
   transaction IDs and products (never payment details).
-- **Friends:** keyed hashes of the player's Game Center friends (replaced on
-  every refresh; dropped when no longer refreshed); **presence:** the
-  current status per session, expiring within about a minute;
-  **invitations:** inviter, invitee, party and status, expiring after a
-  few minutes and purged afterwards. Exact retention is in
-  `docs/final/friends.md`.
+- **Friends:** keyed hashes (HMAC) of up to 500 of the player's Game
+  Center friends' team player IDs, replaced on every upload and deleted
+  after 30 days without one or when friends access is revoked;
+  **presence:** one row per running game (status, the verified party,
+  game version), gone 60 seconds after the last 20-second heartbeat, no
+  history; **invitations:** inviter, invitee, party and outcome, pending for
+  5 minutes, purged 24 hours after they resolve. Status is shown only to
+  mutual friends, never during a round, and can be turned off ("Show when
+  I'm playing"). Details: `service/README.md` and `docs/final/friends.md`.
 - **Blocks:** pairs of profile IDs.
 - **Reports:** reporter, target and their name at the time, reason,
   optional details, context; for a reported chat message, the message.
