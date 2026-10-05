@@ -115,6 +115,7 @@ static func _start(lay: CampusLayout, specs: Array) -> void:
 	for s in specs:
 		_task_keys.append(s["key"])
 	stats["tasks"] = int(stats["tasks"]) + 1
+	_hook_exit()
 	# high priority on purpose: Godot runs low-priority tasks on a small share
 	# of the pool (one thread on a 4-6 core phone), the share the bots' path
 	# searches use; a field build queued there could make a scheduled path
@@ -149,23 +150,37 @@ static func poll() -> void:
 ## A round left while fields are still being built: the App's reaper
 ## releases the task when it finishes (no wait on the main thread).
 static func hand_off() -> void:
+	# (the task stays ours: the next poll() releases it, and the exit hook
+	# below waits for it if the game quits first)
+	poll()
+
+
+## A task still building when the engine shuts down is waited for there
+## (a worker running a script function while the engine tears scripts down
+## aborts the process): the scene tree's root leaving the tree is the last
+## moment scripts are alive.
+static var _exit_hooked := false
+
+
+static func _hook_exit() -> void:
+	if _exit_hooked:
+		return
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return
+	_exit_hooked = true
+	tree.root.tree_exiting.connect(_on_engine_exit, CONNECT_ONE_SHOT)
+
+
+static func _on_engine_exit() -> void:
 	_mutex.lock()
 	var t := _task
-	if t >= 0 and not WorkerThreadPool.is_task_completed(t):
-		_task = -1
-		_task_keys.clear()
-		_waiting.clear()
-		_mutex.unlock()
-		var ids: Array[int] = [t]
-		var tree := Engine.get_main_loop() as SceneTree
-		var app: Node = tree.root.get_node_or_null("App") if tree != null else null
-		if app != null and app.has_method("adopt_worker_tasks"):
-			app.call("adopt_worker_tasks", ids)
-		else:
-			WorkerThreadPool.wait_for_task_completion(t)
-		return
+	_task = -1
+	_task_keys.clear()
+	_waiting.clear()
 	_mutex.unlock()
-	poll()
+	if t >= 0:
+		WorkerThreadPool.wait_for_task_completion(t)
 
 
 ## Tests and tools: wait for the fields being built.
