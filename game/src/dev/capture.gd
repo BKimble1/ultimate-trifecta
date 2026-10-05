@@ -87,6 +87,12 @@ func _ready() -> void:
 		var v7: Node = (load("res://src/dev/capture_v7_screens.gd") as GDScript).new()
 		v7.set("cap", self)
 		add_child(v7)
+	elif scenario == "shop_p8":
+		# Pass 8 Shop rotation and Coin packs (DEV FIXTURE service clock,
+		# schedule and store; labelled on every shot), V7 layout reports
+		var p8: Node = (load("res://src/dev/capture_shop_p8.gd") as GDScript).new()
+		p8.set("cap", self)
+		add_child(p8)
 
 
 func snap(shot_name: String) -> void:

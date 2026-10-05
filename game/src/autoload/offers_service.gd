@@ -312,6 +312,8 @@ func _norm(o: Dictionary) -> Dictionary:
 ## Once a second: notice an offer starting or ending (the Shop then refreshes
 ## in place) and ask the service again when needed.
 func _tick() -> void:
+	if get_signal_connection_list("changed").is_empty():
+		return   # nothing shows the Shop (e.g. during a match): no work
 	var k := _key()
 	if k != _last_key:
 		_last_key = k

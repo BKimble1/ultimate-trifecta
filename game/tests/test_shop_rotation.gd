@@ -178,10 +178,18 @@ func test_featured_counts_down_by_label_and_swaps_in_place_at_expiry() -> void:
 	t.eq(cards[0].when_l.text, "Leaves in 00:00:02", "ticks once a second")
 	t.eq(_ids(shop.rot_grid.get_children()), before, "the same cards: only label text changed")
 	t.eq(shop.find_children("*", "", true, false).size(), nodes, "no node created or freed by the countdown")
+	shop.scroll.scroll_vertical = 30
+	await _frames(2)
+	var scroll_at := shop.scroll.scroll_vertical
+	var old_pos: Vector2 = (cards[0] as Control).get_global_rect().position
 	_advance(2.0)
 	Offers._tick()
 	await _frames(3)
 	t.eq(shop.rot_grid.get_instance_id(), grid_id, "the grid wasn't rebuilt")
+	var nc := shop.rot_grid.get_child(0) as Control
+	t.eq(nc.scale, Vector2.ONE, "the new card's hit region is never scaled (Motion animates its visual)")
+	t.eq(nc.get_global_rect().position, old_pos, "and sits exactly where the old card was")
+	t.eq(shop.scroll.scroll_vertical, scroll_at, "the list kept its scroll position through the refresh (%d)" % scroll_at)
 	var after: Array = shop.rot_grid.get_children()
 	t.eq(after.size(), 4, "still four offers")
 	t.check(after[0].get_instance_id() != before[0], "the ended offer's card was replaced in place")
@@ -191,6 +199,27 @@ func test_featured_counts_down_by_label_and_swaps_in_place_at_expiry() -> void:
 	t.eq((after[0] as ShopScreen.ShopCard).when_l.text, "Leaves in 2d 00h", "the new offer's own departure, not a restarted timer")
 	if v:
 		t.eq((App.stage.local_character() as Node).get_instance_id(), vid, "the one live preview kept running")
+	await _end()
+
+
+func test_refresh_feedback_respects_reduced_motion_and_focus() -> void:
+	await _begin()
+	var prev: Variant = Save.get_setting("reduced_motion", false)
+	Save.set_setting("reduced_motion", true)
+	_four(5.0)
+	await Offers.refresh()
+	var shop := await _shop()
+	var first := shop.rot_grid.get_child(0) as Control
+	first.grab_focus()
+	_advance(6.0)
+	Offers._tick()
+	await _frames(3)
+	var nc := shop.rot_grid.get_child(0) as Control
+	t.check(nc != first, "swapped")
+	t.eq(UIKit.face_of(nc).scale, Vector2.ONE, "Reduced Motion: no scale settle on the new card")
+	t.check(not Motion.running(UIKit.face_of(nc)).has("scale"), "and no scale animation running")
+	t.check(nc.has_focus(), "controller focus moved to the card that replaced the focused one")
+	Save.set_setting("reduced_motion", prev)
 	await _end()
 
 
@@ -243,7 +272,7 @@ func test_an_expired_offer_cannot_be_bought_anywhere() -> void:
 		if (c as ShopScreen.ShopCard).id == "outfit:lantern_scout":
 			card = c
 	t.check(card != null, "All skins lists it")
-	t.eq(card.when_l.text, "Not in current rotation", "labelled out of rotation")
+	t.check(card.when_l.text in ["Not in current rotation", "Not in rotation"], "labelled out of rotation (%s)" % card.when_l.text)
 	shop._open_detail("outfit:lantern_scout")
 	await _frames(2)
 	t.check((shop._d["action"] as Button).disabled, "its sheet can't buy")
@@ -360,7 +389,7 @@ func test_service_off_and_stale_states_are_honest() -> void:
 	t.eq(Offers.shop_status(), "stale", "stale")
 	t.check(shop.rot_status.text.begins_with("Connect to refresh Shop"), "the status says so: %s" % shop.rot_status.text)
 	t.eq(shop.rot_grid.get_child_count(), 4, "the last offers stay previewable")
-	t.eq((shop.rot_grid.get_child(0) as ShopScreen.ShopCard).when_l.text, "Connect to refresh Shop", "no deceptive countdown")
+	t.check((shop.rot_grid.get_child(0) as ShopScreen.ShopCard).when_l.text in ["Connect to refresh Shop", "Refresh needed"], "no deceptive countdown on the card")
 	t.eq(shop.refresh_l.text, "", "no refresh countdown")
 	shop._open_detail("outfit:lantern_scout")
 	await _frames(2)
@@ -427,6 +456,15 @@ func test_coin_pack_cards_are_compact_priced_by_storekit_and_honest() -> void:
 	t.eq(rig.store.purchases_started, 1, "one tap, one Apple sheet")
 	t.eq(Wallet.balance(), 500, "+500 Coins")
 	await _end()
+
+
+func test_currency_marks_for_best_value() -> void:
+	t.eq(Purchases.currency_mark("$0.99"), "$", "dollars")
+	t.eq(Purchases.currency_mark("0,99\u00a0€"), "€", "euros with a no-break space")
+	t.eq(Purchases.currency_mark("US$1.99"), "US$", "a prefixed code")
+	t.eq(Purchases.currency_mark("¥160"), "¥", "yen")
+	t.eq(Purchases.currency_mark("1'000.00 CHF"), "CHF", "Swiss grouping")
+	t.check(Purchases.currency_mark("£4.99") != Purchases.currency_mark("$4.99"), "different currencies differ")
 
 
 func test_all_six_packs_deliver_their_quantity_once() -> void:

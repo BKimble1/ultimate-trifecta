@@ -64,6 +64,9 @@ const WELL := {"swatch": 0.62, "coins": 0.62, "glyph": 0.62}
 const RETURN_NOTE := "Owned skins stay in your Locker. Shop skins may return."
 const NOT_IN_ROTATION := "Not in current rotation"
 const CONNECT := "Connect to refresh Shop"
+## a card's rotation line on the narrowest phone cards (the status line and
+## the sheet always carry the full wording)
+const SHORT := {CONNECT: "Refresh needed", NOT_IN_ROTATION: "Not in rotation"}
 
 ## deep links (set before NavShell.go("shop")): a section and/or an item
 static var focus_section := ""
@@ -1239,6 +1242,10 @@ class ShopCard:
 	var _pill: PanelContainer
 	var _row: Control
 	var _wide_w := 0.0
+	var _when_full := ""
+	var _fit_key := ""
+	var _fit_size := 17
+	var _fit_short := false
 
 	## The picture well's height per item (a share of its width).
 	static func well_of(item_id: String) -> float:
@@ -1315,6 +1322,7 @@ class ShopCard:
 			when_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 			when_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			v.add_child(when_l)
+			resized.connect(_fit_when)
 		fit_cell(w, name_lines(w))
 
 	## Season 1 Premium: the emblem, the name, what it adds (counted from the
@@ -1362,14 +1370,15 @@ class ShopCard:
 		h.minimum_size_changed.connect(func() -> void: _fit_wide(_wide_w))
 		_fit_wide(w)
 
-	## A Coin pack: the pile, the full quantity ("1,500 Coins"), an optional
-	## computed "Best value" line, and the App Store's localized price (or
-	## why not) in a pill on the right.  One compact row, not a slab.
+	## A Coin pack: the pile, then the full quantity ("1,500 Coins") over the
+	## App Store's localized price (or why not) in a pill, with an optional
+	## computed "Best value" beside it.  One compact row, not a slab; the
+	## quantity and the price each get the card's full text width.
 	func _setup_pack(face: Control, w: float) -> void:
 		var h := UIKit.hbox(UIKit.SP_M)
 		h.set_anchors_preset(Control.PRESET_FULL_RECT)
 		h.offset_left = 8
-		h.offset_right = -12
+		h.offset_right = -10
 		h.offset_top = 6
 		h.offset_bottom = -6
 		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1377,33 +1386,39 @@ class ShopCard:
 		var ah := ShopCard.pack_h() - 12.0
 		art = ShopCard.art_for(shop, id, 0.0, "shop:%s" % id)
 		art.name = "Well"
-		art.custom_minimum_size = Vector2(roundf(ah * 1.15), ah)
+		art.custom_minimum_size = Vector2(roundf(ah * 1.1), ah)
 		art.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		h.add_child(art)
-		var tv := UIKit.vbox(0)
+		var tv := UIKit.vbox(4)
 		tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tv.alignment = BoxContainer.ALIGNMENT_CENTER
 		tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		h.add_child(tv)
 		name_l = UIKit.styled(Catalogue.display_name(id), "num", UIKit.IVORY)
-		name_l.add_theme_font_size_override("font_size", 24)
+		name_l.add_theme_font_size_override("font_size", 23)
 		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tv.add_child(name_l)
-		_note = UIKit.styled("", "caption", UIKit.TEAL)
-		_note.name = "PackNote"
-		_note.clip_text = true
-		_note.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tv.add_child(_note)
+		var pr := UIKit.hbox(8)
+		pr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tv.add_child(pr)
 		_pill = PanelContainer.new()
 		_pill.name = "PricePill"
 		_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		price_l = UIKit.styled("", "num", UIKit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
-		price_l.add_theme_font_size_override("font_size", 20)
+		price_l.add_theme_font_size_override("font_size", 19)
 		price_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_pill.add_child(price_l)
-		h.add_child(_pill)
+		pr.add_child(_pill)
+		_note = UIKit.styled("", "caption", UIKit.TEAL)
+		_note.name = "PackNote"
+		_note.add_theme_font_size_override("font_size", 17)
+		_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_note.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_note.clip_text = true
+		_note.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pr.add_child(_note)
 		fit_cell(w, 1)
 
 	## The wide card is as tall as its text needs at this width (the art is
@@ -1452,7 +1467,10 @@ class ShopCard:
 		var can := bool(st.get("can_buy", false))
 		price_l.text = String(st["text"]) if String(st["text"]) != "" else "Not available"
 		price_l.add_theme_color_override("font_color", UIKit.NAVY if can else UIKit.IVORY_MUTED)
-		_pill.add_theme_stylebox_override("panel", UIKit.box(UIKit.AMBER if can else Color(UIKit.NAVY, 0.5), 999, 0, Color.WHITE, 14))
+		var pb := UIKit.box(UIKit.AMBER if can else Color(UIKit.NAVY, 0.5), 999, 0, Color.WHITE, 12)
+		pb.content_margin_top = 2
+		pb.content_margin_bottom = 2
+		_pill.add_theme_stylebox_override("panel", pb)
 		var note := ""
 		match String(st.get("state", "")):
 			"delivering":
@@ -1473,9 +1491,38 @@ class ShopCard:
 		if when_l == null:
 			return
 		var w: Array = shop.when_text(id, offer)
-		if when_l.text != String(w[0]):
-			when_l.text = String(w[0])
-			when_l.add_theme_color_override("font_color", w[1])
+		if _when_full == String(w[0]):
+			return
+		_when_full = String(w[0])
+		when_l.add_theme_color_override("font_color", w[1])
+		_fit_when()
+
+	## A long line ("Not in current rotation" on a narrow phone card) steps
+	## down a size or two, then to its short form, before it would be cut.
+	## The size is chosen for the line's shape (every digit as its widest),
+	## so a ticking countdown never changes size from one second to the next.
+	func _fit_when() -> void:
+		if when_l == null or _when_full == "":
+			return
+		var avail := (size.x if size.x > 1.0 else custom_minimum_size.x) - CreatorScreen.PAD * 2.0
+		var shape := ""
+		for ch in _when_full:
+			shape += "8" if ch in "0123456789" else ch
+		var key := "%s|%d" % [shape, int(avail)]
+		if key != _fit_key:
+			_fit_key = key
+			var f := when_l.get_theme_font("font")
+			_fit_size = 0
+			for fs in [17, 16, 15, 14]:
+				if f.get_string_size(shape, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= avail:
+					_fit_size = fs
+					break
+			_fit_short = _fit_size == 0
+			if _fit_short:
+				_fit_size = 14
+			when_l.add_theme_font_size_override("font_size", _fit_size)
+		# the status line and the sheet always carry the full wording
+		when_l.text = String(ShopScreen.SHORT.get(_when_full, _when_full)) if _fit_short else _when_full
 
 	## The picture for an item: runner items are cached portraits of your
 	## runner wearing it (neutral accessories for outfits); colours are
@@ -1548,7 +1595,9 @@ class ShopPic:
 			var vis := size / k
 			draw_texture_rect_region(tex, r, Rect2((src - vis) * 0.5, vis))
 		elif coins > 0:
-			CommerceArt.coin_pile(self, c, s * 0.36, coins)
+			# a bigger pack reads bigger (250 -> 7,500: 80 % -> 100 % of the well)
+			var grow := clampf(log(float(coins) / 250.0) / log(30.0), 0.0, 1.0)
+			CommerceArt.coin_pile(self, c, s * 0.36 * (0.8 + 0.2 * grow), coins)
 		elif swatch.a > 0.0:
 			draw_circle(c + Vector2(0, 2), s * 0.32, swatch.darkened(0.4), true, -1.0, true)
 			draw_circle(c, s * 0.32, swatch, true, -1.0, true)
