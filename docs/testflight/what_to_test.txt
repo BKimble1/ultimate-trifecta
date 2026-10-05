@@ -1,10 +1,10 @@
-1.7 internal beta (V8: steadier matches, better running and actions, cleaner characters). Please tell us your iPhone model:
+1.8 internal beta (pass 8: steadier sprint, fairer dives, clearer matches, rotating Shop skins, challenges). Please tell us your iPhone model:
 
-- Straight running and quick turns: push the stick straight up and hold, then turn left and right quickly and reverse. You should run straight, the view should not wander, and turns should feel immediate.
-- Pause, Resume and Leave with another finger still on the stick: the menu opens every time and every button takes a normal tap.
-- Crowded chases: play a few Practice rounds back to back with several runners and the Night Watch close together. It should stay smooth, including the first splashes and tags of a round and the later rounds. If it stutters, tell us when.
-- Animation: starting off (a push), stopping from a run (a foot plants), sharp turns and reversals (head and chest lead), jumps and landings, and the Night Watch's tag (wind-up, lunge, then a grab or a miss). Water entries and riding a cart use the same animation as 1.6; tell us if anything there looks off.
-- Looks at normal play distance: characters and campus. Eyes, goggles, satin robe trim and metal buttons and badges should look cleaner, and distant paving should shimmer less.
-- A 15-minute session: play on Standard, then on Battery Saver (Settings > Graphics > Quality). Turn on Settings > Diagnostics (beta) first, then tap Share summary at the end. It shows frame pacing, any slowdowns, and whether the phone was limited by its processor or its graphics. It has no names or codes.
-- Party rounds: other players and carts should move smoothly and never step backward, even on a weak connection. Splashes and tags should show where you see that player.
-- Season Pass rewards still say unavailable (no service or App Store products in this build). That's expected; please don't try to buy anything.
+- Sprint: on a straight, push the stick to its edge (or hold Sprint) and keep holding. You should get one steady burst, then a normal run once the meter is empty, with "Sprint empty · ease off to recharge". Ease off for a moment and push again: it sprints at once. Tell us if it ever pulses fast and slow.
+- Dive: jump, then press jump again in the air. One dive per jump, then a short landing before the next jump. Spamming jump and dive should no longer outrun the Night Watch; a single well-timed dive still helps.
+- In a round: the top bar shows the team goal and the clock ("Team home 2/4 · Need 2 more"), your card says what to do next, and runners see "Runner pace: 3rd/6". Tell us if anything takes more than a glance to understand.
+- Map: the Night Watch shows only while you can actually see them, then as a hollow "last seen" mark for a few seconds. The legend says what each mark is.
+- Results: the outcome and why come first, then what you did, the series, and rewards.
+- Startup: the Idlery Games logo should stay perfectly still and crisp from the launch screen until it fades. If it doesn't, a screenshot (not a screen recording) helps.
+- Shop > All skins: preview the six new outfits (Midnight Mechanic, Moonwalk Cadet, Pumpkin Pajamas, Arcade Sprinter, Cloud Nine, Bedtime Bandit) with Idle, Run and Emote. Season Pass > Challenges lists the daily and weekly goals; pin one and look for it in the pause menu.
+- The game service and App Store products are not set up yet, so rotating offers, buying and challenge progress say they're unavailable in this build. That's expected; please don't try to buy anything.
