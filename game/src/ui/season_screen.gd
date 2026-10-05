@@ -962,6 +962,7 @@ class ChallengeCard:
 	var count_l: Label
 	var xp_l: Label
 	var mark: Icons.IconRect
+	var _was_done := -1    # -1 before the first refresh: a goal already done doesn't pop
 	var body: VBoxContainer
 	var card: Dictionary = {}
 	var live := false
@@ -1044,6 +1045,11 @@ class ChallengeCard:
 		mark.kind = "check" if done else "flag"
 		mark.col = UIKit.TEAL if done else UIKit.AMBER
 		mark.queue_redraw()
+		# Pass 8: a goal completed while its card is on screen confirms with
+		# the shared motion (once; nothing under Reduced Motion)
+		if done and _was_done == 0:
+			Motion.confirm(mark)
+		_was_done = 1 if done else 0
 		UIKit.set_selected(self, pinned)
 		var prog_t := ("%d of %d" % [prog, goal]) if live else "progress not available"
 		accessibility_name = "%s, %s challenge: %s. %s. %s%s. %s" % [String(c["name"]), ChallengeRules.period_label(String(c["period"])), String(c["task"]),

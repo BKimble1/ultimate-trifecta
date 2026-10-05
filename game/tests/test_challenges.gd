@@ -474,3 +474,39 @@ func test_season_pass_challenges_service_off_is_an_honest_preview() -> void:
 			if r.end.x > track.position.x and r.position.x < track.end.x:
 				t.check(r.end.y <= safe.end.y + 0.5, "%s: %s row whole" % [key, c.track])
 	await _end()
+
+
+## Pass 8 §12: a goal that completes while its card is on screen confirms
+## once with the shared motion; a card first shown already done, a refresh
+## of a done card, and Reduced Motion add no motion.
+func test_completion_confirms_once_with_shared_motion() -> void:
+	var prev: Variant = Save.get_setting("reduced_motion", false)
+	Save.set_setting("reduced_motion", false)
+	var mk := func(done: bool) -> Dictionary:
+		return {"name": "Splash", "task": "Stamp 6 waters", "goal": 6, "progress": 6 if done else 5, "completed": done,
+			"pinned": false, "xp": 50, "period": "daily"}
+	var c := SeasonScreen.ChallengeCard.new()
+	c.setup(null, "d_waters")
+	t.get_tree().root.add_child(c)
+	c.refresh(mk.call(true), true)
+	t.check(not Motion.running(c.mark).has("scale"), "shown already done: no motion")
+	var c2 := SeasonScreen.ChallengeCard.new()
+	c2.setup(null, "d_waters")
+	t.get_tree().root.add_child(c2)
+	c2.refresh(mk.call(false), true)
+	c2.refresh(mk.call(true), true)
+	t.check(Motion.running(c2.mark).has("scale"), "completed while shown: the check confirms")
+	await t.get_tree().create_timer(0.4).timeout
+	c2.refresh(mk.call(true), true)
+	t.check(not Motion.running(c2.mark).has("scale"), "a later refresh of a done goal: no repeat")
+	Save.set_setting("reduced_motion", true)
+	var c3 := SeasonScreen.ChallengeCard.new()
+	c3.setup(null, "d_waters")
+	t.get_tree().root.add_child(c3)
+	c3.refresh(mk.call(false), true)
+	c3.refresh(mk.call(true), true)
+	t.check(not Motion.running(c3.mark).has("scale"), "Reduced Motion: no motion")
+	Save.set_setting("reduced_motion", prev)
+	for n in [c, c2, c3]:
+		n.queue_free()
+	await t.get_tree().process_frame
