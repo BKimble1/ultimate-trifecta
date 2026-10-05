@@ -72,6 +72,42 @@ const CATALOG := {
 			"Oatmeal cable-knit cardigan with elbow patches and a pencil in the pocket",
 			"Collared shirt and tie",
 			"Corduroy trousers"]},
+		# Pass 8 rotating Shop outfits (scheduled Shop offers sell them for
+		# Coins; owning one is permanent).  Each draws its own footwear
+		# (OUTFIT_OWN_SHOES); the cadet and pumpkin caps are headwear worn
+		# with no hat (OUTFIT_HEADWEAR); Cloud Nine and Bedtime Bandit wear
+		# their hoods up (HOOD_OUTFITS).  tools/character/outfits_p8.py.
+		"midnight_mechanic": {"id": 16, "name": "Midnight Mechanic", "cost": 900, "includes": [
+			"Cobalt work coverall with a zip front, collar and webbing belt",
+			"Sleeves rolled to the forearm, and cream work gloves",
+			"Stitched wrench and gear patches, a chest pocket, knee patches and a leg pocket",
+			"Turned-up cuffs and tan lace-up work boots (worn instead of your shoes with this outfit)"]},
+		"moonwalk_cadet": {"id": 17, "name": "Moonwalk Cadet", "cost": 1200, "includes": [
+			"Soft quilted ivory space suit with a teal neck ring, belt and trim",
+			"Chest control panel, mission patch and a small life-support pack",
+			"Ivory gloves with teal gauntlets",
+			"Compact space boots (worn instead of your shoes with this outfit)",
+			"Padded cadet cap with ear pads and a clear visor lifted up off the face (shown when no other hat is worn)"]},
+		"pumpkin_pajamas": {"id": 18, "name": "Pumpkin Pajamas", "cost": 800, "includes": [
+			"Rust pumpkin-ribbed pajama top with a leaf collar, cream piping and a pocket",
+			"Cream pinstripe pajama trousers cut at mid-shin",
+			"Soft rust-and-cream striped socks (worn instead of your shoes with this outfit)",
+			"Knitted pumpkin cap with a stem, leaf and vine (shown when no other hat is worn)"]},
+		"arcade_sprinter": {"id": 19, "name": "Arcade Sprinter", "cost": 900, "includes": [
+			"Cropped retro track jacket with cyan and magenta panels, white piping and a stand collar",
+			"Pixel lightning bolts on the chest and back, and striped knit cuffs",
+			"Navy track shorts and striped tube socks",
+			"Rounded magenta-and-white high-tops (worn instead of your shoes with this outfit)"]},
+		"cloud_nine": {"id": 20, "name": "Cloud Nine", "cost": 1000, "includes": [
+			"Plush sky-blue hoodie with a cloud pocket, a cloud on the back and cream cuffs",
+			"Hood worn up with a puffy cloud rim and cloud tufts (replaces hat and hair while worn)",
+			"Plush joggers with cream cuffs",
+			"Cushioned cloud slippers (worn instead of your shoes with this outfit)"]},
+		"bedtime_bandit": {"id": 21, "name": "Bedtime Bandit", "cost": 1000, "includes": [
+			"Charcoal raccoon sleep suit with a cream belly and a moon on the chest",
+			"Raccoon hood with round ears and a mask band above the face (replaces hat and hair while worn)",
+			"Ringed raccoon tail",
+			"Footed paws with cream soles (worn instead of your shoes with this outfit)"]},
 	},
 	"pattern": {
 		"plain": {"id": 1, "name": "Plain", "cost": 0, "per_m": 0.0},
@@ -195,20 +231,26 @@ const DEFAULT := {
 const OUTFIT_PARTS := {"pj": ["pj"], "swim": ["swim", "body_skin"], "robe": ["robe", "body_skin"], "duck": ["duck"], "frog": ["frog"],
 	"moonlight_runner": ["moonlight"], "starry_sleeper": ["starry"], "varsity_sprinter": ["varsity"],
 	"raincoat_explorer": ["raincoat"], "campus_courier": ["courier"], "lantern_scout": ["scout"],
-	"after_hours_hoodie": ["hoodie"], "night_owl": ["owl"], "glow_jogger": ["jogger"], "library_cardigan": ["cardigan"]}
+	"after_hours_hoodie": ["hoodie"], "night_owl": ["owl"], "glow_jogger": ["jogger"], "library_cardigan": ["cardigan"],
+	"midnight_mechanic": ["mechanic"], "moonwalk_cadet": ["cadet"], "pumpkin_pajamas": ["pumpkin"], "arcade_sprinter": ["arcade"],
+	"cloud_nine": ["cloud"], "bedtime_bandit": ["bandit"]}
 ## hoods replace hats and hair entirely
-const HOOD_OUTFITS := ["duck", "frog", "night_owl"]
+const HOOD_OUTFITS := ["duck", "frog", "night_owl", "cloud_nine", "bedtime_bandit"]
 ## V6: outfits whose own footwear replaces the chosen shoes (drawn in the outfit's part)
-const OUTFIT_OWN_SHOES := ["raincoat_explorer"]
+## (Pass 8: every rotating outfit: its trousers end over, or tuck into, that footwear)
+const OUTFIT_OWN_SHOES := ["raincoat_explorer", "midnight_mechanic", "moonwalk_cadet", "pumpkin_pajamas", "arcade_sprinter",
+	"cloud_nine", "bedtime_bandit"]
 ## V6: headwear that comes with an outfit (a separate part), and the hats it
 ## is worn with.  With any other hat the chosen hat wins and this is hidden.
 const OUTFIT_HEADWEAR := {
 	"starry_sleeper": {"parts": ["acc_sleepmask"], "with_hats": ["none", "party", "headphones", "crown", "owl_ears"]},
 	"campus_courier": {"parts": ["acc_courier_cap"], "with_hats": ["none"]},
+	"moonwalk_cadet": {"parts": ["acc_cadet_cap"], "with_hats": ["none"]},
+	"pumpkin_pajamas": {"parts": ["acc_pumpkin_cap"], "with_hats": ["none"]},
 }
 ## Headwear that is worn the way a hat is, for the hair rules below: the
-## courier cap behaves like a cap, the sleep mask like a headband.
-const HEADWEAR_AS_HAT := {"acc_courier_cap": "@cap", "acc_sleepmask": "@mask"}
+## courier, cadet and pumpkin caps behave like a cap, the sleep mask like a headband.
+const HEADWEAR_AS_HAT := {"acc_courier_cap": "@cap", "acc_sleepmask": "@mask", "acc_cadet_cap": "@cap", "acc_pumpkin_cap": "@cap"}
 ## hair/hat compatibility: which hair parts each hat hides
 const HAT_HIDES_HAIR := {
 	"nightcap": ["hair", "hair_bob", "hair_curly", "hair_buns", "hair_buns_knots"],
@@ -390,6 +432,19 @@ static func headwear_parts(c: Dictionary) -> Array:
 	if hw.is_empty() or not a["hat"] in hw["with_hats"]:
 		return []
 	return hw["parts"]
+
+
+## Which of the player's own choices an outfit draws instead (Shop and Locker
+## copy, Pass 8): "hat" and "hair" for hoods, "shoes" for outfits with their
+## own footwear.  An outfit's headwear (OUTFIT_HEADWEAR) only shows with the
+## hats listed there, so it never replaces a chosen hat.
+static func outfit_replaces(outfit: String) -> Array:
+	var out: Array = []
+	if outfit in HOOD_OUTFITS:
+		out.append_array(["hat", "hair"])
+	if outfit in OUTFIT_OWN_SHOES:
+		out.append("shoes")
+	return out
 
 
 ## Keys of HAT_HIDES_HAIR / HAT_HAIR_VARIANT in effect: the chosen hat, plus

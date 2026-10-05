@@ -14,7 +14,8 @@ extends Node3D
 ## Each mode saves a lossless PNG and quits when done.
 
 const MODES := ["views", "outfits", "looks", "hairs", "posesheet", "transitions", "closeup", "faces", "cart", "hero", "group", "distance", "parts",
-	"hathair", "menuidle", "steps", "skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom", "reel"]
+	"hathair", "menuidle", "steps", "skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom", "reel",
+	"pass8", "pass8back"]
 ## V7 "reel": gameplay scenarios from the motion tests (tests/motion_rig.gd:
 ## the 60 Hz mini-motor -> apply_state path) back to back on one look, the
 ## camera circling the head; frames every 0.25 s go into lineup_reel.png and
@@ -41,6 +42,22 @@ const SHOWCASE := {
 	"glow_jogger": {"shoes": "glow_sneakers", "hair": "buns", "hair_color": "black", "skin": "tone6", "color": "mint", "hat": "glow_headband"},
 	"library_cardigan": {"shoes": "moon_boots", "hair": "bob", "hair_color": "blonde", "skin": "tone3", "color": "sunny", "hat": "pompom_beanie"},
 }
+## Pass 8 rotating Shop outfits ("pass8" / "pass8back": all six at the
+## follow camera's distance, with the default runner and a Night Watch for
+## scale and role contrast; --light=dorm puts them on the lobby's marks)
+const P8_OUTFITS := ["midnight_mechanic", "moonwalk_cadet", "pumpkin_pajamas", "arcade_sprinter", "cloud_nine", "bedtime_bandit"]
+const P8_SHOWCASE := {
+	"midnight_mechanic": {"hair": "tuft", "hair_color": "dark_brown", "skin": "tone5", "color": "sunny"},
+	"moonwalk_cadet": {"hair": "bob", "hair_color": "black", "skin": "tone2", "color": "teal"},
+	"pumpkin_pajamas": {"hair": "curly", "hair_color": "auburn", "skin": "tone3", "color": "tangerine"},
+	"arcade_sprinter": {"hair": "buns", "hair_color": "black", "skin": "tone7", "color": "bubblegum"},
+	"cloud_nine": {"hair": "bob", "hair_color": "blonde", "skin": "tone4", "color": "sky"},
+	"bedtime_bandit": {"hair": "tuft", "hair_color": "espresso", "skin": "tone8", "color": "grape"},
+}
+## the follow camera (follow_camera.gd): 6.2 m from the target, pitched 0.32 rad, fov 66
+const FOLLOW_DIST := 6.2
+const FOLLOW_PITCH := 0.32
+const FOLLOW_FOV := 66.0
 ## hats that leave hair visible (nightcap and swim cap hide it) x hair styles
 const HATHAIR_HATS := ["party", "headphones", "crown"]
 const HATHAIR_HAIRS := ["tuft", "bob", "curly", "buns"]
@@ -392,6 +409,30 @@ func _next_mode() -> void:
 			_aim(Vector3(0, 1.0, 7.5), Vector3(0, 0.8, 0), 34)
 			_strip_frames.clear()
 			_strip_next = 0.45
+		"pass8", "pass8back":
+			var back := _mode == "pass8back"
+			var row: Array = [[TC.Role.RUNNER, d, "Pajamas (default)"]]
+			for k in P8_OUTFITS:
+				if not _has("outfit", k):
+					continue
+				var o: Dictionary = {"outfit": k, "hat": "none"}
+				o.merge(P8_SHOWCASE.get(k, {}), true)
+				row.append([TC.Role.RUNNER, look(o), String(Cosmetics.entry("outfit", k)["name"])])
+			if lighting == "dorm":
+				# the lobby's marks and framing (DormStage.MARKS / FRAMES["lobby"])
+				for i in mini(row.size(), DormStage.MARKS.size()):
+					var mk: Vector3 = DormStage.MARKS[i]
+					_add(row[i][0], row[i][1], mk.x, mk.z, (0.0 if back else PI) + float(DormStage.YAW_BIAS[i]))
+				_aim(Vector3(0, 3.1, 0.5 + 6.2), Vector3(0, 0.62, 0.5), 38)
+			else:
+				row.append([TC.Role.PATROL, look({"color": "lime", "skin": "tone5"}), "Night Watch"])
+				for i in row.size():
+					var x := -3.5 + i * 1.0
+					_add(row[i][0], row[i][1], x, -0.25 * absf(i - 3.5), (0.0 if back else PI) + (3.5 - i) * 0.05)
+				_aim(Vector3(0, 0.9 + FOLLOW_DIST * sin(FOLLOW_PITCH), FOLLOW_DIST * cos(FOLLOW_PITCH)), Vector3(0, 0.9, 0), FOLLOW_FOV)
+			var names: Array = row.map(func(r: Array) -> String: return String(r[2]))
+			var f := FileAccess.open(out_dir.path_join("lineup_%s.txt" % _mode), FileAccess.WRITE)
+			f.store_string("left to right: " + ", ".join(PackedStringArray(names)))
 		"distance":
 			# typical follow-camera distance (about 6 m) and a far runner (20 m)
 			_add(TC.Role.RUNNER, d, 0.0, 0.0, PI + 2.6)

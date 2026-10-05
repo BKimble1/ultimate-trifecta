@@ -1,5 +1,5 @@
 {
-  "art_version": "v8-528149faa87b",
+  "art_version": "v9-7a04c66b7676",
   "bones": [
     "root",
     "hips",
@@ -240,7 +240,7 @@
     }
   },
   "forward": "Godot -Z (glTF -Z); built facing Blender +Y",
-  "glb_sha256": "528149faa87b788aa07dcbe42cd73baec922d86389baf210f76cbe3d8ec5e695",
+  "glb_sha256": "7a04c66b767646d955c0fa66bab9b3263f5b96a0268a681e0faa0f6f617fc6da",
   "head": {
     "cap_grow": 0.013,
     "center": [
@@ -262,13 +262,29 @@
     "walk": 0.7
   },
   "meshes": {
+    "acc_cadet_cap": {
+      "tris": 3812,
+      "verts": 2017
+    },
     "acc_courier_cap": {
       "tris": 3090,
       "verts": 1702
     },
+    "acc_pumpkin_cap": {
+      "tris": 2796,
+      "verts": 1435
+    },
     "acc_sleepmask": {
       "tris": 1956,
       "verts": 1009
+    },
+    "arcade": {
+      "tris": 11496,
+      "verts": 6299
+    },
+    "bandit": {
+      "tris": 11475,
+      "verts": 6350
     },
     "base": {
       "tris": 9086,
@@ -278,9 +294,17 @@
       "tris": 4692,
       "verts": 2369
     },
+    "cadet": {
+      "tris": 12616,
+      "verts": 6679
+    },
     "cardigan": {
       "tris": 9186,
       "verts": 4859
+    },
+    "cloud": {
+      "tris": 11940,
+      "verts": 6695
     },
     "courier": {
       "tris": 10258,
@@ -378,6 +402,10 @@
       "tris": 5956,
       "verts": 3225
     },
+    "mechanic": {
+      "tris": 12562,
+      "verts": 6862
+    },
     "moonlight": {
       "tris": 7662,
       "verts": 4104
@@ -393,6 +421,10 @@
     "pj": {
       "tris": 8272,
       "verts": 4421
+    },
+    "pumpkin": {
+      "tris": 10066,
+      "verts": 5403
     },
     "raincoat": {
       "tris": 10572,
