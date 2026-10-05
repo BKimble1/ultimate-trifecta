@@ -1,5 +1,5 @@
 {
-  "art_version": "v9-8bae0e9ae657",
+  "art_version": "v10-8aa7d2363cbe",
   "bones": [
     "root",
     "hips",
@@ -240,7 +240,7 @@
     }
   },
   "forward": "Godot -Z (glTF -Z); built facing Blender +Y",
-  "glb_sha256": "8bae0e9ae6578a8e2fa4bebdacd5452273a6e0df4430f5efcef02e3fc4fc657e",
+  "glb_sha256": "8aa7d2363cbeb336200a318f933d9bf684e7381d0a0e6e1fa3d35010ca663fc2",
   "head": {
     "cap_grow": 0.013,
     "center": [
@@ -309,6 +309,18 @@
     "courier": {
       "tris": 10258,
       "verts": 5565
+    },
+    "dd_fringe": {
+      "tris": 3284,
+      "verts": 1834
+    },
+    "dd_head": {
+      "tris": 10782,
+      "verts": 5709
+    },
+    "dd_suit": {
+      "tris": 18296,
+      "verts": 10764
     },
     "duck": {
       "tris": 9584,
@@ -429,6 +441,18 @@
     "raincoat": {
       "tris": 10572,
       "verts": 5608
+    },
+    "rb_body": {
+      "tris": 14812,
+      "verts": 7807
+    },
+    "rb_hair": {
+      "tris": 7159,
+      "verts": 3719
+    },
+    "rb_head": {
+      "tris": 9132,
+      "verts": 4858
     },
     "robe": {
       "tris": 7628,

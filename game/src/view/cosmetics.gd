@@ -108,6 +108,16 @@ const CATALOG := {
 			"Raccoon hood with round ears and a mask band above the face (replaces hat and hair while worn)",
 			"Ringed raccoon tail",
 			"Footed paws with cream soles (worn instead of your shoes with this outfit)"]},
+		# Pass 9 complete skins: Season 1 Premium rewards (tier 50 and tier
+		# 100).  Each draws its own head and face, hair, body and footwear
+		# (COMPLETE_SKINS, tools/character/skins_p9.py); the player's own
+		# hair, hat, shoes, face and colours stay saved for other outfits.
+		"record_breaker": {"id": 22, "name": "Record Breaker", "cost": 1500, "season": 1,
+			"tagline": "The clock has a new problem.",
+			"includes": ["Signature tousled curls, white athletic shorts, green wristband, and brown sandals."]},
+		"dr_doom": {"id": 23, "name": "Dr. Doom", "cost": 1500, "season": 1,
+			"tagline": "Office hours are over. His rounds aren't.",
+			"includes": ["Signature bald crown and side fringe, brown suit, striped shirt, gold striped tie, and formal shoes."]},
 	},
 	"pattern": {
 		"plain": {"id": 1, "name": "Plain", "cost": 0, "per_m": 0.0},
@@ -233,7 +243,28 @@ const OUTFIT_PARTS := {"pj": ["pj"], "swim": ["swim", "body_skin"], "robe": ["ro
 	"raincoat_explorer": ["raincoat"], "campus_courier": ["courier"], "lantern_scout": ["scout"],
 	"after_hours_hoodie": ["hoodie"], "night_owl": ["owl"], "glow_jogger": ["jogger"], "library_cardigan": ["cardigan"],
 	"midnight_mechanic": ["mechanic"], "moonwalk_cadet": ["cadet"], "pumpkin_pajamas": ["pumpkin"], "arcade_sprinter": ["arcade"],
-	"cloud_nine": ["cloud"], "bedtime_bandit": ["bandit"]}
+	"cloud_nine": ["cloud"], "bedtime_bandit": ["bandit"],
+	"record_breaker": ["rb_head", "rb_hair", "rb_body"], "dr_doom": ["dd_head", "dd_fringe", "dd_suit"]}
+## Pass 9: complete character skins.  While one is worn, its own parts (its
+## head with its own face and face shapes, its hair or fringe, its body with
+## its hands and footwear) are the whole runner: the modular base head,
+## hair, hat, shoes and marks are not drawn, and its skin and hair tones and
+## its resting face are its own (chosen to resemble the reference, so a
+## player's tint or face preset can't break the likeness).  Nothing in the
+## saved appearance changes: hair, hat, shoes, face, brows, marks, tones and
+## colours stay saved and come back exactly with any other outfit, and
+## wearing a skin grants no accessory.  The Night Watch keeps its uniform
+## and the player's modular face (CharacterView).
+const COMPLETE_SKINS := {
+	"record_breaker": {"head": "rb_head", "skin_rgb": Color(0.98, 0.80, 0.68), "hair_rgb": Color("8a6440"), "face": {},
+		"own": {"hair": "tousled curls", "shoes": "sandals"},
+		"note": "A complete look: his own face, curls, skin tone and sandals replace your face, hair, hat, shoes and colours while you wear it. Your own choices stay saved for every other outfit."},
+	"dr_doom": {"head": "dd_head", "skin_rgb": Color(0.96, 0.76, 0.64), "hair_rgb": Color("8f857c"), "face": {},
+		"own": {"hair": "side fringe", "shoes": "formal shoes"},
+		"note": "A complete look: his own face, fringe, skin tone, suit and shoes replace your face, hair, hat, shoes and colours while you wear it. Your own choices stay saved for every other outfit."},
+}
+## the player's own choices a complete skin draws instead (Shop and Locker copy)
+const SKIN_REPLACES := ["hat", "hair", "hair_color", "shoes", "skin", "face", "brows", "marks", "color", "trim", "pattern"]
 ## hoods replace hats and hair entirely
 const HOOD_OUTFITS := ["duck", "frog", "night_owl", "cloud_nine", "bedtime_bandit"]
 ## V6: outfits whose own footwear replaces the chosen shoes (drawn in the outfit's part)
@@ -402,6 +433,10 @@ static func stripes_per_m(c: Dictionary) -> float:
 ## the uniform whatever the appearance says; CharacterView handles that).
 static func runner_parts(c: Dictionary) -> Array:
 	var a := sanitize(c)
+	if COMPLETE_SKINS.has(a["outfit"]):
+		# Pass 9: a complete skin is the whole runner (no base head, hair,
+		# hat, shoes or marks)
+		return (OUTFIT_PARTS[a["outfit"]] as Array).duplicate()
 	var want: Array = ["base"]
 	want.append_array(OUTFIT_PARTS[a["outfit"]])
 	if not a["outfit"] in OUTFIT_OWN_SHOES:
@@ -439,6 +474,8 @@ static func headwear_parts(c: Dictionary) -> Array:
 ## own footwear.  An outfit's headwear (OUTFIT_HEADWEAR) only shows with the
 ## hats listed there, so it never replaces a chosen hat.
 static func outfit_replaces(outfit: String) -> Array:
+	if COMPLETE_SKINS.has(outfit):
+		return SKIN_REPLACES.duplicate()
 	var out: Array = []
 	if outfit in HOOD_OUTFITS:
 		out.append_array(["hat", "hair"])
@@ -457,7 +494,45 @@ static func head_rules(c: Dictionary) -> Array:
 	return keys
 
 
-## Held face shape-key weights for this appearance.
+## Pass 9: true for a complete character skin (its own head, hair, body and footwear).
+static func is_complete_skin(outfit: String) -> bool:
+	return COMPLETE_SKINS.has(outfit)
+
+
+## The mesh part whose face a runner with this look shows ("base", or a
+## complete skin's own head).  Expressions and face presets play on it.
+static func head_part(c: Dictionary) -> String:
+	return String(COMPLETE_SKINS.get(sanitize(c)["outfit"], {}).get("head", "base"))
+
+
+## What a complete skin replaces, in one sentence for previews ("" otherwise).
+static func override_note(outfit: String) -> String:
+	return String(COMPLETE_SKINS.get(outfit, {}).get("note", ""))
+
+
+## A runner's skin and hair tints: a complete skin's own tones, otherwise the
+## player's (skin_color / hair_color, which the Night Watch always uses).
+static func look_skin_color(c: Dictionary) -> Color:
+	var a := sanitize(c)
+	return COMPLETE_SKINS[a["outfit"]]["skin_rgb"] if COMPLETE_SKINS.has(a["outfit"]) else skin_color(a)
+
+
+static func look_hair_color(c: Dictionary) -> Color:
+	var a := sanitize(c)
+	return COMPLETE_SKINS[a["outfit"]]["hair_rgb"] if COMPLETE_SKINS.has(a["outfit"]) else hair_color(a)
+
+
+## Held face keys a runner shows: a complete skin's own resting face (its
+## head's construction carries its likeness), otherwise face_keys.
+static func look_face_keys(c: Dictionary) -> Dictionary:
+	var a := sanitize(c)
+	if COMPLETE_SKINS.has(a["outfit"]):
+		return (COMPLETE_SKINS[a["outfit"]]["face"] as Dictionary).duplicate()
+	return face_keys(a)
+
+
+## Held face shape-key weights for this appearance (the modular face; see
+## look_face_keys for what a runner shows).
 static func face_keys(c: Dictionary) -> Dictionary:
 	var a := sanitize(c)
 	var out: Dictionary = {}
@@ -475,6 +550,9 @@ static func bot_cosmetic(seed_v: int) -> Dictionary:
 	for f in ORDER:
 		var ks: Array = keys_of(f)
 		out[f] = ks[rng.randi() % ks.size()]
+	# Pass 9: bots never wear a complete skin (they are Season Premium rewards)
+	if COMPLETE_SKINS.has(out["outfit"]):
+		out["outfit"] = "pj"
 	return out
 
 

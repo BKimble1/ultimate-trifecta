@@ -29,7 +29,8 @@ extends Node3D
 ## CharacterPoseFade (first skeleton modifier) makes every state change start
 ## from the pose on screen, so interrupted cross-fades never snap (V5).
 ## CharacterSecondary adds head lag, body lean and banking; a spring-bone
-## chain moves the nightcap tip.  Face shapes are blend shapes on "base".
+## chain moves the nightcap tip.  Face shapes are blend shapes on the head
+## that is shown: "base", or (Pass 9) a complete skin's own head (face_mesh).
 ##
 ## V5 motion notes (docs/v5/motion_notes.md):
 ##  * Locomotion weight and blend-space speed are smoothed in time (the sim
@@ -142,6 +143,9 @@ var hat_spring: SpringBoneSimulator3D
 var parts: Dictionary = {}          # name -> MeshInstance3D
 var visible_parts: Array[MeshInstance3D] = []
 var base_mesh: MeshInstance3D
+## Pass 9: the head whose face shapes play ("base" or a complete skin's head)
+var face_mesh: MeshInstance3D
+var _face_idx_of := {}          # head part -> {shape name: blend shape index}
 var name_label: Label3D
 var flashlight: SpotLight3D
 var beam: MeshInstance3D
@@ -318,8 +322,15 @@ func _build_model() -> void:
 			mi.material_override = _shared_material(TWO_SIDED.has(String(mi.name)))
 			mi.visible = false
 	base_mesh = parts.get("base")
-	for i in base_mesh.mesh.get_blend_shape_count():
-		_face_idx[String(base_mesh.mesh.get_blend_shape_name(i))] = i
+	for n in parts:
+		var hm := (parts[n] as MeshInstance3D).mesh
+		if hm.get_blend_shape_count() > 0:
+			var idx := {}
+			for i in hm.get_blend_shape_count():
+				idx[String(hm.get_blend_shape_name(i))] = i
+			_face_idx_of[n] = idx
+	face_mesh = base_mesh
+	_face_idx = _face_idx_of["base"]
 	for k in _face_idx:
 		_face[k] = 0.0
 	_prepare_animations()
@@ -732,14 +743,16 @@ func _apply_cosmetics() -> void:
 		mi.set_instance_shader_parameter("tint_primary", t[0])
 		mi.set_instance_shader_parameter("tint_secondary", t[1])
 		mi.set_instance_shader_parameter("tint_dark", t[2])
-		mi.set_instance_shader_parameter("tint_skin", Cosmetics.skin_color(cosmetic))
-		mi.set_instance_shader_parameter("tint_hair", Cosmetics.hair_color(cosmetic))
+		# (Pass 9: a complete skin's own tones; the Night Watch the player's)
+		mi.set_instance_shader_parameter("tint_skin", Cosmetics.skin_color(cosmetic) if patrol else Cosmetics.look_skin_color(cosmetic))
+		mi.set_instance_shader_parameter("tint_hair", Cosmetics.hair_color(cosmetic) if patrol else Cosmetics.look_hair_color(cosmetic))
 		mi.set_instance_shader_parameter("stripes", stripes)
 		mi.set_instance_shader_parameter("rim_color", rim)
 		mi.set_instance_shader_parameter("rim_strength", 0.14 if lighting == "indoor" else 0.1)
 		mi.set_instance_shader_parameter("wet", _wet)
 		mi.set_instance_shader_parameter("skin_warm", 0.03 if lighting == "indoor" else 0.15)
-	_face_base = Cosmetics.face_keys(cosmetic)
+	_face_base = Cosmetics.face_keys(cosmetic) if patrol else Cosmetics.look_face_keys(cosmetic)
+	_bind_face("base" if patrol else Cosmetics.head_part(cosmetic))
 	# nightcap tip spring only when it is worn
 	var cap := not patrol and "hat_nightcap" in want
 	if cap and hat_spring == null:
@@ -772,6 +785,27 @@ func _apply_cosmetics() -> void:
 		_build_flashlight()
 	if flashlight:
 		flashlight.get_parent().visible = patrol
+
+
+## Pass 9: expressions and face presets play on the head that is shown (a
+## complete skin has its own, with the same shape names).  The newly shown
+## head starts from the current expression, so a swap never shows a frame of
+## a neutral face; the hidden head is left as it was.
+func _bind_face(part: String) -> void:
+	var name_ := part if _face_idx_of.has(part) else "base"
+	face_mesh = parts[name_]
+	_face_idx = _face_idx_of[name_]
+	for key in _face:
+		if _face_idx.has(key):
+			face_mesh.set_blend_shape_value(_face_idx[key], minf(1.0, float(_face[key]) + float(_face_base.get(key, 0.0))))
+
+
+## Show a still face on the visible head: the held face keys plus `extra`
+## (portraits and dev captures; play-time faces come from _update_face).
+func show_face(extra: Dictionary = {}) -> void:
+	for key in _face_idx:
+		var w := float(_face_base.get(key, 0.0)) + float(extra.get(key, 0.0))
+		face_mesh.set_blend_shape_value(_face_idx[key], clampf(w, 0.0, 1.0))
 
 
 ## Nightcap tip spring: lively in play, calm and better damped in menus.
@@ -1686,7 +1720,8 @@ func _update_face(delta: float, m: String, sprinting: bool, tag_phase: int, spot
 		var cur := float(_face[key])
 		_face[key] = target if key == "blink" else lerpf(cur, target, k)
 		var w := minf(1.0, float(_face[key]) + float(_face_base.get(key, 0.0)))
-		base_mesh.set_blend_shape_value(_face_idx[key], w)
+		if _face_idx.has(key):
+			face_mesh.set_blend_shape_value(_face_idx[key], w)
 
 
 func _camera_distance() -> float:

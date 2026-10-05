@@ -256,14 +256,9 @@ func _render(q: Dictionary) -> void:
 	_view.anim.play("idle")
 	_view.anim.seek(0.6, true)
 	_view.anim.pause()
-	for n in _view._face_idx:
-		_view.base_mesh.set_blend_shape_value(_view._face_idx[n], 0.0)
-	var base: Dictionary = Cosmetics.face_keys(q["app"])
-	for n in base:
-		if _view._face_idx.has(n):
-			_view.base_mesh.set_blend_shape_value(_view._face_idx[n], float(base[n]))
-	if _view._face_idx.has("smile"):
-		_view.base_mesh.set_blend_shape_value(_view._face_idx["smile"], 0.5)
+	# the look's held face and a small smile, on the head that is shown
+	# (Pass 9: a complete skin's own head)
+	_view.show_face({"smile": 0.5})
 	var fr: Array = FRAMINGS.get(String(q.get("framing", "head")), FRAMINGS["head"])
 	_cam.fov = float(fr[2])
 	_cam.look_at_from_position(fr[0], fr[1])

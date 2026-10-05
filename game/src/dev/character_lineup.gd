@@ -123,6 +123,8 @@ var debug_parts := false
 ## --shots-file=FILE (mode "custom"): a JSON list of shots, vectors as [x, y, z]
 var shots_file := ""
 var reel_look: Dictionary = REEL_LOOK
+## Pass 9: look overrides for the "faces" mode (--faces-look=JSON)
+var faces_look: Dictionary = {}
 var _reel_i := -1
 var _reel_rig: MotionRig
 var _reel_t := 0.0
@@ -146,6 +148,8 @@ func _ready() -> void:
 			shots_file = a.split("=")[1]
 		elif a.begins_with("--reel-look="):
 			reel_look = JSON.parse_string(a.substr(a.find("=") + 1))
+		elif a.begins_with("--faces-look="):
+			faces_look = JSON.parse_string(a.substr(a.find("=") + 1))
 	if modes.is_empty():
 		modes = ["views"]
 	if out_dir == "":
@@ -330,17 +334,19 @@ func _next_mode() -> void:
 		"faces":
 			var shapes := ["", "blink", "squint", "smile", "open", "brow_up", "brow_angry", "face_bright", "face_sleepy", "brow_flat"]
 			for i in shapes.size():
-				var v := _add(TC.Role.RUNNER, look({"outfit": "pj", "pattern": "plain", "hat": "none", "color": colors[i % colors.size()],
-					"skin": skins[i % skins.size()], "hair": ["tuft", "bob", "curly", "buns"][i % 4]}), -3.15 + i * 0.7, 0.0, PI, shapes[i] if shapes[i] != "" else "neutral")
+				var fl := {"outfit": "pj", "pattern": "plain", "hat": "none", "color": colors[i % colors.size()],
+					"skin": skins[i % skins.size()], "hair": ["tuft", "bob", "curly", "buns"][i % 4]}
+				fl.merge(faces_look, true)   # Pass 9: --faces-look={"outfit": "dr_doom"} (a complete skin's own head)
+				var v := _add(TC.Role.RUNNER, look(fl), -3.15 + i * 0.7, 0.0, PI, shapes[i] if shapes[i] != "" else "neutral")
 				v.set_process(false)
 				v.tree.active = false
 				v.anim.play("idle")
 				v.anim.seek(0.0, true)
 				v.anim.pause()
 				for n in v._face_idx:
-					v.base_mesh.set_blend_shape_value(v._face_idx[n], 0.0)
+					v.face_mesh.set_blend_shape_value(v._face_idx[n], 0.0)
 				if shapes[i] != "":
-					v.base_mesh.set_blend_shape_value(v.base_mesh.find_blend_shape_by_name(shapes[i]), 1.0)
+					v.face_mesh.set_blend_shape_value(v.face_mesh.find_blend_shape_by_name(shapes[i]), 1.0)
 			_aim(Vector3(0, 1.25, 7.4), Vector3(0, 1.12, 0), 28)
 		"cart":
 			for i in 3:
@@ -856,9 +862,24 @@ func _run_shots() -> void:
 	# the expression that state shows in play (no blink mid-shot)
 	pv._blink_t = 99.0
 	pv._update_face(1.0, clip if clip.begins_with("emote_") else "ground", false, 0, false)
+	if sh.has("face"):
+		# Pass 9: a held expression on the visible head ({"smile": 1.0, ...})
+		pv.show_face(sh["face"])
 	for part in sh.get("hide", []):
 		if pv.parts.has(part):
 			pv.parts[part].visible = false
+	# Pass 9: more characters in the same shot ("also": [{look, x, z, yaw_deg, clip, t, role, face}])
+	for o in sh.get("also", []):
+		var od: Dictionary = o
+		var ov: Dictionary = {"outfit": "pj", "pattern": "stripes", "color": "sky", "skin": "tone3"}
+		ov.merge(od.get("look", {}), true)
+		var av := _add(int(od.get("role", TC.Role.RUNNER)), look(ov), float(od.get("x", 0.0)), float(od.get("z", 0.0)),
+			PI + deg_to_rad(float(od.get("yaw_deg", 0.0))))
+		_pose(av, String(od.get("clip", "idle")), float(od.get("t", 0.0)))
+		av._blink_t = 99.0
+		av._update_face(1.0, "ground", false, 0, false)
+		if od.has("face"):
+			av.show_face(od["face"])
 	if sh.has("bone"):
 		# V7: frame a bone wherever the pose put it ("from" and "at" are
 		# offsets from the bone's head in world space)

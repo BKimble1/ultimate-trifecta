@@ -105,11 +105,15 @@ func test_every_appearance_maps_onto_the_character() -> void:
 						if (v.parts[n] as MeshInstance3D).visible:
 							shown[n] = true
 					# (V6: an outfit with its own footwear draws that instead of the shoes)
-					var shoe_parts: Array = [] if o in Cosmetics.OUTFIT_OWN_SHOES else Cosmetics.entry("shoes", sh)["parts"]
+					# (Pass 9: a complete skin draws its own footwear, hair and head)
+					var skin: bool = Cosmetics.is_complete_skin(o)
+					var shoe_parts: Array = [] if o in Cosmetics.OUTFIT_OWN_SHOES or skin else Cosmetics.entry("shoes", sh)["parts"]
 					for part in Cosmetics.OUTFIT_PARTS[o] + shoe_parts:
 						if not shown.has(part):
 							bad.append("%s hidden for %s" % [part, c])
-					var hood: bool = o in Cosmetics.HOOD_OUTFITS
+					var hood: bool = o in Cosmetics.HOOD_OUTFITS or skin
+					if shown.has("base") == skin:
+						bad.append("stock head visibility wrong for %s" % c)
 					for part in Cosmetics.entry("hat", h)["parts"]:
 						if shown.has(part) == hood:
 							bad.append("%s visibility wrong for %s" % [part, c])

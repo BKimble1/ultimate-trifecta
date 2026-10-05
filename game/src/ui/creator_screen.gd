@@ -455,6 +455,16 @@ func _build_tab() -> void:
 			note.custom_minimum_size.x = gw * 0.9
 			_notes[f] = note
 			body.add_child(note)
+	# Pass 9: a complete skin (Record Breaker, Dr. Doom) says what it replaces
+	# while worn, on its own tab and on the tabs whose choices it covers
+	if tab != "profile" and tab != "move":
+		var sn := UIKit.styled("", "caption", UIKit.AMBER)
+		sn.name = "SkinNote"
+		sn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		sn.custom_minimum_size.x = gw * 0.9
+		_notes["skin"] = sn
+		body.add_child(sn)
+		body.move_child(sn, 0)
 	if not first_run:
 		var link := _discover_link(fields)
 		if link:
@@ -623,6 +633,10 @@ func _refresh() -> void:
 		var k := String(draft[f])
 		var st := state_of(f, k)
 		(_picked[f] as Label).text = "·  %s%s" % [Cosmetics.entry(f, k)["name"], "  ·  Equipped" if bool(st["equipped"]) else ""]
+	if _notes.has("skin"):
+		var t := skin_note(tab, String(draft["outfit"]))
+		(_notes["skin"] as Label).text = t
+		(_notes["skin"] as Label).visible = t != ""
 	if _notes.has("hair"):
 		var hid: Array = Cosmetics.HAT_HIDES_HAIR.get(String(draft["hat"]), [])
 		var hood := String(draft["outfit"]) in Cosmetics.HOOD_OUTFITS
@@ -630,7 +644,7 @@ func _refresh() -> void:
 		var covered := hood or parts.any(func(p: String) -> bool: return p in hid)
 		var why := "the hood" if hood else String(Cosmetics.entry("hat", String(draft["hat"]))["name"])
 		(_notes["hair"] as Label).text = ("Tucked under %s. Choose No Hat to show it." % why) if covered else ""
-		(_notes["hair"] as Label).visible = covered
+		(_notes["hair"] as Label).visible = covered and not Cosmetics.is_complete_skin(String(draft["outfit"]))
 	if _notes.has("pattern"):
 		var no_pattern := not String(draft["outfit"]) in Cosmetics.PATTERNED_OUTFITS
 		(_notes["pattern"] as Label).text = "Patterns show on Pajamas and the Fluffy Robe." if no_pattern else ""
@@ -656,6 +670,32 @@ func _paint_swatch(sw: Swatch) -> void:
 	if sw.selected and not was and is_inside_tree():
 		sw.flash()
 	sw.queue_redraw()
+
+
+## Pass 9: what a complete skin in the draft replaces, for this tab ("" when
+## nothing on it is replaced).  The outfit tab says the whole rule; the tabs
+## whose choices the skin covers say that those choices are kept for the
+## player's other outfits (they are saved, not deleted).
+static func skin_note(tab_key: String, outfit: String) -> String:
+	if not Cosmetics.is_complete_skin(outfit):
+		return ""
+	var nm := String(Cosmetics.entry("outfit", outfit).get("name", ""))
+	var own: Dictionary = Cosmetics.COMPLETE_SKINS[outfit].get("own", {})
+	var kept := "Your pick here is saved for your other outfits."
+	match tab_key:
+		"outfit":
+			return Cosmetics.override_note(outfit)
+		"colours":
+			return "%s keeps his own colours. %s" % [nm, kept]
+		"face":
+			return "%s has his own face and skin tone. %s" % [nm, kept]
+		"hair":
+			return "%s has his own %s. %s" % [nm, own.get("hair", "hair"), kept]
+		"hat":
+			return "%s is worn without a hat. %s" % [nm, kept]
+		"shoes":
+			return "%s wears his own %s. %s" % [nm, own.get("shoes", "footwear"), kept]
+	return ""
 
 
 ## An item's state for its card: {text, col, owned, equipped, locked, cost}.

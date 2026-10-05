@@ -7,7 +7,7 @@ Output (default): game/assets/characters/runner.glb plus runner_manifest.json
 and (V7) game/src/view/character_art.gd, the art version the portrait cache
 keys on (Portraits.key_of), so a new asset never reuses old thumbnails.
 Everything is generated from the Python sources in this folder (geo.py,
-rig.py, parts.py, outfits_v6.py, outfits_p8.py, anims.py), which are the editable
+rig.py, parts.py, outfits_v6.py, outfits_p8.py, skins_p9.py, anims.py), which are the editable
 source of the asset.
 The build is deterministic: the same sources give the same GLB.
 """
@@ -29,13 +29,14 @@ import parts  # noqa: E402
 import anims  # noqa: E402
 import outfits_v6  # noqa: E402
 import outfits_p8  # noqa: E402
+import skins_p9  # noqa: E402
 
 REPO = os.path.abspath(os.path.join(HERE, '..', '..'))
 DEFAULT_OUT = os.path.join(REPO, 'game', 'assets', 'characters', 'runner.glb')
 OUT = sys.argv[-1] if sys.argv[-1].endswith('.glb') else DEFAULT_OUT
 ART_SCRIPT = os.path.join(REPO, 'game', 'src', 'view', 'character_art.gd')
 ## The art generation (V7); the version string adds the GLB's SHA-256.
-ART_GEN = 9      # Pass 8: six rotating Shop outfits (outfits_p8.py)
+ART_GEN = 10     # Pass 9: the Record Breaker and Dr. Doom complete skins (skins_p9.py)
 
 
 def reset():
@@ -258,11 +259,15 @@ def main():
     arm_ob = build_armature(scn)
     meshes = {}
     stats = {}
-    for fn in parts.ALL_PARTS + outfits_v6.ALL + outfits_p8.ALL:
+    assert skins_p9.FACE_KEYS == SHAPE_KEYS
+    for fn in parts.ALL_PARTS + outfits_v6.ALL + outfits_p8.ALL + skins_p9.ALL:
         mb = fn()
         ob = make_mesh(mb, arm_ob, scn)
         if mb.name == 'base':
             shape_keys(ob, mb)
+        elif mb.name in skins_p9.HEADS:
+            # Pass 9: a complete skin's own head carries the same face keys
+            skins_p9.apply_shape_keys(ob, mb, SHAPE_KEYS)
         meshes[mb.name] = ob
         stats[mb.name] = {'verts': len(mb.v), 'tris': sum(len(f) - 2 for f in mb.f)}
     clips = bake_actions(arm_ob, scn)

@@ -307,6 +307,13 @@ def main():
     for k, v in gl.items():
         if v['outside_glove_mm'] > 0.5:
             bad.append('%s glove: mitten %.1f mm outside' % (k, v['outside_glove_mm']))
+    # Pass 9: the complete skins (skins_p9.py): their layers, attachments and
+    # heads against the arms, through every clip (skins_check.py)
+    import skins_check
+    sk = skins_check.check()
+    sk_bad = skins_check.failures(sk)
+    print('complete skins (skins_check.py):', len(sk_bad), 'failures')
+    bad += ['complete skin: ' + b for b in sk_bad]
     if '--json' in sys.argv:
         with open(sys.argv[sys.argv.index('--json') + 1], 'w') as f:
             json.dump({'clips': res, 'gloves': gl, 'limit_cm': LIMIT * 100, 'failures': bad}, f, indent=1, sort_keys=True)

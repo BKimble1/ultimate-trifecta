@@ -14,7 +14,10 @@ const BASE := {"hat": "none"}
 var out := ""
 var fields: Array = ["outfit", "hat", "shoes"]
 var only: Array = []
-var _items: Array = []   # [field, key, cache key]
+## Pass 9: --framings=head,body renders each item in each framing (the
+## party/lobby portrait is "head"; the Locker's outfit cards "body")
+var framings: Array = []
+var _items: Array = []   # [field, key, look, framing]
 
 
 func _ready() -> void:
@@ -25,6 +28,8 @@ func _ready() -> void:
 			fields = Array(a.split("=")[1].split(","))
 		elif a.begins_with("--keys="):
 			only = Array(a.split("=")[1].split(","))
+		elif a.begins_with("--framings="):
+			framings = Array(a.split("=")[1].split(","))
 	if out == "":
 		out = OS.get_user_data_dir().path_join("thumbs.png")
 	await get_tree().process_frame
@@ -39,30 +44,31 @@ func _ready() -> void:
 			app[f] = k
 			if f == "hat":
 				app["hair"] = "bob"
-			_items.append([f, k, app])
+			for fr in (framings if not framings.is_empty() else [FRAMING[f]]):
+				_items.append([f, k, app, String(fr)])
 	# in batches: the renderer's queue is bounded (Portraits.MAX_QUEUE)
 	var done: Array = []
 	var i := 0
 	while i < _items.size():
 		var batch := _items.slice(i, i + 12)
 		for it in batch:
-			ps.portrait(it[2], TC.Role.RUNNER, "sheet:%s:%s" % [it[0], it[1]], FRAMING[it[0]])
+			ps.portrait(it[2], TC.Role.RUNNER, "sheet:%s:%s:%s" % [it[0], it[1], it[3]], it[3])
 		var guard := 0
 		while guard < 3000:
 			await get_tree().process_frame
 			guard += 1
 			var all := true
 			for it in batch:
-				if not ps.has_picture(Portraits.key_for(it[2], TC.Role.RUNNER, FRAMING[it[0]])):
+				if not ps.has_picture(Portraits.key_for(it[2], TC.Role.RUNNER, it[3])):
 					all = false
 			if all:
 				break
 		await RenderingServer.frame_post_draw
 		for it in batch:
-			var key := Portraits.key_for(it[2], TC.Role.RUNNER, FRAMING[it[0]])
-			var tex: AtlasTexture = ps.portrait(it[2], TC.Role.RUNNER, "", FRAMING[it[0]])
+			var key := Portraits.key_for(it[2], TC.Role.RUNNER, it[3])
+			var tex: AtlasTexture = ps.portrait(it[2], TC.Role.RUNNER, "", it[3])
 			var img: Image = tex.atlas.get_image().get_region(Rect2i(tex.region))
-			done.append([it[0], it[1], img, ps.has_picture(key)])
+			done.append([it[0], it[1] + ("" if framings.is_empty() else " " + String(it[3])), img, ps.has_picture(key)])
 		i += 12
 	_save(done)
 	get_tree().quit()

@@ -1,0 +1,98 @@
+{
+  "what": "Godot allocation counters (MEMORY_STATIC, RENDER_VIDEO_MEM_USED/BUFFER_MEM_USED) on the desktop Mobile renderer, llvmpipe under Xvfb, src/dev/skins_memory.tscn; each value is the increase measured in a fresh process. Compare before/after on this machine only; not a phone's resident memory.",
+  "asset_loaded_once": {
+    "before_2fff573": {
+      "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+      "glb": "res://tmp_mem_p9/runner_base.glb",
+      "asset_cached_at_start": false,
+      "asset_loaded_and_instanced": {
+        "static": 6009429,
+        "video": 17677920,
+        "buffers": 17674830,
+        "textures": 0
+      },
+      "asset_parts": 53,
+      "asset_vertices_all_parts": 175579,
+      "asset_blend_shapes": 9
+    },
+    "after": {
+      "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+      "glb": "res://tmp_mem_p9/runner_now.glb",
+      "asset_cached_at_start": false,
+      "asset_loaded_and_instanced": {
+        "static": 6151477,
+        "video": 23433888,
+        "buffers": 23430312,
+        "textures": 0
+      },
+      "asset_parts": 59,
+      "asset_vertices_all_parts": 214003,
+      "asset_blend_shapes": 27
+    }
+  },
+  "eight_players_in_view": {
+    "before_2fff573_modular_looks": {
+      "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+      "players": "modular",
+      "eight_players_added": {
+        "static": 10297383,
+        "video": 29944464,
+        "buffers": 29024136,
+        "textures": 0
+      },
+      "eight_players_lod0_tris": 207806,
+      "eight_players_draw_calls": [
+        6,
+        6,
+        4,
+        5,
+        5,
+        4,
+        3,
+        4
+      ]
+    },
+    "after_modular_looks": {
+      "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+      "players": "modular",
+      "eight_players_added": {
+        "static": 10765785,
+        "video": 36093456,
+        "buffers": 35172552,
+        "textures": 0
+      },
+      "eight_players_lod0_tris": 207806,
+      "eight_players_draw_calls": [
+        6,
+        6,
+        4,
+        5,
+        5,
+        4,
+        3,
+        4
+      ]
+    },
+    "after_with_both_skins": {
+      "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+      "players": "skins",
+      "eight_players_added": {
+        "static": 10753579,
+        "video": 36093456,
+        "buffers": 35172552,
+        "textures": 0
+      },
+      "eight_players_lod0_tris": 225163,
+      "eight_players_draw_calls": [
+        6,
+        6,
+        3,
+        3,
+        5,
+        4,
+        3,
+        4
+      ]
+    }
+  }
+}
