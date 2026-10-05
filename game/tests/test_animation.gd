@@ -24,6 +24,11 @@ func test_gait_cadence_matches_the_asset() -> void:
 	t.near(run, 5.0 / 2.2, 1e-3, "run at 5 m/s: %.2f cycles/s" % run)
 	t.check(run < 2.5, "no longer scurrying (V2: 2.94 cycles/s)")
 	t.near(CharacterView.gait_rate(7.0), 7.0 / 2.75, 1e-3, "sprint at 7 m/s")
+	# Pass 9: the steady full-input speeds (no sprint bursts) keep a running
+	# cadence, neither a scurry nor a stroll
+	for spd in [Rules.cfg.runner_speed, Rules.cfg.patrol_speed]:
+		var r := CharacterView.gait_rate(spd)
+		t.check(r > 2.0 and r < 2.7, "steady %.1f m/s: %.2f cycles/s" % [spd, r])
 	var walk := CharacterView.gait_rate(1.3)
 	t.check(walk > 1.5 and walk < 2.1, "walk at 1.3 m/s: %.2f cycles/s" % walk)
 	for k in ["walk", "run", "sprint", "air_rise", "air_apex", "air_fall", "land_soft", "land_hard", "splash_walk",
