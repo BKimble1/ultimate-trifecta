@@ -1,7 +1,8 @@
 class_name LobbyScreen
 extends Screen
 ## Party lobby in the dorm common room (V5).
-##   top       Back · the party code with Copy and Share · Invite;
+##   top       Back · the party code with Copy and Share · Friends (Final:
+##             who's playing and invites, Apple's sheet inside);
 ##             the settings as short labelled values ("3 rounds",
 ##             "2 Night Watch", "4 home to win"): the host taps them to
 ##             change, guests see them read-only
@@ -101,10 +102,11 @@ func build() -> void:
 		if not Share.share_text(Share.party_message(session.room_code)):
 			UIKit.toast(self, "Invite message copied — paste it to a friend"))
 	top.add_child(share)
-	invite_btn = UIKit.icon_button("invite", "Invite")
-	invite_btn.tooltip_text = "Invite Game Center friends"
+	# Final: Friends (who's playing, invites into this party; Apple's invite
+	# sheet and the code are inside it as well)
+	invite_btn = FriendsPanel.entry_button(self)
+	invite_btn.tooltip_text = "Friends: invite to this party"
 	invite_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	invite_btn.pressed.connect(_invite)
 	top.add_child(invite_btn)
 	top.add_child(UIKit.spacer_h())
 	settings_btn = _settings_summary()
@@ -489,7 +491,7 @@ func _refresh() -> void:
 		return
 	var hosting := session.is_host()
 	code_lbl.text = session.room_code if session.room_code != "" else "…"
-	invite_btn.visible = hosting and Social.online_ready() and session.transport is GameKitTransport
+	invite_btn.visible = _can_invite()
 	var humans := 0
 	var not_ready := 0
 	var ready_n := 0
@@ -608,15 +610,18 @@ static func _tally(view: Dictionary) -> Array:
 	return [r, w]
 
 
+## Final: any member of an online party can invite friends (Friends panel);
+## Apple's invite sheet inside it stays the host's.
 func _can_invite() -> bool:
-	return session.is_host() and Social.online_ready() and session.transport is GameKitTransport
+	return session.mode != NetSession.Mode.OFFLINE
 
 
 func _on_cell(c: SlotCell) -> void:
 	var i := c.slot
 	if i < 0:
 		if _can_invite():
-			_invite()
+			close_popover()
+			FriendsPanel.open(self)
 		else:
 			DisplayServer.clipboard_set(session.room_code)
 			UIKit.toast(self, "Code %s copied — share it to invite" % session.room_code)

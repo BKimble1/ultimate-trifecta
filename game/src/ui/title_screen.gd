@@ -2,7 +2,8 @@ class_name TitleScreen
 extends Screen
 ## Home (V5): the dorm common room with the player's own runner as the focus.
 ##   upper left   the Ultimate Trifecta title graphic, modest
-##   upper right  a compact profile chip (name, level, coins) and Settings
+##   upper right  Friends (who's playing, invites), a compact profile chip
+##                (name, level, coins) and Settings
 ##   lower left   V6: the navigation rail (Play · Locker · Shop · Season
 ##                Pass), the Coins chip and Emote; the Locker replaces the
 ##                Wardrobe button
@@ -15,6 +16,7 @@ var play_btn: Button
 var practice_btn: Button
 var wardrobe_btn: Button
 var emote_btn: Button
+var friends_btn: Button
 var title_art: TextureRect
 
 
@@ -39,6 +41,10 @@ func build() -> void:
 	title_art.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	top.add_child(title_art)
 	top.add_child(UIKit.spacer_h())
+	# Final: Friends (who's playing, invites; FriendsPanel)
+	friends_btn = FriendsPanel.entry_button(self)
+	friends_btn.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	top.add_child(friends_btn)
 	top.add_child(profile_chip())
 	var gear := UIKit.icon_button("gear")
 	gear.size_flags_vertical = Control.SIZE_SHRINK_BEGIN

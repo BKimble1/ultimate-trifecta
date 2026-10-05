@@ -30,6 +30,7 @@ Offers="*res://src/autoload/offers_service.gd"
 Purchases="*res://src/autoload/purchase_service.gd"
 Diag="*res://src/core/beta_diag.gd"
 App="*res://src/autoload/app.gd"
+Friends="*res://src/autoload/friends_service.gd"
 
 [display]
 

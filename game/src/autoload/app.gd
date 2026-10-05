@@ -528,13 +528,16 @@ func host_room_gamekit() -> void:
 ## Join a party by code: the service checks the code, room state, capacity,
 ## version and blocks and hands back an admission credential plus the host's
 ## Game Center player; we then join that Game Center match and present it.
-func join_room_gamekit(code: String) -> void:
+## (Final: an accepted Friends invite joins through here too; `confirmed`
+## when the player already agreed to leave their party, so it isn't asked
+## twice.)
+func join_room_gamekit(code: String, confirmed: bool = false) -> void:
 	var parsed := Social.parse_code(code)
 	if not bool(parsed["ok"]):
 		party_error.emit(String(parsed["message"]), "code_format")
 		return
 	var c := String(parsed["code"])
-	if not await _confirm_party_switch():
+	if not confirmed and not await _confirm_party_switch():
 		return
 	_close_session()
 	var adm := ""
