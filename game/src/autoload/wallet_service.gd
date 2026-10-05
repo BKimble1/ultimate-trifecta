@@ -795,7 +795,6 @@ func _round_message(rec: Dictionary) -> String:
 	return ""
 
 
-
 # ------------------------------------------------------------------ challenges
 ## Pass 8 (docs/ECONOMY.md §10).  The last challenge snapshot of this profile
 ## ({} if none): the live one when synced, the cached one while offline.

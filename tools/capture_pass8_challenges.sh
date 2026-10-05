@@ -16,14 +16,27 @@ DEVICES=${*:-se p14 pmax ipad}
 mkdir -p "$OUT"
 OUT=$(cd "$OUT" && pwd)
 for d in $DEVICES; do
-  # pixels, point scale, safe area (points L,T,R,B)
-  case $d in
-    se) res=1334x750 scale=2 safe=0,0,0,0;;              # 667x375 pt, iPhone SE
-    p14) res=2532x1170 scale=3 safe=47,0,47,21;;         # 844x390 pt
-    pmax) res=2778x1284 scale=3 safe=47,0,47,21;;        # 926x428 pt
-    ipad) res=2048x1536 scale=2 safe=0,24,0,20;;         # 1024x768 pt
-    *) echo "unknown device $d"; exit 2;;
-  esac
+  # pixels, point scale, safe area (points L,T,R,B): device pixels.  FAST=1
+  # renders each shape at its canvas size with the matching point scale (as
+  # V7's s1536 shots did): the layout in canvas units, touch_min and the
+  # safe area are the device's; only the picture has fewer pixels.
+  if [ "${FAST:-0}" != 1 ]; then
+    case $d in
+      se) res=1334x750 scale=2 safe=0,0,0,0;;              # 667x375 pt, iPhone SE
+      p14) res=2532x1170 scale=3 safe=47,0,47,21;;         # 844x390 pt
+      pmax) res=2778x1284 scale=3 safe=47,0,47,21;;        # 926x428 pt
+      ipad) res=2048x1536 scale=2 safe=0,24,0,20;;         # 1024x768 pt
+      *) echo "unknown device $d"; exit 2;;
+    esac
+  else
+    case $d in
+      se) res=1334x750 scale=2 safe=0,0,0,0;;
+      p14) res=1558x720 scale=1.846 safe=47,0,47,21;;
+      pmax) res=1558x720 scale=1.682 safe=47,0,47,21;;
+      ipad) res=1280x960 scale=1.25 safe=0,24,0,20;;
+      *) echo "unknown device $d"; exit 2;;
+    esac
+  fi
   w=${res%x*}; h=${res#*x}
   mkdir -p "$OUT/$d"
   XDG_DATA_HOME=$(mktemp -d) timeout "${CAPTURE_TIMEOUT:-2400}" nice -n 10 xvfb-run -a -s "-screen 0 $((w + 64))x$((h + 64))x24" \
