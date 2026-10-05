@@ -146,6 +146,7 @@ by (season, tier, track) and tiers 1-30 are identical in both tables.
 | A 100-tier Claim all would be cut at 60 cells by the version 2 service | code audit (`b.claims.slice(0, 60)`) | a 30-tier assumption | service: up to every cell; game: batches of 60 | both suites |
 | Claiming tier 50 against a service not yet updated would show a dead "Claim" | audit | the client couldn't know the service's table | `tiers` in the snapshot; catalogue version fallback; `service_update` state | `11_svcon_test_old_service_tier50`; `test_an_older_service…` |
 | An expected-reward mismatch could grant something the player wasn't shown | audit | claims named only (tier, track) | the claim names its reward; `reward_changed` | service, game |
+| The detail picture kept a 110-unit floor on every device (a tiny featured preview on the iPad) | iPad, a featured tier (stand-in shot) | its height was computed while the Reward page was still hidden (stale page height) and nothing refit it when the page was shown | refit on the page's own resize; a featured preview takes up to 38% of a tall panel | `12_…standin` (iPad); `test_premium_lock_reason_fits_the_iphone_se` |
 | A refresh of the pass read the wallet's Season state a few hundred times | audit | per-cell reads | read once per frame (`season()`) | code review |
 
 ## How it was verified
