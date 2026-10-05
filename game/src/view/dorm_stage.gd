@@ -591,8 +591,13 @@ func _build_room() -> void:
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color("11192b")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("6d6f8c")
-	env.ambient_light_energy = 0.55
+	# (Final sweep, a lighter and more welcoming room at night: measured on
+	# same-camera frames, docs/final/lobby.md) a touch bluer and stronger
+	# night ambient (V5: 6d6f8c x 0.55): the shadowed side of the furniture
+	# and the walls lift without turning grey; the light count, shadows and
+	# post-processing are unchanged
+	env.ambient_light_color = Color("7379a0")
+	env.ambient_light_energy = 0.62
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_white = 6.0
 	env.glow_enabled = true
@@ -620,7 +625,9 @@ func _build_room() -> void:
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-12, -8, 0)
 	fill.light_color = Color(0.78, 0.82, 1.0)
-	fill.light_energy = 0.22
+	# (Final sweep: 0.22 -> 0.32) it rakes the floor at 12 degrees, so the
+	# contact shadows keep their depth while faces and walls lift
+	fill.light_energy = 0.32
 	fill.light_specular = 0.0
 	add_child(fill)
 	# cool moonlight through the window
@@ -632,14 +639,14 @@ func _build_room() -> void:
 	_lamp = OmniLight3D.new()
 	_lamp.position = Vector3(3.9, 1.75, -1.9)
 	_lamp.light_color = Color(1.0, 0.76, 0.5)
-	_lamp.light_energy = 1.9
+	_lamp.light_energy = 2.15   # (Final sweep: 1.9) a warmer lamp corner
 	_lamp.omni_range = 7.5
 	_lamp.omni_attenuation = 1.4
 	add_child(_lamp)
 	var lamp2 := OmniLight3D.new()
 	lamp2.position = Vector3(-1.9, 0.75, -2.1)
 	lamp2.light_color = Color(1.0, 0.72, 0.45)
-	lamp2.light_energy = 0.9
+	lamp2.light_energy = 1.0   # (Final sweep: 0.9)
 	lamp2.omni_range = 4.0
 	lamp2.omni_attenuation = 1.6
 	add_child(lamp2)
@@ -647,8 +654,10 @@ func _build_room() -> void:
 	var k := MeshKit.new()
 	var wood := Color("8a5a3c", WOOD)
 	var wood_d := Color("6e4630", WOOD)
-	var wall := Color("3a4a6b", PAPER)
-	var wall_lo := Color("2f3d5a")
+	# (Final sweep) the walls, the largest dark area of every framing, one
+	# step lighter in the same slate blue (V5: 3a4a6b and 2f3d5a)
+	var wall := Color("4a5c83", PAPER)
+	var wall_lo := Color("3b4d6d")
 	# floor planks (grain, seams and staggered ends come from the dorm shader)
 	# (the room is larger than any framing needs: the wide iPad 4:3 lobby
 	# framing pulls the camera back, and must never see past the walls)
@@ -788,9 +797,11 @@ func _armchair(k: MeshKit, at: Vector3, yaw: float, cc: Color, feet: Color) -> v
 func _build_view(wx: float) -> void:
 	var v := MeshKit.new()
 	var z_sky := -16.0
-	var top := Color("0a1230")
-	var mid := Color("15224a")
-	var hor := Color("2b3f72")
+	# (Final sweep) a little more moonlit blue in the sky (V5: 0a1230,
+	# 15224a, 2b3f72): the window reads as cool night light, not a dark hole
+	var top := Color("0c1638")
+	var mid := Color("192a56")
+	var hor := Color("31487e")
 	var up := Vector3(0, 0, 1)
 	# sky: three bands, darker toward the top (vertex-coloured gradient)
 	var ys := [-1.0, 2.6, 5.5, 11.0]
