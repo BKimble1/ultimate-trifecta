@@ -314,6 +314,8 @@ func _run() -> void:
 	_setup_profile()
 	if shot_set == "before":
 		await _run_before()
+	elif shot_set == "skins":
+		await _run_skins()
 	else:
 		await _run_after()
 	printerr("CAPTURE-DONE")
@@ -343,6 +345,77 @@ func _run_before() -> void:
 	await _shot("b04_svcon_test_tier43_record_breaker", func(sp: SeasonScreen) -> void:
 		sp.jump_to(50)
 		await _wait(0.8), 2.0)
+
+
+## Rest-pose bounds (metres) of a look on the stage's runner.
+func _look_bounds(v: CharacterView, look: Dictionary) -> AABB:
+	v.set_appearance(TC.Role.RUNNER, look)
+	var box := AABB()
+	var first := true
+	for mi in v.visible_parts:
+		if not is_instance_valid(mi) or not mi.visible:
+			continue
+		var b: AABB = v.global_transform.affine_inverse() * (mi.global_transform * mi.get_aabb())
+		box = b if first else box.merge(b)
+		first = false
+	return box
+
+
+## Inspection at the stage's scale: the two pass skins, the tallest and the
+## broadest outfit (measured over every outfit, and the tallest hat over
+## every hat), and two accessory-heavy Season looks, each from the
+## three-quarter start, both profiles and the back.  The looks are put on
+## the stage's runner directly (the pass's own framing and light), so any
+## outfit can be checked; measure.json keeps every look's bounds.
+func _run_skins() -> void:
+	_service_off()
+	_label("Skin inspection on the Season Pass stage · desktop render")
+	await _open()
+	var sp := App.screen as SeasonScreen
+	sp.jump_to(50)
+	await _wait(1.2)
+	var v := App.stage.local_character()
+	var base := Cosmetics.sanitize(LOOK)
+	var dims := {}
+	var tallest := ["", 0.0]
+	var broadest := ["", 0.0]
+	for k in Cosmetics.keys_of("outfit"):
+		var look := base.duplicate()
+		look["outfit"] = String(k)
+		look["hat"] = "none"
+		var b := _look_bounds(v, Cosmetics.sanitize(look))
+		dims["outfit:" + String(k)] = [snappedf(b.size.y, 0.001), snappedf(b.size.x, 0.001), snappedf(b.size.z, 0.001)]
+		if b.size.y > float(tallest[1]):
+			tallest = [String(k), b.size.y]
+		if maxf(b.size.x, b.size.z) > float(broadest[1]):
+			broadest = [String(k), maxf(b.size.x, b.size.z)]
+	var tallest_hat := ["none", 0.0]
+	for k in Cosmetics.keys_of("hat"):
+		var look := base.duplicate()
+		look["hat"] = String(k)
+		var b := _look_bounds(v, Cosmetics.sanitize(look))
+		dims["hat:" + String(k)] = [snappedf(b.size.y, 0.001), snappedf(b.size.x, 0.001), snappedf(b.size.z, 0.001)]
+		if b.size.y > float(tallest_hat[1]):
+			tallest_hat = [String(k), b.size.y]
+	measures["bounds"] = {"dims_m": dims, "tallest_outfit": tallest, "broadest_outfit": broadest, "tallest_hat": tallest_hat}
+	var looks := {
+		"record_breaker": {"outfit": "record_breaker"},
+		"dr_doom": {"outfit": "dr_doom"},
+		"tall": {"outfit": String(tallest[0]), "hat": String(tallest_hat[0])},
+		"broad": {"outfit": String(broadest[0])},
+		"acc_night_owl": {"outfit": "night_owl", "hat": "owl_ears", "shoes": "glow_sneakers"},
+		"acc_glow_jogger": {"outfit": "glow_jogger", "hat": "headlamp", "shoes": "moon_boots"},
+	}
+	for name in looks:
+		var look := base.duplicate()
+		for f in looks[name]:
+			look[f] = looks[name][f]
+		v.set_appearance(TC.Role.RUNNER, Cosmetics.sanitize(look))
+		for view in [["a_start", 0.0], ["b_side", PI * 0.5], ["c_back", PI], ["d_side", -PI * 0.5]]:
+			sp.turn.touched = true
+			sp.turn.offset = float(view[1])
+			await _wait(0.5)
+			await snap("s_%s_%s" % [name, view[0]])
 
 
 ## The rebuilt screen: the same states as before, then the matrix.

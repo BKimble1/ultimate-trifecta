@@ -67,7 +67,7 @@ const FIG_SHARE := 0.23
 const SIDE_SHARE := 0.25
 ## the figure's width (metres, arms and a run's stride) that must fit the
 ## stage column; the dorm stage fits the tallest look's height to the column
-const FIG_W := 0.85
+const FIG_W := 1.0
 ## the three-quarter start pose: radians from facing the camera
 const START_TURN := 0.42
 ## the right stick's turn rate (radians a second at full tilt)
@@ -641,10 +641,10 @@ func _fit_cells() -> void:
 	c = clampf(c, UIKit.touch_min(), CELL_MAX_H)
 	var w := floorf(clampf(c * CELL_ASPECT, UIKit.touch_min(), 210.0))
 	# a narrow, tall track (the iPad, beside the stage and the side panel)
-	# keeps about four reward columns in view: cells get taller, not wider
+	# keeps three reward columns or more in view: cells get taller, not wider
 	var tw := track_scroll.size.x
 	if tw > 2.0:
-		w = floorf(maxf(UIKit.touch_min(), minf(w, (tw + GAP) / 4.2 - GAP)))
+		w = floorf(maxf(UIKit.touch_min(), minf(w, (tw + GAP) / 3.4 - GAP)))
 	if absf(c - cell_size) < 1.0 and absf(w - cell_w) < 1.0:
 		return
 	cell_size = c
@@ -1652,8 +1652,11 @@ class RewardArt:
 		var f := UIKit.font_w(600)
 		var cap := SeasonScreen.reward_caption(reward)
 		var fs := SeasonScreen.CAPTION_FS
+		# a narrow cell sets the caption a size or two smaller, never trimmed
+		while fs > 15 and f.get_string_size(cap, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > size.x - 10.0:
+			fs -= 1
 		var cy := size.y - 8.0 - SeasonScreen.CAPTION_H * 0.5 + (f.get_ascent(fs) - f.get_descent(fs)) * 0.5
-		draw_string(f, Vector2(6.0, cy), cap, HORIZONTAL_ALIGNMENT_CENTER, size.x - 12.0, fs,
+		draw_string(f, Vector2(5.0, cy), cap, HORIZONTAL_ALIGNMENT_CENTER, size.x - 10.0, fs,
 			UIKit.IVORY if state != "locked" else UIKit.IVORY_MUTED)
 		# state marks (shape + colour, never colour alone)
 		var corner := Vector2(size.x - 18.0, 18.0)
