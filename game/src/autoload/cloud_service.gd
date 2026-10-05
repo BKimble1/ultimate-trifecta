@@ -327,6 +327,10 @@ func _http(method: int, path: String, body: Variant, auth: bool) -> Dictionary:
 		return await transport_override.call(method, path, body, headers)
 	var h := HTTPRequest.new()
 	h.timeout = timeout_s
+	# the connection, TLS handshake and reads run on a worker thread: Friends'
+	# presence heartbeat (every 20 s, also during a round) never adds main-
+	# thread work to a frame
+	h.use_threads = true
 	add_child(h)
 	var err := h.request(base_url + path, headers, method, JSON.stringify(body) if body != null else "")
 	if err != OK:

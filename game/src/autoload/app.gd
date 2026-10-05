@@ -44,6 +44,7 @@ func _ready() -> void:
 	QualityPreset.apply(int(Save.get_setting("quality", 1)))
 	Social.invite_ready.connect(_on_invite_ready)
 	Social.auth_changed.connect(_on_gc_auth)
+	Social.room_failed.connect(_on_room_failed)
 	# automation runs (simulator evidence) skip the Game Center sign-in sheet
 	if not OS.get_cmdline_user_args().has("--no-gamecenter"):
 		Social.authenticate()
@@ -560,6 +561,24 @@ func join_room_gamekit(code: String, confirmed: bool = false) -> void:
 	session.expected_host_uid = host_gc
 	session.local_pid = Cloud.profile_id()
 	party_code = c
+
+
+## Game Center matchmaking failed: a code join (or a party we host) whose
+## match never formed, or Apple's invite sheet that couldn't open.  Before,
+## nothing listened, so a failed join just waited.  A session still waiting
+## for its first match ends with the reason; otherwise the message is shown
+## where the player is (the party stays).
+func _on_room_failed(message: String) -> void:
+	var waiting := session != null and session.transport is GameKitTransport and not (session.transport as GameKitTransport).bound()
+	if waiting and session.mode == NetSession.Mode.CLIENT:
+		_close_session()
+		goto_title("Couldn't connect to that party through Game Center (%s). Try again, or check Game Center in Settings." % message)
+		return
+	if screen is Control and (screen as Control).is_inside_tree():
+		if waiting:
+			# a host keeps their party (and bots); only joining is affected
+			message = "Game Center couldn't open your party to others (%s). Friends can't join until you make a new party." % message
+		UIKit.toast(screen as Control, message, 4.0)
 
 
 ## Invites converge on the same path: once the invited match forms, the host
