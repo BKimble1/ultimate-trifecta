@@ -120,6 +120,24 @@ and ticks for sprinting (blue) and the exhausted latch (red), 1.7 (7) on top.
 | [sprint_rearm_trace.png](../media/pass8/movement/sprint_rearm_trace.png) | Release and re-press at 50 %: identical before and after |
 | [dive_loop_trace.png](../media/pass8/movement/dive_loop_trace.png) | Best jump→dive chain with Sprint held: 8.6 m/s plateaus above the Watch line before; 8.0 m/s dives separated by the 0.45 s recovery after |
 
+## 4b. Gameplay clips (normal speed)
+
+`src/dev/movement_reel_p8.tscn`, recorded by `tools/capture_p8_movement.sh`:
+a real offline Practice round as a runner (the real motor, CharacterView,
+follow camera and HUD, the bots parked), the same lane and input scripts as
+the probe, on build 7's code (`018b8d0`) and on this branch. Godot's Movie
+Maker at a fixed 30 fps clock on the Mobile renderer over llvmpipe, 960×540;
+the round's load and reveal are cut. Each clip is Sprint held for 12 s, then
+jump→dive pressed as fast as it goes with Sprint held for 10 s; the caption
+line shows time, speed, meter and the latch. Desktop rendering of scripted
+input, **not device footage or frame-rate evidence**.
+
+| File | Shows |
+|---|---|
+| [p8_movement_before.mp4](../media/pass8/movement/p8_movement_before.mp4) | 1.7 (7): sprint restarts every ~1.3 s while held (7.4 / 5.0 m/s alternating); the dive loop holds 8.6 m/s |
+| [p8_movement_after.mp4](../media/pass8/movement/p8_movement_after.mp4) | Pass 8: one 2.5 s burst, then a steady 5.0 m/s run with "exhausted latch" while the meter refills to 100 %; dives at 8.0 m/s, each followed by the 0.45 s landing recovery (1.8 m/s) |
+| [p8_movement_side_by_side.mp4](../media/pass8/movement/p8_movement_side_by_side.mp4) | Both at once (left 1.7 (7), right Pass 8), 640×360 each |
+
 ## 5. Tests
 
 * `test_p8_movement.gd` (6 tests, 31 checks): the probe and its contract,
