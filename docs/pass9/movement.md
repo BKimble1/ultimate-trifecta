@@ -313,8 +313,19 @@ the motor state round-trips without the meter floats (read size equals
 written size) and that `fast` resets on capture and respawn. The Pass 8
 floor-snap and respawn tests still pass (`test_sim`, `test_net`).
 
-Clips (desktop renders of scripted input, Movie Maker 30 fps over llvmpipe,
-not device footage): see `docs/media/pass9/movement/`.
+Clips: desktop renders of scripted input in a real Practice round. They were
+recorded with Movie Maker at a fixed 30 fps clock over llvmpipe, at normal
+speed. They are not device footage. `tools/capture_p9_movement.sh` made them
+from `src/dev/movement_reel_p9.tscn`.
+
+- [p9_movement_before.mp4](../media/pass9/movement/p9_movement_before.mp4):
+  1.8, with full input and Sprint held. You see one burst, then 5.0 m/s and
+  "Sprint empty · ease off to recharge". The jump/dive chain follows.
+- [p9_movement_after.mp4](../media/pass9/movement/p9_movement_after.mp4):
+  1.9, the same input. It shows "6.0 m/s · full speed" for all 12 s, with no
+  meter, hint or Sprint prompt.
+- [p9_movement_side_by_side.mp4](../media/pass9/movement/p9_movement_side_by_side.mp4):
+  the two side by side.
 
 ## 7. Not measured here (needs devices and people)
 
