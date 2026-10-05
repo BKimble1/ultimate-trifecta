@@ -1,0 +1,382 @@
+{
+  "controls": [
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        42.0,
+        55.0,
+        64.0
+      ],
+      "text": "Back"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        103.0,
+        42.0,
+        116.0,
+        64.0
+      ],
+      "text": "Play"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        225.0,
+        42.0,
+        142.0,
+        64.0
+      ],
+      "text": "Locker"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        373.0,
+        42.0,
+        126.0,
+        64.0
+      ],
+      "text": "Shop"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        505.0,
+        42.0,
+        204.0,
+        64.0
+      ],
+      "text": "Season Pass"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        1160.0,
+        46.0,
+        84.0,
+        55.0
+      ],
+      "text": "0 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1214.0,
+        46.0,
+        14.0,
+        55.0
+      ],
+      "text": "0"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        694.0,
+        120.0,
+        55.0
+      ],
+      "text": "Idle"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        757.0,
+        120.0,
+        55.0
+      ],
+      "text": "Run"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        820.0,
+        120.0,
+        55.0
+      ],
+      "text": "Emote"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        50.0,
+        890.0,
+        103.0,
+        26.0
+      ],
+      "text": "Drag to turn"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        124.0,
+        130.0,
+        55.0
+      ],
+      "text": "Featured"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        658.0,
+        124.0,
+        121.0,
+        55.0
+      ],
+      "text": "All skins"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        785.0,
+        124.0,
+        164.0,
+        55.0
+      ],
+      "text": "Accessories"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        955.0,
+        124.0,
+        97.0,
+        55.0
+      ],
+      "text": "Coins"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        1058.0,
+        124.0,
+        128.0,
+        55.0
+      ],
+      "text": "Season 1"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        522.0,
+        187.0,
+        710.0,
+        28.0
+      ],
+      "text": "Buying is unavailable right now: the game service isn't set "
+    },
+    {
+      "kind": "label",
+      "rect": [
+        522.0,
+        224.0,
+        691.0,
+        25.0
+      ],
+      "text": "Rotating skins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1225.0,
+        223.0,
+        1.0,
+        28.0
+      ],
+      "text": ""
+    },
+    {
+      "kind": "label",
+      "rect": [
+        522.0,
+        263.0,
+        704.0,
+        58.0
+      ],
+      "text": "Rotating skins come from the game service, which isn't set u"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        522.0,
+        345.0,
+        704.0,
+        28.0
+      ],
+      "text": "Owned skins stay in your Locker. Shop skins may return."
+    },
+    {
+      "kind": "label",
+      "rect": [
+        522.0,
+        385.0,
+        704.0,
+        25.0
+      ],
+      "text": "Always available"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        422.0,
+        168.0,
+        262.0
+      ],
+      "text": "Moonlight Runner"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        530.0,
+        594.0,
+        152.0,
+        54.0
+      ],
+      "text": "Moonlight Runner"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        549.0,
+        654.0,
+        113.0,
+        28.0
+      ],
+      "text": "Unavailable"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        700.0,
+        422.0,
+        168.0,
+        262.0
+      ],
+      "text": "Starry Sleeper"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        708.0,
+        594.0,
+        152.0,
+        54.0
+      ],
+      "text": "Starry Sleeper"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        727.0,
+        654.0,
+        113.0,
+        28.0
+      ],
+      "text": "Unavailable"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        696.0,
+        704.0,
+        141.0
+      ],
+      "text": "Season 1 · After Hours Premium"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        646.0,
+        706.0,
+        568.0,
+        31.0
+      ],
+      "text": "Season 1 · After Hours Premium"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        646.0,
+        739.0,
+        568.0,
+        58.0
+      ],
+      "text": "30 Premium rewards over 30 tiers: 3 outfits, 2 hats, 1 pair "
+    },
+    {
+      "kind": "label",
+      "rect": [
+        674.0,
+        799.0,
+        56.0,
+        28.0
+      ],
+      "text": "1,500"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        849.0,
+        173.0,
+        55.0
+      ],
+      "text": "Coin packs  ›"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        711.0,
+        849.0,
+        186.0,
+        55.0
+      ],
+      "text": "Accessories  ›"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        522.0,
+        929.0,
+        475.0,
+        28.0
+      ],
+      "text": "Bought a skin on another device?"
+    },
+    {
+      "clipped": "partly visible",
+      "kind": "button",
+      "rect": [
+        1009.0,
+        916.0,
+        217.0,
+        55.0
+      ],
+      "text": "Restore Purchases"
+    }
+  ],
+  "issues": [],
+  "keyboard_units": 0.0,
+  "safe": [
+    16.0,
+    30.0,
+    1248.0,
+    905.0
+  ],
+  "screen": "ShopScreen",
+  "shot": "shop_service_off",
+  "touch_min": 54.9999991804361,
+  "units_per_point": 1.24999998137355,
+  "viewport": [
+    1280.0,
+    960.0
+  ]
+}

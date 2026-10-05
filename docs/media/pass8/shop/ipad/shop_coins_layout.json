@@ -1,0 +1,390 @@
+{
+  "controls": [
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        42.0,
+        55.0,
+        64.0
+      ],
+      "text": "Back"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        103.0,
+        42.0,
+        116.0,
+        64.0
+      ],
+      "text": "Play"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        225.0,
+        42.0,
+        142.0,
+        64.0
+      ],
+      "text": "Locker"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        373.0,
+        42.0,
+        126.0,
+        64.0
+      ],
+      "text": "Shop"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        505.0,
+        42.0,
+        204.0,
+        64.0
+      ],
+      "text": "Season Pass"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        1113.0,
+        46.0,
+        131.0,
+        55.0
+      ],
+      "text": "2,650 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1167.0,
+        46.0,
+        61.0,
+        55.0
+      ],
+      "text": "2,650"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        694.0,
+        120.0,
+        55.0
+      ],
+      "text": "Idle"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        757.0,
+        120.0,
+        55.0
+      ],
+      "text": "Run"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        820.0,
+        120.0,
+        55.0
+      ],
+      "text": "Emote"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        50.0,
+        890.0,
+        103.0,
+        26.0
+      ],
+      "text": "Drag to turn"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        124.0,
+        130.0,
+        55.0
+      ],
+      "text": "Featured"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        658.0,
+        124.0,
+        121.0,
+        55.0
+      ],
+      "text": "All skins"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        785.0,
+        124.0,
+        164.0,
+        55.0
+      ],
+      "text": "Accessories"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        955.0,
+        124.0,
+        97.0,
+        55.0
+      ],
+      "text": "Coins"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        1058.0,
+        124.0,
+        128.0,
+        55.0
+      ],
+      "text": "Season 1"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        522.0,
+        187.0,
+        704.0,
+        58.0
+      ],
+      "text": "Coins buy anything in the Shop. They never expire and never "
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        257.0,
+        347.0,
+        86.0
+      ],
+      "text": "250 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        623.0,
+        266.0,
+        236.0,
+        32.0
+      ],
+      "text": "250 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        635.0,
+        304.0,
+        105.0,
+        27.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        879.0,
+        257.0,
+        347.0,
+        86.0
+      ],
+      "text": "500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        980.0,
+        266.0,
+        236.0,
+        32.0
+      ],
+      "text": "500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        992.0,
+        304.0,
+        105.0,
+        27.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        353.0,
+        347.0,
+        86.0
+      ],
+      "text": "1,000 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        623.0,
+        362.0,
+        236.0,
+        32.0
+      ],
+      "text": "1,000 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        635.0,
+        400.0,
+        105.0,
+        27.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        879.0,
+        353.0,
+        347.0,
+        86.0
+      ],
+      "text": "1,500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        980.0,
+        362.0,
+        236.0,
+        32.0
+      ],
+      "text": "1,500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        992.0,
+        400.0,
+        105.0,
+        27.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        449.0,
+        347.0,
+        86.0
+      ],
+      "text": "3,500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        623.0,
+        458.0,
+        236.0,
+        32.0
+      ],
+      "text": "3,500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        635.0,
+        496.0,
+        105.0,
+        27.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        879.0,
+        449.0,
+        347.0,
+        86.0
+      ],
+      "text": "7,500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        980.0,
+        458.0,
+        236.0,
+        32.0
+      ],
+      "text": "7,500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        992.0,
+        496.0,
+        105.0,
+        27.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        522.0,
+        560.0,
+        475.0,
+        28.0
+      ],
+      "text": "Bought a skin on another device?"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        1009.0,
+        547.0,
+        217.0,
+        55.0
+      ],
+      "text": "Restore Purchases"
+    }
+  ],
+  "issues": [],
+  "keyboard_units": 0.0,
+  "safe": [
+    16.0,
+    30.0,
+    1248.0,
+    905.0
+  ],
+  "screen": "ShopScreen",
+  "shot": "shop_coins",
+  "touch_min": 54.9999991804361,
+  "units_per_point": 1.24999998137355,
+  "viewport": [
+    1280.0,
+    960.0
+  ]
+}

@@ -1,0 +1,543 @@
+{
+  "controls": [
+    {
+      "kind": "button",
+      "rect": [
+        106.0,
+        24.0,
+        82.0,
+        82.0
+      ],
+      "text": "Back"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        200.0,
+        24.0,
+        116.0,
+        82.0
+      ],
+      "text": "Play"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        322.0,
+        24.0,
+        142.0,
+        82.0
+      ],
+      "text": "Locker"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        470.0,
+        24.0,
+        126.0,
+        82.0
+      ],
+      "text": "Shop"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        602.0,
+        24.0,
+        204.0,
+        82.0
+      ],
+      "text": "Season Pass"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        1321.0,
+        24.0,
+        131.0,
+        81.2
+      ],
+      "text": "2,650 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1375.0,
+        24.0,
+        61.0,
+        81.0
+      ],
+      "text": "2,650"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        106.0,
+        360.0,
+        120.0,
+        82.0
+      ],
+      "text": "Idle"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        106.0,
+        450.0,
+        120.0,
+        82.0
+      ],
+      "text": "Run"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        106.0,
+        540.0,
+        120.0,
+        82.0
+      ],
+      "text": "Emote"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        120.0,
+        637.0,
+        103.0,
+        26.0
+      ],
+      "text": "Drag to turn"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        645.0,
+        124.0,
+        130.0,
+        82.0
+      ],
+      "text": "Featured"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        781.0,
+        124.0,
+        121.0,
+        82.0
+      ],
+      "text": "All skins"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        908.0,
+        124.0,
+        164.0,
+        82.0
+      ],
+      "text": "Accessories"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        1078.0,
+        124.0,
+        97.0,
+        82.0
+      ],
+      "text": "Coins"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        1181.0,
+        124.0,
+        128.0,
+        82.0
+      ],
+      "text": "Season 1"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        645.0,
+        -155.0,
+        531.0,
+        25.0
+      ],
+      "text": "Rotating skins"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        1188.0,
+        -156.0,
+        246.0,
+        28.0
+      ],
+      "text": "Shop refreshes in 02:11:08"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        645.0,
+        -116.0,
+        189.0,
+        286.0
+      ],
+      "text": "Lantern Scout"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        653.0,
+        78.0,
+        173.0,
+        28.0
+      ],
+      "text": "Lantern Scout"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        724.0,
+        112.0,
+        56.0,
+        28.0
+      ],
+      "text": "1,200"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        653.0,
+        146.0,
+        173.0,
+        25.0
+      ],
+      "text": "Leaves in 02:11:08"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        844.0,
+        -116.0,
+        189.0,
+        286.0
+      ],
+      "text": "Campus Courier"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        852.0,
+        78.0,
+        173.0,
+        28.0
+      ],
+      "text": "Campus Courier"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        932.0,
+        112.0,
+        38.0,
+        28.0
+      ],
+      "text": "900"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        852.0,
+        146.0,
+        173.0,
+        25.0
+      ],
+      "text": "Leaves in 02:11:08"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        1043.0,
+        -116.0,
+        189.0,
+        286.0
+      ],
+      "text": "Raincoat Explorer"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        1051.0,
+        78.0,
+        173.0,
+        28.0
+      ],
+      "text": "Raincoat Explorer"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        1131.0,
+        112.0,
+        38.0,
+        28.0
+      ],
+      "text": "800"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        1051.0,
+        146.0,
+        173.0,
+        25.0
+      ],
+      "text": "Leaves in 1d 02h"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        1242.0,
+        -116.0,
+        189.0,
+        286.0
+      ],
+      "text": "Varsity Sprinter"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        1250.0,
+        78.0,
+        173.0,
+        28.0
+      ],
+      "text": "Varsity Sprinter"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        1330.0,
+        112.0,
+        38.0,
+        28.0
+      ],
+      "text": "600"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        1250.0,
+        146.0,
+        173.0,
+        25.0
+      ],
+      "text": "Leaves in 1d 02h"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        645.0,
+        182.0,
+        789.0,
+        28.0
+      ],
+      "text": "Owned skins stay in your Locker. Shop skins may return."
+    },
+    {
+      "kind": "label",
+      "rect": [
+        645.0,
+        222.0,
+        789.0,
+        25.0
+      ],
+      "text": "Always available"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        645.0,
+        259.0,
+        149.0,
+        242.0
+      ],
+      "text": "Moonlight Runner"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        653.0,
+        411.0,
+        133.0,
+        54.0
+      ],
+      "text": "Moonlight Runner"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        664.0,
+        471.0,
+        111.0,
+        28.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        804.0,
+        259.0,
+        149.0,
+        242.0
+      ],
+      "text": "Starry Sleeper"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        812.0,
+        411.0,
+        133.0,
+        54.0
+      ],
+      "text": "Starry Sleeper"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        823.0,
+        471.0,
+        111.0,
+        28.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        645.0,
+        513.0,
+        789.0,
+        141.0
+      ],
+      "text": "Season 1 · After Hours Premium"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        769.0,
+        523.0,
+        653.0,
+        31.0
+      ],
+      "text": "Season 1 · After Hours Premium"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        769.0,
+        556.0,
+        653.0,
+        58.0
+      ],
+      "text": "30 Premium rewards over 30 tiers: 3 outfits, 2 hats, 1 pair "
+    },
+    {
+      "kind": "label",
+      "rect": [
+        797.0,
+        616.0,
+        56.0,
+        28.0
+      ],
+      "text": "1,500"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        645.0,
+        666.0,
+        173.0,
+        82.0
+      ],
+      "text": "Coin packs  ›"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        834.0,
+        666.0,
+        186.0,
+        82.0
+      ],
+      "text": "Accessories  ›"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        645.0,
+        787.0,
+        560.0,
+        28.0
+      ],
+      "text": "Bought a skin on another device?"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        1217.0,
+        760.0,
+        217.0,
+        82.0
+      ],
+      "text": "Restore Purchases"
+    }
+  ],
+  "issues": [],
+  "keyboard_units": 0.0,
+  "safe": [
+    86.7692337036133,
+    12.0,
+    1384.46142578125,
+    669.230773925781
+  ],
+  "screen": "ShopScreen",
+  "shot": "shop_featured_always",
+  "touch_min": 81.2307692307692,
+  "units_per_point": 1.84615384615385,
+  "viewport": [
+    1558.0,
+    720.0
+  ]
+}

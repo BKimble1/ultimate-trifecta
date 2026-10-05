@@ -1,0 +1,392 @@
+{
+  "controls": [
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        24.0,
+        85.0,
+        85.0
+      ],
+      "text": "Back"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        133.0,
+        24.0,
+        116.0,
+        85.0
+      ],
+      "text": "Play"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        255.0,
+        24.0,
+        142.0,
+        85.0
+      ],
+      "text": "Locker"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        403.0,
+        24.0,
+        126.0,
+        85.0
+      ],
+      "text": "Shop"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        535.0,
+        24.0,
+        204.0,
+        85.0
+      ],
+      "text": "Season Pass"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        1113.0,
+        24.0,
+        131.0,
+        84.5
+      ],
+      "text": "2,650 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1167.0,
+        24.0,
+        61.0,
+        84.0
+      ],
+      "text": "2,650"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        377.0,
+        120.0,
+        85.0
+      ],
+      "text": "Idle"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        470.0,
+        120.0,
+        85.0
+      ],
+      "text": "Run"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        563.0,
+        120.0,
+        85.0
+      ],
+      "text": "Emote"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        50.0,
+        663.0,
+        103.0,
+        26.0
+      ],
+      "text": "Drag to turn"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        127.0,
+        130.0,
+        85.0
+      ],
+      "text": "Featured"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        658.0,
+        127.0,
+        121.0,
+        85.0
+      ],
+      "text": "All skins"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        785.0,
+        127.0,
+        164.0,
+        85.0
+      ],
+      "text": "Accessories"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        955.0,
+        127.0,
+        97.0,
+        85.0
+      ],
+      "text": "Coins"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        1058.0,
+        127.0,
+        128.0,
+        85.0
+      ],
+      "text": "Season 1"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        522.0,
+        220.0,
+        704.0,
+        58.0
+      ],
+      "text": "Coins buy anything in the Shop. They never expire and never "
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        290.0,
+        347.0,
+        106.5
+      ],
+      "text": "250 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        646.0,
+        310.0,
+        213.0,
+        32.0
+      ],
+      "text": "250 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        658.0,
+        348.0,
+        105.0,
+        27.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        879.0,
+        290.0,
+        347.0,
+        106.5
+      ],
+      "text": "500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1003.0,
+        310.0,
+        213.0,
+        32.0
+      ],
+      "text": "500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1015.0,
+        348.0,
+        105.0,
+        27.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        406.0,
+        347.0,
+        106.5
+      ],
+      "text": "1,000 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        646.0,
+        426.0,
+        213.0,
+        32.0
+      ],
+      "text": "1,000 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        658.0,
+        464.0,
+        105.0,
+        27.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        879.0,
+        406.0,
+        347.0,
+        106.5
+      ],
+      "text": "1,500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1003.0,
+        426.0,
+        213.0,
+        32.0
+      ],
+      "text": "1,500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1015.0,
+        464.0,
+        105.0,
+        27.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        522.0,
+        347.0,
+        106.5
+      ],
+      "text": "3,500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        646.0,
+        542.0,
+        213.0,
+        32.0
+      ],
+      "text": "3,500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        658.0,
+        580.0,
+        105.0,
+        27.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        879.0,
+        522.0,
+        347.0,
+        106.5
+      ],
+      "text": "7,500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1003.0,
+        542.0,
+        213.0,
+        32.0
+      ],
+      "text": "7,500 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1015.0,
+        580.0,
+        105.0,
+        27.0
+      ],
+      "text": "(test price)"
+    },
+    {
+      "clipped": "partly visible",
+      "kind": "label",
+      "rect": [
+        522.0,
+        668.0,
+        475.0,
+        28.0
+      ],
+      "text": "Bought a skin on another device?"
+    },
+    {
+      "clipped": "partly visible",
+      "kind": "button",
+      "rect": [
+        1009.0,
+        640.0,
+        217.0,
+        85.0
+      ],
+      "text": "Restore Purchases"
+    }
+  ],
+  "issues": [],
+  "keyboard_units": 0.0,
+  "safe": [
+    16.0,
+    12.0,
+    1248.0,
+    696.0
+  ],
+  "screen": "ShopScreen",
+  "shot": "shop_coins",
+  "touch_min": 84.4800032226564,
+  "units_per_point": 1.92000007324219,
+  "viewport": [
+    1280.0,
+    720.0
+  ]
+}
