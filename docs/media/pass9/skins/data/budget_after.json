@@ -1,5 +1,5 @@
 {
-  "art_version": "v10-8aa7d2363cbe",
+  "art_version": "v10-dafc331423c1",
   "looks": 9200,
   "heaviest_look_tris": 32834,
   "heaviest_look_parts": [
@@ -112,10 +112,10 @@
       ],
       "part_tris": {
         "rb_head": 9132,
-        "rb_hair": 7159,
+        "rb_hair": 8471,
         "rb_body": 14812
       },
-      "look_tris": 31103,
+      "look_tris": 32415,
       "draw_calls": 3
     },
     "dr_doom": {
@@ -133,9 +133,9 @@
       "draw_calls": 3
     }
   },
-  "glb_bytes": 19286480,
-  "imported_scene_bytes": 9633461,
-  "all_parts_tris": 357238,
+  "glb_bytes": 19342908,
+  "imported_scene_bytes": 9655156,
+  "all_parts_tris": 358550,
   "parts_in_asset": 59,
   "part_tris": {
     "base": 9086,

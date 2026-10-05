@@ -21,12 +21,12 @@
       "asset_cached_at_start": false,
       "asset_loaded_and_instanced": {
         "static": 6151477,
-        "video": 23433888,
-        "buffers": 23430312,
+        "video": 23504528,
+        "buffers": 23500962,
         "textures": 0
       },
       "asset_parts": 59,
-      "asset_vertices_all_parts": 214003,
+      "asset_vertices_all_parts": 214717,
       "asset_blend_shapes": 27
     }
   },
@@ -57,8 +57,8 @@
       "players": "modular",
       "eight_players_added": {
         "static": 10765785,
-        "video": 36093456,
-        "buffers": 35172552,
+        "video": 36207632,
+        "buffers": 35286792,
         "textures": 0
       },
       "eight_players_lod0_tris": 207806,
@@ -78,11 +78,11 @@
       "players": "skins",
       "eight_players_added": {
         "static": 10753579,
-        "video": 36093456,
-        "buffers": 35172552,
+        "video": 36207632,
+        "buffers": 35286792,
         "textures": 0
       },
-      "eight_players_lod0_tris": 225163,
+      "eight_players_lod0_tris": 226475,
       "eight_players_draw_calls": [
         6,
         6,
