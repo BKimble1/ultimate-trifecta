@@ -583,7 +583,7 @@ func _finish_prepare() -> void:
 		session.send_loaded()
 	else:
 		session.mark_local_loaded()
-	Sfx.music("chase_calm")
+	Sfx.music("match")   # Pass 9: the owner's "Soft Bounce Loop", blended in on the lobby music's beat
 	# V6: hold a steady pace on a phone that can't keep the preset (heat):
 	# the 3D render scale steps down/up with hysteresis; freed with the match
 	if with_visuals and DisplayServer.get_name() != "headless":

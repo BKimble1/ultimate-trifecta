@@ -42,7 +42,7 @@ func test_this_build_has_no_results_bed_and_no_placeholder() -> void:
 
 func test_without_a_bed_the_sting_plays_once_then_lobby_music() -> void:
 	_begin()
-	Sfx.music("chase_calm")
+	Sfx.music("match")
 	Sfx.results("m1:1")
 	t.eq(Sfx.current_music(), "results", "a decided round plays the results sting")
 	var sting := _playback_id()
@@ -61,7 +61,7 @@ func test_without_a_bed_the_sting_plays_once_then_lobby_music() -> void:
 
 func test_cancelled_round_plays_no_flourish() -> void:
 	_begin()
-	Sfx.music("chase_calm")
+	Sfx.music("match")
 	Sfx.results("m2:1", true)
 	t.eq(Sfx.current_music(), "menu", "a cancelled round goes straight to the lobby music")
 	_reset()
@@ -73,7 +73,7 @@ func test_owner_bed_starts_once_and_loops_under_results() -> void:
 	# under the bed's name (the shipped build has no bed; see the test above).
 	var bed := (load("res://assets/audio/music_menu.ogg") as AudioStreamOggVorbis).duplicate() as AudioStreamOggVorbis
 	Sfx._cache["music_" + Sfx.RESULTS_BED] = bed
-	Sfx.music("chase_calm")
+	Sfx.music("match")
 	Sfx.results("m3:2")
 	t.eq(Sfx.current_music(), Sfx.RESULTS_BED, "with the bed in the build, a decided round starts it")
 	t.check(bed.loop, "and it loops (from its import loop_offset)")

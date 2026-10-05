@@ -88,7 +88,7 @@ How the loop is built:
   | Moment | What happens |
   |---|---|
   | Entering the lobby | The lobby track starts from its intro and fades in over 2.5 s (equal-power curve). |
-  | A round starts | `match_controller` starts `chase_calm` when the round is prepared. The lobby track fades out over 1.2 s. During loading the lobby track keeps playing. |
+  | A round starts | `match_controller` starts the round music when the round is prepared. Pass 9: the owner's "Soft Bounce Loop" (`match`) starts on the lobby music's beat and the lobby track fades out over 2 s under a closing low-pass filter (docs/pass9/music.md); before, `chase_calm` with a 1.2 s fade. During loading the lobby track keeps playing. |
   | Back to the lobby (results, party) | The lobby track starts from its intro again and fades in over 2.5 s. The outgoing track fades out under it. |
   | Chase music leaving | 0.4 s, close to the old cut but without a click. The results sting still starts at full level. |
 

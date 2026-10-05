@@ -144,13 +144,11 @@ def music_loop(bpm, prog, melody, bars=8, sneaky=True):
         if st < n: out[st:st+len(x)] += x[:n-st]
     # wrap tail into the start for a seamless loop
     return out
-prog = [("A","m"),("F","M"),("D","m"),("E","M")]
-mel = [("E",5),None,("C",5),None,("A",4),None,("B",4),("C",5), ("D",5),None,("C",5),None,("A",4),None,None,None,
-       ("F",5),None,("E",5),None,("D",5),None,("C",5),("D",5), ("E",5),None,("G#",4),None,("B",4),None,None,None]
-mel = mel * 2
-save("music_chase_calm", music_loop(100, prog, mel), 0.55)  # converted to .ogg by tools/gen_audio.sh
+# music_chase_calm (the round music to 1.8) was replaced in Pass 9 by the owner's "Soft Bounce Loop"
+# (music_match.ogg, built by tools/make_match_music.py)
 prog2 = [("C","M"),("G","M"),("A","m"),("F","M")]
 mel2 = [("C",5),("E",5),("G",5),("C",6),None,("G",5),("E",5),None]*4
 save("music_results", music_loop(120, prog2, mel2, bars=4), 0.55)
-# music_menu.ogg (the lobby music) is the owner's "Night Campus Loop", built by tools/make_lobby_music.py
+# music_menu.ogg (the lobby music) is the owner's "Night Campus Loop", built by tools/make_lobby_music.py;
+# music_match.ogg (the round music, Pass 9) is the owner's "Soft Bounce Loop", built by tools/make_match_music.py
 print("audio written to", os.path.abspath(OUT))

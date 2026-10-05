@@ -9,20 +9,41 @@ extends Node
 ## a track that is still fading out brings it back from where it is. Loops
 ## are gapless: the stream itself loops in the mixer (Ogg Vorbis loop +
 ## loop_offset from the import), never a timer. The lobby track ("menu") plays
-## its intro once, then loops 12 bars (tools/make_lobby_music.py).
+## its intro once, then loops 12 bars (tools/make_lobby_music.py); the round's
+## track ("match", Pass 9) its intro, then 16 bars (tools/make_match_music.py).
+##
+## Pass 9 blend: going from the lobby to a round, the round's music starts on
+## a beat of the lobby music (both are on known beat grids, MUSIC_GRID), fades
+## in over two of its beats, and the lobby music fades out under it while a
+## low-pass filter closes on it, so its drums and its tempo (84 against 100
+## BPM) leave first and only its warm pad (G major, next to the round's D
+## major) is left under the new groove.  Nothing waits: the new track starts
+## at once, from the point in its pickup that lines its next beat up.
 
 const SFX_DIR := "res://assets/audio/"
 ## Seconds a track takes to fade in when it starts. Tracks not listed start
 ## at full level (the results sting keeps its attack).
-const MUSIC_FADE_IN := {"menu": 2.5}
+const MUSIC_FADE_IN := {"menu": 2.5, "match": 1.2}
 ## Seconds the outgoing track takes to fade out under the next one: the lobby
-## music eases out as a round starts; the chase music clears quickly for the
+## music eases out as a round starts; the round's music clears quickly for the
 ## results sting, as it used to (cut) but without a click.
-const MUSIC_FADE_OUT := {"chase_calm": 0.4}
+const MUSIC_FADE_OUT := {"match": 0.4}
 const MUSIC_FADE_OUT_DEFAULT := 1.2
 ## After backgrounding or an audio interruption (a call, Siri), music resumes
 ## where it stopped and fades back in over this many seconds.
 const MUSIC_RESUME_FADE := 0.8
+## The owner's tracks' beat grids: [a downbeat (seconds into the file), the
+## beat (seconds)].  menu: 84 BPM, the loop starts on a downbeat
+## (make_lobby_music.py); match: 100 BPM, the file opens on the pickup beat,
+## one beat before the first downbeat (make_match_music.py).
+const MUSIC_GRID := {"menu": [896439.0 / 44100.0, 60.0 / 84.0], "match": [0.6, 0.6]}
+## A blend between two gridded tracks: the outgoing one fades over BLEND_OUT
+## seconds while its low-pass filter closes from 20 kHz to BLEND_CUTOFF_HZ
+## over BLEND_SWEEP seconds (exponentially, like a DJ filter).
+const BLEND_OUT := 2.0
+const BLEND_SWEEP := 1.4
+const BLEND_CUTOFF_HZ := 260.0
+const OPEN_CUTOFF_HZ := 20500.0
 const _SILENT_DB := -80.0
 
 var sfx_volume := 0.9
@@ -41,6 +62,7 @@ var _pool3d: Array[AudioStreamPlayer3D] = []
 var _music: MusicVoice          # the current track
 var _music_out: MusicVoice      # the previous track, fading out
 var _suspended := false         # app in the background or audio interrupted
+var last_blend_from := -1.0     # where the last blended track started (tests, diagnostics)
 
 
 ## One music player and its fade. level runs 0 (silent) .. 1 (full) and is
@@ -50,9 +72,25 @@ class MusicVoice:
 	var track := ""
 	var level := 0.0
 	var rate := 0.0             # level per second: > 0 fading in, < 0 fading out
+	var bus := -1               # its own bus (a low-pass filter for blends)
+	var sweep := -1.0           # seconds into a filter sweep (< 0: open)
 
 	func _init(p: AudioStreamPlayer) -> void:
 		player = p
+
+	func cutoff() -> float:
+		if sweep < 0.0:
+			return OPEN_CUTOFF_HZ
+		var k := clampf(sweep / BLEND_SWEEP, 0.0, 1.0)
+		return exp(lerpf(log(OPEN_CUTOFF_HZ), log(BLEND_CUTOFF_HZ), k * k * (3.0 - 2.0 * k)))
+
+	func apply_filter() -> void:
+		if bus < 0:
+			return
+		var lp := AudioServer.get_bus_effect(bus, 0) as AudioEffectLowPassFilter
+		if lp:
+			lp.cutoff_hz = cutoff()
+		AudioServer.set_bus_effect_enabled(bus, 0, sweep >= 0.0)
 
 	func gain() -> float:
 		return sin(clampf(level, 0.0, 1.0) * PI * 0.5)
@@ -66,6 +104,8 @@ class MusicVoice:
 		track = ""
 		level = 0.0
 		rate = 0.0
+		sweep = -1.0
+		apply_filter()
 
 
 func _ready() -> void:
@@ -91,6 +131,38 @@ func _ready() -> void:
 	add_child(b)
 	_music = MusicVoice.new(a)
 	_music_out = MusicVoice.new(b)
+	for v: MusicVoice in [_music, _music_out]:
+		v.bus = _music_bus(v.player.name)
+		v.player.bus = AudioServer.get_bus_name(v.bus)
+		v.apply_filter()
+
+
+## A bus per music voice, sent to Master, with a low-pass filter that is
+## bypassed except during a blend.
+func _music_bus(bus_name: String) -> int:
+	var i := AudioServer.get_bus_index(bus_name)
+	if i < 0:
+		AudioServer.add_bus()
+		i = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(i, bus_name)
+		AudioServer.set_bus_send(i, "Master")
+		var lp := AudioEffectLowPassFilter.new()
+		lp.cutoff_hz = OPEN_CUTOFF_HZ
+		AudioServer.add_bus_effect(i, lp, 0)
+	return i
+
+
+## Where to start a gridded track so that one of its beats lands on the next
+## beat of the outgoing track: out_pos is the outgoing playback position
+## (seconds into its file), grids are [downbeat, beat].  The earliest such
+## start at or after the file start (so at most one beat of the new track's
+## pickup is skipped).
+static func blend_start(out_pos: float, out_grid: Array, in_grid: Array) -> float:
+	var lag := float(out_grid[1]) - fposmod(out_pos - float(out_grid[0]), float(out_grid[1]))
+	var first := float(in_grid[0])
+	var beat := float(in_grid[1])
+	var k := ceili((lag - first) / beat - 1e-9)
+	return maxf(0.0, first + float(k) * beat - lag)
 
 
 func _stream(name: String) -> AudioStream:
@@ -140,6 +212,8 @@ func music(name: String) -> void:
 		_music_out = _music
 		_music = back
 		_music.rate = 1.0 / fade_out_time(name)
+		_music.sweep = -1.0          # back from a blend: the filter opens again
+		_music.apply_filter()
 		_fade_out_previous()
 		_apply_music_volume()
 		return
@@ -149,18 +223,30 @@ func music(name: String) -> void:
 		return
 	if s is AudioStreamOggVorbis:
 		(s as AudioStreamOggVorbis).loop = name != "results"
+	# a blend between two gridded tracks (lobby -> round): on the beat, the
+	# outgoing one filtered out
+	var blend := MUSIC_GRID.has(name) and MUSIC_GRID.has(_music.track) and _music.sounding() \
+			and not _held() and not _suspended and music_volume > 0.001
+	var from := 0.0
+	if blend:
+		from = blend_start(_music.player.get_playback_position(), MUSIC_GRID[_music.track], MUSIC_GRID[name])
 	var next := _music_out
 	_music_out = _music
 	_music = next
 	_music.clear()
 	_fade_out_previous()
+	if blend:
+		_music_out.rate = -1.0 / BLEND_OUT
+		_music_out.sweep = 0.0
+		_music_out.apply_filter()
+		last_blend_from = from
 	_music.track = name
 	_music.player.stream = s
 	var fade: float = MUSIC_FADE_IN.get(name, 0.0)
 	_music.level = 0.0 if fade > 0.0 else 1.0
 	_music.rate = 1.0 / fade if fade > 0.0 else 0.0
 	_apply_music_volume()
-	_music.player.play()
+	_music.player.play(from)
 	_apply_music_pause()
 
 
@@ -245,6 +331,9 @@ func _process(delta: float) -> void:
 	var dt := minf(delta, 0.1)
 	var fading := false
 	for v: MusicVoice in [_music, _music_out]:
+		if v.sweep >= 0.0 and v.track != "":
+			v.sweep += dt
+			v.apply_filter()
 		if v.rate == 0.0 or v.track == "":
 			continue
 		fading = true

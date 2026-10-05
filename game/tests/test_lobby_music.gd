@@ -138,9 +138,10 @@ func test_a_round_fades_the_lobby_out_and_it_comes_back() -> void:
 	while is_instance_valid(mc) and not mc.prepared and Time.get_ticks_msec() - t0 < 60000:
 		await t.get_tree().process_frame
 	t.check(is_instance_valid(mc) and mc.prepared, "prepared")
-	t.eq(Sfx.current_music(), "chase_calm", "the round's music takes over")
+	t.eq(Sfx.current_music(), "match", "the round's music takes over")
 	t.check(Sfx._music_out.track == "menu" and Sfx._music_out.rate < 0.0, "the lobby music fades out under it")
-	_step(Sfx.fade_out_time("menu") + 0.1)
+	t.check(Sfx._music_out.sweep >= 0.0, "filtered out (Pass 9 blend)")
+	_step(Sfx.BLEND_OUT + 0.1)
 	t.eq(_voices_holding("menu"), 0, "and is gone once faded")
 	# back to the lobby: the track starts again from its intro, fading in
 	App._close_session(false)
@@ -149,8 +150,8 @@ func test_a_round_fades_the_lobby_out_and_it_comes_back() -> void:
 	await t.get_tree().process_frame
 	t.eq(Sfx.current_music(), "menu", "the lobby music returns")
 	t.check(Sfx._music.level < 0.2 and Sfx._music.rate > 0.0, "fading in")
-	t.check(Sfx._music_out.track == "chase_calm" and Sfx._music_out.rate < 0.0, "under the round's music fading out")
-	t.near(Sfx.fade_out_time("chase_calm"), 0.4, 0.001, "which clears quickly (as for the results sting)")
+	t.check(Sfx._music_out.track == "match" and Sfx._music_out.rate < 0.0, "under the round's music fading out")
+	t.near(Sfx.fade_out_time("match"), 0.4, 0.001, "which clears quickly (as for the results sting)")
 	var vols: Array[float] = []
 	for i in 5:
 		_step(0.5)
@@ -222,13 +223,13 @@ func test_backgrounding_and_interruptions_hold_and_resume() -> void:
 	_step(Sfx.MUSIC_RESUME_FADE + 0.05)
 	t.near(Sfx._music.level, 1.0, 0.001, "back to full")
 	# interrupted mid cross-fade: the outgoing track just ends
-	Sfx.music("chase_calm")
+	Sfx.music("match")
 	_step(0.3)
 	Sfx.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.eq(_voices_holding("menu"), 0, "an interrupted fade-out finishes")
 	t.check(Sfx._music.player.stream_paused, "the new track holds")
 	Sfx.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
-	t.check(not Sfx._music.player.stream_paused and Sfx.current_music() == "chase_calm", "and resumes")
+	t.check(not Sfx._music.player.stream_paused and Sfx.current_music() == "match", "and resumes")
 	# muted, then away and back: still muted
 	Sfx.set_volumes(0.9, 0.0)
 	Sfx.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
@@ -243,7 +244,7 @@ func test_rapid_switches_never_double_up() -> void:
 	for c in Sfx.get_children():
 		if c is AudioStreamPlayer:
 			players += 1
-	for name: String in ["menu", "menu", "chase_calm", "menu", "results", "menu", "chase_calm", "chase_calm", "menu"]:
+	for name: String in ["menu", "menu", "match", "menu", "results", "menu", "match", "match", "menu"]:
 		Sfx.music(name)
 		_step(0.2)
 	var after := 0
