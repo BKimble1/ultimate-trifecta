@@ -1,5 +1,5 @@
 {
-  "art_version": "v10-b3127262ef43",
+  "art_version": "v10-af967001b9ea",
   "bones": [
     "root",
     "hips",
@@ -240,7 +240,7 @@
     }
   },
   "forward": "Godot -Z (glTF -Z); built facing Blender +Y",
-  "glb_sha256": "b3127262ef4331665153534705921e800497b9cc31f8865ac3a17b775927469a",
+  "glb_sha256": "af967001b9ea1a7e1df4b47a7f22afa52c6073312c30536c27f55e9698524b46",
   "head": {
     "cap_grow": 0.013,
     "center": [
@@ -319,8 +319,8 @@
       "verts": 5709
     },
     "dd_suit": {
-      "tris": 18296,
-      "verts": 10764
+      "tris": 18536,
+      "verts": 10908
     },
     "duck": {
       "tris": 9584,

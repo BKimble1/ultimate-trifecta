@@ -47,6 +47,7 @@ from rig import (torso_w, skirt_w, arm_w, leg_w, rigid, torso_r, shoulder, arm_d
 import parts as P
 from parts import UP, FWD, SIDES, _dense_path, _path_s, _foot_outline
 import kit6 as K
+import outfits_p8 as P8
 
 # the face shape keys, in build_character.SHAPE_KEYS order (asserted there)
 FACE_KEYS = ('blink', 'squint', 'smile', 'open', 'brow_up', 'brow_angry', 'face_bright', 'face_sleepy', 'brow_flat')
@@ -1055,14 +1056,24 @@ def build_rb_hair():
             t.normalize()
             p = sn
             on.append((sn, dvn))
-        path = [s0 - dv0 * (thick * 0.6)]
-        radii = [(thick * 0.8, width * 0.85)]
+        # (the root starts under the mass a step behind the lock and rises
+        # out of it at a shallow angle: a root standing straight out of the
+        # surface turned through a right angle and folded its inner side)
+        t0 = (on[1][0] - s0).normalized()
+        path = [s0 - dv0 * (thick * 0.30) - t0 * (step * 0.9)]
+        radii = [(thick * 0.6, width * 0.8)]
         for i, (sp, dvp) in enumerate(on):
             u = i / (npts - 1.0)
-            hgt = thick * 0.5 + rise * math.sin(math.pi * min(1.0, u * 1.15)) + flick * smoothstep(0.45, 1.0, u) ** 2
+            hgt = (thick * (0.10 + 0.40 * smoothstep(0.0, 0.35, u)) + rise * smoothstep(0.0, 0.55, u) * (1.0 - 0.45 * smoothstep(0.6, 1.0, u))
+                   + flick * smoothstep(0.45, 1.0, u) ** 2)
             path.append(sp + dvp * hgt)
             kk = lerp(1.0, tip, smoothstep(0.2, 1.0, u)) * (0.94 + 0.06 * math.sin(math.pi * u))
             radii.append((thick * kk, width * kk))
+        # (two smoothing passes over the centreline: where it follows the
+        # mass over the swept-up front edge it turns faster than the lock is
+        # thick, and the inside of the turn folded)
+        for _ in range(2):
+            path = [path[0]] + [path[i] * 0.5 + (path[i - 1] + path[i + 1]) * 0.25 for i in range(1, len(path) - 1)] + [path[-1]]
         tot = sum((q1 - q0).length for q0, q1 in zip(path, path[1:]))
         light = 0.45 + 0.55 * hsh(k, 8)
 
@@ -1366,8 +1377,12 @@ def build_rb_body():
     for sx in SIDES:
         sfx = '.L' if sx < 0 else '.R'
         sh = shoulder(sx)
+        # (the shoulder ball takes the weights of the surface under it,
+        # torso on the body side and the arm's on the arm side, as the
+        # shoulder caps do (parts.shoulder_cap_w): with a fixed 55/45 split
+        # it parted from the arm by 1.7 cm with the arms raised)
         ellipsoid(mb, sh + Vector((0.006 * sx, 0.0, -0.006)), (0.058, 0.056, 0.050), sk,
-                  lambda q, sfx=sfx: {'upper_arm' + sfx: 0.55, 'shoulder' + sfx: 0.45}, segs=16, rings=10)
+                  lambda q, sx=sx: P.shoulder_cap_w(q, sx), segs=16, rings=10)
         path = P._arm_path(sx, -0.02)
         s = _path_s(path)
         sweep(mb, path, [((P.bare_arm_radius(v - 0.02) * 0.97 + 0.003 * math.exp(-((v - 0.10) / 0.045) ** 2)),) * 2 for v in s], sk,
@@ -1448,7 +1463,11 @@ def _boxer_shorts(mb):
         z += 0.013
     prof.append((0.598, rb_r(0.598) + g))
     i0 = len(mb.v)
-    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, SHORTS, torso_w, segs=40, ry_scale=RB_RY)
+    # (round the torso's real surface: rb_pec flattens the front and back of
+    # the lean middle by up to 2.4 cm; on rb_r alone the waist stood 2.6 cm
+    # off the belly)
+    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, SHORTS, torso_w, segs=40, ry_scale=RB_RY,
+          rfn=lambda r, th, z: r + rb_pec(th, z))
     mark(mb, 'shorts_seat', i0)
     # the waistband: soft ribs, a rolled top edge and its inside
     zb0, zb1 = 0.590, 0.628
@@ -1457,13 +1476,13 @@ def _boxer_shorts(mb):
             (zb1 - 0.004, rbase(zb1) + 0.0028), (zb1, rbase(zb1) + 0.0010), (zb1 + 0.0015, rbase(zb1) - 0.003),
             (zb1 - 0.006, rbase(zb1) - 0.0085)]
     lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, SHORTS_BAND, torso_w, segs=60, ry_scale=RB_RY,
-          rfn=lambda r, th, z: r + 0.0009 * math.cos(th * 30.0),
+          rfn=lambda r, th, z: r + rb_pec(th, z) + 0.0009 * math.cos(th * 30.0),
           colfn=lambda p, z, th: (0.95, 0.948, 0.94) if math.cos(th * 30.0) < 0 else None)
     # stitched line just under the band
     ring = []
     for k in range(40):
         th = 2 * math.pi * k / 40
-        r = rb_r(0.584) + g + 0.0008
+        r = rb_r(0.584) + g + 0.0008 + rb_pec(th, 0.584)
         ring.append(Vector((math.cos(th) * r, TORSO_CY + math.sin(th) * r * RB_RY, 0.584)))
     K.path_tube(mb, ring, 0.0011, SHORTS_SEAM, torso_w, segs=3, hint=UP, closed=True)
     # front seam: from the band down and round toward the centre
@@ -1472,7 +1491,7 @@ def _boxer_shorts(mb):
         t = i / 7.0
         x = 0.014 * (1.0 - t * t)
         z = lerp(0.584, 0.488, t)
-        q = Vector((x, TORSO_CY + math.sqrt(max(0.0, (rb_r(z) + g) ** 2 - x * x)) * RB_RY + 0.0008, z))
+        q = Vector((x, TORSO_CY + math.sqrt(max(0.0, (rb_r(z) + g + rb_pec(math.pi / 2, z)) ** 2 - x * x)) * RB_RY + 0.0008, z))
         pts.append(q)
     K.path_tube(mb, pts, 0.0011, SHORTS_SEAM, torso_w, segs=4, hint=FWD)
     # legs, folded hems
@@ -1486,7 +1505,7 @@ def _boxer_shorts(mb):
         # side seam: down the seat's side, then the leg's outside to the hem
         seam = []
         for z in (0.586, 0.572, 0.558):
-            r = rb_r(z) + g + 0.0009
+            r = rb_r(z) + g + 0.0009 + rb_pec(0.0 if sx > 0 else math.pi, z)
             seam.append(Vector((sx * r, TORSO_CY, z)))
         for q, rr in zip(poly, radii):
             if q.z < 0.545 and q.z > 0.398:
@@ -1520,6 +1539,7 @@ def dd_tw(p):
 
 SUIT = srgb('#93673f')
 SUIT_EDGE = S('#6f4a2d', rough=0.85)
+SOCK = S('#3d322b', rough=0.92)
 SUIT_LINING = S('#6a4a30', rough=0.6, mat=MAT_SATIN)
 SHIRT = srgb('#d6e4f3')
 SHIRT_STRIPE = srgb('#93b0d6')
@@ -1614,8 +1634,22 @@ def lower_w(p):
 
 
 def jw(p):
-    """Jacket weights: the torso's above the waist, the hips' field (lower_w) below."""
-    return lower_w(p) if p.z < 0.60 else dd_tw(p)
+    """Jacket weights: the torso's above the waist, the hips' field (lower_w)
+    below (lower_w is dd_tw above 0.60 m, so this is lower_w).  Pass 9 fit:
+    every piece of the suit (shirt, tie, belt, buttons, jacket, trousers)
+    uses this one field, so pieces that touch at the waist (the shirt's
+    tucked hem in the trousers, a button on the jacket's edge) cannot part:
+    on dd_tw they parted by up to 2.2 cm in a splash jump (fit_check)."""
+    return lower_w(p)
+
+
+def ankle_w(sx):
+    """The shoes and the trouser hems over them share one field round the
+    ankle (the V6 boots' foot weights, which turn into the leg's at the back
+    of the ankle: outfits_p8.foot_w), so the hem resting on the shoe and the
+    shoe under it move together: with the hem on the leg's weights and the
+    shoe on the foot's they parted by 3.5 cm in a hard landing (fit_check)."""
+    return P8.foot_w(sx)
 
 
 def build_dd_suit():
@@ -1661,7 +1695,7 @@ def _dd_shirt(mb):
             row = []
             for t in cols:
                 p, n = dd_at(t, z, SHIRT_G - 0.012 * smoothstep(0.84, 0.876, z))
-                i = mb.vert(p, st, (0, p.z), dd_tw(p))
+                i = mb.vert(p, st, (0, p.z), lower_w(p))
                 mb.nrm[i] = n
                 row.append(i)
             rows.append(row)
@@ -1672,7 +1706,7 @@ def _dd_shirt(mb):
     mark(mb, 'shirt', i0)
     # the collar band round the neck, and two pointed collar tips over the knot
     lathe(mb, Vector((0, TORSO_CY - 0.004, 0)), Matrix.Identity(3), torus_profile(0.874, 0.092, 0.019, 10), SHIRT_COLLAR,
-          lambda p: dd_tw(p), segs=26, closed_profile=True, ry_scale=0.92)
+          lambda p: lower_w(p), segs=26, closed_profile=True, ry_scale=0.92)
     for sx in SIDES:
         cx, cz = 0.042 * sx, 0.846
 
@@ -1682,11 +1716,11 @@ def _dd_shirt(mb):
         tip = [(-0.030 * sx, 0.024), (0.026 * sx, 0.020), (0.022 * sx, -0.004), (0.010 * sx, -0.033), (-0.016 * sx, 0.000)]
         if sx < 0:
             tip.reverse()
-        K.decal(mb, tip, cplace, SHIRT_COLLAR, dd_tw, lift=0.0, thick=0.003, side_style=S('#b9cbe0', rough=0.85))
+        K.decal(mb, tip, cplace, SHIRT_COLLAR, lower_w, lift=0.0, thick=0.003, side_style=S('#b9cbe0', rough=0.85))
     # a placket line and two small buttons below the knot
     for z in (0.79, 0.73):
         p, n = dd_at(math.pi / 2 + 0.035, z, SHIRT_G + 0.001)
-        ellipsoid(mb, p, (0.0055, 0.0055, 0.0022), S('#f2f5f8', rough=0.3, mat=MAT_GLOSS), dd_tw, segs=8, rings=4, rot=rot_align(n, UP))
+        ellipsoid(mb, p, (0.0055, 0.0055, 0.0022), S('#f2f5f8', rough=0.3, mat=MAT_GLOSS), lower_w, segs=8, rings=4, rot=rot_align(n, UP))
     # cuffs out of the jacket sleeves
     for sx in SIDES:
         d = arm_dir(sx)
@@ -1756,7 +1790,7 @@ def _dd_tie(mb):
             for u in us:
                 v = (qq * period - u * half_w(0.6) * slope) / L
                 p, n = pos(u, v)
-                i = mb.vert(p, st, (0, p.z), dd_tw(p))
+                i = mb.vert(p, st, (0, p.z), lower_w(p))
                 mb.nrm[i] = n
                 row.append(i)
             rows.append(row)
@@ -1768,9 +1802,9 @@ def _dd_tie(mb):
         vs = [i / 30.0 for i in range(31)]
         top = [pos(side, v)[0] for v in vs]
         bot = [pos(side, v, 0.0005)[0] for v in vs]
-        ti = [mb.vert(p, Style(_tie_colour((v * L + side * half_w(v) * slope) / period), T_NONE, 0.5, MAT_SATIN), (0, p.z), dd_tw(p))
+        ti = [mb.vert(p, Style(_tie_colour((v * L + side * half_w(v) * slope) / period), T_NONE, 0.5, MAT_SATIN), (0, p.z), lower_w(p))
               for p, v in zip(top, vs)]
-        bi = [mb.vert(p, Style(TIE_GOLD, T_NONE, 0.5, MAT_SATIN), (0, p.z), dd_tw(p)) for p in bot]
+        bi = [mb.vert(p, Style(TIE_GOLD, T_NONE, 0.5, MAT_SATIN), (0, p.z), lower_w(p)) for p in bot]
         for k in range(30):
             if side > 0:
                 mb.face(ti[k], bi[k], bi[k + 1], ti[k + 1])
@@ -1790,7 +1824,7 @@ def _dd_tie(mb):
         if 0.0035 <= d < 0.0065:
             return TIE_LIGHT
         return TIE_GOLD
-    ellipsoid(mb, p, (0.023, 0.012, 0.0185), S('#ffffff', rough=0.5, mat=MAT_SATIN), dd_tw, segs=16, rings=10, rot=R @ rot_x(90.0),
+    ellipsoid(mb, p, (0.023, 0.012, 0.0185), S('#ffffff', rough=0.5, mat=MAT_SATIN), lower_w, segs=16, rings=10, rot=R @ rot_x(90.0),
               power=2.6, deform=kd, colfn=knot_col)
 
 
@@ -1820,13 +1854,13 @@ def _dd_trousers(mb):
         th = math.pi / 2 - math.atan2(x, 0.2)
         q, n = dd_at(th, z, g + 0.0009 - 0.4 * dd_belly(th, z))     # on the seat (0.6 of the belly)
         pts.append(q)
-    K.path_tube(mb, pts, 0.0012, SUIT_EDGE, dd_tw, segs=4, hint=FWD)
+    K.path_tube(mb, pts, 0.0012, SUIT_EDGE, lower_w, segs=4, hint=FWD)
     for sx in SIDES:
         def crease(p, sv, a):
             c = suit_style(p, 0.8)
             k = math.exp(-(a / 0.22) ** 2) if a < math.pi else math.exp(-((a - 2 * math.pi) / 0.22) ** 2)
             return Style(tuple(min(1.0, x * (1.0 + 0.07 * k)) for x in c.col), T_NONE, 0.9, MAT_CLOTH)
-        grow = lambda z: lerp(0.005, 0.026, smoothstep(0.48, 0.40, z)) + 0.004 * smoothstep(0.30, 0.12, z)
+        grow = lambda z: lerp(0.005, 0.024, smoothstep(0.48, 0.40, z)) - 0.002 * smoothstep(0.30, 0.12, z)
         i0 = len(mb.v)
         # (the legs leave the seat just above the crotch, under the jacket's
         # skirt, which rides on the thighs there: a leg tube reaching up
@@ -1842,25 +1876,36 @@ def _dd_trousers(mb):
         dd = (poly[-1] - poly[-2]).normalized()
         P._sleeve_hem(mb, e, dd, radii[-1][1], P.leg_radius(rig.leg_s(e, sx)) * 0.96, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), None, 0.012,
                       lambda q, sx=sx: leg_w(q, sx), 18, ry=1.0 / 0.96)
+        # a dark sock round the ankle, from inside the shoe to inside the
+        # trouser leg: what shows under the hem (the trousers have no leg in
+        # them; without it the hem opened onto nothing, 5 cm round the back
+        # of the shoe's low heel counter: fit_check "over_shoe")
+        K.leg_tube(mb, sx, 0.175, 0.045, -0.001, SOCK, segs=12, step=0.03)
+        # the bottom of the leg, its hem and the sock join the ankle's field
+        aw = ankle_w(sx)
+        for i in range(i0, len(mb.v)):
+            k = smoothstep(0.16, 0.12, mb.v[i].z)
+            if k > 0.0:
+                mb.w[i] = rig.mix((mb.w[i], 1.0 - k), (aw(mb.v[i]), k))
     # belt and buckle
     zb0, zb1 = 0.594, 0.616
     rb = lambda z: max(torso_r(z), 0.06) + g + 0.0035
     lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), [(zb0 - 0.002, rb(zb0) - 0.004), (zb0, rb(zb0)), (zb1, rb(zb1)),
-                                                           (zb1 + 0.002, rb(zb1) - 0.004)], BELT, dd_tw, segs=40, ry_scale=TORSO_RY,
+                                                           (zb1 + 0.002, rb(zb1) - 0.004)], BELT, lower_w, segs=40, ry_scale=TORSO_RY,
           rfn=lambda r, th, z: r + 0.6 * dd_belly(th, z))
     p, n = dd_at(math.pi / 2, 0.605, g + 0.007 + 0.6 * dd_belly(math.pi / 2, 0.605) - dd_belly(math.pi / 2, 0.605))
     R = rot_align(n, UP)
     outer = K.rounded_rect(0.036, 0.026, 0.004)
     inner = K.rounded_rect(0.026, 0.016, 0.003)
     place = K.place_planar(p, n, UP)
-    K.decal(mb, outer, place, BUCKLE, dd_tw, lift=0.0, thick=0.0035)
-    K.decal(mb, inner, place, BELT, dd_tw, lift=0.0032, thick=0.0012)
+    K.decal(mb, outer, place, BUCKLE, lower_w, lift=0.0, thick=0.0035)
+    K.decal(mb, inner, place, BELT, lower_w, lift=0.0032, thick=0.0012)
     K.path_tube(mb, [p + R @ Vector((-0.0005, -0.009, 0.0)) + n * 0.005, p + R @ Vector((0.0015, 0.009, 0.0)) + n * 0.005], 0.0016, BUCKLE,
-                dd_tw, segs=5, hint=n)
+                lower_w, segs=5, hint=n)
     for th in (math.pi / 2 - 0.62, math.pi / 2 + 0.62, -math.pi / 2 - 0.45, -math.pi / 2 + 0.45):
         q0, nn = dd_at(th, 0.590, g + 0.0035 + 0.6 * dd_belly(th, 0.59) - dd_belly(th, 0.59))
         q1, _ = dd_at(th, 0.620, g + 0.0035 + 0.6 * dd_belly(th, 0.62) - dd_belly(th, 0.62))
-        K.path_tube(mb, [q0 + nn * 0.004, q1 + nn * 0.004], 0.0038, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), dd_tw, segs=6, hint=nn, flat=0.5)
+        K.path_tube(mb, [q0 + nn * 0.004, q1 + nn * 0.004], 0.0038, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), lower_w, segs=6, hint=nn, flat=0.5)
 
 
 def _dd_jacket(mb):
@@ -1946,11 +1991,11 @@ def _dd_jacket(mb):
             inner.append((th_in, z))
             outer.append((th_out, z))
         o, i_ = (outer, inner) if side > 0 else (list(reversed(outer)), list(reversed(inner)))
-        K.strip_decal(mb, o, i_, lapel_place, suit_style(Vector((side, 0.5, 0.7)), 0.6, srgb('#875d38')), dd_tw, lift=0.0005,
+        K.strip_decal(mb, o, i_, lapel_place, suit_style(Vector((side, 0.5, 0.7)), 0.6, srgb('#875d38')), lower_w, lift=0.0005,
                       thick=0.0045, sink=0.001)
         # the lapel's edge
         pts = [jacket_at(th, z, 0.0052)[0] for th, z in outer]
-        K.path_tube(mb, pts, 0.0024, SUIT_EDGE, dd_tw, segs=5, hint=FWD)
+        K.path_tube(mb, pts, 0.0024, SUIT_EDGE, lower_w, segs=5, hint=FWD)
     # collar round the back of the neck, folded down
     pts, nrm = [], []
     for k in range(25):
@@ -1961,7 +2006,7 @@ def _dd_jacket(mb):
         out = Vector((math.cos(a), math.sin(a), 0.0))
         pts.append(p)
         nrm.append((out * 0.75 + UP * 0.66).normalized())
-    K.ribbon(mb, pts, nrm, 0.020, 0.0042, S('#875d38', rough=0.9), dd_tw, closed=False, segs=8)
+    K.ribbon(mb, pts, nrm, 0.020, 0.0042, S('#875d38', rough=0.9), lower_w, closed=False, segs=8)
     # pockets: flaps at the hips, a breast welt on the left chest
     for side in (1.0, -1.0):
         th = math.pi / 2 + side * 0.80
@@ -1969,13 +2014,13 @@ def _dd_jacket(mb):
         K.decal(mb, K.rounded_rect(0.080, 0.028, 0.004), place, suit_style(Vector((side, 0.3, 0.5)), 0.6, srgb('#875d38')), jw, lift=0.0,
                 thick=0.004, side_style=SUIT_EDGE)
     place = (lambda u, v: jacket_at(math.pi / 2 + 0.80 + u / 0.25, 0.765 + v, 0.0008))
-    K.decal(mb, K.rounded_rect(0.056, 0.011, 0.002), place, suit_style(Vector((0.1, 0.2, 0.3)), 0.6, srgb('#875d38')), dd_tw, lift=0.0,
+    K.decal(mb, K.rounded_rect(0.056, 0.011, 0.002), place, suit_style(Vector((0.1, 0.2, 0.3)), 0.6, srgb('#875d38')), lower_w, lift=0.0,
             thick=0.0035, side_style=SUIT_EDGE)
     # two horn buttons on the left front edge
     for z in (0.645, 0.585):
         th = math.pi / 2 + jacket_gap(z) + 0.075
         p, n = jacket_at(th, z, 0.003)
-        ellipsoid(mb, p, (0.0105, 0.0105, 0.0035), HORN, dd_tw if z > 0.53 else jw, segs=12, rings=5, rot=rot_align(n, UP),
+        ellipsoid(mb, p, (0.0105, 0.0105, 0.0035), HORN, jw, segs=12, rings=5, rot=rot_align(n, UP),
                   colfn=lambda q, lp: S('#22160e', rough=0.5) if abs(abs(lp.x) - 0.003) < 0.0016 and abs(abs(lp.y) - 0.003) < 0.0016 else None)
     # sleeves (shoulders fitted by their caps), ending above the shirt cuffs
     P.sleeves(mb, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), 0.026, s1=rig.UPPER_LEN + rig.FORE_LEN - 0.020, cuff_style=None, lod=1)
@@ -2004,7 +2049,7 @@ def _tweed_recolour(mb):
 def _dd_shoe(mb, sx):
     """Polished dark-brown formal shoe: a sleek rounded upper, a darker sole
     with a raised heel, a toe-cap seam, a lacing panel with laces."""
-    fw = foot_w(sx)
+    fw = ankle_w(sx)
     cx = rig.HIP_X * sx
     slab(mb, _foot_outline(sx, heel=-0.082, toe=0.192, w_heel=0.053, w_toe=0.064, n=28), 0.0, 0.014, SHOE_SOLE, fw, bevel=0.004)
     heel = [(x, y) for x, y in _foot_outline(sx, heel=-0.080, toe=0.10, w_heel=0.051, w_toe=0.056, n=20) if y < -0.02]
