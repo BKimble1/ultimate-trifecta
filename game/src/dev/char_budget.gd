@@ -64,6 +64,38 @@ func _ready() -> void:
 	for p in watch:
 		wn += tri.call(p)
 	res["night_watch_max_tris"] = wn
+	# Pass 8: each rotating outfit's heaviest look (any hat, shoes, hair, marks)
+	var p8 := {}
+	for o in ["midnight_mechanic", "moonwalk_cadet", "pumpkin_pajamas", "arcade_sprinter", "cloud_nine", "bedtime_bandit"]:
+		if not Cosmetics.CATALOG["outfit"].has(o):
+			continue
+		var ow := 0
+		var owp: Array = []
+		var omost := 0
+		for h in Cosmetics.keys_of("hat"):
+			for sh in Cosmetics.keys_of("shoes"):
+				for hair in Cosmetics.keys_of("hair"):
+					for mk in Cosmetics.keys_of("marks"):
+						var ps2: Array = Cosmetics.runner_parts({"outfit": o, "hat": h, "shoes": sh, "hair": hair, "marks": mk})
+						var n2 := 0
+						for p in ps2:
+							n2 += tri.call(p)
+						omost = maxi(omost, ps2.size())
+						if n2 > ow:
+							ow = n2
+							owp = ps2
+		var hw: Array = Cosmetics.OUTFIT_HEADWEAR.get(o, {}).get("parts", [])
+		p8[o] = {"outfit_part": Cosmetics.OUTFIT_PARTS[o][0], "outfit_part_tris": tri.call(Cosmetics.OUTFIT_PARTS[o][0]),
+			"headwear_tris": tri.call(hw[0]) if not hw.is_empty() else 0, "heaviest_look_tris": ow, "heaviest_look_parts": owp,
+			"max_parts_draw_calls": omost}
+	res["pass8"] = p8
+	var glb := FileAccess.open("res://assets/characters/runner.glb", FileAccess.READ)
+	res["glb_bytes"] = glb.get_length() if glb else 0
+	var imp := ConfigFile.new()
+	if imp.load("res://assets/characters/runner.glb.import") == OK:
+		var ip := String(imp.get_value("remap", "path", ""))
+		var f2 := FileAccess.open(ip, FileAccess.READ)
+		res["imported_scene_bytes"] = f2.get_length() if f2 else 0
 	var all_tris := 0
 	for p in meshes:
 		all_tris += tri.call(p)

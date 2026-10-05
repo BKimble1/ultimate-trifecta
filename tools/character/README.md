@@ -25,6 +25,9 @@ missing, recreate it with the first two lines above.
 | `anims.py` | 46 clips authored as code: FK deltas in armature axes, plus analytic two-bone leg IK for locomotion. `blend_pose` interpolates IK targets (V5). V6: leg IK takes an optional foot yaw, a `_frame` yaw turns every delta with the root (the victory lap), and arm IK takes a target in another bone's rest space (the shush). |
 | `plot_foot_trail.py` | V6: top-down plot of planted-foot trails from `src/dev/foot_trail.tscn` (Pillow only). |
 | `clip_check.py` | V5: evaluates every clip on the real rig at 60 Hz: sleeves/mittens inside the head shell, mittens inside the torso, IK leg reach (> 0.44 m clamps), the largest in-clip joint jump. V7: sleeves/mittens inside the goggles (their real vertices; exit 1 over 1 cm). |
+| `outfits_p8.py` | Pass 8: the six rotating Shop outfits (`mechanic`, `cadet`, `pumpkin`, `arcade`, `cloud`, `bandit`), each with its own footwear in the part, and the cadet and pumpkin caps (`acc_cadet_cap`, `acc_pumpkin_cap`). Helpers: `gloves` (the base mitten's own palm and thumb grown, with its weights, plus a gauntlet), `stitches` (running-stitch dashes on a patch), `shell` (a head shell with per-vertex colour), `gear_outline`, `cloud_outline`. Every risky piece is rigid on one bone; nothing is simulated or emissive. |
+| `outfit_check.py` | Pass 8: arms against every head-rigid piece and head shell (hoods, caps, visor, ear pads, puffs, ears), the tail against arm and leg capsules and the ground, the cadet pack against the arms, through every clip at 60 Hz; and every mitten vertex inside its glove. The shipped Night Owl and Duck hoods are the baseline for the new hoods (the clips' hands-to-head gestures meet any hood). Exit 1 on a failure. Re-run after any `anims.py` change. |
+| `capture_skin_reel.sh` | Pass 8: a labelled normal-speed reel of one outfit through gameplay motion scenarios (`motion_reel_v8.tscn --look=`), Movie Maker at a fixed 30 fps. |
 | `build_character.py` | Builds the armature, meshes, vertex groups and face shape keys. It also bakes the actions and exports the GLB. V7: writes `game/src/view/character_art.gd` (`CharacterArt.VERSION` = generation + the GLB's SHA-256, which the portrait cache keys on) and the head surface into the manifest (for `test_characters_v7`). Commit all three with the GLB. |
 
 ## Conventions
@@ -45,7 +48,7 @@ missing, recreate it with the first two lines above.
   - Shape keys on `base`: `blink`, `squint`, `smile`, `open`, `brow_up`, `brow_angry`.
   - The neutral mouth (a closed smile) is baked into the basis.
 - **Budgets.**
-  - A typical outfit (base + pajamas + nightcap + slippers) is about 24.5k triangles at LOD0 (V6: 24.1k; V5: 23.4k; V3: 19.7k). Godot generates LODs on import. All 45 parts together: 217k triangles (only the worn ones are drawn). The heaviest look (robe + body + bob + beanie + slippers + freckles) is 32.5k (V6: 31.3k), 7 draw calls. `src/dev/char_budget.tscn` measures all of this from the asset (`--portraits` also times the portrait renderer).
+  - A typical outfit (base + pajamas + nightcap + slippers) is about 24.5k triangles at LOD0 (V6: 24.1k; V5: 23.4k; V3: 19.7k). Godot generates LODs on import. All 45 parts together: 217k triangles (only the worn ones are drawn); Pass 8: 53 parts, 293.8k. The heaviest look (robe + body + bob + beanie + slippers + freckles) is 32.8k (V6: 31.3k), 7 draw calls; the heaviest Pass 8 look (cadet + cap + bob + freckles) is 30.2k, 6 draw calls. `src/dev/char_budget.tscn` measures all of this from the asset (`--portraits` also times the portrait renderer).
   - V6 outfits: 5.9k-11.1k triangles each; the heaviest look that can be worn with any V6 item stays under the heaviest V5 look (`test_outfits_v6`). Measure a part with `build.sh` (it prints every part's count) and see `docs/v6/character_notes.md`.
   - Each visible part is one draw call with one shared `ShaderMaterial`; per-character colours are instance uniforms. Parts listed in `CharacterView.TWO_SIDED` (the nightcap) use a second, double-sided material with the same shader body (`character.gdshaderinc`). The V7 goggle lenses are a material class inside that shader (opaque; tint and glint baked in vertex colour), not a new material.
 - **Checking changes.** `src/dev/character_lineup.tscn -- --lineup=parts` renders 12 fixed close-ups (nightcap, collar, cuff and hand, robe hem, each shoe, hair edges, Night Watch cap); `--parts-debug` hides the head to inspect the cap alone. Render it before and after a change and compare. V7: `--lineup=custom --shots-file=F.json` renders any list of shots (a shot with `"bone"` frames that bone wherever the pose puts it), and `--lineup=reel` runs gameplay scenarios from `tests/motion_rig.gd` back to back with the camera circling the head (record it with `--write-movie`).
@@ -53,6 +56,21 @@ missing, recreate it with the first two lines above.
 - **Overhead arms (V5).** The head is 0.31 m wide over shoulders 0.17 m from the centre, so an arm raised much past ~85° from the A-pose goes into the head. Open raises into a V with bent elbows and run `clip_check.py`.
 - **Hats and curly hair (V5).** `hair_curly_hat` is the curly crop with a smooth band from z 1.34 m; `CharacterView` shows it instead of `hair_curly` under the crown and headphones. `--lineup=hathair` renders every hat that leaves hair visible × every hair style.
 - **Motion checks (V5).** `src/dev/motion_probe.tscn` and `tests/test_motion_v5.gd` measure pose continuity, foot slide and cap motion through gameplay-like scenarios; see `docs/v5/motion_notes.md`. V6: `-- --outfit=<key>` runs them on an outfit; `--bench` also times the foot lock.
+
+## Pass 8: the rotating Shop outfits (art generation 9)
+
+Six outfits in `outfits_p8.py`, registered in `Cosmetics` with ids 16-21 (see `docs/pass8/skins.md` for every included
+item, the budgets and the evidence). All six draw their own footwear (`OUTFIT_OWN_SHOES`); the cadet and pumpkin caps are
+`OUTFIT_HEADWEAR` worn with no hat (hair rule `@cap`); Cloud Nine and Bedtime Bandit wear their hoods up (`HOOD_OUTFITS`,
+`parts._hood(..., opening=HOOD_OPEN)`, a slightly wider face opening than the shipped hoods). Checks after a change:
+
+```sh
+tools/character/build.sh && tools/gd.sh --headless --path game --import
+tools/.cache/bpyenv/bin/python tools/character/outfit_check.py      # exit 0
+tools/gd.sh --headless --fixed-fps 60 --path game -s res://tests/run_tests.gd -- test_outfits_p8
+tools/gd.sh --path game res://src/dev/character_lineup.tscn -- --lineup=pass8,pass8back --light=campus|dorm
+tools/character/capture_skin_reel.sh out.mp4 moonwalk_cadet
+```
 
 ## V6: adding an outfit, hat or shoe
 
