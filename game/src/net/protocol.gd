@@ -16,8 +16,10 @@ extends RefCounted
 ## COIN_PICKUP.  Message types 60-79 are reserved for the V6 social
 ## messages (chat / hub); none of them is defined here.
 ## Protocol 7 (Pass 8): the motor state's flags carry the sprint-exhausted
-## latch (bit 8), and the dive/landing rules changed, so a 1.7 peer can't
-## predict a 1.8 host: mismatched versions are refused at join.
+## latch (bit 8) and the dive/landing rules changed, so a 1.7 peer can't
+## predict a 1.8 host; RESULTS rows carry active_s (challenges), bound into
+## the economy row digest (Economy.row_canonical v2), so a 6 and a 7 game
+## can't confirm each other's rounds. Mismatched versions are refused at join.
 const VERSION := 7
 
 enum M {

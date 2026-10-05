@@ -56,6 +56,8 @@ var home_doors: Array = []
 var spawn_map: Dictionary = {}
 ## V6: the round's coins [{id, pos: Vector3, by: slot or -1}]
 var coins: Array = []
+## Pass 8: each human slot's active play this round (challenges; the row's active_s)
+var activity := ActivityMeter.new()
 var _space: PhysicsDirectSpaceState3D
 var _cap_shape: CapsuleShape3D
 var _bot_factory: Callable
@@ -72,6 +74,7 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 	gentle_bots = bool(opts.get("gentle_bots", false))
 	patrol_release_extra_s = float(opts.get("patrol_release_extra_s", 0.0))
 	_bot_factory = opts.get("bot_factory", Callable())
+	activity.setup(cfg.sim_hz)
 	home_dorm = String(opts.get("dorm", CampusDorms.default_id()))
 	if not CampusDorms.has_dorm(home_dorm):
 		home_dorm = CampusDorms.default_id()
@@ -370,6 +373,7 @@ func step(inputs: Dictionary) -> void:
 		_check_coins()
 		for p in players:
 			_check_recover(p)
+		activity.step(self, inputs)
 	if prof_on:
 		_prof_add("rules", t0)
 		t0 = Time.get_ticks_usec()
@@ -1118,6 +1122,7 @@ func build_results() -> Dictionary:
 			"cosmetic": p.cosmetic, "uid": p.uid,
 			"was_human": p.was_human, "present": p.connected, "away_s": float(p.away_ticks) / float(cfg.sim_hz),
 			"coins_picked": p.coins_picked, "finish_door": p.finish_door,
+			"active_s": activity.active_s(p.id, cfg.sim_hz),
 		})
 	var coin_log: Array = []
 	for c in coins:

@@ -5,7 +5,9 @@ extends RefCounted
 ## (service/src/commerce.js, tested on its own with node --test): wallet
 ## snapshots with revisions, idempotency keys, atomic spend + entitlement,
 ## Season claims, round registration/report/ack settlement, App Store
-## delivery keyed by transaction ID, the one-time legacy import.  It accepts
+## delivery keyed by transaction ID, the one-time legacy import, and the
+## Pass 8 challenges (progress and the bonus once, settled with the round,
+## by the registered start's UTC day/week with the 24 h grace).  It accepts
 ## the simulated store's unsigned "test." transactions, which the real
 ## service rejects (it verifies Apple's certificate chain).
 ##
@@ -17,6 +19,10 @@ var ledger_keys := {}       # idem key -> reply
 var apple := {}             # transaction id -> {pid, product, revoked}
 var rounds := {}            # match id -> {host, participants{pid:slot}, report, acks{}, settled{}}
 var legacy_done := {}       # pid -> {coins, items}
+var challenge_rows := {}    # pid -> {instance_id: {challenge_id, period, period_start/end (ms), goal, xp, progress, completed_at}}
+var challenge_bonus := {}   # pid -> {instance_id: {xp, match_id, at}}
+## the double's clock in ms (0: the system clock)
+var now_ms := 0
 var network_down := false
 var drop_reply := false     # apply the request, then lose the reply (a timeout after commit)
 var calls: Array = []       # [method, path] for assertions
@@ -67,10 +73,11 @@ func snapshot(pid: String) -> Dictionary:
 	for mid in rounds:
 		var st: Dictionary = rounds[mid].get("settled", {}).get(pid, {})
 		if not st.is_empty():
-			rs.append({"match_id": mid, "state": st["state"], "coins": st["coins"], "xp": st["xp"], "reason": st.get("reason", "")})
+			rs.append({"match_id": mid, "state": st["state"], "coins": st["coins"], "xp": st["xp"], "reason": st.get("reason", ""),
+				"challenge_xp": int(st.get("challenge_xp", 0)), "challenges": st.get("challenges")})
 	return {"profile_id": pid, "environment": environment.to_lower(), "balance": w["balance"], "revision": w["revision"], "debt": w["debt"],
 		"app_account_token": w["token"], "entitlements": ents, "season": w["season"].duplicate(true), "catalogue_version": Catalogue.version(),
-		"rounds": rs}
+		"rounds": rs, "challenges": _challenges_view(pid)}
 
 
 func _bump(pid: String) -> void:
@@ -265,7 +272,7 @@ func _round_register(pid: String, b: Dictionary) -> Dictionary:
 	var parts := {}
 	for p in b.get("participants", []):
 		parts[String(p["profile_id"])] = int(p["slot"])
-	rounds[mid] = {"host": pid, "participants": parts, "report": {}, "acks": {}, "settled": {}}
+	rounds[mid] = {"host": pid, "participants": parts, "report": {}, "acks": {}, "settled": {}, "started_at": _now_ms()}
 	return {"status": 200, "body": {"ok": true}}
 
 
@@ -311,5 +318,118 @@ func _try_settle(mid: String, pid: String) -> void:
 	var w := wallet(pid)
 	w["balance"] = int(w["balance"]) + int(c["coins"])
 	w["season"]["s1"]["xp"] = int(w["season"]["s1"]["xp"]) + int(x["xp"])
+	var ch := _settle_challenges(pid, mid, rd, row, results, int(rep.get("report_version", 1)) >= ChallengeRules.REPORT_VERSION)
 	_bump(pid)
-	rd["settled"][pid] = {"state": "settled", "coins": int(c["coins"]), "xp": int(x["xp"])}
+	rd["settled"][pid] = {"state": "settled", "coins": int(c["coins"]), "xp": int(x["xp"]), "challenge_xp": int(ch["xp"]), "challenges": ch}
+
+
+# ------------------------------------------------------------------ challenges
+func _now_ms() -> int:
+	return now_ms if now_ms > 0 else int(Time.get_unix_time_from_system() * 1000.0)
+
+
+## The round's challenge progress and bonus, as service/src/challenges.js.
+func _settle_challenges(pid: String, mid: String, rd: Dictionary, row: Dictionary, results: Dictionary, v2: bool) -> Dictionary:
+	var started := int(int(rd.get("started_at", _now_ms())) / 1000.0)
+	var t := int(_now_ms() / 1000.0)
+	var inc := ChallengeRules.increments(row, results) if v2 else {"state": "no_evidence", "active_rounds": 0, "credits": 0, "round_wins": 0}
+	var items: Array = []
+	var closed: Array = []
+	var xp := 0
+	if String(inc["state"]) == "applied":
+		for kind in ["daily", "weekly"]:
+			var per := ChallengeRules.period_of(kind, started)
+			if t > int(per["end"]) + ChallengeRules.grace_s():
+				closed.append(kind)
+				continue
+			for d in ChallengeRules.defs():
+				if String(d["period"]) != kind or int(inc.get(String(d["metric"]), 0)) <= 0:
+					continue
+				var n := int(inc[String(d["metric"])])
+				var r := _instance(pid, kind, per, d)
+				r["progress"] = mini(int(r["goal"]), int(r["progress"]) + n)
+				var done := _bonus(pid, r, mid)
+				xp += int(r["xp"]) if done else 0
+				items.append({"challenge_id": String(d["id"]), "instance_id": String(r["instance_id"]), "period": kind, "inc": n,
+					"progress": int(r["progress"]), "goal": int(r["goal"]), "completed": int(r["progress"]) >= int(r["goal"]),
+					"completed_now": done, "xp": int(r["xp"]) if done else 0})
+	if xp > 0:
+		wallet(pid)["season"]["s1"]["xp"] = int(wallet(pid)["season"]["s1"]["xp"]) + xp
+	var st := "closed" if String(inc["state"]) == "applied" and items.is_empty() and not closed.is_empty() else String(inc["state"])
+	return {"state": st, "xp": xp, "items": items, "closed": closed, "credits": int(inc["credits"]), "active_s": int(row.get("active_s", 0)),
+		"need": ceili(ChallengeRules.active_need(float(results.get("round_time", 0.0))))}
+
+
+func _instance(pid: String, kind: String, per: Dictionary, d: Dictionary) -> Dictionary:
+	if not challenge_rows.has(pid):
+		challenge_rows[pid] = {}
+	var rows: Dictionary = challenge_rows[pid]
+	var iid := ChallengeRules.instance_id(kind, String(per["key"]), String(d["id"]))
+	if not rows.has(iid):
+		rows[iid] = {"instance_id": iid, "challenge_id": String(d["id"]), "period": kind, "period_start": int(per["start"]) * 1000,
+			"period_end": int(per["end"]) * 1000, "metric": String(d["metric"]), "goal": int(d["goal"]), "xp": int(d["xp"]), "progress": 0,
+			"completed_at": null}
+	return rows[iid]
+
+
+## The bonus once per player and instance; true when this call delivered it.
+func _bonus(pid: String, r: Dictionary, mid: String) -> bool:
+	if not challenge_bonus.has(pid):
+		challenge_bonus[pid] = {}
+	var bon: Dictionary = challenge_bonus[pid]
+	if int(r["progress"]) < int(r["goal"]) or bon.has(String(r["instance_id"])):
+		return false
+	bon[String(r["instance_id"])] = {"xp": int(r["xp"]), "match_id": mid, "at": _now_ms()}
+	r["completed_at"] = _now_ms()
+	return true
+
+
+## Development fixture: put a current-period challenge at `progress` (a
+## complete one gets its bonus, as a settlement would have added it).
+func set_challenge(pid: String, cid: String, progress: int, add_xp: bool = true) -> void:
+	var d := ChallengeRules.def(cid)
+	var kind := String(d["period"])
+	var r := _instance(pid, kind, ChallengeRules.period_of(kind, int(_now_ms() / 1000.0)), d)
+	r["progress"] = clampi(progress, 0, int(r["goal"]))
+	if _bonus(pid, r, "fixture") and add_xp:
+		wallet(pid)["season"]["s1"]["xp"] = int(wallet(pid)["season"]["s1"]["xp"]) + int(r["xp"])
+	_bump(pid)
+
+
+## The snapshot's challenges, as service/src/challenges.js snapshot().
+func _challenges_view(pid: String) -> Dictionary:
+	var t := int(_now_ms() / 1000.0)
+	var rows: Dictionary = challenge_rows.get(pid, {})
+	var bon: Dictionary = challenge_bonus.get(pid, {})
+	var items: Array = []
+	var seen := {}
+	for d in ChallengeRules.defs():
+		var kind := String(d["period"])
+		var per := ChallengeRules.period_of(kind, t)
+		var iid := ChallengeRules.instance_id(kind, String(per["key"]), String(d["id"]))
+		seen[iid] = true
+		var r: Dictionary = rows.get(iid, {"instance_id": iid, "challenge_id": String(d["id"]), "period": kind, "period_start": int(per["start"]) * 1000,
+			"period_end": int(per["end"]) * 1000, "metric": String(d["metric"]), "goal": int(d["goal"]), "xp": int(d["xp"]), "progress": 0,
+			"completed_at": null})
+		items.append(_view(r, bon, true))
+	var recent: Array = []
+	for iid in rows:
+		var r: Dictionary = rows[iid]
+		if not seen.has(iid) and int(r["progress"]) > 0 and int(r["period_end"]) > (t - ChallengeRules.grace_s()) * 1000:
+			recent.append(_view(r, bon, false))
+	var dp := ChallengeRules.period_of("daily", t)
+	var wp := ChallengeRules.period_of("weekly", t)
+	return {"version": int(ChallengeRules.cfg().get("version", 1)), "server_time": _now_ms(), "grace_s": ChallengeRules.grace_s(),
+		"daily": {"start": int(dp["start"]) * 1000, "end": int(dp["end"]) * 1000}, "weekly": {"start": int(wp["start"]) * 1000, "end": int(wp["end"]) * 1000},
+		"items": items, "recent": recent}
+
+
+func _view(r: Dictionary, bon: Dictionary, current: bool) -> Dictionary:
+	var d := ChallengeRules.def(String(r["challenge_id"]))
+	var v := r.duplicate()
+	v["name"] = String(d.get("name", r["challenge_id"]))
+	v["task"] = String(d.get("task", ""))
+	v["completed"] = int(r["progress"]) >= int(r["goal"])
+	v["bonus_xp"] = int(bon[r["instance_id"]]["xp"]) if bon.has(r["instance_id"]) else 0
+	v["current"] = current
+	return v

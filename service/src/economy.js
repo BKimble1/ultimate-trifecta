@@ -82,11 +82,16 @@ function roundHalfAway(x) {
 }
 
 // The row as both sides hash it (Economy.row_canonical in the game).
+// v2 (Pass 8, report_version 2) appends active_s, the seconds of active play
+// the host's simulation counted (challenges); a v1 row (no v) hashes as before.
 export function rowCanonical(matchId, outcome, roundTime, row) {
   const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
-  return ['v1', matchId, outcome | 0, row.role | 0, clamp(row.stamps | 0, 0, 3), row.finished ? 1 : 0,
+  const v2 = (row.v | 0) >= 2;
+  const parts = [v2 ? 'v2' : 'v1', matchId, outcome | 0, row.role | 0, clamp(row.stamps | 0, 0, 3), row.finished ? 1 : 0,
     row.first_home && row.finished ? 1 : 0, clamp(row.unique_captures | 0, 0, 7), Math.max(0, row.coins_picked | 0),
-    row.present ? 1 : 0, roundHalfAway(Number(row.away_s) || 0), roundHalfAway(Number(roundTime) || 0)].join('|');
+    row.present ? 1 : 0, roundHalfAway(Number(row.away_s) || 0), roundHalfAway(Number(roundTime) || 0)];
+  if (v2) parts.push(Math.max(0, Math.trunc(Number(row.active_s) || 0)));
+  return parts.join('|');
 }
 
 export async function rowDigest(matchId, outcome, roundTime, row) {

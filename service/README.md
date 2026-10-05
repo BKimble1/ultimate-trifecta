@@ -146,12 +146,14 @@ against the deleted profile are closed as "profile deleted".
 | `POST /v1/wallet/legacy-import` | session | V6: the one-time, bounded import of a pre-V6 device balance |
 | `POST /v1/season/:id/claim` | session | V6: claim Season rewards (idempotent) |
 | `POST /v1/rounds`, `POST /v1/rounds/:id/report` | room host | V6: register a round's admitted players; report its result (bounds-checked) |
-| `POST /v1/rounds/:id/ack`, `GET /v1/rounds/:id/me` | session | V6: confirm the row your game received; settlement status |
+| `POST /v1/rounds/:id/ack`, `GET /v1/rounds/:id/me` | session | V6: confirm the row your game received; settlement status (Pass 8: with the round's challenge result) |
+| `GET /v1/challenges` | session | Pass 8: the daily/weekly challenges (also in every wallet snapshot); progress and bonus Season XP come only from round settlement |
 | `POST /v1/appstore/notifications` | Apple-signed | V6: App Store Server Notifications V2 (refunds, revocations) |
 | `GET /v1/admin/wallets/:id`, `POST …/adjust` | `ADMIN_TOKEN` | V6: wallet, ledger and App Store rows; support grants / forgive debt |
 
 V6 commerce (wallet, ledger, App Store verification, Season 1, round
-settlement): see [docs/ECONOMY.md](../docs/ECONOMY.md) and
+settlement) and Pass 8 challenges (`src/challenges.js`, migration
+`0004_challenges.sql`, ECONOMY.md §10): see [docs/ECONOMY.md](../docs/ECONOMY.md) and
 [docs/COMMERCE_SETUP.md](../docs/COMMERCE_SETUP.md). Vars: `APPLE_ENVIRONMENT`
 (`Sandbox` for the default/TestFlight deployment, `Production` in
 `[env.production]`). Optional secrets: `ASC_IAP_KEY_ID`, `ASC_IAP_ISSUER_ID`,

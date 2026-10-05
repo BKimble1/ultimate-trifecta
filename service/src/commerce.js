@@ -19,9 +19,12 @@
 //    game received (a digest); the service checks identity, admission,
 //    timing, plausibility and daily limits, then pays Coins and Season XP
 //    once.  Peer-hosted results remain the host's (see docs/ECONOMY.md).
+//  - Pass 8 challenges (challenges.js): the same settlement batch moves the
+//    player's daily/weekly challenges and adds any completion bonus XP.
 import { ApiError, json, readJson, str, int } from './http.js';
 import { verifyAppleJws, fetchTransaction, appleEnvironment, serverApiConfigured } from './appstore.js';
 import * as E from './economy.js';
+import * as CH from './challenges.js';
 
 const HOUR = 3600 * 1000;
 const DAY = 24 * HOUR;
@@ -49,8 +52,8 @@ export async function snapshot(env, pid) {
   const ents = await q.all('SELECT item_id, source, revoked_at FROM entitlements WHERE profile_id = ? AND environment = ? ORDER BY granted_at', pid, e);
   const prog = await q.all('SELECT season, xp, premium FROM season_progress WHERE profile_id = ? AND environment = ?', pid, e);
   const claims = await q.all('SELECT season, tier, track FROM season_claims WHERE profile_id = ? AND environment = ?', pid, e);
-  const rounds = await q.all(`SELECT match_id, state, coins, xp, reason FROM round_players WHERE profile_id = ? AND environment = ? AND state != 'registered'
-    ORDER BY settled_at DESC LIMIT 20`, pid, e);
+  const rounds = await q.all(`SELECT match_id, state, coins, xp, reason, challenge_xp, challenge FROM round_players WHERE profile_id = ? AND environment = ?
+    AND state != 'registered' ORDER BY settled_at DESC LIMIT 20`, pid, e);
   const season = {};
   for (const sid of Object.keys(E.CATALOGUE.seasons)) season[sid] = { xp: 0, premium: false, claimed: [] };
   for (const p of prog) season[p.season] = { xp: p.xp, premium: !!p.premium, claimed: [] };
@@ -62,8 +65,10 @@ export async function snapshot(env, pid) {
   return {
     profile_id: pid, environment: e, balance: w.balance, debt: w.debt, revision: w.revision, app_account_token: w.app_account_token,
     entitlements: ents.map((x) => ({ item: x.item_id, source: x.source, revoked: !!x.revoked_at })),
-    season, rounds: rounds.map((r) => ({ match_id: r.match_id, state: r.state, coins: r.coins, xp: r.xp, reason: r.reason || '' })),
+    season, rounds: rounds.map((r) => ({ match_id: r.match_id, state: r.state, coins: r.coins, xp: r.xp, reason: r.reason || '',
+      challenge_xp: r.challenge_xp || 0, challenges: r.challenge ? JSON.parse(r.challenge) : null })),
     catalogue_version: E.catalogueVersion(),
+    challenges: await CH.snapshot(q, e, pid, H.clock(env)),
   };
 }
 
@@ -462,6 +467,10 @@ export function checkReport(b, registered) {
   if (!Number.isInteger(spawns) || spawns < 0 || spawns > el.max_coin_spawns) return 'coin_spawns';
   const players = Array.isArray(b.players) ? b.players : null;
   if (!players || players.length > 8) return 'players';
+  // Pass 8: report v2 rows carry active_s (seconds of active play the host's
+  // simulation counted); v1 rows settle as before but move no challenge
+  const v = b.report_version === undefined ? 1 : Number(b.report_version);
+  if (![1, CH.REPORT_VERSION].includes(v)) return 'report_version';
   let picked = 0;
   let first = 0;
   const seen = new Set();
@@ -474,6 +483,11 @@ export function checkReport(b, registered) {
     }
     const away = Number(r.away_s ?? 0);
     if (!Number.isFinite(away) || away < 0 || away > rt + 1) return 'away';
+    if (v >= CH.REPORT_VERSION) {
+      // nobody is active for longer than the round, or while away
+      const act = r.active_s;
+      if (!Number.isInteger(act) || act < 0 || act > rt + 1 || act > rt - away + 2) return 'active_s';
+    }
     if (r.finished && (r.role !== E.ROLE.RUNNER || r.stamps !== 3)) return 'finished';
     if (r.role === E.ROLE.PATROL && (r.stamps || r.finished || r.first_home)) return 'watch_row';
     if (r.first_home) {
@@ -529,6 +543,10 @@ async function reportRound(req, env, mid) {
     if (!r) continue;
     const keep = { role: r.role, stamps: r.stamps | 0, finished: !!r.finished, first_home: !!r.first_home, unique_captures: r.unique_captures | 0,
       coins_picked: r.coins_picked | 0, present: r.present !== false, away_s: Number(r.away_s) || 0 };
+    if (Number(b.report_version) >= CH.REPORT_VERSION) {
+      keep.v = CH.REPORT_VERSION;
+      keep.active_s = r.active_s;
+    }
     stmts.push(q.stmt('UPDATE round_players SET report = ? WHERE environment = ? AND match_id = ? AND profile_id = ?', JSON.stringify(keep), e, mid, pr.profile_id));
   }
   await q.batch(stmts);
@@ -572,7 +590,8 @@ export async function settle(env, mid, pid) {
   const e = envName(env);
   const rd = await q.one('SELECT * FROM rounds WHERE environment = ? AND match_id = ?', e, mid);
   const pr = await q.one('SELECT * FROM round_players WHERE environment = ? AND match_id = ? AND profile_id = ?', e, mid, pid);
-  const out = (s) => ({ state: s.state, coins: s.coins || 0, xp: s.xp || 0, reason: s.reason || '' });
+  const out = (s) => ({ state: s.state, coins: s.coins || 0, xp: s.xp || 0, reason: s.reason || '', challenge_xp: s.challenge_xp || 0,
+    challenges: s.challenge ? JSON.parse(s.challenge) : null });
   if (!rd || !pr) return { state: 'unknown', coins: 0, xp: 0, reason: '' };
   if (pr.state !== 'registered') return out(pr);
   const t = H.clock(env);
@@ -599,6 +618,9 @@ export async function settle(env, mid, pid) {
   const xp = E.roundSeasonXp(row, rd.outcome);
   const sid = Object.keys(E.CATALOGUE.seasons)[0];
   await ensureWallet(env, pid);
+  // Pass 8: the round's challenge progress and any completion bonus, in the
+  // same batch (after the season_progress upsert it adds to)
+  const ch = CH.settleStmts(q, e, pid, mid, rd, row, sid, t);
   try {
     await q.batch([
       // the CHECK on daily_rounds is the per-day cap: past it the batch fails
@@ -609,6 +631,7 @@ export async function settle(env, mid, pid) {
         ON CONFLICT(profile_id, environment, season) DO UPDATE SET xp = xp + excluded.xp, updated_at = excluded.updated_at`, pid, e, sid, xp, t),
       q.stmt("UPDATE round_players SET state = 'settled', coins = ?, xp = ?, settled_at = ? WHERE environment = ? AND match_id = ? AND profile_id = ? AND state = 'registered'",
         coins, xp, t, e, mid, pid),
+      ...ch.stmts,
     ]);
   } catch (err) {
     const m = failure(err);
@@ -616,14 +639,23 @@ export async function settle(env, mid, pid) {
     if (m.includes('UNIQUE')) return out(await q.one('SELECT * FROM round_players WHERE environment = ? AND match_id = ? AND profile_id = ?', e, mid, pid));
     throw err;
   }
-  return { state: 'settled', coins, xp, reason: '' };
+  const challenges = await CH.afterSettle(q, e, pid, mid, ch.plan);
+  return { state: 'settled', coins, xp, reason: '', challenge_xp: challenges.xp, challenges };
 }
 
 async function roundMe(req, env, mid) {
   const { profile: p } = await H.requireUser(req, env, { allowSuspended: true });
   const pr = await H.db(env).one('SELECT * FROM round_players WHERE environment = ? AND match_id = ? AND profile_id = ?', envName(env), mid, p.id);
   if (!pr) throw new ApiError(404, 'no_round', 'Unknown round.');
-  return json({ ok: true, settlement: { match_id: mid, state: pr.state === 'registered' ? 'pending' : pr.state, coins: pr.coins, xp: pr.xp, reason: pr.reason || '' } });
+  return json({ ok: true, settlement: { match_id: mid, state: pr.state === 'registered' ? 'pending' : pr.state, coins: pr.coins, xp: pr.xp, reason: pr.reason || '',
+    challenge_xp: pr.challenge_xp || 0, challenges: pr.challenge ? JSON.parse(pr.challenge) : null } });
+}
+
+// Pass 8: the player's challenges (also in every wallet snapshot).
+async function getChallenges(req, env) {
+  const { profile: p } = await H.requireUser(req, env, { allowSuspended: true });
+  await H.rateLimit(env, `challenges:${p.id}`, 120, 60 * 1000);
+  return json({ ok: true, challenges: await CH.snapshot(H.db(env), envName(env), p.id, H.clock(env)) });
 }
 
 // ---------------------------------------------------------------- admin
@@ -672,6 +704,7 @@ export function deletionStmts(q, pid) {
     q.stmt('DELETE FROM season_claims WHERE profile_id = ?', pid),
     q.stmt('DELETE FROM round_players WHERE profile_id = ?', pid),
     q.stmt('DELETE FROM daily_rounds WHERE profile_id = ?', pid),
+    ...CH.deletionStmts(q, pid),
   ];
 }
 
@@ -680,6 +713,7 @@ export async function sweepCommerce(env, q, t) {
   await q.run("DELETE FROM rounds WHERE started_at < ? AND state != 'started'", t - 30 * DAY);
   await q.run('DELETE FROM daily_rounds WHERE day < ?', utcDay(t - 7 * DAY));
   await q.run('DELETE FROM apple_notifications WHERE at < ?', t - 90 * DAY);
+  await CH.sweep(q, t);
 }
 
 // ---------------------------------------------------------------- router
@@ -693,6 +727,7 @@ export async function routeCommerce(req, env, path, m, helpers) {
   if (m === 'POST' && path === '/v1/appstore/notifications') return appleNotification(req, env);
   if (m === 'POST' && (k = path.match(/^\/v1\/season\/([a-z0-9]{1,8})\/claim$/))) return claim(req, env, k[1]);
   if (m === 'POST' && path === '/v1/rounds') return registerRound(req, env);
+  if (m === 'GET' && path === '/v1/challenges') return getChallenges(req, env);
   if ((k = path.match(/^\/v1\/rounds\/([A-Za-z0-9-]{3,64})\/(report|ack|me)$/))) {
     if (m === 'POST' && k[2] === 'report') return reportRound(req, env, k[1]);
     if (m === 'POST' && k[2] === 'ack') return ackRound(req, env, k[1]);

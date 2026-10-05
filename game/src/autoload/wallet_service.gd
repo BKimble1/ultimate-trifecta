@@ -21,9 +21,17 @@ extends Node
 ##    one-time import to an account.
 ##
 ## Results interface for the results screen: round_summary(match_id).
+##
+## Pass 8 challenges (docs/ECONOMY.md §10): the service's snapshot carries
+## the player's daily and weekly challenges; challenge_cards() is the Season
+## Pass view, round_summary()["challenges"] a round's part, and
+## pinned_challenge_text() the one pinned goal for the pause/map area.
+## Progress and the bonus Season XP are only ever the service's.
 
 signal changed
 signal round_updated(match_id: String)
+## Pass 8: a challenge the service just reported complete (its card)
+signal challenge_completed(card: Dictionary)
 
 const SCHEMA := 1
 const MAX_ROUNDS := 60
@@ -63,6 +71,10 @@ static func blank_state() -> Dictionary:
 		"outbox": [],
 		"rounds": {},
 		"round_order": [],
+		# Pass 8: the one pinned challenge (a catalogue id; this device only)
+		# and the completions already announced (instance ids, bounded)
+		"challenge_pin": "",
+		"challenge_seen": [],
 	}
 
 
@@ -293,6 +305,12 @@ func apply_snapshot(w: Variant) -> void:
 		"app_account_token": String(wd.get("app_account_token", "")), "entitlements": ent, "season": seasons,
 		"synced_at": now(), "catalogue_version": int(wd.get("catalogue_version", Catalogue.version())),
 	}
+	var ch: Variant = wd.get("challenges")
+	if ch is Dictionary:
+		var cd: Dictionary = (ch as Dictionary).duplicate(true)
+		cd["received_at"] = now()
+		state["account"]["challenges"] = cd
+		_announce_completions(cd)
 	for r in wd.get("rounds", []):
 		if r is Dictionary:
 			_apply_round_status(r)
@@ -620,7 +638,10 @@ func settle_round(results: Dictionary, me: Dictionary, practice: bool) -> Dictio
 	var before := int(season_state(sid)["xp"])
 	var rec := {"match_id": mid, "at": now(), "coins_collected": picked, "coins_projected": int(c["coins"]), "lines": c["lines"],
 		"season_xp_projected": int(sx["xp"]), "season_lines": sx["lines"], "xp_before": before, "season": sid,
-		"coins_settled": 0, "season_xp_settled": 0, "practice": practice, "reason": String(elig["reason"])}
+		"coins_settled": 0, "season_xp_settled": 0, "practice": practice, "reason": String(elig["reason"]),
+		# Pass 8: what this round should add to challenges (the service decides)
+		"challenge_inc": ChallengeRules.increments(me, results), "challenge_credits": ChallengeRules.credits(me),
+		"challenge_before": _progress_by_id()}
 	if int(results.get("outcome", 0)) == TC.Outcome.CANCELLED:
 		rec["state"] = "cancelled"
 	elif practice:
@@ -657,8 +678,10 @@ func _report_round(results: Dictionary) -> void:
 		rows.append({"profile_id": pid, "slot": int(r.get("slot", -1)), "role": int(r.get("role", 0)), "stamps": int(r.get("stamps", 0)),
 			"finished": bool(r.get("finished", false)), "first_home": Economy.first_home(r, results),
 			"unique_captures": int(r.get("unique_captures", 0)), "coins_picked": maxi(0, int(r.get("coins_picked", 0))),
-			"present": bool(r.get("present", true)), "away_s": float(r.get("away_s", 0.0))})
+			"present": bool(r.get("present", true)), "away_s": float(r.get("away_s", 0.0)), "active_s": maxi(0, int(r.get("active_s", 0)))})
+	# report v2 (Pass 8): rows carry active_s, bound into each player's digest
 	_enqueue("round_report", HTTPClient.METHOD_POST, "/v1/rounds/%s/report" % mid.uri_encode(), {
+		"report_version": ChallengeRules.REPORT_VERSION,
 		"outcome": int(results.get("outcome", 0)), "round_time_s": float(results.get("round_time", 0.0)),
 		"coin_spawns": int(results.get("coin_spawns", Catalogue.economy().get("eligibility", {}).get("max_coin_spawns", 10))),
 		"players": rows}, {"match_id": mid})
@@ -693,7 +716,9 @@ func _apply_round_status(st: Dictionary) -> void:
 	if mid == "":
 		return
 	var patch := {"state": String(st.get("state", "pending")), "coins_settled": int(st.get("coins", 0)),
-		"season_xp_settled": int(st.get("xp", 0)), "reason": String(st.get("reason", ""))}
+		"season_xp_settled": int(st.get("xp", 0)), "reason": String(st.get("reason", "")), "challenge_xp_settled": int(st.get("challenge_xp", 0))}
+	if st.get("challenges") is Dictionary:
+		patch["challenges"] = st["challenges"]
 	if not (state["rounds"] as Dictionary).has(mid):
 		patch["at"] = now()
 	_set_round(mid, patch)
@@ -707,17 +732,23 @@ func _apply_round_status(st: Dictionary) -> void:
 ##   coins             settled Coins (0 until settled), coins_projected
 ##   season_xp         settled XP, season_xp_projected
 ##   xp_before/xp_after, tier_before/tier_after, frac_before/frac_after
+##                     (after includes challenge bonus XP)
 ##   lines / season_lines  the breakdown; message  one honest sentence
+##   challenges        Pass 8: the round's part in challenges
+##                     (_round_challenges); challenge_xp  bonus XP added
 func round_summary(match_id: String) -> Dictionary:
 	var rec: Dictionary = (state["rounds"] as Dictionary).get(match_id, {})
 	if rec.is_empty():
 		return {"state": "unknown", "message": "", "coins_collected": 0, "coins": 0, "coins_projected": 0, "season_xp": 0,
-			"season_xp_projected": 0, "lines": [], "season_lines": []}
+			"season_xp_projected": 0, "lines": [], "season_lines": [], "challenge_xp": 0,
+			"challenges": {"state": "none", "result": "", "xp": 0, "lines": [], "message": ""}}
 	var sid := String(rec.get("season", Catalogue.current_season_id()))
 	var st := String(rec.get("state", "unknown"))
 	var settled := st == "settled"
 	var before := int(rec.get("xp_before", 0))
+	var ch := _round_challenges(rec)
 	var gain := int(rec.get("season_xp_settled", 0)) if settled else (int(rec.get("season_xp_projected", 0)) if st == "pending" else 0)
+	gain += int(ch.get("xp", 0)) if st in ["settled", "pending"] else 0
 	var after := before + gain
 	var pb := Economy.tier_progress(sid, before)
 	var pa := Economy.tier_progress(sid, after)
@@ -728,6 +759,7 @@ func round_summary(match_id: String) -> Dictionary:
 		"season_xp_projected": int(rec.get("season_xp_projected", 0)), "xp_before": before, "xp_after": after,
 		"tier_before": int(pb["tier"]), "tier_after": int(pa["tier"]), "frac_before": float(pb["frac"]), "frac_after": float(pa["frac"]),
 		"lines": rec.get("lines", []), "season_lines": rec.get("season_lines", []), "final": st != "pending",
+		"challenge_xp": int(ch.get("xp", 0)) if settled else 0, "challenges": ch,
 	}
 
 
@@ -761,3 +793,217 @@ func _round_message(rec: Dictionary) -> String:
 		"rejected":
 			return "The game service couldn't verify this round, so it wasn't paid."
 	return ""
+
+
+# ------------------------------------------------------------------ challenges
+## Pass 8 (docs/ECONOMY.md §10).  The last challenge snapshot of this profile
+## ({} if none): the live one when synced, the cached one while offline.
+func _challenge_snapshot() -> Dictionary:
+	var a: Dictionary = _account()
+	if a.is_empty() and Cloud.profile_id() == "":
+		a = state.get("account", {})
+	var c: Variant = a.get("challenges")
+	return c if c is Dictionary else {}
+
+
+## The service's clock (unix s) by the offset seen at the last snapshot; the
+## device's own clock when there is none.  Only for choosing which period's
+## progress to show: the service assigns rounds to periods itself.
+func server_now() -> int:
+	var c := _challenge_snapshot()
+	if c.is_empty() or float(c.get("server_time", 0)) <= 0.0:
+		return now()
+	return now() + int(float(c["server_time"]) / 1000.0) - int(c.get("received_at", now()))
+
+
+## The Season Pass cards, daily then weekly: {id, name, task, period, metric,
+## goal, xp, progress, completed, bonus_xp (delivered), resets_at (unix s),
+## known (progress is the service's for the current period), pinned}.
+func challenge_cards() -> Array:
+	var snap := _challenge_snapshot()
+	var t := server_now()
+	var items: Array = snap.get("items", []) if snap.get("items") is Array else []
+	var pin := pinned_challenge_id()
+	var out: Array = []
+	for d in ChallengeRules.defs():
+		var kind := String(d["period"])
+		var per := ChallengeRules.period_of(kind, t)
+		var card := {"id": String(d["id"]), "name": String(d["name"]), "task": String(d["task"]), "period": kind, "metric": String(d["metric"]),
+			"goal": int(d["goal"]), "xp": int(d["xp"]), "progress": 0, "completed": false, "bonus_xp": 0, "resets_at": int(per["end"]),
+			"known": false, "pinned": String(d["id"]) == pin}
+		for it in items:
+			if it is Dictionary and String(it.get("challenge_id", "")) == card["id"] and int(float(it.get("period_start", 0)) / 1000.0) == int(per["start"]):
+				card["goal"] = maxi(1, int(it.get("goal", card["goal"])))
+				card["xp"] = int(it.get("xp", card["xp"]))
+				card["progress"] = clampi(int(it.get("progress", 0)), 0, int(card["goal"]))
+				card["completed"] = bool(it.get("completed", false))
+				card["bonus_xp"] = int(it.get("bonus_xp", 0))
+				card["known"] = true
+		out.append(card)
+	return out
+
+
+## The Challenges section's one status line: {live, text}.  `live`: the
+## cards show the service's progress for the current periods.
+func challenge_status() -> Dictionary:
+	var snap := _challenge_snapshot()
+	var current := challenge_cards().any(func(c: Dictionary) -> bool: return bool(c["known"]))
+	match service_state():
+		"off":
+			return {"live": false, "text": "Preview: no game service in this build. No progress or Season XP is added."}
+		"signed_out":
+			return {"live": false, "text": "Sign in with Game Center to track challenges."}
+		"offline":
+			if current:
+				return {"live": true, "text": "Offline · progress as of %s" % ChallengeRules.local_clock(int(snap.get("received_at", now())))}
+			return {"live": false, "text": "You're offline. Challenge progress shows when you reconnect."}
+		"syncing":
+			if not current:
+				return {"live": false, "text": "Checking your challenges…"}
+	if snap.is_empty():
+		return {"live": false, "text": "Challenges aren't available from the game service yet."}
+	if not current:
+		return {"live": false, "text": "Checking your challenges…"}
+	return {"live": true, "text": ""}
+
+
+## The pinned challenge's id ("" when none).  One at a time, this device.
+func pinned_challenge_id() -> String:
+	var id := String(state.get("challenge_pin", ""))
+	return id if not ChallengeRules.def(id).is_empty() else ""
+
+
+## Pin a challenge ("" unpins; pinning another replaces the pin).
+func pin_challenge(id: String) -> void:
+	state["challenge_pin"] = id if not ChallengeRules.def(id).is_empty() else ""
+	_save()
+	changed.emit()
+
+
+## One line for the pause / expanded map area: the pinned goal, "" when none
+## is pinned.  `live_row` (optional, during a round): the player's row so far
+## (role, stamps, unique_captures) adds a provisional "+2 this round" to a
+## credits goal; the service counts it only after the round is verified.
+func pinned_challenge_text(live_row: Dictionary = {}) -> String:
+	var id := pinned_challenge_id()
+	if id == "":
+		return ""
+	var card: Dictionary = {}
+	for c in challenge_cards():
+		if String(c["id"]) == id:
+			card = c
+	if card.is_empty():
+		return ""
+	var nm := String(card["name"])
+	if not bool(card["known"]):
+		return "%s · %s" % [nm, String(card["task"])]
+	if bool(card["completed"]):
+		return "%s complete · %s" % [nm, ChallengeRules.xp_text(int(card["xp"]))]
+	var text := "%s %d/%d · %s" % [nm, int(card["progress"]), int(card["goal"]), ChallengeRules.xp_text(int(card["xp"]))]
+	if not live_row.is_empty() and String(card["metric"]) == "credits":
+		var add := mini(ChallengeRules.credits(live_row), int(card["goal"]) - int(card["progress"]))
+		if add > 0:
+			text += " · +%d this round (provisional)" % add
+	return text
+
+
+## {id: {progress, goal, known, completed}} now (a round's projection base).
+func _progress_by_id() -> Dictionary:
+	var out := {}
+	for c in challenge_cards():
+		out[String(c["id"])] = {"progress": int(c["progress"]), "goal": int(c["goal"]), "known": bool(c["known"]), "completed": bool(c["completed"])}
+	return out
+
+
+## A round's part in challenges (round_summary()["challenges"]):
+##   state    settled | pending | practice | none
+##   result   applied | inactive | no_evidence | closed (what the service did)
+##   xp       bonus Season XP: added when settled, expected when pending
+##   lines    [{id, name, period, progress (-1 unknown), goal, inc,
+##            completed_now, xp}]
+##   message  one honest sentence ("" when the lines say it all)
+func _round_challenges(rec: Dictionary) -> Dictionary:
+	var st := String(rec.get("state", ""))
+	var none := {"state": "none", "result": "", "xp": 0, "lines": [], "message": ""}
+	if st == "practice":
+		var n := int(rec.get("challenge_credits", 0))
+		return {"state": "practice", "result": "", "xp": 0, "lines": [],
+			"message": "Training only: %d contribution credit%s. Practice doesn't count toward challenges." % [n, "" if n == 1 else "s"]}
+	if st == "settled":
+		var ch: Variant = rec.get("challenges")
+		if not (ch is Dictionary):
+			return none
+		var cd: Dictionary = ch
+		var lines: Array = []
+		for it in cd.get("items", []):
+			if not (it is Dictionary):
+				continue
+			if bool(it.get("completed", false)) and not bool(it.get("completed_now", false)):
+				continue   # done before this round: nothing new to say
+			var cid := String(it.get("challenge_id", ""))
+			lines.append({"id": cid, "name": String(ChallengeRules.def(cid).get("name", cid)), "period": String(it.get("period", "")),
+				"progress": int(it.get("progress", 0)), "goal": int(it.get("goal", 0)), "inc": int(it.get("inc", 0)),
+				"completed_now": bool(it.get("completed_now", false)), "xp": int(it.get("xp", 0))})
+		var res := String(cd.get("state", ""))
+		var msg := ""
+		match res:
+			"inactive":
+				msg = "No challenge progress: challenges count rounds with at least %d s of active play." % int(cd.get("need", 60))
+			"no_evidence":
+				msg = "No challenge progress from this round."
+			"closed":
+				msg = "This round was confirmed too late for its challenges."
+		if res == "applied" and not (cd.get("closed", []) as Array).is_empty():
+			msg = "Confirmed too late for that day's challenges; the week's counted."
+		return {"state": "settled", "result": res, "xp": int(cd.get("xp", 0)), "lines": lines, "message": msg}
+	if st == "pending":
+		var inc: Dictionary = rec.get("challenge_inc", {})
+		if String(inc.get("state", "")) != "applied":
+			return {"state": "pending", "result": "inactive", "xp": 0, "lines": [],
+				"message": "Not enough active play in this round to count for challenges."}
+		var before: Dictionary = rec.get("challenge_before", {})
+		var lines: Array = []
+		var xp := 0
+		for d in ChallengeRules.defs():
+			var add := int(inc.get(String(d["metric"]), 0))
+			if add <= 0:
+				continue
+			var b: Dictionary = before.get(String(d["id"]), {})
+			var known := bool(b.get("known", false))
+			if known and bool(b.get("completed", false)):
+				continue
+			var goal := int(b.get("goal", d["goal"]))
+			var after := mini(goal, int(b.get("progress", 0)) + add)
+			var done := known and after >= goal
+			if done:
+				xp += int(d["xp"])
+			lines.append({"id": String(d["id"]), "name": String(d["name"]), "period": String(d["period"]), "progress": after if known else -1,
+				"goal": goal, "inc": add, "completed_now": done, "xp": int(d["xp"]) if done else 0})
+		return {"state": "pending", "result": "applied", "xp": xp, "lines": lines, "message": ""}
+	return none
+
+
+## Fresh completions in a snapshot become one milestone each (a new device
+## doesn't replay old ones: only those completed in the last 15 minutes).
+func _announce_completions(cd: Dictionary) -> void:
+	var seen: Array = state.get("challenge_seen", [])
+	var srv := int(float(cd.get("server_time", 0)) / 1000.0)
+	var all: Array = []
+	for k in ["items", "recent"]:
+		if cd.get(k) is Array:
+			all.append_array(cd[k])
+	for it in all:
+		if not (it is Dictionary) or int(it.get("bonus_xp", 0)) <= 0:
+			continue
+		var iid := String(it.get("instance_id", ""))
+		if iid == "" or seen.has(iid):
+			continue
+		seen.append(iid)
+		var at := int(float(it.get("completed_at", 0)) / 1000.0)
+		if at > 0 and srv - at <= 15 * 60:
+			var cid := String(it.get("challenge_id", ""))
+			challenge_completed.emit.call_deferred({"id": cid, "name": String(ChallengeRules.def(cid).get("name", cid)),
+				"xp": int(it.get("bonus_xp", 0)), "period": String(it.get("period", ""))})
+	while seen.size() > 64:
+		seen.pop_front()
+	state["challenge_seen"] = seen

@@ -1,0 +1,881 @@
+{
+ "01_svcon_test_pass_challenges": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   79.0540008544922,
+   12.0,
+   1399.89208984375,
+   672.677978515625
+  ],
+  "touch_min": 74.008,
+  "pressables_cut_off": [],
+  "free_row": {
+   "top": 261.0,
+   "bottom": 459.0,
+   "cell_h": 198.0,
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 467.0,
+   "bottom": 665.0,
+   "cell_h": 198.0,
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "side_page": "challenges",
+  "side_panel": [
+   1095.0,
+   111.0,
+   364.0,
+   562.0
+  ],
+  "tabs": [
+   {
+    "tab": "challenges",
+    "rect": [
+     1111.0,
+     119.0,
+     162.0,
+     75.0
+    ]
+   },
+   {
+    "tab": "reward",
+    "rect": [
+     1281.0,
+     119.0,
+     162.0,
+     75.0
+    ]
+   }
+  ],
+  "claim_all_visible": true,
+  "challenge_page": [
+   1111.0,
+   202.0,
+   332.0,
+   463.0
+  ],
+  "challenge_list": [
+   1111.0,
+   275.0,
+   332.0,
+   390.0
+  ],
+  "challenge_status": "",
+  "challenge_cards": [
+   {
+    "id": "night_shift",
+    "rect": [
+     1111.0,
+     308.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": true,
+    "count": "1/2",
+    "xp": "+50 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "campus_contribution",
+    "rect": [
+     1111.0,
+     424.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": true,
+    "count": "4/6",
+    "xp": "+50 Season XP",
+    "pinned": true
+   },
+   {
+    "id": "team_effort",
+    "rect": [
+     1111.0,
+     540.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": true,
+    "count": "1/1",
+    "xp": "Done \u00b7 +50 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "campus_regular",
+    "rect": [
+     1111.0,
+     689.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": false,
+    "count": "6/10",
+    "xp": "+150 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "pull_your_weight",
+    "rect": [
+     1111.0,
+     805.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": false,
+    "count": "11/18",
+    "xp": "+150 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "strong_together",
+    "rect": [
+     1111.0,
+     921.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": false,
+    "count": "2/4",
+    "xp": "+150 Season XP",
+    "pinned": false
+   }
+  ],
+  "groups": [
+   "Daily \u00b7 Resets 12:00 AM",
+   "Weekly \u00b7 Resets Mon 12:00 AM"
+  ]
+ },
+ "02_svcon_test_pass_challenges_weekly": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   79.0540008544922,
+   12.0,
+   1399.89208984375,
+   672.677978515625
+  ],
+  "touch_min": 74.008,
+  "pressables_cut_off": [],
+  "free_row": {
+   "top": 261.0,
+   "bottom": 459.0,
+   "cell_h": 198.0,
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 467.0,
+   "bottom": 665.0,
+   "cell_h": 198.0,
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "side_page": "challenges",
+  "side_panel": [
+   1095.0,
+   111.0,
+   364.0,
+   562.0
+  ],
+  "tabs": [
+   {
+    "tab": "challenges",
+    "rect": [
+     1111.0,
+     119.0,
+     162.0,
+     75.0
+    ]
+   },
+   {
+    "tab": "reward",
+    "rect": [
+     1281.0,
+     119.0,
+     162.0,
+     75.0
+    ]
+   }
+  ],
+  "claim_all_visible": true,
+  "challenge_page": [
+   1111.0,
+   202.0,
+   332.0,
+   463.0
+  ],
+  "challenge_list": [
+   1111.0,
+   275.0,
+   332.0,
+   390.0
+  ],
+  "challenge_status": "",
+  "challenge_cards": [
+   {
+    "id": "night_shift",
+    "rect": [
+     1111.0,
+     -118.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": false,
+    "count": "1/2",
+    "xp": "+50 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "campus_contribution",
+    "rect": [
+     1111.0,
+     -2.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": false,
+    "count": "4/6",
+    "xp": "+50 Season XP",
+    "pinned": true
+   },
+   {
+    "id": "team_effort",
+    "rect": [
+     1111.0,
+     114.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": false,
+    "count": "1/1",
+    "xp": "Done \u00b7 +50 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "campus_regular",
+    "rect": [
+     1111.0,
+     263.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": false,
+    "count": "6/10",
+    "xp": "+150 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "pull_your_weight",
+    "rect": [
+     1111.0,
+     379.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": true,
+    "count": "11/18",
+    "xp": "+150 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "strong_together",
+    "rect": [
+     1111.0,
+     495.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": true,
+    "count": "2/4",
+    "xp": "+150 Season XP",
+    "pinned": false
+   }
+  ],
+  "groups": [
+   "Daily \u00b7 Resets 12:00 AM",
+   "Weekly \u00b7 Resets Mon 12:00 AM"
+  ]
+ },
+ "03_svcon_test_pass_reward_detail": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   79.0540008544922,
+   12.0,
+   1399.89208984375,
+   672.677978515625
+  ],
+  "touch_min": 74.008,
+  "pressables_cut_off": [],
+  "free_row": {
+   "top": 261.0,
+   "bottom": 459.0,
+   "cell_h": 198.0,
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 467.0,
+   "bottom": 665.0,
+   "cell_h": 198.0,
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "side_page": "reward",
+  "side_panel": [
+   1095.0,
+   111.0,
+   364.0,
+   562.0
+  ],
+  "tabs": [
+   {
+    "tab": "challenges",
+    "rect": [
+     1111.0,
+     119.0,
+     162.0,
+     75.0
+    ]
+   },
+   {
+    "tab": "reward",
+    "rect": [
+     1281.0,
+     119.0,
+     162.0,
+     75.0
+    ]
+   }
+  ],
+  "claim_all_visible": true
+ },
+ "05_svcon_test_results_challenge_settled": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   79.0540008544922,
+   12.0,
+   1399.89208984375,
+   672.677978515625
+  ],
+  "touch_min": 74.008,
+  "pressables_cut_off": [],
+  "challenge_lines": [
+   {
+    "name": "ChallengeDone",
+    "text": "Night Shift complete \u00b7 +50 Season XP",
+    "rect": [
+     773.0,
+     356.0,
+     646.0,
+     31.0
+    ]
+   },
+   {
+    "name": "ChallengeDone2",
+    "text": "Campus Contribution complete \u00b7 +50 Season XP",
+    "rect": [
+     773.0,
+     391.0,
+     646.0,
+     31.0
+    ]
+   },
+   {
+    "name": "ChallengeNote",
+    "text": "Challenges: Campus Regular 7/10 \u00b7 Pull Your Weight 14/18 \u00b7 Strong Together 3/4",
+    "rect": [
+     773.0,
+     426.0,
+     646.0,
+     54.0
+    ]
+   }
+  ],
+  "challenges": {
+   "state": "settled",
+   "result": "applied",
+   "xp": 100,
+   "lines": [
+    {
+     "id": "night_shift",
+     "name": "Night Shift",
+     "period": "daily",
+     "progress": 2,
+     "goal": 2,
+     "inc": 1,
+     "completed_now": true,
+     "xp": 50
+    },
+    {
+     "id": "campus_contribution",
+     "name": "Campus Contribution",
+     "period": "daily",
+     "progress": 6,
+     "goal": 6,
+     "inc": 3,
+     "completed_now": true,
+     "xp": 50
+    },
+    {
+     "id": "campus_regular",
+     "name": "Campus Regular",
+     "period": "weekly",
+     "progress": 7,
+     "goal": 10,
+     "inc": 1,
+     "completed_now": false,
+     "xp": 0
+    },
+    {
+     "id": "pull_your_weight",
+     "name": "Pull Your Weight",
+     "period": "weekly",
+     "progress": 14,
+     "goal": 18,
+     "inc": 3,
+     "completed_now": false,
+     "xp": 0
+    },
+    {
+     "id": "strong_together",
+     "name": "Strong Together",
+     "period": "weekly",
+     "progress": 3,
+     "goal": 4,
+     "inc": 1,
+     "completed_now": false,
+     "xp": 0
+    }
+   ],
+   "message": ""
+  }
+ },
+ "06_svcon_test_results_challenge_pending": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   79.0540008544922,
+   12.0,
+   1399.89208984375,
+   672.677978515625
+  ],
+  "touch_min": 74.008,
+  "pressables_cut_off": [],
+  "challenge_lines": [
+   {
+    "name": "ChallengeDone",
+    "text": "Strong Together complete \u00b7 +150 Season XP (pending)",
+    "rect": [
+     773.0,
+     472.0,
+     646.0,
+     31.0
+    ]
+   },
+   {
+    "name": "ChallengeNote",
+    "text": "Challenges, pending: Campus Regular 8/10 \u00b7 Pull Your Weight 17/18",
+    "rect": [
+     773.0,
+     507.0,
+     646.0,
+     26.0
+    ]
+   }
+  ],
+  "challenges": {
+   "state": "pending",
+   "result": "applied",
+   "xp": 150,
+   "lines": [
+    {
+     "id": "campus_regular",
+     "name": "Campus Regular",
+     "period": "weekly",
+     "progress": 8,
+     "goal": 10,
+     "inc": 1,
+     "completed_now": false,
+     "xp": 0
+    },
+    {
+     "id": "pull_your_weight",
+     "name": "Pull Your Weight",
+     "period": "weekly",
+     "progress": 17,
+     "goal": 18,
+     "inc": 3,
+     "completed_now": false,
+     "xp": 0
+    },
+    {
+     "id": "strong_together",
+     "name": "Strong Together",
+     "period": "weekly",
+     "progress": 4,
+     "goal": 4,
+     "inc": 1,
+     "completed_now": true,
+     "xp": 150
+    }
+   ],
+   "message": ""
+  }
+ },
+ "07_practice_results_training": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   79.0540008544922,
+   12.0,
+   1399.89208984375,
+   672.677978515625
+  ],
+  "touch_min": 74.008,
+  "pressables_cut_off": [],
+  "challenge_lines": [
+   {
+    "name": "ChallengeNote",
+    "text": "Training only: 3 contribution credits. Practice doesn't count toward challenges.",
+    "rect": [
+     773.0,
+     517.0,
+     646.0,
+     54.0
+    ]
+   }
+  ],
+  "challenges": {
+   "state": "practice",
+   "result": "",
+   "xp": 0,
+   "lines": [],
+   "message": "Training only: 3 contribution credits. Practice doesn't count toward challenges."
+  }
+ },
+ "04_svcon_test_pass_after_round": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   79.0540008544922,
+   12.0,
+   1399.89208984375,
+   672.677978515625
+  ],
+  "touch_min": 74.008,
+  "pressables_cut_off": [],
+  "free_row": {
+   "top": 261.0,
+   "bottom": 459.0,
+   "cell_h": 198.0,
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 467.0,
+   "bottom": 665.0,
+   "cell_h": 198.0,
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "side_page": "challenges",
+  "side_panel": [
+   1095.0,
+   111.0,
+   364.0,
+   562.0
+  ],
+  "tabs": [
+   {
+    "tab": "challenges",
+    "rect": [
+     1111.0,
+     119.0,
+     162.0,
+     75.0
+    ]
+   },
+   {
+    "tab": "reward",
+    "rect": [
+     1281.0,
+     119.0,
+     162.0,
+     75.0
+    ]
+   }
+  ],
+  "claim_all_visible": true,
+  "challenge_page": [
+   1111.0,
+   202.0,
+   332.0,
+   463.0
+  ],
+  "challenge_list": [
+   1111.0,
+   275.0,
+   332.0,
+   390.0
+  ],
+  "challenge_status": "",
+  "challenge_cards": [
+   {
+    "id": "night_shift",
+    "rect": [
+     1111.0,
+     308.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": true,
+    "count": "2/2",
+    "xp": "Done \u00b7 +50 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "campus_contribution",
+    "rect": [
+     1111.0,
+     424.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": true,
+    "count": "6/6",
+    "xp": "Done \u00b7 +50 Season XP",
+    "pinned": true
+   },
+   {
+    "id": "team_effort",
+    "rect": [
+     1111.0,
+     540.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": true,
+    "count": "1/1",
+    "xp": "Done \u00b7 +50 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "campus_regular",
+    "rect": [
+     1111.0,
+     689.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": false,
+    "count": "8/10",
+    "xp": "+150 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "pull_your_weight",
+    "rect": [
+     1111.0,
+     805.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": false,
+    "count": "17/18",
+    "xp": "+150 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "strong_together",
+    "rect": [
+     1111.0,
+     921.0,
+     326.0,
+     108.0
+    ],
+    "whole_in_list": false,
+    "count": "4/4",
+    "xp": "Done \u00b7 +150 Season XP",
+    "pinned": false
+   }
+  ],
+  "groups": [
+   "Daily \u00b7 Resets 12:00 AM",
+   "Weekly \u00b7 Resets Mon 12:00 AM"
+  ]
+ },
+ "10_svcoff_pass_challenges_preview": {
+  "view": [
+   1558.0,
+   720.0
+  ],
+  "safe": [
+   79.0540008544922,
+   12.0,
+   1399.89208984375,
+   672.677978515625
+  ],
+  "touch_min": 74.008,
+  "pressables_cut_off": [],
+  "free_row": {
+   "top": 261.0,
+   "bottom": 459.0,
+   "cell_h": 198.0,
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "premium_row": {
+   "top": 467.0,
+   "bottom": 665.0,
+   "cell_h": 198.0,
+   "inside_safe": true,
+   "inside_track": true
+  },
+  "side_page": "challenges",
+  "side_panel": [
+   1095.0,
+   111.0,
+   364.0,
+   562.0
+  ],
+  "tabs": [
+   {
+    "tab": "challenges",
+    "rect": [
+     1111.0,
+     119.0,
+     162.0,
+     75.0
+    ]
+   },
+   {
+    "tab": "reward",
+    "rect": [
+     1281.0,
+     119.0,
+     162.0,
+     75.0
+    ]
+   }
+  ],
+  "claim_all_visible": false,
+  "challenge_page": [
+   1111.0,
+   202.0,
+   332.0,
+   463.0
+  ],
+  "challenge_list": [
+   1111.0,
+   371.0,
+   332.0,
+   294.0
+  ],
+  "challenge_status": "Preview: no game service in this build. No progress or Season XP is added.",
+  "challenge_cards": [
+   {
+    "id": "night_shift",
+    "rect": [
+     1111.0,
+     404.0,
+     326.0,
+     106.0
+    ],
+    "whole_in_list": true,
+    "count": "",
+    "xp": "+50 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "campus_contribution",
+    "rect": [
+     1111.0,
+     518.0,
+     326.0,
+     106.0
+    ],
+    "whole_in_list": true,
+    "count": "",
+    "xp": "+50 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "team_effort",
+    "rect": [
+     1111.0,
+     632.0,
+     326.0,
+     106.0
+    ],
+    "whole_in_list": false,
+    "count": "",
+    "xp": "+50 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "campus_regular",
+    "rect": [
+     1111.0,
+     779.0,
+     326.0,
+     106.0
+    ],
+    "whole_in_list": false,
+    "count": "",
+    "xp": "+150 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "pull_your_weight",
+    "rect": [
+     1111.0,
+     893.0,
+     326.0,
+     106.0
+    ],
+    "whole_in_list": false,
+    "count": "",
+    "xp": "+150 Season XP",
+    "pinned": false
+   },
+   {
+    "id": "strong_together",
+    "rect": [
+     1111.0,
+     1007.0,
+     326.0,
+     106.0
+    ],
+    "whole_in_list": false,
+    "count": "",
+    "xp": "+150 Season XP",
+    "pinned": false
+   }
+  ],
+  "groups": [
+   "Daily \u00b7 Resets 12:00 AM",
+   "Weekly \u00b7 Resets Mon 12:00 AM"
+  ]
+ }
+}
