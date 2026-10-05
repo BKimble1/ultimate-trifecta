@@ -17,13 +17,13 @@ All values come from one resource, `game/config/rules_default.tres` (`RulesConfi
 - Eight gameplay slots; bots fill empty seats and stay labelled. `runners = 8 − Night Watch`, `home to win = ceil(2 × runners / 3)` (`PartySeries.required_home`).
 - **Rounds:** 1, 3 (recommended for friends) or 5. The lobby shows one summary line, e.g. "3 rounds · 2 Night Watch · 6 runners · 4 home to win", and Reset to recommended.
 - Only the host can change them, only in the lobby before a series starts. A change bumps a revision, clears guests' Ready and tells them why. Settings lock when the series starts; ending the series (with confirmation) unlocks them. Guests see the host's values read-only.
-- Each round starts from an immutable snapshot of the locked settings carried in START; incompatible clients are refused with "Update the game to join." (protocol 7 since Pass 8; a guest whose dorm geometry differs from the round's is refused the same way).
+- Each round starts from an immutable snapshot of the locked settings carried in START; incompatible clients are refused with "Update the game to join." (protocol 8 since Pass 9, when sprint was removed; protocol 7 was Pass 8; a guest whose dorm geometry differs from the round's is refused the same way).
 
 ## Roles
 
 - **Friend parties:** drawn on the host at each round from a seeded random draw. Round 1 gives every human an equal chance; later rounds prefer whoever has had fewer Night Watch turns, ties broken at random. With two or more humans at least one human stays a runner and up to min(Night Watch, humans − 1) humans go on the Night Watch; bots take the remaining Night Watch seats. Saved role preferences play no part.
 - **One human in a party:** Night Watch with probability (Night Watch count ÷ 8), otherwise runner. Solo practice is the way to pick a role.
-- **Solo practice:** Runner, Night Watch or Random, plus a guided runner tutorial and a guided Night Watch exercise (find a runner, wait for Tag to light, tag, the capture and protection rules, a cart and a hop-out tag; runner bots jog slower and never sprint there). The choice is stored for practice only.
+- **Solo practice:** Runner, Night Watch or Random, plus a guided runner tutorial and a guided Night Watch exercise (find a runner, wait for Tag to light, tag, the capture and protection rules, a cart and a hop-out tag; runner bots jog slower there). The choice is stored for practice only.
 - A reconnecting player keeps the same seat and role for the current round. Spectators and newcomers join at a round boundary and never inherit anyone's score.
 
 ## Series

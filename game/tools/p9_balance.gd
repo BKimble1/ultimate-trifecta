@@ -19,9 +19,12 @@ extends SceneTree
 ##     watch list e.g. 1,2,3 (default)
 ##     nav        "old" turns the Pass 9 bot path fixes off (1.9 only), to
 ##                separate them from the movement change
+##     overrides  e.g. patrol_speed=6.8,turbo_multiplier=1.15: rules values
+##                for a tuning experiment (applied after the team size)
 ## Deterministic for a seed on one machine; bot play, not people.
 
 var _out_path := "user://p9_balance.json"
+var _over := {}
 
 
 func _initialize() -> void:
@@ -37,6 +40,11 @@ func _run() -> void:
 	for w in (args[2] if args.size() > 2 else "1,2,3").split(","):
 		watches.append(int(w))
 	var nav := args[3] if args.size() > 3 else "new"
+	if args.size() > 4:
+		for kv in args[4].split(","):
+			if kv.contains("="):
+				_over[kv.get_slice("=", 0)] = float(kv.get_slice("=", 1))
+		print("[p9bal] rules overrides: ", _over)
 	if nav == "old":
 		(BotBrain as Script).set("pass9_nav", false)
 		print("[p9bal] Pass 9 bot path fixes: ", (BotBrain as Script).get("pass9_nav"))
@@ -50,6 +58,7 @@ func _run() -> void:
 			var combo: Array = combos[(s * 7 + int(w) * 3) % combos.size()]
 			var row := await _round(dorm, combo, 2000 + s * 13 + int(w), int(w))
 			row["nav"] = nav
+			row["overrides"] = _over
 			rows.append(row)
 			_save(rows)
 			print("[p9bal] watch %d seed %d %s %s -> %s home %d caught %d (%.0f s)" % [w, s, dorm, str(combo), str(row["outcome"]), row["home"], row["captures"], float(Time.get_ticks_msec() - t0) / 1000.0])
@@ -67,6 +76,8 @@ func _make(dorm: String, combo: Array, seed_v: int, watch: int) -> MatchSim:
 	var sim := MatchSim.new()
 	root.add_child(sim)
 	var cfg := PartySeries.rules_for(load("res://config/rules_default.tres") as RulesConfig, watch)
+	for k in _over:
+		cfg.set(k, _over[k])
 	var roster: Array = []
 	for i in 8:
 		var is_r := i < cfg.runner_slots
