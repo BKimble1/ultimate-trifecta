@@ -1197,6 +1197,11 @@ func _process_view(delta: float) -> void:
 		_update_ground(delta, vel, speed, on_floor, sprinting, yaw_rate)
 	else:
 		_clear_layers()
+		# (Pass 9: a stop made in another state belongs to it: back on the
+		# ground from an emote, a landing or a dive recovery the body is
+		# already standing, and a planted stop from the remembered run pace
+		# played late from a standstill)
+		_run_mem = speed
 		_still_t = 0.0
 		tree.set("parameters/loco_seek/seek_request", fposmod(_phase, 1.0))
 		if foot_lock:
