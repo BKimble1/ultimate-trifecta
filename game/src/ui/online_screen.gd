@@ -99,7 +99,7 @@ func build() -> void:
 	create_btn.disabled = not ready
 	create_btn.pressed.connect(_create)
 	cc.add_child(create_btn)
-	var hint := UIKit.styled("You get a 6-character code to share. Invite Game Center friends from the party." if ready
+	var hint := UIKit.styled("You get a 6-character code to share, or invite friends from the party." if ready
 		else "Needs Game Center (see above).", "caption", UIKit.IVORY_MUTED)
 	hint.add_theme_font_size_override("font_size", 19)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
