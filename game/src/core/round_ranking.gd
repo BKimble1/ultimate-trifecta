@@ -25,7 +25,8 @@ extends RefCounted
 static func round_view(results: Dictionary, my_uid: String, my_slot: int = -1) -> Dictionary:
 	var oc := int(results.get("outcome", TC.Outcome.NONE))
 	var out := {"outcome": oc, "cancelled": oc == TC.Outcome.CANCELLED or oc == TC.Outcome.NONE,
-		"reason": reason(results), "round": int(results.get("round_index", 1)), "total": int(results.get("rounds_total", 1)),
+		"reason": reason(results), "why_short": short_reason(results),
+		"round": int(results.get("round_index", 1)), "total": int(results.get("rounds_total", 1)),
 		"practice": bool(results.get("practice", false)), "winners": -1, "runners": [], "watch": [], "celebrate": [], "me": {}}
 	if bool(out["cancelled"]):
 		return out   # no standings or rewards for a round that didn't finish
@@ -105,6 +106,20 @@ static func reason(r: Dictionary) -> String:
 	return "The round was interrupted (a player's connection or the host ended it), so it doesn't count and pays nothing."
 
 
+## Pass 8: the reason in a few words for the results headline: "4 runners
+## home · 2:31" or "Time expired: 3/4 home".
+static func short_reason(r: Dictionary) -> String:
+	var fin := int(r.get("finished", 0))
+	var need := int(r.get("needed", 4))
+	var t := int(r.get("round_time", 0))
+	match int(r.get("outcome", 0)):
+		TC.Outcome.RUNNERS_WIN:
+			return "%d runner%s home · %d:%02d" % [fin, "" if fin == 1 else "s", t / 60, t % 60]
+		TC.Outcome.PATROL_WIN:
+			return "Time expired: %d/%d home" % [fin, need]
+	return "Round cancelled"
+
+
 ## The series standings as shown: PartySeries order and shared places, with
 ## shown names, "you", and the place label ("1st", or "T1" for a tie).
 static func series_rows(view: Dictionary, my_uid: String) -> Array:
@@ -114,6 +129,28 @@ static func series_rows(view: Dictionary, my_uid: String) -> Array:
 		r["name"] = SocialSafety.name_of({"uid": r["uid"], "name": r["name"]})
 		r["label"] = ("T%d" if bool(r["tied"]) else "%s") % ([int(r["place"])] if bool(r["tied"]) else [ordinal(int(r["place"]))])
 	return rows
+
+
+## Pass 8: your series standing in one line - "Series: tied 1st · 2 Round
+## Wins" - for the pause menu, the map and results.  Round Wins only (one
+## per eligible round on the winning team); a shared place says "tied" and
+## no name order is implied; a late join or away rounds stay marked.  ""
+## before any completed round (never a fake place) or when you are not in
+## the standings (bots never are).
+static func series_line(view: Dictionary, my_uid: String) -> String:
+	if view.is_empty() or (view.get("rounds", []) as Array).is_empty() or my_uid == "":
+		return ""
+	for r in series_rows(view, my_uid):
+		if not bool(r["me"]):
+			continue
+		var w := int(r["wins"])
+		var s := "Series: %s%s · %d Round Win%s" % ["tied " if bool(r["tied"]) else "", ordinal(int(r["place"])), w, "" if w == 1 else "s"]
+		if int(r["joined_round"]) > 1:
+			s += " · joined round %d" % int(r["joined_round"])
+		if int(r["partial"]) > 0:
+			s += " · away %d" % int(r["partial"])
+		return s
+	return ""
 
 
 ## Podium steps: up to three places, people who share a place share a step.

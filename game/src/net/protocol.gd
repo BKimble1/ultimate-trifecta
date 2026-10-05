@@ -15,7 +15,11 @@ extends RefCounted
 ## and, privately, the recipient's coin count (u8); EVENTS gain
 ## COIN_PICKUP.  Message types 60-79 are reserved for the V6 social
 ## messages (chat / hub); none of them is defined here.
-const VERSION := 6
+## 7 (Pass 8): the private snapshot block ends with the live runner pace,
+## for runner recipients only: their own suggested next goal (u8: target
+## index, 16 + home door, 255 none) and, per runner, slot + place/flags +
+## stamps (3 bytes each).  Never a position or another runner's goal.
+const VERSION := 7
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}
@@ -326,7 +330,59 @@ static func encode_snapshot(sim: MatchSim, recipient: SimPlayer, relevant: Array
 		for i in mini(fx.size(), 6):
 			b.put_u8(int(fx[i][0]))
 			put_vec3(b, fx[i][1])
+		put_pace(b, sim, recipient)
 	return b.data_array
+
+
+## Pass 8 (protocol 7): the live runner pace for a runner recipient.  The
+## Night Watch (and anything before the round is under way) gets an empty
+## block: pace is the runners' own progress display.
+const PACE_TIED := 16
+const PACE_APPROX := 32
+const PACE_HOME := 64
+
+
+static func put_pace(b: StreamPeerBuffer, sim: MatchSim, recipient: SimPlayer) -> void:
+	var pc: RunnerPace = sim.pace
+	if pc == null or recipient == null or not recipient.is_runner() or sim.phase < TC.Phase.PLAYING:
+		b.put_u8(RunnerPace.NO_GOAL)
+		b.put_u8(0)
+		return
+	b.put_u8(clampi(int(pc.next_goal.get(recipient.id, RunnerPace.NO_GOAL)), 0, 255))
+	var slots: Array = pc.places.keys()
+	slots.sort()
+	b.put_u8(mini(slots.size(), 8))
+	for i in mini(slots.size(), 8):
+		var e: Dictionary = pc.places[slots[i]]
+		var f := clampi(int(e["place"]), 0, 15)
+		if bool(e["tied"]):
+			f |= PACE_TIED
+		if bool(e["approx"]):
+			f |= PACE_APPROX
+		if bool(e["home"]):
+			f |= PACE_HOME
+		b.put_u8(int(slots[i]))
+		b.put_u8(f)
+		b.put_u8(clampi(int(e["stamps"]), 0, 3))
+
+
+static func get_pace(b: StreamPeerBuffer, me: Dictionary) -> void:
+	me["next_goal"] = RunnerPace.NO_GOAL
+	me["pace"] = {}
+	if b.get_available_bytes() < 2:
+		return
+	me["next_goal"] = b.get_u8()
+	var n := b.get_u8()
+	if n > 8 or b.get_available_bytes() < n * 3:
+		return
+	var out := {}
+	for i in n:
+		var slot := b.get_u8()
+		var f := b.get_u8()
+		var st := b.get_u8()
+		out[slot] = {"place": f & 15, "tied": (f & PACE_TIED) != 0, "approx": (f & PACE_APPROX) != 0,
+			"home": (f & PACE_HOME) != 0, "stamps": clampi(st, 0, 3)}
+	me["pace"] = out
 
 
 static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
@@ -413,5 +469,6 @@ static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
 		for i in nf:
 			fx.append({"kind": b.get_u8(), "pos": get_vec3(b)})
 		me["fx"] = fx
+		get_pace(b, me)
 		s["me"] = me
 	return s

@@ -131,6 +131,12 @@ var _prev_server_state := -1
 ## my own catches this round (Night Watch confirmation)
 var caught_by := ""
 var my_catches := 0
+## Pass 8: personal contribution from the reliable events (host and guest
+## alike): the different runners I tagged, and my place in the finish order
+var my_tagged: Dictionary = {}
+var my_finish_order := 0
+## the water of my latest stamp (a caught runner comes back at its pads)
+var last_stamp_water := -1
 
 
 func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> void:
@@ -327,6 +333,7 @@ func _exit_tree() -> void:
 	stage_report = Callable()
 	_set_view_held(false)     # menus draw 3D again
 	NavGrid.settle_shared()   # V8: no bot path search left running on a worker
+	PaceFields.hand_off()     # Pass 8: route fields still building are released later, never waited for here
 	if prepared:
 		return
 	Diag.mark("prep_cancelled")
@@ -891,6 +898,7 @@ func _on_snapshot(s: Dictionary) -> void:
 	if _last_snap_tick >= 0:
 		_snap_gap_avg = lerpf(_snap_gap_avg, float(tick - _last_snap_tick), 0.1)
 	_jb_arrival(tick, session.clock_s() * cfg.sim_hz if session != null else 0.0)
+	_last_snap_ms = Time.get_ticks_msec()
 	var prev_tick := _last_snap_tick
 	_last_snap_tick = tick
 	_last_snap = s
@@ -1372,7 +1380,35 @@ func local_info() -> Dictionary:
 	else:
 		info["coins"] = int(_me.get("coins_picked", 0))
 	info["coins_total"] = (start.get("coins", []) as Array).size()
+	# Pass 8: the round's immutable goal, the runner pace (runners only:
+	# the host reads its own tracker, a guest the private snapshot block)
+	# and this player's own contribution
+	info["needed"] = cfg.runners_needed
+	info["runner_count"] = runner_count()
+	var pace := {}
+	var goal := RunnerPace.NO_GOAL
+	if int(info["role"]) == TC.Role.RUNNER:
+		if sim and sim.pace:
+			pace = sim.pace.places
+			goal = int(sim.pace.next_goal.get(local_slot, RunnerPace.NO_GOAL))
+		elif not sim:
+			pace = _me.get("pace", {})
+			goal = int(_me.get("next_goal", RunnerPace.NO_GOAL))
+	info["pace"] = pace
+	info["next_goal"] = goal
+	info["finish_order"] = my_finish_order
+	info["tags"] = my_catches
+	info["distinct"] = my_tagged.size()
 	return info
+
+
+## Runners in tonight's roster (bots included: they help decide the round).
+func runner_count() -> int:
+	var n := 0
+	for slot in roster:
+		if int(roster[slot]["role"]) == TC.Role.RUNNER:
+			n += 1
+	return n
 
 
 ## Tag button cooldown ring, 0..1 of the miss cooldown (or cart-exit lockout).
@@ -1645,6 +1681,7 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 			Diag.mark("splash")
 			if mine:
 				if big:
+					last_stamp_water = int(ev["b"])
 					hud.stamp_pop(layout.waters[int(ev["b"])], _my_stamp_count(int(ev["b"])), targets.size())
 					_haptic(20)
 				else:
@@ -1669,7 +1706,8 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 			elif int(ev["b"]) == local_slot:
 				# the tagger's confirmation, once, with their count this round
 				my_catches += 1
-				hud.toast("Tagged %s! · %d catch%s" % [r.get("name", "?"), my_catches, "" if my_catches == 1 else "es"], Color(1.0, 0.8, 0.3))
+				my_tagged[a] = true
+				hud.toast("Tagged %s! · %d tag%s · %d different" % [r.get("name", "?"), my_catches, "" if my_catches == 1 else "s", my_tagged.size()], Color(1.0, 0.8, 0.3))
 				_haptic(20)
 		TC.Ev.TAG_MISS:
 			if world:
@@ -1687,7 +1725,9 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 			var r2: Dictionary = roster.get(a, {})
 			hud.feed("%s made it home! (%d/%d)" % [r2.get("name", "?"), int(ev["v"]), cfg.runners_needed], TC.Role.RUNNER)
 			if mine:
-				# (the HOME SAFE overlay says it; no second toast)
+				# (the Home overlay says it; no second toast)
+				my_finish_order = int(ev["v"])
+				hud.home_now()
 				_haptic(40)
 		TC.Ev.BUMP:
 			if world:
@@ -1788,8 +1828,26 @@ func _build_beacons() -> void:
 ## the tracking.  (Presentation only: see docs/V4_NOTES.md for what the
 ## network actually carries.)
 const LAST_SEEN_TTL_S := 5.0
-var last_seen: Dictionary = {}   # slot -> {"pos": Vector3, "ms": int, "live": bool}
+## Pass 8: a guest's snapshots older than this are stale: nothing new is
+## "seen" from them (a dead link never keeps a frozen opponent live)
+const SEEN_STALE_MS := 600
+var last_seen: Dictionary = {}   # slot -> {"pos": Vector3, "ms": int, "live": bool, "cart": bool, "yaw": float, "dist": float}
 var _seen_scan_t := 0.0
+var _last_snap_ms := -1
+
+
+## Whose eyes the map's opponent sightings come from: your own character
+## while it is in play; while you are caught or home and the camera follows
+## a teammate, that teammate (the followed-view policy: what the view you
+## are shown can see, never more).  -1: nobody (pure spectators).
+func sight_slot() -> int:
+	if spectator or not roster.has(local_slot):
+		return -1
+	var st := int(_player_rs(local_slot).get("state", TC.PState.ACTIVE))
+	if (st == TC.PState.FINISHED or st == TC.PState.CAPTURED) and spectate_slot >= 0 and roster.has(spectate_slot) \
+			and int(roster[spectate_slot]["role"]) == int(roster[local_slot]["role"]):
+		return spectate_slot
+	return local_slot
 
 
 func _scan_seen(delta: float) -> void:
@@ -1797,15 +1855,27 @@ func _scan_seen(delta: float) -> void:
 	if _seen_scan_t > 0.0:
 		return
 	_seen_scan_t = 0.2
+	scan_seen_now()
+
+
+## One sighting pass (5 Hz from _process; tests call it directly).  An
+## opponent is live while it is within view range of the viewer's head
+## with a clear line through the campus (walls, buildings, dorms block it;
+## "not on screen" is not "not in sight"); its marker then freezes where
+## it was last seen and expires after LAST_SEEN_TTL_S.
+func scan_seen_now() -> void:
 	var now := Time.get_ticks_msec()
 	for k in last_seen.keys():
 		last_seen[k]["live"] = false
 		if now - int(last_seen[k]["ms"]) > int(LAST_SEEN_TTL_S * 1000.0):
 			last_seen.erase(k)
-	if spectator or not roster.has(local_slot):
+	var viewer := sight_slot()
+	if viewer < 0:
+		return
+	if is_client and (_last_snap_ms < 0 or now - _last_snap_ms > SEEN_STALE_MS):
 		return
 	var my_role := int(roster[local_slot]["role"])
-	var me := _player_rs(local_slot)
+	var me := _player_rs(viewer)
 	if not me.has("pos"):
 		return
 	var eye: Vector3 = (me["pos"] as Vector3) + Vector3(0, 1.5, 0)
@@ -1820,11 +1890,13 @@ func _scan_seen(delta: float) -> void:
 		if st == TC.PState.FINISHED or st == TC.PState.CAPTURED or not bool(rs.get("visible", true)):
 			continue
 		var p: Vector3 = (rs["pos"] as Vector3) + Vector3(0, 1.0, 0)
-		if eye.distance_to(p) > cfg.view_range_m:
+		var dist := eye.distance_to(p)
+		if dist > cfg.view_range_m:
 			continue
 		var q := PhysicsRayQueryParameters3D.create(eye, p, TC.L_WORLD)
 		if space.intersect_ray(q).is_empty():
-			last_seen[int(slot)] = {"pos": rs["pos"], "ms": now, "live": true}
+			last_seen[int(slot)] = {"pos": rs["pos"], "ms": now, "live": true, "dist": dist,
+				"cart": st == TC.PState.IN_CART or st == TC.PState.ENTERING, "yaw": float(rs.get("yaw", 0.0))}
 
 
 var _aim_ring: MeshInstance3D

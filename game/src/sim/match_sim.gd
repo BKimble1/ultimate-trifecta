@@ -56,6 +56,9 @@ var home_doors: Array = []
 var spawn_map: Dictionary = {}
 ## V6: the round's coins [{id, pos: Vector3, by: slot or -1}]
 var coins: Array = []
+## Pass 8: the live runner pace (host only, output only: it never feeds
+## back into the round); null with opts "pace": false
+var pace: RunnerPace = null
 var _space: PhysicsDirectSpaceState3D
 var _cap_shape: CapsuleShape3D
 var _bot_factory: Callable
@@ -130,6 +133,9 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 	if not enabled.is_empty():
 		for spot in layout.gadget_spots:
 			pickups.append({"pos": Vector3(spot.x, 0.0, spot.y), "type": enabled[rng.randi() % enabled.size()], "respawn": 0.0})
+	if bool(opts.get("pace", true)):
+		pace = RunnerPace.new()
+		pace.setup(self)       # starts the route fields on a worker (PaceFields)
 	_set_phase(TC.Phase.REVEAL)
 
 
@@ -389,6 +395,8 @@ func step(inputs: Dictionary) -> void:
 			_end_match(TC.Outcome.RUNNERS_WIN)
 		elif tick >= end_tick:
 			_end_match(TC.Outcome.PATROL_WIN)
+		elif pace != null and tick % RunnerPace.UPDATE_TICKS == 0:
+			pace.update(self)      # Pass 8: 2 Hz, after the tick's rules
 
 
 func _idle_bodies() -> void:
@@ -1083,6 +1091,8 @@ func _end_match(oc: int) -> void:
 	if outcome != TC.Outcome.NONE:
 		return
 	outcome = oc
+	if pace != null:
+		pace.update(self)          # the final finishes are in the last pace
 	results = build_results()
 	_set_phase(TC.Phase.RESULTS)
 	_emit(TC.Ev.MATCH_END, -1, -1, oc)
