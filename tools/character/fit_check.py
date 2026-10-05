@@ -10,13 +10,16 @@ that sits away from the body, which outfit_check.py (proxy spheres against
 head pieces) cannot see:
 
   weights   every vertex: weights sum to 1, no unweighted vertex, joints in
-            range; and vertices split at a seam (same position) carry the
-            same weights (different weights open a crack in motion).
+            range, at most 4 influences; and vertices split at a seam (same
+            position) carry the same weights (different weights open a crack
+            in motion).
+  normals   per part: unit normals that agree with the face winding (an
+            inverted normal reads as a dark, detached piece).
   trims     closed rings round a limb or the torso (hem rings, cuff rolls,
             belts, piping, boot collars): per 15-degree sector, the ring's
             inner radius minus the radius of the outward-facing surface it
             sits on (the garment, a boot, bare skin).  A trim must sit on
-            something: > 3 mm in any sector is a floating ring.
+            something: > 4 mm in any sector is a floating ring.
   openings  open edges round a limb or the neck (cuffs, hems, ankle and
             neck openings) that are not themselves covered by another piece:
             per sector, the edge's radius minus the outward-facing surface
@@ -27,8 +30,10 @@ head pieces) cannot see:
   crossing  a trouser leg must not cross the body's midline into the other
             leg (rest pose).
   seams     pieces of one garment that touch at rest (rings on tubes, cuffs on
-            sleeves, collars, patches, pockets) on the same body segment:
-            their separation may not grow by more than 6 mm in any pose.
+            sleeves, collars, patches, pockets): on the same main bone their
+            separation may not grow by more than 1.2 cm in any pose; layers
+            that overlap across a joint (a shoulder cap over its sleeve, the
+            pelvis over a trouser top) by more than 2 cm.
   fitted    garment vertices on a limb: radial distance to the posed limb
             axis minus the rest distance, by region (shoulder, elbow, wrist,
             hip, knee, ankle): how far the garment leaves (+) or sinks into
@@ -74,6 +79,8 @@ TIP = {'hand': 0.09, 'foot': 0.1336, 'head': 0.37}
 TRIM_GAP = 0.004          # a ring may sit on (or sink into) its surface, never float
 SEAM_GROW = 0.012         # touching pieces on one bone (a ring on its tube, a patch, a cap over its sleeve) may not part more
 JUNCTION_GROW = 0.02      # overlapping layers across a joint (footwear over a cuff, the pelvis over a trouser top)
+OVER_SHOE_GROW = 0.03     # in game: a pair across the ankle (a hem over footwear, a shoe collar round the shin)
+FLIPPED_MAX = 0.002       # faces against their normals (a pinched tip or fold), as a share of a part's faces
 CROSS_MAX = 0.002         # a trouser leg's inner face may reach the midline, not cross it
 # visible openings: the largest radial gap between an edge and what comes out of it
 OPEN_GAP = {'cuff': 0.016, 'sleeve': 0.016, 'thigh': 0.016, 'knee': 0.016, 'ankle': 0.016, 'waist': 0.016, 'skirt': 1.0,
@@ -368,6 +375,26 @@ def check_weights(look):
         out[p] = {'verts': int(len(w)), 'sum_err': float(np.abs(s - 1).max()), 'unweighted': int((s < 1e-6).sum()),
                   'bad_joint': int((m['joints'] >= len(look.g.joint_names)).sum()), 'split_weight_diff': round(split, 5),
                   'max_influences': int((m['weights'] > 1e-4).sum(1).max())}
+    return out
+
+
+def check_normals(look):
+    """Per part: faces whose winding disagrees with their vertex normals (an
+    inverted or crossed normal shades a piece dark from outside) and normals
+    that are not unit length.  (Pass 9: a dark detached-looking cuff was the
+    lining's 50% vertex colour seen through the gap, not inverted normals.)"""
+    out = {}
+    for p in look.parts:
+        m = look.meshes[p]
+        P, N, F = m['pos'], m['nrm'], m['faces']
+        fn = np.cross(P[F[:, 1]] - P[F[:, 0]], P[F[:, 2]] - P[F[:, 0]])
+        area = np.linalg.norm(fn, axis=1)
+        ok = area > 1e-10
+        vn = N[F].mean(axis=1)
+        vn /= np.maximum(np.linalg.norm(vn, axis=1), 1e-9)[:, None]
+        d = np.einsum('ij,ij->i', fn[ok] / area[ok][:, None], vn[ok])
+        out[p] = {'faces': int(len(F)), 'flipped': int((d < -0.2).sum()),
+                  'bad_length': int((np.abs(np.linalg.norm(N, axis=1) - 1.0) > 0.02).sum())}
     return out
 
 
@@ -683,13 +710,13 @@ def poses_of(g):
     return out
 
 
-def analyze(g, key, parts, poses, pose_data, want_anchors=False):
+def analyze(g, key, parts, poses, pose_data, want_anchors=False):  # noqa: C901
     look = Look(g, parts)
     rest_glob = joint_globals(g)
     look.axes = {grp: chain_points(g, rest_glob, grp) for grp in set(look.group)}
     P, N = look.pos, look.nrm
     reg = region_of_fn()
-    rep = {'parts': look.parts, 'weights': check_weights(look)}
+    rep = {'parts': look.parts, 'weights': check_weights(look), 'normals': check_normals(look)}
     trims = check_trims(look, P, N, reg)
     opens = check_openings(look, P, N, reg, {t['island'] for t in trims})
     rep['crossing'] = check_crossing(look, P)
@@ -762,6 +789,9 @@ def analyze(g, key, parts, poses, pose_data, want_anchors=False):
     for p, w in rep['weights'].items():
         if w['sum_err'] > 1e-3 or w['unweighted'] or w['bad_joint'] or w['split_weight_diff'] > 1e-3 or w['max_influences'] > 4:
             fails.append('weights %s %s' % (p, w))
+    for p, n in rep['normals'].items():
+        if n['flipped'] > FLIPPED_MAX * n['faces'] or n['bad_length']:
+            fails.append('normals %s %s' % (p, n))
     for t in rep['trims']:
         if t['gap'] > TRIM_GAP:
             fails.append('trim %s %s at %s floats %.1f cm off its surface' % (t['part'], t['region'], t['center'], t['gap'] * 100))
@@ -779,40 +809,103 @@ def analyze(g, key, parts, poses, pose_data, want_anchors=False):
     rep['failures'] = fails
     anchors = None
     if want_anchors:
-        anchors = make_anchors(look, trims, opens, pairs, grow)
+        anchors = make_anchors(look, trims, opens, pairs, grow, key)
     return rep, anchors
 
 
-def make_anchors(look, trims, opens, pairs, grow):
-    """Vertex pairs for the in-game check: a few per trim (ring vertex and the
-    surface vertex under it), per visible opening (edge vertex and the
-    nearest support vertex) and per seam."""
+# poses whose skinned anchor positions go into the fixture: the game must
+# reproduce them from the imported scene (imported-vs-runtime comparison)
+REFERENCE_POSES = [('run', 0.3), ('dive', 0.3), ('emote_cheer', 0.3), ('land_hard', 0.15), ('cart_drive', 0.3)]
+REFERENCE_LOOKS = {'pj', 'midnight_mechanic', 'moonwalk_cadet', 'pumpkin_pajamas', 'arcade_sprinter', 'cloud_nine', 'bedtime_bandit',
+                   'after_hours_hoodie', 'night_owl', 'glow_jogger', 'library_cardigan'}
+
+
+def make_anchors(look, trims, opens, pairs, grow, key):
+    """Vertex pairs for the in-game check (tests/test_fit_p9.gd), re-measured
+    on the imported scene in final blended poses: a few per trim (a ring
+    vertex and the surface vertex under it), per visible opening (an edge
+    vertex and the nearest outward surface vertex of the same segment) and
+    the seams that moved most in the clips.  Each carries its bound on how
+    far the pair may part from its rest distance, and for limb anchors the
+    rest distance of `a` from its limb's axis (`axis`: the bones of the
+    segment, `r`)."""
     P = look.pos
+    N = look.nrm
+    g = look.g
     out = []
+    dom = look.joints[np.arange(len(look.joints)), look.weights.argmax(1)]
+    rest_glob = joint_globals(g)
 
     def add(kind, a, b, bound):
-        out.append({'kind': kind, 'a': [look.parts[look.pid[a]], [round(float(v), 5) for v in gl_back(P[a])]],
-                    'b': [look.parts[look.pid[b]], [round(float(v), 5) for v in gl_back(P[b])]],
-                    'rest': round(float(np.linalg.norm(P[a] - P[b])), 5), 'bound': bound})
+        grp = look.group[a]
+        e = {'kind': kind, 'a': [look.parts[look.pid[a]], [round(float(v), 5) for v in gl_back(P[a])]],
+             'b': [look.parts[look.pid[b]], [round(float(v), 5) for v in gl_back(P[b])]],
+             'rest': round(float(np.linalg.norm(P[a] - P[b])), 5),
+             'bound': bound if dom[a] == dom[b] else max(bound, JUNCTION_GROW), 'group': grp}
+        if grp != 'torso' and grp != 'head':
+            pts = chain_points(g, rest_glob, grp)
+            e['r'] = round(float(axis_project(P[a][None, :], pts)[0][0]), 5)
+        out.append(e)
+
+    foot_j = np.array([n.startswith('foot') for n in g.joint_names])
+    foot_share = (look.weights * foot_j[look.joints]).sum(1)
+
+    def over_shoe(a, b):
+        # a pair across the ankle (a hem over footwear, a shoe collar round
+        # the shin): the two ends follow the foot to different extents, and
+        # the foot flexes and pivots under the hem, which follows the shin
+        return abs(float(foot_share[a]) - float(foot_share[b])) > 0.2
+
     for t in trims:
         idx = t['verts']
-        others = np.where(look.isl != t['island'])[0]
+        # (the surface under the ring: another piece on the same segment, so
+        # an arm's ring is never paired with the torso it happens to touch)
+        others = np.where((look.isl != t['island']) & (look.group == look.group[idx[0]]))[0]
+        if len(others) == 0:
+            continue
         for v in idx[::max(1, len(idx) // 4)][:4]:
             d = np.linalg.norm(P[others] - P[v], axis=1)
-            add('trim', int(v), int(others[d.argmin()]), SEAM_GROW)
+            b = int(others[d.argmin()])
+            add('trim', int(v), b, OVER_SHOE_GROW if over_shoe(int(v), b) else SEAM_GROW)
     for o in opens:
         L = o['verts']
         isl = look.isl[L[0]]
-        others = np.where((look.isl != isl) & (look.group == look.group[L[0]]))[0]
+        c = P[L].mean(0)
+        rad = P - c
+        outward = np.einsum('ij,ij->i', N, rad) > 0.0
+        others = np.where((look.isl != isl) & (look.group == look.group[L[0]]) & outward)[0]
         if len(others) == 0:
             continue
         for v in L[::max(1, len(L) // 4)][:4]:
             d = np.linalg.norm(P[others] - P[v], axis=1)
-            add('opening', int(v), int(others[d.argmin()]), 0.02)
+            b = int(others[d.argmin()])
+            add('opening', int(v), b, OVER_SHOE_GROW if over_shoe(int(v), b) else JUNCTION_GROW)
     if len(pairs):
-        for i in np.argsort(-grow)[:12]:
+        # (a stable order on rounded values: left/right twins tie, and the
+        # fixture must not depend on the numpy build's tie order)
+        for i in np.argsort(-np.round(grow, 5), kind='stable')[:12]:
             add('seam', int(pairs[i, 0]), int(pairs[i, 1]), SEAM_GROW)
-    return out
+    ref = []
+    if key in REFERENCE_LOOKS:
+        idx_a = []
+        for e in out:
+            idx_a.append(_find(look, e['a']))
+            idx_a.append(_find(look, e['b']))
+        idx_a = np.array(idx_a, dtype=np.int64)
+        for clip, t in REFERENCE_POSES:
+            glob = joint_globals(g, clip, t)
+            jm = np.stack([glob[n] for n in g.joint_names]) @ g.ibm
+            Q = look.posed_idx(jm, idx_a)
+            ref.append({'clip': clip, 't': t, 'pos': [[round(float(v), 5) for v in gl_back(q)] for q in Q]})
+    return out, ref
+
+
+def _find(look, pv):
+    part, pos = pv
+    k = look.parts.index(part)
+    q = np.array([pos[0], -pos[2], pos[1]])
+    sel = np.where(look.pid == k)[0]
+    return int(sel[np.linalg.norm(look.pos[sel] - q, axis=1).argmin()])
 
 
 def gl_back(p):
@@ -844,7 +937,7 @@ def main():
         rep, anc = analyze(g, k, L[k], poses, pose_data, bool(a.anchors))
         report['looks'][k] = rep
         if anc is not None:
-            anchors[k] = {'parts': L[k], 'pairs': anc}
+            anchors[k] = {'parts': L[k], 'pairs': anc[0], 'reference': anc[1]}
         nfail += len(rep['failures'])
         if not a.quiet:
             worst_t = max([t['gap'] for t in rep['trims']] or [0.0])
@@ -860,7 +953,7 @@ def main():
             json.dump(report, f, indent=1, sort_keys=True)
     if a.anchors:
         with open(a.anchors, 'w') as f:
-            json.dump({'glb_sha256': g_sha(a.glb), 'looks': anchors}, f, indent=1, sort_keys=True)
+            json.dump({'glb_sha256': g_sha(a.glb), 'looks': anchors}, f, sort_keys=True, separators=(',', ':'))
     print('fit_check: %d looks, %d poses, %d failures' % (len(keys), len(poses), nfail))
     return 1 if nfail else 0
 

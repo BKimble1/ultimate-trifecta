@@ -10,6 +10,8 @@ extends Node3D
 ##   tools/gd.sh --path game --write-movie OUT.avi --fixed-fps 30 res://src/dev/motion_reel_v8.tscn -- [--scenarios=a,b] [--views=game,side]
 ## (tools/capture_v8_motion.sh OUT NAME [ROOT] records and labels it; the V5 motion_reel.tscn is the studio-light version.)
 ## Desktop rendering of scripted input, not device footage.
+## Pass 9: --views=close / closeback frame the body from about 2.2 m (garment fit
+## in motion: hems, cuffs, the hips), the rest unchanged.
 ## Pass 8: --look=JSON wears another look (an outfit through the same
 ## scenarios, e.g. --look={"outfit":"moonwalk_cadet","hat":"none"}); its
 ## name goes into the caption.
@@ -98,7 +100,8 @@ func _next() -> void:
 	_caption.text = sc.replace("_", " ")
 	if look.has("outfit") and String(look["outfit"]) != String(LOOK["outfit"]):
 		_caption.text = "%s  ·  %s" % [Cosmetics.entry("outfit", String(look["outfit"])).get("name", ""), _caption.text]
-	_sub.text = "from behind (follow-camera distance)" if view == "game" else "from the side"
+	_sub.text = {"game": "from behind (follow-camera distance)", "close": "close-up, front three-quarter (Pass 9 fit)",
+		"closeback": "close-up, back three-quarter (Pass 9 fit)"}.get(view, "from the side")
 	rig = MotionRig.new()
 	add_child(rig)
 	rig.start(sc, Cosmetics.sanitize(look.duplicate()), 0.0)
@@ -117,8 +120,14 @@ func _process(delta: float) -> void:
 		_cam_at = target
 	# a follow camera's lag (not locked to the pelvis: the body's own motion shows)
 	_cam_at = _cam_at.lerp(target, 1.0 - exp(-delta / 0.12))
-	if String(get_meta("view", "game")) == "game":
+	var vw := String(get_meta("view", "game"))
+	if vw == "game":
 		cam.look_at_from_position(_cam_at + Vector3(0.0, 1.6, 4.6), _cam_at + Vector3(0, 0.1, -1.2))
+	elif vw == "close":
+		# Pass 9 fit reels: hips to feet, ahead of the runner at three-quarter
+		cam.look_at_from_position(_cam_at + Vector3(1.5, -0.15, -1.6), _cam_at + Vector3(0, -0.3, 0))
+	elif vw == "closeback":
+		cam.look_at_from_position(_cam_at + Vector3(-1.5, 0.0, 1.6), _cam_at + Vector3(0, -0.25, 0))
 	else:
 		cam.look_at_from_position(_cam_at + Vector3(4.2, 0.5, 0.0), _cam_at)
 	if not rig.running:
