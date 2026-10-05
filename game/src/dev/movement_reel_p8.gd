@@ -55,8 +55,10 @@ func _ready() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 50
 	add_child(layer)
-	_caption = _label(layer, 26, 14)
-	_sub = _label(layer, 18, 50)
+	# low in the frame: the HUD owns the top (round time, waters, map)
+	var h := get_viewport().get_visible_rect().size.y
+	_caption = _label(layer, 24, h - 124)
+	_sub = _label(layer, 18, h - 90)
 	_caption.text = "Loading"
 	while not (mc.prepared and mc.sim != null and mc.sim.phase == TC.Phase.PLAYING):
 		await get_tree().physics_frame
