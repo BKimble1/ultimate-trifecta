@@ -228,6 +228,7 @@ play Ultimate Trifecta so you can invite them to a private room.")
 | `tools/gd.sh --headless --fixed-fps 60 --path game -s res://tests/run_tests.gd -- test_friends.gd:` | **13 tests, 253 checks, 0 failures** |
 | same runner, `test_v7_screens, test_lobby, test_lobby_flow, test_hub_walk, test_menus_layout, test_focus, test_account, test_report_block, test_screen_cycles, test_compile, test_trust` | **51 tests, 12,635 checks, 0 failures** |
 | `tools/check_v7_screens.sh` (SE, X/14, 14, Pro Max, iPad, two owner aspects; real 44 pt targets and safe areas) | 7 × 10 tests, **0 failures** (Home with the new Friends button, party room) |
+| final HEAD: the two runner lines above in one process | **64 tests, 12,889 checks, 0 failures** |
 | `tools/check_v7_screens.sh test_friends.gd:test_layout` | 7 devices × 26 checks, **0 failures** (panel inside the safe area, rows, Invite targets, toast right half, small, clear of the bottom row, long names) |
 
 Two-account logic is shown by the service test with two in-process
