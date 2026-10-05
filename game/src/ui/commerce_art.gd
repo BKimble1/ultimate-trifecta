@@ -114,7 +114,7 @@ static func _crescent(ci: CanvasItem, c: Vector2, r: float, col: Color) -> void:
 
 ## Navigation and shop glyphs.  kind: "bag", "pass", "hanger", "coins",
 ## "restore", "lantern", "moon", "owl", "whistle", "drop", "lamp", "quad",
-## "sun", "track", "stars", plus every Icons shape.
+## "sun", "track", "stars", "stopwatch" (Pass 9), plus every Icons shape.
 static func glyph(ci: CanvasItem, kind: String, c: Vector2, r: float, col: Color) -> void:
 	match kind:
 		"bag":
@@ -210,6 +210,16 @@ static func glyph(ci: CanvasItem, kind: String, c: Vector2, r: float, col: Color
 		"stars":
 			for p in [[-0.5, -0.3, 0.32], [0.3, -0.55, 0.22], [0.45, 0.3, 0.36], [-0.25, 0.5, 0.18]]:
 				Icons.draw_shape(ci, "star", c + Vector2(float(p[0]), float(p[1])) * r, r * float(p[2]), col)
+		"stopwatch":
+			# Pass 9 (the Record Pace badge): the dial, its crown and side
+			# button, and the hand stopped at a record time
+			var dc := c + Vector2(0, r * 0.12)
+			ci.draw_arc(dc, r * 0.66, 0, TAU, 32, col, r * 0.16, true)
+			ci.draw_line(c + Vector2(0, -r * 0.56), c + Vector2(0, -r * 0.74), col, r * 0.14, true)
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.2, -r * 0.94), Vector2(r * 0.4, r * 0.2)), col)
+			ci.draw_line(dc + Vector2(r * 0.5, -r * 0.5), dc + Vector2(r * 0.66, -r * 0.66), col, r * 0.14, true)
+			ci.draw_line(dc, dc + Vector2(r * 0.3, -r * 0.3), col, r * 0.12, true)
+			ci.draw_circle(dc, r * 0.1, col, true, -1.0, true)
 		_:
 			Icons.draw_shape(ci, kind, c, r, col)
 
@@ -264,7 +274,8 @@ static func name_card(ci: CanvasItem, rect: Rect2, card_id: String, player_name:
 	ci.draw_line(rect.position + Vector2(rad, 0.75), Vector2(rect.end.x - rad, rect.position.y + 0.75), Color(1, 1, 1, 0.16), 1.5, true)
 	# motif: restrained, in the accent colour, on the right
 	var h := rect.size.y
-	var motif := String(CARD_MOTIF.get(card_id, "stars" if bool(it.get("stars", false)) else "moon"))
+	# (Pass 9: a card may name its motif in the catalogue)
+	var motif := String(CARD_MOTIF.get(card_id, it.get("motif", "stars" if bool(it.get("stars", false)) else "moon")))
 	if bool(it.get("stars", false)):
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash(card_id)

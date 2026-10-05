@@ -257,24 +257,71 @@ func owned_keys(field: String) -> Array:
 
 
 # ------------------------------------------------------------------ season
+## {xp, premium, claimed, service_tiers}.  xp is the service's recorded
+## Season XP, never capped or rewritten here: the tier is always computed
+## from it and this game's table (Pass 9: XP earned past the old tier 30 now
+## counts toward tiers 31-100).  service_tiers (Pass 9): the last tier the
+## game service can grant (service_tiers()).
 func season_state(sid: String) -> Dictionary:
-	var a: Dictionary = _account()
-	if a.is_empty() and Cloud.profile_id() == "":
-		a = state.get("account", {})   # offline view of the last snapshot
+	var a := _season_account()
 	var s: Dictionary = a.get("season", {}).get(sid, {})
 	var claimed := {}
 	for k in s.get("claimed", []):
 		claimed[String(k)] = true
-	return {"xp": int(s.get("xp", 0)), "premium": bool(s.get("premium", false)) or owns_id("season:%s:premium" % sid), "claimed": claimed}
+	return {"xp": int(s.get("xp", 0)), "premium": bool(s.get("premium", false)) or owns_id("season:%s:premium" % sid), "claimed": claimed,
+		"service_tiers": service_tiers(sid)}
+
+
+## The snapshot season state is read from: the live one when synced, the
+## last one while offline.
+func _season_account() -> Dictionary:
+	var a: Dictionary = _account()
+	if a.is_empty() and Cloud.profile_id() == "":
+		a = state.get("account", {})   # offline view of the last snapshot
+	return a
+
+
+## Pass 9: the last tier of this game's table that the game service can
+## grant.  A current service says (its snapshot's season "tiers"); an older
+## one (catalogue version 2, 30 tiers) is known by its catalogue version, so
+## a reward it doesn't have is shown as earned, never as a Claim that would
+## do nothing.  Without any snapshot: this game's own table.
+func service_tiers(sid: String) -> int:
+	var local := Economy.max_tier(sid)
+	var a := _season_account()
+	if a.is_empty():
+		return local
+	var s: Dictionary = a.get("season", {}).get(sid, {})
+	if int(s.get("tiers", 0)) > 0:
+		return mini(local, int(s["tiers"]))
+	var v := int(a.get("catalogue_version", Catalogue.version()))
+	return mini(local, Economy.tiers_in_version(sid, v)) if v < Catalogue.version() else local
 
 
 func premium(sid: String) -> bool:
 	return bool(season_state(sid)["premium"])
 
 
+## Everything claimable now (Economy.claimable), minus cells past the
+## service's table and cells whose claim is already queued (sent or waiting
+## to be sent: it completes by itself, so it is never queued twice).
 func claimable(sid: String) -> Array:
 	var st := season_state(sid)
-	return Economy.claimable(sid, int(st["xp"]), bool(st["premium"]), st["claimed"])
+	return Economy.claimable(sid, int(st["xp"]), bool(st["premium"]), st["claimed"], int(st["service_tiers"])).filter(
+		func(c: Dictionary) -> bool: return not claim_pending(sid, int(c["tier"]), String(c["track"])))
+
+
+## Pass 9: a claim of this cell is in the outbox (offline, or its reply was
+## lost): it is retried with the same key until the service answers.
+func claim_pending(sid: String, tier: int, track: String) -> bool:
+	var path := "/v1/season/%s/claim" % sid
+	for op in state["outbox"]:
+		if String(op.get("kind", "")) != "claim" or String(op.get("path", "")) != path or String(op.get("profile_id", "")) != Cloud.profile_id():
+			continue
+		for c in (op.get("body", {}) as Dictionary).get("claims", []):
+			if c is Dictionary and int(c.get("tier", 0)) == tier and String(c.get("track", "")) == track:
+				return true
+	return false
 
 
 # ------------------------------------------------------------------ snapshot
@@ -299,6 +346,10 @@ func apply_snapshot(w: Variant) -> void:
 			var s: Dictionary = sw[sid]
 			seasons[String(sid)] = {"xp": int(s.get("xp", 0)), "premium": bool(s.get("premium", false)),
 				"claimed": (s.get("claimed", []) as Array).map(func(x: Variant) -> String: return String(x))}
+			# Pass 9: the last tier the service's table has (absent from an
+			# older service: then its catalogue version tells)
+			if int(s.get("tiers", 0)) > 0:
+				seasons[String(sid)]["tiers"] = int(s["tiers"])
 	state["account"] = {
 		"profile_id": pid, "environment": String(wd.get("environment", "")), "balance": maxi(0, int(wd.get("balance", 0))),
 		"revision": int(wd.get("revision", 0)), "debt": int(wd.get("debt", 0)),
@@ -557,8 +608,19 @@ func spend(item_id: String, offer: Dictionary = {}) -> Dictionary:
 
 
 # ------------------------------------------------------------------ claims
+## The most cells one claim request carries (the version 2 service read at
+## most 60; Pass 9: a whole 100-tier Claim all goes in several requests, so
+## an older service still answers every one).
+const CLAIM_BATCH := 60
+
 ## Claim Season rewards ([{tier, track}], or every claimable one).  Claims
-## are idempotent on the service: claiming again never grants twice.
+## are idempotent on the service: claiming again never grants twice.  Each
+## request is an outbox operation with its own idempotency key (a lost reply
+## is retried and answers "already claimed").  Pass 9: every cell names the
+## reward this game shows ("coins:50", an item id); a service on another
+## catalogue grants nothing for a cell whose reward differs and says so.
+## Returns {ok, state: delivered | pending | failed, claimed, skipped,
+## message}: message is set when something earned couldn't be claimed.
 func claim(sid: String, which: Array = []) -> Dictionary:
 	var can := can_transact()
 	if not bool(can["ok"]):
@@ -566,20 +628,58 @@ func claim(sid: String, which: Array = []) -> Dictionary:
 	var list := which if not which.is_empty() else claimable(sid)
 	if list.is_empty():
 		return {"ok": false, "state": "failed", "message": "Nothing to claim yet."}
-	var body := {"claims": list.map(func(c: Dictionary) -> Dictionary: return {"tier": int(c["tier"]), "track": String(c["track"])})}
-	var op := _enqueue("claim", HTTPClient.METHOD_POST, "/v1/season/%s/claim" % sid, body)
-	op["body"]["idempotency_key"] = op["id"]
+	var cells: Array = list.map(func(c: Dictionary) -> Dictionary:
+		return {"tier": int(c["tier"]), "track": String(c["track"]),
+			"reward": Economy.reward_key(Economy.reward_at(sid, int(c["tier"]), String(c["track"])))})
+	var ops: Array = []
+	for i in range(0, cells.size(), CLAIM_BATCH):
+		var op := _enqueue("claim", HTTPClient.METHOD_POST, "/v1/season/%s/claim" % sid, {"claims": cells.slice(i, i + CLAIM_BATCH)})
+		op["body"]["idempotency_key"] = op["id"]
+		ops.append(op)
 	_save()
-	var r := await _send(op)
-	if bool(r.get("ok", false)):
-		return {"ok": true, "state": "delivered", "claimed": r.get("claimed", []), "message": ""}
-	if int(r.get("http_status", 0)) == 0:
-		return {"ok": false, "state": "pending", "message": "We couldn't reach the game service. Your claim will finish when you're back online."}
-	return {"ok": false, "state": "failed", "message": Cloud.explain(r)}
+	var got: Array = []
+	var skipped: Array = []
+	for op in ops:
+		if _inflight.has(op["id"]) or not (state["outbox"] as Array).has(op):
+			continue   # the retry pump took it meanwhile (same key: applied once)
+		var r := await _send(op)
+		if bool(r.get("ok", false)):
+			var granted: Array = r.get("claimed", [])
+			got.append_array(granted)
+			if r.has("skipped"):
+				skipped.append_array(r["skipped"])
+			else:
+				# an older service answers only what it granted: a requested
+				# cell it neither granted nor has as claimed is one its table
+				# doesn't have
+				var now_claimed: Dictionary = season_state(sid)["claimed"]
+				for c in op["body"]["claims"]:
+					var key := Economy.claim_key(int(c["tier"]), String(c["track"]))
+					if not now_claimed.has(key) and not granted.any(func(g: Variant) -> bool: return g is Dictionary and Economy.claim_key(int(g.get("tier", 0)), String(g.get("track", ""))) == key):
+						skipped.append({"tier": int(c["tier"]), "track": String(c["track"]), "reason": "no_reward"})
+			continue
+		if int(r.get("http_status", 0)) == 0:
+			return {"ok": false, "state": "pending", "claimed": got, "skipped": skipped,
+				"message": "We couldn't reach the game service. Your claim will finish when you're back online."}
+		return {"ok": false, "state": "failed", "claimed": got, "skipped": skipped, "message": Cloud.explain(r)}
+	return {"ok": true, "state": "delivered", "claimed": got, "skipped": skipped, "message": claim_note(skipped)}
 
 
 func claim_all(sid: String) -> Dictionary:
 	return await claim(sid, [])
+
+
+## Pass 9: one honest sentence for cells the service answered but didn't
+## grant because its catalogue differs from this game's ("" otherwise:
+## already claimed, not reached or Premium needed are shown by the pass).
+static func claim_note(skipped: Array) -> String:
+	var changed := skipped.any(func(s: Variant) -> bool: return s is Dictionary and String(s.get("reason", "")) == "reward_changed")
+	var missing := skipped.any(func(s: Variant) -> bool: return s is Dictionary and String(s.get("reason", "")) == "no_reward")
+	if changed:
+		return "The game service has a different reward at this tier, so nothing was claimed. Update the game to see it."
+	if missing:
+		return "The game service doesn't have this tier's reward yet, so nothing was claimed. It stays earned: claim it once the service is updated."
+	return ""
 
 
 # ------------------------------------------------------------------ legacy import

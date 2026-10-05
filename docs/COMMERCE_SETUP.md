@@ -167,6 +167,19 @@ sign-in prompt in TestFlight). TestFlight purchases are free.
    reopen: "Connect to refresh Shop", nothing buyable until online.
 8c. **Six Coin packs**: 250 / 500 / 1,000 / 1,500 / 3,500 / 7,500 with
    localized prices; buy the 250 and the 7,500 once each.
+8d. **Season 1 to tier 100 (Pass 9)**: the deploy applies migration
+   `0005_season_100.sql` with the others (`scripts/deploy.sh`). The pass
+   shows "Tier N / 100", the navigation row (You're at, Next reward, 30 /
+   50 / 100) and progress runs. Reaching tier 50 or 100 takes real play
+   (≈105 / ≈225 regular rounds); to check the tier-50 and tier-100 claims
+   sooner, set a **sandbox** test profile's Season XP directly in the
+   sandbox database only, e.g. `npx wrangler d1 execute trifecta --remote
+   --command "UPDATE season_progress SET xp = 15300 WHERE profile_id = '<test
+   profile>' AND environment = 'sandbox'"` (never on the production
+   database; there is deliberately no API for it). Then: Record Breaker is
+   Premium-locked without Premium, claimable with it, claimed once (Claim
+   again, a second device, Airplane Mode during the claim: still once).
+   [docs/pass9/season.md](pass9/season.md) lists every case.
 9. **Rounds**: a two-phone party through the service: after a completed
    round both see "+N Coins · +X Season XP" on results (or the honest
    reason); practice says it doesn't add Coins.
@@ -184,7 +197,9 @@ sign-in prompt in TestFlight). TestFlight purchases are free.
   chain shaped like Apple's; the real Apple root stays pinned).
 - **Captures**: `tools/capture_v6_commerce.sh OUT [phone se ipad]` (labelled
   test adapters); Pass 8 Shop: `tools/capture_pass8_shop.sh OUT [se p14 ipad]`
-  (DEV FIXTURE service clock and schedule, labelled on every shot).
+  (DEV FIXTURE service clock and schedule, labelled on every shot); Pass 9
+  Season Pass: `tools/capture_pass9_season.sh OUT [se p14 pmax ipad]`
+  (test-double service, labelled).
 - **Rotation schedule**: `python3 tools/make_offer_schedule.py --check`;
   regenerate as in [ECONOMY.md](ECONOMY.md) §2.1.
 - **Xcode StoreKit testing**: `native/storekit/UltimateTrifecta.storekit`

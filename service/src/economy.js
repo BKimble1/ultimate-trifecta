@@ -111,6 +111,13 @@ export function tierForXp(sid, xp) {
   return t;
 }
 
+// Pass 9: the last tier this service's table has (Season 1: 100; an older
+// deployment's table: 30).  Reported in the snapshot so a game can tell
+// which of its tiers this service can grant.
+export function maxTier(sid) {
+  return tiers(sid).length;
+}
+
 export function rewardAt(sid, tier, track) {
   const t = tiers(sid).find((r) => r.tier === tier);
   return t && t[track] ? t[track] : null;
@@ -118,6 +125,13 @@ export function rewardAt(sid, tier, track) {
 
 export function claimKey(tier, track) {
   return `${tier}:${track}`;
+}
+
+// A reward as one string ("coins:50" or the item id), as season_claims.reward
+// stores it and as a game names the reward it showed (Pass 9 claims).
+export function rewardKey(r) {
+  if (!r) return '';
+  return r.coins ? `coins:${r.coins}` : String(r.item || '');
 }
 
 export function cellState(sid, tier, track, xp, premium, claimed) {

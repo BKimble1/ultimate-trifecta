@@ -172,6 +172,70 @@ static func max_tier(sid: String) -> int:
 	return Catalogue.season_tiers(sid).size()
 
 
+## Pass 9: Season XP a tier needs (0 for tier 1; -1 outside the table).
+static func tier_xp(sid: String, tier: int) -> int:
+	var ts := Catalogue.season_tiers(sid)
+	if tier < 1 or tier > ts.size():
+		return -1
+	return int(ts[tier - 1]["xp"])
+
+
+## Pass 9: how many tiers a game service on catalogue `version` has (the
+## tiers added up to that version: 30 for version 2, 100 for version 3).
+static func tiers_in_version(sid: String, version: int) -> int:
+	var n := 0
+	for t in Catalogue.season_tiers(sid):
+		if maxi(1, int(t.get("added_in", 1))) <= version:
+			n += 1
+	return n
+
+
+## Pass 9: a tier with a reward on either track.
+static func has_reward(sid: String, tier: int) -> bool:
+	return not reward_at(sid, tier, "free").is_empty() or not reward_at(sid, tier, "premium").is_empty()
+
+
+## Pass 9: the first tier after `tier` with a reward this player can get
+## (Free only without Premium); -1 when none is left.
+static func next_reward_tier(sid: String, tier: int, premium: bool) -> int:
+	for t in Catalogue.season_tiers(sid):
+		var n := int(t["tier"])
+		if n <= tier:
+			continue
+		if not reward_at(sid, n, "free").is_empty() or (premium and not reward_at(sid, n, "premium").is_empty()):
+			return n
+	return -1
+
+
+## Pass 9: runs of consecutive progress tiers (no reward on either track),
+## [[first, last], ...] in order: the track shows each run as one column.
+static func progress_runs(sid: String) -> Array:
+	var out: Array = []
+	var start := -1
+	for t in Catalogue.season_tiers(sid):
+		var n := int(t["tier"])
+		if not has_reward(sid, n):
+			if start < 0:
+				start = n
+		elif start >= 0:
+			out.append([start, n - 1])
+			start = -1
+	if start >= 0:
+		out.append([start, max_tier(sid)])
+	return out
+
+
+## Pass 9: a reward as one string ("coins:50" or the item id), as the game
+## service names it (economy.js rewardKey): a claim says which reward its
+## game showed, so a service on another catalogue never grants another one.
+static func reward_key(r: Dictionary) -> String:
+	if r.is_empty():
+		return ""
+	if r.has("coins"):
+		return "coins:%d" % int(r["coins"])
+	return String(r.get("item", ""))
+
+
 ## Progress for the header: {tier, next, into, need, frac, xp, total}.
 static func tier_progress(sid: String, xp: int) -> Dictionary:
 	var tiers := Catalogue.season_tiers(sid)
@@ -214,9 +278,13 @@ static func cell_state(sid: String, tier: int, track: String, xp: int, premium: 
 
 ## Everything claimable now, in tier order: [{tier, track, reward}].  Buying
 ## Premium later makes every Premium reward already earned claimable.
-static func claimable(sid: String, xp: int, premium: bool, claimed: Dictionary) -> Array:
+## Pass 9: `upto` (> 0) leaves out tiers past the last one the game service
+## has (a service on an older catalogue).
+static func claimable(sid: String, xp: int, premium: bool, claimed: Dictionary, upto: int = 0) -> Array:
 	var out: Array = []
 	for t in Catalogue.season_tiers(sid):
+		if upto > 0 and int(t["tier"]) > upto:
+			break
 		for track in ["free", "premium"]:
 			if cell_state(sid, int(t["tier"]), track, xp, premium, claimed) == "claimable":
 				out.append({"tier": int(t["tier"]), "track": track, "reward": reward_at(sid, int(t["tier"]), track)})
