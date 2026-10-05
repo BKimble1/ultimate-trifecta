@@ -7,9 +7,9 @@ hidden), <shot>_room.png (UI and characters hidden) and <shot>.json, and reports
             mean, p10, p50, p90, and the share of pixels under 40 (near black)
             and over 235 (near white)
   seen      the same over the frame the player sees (UI included)
-  face/torso  each character's face and torso patch (the pixels inside the
-            projected radius that belong to the character: they differ from
-            the room frame), mean luma and mean sRGB colour
+  face/torso  each character's face (median luma of a cheek-level disk) and
+            torso (mean luma) patch: the pixels inside the projected radius that
+            belong to the character (they differ from the room frame)
   refs      fixed room patches (lamp shade, window, wall, furniture, floor)
             from the room frame
   texts     every visible label/button: WCAG contrast of its text against
@@ -84,11 +84,18 @@ def measure_shot(d, shot):
             p = c.get(part) or {}
             if not p:
                 continue
-            m = disk(td.shape, p["x"] * s, p["y"] * s, max(2.0, p["r"] * s)) & diff
+            if part == "face":
+                # the cheeks: a disk one radius below the projected point, its
+                # median (eyes, brows and lashes are a minority of its pixels)
+                m = disk(td.shape, p["x"] * s, (p["y"] + p["r"]) * s, max(2.0, p["r"] * 1.4 * s)) & diff
+            else:
+                m = disk(td.shape, p["x"] * s, p["y"] * s, max(2.0, p["r"] * s)) & diff
             if m.sum() < 6:
                 continue
             px = td[m]
-            e[part] = {"luma": round(float(luma(px).mean()), 1), "rgb": [int(v) for v in px.mean(axis=0)], "n": int(m.sum())}
+            y = luma(px)
+            e[part] = {"luma": round(float(np.median(y) if part == "face" else y.mean()), 1),
+                       "rgb": [int(v) for v in np.median(px, axis=0)], "n": int(m.sum())}
         chars.append(e)
     out["chars"] = chars
     refs = {}
@@ -103,6 +110,8 @@ def measure_shot(d, shot):
     texts = []
     rl = rel_lum(seen)
     for t in rep.get("texts", []):
+        if float(t.get("visible", 1.0)) < 0.95:
+            continue   # scrolled out or cut by its panel: not text the player sees
         x, y, w, h = [v * s for v in t["rect"]]
         if t["kind"] == "button":
             # the caption sits inside the face: leave out the rounded edges

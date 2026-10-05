@@ -249,7 +249,15 @@ func _texts() -> Array:
 		if text.strip_edges() == "":
 			continue
 		var r := c.get_global_rect()
-		out.append({"kind": "label" if c is Label else "button", "text": text.substr(0, 48), "rect": [snappedf(r.position.x, 0.1),
+		# the share of the text box its scrolling/clipping ancestors leave in view
+		var shown := r
+		var p := c.get_parent()
+		while p != null and p is Control:
+			if p is ScrollContainer or (p as Control).clip_contents:
+				shown = shown.intersection((p as Control).get_global_rect())
+			p = p.get_parent()
+		var vis := (shown.get_area() / r.get_area()) if r.get_area() > 0.0 and shown.has_area() else 0.0
+		out.append({"kind": "label" if c is Label else "button", "visible": snappedf(vis, 0.01), "text": text.substr(0, 48), "rect": [snappedf(r.position.x, 0.1),
 			snappedf(r.position.y, 0.1), snappedf(r.size.x, 0.1), snappedf(r.size.y, 0.1)], "color": col.to_html(true),
 			"size": c.get_theme_font_size("font_size")})
 	return out
