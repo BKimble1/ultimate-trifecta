@@ -27,8 +27,6 @@ var rounds := {}            # match id -> {host, participants{pid:slot}, report,
 var legacy_done := {}       # pid -> {coins, items}
 var challenge_rows := {}    # pid -> {instance_id: {challenge_id, period, period_start/end (ms), goal, xp, progress, completed_at}}
 var challenge_bonus := {}   # pid -> {instance_id: {xp, match_id, at}}
-## the double's clock in ms (0: the system clock)
-var now_ms := 0
 var network_down := false
 var drop_reply := false     # apply the request, then lose the reply (a timeout after commit)
 var calls: Array = []       # [method, path] for assertions
@@ -422,8 +420,9 @@ func _try_settle(mid: String, pid: String) -> void:
 
 
 # ------------------------------------------------------------------ challenges
+## Challenges use the same clock as offers (clock_ms, else the real time).
 func _now_ms() -> int:
-	return now_ms if now_ms > 0 else int(Time.get_unix_time_from_system() * 1000.0)
+	return int(now_ms())
 
 
 ## The round's challenge progress and bonus, as service/src/challenges.js.
