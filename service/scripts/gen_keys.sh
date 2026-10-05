@@ -7,6 +7,10 @@ cd "$(dirname "$0")/.."
 mkdir -p .secrets && chmod 700 .secrets
 [ -f .secrets/session_key ] || openssl rand -base64 48 | tr -d '\n' > .secrets/session_key
 [ -f .secrets/admin_token ] || openssl rand -hex 32 | tr -d '\n' > .secrets/admin_token
+# Friends: the key for the keyed hashes of friend IDs (src/friends.js).  Keep
+# it stable: a new key makes every stored friend set unreadable until each
+# game syncs again (it does on its next launch or Friends visit).
+[ -f .secrets/friend_hash_key ] || openssl rand -base64 48 | tr -d '\n' > .secrets/friend_hash_key
 if [ ! -f .secrets/admission_private.pem ]; then
   openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out .secrets/admission_private.pem 2>/dev/null
 fi

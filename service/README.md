@@ -46,6 +46,19 @@ the trusted part of online play:
     Game Center player and the room. The host's game verifies them with the
     public key built into the app.
 
+- **Friends (Final).** `src/friends.js`, migration `0006_friends.sql`
+  ([docs/final/friends.md](../docs/final/friends.md)). Each game uploads the
+  teamPlayerIDs of its own authorised Game Center friends; the service
+  stores only keyed hashes (HMAC-SHA256 with `FRIEND_HASH_KEY`) and treats
+  two players as friends only while both lists contain each other (a mutual
+  claim from two verified sessions), neither has blocked the other and
+  neither is suspended. Mutual friends see each other's in-game status
+  (online, in a party, in a round, offline; from a 20 s heartbeat that
+  expires after 60 s) and can invite each other into the party they are in;
+  accepting returns the room code and the game joins through the normal
+  `/v1/rooms/<code>/join` admission. Nobody else can be listed, probed or
+  invited, and room codes are never shown in status.
+
 Nothing is mocked in the release path. If `game/config/service.cfg` has no
 URL, the service is off: practice and local play still work, names stay on
 the device, and the game never claims a verified profile.
@@ -97,8 +110,30 @@ and uploads the secrets with `wrangler secret put`.
 
 ### Secrets (`wrangler secret put`, done by `deploy.sh`)
 
-`SESSION_KEY` (HMAC for session tokens), `ADMIN_TOKEN` (moderation API), and
-`ADMISSION_PRIVATE_KEY` (PKCS#8 PEM, signs admission tokens).
+`SESSION_KEY` (HMAC for session tokens), `ADMIN_TOKEN` (moderation API),
+`ADMISSION_PRIVATE_KEY` (PKCS#8 PEM, signs admission tokens) and
+`FRIEND_HASH_KEY` (Final: the HMAC key for the hashes of friend IDs, at
+least 32 characters; `scripts/gen_keys.sh` writes `.secrets/friend_hash_key`
+and `deploy.sh` refuses to deploy without it). Without `FRIEND_HASH_KEY` the
+service leaves `friends` out of `/v1/config` features and the game shows
+Friends with "Status unavailable" (Apple's invite sheet and party codes
+still work). Keep the key stable: a new key orphans every stored friend set
+until each game uploads its list again (it does at its next launch or
+Friends visit). Each deployment (sandbox, production) has its own key.
+
+### Friends retention and TTL
+
+| Data | Kept | Removed |
+|---|---|---|
+| Friend set (keyed hashes of up to 500 friends' teamPlayerIDs, plus the player's own hash) | until replaced by the next upload | whole set replaced on every upload; deleted after 30 days without one (cron), on `DELETE /v1/friends` (friend access revoked) and with the profile |
+| Presence (one row per running game: status, verified room, protocol/build) | 60 s after the last heartbeat (every 20 s) | at expiry (cron every 5 min), on background (`DELETE /v1/presence`), sign-out and profile deletion; no history |
+| Invites (inviter, invitee, room, state) | 5 minutes pending; resolved rows (accepted, declined, expired, cancelled) for 24 h | cron after 24 h; with either player's profile |
+
+Capacity: every playing, Friends-enabled game writes at most one presence
+row per heartbeat (≈3 writes a minute, ≈4,300 a day) and reads status only
+while its Friends panel is open. Size the Cloudflare plan from the expected
+number of concurrent players (the Workers and D1 free tiers cover a few
+dozen concurrent players around the clock).
 
 ## Moderation (owner)
 
@@ -116,7 +151,8 @@ node tools/admin.mjs audit 50
 ```
 
 Every action is written to the audit log. Deleting a profile removes its
-identity link, names, blocks and profile row. The player's own reports stay
+identity link, names, blocks and profile row (Final: and its friend set,
+presence and invites). The player's own reports stay
 in the queue for moderators, without the reporter's link. Open reports
 against the deleted profile are closed as "profile deleted".
 
@@ -148,6 +184,11 @@ against the deleted profile are closed as "profile deleted".
 | `POST /v1/season/:id/claim` | session | V6: claim Season rewards (idempotent: a cell once, Coins once, an owned item `already_owned`). Pass 9 (100 tiers): `{claims: [{tier, track, reward?}]}`, up to every cell of the table; `reward` names what the game showed (`coins:75`, an item id) and a cell whose reward differs is not granted (`reward_changed`); the reply has `claimed` (`result`, `reward`) and `skipped` (`no_reward`, `already_claimed`, `locked`, `premium_required`, `reward_changed`); the snapshot's season has `tiers` (the last tier this service grants) and `tier` |
 | `POST /v1/rounds`, `POST /v1/rounds/:id/report` | room host | V6: register a round's admitted players; report its result (bounds-checked) |
 | `POST /v1/rounds/:id/ack`, `GET /v1/rounds/:id/me` | session | V6: confirm the row your game received; settlement status (Pass 8: with the round's challenge result) |
+| `PUT /v1/friends`, `DELETE /v1/friends` | session | Final: replace this player's friend set (`ids`: teamPlayerIDs of authorised Game Center friends, ≤ 500; only keyed hashes are kept); forget it (with presence and invites) |
+| `GET /v1/friends/presence` | session | Final: mutual friends only, keyed by their teamPlayerID: verified name, profile ID (report/block), `status` online / lobby / match / offline, `in_your_party`, `invited`, `can_invite`, `why` |
+| `POST /v1/presence`, `DELETE /v1/presence` | session | Final: heartbeat `{instance, seq, state, room?, protocol, build}` (a lobby counts only for a room you're a verified member of; the newest launch wins; replies with waiting invites); clear this launch's row |
+| `POST /v1/invites`, `GET /v1/invites` | session | Final: invite a mutual friend who is playing into the party you're a connected member of (rate limited per inviter and per pair, de-duplicated, 5-minute expiry); invites waiting for you |
+| `POST /v1/invites/:id/accept`, `/decline` | session (invitee) | Final: accept re-checks friendship, blocks, removal, room state, capacity and version, then returns the room `code` for the normal join; decline is recorded |
 | `GET /v1/challenges` | session | Pass 8: the daily/weekly challenges (also in every wallet snapshot); progress and bonus Season XP come only from round settlement |
 | `POST /v1/appstore/notifications` | Apple-signed | V6: App Store Server Notifications V2 (refunds, revocations) |
 | `GET /v1/admin/wallets/:id`, `POST …/adjust` | `ADMIN_TOKEN` | V6: wallet, ledger and App Store rows; support grants / forgive debt |
