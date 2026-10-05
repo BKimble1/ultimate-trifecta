@@ -212,7 +212,11 @@ func test_row_digest_is_canonical() -> void:
 	r2["coins_picked"] = 2
 	t.check(Economy.row_digest("M-1", res, r2) != d1, "a different pickup count changes the digest")
 	t.check(Economy.row_digest("M-2", res, r) != d1, "bound to the match")
-	t.eq(Economy.row_canonical("M-1", res, r), "v1|M-1|2|0|2|0|0|0|1|1|3|200", "canonical form (shared with service/src/economy.js)")
+	# Pass 8 (report v2): the seconds of active play are bound too
+	var r3 := r.duplicate()
+	r3["active_s"] = 150
+	t.check(Economy.row_digest("M-1", res, r3) != d1, "a different active_s changes the digest")
+	t.eq(Economy.row_canonical("M-1", res, r3), "v2|M-1|2|0|2|0|0|0|1|1|3|200|150", "canonical form (shared with service/src/economy.js)")
 
 
 func test_compute_rewards_decoupled_from_coins() -> void:
@@ -243,11 +247,77 @@ func test_earning_rate_meets_the_pass_target() -> void:
 	var avg := (runner + watch) * 0.5
 	var rounds := 1500.0 / avg
 	t.check(rounds >= 60.0 and rounds <= 120.0, "Premium (1,500 Coins) in %.0f typical eligible rounds (target 60-120)" % rounds)
-	var sx: Dictionary = e["season_xp"]
+	# Season XP from the rounds themselves (unchanged by Pass 8 challenges)
+	var base := _base_season_xp()
+	t.near(base, 85.75, 0.01, "base Season XP per typical eligible round (docs/ECONOMY.md §3)")
+	var to30 := float(Catalogue.season_tiers("s1")[-1]["xp"]) / base
+	t.check(to30 >= 70.0 and to30 <= 130.0, "base only: tier 30 in %.0f typical eligible rounds" % to30)
+
+
+## Base Season XP of a typical eligible round: half as a runner (2.2
+## splashes, home 60%), half as Night Watch (1.5 different runners tagged),
+## team wins 50% (docs/ECONOMY.md §3).
+func _base_season_xp() -> float:
+	var sx: Dictionary = Catalogue.economy()["season_xp"]
 	var xr := float(sx["completed"]) + 2.2 * float(sx["stamp"]) + 0.6 * float(sx["runner_home"]) + 0.5 * float(sx["team_win"])
 	var xw := float(sx["completed"]) + 1.5 * float(sx["watch_distinct_tag"]) + 0.5 * float(sx["team_win"])
-	var to30 := float(Catalogue.season_tiers("s1")[-1]["xp"]) / ((xr + xw) * 0.5)
-	t.check(to30 >= 70.0 and to30 <= 130.0, "tier 30 in %.0f typical eligible rounds" % to30)
+	return (xr + xw) * 0.5
+
+
+## One modelled week: `days` active days of `per_day` eligible, active
+## rounds.  A goal counts as completed when the period's expected amount
+## (1 active round, 1.85 credits = half 2.2 splashes / half 1.5 different
+## tags, 0.5 Round Wins per round) reaches it.  {base, daily, weekly, total}.
+func _model_week(days: int, per_day: int) -> Dictionary:
+	var per_round := {"active_rounds": 1.0, "credits": (2.2 + 1.5) * 0.5, "round_wins": 0.5}
+	var c := ChallengeRules.cfg()
+	var daily := 0
+	for d in c["daily"]:
+		if float(per_round[String(d["metric"])]) * per_day >= float(d["goal"]) - 0.0001:
+			daily += int(d["xp"])
+	var weekly := 0
+	for d in c["weekly"]:
+		if float(per_round[String(d["metric"])]) * per_day * days >= float(d["goal"]) - 0.0001:
+			weekly += int(d["xp"])
+	if days * per_day == 0:
+		daily = 0
+		weekly = 0
+	var base := _base_season_xp() * days * per_day
+	return {"base": base, "daily": daily * days, "weekly": weekly, "total": base + daily * days + weekly}
+
+
+## Pass 8: challenges add Season XP to the same pass (no other currency).
+## The documented light / typical / heavy weeks (docs/ECONOMY.md §3, "With
+## challenges"), recomputed from the live catalogue; the brief's sample
+## week (20 rounds over 5 days) is the typical one.
+func test_challenges_accelerate_the_pass_as_documented() -> void:
+	t.eq(ChallengeRules.max_xp("daily"), 150, "daily challenges: at most 150 Season XP a day")
+	t.eq(ChallengeRules.max_xp("weekly"), 450, "weekly challenges: at most 450 Season XP a week")
+	var tier30 := float(Catalogue.season_tiers("s1")[-1]["xp"])
+	t.eq(int(tier30), 8300, "the pass and its thresholds are unchanged")
+	var light := _model_week(2, 3)
+	var typical := _model_week(5, 4)
+	var heavy := _model_week(7, 8)
+	t.near(float(typical["base"]), 1715.0, 0.5, "typical week: 20 rounds of base XP")
+	t.eq(int(typical["daily"]), 750, "typical week: every daily goal on 5 days")
+	t.eq(int(typical["weekly"]), 450, "typical week: every weekly goal")
+	t.near(float(typical["total"]), 2915.0, 0.5, "typical week: about 2,915 Season XP")
+	t.near(tier30 / float(typical["total"]), 2.85, 0.01, "typical: tier 30 in about 2.85 weeks")
+	t.near(tier30 / (float(typical["total"]) / 20.0), 56.9, 0.1, "typical: about 57 rounds to tier 30 (97 without challenges)")
+	t.near(float(light["total"]), 714.5, 0.5, "light week (2 days x 3 rounds): Night Shift and Team Effort only")
+	t.eq(int(light["weekly"]), 0, "light week: no weekly goal")
+	t.near(tier30 / float(light["total"]), 11.6, 0.05, "light: about 11.6 weeks (16.1 without challenges)")
+	t.near(float(heavy["total"]), 6302.0, 0.5, "heavy week (7 days x 8 rounds)")
+	t.near(tier30 / float(heavy["total"]), 1.32, 0.01, "heavy: about 1.3 weeks")
+	# challenges accelerate without replacing the base: their share stays under half
+	for wk in [light, typical, heavy]:
+		var share := (float(wk["daily"]) + float(wk["weekly"])) / float(wk["total"])
+		t.check(share < 0.45, "challenges are %.0f%% of a modelled week's Season XP" % (share * 100.0))
+	# no round, no challenge XP; challenges give Season XP only
+	t.eq(int(_model_week(0, 0)["total"]), 0, "no rounds, nothing")
+	for d in ChallengeRules.defs():
+		t.check(not (d as Dictionary).has("coins") and String(d["metric"]) in ["active_rounds", "credits", "round_wins"],
+			"%s: Season XP from play only (no Coins, no purchase metric)" % d["id"])
 
 
 func test_legacy_import_is_bounded() -> void:

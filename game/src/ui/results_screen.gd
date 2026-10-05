@@ -418,6 +418,7 @@ func _fill_rewards(p: Control, mid: String) -> void:
 			det.add_theme_font_size_override("font_size", 18)
 			det.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			v.add_child(det)
+	add_challenge_lines(v, s.get("challenges", {}) if s.get("challenges") is Dictionary else {})
 	if bool(s["settled"]) and int(s["season_xp"]) > 0:
 		var tier := int(s["tier_after"])
 		v.add_child(UIKit.styled("Season tier %d%s" % [tier, "  ·  tier up!" if tier > int(s["tier_before"]) else ""], "label", UIKit.TEAL))
@@ -430,6 +431,52 @@ func _fill_rewards(p: Control, mid: String) -> void:
 		v.add_child(bar)
 	if bool(s["level_up"]):
 		v.add_child(UIKit.styled("Level up! You're now level %d" % int(s["level"]), "label", UIKit.TEAL))
+
+
+## Pass 8: the round's part in challenges (Wallet.round_summary()
+## ["challenges"], docs/ECONOMY.md §10), a self-contained block for the
+## rewards card, placed before the Season progress bar (which already
+## includes any bonus): each goal this round completed ("Campus
+## Contribution complete · +50 Season XP", marked pending until the service
+## settles the round), the other goals it moved, and one honest sentence
+## when it counted for nothing (inactive, practice training, too late).
+## Adds nothing for a round with no challenge part.
+static func add_challenge_lines(v: Container, ch: Dictionary) -> void:
+	var st := String(ch.get("state", "none"))
+	if st == "none" or st == "":
+		return
+	var pending := st == "pending"
+	var moved: Array[String] = []
+	for line in ch.get("lines", []):
+		if not (line is Dictionary):
+			continue
+		var nm := String(line.get("name", ""))
+		if bool(line.get("completed_now", false)):
+			var row := UIKit.hbox(8)
+			row.name = "ChallengeDone"
+			var ic := Icons.IconRect.new("check", UIKit.IVORY_MUTED if pending else UIKit.TEAL, 22)
+			ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			row.add_child(ic)
+			var l := UIKit.styled("%s complete · %s%s" % [nm, ChallengeRules.xp_text(int(line.get("xp", 0))), " (pending)" if pending else ""],
+				"label", UIKit.IVORY if pending else UIKit.AMBER)
+			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(l)
+			v.add_child(row)
+		else:
+			var prog := int(line.get("progress", -1))
+			moved.append(("%s %d/%d" % [nm, prog, int(line.get("goal", 0))]) if prog >= 0 else ("%s +%d" % [nm, int(line.get("inc", 0))]))
+	var bits: Array[String] = []
+	if not moved.is_empty():
+		bits.append(("Challenges, pending: " if pending else "Challenges: ") + " · ".join(moved))
+	if String(ch.get("message", "")) != "":
+		bits.append(String(ch["message"]))
+	for b in bits:
+		var m := UIKit.styled(b, "caption", UIKit.IVORY_MUTED)
+		m.name = "ChallengeNote"
+		m.add_theme_font_size_override("font_size", 18)
+		m.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		v.add_child(m)
 
 
 func _big_number(n: String, label_text: String) -> Control:

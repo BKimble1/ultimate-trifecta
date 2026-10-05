@@ -17,6 +17,11 @@ extends Screen
 ##   detail  the selected reward: its picture (an emote plays on a small live
 ##           runner), name, type, tier and track, its state, why an action is
 ##           unavailable, and one action fixed at the bottom
+##   Pass 8  the same side panel has two pages, "Challenges" and "Reward":
+##           Challenges · Earn Season XP (three daily and three weekly goals,
+##           their progress, +XP and local reset time, one pinned goal) opens
+##           first; tapping a reward shows its detail.  The header and the
+##           track are untouched, so Free and Premium stay whole.
 ##
 ## States kept apart: progression (locked / earned), Premium entitlement,
 ## claimed, and whether claiming works right now (the service).  A reward can
@@ -65,6 +70,15 @@ var _preview: Preview3D
 var _preview_view: CharacterView
 var _preview_emote := -1
 var _preview_t := 0.0
+## Pass 8: the side panel's pages ("challenges" | "reward") and the
+## Challenges page's parts (ChallengeCard per goal, the group headers)
+var side_page := "challenges"
+var _side: VBoxContainer
+var _tabs: Dictionary = {}
+var challenge_page: VBoxContainer
+var challenge_cards: Array = []
+var _ch: Dictionary = {}
+var _ch_timer: Timer
 
 
 func build() -> void:
@@ -117,6 +131,7 @@ func build() -> void:
 	(detail_panel.get_parent() as Control).size_flags_stretch_ratio = 1.0
 	(detail_panel.get_parent() as Control).custom_minimum_size.x = 280.0
 	_build_detail()
+	_build_challenges()
 
 	var st := Wallet.season_state(sid)
 	var tier := maxi(1, Economy.tier_for_xp(sid, int(st["xp"])))
@@ -126,8 +141,10 @@ func build() -> void:
 	else:
 		focus(mini(tier + (1 if tier < Economy.max_tier(sid) else 0), Economy.max_tier(sid)), "free" if not Economy.reward_at(sid, tier, "free").is_empty() else "premium")
 	_refresh()
+	show_side("challenges")
 	_scroll_to.call_deferred(focus_tier)
 	Wallet.changed.connect(_refresh)
+	Wallet.challenge_completed.connect(_on_challenge_completed)
 	if Cloud.signed_in():
 		Wallet.refresh()
 	focus_first(claim_all_btn if claim_all_btn.visible else _cell(focus_tier, focus_track))
@@ -331,6 +348,7 @@ func _refresh() -> void:
 	for c in cells:
 		c.refresh()
 	_refresh_detail()
+	_refresh_challenges()
 
 
 func cell_state(tier: int, track: String) -> String:
@@ -381,11 +399,14 @@ func focus(tier: int, track: String, from_empty: bool = false) -> void:
 	for c in cells:
 		UIKit.set_selected(c, c.tier == tier and c.track == track)
 	_refresh_detail()
+	show_side("reward")
 
 
 func _build_detail() -> void:
 	var v := UIKit.vbox(UIKit.SP_M)
-	detail_panel.add_child(v)
+	v.name = "RewardPage"
+	v.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_side_box().add_child(v)
 	var sc := UIKit.scroll_area()
 	sc.name = "DetailInfo"
 	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -418,7 +439,7 @@ func _build_detail() -> void:
 	action.name = "DetailAction"
 	action.pressed.connect(_on_detail_action)
 	v.add_child(action)
-	_d = {"over": over, "art": art, "name": name_l, "type": type_l, "state": state_l, "reason": reason_l, "action": action, "scroll": sc}
+	_d = {"over": over, "art": art, "name": name_l, "type": type_l, "state": state_l, "reason": reason_l, "action": action, "scroll": sc, "page": v}
 	# wrapping labels get their width from the panel's allocated width, so
 	# they never report a first-frame height for an unknown width
 	detail_panel.resized.connect(_fit_detail)
@@ -539,7 +560,7 @@ func _play_preview() -> void:
 
 func _process(delta: float) -> void:
 	# the preview replays its move every few seconds (Reduced Motion: once)
-	if _preview_emote < 0 or not is_instance_valid(_preview) or not _preview.visible:
+	if _preview_emote < 0 or not is_instance_valid(_preview) or not _preview.is_visible_in_tree():
 		return
 	_preview_t += delta
 	var dur := float(DormStage.EMOTE_S.get(String(TC.EMOTES[_preview_emote]), 2.4)) + 0.8
@@ -770,3 +791,260 @@ class RewardArt:
 		var k := maxf(rect.size.x / src.x, rect.size.y / src.y)
 		var vis := rect.size / k
 		draw_texture_rect_region(t, rect, Rect2((src - vis) * 0.5, vis), mod)
+
+
+# ------------------------------------------------------------------ challenges
+## Pass 8 (docs/ECONOMY.md §10).  The side panel: a two-page switch
+## ("Challenges" | "Reward", one 44 pt row) over its pages.
+func _side_box() -> VBoxContainer:
+	if _side != null:
+		return _side
+	_side = UIKit.vbox(UIKit.SP_S)
+	_side.name = "Side"
+	detail_panel.add_child(_side)
+	var row := UIKit.hbox(UIKit.SP_S)
+	row.name = "SideTabs"
+	_side.add_child(row)
+	for spec in [["challenges", "Challenges"], ["reward", "Reward"]]:
+		var b := UIKit.quiet(String(spec[1]), Vector2(0, UIKit.row_h()), UIKit.T_CAPTION + 1)
+		b.name = "Tab_" + String(spec[0])
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(show_side.bind(String(spec[0])))
+		row.add_child(b)
+		_tabs[String(spec[0])] = b
+	return _side
+
+
+## Show one page of the side panel: "challenges" or "reward" (a tapped
+## reward shows its detail; the Challenges tab comes back to the goals).
+func show_side(page: String) -> void:
+	side_page = page
+	if is_instance_valid(challenge_page):
+		challenge_page.visible = page == "challenges"
+	if _d.has("page"):
+		(_d["page"] as Control).visible = page == "reward"
+	for k in _tabs:
+		UIKit.set_selected(_tabs[k], k == page)
+		(_tabs[k] as Button).accessibility_name = "%s%s" % [(_tabs[k] as Button).text, ", shown" if k == page else ""]
+	if page == "challenges":
+		_refresh_challenges()
+
+
+## Challenges · Earn Season XP: the role line once, an honest status when
+## the service can't show progress, then Daily and Weekly with their local
+## reset time, one card per goal, and how pinning works.
+func _build_challenges() -> void:
+	challenge_page = UIKit.vbox(UIKit.SP_S)
+	challenge_page.name = "ChallengesPage"
+	challenge_page.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_side_box().add_child(challenge_page)
+	var head := UIKit.styled("Challenges · Earn Season XP", "label", UIKit.IVORY)
+	head.name = "ChallengesHeading"
+	head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	challenge_page.add_child(head)
+	var role := UIKit.styled(ChallengeRules.ROLE_LINE, "caption", UIKit.IVORY_MUTED)
+	role.name = "RoleLine"
+	role.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	challenge_page.add_child(role)
+	var status := UIKit.styled("", "caption", UIKit.AMBER)
+	status.name = "ChallengeStatus"
+	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status.visible = false
+	challenge_page.add_child(status)
+	var sc := UIKit.scroll_area()
+	sc.name = "ChallengeList"
+	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	challenge_page.add_child(sc)
+	var list := UIKit.vbox(UIKit.SP_S)
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sc.add_child(list)
+	var groups := {}
+	for d in ChallengeRules.defs():
+		var kind := String(d["period"])
+		if not groups.has(kind):
+			var gh := UIKit.styled("", "overline", UIKit.IVORY_MUTED)
+			gh.name = "Group_" + kind
+			UIKit.fit_text(gh, [UIKit.T_OVERLINE, 15, 14])
+			list.add_child(gh)
+			groups[kind] = gh
+		var card := ChallengeCard.new()
+		card.setup(self, String(d["id"]))
+		card.pressed.connect(_toggle_pin.bind(String(d["id"])))
+		list.add_child(card)
+		challenge_cards.append(card)
+	var hint := UIKit.styled("Tap a goal to pin it: it shows in your pause menu.", "caption", UIKit.IVORY_MUTED)
+	hint.name = "PinHint"
+	hint.add_theme_font_size_override("font_size", 18)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	list.add_child(hint)
+	_ch = {"head": head, "role": role, "status": status, "scroll": sc, "list": list, "groups": groups, "hint": hint, "day": -1}
+	detail_panel.resized.connect(_fit_challenges)
+	# reset times and a new period are checked twice a minute (labels are
+	# updated in place: nothing is rebuilt)
+	_ch_timer = Timer.new()
+	_ch_timer.wait_time = 30.0
+	_ch_timer.timeout.connect(_on_challenge_tick)
+	add_child(_ch_timer)
+	_ch_timer.start()
+
+
+## Wrapping labels get their width from the panel's allocated width.
+func _fit_challenges() -> void:
+	if _ch.is_empty() or not is_instance_valid(detail_panel):
+		return
+	var sb := detail_panel.get_theme_stylebox("panel")
+	var w := detail_panel.size.x - sb.get_margin(SIDE_LEFT) - sb.get_margin(SIDE_RIGHT) - 10.0
+	if w < 10.0:
+		return
+	for k in ["head", "role", "status"]:
+		(_ch[k] as Control).custom_minimum_size.x = w
+	(_ch["hint"] as Control).custom_minimum_size.x = w - 24.0
+
+
+func _refresh_challenges() -> void:
+	if _ch.is_empty() or not is_inside_tree():
+		return
+	var st := Wallet.challenge_status()
+	var status: Label = _ch["status"]
+	status.text = String(st["text"])
+	status.visible = status.text != ""
+	var cards := Wallet.challenge_cards()
+	var now := Wallet.server_now()
+	for kind in _ch["groups"]:
+		var end := 0
+		for c in cards:
+			if String(c["period"]) == kind:
+				end = int(c["resets_at"])
+		(_ch["groups"][kind] as Label).text = "%s · %s" % [ChallengeRules.period_label(String(kind)), ChallengeRules.reset_text(end, now)]
+	for cc in challenge_cards:
+		for c in cards:
+			if String(c["id"]) == cc.id:
+				cc.refresh(c, bool(st["live"]) and bool(c["known"]))
+	_ch["day"] = ChallengeRules.day_start(now)
+
+
+## A new UTC day while the screen is open: the old progress belongs to the
+## old period, so ask the service for the new one.
+func _on_challenge_tick() -> void:
+	var day := ChallengeRules.day_start(Wallet.server_now())
+	var rolled := int(_ch.get("day", -1)) >= 0 and day != int(_ch["day"])
+	_refresh_challenges()
+	if rolled and Cloud.signed_in() and not Wallet.syncing:
+		Wallet.refresh()
+
+
+func _toggle_pin(id: String) -> void:
+	var was := Wallet.pinned_challenge_id() == id
+	Wallet.pin_challenge("" if was else id)
+	UIKit.toast(self, "Unpinned" if was else "Pinned: it shows in your pause menu", 1.6)
+
+
+## A real milestone (the service reported a goal complete): said once.
+func _on_challenge_completed(card: Dictionary) -> void:
+	if not is_inside_tree():
+		return
+	UIKit.toast(self, "%s complete · %s" % [String(card.get("name", "")), ChallengeRules.xp_text(int(card.get("xp", 0)))], 2.4)
+	Sfx.play("pickup")
+
+
+## One goal: its name and task, its progress (bar and "4/6"), "+50 Season
+## XP", a flag when pinned and a check when complete.  The whole card is one
+## touch target that pins or unpins it (a swipe that starts on it scrolls
+## the list instead).  Without the service's progress for this period the
+## bar and count are hidden: the card is a readable preview, never a fake 0.
+class ChallengeCard:
+	extends Button
+	var screen: SeasonScreen
+	var id := ""
+	var name_l: Label
+	var task_l: Label
+	var bar: ProgressBar
+	var count_l: Label
+	var xp_l: Label
+	var mark: Icons.IconRect
+	var body: VBoxContainer
+	var card: Dictionary = {}
+	var live := false
+
+	func setup(s: SeasonScreen, cid: String) -> void:
+		screen = s
+		id = cid
+		name = "Challenge_" + cid
+		UIKit.make_card(self, Vector2(0, UIKit.touch_min()), Color(UIKit.SLATE_HI, 0.96))
+		size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var m := MarginContainer.new()
+		m.set_anchors_preset(Control.PRESET_FULL_RECT)
+		m.add_theme_constant_override("margin_left", 14)
+		m.add_theme_constant_override("margin_right", 12)
+		m.add_theme_constant_override("margin_top", 9)
+		m.add_theme_constant_override("margin_bottom", 10)
+		UIKit.face_of(self).add_child(m)
+		body = UIKit.vbox(3)
+		m.add_child(body)
+		var r1 := UIKit.hbox(8)
+		name_l = UIKit.styled("", "label", UIKit.IVORY)
+		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UIKit.fit_text(name_l, [UIKit.T_LABEL - 1, UIKit.T_CAPTION - 1, 17])
+		r1.add_child(name_l)
+		mark = Icons.IconRect.new("flag", UIKit.AMBER, 22)
+		mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		mark.visible = false
+		r1.add_child(mark)
+		body.add_child(r1)
+		task_l = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
+		task_l.add_theme_font_size_override("font_size", 18)
+		UIKit.fit_text(task_l, [18, 16, 15])
+		body.add_child(task_l)
+		var r3 := UIKit.hbox(8)
+		bar = ProgressBar.new()
+		bar.show_percentage = false
+		bar.max_value = 1.0
+		bar.step = 0.001
+		bar.custom_minimum_size = Vector2(36, 8)
+		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		bar.add_theme_stylebox_override("background", UIKit.box(Color(UIKit.NAVY, 0.7), 4, 0, Color.WHITE, 0))
+		bar.add_theme_stylebox_override("fill", UIKit.box(UIKit.TEAL, 4, 0, Color.WHITE, 0))
+		r3.add_child(bar)
+		count_l = UIKit.styled("", "num", UIKit.IVORY)
+		count_l.add_theme_font_size_override("font_size", 19)
+		r3.add_child(count_l)
+		xp_l = UIKit.styled("", "caption", UIKit.AMBER, HORIZONTAL_ALIGNMENT_RIGHT)
+		xp_l.add_theme_font_size_override("font_size", 17)
+		r3.add_child(xp_l)
+		body.add_child(r3)
+		m.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for n in m.find_children("*", "Control", true, false):
+			(n as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+		body.minimum_size_changed.connect(_fit)
+		_fit()
+
+	func _fit() -> void:
+		if is_instance_valid(body):
+			custom_minimum_size.y = maxf(UIKit.touch_min(), body.get_combined_minimum_size().y + 19.0)
+
+	func refresh(c: Dictionary, is_live: bool) -> void:
+		card = c
+		live = is_live
+		name_l.text = String(c["name"])
+		task_l.text = String(c["task"])
+		var goal := maxi(1, int(c["goal"]))
+		var prog := clampi(int(c["progress"]), 0, goal)
+		var done := live and bool(c["completed"])
+		var pinned := bool(c["pinned"])
+		bar.visible = live
+		count_l.visible = live
+		if live:
+			bar.value = float(prog) / float(goal)
+			count_l.text = "%d/%d" % [prog, goal]
+		xp_l.text = ("Done · " if done else "") + ChallengeRules.xp_text(int(c["xp"]))
+		xp_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL if not live else Control.SIZE_FILL
+		xp_l.add_theme_color_override("font_color", UIKit.TEAL if done else (UIKit.AMBER if live else UIKit.IVORY_MUTED))
+		mark.visible = done or pinned
+		mark.kind = "check" if done else "flag"
+		mark.col = UIKit.TEAL if done else UIKit.AMBER
+		mark.queue_redraw()
+		UIKit.set_selected(self, pinned)
+		var prog_t := ("%d of %d" % [prog, goal]) if live else "progress not available"
+		accessibility_name = "%s, %s challenge: %s. %s. %s%s. %s" % [String(c["name"]), ChallengeRules.period_label(String(c["period"])), String(c["task"]),
+			prog_t, ChallengeRules.xp_text(int(c["xp"])), ", complete" if done else "", "Pinned; tap to unpin" if pinned else "Tap to pin"]

@@ -187,7 +187,8 @@ export async function snapshot(q, e, pid, t) {
   const view = (r, d, current) => ({
     instance_id: r.instance_id, challenge_id: r.challenge_id, period: r.period, period_start: r.period_start, period_end: r.period_end,
     name: d ? d.name : r.challenge_id, task: d ? d.task : '', metric: r.metric, goal: r.goal, xp: r.xp, progress: r.progress,
-    completed: r.progress >= r.goal, bonus_xp: bonus.has(r.instance_id) ? bonus.get(r.instance_id).xp : 0, set_version: r.set_version, current,
+    completed: r.progress >= r.goal, completed_at: r.completed_at || null, bonus_xp: bonus.has(r.instance_id) ? bonus.get(r.instance_id).xp : 0,
+    set_version: r.set_version, current,
   });
   const items = [];
   const seen = new Set();

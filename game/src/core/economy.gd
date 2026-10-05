@@ -12,7 +12,9 @@ extends RefCounted
 ## Lifetime level XP stays local (RulesLogic.lifetime_xp) and is separate
 ## from Season XP.
 
-const DIGEST_VERSION := "v1"
+## v2 (Pass 8): the row also binds active_s, the seconds of active play the
+## host's simulation counted (challenges); the host reports report_version 2.
+const DIGEST_VERSION := "v2"
 
 
 static func cfg() -> Dictionary:
@@ -145,10 +147,11 @@ static func present_enough(row: Dictionary, results: Dictionary) -> bool:
 ## player confirms the row its own game received by sending this digest, and
 ## the service settles a player only when the two agree.
 static func row_canonical(match_id: String, results: Dictionary, row: Dictionary) -> String:
-	return "%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d" % [DIGEST_VERSION, match_id, int(results.get("outcome", 0)), _row_role(row),
+	return "%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d" % [DIGEST_VERSION, match_id, int(results.get("outcome", 0)), _row_role(row),
 		clampi(int(row.get("stamps", 0)), 0, 3), 1 if bool(row.get("finished", false)) else 0, 1 if first_home(row, results) else 0,
 		clampi(int(row.get("unique_captures", 0)), 0, 7), maxi(0, int(row.get("coins_picked", 0))),
-		1 if bool(row.get("present", true)) else 0, int(round(float(row.get("away_s", 0.0)))), int(round(float(results.get("round_time", 0.0))))]
+		1 if bool(row.get("present", true)) else 0, int(round(float(row.get("away_s", 0.0)))), int(round(float(results.get("round_time", 0.0)))),
+		maxi(0, int(row.get("active_s", 0)))]
 
 
 static func row_digest(match_id: String, results: Dictionary, row: Dictionary) -> String:

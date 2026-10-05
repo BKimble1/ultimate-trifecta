@@ -15,7 +15,10 @@ extends RefCounted
 ## and, privately, the recipient's coin count (u8); EVENTS gain
 ## COIN_PICKUP.  Message types 60-79 are reserved for the V6 social
 ## messages (chat / hub); none of them is defined here.
-const VERSION := 6
+## 7 (Pass 8): RESULTS rows carry active_s (challenges), bound into the
+## economy row digest (Economy.row_canonical v2): a 6 and a 7 game can't
+## confirm each other's rounds, so they don't share a party.
+const VERSION := 7
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}

@@ -1406,6 +1406,8 @@ func _fix_results(d: Dictionary) -> Dictionary:
 			rr[k] = int(r.get(k, 0))
 		rr["coins_picked"] = clampi(int(r.get("coins_picked", 0)), 0, 16)
 		rr["away_s"] = float(r.get("away_s", 0.0))
+		# Pass 8: whole seconds of active play (challenges; in the row digest)
+		rr["active_s"] = clampi(int(r.get("active_s", 0)), 0, 3600)
 		rr["present"] = bool(r.get("present", true))
 		rr["was_human"] = bool(r.get("was_human", false))
 		rows.append(rr)

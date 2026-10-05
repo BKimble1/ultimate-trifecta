@@ -19,7 +19,8 @@ extends RefCounted
 ## Summary: {state, message, coins_collected, coins (added), coins_projected,
 ## season_xp (added), season_xp_projected, tier_before, tier_after,
 ## frac_before, frac_after, lines, season_lines, settled, pending, away,
-## level_up, level, source}.  Empty when there is nothing to show.
+## level_up, level, source, challenge_xp, challenges}.  Empty when there is
+## nothing to show.
 
 const KEEP := 32
 
@@ -90,6 +91,9 @@ static func _normalize(w: Dictionary, local: Dictionary) -> Dictionary:
 		"away": bool(local.get("away", false)) or String(w.get("reason", "")) == "away",
 		"level_up": bool(local.get("level_up", false)), "level": int(local.get("level", 0)),
 		"source": "device" if w.is_empty() else "wallet",
+		# Pass 8: the round's part in challenges (Wallet._round_challenges)
+		"challenge_xp": int(w.get("challenge_xp", 0)) if settled else 0,
+		"challenges": w.get("challenges", {}) if w.get("challenges") is Dictionary else {},
 	}
 
 
