@@ -205,10 +205,13 @@ func _measure() -> Dictionary:
 
 
 # ------------------------------------------------------------------ states
+const LOOK := {"schema": 2, "outfit": "pj", "hat": "nightcap", "shoes": "slippers", "color": "sky", "hair": "tuft", "skin": "tone4"}
+
+
 func _setup_profile() -> void:
 	Save.data = Save.migrate({"version": 3, "uid": "local-capture", "name": "Sleepy Otter", "coins": 0, "level": 6, "xp": 40,
 		"owned": [], "onboarded": true, "tutorial_done": true,
-		"cosmetic": {"schema": 2, "outfit": "pj", "hat": "nightcap", "shoes": "slippers", "color": "sky", "hair": "tuft", "skin": "tone4"},
+		"cosmetic": LOOK.duplicate(),
 		"stats": {"online": {"matches": 14}, "practice": {"matches": 6}}, "settings": {}})
 	Save.data["onboarded"] = true
 
@@ -342,5 +345,161 @@ func _run_before() -> void:
 		await _wait(0.8), 2.0)
 
 
+## The rebuilt screen: the same states as before, then the matrix.
 func _run_after() -> void:
-	await _run_before()
+	# ------------------------------------------------------------ service off (as shipped in 1.9)
+	_service_off()
+	_label(SVC_OFF)
+	await _open()
+	await _shot("a01_svcoff_tier1_open")
+	await _shot("a02_svcoff_tier1_record_breaker", func(sp: SeasonScreen) -> void:
+		sp.jump_to(50)
+		await _wait(0.8), 2.0)
+	await _shot("a03_svcoff_tier1_dr_doom", func(sp: SeasonScreen) -> void:
+		sp.jump_to(100)
+		await _wait(0.8), 2.0)
+	await _shot("a04_svcoff_challenges", func(sp: SeasonScreen) -> void:
+		sp.show_side("challenges")
+		await _wait(0.3))
+	# ------------------------------------------------------------ a regular player (Premium, Tier 43)
+	var pid := await _online("T:_regular")
+	svc.grant(pid, 640)
+	_set_season(pid, 13000, true)            # Tier 43 (tier 45 at 13,550)
+	_claimed_through(pid, 43, true, ["40:free", "40:premium"])
+	await Wallet.refresh()
+	_label(FIXTURE)
+	await _open()
+	await _shot("a10_svcon_test_tier43_open")
+	await _shot("a11_svcon_test_progress_run", func(sp: SeasonScreen) -> void:
+		sp.jump_current()
+		await _wait(0.8))
+	await _shot("a12_svcon_test_tier30", func(sp: SeasonScreen) -> void:
+		sp.jump_to(30)
+		await _wait(0.8))
+	await _shot("a13_svcon_test_record_breaker_locked", func(sp: SeasonScreen) -> void:
+		sp.jump_to(50)
+		await _wait(0.8), 2.0)
+	await _shot("a14_svcon_test_record_breaker_turned", func(sp: SeasonScreen) -> void:
+		sp.turn.turn_by(2.4)                 # the player turns it: its back
+		await _wait(0.3), 1.2)
+	await _shot("a15_svcon_test_dr_doom_locked", func(sp: SeasonScreen) -> void:
+		sp.turn.reset()
+		sp.jump_to(100)
+		await _wait(0.8), 2.0)
+	await _shot("a16_svcon_test_tier40_claimable", func(sp: SeasonScreen) -> void:
+		sp.jump_to(40)
+		await _wait(0.5)
+		sp.focus(40, "premium")
+		await _wait(0.2))
+	await _shot("a17_svcon_test_tier40_claimed", func(sp: SeasonScreen) -> void:
+		sp._on_detail_action()
+		for i in 120:
+			if sp.display_state(40, "premium") == "claimed":
+				break
+			await get_tree().process_frame
+		await _wait(2.2))
+	await _shot("a18_svcon_test_challenges", func(sp: SeasonScreen) -> void:
+		svc.set_challenge(pid, "campus_contribution", 4)
+		svc.set_challenge(pid, "team_effort", 1)
+		await Wallet.refresh()
+		sp.show_side("challenges")
+		await _wait(0.4))
+	await _shot("a19_svcon_test_emote_reward", func(sp: SeasonScreen) -> void:
+		sp.show_side("reward")
+		sp.jump_to(9)
+		await _wait(0.5)
+		sp.focus(9, "free")
+		await _wait(1.0), 0.6)
+	await _shot("a20_svcon_test_tier1", func(sp: SeasonScreen) -> void:
+		sp.jump_to(1)
+		await _wait(0.5)
+		sp.focus(1, "premium")
+		await _wait(0.4), 1.5)
+	# ------------------------------------------------------------ a free player at Tier 52
+	pid = await _online("T:_free")
+	_set_season(pid, 16000, false)
+	_claimed_through(pid, 45, false)
+	await Wallet.refresh()
+	await _open()
+	await _shot("a21_svcon_test_free_record_breaker_premium_locked", func(sp: SeasonScreen) -> void:
+		sp.jump_to(50)
+		await _wait(0.8), 2.0)
+	await _shot("a22_svcon_test_free_tier50_badge_claimable", func(sp: SeasonScreen) -> void:
+		sp.focus(50, "free")
+		await _wait(0.4))
+	# ------------------------------------------------------------ a finished pass
+	pid = await _online("T:_finished")
+	_set_season(pid, 33200, true)
+	_claimed_through(pid, 100, true)
+	await Wallet.refresh()
+	await _open()
+	await _shot("a23_svcon_test_dr_doom_claimed", func(sp: SeasonScreen) -> void:
+		sp.jump_to(100)
+		await _wait(0.8), 2.0)
+	await _shot("a24_svcon_test_dr_doom_equipped", func(sp: SeasonScreen) -> void:
+		sp._on_detail_action()               # Equip
+		await _wait(2.2))
+	# the profile's own look back for the next players
+	Save.data["cosmetic"] = Cosmetics.sanitize(LOOK)
+	App.sync_stage_local()
+	# ------------------------------------------------------------ a claim waiting for the service
+	pid = await _online("T:_pending")
+	_set_season(pid, 15400, true)
+	_claimed_through(pid, 45, true)
+	await Wallet.refresh()
+	await _open()
+	await _shot("a25_svcon_test_claim_pending", func(sp: SeasonScreen) -> void:
+		sp.jump_to(50)
+		await _wait(0.6)
+		svc.network_down = true
+		await Wallet.claim("s1", [{"tier": 50, "track": "premium"}])
+		sp._refresh()
+		sp.focus(50, "premium")
+		await _wait(0.3), 2.0)
+	svc.network_down = false
+	# ------------------------------------------------------------ an older (30-tier) game service
+	pid = await _online("T:_legacy")
+	svc.legacy_tiers = 30
+	_set_season(pid, 15400, true)
+	_claimed_through(pid, 30, true)
+	await Wallet.refresh()
+	_label(FIXTURE + " · acting as an older (30-tier) service")
+	await _open()
+	await _shot("a26_svcon_test_old_service_tier50", func(sp: SeasonScreen) -> void:
+		sp.jump_to(50)
+		await _wait(0.8), 2.0)
+	svc.legacy_tiers = 0
+	# ------------------------------------------------------------ outages with an account (earned stays earned)
+	pid = await _online("T:_outage")
+	_set_season(pid, 15400, true)            # Tier 50: Record Breaker earned
+	_claimed_through(pid, 45, true)
+	await Wallet.refresh()
+	# Game Center doesn't sign in (the last snapshot still shows)
+	Cloud.identity_override = func() -> Dictionary:
+		return {"ok": false, "message": "Sign in to Game Center to play online."}
+	Cloud.token = ""
+	await Cloud.sign_in()
+	_label(FIXTURE + " · Game Center sign-in failed")
+	await _open()
+	await _shot("a27_svcon_test_signin_failed_earned", func(sp: SeasonScreen) -> void:
+		sp.jump_to(50)
+		await _wait(0.8), 2.0)
+	# no network at launch
+	svc.install()
+	svc.network_down = true
+	Cloud.token = ""
+	await Cloud.sign_in()
+	_label(FIXTURE + " · no network")
+	await _open()
+	await _shot("a28_svcon_test_offline_earned", func(sp: SeasonScreen) -> void:
+		sp.jump_to(50)
+		await _wait(0.8), 2.0)
+	svc.network_down = false
+	# signed out of Game Center
+	Cloud.token = ""
+	Cloud.state = "signed_out"
+	_label(FIXTURE + " · signed out")
+	await _open()
+	await _shot("a29_svcon_test_signed_out", func(sp: SeasonScreen) -> void:
+		sp.jump_to(50)
+		await _wait(0.8), 2.0)

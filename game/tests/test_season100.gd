@@ -273,7 +273,7 @@ func test_an_older_service_and_a_changed_reward_never_mis_grant() -> void:
 	var sp := App.screen as SeasonScreen
 	t.eq(sp.display_state(50, "premium"), "service_update", "Record Breaker shows earned, waiting for the service")
 	sp.focus(50, "premium")
-	t.check((sp._d["action"] as Button).disabled and (sp._d["reason"] as Label).text.contains("can't be claimed yet"), "no Claim that would do nothing; the reason says why")
+	t.check((sp._d["action"] as Button).disabled and (sp._d["reason"] as Label).text.contains("isn't open yet"), "no Claim that would do nothing; the reason says why")
 	t.check((sp._d["state"] as Label).text.contains("It stays earned"), "and it stays earned")
 	t.eq(sp.claim_all_btn.text, "Nothing to claim", "Claim all counts what the service can grant")
 	# forced anyway (a stale screen): the old service grants nothing and says

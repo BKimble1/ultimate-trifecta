@@ -750,12 +750,21 @@ func _scroll_to(tier: int, animate: bool = false) -> void:
 		return
 	var col: Control = columns[tier]
 	var room := track_scroll.get_h_scroll_bar().max_value - track_scroll.size.x
-	var to := int(clampf(col.position.x - track_scroll.size.x * 0.35, 0.0, maxf(0.0, room)))
+	var to := clampf(col.position.x - track_scroll.size.x * 0.35, 0.0, maxf(0.0, room))
+	# start at a column's edge: no half-cut column at the left of the track
+	if to > 0.0 and to < room:
+		var edge := 0.0
+		for c in _cols:
+			var cx := (c as Control).position.x
+			if cx <= to + 1.0:
+				edge = cx
+		to = edge
+	to = roundf(to)
 	if animate and not UIKit.reduced_motion() and is_inside_tree():
-		Motion.animate(track_scroll, "scroll_horizontal", to, Motion.CAMERA)
+		Motion.animate(track_scroll, "scroll_horizontal", int(to), Motion.CAMERA)
 	else:
 		Motion.stop(track_scroll, "scroll_horizontal")
-		track_scroll.scroll_horizontal = to
+		track_scroll.scroll_horizontal = int(to)
 
 
 # ------------------------------------------------------------------ navigation
@@ -922,9 +931,10 @@ func claim_status() -> Dictionary:
 		"syncing":
 			reason = "Checking your account…"
 		"offline":
-			# a sign-in that failed (Game Center or the network) is not "offline"
-			if Cloud.state == "error":
-				reason = "Couldn't sign in just now. Your rewards are kept; try again later."
+			# the last sign-in failed: no network (the game's own "Check your
+			# connection" message), or Game Center didn't sign in
+			if Cloud.state == "error" and not Cloud.last_error.contains("connection"):
+				reason = "Game Center didn't sign in. Your rewards are kept; try again later."
 			else:
 				reason = "You're offline. Claiming comes back when you reconnect."
 		_:
@@ -1268,7 +1278,7 @@ func _refresh_reward_detail() -> void:
 		"service_update":
 			chip.set_state("check", "Earned", UIKit.TEAL)
 			state_l.text = lead + "Earned at Tier %d, not claimed yet. It stays earned." % focus_tier
-			reason_l.text = "This tier can't be claimed yet: rewards for it aren't ready on the game's side."
+			reason_l.text = "Claiming for this tier isn't open yet."
 			action.text = "Claim"
 			action.disabled = true
 		"claimed":
@@ -1296,7 +1306,7 @@ func _refresh_progress_detail() -> void:
 	over.add_theme_color_override("font_color", UIKit.IVORY_MUTED)
 	_stage_show({}, [first, last])
 	(_d["name"] as Label).text = "Progress tiers" if last > first else "Progress tier"
-	(_d["type"] as Label).text = "No reward on either track"
+	(_d["type"] as Label).text = "No reward"
 	var xp := int(season()["xp"])
 	var tier := current_tier()
 	var chip: StateChip = _d["chip"]
@@ -1563,8 +1573,16 @@ class RewardArt:
 		if cell == null:
 			if not big:
 				return Rect2(Vector2.ZERO, size)
+			# a well shaped for what it holds: a name card is a wide plate, a
+			# progress run tall, everything else about square
 			var w := size.x * 0.88
 			var h := minf(size.y * 0.78, w * 1.25)
+			if not run.is_empty():
+				h = size.y * 0.86
+			elif String(reward.get("item", "")).begins_with("card:"):
+				h = minf(h, w * 0.62)
+			elif not reward.is_empty():
+				h = minf(h, w * 1.0)
 			return Rect2(Vector2((size.x - w) * 0.5, (size.y - h) * 0.44), Vector2(w, h))
 		var pad := 8.0
 		return Rect2(Vector2(pad, pad), Vector2(size.x - pad * 2.0, size.y - pad * 2.0 - SeasonScreen.CAPTION_H))
