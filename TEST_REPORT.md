@@ -107,10 +107,34 @@ each. The gating numbers of the upload run are in P9.5.
 
 ## P9.5 iOS build (CI iOS) and TestFlight
 
-Before uploading: read-only status run #117 showed builds 1–8 in App Store
-Connect (latest 1.8 (8), `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING`) and
-no 1.9. The upload run and Apple's processing state are recorded in
-TESTFLIGHT_RELEASE once Apple reports them.
+- **Gating CI:** upload run #125
+  (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37360488402),
+  on commit `1704d9d` (the code of `995d488` plus captures and
+  documentation).
+  - Headless tests: **523 tests, 105,358 checks, 0 failures**.
+  - Xcode project export, launch and branding audit **PASS**: both launch
+    images 1656², opaque, black corners; the logo's box matches the vector
+    exactly; 0 detached glow and 0 inner dip pixels; 0 "powered by"
+    strings.
+  - Signed archive and upload, `CFBundleShortVersionString` 1.9,
+    `CFBundleVersion` 9, arm64, 302 MB.
+  - 40 Metal `shader_cache` entries. As with 1.8, the baking editor exited
+    with code 250 after the export (a Godot crash report on the runner).
+    The lane judged the export by its output, which was complete.
+  - Xcode warned that the four embedded plugin frameworks have no dSYMs.
+    The upload succeeded.
+- **Simulator (x86_64, ~1 fps):** cold launch running, no crash report for
+  the app, 0 script errors, 23 screenshots; still preparing the bot round
+  (phase 1) when the window closed. Not a phone.
+- **TestFlight:** **1.9 (9)** uploaded 2026-10-05 19:23:26 UTC.
+  - App Store Connect build `8a207a62-69de-4c34-95bd-a90e4c8504ec`.
+  - Processing `VALID`, `INTERNAL_ONLY`.
+  - Internal state `IN_BETA_TESTING`; external `NOT_APPLICABLE`.
+  - What to Test set (1,844 characters).
+  - The existing internal group receives every build automatically.
+  - Read from Apple's API by run #125 at 19:38 UTC.
+  - No testers added, nothing submitted, no purchase made.
+  - Status run #117 beforehand: builds 1–8, no 1.9.
 
 ## P9.6 Not verified (exact remaining checks)
 

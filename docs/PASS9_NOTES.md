@@ -80,15 +80,22 @@ evidence. The full registers are in each area's notes.
 
 See `TEST_REPORT.md` (Pass 9) for the full gate.
 
-- **Game suite:** 516 tests, 104,884 checks, 0 failures on the integrated
-  branch before the last skin and music commits. The final gate is recorded
-  in TEST_REPORT.
+- **Game suite:** 523 tests, 105,357 checks, 0 failures on the final code
+  (`995d488`), locally. The upload run's gate on `1704d9d` (the same code
+  plus captures and docs) was 523 tests, 105,358 checks, 0 failures.
 - **Service:** 68/68.
 - **Character checks:** `fit_check`, `skins_check`, `outfit_check` and
   `clip_check` all 0 failures.
 - **Balance:** a seeded bot-round matrix, 12 rounds per team size, on 1.8,
   on 1.9 with 1.8 bot steering, on 1.9 as shipped, and on a Night Watch
   6.8 m/s experiment (not adopted). Details in `pass9/movement.md` §4.
+
+## Release
+
+**1.9 (9)** was uploaded by run #125 from `1704d9d`. Apple reports it as
+`VALID`, `INTERNAL_ONLY` and `IN_BETA_TESTING` for the existing internal
+group, with What to Test set. No testers were added and nothing was
+submitted. Details are in `TESTFLIGHT_RELEASE.md` and TEST_REPORT P9.5.
 
 ## Owner dependencies
 

@@ -19,9 +19,35 @@ Current version: **1.9 (Pass 9)**. It uses the same app, bundle ID, Game Center 
 
 ## Current release state
 
-**State: source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **1.8 (8)**.
+**State: source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **1.9 (9)**.
 
 It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, nothing was submitted for App Store review, and no purchase of any kind was made.
+
+| | |
+|---|---|
+| Build | `com.idlery.ultimatetrifecta` **1.9 (9)**. App Store Connect build ID `8a207a62-69de-4c34-95bd-a90e4c8504ec`. |
+| Build number | **9**: the lane read the highest existing build (1.8 (8)) and added one. Status run #117 had shown builds 1–8 and no 1.9 beforehand, and no other session was working on this app. |
+| Source | Commit `1704d9d`: all Pass 9 code as of `995d488` (the full suite run locally on it: 523 tests, 0 failures) plus the re-taken Season Pass captures and documentation. Later commits change only documentation. |
+| Uploaded | 2026-10-05 19:23:26 UTC (Apple's upload time; `xcodebuild` finished sending at 19:22:36), by GitHub Actions run #125 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37360488402) with `upload=true`. The headless tests gate the build: **523 tests, 105,358 checks, 0 failures**. |
+| Apple's processing | `VALID`. The build is `INTERNAL_ONLY` and declares no non-exempt encryption. |
+| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. What to Test is set from `docs/testflight/what_to_test.txt` (1,844 characters, en-US). |
+| Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which receives every build. The lane added no one. TestFlight's automatic notification is on. |
+| Confirmed by | Apple's API, read by run #125 at 19:38 UTC. |
+
+What run #125 checked besides the upload:
+- **Launch and branding audit: PASS.** One black launch storyboard; both launch images **1656²**, opaque, black corners, the Idlery teal mark; the logo's box matches the vector exactly (off by 0.0000), 0 detached glow pixels, 0 inner dip pixels; the boot splash image is the same; 0 "powered by" strings.
+- **Shader baking:** the baking export was used and the game data carries **40 `shader_cache` entries**. As with 1.8, the baking editor exited with code 250 after the export and macOS saved a Godot crash report on the runner (`Godot-2026-10-05-192014.ips`). The lane judges this export by its output: the project, the game data and the 40 baked entries were all present, and that output was signed, uploaded and accepted as `VALID`.
+- **Simulator (x86_64, about 1 fps):** the cold launch was still running, no crash report for the app, 0 script errors, 23 screenshots; as with 1.6–1.8 the bot round was still preparing (phase 1) when the window closed. Not a phone.
+- **Build facts:**
+  - arm64, app 302 MB;
+  - Xcode 26.6 (17F113), iOS SDK 26.5;
+  - `CFBundleShortVersionString` 1.9, `CFBundleVersion` 9, MinimumOSVersion 17.0, iPhone and iPad, landscape left and right;
+  - `ITSAppUsesNonExemptEncryption` false;
+  - the Game Center entitlement and friends purpose string;
+  - the same four embedded frameworks as 1.8 (`GodotApplePluginsGameCenter`, `GodotApplePluginsStoreKit`, `SwiftGodotRuntime`, `UTShare` arm64) and the privacy manifest.
+- **Symbols warning:** Xcode warned that the archive has no debug symbols (dSYMs) for those four frameworks. The upload succeeded. Crash reports from inside those frameworks won't be symbolicated. The app's own symbols were generated.
+
+The previous build, **1.8 (8)**, as recorded when it shipped:
 
 | | |
 |---|---|
@@ -34,27 +60,8 @@ It is **not device-tested**: no install or play on an iPhone or iPad has been ob
 | Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which receives every build. The lane added no one. TestFlight's automatic notification is on. |
 | Confirmed by | Apple's API, read by run #112 at 06:25 UTC. |
 
-What run #112 checked besides the upload:
-- **Launch and branding audit: PASS.** One black launch storyboard; both launch images **1656²** (Pass 8: rasterised from the owner's vector), opaque, black corners, the Idlery teal mark; the logo's box matches the vector exactly (off by 0.0000), 0 detached glow pixels, 0 inner dip pixels; the boot splash image is the same; 0 "powered by" strings.
-- **Shader baking:** the baking export was used and the game data carries **40 `shader_cache` entries**. The baking editor exited with code 250 after the export (1.7's exited 0), and macOS saved a Godot crash report on the runner at that moment (`Godot-2026-10-05-060750.ips`, before the Simulator started). The lane judges this export by what it produced because the editor has crashed while quitting before (run #63): here the project, the game data and the 40 baked entries were all present, and that output is what was signed, uploaded and accepted as `VALID`.
-- **Simulator (x86_64, about 1 fps):** the cold launch was still running, no crash report for the app, 0 script errors, 23 screenshots; as with 1.6 and 1.7 the bot round was still preparing (phase 1) when the window closed. Not a phone.
-
-The previous build, **1.7 (7)**, as recorded when it shipped:
-
-| | |
-|---|---|
-| Build | `com.idlery.ultimatetrifecta` **1.7 (7)**. App Store Connect build ID `3a68fdfb-043d-4e2f-882d-793e09dd7956`. |
-| Build number | **7**: the lane read the highest existing build (1.6 (6)) and added one. Status run #98 had shown builds 1–6 and no 1.7 beforehand, and no other session was working on this app. |
-| Source | Commit `00dc652`: all V8 code as of `5e96387` (tested by push run #97) plus documentation. Later commits change only documentation and evidence. |
-| Uploaded | 2026-10-04 23:00:18 UTC, by GitHub Actions run #99 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37241343086) with `upload=true`. The headless tests gate the build: **418 tests, 99,343 checks, 0 failures**. |
-| Apple's processing | `VALID`. The build is `INTERNAL_ONLY` and declares no non-exempt encryption. |
-| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. What to Test is set from `docs/testflight/what_to_test.txt` (1806 characters, en-US). |
-| Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which receives every build. The lane added no one. TestFlight's automatic notification is on. |
-| Confirmed by | Apple's API, read by run #99 at 23:18 UTC. |
-
-What the signed archive contains (run #99's build facts): arm64, app 297 MB (1.6: 296 MB); Xcode 26.6 (17F113), iOS SDK 26.5; `CFBundleIdentifier` `com.idlery.ultimatetrifecta`, `CFBundleShortVersionString` 1.7, `CFBundleVersion` 7, MinimumOSVersion 17.0, iPhone and iPad, landscape left and right; `ITSAppUsesNonExemptEncryption` false; the Game Center entitlement and friends purpose string; `GodotApplePluginsGameCenter`, `GodotApplePluginsStoreKit`, `SwiftGodotRuntime` and `UTShare` (arm64) embedded; the privacy manifest. What run #99 checked besides the upload: the launch and branding audit **PASS** (one black launch storyboard; both 2048² launch images opaque with black corners and the Idlery teal mark; 0 "powered by" strings); the shader-baking export (exit code 0, **40 `shader_cache` entries**); and the x86_64 Simulator (cold launch still running, no crash report, 0 script errors, 23 screenshots; at about 1 fps it was still preparing the bot round, phase 1, when the window closed, as with 1.6). The Simulator says nothing about device speed.
-
 Earlier builds, all still `VALID` and internal-only:
+- **1.7 (7)** (`3a68fdfb-…`, run #99, commit `00dc652`): V8.
 - **1.6 (6)** (`811b7ee6-…`, run #94, commit `4de97c7`): V7.
 - **1.5 (5)** (`3d9ab76f-…`, run #80, commit `434fcd4`): V6.
 - **1.4 (4)** (`71dd2161-…`, run #62, commit `0a41d70`): V5.
@@ -66,21 +73,30 @@ Earlier builds, all still `VALID` and internal-only:
 The one-time setup is done: the API key and the four repository secrets, the app record, and an internal group. Nothing needs to be set up again.
 
 What only you can do now:
-1. **Install 1.8 (8)** from the TestFlight app on your iPhone. If it doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing).
-2. **Play it and check the items in What to Test.**
-   - Most important: whether holding sprint now feels like one steady burst (and "Sprint empty · ease off to recharge" makes sense), whether jump→dive spam no longer out-runs the Night Watch while a single dive still helps, and whether the goal bar, your next action and "Runner pace" are clear at a glance.
-   - The startup: the Idlery Games logo should stay still and crisp from the launch screen until it fades. If it doesn't, send a PNG screenshot (not a screen recording), ideally from more than one iPhone size.
-   - The device checks are listed in `TEST_REPORT.md` P8.6.
-3. **Purchases, rotating offers and challenges, when you want them live** (`docs/COMMERCE_SETUP.md`):
+1. **Install 1.9 (9)** from the TestFlight app on your iPhone. If it doesn't appear, check that your Apple Account is in "Ultimate Trifecta Internal Testing Group" (App Store Connect › TestFlight › Internal Testing). Everyone in a party needs 1.9: 1.8 and 1.9 can't join each other (protocol 8).
+2. **Play it and check the items in What to Test.** Most important:
+   - whether holding the stick all the way gives one steady full speed with your thumb;
+   - whether chases feel right now that the Night Watch is only a little faster;
+   - whether the round music blends in from the lobby music on the beat, on the speaker and on headphones;
+   - how Record Breaker and Dr. Doom look in the Season Pass (tiers 50 and 100) and, once unlocked, on a phone screen;
+   - whether outfits stay on the body.
+
+   The device checks are listed in `TEST_REPORT.md` P9.6.
+3. **Confirm two permissions** before the build goes beyond your internal testers:
+   - **Likeness:** Record Breaker and Dr. Doom are stylised likenesses of real people, made from your photos. Make sure those people are happy to appear in the game.
+   - **Music:** check mureka.ai's terms for commercial use of "Soft Bounce Loop" and "Night Campus Loop".
+4. **Purchases, the Season Pass, rotating offers and challenges, when you want them live** (`docs/COMMERCE_SETUP.md`):
    1. Accept the Paid Applications agreement and complete tax and banking (account holder).
    2. Run the workflow with **iap = create**: it creates the eight missing products (the five V6 ones and Pass 8's `coins.250`, `coins.1000`, `coins.7500`) and sets no prices.
    3. Choose each product's price and add a review screenshot in App Store Connect.
-   4. Deploy the service (migrations 0001–0004: commerce, offers, challenges) and fill in `game/config/service.cfg`.
+   4. Deploy the service (migrations 0001–0005: commerce, offers, challenges, and Pass 9's 100-tier Season) and fill in `game/config/service.cfg`.
    5. Upload again.
-   6. Test with a Sandbox account (`COMMERCE_SETUP.md` §4), including a rotating offer across 00:00 UTC and a challenge completed in a two-device round.
+   6. Test with a Sandbox account (`COMMERCE_SETUP.md` §4), including a rotating offer across 00:00 UTC, a challenge completed in a two-device round, and a Season Pass claim.
    7. Extend the offer schedule before **2026-12-28** (`tools/make_offer_schedule.py`, then `node service/tools/sync_catalogue.mjs`, redeploy).
-4. **The results track:** when you have the new end-of-match music, add it; the game already has a results-music state waiting for it (see `docs/pass8/movement.md` and `docs/PASS8_GAMEPLAY_COMMERCE_NOTES.md`).
-5. **Typed chat, verified names and reports** need the same service deployment. Also choose whether to declare chat as "Emails or Text Messages" (`docs/APP_STORE.md`).
+   
+   Until the service is deployed, the two skins can't be unlocked in a real account; the Season Pass only previews them.
+5. **The results track:** when you have the new end-of-match music, add it; the game already has a results-music state waiting for it (see `docs/PASS8_GAMEPLAY_COMMERCE_NOTES.md`).
+6. **Typed chat, verified names and reports** need the same service deployment. Also choose whether to declare chat as "Emails or Text Messages" (`docs/APP_STORE.md`).
 
 For later uploads, run "Build, test and ship (iOS)" with **upload** ticked. The build number follows the highest one in App Store Connect, and the build goes to internal testing only. **asc_status** reads the current state without building anything.
 
