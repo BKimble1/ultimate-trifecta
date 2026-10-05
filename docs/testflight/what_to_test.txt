@@ -1,7 +1,8 @@
-1.9 internal beta (pass 9: one steady full speed, Season Pass to tier 100 with two new skins, better-fitting outfits). Please tell us your iPhone model:
+1.9 internal beta (pass 9: one steady full speed, new round music, Season Pass to tier 100 with two new skins, better-fitting outfits). Please tell us your iPhone model:
 
 - Running: push the stick all the way and hold it. You keep one steady full speed for as long as you hold it. There is no Sprint button, meter or recharge any more. A gentle push walks (silent), a part push jogs (quieter). On a controller or keyboard: left stick all the way, or WASD. Tell us if the speed ever dips or pulses, or if full speed is hard to reach with your thumb.
 - Night Watch: you are a little faster than a runner on foot, so on a straight you close in slowly. Press Tag when it lights up. Tell us if chases feel too long or too short, and who wins most rounds.
+- Music: rounds now play "Soft Bounce Loop". When a round starts it should blend in from the lobby music on the beat, with the lobby music fading away underneath. Tell us if the change ever sounds abrupt, off-beat or too loud or quiet next to the sound effects.
 - Dive: unchanged. One dive per jump, then a short landing.
 - Turbo Sneakers are now a real escape for 3 seconds. Tell us if they feel too strong.
 - Season Pass: now 100 tiers. Your Season XP, claims and Premium are kept. Try "You're at", "Next reward" and the 30, 50 and 100 shortcuts above the track. Record Breaker is the Premium reward at tier 50 and Dr. Doom at tier 100. Open them to preview.
