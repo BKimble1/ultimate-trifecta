@@ -7,6 +7,12 @@ extends CanvasLayer
 ## boot splash, and this curtain draws the same lockup at the same place
 ## over the first runtime frames, so launch -> boot -> first frame is one
 ## still picture with no white flash and no second splash.
+## Pass 8: the curtain's lockup is rasterised from the vector for this
+## screen (Brand.place_studio): exact pixel size, the launch image's
+## sub-pixel position, drawn 1:1 by a BrandMark.  V5-V8 drew a 1400-px
+## texture through its mipmaps (~0.95 of a mip level down on a phone) in a
+## TextureRect whose position Godot rounds to whole canvas units: softer
+## than the splash, up to 0.9 px off it, with a ringing halo.
 ##
 ## It leaves when the home screen is actually ready, not after a fixed
 ## number of frames (V4 left after six process frames, whatever was
@@ -29,7 +35,10 @@ var _stable := 0
 var _prev_delta := -1.0
 var _leaving := false
 var bg: ColorRect
-var logo: TextureRect
+var logo: BrandMark
+## true when the lockup is the exact vector raster (false: PNG fallback)
+var exact := false
+var _placed_for := Rect2()
 ## timings for diagnostics and tests
 var waited := 0.0
 var reason := ""
@@ -50,13 +59,14 @@ func _ready() -> void:
 
 
 func _layout() -> void:
-	if logo == null or logo.texture == null:
+	if logo == null:
 		return
-	var view := get_viewport().get_visible_rect().size
-	var r := Brand.lockup_rect(view, Vector2(logo.texture.get_size()))
-	logo.position = r.position
-	logo.size = r.size
-	logo.pivot_offset = r.size * 0.5
+	var vp := get_viewport()
+	var key := Rect2(vp.get_visible_rect().size, vp.get_final_transform().get_scale())
+	if key == _placed_for and logo.texture != null:
+		return   # same screen: keep the raster
+	_placed_for = key
+	exact = Brand.place_studio(logo, vp)
 
 
 ## True once the first interactive screen exists with its 3D room ready.
@@ -98,10 +108,10 @@ func _leave(why: String) -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if UIKit.reduced_motion():
 		Motion.animate(bg, "modulate:a", 0.0, 0.15)
-		Motion.animate(logo, "modulate:a", 0.0, 0.15)
+		Motion.animate(logo, "fade", 0.0, 0.15)
 		get_tree().create_timer(0.16).timeout.connect(queue_free)
 		return
-	Motion.animate(logo, "modulate:a", 0.0, 0.26, Tween.TRANS_QUAD, Tween.EASE_IN)
-	Motion.animate(logo, "scale", Vector2.ONE * 1.03, 0.3, Tween.TRANS_QUAD, Tween.EASE_OUT)
+	Motion.animate(logo, "fade", 0.0, 0.26, Tween.TRANS_QUAD, Tween.EASE_IN)
+	Motion.animate(logo, "settle", 1.03, 0.3, Tween.TRANS_QUAD, Tween.EASE_OUT)
 	Motion.animate(bg, "modulate:a", 0.0, 0.34, Tween.TRANS_CUBIC, Tween.EASE_IN_OUT, 0.06)
 	get_tree().create_timer(0.42).timeout.connect(queue_free)

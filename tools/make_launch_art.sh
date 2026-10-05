@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Renders the static launch image (iOS launch screen + boot splash) from the
-# loading screen's drawing code: game/assets/icon/launch.png, 1440x1440.
-# Needs a display (xvfb-run on Linux).  Usage: tools/make_launch_art.sh [out.png]
+# The static launch image (iOS launch screen + Godot boot splash):
+# game/assets/icon/launch.png.  V5 replaced the old loading-screen render
+# (kept below, unreachable) with the Idlery Games lockup; Pass 8 rasterises it
+# from the vector (art_src/branding/idlery-games.svg), 1656 x 1656, together
+# with the runtime branding assets.  No display needed; needs pillow + numpy.
+# Check the result with tools/launch_audit.py (edges and composition).
 set -euo pipefail
 cd "$(dirname "$0")/.."
-# V5: the launch image is the Idlery Games lockup, built from the owner's
-# masters by tools/branding/make_branding.py (no display needed).
 exec python3 tools/branding/make_branding.py
 OUT=${1:-res://assets/icon/launch.png}
 xvfb-run -a -s "-screen 0 1600x1600x24" timeout 120 tools/gd.sh --path game --resolution 1440x1440 \
