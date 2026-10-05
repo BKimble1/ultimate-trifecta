@@ -4,6 +4,7 @@
 #   tools/build_ios.sh device         -> unsigned device archive (compile proof)
 #   tools/build_ios.sh signed         -> signed App Store archive + .ipa export
 # Signed builds need: APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH (AuthKey .p8)
+# and INTERNAL_ONLY=true|false (the TestFlight audience; no default)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 MODE="${1:-sim}"
@@ -26,6 +27,12 @@ case "$MODE" in
     ;;
   signed)
     : "${APPLE_TEAM_ID:?}" "${ASC_KEY_ID:?}" "${ASC_ISSUER_ID:?}" "${ASC_KEY_PATH:?}"
+    # the TestFlight audience is never implied: true = internal testers only
+    # (the build can't be submitted to the App Store), false = App Store-eligible
+    case "${INTERNAL_ONLY:-}" in
+      true|false) echo "testFlightInternalTestingOnly: $INTERNAL_ONLY" ;;
+      *) echo "INTERNAL_ONLY must be set to true or false for a signed export (got '${INTERNAL_ONLY:-}')"; exit 2 ;;
+    esac
     AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
     SIGN=(DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY="Apple Development")
     echo "signing settings (Release, iphoneos):"
@@ -45,7 +52,7 @@ case "$MODE" in
   <key>signingStyle</key><string>automatic</string>
   <key>uploadSymbols</key><true/>
   <key>manageAppVersionAndBuildNumber</key><false/>
-  <key>testFlightInternalTestingOnly</key><${INTERNAL_ONLY:-true}/>
+  <key>testFlightInternalTestingOnly</key><${INTERNAL_ONLY}/>
 </dict></plist>
 PLIST
     xcodebuild -exportArchive -archivePath build/ios/UltimateTrifecta.xcarchive \

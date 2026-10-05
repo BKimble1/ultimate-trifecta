@@ -471,7 +471,7 @@ static func _thermal_name(v: int) -> String:
 # ---------------------------------------------------------------------------
 func summary() -> String:
 	var L: PackedStringArray = []
-	L.append("Ultimate Trifecta beta diagnostics")
+	L.append("Ultimate Trifecta diagnostics")
 	L.append("(no player names, room codes or Game Center IDs are included)")
 	var ver := String(ProjectSettings.get_setting("application/config/version", "?"))
 	var eng := Engine.get_version_info()

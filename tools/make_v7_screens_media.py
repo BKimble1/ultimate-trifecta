@@ -100,7 +100,7 @@ def settings_fact(lay):
         if c["kind"] != "label":
             continue
         t = c["text"]
-        if t in ("Profile", "Controls", "Sound", "Graphics", "Camera & comfort", "Diagnostics (beta)"):
+        if t in ("Profile", "Controls", "Sound", "Graphics", "Camera & comfort", "Diagnostics"):
             if "clipped" not in c:
                 shown.append(t)
             if t == "Sound":

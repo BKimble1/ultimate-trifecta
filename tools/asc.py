@@ -230,6 +230,18 @@ def main():
         if not groups:
             print("No internal beta group yet: in App Store Connect > TestFlight > Internal Testing, create a group with your account.")
         return 0
+    if cmd == "audience":
+        # the build's distribution audience (INTERNAL_ONLY or APP_STORE_ELIGIBLE),
+        # checked against the expected one when given
+        r = call("GET", f"/builds/{sys.argv[2]}", params={"fields[builds]": "buildAudienceType,version,processingState"})
+        if not r.ok:
+            print("could not read the build (HTTP %d)" % r.status_code)
+            return 1
+        got = r.json()["data"]["attributes"].get("buildAudienceType")
+        print(json.dumps({"build_id": sys.argv[2], "audience": got}))
+        if len(sys.argv) > 3 and got != sys.argv[3]:
+            return 6
+        return 0
     if cmd == "beta":
         # TestFlight availability as App Store Connect reports it
         r = call("GET", f"/builds/{sys.argv[2]}/buildBetaDetail")

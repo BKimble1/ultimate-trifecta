@@ -30,7 +30,7 @@ const DEVICES := [
 	["2048x946 (owner screenshot, as 844x390 pt)", Vector2i(2048, 946), 390.0, 209.0],
 	["1536x710 (owner screenshot, as 812x375 pt)", Vector2i(1536, 710), 375.0, 209.0],
 ]
-const SECTIONS := ["Profile", "Controls", "Sound", "Camera & comfort", "Graphics", "Diagnostics (beta)", "Privacy",
+const SECTIONS := ["Profile", "Controls", "Sound", "Camera & comfort", "Graphics", "Diagnostics", "Privacy",
 	"How to play", "Credits & licenses", "Delete game profile"]
 
 var _saved := {}

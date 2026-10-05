@@ -2,8 +2,8 @@ class_name SettingsScreen
 extends Screen
 ## Settings (V7): a header that never scrolls (Back and the title), then one
 ## list that scrolls by finger, made of grouped cards of compact labelled
-## rows - Profile, Controls, Sound, Camera & comfort, Graphics, Diagnostics
-## (beta), Privacy, How to play, Credits - and, kept apart at the end, Delete
+## rows - Profile, Controls, Sound, Camera & comfort, Graphics, Diagnostics,
+## Privacy, How to play, Credits - and, kept apart at the end, Delete
 ## Game Profile (always explicitly confirmed).  Every row has the same label
 ## column, so sliders, switches and choices line up; a choice whose options
 ## don't fit beside its label moves under it instead of trimming them.
@@ -92,7 +92,7 @@ func build() -> void:
 	_choice(gfx, "Quality", "quality", [[1, "Standard (60 fps)"], [0, "Battery Saver (30 fps)"]],
 		"Battery Saver draws the world at a lower resolution with simpler shadows and effects. Text and buttons stay sharp.")
 
-	_diag_section(_section("Diagnostics (beta)"))
+	_diag_section(_section("Diagnostics"))
 
 	var priv_s := _section("Privacy")
 	priv_s.add_child(_note(_privacy_text()))

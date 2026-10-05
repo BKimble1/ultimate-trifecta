@@ -26,39 +26,37 @@ if [ -n "${APPLE_TEAM_ID:-}" ]; then
     -e 's/^application\/code_sign_identity_debug=.*/application\/code_sign_identity_debug="Apple Development"/' game/export_presets.cfg
   rm -f game/export_presets.cfg.tmp
 fi
-# With the game service configured, the app collects a user ID (Game Center
-# team player ID, verified server-side), the player name, the runner's look
-# (gameplay content) and reports (other user content), linked to the player,
-# for app functionality only, never tracking. Declare exactly that in the
-# privacy manifest; without the service nothing is collected and nothing is
-# declared.
-SERVICE_URL=$(sed -n 's/^url *= *"\(.*\)"/\1/p' game/config/service.cfg 2>/dev/null | head -1)
+# With the game service configured (any of url / production_url /
+# sandbox_url in game/config/service.cfg), the app collects, linked to the
+# player, for app functionality only and never for tracking:
+#  - user ID: the Game Center team player ID, verified server-side;
+#  - name: the chosen player name;
+#  - gameplay content: the runner's look, round results, Season progress;
+#  - other user content: reports (with the reported message);
+#  - purchase history: App Store transactions and what they delivered
+#    (never payment details);
+#  - contacts: the Game Center friends list, uploaded as keyed hashes so the
+#    game can show which mutual friends are online and deliver invites;
+#  - product interaction: short-lived in-game status (online / in lobby /
+#    in match) shown to mutual friends.
+# docs/APP_STORE.md "App Privacy" gives the matching App Store Connect
+# answers.  Without the service nothing is collected and nothing is declared.
+SERVICE_URL=$(sed -nE 's/^(url|production_url|sandbox_url) *= *"(.+)"/\2/p' game/config/service.cfg 2>/dev/null | head -1)
 if [ -n "$SERVICE_URL" ]; then
-  PRIV=""
-  for d in user_id name gameplay_content other_user_content; do
-    PRIV+="privacy/collected_data/$d/collected=true\nprivacy/collected_data/$d/linked_to_user=true\nprivacy/collected_data/$d/used_for_tracking=false\nprivacy/collected_data/$d/collection_purposes=2\n"
-  done
-  python3 - "$PRIV" <<'PY'
-import sys
+  python3 - <<'PY'
 p = "game/export_presets.cfg"
 s = open(p).read()
 anchor = "privacy/tracking_domains=PackedStringArray()\n"
 assert anchor in s
-s = s.replace(anchor, anchor + sys.argv[1].replace("\\n", "\n"), 1)
-open(p, "w").write(s)
-PY
-  echo "Privacy manifest: declaring service data (user ID, name, gameplay content, reports) for app functionality"
-  # V6: the service keeps purchases (App Store transaction IDs and what they
-  # delivered, never payment details) to deliver them once and restore them
-  python3 - <<'PY2'
-p = "game/export_presets.cfg"
-s = open(p).read()
-anchor = "privacy/tracking_domains=PackedStringArray()\n"
-add = "".join("privacy/collected_data/purchase_history/%s\n" % kv for kv in ["collected=true", "linked_to_user=true", "used_for_tracking=false", "collection_purposes=2"])
+types = ["user_id", "name", "gameplay_content", "other_user_content", "purchase_history", "contacts", "product_interaction"]
+add = "".join("privacy/collected_data/%s/%s\n" % (d, kv) for d in types
+              for kv in ["collected=true", "linked_to_user=true", "used_for_tracking=false", "collection_purposes=2"])
 s = s.replace(anchor, anchor + add, 1)
 open(p, "w").write(s)
-PY2
-  echo "Privacy manifest: declaring purchase history (App Store purchases, app functionality)"
+print("Privacy manifest: declaring " + ", ".join(types) + " (linked, app functionality, no tracking)")
+PY
+else
+  echo "Privacy manifest: no game service configured; no collected data declared"
 fi
 rm -rf build/ios && mkdir -p build/ios
 "$GODOT" --headless --path game --import >/dev/null 2>&1 || true

@@ -19,6 +19,11 @@ on:
         description: "Only read App Store Connect: app record, recent builds and TestFlight state (no build)"
         type: boolean
         default: false
+      distribution:
+        description: "Upload audience (with upload): internal_only = TestFlight internal testers only (cannot be submitted); app_store = App Store-eligible (internal testers can still install it; nothing is submitted or released)"
+        type: choice
+        options: [internal_only, app_store]
+        default: internal_only
       iap:
         description: "V6 in-app purchases in App Store Connect: list (read only) or create the missing ones (no prices, no submission). No build."
         type: choice
@@ -32,7 +37,7 @@ concurrency:
 
 env:
   GODOT_VERSION: "4.7.2"
-  MARKETING_VERSION: "1.9"
+  MARKETING_VERSION: "2.0"
   BUNDLE_ID: com.idlery.ultimatetrifecta
 
 jobs:
@@ -208,8 +213,9 @@ jobs:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           EXPORT_DESTINATION: upload
-          # first delivery is for the owner's internal testers only
-          INTERNAL_ONLY: "true"
+          # the audience is an explicit choice: internal_only (default) or an
+          # App Store-eligible release candidate (testFlightInternalTestingOnly=false)
+          INTERNAL_ONLY: ${{ github.event.inputs.distribution == 'app_store' && 'false' || 'true' }}
         run: |
           export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
           # register the bundle ID with the Game Center capability if it is new
@@ -375,12 +381,20 @@ jobs:
           "$ASC_PY" tools/asc.py wait "$MARKETING_VERSION" "${{ steps.num.outputs.build }}" 2400
           RC=$?
           "$ASC_PY" tools/asc.py builds | head -40
-          if [ $RC -eq 0 ]; then
-            BID=$("$ASC_PY" tools/asc.py builds | python3 -c 'import json,sys; b=[x for x in json.load(sys.stdin) if str(x["build"])=="${{ steps.num.outputs.build }}"]; print(b[0]["id"] if b else "")')
-            if [ -n "$BID" ]; then
-              "$ASC_PY" tools/asc.py internal "$BID"
-              [ -f docs/testflight/what_to_test.txt ] && "$ASC_PY" tools/asc.py whats-new "$BID" docs/testflight/what_to_test.txt
-              "$ASC_PY" tools/asc.py beta "$BID"
-            fi
+          if [ $RC -eq 4 ]; then
+            echo "::error::App Store Connect reports the build as FAILED or INVALID"
+            exit 1
           fi
-          exit 0
+          if [ $RC -ne 0 ]; then
+            # the upload itself succeeded; Apple is still processing it
+            echo "::warning::Build ${{ steps.num.outputs.build }} is still processing in App Store Connect: it is uploaded, not yet available. Re-check with asc_status."
+            exit 0
+          fi
+          BID=$("$ASC_PY" tools/asc.py builds | python3 -c 'import json,sys; b=[x for x in json.load(sys.stdin) if str(x["build"])=="${{ steps.num.outputs.build }}"]; print(b[0]["id"] if b else "")')
+          [ -n "$BID" ] || { echo "::error::processed build not found"; exit 1; }
+          # the audience Apple recorded must be the one this run asked for
+          WANT=$([ "${{ github.event.inputs.distribution }}" = "app_store" ] && echo APP_STORE_ELIGIBLE || echo INTERNAL_ONLY)
+          "$ASC_PY" tools/asc.py audience "$BID" "$WANT" || { echo "::error::build audience is not $WANT"; exit 1; }
+          "$ASC_PY" tools/asc.py internal "$BID"
+          [ -f docs/testflight/what_to_test.txt ] && "$ASC_PY" tools/asc.py whats-new "$BID" docs/testflight/what_to_test.txt
+          "$ASC_PY" tools/asc.py beta "$BID"
