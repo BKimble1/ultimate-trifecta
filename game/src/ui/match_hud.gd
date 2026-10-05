@@ -2130,6 +2130,7 @@ class MapPainter:
 		var tc := UIKit.PATROL if role == TC.Role.PATROL else UIKit.RUNNER
 		var opp := UIKit.RUNNER if role == TC.Role.PATROL else UIKit.PATROL
 		var me_item: Dictionary = {}
+		var seen_items: Array = []
 		for it in items(hud, c, half, full):
 			var p: Vector2 = it["pos"]
 			match String(it["kind"]):
@@ -2192,12 +2193,7 @@ class MapPainter:
 					# a splash just happened there: a still ring that fades (no pulsing)
 					ci.draw_arc(p, (22.0 if full else 11.0), 0, TAU, 32, Color(1, 1, 1, 0.3 + 0.6 * float(it["left"])), 2.5 if full else 1.5, true)
 				"seen":
-					_seen_mark(ci, it, full, opp)
-					if full and not bool(it["live"]):
-						# its age, beside the frozen mark (expanded map only)
-						var at := p + Vector2(10, 5)
-						ci.draw_string(UIKit.font_num(700), at, "%ds" % int(ceil(float(it["age"]))), HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
-							Color(UIKit.IVORY, 0.35 + 0.5 * float(it["fade"])))
+					seen_items.append(it)    # drawn last, over your own arrow
 				"me":
 					me_item = it
 		# you, on top: an arrow and a soft wedge for where the camera looks
@@ -2220,6 +2216,15 @@ class MapPainter:
 			ci.draw_colored_polygon(outline, Color(UIKit.NAVY, 0.9))
 			ci.draw_colored_polygon(tri, Color(1, 1, 1))
 			blocked.append(Rect2(mpos - Vector2.ONE * 12.0 * kk, Vector2.ONE * 24.0 * kk))
+		# opponents you saw go on top: a Night Watch right beside you must
+		# never hide under your own arrow
+		for it in seen_items:
+			_seen_mark(ci, it, full, opp)
+			if full and not bool(it["live"]):
+				# its age, beside the frozen mark (expanded map only)
+				var at := (it["pos"] as Vector2) + Vector2(10, 5)
+				ci.draw_string(UIKit.font_num(700), at, "%ds" % int(ceil(float(it["age"]))), HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
+					Color(UIKit.IVORY, 0.35 + 0.5 * float(it["fade"])))
 		if full:
 			var area := Rect2(c - Vector2.ONE * half, Vector2.ONE * half * 2.0).grow(-6.0)
 			for lb in CampusMap.place_labels(labels, f, area, blocked):

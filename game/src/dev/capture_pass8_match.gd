@@ -400,7 +400,7 @@ func _watch_urgent() -> float:
 func _runners_finish() -> float:
 	var mc := _mc()
 	for p in mc.sim.players:
-		if mc.sim.phase != TC.Phase.PLAYING:
+		if mc.sim.phase != TC.Phase.PLAYING or mc.sim.finished_count >= mc.cfg.runners_needed:
 			break
 		if p.is_runner() and p.state != TC.PState.FINISHED:
 			if p.state == TC.PState.CAPTURED:
