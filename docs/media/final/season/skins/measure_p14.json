@@ -1,0 +1,1247 @@
+{
+  "bounds": {
+    "dims_m": {
+      "outfit:pj": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:swim": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:robe": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:duck": [
+        1.578,
+        1.541,
+        1.541
+      ],
+      "outfit:frog": [
+        1.52,
+        1.483,
+        1.459
+      ],
+      "outfit:moonlight_runner": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:starry_sleeper": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:varsity_sprinter": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:raincoat_explorer": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:campus_courier": [
+        1.544,
+        1.483,
+        1.466
+      ],
+      "outfit:lantern_scout": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:after_hours_hoodie": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:night_owl": [
+        1.596,
+        1.483,
+        1.47
+      ],
+      "outfit:glow_jogger": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:library_cardigan": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:midnight_mechanic": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:moonwalk_cadet": [
+        1.533,
+        1.483,
+        1.468
+      ],
+      "outfit:pumpkin_pajamas": [
+        1.599,
+        1.483,
+        1.459
+      ],
+      "outfit:arcade_sprinter": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "outfit:cloud_nine": [
+        1.591,
+        1.483,
+        1.459
+      ],
+      "outfit:bedtime_bandit": [
+        1.552,
+        1.511,
+        1.55
+      ],
+      "outfit:record_breaker": [
+        1.57,
+        1.447,
+        1.443
+      ],
+      "outfit:dr_doom": [
+        1.495,
+        1.351,
+        1.325
+      ],
+      "hat:none": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "hat:nightcap": [
+        1.709,
+        1.483,
+        1.459
+      ],
+      "hat:swimcap": [
+        1.498,
+        1.483,
+        1.459
+      ],
+      "hat:party": [
+        1.747,
+        1.483,
+        1.459
+      ],
+      "hat:headphones": [
+        1.594,
+        1.483,
+        1.459
+      ],
+      "hat:crown": [
+        1.52,
+        1.483,
+        1.459
+      ],
+      "hat:headlamp": [
+        1.515,
+        1.483,
+        1.459
+      ],
+      "hat:pompom_beanie": [
+        1.652,
+        1.483,
+        1.459
+      ],
+      "hat:glow_headband": [
+        1.503,
+        1.483,
+        1.459
+      ],
+      "hat:owl_ears": [
+        1.617,
+        1.483,
+        1.459
+      ]
+    },
+    "tallest_outfit": [
+      "pumpkin_pajamas",
+      1.59855902194977
+    ],
+    "broadest_outfit": [
+      "bedtime_bandit",
+      1.55044782161713
+    ],
+    "tallest_hat": [
+      "party",
+      1.7472448348999
+    ]
+  },
+  "s_record_breaker_a_start": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 374.8,
+      "height_pt": 203.1,
+      "model_height_m": 1.57,
+      "top_y": 187.7,
+      "feet_y": 562.6,
+      "centre_x": 260.4,
+      "width_units_rest": 252.4,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.307
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_record_breaker_b_side": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 375.5,
+      "height_pt": 203.4,
+      "model_height_m": 1.57,
+      "top_y": 187.5,
+      "feet_y": 563.0,
+      "centre_x": 259.2,
+      "width_units_rest": 253.9,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -0.736
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_record_breaker_c_back": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 375.6,
+      "height_pt": 203.4,
+      "model_height_m": 1.57,
+      "top_y": 187.5,
+      "feet_y": 563.0,
+      "centre_x": 261.1,
+      "width_units_rest": 252.9,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": 0.835
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_record_breaker_d_side": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 374.9,
+      "height_pt": 203.1,
+      "model_height_m": 1.57,
+      "top_y": 187.7,
+      "feet_y": 562.6,
+      "centre_x": 262.2,
+      "width_units_rest": 253.6,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": 2.406
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_dr_doom_a_start": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "dr_doom",
+      "where": "stage",
+      "height_units": 357.5,
+      "height_pt": 193.6,
+      "model_height_m": 1.495,
+      "top_y": 205.6,
+      "feet_y": 563.0,
+      "centre_x": 263.4,
+      "width_units_rest": 231.0,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.307
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_dr_doom_b_side": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "dr_doom",
+      "where": "stage",
+      "height_units": 356.3,
+      "height_pt": 193.0,
+      "model_height_m": 1.495,
+      "top_y": 206.0,
+      "feet_y": 562.2,
+      "centre_x": 263.1,
+      "width_units_rest": 237.1,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -0.736
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_dr_doom_c_back": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "dr_doom",
+      "where": "stage",
+      "height_units": 356.9,
+      "height_pt": 193.3,
+      "model_height_m": 1.495,
+      "top_y": 205.8,
+      "feet_y": 562.6,
+      "centre_x": 258.3,
+      "width_units_rest": 230.6,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": 0.835
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_dr_doom_d_side": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "dr_doom",
+      "where": "stage",
+      "height_units": 358.1,
+      "height_pt": 194.0,
+      "model_height_m": 1.495,
+      "top_y": 205.4,
+      "feet_y": 563.5,
+      "centre_x": 258.5,
+      "width_units_rest": 238.3,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": 2.406
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_tall_a_start": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_tall_b_side": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_tall_c_back": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_tall_d_side": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_broad_a_start": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_broad_b_side": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_broad_c_back": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_broad_d_side": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_acc_night_owl_a_start": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_acc_night_owl_b_side": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_acc_night_owl_c_back": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_acc_night_owl_d_side": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_acc_glow_jogger_a_start": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_acc_glow_jogger_b_side": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_acc_glow_jogger_c_back": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "s_acc_glow_jogger_d_side": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  }
+}

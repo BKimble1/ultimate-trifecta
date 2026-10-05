@@ -171,20 +171,13 @@ func _run() -> void:
 	await _wait(1.2)
 	await _drag(Vector2(tr.position.x + 60, y), Vector2(tr.end.x - 40, y - 4), 1.0)
 	await _wait(1.2)
-	# a badge (a picture, nothing to turn), then Record Breaker again
-	var badge: Control = null
-	for cell in sp.cells:
-		var r: Rect2 = (cell as Control).get_global_rect()
-		var rw := Economy.reward_at(sp.sid, cell.tier, cell.track)
-		if String(rw.get("item", "")).begins_with("badge:") and tr.grow(-6).encloses(r):
-			badge = cell
-			break
-	if badge != null:
-		_mark("badge")
-		await _tap(badge)
-		await _wait(1.6)
+	# Tier 50's Free badge (a picture, nothing to turn), then Record Breaker
+	# again
 	sp._scroll_to(50, true)
 	await _wait(0.8)
+	_mark("badge")
+	await _tap(sp._cell(50, "free"))
+	await _wait(1.6)
 	await _tap(sp._cell(50, "premium"))
 	await _wait(1.4)
 	# ---------------------------------------------------- tabs

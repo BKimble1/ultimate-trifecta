@@ -1,0 +1,216 @@
+{
+  "b01_svcoff_tier1_open": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      79.0540008544922,
+      12.0,
+      1399.89208984375,
+      672.677978515625
+    ],
+    "touch_min": 74.008,
+    "units_per_pt": 1.682,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      3,
+      "free"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      125.0,
+      157.0
+    ],
+    "cells_in_view": 14,
+    "track": [
+      210.0,
+      305.0,
+      857.0,
+      363.0
+    ],
+    "detail": {
+      "over": "Tier 3 · Free track",
+      "name": "Pom-Pom Beanie",
+      "state": "Reach Tier 3: 400 more Season XP from online rounds. No tier skips.",
+      "reason": "",
+      "action": ""
+    }
+  },
+  "b02_svcoff_tier1_record_breaker": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      79.0540008544922,
+      12.0,
+      1399.89208984375,
+      672.677978515625
+    ],
+    "touch_min": 74.008,
+    "units_per_pt": 1.682,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "preview",
+      "height_units": 134.3,
+      "height_pt": 79.9,
+      "model_height_m": 1.57,
+      "top_y": 229.6,
+      "feet_y": 363.9,
+      "centre_x": 1273.6,
+      "width_units_rest": 82.0,
+      "host_rect": [
+        1111.0,
+        235.0,
+        326.0,
+        139.0
+      ],
+      "units_per_pt": 1.682,
+      "yaw": -1.957
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      125.0,
+      157.0
+    ],
+    "cells_in_view": 8,
+    "track": [
+      210.0,
+      305.0,
+      857.0,
+      363.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "Reach Tier 50: 15,300 more Season XP from online rounds. No tier skips. Premium track: needs Premium too.",
+      "reason": "",
+      "action": ""
+    }
+  },
+  "b03_svcoff_tier1_dr_doom": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      79.0540008544922,
+      12.0,
+      1399.89208984375,
+      672.677978515625
+    ],
+    "touch_min": 74.008,
+    "units_per_pt": 1.682,
+    "figure": {
+      "skin": "dr_doom",
+      "where": "preview",
+      "height_units": 128.0,
+      "height_pt": 76.1,
+      "model_height_m": 1.495,
+      "top_y": 236.0,
+      "feet_y": 364.0,
+      "centre_x": 1276.3,
+      "width_units_rest": 73.4,
+      "host_rect": [
+        1111.0,
+        235.0,
+        326.0,
+        139.0
+      ],
+      "units_per_pt": 1.682,
+      "yaw": -1.98
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      100,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      125.0,
+      157.0
+    ],
+    "cells_in_view": 8,
+    "track": [
+      210.0,
+      305.0,
+      857.0,
+      363.0
+    ],
+    "detail": {
+      "over": "Tier 100 · Premium track",
+      "name": "Dr. Doom",
+      "state": "Reach Tier 100: 32,800 more Season XP from online rounds. No tier skips. Premium track: needs Premium too.",
+      "reason": "",
+      "action": ""
+    }
+  },
+  "b04_svcon_test_tier43_record_breaker": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      79.0540008544922,
+      12.0,
+      1399.89208984375,
+      672.677978515625
+    ],
+    "touch_min": 74.008,
+    "units_per_pt": 1.682,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "preview",
+      "height_units": 134.3,
+      "height_pt": 79.9,
+      "model_height_m": 1.57,
+      "top_y": 229.6,
+      "feet_y": 363.9,
+      "centre_x": 1273.6,
+      "width_units_rest": 82.0,
+      "host_rect": [
+        1111.0,
+        235.0,
+        326.0,
+        139.0
+      ],
+      "units_per_pt": 1.682,
+      "yaw": -1.958
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 43 / 100",
+    "header_xp": "150 / 350 XP",
+    "cell": [
+      125.0,
+      157.0
+    ],
+    "cells_in_view": 8,
+    "track": [
+      210.0,
+      305.0,
+      857.0,
+      363.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "Reach Tier 50: 2,300 more Season XP from online rounds. No tier skips.",
+      "reason": "",
+      "action": ""
+    }
+  }
+}
