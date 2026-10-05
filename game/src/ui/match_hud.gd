@@ -2226,7 +2226,7 @@ class MapPainter:
 			if full and not bool(it["live"]):
 				# its age, beside the frozen mark (expanded map only)
 				var at := (it["pos"] as Vector2) + Vector2(10, 5)
-				ci.draw_string(UIKit.font_num(700), at, "%ds" % int(ceil(float(it["age"]))), HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
+				ci.draw_string(UIKit.font_num(700), at, "%ds" % maxi(1, int(float(it["age"]))), HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
 					Color(UIKit.IVORY, 0.35 + 0.5 * float(it["fade"])))
 		if full:
 			var area := Rect2(c - Vector2.ONE * half, Vector2.ONE * half * 2.0).grow(-6.0)

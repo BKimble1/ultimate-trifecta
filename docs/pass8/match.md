@@ -112,7 +112,10 @@ thread on a 4–6 core phone), and that share is where the V8 bot path
 searches run with their fixed delivery ticks, so a field build there could
 make a delivery wait; as one high-priority task it takes another thread.
 The grid copy holds the foot grid's search lock (bots search only after
-GO; the copy happens during loading). On a phone the worker time will be several times longer; the
+GO; the copy happens during loading). Leaving a round never waits for a
+field build (the next round's request picks it up); only quitting the
+game does, once, at engine shutdown — found here because a worker still
+running at exit aborted the test process (exit 134 after passing). On a phone the worker time will be several times longer; the
 4 s reveal + 3 s countdown cover it, and it is skipped entirely on later
 rounds with the same waters/dorm. Not measured on a device.
 
