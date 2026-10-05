@@ -642,29 +642,35 @@ def build_rb_head():
 
 # ================================================================== DR. DOOM: head
 DD_SHAPE = HeadShape([
-    ((0.60, 0.58, -0.40), 0.26, 0.013),                    # broad, full lower cheeks (forward of the shoulders)
-    ((-0.60, 0.58, -0.40), 0.26, 0.013),
+    ((0.58, 0.62, -0.42), 0.28, 0.020),                    # broad, full lower cheeks and jowls (forward of the shoulders)
+    ((-0.58, 0.62, -0.42), 0.28, 0.020),
+    ((0.48, 0.82, -0.16), 0.20, 0.008),                    # the apples of the cheeks (they round the smile)
+    ((-0.48, 0.82, -0.16), 0.20, 0.008),
+    ((0.84, 0.36, -0.42), 0.24, 0.006),                    # a broader jaw: wider below than at the temples
+    ((-0.84, 0.36, -0.42), 0.24, 0.006),
     ((0.0, 0.72, -0.68), 0.20, (0.0, 0.007, -0.004)),      # a soft, rounded chin
     ((0.0, -0.10, 1.0), 0.36, 0.010),                      # a high, rounded crown
     ((0.0, 0.75, 0.62), 0.30, 0.006),                      # a broad forehead
-    ((0.90, 0.20, 0.30), 0.25, -0.004),
-    ((-0.90, 0.20, 0.30), 0.25, -0.004),
+    ((0.90, 0.20, 0.30), 0.25, -0.008),
+    ((-0.90, 0.20, 0.30), 0.25, -0.008),
 ])
-DD_EYE = {'ex': 0.099, 'ez': 1.168, 'a': 0.040, 'b': 0.041, 'D': 0.010, 'iris': 0.0235, 'iris_col': '#6d8399',
-          'iris_off': (-0.05, -0.06), 'pupil': 0.5, 'lash': 0.0024, 'lash_col': '#3b2a24', 'lid_col': '#f2d9d0',
+DD_EYE = {'ex': 0.100, 'ez': 1.170, 'a': 0.041, 'b': 0.041, 'D': 0.010, 'iris': 0.0235, 'iris_col': '#6d8399',
+          'iris_off': (-0.04, -0.01), 'pupil': 0.5, 'lash': 0.0024, 'lash_col': '#3b2a24', 'lid_col': '#f2d9d0',
           'low_col': '#f6e3dc', 'low_rim': '#eac6bb'}
-DD_P0 = {'up': 0.20, 'low': 0.56, 'tilt': -0.08, 'brow_up': 0.0, 'brow_in': 0.0, 'brow_out': 0.0, 'brow_arch': 0.0,
-         'mw': 0.058, 'lift': 0.008, 'gap': 0.0, 'asym': 0.003, 'cheeks': 0.3}
+# Warm and amused at rest: open upper lids (up), lower lids lifted by the
+# smile (low), level corners; a wide closed smile whose corners turn up.
+DD_P0 = {'up': 0.40, 'low': 0.33, 'tilt': 0.03, 'brow_up': 0.0, 'brow_in': 0.0, 'brow_out': 0.0, 'brow_arch': 0.0,
+         'mw': 0.082, 'lift': 0.016, 'gap': 0.0, 'asym': 0.003, 'cheeks': 0.35}
 DD_KEYS = {
-    'blink': {'up': -0.64, 'low': -0.12},
-    'squint': {'up': -0.20, 'low': -0.42, 'cheeks': 0.45},
-    'smile': {'mw': 0.006, 'lift': 0.009, 'cheeks': 0.7, 'low': -0.12},
-    'open': {'gap': 0.020, 'mw': -0.006, 'lift': -0.004, 'up': 0.12},
+    'blink': {'up': -0.78, 'low': -0.02},
+    'squint': {'up': -0.30, 'low': -0.22, 'cheeks': 0.45},
+    'smile': {'mw': 0.008, 'lift': 0.009, 'cheeks': 0.65, 'low': -0.12},
+    'open': {'gap': 0.020, 'mw': -0.008, 'lift': -0.006, 'up': 0.10},
     'brow_up': {'brow_up': 0.018, 'up': 0.12},
-    'brow_angry': {'brow_in': -0.012, 'brow_out': 0.003, 'up': -0.05, 'lift': -0.005},
-    'face_bright': {'up': 0.24, 'low': 0.10, 'brow_up': 0.010},
-    'face_sleepy': {'up': -0.16, 'brow_out': -0.007},
-    'brow_flat': {'brow_arch': -0.007},
+    'brow_angry': {'brow_in': -0.012, 'brow_out': 0.003, 'up': -0.10, 'lift': -0.006},
+    'face_bright': {'up': 0.20, 'low': 0.10, 'brow_up': 0.010},
+    'face_sleepy': {'up': -0.22, 'brow_out': -0.007},
+    'brow_flat': {'brow_arch': -0.006},
 }
 
 
@@ -729,21 +735,29 @@ def _dd_mouth(mb, P0):
         rad = [(rr[0] * (0.45 + 0.55 * (1.0 - min(1.0, abs(u)) ** 2)), rr[1] * (0.4 + 0.6 * (1.0 - min(1.0, abs(u)) ** 2))) for u in lus]
         sweep(mb, pts, rad, S(col, rough=0.6) if mat == 'line' else skin(col), HW, segs=7, twist_hint=head_normal(pts[8]))
         mb.bind_curve(i0, curve, lus, P0)
-    # the deep smile lines from the nose to past the corners (they lift with
-    # the cheeks), and the small creases at the corners
+    # the smile lines (nasolabial folds): from beside each nose wing round
+    # the cheek to past the mouth corner, deeper as the cheeks lift; a
+    # lighter crest above each (the cheek rolling over the fold)
     for sx in SIDES:
-        def sl(Pm, t, sx=sx):
-            x = sx * (0.040 + 0.040 * t + 0.006 * t * t + 0.004 * Pm['cheeks'])
-            z = 1.100 - 0.068 * t + 0.008 * Pm['cheeks'] * (1.0 - t)
-            return fpt(x, z, 0.0008)
-        ts = [i / 7.0 for i in range(8)]
+        def sl(Pm, t, sx=sx, h=0.0008):
+            x = sx * (0.052 + 0.032 * t + 0.016 * math.sin(math.pi * 0.5 * t) + 0.005 * Pm['cheeks'])
+            z = 1.103 - 0.064 * t + 0.008 * Pm['cheeks'] * (1.0 - t)
+            return fpt(x, z, h)
+        ts = [i / 8.0 for i in range(9)]
         i0 = len(mb.v)
-        crease(mb, [sl(P0, t) for t in ts], 0.0019, 0.0024, '#e3b5a6')
+        crease(mb, [sl(P0, t) for t in ts], 0.0026, 0.0036, '#d39e8f')
         mb.bind_curve(i0, sl, ts, P0)
 
+        def crest(Pm, t, sx=sx):
+            q = sl(Pm, t, sx, 0.0012)
+            return q + Vector((0.0045 * sx, 0.0, 0.0030))
+        i0 = len(mb.v)
+        crease(mb, [crest(P0, t) for t in ts[1:-1]], 0.0020, 0.0040, '#fff1ec')
+        mb.bind_curve(i0, crest, ts[1:-1], P0)
+
         def cc(Pm, t, sx=sx):
-            x = sx * (Pm['mw'] + 0.004 + 0.006 * t)
-            z = line(Pm, 1.0) + 0.002 - 0.009 * t
+            x = sx * (Pm['mw'] + 0.004 + 0.005 * t)
+            z = line(Pm, 1.0) + 0.003 - 0.010 * t
             return fpt(x, z, 0.0006)
         i0 = len(mb.v)
         crease(mb, [cc(P0, t) for t in (0.0, 0.5, 1.0)], 0.0013, 0.0016, '#e6bbad')
@@ -770,23 +784,26 @@ def build_dd_head():
     ears(mb, scale=1.26, out_deg=24.0, dz=-0.004, inner='#d38377')
     for sx in SIDES:
         eye(mb, sx, DD_EYE, P0)
-        brow(mb, sx, {'x0': 0.036, 'x1': 0.150, 'z': lambda t: 1.236 + 0.012 * math.sin(math.pi * min(1.0, t * 1.35)) - 0.022 * t,
-                      'w': lambda t: lerp(0.0066, 0.0042, t) * (0.85 + 0.15 * math.sin(math.pi * t)),
-                      'depth': 0.0036, 'col': '#8d7d70', 'lift': 0.0022}, P0)
-        # under-eye fullness and crow's feet
-        feat(mb, sx * 0.104, 1.110, (0.030, 0.011, 0.005), col, sink=0.0025)
+        # straight, calm, a little heavy, grey-brown; the outer end lifts a
+        # touch (no sad inner arch)
+        brow(mb, sx, {'x0': 0.040, 'x1': 0.152, 'z': lambda t: 1.229 + 0.006 * math.sin(math.pi * t) + 0.006 * t * t,
+                      'w': lambda t: lerp(0.0080, 0.0056, t) * (0.88 + 0.12 * math.sin(math.pi * t)),
+                      'depth': 0.0042, 'col': '#94796a', 'lift': 0.0024}, P0)
+        # under-eye fullness (the lower lid's smile) and crow's feet
+        feat(mb, sx * 0.104, 1.117, (0.032, 0.012, 0.0055), col, sink=0.0025)
         for k, (dz, ang) in enumerate(((0.012, 20.0), (0.0, 0.0), (-0.012, -22.0))):
             x0 = sx * (0.099 + 0.044)
             a = math.radians(ang)
             pts = [fpt(x0 + sx * 0.022 * t * math.cos(a), 1.168 + dz + 0.022 * t * math.sin(a), 0.0006) for t in (0.0, 0.5, 1.0)]
             crease(mb, pts, 0.0011, 0.0015, '#e8bfb1')
-    # forehead lines: three long, shallow arcs
-    for k, z in enumerate((1.300, 1.326, 1.352)):
-        span = 0.10 - 0.01 * k
-        pts = [fpt(x, z + 0.010 * (x / span) ** 2 - 0.002 * k * abs(x) / span, 0.0006) for x in [lerp(-span, span, i / 8.0) for i in range(9)]]
-        crease(mb, pts, 0.0012, 0.0019, '#ecc6b8')
-    nose(mb, {'bridge': (1.185, 1.128), 'bridge_h': (-0.002, 0.012), 'bridge_r': (0.013, 0.021), 'tip_z': 1.110,
-              'tip_r': (0.034, 0.030, 0.031), 'tip_sink': 0.004, 'wing_x': 0.031, 'wing_z': 1.097, 'wing_r': (0.019, 0.016, 0.016),
+    # forehead lines: two long, faint arcs
+    for k, z in enumerate((1.318, 1.342)):
+        span = 0.090 - 0.012 * k
+        pts = [fpt(x, z + 0.009 * (x / span) ** 2, 0.0005) for x in [lerp(-span, span, i / 8.0) for i in range(9)]]
+        crease(mb, pts, 0.0010, 0.0015, '#f1d3c8')
+    # a large, broad, rounded nose
+    nose(mb, {'bridge': (1.185, 1.124), 'bridge_h': (-0.002, 0.013), 'bridge_r': (0.015, 0.025), 'tip_z': 1.106,
+              'tip_r': (0.042, 0.035, 0.036), 'tip_sink': 0.005, 'wing_x': 0.040, 'wing_z': 1.094, 'wing_r': (0.024, 0.019, 0.019),
               'wing_sink': 0.006, 'col': '#ffe0d6', 'tip_col': '#ffcdbf'})
     _dd_mouth(mb, P0)
     # a soft chin form
@@ -1134,7 +1151,7 @@ DD_LOW = [(0.0, 0.985), (0.7, 1.005), (1.10, 1.075), (1.36, 1.188), (1.60, 1.206
 DD_HIGH = [(0.0, 1.250), (0.8, 1.262), (1.2, 1.292), (1.5, 1.322), (1.78, 1.334), (1.98, 1.326), (2.10, 1.306), (2.18, 1.282),
            (2.22, 1.258)]
 DD_END = 2.22
-FRINGE = [srgb('#a48a72'), srgb('#c6ad93'), srgb('#e4d3bd')]      # warm grey-brown: shadow, body, light
+FRINGE = [srgb('#a28c78'), srgb('#c3ad97'), srgb('#e6d8c6')]      # warm grey-brown: groove, body, crest
 
 
 def dd_high(a):
@@ -1147,26 +1164,43 @@ def dd_high(a):
 FRINGE_STYLE = Style('#ffffff', T_NONE, 0.8, MAT_SKIN)
 
 
-def dd_band(a, f):
-    """How far the fringe stands off the scalp at angle a, a fraction f of
-    the way from its lower to its upper edge: fullest above and around the
-    ears (so it frames the face from the front), thin at the back, thinning
-    to nothing at both edges and at the temples' ends."""
-    end = smoothstep(DD_END, DD_END - 0.26, abs(a))
-    puff = 0.028 * math.exp(-((abs(a) - 1.78) / 0.48) ** 2)
-    prof = math.sin(math.pi * min(1.0, f * 1.05 + 0.04)) ** 0.7
-    return (0.0012 + (0.0050 + puff) * prof) * lerp(0.35, 1.0, end)
+def dd_comb(a, f):
+    """The combed-hair relief at (a, f) in -1..1: strand groups that run the
+    way the hair is combed, back above the ears (grooves along the band)
+    and down at the back of the head (grooves across it), with a little
+    waver so no groove is ruled straight."""
+    ws = smoothstep(0.75, 1.45, abs(a))
+    g_side = math.sin(2.0 * math.pi * (f * 4.5) + 0.7 * math.sin(3.0 * a) + 0.4 * math.sin(11.0 * a))
+    g_back = math.sin(21.0 * a + 1.4 * f + 0.5 * math.sin(5.0 * f + 2.0 * a))
+    return lerp(g_back, g_side, ws)
+
+
+def dd_thick(a, f):
+    """How far the fringe stands off the scalp: a sculpted band, thickest
+    over the ears and full at the back, thinning to nothing toward the
+    temples; it rises from a defined lower edge and thins into the scalp
+    toward its upper edge."""
+    aa = abs(a)
+    T = (lerp(0.011, 0.019, smoothstep(0.55, 1.40, aa)) + 0.004 * math.exp(-((aa - 1.55) / 0.30) ** 2)) \
+        * smoothstep(DD_END, DD_END - 0.75, aa) ** 1.3 + 0.0012
+    # (a soft edge at the nape, a fuller one round the ears)
+    lo_edge = lerp(0.22, 0.45, smoothstep(0.6, 1.3, aa))
+    prof = lerp(lo_edge, 1.0, smoothstep(0.0, 0.26, f)) * (1.0 - smoothstep(0.42, 1.0, f)) ** 0.85
+    return T * prof
 
 
 def build_dd_fringe():
-    """Fine, short grey-brown hair at the sides and back (the crown and the
-    top of the forehead stay bare): a thin band round the back of the head
-    from temple to temple, fullest above and behind the ears, thinning into
-    the scalp along an uneven upper edge; fine streaks and feathered tufts
-    give it the look of short combed-back hair."""
+    """Short, combed grey-brown hair at the sides and back (the crown and
+    the top of the forehead stay bare): a sculpted band from each temple,
+    above and around the ears and round the back of the head, thickest over
+    the ears and full at the back, thinning toward the temples and into the
+    scalp at its upper edge.  Its relief is combed strand groups (back
+    above the ears, down at the back), shaded light on their crests and
+    dark in the grooves, with fine strand streaks; feathered tufts break
+    the upper edge."""
     mb = MeshBuilder('dd_fringe')
-    nc = 56
-    nr = 10
+    nc = 64
+    nr = 14
     angs = [lerp(-DD_END, DD_END, k / float(nc - 1)) for k in range(nc)]
     rows = []
     for r in range(-1, nr):
@@ -1175,19 +1209,22 @@ def build_dd_fringe():
             lo, hi = table(DD_LOW, abs(a)) + 0.004 * math.sin(13.0 * a + 0.7), dd_high(a)
             hi = max(hi, lo + 0.004)
             f = max(0.0, r) / (nr - 1)
-            z = lerp(lo, hi, f) + (0.004 if r < 0 else 0.0)
-            gr = dd_band(a, f)
-            if 0 < r < nr - 1:
-                gr += 0.0014 * (hsh(k, r, 5) - 0.5)          # a fine, uneven surface
+            z = lerp(lo, hi, f) + (0.003 if r < 0 else 0.0)
+            comb = dd_comb(a, f)
+            gr = dd_thick(a, f) * (1.0 + 0.12 * comb)
             if r == nr - 1:
                 gr = -0.0015
             if r < 0:
                 gr = -0.0035
             q = P._shell_point(a, z, gr)
-            streak = 0.5 + 0.5 * math.sin(k * 1.37 + 0.8 * math.sin(k * 0.31 + r * 0.5))
-            m = hsh(k // 3, r // 2)
-            c = Vector(FRINGE[1]).lerp(Vector(FRINGE[2]), (0.35 * streak + 0.15 * m) * (0.45 + 0.55 * f))
-            c = c.lerp(Vector(FRINGE[0]), 0.3 * (1.0 - f) * (1.0 - streak) + 0.25 * (r < 0))
+            # shading: crests light, grooves dark, darker toward the scalp at
+            # both edges, and fine strand streaks along the comb
+            ws = smoothstep(0.75, 1.45, abs(a))
+            fine = math.sin(lerp(a * 61.0, f * 26.0, ws) + 2.0 * hsh(k // 2, r // 3))
+            t = 0.55 + 0.30 * comb + 0.10 * fine
+            edge = smoothstep(0.0, 0.18, f) * (1.0 - smoothstep(0.80, 1.0, f))
+            c = Vector(FRINGE[0]).lerp(Vector(FRINGE[1]), smoothstep(0.0, 0.55, t)).lerp(Vector(FRINGE[2]), smoothstep(0.55, 1.0, t))
+            c = Vector(FRINGE[0]).lerp(c, lerp(0.45, 1.0, edge))
             row.append(mb.vert(q, FRINGE_STYLE, (0, q.z), HW(q), '', None, (c.x, c.y, c.z)))
         rows.append(row)
     for r in range(len(rows) - 1):
@@ -1196,35 +1233,23 @@ def build_dd_fringe():
             # columns run from the right temple round the back to the left one
             # (clockwise seen from above): this winding faces out
             mb.face(a_[k], b_[k], b_[k + 1], a_[k + 1])
-    # feathered tufts break the upper edge (short, lying back and up), a few
-    # at the nape and over the ears
-    for k in range(26):
-        a = lerp(-DD_END + 0.12, DD_END - 0.12, (k + 0.5) / 26.0) + 0.03 * math.sin(k * 2.7)
-        hi = dd_high(a) - lerp(0.004, 0.016, hsh(k, 2))
+    # feathered tufts break the upper edge, lying the way the hair is combed
+    for k in range(30):
+        a = lerp(-DD_END + 0.16, DD_END - 0.16, (k + 0.5) / 30.0) + 0.025 * math.sin(k * 2.7)
         lo = table(DD_LOW, abs(a))
-        gt = dd_band(a, (hi - lo) / max(0.004, dd_high(a) - lo)) + 0.0008
+        hi = dd_high(a) - lerp(0.003, 0.012, hsh(k, 2))
+        f = (hi - lo) / max(0.004, dd_high(a) - lo)
+        gt = dd_thick(a, f) + 0.0006
         q = P._shell_point(a, hi, gt)
         nn = head_normal(q, gt)
-        back = Vector((0.0, -1.0, 0.35 + 0.4 * hsh(k, 5)))
-        back = (back - nn * back.dot(nn)).normalized()
-        L = lerp(0.018, 0.032, hsh(k, 3))
-        pts = [q - nn * 0.002, q + back * L * 0.5 + nn * 0.0028, q + back * L + nn * 0.0010]
-        c = Vector(FRINGE[1]).lerp(Vector(FRINGE[2]), 0.25 + 0.5 * hsh(k, 4))
-        sweep(mb, pts, [(0.0022, 0.0062), (0.0018, 0.0052), (0.0008, 0.0020)], FRINGE_STYLE.with_col(tuple(c)), HW, segs=4, cap_start=None,
-              cap_end='round', twist_hint=nn)
-    # short tufts along the lower edge (pointing down at the nape and back at the sides)
-    for k in range(16):
-        a = lerp(-DD_END + 0.25, DD_END - 0.25, (k + 0.5) / 16.0) + 0.02 * math.sin(k * 3.1)
-        lo = table(DD_LOW, abs(a)) + 0.004 * math.sin(13.0 * a + 0.7) + lerp(0.003, 0.010, hsh(k, 7))
-        q = P._shell_point(a, lo, 0.003)
-        nn = head_normal(q, 0.003)
-        down = Vector((0.0, -0.6 * (1.0 - abs(math.sin(a))), -1.0))
-        down = (down - nn * down.dot(nn)).normalized()
-        L = lerp(0.010, 0.018, hsh(k, 8))
-        pts = [q - nn * 0.002, q + down * L * 0.5 + nn * 0.0016, q + down * L]
-        c = Vector(FRINGE[0]).lerp(Vector(FRINGE[1]), 0.3 + 0.5 * hsh(k, 9))
-        sweep(mb, pts, [(0.0016, 0.0046), (0.0013, 0.0038), (0.0006, 0.0015)], FRINGE_STYLE.with_col(tuple(c)), HW, segs=4, cap_start=None,
-              cap_end='round', twist_hint=nn)
+        ws = smoothstep(0.75, 1.45, abs(a))
+        d = Vector((0.0, -1.0, 0.25 * hsh(k, 5))).lerp(Vector((0.0, -0.3, -1.0)), 1.0 - ws)
+        d = (d - nn * d.dot(nn)).normalized()
+        L = lerp(0.016, 0.026, hsh(k, 3))
+        pts = [q - nn * 0.0025, q + d * L * 0.5 + nn * 0.0020, q + d * L + nn * 0.0006]
+        c = Vector(FRINGE[1]).lerp(Vector(FRINGE[2]), 0.35 + 0.5 * hsh(k, 4))
+        sweep(mb, pts, [(0.0020, 0.0056), (0.0016, 0.0046), (0.0007, 0.0017)], FRINGE_STYLE.with_col(tuple(c)), HW, segs=4,
+              cap_start=None, cap_end='round', twist_hint=nn)
     return reshape(mb, DD_SHAPE)
 
 
