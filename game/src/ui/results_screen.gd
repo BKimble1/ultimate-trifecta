@@ -462,7 +462,7 @@ static func add_challenge_lines(v: Container, ch: Dictionary) -> void:
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			row.add_child(l)
-			v.add_child(row)
+			v.add_child(row, true)
 		else:
 			var prog := int(line.get("progress", -1))
 			moved.append(("%s %d/%d" % [nm, prog, int(line.get("goal", 0))]) if prog >= 0 else ("%s +%d" % [nm, int(line.get("inc", 0))]))
@@ -476,7 +476,7 @@ static func add_challenge_lines(v: Container, ch: Dictionary) -> void:
 		m.name = "ChallengeNote"
 		m.add_theme_font_size_override("font_size", 18)
 		m.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		v.add_child(m)
+		v.add_child(m, true)
 
 
 func _big_number(n: String, label_text: String) -> Control:

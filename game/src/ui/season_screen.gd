@@ -838,13 +838,14 @@ func _build_challenges() -> void:
 	challenge_page.name = "ChallengesPage"
 	challenge_page.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_side_box().add_child(challenge_page)
+	# one line each (they shrink to fit a narrow phone panel)
 	var head := UIKit.styled("Challenges · Earn Season XP", "label", UIKit.IVORY)
 	head.name = "ChallengesHeading"
-	head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UIKit.fit_text(head, [UIKit.T_LABEL, UIKit.T_CAPTION, 18, 17])
 	challenge_page.add_child(head)
 	var role := UIKit.styled(ChallengeRules.ROLE_LINE, "caption", UIKit.IVORY_MUTED)
 	role.name = "RoleLine"
-	role.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UIKit.fit_text(role, [UIKit.T_CAPTION, 18, 17, 16])
 	challenge_page.add_child(role)
 	var status := UIKit.styled("", "caption", UIKit.AMBER)
 	status.name = "ChallengeStatus"
@@ -896,8 +897,7 @@ func _fit_challenges() -> void:
 	var w := detail_panel.size.x - sb.get_margin(SIDE_LEFT) - sb.get_margin(SIDE_RIGHT) - 10.0
 	if w < 10.0:
 		return
-	for k in ["head", "role", "status"]:
-		(_ch[k] as Control).custom_minimum_size.x = w
+	(_ch["status"] as Control).custom_minimum_size.x = w
 	(_ch["hint"] as Control).custom_minimum_size.x = w - 24.0
 
 

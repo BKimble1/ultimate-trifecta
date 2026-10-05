@@ -111,7 +111,7 @@ Lifetime level XP (the "Lv" on the profile chip) stays local and separate:
 it keeps the V5 performance values (`RulesConfig` "Rewards" group, practice
 x0.5) and never comes from Coins (`RulesLogic.lifetime_xp`).
 
-### The calculation (target: Premium in 60-120 eligible rounds)
+### The calculation (Premium in 60-120 eligible rounds; Season XP with challenges below)
 
 This is a tuning model, **not a measured rate**: no real eligible rounds have
 been played with the service. Assumptions for typical active play (half the
@@ -125,16 +125,54 @@ Night Watch, 2.2 splashes as a runner.
 - Average **15.3 Coins** → Premium (1,500) in **≈ 98 rounds**. A strong
   player (wins, home, 3 pickups: ~22) needs ≈ 68; a player who only
   completes rounds (~11) ≈ 136.
-- Season XP: runner 50 + 2.2×10 + 0.6×20 + 0.5×15 = 91.5; Night Watch
-  50 + 1.5×15 + 0.5×15 = 80; average **85.8 XP** → tier 30 (8,300 XP) in
-  **≈ 97 rounds**.
+- Season XP from the rounds themselves (base): runner 50 + 2.2×10 +
+  0.6×20 + 0.5×15 = 91.5; Night Watch 50 + 1.5×15 + 0.5×15 = 80; average
+  **85.75 XP** → tier 30 (8,300 XP) in **≈ 97 rounds without challenges**.
 - Time: a round is up to 4 minutes of play plus reveal, countdown, loading
   and results, about 4-6 minutes in all, so ≈ 98 rounds is roughly 6.5-10
-  hours of play for either goal.
+  hours of play for Premium.
 
-`test_catalogue::test_earning_rate_meets_the_pass_target` recomputes this from
-the live table and fails if it leaves 60-120. Re-tune `round_coins` /
-`season_xp` once real playtests measure pickups and role results.
+### With challenges (Pass 8)
+
+Challenges (§10) add Season XP to the same pass: at most **150 a day**
+(three daily goals × 50) and **450 a week** (three weekly goals × 150).
+They change nothing above: not the base table, not the 30 tiers or their
+thresholds, not Coins. The Coins → Premium model above is separate and
+unchanged (challenges never pay Coins).
+
+The model uses the same assumptions, with every round eligible and actively
+played. Per round: 1 active round, **1.85 contribution credits** (half the
+rounds 2.2 splashes as a runner, half 1.5 different runners tagged as Night
+Watch, never more than 3) and **0.5 Round Wins**. A goal counts as completed
+in its period when that period's expected amount reaches it.
+
+| Week | Rounds | Base XP | Daily goals | Weekly goals | Season XP a week | Tier 30 in |
+|---|---|---|---|---|---|---|
+| Light: 2 days × 3 rounds | 6 | 515 | 200 (Night Shift and Team Effort; 5.6 credits a day is short of 6) | 0 | **≈ 715** | ≈ 11.6 weeks (16.1 without challenges) |
+| Typical, the brief's sample: 5 days × 4 rounds | 20 | 1,715 | 750 | 450 | **≈ 2,915** | **≈ 2.85 weeks, ≈ 57 rounds** (97 without) |
+| Heavy: 7 days × 8 rounds | 56 | 4,802 | 1,050 | 450 | **≈ 6,302** | ≈ 1.3 weeks, ≈ 74 rounds |
+
+- The brief's illustrative 1,716 + 750 + 450 = 2,916 used 85.8 XP a round;
+  the table uses the unrounded 85.75.
+- Real weeks vary. With 3 rounds a day, Team Effort completes on 87.5% of
+  days (1 − 0.5³); in the light week Strong Together (4 wins in 6 rounds)
+  completes in about 34% of weeks (≈ +50 XP on average). Rounds that are not
+  active, not eligible or not settled add nothing (§10).
+- Challenges are about 28% (light), 41% (typical) and 24% (heavy) of a
+  modelled week's Season XP: they speed up the pass most for regular,
+  moderate play, and base earning stays the larger part.
+- This is a model, not a measured result: no real eligible rounds have been
+  played with the service.
+
+`test_catalogue::test_earning_rate_meets_the_pass_target` recomputes the
+Coins → Premium rounds (target 60-120) and the base Season XP (85.75 a
+round; tier 30 in 70-130 rounds without challenges) from the live table.
+`test_catalogue::test_challenges_accelerate_the_pass_as_documented`
+recomputes the challenge table above from the live catalogue (150/450 caps,
+the light/typical/heavy totals and weeks) and fails if it drifts: the old
+"tier 30 in ≈ 97 rounds" now describes base XP only. Re-tune `round_coins`
+/ `season_xp` / `challenges` once real playtests measure pickups, role
+results and how often goals complete.
 
 ## 4. Season 1 · After Hours
 
@@ -216,8 +254,10 @@ A round pays only when all of this holds (service `commerce.js`):
    time ≤ 15 min; ≤ 10 coin spawns; per player stamps 0-3, distinct tags
    0-7, coins picked ≤ spawns, the sum of coins picked ≤ spawns, a finish
    only with three stamps, at most one first-home, Night Watch rows without
-   runner results, away time ≤ round time. Anything else rejects the round
-   (`422 implausible`) and writes the audit log for review.
+   runner results, away time ≤ round time; (Pass 8, report version 2) a
+   whole number of active seconds no longer than the round and not while
+   away (`active_s ≤ round time − away + 2`). Anything else rejects the
+   round (`422 implausible`) and writes the audit log for review.
 3. **Confirmed by each player's own game** (`POST /v1/rounds/:id/ack`): a
    SHA-256 digest of the row that player's game received
    (`Economy.row_digest` = `economy.js rowDigest`); the service pays a player
@@ -231,7 +271,8 @@ A round pays only when all of this holds (service `commerce.js`):
 
 Settlement is a single D1 batch: the daily count, the ledger grant (key
 `round:<match>:<profile>`, unique), the wallet, the Season XP and the round
-row. Re-sent reports, acks and reopened results never pay twice; financial
+row, and (Pass 8) the round's challenge progress and any challenge bonus
+XP (§10). Re-sent reports, acks and reopened results never pay twice; financial
 idempotency lives in the service ledger and is never truncated (the old local
 200-entry list is now a stats ledger only).
 
@@ -305,6 +346,7 @@ server simulation would be the real fix.
 | Coins shown | pre-V6 balance (this device) | last verified balance | live |
 | Spend, claim, buy | unavailable, says why | unavailable, says why | yes |
 | Round rewards | not added (said on results) | queued confirmation, settled later | settled |
+| Challenges (Pass 8) | goal previews, no progress, "Preview" status | last known progress for the current period ("Offline · progress as of …"), else previews | live |
 
 ## 9. Results interface
 
@@ -322,3 +364,163 @@ server simulation would be the real fix.
 | `xp_before`, `xp_after`, `tier_before`, `tier_after`, `frac_before`, `frac_after` | Season progress for the bar |
 | `lines`, `season_lines` | the breakdown ([label, amount]) |
 | `final` | false while pending |
+| `challenge_xp` | Pass 8: challenge bonus Season XP this round added (0 until settled; `xp_after` includes it) |
+| `challenges` | Pass 8: the round's part in challenges: `state` (`settled`, `pending`, `practice`, `none`), `result` (`applied`, `inactive`, `no_evidence`, `closed`), `xp`, `lines` ([{id, name, period, progress, goal, inc, completed_now, xp}]), `message` (§10) |
+
+## 10. Challenges (Pass 8)
+
+Three daily and three weekly goals that add **Season XP to the existing
+pass**. No new currency, no boost, no claim button, nothing to buy; Premium,
+Coins and purchases never advance a goal. Definitions:
+`economy.challenges` in the catalogue (copied to the service like every
+other number). Rules: `service/src/challenges.js` (the authority) and
+`game/src/core/challenge_rules.gd` (the same rules for display).
+
+| Period | Goal | Requirement | Metric | Reward |
+|---|---|---|---|---|
+| Daily | Night Shift | Play 2 online rounds (active) | active rounds | 50 Season XP |
+| Daily | Campus Contribution | Earn 6 contribution credits | credits | 50 Season XP |
+| Daily | Team Effort | Win 1 round, either role | Round Wins | 50 Season XP |
+| Weekly | Campus Regular | Play 10 online rounds (active) | active rounds | 150 Season XP |
+| Weekly | Pull Your Weight | Earn 18 contribution credits | credits | 150 Season XP |
+| Weekly | Strong Together | Win 4 rounds, either role | Round Wins | 150 Season XP |
+
+Every player gets the same six goals; all are role-flexible ("Splash
+waters or tag different runners."), so nobody has to quit or re-roll to
+become the Night Watch. There are no distance, near-miss, spam or
+repeat-tag goals.
+
+### What a round adds
+
+Only an **eligible, verified, completed online round** (§5: registered by
+the host, reported plausibly, confirmed by the player's own game, present,
+two humans, not cancelled, under the daily cap) that the player **actively
+played**. It then adds, to each goal of its day and week:
+
+- **1 active round**;
+- **contribution credits**: each unique required-water stamp and the first
+  valid tag of each different runner (the row's `stamps` +
+  `unique_captures`), **at most 3 a round**. Tagging the same runner again,
+  a duplicate stamp, a repeated report or confirmation adds nothing;
+- **1 Round Win** when the player's team won (either role).
+
+Progress stops at the goal; a completed goal takes nothing more.
+
+**Nothing** from practice, the tutorial, service-off builds, unverified
+rooms, cancelled rounds (host loss cancels), mismatched or rejected rows,
+away or bot-only rounds, capped rounds, or a round without active play.
+Practice results may show labelled training feedback ("Training only: 2
+contribution credits. Practice doesn't count toward challenges."); it is
+never imported later.
+
+### Active participation (report version 2)
+
+A connection, or being "present", doesn't prove play. The host's
+simulation counts each human slot's **active seconds** (`ActivityMeter`,
+`game/src/sim/activity_meter.gd`) and reports them in the row as
+`active_s`:
+
+- **Evidence**, per playing tick, for a slot a person controls (connected,
+  no bot covering it): a fresh input (one that arrived for that tick, never
+  the host's repeat of the last one) with a button press, a stick, steering
+  or pedal change of more than 0.12, or a camera turn of more than about
+  2° since the last evidence; or a steady stick that actually moves the
+  player at 1 m/s or more; or one of their own objective events (a water
+  stamp, a home finish, a tag on a runner, a coin).
+- A tick is **active within 5 s** (`active.window_s`) of evidence, which
+  absorbs packet gaps. Being **captured, splashing or home** keeps an
+  active player active (they can't act then). A pause menu, idling, a
+  neutral input every tick, a key held against a wall, a stale repeated
+  input or a bare connection gather nothing; a disconnected or bot-covered
+  slot counts nothing until fresh evidence after it returns.
+- **Threshold:** a round counts when `active_s ≥ min(60 s, 40% of the round
+  time)` (`active.min_s`, `active.min_share`): 60 s of a 4-minute round;
+  40 s of a 100 s round. A real player clears it easily while tolerating
+  captures, splashes, a short pause and network hiccups.
+- **Bounded and confirmed:** `active_s` is a whole number of seconds; the
+  service refuses a row with more than the round or with active plus away
+  time over the round (`422 implausible`, audited). It is part of the row
+  digest (`Economy.row_canonical` = `economy.js rowCanonical`, version
+  `v2`), so each player's own game confirms it.
+- **Compatibility:** the host reports `report_version: 2`. A version 1
+  report (an older game) still settles Coins and Season XP as before but
+  moves no challenge (`no_evidence`). The network protocol is 7: a 6 and a 7
+  game can't share a party, because their row digests differ.
+
+### Periods, resets and the grace
+
+- A round belongs to the **UTC day** (reset 00:00 UTC) and the **UTC week**
+  (reset Monday 00:00 UTC) of its **registered start**, the service's own
+  timestamp (`rounds.started_at`). The device's clock, time zone or date
+  never decide anything; the local reset time on screen is presentation
+  only.
+- **Grace: 24 h** (`grace_s`). A round that started before a reset and
+  settles after it (a late confirmation, an offline queue) is credited to
+  its **original** period, once, until 24 h after that period ended. Later,
+  that period takes nothing (`closed`; the round still pays its Coins and
+  Season XP, and an open week still counts).
+- A round that starts after a reset belongs to the new period, so an
+  **expired goal never takes a new round**.
+- A completed goal's bonus is delivered in the settlement that completed
+  it; an accepted reward is never undone by a refresh, a reset or a new
+  device, and goals still within their grace stay visible ("recent").
+
+### Settlement, idempotency and storage
+
+The challenge statements run inside the round's settlement batch (§5), so
+Coins, Season XP, challenge progress and the bonus land together or not at
+all (`service/migrations/0004_challenges.sql`):
+
+- `challenge_progress`: one row per player and **challenge instance**
+  (`d:2026-10-05:campus_contribution`, `w:2026-10-05:pull_your_weight`, the
+  week by its Monday), with the period, the goal, XP and set version copied
+  when first touched (a later catalogue change never rewrites a running
+  goal), the progress (`CHECK 0 ≤ progress ≤ goal`) and completion time.
+- `challenge_bonus`: the bonus, **primary key player + instance**: inserted
+  once (`INSERT OR IGNORE`) when the instance reaches its goal; the batch
+  then adds exactly the bonus rows this round created to `season_progress`.
+  Two rounds settling at once can't both deliver it.
+- `challenge_rounds`: what each settled round did (primary key player +
+  match: a duplicate settlement fails its whole batch), plus the round's
+  result on `round_players` for its results screen.
+- Repeated reports, confirmations, reconnects, reopened results and service
+  retries replay the first result; tests cover each.
+- The snapshot (`GET /v1/wallet` and `GET /v1/challenges`) carries the
+  current instances (untouched ones at 0), recent ones in their grace, the
+  server time and the next resets: any device signed in to the profile
+  (reinstall, a second device) shows the same progress. Deleting the
+  profile deletes its challenges; the sweep drops instances 30 days after
+  their grace.
+
+### In the game
+
+- **Season Pass:** the side panel has two pages, **Challenges** and
+  **Reward**. "Challenges · Earn Season XP" opens first: the role line,
+  Daily and Weekly with their local reset time, one card per goal (name,
+  task, progress bar and "4/6", "+50 Season XP", a check when done) and one
+  optional pin (tap a goal; one at a time, kept on this device). Tapping a
+  reward shows its detail. The header and the track are unchanged: Free
+  and Premium stay whole, Claim all stays where it was.
+- **Service unavailable:** one short status ("Preview: no game service in
+  this build. No progress or Season XP is added.", or signed out /
+  offline / checking) and readable goal previews without progress bars,
+  counts, completion marks or claim buttons.
+- **Results:** "Campus Contribution complete · +50 Season XP" (marked
+  "(pending)" until the service settles the round), the other goals the
+  round moved, an honest line when it didn't count, then the Season tier
+  bar including the bonus (`Wallet.round_summary(match_id)["challenges"]`,
+  §9).
+- **Pinned goal:** `Wallet.pinned_challenge_text(live_row)` returns one line
+  for the pause / expanded map ("Campus Contribution 4/6 · +50 Season XP",
+  with "· +2 this round (provisional)" during a round when the player's row
+  so far is passed; "" when nothing is pinned).
+- A completion the service reports is announced once (a short toast on the
+  Season Pass), never every frame.
+
+### The trust limit
+
+Unchanged from §5: the host's device runs the simulation, so a modified or
+colluding host can report plausible activity, stamps, tags and wins. What
+bounds challenges: everything in §5, at most 3 credits a round, the active
+time can't exceed the round or overlap away time, and challenges add at most
+150 Season XP a day and 450 a week, never Coins. It is not anti-cheat.

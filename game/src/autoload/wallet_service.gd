@@ -851,7 +851,7 @@ func challenge_status() -> Dictionary:
 	var current := challenge_cards().any(func(c: Dictionary) -> bool: return bool(c["known"]))
 	match service_state():
 		"off":
-			return {"live": false, "text": "Preview: challenges need the game service, which isn't in this build. No progress or Season XP is added."}
+			return {"live": false, "text": "Preview: no game service in this build. No progress or Season XP is added."}
 		"signed_out":
 			return {"live": false, "text": "Sign in with Game Center to track challenges."}
 		"offline":
@@ -939,6 +939,8 @@ func _round_challenges(rec: Dictionary) -> Dictionary:
 		for it in cd.get("items", []):
 			if not (it is Dictionary):
 				continue
+			if bool(it.get("completed", false)) and not bool(it.get("completed_now", false)):
+				continue   # done before this round: nothing new to say
 			var cid := String(it.get("challenge_id", ""))
 			lines.append({"id": cid, "name": String(ChallengeRules.def(cid).get("name", cid)), "period": String(it.get("period", "")),
 				"progress": int(it.get("progress", 0)), "goal": int(it.get("goal", 0)), "inc": int(it.get("inc", 0)),
