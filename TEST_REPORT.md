@@ -1,6 +1,6 @@
 # Test report: Ultimate Trifecta
 
-This report records what was actually run, where, and what each result proves. Version 1.7 (V8) is reported first. The V7 (1.6), V6 (1.5), V5 (1.4), V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
+This report records what was actually run, where, and what each result proves. Version 1.8 (Pass 8) is reported first. The V8 (1.7), V7 (1.6), V6 (1.5), V5 (1.4), V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
 
 | Label | What it is | What it can prove |
 |---|---|---|
@@ -11,7 +11,75 @@ This report records what was actually run, where, and what each result proves. V
 | **Desktop render** | The game rendered by Godot's Mobile renderer on Mesa **llvmpipe** (software Vulkan) under Xvfb, at device resolutions, with a fixed frame clock (`--fixed-fps 60`, or Movie Maker) | Layout, framing, art, render-path dimensions (render size vs displayed size, MSAA, scale) and engine counters (draw calls, primitives). **Not** frame rate, frame pacing, GPU cost or device smoothness |
 | **CI iOS** | GitHub Actions `macos-26` runner: Xcode project export, unsigned arm64 device archive (or, from V3, a signed archive and TestFlight upload), x86_64 Simulator build and run, App Store Connect API checks | That the iOS project compiles, links, signs and uploads, launches in the Simulator, and what App Store Connect reports for the build; *not* device performance or a device install |
 
-**Not done: no physical iPhone or iPad was available, so nothing in V1–V8 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+**Not done: no physical iPhone or iPad was available, so nothing in V1–V8 or Pass 8 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+
+# Pass 8 (version 1.8)
+
+Pass 8 ("pass eight") builds on 1.7 (7): the sprint exhaustion latch and
+the jump→dive nerf, match clarity (goal bar, next action, Runner pace,
+series line, results order, map sight cues), six rotating Shop skins on a
+real schedule, three more Coin packs, challenges that add Season XP, crisp
+startup logo edges and a central RESULTS music state. Notes, defect
+register and results: [docs/PASS8_GAMEPLAY_COMMERCE_NOTES.md](docs/PASS8_GAMEPLAY_COMMERCE_NOTES.md);
+per-area details in [docs/pass8/](docs/pass8/). **No physical iPhone or
+iPad was available**: everything below is desktop Linux, the service's Node
+tests, and CI iOS.
+
+## P8.1 Automated tests
+
+Full game suite on the integrated code (local, headless, commit `7e9602a`):
+**482 tests, 102,855 checks, 0 failures**. Service (`service/`, Node):
+**60 tests, 60 pass**. CI headless tests on the same commit (push run #110)
+passed; the gating numbers of the upload run are in P8.5.
+
+| Suite (new in Pass 8) | What it exercises |
+|---|---|
+| `test_p8_movement` (6) | The movement probe on the campus's longest clear straight and its contract (one sprint burst per hold, re-armed bursts real, no dive pattern at or above the Watch's 6.6 m/s, a dive loop slower than released sprint bursts, a deliberate dive still a burst); the `test_pursuit` Watch catches a dive-looping runner; accepted and rejected jump/dive edges press by press; motor-state round trip and resets; bots re-arm; guest prediction of the latch and dives at 50 ± 8 ms and 2 % loss (0 corrections over 25 cm) |
+| `test_p8_sprint_touch` (1) | Real touches in a Practice round: parked at the stick's edge for 6 s gives one burst, then running with the meter empty and the stick showing the latch (never sprint on); easing under the exit threshold re-arms; pushing to the edge again sprints on the next tick |
+| `test_p8_results_music` (4) | No results track shipped and no placeholder; without one the sting plays once and the lobby music continues under results; a cancelled round plays no flourish; with a bed (test stand-in only) it starts once per round result and is never restarted by reopening results |
+| `test_runner_pace` (8) | Distance fields and route orders against hand enumeration, ordering rules (home by tick, stamps, route; 4 m shared places, anchored), approximate places, caught penalty, bots counted, debounce, the wire block (no positions) |
+| `test_match_hud_pass8` (9) | Goal bar from the round's own configuration; runner and Watch cards in every state; series line never fakes a place; sprint-empty hint follows the latch and the hold; pinned challenge line in pause and map; layout at every device size |
+| `test_shop_rotation` (12) | Service time as a monotonic offset (a device clock change never adds time); countdowns and local departure wording; in-place swap at expiry; refresh feedback respects Reduced Motion and focus; an expired offer can't be bought from any path; offer changed before acceptance charges nothing; accepted before expiry delivered after a lost reply; owned skins stay owned and return owned; service-off and stale states; compact Coin pack cards with StoreKit prices or "Not available"; "Best value" only from same-currency numeric prices; all six packs deliver their quantity once |
+| `test_challenges` (10) | UTC periods and grace, credits and the active-play threshold, the activity evidence rule and the real-simulation meter, service-off and practice add nothing and say so, a settled round completes a goal once and moves the pass, inactive rounds, results lines, the Season Pass page at four device shapes, completion motion once (not under Reduced Motion) |
+| `test_outfits_p8` (7) | The six outfits' keys, prices, includes copy and wire round trip; footwear, cap and hood rules; budgets; head pieces clear of the face; concealment against the Night Watch; ten motion scenarios; identical simulation whatever the outfit |
+| `test_boot_branding` (extended) | Vector-exact launch image and curtain raster; edge, halo and size checks (fail on 1.7's images) |
+| Service: `offers.test.mjs`, `challenges.test.mjs` | Offer windows to the millisecond, replay after expiry, overlapping offers, the schedule rule and tool check, the iap-diff plan; challenge periods, grace, caps, concurrent and duplicate settlement (one bonus), v1 reports, implausible `active_s`, device sync, deletion and sweep |
+
+## P8.2 Movement, measured (headless sim)
+
+The probe (`docs/pass8/data/movement_{before,after}.json`, build 7's code
+vs this branch): sprint held 30 s 22 → 1 bursts; the best jump→dive chain
+8.05 → 5.23 m/s (released-and-repressed sprint bursts 5.98 both builds;
+the Watch 6.6); a single dive still peaks at 8.0 m/s; pursuit from 8 m:
+the dive loop escaped → caught after 4.5 s, sprint bursts 11.1 s both
+builds. Details, traces and normal-speed clips: [docs/pass8/movement.md](docs/pass8/movement.md).
+
+## P8.3 Visual and behavioural evidence (desktop render, labelled)
+
+| What | Where | Shows |
+|---|---|---|
+| Movement before/after (real Practice round, Movie Maker 30 fps, normal speed) | `docs/media/pass8/movement/` | Sprint held and jump→dive spam on 1.7 (7) and Pass 8, side by side; speed/meter/latch traces |
+| Match HUD, map and results (72 shots, SE / iPhone 14 / Pro Max / iPad) | `docs/media/pass8/match/` | Every runner and Watch card state, pace, map sight and last-seen, results order; measured rects, no overlaps |
+| Shop (33 shots, SE / iPhone 14 / iPad) | `docs/media/pass8/shop/` | Featured with countdowns, the 00:00 UTC change, offer sheet and confirmation, Coin packs, out-of-rotation, stale and service-off states; 0 layout issues |
+| Challenges (SE / iPhone 14 / Pro Max / iPad) | `docs/media/pass8/challenges/` | The Season Pass Challenges page, settled and pending results lines, practice, service-off preview (test-double service labelled) |
+| Six skins | `docs/media/pass8/skins/` | Campus and dorm light at play distance, close-ups, an action sheet, skin tones, thumbnails, a 30 s action reel of the heaviest look |
+| Startup logo (lossless PNG) | `docs/media/pass8/logo/` | Every startup stage at four device sizes, 400 % edge crops, handoff difference images, the fade frame by frame |
+
+## P8.4 Found and fixed during Pass 8 integration
+
+- Guest prediction snapped at dive landings (paired 0.27 m corrections):
+  the floor snap now follows the serialized `on_floor`.
+- The touch stick showed sprint on while the latch kept it off: it now
+  follows the motor and draws the latch.
+- `test_wardrobe` failed only in the full suite: `test_shop_rotation`
+  restored the window to the wrong size; found by running the two together
+  (`run_tests.gd -- a,b`, new).
+- Two merged streams each added a clock to the fake commerce service; one
+  clock now drives offers and challenges.
+- The layout checker reported scrolled-out "New" chips as off screen (it
+  read only the nearest clip); it now intersects every clip, as the engine.
+- The Shop's includes copy said the Locker's shoes stay for outfits that
+  bring their own footwear; it now says what each outfit replaces.
 
 # V8 (version 1.7)
 
