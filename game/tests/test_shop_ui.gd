@@ -189,7 +189,7 @@ func test_season_track_swipes_and_claims() -> void:
 	t.eq(Wallet.balance(), 25, "tier 5's 25 Coins")
 	sp.focus(4, "premium")
 	t.eq(sp.cell_state(4, "premium"), "premium_locked", "earned Premium reward, locked")
-	t.eq((sp._d["action"] as Button).text, "Get Premium in the Shop", "Premium resolves in the Shop")
+	t.eq((sp._d["action"] as Button).text, "Get Premium", "Premium resolves in the Shop")
 	sp._on_detail_action()
 	await _frames(4)
 	t.check(App.screen is ShopScreen, "the Shop opened")

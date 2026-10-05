@@ -273,7 +273,8 @@ func test_an_older_service_and_a_changed_reward_never_mis_grant() -> void:
 	var sp := App.screen as SeasonScreen
 	t.eq(sp.display_state(50, "premium"), "service_update", "Record Breaker shows earned, waiting for the service")
 	sp.focus(50, "premium")
-	t.check((sp._d["action"] as Button).disabled and (sp._d["reason"] as Label).text.contains("hasn't been updated"), "no Claim that would do nothing; the reason says why")
+	t.check((sp._d["action"] as Button).disabled and (sp._d["reason"] as Label).text.contains("can't be claimed yet"), "no Claim that would do nothing; the reason says why")
+	t.check((sp._d["state"] as Label).text.contains("It stays earned"), "and it stays earned")
 	t.eq(sp.claim_all_btn.text, "Nothing to claim", "Claim all counts what the service can grant")
 	# forced anyway (a stale screen): the old service grants nothing and says
 	# nothing; the game explains
@@ -339,8 +340,11 @@ func test_navigation_and_milestones_fit_every_device() -> void:
 			prev_end = r.end.x
 			for l in [c.top_l, c.main_l]:
 				t.check(UIKit.v7_text_width(l, (l as Label).text) <= (l as Control).size.x + 1.0, "%s: '%s' whole" % [key, (l as Label).text])
-		t.eq(sp.now_chip.main_l.text, "Tier 43", "%s: you're at Tier 43" % key)
-		t.eq(sp.next_chip.main_l.text, "Tier 45 · 550 XP", "%s: the next reward and its XP" % key)
+		# the chips' whole form, or (final sweep) a shorter one on a narrow panel
+		t.check(sp.now_chip.main_l.text in ["Tier 43", "43"], "%s: you're at Tier 43 (%s)" % [key, sp.now_chip.main_l.text])
+		t.check(sp.next_chip.main_l.text in ["Tier 45 · 550 XP", "Tier 45", "45"], "%s: the next reward (%s)" % [key, sp.next_chip.main_l.text])
+		t.check(sp.now_chip.accessibility_name.contains("Tier 43"), "%s: the whole sentence for screen readers" % key)
+		t.check(sp.next_chip.accessibility_name.contains("Tier 45, 550 Season XP away"), "%s: %s" % [key, sp.next_chip.accessibility_name])
 		# jumps: current (a progress run), next reward, 50, 100 (and back)
 		for spec in [["now", 43, "progress"], ["next", 45, "free"], [50, 50, "premium"], [100, 100, "premium"], [30, 30, "free"]]:
 			if spec[0] is String and spec[0] == "now":
@@ -356,10 +360,12 @@ func test_navigation_and_milestones_fit_every_device() -> void:
 			t.check(track.grow(0.5).encloses(col.get_global_rect()), "%s: tier %d's column scrolled into view" % [key, spec[1]])
 			t.check(_inside((sp._d["action"] as Control).get_global_rect(), safe) or not (sp._d["action"] as Control).visible, "%s: the action on screen" % key)
 			t.check(_inside(sp.detail_panel.get_global_rect(), safe), "%s: the side panel inside the safe area" % key)
-			# the lock reason / state is wholly in view without scrolling the detail
+			# the requirement / state is wholly in view (final sweep: above the
+			# scrolling description, never inside it)
 			var sl := sp._d["state"] as Control
-			var info := (sp._d["scroll"] as Control).get_global_rect()
-			t.check(info.grow(1.0).encloses(sl.get_global_rect()), "%s: tier %d's state whole in view (%s in %s)" % [key, spec[1], sl.get_global_rect(), info])
+			var page := (sp._d["page"] as Control).get_global_rect()
+			t.check(page.grow(1.0).encloses(sl.get_global_rect()) and sl.get_global_rect().end.y <= (sp._d["scroll"] as Control).get_global_rect().position.y + 1.0,
+				"%s: tier %d's state whole in view above the description (%s in %s)" % [key, spec[1], sl.get_global_rect(), page])
 		# both rows whole, cells full targets
 		var tr := sp.track_scroll.get_global_rect()
 		var hbar := sp.track_scroll.get_h_scroll_bar().get_combined_minimum_size().y
@@ -423,11 +429,14 @@ func test_progress_runs_featured_preview_and_claim_from_the_pass() -> void:
 		var chip: SeasonScreen.NavChip = sp.milestone_chips[int(spec[0])]
 		t.eq(chip.skin, id, "the milestone chip features the skin")
 		if Catalogue.has_art(id):
-			t.check(is_instance_valid(sp._preview) and sp._preview.visible and sp._preview_skin == id, "art in the build: the live preview turns the real skin")
+			var v := App.stage.local_character()
+			t.check(sp.preview_id == id and v.visible and String(v.cosmetic.get("outfit", "")) == String(Catalogue.split(id)[1]),
+				"art in the build: the real skin on the stage's runner")
+			t.check(not sp.plate.visible and sp.turn.enabled, "no picture over it; it turns")
 			t.eq((sp._d["note"] as Label).text, "", "no missing-art note")
 		else:
 			t.eq((sp._d["note"] as Label).text, "Preview not available in this build.", "art not in this build (SKINS9 not merged): said plainly")
-			t.check((sp._d["art"] as Control).visible and not (is_instance_valid(sp._preview) and sp._preview.visible), "a neutral picture, no fake preview")
+			t.check(sp.plate.visible and sp.preview_id == "", "a neutral picture, no fake preview")
 			t.check(chip.tex == null, "the chip shows a neutral head")
 	t.eq(sp.display_state(50, "premium"), "claimable", "tier 52 with Premium: Record Breaker claimable")
 	t.check((sp._d["state"] as Label).visible, "state shown")
@@ -436,7 +445,8 @@ func test_progress_runs_featured_preview_and_claim_from_the_pass() -> void:
 	sp._on_detail_action()
 	await rig.until(func() -> bool: return sp.display_state(50, "premium") == "claimed")
 	t.check(Wallet.owns_id("outfit:record_breaker"), "claimed from the pass")
-	t.eq((sp._d["action"] as Button).text, "Wear it in the Locker", "then it points to the Locker")
+	t.eq((sp._d["action"] as Button).text, "Equip", "then it can be worn from here")
+	t.check(String(Save.data["cosmetic"]["outfit"]) != "record_breaker", "claiming never equips by itself")
 	# Reduced Motion: jumps land at once and the preview doesn't turn
 	Save.set_setting("reduced_motion", true)
 	sp.track_scroll.scroll_horizontal = 0
@@ -528,11 +538,11 @@ func test_the_shop_never_advertises_100_rewards() -> void:
 	t.check(not line.contains("100 rewards") and not line.contains("100 Premium"), "never 100 rewards")
 
 
-## The featured-skin code path with art present, exercised with an outfit
-## whose art is in every build (Glow Jogger, Premium 15) standing in for the
-## two skins until the skins workstream's art merges: the milestone chip
-## asks Portraits for the skin's face, the detail turns the real skin on a
-## live runner, and Reduced Motion holds it still.
+## The featured-skin code path with an outfit whose art is in every build
+## (Glow Jogger, Premium 15) as a featured tier: the milestone chip asks
+## Portraits for the skin's face, the stage's runner wears the skin, a slow
+## sway shows its sides only until the player turns it, Reduced Motion
+## holds it still, and an ordinary reward gives the runner back.
 func test_featured_preview_renders_the_real_art_when_present() -> void:
 	await _begin()
 	var season: Dictionary = Catalogue.season("s1")
@@ -542,6 +552,7 @@ func test_featured_preview_renders_the_real_art_when_present() -> void:
 	rig.svc.wallet(Cloud.profile_id())["season"]["s1"]["xp"] = 3400
 	await Wallet.refresh()
 	await _device("p14_844x390")
+	var look_before: Dictionary = Save.data["cosmetic"].duplicate(true)
 	App.goto(SeasonScreen)
 	await _frames(8)
 	var sp := App.screen as SeasonScreen
@@ -551,22 +562,33 @@ func test_featured_preview_renders_the_real_art_when_present() -> void:
 	sp.jump_to(15)
 	await _frames(30)
 	t.eq([sp.focus_tier, sp.focus_track], [15, "premium"], "the featured cell")
-	t.check(is_instance_valid(sp._preview) and sp._preview.visible and not (sp._d["art"] as Control).visible, "a live preview instead of the static picture")
-	t.eq(sp._preview_skin, "outfit:glow_jogger", "turning the featured skin")
-	t.eq(String(sp._preview_view.cosmetic.get("outfit", "")), "glow_jogger", "on the real character")
+	var v := App.stage.local_character()
+	t.check(v.visible and not sp.plate.visible, "the runner on the stage, no static picture over it")
+	t.eq(sp.preview_id, "outfit:glow_jogger", "previewing the featured skin")
+	t.eq(String(v.cosmetic.get("outfit", "")), "glow_jogger", "on the real character")
 	t.eq((sp._d["note"] as Label).text, "", "no missing-art note")
-	var turn0 := sp._turn
-	await _frames(20)
-	t.check(sp._turn > turn0, "it turns slowly")
-	Save.set_setting("reduced_motion", true)
-	var turn1 := sp._turn
-	await _frames(20)
-	t.eq(sp._turn, turn1, "Reduced Motion: it holds still")
+	# the sway before the first touch, never under Reduced Motion
 	Save.set_setting("reduced_motion", false)
-	# an ordinary reward after it: the preview gives the runner back
-	sp.focus(14, "premium")
+	var s0 := sp.turn.sway()
+	await _frames(20)
+	t.check(not is_equal_approx(sp.turn.sway(), s0), "a slow sway shows its sides")
+	Save.set_setting("reduced_motion", true)
+	t.eq(sp.turn.sway(), 0.0, "Reduced Motion: no automatic motion at all")
+	Save.set_setting("reduced_motion", false)
+	# the player turns it: the sway is over, the player's turn holds
+	sp.turn.turn_by(0.8)
 	await _frames(3)
-	t.eq(sp._preview_skin, "", "the preview is released")
+	t.check(sp.turn.touched and sp.turn.sway() == 0.0, "the player owns the turn: no sway fights it")
+	var y0 := v.rotation.y
+	await _frames(30)
+	t.near(v.rotation.y, y0, 0.0001, "it stays where the player left it")
+	# an ordinary reward (a badge) after it: the runner steps aside for its
+	# big picture and the preview is released
+	sp.focus(13, "premium")
+	await _frames(3)
+	t.eq(sp.preview_id, "", "the preview is released")
+	t.check(sp.plate.visible and not v.visible and not sp.turn.enabled, "a big picture instead (nothing to turn): plate %s runner %s turn %s" % [sp.plate.visible, v.visible, sp.turn.enabled])
+	t.eq(Save.data["cosmetic"], look_before, "the saved look never changed")
 	season["featured"] = saved["featured"]
 	season["milestones"] = saved["milestones"]
 	await _end()
@@ -589,9 +611,10 @@ func test_premium_lock_reason_fits_the_iphone_se() -> void:
 		t.eq(sp.display_state(50, "premium"), "premium_locked", "%s: Record Breaker reached, needs Premium" % key)
 		var sl := sp._d["state"] as Label
 		t.check(sl.text.contains("Premium") and sl.text.contains("1,500 Coins"), "%s: the reason: %s" % [key, sl.text])
-		t.check((sp._d["scroll"] as Control).get_global_rect().grow(1.0).encloses(sl.get_global_rect()), "%s: the whole reason in view" % key)
+		t.check((sp._d["page"] as Control).get_global_rect().grow(1.0).encloses(sl.get_global_rect()), "%s: the whole reason in view" % key)
+		t.check(sl.get_global_rect().end.y <= (sp._d["scroll"] as Control).get_global_rect().position.y + 1.0, "%s: above the description" % key)
 		var act := sp._d["action"] as Button
-		t.eq(act.text, "Get Premium in the Shop", "%s: the way to unlock it" % key)
+		t.eq(act.text, "Get Premium", "%s: the way to unlock it" % key)
 		t.check(_inside(act.get_global_rect(), _safe()) and _inside(act.get_global_rect(), sp.detail_panel.get_global_rect()), "%s: on screen, inside the panel" % key)
 		t.check(_inside(sp.detail_panel.get_global_rect(), _safe()), "%s: the panel inside the safe area (no overflow)" % key)
 	await _end()
