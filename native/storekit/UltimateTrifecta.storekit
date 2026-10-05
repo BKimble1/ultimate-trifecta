@@ -5,6 +5,21 @@
     {
       "displayPrice": "0.99",
       "familyShareable": false,
+      "internalID": "82C92BBD",
+      "localizations": [
+        {
+          "description": "1,000 Coins for the Shop. Cosmetic only.",
+          "displayName": "1,000 Coins",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.idlery.ultimatetrifecta.coins.1000",
+      "referenceName": "Coins 1000 (local test)",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
       "internalID": "0CE583D7",
       "localizations": [
         {
@@ -15,6 +30,21 @@
       ],
       "productID": "com.idlery.ultimatetrifecta.coins.1500",
       "referenceName": "Coins 1500 (local test)",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "CA5B6BDB",
+      "localizations": [
+        {
+          "description": "250 Coins for the Shop. Cosmetic only.",
+          "displayName": "250 Coins",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.idlery.ultimatetrifecta.coins.250",
+      "referenceName": "Coins 250 (local test)",
       "type": "Consumable"
     },
     {
@@ -45,6 +75,21 @@
       ],
       "productID": "com.idlery.ultimatetrifecta.coins.500",
       "referenceName": "Coins 500 (local test)",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "2BB42788",
+      "localizations": [
+        {
+          "description": "7,500 Coins for the Shop. Cosmetic only.",
+          "displayName": "7,500 Coins",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.idlery.ultimatetrifecta.coins.7500",
+      "referenceName": "Coins 7500 (local test)",
       "type": "Consumable"
     },
     {

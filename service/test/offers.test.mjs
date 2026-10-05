@@ -3,6 +3,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeEnv, call, user, ADMIN, appleJws, trustTestRoot, storeTx } from './helpers.mjs';
 import * as E from '../src/economy.js';
@@ -353,6 +356,34 @@ test('six Coin packs: every product maps to its quantity and is delivered once, 
     assert.equal(again.body.wallet.balance, total);
   }
   assert.equal(total, 14250);
+});
+
+test('App Store product plan: eight products; iap-create would create only the missing ones', (t) => {
+  const tool = fileURLToPath(new URL('../../tools/asc.py', import.meta.url));
+  const dir = mkdtempSync(join(tmpdir(), 'iap-'));
+  const have = join(dir, 'have.json');
+  // App Store Connect today: none of them (iap-list shows every product MISSING)
+  writeFileSync(have, '[]');
+  const none = spawnSync('python3', [tool, 'iap-diff', have], { encoding: 'utf8' });
+  if (none.error && none.error.code === 'ENOENT') {
+    t.skip('python3 not installed');
+    return;
+  }
+  assert.equal(none.status, 0, none.stderr);
+  assert.match(none.stdout, /8 planned, 0 present, 8 missing/);
+  // once the first five exist, only the three new packs are created; an
+  // existing product is never touched, whatever its state
+  const five = ['coins.500', 'coins.1500', 'coins.3500'].map((k) => ({ productId: `com.idlery.ultimatetrifecta.${k}`, inAppPurchaseType: 'CONSUMABLE', state: 'READY_TO_SUBMIT' }))
+    .concat(['moonlight_runner', 'starry_sleeper'].map((k) => ({ productId: `com.idlery.ultimatetrifecta.skin.${k}`, inAppPurchaseType: 'NON_CONSUMABLE', state: 'MISSING_METADATA' })));
+  writeFileSync(have, JSON.stringify(five));
+  const r = spawnSync('python3', [tool, 'iap-diff', have], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /8 planned, 5 present, 3 missing/);
+  assert.match(r.stdout, /iap-create would create: com\.idlery\.ultimatetrifecta\.coins\.250, com\.idlery\.ultimatetrifecta\.coins\.1000, com\.idlery\.ultimatetrifecta\.coins\.7500\n/);
+  const plan = JSON.parse(spawnSync('python3', [tool, 'iap-plan'], { encoding: 'utf8' }).stdout);
+  assert.deepEqual(plan.filter((p) => p.inAppPurchaseType === 'CONSUMABLE').map((p) => p.displayName),
+    ['250 Coins', '500 Coins', '1,000 Coins', '1,500 Coins', '3,500 Coins', '7,500 Coins']);
+  assert.ok(plan.every((p) => !('price' in p)), 'no price is ever set by the tool');
 });
 
 test('profile deletion keeps offer sales for reconciliation without the profile', async () => {
