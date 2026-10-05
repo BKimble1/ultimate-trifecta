@@ -956,8 +956,15 @@ func _includes_text(id: String) -> String:
 		parts.append("%s (%s)" % [Catalogue.display_name(String(g)), Catalogue.type_label(String(g)).to_lower()])
 	var t := "Includes: %s." % ", ".join(parts)
 	if id.begins_with("outfit:"):
-		if String(Catalogue.split(id)[1]) in Cosmetics.HOOD_OUTFITS:
+		# Pass 8: say what the outfit replaces (hood: hat and hair; its own
+		# footwear: shoes) instead of promising the Locker's shoes stay
+		var rep := Cosmetics.outfit_replaces(String(Catalogue.split(id)[1]))
+		if "hair" in rep and "shoes" in rep:
+			t += " Its hood covers your hair and hat, and it's worn with its own footwear instead of your shoes; your colours stay as you set them in the Locker."
+		elif "hair" in rep:
 			t += " Its hood covers your hair and hat; your shoes stay as you set them in the Locker."
+		elif "shoes" in rep:
+			t += " It's worn with its own footwear instead of your shoes; your colours, hair and hat stay as you set them in the Locker."
 		else:
 			t += " Your colours, hair, hat and shoes stay as you set them in the Locker."
 	if Catalogue.kind(id) == "apple_skin":

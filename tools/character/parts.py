@@ -739,13 +739,17 @@ def build_robe():
     return mb
 
 
-def _hood(mb, base, rim_style, extra_grow=0.035):
-    """Mascot hood: a shell over the head with a face opening and a rolled rim."""
+def _hood(mb, base, rim_style, extra_grow=0.035, opening=(0.228, 0.19, 1.145)):
+    """Mascot hood: a shell over the head with a face opening and a rolled rim.
+    opening: the face opening's half-width, half-height and centre height
+    (Pass 8: the rotating outfits' hoods open a little wider, clear of the brows)."""
+    ox, oz, oc = opening
+
     def keep(p):
         if p.z < 0.94:
             return False
         if p.y > 0.0:
-            e = (p.x / 0.228) ** 2 + ((p.z - 1.145) / 0.19) ** 2
+            e = (p.x / ox) ** 2 + ((p.z - oc) / oz) ** 2
             if e < 1.0:
                 return False
         return True
@@ -766,18 +770,18 @@ def _hood(mb, base, rim_style, extra_grow=0.035):
         p = mb.v[i]
         if p.y <= 0.0 or p.z < 0.95:
             continue
-        u, w = p.x / 0.228, (p.z - 1.145) / 0.19
+        u, w = p.x / ox, (p.z - oc) / oz
         r = math.hypot(u, w)
         if r < 1e-6 or r > 1.8:
             continue
-        x, z = 0.228 * u / r, 1.145 + 0.19 * w / r
+        x, z = ox * u / r, oc + oz * w / r
         mb.v[i] = Vector((x, head_front_y(x, z, extra_grow), z))
     # rim
     pts = []
     for i in range(32):
         a = 2 * math.pi * i / 32
-        x = 0.228 * math.cos(a)
-        z = 1.145 + 0.19 * math.sin(a)
+        x = ox * math.cos(a)
+        z = oc + oz * math.sin(a)
         p = head_point(x, z, extra_grow)
         pts.append(p)
     sweep(mb, pts, [(0.02, 0.02)] * len(pts), rim_style, lambda p, sv, i: {'head': 1.0}, segs=10, closed=True,

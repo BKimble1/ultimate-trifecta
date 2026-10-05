@@ -1,0 +1,41 @@
+{
+  "art_version": "v8-528149faa87b",
+  "looks": 6000,
+  "heaviest_look_tris": 32834,
+  "heaviest_look_parts": [
+    "base",
+    "robe",
+    "body_skin",
+    "shoe_slippers",
+    "freckles",
+    "hat_beanie",
+    "hair_bob"
+  ],
+  "max_parts_per_runner": 8,
+  "default_look_tris": 24850,
+  "default_look_parts": [
+    "base",
+    "pj",
+    "shoe_slippers",
+    "hat_nightcap"
+  ],
+  "swim_goggles_look_tris": 21258,
+  "night_watch_max_tris": 22882,
+  "all_parts_tris": 217010,
+  "parts_in_asset": 45,
+  "part_tris": {
+    "base": 9086,
+    "hat_swimcap": 3576,
+    "body_skin": 4692,
+    "pj": 8272,
+    "robe": 7628,
+    "watch": 12600,
+    "hair_bob": 4096,
+    "hair_curly": 5848
+  },
+  "heaviest_look_draw_calls": 7,
+  "heaviest_look_materials": [
+    "res://assets/shaders/character.gdshader"
+  ],
+  "material_variants_in_asset": 2
+}

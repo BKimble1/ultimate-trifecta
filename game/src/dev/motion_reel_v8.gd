@@ -10,11 +10,15 @@ extends Node3D
 ##   tools/gd.sh --path game --write-movie OUT.avi --fixed-fps 30 res://src/dev/motion_reel_v8.tscn -- [--scenarios=a,b] [--views=game,side]
 ## (tools/capture_v8_motion.sh OUT NAME [ROOT] records and labels it; the V5 motion_reel.tscn is the studio-light version.)
 ## Desktop rendering of scripted input, not device footage.
+## Pass 8: --look=JSON wears another look (an outfit through the same
+## scenarios, e.g. --look={"outfit":"moonwalk_cadet","hat":"none"}); its
+## name goes into the caption.
 
 const SCENARIOS := ["start", "stop", "reverse", "turn90", "sprint", "jump_run", "tag_miss", "tag_hit", "splash", "cart"]
 const LOOK := {"outfit": "pj", "hat": "nightcap", "shoes": "slippers", "pattern": "stripes", "skin": "tone3", "color": "sky"}
 
 var scenarios: Array = SCENARIOS.duplicate()
+var look: Dictionary = LOOK.duplicate()
 var views: Array = ["game", "side"]
 var cam: Camera3D
 var rig: MotionRig
@@ -30,6 +34,8 @@ func _ready() -> void:
 			scenarios = Array(a.get_slice("=", 1).split(","))
 		elif a.begins_with("--views="):
 			views = Array(a.get_slice("=", 1).split(","))
+		elif a.begins_with("--look="):
+			look.merge(JSON.parse_string(a.substr(a.find("=") + 1)), true)
 	add_child(EnvFactory.make_environment(1))
 	add_child(EnvFactory.make_moon(1))
 	var lawn := MeshInstance3D.new()
@@ -90,10 +96,12 @@ func _next() -> void:
 	var sc: String = scenarios[_i / views.size()]
 	var view: String = views[_i % views.size()]
 	_caption.text = sc.replace("_", " ")
+	if look.has("outfit") and String(look["outfit"]) != String(LOOK["outfit"]):
+		_caption.text = "%s  ·  %s" % [Cosmetics.entry("outfit", String(look["outfit"])).get("name", ""), _caption.text]
 	_sub.text = "from behind (follow-camera distance)" if view == "game" else "from the side"
 	rig = MotionRig.new()
 	add_child(rig)
-	rig.start(sc, Cosmetics.sanitize(LOOK.duplicate()), 0.0)
+	rig.start(sc, Cosmetics.sanitize(look.duplicate()), 0.0)
 	rig.cam.current = false
 	cam.current = true
 	_cam_at = Vector3.ZERO

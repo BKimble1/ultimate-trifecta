@@ -7,7 +7,8 @@ Output (default): game/assets/characters/runner.glb plus runner_manifest.json
 and (V7) game/src/view/character_art.gd, the art version the portrait cache
 keys on (Portraits.key_of), so a new asset never reuses old thumbnails.
 Everything is generated from the Python sources in this folder (geo.py,
-rig.py, parts.py, anims.py), which are the editable source of the asset.
+rig.py, parts.py, outfits_v6.py, outfits_p8.py, anims.py), which are the editable
+source of the asset.
 The build is deterministic: the same sources give the same GLB.
 """
 import hashlib
@@ -27,13 +28,14 @@ import rig  # noqa: E402
 import parts  # noqa: E402
 import anims  # noqa: E402
 import outfits_v6  # noqa: E402
+import outfits_p8  # noqa: E402
 
 REPO = os.path.abspath(os.path.join(HERE, '..', '..'))
 DEFAULT_OUT = os.path.join(REPO, 'game', 'assets', 'characters', 'runner.glb')
 OUT = sys.argv[-1] if sys.argv[-1].endswith('.glb') else DEFAULT_OUT
 ART_SCRIPT = os.path.join(REPO, 'game', 'src', 'view', 'character_art.gd')
 ## The art generation (V7); the version string adds the GLB's SHA-256.
-ART_GEN = 8      # V8: authored transition clips, eye/lens normals, satin and metal materials
+ART_GEN = 9      # Pass 8: six rotating Shop outfits (outfits_p8.py)
 
 
 def reset():
@@ -256,7 +258,7 @@ def main():
     arm_ob = build_armature(scn)
     meshes = {}
     stats = {}
-    for fn in parts.ALL_PARTS + outfits_v6.ALL:
+    for fn in parts.ALL_PARTS + outfits_v6.ALL + outfits_p8.ALL:
         mb = fn()
         ob = make_mesh(mb, arm_ob, scn)
         if mb.name == 'base':
