@@ -837,7 +837,9 @@ func _refresh_reward_detail() -> void:
 				state_l.text += " Premium track: needs Premium too."
 			action.visible = false
 		"premium_locked":
-			state_l.text = lead + "Reached. Premium (%s Coins in the Shop) unlocks it and every Premium reward you've earned." % Catalogue.format_coins(Catalogue.price(String(Catalogue.season(sid).get("premium_item", ""))))
+			# (three lines on the iPhone SE: the whole reason stays in view;
+			# the Shop's Premium page says it unlocks everything earned)
+			state_l.text = lead + "Reached. Premium (%s Coins in the Shop) unlocks it." % Catalogue.format_coins(Catalogue.price(String(Catalogue.season(sid).get("premium_item", ""))))
 			action.text = "Get Premium in the Shop" if bool(cs["ok"]) else "See Premium in the Shop"
 			if not bool(cs["ok"]):
 				reason_l.text = String(cs["reason"])

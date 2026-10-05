@@ -356,10 +356,10 @@ func test_navigation_and_milestones_fit_every_device() -> void:
 			t.check(track.grow(0.5).encloses(col.get_global_rect()), "%s: tier %d's column scrolled into view" % [key, spec[1]])
 			t.check(_inside((sp._d["action"] as Control).get_global_rect(), safe) or not (sp._d["action"] as Control).visible, "%s: the action on screen" % key)
 			t.check(_inside(sp.detail_panel.get_global_rect(), safe), "%s: the side panel inside the safe area" % key)
-			# the lock reason / state is in view without scrolling the detail
+			# the lock reason / state is wholly in view without scrolling the detail
 			var sl := sp._d["state"] as Control
 			var info := (sp._d["scroll"] as Control).get_global_rect()
-			t.check(sl.get_global_rect().position.y < info.end.y - 20.0, "%s: tier %d's state starts in view" % [key, spec[1]])
+			t.check(info.grow(1.0).encloses(sl.get_global_rect()), "%s: tier %d's state whole in view (%s in %s)" % [key, spec[1], sl.get_global_rect(), info])
 		# both rows whole, cells full targets
 		var tr := sp.track_scroll.get_global_rect()
 		var hbar := sp.track_scroll.get_h_scroll_bar().get_combined_minimum_size().y
@@ -569,4 +569,29 @@ func test_featured_preview_renders_the_real_art_when_present() -> void:
 	t.eq(sp._preview_skin, "", "the preview is released")
 	season["featured"] = saved["featured"]
 	season["milestones"] = saved["milestones"]
+	await _end()
+
+
+## A free player who reached Record Breaker: the reason it is locked and the
+## way to unlock it are both in view on the smallest phone.
+func test_premium_lock_reason_fits_the_iphone_se() -> void:
+	await _begin()
+	var pid := Cloud.profile_id()
+	_old_account(pid, Economy.tier_xp("s1", 52), false, 45)
+	await Wallet.refresh()
+	for key in ["se_667x375", "ipad_1024x768"]:
+		await _device(key)
+		App.goto(SeasonScreen)
+		await _frames(8)
+		var sp := App.screen as SeasonScreen
+		sp.jump_to(50)
+		await _frames(30)
+		t.eq(sp.display_state(50, "premium"), "premium_locked", "%s: Record Breaker reached, needs Premium" % key)
+		var sl := sp._d["state"] as Label
+		t.check(sl.text.contains("Premium") and sl.text.contains("1,500 Coins"), "%s: the reason: %s" % [key, sl.text])
+		t.check((sp._d["scroll"] as Control).get_global_rect().grow(1.0).encloses(sl.get_global_rect()), "%s: the whole reason in view" % key)
+		var act := sp._d["action"] as Button
+		t.eq(act.text, "Get Premium in the Shop", "%s: the way to unlock it" % key)
+		t.check(_inside(act.get_global_rect(), _safe()) and _inside(act.get_global_rect(), sp.detail_panel.get_global_rect()), "%s: on screen, inside the panel" % key)
+		t.check(_inside(sp.detail_panel.get_global_rect(), _safe()), "%s: the panel inside the safe area (no overflow)" % key)
 	await _end()

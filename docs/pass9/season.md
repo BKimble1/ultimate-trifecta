@@ -34,7 +34,7 @@ below).
 | Drawing | A stopwatch emblem; a card can name its motif in the catalogue | `game/src/ui/commerce_art.gd` (additive) |
 | Shop | "100 tiers you earn by playing"; "44 Premium rewards over 100 tiers: …" (counts from the table) | `game/src/ui/shop_screen.gd` (2 lines) |
 | Test double / evidence | The double claims as the service does (answers, `reward_changed`, an "older service" mode, a reward override); a capture scene and script | `game/src/dev/fake_commerce_service.gd`, `game/src/dev/season100_capture.*`, `tools/capture_pass9_season.sh` |
-| Tests | Service: 8 new tests. Game: `test_season100.gd` (12 tests), `test_catalogue` (table, extension, boundaries, pacing), `test_shop_ui` (column count) | `service/test/season.test.mjs`, `game/tests/test_season100.gd`, `game/tests/test_catalogue.gd`, `game/tests/test_shop_ui.gd`, `game/tests/data/season_s1_v2.json` |
+| Tests | Service: 8 new tests. Game: `test_season100.gd` (13 tests), `test_catalogue` (table, extension, boundaries, pacing), `test_shop_ui` (column count) | `service/test/season.test.mjs`, `game/tests/test_season100.gd`, `game/tests/test_catalogue.gd`, `game/tests/test_shop_ui.gd`, `game/tests/data/season_s1_v2.json` |
 | Docs | ECONOMY.md §2, §3, §4 (rewritten: both tables, pacing, rules, claim protocol, mismatch, migration), §8, §10; service README; COMMERCE_SETUP 8d | `docs/ECONOMY.md`, `service/README.md`, `docs/COMMERCE_SETUP.md` |
 
 ## Pacing model and table
@@ -128,7 +128,7 @@ by (season, tier, track) and tiers 1-30 are identical in both tables.
   Claim; navigation never claims; a queued claim shows "Claiming…"
   (disabled), an un-grantable one "Claim" disabled with its reason.
 - **Lock reasons in view.** On the SE the detail's state (the lock reason or
-  "Reached. Premium … unlocks it") is placed before the description and the
+  "Reached. Premium (1,500 Coins in the Shop) unlocks it", three lines) is placed before the description and the
   picture is capped to 30% of the page, so it is visible without scrolling;
   the progress-run detail drops its picture on short panels.
 - **Season tier vs lifetime level.** "Tier N / 100" (accessibility: "Season
@@ -153,7 +153,7 @@ by (season, tier, track) and tiers 1-30 are identical in both tables.
 - **Service** (`cd service && npm test`): 68 tests pass (8 new in
   `test/season.test.mjs`); the existing 60 (including the V6 Season test
   with its 30-tier body) unchanged and passing.
-- **Game** (focused suites, headless): `test_season100` 12 tests;
+- **Game** (focused suites, headless): `test_season100` 13 tests;
   `test_catalogue` (all but `test_every_referenced_item_exists_in_cosmetics`,
   which lists `outfit:record_breaker` and `outfit:dr_doom` until SKINS9's
   Cosmetics entries merge, as expected), `test_wallet`, `test_challenges`,
