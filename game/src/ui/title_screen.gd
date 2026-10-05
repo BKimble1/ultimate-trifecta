@@ -74,7 +74,18 @@ func build() -> void:
 	var tut_done: bool = Save.data.get("tutorial_done", false)
 	if not tut_done:
 		var hint := UIKit.outlined(UIKit.styled("New here? Practice starts with a short tutorial.", "caption", Color(UIKit.IVORY, 0.88), HORIZONTAL_ALIGNMENT_RIGHT))
-		col.add_child(hint)
+		# (Final sweep) a soft pill of its own: on a small phone the line sits
+		# over the floor lamp's light pool, which the lighter room made brighter
+		var pill := UIKit.scrim(999, 0, 0.5)
+		var sb := pill.get_theme_stylebox("panel") as StyleBoxFlat
+		sb.content_margin_left = 14
+		sb.content_margin_right = 14
+		sb.content_margin_top = 2
+		sb.content_margin_bottom = 2
+		pill.size_flags_horizontal = Control.SIZE_SHRINK_END
+		pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pill.add_child(hint)
+		col.add_child(pill)
 	play_btn = UIKit.primary("Play with Friends", Vector2(400, 100), 31)
 	play_btn.pressed.connect(func() -> void: App.goto(OnlineScreen))
 	col.add_child(play_btn)
