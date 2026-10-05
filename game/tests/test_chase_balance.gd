@@ -1,7 +1,9 @@
 extends RefCounted
 ## Chase balance with real movement and the real bots: on open ground the Night
-## Watch runs a fleeing runner down (a credible chase), while a runner sprint
-## still opens the gap for its duration (separation is possible).
+## Watch runs a fleeing runner down (a credible chase).  Pass 9: both run at
+## one steady full speed (runner 6.0, Night Watch 6.6 m/s), so on a straight
+## the Watch closes at their difference; a runner's separation comes from
+## finite tools (Turbo for its duration, routes, timing), never a meter.
 var t
 const R := TC.Role.RUNNER
 const P := TC.Role.PATROL
@@ -36,22 +38,30 @@ func test_night_watch_runs_down_a_fleeing_runner_in_the_open() -> void:
 	t.check(caught >= 3, "patrol bot catches a fleeing runner bot from 8 m on open ground (%d/%d within 25 s)" % [caught, STARTS.size()])
 
 
-func test_runner_sprint_opens_the_gap() -> void:
+func test_steady_closure_and_turbo_opens_the_gap_for_its_duration() -> void:
 	var h := SimHarness.new(t)
 	h.make([R, P], [0, 1, 2])
 	await h.release_patrol()
 	h.place(0, Vector3(-20, 0.05, 60), atan2(-1.0, 0.0))
-	h.place(1, Vector3(-23, 0.05, 60), atan2(-1.0, 0.0))
+	h.place(1, Vector3(-26, 0.05, 60), atan2(-1.0, 0.0))
 	h.cmd(0).move = Vector2(1, 0)
 	h.cmd(1).move = Vector2(1, 0)
-	await h.step(45)   # both up to speed
-	h.cmd(0).held = TC.BTN_SPRINT
+	h.cmd(0).held = TC.BTN_SPRINT   # the retired Sprint bit: adds nothing
+	await h.step(30)   # both up to speed
 	var g0 := h.sim.player(0).pos2().distance_to(h.sim.player(1).pos2())
-	await h.step(90)   # 1.5 s of sprint
+	await h.step(120)  # 2 s of plain full-speed running
 	var g1 := h.sim.player(0).pos2().distance_to(h.sim.player(1).pos2())
-	t.check(g1 > g0 + 0.8, "a sprint opens the gap on the Night Watch (%.1f m -> %.1f m)" % [g0, g1])
-	h.cmd(0).held = 0
-	await h.step(120)  # jogging: the Night Watch closes again
+	var want := (Rules.cfg.patrol_speed - Rules.cfg.runner_speed) * 2.0
+	t.near(g0 - g1, want, 0.15, "full speed against full speed: the Night Watch closes %.2f m in 2 s (theory %.2f)" % [g0 - g1, want])
+	var r := h.sim.player(0)
+	r.gadget = TC.Gadget.TURBO
+	h.press(0, TC.BTN_GADGET)
+	await h.step()
+	t.check(r.turbo_t > 0.0, "Turbo on")
+	await h.step(int(Rules.cfg.turbo_duration_s * 60.0) - 1)
 	var g2 := h.sim.player(0).pos2().distance_to(h.sim.player(1).pos2())
-	t.check(g2 < g1, "without sprint the Night Watch closes in (%.1f m -> %.1f m)" % [g1, g2])
+	t.check(g2 > g1 + 1.5, "Turbo opens the gap for its duration (%.1f m -> %.1f m)" % [g1, g2])
+	await h.step(180)  # Turbo over: the Night Watch closes again
+	var g3 := h.sim.player(0).pos2().distance_to(h.sim.player(1).pos2())
+	t.check(g3 < g2 - 1.2, "after Turbo the Night Watch closes in again (%.1f m -> %.1f m)" % [g2, g3])
 	h.free_sim()

@@ -64,9 +64,6 @@ var _pace_delta := 0
 var _pace_cue_t := 0.0
 var _home_t := 0.0
 var _home_seen := false
-const SPRINT_HINT := "Sprint empty · ease off to recharge"
-var sprint_hint: PanelContainer
-var sprint_meter: SprintMeter
 var _two_row := false
 var _coach_moved := 0.0
 var _coach_last := Vector3.INF
@@ -280,20 +277,6 @@ func setup(controller: MatchController) -> void:
 	coach.add_child(ch)
 	coach.visible = false
 	root.add_child(coach)
-	# Pass 8: the sprint latch (an empty meter needs a release to re-arm):
-	# a short hint with a tinted meter, only while sprint is still held
-	sprint_hint = UIKit.panel(Color(0.36, 0.13, 0.12, 0.86), 999, 8)
-	sprint_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sh := UIKit.hbox(8)
-	var sm := SprintMeter.new()
-	sm.custom_minimum_size = Vector2(64, 14)
-	sm.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	sh.add_child(sm)
-	sprint_meter = sm
-	sh.add_child(UIKit.label(SPRINT_HINT, 18, UIKit.IVORY, true))
-	sprint_hint.add_child(sh)
-	sprint_hint.visible = false
-	root.add_child(sprint_hint)
 	_build_pause()
 	_build_reveal()
 	chat = MatchChat.attach(self)   # (V6) party rounds: Quick Chat + drawer
@@ -376,7 +359,7 @@ func _build_reveal() -> void:
 #  - every match overlay (pause, the leave confirmation, the map, the chat
 #    drawer) is registered here; gameplay touch input is hidden while any
 #    is open, and every change cancels held fingers, queued presses and
-#    look/sprint/throttle state, so one overlay closing never re-enables
+#    look/throttle state, so one overlay closing never re-enables
 #    controls under another;
 #  - Practice and the tutorial really pause (the scene tree: sim, bots,
 #    physics, timers, animation); an online round keeps running for
@@ -613,7 +596,7 @@ func blocks_gameplay_input() -> bool:
 func _gate_input() -> void:
 	var any := not _overlays.is_empty()
 	if mc != null and is_instance_valid(mc) and mc.touch != null:
-		mc.touch.cancel_all()          # every held finger, stick, look, sprint, throttle
+		mc.touch.cancel_all()          # every held finger, stick, look, throttle
 		mc.touch.visible = not any
 	Controls.clear_edges()             # queued presses
 	Controls.reset_touch()
@@ -1053,13 +1036,6 @@ func refresh(delta: float) -> void:
 		personal.size.y = ph
 	personal.queue_redraw()
 	_refresh_danger(role, phase)
-	var hint := sprint_hint_wanted(info)
-	if sprint_hint.visible != hint:
-		sprint_hint.visible = hint
-	if hint:
-		sprint_meter.value = float(info.get("sprint", 0.0))
-		sprint_meter.rearm = rearm_fraction()
-		sprint_meter.queue_redraw()
 	# countdown / reveal / release
 	reveal.visible = phase == TC.Phase.REVEAL
 	center_lbl.text = ""
@@ -1170,16 +1146,12 @@ func _place(vs: Vector2) -> void:
 	var cs := coach.get_combined_minimum_size()
 	coach.position = Vector2((vs.x - cs.x) * 0.5, vs.y * 0.66)
 	coach.size = cs
-	# (Pass 8) the spectating line and the sprint hint sit centred above the
-	# thumb clusters (and the toasts), never under a thumb
+	# (Pass 8) the spectating line sits centred above the thumb clusters
+	# (and the toasts), never under a thumb
 	var top_of_thumbs := thumbs_top(vs)
 	var ss := spectate_lbl.get_combined_minimum_size()
 	spectate_lbl.position = Vector2((vs.x - ss.x) * 0.5, floorf(minf(vs.y - _safe.size.y - 150.0, top_of_thumbs - ss.y)))
 	spectate_lbl.size = ss
-	var hs := sprint_hint.get_combined_minimum_size()
-	sprint_hint.size = hs
-	var bottom := minf(vs.y * 0.62 - 8.0, top_of_thumbs)
-	sprint_hint.position = Vector2(floorf((vs.x - hs.x) * 0.5), floorf(maxf(vs.y * 0.4, bottom - hs.y)))
 
 
 ## The highest edge of the touch thumb clusters now laid out (buttons with
@@ -1203,7 +1175,7 @@ func _hint(kind: String) -> String:
 		"move": {"touch": "put your left thumb down and drag", "gamepad": "left stick", "keyboard": "W A S D"},
 		"look": {"touch": "drag on the right side of the screen", "gamepad": "right stick", "keyboard": "hold right mouse and drag (or I J K L)"},
 		"jump": {"touch": "tap Jump", "gamepad": "press A / Cross", "keyboard": "press Space"},
-		"sprint": {"touch": "push the stick all the way to its outer ring", "gamepad": "hold LB or RB", "keyboard": "hold Shift"},
+		"full": {"touch": "push the stick all the way out", "gamepad": "push the left stick all the way", "keyboard": "hold W A S D"},
 		"tag": {"touch": "tap Tag"},
 		"interact": {"touch": "tap Drive (Exit in the cart)"},
 	}
@@ -1239,7 +1211,7 @@ func _update_coach(delta: float, phase: int, role: int) -> void:
 		["Look around: %s." % _hint("look"), _coach_look > 1.2],
 		["Jump: %s." % _hint("jump"), not bool(rs.get("on_floor", true)) and (rs.get("vel", Vector3.ZERO) as Vector3).y > 2.0],
 		["Dive: jump, then %s again while in the air." % _hint("jump").replace("tap ", "tap ").replace("press ", "press "), bool(rs.get("diving", false))],
-		["Sprint: %s. It refills quickly." % _hint("sprint"), bool(rs.get("sprinting", false))],
+		["Full speed: %s. You can keep it up as long as you like." % _hint("full"), bool(rs.get("fast", false))],
 		["Jump into any glowing water! The card top-left suggests a good next one and points the way.", stamps != 0],
 		["SPLASH! Two more spots to go. Each one has its own shape and colour.", stamps == 7],
 		["All three! Now run back inside %s through any of its glowing doors." % CampusDorms.display_name(mc.home_dorm), st == TC.PState.FINISHED],
@@ -1568,26 +1540,6 @@ func _personal_rows(phase: int, role: int) -> Array:
 	return rows
 
 
-## "Sprint empty · ease off to recharge": a runner in play whose sprint
-## latched empty (SimPlayer.sprint_exhausted) and who is still holding
-## sprint.  It goes the moment either stops.
-static func sprint_hint_wanted(i: Dictionary) -> bool:
-	if int(i.get("role", -1)) != TC.Role.RUNNER or int(i.get("phase", -1)) != TC.Phase.PLAYING:
-		return false
-	var st := int((i.get("rs", {}) as Dictionary).get("state", TC.PState.ACTIVE))
-	if st != TC.PState.ACTIVE and st != TC.PState.STUMBLE and st != TC.PState.EXITING:
-		return false
-	return bool(i.get("sprint_exhausted", false)) and bool(i.get("sprint_held", false))
-
-
-## The meter level at which a released sprint re-arms (the round's rules,
-## when they have it).
-func rearm_fraction() -> float:
-	if mc != null and mc.cfg != null and "sprint_rearm_fraction" in mc.cfg:
-		return float(mc.cfg.get("sprint_rearm_fraction"))
-	return -1.0
-
-
 ## The danger chip: a Night Watch you can actually see, close by.
 func _refresh_danger(role: int, phase: int) -> void:
 	var near := INF
@@ -1709,12 +1661,6 @@ class DrawLayer:
 				draw_arc(sp2, 26.0 * pulse, 0, TAU, 24, w["color"], 4.0)
 				Icons.draw_shape(self, w["icon"], sp2, 14, w["color"])
 				draw_string(UIKit.font(true), sp2 + Vector2(-40, 48), "SPLASH!", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, w["color"])
-		# sprint meter for non-touch devices (touch draws it on the stick)
-		if Controls.device != "touch" and int(info.get("role", 0)) == TC.Role.RUNNER:
-			# (Pass 8) tinted and hatched while the sprint latch is on
-			var base := Vector2(vs.x * 0.5 - 90, vs.y - hud._safe.size.y - 26)
-			SprintMeter.paint(self, Rect2(base, Vector2(180, 14)), float(info.get("sprint", 1.0)),
-				bool(info.get("sprint_exhausted", false)), hud.rearm_fraction())
 
 
 ## Pass 8: the personal card (top left), drawn from MatchHUD.personal_rows -
@@ -1897,37 +1843,6 @@ class ObjectiveChips:
 			Icons.draw_shape(self, String(w["icon"]), Vector2(x0 + 20, y + h * 0.5), 11, w["col"])
 			_arrow(Vector2(x0 + 42, y + h * 0.5), float(w["bearing"]), UIKit.IVORY)
 			draw_string(UIKit.font_num(600), Vector2(x0 + 54, y + h * 0.5 + 6), "%dm" % int(w["dist"]), HORIZONTAL_ALIGNMENT_LEFT, cw - 56, 16, Color(UIKit.IVORY, 0.85))
-
-
-## Pass 8: a sprint meter.  While the latch is on (ran dry, sprint still
-## held) it is coral with diagonal hatching - a shape as well as a colour -
-## with a tick at the re-arm level when the rules give one.
-class SprintMeter:
-	extends Control
-	var value := 0.0
-	var rearm := -1.0
-
-	func _init() -> void:
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	func _draw() -> void:
-		SprintMeter.paint(self, Rect2(Vector2.ZERO, size), value, true, rearm)
-
-	static func paint(ci: CanvasItem, r: Rect2, v: float, latched: bool, rearm_at: float) -> void:
-		ci.draw_style_box(UIKit.box(Color(0, 0, 0, 0.45), 8), r)
-		var fill := Rect2(r.position, Vector2(r.size.x * clampf(v, 0.0, 1.0), r.size.y))
-		if not latched:
-			ci.draw_style_box(UIKit.box(UIKit.ACCENT if v > 0.15 else UIKit.BAD, 8), fill)
-			return
-		ci.draw_style_box(UIKit.box(Color(UIKit.BAD, 0.75), 8), fill)
-		var x := fill.position.x + 4.0
-		while x < fill.end.x:
-			var x2 := minf(x + r.size.y * 0.6, fill.end.x)
-			ci.draw_line(Vector2(x, fill.end.y - 2.0), Vector2(x2, fill.position.y + 2.0), Color(UIKit.NAVY, 0.55), 2.0)
-			x += 8.0
-		if rearm_at > 0.0 and rearm_at < 1.0:
-			var tx := r.position.x + r.size.x * rearm_at
-			ci.draw_line(Vector2(tx, r.position.y - 3.0), Vector2(tx, r.end.y + 3.0), UIKit.IVORY, 2.0)
 
 
 ## The team's home tracker: one segment per required finish, filled for each

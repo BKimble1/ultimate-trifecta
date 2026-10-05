@@ -24,13 +24,14 @@ extends Resource
 @export var splash_sequence_s: float = 1.5
 
 @export_group("Runner movement")
-@export var runner_speed: float = 5.0
-@export var runner_sprint_speed: float = 7.4             # V4: was 7.0 (sprint stays an escape with the faster Night Watch)
-@export var sprint_capacity_s: float = 2.5
-@export var sprint_regen_delay_s: float = 0.35
-@export var sprint_regen_full_s: float = 3.6
-@export var sprint_min_to_start: float = 0.15
-@export var sprint_rearm_fraction: float = 0.45          # Pass 8: after running the meter dry, sprint re-arms only once it is released AND refilled this far
+## Pass 9: one continuous analog speed, no sprint meter: the move input's
+## magnitude (after the device's dead zone and curve) scales the role's
+## full-input speed, which a held full input keeps for as long as it is held.
+## (V4-Pass 8: run 5.0, a 2.5 s sprint meter to 7.4 and its refills.)
+@export var runner_speed: float = 6.0
+## "fast" (footstep noise, animation, expressions, bots) = at least this
+## fraction of the role's full-input speed, on the ground
+@export var fast_fraction: float = 0.85
 @export var ground_accel: float = 46.0
 @export var ground_decel: float = 52.0
 @export var air_accel: float = 14.0
@@ -128,8 +129,8 @@ extends Resource
 @export var view_range_m: float = 34.0
 @export var view_half_fov_deg: float = 62.0
 @export var spotted_hold_s: float = 2.2
-@export var noise_sprint_m: float = 24.0
-@export var noise_jog_m: float = 14.0
+@export var noise_fast_m: float = 24.0                   # a runner at full speed (Pass 9: was noise_sprint_m, the sprint)
+@export var noise_jog_m: float = 14.0                    # a runner jogging (3.2 m/s up to fast); slower is silent
 @export var noise_patrol_step_m: float = 12.0
 @export var noise_cart_m: float = 45.0
 

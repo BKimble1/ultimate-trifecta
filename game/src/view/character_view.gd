@@ -877,7 +877,7 @@ func reset_motion() -> void:
 		hat_spring.external_force = Vector3.ZERO
 
 
-## rs keys: pos, yaw, vel, state, state_t, on_floor, diving, sprinting,
+## rs keys: pos, yaw, vel, state, state_t, on_floor, diving, fast,
 ## tag_phase, protect, bump_protect, spotted, cart_id, steer, emote, emote_t,
 ## celebrate, visible, impact.  The caller supplies render-time
 ## values (already interpolated); this view does not smooth position again.
@@ -1009,7 +1009,9 @@ func _process_view(delta: float) -> void:
 	var speed := Vector2(vel.x, vel.z).length()
 	var on_floor: bool = rs.get("on_floor", true)
 	var diving: bool = rs.get("diving", false)
-	var sprinting: bool = rs.get("sprinting", false)
+	# Pass 9: "fast" = at or near full speed (the render state's "sprinting"
+	# until then; there is no sprint any more)
+	var sprinting: bool = rs.get("fast", rs.get("sprinting", false))
 	var tag_phase: int = rs.get("tag_phase", 0)
 	var state_t: float = rs.get("state_t", 0.0)
 	var finished := st == TC.PState.FINISHED

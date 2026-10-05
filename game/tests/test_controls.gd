@@ -166,6 +166,40 @@ func test_stick_curves() -> void:
 	_end()
 
 
+## Pass 9: every device's full input is the same magnitude 1 (the motor turns
+## that into the role's one full speed): keyboard keys straight and diagonal,
+## a controller stick pushed out straight, diagonally, past its round gate
+## (square-gate pads report (1, 1)) or just inside the outer dead zone.
+## Nothing reads a Sprint key or button any more.
+func test_full_input_is_the_same_maximum_on_every_device() -> void:
+	_begin()
+	Controls.device = "keyboard"
+	Controls.active_joy = -1
+	for keys in [["move_forward"], ["move_forward", "move_right"], ["move_back", "move_left"]]:
+		for a in keys:
+			Input.action_press(a)
+		t.near(Controls.get_move().length(), 1.0, 1e-4, "keyboard %s: full input" % "+".join(keys))
+		for a in keys:
+			Input.action_release(a)
+	t.check(not InputMap.has_action("sprint") or InputMap.action_get_events("sprint").is_empty(), "no Sprint key or button is bound")
+	for v in [Vector2(0, 1), Vector2(0.7071, 0.7071), Vector2(1, 1), Vector2(-0.96, 0.0), Vector2(0.6, -0.78)]:
+		var m := InputRouter.radial(v, InputRouter.MOVE_INNER, InputRouter.MOVE_OUTER)
+		var out := m.normalized() * InputRouter.move_curve(m.length())
+		t.near(out.length(), 1.0, 1e-4, "controller stick at %s: full input" % str(v))
+	Controls.device = "gamepad"
+	Controls.active_joy = 0
+	for v in [Vector2(0, -1), Vector2(0.7071, -0.7071), Vector2(1, -1)]:
+		Input.parse_input_event(_axis(JOY_AXIS_LEFT_X, v.x))
+		Input.parse_input_event(_axis(JOY_AXIS_LEFT_Y, v.y))
+		Input.flush_buffered_events()
+		if Input.get_joy_axis(0, JOY_AXIS_LEFT_Y) == v.y:
+			t.near(Controls.get_move().length(), 1.0, 1e-4, "controller axes %s through get_move: full input" % str(v))
+	Input.parse_input_event(_axis(JOY_AXIS_LEFT_X, 0.0))
+	Input.parse_input_event(_axis(JOY_AXIS_LEFT_Y, 0.0))
+	Input.flush_buffered_events()
+	_end()
+
+
 func test_prompts_follow_the_controller_family() -> void:
 	_begin()
 	t.eq(InputRouter.family_of("Xbox Wireless Controller"), "xbox", "Xbox")
@@ -176,11 +210,13 @@ func test_prompts_follow_the_controller_family() -> void:
 	t.eq(InputRouter.family_of("Backbone One"), "mfi", "MFi")
 	t.eq(InputRouter.family_of("Gamepad 1"), "generic", "unknown")
 	Controls.device = "gamepad"
-	var expect := {"xbox": ["A", "LB", "RT"], "playstation": ["Cross", "L1", "R2"], "mfi": ["A", "L1", "R2"],
-		"nintendo": ["Bottom button", "L", "ZR"], "generic": ["Bottom button", "L1", "R2"]}
+	# (Pass 9: no Sprint; the left trigger stays the cart brake)
+	var expect := {"xbox": ["A", "LT", "RT"], "playstation": ["Cross", "L2", "R2"], "mfi": ["A", "L2", "R2"],
+		"nintendo": ["Bottom button", "ZL", "ZR"], "generic": ["Bottom button", "L2", "R2"]}
 	for fam in expect:
 		Controls.family = fam
-		t.eq([Controls.prompt("jump"), Controls.prompt("sprint"), Controls.prompt("accelerate")], expect[fam], "%s prompts" % fam)
+		t.eq([Controls.prompt("jump"), Controls.prompt("brake"), Controls.prompt("accelerate")], expect[fam], "%s prompts" % fam)
+		t.eq(Controls.prompt("sprint"), "", "%s: no Sprint prompt" % fam)
 	Controls.device = "keyboard"
 	t.eq(Controls.prompt("jump"), "Space", "keyboard prompt")
 	Controls.device = "touch"

@@ -51,7 +51,6 @@ func build() -> void:
 	var ctl_s := _section("Controls")
 	var first := _slider(ctl_s, "Camera sensitivity", "sensitivity", 0.3, 2.5, 0.05, "%.2f×")
 	_choice(ctl_s, "Movement stick", "stick_mode", [["dynamic", "Where you touch"], ["fixed", "Fixed position"]])
-	_choice(ctl_s, "Sprint", "sprint_mode", [["edge", "Push stick to edge"], ["hold", "Sprint button"]])
 	var tl := TouchControls.saved_layout()
 	var custom := not (tl["move"] as Array).is_empty() or not (tl["action"] as Dictionary).is_empty()
 	var edit := _action("Edit layout")
@@ -73,7 +72,7 @@ func build() -> void:
 	var reset := _action("Reset controls")
 	reset.pressed.connect(func() -> void:
 		var d: Dictionary = Save.default_profile()["settings"]
-		for k in ["sensitivity", "invert_y", "reduced_motion", "sprint_threshold", "touch_sprint", "stick_mode", "sprint_mode", "button_size", "touch_layout", "haptics"]:
+		for k in ["sensitivity", "invert_y", "reduced_motion", "stick_mode", "button_size", "touch_layout", "haptics"]:
 			Save.set_setting(k, d[k])
 		Save.set_setting("touch_layout_v2", TouchLayout.default_layout())
 		App.goto(SettingsScreen))

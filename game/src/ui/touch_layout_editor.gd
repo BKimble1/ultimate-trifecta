@@ -208,11 +208,10 @@ class EditorCanvas:
 		router.fixed_center = res["stick_c"]
 		router.stick_zone = res["zone"]
 		router.fixed_stick = String(Save.get_setting("stick_mode", "dynamic")) == "fixed"
-		router.edge_sprint = ed.ctx == "runner" and String(Save.get_setting("sprint_mode", "edge")) == "edge"
 
 	func _process(_d: float) -> void:
 		if try_mode:
-			router.move_vector()   # updates the sprint state for the drawing
+			router.move_vector()
 			router.take_edges()
 			router.take_look_px()
 		queue_redraw()
@@ -303,13 +302,10 @@ class EditorCanvas:
 			knob = router.knob_pos()
 		var runner := ed.ctx == "runner"
 		TouchControls.draw_stick(self, base, knob, R, float(res["knob_r"]), opacity, active or _drag == "move",
-			router.sprint_on if runner and router.edge_sprint else 0.0, try_mode and router.sprinting, 1.0 if runner else -1.0)
+			try_mode and router.stick_active() and router.move_vector().length() >= 0.999)
 		var held := router.held() if try_mode else {}
 		var c := {"role": TC.Role.PATROL if ed.ctx == "patrol" else TC.Role.RUNNER, "in_cart": ed.ctx == "cart", "gadget": TC.Gadget.TURBO}
-		var hold_sprint := String(Save.get_setting("sprint_mode", "edge")) == "hold"
 		for name in res["buttons"]:
-			if name == "sprint" and not hold_sprint:
-				continue   # edge sprint: no button (its slot stays reserved)
 			var label := String(TouchControls.LABELS.get(name, name))
 			if name == "cart":
 				label = "Exit" if ed.ctx == "cart" else "Drive"
@@ -324,7 +320,7 @@ class EditorCanvas:
 			var bits: Array[String] = []
 			var mv := router.move_vector()
 			if mv.length() > 0.05:
-				bits.append("Sprinting" if router.sprinting and runner else "Moving")
+				bits.append("Full speed" if mv.length() >= 0.999 else "Moving")
 			for name in held:
 				bits.append(String(TouchControls.LABELS.get(name, name)))
 			var f := UIKit.font_w(650)

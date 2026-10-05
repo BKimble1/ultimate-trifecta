@@ -69,7 +69,7 @@ func build() -> void:
 		["Move", "Left thumb: stick appears where you touch (or fixed, in Settings)", "Left stick", "WASD"],
 		["Camera", "Drag anywhere that isn't a button", "Right stick", "Right-mouse drag / IJKL"],
 		["Jump / Dive", "Jump (it becomes Dive in the air)", "A / Cross", "Space"],
-		["Sprint", "Push the stick to its edge (or hold Sprint, in Settings)", "Hold LB or RB", "Shift"],
+		["Full speed", "Push the stick all the way: you keep full speed as long as you hold it", "Left stick all the way", "WASD"],
 		["Gadget", "Gadget button (when holding one)", "B / Circle", "Q"],
 		["Tag (Night Watch)", "Tag button", "X / Square", "F"],
 		["Cart in/out", "Drive near a cart; small Exit while driving", "Y / Triangle", "E"],

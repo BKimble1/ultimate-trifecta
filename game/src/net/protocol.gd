@@ -24,7 +24,14 @@ extends RefCounted
 ## recipients only: their own suggested next goal (u8: target index, 16 +
 ## home door, 255 none) and, per runner, slot + place/flags + stamps (3 bytes
 ## each).  Never a position or another runner's goal.
-const VERSION := 7
+## Protocol 8 (Pass 9): no sprint. The movement rules changed (one steady
+## full-input speed: runner 6.0 m/s, no meter, latch or Sprint button), so a
+## 1.8 peer would mispredict a 1.9 host. The motor state loses the meter and
+## its refill delay (two floats) and its flags bit 1 means "fast" (at or near
+## full speed; bit 8, the latch, is retired); snapshot player flag 4 is
+## "fast" too; the private block loses the meter byte. A 7 and an 8 game
+## refuse each other at join ("Update the game to join.").
+const VERSION := 8
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}
@@ -233,7 +240,7 @@ static func decode_inputs(b: StreamPeerBuffer) -> Dictionary:
 ## flags bits for a player entry
 const PF_FLOOR := 1
 const PF_DIVING := 2
-const PF_SPRINT := 4
+const PF_FAST := 4       # Pass 9: at or near full speed (was PF_SPRINT)
 const PF_PROTECT := 8
 const PF_BUMPPROT := 16
 const PF_SPOTTED := 32
@@ -260,7 +267,7 @@ static func encode_snapshot(sim: MatchSim, recipient: SimPlayer, relevant: Array
 		var f := 0
 		if sp.on_floor: f |= PF_FLOOR
 		if sp.diving: f |= PF_DIVING
-		if sp.sprinting: f |= PF_SPRINT
+		if sp.fast: f |= PF_FAST
 		if sp.protect > 0.0: f |= PF_PROTECT
 		if sp.bump_protect > 0.0: f |= PF_BUMPPROT
 		if sp.spotted > 0.0: f |= PF_SPOTTED
@@ -289,7 +296,6 @@ static func encode_snapshot(sim: MatchSim, recipient: SimPlayer, relevant: Array
 	b.put_u8(1 if recipient != null else 0)
 	if recipient != null:
 		b.put_u8(recipient.id)
-		b.put_u8(int(recipient.sprint * 255.0))
 		b.put_u8(recipient.gadget)
 		b.put_u8(int(clampf(recipient.gadget_cd, 0.0, 12.0) * 20.0))
 		b.put_u8(int(clampf(recipient.penalty, 0.0, 12.0) * 20.0))
@@ -411,7 +417,7 @@ static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
 		var f := b.get_u8()
 		e["on_floor"] = (f & PF_FLOOR) != 0
 		e["diving"] = (f & PF_DIVING) != 0
-		e["sprinting"] = (f & PF_SPRINT) != 0
+		e["fast"] = (f & PF_FAST) != 0
 		e["protect"] = 1.0 if (f & PF_PROTECT) != 0 else 0.0
 		e["bump_protect"] = 1.0 if (f & PF_BUMPPROT) != 0 else 0.0
 		e["spotted"] = (f & PF_SPOTTED) != 0
@@ -442,7 +448,6 @@ static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
 	if b.get_u8() == 1:
 		var me := {}
 		me["slot"] = b.get_u8()
-		me["sprint"] = float(b.get_u8()) / 255.0
 		me["gadget"] = b.get_u8()
 		me["gadget_cd"] = float(b.get_u8()) / 20.0
 		me["penalty"] = float(b.get_u8()) / 20.0

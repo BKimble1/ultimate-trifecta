@@ -126,20 +126,35 @@ func test_dead_zone_sneak_and_no_diagonal_boost() -> void:
 	t.near(r.move_vector().length(), 1.0, 0.001, "full deflection reaches 1")
 
 
-func test_sprint_hysteresis() -> void:
+## Pass 9: one continuous curve, no edge sprint.  Output rises smoothly from
+## the dead zone (no step anywhere), reaches 1 at `full_at` of the radius and
+## stays exactly 1 out to the rim, so a thumb wobbling near the rim keeps the
+## same top speed.
+func test_one_continuous_curve_without_an_edge_jump() -> void:
 	var r := _router()
+	t.check(not ("sprinting" in r) and not ("sprint_on" in r) and not ("edge_sprint" in r), "the router has no sprint state")
 	r.touch_down(0, Vector2(400, 500))
 	var c := r.stick_center
 	var R := r.stick_radius
-	r.drag(0, c + Vector2(0, -0.92 * R), Vector2.ZERO)
-	r.move_vector()
-	t.check(r.sprinting, "edge of the stick starts a sprint")
-	r.drag(0, c + Vector2(0, -0.8 * R), Vector2.ZERO)
-	r.move_vector()
-	t.check(r.sprinting, "small wobble below the edge keeps sprinting (hysteresis)")
+	var prev := 0.0
+	var worst_step := 0.0
+	for i in range(0, 121):
+		var f := float(i) / 100.0   # 0 .. 1.2 of the radius
+		r.drag(0, c + Vector2(0, -f * R), Vector2.ZERO)
+		var m := r.move_vector().length()
+		t.check(m >= prev - 1e-6, "monotonic at %.2f R" % f)
+		worst_step = maxf(worst_step, m - prev)
+		prev = m
+	t.check(worst_step <= 1.0 / ((r.full_at - r.dead_zone) * 100.0) + 0.01, "no jump in the curve (largest step %.3f per 1%% of the radius)" % worst_step)
+	for f in [r.full_at, 0.93, 0.97, 1.0, 1.1]:
+		r.drag(0, c + Vector2(0, -float(f) * R), Vector2.ZERO)
+		t.near(r.move_vector().length(), 1.0, 1e-4, "full at %.2f R" % float(f))
+	for deg in [-4.0, 4.0]:
+		r.drag(0, c + Vector2(0, -0.95 * R).rotated(deg_to_rad(deg)), Vector2.ZERO)
+		t.near(r.move_vector().length(), 1.0, 1e-4, "a %+.0f degree wobble at the rim keeps full input" % deg)
 	r.drag(0, c + Vector2(0, -0.6 * R), Vector2.ZERO)
-	r.move_vector()
-	t.check(not r.sprinting, "clearly easing off stops the sprint")
+	var part := r.move_vector().length()
+	t.check(part > 0.5 and part < 0.75, "a part push is a part speed (%.2f)" % part)
 
 
 func test_dynamic_stick_spawn_is_clamped_and_fixed_stick_option() -> void:
@@ -185,14 +200,13 @@ func test_controller_takeover_and_focus_loss_release_touch_intent() -> void:
 		s.router.touch_down(1, GAS)                  # gas held
 		Controls.touch_move = s.router.move_vector()
 		Controls.touch_drive = 1.0
-		Controls.touch_sprint = true
 		if kind == "gamepad":
 			s._on_device("gamepad")                  # a controller takes over mid-drive
 		else:
 			s._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 		t.check(s.router.held().is_empty() and s.router.move_vector() == Vector2.ZERO, "%s: no finger keeps an owner" % kind)
-		t.check(Controls.touch_move == Vector2.ZERO and Controls.touch_drive == 0.0 and not Controls.touch_sprint,
-			"%s: no stuck stick, gas or sprint" % kind)
+		t.check(Controls.touch_move == Vector2.ZERO and Controls.touch_drive == 0.0,
+			"%s: no stuck stick or gas" % kind)
 		s.router.touch_up(0)
 		s.router.touch_up(1)
 	s._on_device("touch")                            # back to touch: fresh fingers work

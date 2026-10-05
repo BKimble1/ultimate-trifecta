@@ -114,7 +114,8 @@ func _next() -> void:
 	p.vel = Vector3.ZERO
 	p.body.velocity = Vector3.ZERO
 	p.yaw = yaw
-	p.sprint = 1.0
+	if "sprint" in p:   # (builds before Pass 9 had a sprint meter)
+		p.set("sprint", 1.0)
 	p.diving = false
 	p.dive_land = 0.0
 	p.jump_buf = 0.0
@@ -143,9 +144,12 @@ func _scripted_cmd(_m: Variant = null) -> InputCmd:
 	var p := mc.sim.player(mc.local_slot)
 	var c: InputCmd = _fn.call(mc.sim, p, _tick)
 	_tick += 1
+	# the same reel runs on builds with a sprint meter (1.7, 1.8) and without
 	var ex := bool(p.get("sprint_exhausted")) if "sprint_exhausted" in p else false
-	_sub.text = "%.1f s · %.1f m/s · meter %d%%%s%s" % [_tick / 60.0, Vector2(p.vel.x, p.vel.z).length(), int(round(p.sprint * 100.0)),
-		" · sprinting" if p.sprinting else "", " · exhausted latch" if ex else ""]
+	var meter := (" · meter %d%%" % int(round(float(p.get("sprint")) * 100.0))) if "sprint" in p else ""
+	var quick := bool(p.get("sprinting")) if "sprinting" in p else bool(p.get("fast"))
+	_sub.text = "%.1f s · %.1f m/s%s%s%s" % [_tick / 60.0, Vector2(p.vel.x, p.vel.z).length(), meter,
+		(" · sprinting" if "sprinting" in p else " · full speed") if quick else "", " · exhausted latch" if ex else ""]
 	if _tick >= _ticks:
 		_next.call_deferred()
 	return c

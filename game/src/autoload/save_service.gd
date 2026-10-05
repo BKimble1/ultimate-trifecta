@@ -41,8 +41,8 @@ func default_profile() -> Dictionary:
 		"uid": uid,
 		"name": generated_name(rng),
 		"settings": {"sensitivity": 1.0, "invert_y": false, "reduced_motion": false, "sfx": 0.9, "music": 0.6,
-			"quality": 1, "sprint_threshold": 0.88, "touch_sprint": true, "role_pref": "any",
-			"stick_mode": "dynamic", "sprint_mode": "edge", "button_size": 1.0, "touch_layout": "standard", "haptics": true},
+			"quality": 1, "role_pref": "any",
+			"stick_mode": "dynamic", "button_size": 1.0, "touch_layout": "standard", "haptics": true},
 		"cosmetic": Cosmetics.DEFAULT.duplicate(),
 		"owned": [],
 		"coins": 0, "level": 1, "xp": 0,
@@ -104,6 +104,10 @@ func load_profile() -> void:
 		data = migrate(parsed)
 
 
+## Settings of removed features (Pass 9: sprint) dropped from older profiles.
+const RETIRED_SETTINGS := ["sprint_threshold", "touch_sprint", "sprint_mode"]
+
+
 ## Upgrades older profile versions and fills any missing keys.
 func migrate(d: Dictionary) -> Dictionary:
 	var out := default_profile()
@@ -118,6 +122,11 @@ func migrate(d: Dictionary) -> Dictionary:
 	for k2 in default_profile()["settings"]:
 		if not (out["settings"] as Dictionary).has(k2):
 			out["settings"][k2] = default_profile()["settings"][k2]
+	# Pass 9: sprint is gone (one steady full speed): drop its settings; every
+	# other setting and a custom touch layout (cluster anchors, size,
+	# opacity, mirroring: it never stored a Sprint position) are kept
+	for k3 in RETIRED_SETTINGS:
+		(out["settings"] as Dictionary).erase(k3)
 	for mode in ["online", "practice"]:
 		if not (out["stats"] as Dictionary).has(mode):
 			out["stats"][mode] = _blank_stats()
@@ -226,8 +235,6 @@ func _apply_settings() -> void:
 	var s: Dictionary = data["settings"]
 	Controls.sensitivity = float(s["sensitivity"])
 	Controls.invert_y = bool(s["invert_y"])
-	Controls.sprint_threshold = float(s["sprint_threshold"])
-	Controls.touch_sprint_enabled = bool(s["touch_sprint"])
 	Sfx.set_volumes(float(s["sfx"]), float(s["music"]))
 	QualityPreset.apply(int(s.get("quality", 1)))
 

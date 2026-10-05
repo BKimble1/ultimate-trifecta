@@ -12,7 +12,6 @@ const ACTIONS := {
 	"move_forward": [KEY_W, KEY_UP],
 	"move_back": [KEY_S, KEY_DOWN],
 	"jump": [KEY_SPACE],
-	"sprint": [KEY_SHIFT],
 	"tag": [KEY_F],
 	"interact": [KEY_E],
 	"gadget": [KEY_Q],
@@ -27,7 +26,6 @@ const ACTIONS := {
 }
 const JOY_BUTTONS := {
 	"jump": [JOY_BUTTON_A],
-	"sprint": [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER],
 	"tag": [JOY_BUTTON_X],
 	"interact": [JOY_BUTTON_Y],
 	"gadget": [JOY_BUTTON_B],
@@ -41,15 +39,12 @@ var device := "touch"            # "touch" | "keyboard" | "gamepad"
 var controller_name := ""
 var sensitivity := 1.0
 var invert_y := false
-var sprint_threshold := 0.88     # touch: stick deflection that triggers sprint
-var touch_sprint_enabled := true
 
 # touch state written by TouchControls
 var touch_move := Vector2.ZERO   # x right, y forward (screen up); radial dead zone applied
 var touch_look_px := Vector2.ZERO  # accumulated camera drag, UNSCALED screen pixels
 var touch_held := 0
 var touch_stick_owned := false   # a finger is on the move stick (even inside its dead zone)
-var touch_sprint := false        # edge-sprint (with hysteresis) or the hold-to-sprint button
 var touch_drive := 0.0
 var touch_steer := 0.0
 ## Camera drag sensitivity: radians per point (pixels / screen scale), so the
@@ -268,7 +263,7 @@ static func radial(v: Vector2, inner: float, outer: float) -> Vector2:
 
 
 ## Move stick curve: a gentle expo widens the walking range while full tilt
-## stays full speed (walk < ~0.45, run, then sprint with the sprint button).
+## stays full speed (Pass 9: the role's one steady full speed; no Sprint).
 static func move_curve(m: float) -> float:
 	return lerpf(m, m * m, 0.3)
 
@@ -327,12 +322,8 @@ func held_bits() -> int:
 	var b := touch_held
 	if Input.is_action_pressed("jump"):
 		b |= TC.BTN_JUMP
-	if Input.is_action_pressed("sprint"):
-		b |= TC.BTN_SPRINT
 	if Input.is_action_pressed("tag"):
 		b |= TC.BTN_TAG
-	if touch_sprint and device == "touch":
-		b |= TC.BTN_SPRINT
 	return b
 
 
@@ -416,7 +407,6 @@ func reset_touch() -> void:
 	touch_stick_owned = false
 	touch_look_px = Vector2.ZERO
 	touch_held = 0
-	touch_sprint = false
 	clear_edges()
 	touch_drive = 0.0
 	touch_steer = 0.0
@@ -424,10 +414,10 @@ func reset_touch() -> void:
 
 ## Button for an action, by position (south/east/west/north face buttons,
 ## shoulders, triggers, menu) or keyboard key; Glyphs draws it per family.
-const PAD_SLOTS := {"jump": "south", "gadget": "east", "tag": "west", "interact": "north", "sprint": "l1",
+const PAD_SLOTS := {"jump": "south", "gadget": "east", "tag": "west", "interact": "north",
 	"accelerate": "r2", "brake": "l2", "pause": "menu", "spectate_next": "r1", "emote_1": "dpad_up", "map": "view",
 	"menu_prev": "l1", "menu_next": "r1", "accept": "south", "back": "east"}
-const KEY_NAMES := {"jump": "Space", "sprint": "Shift", "tag": "F", "interact": "E", "gadget": "Q", "pause": "Esc",
+const KEY_NAMES := {"jump": "Space", "tag": "F", "interact": "E", "gadget": "Q", "pause": "Esc",
 	"accelerate": "W", "brake": "S", "spectate_next": "Tab", "emote_1": "1", "map": "M", "menu_prev": "Q", "menu_next": "E",
 	"accept": "Enter", "back": "Esc"}
 const LABELS := {

@@ -46,7 +46,7 @@ var results: Dictionary = {}
 var bots: Dictionary = {}
 var practice := false
 var tutorial := false
-## Night Watch training: runner bots jog slower and never sprint
+## Night Watch training: runner bots jog slower
 var gentle_bots := false
 var patrol_release_extra_s := 0.0
 ## V6: tonight's home dorm, its doors, and slot -> pad (runner) or patrol
@@ -683,7 +683,7 @@ func _capture(r: SimPlayer, by: SimPlayer) -> void:
 	by.captured_ids[r.id] = true
 	r.penalty = cfg.capture_penalty_s
 	r.end_air_actions()
-	r.sprinting = false
+	r.fast = false
 	r.turbo_t = 0.0
 	r.vel = Vector3.ZERO
 	Motor.set_body_enabled(r.body, false)
@@ -707,8 +707,7 @@ func _respawn(p: SimPlayer) -> void:
 	p.vel = Vector3.ZERO
 	Motor.set_body_enabled(p.body, true)
 	p.protect = cfg.respawn_protect_s
-	p.sprint = 1.0
-	p.sprint_exhausted = false
+	p.fast = false
 	p.end_air_actions()
 	p.clear_history()
 	p.prev_pos = Vector3.INF
@@ -1064,7 +1063,9 @@ func noises_for(listener: SimPlayer) -> Array:
 			continue
 		var radius := cfg.noise_patrol_step_m
 		if p.is_runner():
-			radius = cfg.noise_sprint_m if spd > cfg.runner_speed + 0.5 else cfg.noise_jog_m
+			# Pass 9: full speed is loud (it was the sprint), a jog quieter;
+			# under 3.2 m/s (walking) is silent (above)
+			radius = cfg.noise_fast_m if spd >= cfg.runner_speed * cfg.fast_fraction else cfg.noise_jog_m
 			if listener.is_runner():
 				continue
 		else:
@@ -1078,8 +1079,8 @@ func noises_for(listener: SimPlayer) -> Array:
 			if float(dc["flight"]) > 0.0:
 				continue
 			var d2 := lp.distance_to(dc["pos"])
-			if d2 <= cfg.noise_sprint_m:
-				out.append({"pos": dc["pos"], "kind": "steps", "loud": 1.0 - d2 / cfg.noise_sprint_m})
+			if d2 <= cfg.noise_fast_m:
+				out.append({"pos": dc["pos"], "kind": "steps", "loud": 1.0 - d2 / cfg.noise_fast_m})
 	else:
 		for c in carts:
 			if c.occupant < 0:

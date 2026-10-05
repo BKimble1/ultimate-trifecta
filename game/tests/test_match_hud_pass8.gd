@@ -252,39 +252,39 @@ func test_watch_card_tags_and_pause_info() -> void:
 	await _end(mc)
 
 
-func test_sprint_empty_hint_follows_the_latch_and_the_hold() -> void:
-	var base := {"role": TC.Role.RUNNER, "phase": TC.Phase.PLAYING, "rs": {"state": TC.PState.ACTIVE}, "sprint_exhausted": true, "sprint_held": true}
-	t.check(MatchHUD.sprint_hint_wanted(base), "latched and still held: the hint")
-	for k in [["sprint_held", false], ["sprint_exhausted", false], ["role", TC.Role.PATROL], ["phase", TC.Phase.RESULTS]]:
-		var d := base.duplicate(true)
-		d[k[0]] = k[1]
-		t.check(not MatchHUD.sprint_hint_wanted(d), "no hint when %s is %s" % [k[0], str(k[1])])
-	var cap := base.duplicate(true)
-	cap["rs"] = {"state": TC.PState.CAPTURED}
-	t.check(not MatchHUD.sprint_hint_wanted(cap), "no hint while caught")
-	t.eq(MatchHUD.SPRINT_HINT, "Sprint empty · ease off to recharge", "the brief's words")
-	# in a round: the real latch (SimPlayer.sprint_exhausted, when this build has it)
+## Pass 9 removed the sprint meter: no meter, Sprint hint, rearm cue or
+## Sprint words anywhere in a round's HUD or touch controls, and the full
+## speed tutorial line names the stick push, not a button.
+func test_no_sprint_meter_hint_or_words_in_a_round() -> void:
 	var mc := await _begin("runner", 2)
 	mc.sim._set_phase(TC.Phase.PLAYING)
-	var p := mc.sim.player(mc.local_slot)
-	mc.last_local_held = TC.BTN_SPRINT
 	mc.hud.refresh(0.016)
-	if "sprint_exhausted" in p:
-		p.set("sprint_exhausted", true)
-		p.sprint = 0.2
-		mc.last_local_held = TC.BTN_SPRINT
-		mc.hud.refresh(0.016)
-		t.check(mc.hud.sprint_hint.visible, "latched and held: shown")
-		t.check(absf(mc.hud.sprint_meter.value - 0.2) < 0.01, "its meter shows the refill")
-		mc.last_local_held = 0
-		mc.hud.refresh(0.016)
-		t.check(not mc.hud.sprint_hint.visible, "released: gone")
-		mc.last_local_held = TC.BTN_SPRINT
-		p.set("sprint_exhausted", false)
-		mc.hud.refresh(0.016)
-		t.check(not mc.hud.sprint_hint.visible, "the latch clears: gone at once")
-	else:
-		t.check(not mc.hud.sprint_hint.visible, "a build without the latch never shows the hint")
+	await _frames(2)
+	mc.hud.refresh(0.016)
+	for prop in ["sprint_hint", "sprint_meter"]:
+		t.check(not (prop in mc.hud), "the HUD has no %s" % prop)
+	t.check(not (load("res://src/ui/match_hud.gd") as GDScript).get_script_constant_map().has("SPRINT_HINT"), "no sprint hint text")
+	var stale: Array = []
+	for k in mc.hud.info.keys():
+		if String(k).contains("sprint"):
+			stale.append(k)
+	t.eq(stale, [], "the HUD state has no sprint fields")
+	var words: Array = []
+	var stack: Array = [mc.hud, mc.touch]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		stack.append_array(n.get_children())
+		var txt := ""
+		if n is Label:
+			txt = (n as Label).text
+		elif n is Button:
+			txt = (n as Button).text
+		elif n is RichTextLabel:
+			txt = (n as RichTextLabel).get_parsed_text()
+		if txt.to_lower().contains("sprint") or txt.to_lower().contains("stamina"):
+			words.append(txt)
+	t.eq(words, [], "no Sprint or stamina words on screen")
+	t.check(not mc.touch.surface.router.buttons.has("sprint"), "no Sprint touch button")
 	await _end(mc)
 
 
@@ -367,8 +367,6 @@ func _hud_rects(mc: MatchHUD) -> Dictionary:
 		"badge": (mc.role_lbl.get_parent().get_parent().get_parent() as Control).get_global_rect()}
 	if mc.danger_chip.visible:
 		out["danger"] = mc.danger_chip.get_global_rect()
-	if mc.sprint_hint.visible:
-		out["sprint_hint"] = mc.sprint_hint.get_global_rect()
 	return out
 
 
@@ -428,18 +426,6 @@ func test_layout_at_phone_and_ipad_sizes() -> void:
 						t.check(not r.intersects(th), "%s: %s clear of the thumb controls" % [tag, names[i]])
 					for j in range(i + 1, names.size()):
 						t.check(not r.intersects(rects[names[j]]), "%s: %s and %s don't overlap" % [tag, names[i], names[j]])
-				# the sprint hint (bottom centre) sits between the thumb clusters
-				if role == "runner":
-					hud.sprint_hint.visible = true
-					hud._place(vs)
-					var hr := hud.sprint_hint.get_global_rect()
-					t.check(safe.grow(0.5).encloses(hr), "%s: sprint hint inside the safe area (%s)" % [tag, str(hr)])
-					t.check(not hr.intersects(pause) and not hr.intersects(mini), "%s: sprint hint clear of Pause and the minimap" % tag)
-					for th in thumbs:
-						t.check(not hr.intersects(th), "%s: sprint hint clear of the thumb controls (%s vs %s)" % [tag, str(hr), str(th)])
-					for nm in names:
-						t.check(not hr.intersects(rects[nm]), "%s: sprint hint clear of %s" % [tag, nm])
-					hud.sprint_hint.visible = false
 				# words fit: nothing on the card is cut (long lines take two)
 				t.eq(hud.personal.clipped_rows(), [], "%s: no clipped words on the card" % tag)
 				# and in the states with the longest words

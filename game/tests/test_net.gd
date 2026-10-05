@@ -219,9 +219,17 @@ func test_client_patrol_lag_compensated_tags() -> void:
 	await rig.wait_until(func() -> bool: return client.local_slot >= 0, 300)
 	client.set_local_ready(true)
 	await rig.wait_until(func() -> bool: return rig.host.can_start(), 300)
+	# Pass 9: 6 s legs from the moment the two are placed (was 3 s legs on
+	# the global frame count, so the phase depended on the tests run before).
+	# With a 0.6 m/s closure a Night Watch that misses on a head-on pass can't
+	# catch back up within a 3 s leg before the runner turns past it again
+	# (measured: one phase, 13 misses in 40 s; the same phases on 1.8 catch
+	# within 7 s): the chase is from behind, as the lag compensation is
+	var leg := {"f0": -1}
 	var runner_line := func(mc: MatchController) -> InputCmd:
 		var c := InputCmd.new()
-		c.move = Vector2(1, 0) if (Engine.get_physics_frames() / 180) % 2 == 0 else Vector2(-1, 0)
+		var f := Engine.get_physics_frames() - int(leg["f0"]) if int(leg["f0"]) >= 0 else 0
+		c.move = Vector2(1, 0) if (f / 360) % 2 == 0 else Vector2(-1, 0)
 		return c
 	rig.inputs[rig.host] = runner_line
 	var hunter := func(mc: MatchController) -> InputCmd:
@@ -245,6 +253,7 @@ func test_client_patrol_lag_compensated_tags() -> void:
 	var pat := hmc.sim.player(client.local_slot)
 	hmc.sim.player(0).body.global_position = Vector3(-30, 0.05, 50)
 	pat.body.global_position = Vector3(-30, 0.05, 56)
+	leg["f0"] = Engine.get_physics_frames()
 	var captured := await rig.wait_until(func() -> bool:
 		for e in rig.host_events:
 			if int(e["type"]) == TC.Ev.CAPTURE:

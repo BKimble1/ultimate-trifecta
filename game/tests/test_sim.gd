@@ -440,12 +440,13 @@ func test_gadget_single_use_and_ownership() -> void:
 		use_events += h2.events_of(TC.Ev.GADGET_USE).size()
 	t.eq(use_events, 1, "one held gadget = one use (%s)" % g)
 	t.check(r2.turbo_t > 0.0, "turbo active")
-	# turbo + sprint is capped
+	# turbo on full input is capped (the retired Sprint bit adds nothing)
 	h2.cmd(0).move = Vector2(1, 0)
 	h2.cmd(0).held = TC.BTN_SPRINT
 	await h2.step(40)
 	var spd := Vector2(r2.vel.x, r2.vel.z).length()
-	t.check(spd <= Rules.cfg.turbo_speed_cap + 0.05, "turbo+sprint speed capped (%.2f)" % spd)
+	t.check(spd <= Rules.cfg.turbo_speed_cap + 0.05, "turbo speed capped (%.2f)" % spd)
+	t.near(spd, minf(Rules.cfg.runner_speed * Rules.cfg.turbo_multiplier, Rules.cfg.turbo_speed_cap), 0.1, "turbo is the full speed boosted (%.2f)" % spd)
 	h2.free_sim()
 
 
@@ -530,15 +531,12 @@ func test_movement_feel_numbers() -> void:
 	h.place(0, Vector3(-20, 0.05, 40))
 	h.cmd(0).move = Vector2(1, 0)
 	await h.step(30)
-	t.near(Vector2(r.vel.x, r.vel.z).length(), Rules.cfg.runner_speed, 0.3, "run speed ~5 m/s")
+	t.near(Vector2(r.vel.x, r.vel.z).length(), Rules.cfg.runner_speed, 0.05, "full input: the steady run speed (6 m/s)")
+	t.check(r.fast, "and that is fast")
+	# Pass 9: no sprint meter; holding the retired Sprint bit adds nothing
 	h.cmd(0).held = TC.BTN_SPRINT
-	await h.step(30)
-	t.near(Vector2(r.vel.x, r.vel.z).length(), Rules.cfg.runner_sprint_speed, 0.3, "sprint ~7 m/s")
-	var t0 := h.sim.tick
-	while r.sprinting:
-		await h.step()
-	var dur := float(h.sim.tick - t0 + 30) / 60.0
-	t.near(dur, Rules.cfg.sprint_capacity_s, 0.25, "sprint lasts ~2.5 s")
+	await h.step(240)
+	t.near(Vector2(r.vel.x, r.vel.z).length(), Rules.cfg.runner_speed, 0.05, "Sprint held 4 s: still the same speed")
 	h.cmd(0).held = 0
 	# jump + coyote + dive
 	h.cmd(0).move = Vector2.ZERO
@@ -579,7 +577,7 @@ func test_movement_feel_numbers() -> void:
 	h.place(1, Vector3(-20, 0.05, 50))
 	h.cmd(1).move = Vector2(1, 0)
 	await h.step(40)
-	t.near(Vector2(p.vel.x, p.vel.z).length(), Rules.cfg.patrol_speed, 0.3, "patrol foot speed between run and sprint")
+	t.near(Vector2(p.vel.x, p.vel.z).length(), Rules.cfg.patrol_speed, 0.3, "patrol foot speed (a little faster than a runner)")
 	h.free_sim()
 
 

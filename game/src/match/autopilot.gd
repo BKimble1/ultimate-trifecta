@@ -58,8 +58,6 @@ func cmd_for(mc: MatchController) -> InputCmd:
 					if jump_cd <= 0.0:
 						c.pressed |= TC.BTN_JUMP
 						jump_cd = 0.8
-				if rng.randf() < 0.3:
-					c.held |= TC.BTN_SPRINT
 				break
 	wander_t -= dt
 	if wander_t <= 0.0:

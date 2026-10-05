@@ -153,9 +153,9 @@ func test_secondary_bounded_under_irregular_frames() -> void:
 
 
 func test_gait_cadence_matches_ground_travel() -> void:
-	# runner jog, Night Watch on foot, runner sprint, Turbo cap
+	# walk, runner jog, runner full speed, Night Watch on foot, Turbo, Turbo cap
 	var cfg: RulesConfig = Rules.cfg
-	for spd in [1.3, cfg.runner_speed, cfg.patrol_speed, cfg.runner_sprint_speed, cfg.turbo_speed_cap]:
+	for spd in [1.3, cfg.runner_speed * 0.6, cfg.runner_speed, cfg.patrol_speed, cfg.runner_speed * cfg.turbo_multiplier, cfg.turbo_speed_cap]:
 		var v := CharacterView.new()
 		t.add_child(v)
 		v.setup(TC.Role.RUNNER, Cosmetics.DEFAULT, 0, "", false, true)
@@ -308,8 +308,8 @@ func test_run_on_the_spot_keeps_its_facing() -> void:
 	v._process(1.0 / 60.0)
 	var p0 := v._phase
 	for i in 60:
-		v.apply_state({"pos": Vector3(1, 0, 1), "yaw": yaw, "state": TC.PState.ACTIVE, "vel": back * Rules.cfg.runner_sprint_speed,
-			"on_floor": true, "sprinting": true})
+		v.apply_state({"pos": Vector3(1, 0, 1), "yaw": yaw, "state": TC.PState.ACTIVE, "vel": back * Rules.cfg.runner_speed,
+			"on_floor": true, "fast": true})
 		v._process(1.0 / 60.0)
 	t.near(wrapf(v.rotation.y - yaw, -PI, PI), 0.0, 0.01, "the lobby runner keeps facing the camera")
 	t.check(v._phase - p0 > 1.5, "and its legs keep cycling (%.2f cycles in 1 s)" % (v._phase - p0))

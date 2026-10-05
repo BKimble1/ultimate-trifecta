@@ -51,6 +51,7 @@ enum Ev {
 
 # Input button bits (held state) and edge bits (pressed this tick).
 const BTN_JUMP := 1
+## Pass 9: retired (no sprint). The motor ignores it; the bit is never reused.
 const BTN_SPRINT := 2
 const BTN_TAG := 4
 const BTN_INTERACT := 8

@@ -475,10 +475,12 @@ func _update_preview(delta: float) -> void:
 		var fwd := Vector3(sin(v.rotation.y), 0, cos(v.rotation.y))
 		match String(pv["kind"]):
 			"run":
-				rs["vel"] = fwd * Rules.cfg.runner_speed
+				# a jog (Pass 9: full speed is the "sprint" tile, below)
+				rs["vel"] = fwd * Rules.cfg.runner_speed * 0.7
 			"sprint":
-				rs["vel"] = fwd * Rules.cfg.runner_sprint_speed
-				rs["sprinting"] = true
+				# full speed (Pass 9: steady; there is no separate sprint)
+				rs["vel"] = fwd * Rules.cfg.runner_speed
+				rs["fast"] = true
 			"jump":
 				# the real jump arc, on the spot
 				var g := Rules.cfg.gravity

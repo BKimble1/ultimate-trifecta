@@ -130,34 +130,15 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 	elif p.dive_land > 0.0:
 		control = 0.35
 
-	# --- sprint meter (runners only). Short, regenerates quickly, no long waits.
-	# Pass 8: running the meter dry latches "exhausted". While the latch is on
-	# a held sprint is an ordinary run (V4-V8 restarted it on every 15 % of
-	# refill: 0.38 s bursts every 1.3 s for as long as it was held). The latch
-	# clears once sprint is released (button up, or the stick back under its
-	# edge-sprint exit threshold, or the finger lifted) and the meter is back
-	# to sprint_rearm_fraction; the next press then sprints at once.
+	# --- speed (Pass 9): one continuous analog speed. The input magnitude
+	# (after the device's dead zone and curve: walking, jogging, running)
+	# scales the role's full-input speed, and a held full input keeps it for
+	# as long as it is held. No sprint button, meter, refill or latch (V4 to
+	# Pass 8 had a 2.5 s meter to 7.4 m/s over a 5.0 m/s run); BTN_SPRINT is
+	# ignored, so an old binding or client can't add speed.
 	var move := cmd.move
 	var mag := minf(move.length(), 1.0)
-	var sprint_held := runner and cmd.is_held(TC.BTN_SPRINT)
-	if p.sprint_exhausted and not sprint_held and p.sprint >= cfg.sprint_rearm_fraction:
-		p.sprint_exhausted = false
-	var wants_sprint := sprint_held and mag > 0.3 and control > 0.5 and not p.sprint_exhausted
-	if wants_sprint and p.sprint > 0.0 and (p.sprinting or p.sprint >= cfg.sprint_min_to_start):
-		p.sprinting = true
-		p.sprint = maxf(0.0, p.sprint - dt / cfg.sprint_capacity_s)
-		p.sprint_delay = cfg.sprint_regen_delay_s
-		if p.sprint <= 0.0:
-			p.sprint_exhausted = true
-	else:
-		p.sprinting = false
-		if p.sprint_delay > 0.0:
-			p.sprint_delay = maxf(0.0, p.sprint_delay - dt)
-		else:
-			p.sprint = minf(1.0, p.sprint + dt / cfg.sprint_regen_full_s)
-
-	var base := cfg.runner_speed if runner else cfg.patrol_speed
-	var top := cfg.runner_sprint_speed if p.sprinting else base
+	var top := full_speed(p, cfg)
 	if p.turbo_t > 0.0:
 		top = minf(top * cfg.turbo_multiplier, cfg.turbo_speed_cap)
 	var target := Vector2.ZERO
@@ -262,6 +243,13 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 			b.global_position += Vector3(-move.x, 0.0, -move.y) * 0.3 + Vector3(0, 0.05, 0)
 	else:
 		p.stuck_t = 0.0
+	# Pass 9: "fast" from the speed actually moved, not from a button
+	p.fast = p.on_floor and not p.diving and Vector2(p.vel.x, p.vel.z).length() >= full_speed(p, cfg) * cfg.fast_fraction
+
+
+## The role's full-input foot speed (Pass 9: steady; Turbo is applied on top).
+static func full_speed(p: SimPlayer, cfg: RulesConfig) -> float:
+	return cfg.runner_speed if p.is_runner() else cfg.patrol_speed
 
 
 ## Advance a cart one tick with driver intent (cmd may be null for no driver).

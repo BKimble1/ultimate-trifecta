@@ -678,7 +678,7 @@ func _moves_popover(anchor: Control) -> void:
 	g.add_theme_constant_override("h_separation", 10)
 	g.add_theme_constant_override("v_separation", 10)
 	var mine := String(Cosmetics.sanitize(Save.data["cosmetic"]).get("emote", "wave"))
-	for m in [["m_idle", "Idle", "idle"], ["m_run", "Run", "run"], ["m_run", "Sprint", "sprint"], ["m_jump", "Jump", "jump"], ["m_dive", "Dive", "dive"],
+	for m in [["m_idle", "Idle", "idle"], ["m_run", "Jog", "run"], ["m_run", "Full speed", "sprint"], ["m_jump", "Jump", "jump"], ["m_dive", "Dive", "dive"],
 			["e_" + mine, "Your move", "move"]]:
 		var kind: String = m[2]
 		g.add_child(icon_tile(String(m[0]), String(m[1]), func() -> void:

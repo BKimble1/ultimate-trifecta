@@ -58,9 +58,11 @@ var straight_assist := true
 ## Unscaled screen pixels a look pointer that started in the stick zone must
 ## travel before it turns the camera (about 3 mm on a phone).
 const LOOK_SLOP_PX := 24.0
-var sprint_on := 0.88                # edge-sprint hysteresis (fraction of radius)
-var sprint_off := 0.76
-var edge_sprint := true
+## Pass 9: the stick's output reaches full (the role's steady full speed)
+## at this fraction of the radius, so a thumb resting near the rim, wobbling
+## a little, holds full speed (V4-Pass 8: edge sprint switched on at 0.88 and
+## off at 0.76 of the radius).
+var full_at := 0.9
 var buttons: Dictionary = {}         # name -> {"c": Vector2, "r": float, "hit": float (optional)}
 var reserved: Array[Rect2] = []      # HUD regions that are not camera/stick
 
@@ -70,7 +72,6 @@ var stick_center := Vector2.ZERO     # where the ring is DRAWN (dynamic: the ori
 var stick_origin := Vector2.ZERO     # where deflection is measured FROM (dynamic: the touchdown point)
 var stick_pos := Vector2.ZERO
 var follows := 0                     # base-follow steps this gesture (diagnostics)
-var sprinting := false
 var look_px := Vector2.ZERO          # unscaled screen pixels since last consume
 var _edges: Array[String] = []       # button press edges, consumed once
 
@@ -131,7 +132,6 @@ func touch_down(index: int, p: Vector2) -> void:
 		stick_origin = fixed_center if fixed_stick else p
 		stick_center = spawn_center_for(p)
 		stick_pos = p
-		sprinting = false
 		follows = 0
 		return
 	# a look pointer that starts in the stick zone (a spare finger near the
@@ -146,7 +146,6 @@ func touch_up(index: int) -> void:
 		return
 	if int(o["kind"]) == KIND_STICK and index == stick_index:
 		stick_index = -1
-		sprinting = false
 
 
 func drag(index: int, p: Vector2, screen_relative: Vector2) -> void:
@@ -195,7 +194,6 @@ func knob_pos() -> Vector2:
 func cancel_all() -> void:
 	owners.clear()
 	stick_index = -1
-	sprinting = false
 	look_px = Vector2.ZERO
 	_edges.clear()
 
@@ -235,7 +233,8 @@ func take_look_px() -> Vector2:
 
 
 ## Stick deflection (x right, y up/forward), radial dead zone remapped so the
-## output starts at 0 just outside the dead zone and reaches 1 at the rim.
+## output starts at 0 just outside the dead zone and reaches 1 at `full_at`
+## of the radius (and stays 1 out to the rim and beyond).
 ## Magnitude is preserved (sneaking works) and never exceeds 1 (no diagonal boost).
 func move_vector() -> Vector2:
 	if stick_index < 0:
@@ -243,10 +242,8 @@ func move_vector() -> Vector2:
 	var raw := (stick_pos - stick_origin) / stick_radius
 	var m := raw.length()
 	if m <= dead_zone:
-		_update_sprint(0.0)
 		return Vector2.ZERO
-	var out_m := clampf((m - dead_zone) / (1.0 - dead_zone), 0.0, 1.0)
-	_update_sprint(minf(m, 1.0))
+	var out_m := clampf((m - dead_zone) / (full_at - dead_zone), 0.0, 1.0)
 	var dir := raw / m
 	var v := Vector2(dir.x, -dir.y) * out_m
 	return straighten(v) if straight_assist else v
@@ -270,15 +267,6 @@ static func straighten(v: Vector2) -> Vector2:
 	var na := 0.0 if aa <= b else (aa - b) * e / (e - b)
 	na *= signf(a)
 	return Vector2(sin(na), cos(na) * (1.0 if v.y >= 0.0 else -1.0)) * m
-
-
-func _update_sprint(m: float) -> void:
-	if not edge_sprint:
-		sprinting = false
-	elif sprinting:
-		sprinting = m >= sprint_off
-	else:
-		sprinting = m >= sprint_on
 
 
 func stick_active() -> bool:
