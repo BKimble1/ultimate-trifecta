@@ -3,7 +3,16 @@ extends Node
 ## - Code rooms: everyone in a room uses the same GKMatchRequest.player_group
 ##   derived from the short room code; the host keeps adding players.
 ## - Friends: Apple's GKMatchmakerViewController invite UI (invite-only, no
-##   strangers) and the friends list (permission requested only when opened).
+##   strangers; optionally with a friend pre-selected) and the friends list
+##   (permission requested only when the player opens Friends).
+## Identity domains (Final): every friend is reported by its teamPlayerID, the
+## same team-scoped ID the service verifies for a signed-in player
+## (identity_signature), so presence and invites match people across the
+## two; gamePlayerID and the display name are kept only for Apple's own UI
+## and for showing the row.  Native names are checked against the pinned
+## GodotApplePlugins source (GKLocalPlayer.load_friends,
+## load_friends_authorization_status; GKPlayer team_player_id,
+## game_player_id, display_name; GKMatchRequest recipients).
 ## If Game Center is unavailable or declined, solo practice still works and the
 ## online buttons explain why they are disabled. Nothing here is mocked.
 
@@ -11,6 +20,8 @@ signal auth_changed(ok: bool)
 signal invite_ready(transport: GameKitTransport)     # an accepted invite produced a match (we are a client)
 signal room_matched(transport: GameKitTransport)     # code/invite matchmaking produced a GKMatch
 signal room_failed(message: String)
+## friends: [{tid (teamPlayerID), gid (gamePlayerID), name, player (GKPlayer)}];
+## error: "" or denied | restricted | signed_out | error
 signal friends_loaded(friends: Array, error: String)
 
 ## Party codes (same alphabet as the service: no look-alikes such as 0/O,
@@ -106,7 +117,7 @@ func identity_signature() -> Dictionary:
 	if done["v"] == null:
 		return {"ok": false, "message": "Game Center didn't answer. Try again."}
 	if done["v"]["error"] != null:
-		return {"ok": false, "message": "Game Center couldn't confirm your identity (%s)." % str(done["v"]["error"])}
+		return {"ok": false, "message": "Game Center couldn't confirm your identity (%s)." % error_text(done["v"]["error"])}
 	var v: Dictionary = done["v"]["values"]
 	var b64 := func(x: Variant) -> String:
 		return Marshalls.raw_to_base64(x) if x is PackedByteArray else String(x)
@@ -161,8 +172,12 @@ static func code_group(code: String) -> int:
 	return maxi(v, 1)
 
 
+## null where GameKit isn't there (desktop): callers then report that
+## matchmaking is unavailable instead of failing on a null object.
 func _request(code: String, host: bool) -> Object:
-	var req: Object = ClassDB.instantiate("GKMatchRequest")
+	var req: Object = ClassDB.instantiate("GKMatchRequest") if ClassDB.can_instantiate("GKMatchRequest") else null
+	if req == null:
+		return null
 	req.set("min_players", 2)
 	req.set("max_players", 8)
 	req.set("player_group", code_group(code))
@@ -186,9 +201,12 @@ func join_code_room(code: String) -> GameKitTransport:
 	var t := GameKitTransport.new(false)
 	_pending_transport = t
 	_room_request = _request(code, false)
+	if matchmaker == null or _room_request == null:
+		room_failed.emit.call_deferred("Game Center matchmaking isn't available.")
+		return t
 	matchmaker.call("find_match", _room_request, func(m: Object, err: Variant) -> void:
 		if err != null:
-			room_failed.emit(str(err))
+			room_failed.emit(error_text(err))
 			return
 		t.bind(m)
 		room_matched.emit(t))
@@ -197,13 +215,13 @@ func join_code_room(code: String) -> GameKitTransport:
 
 func _find_or_add() -> void:
 	var t := _pending_transport
-	if t == null or matchmaker == null:
+	if t == null or matchmaker == null or _room_request == null:
 		return
 	if not t.bound():
 		matchmaker.call("find_match", _room_request, func(m: Object, err: Variant) -> void:
 			if err != null:
 				if t == _pending_transport:
-					room_failed.emit(str(err))
+					room_failed.emit(error_text(err))
 				return
 			t.bind(m)
 			room_matched.emit(t)
@@ -225,10 +243,18 @@ func stop_matchmaking() -> void:
 
 
 ## Apple's invite UI: invite Game Center friends to this room (no automatch).
-func invite_friends(t: GameKitTransport, code: String) -> void:
+## `recipients` (GKPlayer objects from load_friends) pre-selects friends in
+## Apple's sheet (GKMatchRequest.recipients); the player still sends it there.
+func invite_friends(t: GameKitTransport, code: String, recipients: Array = []) -> void:
 	if not online_ready():
 		return
 	var req := _request(code, true)
+	if req == null:
+		room_failed.emit("Could not open the Game Center invite screen.")
+		return
+	var picked: Array = recipients.filter(func(p: Variant) -> bool: return p is Object and is_instance_valid(p))
+	if not picked.is_empty():
+		req.set("recipients", picked)
 	var vc: Object = _static("GKMatchmakerViewController", "create_controller", [req])
 	if vc == null:
 		room_failed.emit("Could not open the Game Center invite screen.")
@@ -265,17 +291,69 @@ func _on_invite_accepted(_player: Object, invite: Object) -> void:
 	vc.call("present")
 
 
-## Friends list (requests friends-list permission the first time).
+# ---------------------------------------------------------------- friends
+## GKFriendsAuthorizationStatus raw values (GameKit): notDetermined 0,
+## restricted 1, denied 2, authorized 3.
+const FRIENDS_ACCESS := ["not_determined", "restricted", "denied", "authorized"]
+## GodotApplePlugins GKError.Code values for the friend-list errors.
+const GKERR_NOT_AUTHENTICATED := 14
+const GKERR_FRIEND_LIST_RESTRICTED := 26
+const GKERR_FRIEND_LIST_DENIED := 27
+
+
+## A readable message from a GodotApplePlugins GKError (or anything else).
+static func error_text(err: Variant) -> String:
+	if err is Object and is_instance_valid(err):
+		var m := String((err as Object).get("message")) if "message" in (err as Object) else ""
+		if m != "":
+			return m
+	return str(err)
+
+
+static func error_code(err: Variant) -> int:
+	if err is Object and is_instance_valid(err) and "code" in (err as Object):
+		return int((err as Object).get("code"))
+	return -1
+
+
+## Friends-list access without asking (no prompt): `done.call(status)` with
+## not_determined | restricted | denied | authorized | unavailable.
+func friends_access(done: Callable) -> void:
+	if not online_ready() or gc == null:
+		done.call("unavailable")
+		return
+	var lp: Object = gc.get("local_player")
+	lp.call("load_friends_authorization_status", func(status: int, err: Variant) -> void:
+		var code: String = "unavailable" if err != null and status == 0 else (String(FRIENDS_ACCESS[status]) if status >= 0 and status < 4 else "unavailable")
+		# (GameKit may answer off the main thread: hand over to it)
+		done.call_deferred(code))
+
+
+## The friends list.  The first call asks for friends-list permission with
+## NSGKFriendListUsageDescription (Apple shows its sheet); later calls answer
+## at once.  Emits friends_loaded.
 func load_friends() -> void:
-	if not online_ready():
-		friends_loaded.emit([], "Game Center is not signed in.")
+	if not online_ready() or gc == null:
+		friends_loaded.emit([], "signed_out")
 		return
 	var lp: Object = gc.get("local_player")
 	lp.call("load_friends", func(friends: Array, err: Variant) -> void:
-		if err != null:
-			friends_loaded.emit([], str(err))
-			return
-		var out: Array = []
-		for f in friends:
-			out.append({"name": String(f.get("display_name")), "id": String(f.get("game_player_id"))})
-		friends_loaded.emit(out, ""))
+		_friends_answer.call_deferred(friends, err))
+
+
+func _friends_answer(friends: Array, err: Variant) -> void:
+	if err != null:
+		var c := error_code(err)
+		var why := "denied" if c == GKERR_FRIEND_LIST_DENIED else ("restricted" if c == GKERR_FRIEND_LIST_RESTRICTED else
+			("signed_out" if c == GKERR_NOT_AUTHENTICATED else "error"))
+		friends_loaded.emit([], why)
+		return
+	var out: Array = []
+	for f in friends:
+		if not (f is Object) or not is_instance_valid(f):
+			continue
+		var tid := String((f as Object).get("team_player_id"))
+		if tid == "":
+			continue    # (no team-scoped ID: nothing the service could ever match)
+		out.append({"tid": tid, "gid": String((f as Object).get("game_player_id")), "name": String((f as Object).get("display_name")), "player": f})
+	friends_loaded.emit(out, "")

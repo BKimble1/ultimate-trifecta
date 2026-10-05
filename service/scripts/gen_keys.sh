@@ -11,6 +11,10 @@ mkdir -p .secrets && chmod 700 .secrets
 # value for BOTH deployments (deploy.sh uploads this same file to sandbox and
 # production): never regenerate it once purchases exist.
 [ -f .secrets/app_account_token_key ] || openssl rand -base64 48 | tr -d '\n' > .secrets/app_account_token_key
+# Friends: the key for the keyed hashes of friend IDs (src/friends.js).  Keep
+# it stable: a new key makes every stored friend set unreadable until each
+# game syncs again (it does on its next launch or Friends visit).
+[ -f .secrets/friend_hash_key ] || openssl rand -base64 48 | tr -d '\n' > .secrets/friend_hash_key
 if [ ! -f .secrets/admission_private.pem ]; then
   openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out .secrets/admission_private.pem 2>/dev/null
 fi

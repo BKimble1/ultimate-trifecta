@@ -11,6 +11,7 @@ import { moderate, suggestions, normalizeName } from './names.js';
 import { randomId, newRoomCode, normalizeCode } from './ids.js';
 import { chatCheck, reportMessage } from './chat.js';
 import { routeCommerce, deletionStmts, sweepCommerce } from './commerce.js';
+import { routeFriends, deletionStmts as friendDeletionStmts, signOutStmts, sweepFriends, friendsConfigured } from './friends.js';
 import CATALOGUE from './catalogue_data.js';
 
 const HOUR = 3600 * 1000;
@@ -149,8 +150,13 @@ async function signIn(req, env) {
 }
 
 async function signOut(req, env) {
-  const { session } = await requireUser(req, env, { allowSuspended: true });
-  await db(env).run('INSERT OR IGNORE INTO revoked_sessions (jti, expires_at) VALUES (?, ?)', session.jti, session.exp * 1000);
+  const { profile, session } = await requireUser(req, env, { allowSuspended: true });
+  const q = db(env);
+  await q.batch([
+    q.stmt('INSERT OR IGNORE INTO revoked_sessions (jti, expires_at) VALUES (?, ?)', session.jti, session.exp * 1000),
+    // Friends: the presence this session wrote goes with it
+    ...signOutStmts(q, profile.id, session.jti),
+  ]);
   return json({ ok: true });
 }
 
@@ -243,6 +249,8 @@ async function deleteMe(req, env) {
     // V6: Coins, items, Season progress go with the profile; ledger and App
     // Store rows stay for reconciliation without the profile link
     ...deletionStmts(q, p.id),
+    // Friends: friend hashes, presence and invites
+    ...friendDeletionStmts(q, p.id),
   ]);
   await audit(env, 'system', 'profile_deleted', null, { at: t });
   return json({ ok: true, deleted_at: t });
@@ -606,6 +614,7 @@ export async function sweep(env) {
   await q.run('DELETE FROM rate_events WHERE at < ?', t - 24 * HOUR);
   await q.run('DELETE FROM revoked_sessions WHERE expires_at < ?', t);
   await sweepCommerce(env, q, t);
+  await sweepFriends(q, t);
 }
 
 function config(env) {
@@ -623,7 +632,8 @@ function config(env) {
     // V6: what this deployment supports (an older deployment has no chat, so
     // the game keeps typed chat honestly unavailable)
     // Pass 8: scheduled rotating Shop offers (GET /v1/shop/offers)
-    features: ['chat', 'message_reports', 'shop_offers'],
+    // Final: Friends presence and invites (only with FRIEND_HASH_KEY set)
+    features: ['chat', 'message_reports', 'shop_offers', ...(friendsConfigured(env) ? ['friends'] : [])],
   });
 }
 
@@ -654,6 +664,9 @@ export async function handle(req, env) {
     // V6 social (service/src/chat.js): typed chat approval and message reports
     if (m === 'POST' && path === '/v1/chat/check') return await chatCheck(req, env, SOCIAL_DEPS);
     if (m === 'POST' && path === '/v1/reports/message') return await reportMessage(req, env, SOCIAL_DEPS);
+    // Final: Friends (service/src/friends.js): friend sets, presence, invites
+    const fr = await routeFriends(req, env, path, m, SOCIAL_DEPS);
+    if (fr) return fr;
     if (m === 'POST' && path === '/v1/rooms') return await createRoom(req, env);
     if ((k = path.match(/^\/v1\/rooms\/([^/]{1,24})(\/[a-z]+)?$/))) {
       const code = decodeURIComponent(k[1]);

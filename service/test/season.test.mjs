@@ -99,7 +99,8 @@ test('the 100-tier table keeps tiers 1-30 exactly and extends them from the paci
 
 test('migration 0005 keeps every 30-tier-era row and only adds the audit column', () => {
   const files = readdirSync(MIG).filter((f) => f.endsWith('.sql')).sort();
-  assert.equal(files[files.length - 1], '0005_season_100.sql');
+  // (later migrations, e.g. 0006_friends, add their own tables after it)
+  assert.ok(files.includes('0005_season_100.sql'), 'the Season 100 migration is applied');
   const db = new DatabaseSync(':memory:');
   for (const f of files.filter((x) => x < '0005')) db.exec(readFileSync(new URL(f, MIG), 'utf8'));
   // a 30-tier-era account: XP past the old cap, Premium, every old cell claimed

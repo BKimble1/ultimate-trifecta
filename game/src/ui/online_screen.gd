@@ -4,7 +4,8 @@ extends Screen
 ## Change name), then two cards side by side - Start a party (the one gold
 ## action, Create Party) and Join with a code (the code field and Join on one
 ## row, the same height, a one-line message under them) - and the Game
-## Center friends entry below them.  Everything a player needs is in the
+## Center friends entry below them (Final: Friends, who's playing and
+## invites, FriendsPanel).  Everything a player needs is in the
 ## first view on every supported phone and iPad; on a narrow screen the two
 ## cards stack.  Party codes are 6 characters from an alphabet without
 ## look-alikes; typing is checked strictly as you go (only case, spaces and
@@ -21,8 +22,6 @@ var join_btn: Button
 var create_btn: Button
 var busy_card: PanelContainer
 var busy_lbl: Label
-var friends_box: VBoxContainer
-var friends_status: Label
 var friends_btn: Button
 var who_lbl: Label
 var rename_btn: Button
@@ -100,7 +99,7 @@ func build() -> void:
 	create_btn.disabled = not ready
 	create_btn.pressed.connect(_create)
 	cc.add_child(create_btn)
-	var hint := UIKit.styled("You get a 6-character code to share. Invite Game Center friends from the party." if ready
+	var hint := UIKit.styled("You get a 6-character code to share, or invite friends from the party." if ready
 		else "Needs Game Center (see above).", "caption", UIKit.IVORY_MUTED)
 	hint.add_theme_font_size_override("font_size", 19)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -151,40 +150,24 @@ func build() -> void:
 	v.add_child(busy_card)
 	code_pad = _make_code_pad()
 	v.add_child(code_pad)
-	# the Game Center friends entry
+	# Final: Friends (who's playing right now, invites) - the panel explains
+	# its own states (Game Center, permission, status unavailable)
 	var fcard := UIKit.panel(Color(UIKit.SLATE, 0.9), UIKit.R_PANEL, 16)
-	fcard.visible = ready
 	var frow := UIKit.hbox(16)
 	fcard.add_child(frow)
-	friends_btn = UIKit.quiet("Show Game Center friends", Vector2(0, tm), UIKit.T_LABEL)
-	friends_btn.disabled = not ready
-	friends_btn.visible = ready
+	friends_btn = UIKit.quiet("Friends", Vector2(180, tm), UIKit.T_LABEL)
 	friends_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	friends_btn.pressed.connect(func() -> void:
-		_friends_hint.visible = false
-		friends_status.visible = true
-		friends_status.text = "Loading…"
-		Social.load_friends())
+	friends_btn.accessibility_name = "Friends: see who's playing and invite them"
+	friends_btn.pressed.connect(func() -> void: FriendsPanel.open(self))
 	frow.add_child(friends_btn)
-	friends_status = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
-	friends_status.add_theme_font_size_override("font_size", 19)
-	friends_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	friends_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	friends_status.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	friends_status.custom_minimum_size = Vector2(200, 0)
-	friends_status.visible = false
-	frow.add_child(friends_status)
-	_friends_hint = UIKit.styled("See which friends play. Invite them from your party.", "caption", UIKit.IVORY_MUTED)
+	_friends_hint = UIKit.styled("See which friends are playing and invite them to your party.", "caption", UIKit.IVORY_MUTED)
 	_friends_hint.add_theme_font_size_override("font_size", 19)
 	_friends_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_friends_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_friends_hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_friends_hint.custom_minimum_size = Vector2(200, 0)
-	_friends_hint.visible = ready
 	frow.add_child(_friends_hint)
 	v.add_child(fcard)
-	friends_box = UIKit.vbox(4)
-	v.add_child(friends_box)
 	Controls.device_changed.connect(_on_device)
 	_on_device(Controls.device)
 	if OS.is_debug_build() and not OS.has_feature("mobile") and not UIKit.emulate_phone():
@@ -206,7 +189,6 @@ func build() -> void:
 	_kb_space = Control.new()
 	_kb_space.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(_kb_space)
-	Social.friends_loaded.connect(_on_friends)
 	Social.auth_changed.connect(_on_auth)
 	App.party_error.connect(_on_party_error)
 	_refresh_who()
@@ -405,17 +387,19 @@ func _on_party_error(message: String, code: String) -> void:
 	dialog((title + "\n" if title != "" else "") + message)
 
 
-func _on_friends(friends: Array, err: String) -> void:
-	if not is_instance_valid(friends_box):
+## Final: an accepted Friends invite.  The service already re-checked it;
+## the join is the same as a typed code (admission, then Game Center
+## matchmaking for the code), with this screen's progress, Cancel and error
+## messages.  The player agreed to leave any party already.
+func join_invited(code: String, who: String) -> void:
+	if not Social.online_ready() or not await _ensure_name():
 		return
-	for c in friends_box.get_children():
-		c.queue_free()
-	if err != "":
-		friends_status.text = "Friends list unavailable (%s). Party codes still work." % err
-		return
-	friends_status.text = "%d Game Center friend%s play Ultimate Trifecta. Invite them from your party." % [friends.size(), "" if friends.size() == 1 else "s"]
-	for f in friends:
-		friends_box.add_child(UIKit.label("•  " + NameRules.safe_display(String(f["name"])), 22))
+	_op += 1
+	var op := _op
+	_busy("Joining %s's party…" % who)
+	await App.join_room_gamekit(code, true)
+	if op == _op and is_inside_tree():
+		_idle()
 
 
 ## Controller code pad: the code alphabet as buttons plus Delete.  Shown while

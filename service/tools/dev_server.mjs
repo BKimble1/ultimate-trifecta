@@ -26,7 +26,8 @@ import { handle } from '../src/app.js';
 const port = Number(process.argv[2] || 8787);
 const out = process.argv[3] || '.';
 mkdirSync(out, { recursive: true });
-const ctx = makeEnv({ ENVIRONMENT: 'development', SUPPORT_EMAIL: '', SUPPORT_URL: '' });
+const ctx = makeEnv({ ENVIRONMENT: 'development', SUPPORT_EMAIL: '', SUPPORT_URL: '',
+  FRIEND_HASH_KEY: 'dev-server-only-friend-hash-key-not-a-secret' });
 ctx.env.__now = () => Date.now() + 60 * 1000;   // (the test certificate is valid from "now")
 ctx.clock.t = Date.now() + 60 * 1000;
 writeFileSync(join(out, 'admission_public.pem'), ctx.admPub.export({ type: 'spki', format: 'pem' }));

@@ -19,7 +19,7 @@ elif grep -q "REPLACE_WITH_D1_DATABASE_ID" wrangler.toml; then
   echo "Set database_id in wrangler.toml first: npx wrangler d1 create trifecta"; exit 1
 fi
 node tools/sync_catalogue.mjs --check   # the Worker's catalogue copy matches the game
-for f in session_key admin_token admission_private.pem app_account_token_key; do
+for f in session_key admin_token admission_private.pem app_account_token_key friend_hash_key; do
   [ -f ".secrets/$f" ] || { echo "Missing .secrets/$f: run scripts/gen_keys.sh"; exit 1; }
 done
 npm test
@@ -30,6 +30,8 @@ npx wrangler secret put ADMISSION_PRIVATE_KEY ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} < 
 # the same key on both deployments: the App Review fallback (production ->
 # sandbox) needs the same player's appAccountToken in both
 npx wrangler secret put APP_ACCOUNT_TOKEN_KEY ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} < .secrets/app_account_token_key
+# Final: Friends (keyed hashes of friend IDs; without it Friends stays off)
+npx wrangler secret put FRIEND_HASH_KEY ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} < .secrets/friend_hash_key
 # V6, optional: an App Store Connect In-App Purchase key lets the service ask
 # Apple's App Store Server API about each transaction (docs/COMMERCE_SETUP.md)
 if [ -f .secrets/asc_iap_key.p8 ] && [ -f .secrets/asc_iap_key_id ] && [ -f .secrets/asc_iap_issuer_id ]; then
