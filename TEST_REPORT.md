@@ -1,6 +1,6 @@
 # Test report: Ultimate Trifecta
 
-This report records what was actually run, where, and what each result proves. Version 1.8 (Pass 8) is reported first. The V8 (1.7), V7 (1.6), V6 (1.5), V5 (1.4), V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
+This report records what was actually run, where, and what each result proves. Version 1.9 (Pass 9) is reported first. The Pass 8 (1.8), V8 (1.7), V7 (1.6), V6 (1.5), V5 (1.4), V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
 
 | Label | What it is | What it can prove |
 |---|---|---|
@@ -11,7 +11,127 @@ This report records what was actually run, where, and what each result proves. V
 | **Desktop render** | The game rendered by Godot's Mobile renderer on Mesa **llvmpipe** (software Vulkan) under Xvfb, at device resolutions, with a fixed frame clock (`--fixed-fps 60`, or Movie Maker) | Layout, framing, art, render-path dimensions (render size vs displayed size, MSAA, scale) and engine counters (draw calls, primitives). **Not** frame rate, frame pacing, GPU cost or device smoothness |
 | **CI iOS** | GitHub Actions `macos-26` runner: Xcode project export, unsigned arm64 device archive (or, from V3, a signed archive and TestFlight upload), x86_64 Simulator build and run, App Store Connect API checks | That the iOS project compiles, links, signs and uploads, launches in the Simulator, and what App Store Connect reports for the build; *not* device performance or a device install |
 
-**Not done: no physical iPhone or iPad was available, so nothing in V1–V8 or Pass 8 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+**Not done: no physical iPhone or iPad was available, so nothing in V1–V8, Pass 8 or Pass 9 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+
+# Pass 9 (version 1.9)
+
+Pass 9 builds on 1.8 (8):
+- one steady full-input speed with no stamina (runner 6.0 m/s, Night Watch
+  6.6; protocol 8);
+- the Record Breaker and Dr. Doom skins;
+- garments that sit on the body, and animation at the new speed;
+- Season 1 · After Hours extended to 100 tiers;
+- the owner's "Soft Bounce Loop" as the round music, blended in from the
+  lobby music.
+
+Notes, defect register and owner dependencies:
+[docs/PASS9_NOTES.md](docs/PASS9_NOTES.md); per-area details in
+[docs/pass9/](docs/pass9/). **No physical iPhone or iPad was available**:
+everything below is desktop Linux, the service's Node tests, and CI iOS.
+
+## P9.1 Automated tests
+
+Full game suite on the integrated code (local, headless, commit `995d488`):
+**523 tests, 105,357 checks, 0 failures** (718 s). Service (`service/`,
+Node): **68 tests, 68 pass**. Character checks on the shipped GLB (art
+version `v10-5fd133068d04`): `fit_check.py` (24 looks × 567 poses),
+`skins_check.py`, `outfit_check.py` and `clip_check.py`, **0 failures**
+each. The gating numbers of the upload run are in P9.5.
+
+| Suite (new in Pass 9) | What it exercises |
+|---|---|
+| `test_p9_movement` (9) | The movement probe and its contract (60 s of full input at 6.00 m/s with 0 drop ticks; diagonal stick, wobble, jumps; no input pattern beats holding full input except a dive's 8.0 m/s peak); the Night Watch closes on a full-speed runner; dive edges press by press; motor state round trip and resets; bots run steadily (the M2 wall-slide fix); footstep noise follows actual speed; guest prediction of full speed and dives; protocol 7 and 9 refused with "Update the game to join."; a guest holds full speed for a minute online (min 5.97 m/s, corrections ≤ 0.1 cm) |
+| `test_p9_full_speed_touch` (1) | Real touches in a Practice round: parked at the stick's rim for 60 s (3,582/3,582 frames at 6.000 m/s), rim jitter, a part push, back to the rim; no sprint control, meter or words anywhere |
+| `test_fit_p9` (5) | The imported skinning setup; runtime deformation matches the asset; garments stay on the body in final poses (every look); a cosmetic swap mid-run keeps the gait and the fit; interruptions leave no layer latched |
+| `test_skins_p9` (10) | New IDs; the complete-skin override keeps and restores every modular choice; expressions on the active head; wire round trip and unknown IDs; the Night Watch keeps its uniform and the player's face; budgets and the shared material; portraits never show the previous face; every motion scenario with each skin; identical simulation; Locker and Shop copy |
+| `test_season100` (13) | A 30-tier account keeps everything; old cached wallets; tiers 50 and 100 need the tier and Premium; claims survive lost replies, offline, reinstall and a second device; a 100-tier Claim all in batches, granted once; an older service and a changed reward never mis-grant; navigation and milestones at four device shapes; the featured preview with the real art; finger swipes never select; the season tier stays apart from the lifetime level; the Shop never advertises 100 rewards |
+| `test_match_music` (7) | The round track loops sample for sample (no gap, no click, level across the wrap); level matched to the lobby track; `blend_start` lands a round beat on the lobby beat (200 random positions); the filtered beat blend; back to the lobby mid-blend; no blend from silence or muted; results and lobby transitions unchanged |
+| Updated | `test_pursuit`, `test_chase_balance`, `test_net` (anchored 6 s legs), `test_controls`, `test_profile` (Pass 8 sprint settings dropped, the rest kept), `test_touch_input`, `test_match_hud_pass8`, `test_lobby_music`, `test_p8_results_music`, `test_catalogue`, `test_sim`, `test_motion_v5`, `test_stick_probe`, `test_stick_round`, `test_v7_screens`, `test_challenges`, `test_runner_pace`. `test_p8_movement` and `test_p8_sprint_touch` are replaced by the two `test_p9_*` movement suites. |
+| Service: `season.test.mjs` (8) | The 100-tier table keeps tiers 1–30 exactly; migration 0005 keeps every row; a 30-tier account keeps XP, claims, items, Premium and Coins; Premium alone never unlocks an unearned tier and XP alone never grants a Premium reward; idempotent claims (repeats, lost reply, two devices, reinstall); an old 30-tier game, a changed reward, unknown tiers; a whole 100-tier Claim all; Season XP keeps counting past tier 30 |
+
+## P9.2 Movement and balance, measured (headless sim)
+
+- **Probe** (`docs/pass9/data/movement_{1.8,1.9}.json`): full input held
+  60 s, 5.00 → **5.99 m/s average, slowest settled tick 6.00, 0 drop
+  ticks**. The Pass 8 best (sprint release / re-press) averaged 5.98, a
+  sawtooth to 7.4; 1.9 has no such pattern. The best jump/dive chain
+  is 5.38 m/s, below holding full input. A single dive still peaks at
+  8.0.
+- **Chases** (`test_pursuit`): the Night Watch catches a full-input runner
+  from 8 m in 10.6 s (1.8: 3.8 s against a non-sprinting runner, 11.1 s
+  against released sprint bursts). Turbo gives 7.5 m/s for 3 s and opens
+  the gap for its duration.
+- **Seeded bot-round matrix** (`docs/pass9/data/balance_*.json`, 12 rounds
+  per row, desktop headless; bots, not people):
+
+| Runner wins (1 / 2 / 3 Night Watch) | 1 | 2 | 3 |
+|---|---|---|---|
+| 1.8 | 11/12 | 10/12 | 5/12 |
+| 1.9 with 1.8's bot steering | 12/12 | 10/12 | 5/12 |
+| **1.9 as shipped** | 12/12 | 12/12 | 8/12 |
+| 1.9, Night Watch 6.8 (not adopted) | 12/12 | 11/12 | 5/12 |
+
+  The movement change alone leaves outcomes where they were. The rise in
+  runner wins comes from the bot fix (M2: runner bots no longer crawl along
+  walls). That is a fix to bots, not a change to the rules, so the Night
+  Watch was not buffed to compensate. 6.0 / 6.6 is kept. Details and
+  confidence intervals: [docs/pass9/movement.md](docs/pass9/movement.md) §4.
+
+## P9.3 Visual, audio and behavioural evidence (desktop render, labelled)
+
+| What | Where | Shows |
+|---|---|---|
+| Movement before/after (real Practice round, Movie Maker, normal speed) | `docs/media/pass9/movement/` | 60 s full-input and online traces, the dive chain, 1.8 vs 1.9 side by side |
+| Garment fit | `docs/media/pass9/fit/` | Close-ups before/after (cuffs, hems, shoulder caps, hip tops, footwear), the reversal at 6.0 m/s |
+| Record Breaker and Dr. Doom | `docs/media/pass9/skins/` | Line-ups in dorm, campus and studio light at thumbnail and gameplay distance; actions; expressions; fit close-ups; the white shorts before/after; thumbnails; concept art beside the engine render; a reel of each skin |
+| Season Pass to tier 100 (13 shots × SE / iPhone 14 / Pro Max / iPad) | `docs/media/pass9/season/` | Navigation, milestones 50 and 100 with the skins' real portraits and live preview, claimable/claimed/pending, an older service, service off. Re-captured after the skins merged; every layout measurement unchanged |
+| Lobby → round music | `docs/media/pass9/music/` | The spectrogram across the blend and an 11 s excerpt from an engine capture (round beat 1.1 ms from the lobby beat; no click; no level dip) |
+
+## P9.4 Found and fixed during Pass 9 integration
+
+- **Runner bots crawled along tall walls** and never hopped low ones (also
+  on 1.8; M2 in the notes). Found by the new steady-speed bot test.
+- **22 motion tests failed at 6.0 m/s.** A reversal fired the planted stop
+  for one frame. Fixed in the view: the body has to be stopped for 30 ms
+  (F2).
+- **A lag-compensation test depended on phase** at the smaller 0.6 m/s
+  closure. Its legs are now anchored (M3); the tagging rules are
+  unchanged.
+- **The online 60 s trace dropped when the circle clipped an obstacle**
+  that a line-of-sight ray missed. The test now sweeps a sphere; the game
+  was not at fault.
+- **The garments' fit and the skins' fit** were fixed at the generator
+  (F1, S2), and the white shorts' material (S1).
+- **The Season Pass featured preview** was measured on a stale page height
+  on the iPad; it now refits when the page is shown.
+
+## P9.5 iOS build (CI iOS) and TestFlight
+
+Before uploading: read-only status run #117 showed builds 1–8 in App Store
+Connect (latest 1.8 (8), `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING`) and
+no 1.9. The upload run and Apple's processing state are recorded in
+TESTFLIGHT_RELEASE once Apple reports them.
+
+## P9.6 Not verified (exact remaining checks)
+
+- **On a real iPhone/iPad:**
+  - the steady speed with a thumb at the stick's rim, and on a controller;
+  - chase length with people;
+  - the two skins at play distance on a phone screen;
+  - the Season Pass navigation by touch;
+  - the lobby → round blend on the device's speaker and headphones;
+  - frame rate and heat.
+- **Human balance:** the matrix is bots. Who wins with people, and whether
+  Turbo is too strong, need playtests.
+- **Game Center rounds** between two devices on protocol 8, and 1.8 being
+  refused against a 1.9 host.
+- **Live service:** season claims at tiers 50 and 100, Premium, Coin
+  purchases and challenges. None of it is possible until the account
+  holder deploys the service and creates the products (TESTFLIGHT_RELEASE,
+  COMMERCE_SETUP).
+- **Owner confirmations:**
+  - likeness permission for the two skins;
+  - mureka.ai's terms for both music tracks.
 
 # Pass 8 (version 1.8)
 

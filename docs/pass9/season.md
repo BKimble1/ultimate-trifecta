@@ -14,12 +14,11 @@ wallet and Season Pass with the test-double service
 test-double service, labelled. **Not live**: the game service is still not
 deployed and no build has a service URL, so in the shipped configuration the
 pass is the honest preview (browse every tier, nothing claimable). Nothing
-here claims a live unlock. The two skins' **art** comes from the SKINS9
-stream (`Cosmetics` keys `record_breaker`, `dr_doom`): on this branch alone
-the pass shows their neutral picture and says "Preview not available in this
-build."; with the art merged the same code shows the real portraits and the
-live, slowly swaying preview (the path is tested and captured with a stand-in, see
-below).
+here claims a live unlock. The two skins' **art** (from the skins
+workstream, `Cosmetics` keys `record_breaker`, `dr_doom`) is merged: the pass
+shows their real portraits on the Tier 50 and 100 chips and cells, and the
+live, slowly swaying preview in the detail. The captures were re-taken after
+the merge.
 
 ## What changed
 
@@ -121,9 +120,10 @@ by (season, tier, track) and tiers 1-30 are identical in both tables.
   existing live preview (the emote preview's runner, framed head to shoes like the
   Locker's outfit pictures, swaying ±49° around its three-quarter view so
   the face stays in the key light; Reduced Motion: still).
-  Without the art: a neutral head on the chip, the neutral silhouette in the
-  cell and the detail with "Preview not available in this build." drawn in
-  the picture: never a fake preview.
+  If a featured skin's art were ever missing from a build, the pass would
+  show a neutral head on the chip, the neutral silhouette in the cell and
+  "Preview not available in this build." in the picture: never a fake
+  preview. With the merged art, 1.9 never shows it.
 - **One Claim.** Claim all stays in the header and the detail has the one
   Claim; navigation never claims; a queued claim shows "Claiming…"
   (disabled), an un-grantable one "Claim" disabled with its reason.
@@ -146,7 +146,7 @@ by (season, tier, track) and tiers 1-30 are identical in both tables.
 | A 100-tier Claim all would be cut at 60 cells by the version 2 service | code audit (`b.claims.slice(0, 60)`) | a 30-tier assumption | service: up to every cell; game: batches of 60 | both suites |
 | Claiming tier 50 against a service not yet updated would show a dead "Claim" | audit | the client couldn't know the service's table | `tiers` in the snapshot; catalogue version fallback; `service_update` state | `11_svcon_test_old_service_tier50`; `test_an_older_service…` |
 | An expected-reward mismatch could grant something the player wasn't shown | audit | claims named only (tier, track) | the claim names its reward; `reward_changed` | service, game |
-| The detail picture kept a 110-unit floor on every device (a tiny featured preview on the iPad) | iPad, a featured tier (stand-in shot) | its height was computed while the Reward page was still hidden (stale page height) and nothing refit it when the page was shown | refit on the page's own resize; a featured preview takes up to 38% of a tall panel | `12_…standin` (iPad); `test_premium_lock_reason_fits_the_iphone_se` |
+| The detail picture kept a 110-unit floor on every device (a tiny featured preview on the iPad) | iPad, a featured tier (first captures, with a stand-in skin before the art merged) | its height was computed while the Reward page was still hidden (stale page height) and nothing refit it when the page was shown | refit on the page's own resize; a featured preview takes up to 38% of a tall panel | `03`, `04`, `09` (iPad); `test_premium_lock_reason_fits_the_iphone_se` |
 | A refresh of the pass read the wallet's Season state a few hundred times | audit | per-cell reads | read once per frame (`season()`) | code review |
 
 ## How it was verified
@@ -155,12 +155,12 @@ by (season, tier, track) and tiers 1-30 are identical in both tables.
   `test/season.test.mjs`); the existing 60 (including the V6 Season test
   with its 30-tier body) unchanged and passing.
 - **Game** (focused suites, headless): `test_season100` 13 tests;
-  `test_catalogue` (all but `test_every_referenced_item_exists_in_cosmetics`,
-  which lists `outfit:record_breaker` and `outfit:dr_doom` until SKINS9's
-  Cosmetics entries merge, as expected), `test_wallet`, `test_challenges`,
-  `test_menus_layout`, `test_v7_screens`, `test_shop_ui`, `test_purchases`,
-  `test_coins`: pass. The whole suite and the benches were not run here
-  (the integrator runs them after merging).
+  `test_catalogue`, `test_wallet`, `test_challenges`, `test_menus_layout`,
+  `test_v7_screens`, `test_shop_ui`, `test_purchases`, `test_coins`: pass.
+- **Integrated** (after the skins, fit and movement merges): the whole game
+  suite passes (523 tests, 0 failures), including
+  `test_catalogue::test_every_referenced_item_exists_in_cosmetics` and
+  `test_season100`'s "art in the build" branch (the live preview).
 - **Captures:** the real Season Pass at four device shapes (below).
 
 ## Evidence index
@@ -173,10 +173,6 @@ for the shot list and the measured rows.
 
 ## Open items
 
-- **Art.** Until SKINS9 merges, Record Breaker and Dr. Doom show a neutral
-  picture and the note; after the merge, re-run
-  `tools/capture_pass9_season.sh` to capture the real portraits and the
-  live preview (shot 12, the stand-in, then drops out by itself).
 - **No live service.** Deploying (owner, COMMERCE_SETUP) applies migration
   0005 with the others; tiers 50 and 100 then need real play (or a sandbox
   database edit for QA, COMMERCE_SETUP 8d). No sandbox claim has happened.
@@ -185,20 +181,17 @@ for the shot list and the measured rows.
 - No physical device: the navigation row's touch feel and the live preview
   on a phone GPU are unverified.
 
-## Exact steps for the integrator
+## Integration (done)
 
-1. Merge `p9-pass100`. `game/config/catalogue.json` (version 3) and the
-   generated `service/src/catalogue_data.js` are this branch's; if another
-   branch touched the catalogue, resolve it and run
-   `node service/tools/sync_catalogue.mjs` and
-   `python3 tools/make_offer_schedule.py --check`.
-2. After SKINS9's `Cosmetics` entries for `record_breaker` and `dr_doom`
-   land, `test_catalogue::test_every_referenced_item_exists_in_cosmetics`
-   must pass, and `test_season100::test_progress_runs_featured_preview…`
-   takes its "art in the build" branch (the live preview).
-3. Re-capture: `FAST=1 tools/capture_pass9_season.sh docs/media/pass9/season/raw se p14 pmax ipad`
-   and convert as the media README says (the pictures then show the skins).
-4. Release notes / what to test (owned by the integrator): "Season Pass now
-   has 100 tiers: Record Breaker at Premium 50, Dr. Doom at Premium 100;
-   earlier progress, claims and Premium are kept. Try You're at / Next
-   reward / 30 · 50 · 100 above the track."
+The integrator merged `p9-pass100` with the skins, fit and movement
+streams, then:
+1. `test_catalogue::test_every_referenced_item_exists_in_cosmetics` passes
+   with the skins' `Cosmetics` entries, and
+   `test_season100::test_progress_runs_featured_preview…` takes its "art in
+   the build" branch (the live preview).
+2. Re-captured with `FAST=1 tools/capture_pass9_season.sh <out> se p14 pmax ipad`
+   and converted as the media README says. The pictures show the skins. The
+   stand-in shot is no longer produced. Every layout measurement is
+   unchanged from the first captures; the only difference is that the
+   "Preview not available" note is gone.
+3. The release notes and What to Test carry the Season Pass lines.

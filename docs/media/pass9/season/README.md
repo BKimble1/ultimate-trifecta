@@ -29,14 +29,13 @@ tables: [ECONOMY.md §4](../../../ECONOMY.md).
   The fixtures are Season XP, Premium and claims set on the double as
   settled rounds and claims would have left them; claims shown as made
   (06) went through the real wallet and the double.
-- **The two skins' art is not in this branch** (it comes from the SKINS9
-  stream): Record Breaker and Dr. Doom show the neutral picture, a neutral
-  head on their milestone chips, and "Preview not available in this
-  build." This is the intended state while the art is absent. Shot 12 shows
-  the featured-skin preview path with a **stand-in** (Glow Jogger set as a
-  featured tier, labelled on the picture); it drops out by itself once the
-  skins' art is in the build. Re-run the tool after the merge for the real
-  portraits and the live preview.
+- **The two skins' art is in the build.** Record Breaker and Dr. Doom show
+  their real portraits on the Tier 50 and 100 chips and cells, and the live
+  preview in the detail (it sways slowly around its three-quarter view, so a
+  capture catches one moment of it). These were re-captured after the skins
+  merged. The first captures, taken before the merge, showed a neutral
+  picture and included a stand-in shot (12); both are gone. Every layout
+  measurement in `measure.json` is the same as in those first captures.
 - **Images:** PNG captures converted to JPEG (q85), at most 1280 px wide.
 
 ### Devices (landscape)
@@ -54,7 +53,7 @@ tables: [ECONOMY.md §4](../../../ECONOMY.md).
 |---|---|
 | `01_svcon_test_pass_open_tier43` | A regular player (Premium, Season XP for Tier 43, tier 40 not yet claimed) opens the pass: "Tier 43 / 100", the navigation row ("You're at Tier 43", "Next reward · Tier 45 · 550 XP", Tier 30 / 50 / 100), progress runs ("36–39", "41–44" with Tier 43 ringed), the claimable tier 40, Claim all (2), the Challenges page |
 | `02_svcon_test_nav_current_run` | "You're at" tapped: the 41–44 run selected; its detail ("Progress tiers · No reward on either track", what it counts toward, 550 more Season XP) and "Show Tier 45" |
-| `03_svcon_test_milestone_50_record_breaker` | The Tier 50 shortcut: Record Breaker, locked, "Reach Tier 50: 2,300 more Season XP …", description and includes; the neutral picture with "Preview not available in this build." |
+| `03_svcon_test_milestone_50_record_breaker` | The Tier 50 shortcut: Record Breaker, locked, "Reach Tier 50: 2,300 more Season XP …", description and includes; the skin's live preview |
 | `04_svcon_test_milestone_100_dr_doom` | The Tier 100 shortcut: Dr. Doom (locked, 19,800 more Season XP) beside the Season 1 Legend badge; runs 86–89 … 96–99 |
 | `05_svcon_test_tier40_claimable` | Tier 40 Premium (Big Dive badge) ready: the one Claim in the detail, Claim all in the header |
 | `06_svcon_test_tier40_claimed` | The same after claiming: claimed mark, "Wear it in the Locker" |
@@ -63,7 +62,6 @@ tables: [ECONOMY.md §4](../../../ECONOMY.md).
 | `09_svcon_test_tier100_dr_doom_claimed` | A finished pass: "Tier 100 / 100", "Every tier reached", "Next reward · All reached", Dr. Doom claimed |
 | `10_svcon_test_claim_pending` | A claim sent while the network is down: the cell's pending mark, "Your claim is on its way …", "Claiming…" (disabled); Claim all counts only what isn't queued |
 | `11_svcon_test_old_service_tier50` | The double acting as an **older (30-tier) service**: tier 50 earned, "Nothing to claim", the reason "The game service hasn't been updated for this tier yet …" and a disabled Claim |
-| `12_svcon_test_featured_preview_path_standin` | **Stand-in** (labelled): Glow Jogger as a featured tier: its face on the milestone chip (Portraits) and the live preview swaying around its three-quarter view, the path Record Breaker and Dr. Doom take once their art is in the build |
 | `20_svcoff_pass_preview` | Service off (as shipped): "Rewards unavailable right now", the navigation row, tier 1 earned, the Challenges preview |
 | `21_svcoff_milestone_100` | Service off: the Tier 100 shortcut still browses Dr. Doom with its lock reason (and "Premium track: needs Premium too.") |
 
