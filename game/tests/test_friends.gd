@@ -435,6 +435,24 @@ func test_incoming_toast_never_in_a_round_and_accept_flow() -> void:
 	await _end()
 
 
+func test_toast_folds_into_the_badge() -> void:
+	await _begin()
+	await _signin()
+	var home := await _home()
+	await _until(func() -> bool: return Friends.shared)
+	ff.add_invite("Comfy Frog", "T:_ada")
+	Friends.beat_now()
+	await _secs(4.0)
+	t.check(Friends.toast.showing(), "shown")
+	await _secs(16.0)
+	t.check(not Friends.toast.showing(), "after about 15 s it folds away")
+	t.eq(Friends.incoming.size(), 1, "the invite itself stays")
+	t.check(home.friends_btn.get_node("Badge").visible, "counted on the Friends button")
+	await _secs(3.0)
+	t.check(not Friends.toast.showing(), "and the same invite doesn't pop up again")
+	await _end()
+
+
 func test_accept_in_a_party_asks_first_and_decline() -> void:
 	await _begin()
 	await _signin()
@@ -525,6 +543,33 @@ func test_revoked_access_clears_friend_data() -> void:
 	t.eq(ff.uploaded, ["T:_ada"], "and the service's set was replaced")
 	t.check(not Friends.presence.has("T:_bo"), "nothing kept for a removed friend")
 	q.close()
+	await _end()
+
+
+## Integration: Cloud may move an install between deployments once
+## (deployment_changed); Friends starts again there.  (This branch's Cloud
+## has no such signal yet: the handler is called as the signal would.)
+func test_deployment_move_resyncs() -> void:
+	await _begin()
+	await _signin()
+	var home := await _home()
+	var p := FriendsPanel.open(home)
+	await _until(func() -> bool: return Friends.service == "ok" and p.rows_in_order().size() == 6)
+	ff.add_invite("Comfy Frog", "T:_ada")
+	Friends.beat_now()
+	await _secs(4.0)
+	t.eq(Friends.incoming.size(), 1, "an invite from the first deployment")
+	var puts: int = ff.count(HTTPClient.METHOD_PUT, "/v1/friends")
+	var beats: int = ff.count(HTTPClient.METHOD_POST, "/v1/presence")
+	ff.incoming = []
+	Friends._on_deployment_changed("production", "sandbox")
+	t.eq(Friends.incoming.size(), 0, "its invites are dropped")
+	t.eq(Friends.friends.size(), 6, "Game Center's list is kept")
+	await _secs(5.0)
+	t.check(ff.count(HTTPClient.METHOD_PUT, "/v1/friends") > puts, "the friend set is uploaded again")
+	t.check(ff.count(HTTPClient.METHOD_POST, "/v1/presence") > beats, "heartbeats go to the new deployment")
+	t.eq(Friends.service, "ok", "and the open panel shows status again")
+	p.close()
 	await _end()
 
 

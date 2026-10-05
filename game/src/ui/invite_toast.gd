@@ -22,7 +22,7 @@ var sub_l: Label
 var accept_btn: Button
 var decline_btn: Button
 var current: Dictionary = {}
-var _shown_ms := 0
+var _shown_s := 0.0     # time on screen, counted in the 1 s state ticks (game time)
 var _anchor := Vector2.ZERO
 
 
@@ -86,8 +86,8 @@ func _allowed() -> bool:
 	return not (scr is Screen and (scr as Screen).has_modal())
 
 
-## Called by Friends each second and whenever invites change.
-func refresh() -> void:
+## Called by Friends each second (`tick_s`) and whenever invites change.
+func refresh(tick_s: float = 0.0) -> void:
 	if card == null:
 		return
 	if showing():
@@ -101,10 +101,12 @@ func refresh() -> void:
 			_hide(true)      # the panel shows it now
 		elif not _allowed():
 			_hide(false)     # a round started: shown again afterwards
-		elif Time.get_ticks_msec() - _shown_ms >= int(SHOW_S * 1000.0):
-			_hide(true)      # folds into the Friends badge
 		else:
-			_paint()
+			_shown_s += tick_s
+			if _shown_s >= SHOW_S:
+				_hide(true)      # folds into the Friends badge
+			else:
+				_paint()
 		return
 	if not _allowed():
 		return
@@ -115,7 +117,7 @@ func refresh() -> void:
 
 func _show(iv: Dictionary) -> void:
 	current = iv
-	_shown_ms = Time.get_ticks_msec()
+	_shown_s = 0.0
 	_paint()
 	card.visible = true
 	_place()

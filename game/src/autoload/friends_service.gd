@@ -118,6 +118,10 @@ func _ready() -> void:
 	_layer.add_child(toast)
 	Cloud.changed.connect(_on_cloud)
 	Social.auth_changed.connect(func(_ok: bool) -> void: _on_cloud())
+	# (integration: Cloud may move an install between the sandbox and
+	# production deployments once; Friends data is per deployment)
+	if Cloud.has_signal("deployment_changed"):
+		Cloud.connect("deployment_changed", _on_deployment_changed)
 
 
 func _timer(cb: Callable) -> Timer:
@@ -231,6 +235,25 @@ func _quiet_start() -> void:
 		await _revoke()
 	_update_timers()
 	changed.emit()
+
+
+## Cloud moved this install to another deployment: its friend sets, status
+## and invites are separate there.  Stop talking to the old one (its row
+## simply expires within 60 s), forget what it said, and start again on the
+## new one (upload, heartbeat, and a panel refresh if one is open).
+func _on_deployment_changed(_from: Variant = null, _to: Variant = null) -> void:
+	_hb_timer.stop()
+	_poll_timer.stop()
+	var keep_friends := friends
+	_forget()
+	friends = keep_friends     # (Game Center's list doesn't depend on the deployment)
+	_pid = ""
+	_last_sent = {}
+	_toasted = {}
+	service = "idle"
+	_on_cloud()
+	if _watchers > 0:
+		refresh()
 
 
 ## Everything this device knows about friends goes (sign-out, deleted or
@@ -519,7 +542,7 @@ func _on_check() -> void:
 	if _should_beat() and not _beating and derive_state() != _last_sent:
 		beat_now()
 	_expire_invites()
-	toast.refresh()
+	toast.refresh(STATE_CHECK_S)
 
 
 func _notification(what: int) -> void:

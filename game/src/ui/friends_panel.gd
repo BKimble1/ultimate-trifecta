@@ -604,9 +604,10 @@ class Row:
 		action_btn.visible = act in ["invite", "sending"]
 		action_btn.disabled = act == "sending"
 		action_btn.text = "Sending…" if act == "sending" else "Invite"
-		chip.visible = act in ["invited", "in_party", "update", "full", "busy"]
-		chip.text = {"invited": "Invited ✓", "in_party": "In your party", "update": "Needs update", "full": "Party full", "busy": "After the round"}.get(act, "")
-		chip.add_theme_color_override("font_color", UIKit.TEAL if act in ["invited", "in_party"] else UIKit.IVORY_MUTED)
+		# ("In your party" is already the status line: no second label)
+		chip.visible = act in ["invited", "update", "full", "busy"]
+		chip.text = {"invited": "Invited ✓", "update": "Needs update", "full": "Party full", "busy": "After the round"}.get(act, "")
+		chip.add_theme_color_override("font_color", UIKit.TEAL if act == "invited" else UIKit.IVORY_MUTED)
 		card.accessibility_name = "%s, %s" % [name_l.text, status_l.text]
 		action_btn.accessibility_name = "Invite %s" % name_l.text
 		if changed_actions or open:
