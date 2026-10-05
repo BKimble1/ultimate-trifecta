@@ -110,6 +110,19 @@ func _http(method: int, path: String, body: Variant, auth: bool) -> Dictionary:
 	return {"status": int(res[1]), "body": parsed}
 
 
+## Unauthenticated GET of public service data (Pass 8: the Shop's offers
+## and the service's clock).  {ok, ..., http_status}.
+func public_get(path: String) -> Dictionary:
+	if not configured():
+		return {"ok": false, "error": "service_off", "message": "The game service isn't set up in this build.", "http_status": 0}
+	var r := await _http(HTTPClient.METHOD_GET, path, null, false)
+	var out: Dictionary = r["body"]
+	out["http_status"] = int(r["status"])
+	if not out.has("ok"):
+		out["ok"] = int(r["status"]) == 200
+	return out
+
+
 ## Authenticated call; signs in (or back in) with Game Center when needed.
 func api(method: int, path: String, body: Variant = null) -> Dictionary:
 	if not configured():

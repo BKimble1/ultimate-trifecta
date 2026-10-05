@@ -105,7 +105,8 @@ func _on_products(products: Array, status: int) -> void:
 		var pid := String(o.get("product_id"))
 		_products[pid] = o
 		out.append({"product_id": pid, "display_name": String(o.get("display_name")),
-			"display_price": String(o.get("display_price")), "description": String(o.get("description_value"))})
+			"display_price": String(o.get("display_price")), "description": String(o.get("description_value")),
+			"price": float(o.get("price")) if o.get("price") != null else 0.0})
 	products_loaded.emit(out, status == Status.OK)
 
 

@@ -1,7 +1,7 @@
 extends Node
 ## Purchases (V6, autoload "Purchases"): Apple in-app purchases for the Shop.
 ##
-## Products (config/catalogue.json "products"): three consumable Coin packs
+## Products (config/catalogue.json "products"): six consumable Coin packs
 ## and two permanent (non-consumable) skins.  Season 1 Premium is bought with
 ## Coins (Wallet.spend), never here.  Prices are StoreKit's localized ones;
 ## a product StoreKit doesn't return is shown as unavailable, never with a
@@ -177,6 +177,47 @@ func view(pid: String) -> Dictionary:
 	if cur in ["cancelled", "failed", "delivered"]:
 		out["state"] = cur
 		out["message"] = String(st.get("message", ""))
+	return out
+
+
+## Pass 8: the Coin pack with the lowest price per Coin, computed only from
+## StoreKit's own numeric prices, and only when every compared pack is priced
+## in the same currency (the same currency text around the digits of its
+## localized price) and it is cheaper per Coin than every other pack by more
+## than rounding.  "" otherwise: no "best value" claim without real numbers.
+func best_value_pack() -> String:
+	var rows: Array = []
+	var cur := ""
+	for it in Catalogue.items_of_kind("coin_pack"):
+		var pid := String(it.get("product", ""))
+		var p: Dictionary = products.get(pid, {})
+		var price := float(p.get("price", 0.0))
+		var coins := int(it.get("coins", 0))
+		if p.is_empty() or price <= 0.0 or coins <= 0:
+			continue
+		var c := currency_mark(String(p.get("display_price", "")))
+		if c == "":
+			return ""
+		if cur == "":
+			cur = c
+		elif c != cur:
+			return ""
+		rows.append([price / coins, pid])
+	if rows.size() < 2:
+		return ""
+	rows.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	if float(rows[0][0]) >= float(rows[1][0]) * 0.999:
+		return ""
+	return String(rows[0][1])
+
+
+## The currency part of a localized price ("$0.99" -> "$", "0,99 €" -> "€",
+## "US$1.99" -> "US$"): everything but digits, separators and spaces.
+static func currency_mark(display_price: String) -> String:
+	var out := ""
+	for ch in display_price:
+		if not (ch in "0123456789.,'    "):
+			out += ch
 	return out
 
 

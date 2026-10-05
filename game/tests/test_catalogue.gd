@@ -38,11 +38,19 @@ func test_products_are_honest() -> void:
 		else:
 			skins += 1
 			t.eq(String(p["apple_type"]), "NON_CONSUMABLE", "%s is a permanent skin" % pid)
-	t.eq(packs, 3, "three Coin packs")
+	t.eq(packs, 6, "six Coin packs (Pass 8: 250, 1,000 and 7,500 added)")
 	t.eq(skins, 2, "two direct-purchase skins")
 	var amounts := Catalogue.items_of_kind("coin_pack").map(func(i: Dictionary) -> int: return int(i["coins"]))
 	amounts.sort()
-	t.eq(amounts, [500, 1500, 3500], "500 / 1,500 / 3,500 Coins")
+	t.eq(amounts, [250, 500, 1000, 1500, 3500, 7500], "250 / 500 / 1,000 / 1,500 / 3,500 / 7,500 Coins")
+	# every existing product ID and quantity is kept; the new ones follow the prefix
+	for n in [250, 500, 1000, 1500, 3500, 7500]:
+		var pid := "%s.coins.%d" % [prefix, n]
+		t.eq(int(Catalogue.product(pid).get("coins", 0)), n, "%s delivers %d Coins" % [pid, n])
+		t.eq(Catalogue.item_for_product(pid), "coins:%d" % n, "%s is coins:%d" % [pid, n])
+		t.eq(Catalogue.product_of("coins:%d" % n), pid, "coins:%d names %s" % [n, pid])
+	t.eq(Catalogue.shop_items("coins").map(func(i: Dictionary) -> int: return int(i["coins"])), [250, 500, 1000, 1500, 3500, 7500],
+		"the Shop lists them by quantity")
 	t.eq(Catalogue.price("season:s1:premium"), 1500, "Season 1 Premium costs 1,500 Coins")
 	t.eq(Catalogue.product_of("season:s1:premium"), "", "Premium is never an Apple product (bought with Coins, no subscription)")
 
@@ -66,6 +74,40 @@ func test_shop_outfits_and_prices() -> void:
 	for rid in Catalogue.season_reward_ids("s1"):
 		t.check(not sold.has(rid), "pass reward %s is not resold in the Shop" % rid)
 		t.eq(Catalogue.kind(rid), "season_reward", "%s is a season reward" % rid)
+
+
+## Pass 8 rotation: the six new outfits and the four V6 Coin outfits are sold
+## only through scheduled offers; the written schedule (client copy of the
+## catalogue) has the rule's shape; ownership kinds are unchanged.
+func test_rotation_pool_and_schedule() -> void:
+	var pool := Catalogue.rotation_ids()
+	pool.sort()
+	t.eq(pool, ["outfit:arcade_sprinter", "outfit:bedtime_bandit", "outfit:campus_courier", "outfit:cloud_nine", "outfit:lantern_scout",
+		"outfit:midnight_mechanic", "outfit:moonwalk_cadet", "outfit:pumpkin_pajamas", "outfit:raincoat_explorer", "outfit:varsity_sprinter"],
+		"the rotating pool")
+	var want := {"outfit:midnight_mechanic": 900, "outfit:moonwalk_cadet": 1200, "outfit:pumpkin_pajamas": 800, "outfit:arcade_sprinter": 900,
+		"outfit:cloud_nine": 1000, "outfit:bedtime_bandit": 1000}
+	for id in want:
+		t.eq(Catalogue.kind(id), "coin_item", "%s is a Coin item" % id)
+		t.eq(Catalogue.price(id), int(want[id]), "%s costs %d Coins" % [id, int(want[id])])
+		t.check(Catalogue.is_new(id), "%s is new in this catalogue version" % id)
+	for id in ["outfit:moonlight_runner", "outfit:starry_sleeper", "season:s1:premium", "coins:250", "hat:crown", "outfit:robe"]:
+		t.check(not Catalogue.is_rotation(id), "%s stays always available" % id)
+	var always: Array = Catalogue.shop_items("always").map(func(i: Dictionary) -> String: return String(i["id"]))
+	t.eq(always.filter(func(id: String) -> bool: return Catalogue.is_rotation(id)), [], "nothing rotating in Always available")
+	var sec := Catalogue.offers_section()
+	var sched: Array = sec.get("schedule", [])
+	t.check(sched.size() >= 8 * 7 * 2, "a bounded written schedule of at least 8 weeks (%d offers)" % sched.size())
+	var seen := {}
+	for o in sched:
+		var s := Catalogue.parse_utc_ms(String(o["starts_at_utc"]))
+		var e := Catalogue.parse_utc_ms(String(o["ends_at_utc"]))
+		t.check(not seen.has(o["offer_id"]), "offer id %s unique" % o["offer_id"])
+		seen[o["offer_id"]] = true
+		t.check(e - s >= 48 * 3600 * 1000, "%s lasts at least 48 h" % o["offer_id"])
+		t.eq(s % 86400000, 0, "%s starts at 00:00 UTC" % o["offer_id"])
+		t.check(Catalogue.is_rotation(String(o["item_id"])), "%s sells a rotating item" % o["offer_id"])
+		t.eq(int(o["price"]), Catalogue.price(String(o["item_id"])), "%s at the catalogue price" % o["offer_id"])
 
 
 ## Run after the art merge: every runner item the Shop or the Season Pass

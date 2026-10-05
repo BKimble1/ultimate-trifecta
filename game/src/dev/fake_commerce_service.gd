@@ -9,6 +9,12 @@ extends RefCounted
 ## the simulated store's unsigned "test." transactions, which the real
 ## service rejects (it verifies Apple's certificate chain).
 ##
+## Pass 8 (DEV FIXTURE, never in a release: src/dev isn't exported): the
+## Shop's rotating offers as service/src/offers.js serves them
+## (GET /v1/shop/offers) and the same acceptance check on a spend, from the
+## catalogue's schedule or one a test sets (use_schedule), judged by this
+## double's own clock (clock_ms: a test or a labelled capture fixes it).
+##
 ## Use: install(); Cloud.transport_override and identity_override point here.
 
 var profiles := {}          # pid -> {gc}
@@ -23,6 +29,33 @@ var calls: Array = []       # [method, path] for assertions
 var gc_player := "T:_tester"
 var environment := "Sandbox"
 var _seq := 0
+## the double's clock (unix ms); unset = the real time
+var clock_ms: Callable
+## offers: [{offer_id, item_id, slot, price, revision, starts_at, ends_at (ms)}]
+var schedule: Array = []
+var schedule_revision := 1
+var offers_supported := true
+var offer_sales := {}       # idem key -> {offer_id, item_id, price, accepted_at}
+const LOOKAHEAD_MS := 72 * 3600 * 1000
+
+
+func _init() -> void:
+	var sec := Catalogue.offers_section()
+	schedule_revision = int(sec.get("schedule_revision", 1))
+	for o in sec.get("schedule", []):
+		schedule.append({"offer_id": String(o["offer_id"]), "item_id": String(o["item_id"]), "slot": int(o["slot"]), "price": int(o["price"]),
+			"revision": int(o.get("revision", 1)), "starts_at": float(Catalogue.parse_utc_ms(String(o["starts_at_utc"]))),
+			"ends_at": float(Catalogue.parse_utc_ms(String(o["ends_at_utc"])))})
+
+
+func now_ms() -> float:
+	return float(clock_ms.call()) if clock_ms.is_valid() else Time.get_unix_time_from_system() * 1000.0
+
+
+## A test schedule (times in ms).
+func use_schedule(list: Array, revision: int = 7) -> void:
+	schedule = list.duplicate(true)
+	schedule_revision = revision
 
 
 func install() -> void:
@@ -114,6 +147,8 @@ func handle(method: int, path: String, body: Variant, headers: PackedStringArray
 func _route(method: int, path: String, b: Dictionary, pid: String) -> Dictionary:
 	if path == "/v1/config":
 		return {"status": 200, "body": {"ok": true, "environment": environment.to_lower()}}
+	if path == "/v1/shop/offers":
+		return _offers() if offers_supported else _err(404, "no_route", "Not found.")
 	if path == "/v1/auth/gamecenter":
 		var p := _pid_for(String(b.get("player_id", "")))
 		return {"status": 200, "body": {"ok": true, "token": p, "expires_at": (Time.get_unix_time_from_system() + 3600) * 1000,
@@ -142,16 +177,43 @@ func _route(method: int, path: String, b: Dictionary, pid: String) -> Dictionary
 func _spend(pid: String, b: Dictionary) -> Dictionary:
 	var key := "spend:%s:%s" % [pid, String(b.get("idempotency_key", ""))]
 	if ledger_keys.has(key):
-		return _ok(pid, {"replay": true})
+		var extra := {"replay": true}
+		if offer_sales.has(key):
+			extra["offer"] = offer_sales[key]
+			extra["accepted_at"] = offer_sales[key]["accepted_at"]
+		return _ok(pid, extra)
 	var id := String(b.get("item_id", ""))
 	var price := Catalogue.price(id)
 	if not Catalogue.kind(id) in ["coin_item", "season_premium"]:
 		return _err(400, "not_for_sale", "That item isn't sold for Coins.")
-	if int(b.get("price", -1)) != price:
-		return _err(409, "price_changed", "The price changed. Check it and try again.")
 	var w := wallet(pid)
 	if (w["entitlements"] as Dictionary).has(id):
 		return _err(409, "already_owned", "You already own this.")
+	var offer := {}
+	if Catalogue.is_rotation(id):
+		var t := now_ms()
+		var oid := String(b.get("offer_id", ""))
+		if oid == "":
+			offer = _active_for(id, t)
+			if offer.is_empty():
+				return _changed("not_in_rotation", "This skin isn't in the Shop right now. Nothing was charged.")
+		else:
+			for o in schedule:
+				if String(o["offer_id"]) == oid:
+					offer = o
+			if offer.is_empty():
+				return _changed("unknown_offer", "This offer isn't in the Shop any more. Nothing was charged.")
+			if String(offer["item_id"]) != id:
+				return _changed("item_mismatch", "This offer is for a different item. Nothing was charged.")
+			if t < float(offer["starts_at"]):
+				return _changed("not_started", "This offer hasn't started yet. Nothing was charged.")
+			if t >= float(offer["ends_at"]):
+				return _changed("expired", "This offer has left the Shop. Nothing was charged.")
+		price = int(offer["price"])
+		if int(b.get("price", -1)) != price:
+			return _changed("price", "The price changed. Nothing was charged.")
+	elif int(b.get("price", -1)) != price:
+		return _err(409, "price_changed", "The price changed. Check it and try again.")
 	if int(w["balance"]) < price:
 		return _err(409, "insufficient_funds", "You don't have enough Coins.")
 	w["balance"] = int(w["balance"]) - price
@@ -160,7 +222,43 @@ func _spend(pid: String, b: Dictionary) -> Dictionary:
 		w["season"][String(Catalogue.item(id).get("season", "s1"))]["premium"] = true
 	_bump(pid)
 	ledger_keys[key] = true
-	return _ok(pid)
+	if not offer.is_empty():
+		offer_sales[key] = {"offer_id": offer["offer_id"], "item_id": id, "price": price, "starts_at": offer["starts_at"],
+			"ends_at": offer["ends_at"], "accepted_at": now_ms()}
+		return _ok(pid, {"bought": id, "offer": offer_sales[key], "accepted_at": now_ms()})
+	return _ok(pid, {"bought": id})
+
+
+func _changed(reason: String, message: String) -> Dictionary:
+	var r := _err(409, "offer_changed", message)
+	r["body"]["reason"] = reason
+	return r
+
+
+func _active_for(id: String, t: float) -> Dictionary:
+	var best := {}
+	for o in schedule:
+		if String(o["item_id"]) == id and float(o["starts_at"]) <= t and t < float(o["ends_at"]):
+			if best.is_empty() or float(o["ends_at"]) > float(best["ends_at"]):
+				best = o
+	return best
+
+
+func _offers() -> Dictionary:
+	var t := now_ms()
+	var cur: Array = []
+	var up: Array = []
+	var nxt := -1.0
+	for o in schedule:
+		if float(o["starts_at"]) <= t and t < float(o["ends_at"]):
+			cur.append(o.duplicate())
+			nxt = float(o["ends_at"]) if nxt < 0.0 else minf(nxt, float(o["ends_at"]))
+		elif float(o["starts_at"]) > t and float(o["starts_at"]) <= t + LOOKAHEAD_MS:
+			up.append(o.duplicate())
+			nxt = float(o["starts_at"]) if nxt < 0.0 else minf(nxt, float(o["starts_at"]))
+	cur.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["slot"]) < int(b["slot"]))
+	return {"status": 200, "body": {"ok": true, "server_time": t, "schedule_revision": schedule_revision, "slots": 4,
+		"current": cur, "upcoming": up, "next_change_at": nxt if nxt >= 0.0 else null, "known_until": t + LOOKAHEAD_MS}}
 
 
 func _apple(pid: String, b: Dictionary) -> Dictionary:
