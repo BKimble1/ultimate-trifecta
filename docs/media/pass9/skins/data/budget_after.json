@@ -1,0 +1,155 @@
+{
+  "art_version": "v10-8aa7d2363cbe",
+  "looks": 9200,
+  "heaviest_look_tris": 32834,
+  "heaviest_look_parts": [
+    "base",
+    "robe",
+    "body_skin",
+    "shoe_slippers",
+    "freckles",
+    "hat_beanie",
+    "hair_bob"
+  ],
+  "max_parts_per_runner": 8,
+  "default_look_tris": 24850,
+  "default_look_parts": [
+    "base",
+    "pj",
+    "shoe_slippers",
+    "hat_nightcap"
+  ],
+  "swim_goggles_look_tris": 21258,
+  "night_watch_max_tris": 22882,
+  "pass8": {
+    "midnight_mechanic": {
+      "outfit_part": "mechanic",
+      "outfit_part_tris": 12562,
+      "headwear_tris": 0,
+      "heaviest_look_tris": 29772,
+      "heaviest_look_parts": [
+        "base",
+        "mechanic",
+        "freckles",
+        "hat_beanie",
+        "hair_bob"
+      ],
+      "max_parts_draw_calls": 6
+    },
+    "moonwalk_cadet": {
+      "outfit_part": "cadet",
+      "outfit_part_tris": 12616,
+      "headwear_tris": 3812,
+      "heaviest_look_tris": 30186,
+      "heaviest_look_parts": [
+        "base",
+        "cadet",
+        "freckles",
+        "acc_cadet_cap",
+        "hair_bob"
+      ],
+      "max_parts_draw_calls": 6
+    },
+    "pumpkin_pajamas": {
+      "outfit_part": "pumpkin",
+      "outfit_part_tris": 10066,
+      "headwear_tris": 2796,
+      "heaviest_look_tris": 27276,
+      "heaviest_look_parts": [
+        "base",
+        "pumpkin",
+        "freckles",
+        "hat_beanie",
+        "hair_bob"
+      ],
+      "max_parts_draw_calls": 6
+    },
+    "arcade_sprinter": {
+      "outfit_part": "arcade",
+      "outfit_part_tris": 11496,
+      "headwear_tris": 0,
+      "heaviest_look_tris": 28706,
+      "heaviest_look_parts": [
+        "base",
+        "arcade",
+        "freckles",
+        "hat_beanie",
+        "hair_bob"
+      ],
+      "max_parts_draw_calls": 6
+    },
+    "cloud_nine": {
+      "outfit_part": "cloud",
+      "outfit_part_tris": 11940,
+      "headwear_tris": 0,
+      "heaviest_look_tris": 21602,
+      "heaviest_look_parts": [
+        "base",
+        "cloud",
+        "freckles"
+      ],
+      "max_parts_draw_calls": 3
+    },
+    "bedtime_bandit": {
+      "outfit_part": "bandit",
+      "outfit_part_tris": 11475,
+      "headwear_tris": 0,
+      "heaviest_look_tris": 21137,
+      "heaviest_look_parts": [
+        "base",
+        "bandit",
+        "freckles"
+      ],
+      "max_parts_draw_calls": 3
+    }
+  },
+  "pass9": {
+    "record_breaker": {
+      "parts": [
+        "rb_head",
+        "rb_hair",
+        "rb_body"
+      ],
+      "part_tris": {
+        "rb_head": 9132,
+        "rb_hair": 7159,
+        "rb_body": 14812
+      },
+      "look_tris": 31103,
+      "draw_calls": 3
+    },
+    "dr_doom": {
+      "parts": [
+        "dd_head",
+        "dd_fringe",
+        "dd_suit"
+      ],
+      "part_tris": {
+        "dd_head": 10782,
+        "dd_fringe": 3284,
+        "dd_suit": 18296
+      },
+      "look_tris": 32362,
+      "draw_calls": 3
+    }
+  },
+  "glb_bytes": 19286480,
+  "imported_scene_bytes": 9633461,
+  "all_parts_tris": 357238,
+  "parts_in_asset": 59,
+  "part_tris": {
+    "base": 9086,
+    "hat_swimcap": 3576,
+    "body_skin": 4692,
+    "pj": 8272,
+    "robe": 7628,
+    "watch": 12600,
+    "hair_bob": 4096,
+    "hair_curly": 5848
+  },
+  "heaviest_look_draw_calls": 7,
+  "heaviest_look_materials": [
+    "res://assets/shaders/character.gdshader"
+  ],
+  "material_variants_in_asset": 2
+}

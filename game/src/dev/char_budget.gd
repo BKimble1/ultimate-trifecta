@@ -89,6 +89,18 @@ func _ready() -> void:
 			"headwear_tris": tri.call(hw[0]) if not hw.is_empty() else 0, "heaviest_look_tris": ow, "heaviest_look_parts": owp,
 			"max_parts_draw_calls": omost}
 	res["pass8"] = p8
+	# Pass 9: the complete skins (their own parts whatever hat, shoes, hair
+	# and marks are saved: Cosmetics.COMPLETE_SKINS)
+	var p9 := {}
+	for o in Cosmetics.COMPLETE_SKINS:
+		var ps3: Array = Cosmetics.runner_parts({"outfit": o})
+		var n3 := 0
+		var each := {}
+		for p in ps3:
+			n3 += tri.call(p)
+			each[p] = tri.call(p)
+		p9[o] = {"parts": ps3, "part_tris": each, "look_tris": n3, "draw_calls": ps3.size()}
+	res["pass9"] = p9
 	var glb := FileAccess.open("res://assets/characters/runner.glb", FileAccess.READ)
 	res["glb_bytes"] = glb.get_length() if glb else 0
 	var imp := ConfigFile.new()

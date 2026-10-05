@@ -1161,8 +1161,8 @@ def bare_foot(mb, sx, style):
 
 
 # ================================================================== RECORD BREAKER: body
-RB_TORSO = [(0.455, 0.0), (0.462, 0.07), (0.475, 0.125), (0.50, 0.162), (0.53, 0.177), (0.57, 0.179), (0.62, 0.173),
-            (0.67, 0.176), (0.72, 0.186), (0.77, 0.193), (0.81, 0.178), (0.84, 0.152), (0.865, 0.113), (0.885, 0.074),
+RB_TORSO = [(0.455, 0.0), (0.462, 0.07), (0.475, 0.125), (0.50, 0.160), (0.53, 0.172), (0.57, 0.172), (0.62, 0.165),
+            (0.67, 0.168), (0.72, 0.180), (0.77, 0.190), (0.81, 0.178), (0.84, 0.152), (0.865, 0.113), (0.885, 0.074),
             (0.93, 0.066), (0.96, 0.0)]
 RB_RY = 0.82
 RB_SKIN_LEG = -0.004       # the leaner legs (under the leg radius)
@@ -1187,12 +1187,12 @@ def rb_r(z):
 def rb_pec(th, z):
     """Soft chest and shoulder-blade forms on the lean torso (extra radius),
     and a flatter front and back below the chest (a lean middle)."""
-    zc = math.exp(-((z - 0.768) / 0.036) ** 2)
+    zc = math.exp(-((z - 0.775) / 0.045) ** 2)
     out = 0.0
-    for c in (math.pi / 2 - 0.48, math.pi / 2 + 0.48):
-        out += 0.0045 * zc * math.exp(-((th - c) / 0.42) ** 2)
-    flat = smoothstep(0.76, 0.66, z) * smoothstep(0.55, 0.60, z)
-    out -= 0.016 * flat * math.sin(th) ** 2
+    for c in (math.pi / 2 - 0.55, math.pi / 2 + 0.55):
+        out += 0.0030 * zc * math.exp(-((th - c) / 0.55) ** 2)
+    flat = smoothstep(0.76, 0.67, z) * smoothstep(0.55, 0.60, z)
+    out -= 0.024 * flat * math.sin(th) ** 2
     out -= 0.0015 * math.exp(-((th - math.pi / 2) / 0.12) ** 2) * math.exp(-((z - 0.74) / 0.06) ** 2)
     for c in (-math.pi / 2 - 0.62, -math.pi / 2 + 0.62):
         out += 0.0042 * math.exp(-((z - 0.79) / 0.05) ** 2) * math.exp(-((th - c) / 0.4) ** 2)
@@ -1219,7 +1219,7 @@ def build_rb_body():
     def tcol(p, z, th):
         c = 1.0
         front = math.exp(-((th - math.pi / 2) / 0.75) ** 2)
-        c -= 0.045 * math.exp(-((z - 0.734) / 0.012) ** 2) * front          # under the chest
+        c -= 0.018 * math.exp(-((z - 0.738) / 0.014) ** 2) * front          # a faint line under the chest
         c -= 0.04 * math.exp(-((th - math.pi / 2) / 0.07) ** 2) * smoothstep(0.66, 0.70, z) * smoothstep(0.75, 0.71, z)
         return (c, c * 0.985, c * 0.98)
     prof = []
@@ -1552,7 +1552,19 @@ def _dd_shirt(mb):
                 # th ascends toward -x: seen from the front this winding faces out
                 mb.face(rows[r][c], rows[r][c + 1], rows[r + 1][c + 1], rows[r + 1][c])
     mark(mb, 'shirt', i0)
-    P.collar(mb, 0.012, SHIRT_COLLAR, z=0.874)
+    # the collar band round the neck, and two pointed collar tips over the knot
+    lathe(mb, Vector((0, TORSO_CY - 0.004, 0)), Matrix.Identity(3), torus_profile(0.874, 0.092, 0.019, 10), SHIRT_COLLAR,
+          lambda p: dd_tw(p), segs=26, closed_profile=True, ry_scale=0.92)
+    for sx in SIDES:
+        cx, cz = 0.042 * sx, 0.846
+
+        def cplace(u, v, cx=cx, cz=cz):
+            x = cx + u
+            return dd_at(math.pi / 2 - math.atan2(x, 0.24), cz + v, SHIRT_G + 0.0075 + 0.004 * smoothstep(-0.03, 0.03, v))
+        tip = [(-0.030 * sx, 0.024), (0.026 * sx, 0.020), (0.022 * sx, -0.004), (0.010 * sx, -0.033), (-0.016 * sx, 0.000)]
+        if sx < 0:
+            tip.reverse()
+        K.decal(mb, tip, cplace, SHIRT_COLLAR, dd_tw, lift=0.0, thick=0.003, side_style=S('#b9cbe0', rough=0.85))
     # a placket line and two small buttons below the knot
     for z in (0.79, 0.73):
         p, n = dd_at(math.pi / 2 + 0.035, z, SHIRT_G + 0.001)
@@ -1653,8 +1665,15 @@ def _dd_tie(mb):
     def kd(lp):
         t = (lp.z + 0.016) / 0.032
         return Vector((lp.x * lerp(1.0, 0.62, t), lp.y, lp.z))
-    ellipsoid(mb, p, (0.021, 0.0105, 0.0175), S('#ffffff', rough=0.5, mat=MAT_SATIN), dd_tw, segs=16, rings=10, rot=R @ rot_x(90.0),
-              power=2.6, deform=kd, colfn=lambda q, lp: _tie_colour(((z0 + 0.03 - q.z) + (q.x) * slope * 0.8) / period))
+    def knot_col(q, lp):
+        d = (q.z - 0.851) + q.x * 0.9
+        if abs(d) < 0.0035:
+            return TIE_NAVY
+        if 0.0035 <= d < 0.0065:
+            return TIE_LIGHT
+        return TIE_GOLD
+    ellipsoid(mb, p, (0.023, 0.012, 0.0185), S('#ffffff', rough=0.5, mat=MAT_SATIN), dd_tw, segs=16, rings=10, rot=R @ rot_x(90.0),
+              power=2.6, deform=kd, colfn=knot_col)
 
 
 def _dd_trousers(mb):
