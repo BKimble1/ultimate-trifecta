@@ -8,6 +8,7 @@
 #
 # Usage: tools/capture_pass9_season.sh OUT_DIR [devices...]
 #   devices: se p14 pmax ipad (default: all)
+#   ONLY=12 re-takes one shot per device (the others' measurements stay).
 #   FAST=1 renders each shape at its canvas size with the matching point
 #   scale (layout, touch_min and the safe area are the device's; only the
 #   picture has fewer pixels), as tools/capture_pass8_challenges.sh does.
@@ -39,7 +40,7 @@ for d in $DEVICES; do
   mkdir -p "$OUT/$d"
   XDG_DATA_HOME=$(mktemp -d) timeout "${CAPTURE_TIMEOUT:-2400}" nice -n 10 xvfb-run -a -s "-screen 0 $((w + 64))x$((h + 64))x24" \
     tools/gd.sh --path game --resolution "$res" res://src/dev/season100_capture.tscn -- \
-    --capture-dir="$OUT/$d" --emulate-phone="$scale" --emulate-safe="$safe" --no-gamecenter > "$OUT/$d/log.txt" 2>&1 || true
+    --capture-dir="$OUT/$d" --emulate-phone="$scale" --emulate-safe="$safe" --no-gamecenter ${ONLY:+--only=$ONLY} > "$OUT/$d/log.txt" 2>&1 || true
   echo "== $d $res @${scale} safe $safe: $(grep -c '^CAPTURE ' "$OUT/$d/log.txt" || true) shots"
   grep -E "SCRIPT ERROR|CAPTURE-DONE" "$OUT/$d/log.txt" | head -5 | sed "s|$OUT/||" || true
 done

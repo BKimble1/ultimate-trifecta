@@ -724,6 +724,8 @@ func _build_detail() -> void:
 	# they never report a first-frame height for an unknown width
 	detail_panel.resized.connect(_fit_detail)
 	(detail_panel.get_parent() as Control).resized.connect(_fit_detail)
+	# the picture's height follows the page's (laid out once it is shown)
+	v.resized.connect(_fit_detail)
 
 
 ## The side panel's inner width, from the region it lives in (which never
@@ -753,6 +755,10 @@ func _fit_detail() -> void:
 	var h := clampf(w * 0.58, 120.0, 260.0)
 	if page > 1.0:
 		h = clampf(minf(h, page * 0.3), 110.0, 260.0)
+		# a featured skin's live preview gets a taller picture where the
+		# panel has room (iPad, large phones), never at the state's expense
+		if _preview_skin != "" and page >= 540.0:
+			h = clampf(minf(w * 0.95, page * 0.38), h, 300.0)
 	if focus_track == "progress":
 		h = clampf(minf(w * 0.48, maxf(page, 1.0) * 0.28), 100.0, 200.0)
 	(_d["art"] as Control).custom_minimum_size.y = h
@@ -952,7 +958,7 @@ func _show_preview(r: Dictionary) -> void:
 			_preview_view.apply_state(rs)
 			# the whole figure, head to shoes, filling the picture's height
 			_preview.cam.fov = 36.0
-			_preview.aim(Vector3(0, 0.74, 2.3), Vector3(0, 0.68, 0))
+			_preview.aim(Vector3(0, 0.76, 2.5), Vector3(0, 0.7, 0))
 		_preview_view.set_facing(PI + 0.35)
 		return
 	if _preview_skin != "":

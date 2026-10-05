@@ -42,6 +42,8 @@ var out_dir := ""
 var svc
 var measures := {}
 var _tag: Label
+## --only=12: re-take one shot (the others' measurements are kept)
+var only := ""
 
 
 func _ready() -> void:
@@ -49,7 +51,13 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--capture-dir="):
 			out_dir = a.get_slice("=", 1)
+		if a.begins_with("--only="):
+			only = a.get_slice("=", 1)
 	DirAccess.make_dir_recursive_absolute(out_dir)
+	if only != "" and FileAccess.file_exists(out_dir.path_join("measure.json")):
+		var old: Variant = JSON.parse_string(FileAccess.get_file_as_string(out_dir.path_join("measure.json")))
+		if old is Dictionary:
+			measures = old
 	var layer := CanvasLayer.new()
 	layer.layer = 120
 	add_child(layer)
@@ -209,6 +217,8 @@ func _set_season(pid: String, xp: int, premium: bool) -> void:
 
 
 func _pass(shot: String, prep: Callable = Callable()) -> void:
+	if only != "" and not shot.begins_with(only + "_"):
+		return
 	if not (App.screen is SeasonScreen):
 		NavShell.open("pass")
 		await _wait(1.4)
