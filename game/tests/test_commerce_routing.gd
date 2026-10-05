@@ -155,6 +155,12 @@ func test_app_review_fallback_moves_to_sandbox_and_finishes_once() -> void:
 	t.eq(cf.load(Cloud.route_path), OK, "the move is saved")
 	t.eq([String(cf.get_value("route", "deployment")), int(cf.get_value("route", "receipt_kind")), String(cf.get_value("route", "reason"))],
 		["sandbox", R.Receipt.APP_STORE, "sandbox_purchase"], "with the receipt kind it was made with")
+	# an unanswered Coin purchase of the production profile waits for that
+	# profile; it doesn't block the item here
+	(Wallet.state["outbox"] as Array).append({"id": "prod-op-1", "kind": "spend", "item": "hat:crown", "profile_id": "p_production_old",
+		"method": HTTPClient.METHOD_POST, "path": "/v1/wallet/spend", "body": {}, "next_at": 0})
+	t.check(not Wallet.pending_for("hat:crown"), "another deployment's pending purchase doesn't block this one")
+	(Wallet.state["outbox"] as Array).pop_back()
 	# a later purchase goes straight to the sandbox
 	Purchases.states.clear()
 	Purchases.buy(SKIN)

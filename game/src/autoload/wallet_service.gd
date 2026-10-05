@@ -478,8 +478,11 @@ func pending_ops() -> int:
 
 
 func pending_for(item_id: String) -> bool:
+	# (an operation of another signed-in profile, e.g. the other deployment's
+	# after a move, waits for that profile and doesn't block this one)
+	var me := Cloud.profile_id()
 	for op in state["outbox"]:
-		if String(op.get("item", "")) == item_id:
+		if String(op.get("item", "")) == item_id and (me == "" or String(op.get("profile_id", "")) == me):
 			return true
 	return false
 
