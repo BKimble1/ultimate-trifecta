@@ -142,6 +142,7 @@ against the deleted profile are closed as "profile deleted".
 | `/v1/admin/*` | `ADMIN_TOKEN` | Reports, profiles, actions, reserved names, audit |
 | `GET /v1/wallet` | session | V6: Coins, debt, revision, appAccountToken, entitlements, Season progress/claims, recent round settlements |
 | `POST /v1/wallet/spend` | session | V6: buy a Coin item or Season Premium (`item_id`, `price`, `idempotency_key`): atomic debit + entitlement |
+| `GET /v1/shop/offers` | none | Pass 8: the service's clock and the Shop's rotating offers on sale now and in the next 72 h (`src/offers.js`); a rotating skin's spend must name an active `offer_id` (checked on this clock at acceptance, `409 offer_changed` otherwise) |
 | `POST /v1/wallet/apple` | session | V6: deliver a StoreKit 2 transaction (`jws`) once; refunds/revocations |
 | `POST /v1/wallet/legacy-import` | session | V6: the one-time, bounded import of a pre-V6 device balance |
 | `POST /v1/season/:id/claim` | session | V6: claim Season rewards (idempotent) |

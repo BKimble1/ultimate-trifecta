@@ -13,6 +13,7 @@ var store
 var _save_data: Dictionary
 var _wallet_path := ""
 var _wallet_state: Dictionary
+var _offers_path := ""
 
 
 func _init(test_runner) -> void:
@@ -27,6 +28,11 @@ func begin(with_service: bool = true, with_store: bool = true) -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(Wallet.path))
 	Wallet.state = Wallet.blank_state()
 	Save.data = Save.default_profile()
+	# Pass 8: the Shop's offers cache and clocks, isolated per test
+	_offers_path = Offers.path
+	Offers.ticks_override = Callable()
+	Offers.wall_override = Callable()
+	Offers.reset("user://shop_offers_test.json")
 	Cloud.token = ""
 	Cloud.profile = {}
 	if with_service:
@@ -52,6 +58,11 @@ func end() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(Wallet.path + ".tmp"))
 	Wallet.path = _wallet_path
 	Wallet.state = _wallet_state
+	Offers.reset("user://shop_offers_test.json")
+	Offers.ticks_override = Callable()
+	Offers.wall_override = Callable()
+	Offers.path = _offers_path
+	Offers.reload_as_new_run()
 	Wallet.syncing = false
 	Wallet._auto_at = -1.0
 	Save.data = _save_data

@@ -26,18 +26,22 @@ Commands:
                     a price, never uploads a review screenshot, never submits
                     anything for review and never changes existing products:
                     the account holder chooses prices in App Store Connect
+  iap-diff FILE  -> (no credentials) what iap-list/iap-create would report and
+                    create against FILE, a JSON list of existing products
+                    ([{"productId", "inAppPurchaseType", "state"}], e.g. saved
+                    from iap-list --json); `iap-diff -` reads it from stdin
+  iap-list --json -> iap-list's existing products as that JSON (read only)
 Never prints the key. Requires: pip install pyjwt cryptography requests
+(only for the commands that call App Store Connect).
 """
 import json, os, sys, time
-
-import jwt
-import requests
 
 API = "https://api.appstoreconnect.apple.com/v1"
 BUNDLE_ID = os.environ.get("BUNDLE_ID", "com.idlery.ultimatetrifecta")
 
 
 def token():
+    import jwt   # only the API commands need it: iap-plan / iap-diff work without
     key = open(os.environ["ASC_KEY_PATH"]).read()
     now = int(time.time())
     return jwt.encode({"iss": os.environ["ASC_ISSUER_ID"], "iat": now, "exp": now + 1100, "aud": "appstoreconnect-v1"},
@@ -45,6 +49,7 @@ def token():
 
 
 def call(method, path, **kw):
+    import requests
     r = requests.request(method, API + path if path.startswith("/") else path,
                          headers={"Authorization": "Bearer " + token(), "Content-Type": "application/json"}, timeout=60, **kw)
     if r.status_code >= 400:
@@ -91,7 +96,7 @@ REVIEW_NOTE = ("Ultimate Trifecta is a cosmetic-only party game. {what} Open Sho
 def iap_plan():
     cat = json.load(open(CATALOGUE))
     out = []
-    for pid, p in sorted(cat["products"].items()):
+    for pid, p in sorted(cat["products"].items(), key=lambda kv: (kv[1]["kind"] != "coin_pack", kv[1].get("coins", 0), kv[0])):
         if p["kind"] == "coin_pack":
             n = "{:,}".format(p["coins"])
             name, desc = (t.format(n=n) for t in IAP_TEXT["coin_pack"])
@@ -103,6 +108,37 @@ def iap_plan():
         out.append({"productId": pid, "inAppPurchaseType": p["apple_type"], "name": p["reference_name"], "displayName": name,
                     "description": desc, "reviewNote": REVIEW_NOTE.format(what=what)})
     return out
+
+
+def iap_diff(plan, have):
+    """Plan vs existing products: (rows, missing, unexpected).  rows are
+    (productId, type, status) for every planned product; missing are the
+    planned products App Store Connect doesn't have (the only ones iap-create
+    creates); unexpected are existing products the catalogue doesn't plan.
+    An existing product is never changed, whatever its state or type."""
+    by_pid = {h["productId"]: h for h in have}
+    rows, missing = [], []
+    for p in plan:
+        h = by_pid.get(p["productId"])
+        if h is None:
+            missing.append(p)
+            rows.append((p["productId"], p["inAppPurchaseType"], "MISSING"))
+        else:
+            st = "present, state " + str(h.get("state"))
+            if h.get("inAppPurchaseType") != p["inAppPurchaseType"]:
+                st += "  ! type mismatch: App Store Connect has %s" % h.get("inAppPurchaseType")
+            rows.append((p["productId"], p["inAppPurchaseType"], st))
+    planned = {p["productId"] for p in plan}
+    unexpected = [h for h in have if h["productId"] not in planned]
+    return rows, missing, unexpected
+
+
+def print_diff(rows, missing, unexpected):
+    for pid, typ, st in rows:
+        print("%-52s %-15s %s" % (pid, typ, st))
+    for h in unexpected:
+        print("%-52s %-15s unexpected (not in the catalogue)" % (h["productId"], h.get("inAppPurchaseType")))
+    print("%d planned, %d present, %d missing" % (len(rows), len(rows) - len(missing), len(missing)))
 
 
 def iap_existing(app_id):
@@ -123,6 +159,13 @@ def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "app"
     if cmd == "iap-plan":
         print(json.dumps(iap_plan(), indent=2))
+        return 0
+    if cmd == "iap-diff":
+        src = sys.argv[2] if len(sys.argv) > 2 else "-"
+        have = json.load(sys.stdin if src == "-" else open(src))
+        rows, missing, unexpected = iap_diff(iap_plan(), have)
+        print_diff(rows, missing, unexpected)
+        print("iap-create would create: %s" % (", ".join(p["productId"] for p in missing) or "nothing"))
         return 0
     if cmd == "ensure-bundle":
         r = call("GET", "/bundleIds", params={"filter[identifier]": BUNDLE_ID})
@@ -206,18 +249,11 @@ def main():
         if have is None:
             print("could not read in-app purchases (the API key needs App Manager or Admin)")
             return 1
-        plan = iap_plan()
-        by_pid = {h["productId"]: h for h in have}
-        missing = [p for p in plan if p["productId"] not in by_pid]
-        for p in plan:
-            h = by_pid.get(p["productId"])
-            print("%-52s %-15s %s" % (p["productId"], p["inAppPurchaseType"], ("present, state " + str(h.get("state"))) if h else "MISSING"))
-            if h and h.get("inAppPurchaseType") != p["inAppPurchaseType"]:
-                print("   ! type mismatch: App Store Connect has %s" % h.get("inAppPurchaseType"))
-        planned = {p["productId"] for p in plan}
-        for h in have:
-            if h["productId"] not in planned:
-                print("%-52s %-15s unexpected (not in the catalogue)" % (h["productId"], h.get("inAppPurchaseType")))
+        if "--json" in sys.argv:
+            print(json.dumps([{k: h.get(k) for k in ("productId", "inAppPurchaseType", "state")} for h in have], indent=2))
+            return 0
+        rows, missing, unexpected = iap_diff(iap_plan(), have)
+        print_diff(rows, missing, unexpected)
         if cmd == "iap-list" or not missing:
             return 0
         if "--yes" not in sys.argv:

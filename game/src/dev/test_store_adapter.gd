@@ -42,7 +42,7 @@ func request_products(ids: PackedStringArray) -> void:
 	var out: Array = []
 	for pid in ids:
 		if catalog.has(pid):
-			out.append({"product_id": pid, "display_name": catalog[pid]["display_name"], "display_price": catalog[pid]["display_price"],
+			out.append({"product_id": pid, "display_name": catalog[pid]["display_name"], "display_price": catalog[pid]["display_price"], "price": float(catalog[pid].get("price", 0.0)),
 				"description": ""})
 	products_loaded.emit.call_deferred(out, true)
 

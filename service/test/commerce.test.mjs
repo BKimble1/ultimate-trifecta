@@ -161,13 +161,13 @@ test('refunded Coin pack: Coins taken back, debt when spent, paid from later gra
   const a = await user(ctx, 'T:_ann', 'Ann Otter');
   const tx = storeTx(ctx);
   await deliver(ctx, a, tx);
-  const sp = await call(ctx, 'POST', '/v1/wallet/spend', { item_id: 'outfit:lantern_scout', price: 1200, idempotency_key: 'lantern-01' }, a.token);
-  assert.equal(sp.body.wallet.balance, 300);
+  const sp = await call(ctx, 'POST', '/v1/wallet/spend', { item_id: 'season:s1:premium', price: 1500, idempotency_key: 'premium-01' }, a.token);
+  assert.equal(sp.body.wallet.balance, 0);
   const r = await deliver(ctx, a, { ...tx, revocationDate: ctx.clock.t });
   assert.equal(r.body.wallet.balance, 0);
-  assert.equal(r.body.wallet.debt, 1200, 'the spent part is recorded as debt');
-  assert.ok(!r.body.wallet.entitlements.find((e) => e.item === 'outfit:lantern_scout').revoked, 'items bought with it are not erased');
-  const g = await grant(ctx, a, 1500);
+  assert.equal(r.body.wallet.debt, 1500, 'the spent part is recorded as debt');
+  assert.ok(!r.body.wallet.entitlements.find((e) => e.item === 'season:s1:premium').revoked, 'items bought with it are not erased');
+  const g = await grant(ctx, a, 1800);
   assert.equal(g.balance, 300, 'later grants pay the debt first');
   assert.equal(g.debt, 0);
   // the refund again: nothing more
@@ -235,14 +235,14 @@ test('spend: atomic debit + grant, never negative, never twice', async () => {
   assert.equal(race.filter((r) => r.status === 200).length, 1);
   assert.equal((await wallet(ctx, a)).balance, 200);
   // racing purchases that together overdraw: one fails, balance never negative
-  await grant(ctx, a, 500);
+  await grant(ctx, a, 400);
   const race2 = await Promise.all([call(ctx, 'POST', '/v1/wallet/spend', body('outfit:duck', 'k-duck-1'), a.token),
-    call(ctx, 'POST', '/v1/wallet/spend', body('outfit:varsity_sprinter', 'k-vars-1'), a.token)]);
+    call(ctx, 'POST', '/v1/wallet/spend', body('hat:crown', 'k-crown-1'), a.token)]);
   assert.equal(race2.filter((r) => r.status === 200).length, 1);
   assert.ok(race2.some((r) => r.body.error === 'insufficient_funds'));
   const w = await wallet(ctx, a);
   assert.ok(w.balance >= 0);
-  assert.equal(w.balance, 700 - (race2[0].status === 200 ? 450 : 600));
+  assert.equal(w.balance, 600 - (race2[0].status === 200 ? 450 : 240));
 });
 
 test('legacy import: bounded, once per account and per Game Center player', async () => {

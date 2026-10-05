@@ -1,0 +1,230 @@
+{
+  "controls": [
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        42.0,
+        55.0,
+        64.0
+      ],
+      "text": "Back"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        103.0,
+        42.0,
+        116.0,
+        64.0
+      ],
+      "text": "Play"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        225.0,
+        42.0,
+        142.0,
+        64.0
+      ],
+      "text": "Locker"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        373.0,
+        42.0,
+        126.0,
+        64.0
+      ],
+      "text": "Shop"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        505.0,
+        42.0,
+        204.0,
+        64.0
+      ],
+      "text": "Season Pass"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        1113.0,
+        46.0,
+        131.0,
+        55.0
+      ],
+      "text": "2,650 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1167.0,
+        46.0,
+        61.0,
+        55.0
+      ],
+      "text": "2,650"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        694.0,
+        120.0,
+        55.0
+      ],
+      "text": "Idle"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        757.0,
+        120.0,
+        55.0
+      ],
+      "text": "Run"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        36.0,
+        820.0,
+        120.0,
+        55.0
+      ],
+      "text": "Emote"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        50.0,
+        890.0,
+        103.0,
+        26.0
+      ],
+      "text": "Drag to turn"
+    },
+    {
+      "kind": "button",
+      "rect": [
+        522.0,
+        124.0,
+        176.0,
+        55.0
+      ],
+      "text": "‹ Back to Shop"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        728.0,
+        187.0,
+        504.0,
+        25.0
+      ],
+      "text": "Outfit · Rotating"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        728.0,
+        216.0,
+        504.0,
+        38.0
+      ],
+      "text": "Lantern Scout"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        766.0,
+        258.0,
+        162.0,
+        39.0
+      ],
+      "text": "1,200 Coins"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        728.0,
+        301.0,
+        504.0,
+        31.0
+      ],
+      "text": "Leaves in 02:12:32"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        728.0,
+        336.0,
+        504.0,
+        58.0
+      ],
+      "text": "Leaves the Shop Wednesday, Oct 7, 12:00 AM (your time)"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        522.0,
+        402.0,
+        710.0,
+        32.0
+      ],
+      "text": "Lantern Scout: ready for the darkest corner of campus."
+    },
+    {
+      "kind": "label",
+      "rect": [
+        522.0,
+        442.0,
+        710.0,
+        118.0
+      ],
+      "text": "Includes: Lantern Scout (outfit). Your colours, hair, hat an"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        522.0,
+        826.0,
+        710.0,
+        28.0
+      ],
+      "text": "You have 2,650 Coins."
+    },
+    {
+      "kind": "button",
+      "rect": [
+        971.0,
+        862.0,
+        261.0,
+        55.0
+      ],
+      "text": "Buy for 1,200 Coins"
+    }
+  ],
+  "issues": [],
+  "keyboard_units": 0.0,
+  "safe": [
+    16.0,
+    30.0,
+    1248.0,
+    905.0
+  ],
+  "screen": "ShopScreen",
+  "shot": "shop_detail_offer",
+  "touch_min": 54.9999991804361,
+  "units_per_point": 1.24999998137355,
+  "viewport": [
+    1280.0,
+    960.0
+  ]
+}

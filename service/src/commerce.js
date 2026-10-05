@@ -14,6 +14,10 @@
 //    and revocations by transaction or by App Store Server Notification.
 //  - Season 1: XP from verified rounds only, idempotent claims, Premium
 //    bought with Coins.
+//  - Pass 8: rotating Shop skins are sold only through a scheduled offer
+//    (offers.js): the offer, its item and its price are checked against the
+//    service's own clock when the spend is accepted, and the acceptance is
+//    recorded (offer_sales) in the same batch as the debit and grant.
 //  - Round settlement: the room host registers a round with its admitted
 //    players and reports the result; each player confirms the row their own
 //    game received (a digest); the service checks identity, admission,
@@ -25,6 +29,7 @@ import { ApiError, json, readJson, str, int } from './http.js';
 import { verifyAppleJws, fetchTransaction, appleEnvironment, serverApiConfigured } from './appstore.js';
 import * as E from './economy.js';
 import * as CH from './challenges.js';
+import * as O from './offers.js';
 
 const HOUR = 3600 * 1000;
 const DAY = 24 * HOUR;
@@ -121,20 +126,31 @@ async function spend(req, env) {
   const key = str(b.idempotency_key, 'idempotency_key', { max: 64 });
   if (!IDEM.test(key)) throw new ApiError(400, 'bad_request', 'Bad idempotency key.');
   const shown = int(b.price, 'price', { min: 0, max: 1e7 });
+  const offerId = b.offer_id === undefined || b.offer_id === null || b.offer_id === '' ? '' : str(b.offer_id, 'offer_id', { max: 64 });
   await H.rateLimit(env, `spend:${p.id}`, 30, 60 * 1000);
   const it = E.item(id);
   if (!it || !['coin_item', 'season_premium'].includes(it.kind)) throw new ApiError(400, 'not_for_sale', "That item isn't sold for Coins.");
   const idem = `spend:${p.id}:${key}`;
-  const prev = await ledgerHas(env, idem);
-  if (prev) return reply(env, p.id, { replay: true });
-  if (shown !== E.price(id)) throw new ApiError(409, 'price_changed', 'The price changed. Check it and try again.', { price: E.price(id) });
+  // a replay of an accepted purchase returns that result, even after its
+  // offer has left the Shop (never a second charge, never a late refusal)
+  if (await ledgerHas(env, idem)) return spendReplay(env, p.id, idem);
   await ensureWallet(env, p.id);
   const q = H.db(env);
   const e = envName(env);
   const owned = await q.one('SELECT revoked_at FROM entitlements WHERE profile_id = ? AND environment = ? AND item_id = ?', p.id, e, id);
   if (owned && !owned.revoked_at) throw new ApiError(409, 'already_owned', 'You already own this.');
+  // Pass 8: the service's clock at acceptance decides; a rotating item is
+  // sold only through an offer on sale now, at that offer's price
   const t = H.clock(env);
-  const price = E.price(id);
+  let offer = null;
+  let price;
+  if (O.isRotation(id)) {
+    offer = O.checkOffer(env, id, offerId, shown, t);
+    price = offer.price;
+  } else {
+    if (shown !== E.price(id)) throw new ApiError(409, 'price_changed', 'The price changed. Check it and try again.', { price: E.price(id) });
+    price = E.price(id);
+  }
   const stmts = [
     // the CHECK (balance >= 0) makes an overdraw fail the whole batch
     q.stmt('UPDATE wallets SET balance = balance - ?, revision = revision + 1, updated_at = ? WHERE profile_id = ? AND environment = ?', price, t, p.id, e),
@@ -145,6 +161,10 @@ async function spend(req, env) {
       ? q.stmt("UPDATE entitlements SET revoked_at = NULL, source = 'coin_purchase', ref = ?, granted_at = ? WHERE profile_id = ? AND environment = ? AND item_id = ? AND revoked_at IS NOT NULL", idem, t, p.id, e, id)
       : q.stmt("INSERT INTO entitlements (profile_id, environment, item_id, source, ref, granted_at) VALUES (?, ?, ?, 'coin_purchase', ?, ?)", p.id, e, id, idem, t),
   ];
+  if (offer) {
+    stmts.push(q.stmt(`INSERT INTO offer_sales (environment, idem_key, profile_id, offer_id, item_id, price, schedule_revision, offer_starts_at, offer_ends_at, accepted_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, e, idem, p.id, offer.offer_id, id, price, offer.revision, offer.starts_at, offer.ends_at, t));
+  }
   if (it.kind === 'season_premium') {
     stmts.push(q.stmt(`INSERT INTO season_progress (profile_id, environment, season, xp, premium, premium_at, updated_at) VALUES (?, ?, ?, 0, 1, ?, ?)
       ON CONFLICT(profile_id, environment, season) DO UPDATE SET premium = 1, premium_at = excluded.premium_at, updated_at = excluded.updated_at`,
@@ -154,14 +174,28 @@ async function spend(req, env) {
     await q.batch(stmts);
   } catch (err) {
     const m = failure(err);
+    if (m.includes('offer_window')) throw new ApiError(409, 'offer_changed', 'This offer has left the Shop. Nothing was charged.', { reason: 'expired' });
     if (m.includes('CHECK')) throw new ApiError(409, 'insufficient_funds', "You don't have enough Coins.");
     if (m.includes('UNIQUE')) {
-      if (await ledgerHas(env, idem)) return reply(env, p.id, { replay: true });
+      if (await ledgerHas(env, idem)) return spendReplay(env, p.id, idem);
       throw new ApiError(409, 'already_owned', 'You already own this.');
     }
     throw err;
   }
-  return reply(env, p.id, { bought: id });
+  return reply(env, p.id, { bought: id, ...(offer ? { offer: O.publicOffer(offer), accepted_at: t } : {}) });
+}
+
+// The first result of an accepted spend (same idempotency key).
+async function spendReplay(env, pid, idem) {
+  const row = await ledgerHas(env, idem);
+  const sale = await H.db(env).one('SELECT offer_id, item_id, price, offer_starts_at, offer_ends_at, accepted_at FROM offer_sales WHERE environment = ? AND idem_key = ?',
+    envName(env), idem);
+  const extra = { replay: true, bought: row ? row.ref : null };
+  if (sale) {
+    extra.offer = { offer_id: sale.offer_id, item_id: sale.item_id, price: sale.price, starts_at: sale.offer_starts_at, ends_at: sale.offer_ends_at };
+    extra.accepted_at = sale.accepted_at;
+  }
+  return reply(env, pid, extra);
 }
 
 // ---------------------------------------------------------------- Apple
@@ -697,6 +731,7 @@ export function deletionStmts(q, pid) {
   return [
     q.stmt('UPDATE ledger SET profile_id = NULL WHERE profile_id = ?', pid),
     q.stmt('UPDATE apple_transactions SET profile_id = NULL WHERE profile_id = ?', pid),
+    q.stmt('UPDATE offer_sales SET profile_id = NULL WHERE profile_id = ?', pid),
     q.stmt('UPDATE legacy_imports SET profile_id = ? WHERE profile_id = ?', 'deleted:' + pid.slice(-6) + ':' + Date.now(), pid),
     q.stmt('DELETE FROM wallets WHERE profile_id = ?', pid),
     q.stmt('DELETE FROM entitlements WHERE profile_id = ?', pid),
@@ -722,6 +757,7 @@ export async function routeCommerce(req, env, path, m, helpers) {
   let k;
   if (m === 'GET' && path === '/v1/wallet') return getWallet(req, env);
   if (m === 'POST' && path === '/v1/wallet/spend') return spend(req, env);
+  if (m === 'GET' && path === '/v1/shop/offers') return O.routeOffers(req, env, path, m, H.clock);
   if (m === 'POST' && path === '/v1/wallet/apple') return appleDeliver(req, env);
   if (m === 'POST' && path === '/v1/wallet/legacy-import') return legacyImport(req, env);
   if (m === 'POST' && path === '/v1/appstore/notifications') return appleNotification(req, env);

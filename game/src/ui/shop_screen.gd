@@ -1,18 +1,36 @@
 class_name ShopScreen
 extends Screen
-## The Shop (V6): every purchase in the game, and nothing else.
+## The Shop (V6; Pass 8 rotation): every purchase in the game, and nothing
+## else.
 ##
 ##   top     Back, the navigation bar and the Coins chip (one 44 pt row)
 ##   left    the runner in the dorm, wearing whatever item is selected: drag
 ##           to turn, Idle / Run / Emote.  This is the one interactive 3D
 ##           preview (the dorm stage already on screen); cards use cached
 ##           portraits, never a live viewport each.
-##   right   sections (Featured · Outfits · Accessories · Coins · Season 1)
-##           over item cards: a picture, the full name, and the exact price
-##           (Coins, or the App Store's localized price) or Owned.  Tapping
-##           a card previews it on the runner and opens its detail: what it
-##           is, exactly what it includes, the price, its state, why an
-##           action is unavailable (right above it) and one action.
+##   right   sections (Featured · All skins · Accessories · Coins ·
+##           Season 1) over item cards: a picture, the full name, and the
+##           exact price (Coins, or the App Store's localized price) or
+##           Owned.  Tapping a card previews it on the runner and opens its
+##           detail: what it is, exactly what it includes, the price, its
+##           state, why an action is unavailable (right above it) and one
+##           action.
+##
+## Pass 8 rotation (docs/ECONOMY.md 2.1): Featured shows the four scheduled
+## rotating offers the game service has on sale now (Offers), each with its
+## own departure ("Leaves in 1d 04h" / "Leaves in 02:14:09"; the detail adds
+## the local date and time), and the time until the Shop next changes
+## ("Shop refreshes in …"), labelled separately.  The countdowns come from
+## the service's clock (a monotonic offset), tick once a second by setting
+## label text only (no grid or preview is rebuilt), and when an offer ends
+## its card is replaced in place by the next one.  Below them, a compact
+## "Always available" block: the direct Apple skins, Season 1 Premium and
+## links to the Coin packs and the classic accessories.  A rotating skin can
+## only be bought while its offer is on sale: in All skins, a stale detail
+## sheet or a deep link it reads "Not in current rotation"; with no trusted
+## time it reads "Connect to refresh Shop"; the service checks the offer
+## again on its own clock when it accepts the purchase.  Owned skins stay in
+## the Locker.  No sales, fake scarcity, "rare" or "last chance".
 ##
 ## V7: the Locker's card system (UIKit.AutoGrid, CreatorScreen card layout):
 ## columns from the panel's final width, per-type picture wells, outfits
@@ -22,25 +40,33 @@ extends Screen
 ##
 ## Coins: a confirmation shows the item, its cost and the balance left, then
 ## the service debits and grants atomically (Wallet.spend).  Apple: the tap
-## opens Apple's own sheet directly (Purchases.buy).  States are honest:
-## loading, available, owned, pending, cancelled, failed, offline/unavailable,
-## delivered.  Wallet and purchase updates refresh labels in place; the menu
-## is never rebuilt.  No sales, timers, scarcity, loot boxes or pop-ups; an
-## owned item is never offered again; Season rewards are never sold here.
+## opens Apple's own sheet directly (Purchases.buy); Coin packs are compact
+## cards whose tap is the purchase (the localized price on the card, or
+## "Not available").  States are honest: loading, available, owned, pending,
+## cancelled, failed, offline/unavailable, delivered.  Wallet, purchase and
+## offer updates refresh labels in place; the menu is never rebuilt.
 
 const SECTIONS := [
 	["featured", "Featured"],
-	["outfits", "Outfits"],
+	["outfits", "All skins"],
 	["accessories", "Accessories"],
 	["coins", "Coins"],
 	["season", "Season 1"],
 ]
 const CARD_W := 144.0
 const CARD_GAP := float(UIKit.GAP_CARD)
+## the narrowest Coin pack card (two per row on a landscape phone)
+const PACK_W := 250.0
 const THUMB_FRAMING := {"outfit": "body", "pattern": "body", "hat": "hat", "shoes": "feet"}
 const SWATCH_FIELDS := ["color", "trim", "hair_color"]
 ## picture wells beyond the Locker's (CreatorScreen.WELL)
 const WELL := {"swatch": 0.62, "coins": 0.62, "glyph": 0.62}
+const RETURN_NOTE := "Owned skins stay in your Locker. Shop skins may return."
+const NOT_IN_ROTATION := "Not in current rotation"
+const CONNECT := "Connect to refresh Shop"
+## a card's rotation line on the narrowest phone cards (the status line and
+## the sheet always carry the full wording)
+const SHORT := {CONNECT: "Refresh needed", NOT_IN_ROTATION: "Not in rotation"}
 
 ## deep links (set before NavShell.go("shop")): a section and/or an item
 static var focus_section := ""
@@ -58,6 +84,12 @@ var detail_id := ""
 var preview_id := ""
 var saved: Dictionary = {}
 var preview_run := false
+## Featured: the rotating offers' grid, its status line and the refresh line
+var rot_grid: UIKit.AutoGrid
+var rot_status: Label
+var refresh_l: Label
+var _clock: Timer
+var _confirm: Dictionary = {}         # the open Coin confirmation {item, offer, close}
 var _stage_area: Control
 var _yaw := 0.0
 var _yaw_set := false
@@ -133,7 +165,16 @@ func build() -> void:
 	Purchases.products_changed.connect(_refresh_states)
 	Purchases.state_changed.connect(_on_purchase_state)
 	Purchases.restore_finished.connect(_on_restore_finished)
+	Offers.changed.connect(_on_offers_changed)
 	Purchases.load_products()
+	Offers.refresh_if_needed()
+	# once a second: countdown labels only (never a rebuild)
+	_clock = Timer.new()
+	_clock.name = "ShopClock"
+	_clock.wait_time = 1.0
+	_clock.timeout.connect(_on_clock)
+	add_child(_clock)
+	_clock.start()
 	var lc := App.stage.local_character() if App.stage else null
 	_yaw = lc.rotation.y if lc else 0.0
 
@@ -357,43 +398,25 @@ func _build_section() -> void:
 	for c in body.get_children():
 		c.queue_free()
 	cards.clear()
-	var items := Catalogue.shop_items(section)
-	if section in ["featured", "outfits", "accessories"]:
-		# an owned item is never shown as buyable: owned ones sort last
-		var unowned := items.filter(func(it: Dictionary) -> bool: return not Wallet.owns_id(String(it["id"])))
-		var owned := items.filter(func(it: Dictionary) -> bool: return Wallet.owns_id(String(it["id"])))
-		items = unowned + owned
-	var intro := ""
-	match section:
-		"coins":
-			intro = "Coins buy anything in the Shop. They never expire and never add XP."
-		"season":
-			intro = "30 tiers you earn by playing. Premium adds a second track of rewards."
-	if intro != "":
-		var il := UIKit.styled(intro, "caption", UIKit.IVORY_MUTED)
-		il.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		il.custom_minimum_size.x = grid_width() * 0.95
-		body.add_child(il)
+	rot_grid = null
+	rot_status = null
+	refresh_l = null
 	var gw := grid_width()
-	if section == "season" or section == "featured":
-		# Season 1 Premium leads Featured too (a real offer, never a timer)
-		body.add_child(_season_offer(gw))
-	if section != "season":
-		var min_cell := 190.0 if section == "coins" else CARD_W
-		var g := UIKit.AutoGrid.new(min_cell, 2, 6 if section != "coins" else 3, CARD_GAP)
-		g.name = "Grid_" + section
-		var cols := UIKit.columns_for(gw, min_cell, CARD_GAP, 2, g.max_cols)
-		var w := UIKit.cell_width(gw, cols, CARD_GAP)
-		for it in items:
-			var card := ShopCard.new()
-			card.setup(self, String(it["id"]), w)
-			card.pressed.connect(_open_detail.bind(String(it["id"])))
-			g.add_child(card)
-			cards.append(card)
-		g.columns = cols
-		body.add_child(g)
-		if items.is_empty() and section != "featured":
-			body.add_child(UIKit.styled("Nothing here right now.", "body", UIKit.IVORY_MUTED))
+	match section:
+		"featured":
+			_build_featured(gw)
+		"outfits":
+			_intro("Rotating skins are bought from Featured while they're in the Shop. " + RETURN_NOTE, gw)
+			body.add_child(_grid("outfits", _sorted(Catalogue.shop_items("outfits")), gw, CARD_W, 2, 6))
+		"accessories":
+			_intro("Always available.", gw)
+			body.add_child(_grid("accessories", _sorted(Catalogue.shop_items("accessories")), gw, CARD_W, 2, 6))
+		"coins":
+			_intro("Coins buy anything in the Shop. They never expire and never add XP. Prices come from the App Store.", gw)
+			body.add_child(_grid("coins", Catalogue.shop_items("coins"), gw, PACK_W, 1, 3))
+		"season":
+			_intro("30 tiers you earn by playing. Premium adds a second track of rewards.", gw)
+			body.add_child(_season_offer(gw))
 	if section in ["featured", "outfits", "coins"]:
 		body.add_child(_restore_row())
 	_refresh_states()
@@ -402,6 +425,215 @@ func _build_section() -> void:
 		await get_tree().process_frame
 		if is_instance_valid(scroll) and not TouchScroll.is_dragging(scroll):
 			scroll.scroll_vertical = at).call()
+
+
+func _intro(text: String, gw: float) -> Label:
+	var il := UIKit.styled(text, "caption", UIKit.IVORY_MUTED)
+	il.name = "Intro"
+	il.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	il.custom_minimum_size.x = gw * 0.95
+	body.add_child(il)
+	return il
+
+
+## An owned item is never shown as buyable: what can be bought now first,
+## then rotating skins out of rotation, then what's owned.
+func _sorted(items: Array) -> Array:
+	var now: Array = []
+	var later: Array = []
+	var owned: Array = []
+	for it in items:
+		var id := String(it["id"])
+		if Wallet.owns_id(id):
+			owned.append(it)
+		elif Offers.listed(id):
+			now.append(it)
+		else:
+			later.append(it)
+	return now + later + owned
+
+
+## A card grid laid out for its final width (UIKit.AutoGrid).
+func _grid(key: String, items: Array, gw: float, min_cell: float, min_cols: int, max_cols: int) -> UIKit.AutoGrid:
+	var g := UIKit.AutoGrid.new(min_cell, min_cols, max_cols, CARD_GAP)
+	g.name = "Grid_" + key
+	var cols := UIKit.columns_for(gw, min_cell, CARD_GAP, min_cols, max_cols)
+	var w := UIKit.cell_width(gw, cols, CARD_GAP)
+	for it in items:
+		var id := String(it["id"])
+		var card := ShopCard.new()
+		card.setup(self, id, w)
+		if Catalogue.kind(id) == "coin_pack":
+			card.pressed.connect(_pack_tap.bind(id))
+		else:
+			card.pressed.connect(_open_detail.bind(id))
+		g.add_child(card)
+		cards.append(card)
+	g.columns = cols
+	return g
+
+
+## Featured: the rotating offers (the service's), the return note, then the
+## compact Always available block.
+func _build_featured(gw: float) -> void:
+	var head := UIKit.hbox(UIKit.SP_M)
+	head.name = "RotationHead"
+	var title := UIKit.styled("Rotating skins", "overline", UIKit.IVORY_MUTED)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(title)
+	refresh_l = UIKit.styled("", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
+	refresh_l.name = "ShopRefresh"
+	refresh_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(refresh_l)
+	body.add_child(head)
+	rot_status = UIKit.styled("", "caption", UIKit.AMBER)
+	rot_status.name = "RotationStatus"
+	rot_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rot_status.custom_minimum_size.x = gw * 0.95
+	body.add_child(rot_status)
+	rot_grid = UIKit.AutoGrid.new(CARD_W, 2, 4, CARD_GAP)
+	rot_grid.name = "Grid_featured"
+	var cols := UIKit.columns_for(gw, CARD_W, CARD_GAP, 2, 4)
+	var w := UIKit.cell_width(gw, cols, CARD_GAP)
+	for o in featured_offers():
+		_add_offer_card(o, w)
+	rot_grid.columns = cols
+	body.add_child(rot_grid)
+	var note := UIKit.styled(RETURN_NOTE, "caption", UIKit.IVORY_MUTED)
+	note.name = "ReturnNote"
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.custom_minimum_size.x = gw * 0.95
+	body.add_child(note)
+	var always := UIKit.styled("Always available", "overline", UIKit.IVORY_MUTED)
+	always.name = "AlwaysAvailable"
+	body.add_child(always)
+	body.add_child(_grid("always", Catalogue.shop_items("always"), gw, CARD_W, 2, 6))
+	body.add_child(_season_offer(gw))
+	var links := UIKit.hbox(UIKit.SP_L)
+	links.name = "AlwaysLinks"
+	var packs := UIKit.link("Coin packs  ›", UIKit.T_LABEL)
+	packs.name = "Link_coins"
+	packs.custom_minimum_size.y = UIKit.row_h()
+	packs.pressed.connect(func() -> void: select_section("coins"))
+	links.add_child(packs)
+	var acc := UIKit.link("Accessories  ›", UIKit.T_LABEL)
+	acc.name = "Link_accessories"
+	acc.custom_minimum_size.y = UIKit.row_h()
+	acc.pressed.connect(func() -> void: select_section("accessories"))
+	links.add_child(acc)
+	body.add_child(links)
+
+
+## The offers Featured shows: on sale now by the service's clock, or (time
+## not trusted) the last ones seen, as previews only.  Only finished art.
+func featured_offers() -> Array:
+	var list: Array = Offers.active() if Offers.shop_status() == "live" else Offers.last_seen()
+	return list.filter(func(o: Dictionary) -> bool:
+		var id := String(o.get("item_id", ""))
+		return Catalogue.is_rotation(id) and Catalogue.has_art(id))
+
+
+func _add_offer_card(o: Dictionary, w: float, at: int = -1) -> ShopCard:
+	var id := String(o["item_id"])
+	var card := ShopCard.new()
+	card.setup(self, id, w, o)
+	card.pressed.connect(_open_detail.bind(id))
+	rot_grid.add_child(card)
+	if at >= 0:
+		rot_grid.move_child(card, at)
+	cards.append(card)
+	return card
+
+
+## An offer started or ended (or the Shop's time became trusted / stale):
+## replace only the cards that changed, in place, then refresh the labels.
+func _on_offers_changed() -> void:
+	if not is_inside_tree():
+		return
+	_sync_featured()
+	_check_confirm()
+	_refresh_states()
+
+
+func _sync_featured() -> void:
+	if rot_grid == null or not is_instance_valid(rot_grid):
+		return
+	var want := featured_offers()
+	var have: Array = rot_grid.get_children().filter(func(c: Node) -> bool: return c is ShopCard and not c.is_queued_for_deletion())
+	var w := rot_grid.cell_w if rot_grid.cell_w > 0.0 else UIKit.cell_width(grid_width(), rot_grid.columns, CARD_GAP)
+	if want.size() == have.size():
+		for i in want.size():
+			var old: ShopCard = have[i]
+			if String(old.offer.get("offer_id", "")) == String(want[i]["offer_id"]):
+				old.offer = want[i]
+				continue
+			_swap_card(old, want[i], w, i)
+		return
+	var had_focus := have.any(func(c: Control) -> bool: return c.has_focus())
+	for c in have:
+		_drop_card(c)
+	for o in want:
+		var nc := _add_offer_card(o, w)
+		Motion.settle_in(UIKit.face_of(nc))
+	if had_focus and rot_grid.get_child_count() > 0:
+		(rot_grid.get_child(0) as Control).grab_focus()
+
+
+func _swap_card(old: ShopCard, o: Dictionary, w: float, at: int) -> void:
+	var had_focus := old.has_focus()
+	_drop_card(old)
+	var nc := _add_offer_card(o, w, at)
+	# the new offer settles in on its visual; the hit region doesn't move
+	Motion.settle_in(UIKit.face_of(nc))
+	if had_focus:
+		nc.grab_focus()
+
+
+func _drop_card(c: Control) -> void:
+	cards.erase(c)
+	if c.get_parent() != null:
+		c.get_parent().remove_child(c)
+	c.queue_free()
+
+
+## Once a second: countdowns and the refresh line (label text only).
+func _on_clock() -> void:
+	if not is_inside_tree():
+		return
+	Offers.refresh_if_needed()
+	_tick_labels()
+
+
+func _tick_labels() -> void:
+	if refresh_l != null and is_instance_valid(refresh_l):
+		var s := Offers.refresh_in_s()
+		var txt := ("Shop refreshes in %s" % Offers.countdown(s)) if s >= 0 and Offers.shop_status() == "live" else ""
+		if refresh_l.text != txt:
+			refresh_l.text = txt
+	for c in cards:
+		if is_instance_valid(c):
+			(c as ShopCard).tick()
+	if detail != null:
+		_tick_detail()
+
+
+func _rotation_line() -> String:
+	match Offers.shop_status():
+		"off":
+			return "Rotating skins come from the game service, which isn't set up in this build. You can preview every skin in All skins."
+		"unsupported":
+			return "Rotating skins aren't available from the game service yet. You can preview them in All skins."
+		"loading":
+			return "Loading the Shop…"
+		"stale":
+			if rot_grid != null and is_instance_valid(rot_grid) and rot_grid.get_child_count() > 0:
+				return CONNECT + ". These skins were in the Shop when it last refreshed; buying waits for the Shop's time."
+			return CONNECT + "."
+		"live":
+			if featured_offers().is_empty():
+				return "No rotating skins right now. " + RETURN_NOTE
+	return ""
 
 
 func _restore_row() -> Control:
@@ -470,17 +702,22 @@ static func premium_summary(sid: String) -> String:
 
 
 # ------------------------------------------------------------------ states
-## Everything that depends on the wallet or the store, updated in place.
+## Everything that depends on the wallet, the store or the offers, updated
+## in place.
 func _refresh_states() -> void:
 	if not is_inside_tree():
 		return
 	banner.text = unavailable_line()
 	banner.visible = banner.text != ""
+	if rot_status != null and is_instance_valid(rot_status):
+		rot_status.text = _rotation_line()
+		rot_status.visible = rot_status.text != ""
 	for c in cards:
 		if is_instance_valid(c):
 			c.refresh()
 	if detail != null:
 		_refresh_detail()
+	_tick_labels()
 
 
 ## One short line when buying can't work right now ("" when it can); the
@@ -509,11 +746,15 @@ func _on_purchase_state(pid: String) -> void:
 		UIKit.toast(self, String(st["message"]), 2.4)
 		if s == "delivered":
 			Sfx.play("pickup")
+			_celebrate(Catalogue.item_for_product(pid))
 
 
 ## A card's or the sheet's price/state: {text, col, kind, owned, price,
-## coins, message}.  kind: coins | apple | owned | unavailable
-func state_of(id: String) -> Dictionary:
+## coins, message, offer, listed}.  kind: coins | rotation (a rotating skin
+## not on sale now) | apple | owned | unavailable.  For a rotating skin the
+## price is its offer's (`offer` if still on sale, else the item's active
+## offer).
+func state_of(id: String, offer: Dictionary = {}) -> Dictionary:
 	var k := Catalogue.kind(id)
 	if Wallet.owns_id(id) and k != "coin_pack":
 		return {"text": "Owned", "col": UIKit.TEAL, "kind": "owned", "owned": true}
@@ -527,10 +768,43 @@ func state_of(id: String) -> Dictionary:
 			"price": price, "message": String(pv["message"]), "state": String(pv["state"]), "can_buy": bool(pv["can_buy"])}
 	if k in ["coin_item", "season_premium"]:
 		var p := Catalogue.price(id)
+		if Catalogue.is_rotation(id):
+			var o: Dictionary = offer if Offers.is_active(offer) else Offers.offer_for(id)
+			if o.is_empty():
+				return {"text": Catalogue.format_coins(p), "col": UIKit.IVORY_DIM, "kind": "rotation", "owned": false, "coins": p,
+					"listed": false, "offer": {}, "pending": Wallet.pending_for(id)}
+			p = int(o["price"])
+			var ok := Wallet.balance() >= p
+			return {"text": Catalogue.format_coins(p), "col": UIKit.AMBER if ok else UIKit.IVORY_MUTED, "kind": "coins", "owned": false,
+				"coins": p, "afford": ok, "pending": Wallet.pending_for(id), "listed": true, "offer": o}
 		var afford := Wallet.balance() >= p
 		return {"text": Catalogue.format_coins(p), "col": UIKit.AMBER if afford else UIKit.IVORY_MUTED, "kind": "coins",
-			"owned": false, "coins": p, "afford": afford, "pending": Wallet.pending_for(id)}
+			"owned": false, "coins": p, "afford": afford, "pending": Wallet.pending_for(id), "listed": true}
 	return {"text": "Not sold", "col": UIKit.IVORY_MUTED, "kind": "unavailable", "owned": false}
+
+
+## The rotation line of a rotating skin's card or sheet: [text, colour].
+## "Leaves in 1d 04h" / "Leaves in 02:14:09" while on sale (the service's
+## clock), "Not in current rotation", "Connect to refresh Shop" when the
+## Shop's time can't be trusted.  "" for anything that doesn't rotate.
+func when_text(id: String, offer: Dictionary = {}) -> Array:
+	if not Catalogue.is_rotation(id):
+		return ["", UIKit.IVORY_MUTED]
+	if Wallet.owns_id(id):
+		return ["In your Locker", UIKit.TEAL]
+	if Wallet.pending_for(id) or _busy_item == id:
+		return ["Finishing…", UIKit.AMBER]
+	match Offers.shop_status():
+		"live":
+			var o: Dictionary = offer if Offers.is_active(offer) else Offers.offer_for(id)
+			if o.is_empty():
+				return [NOT_IN_ROTATION, UIKit.IVORY_MUTED]
+			return ["Leaves in " + Offers.countdown(Offers.seconds_left(o)), UIKit.IVORY]
+		"loading":
+			return ["Loading the Shop…", UIKit.IVORY_MUTED]
+		"stale":
+			return [CONNECT, UIKit.AMBER]
+	return ["Rotation unavailable", UIKit.IVORY_MUTED]
 
 
 # ------------------------------------------------------------------ detail
@@ -611,6 +885,17 @@ func _detail_sheet(id: String) -> Control:
 	price_l.add_theme_font_size_override("font_size", 28)
 	price_row.add_child(price_l)
 	hv.add_child(price_row)
+	# a rotating skin: its countdown and the local date and time it leaves
+	var when := UIKit.styled("", "label", UIKit.IVORY)
+	when.name = "DetailLeaves"
+	when.visible = false
+	hv.add_child(when)
+	var leave := UIKit.styled("", "caption", UIKit.IVORY_MUTED)
+	leave.name = "DetailDeparture"
+	leave.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	leave.custom_minimum_size.x = maxf(80.0, gw - art_w - UIKit.SP_L - 10.0)
+	leave.visible = false
+	hv.add_child(leave)
 	var bl := Catalogue.blurb(id)
 	if Catalogue.kind(id) == "coin_pack":
 		bl = "%s Coins for your wallet. Coins buy anything in the Shop, never expire, and never count as XP." % Catalogue.format_coins(int(Catalogue.item(id).get("coins", 0)))
@@ -644,7 +929,7 @@ func _detail_sheet(id: String) -> Control:
 	action.custom_minimum_size.x = UIKit.row_h() * 3.0
 	action.pressed.connect(_on_action)
 	act_row.add_child(action)
-	_d = {"price": price_l, "coin": coin, "status": status, "action": action, "second": second}
+	_d = {"price": price_l, "coin": coin, "status": status, "action": action, "second": second, "when": when, "leave": leave, "art": art}
 	return v
 
 
@@ -654,6 +939,8 @@ func _kind_note(id: String) -> String:
 			return " · App Store"
 		"coin_pack":
 			return " · App Store"
+	if Catalogue.is_rotation(id):
+		return " · Rotating"
 	return ""
 
 
@@ -675,6 +962,8 @@ func _includes_text(id: String) -> String:
 			t += " Your colours, hair, hat and shoes stay as you set them in the Locker."
 	if Catalogue.kind(id) == "apple_skin":
 		t += " Permanent: restore it with Restore Purchases on any device signed in to the same Apple Account."
+	if Catalogue.is_rotation(id):
+		t += " It's in the Shop while its rotating offer lasts; once bought it's yours to keep. " + RETURN_NOTE
 	return t
 
 
@@ -688,7 +977,7 @@ func _refresh_detail() -> void:
 	var status: Label = _d["status"]
 	var action: Button = _d["action"]
 	var second: Button = _d["second"]
-	coin.visible = String(st["kind"]) == "coins"
+	coin.visible = String(st["kind"]) in ["coins", "rotation"]
 	second.visible = false
 	status.text = ""
 	match String(st["kind"]):
@@ -700,8 +989,22 @@ func _refresh_detail() -> void:
 				status.text = "Premium is unlocked for Season 1. Claim your Premium rewards in the Season Pass."
 			else:
 				action.text = "Wear it in the Locker"
-				status.text = "It's in your Locker."
+				status.text = "It's in your Locker, to keep." if not Catalogue.is_rotation(id) else "It's in your Locker, to keep. " + RETURN_NOTE
 			action.disabled = false
+		"rotation":
+			price_l.text = "%s Coins" % String(st["text"])
+			price_l.add_theme_color_override("font_color", UIKit.IVORY_MUTED)
+			action.disabled = true
+			match Offers.shop_status():
+				"live":
+					action.text = NOT_IN_ROTATION
+					status.text = "%s. You can preview it here. %s" % [NOT_IN_ROTATION, RETURN_NOTE]
+				"stale", "loading":
+					action.text = CONNECT
+					status.text = "%s: the Shop's offers and times come from the game service. Nothing can be bought from an old offer." % CONNECT
+				_:
+					action.text = "Unavailable"
+					status.text = _rotation_line() if unavailable_line() == "" else unavailable_line()
 		"coins":
 			price_l.text = "%s Coins" % String(st["text"])
 			price_l.add_theme_color_override("font_color", UIKit.AMBER)
@@ -740,6 +1043,27 @@ func _refresh_detail() -> void:
 			action.disabled = true
 	status.visible = status.text != ""
 	action.accessibility_name = "%s, %s" % [Catalogue.display_name(id), action.text]
+	_tick_detail()
+
+
+## The sheet's countdown and local departure (label text only).
+func _tick_detail() -> void:
+	if _d.is_empty() or detail_id == "" or not _d.has("when"):
+		return
+	var when: Label = _d["when"]
+	var leave: Label = _d["leave"]
+	var w := when_text(detail_id)
+	if when.text != String(w[0]):
+		when.text = String(w[0])
+		when.add_theme_color_override("font_color", w[1])
+	when.visible = when.text != ""
+	var dep := ""
+	var o := Offers.offer_for(detail_id)
+	if not o.is_empty() and not Wallet.owns_id(detail_id):
+		dep = "Leaves the Shop %s (your time)" % Offers.local_text(float(o["ends_at"]))
+	if leave.text != dep:
+		leave.text = dep
+	leave.visible = dep != ""
 
 
 func _on_secondary() -> void:
@@ -764,7 +1088,7 @@ func _on_action() -> void:
 				NavShell.open("locker")
 		"coins":
 			if bool(st["afford"]):
-				_confirm_spend(id)
+				_confirm_spend(id, st.get("offer", {}))
 		"apple":
 			var r := Purchases.buy(Catalogue.product_of(id))
 			if not bool(r.get("ok", false)):
@@ -772,10 +1096,32 @@ func _on_action() -> void:
 			_refresh_states()
 
 
+## A Coin pack card: the tap is the purchase (Apple's own sheet confirms
+## it), or says why it can't be bought right now.
+func _pack_tap(id: String) -> void:
+	var pid := Catalogue.product_of(id)
+	var v := Purchases.view(pid)
+	if bool(v["can_buy"]):
+		var r := Purchases.buy(pid)
+		if not bool(r.get("ok", false)):
+			dialog(String(r.get("message", "")))
+		_refresh_states()
+		return
+	if String(v["state"]) in ["delivering", "purchasing", "pending_approval"]:
+		UIKit.toast(self, String(v["message"]) if String(v["message"]) != "" else "Still finishing your last purchase.", 2.4)
+		return
+	var msg := String(v["message"])
+	if String(v["state"]) == "service":
+		msg = unavailable_line()
+	dialog(msg if msg != "" else "This pack can't be bought right now.")
+
+
 ## Coin purchases are confirmed: the item, its cost, the balance now and the
-## balance after.  Nothing is charged before Buy.
-func _confirm_spend(id: String) -> void:
-	var price := Catalogue.price(id)
+## balance after.  Nothing is charged before Buy.  A rotating skin's offer
+## is captured here; if it leaves the Shop while this is open, it closes and
+## says so (nothing charged).
+func _confirm_spend(id: String, offer: Dictionary = {}) -> void:
+	var price := int(offer.get("price", Catalogue.price(id)))
 	var bal := Wallet.balance()
 	var dim := ColorRect.new()
 	dim.color = Color(UIKit.NAVY, 0.72)
@@ -803,7 +1149,7 @@ func _confirm_spend(id: String) -> void:
 		n.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		g.add_child(n)
 	v.add_child(g)
-	var note := UIKit.styled("Cosmetic only. It goes straight to your Locker.", "caption", UIKit.IVORY_MUTED)
+	var note := UIKit.styled("Cosmetic only. It goes straight to your Locker, to keep.", "caption", UIKit.IVORY_MUTED)
 	v.add_child(note)
 	var row2 := UIKit.hbox(14)
 	row2.alignment = BoxContainer.ALIGNMENT_END
@@ -818,54 +1164,88 @@ func _confirm_spend(id: String) -> void:
 	p.position = (get_viewport().get_visible_rect().size - p.get_combined_minimum_size()) * 0.5
 	Motion.appear(p, 10.0, UIKit.T_FAST)
 	var close := func() -> void:
+		_confirm = {}
 		if is_instance_valid(dim):
 			dim.queue_free()
 		if is_instance_valid(p):
 			p.queue_free()
+	_confirm = {"item": id, "offer": offer, "close": close}
 	push_modal(p, close)
 	cancel.pressed.connect(close)
 	buy.pressed.connect(func() -> void:
 		close.call()
-		_spend(id))
+		_spend(id, offer))
 	UIKit.soft_focus.call_deferred(cancel)
 
 
-func _spend(id: String) -> void:
+## The open confirmation's offer left the Shop: close it, charge nothing.
+func _check_confirm() -> void:
+	if _confirm.is_empty():
+		return
+	var o: Dictionary = _confirm.get("offer", {})
+	if o.is_empty() or Offers.is_active(o):
+		return
+	(_confirm["close"] as Callable).call()
+	UIKit.toast(self, "This offer just left the Shop. Nothing was charged.", 2.6)
+
+
+func _spend(id: String, offer: Dictionary = {}) -> void:
 	_busy_item = id
 	_refresh_states()
-	var r: Dictionary = await Wallet.spend(id)
+	var r: Dictionary = await Wallet.spend(id, offer)
 	_busy_item = ""
 	if not is_inside_tree():
 		return
 	if bool(r.get("ok", false)):
 		Sfx.play("pickup")
 		UIKit.toast(self, "%s is in your %s." % [Catalogue.display_name(id), "Season Pass" if Catalogue.kind(id) == "season_premium" else "Locker"], 2.4)
-	elif String(r.get("state", "")) == "pending":
-		dialog(String(r.get("message", "")))
+		_celebrate(id)
 	else:
 		dialog(String(r.get("message", "Something went wrong.")))
 	_refresh_states()
 
 
+## Unlock feedback on the visuals of that item's cards and sheet (Motion
+## layer: hit regions stay put; nothing with Reduced Motion).
+func _celebrate(id: String) -> void:
+	for c in cards:
+		if is_instance_valid(c) and (c as ShopCard).id == id:
+			Motion.confirm(UIKit.face_of(c))
+	if detail != null and detail_id == id and _d.has("art") and is_instance_valid(_d["art"]):
+		Motion.confirm(_d["art"])
+
+
 ## A Shop card, laid out like the Locker's (CreatorScreen card helpers):
 ## the picture well (a cached portrait of your runner wearing it with
 ## neutral accessories, a swatch, the emote's glyph, a Coin pile, the Season
-## emblem), the full name (the grid's line count) and the price row (exact
-## price, or Owned).  Season 1 Premium is one wide card.
+## emblem), the full name (the grid's line count), the price row (exact
+## price, or Owned) and, for a rotating skin, its rotation line ("Leaves in
+## …", updated by tick()).  Season 1 Premium is one wide card; a Coin pack
+## is a compact row: Coin pile, full quantity, the App Store's price.
 class ShopCard:
 	extends Button
 	var shop: ShopScreen
 	var id := ""
 	var kind := ""
+	var offer: Dictionary = {}
 	var name_l: Label
 	var price_l: Label
+	var when_l: Label
 	var coin: Control
 	var art: Control
 	var lines := 1
 	var wide := false
+	var pack := false
+	var rot := false
 	var _sum: Label
+	var _note: Label
+	var _pill: PanelContainer
 	var _row: Control
 	var _wide_w := 0.0
+	var _when_full := ""
+	var _fit_key := ""
+	var _fit_size := 17
+	var _fit_short := false
 
 	## The picture well's height per item (a share of its width).
 	static func well_of(item_id: String) -> float:
@@ -885,22 +1265,38 @@ class ShopCard:
 			return "emote"
 		return String(ShopScreen.THUMB_FRAMING.get(f, "glyph"))
 
-	func setup(s: ShopScreen, item_id: String, w: float) -> void:
+	static func pack_h() -> float:
+		return maxf(UIKit.row_h() + 22.0, 86.0)
+
+	func setup(s: ShopScreen, item_id: String, w: float, o: Dictionary = {}) -> void:
 		shop = s
 		id = item_id
+		offer = o
 		name = "Card_" + item_id.replace(":", "_")
 		kind = ShopCard.kind_of(id)
 		wide = Catalogue.kind(id) == "season_premium"
+		pack = Catalogue.kind(id) == "coin_pack"
+		rot = Catalogue.is_rotation(id)
 		UIKit.make_card(self, Vector2(w, 0), Color(UIKit.SLATE_HI, 0.96))
 		var face := UIKit.face_of(self)
 		if wide:
 			_setup_wide(face, w)
+			return
+		if pack:
+			_setup_pack(face, w)
 			return
 		var v := CreatorScreen.card_column(face)
 		art = ShopCard.art_for(s, id, 0.0, "shop:%s" % id)
 		art.name = "Well"
 		art.size_flags_horizontal = Control.SIZE_FILL
 		v.add_child(art)
+		if Catalogue.is_new(id):
+			# a real catalogue fact (added in this catalogue version)
+			var chip := UIKit.chip("New", Color(UIKit.TEAL, 0.92), UIKit.NAVY, 16)
+			chip.name = "New"
+			chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			chip.position = Vector2(6, 6)
+			art.add_child(chip)
 		name_l = CreatorScreen.name_label(Catalogue.display_name(id))
 		v.add_child(name_l)
 		var row := UIKit.hbox(6)
@@ -916,6 +1312,17 @@ class ShopCard:
 		price_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(price_l)
 		v.add_child(row)
+		if rot:
+			when_l = UIKit.styled("", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+			when_l.name = "Leaves"
+			when_l.add_theme_font_size_override("font_size", 17)
+			when_l.custom_minimum_size.y = CreatorScreen.STATE_H
+			when_l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			when_l.clip_text = true
+			when_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			when_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			v.add_child(when_l)
+			resized.connect(_fit_when)
 		fit_cell(w, name_lines(w))
 
 	## Season 1 Premium: the emblem, the name, what it adds (counted from the
@@ -963,6 +1370,57 @@ class ShopCard:
 		h.minimum_size_changed.connect(func() -> void: _fit_wide(_wide_w))
 		_fit_wide(w)
 
+	## A Coin pack: the pile, then the full quantity ("1,500 Coins") over the
+	## App Store's localized price (or why not) in a pill, with an optional
+	## computed "Best value" beside it.  One compact row, not a slab; the
+	## quantity and the price each get the card's full text width.
+	func _setup_pack(face: Control, w: float) -> void:
+		var h := UIKit.hbox(UIKit.SP_M)
+		h.set_anchors_preset(Control.PRESET_FULL_RECT)
+		h.offset_left = 8
+		h.offset_right = -10
+		h.offset_top = 6
+		h.offset_bottom = -6
+		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.add_child(h)
+		var ah := ShopCard.pack_h() - 12.0
+		art = ShopCard.art_for(shop, id, 0.0, "shop:%s" % id)
+		art.name = "Well"
+		art.custom_minimum_size = Vector2(roundf(ah * 1.1), ah)
+		art.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(art)
+		var tv := UIKit.vbox(4)
+		tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tv.alignment = BoxContainer.ALIGNMENT_CENTER
+		tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		h.add_child(tv)
+		name_l = UIKit.styled(Catalogue.display_name(id), "num", UIKit.IVORY)
+		name_l.add_theme_font_size_override("font_size", 23)
+		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tv.add_child(name_l)
+		var pr := UIKit.hbox(8)
+		pr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tv.add_child(pr)
+		_pill = PanelContainer.new()
+		_pill.name = "PricePill"
+		_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		price_l = UIKit.styled("", "num", UIKit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
+		price_l.add_theme_font_size_override("font_size", 19)
+		price_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_pill.add_child(price_l)
+		pr.add_child(_pill)
+		_note = UIKit.styled("", "caption", UIKit.TEAL)
+		_note.name = "PackNote"
+		_note.add_theme_font_size_override("font_size", 17)
+		_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_note.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_note.clip_text = true
+		_note.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pr.add_child(_note)
+		fit_cell(w, 1)
+
 	## The wide card is as tall as its text needs at this width (the art is
 	## centred beside it): nothing spills past the card.
 	func _fit_wide(w: float) -> void:
@@ -972,7 +1430,7 @@ class ShopCard:
 		custom_minimum_size = Vector2(w, maxf(UIKit.row_h(), need + 20.0))
 
 	func name_lines(w: float) -> int:
-		if wide:
+		if wide or pack:
 			return 1
 		return mini(2, UIKit.lines_for(name_l.text, UIKit.font_w(600), CreatorScreen.NAME_FS, w - CreatorScreen.PAD * 2.0))
 
@@ -980,21 +1438,91 @@ class ShopCard:
 		if wide:
 			_fit_wide(w)
 			return
+		if pack:
+			custom_minimum_size = Vector2(w, ShopCard.pack_h())
+			return
 		lines = n
 		var iw := w - CreatorScreen.PAD * 2.0
 		var wh := roundf(iw * ShopCard.well_of(id))
 		art.custom_minimum_size = Vector2(0, wh)
 		name_l.custom_minimum_size = Vector2(iw, CreatorScreen.name_block_h(n))
 		name_l.max_lines_visible = n
-		custom_minimum_size = Vector2(w, CreatorScreen.PAD * 2.0 + wh + CreatorScreen.ROW_GAP * 2.0 + CreatorScreen.name_block_h(n) + CreatorScreen.STATE_H)
+		var extra := (CreatorScreen.ROW_GAP + CreatorScreen.STATE_H) if rot else 0.0
+		custom_minimum_size = Vector2(w, CreatorScreen.PAD * 2.0 + wh + CreatorScreen.ROW_GAP * 2.0 + CreatorScreen.name_block_h(n) + CreatorScreen.STATE_H + extra)
 
 	func refresh() -> void:
-		var st: Dictionary = shop.state_of(id)
+		var st: Dictionary = shop.state_of(id, offer)
+		if pack:
+			_refresh_pack(st)
+			return
 		price_l.text = String(st["text"])
 		price_l.add_theme_color_override("font_color", st["col"])
-		coin.visible = String(st["kind"]) == "coins"
-		accessibility_name = "%s, %s%s" % [Catalogue.display_name(id), Catalogue.type_label(id),
-			", " + String(st["text"]) + (" Coins" if String(st["kind"]) == "coins" else "")]
+		coin.visible = String(st["kind"]) in ["coins", "rotation"]
+		tick()
+		var when := ("" if when_l == null else ", " + when_l.text)
+		accessibility_name = "%s, %s%s%s" % [Catalogue.display_name(id), Catalogue.type_label(id),
+			", " + String(st["text"]) + (" Coins" if String(st["kind"]) in ["coins", "rotation"] else ""), when]
+
+	func _refresh_pack(st: Dictionary) -> void:
+		var can := bool(st.get("can_buy", false))
+		price_l.text = String(st["text"]) if String(st["text"]) != "" else "Not available"
+		price_l.add_theme_color_override("font_color", UIKit.NAVY if can else UIKit.IVORY_MUTED)
+		var pb := UIKit.box(UIKit.AMBER if can else Color(UIKit.NAVY, 0.5), 999, 0, Color.WHITE, 12)
+		pb.content_margin_top = 2
+		pb.content_margin_bottom = 2
+		_pill.add_theme_stylebox_override("panel", pb)
+		var note := ""
+		match String(st.get("state", "")):
+			"delivering":
+				note = "Adding to your account…"
+			"pending_approval":
+				note = "Waiting for approval"
+			"unavailable":
+				note = "Not available from the App Store"
+		if note == "" and can and Purchases.best_value_pack() == Catalogue.product_of(id):
+			note = "Best value"
+		_note.text = note
+		_note.visible = note != ""
+		accessibility_name = ("%s. Buy for %s" % [Catalogue.display_name(id), String(st["text"])]) if can \
+			else "%s. %s" % [Catalogue.display_name(id), String(st["text"])]
+
+	## The rotation line: label text only (called once a second).
+	func tick() -> void:
+		if when_l == null:
+			return
+		var w: Array = shop.when_text(id, offer)
+		if _when_full == String(w[0]):
+			return
+		_when_full = String(w[0])
+		when_l.add_theme_color_override("font_color", w[1])
+		_fit_when()
+
+	## A long line ("Not in current rotation" on a narrow phone card) steps
+	## down a size or two, then to its short form, before it would be cut.
+	## The size is chosen for the line's shape (every digit as its widest),
+	## so a ticking countdown never changes size from one second to the next.
+	func _fit_when() -> void:
+		if when_l == null or _when_full == "":
+			return
+		var avail := (size.x if size.x > 1.0 else custom_minimum_size.x) - CreatorScreen.PAD * 2.0
+		var shape := ""
+		for ch in _when_full:
+			shape += "8" if ch in "0123456789" else ch
+		var key := "%s|%d" % [shape, int(avail)]
+		if key != _fit_key:
+			_fit_key = key
+			var f := when_l.get_theme_font("font")
+			_fit_size = 0
+			for fs in [17, 16, 15, 14]:
+				if f.get_string_size(shape, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= avail:
+					_fit_size = fs
+					break
+			_fit_short = _fit_size == 0
+			if _fit_short:
+				_fit_size = 14
+			when_l.add_theme_font_size_override("font_size", _fit_size)
+		# the status line and the sheet always carry the full wording
+		when_l.text = String(ShopScreen.SHORT.get(_when_full, _when_full)) if _fit_short else _when_full
 
 	## The picture for an item: runner items are cached portraits of your
 	## runner wearing it (neutral accessories for outfits); colours are
@@ -1067,7 +1595,9 @@ class ShopPic:
 			var vis := size / k
 			draw_texture_rect_region(tex, r, Rect2((src - vis) * 0.5, vis))
 		elif coins > 0:
-			CommerceArt.coin_pile(self, c, s * 0.36, coins)
+			# a bigger pack reads bigger (250 -> 7,500: 80 % -> 100 % of the well)
+			var grow := clampf(log(float(coins) / 250.0) / log(30.0), 0.0, 1.0)
+			CommerceArt.coin_pile(self, c, s * 0.36 * (0.8 + 0.2 * grow), coins)
 		elif swatch.a > 0.0:
 			draw_circle(c + Vector2(0, 2), s * 0.32, swatch.darkened(0.4), true, -1.0, true)
 			draw_circle(c, s * 0.32, swatch, true, -1.0, true)

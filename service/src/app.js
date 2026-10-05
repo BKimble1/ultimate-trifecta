@@ -622,7 +622,8 @@ function config(env) {
     session_ttl_s: SESSION_TTL_S,
     // V6: what this deployment supports (an older deployment has no chat, so
     // the game keeps typed chat honestly unavailable)
-    features: ['chat', 'message_reports'],
+    // Pass 8: scheduled rotating Shop offers (GET /v1/shop/offers)
+    features: ['chat', 'message_reports', 'shop_offers'],
   });
 }
 

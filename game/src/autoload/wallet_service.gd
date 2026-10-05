@@ -510,7 +510,14 @@ func _after_op(op: Dictionary, r: Dictionary) -> void:
 ## catalogue there.  Returns {ok, state: "delivered" | "pending" | "failed",
 ## message}.  "pending" = sent, no answer yet: it completes by itself (same
 ## idempotency key) and can never charge twice.
-func spend(item_id: String) -> Dictionary:
+##
+## Pass 8: a rotating skin is bought through its scheduled offer (`offer`,
+## or the item's active offer): only while Offers trusts the service's time
+## and the offer is on sale, at the offer's price.  The service checks the
+## offer again on its own clock when it accepts the purchase; if the offer
+## changed first, nothing is charged ("offer_changed").  A queued purchase
+## retried after the offer ended returns the accepted result (same key).
+func spend(item_id: String, offer: Dictionary = {}) -> Dictionary:
 	var can := can_transact()
 	if not bool(can["ok"]):
 		return {"ok": false, "state": "failed", "message": String(can["message"])}
@@ -521,17 +528,31 @@ func spend(item_id: String) -> Dictionary:
 	if pending_for(item_id):
 		return {"ok": false, "state": "pending", "message": "Still finishing your last purchase of this item."}
 	var price := Catalogue.price(item_id)
+	var body := {"item_id": item_id, "price": price, "catalogue_version": Catalogue.version()}
+	var meta := {"item": item_id}
+	if Catalogue.is_rotation(item_id):
+		var o := offer if not offer.is_empty() else Offers.offer_for(item_id)
+		if not Offers.trusted():
+			return {"ok": false, "state": "failed", "message": "Connect to refresh Shop. Nothing was charged."}
+		if o.is_empty() or String(o.get("item_id", "")) != item_id or not Offers.is_active(o):
+			return {"ok": false, "state": "offer_changed", "message": "This skin isn't in the Shop right now. Nothing was charged."}
+		price = int(o["price"])
+		body["price"] = price
+		body["offer_id"] = String(o["offer_id"])
+		meta["offer_id"] = String(o["offer_id"])
 	if balance() < price:
 		return {"ok": false, "state": "failed", "message": "You need %s more Coins." % Catalogue.format_coins(price - balance())}
-	var op := _enqueue("spend", HTTPClient.METHOD_POST, "/v1/wallet/spend",
-		{"item_id": item_id, "price": price, "catalogue_version": Catalogue.version()}, {"item": item_id})
+	var op := _enqueue("spend", HTTPClient.METHOD_POST, "/v1/wallet/spend", body, meta)
 	op["body"]["idempotency_key"] = op["id"]
 	_save()
 	var r := await _send(op)
 	if bool(r.get("ok", false)):
-		return {"ok": true, "state": "delivered", "message": ""}
+		return {"ok": true, "state": "delivered", "message": "", "offer": r.get("offer", {})}
 	if int(r.get("http_status", 0)) == 0:
 		return {"ok": false, "state": "pending", "message": "We couldn't reach the game service. Your purchase will finish by itself when you're back online, and you won't be charged twice."}
+	if String(r.get("error", "")) == "offer_changed":
+		Offers.refresh()
+		return {"ok": false, "state": "offer_changed", "message": "%s Check the Shop's current offers." % Cloud.explain(r)}
 	return {"ok": false, "state": "failed", "message": Cloud.explain(r)}
 
 

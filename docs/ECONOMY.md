@@ -1,6 +1,7 @@
-# Economy: catalogue, products, earning, wallet, Season XP and claims (V6)
+# Economy: catalogue, products, earning, wallet, Season XP and claims (V6, Pass 8 Shop)
 
-This is the economy as implemented in V6. The numbers live in one file,
+This is the economy as implemented in V6, with the Pass 8 Shop changes
+(scheduled rotating offers, §2.1; six Coin packs). The numbers live in one file,
 [`game/config/catalogue.json`](../game/config/catalogue.json): the game reads
 it (`Catalogue`, `Economy`) and the service reads a generated copy
 (`service/src/catalogue_data.js`, checked by a test and by `deploy.sh`).
@@ -40,7 +41,9 @@ See [COMMERCE_SETUP.md](COMMERCE_SETUP.md) for the owner's steps.
 Kinds: `coin_item` (Shop, Coins), `apple_skin` (Shop, permanent App Store
 non-consumable), `coin_pack` (Shop, App Store consumable), `season_premium`
 (Shop, Coins), `season_reward` (earned in the pass; never sold under any
-ID). Runner options with no catalogue entry and Cosmetics cost 0 are the free
+ID). Pass 8: a `coin_item` with `"rotation": true` is sold **only through a
+scheduled rotating offer** (§2.1); its item ID is still the permanent
+entitlement. Runner options with no catalogue entry and Cosmetics cost 0 are the free
 base options everyone owns. The catalogue is versioned
 (`catalogue_version`), and the service checks every Coin price against it
 (a stale client gets `price_changed`, never a different charge).
@@ -49,36 +52,149 @@ base options everyone owns. The catalogue is versioned
 
 | ID | Kind | Price | Notes |
 |---|---|---|---|
-| `outfit:moonlight_runner` | apple_skin | App Store (localized) | Featured; permanent; Restore Purchases |
-| `outfit:starry_sleeper` | apple_skin | App Store (localized) | Featured; permanent; Restore Purchases |
-| `outfit:lantern_scout` | coin_item | 1,200 Coins | Featured |
-| `outfit:campus_courier` | coin_item | 900 Coins | |
-| `outfit:raincoat_explorer` | coin_item | 800 Coins | |
-| `outfit:varsity_sprinter` | coin_item | 600 Coins | |
-| `outfit:frog`, `outfit:duck`, `outfit:robe` | coin_item | 500 / 450 / 300 | pre-V6 outfits, re-priced into the 300-1,200 band |
-| pre-V6 accessories (patterns, colours, trims, hair colours, hats, shoes, Wiggle Dance) | coin_item | 20-240 | unchanged V5 prices |
-| `coins:500`, `coins:1500`, `coins:3500` | coin_pack | App Store (localized) | 500 / 1,500 / 3,500 Coins |
+| `outfit:moonlight_runner` | apple_skin | App Store (localized) | Always available; permanent; Restore Purchases |
+| `outfit:starry_sleeper` | apple_skin | App Store (localized) | Always available; permanent; Restore Purchases |
+| `outfit:midnight_mechanic` | coin_item, rotation | 900 Coins | Pass 8, new; rotating offers only |
+| `outfit:moonwalk_cadet` | coin_item, rotation | 1,200 Coins | Pass 8, new; rotating offers only |
+| `outfit:pumpkin_pajamas` | coin_item, rotation | 800 Coins | Pass 8, new; rotating offers only |
+| `outfit:arcade_sprinter` | coin_item, rotation | 900 Coins | Pass 8, new; rotating offers only |
+| `outfit:cloud_nine` | coin_item, rotation | 1,000 Coins | Pass 8, new; rotating offers only |
+| `outfit:bedtime_bandit` | coin_item, rotation | 1,000 Coins | Pass 8, new; rotating offers only |
+| `outfit:lantern_scout` | coin_item, rotation | 1,200 Coins | V6; moved into the rotation in Pass 8 |
+| `outfit:campus_courier` | coin_item, rotation | 900 Coins | V6; moved into the rotation in Pass 8 |
+| `outfit:raincoat_explorer` | coin_item, rotation | 800 Coins | V6; moved into the rotation in Pass 8 |
+| `outfit:varsity_sprinter` | coin_item, rotation | 600 Coins | V6; moved into the rotation in Pass 8 |
+| `outfit:frog`, `outfit:duck`, `outfit:robe` | coin_item | 500 / 450 / 300 | pre-V6 outfits; always available |
+| pre-V6 accessories (patterns, colours, trims, hair colours, hats, shoes, Wiggle Dance) | coin_item | 20-240 | unchanged V5 prices; always available |
+| `coins:250`, `coins:500`, `coins:1000`, `coins:1500`, `coins:3500`, `coins:7500` | coin_pack | App Store (localized) | 250 / 500 / 1,000 / 1,500 / 3,500 / 7,500 Coins (250, 1,000, 7,500 new in Pass 8) |
 | `season:s1:premium` | season_premium | 1,500 Coins | not a subscription; no tier skips |
 
-The art for the six Shop outfits and the Season rewards comes from the art
+The art for every Shop outfit and the Season rewards comes from the art
 workstream (`Cosmetics`). An item whose art isn't in `Cosmetics` is never
 offered; `test_catalogue::test_every_referenced_item_exists_in_cosmetics`
-lists any that are missing (it fails until the art lands).
+lists any that are missing (it fails until the art lands: in the Shop
+branch of Pass 8 the six new outfits are listed until the skins stream's
+`Cosmetics` entries merge).
+
+### 2.1 Rotating offers (Pass 8)
+
+**Data model.** An offer is separate from the item it sells:
+
+| Field | Meaning |
+|---|---|
+| `offer_id` | `r<revision>-<YYYYMMDD start>-s<slot>`; unique, never reused |
+| `item_id` | the permanent entitlement it sells (e.g. `outfit:cloud_nine`) |
+| `slot` | Featured slot 1-4 |
+| `starts_at_utc` / `ends_at_utc` | on sale from start (inclusive) to end (exclusive) |
+| `price` | Coins; always the item's catalogue price (no sale prices) |
+| `revision` | the schedule revision that published it |
+
+The same skin returns later under a new `offer_id`; ownership, the
+Locker and the ledger only ever use the `item_id`.
+
+**What rotates, what doesn't (decision).** The rotating pool is the six new
+Pass 8 outfits plus the four V6 Coin outfits (Lantern Scout, Campus
+Courier, Raincoat Explorer, Varsity Sprinter), which leave the always-on
+list. Anyone who owns one keeps it (nothing was sold from a live service
+yet, and entitlements never expire). **Always available**, never
+expiring: the two direct Apple skins, all six Coin packs, Season 1
+Premium, and the cheap pre-V6 items (three outfits and the accessories).
+Reasons: Apple non-consumables and Premium are permanent purchases already
+described as such; Coin packs must always be buyable; the pre-V6 items are
+cheap legacy unlocks that existing players already own on their devices.
+
+**The rule** (catalogue `offers.rule`, `tools/make_offer_schedule.py`):
+
+- 4 Featured slots; every offer lasts exactly 48 h and starts and ends at
+  00:00 UTC.
+- Staggered: slots 1-2 change on even days from the start date, slots 3-4
+  on odd days, so **two offers change every day at 00:00 UTC** (slots 3-4
+  open one day before the start so every offer is a full 48 h).
+- At each change the slot takes the pool skin that left the Shop longest
+  ago (never shown counts as longest; ties in catalogue order) among those
+  not on show and not leaving at that moment: no skin twice at once, no
+  back-to-back return. With 10 skins this is a 5-day cycle: each skin is
+  in the Shop 2 days, away 3, and returns under a new offer.
+- Written schedule: **12 weeks** (2026-10-05 to 2026-12-28; 170 offers)
+  in `game/config/catalogue.json` → `offers.schedule`. Past its end the
+  service has no offers and the Shop says "No rotating skins right now".
+
+**Regenerating / extending** (before the written schedule runs out, or
+after the art lands if the pool changes): edit `offers.rule` (raise
+`days`, or move `start_utc` to a later 00:00 UTC; or change the pool's
+`"rotation"` flags), bump `offers.schedule_revision` if any unpublished
+offer changes, then
+
+```sh
+python3 tools/make_offer_schedule.py          # refuses to change an offer that already started
+node service/tools/sync_catalogue.mjs         # the service's copy
+python3 tools/make_offer_schedule.py --check  # and cd service && npm test (both check it)
+```
+
+and deploy the service. Raising `days` with the same start is
+prefix-stable: published offers keep their ids.
+
+**The service is the authority** (`service/src/offers.js`):
+
+- `GET /v1/shop/offers` (no sign-in): the service's clock, the offers on
+  sale now (by slot), those starting in the next 72 h, the next change and
+  `known_until`.
+- `POST /v1/wallet/spend` with `offer_id` (§6): accepted only if, **at the
+  service's own time when it accepts**, the offer exists, sells that item,
+  is on sale and has the shown price; otherwise `409 offer_changed`
+  (`reason`: not_started, expired, price, item_mismatch, unknown_offer,
+  not_in_rotation) and nothing is charged. An item-only spend for a
+  rotating skin (an older client, a deep link, a direct request) is
+  accepted only while that skin has an active offer.
+- Accepted: debit + permanent entitlement + ledger row + an `offer_sales`
+  row (migration `0003_offers.sql`; a `CHECK` makes "accepted inside the
+  window" part of the schema) in one batch. A replay of the same
+  idempotency key returns that result even after the offer ended. Already
+  owned stays owned and unbuyable (`already_owned`).
+- Coin packs are independent of offers: buying Coins never reserves a skin.
+
+**The game** (`Offers` autoload, `ShopScreen`):
+
+- Keeps the service's time as an offset from the monotonic clock; the
+  device clock can only make an offer end *sooner* (the later of the two
+  estimates counts, so iOS sleep doesn't extend an offer), never later.
+  Time zones don't enter at all (local time is presentation only).
+- Trusts its time only after a sync in this app run, within 6 h, inside
+  the described window. Otherwise: "Connect to refresh Shop" (cached
+  offers stay previewable; nothing can be bought from them).
+- Featured: four cards with "Leaves in 1d 04h" / "Leaves in 02:14:09",
+  a separate "Shop refreshes in …", the note "Owned skins stay in your
+  Locker. Shop skins may return.", then the compact Always available block.
+  Countdowns tick once a second by changing label text; an ended offer's
+  card is replaced in place by the slot's next offer.
+- The detail sheet adds the local departure ("Leaves the Shop Wednesday,
+  Oct 7, 12:00 AM (your time)", from the device's current UTC offset).
+  All skins, a stale sheet or a deep link to a skin out of rotation say
+  "Not in current rotation" (preview still works). "New" marks items added
+  in the current catalogue version (`added_in`); no sale, rare or
+  last-chance wording.
+- Service off (this build): no rotation, the existing unavailable state;
+  every skin can still be previewed in All skins.
 
 ### App Store products
 
 | Product ID | Type | Delivers |
 |---|---|---|
+| `com.idlery.ultimatetrifecta.coins.250` | Consumable | 250 Coins (Pass 8) |
 | `com.idlery.ultimatetrifecta.coins.500` | Consumable | 500 Coins |
+| `com.idlery.ultimatetrifecta.coins.1000` | Consumable | 1,000 Coins (Pass 8) |
 | `com.idlery.ultimatetrifecta.coins.1500` | Consumable | 1,500 Coins |
 | `com.idlery.ultimatetrifecta.coins.3500` | Consumable | 3,500 Coins |
+| `com.idlery.ultimatetrifecta.coins.7500` | Consumable | 7,500 Coins (Pass 8) |
 | `com.idlery.ultimatetrifecta.skin.moonlight_runner` | Non-Consumable | `outfit:moonlight_runner` |
 | `com.idlery.ultimatetrifecta.skin.starry_sleeper` | Non-Consumable | `outfit:starry_sleeper` |
 
 No real-money price is stored anywhere: the Shop shows StoreKit's localized
 `displayPrice`, and a product StoreKit doesn't return shows "Not available",
 never a made-up price. Prices are the account holder's choice in App Store
-Connect.
+Connect. "Best value" appears on a Coin pack only when StoreKit's own
+numeric prices, all in the same currency, make it strictly the cheapest
+per Coin (`Purchases.best_value_pack`); otherwise no such label.
 
 ## 3. What a round pays
 
@@ -309,6 +425,15 @@ server simulation would be the real fix.
   the primary key, a repeated key violates the ledger's unique index: in
   each case the whole batch rolls back. A replay of the same key returns the
   first result. Concurrent purchases are tested.
+- **Rotating skins (Pass 8)**: the spend carries `offer_id`; the service
+  checks the offer on its own clock at acceptance (§2.1) and charges the
+  offer's price, recording `offer_sales` in the same batch. `offer_changed`
+  charges nothing and the client drops the operation, refreshes the offers
+  and says so ("This offer has left the Shop. Nothing was charged.").
+  A queued purchase whose reply was lost is retried with the same key and
+  returns the accepted result even after the offer ended. Tested at
+  before/at start, last millisecond, exact end, overlapping offers, a spend
+  racing a Shop refresh, duplicate retries and an owned skin returning.
 - **Client outbox**: every operation is written to `user://wallet.json`
   with its idempotency key *before* it's sent. No answer (a timeout is not a
   "no") keeps it queued and retried on sign-in, resume and every 20 s, so it
@@ -345,6 +470,7 @@ server simulation would be the real fix.
 | Owned items | free + pre-V6 + verified App Store skins | + last account snapshot | account |
 | Coins shown | pre-V6 balance (this device) | last verified balance | live |
 | Spend, claim, buy | unavailable, says why | unavailable, says why | yes |
+| Rotating offers (Pass 8) | none ("come from the game service") | last offers previewable, "Connect to refresh Shop", not buyable | live countdowns, buyable while on sale |
 | Round rewards | not added (said on results) | queued confirmation, settled later | settled |
 | Challenges (Pass 8) | goal previews, no progress, "Preview" status | last known progress for the current period ("Offline · progress as of …"), else previews | live |
 

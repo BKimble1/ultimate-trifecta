@@ -505,7 +505,9 @@ func not_owned(f: String) -> Dictionary:
 			continue
 		match Catalogue.source_of(id):
 			"shop", "apple":
-				if Catalogue.has_art(id):
+				# Pass 8: a rotating skin counts only while its offer is on
+				# sale (owned ones are in the Locker whatever the rotation)
+				if Catalogue.has_art(id) and Offers.listed(id):
 					out["shop"] += 1
 			"season":
 				if Catalogue.has_art(id):

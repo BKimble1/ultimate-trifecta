@@ -12,7 +12,7 @@ extends RefCounted
 ## `handle` is the native object finish() needs.  The JWS is the signed
 ## transaction the service verifies; it is never logged.
 
-signal products_loaded(products: Array, ok: bool)   # [{product_id, display_name, display_price, description}]
+signal products_loaded(products: Array, ok: bool)   # [{product_id, display_name, display_price, description, price}] (price: StoreKit's numeric local-currency price, 0 if unknown)
 signal purchase_result(tx: Dictionary, status: int, message: String)
 signal transaction(tx: Dictionary)                   # verified: deliver, then finish
 signal unverified(tx: Dictionary, code: int)
