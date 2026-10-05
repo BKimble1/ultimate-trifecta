@@ -1139,22 +1139,31 @@ func _place(vs: Vector2) -> void:
 	var cs := coach.get_combined_minimum_size()
 	coach.position = Vector2((vs.x - cs.x) * 0.5, vs.y * 0.66)
 	coach.size = cs
+	# (Pass 8) the spectating line and the sprint hint sit centred above the
+	# thumb clusters (and the toasts), never under a thumb
+	var top_of_thumbs := thumbs_top(vs)
 	var ss := spectate_lbl.get_combined_minimum_size()
-	spectate_lbl.position = Vector2((vs.x - ss.x) * 0.5, vs.y - _safe.size.y - 150)
+	spectate_lbl.position = Vector2((vs.x - ss.x) * 0.5, floorf(minf(vs.y - _safe.size.y - 150.0, top_of_thumbs - ss.y)))
 	spectate_lbl.size = ss
-	# the sprint hint: centred, above the thumb clusters (and the toasts),
-	# never under a thumb
 	var hs := sprint_hint.get_combined_minimum_size()
 	sprint_hint.size = hs
-	var bottom := vs.y * 0.62 - 8.0
+	var bottom := minf(vs.y * 0.62 - 8.0, top_of_thumbs)
+	sprint_hint.position = Vector2(floorf((vs.x - hs.x) * 0.5), floorf(maxf(vs.y * 0.4, bottom - hs.y)))
+
+
+## The highest edge of the touch thumb clusters now laid out (buttons with
+## their hit padding, the stick ring), less a small gap; the bottom of the
+## screen when there are none.
+func thumbs_top(vs: Vector2) -> float:
+	var top := vs.y - _safe.size.y
 	if mc != null and mc.touch != null and mc.touch.surface != null:
 		var res: Dictionary = mc.touch.surface.res
 		for bn in res.get("buttons", {}):
 			var b: Dictionary = res["buttons"][bn]
-			bottom = minf(bottom, (b["c"] as Vector2).y - float(b["hit"]) - 12.0)
+			top = minf(top, (b["c"] as Vector2).y - float(b["hit"]))
 		if res.has("stick_c"):
-			bottom = minf(bottom, (res["stick_c"] as Vector2).y - float(res["stick_r"]) - 12.0)
-	sprint_hint.position = Vector2(floorf((vs.x - hs.x) * 0.5), floorf(maxf(vs.y * 0.4, bottom - hs.y)))
+			top = minf(top, (res["stick_c"] as Vector2).y - float(res["stick_r"]))
+	return top - 12.0
 
 
 func _hint(kind: String) -> String:

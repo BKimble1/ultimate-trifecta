@@ -257,6 +257,55 @@ func test_sprint_empty_hint_follows_the_latch_and_the_hold() -> void:
 	await _end(mc)
 
 
+func test_results_say_won_or_lost_why_and_what_you_did() -> void:
+	var me := "u-res8"
+	var rows := [
+		{"slot": 0, "uid": me, "name": "Me", "role": TC.Role.RUNNER, "stamps": 3, "finished": true, "finish_order": 2, "finish_time": 151.0, "times_captured": 1},
+		{"slot": 1, "uid": "u2", "name": "Ana", "role": TC.Role.RUNNER, "stamps": 2, "finished": false},
+		{"slot": 2, "uid": "bot-2", "name": "Bot Nap", "is_bot": true, "role": TC.Role.PATROL, "captures": 3, "unique_captures": 2},
+	]
+	var won := {"match_id": "r8a", "outcome": TC.Outcome.RUNNERS_WIN, "players": rows, "finished": 4, "needed": 4, "round_time": 199.0}
+	var v := RoundRanking.round_view(won, me)
+	var h := ResultsScreen.headline(v)
+	t.eq(String(h[0]), "Your team won!", "1: your team won")
+	t.eq(String(h[2]), "Runners won · 4 runners home · 3:19", "and why, in the round's numbers")
+	t.eq(ResultsScreen.my_contribution(v["me"]), "Home 2nd · 2:31 · 3/3 waters · caught 1", "2: your contribution")
+	var vana := RoundRanking.round_view(won, "u2")
+	t.eq(ResultsScreen.my_contribution(vana["me"]), "Not home · 2/3 waters · never caught", "an unfinished runner is 'Not home', never a made-up place")
+	var lost := won.duplicate(true)
+	lost["outcome"] = TC.Outcome.PATROL_WIN
+	lost["finished"] = 3
+	lost["round_time"] = 240.0
+	var lv := RoundRanking.round_view(lost, me)
+	var lh := ResultsScreen.headline(lv)
+	t.eq(String(lh[0]), "Your team lost", "your team lost")
+	t.eq(String(lh[2]), "Runners lost · Time expired: 3/4 home", "time expired, with the count")
+	var spec := ResultsScreen.headline(RoundRanking.round_view(lost, "nobody"))
+	t.eq(String(spec[0]), "Night Watch wins!", "a watcher sees the winning role")
+	var cancelled := won.duplicate(true)
+	cancelled["outcome"] = TC.Outcome.CANCELLED
+	var ch := ResultsScreen.headline(RoundRanking.round_view(cancelled, me))
+	t.eq(String(ch[0]), "Round cancelled", "a cancelled round is never a loss")
+	var wv := RoundRanking.round_view(won, "bot-2")
+	t.eq(ResultsScreen.my_contribution(wv["me"]), "3 tags · 2 different runners", "the Night Watch's contribution")
+
+
+func test_hud_refresh_cost_is_small() -> void:
+	var mc := await _begin("runner", 2)
+	mc.sim._set_phase(TC.Phase.PLAYING)
+	PaceFields.settle()
+	mc.sim.pace.update(mc.sim)
+	var each: Array[float] = []
+	for i in 300:
+		var t0 := Time.get_ticks_usec()
+		mc.hud.refresh(0.016)
+		each.append(float(Time.get_ticks_usec() - t0))
+	each.sort()
+	print("[hud refresh] p50 %.0f us, p95 %.0f us, max %.0f us (300 calls, runner, pace on)" % [each[150], each[285], each[299]])
+	t.check(each[150] < 1500.0, "the HUD's per-frame refresh stays small (p50 %.0f us)" % each[150])
+	await _end(mc)
+
+
 func test_series_line_never_fakes_a_place() -> void:
 	t.eq(RoundRanking.series_line({}, "u1"), "", "no series: nothing")
 	var ps := PartySeries.new()
@@ -375,6 +424,17 @@ func test_layout_at_phone_and_ipad_sizes() -> void:
 					t.eq(hud.personal.clipped_rows(), [], "%s state %d: no clipped words" % [tag, int(st[1])])
 					var pr := hud.personal.get_global_rect()
 					t.check(pr.end.y <= vs.y * TouchLayout.TOP_BAND + 0.5, "%s state %d: the card stays in the HUD band (%.0f)" % [tag, int(st[1]), pr.end.y])
+					if int(st[1]) == TC.PState.FINISHED:
+						# home: the "Watching …" line clears the watch buttons (Next, Cheer)
+						await _frames(3)
+						hud.spectate_lbl.text = "Watching Pajamarama  ·  next: ⟳"
+						hud._place(vs)
+						var sl := hud.spectate_lbl.get_global_rect()
+						var wres: Dictionary = mc.touch.surface.res
+						for bn in wres.get("buttons", {}):
+							var wb: Dictionary = wres["buttons"][bn]
+							var br := Rect2(wb["c"] - Vector2.ONE * float(wb["hit"]), Vector2.ONE * float(wb["hit"]) * 2.0)
+							t.check(not sl.intersects(br), "%s: the watching line clears the %s button (%s vs %s)" % [tag, bn, str(sl), str(br)])
 				p.state = TC.PState.ACTIVE
 				await _end(mc)
 	UIKit.emulation = orig_emu

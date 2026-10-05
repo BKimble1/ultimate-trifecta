@@ -73,7 +73,7 @@ static func request(lay: CampusLayout, water_indices: Array, dorm_id: String) ->
 	var specs: Array = []
 	for wi in water_indices:
 		var k := water_key(int(wi))
-		if not _fields.has(k) and not _task_keys.has(k):
+		if not _fields.has(k) and not _task_keys.has(k) and not _queued(k):
 			var w: Dictionary = lay.waters[int(wi)]
 			var src := PackedVector2Array()
 			for jp in w.get("jump_points", []):
@@ -82,7 +82,7 @@ static func request(lay: CampusLayout, water_indices: Array, dorm_id: String) ->
 				src.append(Vector2((e as Vector3).x, (e as Vector3).z))
 			specs.append({"key": k, "src": src, "lab": PackedByteArray()})
 	var hk := home_key(dorm_id)
-	if dorm_id != "" and not _fields.has(hk) and not _task_keys.has(hk):
+	if dorm_id != "" and not _fields.has(hk) and not _task_keys.has(hk) and not _queued(hk):
 		var src2 := PackedVector2Array()
 		var lab := PackedByteArray()
 		var doors: Array = CampusDorms.geometry(dorm_id).get("doors", [])
@@ -98,6 +98,14 @@ static func request(lay: CampusLayout, water_indices: Array, dorm_id: String) ->
 	if specs.is_empty() or running:
 		return
 	_start(lay, specs)
+
+
+## (mutex held) a field already asked for while a task runs.
+static func _queued(key: String) -> bool:
+	for s in _waiting:
+		if String(s["key"]) == key:
+			return true
+	return false
 
 
 static func _start(lay: CampusLayout, specs: Array) -> void:

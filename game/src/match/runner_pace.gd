@@ -119,10 +119,12 @@ func _publish(ranked: Dictionary) -> void:
 
 func _try_ready(sim: MatchSim) -> void:
 	PaceFields.poll()
+	var missing := not PaceFields.has(PaceFields.home_key(_dorm))
 	for wi in _targets:
 		if not PaceFields.has(PaceFields.water_key(int(wi))):
-			return
-	if not PaceFields.has(PaceFields.home_key(_dorm)):
+			missing = true
+	if missing:
+		PaceFields.request(_layout, _targets, _dorm)   # idempotent: only what isn't built or building
 		return
 	for wi in _targets:
 		_w[int(wi)] = PaceFields.field(PaceFields.water_key(int(wi)))

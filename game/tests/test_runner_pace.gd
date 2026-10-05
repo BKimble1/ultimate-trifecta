@@ -214,17 +214,21 @@ func test_budget_and_no_path_search() -> void:
 	var t0 := Time.get_ticks_usec()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 9
+	var each: Array[float] = []
 	for i in 200:
 		# runners spread over the campus with mixed stamps and states
 		for s in 6:
 			var p := sim.player(s)
 			p.stamps = rng.randi() % 8
 			h.place(s, Vector3(rng.randf_range(-120, 120), 0.05, rng.randf_range(-120, 120)))
+		var tu := Time.get_ticks_usec()
 		pc.update(sim)
+		each.append(float(Time.get_ticks_usec() - tu))
 	var us := float(Time.get_ticks_usec() - t0) / 200.0
 	var cost := pc.cost_us()
-	print("[pace budget] update mean %.0f us, max %d us over %d updates; one update incl. placement %.0f us; fields %s" % [
-		float(cost["mean"]), int(cost["max"]), int(cost["updates"]), us, str(PaceFields.stats)])
+	each.sort()
+	print("[pace budget] update p50 %.0f us, p95 %.0f us, p99 %.0f us, max %.0f us (200 updates, 6 runners); mean incl. placement %.0f us; fields %s" % [
+		each[100], each[190], each[198], each[199], us, str(PaceFields.stats)])
 	t.check(float(cost["mean"]) < 2000.0, "a 2 Hz update of six runners costs well under a frame (mean %.0f us)" % float(cost["mean"]))
 	t.eq(int(nav.path_stats["search"]), searches, "pace never starts a path search")
 	t.check(float(PaceFields.stats["extract_ms"]) > 0.0 and (PaceFields.stats["fields"] as Dictionary).size() >= 4, "field build times recorded")

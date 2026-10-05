@@ -115,14 +115,17 @@ func _wait_round() -> float:
 	var mc := _mc()
 	if mc == null or mc.sim == null or not mc.round_live() or not mc.view_ready() or App.screen != null:
 		return -1.0
-	# the Night Watch stays in its shed until the driver moves it (no chase
-	# in the stills); straight to play; the route fields ready now
-	mc.sim.patrol_release_extra_s = 9999.0
+	# straight to play with the head start over; the route fields ready now
 	if mc.sim.phase < TC.Phase.PLAYING:
 		mc.sim._set_phase(TC.Phase.PLAYING)
+	mc.sim.patrol_release_extra_s = -100.0
 	PaceFields.settle()
-	if part == "patrol":
-		mc.sim.patrol_release_extra_s = -100.0
+	if part == "runner":
+		# the Night Watch bots stand still where the driver puts them (no
+		# chase in the stills): their brains are switched off
+		for p in mc.sim.players:
+			if p.is_patrol():
+				mc.sim.bots.erase(p.id)
 	return 2.0
 
 
@@ -195,7 +198,14 @@ func _runner_danger() -> float:
 	_watch = _first(TC.Role.PATROL)
 	var fw := Vector3(-sin(me.yaw), 0, -cos(me.yaw))
 	var side := Vector3(-fw.z, 0, fw.x)
+	# 10-15 m away in plain sight, to one side (a separate mark on the map)
 	_spot = me.pos() + fw * 8.0 + side * 3.0
+	var nav := NavGrid.shared(mc.layout)
+	for off in [fw * 13.0 + side * 7.0, fw * 12.0 - side * 7.0, fw * 11.0 + side * 4.0, fw * 10.0 - side * 4.0]:
+		var q: Vector3 = me.pos() + off
+		if nav.is_walkable(Vector2(q.x, q.z)) and mc.sim.has_los(me.pos() + Vector3(0, 1.5, 0), q + Vector3(0, 1.0, 0)):
+			_spot = q
+			break
 	var w := _watch
 	_hold = func() -> void:
 		var m := _me()
@@ -284,7 +294,7 @@ func _runner_home() -> float:
 	me.body.global_position = inside
 	me.prev_pos = outside
 	mc.sim._check_finish(me)
-	get_tree().create_timer(1.0).timeout.connect(_snap.bind("runner_home_2nd_waiting"))
+	get_tree().create_timer(1.0).timeout.connect(_snap.bind("runner_home_waiting_for_team"))
 	get_tree().create_timer(4.6).timeout.connect(_snap.bind("runner_home_watching_teammate"))
 	return 5.4
 
