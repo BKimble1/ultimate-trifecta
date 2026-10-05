@@ -118,7 +118,7 @@ by (season, tier, track) and tiers 1-30 are identical in both tables.
   that isn't there, your tier still visible inside a run.
 - **Featured preview.** The milestone chips for 50 and 100 show the skin's
   face (Portraits "head" framing) and the detail shows the real skin on the
-  existing live preview (the emote preview's runner, framed like the
+  existing live preview (the emote preview's runner, framed head to shoes like the
   Locker's outfit pictures, swaying ±49° around its three-quarter view so
   the face stays in the key light; Reduced Motion: still).
   Without the art: a neutral head on the chip, the neutral silhouette in the

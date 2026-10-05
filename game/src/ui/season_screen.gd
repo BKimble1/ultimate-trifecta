@@ -950,9 +950,9 @@ func _show_preview(r: Dictionary) -> void:
 			rs["emote"] = -1
 			rs["emote_t"] = 0.0
 			_preview_view.apply_state(rs)
-			# the whole figure, framed like the Locker's outfit pictures
+			# the whole figure, head to shoes, filling the picture's height
 			_preview.cam.fov = 36.0
-			_preview.aim(Vector3(0, 0.88, 2.7), Vector3(0, 0.8, 0))
+			_preview.aim(Vector3(0, 0.74, 2.3), Vector3(0, 0.68, 0))
 		_preview_view.set_facing(PI + 0.35)
 		return
 	if _preview_skin != "":
