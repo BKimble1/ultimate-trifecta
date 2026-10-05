@@ -175,6 +175,7 @@ Tools/docs: `tools/make_offer_schedule.py` (cycle), `tools/capture_final_shop.sh
 | D10 | (found in this pass's own change) Hide owned rebuilt the section under the same node names while the old nodes were only queued: lookups found the dying nodes | `test_hide_owned…` (first run) | `queue_free` without `remove_child` | Detach before freeing | Test passes |
 | D11 | (found in this pass's render) With Hide owned on, items owned after the grid was built (late wallet sync) stayed listed | `shop_accessories_all_owned_hidden` first render | Filter applied only at build time | Re-applied when ownership changes (not while a sheet is open) | `test_hide_owned…` "a newly owned skin leaves the filtered grid" |
 | D13 | On iPhone SE, a Coin pack the App Store doesn't return showed "Not available" in its pill **and** a clipped "Not av…" note beside it (layout report: 6 trimmed labels) | `capture_final_shop.sh … se`, shot `shop_coins_price_unavailable` (first run) | The card repeated the pill's state as a note too long for the compact card | The note is gone for that state (the pill says it; a tap says why) | `test_coin_pack_cards_are_compact_priced_by_storekit_and_honest` ("said once"); the re-rendered shot |
+| D14 | (new path) After a move, an unanswered Coin purchase of the other deployment's profile kept that item "Finishing…" here | Code reading of `Wallet.pending_for` | Outbox matched by item only | Only the signed-in profile's operations count | `test_app_review_fallback…` ("another deployment's pending purchase doesn't block this one") |
 | D12 | (new path) A wallet reply in flight during a deployment move could be applied as the new deployment's | `test_testflight…` (an auto-refresh racing the test) | Snapshots not checked against the deployment | `apply_snapshot` drops another environment's snapshot | Same test: "a late sandbox snapshot is dropped" |
 
 ## 6. Flows (brief §7 table)
@@ -201,7 +202,7 @@ branch. Device / sandbox / live columns: not observed (§12).
 | Concurrent spend / claim | commerce: `spend: … never twice` (races), `concurrent spend, claim, Premium and delivery…` (new) | test_wallet: `test_spend_is_atomic_and_never_twice`, `test_lost_reply_retries_without_double_charge` | pass |
 | **Environments (§7 Critical)** | environments.test.mjs: all 10 | test_commerce_routing.gd: all 6 | pass |
 
-## 7. StoreKit adapter audit (pinned GodotApplePlugins `bfade13`, source in the scratchpad clone)
+## 7. StoreKit adapter audit (pinned GodotApplePlugins build `bfade13`, read from a clone of that source revision: `Sources/GodotStoreKit/*.swift`, `doc_classes/Store*.xml`)
 
 | Item | Plugin source | Adapter | Status |
 |---|---|---|---|
@@ -211,7 +212,7 @@ branch. Device / sandbox / live columns: not observed (§12).
 | appAccountToken | `UUID(uuidString:)`, `nil` if not a UUID | derived UUIDv8 always parses; adapter now refuses to purchase without the option (D8) | fixed |
 | Replay at start | `start()` → `Transaction.updates` listener + `PurchaseIntent` listener + `fetch_unfinished_transactions()` | `Purchases.use_adapter` → `start()`, `fetch_entitlements()`; resume → `fetch_unfinished()` | matches |
 | Purchases made in-app | delivered by `purchase_completed` (StoreKit doesn't repeat them on `Transaction.updates`) | `_on_purchase_result(OK)` → `_on_transaction` | matches |
-| Finishing | the plugin never finishes (comment in `handleTransaction` says so; code doesn't) | `finish()` only after the service's `ok` (delivered, replay or revoked) | matches |
+| Finishing | the plugin never calls `finish()` itself (a stale comment in `handleTransaction` says it would; the code only emits) | `finish()` only after the service's `ok` (delivered, replay or revoked) | matches (re-check if the pinned build changes) |
 | Restore | `AppStore.sync()` then `restore_completed`; entitlements via `fetch_current_entitlements` (`Transaction.currentEntitlements`) | `restore()` → on OK `fetch_entitlements()`, 3 s quiet period, summary | matches |
 | Unverified | emitted separately, with a nil transaction from `purchase_completed` | counted, never delivered or logged | matches |
 | Promoted IAP | `purchase_intent(product)` (iOS 17.4+) | **not handled** | leave App Store promotion off for launch, or add a handler later |
@@ -272,10 +273,7 @@ captures and client tests past 2027-04-06 behave like the service.
 | `python3 tools/make_offer_schedule.py --check`; `node service/tools/sync_catalogue.mjs --check` | up to date (366 offers); copy up to date |
 | `tools/build_native.sh` (Linux, `-Werror`) | builds `libut_share.linux.x86_64.so` with `receipt_kind` |
 | `clang -fsyntax-only -fobjc-arc -Wall -Wextra -Werror` on `ut_platform_receipt_kind` with stand-in Foundation declarations | clean (no iOS SDK here: the real compile is CI's) |
-| `tools/gd.sh --headless --fixed-fps 60 --path game -s res://tests/run_tests.gd -- test_commerce_routing.gd:,test_purchases.gd:,test_wallet.gd:,test_native.gd:` | 33 tests, 0 failures |
-| `… -- test_shop_filters.gd:,test_shop_ui.gd:,test_shop_rotation.gd:,test_menus_layout.gd:` | 33 tests, 6,267 checks, 0 failures |
-| `… -- test_shop_ui.gd:,test_shop_rotation.gd:,test_account.gd:,test_report_block.gd:,test_chat.gd:,test_profile.gd:,test_catalogue.gd:,test_season100.gd:` | 74 tests, 4,114 checks, 0 failures |
-| `… -- test_menus_layout.gd:,test_screen_cycles.gd:,test_skins_p9.gd:,test_focus.gd:` | 26 tests, 5,764 checks, 0 failures |
+| `tools/gd.sh --headless --fixed-fps 60 --path game -s res://tests/run_tests.gd -- test_commerce_routing.gd:,test_purchases.gd:,test_wallet.gd:,test_native.gd:,test_shop_filters.gd:,test_shop_ui.gd:,test_shop_rotation.gd:,test_catalogue.gd:,test_season100.gd:,test_account.gd:,test_report_block.gd:,test_chat.gd:,test_profile.gd:,test_menus_layout.gd:,test_screen_cycles.gd:,test_skins_p9.gd:,test_focus.gd:,test_challenges.gd:,test_trust.gd:` (final, after every change) | **155 tests, 10,983 checks, 0 failures** |
 | `tools/capture_final_shop.sh build/frs_final se p14 ipad` | the shots in §11 (layout reports: 0 issues) |
 
 The full game suite was not run here (the integrator runs it after merging).
