@@ -58,16 +58,80 @@ func _init() -> void:
 		schedule.append({"offer_id": String(o["offer_id"]), "item_id": String(o["item_id"]), "slot": int(o["slot"]), "price": int(o["price"]),
 			"revision": int(o.get("revision", 1)), "starts_at": float(Catalogue.parse_utc_ms(String(o["starts_at_utc"]))),
 			"ends_at": float(Catalogue.parse_utc_ms(String(o["ends_at_utc"])))})
+	var cy: Variant = sec.get("cycle")
+	if cy is Dictionary and int((cy as Dictionary).get("period_days", 0)) > 0:
+		var by_day: Array = []
+		for i in int(cy["period_days"]):
+			by_day.append([])
+		for o in cy.get("offers", []):
+			(by_day[int(o["day"])] as Array).append({"slot": int(o["slot"]), "item_id": String(o["item_id"]), "price": int(o["price"])})
+		cycle = {"from": float(Catalogue.parse_utc_ms(String(cy["from_utc"]))), "anchor": float(Catalogue.parse_utc_ms(String(cy["anchor_utc"]))),
+			"period": int(cy["period_days"]), "span": float(int(cy["offer_hours"]) * 3600000), "revision": int(cy.get("revision", 1)), "by_day": by_day}
 
 
 func now_ms() -> float:
 	return float(clock_ms.call()) if clock_ms.is_valid() else Time.get_unix_time_from_system() * 1000.0
 
 
-## A test schedule (times in ms).
+## A test schedule (times in ms; no fallback cycle after it).
 func use_schedule(list: Array, revision: int = 7) -> void:
 	schedule = list.duplicate(true)
 	schedule_revision = revision
+	cycle = {}
+
+
+# FINAL_RELEASE_SWEEP (service/src/offers.js): after the written schedule
+# the rule continues from the catalogue's cycle, computed from this double's
+# clock with the ids the rule would have written.
+const DAY_MS := 86400000.0
+var cycle: Dictionary = {}
+
+
+func _cycle_offer(day: float, row: Dictionary) -> Dictionary:
+	var d := Time.get_datetime_dict_from_unix_time(int(day / 1000.0))
+	return {"offer_id": "r%d-%04d%02d%02d-s%d" % [int(cycle["revision"]), int(d["year"]), int(d["month"]), int(d["day"]), int(row["slot"])],
+		"item_id": String(row["item_id"]), "slot": int(row["slot"]), "price": int(row["price"]), "revision": int(cycle["revision"]),
+		"starts_at": day, "ends_at": day + float(cycle["span"])}
+
+
+func _cycle_rows(day: float) -> Array:
+	if cycle.is_empty() or day < float(cycle["from"]):
+		return []
+	var p := int(cycle["period"])
+	var k := posmod(int(roundf((day - float(cycle["anchor"])) / DAY_MS)), p)
+	return cycle["by_day"][k]
+
+
+## Offers (written, then computed) whose window meets [a, b].
+func offers_between(a: float, b: float) -> Array:
+	var out: Array = schedule.filter(func(o: Dictionary) -> bool: return float(o["ends_at"]) > a and float(o["starts_at"]) <= b)
+	if cycle.is_empty():
+		return out
+	var d := maxf(float(cycle["from"]), floorf((a - float(cycle["span"])) / DAY_MS) * DAY_MS + DAY_MS)
+	while d <= b:
+		for row in _cycle_rows(d):
+			var o := _cycle_offer(d, row)
+			if float(o["ends_at"]) > a:
+				out.append(o)
+		d += DAY_MS
+	return out
+
+
+func offer_by_id(oid: String) -> Dictionary:
+	for o in schedule:
+		if String(o["offer_id"]) == oid:
+			return o
+	if cycle.is_empty():
+		return {}
+	var m := RegEx.create_from_string("^r(\\d+)-(\\d{4})(\\d{2})(\\d{2})-s(\\d+)$").search(oid)
+	if m == null or int(m.get_string(1)) != int(cycle["revision"]):
+		return {}
+	var day := float(Catalogue.parse_utc_ms("%s-%s-%sT00:00:00Z" % [m.get_string(2), m.get_string(3), m.get_string(4)]))
+	for row in _cycle_rows(day):
+		if int(row["slot"]) == int(m.get_string(5)):
+			var o := _cycle_offer(day, row)
+			return o if String(o["offer_id"]) == oid else {}
+	return {}
 
 
 func install() -> void:
@@ -90,17 +154,29 @@ func _pid_for(gc: String) -> String:
 		if profiles[pid]["gc"] == gc:
 			return pid
 	_seq += 1
-	var pid := "p_test%03d" % _seq
+	# (each deployment issues its own random profile ids: never the same twice)
+	var pid := "p_test%s%03d" % ["" if environment == "Sandbox" else environment.to_lower().left(4), _seq]
 	profiles[pid] = {"gc": gc}
 	return pid
 
 
 func wallet(pid: String) -> Dictionary:
 	if not wallets.has(pid):
-		_seq += 1
-		wallets[pid] = {"balance": 0, "revision": 0, "debt": 0, "token": "00000000-0000-4000-8000-%012d" % _seq,
+		wallets[pid] = {"balance": 0, "revision": 0, "debt": 0, "token": token_for(String(profiles.get(pid, {}).get("gc", pid))),
 			"entitlements": {}, "season": {"s1": {"xp": 0, "premium": false, "claimed": []}}}
 	return wallets[pid]
+
+
+## FINAL_RELEASE_SWEEP: like the service, the appAccountToken depends only on
+## the Game Center player (the real one is an HMAC with a secret key), so two
+## doubles standing in for the sandbox and production deployments give the
+## same player the same token.
+static func token_for(gc: String) -> String:
+	var h := HashingContext.new()
+	h.start(HashingContext.HASH_SHA256)
+	h.update(("gamecenter:" + gc).to_utf8_buffer())
+	var x := h.finish().hex_encode()
+	return "%s-%s-8%s-a%s-%s" % [x.substr(0, 8), x.substr(8, 4), x.substr(13, 3), x.substr(17, 3), x.substr(20, 12)]
 
 
 func snapshot(pid: String) -> Dictionary:
@@ -217,9 +293,7 @@ func _spend(pid: String, b: Dictionary) -> Dictionary:
 			if offer.is_empty():
 				return _changed("not_in_rotation", "This skin isn't in the Shop right now. Nothing was charged.")
 		else:
-			for o in schedule:
-				if String(o["offer_id"]) == oid:
-					offer = o
+			offer = offer_by_id(oid)
 			if offer.is_empty():
 				return _changed("unknown_offer", "This offer isn't in the Shop any more. Nothing was charged.")
 			if String(offer["item_id"]) != id:
@@ -256,7 +330,7 @@ func _changed(reason: String, message: String) -> Dictionary:
 
 func _active_for(id: String, t: float) -> Dictionary:
 	var best := {}
-	for o in schedule:
+	for o in offers_between(t, t):
 		if String(o["item_id"]) == id and float(o["starts_at"]) <= t and t < float(o["ends_at"]):
 			if best.is_empty() or float(o["ends_at"]) > float(best["ends_at"]):
 				best = o
@@ -268,7 +342,7 @@ func _offers() -> Dictionary:
 	var cur: Array = []
 	var up: Array = []
 	var nxt := -1.0
-	for o in schedule:
+	for o in offers_between(t, t + LOOKAHEAD_MS):
 		if float(o["starts_at"]) <= t and t < float(o["ends_at"]):
 			cur.append(o.duplicate())
 			nxt = float(o["ends_at"]) if nxt < 0.0 else minf(nxt, float(o["ends_at"]))
@@ -288,7 +362,14 @@ func _apple(pid: String, b: Dictionary) -> Dictionary:
 	if not (payload is Dictionary):
 		return _err(400, "bad_transaction", "This purchase couldn't be verified.")
 	var tx: Dictionary = payload
-	if String(tx.get("environment", "")) != environment:
+	var txe := String(tx.get("environment", ""))
+	if txe != environment:
+		# FINAL_RELEASE_SWEEP (service/src/commerce.js environmentMismatch):
+		# the other environment's purchase gets a routing reply, nothing recorded
+		var codes := {"Production": {"Sandbox": "sandbox_purchase"}, "Sandbox": {"Production": "production_purchase"}}
+		var code := String(codes.get(environment, {}).get(txe, ""))
+		if code != "":
+			return _err(409, code, "This purchase is added by the other game service.")
 		return _err(400, "wrong_environment", "This purchase is from a different App Store environment.")
 	var tid := String(tx.get("transactionId", ""))
 	var prod := Catalogue.product(String(tx.get("productId", "")))

@@ -15,3 +15,13 @@ int ut_platform_share(const char *text, const char *url);
  * 2 serious, 3 critical; Low Power Mode 1/0.  -1 when unavailable. */
 int ut_platform_thermal_state(void);
 int ut_platform_low_power(void);
+
+/* App Store receipt kind, a routing hint for the game service (never a
+ * proof: the service verifies every purchase itself).  The last path
+ * component of [[NSBundle mainBundle] appStoreReceiptURL]:
+ *   1 "receipt"         (App Store install)
+ *   2 "sandboxReceipt"  (TestFlight, Xcode/development builds)
+ *   3 another name
+ *   0 no receipt URL
+ *  -1 not available on this platform */
+int ut_platform_receipt_kind(void);

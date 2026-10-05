@@ -40,3 +40,29 @@ func test_device_state_for_diagnostics() -> void:
 	else:
 		t.eq([th, lp], [-1, -1], "desktop reports unavailable (-1), never a made-up state")
 	t.eq(Diag.thermal_state(), th, "diagnostics read the same value")
+
+
+## FINAL_RELEASE_SWEEP: the App Store receipt kind, Cloud's launch routing
+## hint (native/ut_share/src/ut_share_ios.m).  Off iOS it is -1, never a
+## made-up kind; on a device: 1 "receipt" (App Store), 2 "sandboxReceipt"
+## (TestFlight), 0 no receipt URL, 3 another name.
+func test_receipt_kind_is_bound_and_honest_off_device() -> void:
+	if not ClassDB.class_exists("UTShare"):
+		t.check(false, "UTShare missing")
+		return
+	var m := {}
+	for x in ClassDB.class_get_method_list("UTShare", true):
+		if x["name"] == "receipt_kind":
+			m = x
+	t.check(not m.is_empty(), "receipt_kind() is bound")
+	if m.is_empty():
+		return
+	t.eq(int(m["flags"]) & METHOD_FLAG_STATIC, METHOD_FLAG_STATIC, "receipt_kind() is static")
+	t.eq((m["args"] as Array).size(), 0, "no arguments")
+	t.eq(int(m["return"]["type"]), TYPE_INT, "returns int")
+	var k := int(ClassDB.class_call_static("UTShare", "receipt_kind"))
+	if OS.get_name() == "iOS":
+		t.check(k >= 0 and k <= 3, "iOS answers a kind: %d" % k)
+	else:
+		t.eq(k, -1, "desktop: unavailable")
+	t.eq(Cloud.read_receipt_kind() if not Cloud.receipt_override.is_valid() else k, k, "Cloud reads the same value")

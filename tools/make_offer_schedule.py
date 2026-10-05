@@ -25,6 +25,19 @@ The rule (Pass 8, docs/ECONOMY.md section 2.1):
 Published offers are history: writing refuses to change or drop an offer
 that started before --now (default: the current time) unless --force.
 
+FINAL_RELEASE_SWEEP: the fallback after the written schedule ("cycle").
+The rule is deterministic and, with a fixed pool, periodic (10 skins, two
+changes a day: a 10-day period).  The tool finds that period, checks that
+the rule continued past `days` repeats it exactly, and writes one period of
+it as "offers" -> "cycle": {period_days, from_utc (the first change day after
+the written schedule), anchor_utc (day 0 of the period), offer_hours,
+revision, offers: [{day, slot, item_id, price}]}.  The game service (and
+the game's test double) serves the cycle after the written schedule, from
+its own clock, with offer ids in the same "r<revision>-<YYYYMMDD>-s<slot>"
+form: an offer there is exactly the one the rule would have written, so the
+Shop never runs empty and extending the written schedule later changes no
+offer anyone has seen.
+
 Usage:
   python3 tools/make_offer_schedule.py            # regenerate and write
   python3 tools/make_offer_schedule.py --check    # exit 1 if the file differs
@@ -59,7 +72,7 @@ def pool_of(cat):
     return [it for it in cat["items"] if it.get("rotation") is True]
 
 
-def generate(cat):
+def generate(cat, days=None):
     off = cat["offers"]
     rule = off["rule"]
     rev = int(off.get("schedule_revision", 1))
@@ -82,7 +95,7 @@ def generate(cat):
         keep[(o["slot"], o["starts_at_utc"], o["ends_at_utc"], o["item_id"], o["price"])] = o["offer_id"]
     out = []
     first = min(phase)
-    for d in range(first - 1, int(rule["days"])):
+    for d in range(first - 1, int(rule["days"]) if days is None else days):
         t = start + d * DAY
         changing = [s for s in range(slots) if (d - phase[s]) % span == 0]
         if not changing:
@@ -108,7 +121,47 @@ def generate(cat):
     return out
 
 
-def render_section(cat, schedule):
+def change_day(o, start):
+    return (parse(o["starts_at_utc"]) - start).days
+
+
+def cycle_of(cat):
+    """One period of the rule's steady state, taken at the end of the written
+    schedule, checked to equal the rule continued for three more periods."""
+    off = cat["offers"]
+    rule = off["rule"]
+    start = parse(rule["start_utc"])
+    days = int(rule["days"])
+    span = int(rule["offer_hours"]) // 24
+    pool = pool_of(cat)
+    longest = 2 * len(pool) * span
+    assert days >= 2 * longest, "the written schedule must cover two of the longest possible periods"
+    ext = generate(cat, days + 3 * longest)
+    cell = {(change_day(o, start), o["slot"]): o for o in ext}
+    period = None
+    for p in range(span, longest + 1, span):
+        if all(cell[(d + p, sl)]["item_id"] == o["item_id"] for (d, sl), o in cell.items()
+               if days - longest <= d < days + 2 * longest and (d + p, sl) in cell):
+            period = p
+            break
+    assert period, "the rule is not periodic within %d days: change the pool or the rule" % longest
+    first = days - period
+    rows = []
+    for (d, sl), o in sorted(cell.items()):
+        if first <= d < days:
+            rows.append({"day": d - first, "slot": sl, "item_id": o["item_id"], "price": o["price"]})
+    # the fallback is the rule continued: every offer past the written schedule
+    for (d, sl), o in cell.items():
+        if d >= days:
+            k = (d - first) % period
+            want = [r for r in rows if r["day"] == k and r["slot"] == sl]
+            assert len(want) == 1 and want[0]["item_id"] == o["item_id"] and want[0]["price"] == o["price"], \
+                "cycle differs from the rule at day %d slot %d" % (d, sl)
+    return {"period_days": period, "from_utc": iso(start + days * DAY), "anchor_utc": iso(start + first * DAY),
+            "offer_hours": int(rule["offer_hours"]), "revision": int(off.get("schedule_revision", 1)), "offers": rows}
+
+
+def render_section(cat, schedule, cycle):
     off = cat["offers"]
     lines = ['  "offers": {']
     lines.append('    "_comment": %s,' % json.dumps(off.get("_comment") or DEFAULT_COMMENT))
@@ -117,7 +170,12 @@ def render_section(cat, schedule):
     lines.append('    "schedule": [')
     for i, o in enumerate(schedule):
         lines.append("      " + json.dumps(o) + ("," if i < len(schedule) - 1 else ""))
-    lines.append("    ]")
+    lines.append("    ],")
+    head = json.dumps({k: v for k, v in cycle.items() if k != "offers"})
+    lines.append('    "cycle": %s, "offers": [' % head[:-1])
+    for i, o in enumerate(cycle["offers"]):
+        lines.append("      " + json.dumps(o) + ("," if i < len(cycle["offers"]) - 1 else ""))
+    lines.append("    ]}")
     lines.append("  },")
     return "\n".join(lines) + "\n"
 
@@ -147,7 +205,7 @@ def main(argv):
         if a.startswith("--now="):
             now = parse(a.split("=", 1)[1])
     schedule = generate(cat)
-    new_text = splice(text, render_section(cat, schedule))
+    new_text = splice(text, render_section(cat, schedule, cycle_of(cat)))
     json.loads(new_text)
     if "--check" in argv:
         if new_text != text:

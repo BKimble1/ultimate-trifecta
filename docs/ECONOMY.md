@@ -117,9 +117,17 @@ cheap legacy unlocks that existing players already own on their devices.
   not on show and not leaving at that moment: no skin twice at once, no
   back-to-back return. With 10 skins this is a 5-day cycle: each skin is
   in the Shop 2 days, away 3, and returns under a new offer.
-- Written schedule: **12 weeks** (2026-10-05 to 2026-12-28; 170 offers)
-  in `game/config/catalogue.json` → `offers.schedule`. Past its end the
-  service has no offers and the Shop says "No rotating skins right now".
+- Written schedule: **26 weeks** (2026-10-04 to 2027-04-06; 366 offers;
+  FINAL_RELEASE_SWEEP extended it from 12 weeks with every published offer
+  unchanged) in `game/config/catalogue.json` → `offers.schedule`.
+- **After it the rule continues** (FINAL_RELEASE_SWEEP): the rule is
+  periodic (10 skins, two changes a day: the slot pattern repeats every
+  10 days), so the tool also writes one period as `offers.cycle` and
+  checks that the rule continued past `days` repeats it exactly. The
+  service computes those offers from its own clock with the ids the rule
+  would have written (`r1-<YYYYMMDD>-s<slot>`) and checks them like
+  written ones: the Shop never runs empty, and extending the written
+  schedule later changes no offer anyone has seen.
 
 **Regenerating / extending** (before the written schedule runs out, or
 after the art lands if the pool changes): edit `offers.rule` (raise
@@ -603,6 +611,12 @@ server simulation would be the real fix.
   **2,000**; items only from the pre-V6 Coin catalogue (never Shop skins or
   Season rewards). Source `legacy_beta`, audited. An edited local save can't
   mint more than that cap, and only once.
+- FINAL_RELEASE_SWEEP: only the **sandbox** deployment imports. Pre-V6
+  balances only ever existed in TestFlight beta builds, so they belong to
+  the sandbox economy; the production (App Store) deployment answers
+  `409 legacy_not_available` and the device keeps its pre-V6 unlocks as
+  "this device's" items. Moving from TestFlight to the App Store never
+  carries Coins into production.
 - Until then the Coins chip shows the device's pre-V6 balance ("on this
   device"); it can't be spent without the service.
 - Lifetime level and stats stay separate from Season 1.

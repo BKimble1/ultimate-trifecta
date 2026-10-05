@@ -200,3 +200,46 @@ func test_storekit_adapter_is_inert_off_ios() -> void:
 		"the simulated store lives in src/dev (excluded from exports)")
 	var ep := FileAccess.get_file_as_string("res://export_presets.cfg")
 	t.check(ep.contains("src/dev/*"), "export presets exclude src/dev (no purchase bypass ships)")
+
+
+## FINAL_RELEASE_SWEEP (brief section 7): both direct Apple outfits are
+## permanent entitlements, visible in the Locker, never offered twice, and
+## restored on a new device from Apple's entitlements without any Coins.
+func test_both_direct_outfits_deliver_show_in_locker_and_restore() -> void:
+	await _ready_to_buy()
+	var skins := {"com.idlery.ultimatetrifecta.skin.moonlight_runner": "moonlight_runner",
+		"com.idlery.ultimatetrifecta.skin.starry_sleeper": "starry_sleeper"}
+	for pid in skins:
+		t.eq(String(Catalogue.product(pid)["kind"]), "apple_skin", "%s is a direct outfit" % pid)
+		t.check(bool(Purchases.view(pid)["can_buy"]), "%s can be bought" % pid)
+		Purchases.buy(pid)
+		var key: String = skins[pid]
+		await rig.until(func() -> bool: return Wallet.owns("outfit", key) and _st(pid) == "delivered")
+		t.check(Wallet.owned_keys("outfit").has(key), "%s is in the Locker" % key)
+		t.eq(String(Purchases.view(pid)["state"]), "owned", "%s is never offered again" % key)
+		t.check(String(Purchases.states[pid]["message"]).contains("Locker"), "says where it went: %s" % Purchases.states[pid]["message"])
+	t.eq(rig.store.finish_calls, 2, "each finished once, after delivery")
+	t.eq(Wallet.balance(), 0, "outfits add no Coins")
+	# a new device (no local wallet, a fresh store adapter state) restores both
+	var ents: Array = rig.store.entitlements.duplicate()
+	t.eq(ents.size(), 2, "two non-consumable entitlements on the Apple Account")
+	Wallet.state = Wallet.blank_state()
+	Purchases.use_adapter(rig.store)
+	rig.store.entitlements = ents
+	var done := {"v": {}}
+	Purchases.restore_finished.connect(func(s: Dictionary) -> void: done["v"] = s, CONNECT_ONE_SHOT)
+	Purchases.restore()
+	await rig.until(func() -> bool: return not (done["v"] as Dictionary).is_empty(), 400)
+	var msg := String(done["v"].get("message", ""))
+	t.check(msg.contains("Moonlight Runner") and msg.contains("Starry Sleeper"), "names both: %s" % msg)
+	await Wallet.refresh()
+	for key in skins.values():
+		t.check(Wallet.owns("outfit", String(key)), "%s owned again" % key)
+	t.eq(Wallet.balance(), 0, "restore never credits Coins")
+	t.eq(int(rig.svc.wallet(Cloud.profile_id())["balance"]), 0, "nor does the ledger")
+	t.eq(rig.svc.apple.size(), 2, "the restore replays the two transactions; no new delivery")
+	await rig.end()
+
+
+func _st(pid: String) -> String:
+	return String(Purchases.states.get(pid, {}).get("state", ""))

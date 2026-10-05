@@ -1561,7 +1561,7 @@ export default {
   "schedule_revision": 1,
   "rule": {
    "start_utc": "2026-10-05T00:00:00Z",
-   "days": 84,
+   "days": 182,
    "slots": 4,
    "offer_hours": 48,
    "slot_phase_days": [
@@ -3101,8 +3101,1901 @@ export default {
     "ends_at_utc": "2026-12-29T00:00:00Z",
     "price": 600,
     "revision": 1
+   },
+   {
+    "offer_id": "r1-20261228-s1",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 1,
+    "starts_at_utc": "2026-12-28T00:00:00Z",
+    "ends_at_utc": "2026-12-30T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20261228-s2",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 2,
+    "starts_at_utc": "2026-12-28T00:00:00Z",
+    "ends_at_utc": "2026-12-30T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20261229-s3",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 3,
+    "starts_at_utc": "2026-12-29T00:00:00Z",
+    "ends_at_utc": "2026-12-31T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20261229-s4",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2026-12-29T00:00:00Z",
+    "ends_at_utc": "2026-12-31T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20261230-s1",
+    "item_id": "outfit:cloud_nine",
+    "slot": 1,
+    "starts_at_utc": "2026-12-30T00:00:00Z",
+    "ends_at_utc": "2027-01-01T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20261230-s2",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 2,
+    "starts_at_utc": "2026-12-30T00:00:00Z",
+    "ends_at_utc": "2027-01-01T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20261231-s3",
+    "item_id": "outfit:lantern_scout",
+    "slot": 3,
+    "starts_at_utc": "2026-12-31T00:00:00Z",
+    "ends_at_utc": "2027-01-02T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20261231-s4",
+    "item_id": "outfit:campus_courier",
+    "slot": 4,
+    "starts_at_utc": "2026-12-31T00:00:00Z",
+    "ends_at_utc": "2027-01-02T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270101-s1",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 1,
+    "starts_at_utc": "2027-01-01T00:00:00Z",
+    "ends_at_utc": "2027-01-03T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270101-s2",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-01-01T00:00:00Z",
+    "ends_at_utc": "2027-01-03T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270102-s3",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 3,
+    "starts_at_utc": "2027-01-02T00:00:00Z",
+    "ends_at_utc": "2027-01-04T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270102-s4",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 4,
+    "starts_at_utc": "2027-01-02T00:00:00Z",
+    "ends_at_utc": "2027-01-04T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270103-s1",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 1,
+    "starts_at_utc": "2027-01-03T00:00:00Z",
+    "ends_at_utc": "2027-01-05T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270103-s2",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-01-03T00:00:00Z",
+    "ends_at_utc": "2027-01-05T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270104-s3",
+    "item_id": "outfit:cloud_nine",
+    "slot": 3,
+    "starts_at_utc": "2027-01-04T00:00:00Z",
+    "ends_at_utc": "2027-01-06T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270104-s4",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 4,
+    "starts_at_utc": "2027-01-04T00:00:00Z",
+    "ends_at_utc": "2027-01-06T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270105-s1",
+    "item_id": "outfit:lantern_scout",
+    "slot": 1,
+    "starts_at_utc": "2027-01-05T00:00:00Z",
+    "ends_at_utc": "2027-01-07T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270105-s2",
+    "item_id": "outfit:campus_courier",
+    "slot": 2,
+    "starts_at_utc": "2027-01-05T00:00:00Z",
+    "ends_at_utc": "2027-01-07T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270106-s3",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 3,
+    "starts_at_utc": "2027-01-06T00:00:00Z",
+    "ends_at_utc": "2027-01-08T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270106-s4",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-01-06T00:00:00Z",
+    "ends_at_utc": "2027-01-08T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270107-s1",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 1,
+    "starts_at_utc": "2027-01-07T00:00:00Z",
+    "ends_at_utc": "2027-01-09T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270107-s2",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 2,
+    "starts_at_utc": "2027-01-07T00:00:00Z",
+    "ends_at_utc": "2027-01-09T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270108-s3",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 3,
+    "starts_at_utc": "2027-01-08T00:00:00Z",
+    "ends_at_utc": "2027-01-10T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270108-s4",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-01-08T00:00:00Z",
+    "ends_at_utc": "2027-01-10T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270109-s1",
+    "item_id": "outfit:cloud_nine",
+    "slot": 1,
+    "starts_at_utc": "2027-01-09T00:00:00Z",
+    "ends_at_utc": "2027-01-11T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270109-s2",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 2,
+    "starts_at_utc": "2027-01-09T00:00:00Z",
+    "ends_at_utc": "2027-01-11T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270110-s3",
+    "item_id": "outfit:lantern_scout",
+    "slot": 3,
+    "starts_at_utc": "2027-01-10T00:00:00Z",
+    "ends_at_utc": "2027-01-12T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270110-s4",
+    "item_id": "outfit:campus_courier",
+    "slot": 4,
+    "starts_at_utc": "2027-01-10T00:00:00Z",
+    "ends_at_utc": "2027-01-12T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270111-s1",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 1,
+    "starts_at_utc": "2027-01-11T00:00:00Z",
+    "ends_at_utc": "2027-01-13T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270111-s2",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-01-11T00:00:00Z",
+    "ends_at_utc": "2027-01-13T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270112-s3",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 3,
+    "starts_at_utc": "2027-01-12T00:00:00Z",
+    "ends_at_utc": "2027-01-14T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270112-s4",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 4,
+    "starts_at_utc": "2027-01-12T00:00:00Z",
+    "ends_at_utc": "2027-01-14T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270113-s1",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 1,
+    "starts_at_utc": "2027-01-13T00:00:00Z",
+    "ends_at_utc": "2027-01-15T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270113-s2",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-01-13T00:00:00Z",
+    "ends_at_utc": "2027-01-15T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270114-s3",
+    "item_id": "outfit:cloud_nine",
+    "slot": 3,
+    "starts_at_utc": "2027-01-14T00:00:00Z",
+    "ends_at_utc": "2027-01-16T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270114-s4",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 4,
+    "starts_at_utc": "2027-01-14T00:00:00Z",
+    "ends_at_utc": "2027-01-16T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270115-s1",
+    "item_id": "outfit:lantern_scout",
+    "slot": 1,
+    "starts_at_utc": "2027-01-15T00:00:00Z",
+    "ends_at_utc": "2027-01-17T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270115-s2",
+    "item_id": "outfit:campus_courier",
+    "slot": 2,
+    "starts_at_utc": "2027-01-15T00:00:00Z",
+    "ends_at_utc": "2027-01-17T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270116-s3",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 3,
+    "starts_at_utc": "2027-01-16T00:00:00Z",
+    "ends_at_utc": "2027-01-18T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270116-s4",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-01-16T00:00:00Z",
+    "ends_at_utc": "2027-01-18T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270117-s1",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 1,
+    "starts_at_utc": "2027-01-17T00:00:00Z",
+    "ends_at_utc": "2027-01-19T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270117-s2",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 2,
+    "starts_at_utc": "2027-01-17T00:00:00Z",
+    "ends_at_utc": "2027-01-19T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270118-s3",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 3,
+    "starts_at_utc": "2027-01-18T00:00:00Z",
+    "ends_at_utc": "2027-01-20T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270118-s4",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-01-18T00:00:00Z",
+    "ends_at_utc": "2027-01-20T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270119-s1",
+    "item_id": "outfit:cloud_nine",
+    "slot": 1,
+    "starts_at_utc": "2027-01-19T00:00:00Z",
+    "ends_at_utc": "2027-01-21T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270119-s2",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 2,
+    "starts_at_utc": "2027-01-19T00:00:00Z",
+    "ends_at_utc": "2027-01-21T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270120-s3",
+    "item_id": "outfit:lantern_scout",
+    "slot": 3,
+    "starts_at_utc": "2027-01-20T00:00:00Z",
+    "ends_at_utc": "2027-01-22T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270120-s4",
+    "item_id": "outfit:campus_courier",
+    "slot": 4,
+    "starts_at_utc": "2027-01-20T00:00:00Z",
+    "ends_at_utc": "2027-01-22T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270121-s1",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 1,
+    "starts_at_utc": "2027-01-21T00:00:00Z",
+    "ends_at_utc": "2027-01-23T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270121-s2",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-01-21T00:00:00Z",
+    "ends_at_utc": "2027-01-23T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270122-s3",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 3,
+    "starts_at_utc": "2027-01-22T00:00:00Z",
+    "ends_at_utc": "2027-01-24T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270122-s4",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 4,
+    "starts_at_utc": "2027-01-22T00:00:00Z",
+    "ends_at_utc": "2027-01-24T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270123-s1",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 1,
+    "starts_at_utc": "2027-01-23T00:00:00Z",
+    "ends_at_utc": "2027-01-25T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270123-s2",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-01-23T00:00:00Z",
+    "ends_at_utc": "2027-01-25T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270124-s3",
+    "item_id": "outfit:cloud_nine",
+    "slot": 3,
+    "starts_at_utc": "2027-01-24T00:00:00Z",
+    "ends_at_utc": "2027-01-26T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270124-s4",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 4,
+    "starts_at_utc": "2027-01-24T00:00:00Z",
+    "ends_at_utc": "2027-01-26T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270125-s1",
+    "item_id": "outfit:lantern_scout",
+    "slot": 1,
+    "starts_at_utc": "2027-01-25T00:00:00Z",
+    "ends_at_utc": "2027-01-27T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270125-s2",
+    "item_id": "outfit:campus_courier",
+    "slot": 2,
+    "starts_at_utc": "2027-01-25T00:00:00Z",
+    "ends_at_utc": "2027-01-27T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270126-s3",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 3,
+    "starts_at_utc": "2027-01-26T00:00:00Z",
+    "ends_at_utc": "2027-01-28T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270126-s4",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-01-26T00:00:00Z",
+    "ends_at_utc": "2027-01-28T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270127-s1",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 1,
+    "starts_at_utc": "2027-01-27T00:00:00Z",
+    "ends_at_utc": "2027-01-29T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270127-s2",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 2,
+    "starts_at_utc": "2027-01-27T00:00:00Z",
+    "ends_at_utc": "2027-01-29T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270128-s3",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 3,
+    "starts_at_utc": "2027-01-28T00:00:00Z",
+    "ends_at_utc": "2027-01-30T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270128-s4",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-01-28T00:00:00Z",
+    "ends_at_utc": "2027-01-30T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270129-s1",
+    "item_id": "outfit:cloud_nine",
+    "slot": 1,
+    "starts_at_utc": "2027-01-29T00:00:00Z",
+    "ends_at_utc": "2027-01-31T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270129-s2",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 2,
+    "starts_at_utc": "2027-01-29T00:00:00Z",
+    "ends_at_utc": "2027-01-31T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270130-s3",
+    "item_id": "outfit:lantern_scout",
+    "slot": 3,
+    "starts_at_utc": "2027-01-30T00:00:00Z",
+    "ends_at_utc": "2027-02-01T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270130-s4",
+    "item_id": "outfit:campus_courier",
+    "slot": 4,
+    "starts_at_utc": "2027-01-30T00:00:00Z",
+    "ends_at_utc": "2027-02-01T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270131-s1",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 1,
+    "starts_at_utc": "2027-01-31T00:00:00Z",
+    "ends_at_utc": "2027-02-02T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270131-s2",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-01-31T00:00:00Z",
+    "ends_at_utc": "2027-02-02T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270201-s3",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 3,
+    "starts_at_utc": "2027-02-01T00:00:00Z",
+    "ends_at_utc": "2027-02-03T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270201-s4",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 4,
+    "starts_at_utc": "2027-02-01T00:00:00Z",
+    "ends_at_utc": "2027-02-03T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270202-s1",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 1,
+    "starts_at_utc": "2027-02-02T00:00:00Z",
+    "ends_at_utc": "2027-02-04T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270202-s2",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-02-02T00:00:00Z",
+    "ends_at_utc": "2027-02-04T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270203-s3",
+    "item_id": "outfit:cloud_nine",
+    "slot": 3,
+    "starts_at_utc": "2027-02-03T00:00:00Z",
+    "ends_at_utc": "2027-02-05T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270203-s4",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 4,
+    "starts_at_utc": "2027-02-03T00:00:00Z",
+    "ends_at_utc": "2027-02-05T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270204-s1",
+    "item_id": "outfit:lantern_scout",
+    "slot": 1,
+    "starts_at_utc": "2027-02-04T00:00:00Z",
+    "ends_at_utc": "2027-02-06T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270204-s2",
+    "item_id": "outfit:campus_courier",
+    "slot": 2,
+    "starts_at_utc": "2027-02-04T00:00:00Z",
+    "ends_at_utc": "2027-02-06T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270205-s3",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 3,
+    "starts_at_utc": "2027-02-05T00:00:00Z",
+    "ends_at_utc": "2027-02-07T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270205-s4",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-02-05T00:00:00Z",
+    "ends_at_utc": "2027-02-07T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270206-s1",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 1,
+    "starts_at_utc": "2027-02-06T00:00:00Z",
+    "ends_at_utc": "2027-02-08T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270206-s2",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 2,
+    "starts_at_utc": "2027-02-06T00:00:00Z",
+    "ends_at_utc": "2027-02-08T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270207-s3",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 3,
+    "starts_at_utc": "2027-02-07T00:00:00Z",
+    "ends_at_utc": "2027-02-09T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270207-s4",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-02-07T00:00:00Z",
+    "ends_at_utc": "2027-02-09T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270208-s1",
+    "item_id": "outfit:cloud_nine",
+    "slot": 1,
+    "starts_at_utc": "2027-02-08T00:00:00Z",
+    "ends_at_utc": "2027-02-10T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270208-s2",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 2,
+    "starts_at_utc": "2027-02-08T00:00:00Z",
+    "ends_at_utc": "2027-02-10T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270209-s3",
+    "item_id": "outfit:lantern_scout",
+    "slot": 3,
+    "starts_at_utc": "2027-02-09T00:00:00Z",
+    "ends_at_utc": "2027-02-11T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270209-s4",
+    "item_id": "outfit:campus_courier",
+    "slot": 4,
+    "starts_at_utc": "2027-02-09T00:00:00Z",
+    "ends_at_utc": "2027-02-11T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270210-s1",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 1,
+    "starts_at_utc": "2027-02-10T00:00:00Z",
+    "ends_at_utc": "2027-02-12T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270210-s2",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-02-10T00:00:00Z",
+    "ends_at_utc": "2027-02-12T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270211-s3",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 3,
+    "starts_at_utc": "2027-02-11T00:00:00Z",
+    "ends_at_utc": "2027-02-13T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270211-s4",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 4,
+    "starts_at_utc": "2027-02-11T00:00:00Z",
+    "ends_at_utc": "2027-02-13T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270212-s1",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 1,
+    "starts_at_utc": "2027-02-12T00:00:00Z",
+    "ends_at_utc": "2027-02-14T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270212-s2",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-02-12T00:00:00Z",
+    "ends_at_utc": "2027-02-14T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270213-s3",
+    "item_id": "outfit:cloud_nine",
+    "slot": 3,
+    "starts_at_utc": "2027-02-13T00:00:00Z",
+    "ends_at_utc": "2027-02-15T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270213-s4",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 4,
+    "starts_at_utc": "2027-02-13T00:00:00Z",
+    "ends_at_utc": "2027-02-15T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270214-s1",
+    "item_id": "outfit:lantern_scout",
+    "slot": 1,
+    "starts_at_utc": "2027-02-14T00:00:00Z",
+    "ends_at_utc": "2027-02-16T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270214-s2",
+    "item_id": "outfit:campus_courier",
+    "slot": 2,
+    "starts_at_utc": "2027-02-14T00:00:00Z",
+    "ends_at_utc": "2027-02-16T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270215-s3",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 3,
+    "starts_at_utc": "2027-02-15T00:00:00Z",
+    "ends_at_utc": "2027-02-17T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270215-s4",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-02-15T00:00:00Z",
+    "ends_at_utc": "2027-02-17T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270216-s1",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 1,
+    "starts_at_utc": "2027-02-16T00:00:00Z",
+    "ends_at_utc": "2027-02-18T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270216-s2",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 2,
+    "starts_at_utc": "2027-02-16T00:00:00Z",
+    "ends_at_utc": "2027-02-18T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270217-s3",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 3,
+    "starts_at_utc": "2027-02-17T00:00:00Z",
+    "ends_at_utc": "2027-02-19T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270217-s4",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-02-17T00:00:00Z",
+    "ends_at_utc": "2027-02-19T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270218-s1",
+    "item_id": "outfit:cloud_nine",
+    "slot": 1,
+    "starts_at_utc": "2027-02-18T00:00:00Z",
+    "ends_at_utc": "2027-02-20T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270218-s2",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 2,
+    "starts_at_utc": "2027-02-18T00:00:00Z",
+    "ends_at_utc": "2027-02-20T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270219-s3",
+    "item_id": "outfit:lantern_scout",
+    "slot": 3,
+    "starts_at_utc": "2027-02-19T00:00:00Z",
+    "ends_at_utc": "2027-02-21T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270219-s4",
+    "item_id": "outfit:campus_courier",
+    "slot": 4,
+    "starts_at_utc": "2027-02-19T00:00:00Z",
+    "ends_at_utc": "2027-02-21T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270220-s1",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 1,
+    "starts_at_utc": "2027-02-20T00:00:00Z",
+    "ends_at_utc": "2027-02-22T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270220-s2",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-02-20T00:00:00Z",
+    "ends_at_utc": "2027-02-22T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270221-s3",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 3,
+    "starts_at_utc": "2027-02-21T00:00:00Z",
+    "ends_at_utc": "2027-02-23T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270221-s4",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 4,
+    "starts_at_utc": "2027-02-21T00:00:00Z",
+    "ends_at_utc": "2027-02-23T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270222-s1",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 1,
+    "starts_at_utc": "2027-02-22T00:00:00Z",
+    "ends_at_utc": "2027-02-24T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270222-s2",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-02-22T00:00:00Z",
+    "ends_at_utc": "2027-02-24T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270223-s3",
+    "item_id": "outfit:cloud_nine",
+    "slot": 3,
+    "starts_at_utc": "2027-02-23T00:00:00Z",
+    "ends_at_utc": "2027-02-25T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270223-s4",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 4,
+    "starts_at_utc": "2027-02-23T00:00:00Z",
+    "ends_at_utc": "2027-02-25T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270224-s1",
+    "item_id": "outfit:lantern_scout",
+    "slot": 1,
+    "starts_at_utc": "2027-02-24T00:00:00Z",
+    "ends_at_utc": "2027-02-26T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270224-s2",
+    "item_id": "outfit:campus_courier",
+    "slot": 2,
+    "starts_at_utc": "2027-02-24T00:00:00Z",
+    "ends_at_utc": "2027-02-26T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270225-s3",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 3,
+    "starts_at_utc": "2027-02-25T00:00:00Z",
+    "ends_at_utc": "2027-02-27T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270225-s4",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-02-25T00:00:00Z",
+    "ends_at_utc": "2027-02-27T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270226-s1",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 1,
+    "starts_at_utc": "2027-02-26T00:00:00Z",
+    "ends_at_utc": "2027-02-28T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270226-s2",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 2,
+    "starts_at_utc": "2027-02-26T00:00:00Z",
+    "ends_at_utc": "2027-02-28T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270227-s3",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 3,
+    "starts_at_utc": "2027-02-27T00:00:00Z",
+    "ends_at_utc": "2027-03-01T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270227-s4",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-02-27T00:00:00Z",
+    "ends_at_utc": "2027-03-01T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270228-s1",
+    "item_id": "outfit:cloud_nine",
+    "slot": 1,
+    "starts_at_utc": "2027-02-28T00:00:00Z",
+    "ends_at_utc": "2027-03-02T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270228-s2",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 2,
+    "starts_at_utc": "2027-02-28T00:00:00Z",
+    "ends_at_utc": "2027-03-02T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270301-s3",
+    "item_id": "outfit:lantern_scout",
+    "slot": 3,
+    "starts_at_utc": "2027-03-01T00:00:00Z",
+    "ends_at_utc": "2027-03-03T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270301-s4",
+    "item_id": "outfit:campus_courier",
+    "slot": 4,
+    "starts_at_utc": "2027-03-01T00:00:00Z",
+    "ends_at_utc": "2027-03-03T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270302-s1",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 1,
+    "starts_at_utc": "2027-03-02T00:00:00Z",
+    "ends_at_utc": "2027-03-04T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270302-s2",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-03-02T00:00:00Z",
+    "ends_at_utc": "2027-03-04T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270303-s3",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 3,
+    "starts_at_utc": "2027-03-03T00:00:00Z",
+    "ends_at_utc": "2027-03-05T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270303-s4",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 4,
+    "starts_at_utc": "2027-03-03T00:00:00Z",
+    "ends_at_utc": "2027-03-05T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270304-s1",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 1,
+    "starts_at_utc": "2027-03-04T00:00:00Z",
+    "ends_at_utc": "2027-03-06T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270304-s2",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-03-04T00:00:00Z",
+    "ends_at_utc": "2027-03-06T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270305-s3",
+    "item_id": "outfit:cloud_nine",
+    "slot": 3,
+    "starts_at_utc": "2027-03-05T00:00:00Z",
+    "ends_at_utc": "2027-03-07T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270305-s4",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 4,
+    "starts_at_utc": "2027-03-05T00:00:00Z",
+    "ends_at_utc": "2027-03-07T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270306-s1",
+    "item_id": "outfit:lantern_scout",
+    "slot": 1,
+    "starts_at_utc": "2027-03-06T00:00:00Z",
+    "ends_at_utc": "2027-03-08T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270306-s2",
+    "item_id": "outfit:campus_courier",
+    "slot": 2,
+    "starts_at_utc": "2027-03-06T00:00:00Z",
+    "ends_at_utc": "2027-03-08T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270307-s3",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 3,
+    "starts_at_utc": "2027-03-07T00:00:00Z",
+    "ends_at_utc": "2027-03-09T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270307-s4",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-03-07T00:00:00Z",
+    "ends_at_utc": "2027-03-09T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270308-s1",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 1,
+    "starts_at_utc": "2027-03-08T00:00:00Z",
+    "ends_at_utc": "2027-03-10T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270308-s2",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 2,
+    "starts_at_utc": "2027-03-08T00:00:00Z",
+    "ends_at_utc": "2027-03-10T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270309-s3",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 3,
+    "starts_at_utc": "2027-03-09T00:00:00Z",
+    "ends_at_utc": "2027-03-11T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270309-s4",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-03-09T00:00:00Z",
+    "ends_at_utc": "2027-03-11T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270310-s1",
+    "item_id": "outfit:cloud_nine",
+    "slot": 1,
+    "starts_at_utc": "2027-03-10T00:00:00Z",
+    "ends_at_utc": "2027-03-12T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270310-s2",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 2,
+    "starts_at_utc": "2027-03-10T00:00:00Z",
+    "ends_at_utc": "2027-03-12T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270311-s3",
+    "item_id": "outfit:lantern_scout",
+    "slot": 3,
+    "starts_at_utc": "2027-03-11T00:00:00Z",
+    "ends_at_utc": "2027-03-13T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270311-s4",
+    "item_id": "outfit:campus_courier",
+    "slot": 4,
+    "starts_at_utc": "2027-03-11T00:00:00Z",
+    "ends_at_utc": "2027-03-13T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270312-s1",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 1,
+    "starts_at_utc": "2027-03-12T00:00:00Z",
+    "ends_at_utc": "2027-03-14T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270312-s2",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-03-12T00:00:00Z",
+    "ends_at_utc": "2027-03-14T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270313-s3",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 3,
+    "starts_at_utc": "2027-03-13T00:00:00Z",
+    "ends_at_utc": "2027-03-15T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270313-s4",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 4,
+    "starts_at_utc": "2027-03-13T00:00:00Z",
+    "ends_at_utc": "2027-03-15T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270314-s1",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 1,
+    "starts_at_utc": "2027-03-14T00:00:00Z",
+    "ends_at_utc": "2027-03-16T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270314-s2",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-03-14T00:00:00Z",
+    "ends_at_utc": "2027-03-16T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270315-s3",
+    "item_id": "outfit:cloud_nine",
+    "slot": 3,
+    "starts_at_utc": "2027-03-15T00:00:00Z",
+    "ends_at_utc": "2027-03-17T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270315-s4",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 4,
+    "starts_at_utc": "2027-03-15T00:00:00Z",
+    "ends_at_utc": "2027-03-17T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270316-s1",
+    "item_id": "outfit:lantern_scout",
+    "slot": 1,
+    "starts_at_utc": "2027-03-16T00:00:00Z",
+    "ends_at_utc": "2027-03-18T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270316-s2",
+    "item_id": "outfit:campus_courier",
+    "slot": 2,
+    "starts_at_utc": "2027-03-16T00:00:00Z",
+    "ends_at_utc": "2027-03-18T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270317-s3",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 3,
+    "starts_at_utc": "2027-03-17T00:00:00Z",
+    "ends_at_utc": "2027-03-19T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270317-s4",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-03-17T00:00:00Z",
+    "ends_at_utc": "2027-03-19T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270318-s1",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 1,
+    "starts_at_utc": "2027-03-18T00:00:00Z",
+    "ends_at_utc": "2027-03-20T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270318-s2",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 2,
+    "starts_at_utc": "2027-03-18T00:00:00Z",
+    "ends_at_utc": "2027-03-20T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270319-s3",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 3,
+    "starts_at_utc": "2027-03-19T00:00:00Z",
+    "ends_at_utc": "2027-03-21T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270319-s4",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-03-19T00:00:00Z",
+    "ends_at_utc": "2027-03-21T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270320-s1",
+    "item_id": "outfit:cloud_nine",
+    "slot": 1,
+    "starts_at_utc": "2027-03-20T00:00:00Z",
+    "ends_at_utc": "2027-03-22T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270320-s2",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 2,
+    "starts_at_utc": "2027-03-20T00:00:00Z",
+    "ends_at_utc": "2027-03-22T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270321-s3",
+    "item_id": "outfit:lantern_scout",
+    "slot": 3,
+    "starts_at_utc": "2027-03-21T00:00:00Z",
+    "ends_at_utc": "2027-03-23T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270321-s4",
+    "item_id": "outfit:campus_courier",
+    "slot": 4,
+    "starts_at_utc": "2027-03-21T00:00:00Z",
+    "ends_at_utc": "2027-03-23T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270322-s1",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 1,
+    "starts_at_utc": "2027-03-22T00:00:00Z",
+    "ends_at_utc": "2027-03-24T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270322-s2",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-03-22T00:00:00Z",
+    "ends_at_utc": "2027-03-24T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270323-s3",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 3,
+    "starts_at_utc": "2027-03-23T00:00:00Z",
+    "ends_at_utc": "2027-03-25T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270323-s4",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 4,
+    "starts_at_utc": "2027-03-23T00:00:00Z",
+    "ends_at_utc": "2027-03-25T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270324-s1",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 1,
+    "starts_at_utc": "2027-03-24T00:00:00Z",
+    "ends_at_utc": "2027-03-26T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270324-s2",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-03-24T00:00:00Z",
+    "ends_at_utc": "2027-03-26T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270325-s3",
+    "item_id": "outfit:cloud_nine",
+    "slot": 3,
+    "starts_at_utc": "2027-03-25T00:00:00Z",
+    "ends_at_utc": "2027-03-27T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270325-s4",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 4,
+    "starts_at_utc": "2027-03-25T00:00:00Z",
+    "ends_at_utc": "2027-03-27T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270326-s1",
+    "item_id": "outfit:lantern_scout",
+    "slot": 1,
+    "starts_at_utc": "2027-03-26T00:00:00Z",
+    "ends_at_utc": "2027-03-28T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270326-s2",
+    "item_id": "outfit:campus_courier",
+    "slot": 2,
+    "starts_at_utc": "2027-03-26T00:00:00Z",
+    "ends_at_utc": "2027-03-28T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270327-s3",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 3,
+    "starts_at_utc": "2027-03-27T00:00:00Z",
+    "ends_at_utc": "2027-03-29T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270327-s4",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-03-27T00:00:00Z",
+    "ends_at_utc": "2027-03-29T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270328-s1",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 1,
+    "starts_at_utc": "2027-03-28T00:00:00Z",
+    "ends_at_utc": "2027-03-30T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270328-s2",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 2,
+    "starts_at_utc": "2027-03-28T00:00:00Z",
+    "ends_at_utc": "2027-03-30T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270329-s3",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 3,
+    "starts_at_utc": "2027-03-29T00:00:00Z",
+    "ends_at_utc": "2027-03-31T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270329-s4",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 4,
+    "starts_at_utc": "2027-03-29T00:00:00Z",
+    "ends_at_utc": "2027-03-31T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270330-s1",
+    "item_id": "outfit:cloud_nine",
+    "slot": 1,
+    "starts_at_utc": "2027-03-30T00:00:00Z",
+    "ends_at_utc": "2027-04-01T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270330-s2",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 2,
+    "starts_at_utc": "2027-03-30T00:00:00Z",
+    "ends_at_utc": "2027-04-01T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270331-s3",
+    "item_id": "outfit:lantern_scout",
+    "slot": 3,
+    "starts_at_utc": "2027-03-31T00:00:00Z",
+    "ends_at_utc": "2027-04-02T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270331-s4",
+    "item_id": "outfit:campus_courier",
+    "slot": 4,
+    "starts_at_utc": "2027-03-31T00:00:00Z",
+    "ends_at_utc": "2027-04-02T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270401-s1",
+    "item_id": "outfit:raincoat_explorer",
+    "slot": 1,
+    "starts_at_utc": "2027-04-01T00:00:00Z",
+    "ends_at_utc": "2027-04-03T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270401-s2",
+    "item_id": "outfit:varsity_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-04-01T00:00:00Z",
+    "ends_at_utc": "2027-04-03T00:00:00Z",
+    "price": 600,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270402-s3",
+    "item_id": "outfit:midnight_mechanic",
+    "slot": 3,
+    "starts_at_utc": "2027-04-02T00:00:00Z",
+    "ends_at_utc": "2027-04-04T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270402-s4",
+    "item_id": "outfit:moonwalk_cadet",
+    "slot": 4,
+    "starts_at_utc": "2027-04-02T00:00:00Z",
+    "ends_at_utc": "2027-04-04T00:00:00Z",
+    "price": 1200,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270403-s1",
+    "item_id": "outfit:pumpkin_pajamas",
+    "slot": 1,
+    "starts_at_utc": "2027-04-03T00:00:00Z",
+    "ends_at_utc": "2027-04-05T00:00:00Z",
+    "price": 800,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270403-s2",
+    "item_id": "outfit:arcade_sprinter",
+    "slot": 2,
+    "starts_at_utc": "2027-04-03T00:00:00Z",
+    "ends_at_utc": "2027-04-05T00:00:00Z",
+    "price": 900,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270404-s3",
+    "item_id": "outfit:cloud_nine",
+    "slot": 3,
+    "starts_at_utc": "2027-04-04T00:00:00Z",
+    "ends_at_utc": "2027-04-06T00:00:00Z",
+    "price": 1000,
+    "revision": 1
+   },
+   {
+    "offer_id": "r1-20270404-s4",
+    "item_id": "outfit:bedtime_bandit",
+    "slot": 4,
+    "starts_at_utc": "2027-04-04T00:00:00Z",
+    "ends_at_utc": "2027-04-06T00:00:00Z",
+    "price": 1000,
+    "revision": 1
    }
-  ]
+  ],
+  "cycle": {
+   "period_days": 10,
+   "from_utc": "2027-04-05T00:00:00Z",
+   "anchor_utc": "2027-03-26T00:00:00Z",
+   "offer_hours": 48,
+   "revision": 1,
+   "offers": [
+    {
+     "day": 0,
+     "slot": 1,
+     "item_id": "outfit:lantern_scout",
+     "price": 1200
+    },
+    {
+     "day": 0,
+     "slot": 2,
+     "item_id": "outfit:campus_courier",
+     "price": 900
+    },
+    {
+     "day": 1,
+     "slot": 3,
+     "item_id": "outfit:raincoat_explorer",
+     "price": 800
+    },
+    {
+     "day": 1,
+     "slot": 4,
+     "item_id": "outfit:varsity_sprinter",
+     "price": 600
+    },
+    {
+     "day": 2,
+     "slot": 1,
+     "item_id": "outfit:midnight_mechanic",
+     "price": 900
+    },
+    {
+     "day": 2,
+     "slot": 2,
+     "item_id": "outfit:moonwalk_cadet",
+     "price": 1200
+    },
+    {
+     "day": 3,
+     "slot": 3,
+     "item_id": "outfit:pumpkin_pajamas",
+     "price": 800
+    },
+    {
+     "day": 3,
+     "slot": 4,
+     "item_id": "outfit:arcade_sprinter",
+     "price": 900
+    },
+    {
+     "day": 4,
+     "slot": 1,
+     "item_id": "outfit:cloud_nine",
+     "price": 1000
+    },
+    {
+     "day": 4,
+     "slot": 2,
+     "item_id": "outfit:bedtime_bandit",
+     "price": 1000
+    },
+    {
+     "day": 5,
+     "slot": 3,
+     "item_id": "outfit:lantern_scout",
+     "price": 1200
+    },
+    {
+     "day": 5,
+     "slot": 4,
+     "item_id": "outfit:campus_courier",
+     "price": 900
+    },
+    {
+     "day": 6,
+     "slot": 1,
+     "item_id": "outfit:raincoat_explorer",
+     "price": 800
+    },
+    {
+     "day": 6,
+     "slot": 2,
+     "item_id": "outfit:varsity_sprinter",
+     "price": 600
+    },
+    {
+     "day": 7,
+     "slot": 3,
+     "item_id": "outfit:midnight_mechanic",
+     "price": 900
+    },
+    {
+     "day": 7,
+     "slot": 4,
+     "item_id": "outfit:moonwalk_cadet",
+     "price": 1200
+    },
+    {
+     "day": 8,
+     "slot": 1,
+     "item_id": "outfit:pumpkin_pajamas",
+     "price": 800
+    },
+    {
+     "day": 8,
+     "slot": 2,
+     "item_id": "outfit:arcade_sprinter",
+     "price": 900
+    },
+    {
+     "day": 9,
+     "slot": 3,
+     "item_id": "outfit:cloud_nine",
+     "price": 1000
+    },
+    {
+     "day": 9,
+     "slot": 4,
+     "item_id": "outfit:bedtime_bandit",
+     "price": 1000
+    }
+   ]
+  }
  },
  "economy": {
   "_comment": "Centralised earning values (client projection and service settlement read the same numbers). Coins and Season XP come only from eligible, service-verified online rounds; practice settles nothing into the wallet or the pass. Purchased Coins never become XP.",

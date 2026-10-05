@@ -19,3 +19,7 @@ int ut_platform_thermal_state(void) {
 int ut_platform_low_power(void) {
 	return -1;
 }
+
+int ut_platform_receipt_kind(void) {
+	return -1;
+}

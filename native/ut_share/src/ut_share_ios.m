@@ -88,3 +88,28 @@ int ut_platform_thermal_state(void) {
 int ut_platform_low_power(void) {
 	return NSProcessInfo.processInfo.isLowPowerModeEnabled ? 1 : 0;
 }
+
+/* The App Store receipt's file name: "sandboxReceipt" for TestFlight and
+ * development installs, "receipt" for App Store installs.  Only the URL is
+ * read (never the receipt's contents); the URL exists even before the file
+ * does.  appStoreReceiptURL is deprecated from iOS 18 but still answers; the
+ * game treats any unknown answer as the App Store (production). */
+int ut_platform_receipt_kind(void) {
+	@autoreleasepool {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+		NSURL *url = [[NSBundle mainBundle] appStoreReceiptURL];
+#pragma clang diagnostic pop
+		if (url == nil) {
+			return 0;
+		}
+		NSString *name = url.lastPathComponent;
+		if ([name isEqualToString:@"receipt"]) {
+			return 1;
+		}
+		if ([name isEqualToString:@"sandboxReceipt"]) {
+			return 2;
+		}
+		return 3;
+	}
+}

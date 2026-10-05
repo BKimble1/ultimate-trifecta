@@ -5,10 +5,14 @@
  *     ClassDB.class_call_static("UTShare", "share", text, url) -> bool
  *     ClassDB.class_call_static("UTShare", "thermal_state") -> int
  *     ClassDB.class_call_static("UTShare", "low_power_mode") -> int
+ *     ClassDB.class_call_static("UTShare", "receipt_kind") -> int
  *
  * thermal_state: 0 nominal, 1 fair, 2 serious, 3 critical (iOS
  * ProcessInfo.thermalState); low_power_mode: 1 on, 0 off; both -1 where the
  * platform has no such state (the beta diagnostics report "unavailable").
+ * receipt_kind: the App Store receipt's kind, a routing hint for the game
+ * service (ut_share_platform.h): 1 "receipt", 2 "sandboxReceipt", 3 other,
+ * 0 no receipt URL, -1 not on this platform.
  *
  * The class is abstract (never instantiated) and only has static methods, so
  * there is no object lifetime to manage. The platform work lives in
@@ -52,7 +56,7 @@ static ut_opaque ut_parent_name;     /* "Object" */
 static ut_opaque ut_empty_name;      /* "" (StringName) */
 static ut_opaque ut_empty_string;    /* "" (String) */
 static ut_opaque ut_arg_names[2];    /* "text", "url" */
-static ut_opaque ut_method_names[4]; /* "share", "available", "thermal_state", "low_power_mode" */
+static ut_opaque ut_method_names[5]; /* "share", "available", "thermal_state", "low_power_mode", "receipt_kind" */
 static int ut_registered;
 
 /* ------------------------------------------------------------- strings */
@@ -151,10 +155,17 @@ static void ut_available_ptrcall(void *userdata, GDExtensionClassInstancePtr ins
 	*(GDExtensionBool *)r_ret = ut_platform_available() ? 1 : 0;
 }
 
-/* thermal_state() / low_power_mode(): no arguments, int result. The method
- * userdata selects which platform query runs. */
+/* thermal_state() / low_power_mode() / receipt_kind(): no arguments, int
+ * result. The method userdata selects which platform query runs. */
 static int64_t ut_int_query(void *which) {
-	return (intptr_t)which == 0 ? (int64_t)ut_platform_thermal_state() : (int64_t)ut_platform_low_power();
+	switch ((intptr_t)which) {
+		case 0:
+			return (int64_t)ut_platform_thermal_state();
+		case 1:
+			return (int64_t)ut_platform_low_power();
+		default:
+			return (int64_t)ut_platform_receipt_kind();
+	}
 }
 
 static void ut_int_call(void *userdata, GDExtensionClassInstancePtr instance, const GDExtensionConstVariantPtr *args,
@@ -210,6 +221,7 @@ static void ut_register(void) {
 	ut_string_name_new(&ut_method_names[1], "available", 1);
 	ut_string_name_new(&ut_method_names[2], "thermal_state", 1);
 	ut_string_name_new(&ut_method_names[3], "low_power_mode", 1);
+	ut_string_name_new(&ut_method_names[4], "receipt_kind", 1);
 
 	GDExtensionClassCreationInfo6 info;
 	memset(&info, 0, sizeof(info));
@@ -258,7 +270,7 @@ static void ut_register(void) {
 	ut_register_method(ut_library, &ut_class_name, &avail);
 
 	GDExtensionPropertyInfo ret_int = ut_prop(GDEXTENSION_VARIANT_TYPE_INT, &ut_empty_name);
-	for (int q = 0; q < 2; q++) {
+	for (int q = 0; q < 3; q++) {
 		GDExtensionClassMethodInfo m;
 		memset(&m, 0, sizeof(m));
 		m.name = &ut_method_names[2 + q];

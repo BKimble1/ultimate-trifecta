@@ -166,6 +166,11 @@ func view(pid: String) -> Dictionary:
 	if not bool(can["ok"]):
 		out.merge({"state": "service", "button": "Unavailable", "message": String(can["message"])}, true)
 		return out
+	if Wallet.app_account_token() == "":
+		# FINAL_RELEASE_SWEEP: never a purchase the service can't bind to this
+		# player (its appAccountToken comes with the wallet snapshot)
+		out.merge({"state": "service", "button": "Unavailable", "message": "App Store purchases aren't available right now. Your items and Coins are safe."}, true)
+		return out
 	if products_state == "loading" or products_state == "idle":
 		out.merge({"state": "loading", "button": "Loading…", "message": "Getting prices from the App Store…"}, true)
 		return out
@@ -321,6 +326,22 @@ func _deliver(tx: Dictionary) -> void:
 		_set_state(pid, "delivering", "Your purchase went through. We'll add it as soon as the game service answers.")
 		return
 	match String(r.get("error", "")):
+		"sandbox_purchase", "production_purchase":
+			# FINAL_RELEASE_SWEEP: a verified purchase from the other App Store
+			# environment (App Review buys in Apple's sandbox).  This
+			# deployment recorded nothing; the install moves to the one that
+			# credits it, signs in there as the same player and this
+			# still-unfinished transaction is delivered there (once).
+			var target := "sandbox" if String(r["error"]) == "sandbox_purchase" else "production"
+			if Cloud.can_move_to(target):
+				_held[tid] = tx
+				_set_state(pid, "delivering", "Your purchase went through. Adding it to your account…")
+				Cloud.move_to(target, String(r["error"]))
+			else:
+				# can't move now (already moved in this launch, or a build with
+				# one service): kept unfinished, so StoreKit offers it again
+				# at the next launch; nothing is lost or credited twice
+				_set_state(pid, "failed", "We couldn't add this purchase yet. It's kept safe and added the next time you open the game.")
 		"account_mismatch":
 			_set_state(pid, "failed", "This purchase belongs to another player profile on this device. Sign in with that Game Center account to receive it.")
 		"owned_by_other_profile":
@@ -333,6 +354,8 @@ func _deliver(tx: Dictionary) -> void:
 func _retry_held() -> void:
 	if _held.is_empty() or not Cloud.signed_in() or not Wallet.synced():
 		return
+	if Cloud.pending_move() != "":
+		return   # a move to the deployment that credits it waits for the party to end
 	for tid in _held.keys():
 		if not _delivering.has(tid):
 			_deliver(_held[tid])
