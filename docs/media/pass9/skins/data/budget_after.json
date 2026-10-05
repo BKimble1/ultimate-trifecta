@@ -1,5 +1,5 @@
 {
-  "art_version": "v10-af967001b9ea",
+  "art_version": "v10-5fd133068d04",
   "looks": 9200,
   "heaviest_look_tris": 32834,
   "heaviest_look_parts": [
@@ -125,17 +125,17 @@
         "dd_suit"
       ],
       "part_tris": {
-        "dd_head": 10782,
-        "dd_fringe": 3284,
+        "dd_head": 10838,
+        "dd_fringe": 3324,
         "dd_suit": 18536
       },
-      "look_tris": 32602,
+      "look_tris": 32698,
       "draw_calls": 3
     }
   },
-  "glb_bytes": 19337604,
-  "imported_scene_bytes": 9737565,
-  "all_parts_tris": 358926,
+  "glb_bytes": 19344280,
+  "imported_scene_bytes": 9759559,
+  "all_parts_tris": 359022,
   "parts_in_asset": 59,
   "part_tris": {
     "base": 9086,
