@@ -18,7 +18,7 @@ here claims a live unlock. The two skins' **art** comes from the SKINS9
 stream (`Cosmetics` keys `record_breaker`, `dr_doom`): on this branch alone
 the pass shows their neutral picture and says "Preview not available in this
 build."; with the art merged the same code shows the real portraits and the
-live, turning preview (the path is tested and captured with a stand-in, see
+live, slowly swaying preview (the path is tested and captured with a stand-in, see
 below).
 
 ## What changed
@@ -30,11 +30,11 @@ below).
 | Migration | `0005_season_100.sql`: `season_claims.catalogue_version` (audit only). No data rewrite is needed (below) | `service/migrations/0005_season_100.sql` |
 | Client rules | `Economy.tier_xp`, `tiers_in_version`, `has_reward`, `next_reward_tier`, `progress_runs`, `reward_key`; `claimable(…, upto)`. `Catalogue.season_milestones`, `season_featured`, `tier_added_in`, `includes_text` | `game/src/core/economy.gd`, `game/src/core/catalogue.gd` |
 | Wallet | `service_tiers(sid)` (from the snapshot's `tiers`, else an older service's catalogue version); claimable cells stop at it and skip cells whose claim is queued (`claim_pending`); Claim all sent in batches of 60 (each its own outbox operation and key); claims name their reward; `claim_note` explains a service-side mismatch; an older service's reply without `skipped` is understood | `game/src/autoload/wallet_service.gd` |
-| Season Pass | Navigation row (You're at Tier N; Next reward · Tier N · XP; milestones 30, 50, 100 with the featured skins' faces); progress runs as one compact column each ("36–39", a step per tier, "No reward"); featured-skin detail (description, includes, live turning preview when the art is in the build, a neutral picture and a plain note when not); progress-run detail with "Show Tier N"; new cell states `pending` ("Claiming…") and `service_update`; jumps glide (Reduced Motion: land at once); "Tier N / 100" with a "Season Pass tier" accessibility name | `game/src/ui/season_screen.gd` |
+| Season Pass | Navigation row (You're at Tier N; Next reward · Tier N · XP; milestones 30, 50, 100 with the featured skins' faces); progress runs as one compact column each ("36–39", a step per tier, "No reward"); featured-skin detail (description, includes, live preview swaying around its three-quarter view when the art is in the build, a neutral picture and a plain note when not); progress-run detail with "Show Tier N"; new cell states `pending` ("Claiming…") and `service_update`; jumps glide (Reduced Motion: land at once); "Tier N / 100" with a "Season Pass tier" accessibility name | `game/src/ui/season_screen.gd` |
 | Drawing | A stopwatch emblem; a card can name its motif in the catalogue | `game/src/ui/commerce_art.gd` (additive) |
 | Shop | "100 tiers you earn by playing"; "44 Premium rewards over 100 tiers: …" (counts from the table) | `game/src/ui/shop_screen.gd` (2 lines) |
 | Test double / evidence | The double claims as the service does (answers, `reward_changed`, an "older service" mode, a reward override); a capture scene and script | `game/src/dev/fake_commerce_service.gd`, `game/src/dev/season100_capture.*`, `tools/capture_pass9_season.sh` |
-| Tests | Service: 8 new tests. Game: `test_season100.gd` (13 tests), `test_catalogue` (table, extension, boundaries, pacing), `test_shop_ui` (column count) | `service/test/season.test.mjs`, `game/tests/test_season100.gd`, `game/tests/test_catalogue.gd`, `game/tests/test_shop_ui.gd`, `game/tests/data/season_s1_v2.json` |
+| Tests | Service: 8 new tests. Game: `test_season100.gd` (12 tests), `test_catalogue` (table, extension, boundaries, pacing), `test_shop_ui` (column count) | `service/test/season.test.mjs`, `game/tests/test_season100.gd`, `game/tests/test_catalogue.gd`, `game/tests/test_shop_ui.gd`, `game/tests/data/season_s1_v2.json` |
 | Docs | ECONOMY.md §2, §3, §4 (rewritten: both tables, pacing, rules, claim protocol, mismatch, migration), §8, §10; service README; COMMERCE_SETUP 8d | `docs/ECONOMY.md`, `service/README.md`, `docs/COMMERCE_SETUP.md` |
 
 ## Pacing model and table
@@ -117,8 +117,10 @@ by (season, tier, track) and tiers 1-30 are identical in both tables.
   ahead) and "No reward": 58 columns instead of 100, nothing advertised
   that isn't there, your tier still visible inside a run.
 - **Featured preview.** The milestone chips for 50 and 100 show the skin's
-  face (Portraits "head" framing) and the detail turns the real skin on the
-  existing live preview (the emote preview's runner; Reduced Motion: still).
+  face (Portraits "head" framing) and the detail shows the real skin on the
+  existing live preview (the emote preview's runner, framed like the
+  Locker's outfit pictures, swaying ±49° around its three-quarter view so
+  the face stays in the key light; Reduced Motion: still).
   Without the art: a neutral head on the chip, the neutral silhouette in the
   cell and the detail with "Preview not available in this build." drawn in
   the picture: never a fake preview.
@@ -151,7 +153,7 @@ by (season, tier, track) and tiers 1-30 are identical in both tables.
 - **Service** (`cd service && npm test`): 68 tests pass (8 new in
   `test/season.test.mjs`); the existing 60 (including the V6 Season test
   with its 30-tier body) unchanged and passing.
-- **Game** (focused suites, headless): `test_season100` 13 tests;
+- **Game** (focused suites, headless): `test_season100` 12 tests;
   `test_catalogue` (all but `test_every_referenced_item_exists_in_cosmetics`,
   which lists `outfit:record_breaker` and `outfit:dr_doom` until SKINS9's
   Cosmetics entries merge, as expected), `test_wallet`, `test_challenges`,

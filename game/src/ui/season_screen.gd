@@ -26,8 +26,8 @@ extends Screen
 ##                  shows every tier honestly and never advertises a reward
 ##                  that isn't there (58 columns for 100 tiers)
 ##           detail a featured skin adds its description, what it includes
-##                  and a slowly turning live preview (still under Reduced
-##                  Motion); a progress run explains itself and offers the
+##                  and a live preview slowly swaying around its three-quarter
+##                  view (still under Reduced Motion); a progress run explains itself and offers the
 ##                  next reward; a claim waiting for the service, or a tier
 ##                  the game service doesn't have yet, says so
 ##   detail  the selected reward: its picture (an emote plays on a small live
@@ -108,8 +108,11 @@ var _preview_skin := ""
 var _turn := 0.0
 ## the width of a run column relative to a reward column
 const RUN_ASPECT := 0.56
-## the featured preview's turn (radians a second; still under Reduced Motion)
+## the featured preview's slow sway around its three-quarter view (phase
+## radians a second; how far it turns each way): the face and both sides,
+## always in the key light; still under Reduced Motion
 const TURN_RATE := 0.55
+const TURN_SWING := 0.85
 
 
 func build() -> void:
@@ -904,9 +907,9 @@ func _refresh_progress_detail() -> void:
 
 ## Emote rewards play on one small live runner in the detail (created on
 ## first use, hidden and not rendered otherwise; one per screen).  Pass 9:
-## a featured skin turns slowly on the same runner when its art is in the
-## build (still under Reduced Motion); without the art the detail keeps its
-## neutral picture.
+## a featured skin sways slowly on the same runner when its art is in the
+## build (swaying around its three-quarter view; still under Reduced
+## Motion); without the art the detail keeps its neutral picture.
 func _show_preview(r: Dictionary) -> void:
 	var art: Control = _d["art"]
 	var id := String(r.get("item", ""))
@@ -920,6 +923,8 @@ func _show_preview(r: Dictionary) -> void:
 				_preview_skin = ""
 				_preview_view.set_appearance(TC.Role.RUNNER, Cosmetics.sanitize(Save.data["cosmetic"]))
 				_preview_view.set_facing(PI + 0.3)
+				_preview.cam.fov = 32.0
+				_preview.aim(Vector3(0, 1.0, 3.4), Vector3(0, 0.82, 0))
 		art.visible = true
 		_preview_emote = -1
 		return
@@ -945,12 +950,17 @@ func _show_preview(r: Dictionary) -> void:
 			rs["emote"] = -1
 			rs["emote_t"] = 0.0
 			_preview_view.apply_state(rs)
+			# the whole figure, framed like the Locker's outfit pictures
+			_preview.cam.fov = 36.0
+			_preview.aim(Vector3(0, 0.88, 2.7), Vector3(0, 0.8, 0))
 		_preview_view.set_facing(PI + 0.35)
 		return
 	if _preview_skin != "":
 		_preview_skin = ""
 		_preview_view.set_appearance(TC.Role.RUNNER, Cosmetics.sanitize(Save.data["cosmetic"]))
 		_preview_view.set_facing(PI + 0.3)
+		_preview.cam.fov = 32.0
+		_preview.aim(Vector3(0, 1.0, 3.4), Vector3(0, 0.82, 0))
 	if _preview_emote != eid:
 		_preview_emote = eid
 		_preview_t = 0.0
@@ -972,11 +982,11 @@ func _play_preview() -> void:
 func _process(delta: float) -> void:
 	if not is_instance_valid(_preview) or not _preview.is_visible_in_tree():
 		return
-	# Pass 9: a featured skin turns slowly (Reduced Motion: it stays put)
+	# Pass 9: a featured skin sways slowly (Reduced Motion: it stays put)
 	if _preview_skin != "":
 		if not UIKit.reduced_motion() and is_instance_valid(_preview_view):
-			_turn = wrapf(_turn + delta * TURN_RATE, 0.0, TAU)
-			_preview_view.set_facing(PI + 0.35 + _turn)
+			_turn += delta * TURN_RATE
+			_preview_view.set_facing(PI + 0.35 + TURN_SWING * sin(_turn))
 		return
 	# the preview replays its move every few seconds (Reduced Motion: once)
 	if _preview_emote < 0:
