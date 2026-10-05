@@ -1063,7 +1063,7 @@ func _process_view(delta: float) -> void:
 	var diving: bool = rs.get("diving", false)
 	# Pass 9: "fast" = at or near full speed (the render state's "sprinting"
 	# until then; there is no sprint any more)
-	var sprinting: bool = rs.get("fast", rs.get("sprinting", false))
+	var fast: bool = rs.get("fast", false)
 	var tag_phase: int = rs.get("tag_phase", 0)
 	var state_t: float = rs.get("state_t", 0.0)
 	var finished := st == TC.PState.FINISHED
@@ -1230,7 +1230,7 @@ func _process_view(delta: float) -> void:
 	_idle_clock += delta * (0.8 if menu_idle else 1.0)
 	tree.set("parameters/idle_seek/seek_request", fmod(_idle_clock, IDLE_LEN))
 	if m == "ground":
-		_update_ground(delta, vel, speed, on_floor, sprinting, yaw_rate)
+		_update_ground(delta, vel, speed, on_floor, fast, yaw_rate)
 	else:
 		_clear_layers()
 		# (Pass 9: a stop made in another state belongs to it: back on the
@@ -1300,7 +1300,7 @@ func _process_view(delta: float) -> void:
 	# --- face (distant characters: at their animation rate)
 	_face_acc += delta
 	if due:
-		_update_face(_face_acc, m, sprinting, tag_phase, bool(rs.get("spotted", false)))
+		_update_face(_face_acc, m, fast, tag_phase, bool(rs.get("spotted", false)))
 		_face_acc = 0.0
 
 	# --- animate (manual advance: distant characters update at a lower rate,
@@ -1476,7 +1476,7 @@ func _clear_layers() -> void:
 		tree.set("parameters/%s/add_amount" % n, 0.0)
 
 
-func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sprinting: bool, yaw_rate: float) -> void:
+func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, fast: bool, yaw_rate: float) -> void:
 	# while the body turns, the gait advances with the forward part of the
 	# ground speed (no moonwalk while the facing catches up in a reversal).
 	# Without a turn in progress (a run on the spot in the lobby) speed rules.
@@ -1563,7 +1563,7 @@ func _update_ground(delta: float, vel: Vector3, speed: float, on_floor: bool, sp
 	if k != _step_k:
 		if on_floor and speed > 1.0 and k > _step_k and _near_camera(30.0):
 			var walk := speed < 3.0
-			var db := (-12.0 if walk else -6.0) + (4.0 if sprinting else 0.0) + (2.0 if role == TC.Role.PATROL else 0.0)
+			var db := (-12.0 if walk else -6.0) + (4.0 if fast else 0.0) + (2.0 if role == TC.Role.PATROL else 0.0)
 			Sfx.play("step", global_position, db, 0.9 if role == TC.Role.PATROL else 1.1)
 		_step_k = k
 	# turn in place
@@ -1704,7 +1704,7 @@ static func gait_rate(speed: float) -> float:
 	return r
 
 
-func _update_face(delta: float, m: String, sprinting: bool, tag_phase: int, spotted: bool) -> void:
+func _update_face(delta: float, m: String, fast: bool, tag_phase: int, spotted: bool) -> void:
 	var tgt := {"blink": 0.0, "squint": 0.0, "smile": 0.0, "open": 0.0, "brow_up": 0.0, "brow_angry": 0.0}
 	match m:
 		"celebrate", "emote_cheer", "emote_laugh", "emote_dance", "arrive", "ready", "emote_victory_lap":
@@ -1763,7 +1763,7 @@ func _update_face(delta: float, m: String, sprinting: bool, tag_phase: int, spot
 			tgt["open"] = 0.15
 		_:
 			tgt["smile"] = 0.35
-			if sprinting or tag_phase > 0:
+			if fast or tag_phase > 0:
 				tgt["brow_angry"] = 0.8
 				tgt["smile"] = 0.0
 	if _fidget_on and _fidget == "fidget_yawn":

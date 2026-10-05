@@ -649,7 +649,7 @@ func _drive_transitions(_delta: float) -> void:
 	var x := 0.0
 	v.apply_state({"pos": Vector3(0, maxf(0.0, (6.4 * (t - 3.0) - 9.5 * (t - 3.0) * (t - 3.0))) if not floor_ok else 0.0, 0),
 		"yaw": PI * 0.5, "vel": Vector3(-speed, vy, 0), "state": TC.PState.ACTIVE, "on_floor": floor_ok,
-		"sprinting": speed > 6.5, "emote": emote, "emote_t": 1.0 if emote >= 0 else 0.0})
+		"fast": speed > 5.0, "emote": emote, "emote_t": 1.0 if emote >= 0 else 0.0})
 
 
 ## Start (0.5 s), run, stop (1.4 s), start again, reverse (2.6 s): the sim's
