@@ -1,0 +1,1144 @@
+{
+  "a01_svcoff_tier1_open": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      3,
+      "free"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 12,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 3 · Free track",
+      "name": "Pom-Pom Beanie",
+      "state": "400 XP to unlock",
+      "reason": "",
+      "action": ""
+    }
+  },
+  "a02_svcoff_tier1_record_breaker": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 374.9,
+      "height_pt": 203.1,
+      "model_height_m": 1.57,
+      "top_y": 187.7,
+      "feet_y": 562.6,
+      "centre_x": 259.9,
+      "width_units_rest": 234.3,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.008
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "15,300 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "a03_svcoff_tier1_dr_doom": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "dr_doom",
+      "where": "stage",
+      "height_units": 357.2,
+      "height_pt": 193.5,
+      "model_height_m": 1.495,
+      "top_y": 205.7,
+      "feet_y": 562.9,
+      "centre_x": 267.2,
+      "width_units_rest": 207.7,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.009
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      100,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 100 · Premium track",
+      "name": "Dr. Doom",
+      "state": "32,800 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "a04_svcoff_challenges": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "dr_doom",
+      "where": "stage",
+      "height_units": 357.3,
+      "height_pt": 193.6,
+      "model_height_m": 1.495,
+      "top_y": 205.6,
+      "feet_y": 562.9,
+      "centre_x": 267.1,
+      "width_units_rest": 214.9,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.099
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      100,
+      "premium"
+    ],
+    "header_tier": "Tier 1 / 100",
+    "header_xp": "0 / 200 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 100 · Premium track",
+      "name": "Dr. Doom",
+      "state": "32,800 XP to unlock\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "View Premium"
+    }
+  },
+  "a10_svcon_test_tier43_open": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      40,
+      "free"
+    ],
+    "header_tier": "Tier 43 / 100",
+    "header_xp": "150 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 40 · Free track",
+      "name": "Finish Line",
+      "state": "Earned at Tier 40. Claim it to add it to your Locker.",
+      "reason": "",
+      "action": "Claim"
+    }
+  },
+  "a11_svcon_test_progress_run": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      43,
+      "progress"
+    ],
+    "header_tier": "Tier 43 / 100",
+    "header_xp": "150 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tiers 41–44 · Progress",
+      "name": "Progress tiers",
+      "state": "They count toward Tier 45: 50 Coins (Free) and 75 Coins (Premium). You're at Tier 43. 550 more Season XP to Tier 45.",
+      "reason": "",
+      "action": "Show Tier 45"
+    }
+  },
+  "a12_svcon_test_tier30": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      30,
+      "free"
+    ],
+    "header_tier": "Tier 43 / 100",
+    "header_xp": "150 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 8,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 30 · Free track",
+      "name": "Season 1 Finisher",
+      "state": "Claimed. It's yours to keep, in your Locker.",
+      "reason": "",
+      "action": "Equip"
+    }
+  },
+  "a13_svcon_test_record_breaker_locked": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 374.9,
+      "height_pt": 203.1,
+      "model_height_m": 1.57,
+      "top_y": 187.7,
+      "feet_y": 562.6,
+      "centre_x": 259.9,
+      "width_units_rest": 234.5,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.009
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 43 / 100",
+    "header_xp": "150 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "2,300 XP to unlock",
+      "reason": "",
+      "action": ""
+    }
+  },
+  "a14_svcon_test_record_breaker_turned": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 375.6,
+      "height_pt": 203.5,
+      "model_height_m": 1.57,
+      "top_y": 187.4,
+      "feet_y": 563.1,
+      "centre_x": 258.7,
+      "width_units_rest": 228.4,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": 0.093
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 43 / 100",
+    "header_xp": "150 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "2,300 XP to unlock",
+      "reason": "",
+      "action": ""
+    }
+  },
+  "a15_svcon_test_dr_doom_locked": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "dr_doom",
+      "where": "stage",
+      "height_units": 357.5,
+      "height_pt": 193.6,
+      "model_height_m": 1.495,
+      "top_y": 205.6,
+      "feet_y": 563.0,
+      "centre_x": 263.4,
+      "width_units_rest": 231.0,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.307
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      100,
+      "premium"
+    ],
+    "header_tier": "Tier 43 / 100",
+    "header_xp": "150 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 100 · Premium track",
+      "name": "Dr. Doom",
+      "state": "19,800 XP to unlock",
+      "reason": "",
+      "action": ""
+    }
+  },
+  "a16_svcon_test_tier40_claimable": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      40,
+      "premium"
+    ],
+    "header_tier": "Tier 43 / 100",
+    "header_xp": "150 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 40 · Premium track",
+      "name": "Big Dive",
+      "state": "Earned at Tier 40. Claim it to add it to your Locker.",
+      "reason": "",
+      "action": "Claim"
+    }
+  },
+  "a17_svcon_test_tier40_claimed": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      40,
+      "premium"
+    ],
+    "header_tier": "Tier 43 / 100",
+    "header_xp": "150 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 40 · Premium track",
+      "name": "Big Dive",
+      "state": "Claimed. It's yours to keep, in your Locker.",
+      "reason": "",
+      "action": "Equip"
+    }
+  },
+  "a18_svcon_test_challenges": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      40,
+      "premium"
+    ],
+    "header_tier": "Tier 43 / 100",
+    "header_xp": "200 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 40 · Premium track",
+      "name": "Big Dive",
+      "state": "Claimed. It's yours to keep, in your Locker.",
+      "reason": "",
+      "action": "Equip"
+    }
+  },
+  "a19_svcon_test_emote_reward": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      9,
+      "free"
+    ],
+    "header_tier": "Tier 43 / 100",
+    "header_xp": "200 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 10,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 9 · Free track",
+      "name": "Stargaze",
+      "state": "Claimed. It's yours to keep, in your Locker.",
+      "reason": "",
+      "action": "Equip"
+    }
+  },
+  "a20_svcon_test_tier1": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      1,
+      "premium"
+    ],
+    "header_tier": "Tier 43 / 100",
+    "header_xp": "200 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 10,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 1 · Premium track",
+      "name": "Night Owl Onesie",
+      "state": "Claimed. It's yours to keep, in your Locker.",
+      "reason": "",
+      "action": "Equip"
+    }
+  },
+  "a21_svcon_test_free_record_breaker_premium_locked": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 374.9,
+      "height_pt": 203.1,
+      "model_height_m": 1.57,
+      "top_y": 187.7,
+      "feet_y": 562.6,
+      "centre_x": 260.1,
+      "width_units_rest": 242.3,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.1
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 52 / 100",
+    "header_xp": "0 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "Reached Tier 50.\nNeeds Premium · 1,500 Coins",
+      "reason": "",
+      "action": "Get Premium"
+    }
+  },
+  "a22_svcon_test_free_tier50_badge_claimable": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {},
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "free"
+    ],
+    "header_tier": "Tier 52 / 100",
+    "header_xp": "0 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Free track",
+      "name": "Record Pace",
+      "state": "Earned at Tier 50. Claim it to add it to your Locker.",
+      "reason": "",
+      "action": "Claim"
+    }
+  },
+  "a23_svcon_test_dr_doom_claimed": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "dr_doom",
+      "where": "stage",
+      "height_units": 357.3,
+      "height_pt": 193.6,
+      "model_height_m": 1.495,
+      "top_y": 205.6,
+      "feet_y": 562.9,
+      "centre_x": 267.1,
+      "width_units_rest": 215.7,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.111
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      100,
+      "premium"
+    ],
+    "header_tier": "Tier 100 / 100",
+    "header_xp": "Every tier reached",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 100 · Premium track",
+      "name": "Dr. Doom",
+      "state": "Claimed. It's yours to keep, in your Locker.",
+      "reason": "",
+      "action": "Equip"
+    }
+  },
+  "a24_svcon_test_dr_doom_equipped": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "dr_doom",
+      "where": "stage",
+      "height_units": 357.2,
+      "height_pt": 193.5,
+      "model_height_m": 1.495,
+      "top_y": 205.7,
+      "feet_y": 562.9,
+      "centre_x": 267.2,
+      "width_units_rest": 207.5,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.007
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      100,
+      "premium"
+    ],
+    "header_tier": "Tier 100 / 100",
+    "header_xp": "Every tier reached",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 100 · Premium track",
+      "name": "Dr. Doom",
+      "state": "Claimed. You're using it now.",
+      "reason": "",
+      "action": "View in Locker"
+    }
+  },
+  "a25_svcon_test_claim_pending": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 374.9,
+      "height_pt": 203.1,
+      "model_height_m": 1.57,
+      "top_y": 187.7,
+      "feet_y": 562.6,
+      "centre_x": 260.1,
+      "width_units_rest": 243.2,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.112
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 50 / 100",
+    "header_xp": "100 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "Earned at Tier 50. Your claim is on its way and finishes by itself, never twice.",
+      "reason": "",
+      "action": "Claiming…"
+    }
+  },
+  "a26_svcon_test_old_service_tier50": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 374.9,
+      "height_pt": 203.1,
+      "model_height_m": 1.57,
+      "top_y": 187.7,
+      "feet_y": 562.6,
+      "centre_x": 260.0,
+      "width_units_rest": 240.8,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.081
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 50 / 100",
+    "header_xp": "100 / 350 XP",
+    "cell": [
+      119.0,
+      149.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      317.0,
+      546.0,
+      347.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "Earned at Tier 50, not claimed yet. It stays earned.",
+      "reason": "Claiming for this tier isn't open yet.",
+      "action": "Claim"
+    }
+  },
+  "a27_svcon_test_signin_failed_earned": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 374.9,
+      "height_pt": 203.1,
+      "model_height_m": 1.57,
+      "top_y": 187.7,
+      "feet_y": 562.6,
+      "centre_x": 260.1,
+      "width_units_rest": 241.7,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.093
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 50 / 100",
+    "header_xp": "100 / 350 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "Earned at Tier 50. It stays earned: claim it when rewards are available.",
+      "reason": "",
+      "action": "Claim"
+    }
+  },
+  "a28_svcon_test_offline_earned": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 374.9,
+      "height_pt": 203.1,
+      "model_height_m": 1.57,
+      "top_y": 187.7,
+      "feet_y": 562.6,
+      "centre_x": 260.1,
+      "width_units_rest": 241.6,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.091
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 50 / 100",
+    "header_xp": "100 / 350 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "Earned at Tier 50. It stays earned: claim it when rewards are available.",
+      "reason": "",
+      "action": "Claim"
+    }
+  },
+  "a29_svcon_test_signed_out": {
+    "view": [
+      1558.0,
+      720.0
+    ],
+    "safe": [
+      86.7620010375977,
+      12.0,
+      1384.47607421875,
+      669.234008789062
+    ],
+    "touch_min": 81.224,
+    "units_per_pt": 1.846,
+    "figure": {
+      "skin": "record_breaker",
+      "where": "stage",
+      "height_units": 374.9,
+      "height_pt": 203.1,
+      "model_height_m": 1.57,
+      "top_y": 187.7,
+      "feet_y": 562.6,
+      "centre_x": 260.0,
+      "width_units_rest": 241.5,
+      "host_rect": [],
+      "units_per_pt": 1.846,
+      "yaw": -2.09
+    },
+    "pressables_cut_off": [],
+    "focus": [
+      50,
+      "premium"
+    ],
+    "header_tier": "Tier 50 / 100",
+    "header_xp": "100 / 350 XP",
+    "cell": [
+      92.0,
+      115.0
+    ],
+    "cells_in_view": 6,
+    "track": [
+      894.0,
+      385.0,
+      546.0,
+      279.0
+    ],
+    "detail": {
+      "over": "Tier 50 · Premium track",
+      "name": "Record Breaker",
+      "state": "Earned at Tier 50. It stays earned: claim it when rewards are available.",
+      "reason": "",
+      "action": "Claim"
+    }
+  }
+}
