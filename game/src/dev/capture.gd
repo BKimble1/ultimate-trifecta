@@ -27,6 +27,9 @@ extends Node
 ##             then opens the scoreboard drawer
 ##   startup   normal boot (boot curtain over the title), then Practice as a
 ##             runner: loading screen, role reveal and countdown (for clips)
+##   logo_*    (Pass 8) startup-logo evidence: logo_startup (every frame of
+##             the real boot curtain and its fade), logo_variants (the
+##             lockup drawn several ways); see logo_capture.gd
 ##   emotes    a LAN room (--capture-players=N): presses the real Emote and
 ##             Try moves buttons and tiles (Dance, Wave, Ha!, Sprint, Jump)
 ##   transition  the host of a LAN series (--net-host, --expect=2, a
@@ -81,6 +84,12 @@ func _ready() -> void:
 		add_child(sc)
 		if scenario == "social_hub" or scenario == "social_service_host":
 			App.dev_expect = 99   # hold the room open for the capture
+	elif scenario.begins_with("logo_"):
+		# Pass 8 startup-logo evidence: its own driver
+		var lg: Node = (load("res://src/dev/logo_capture.gd") as GDScript).new()
+		lg.set("cap", self)
+		lg.set("scenario", scenario)
+		add_child(lg)
 	elif scenario == "v7_screens":
 		# V7 screens evidence (Friends, Settings, home, party, results,
 		# dialogs) with measured layout: its own driver

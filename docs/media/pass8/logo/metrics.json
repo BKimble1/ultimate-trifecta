@@ -1,0 +1,682 @@
+{
+ "devices": {
+  "2532x1170": {
+   "name": "iPhone 12-14, 16e (3x)",
+   "lockup_px": [
+    903.3,
+    376.447,
+    725.4,
+    417.105
+   ],
+   "crop": [
+    895,
+    368,
+    742,
+    434
+   ],
+   "stages": {
+    "launch_before": {
+     "edge_rms": 3.85,
+     "alias_max": 12.2,
+     "glow": 0,
+     "dips": 4,
+     "purity": 13.0,
+     "aliased_crossings": 0.048,
+     "shift": [
+      -0.017,
+      0.093
+     ]
+    },
+    "launch_after": {
+     "edge_rms": 5.12,
+     "alias_max": 11.0,
+     "glow": 0,
+     "dips": 0,
+     "purity": 0.9,
+     "aliased_crossings": 0.024,
+     "shift": [
+      -0.147,
+      -0.046
+     ]
+    },
+    "curtain_before": {
+     "edge_rms": 31.79,
+     "alias_max": 66.5,
+     "glow": 0,
+     "dips": 0,
+     "purity": 7.0,
+     "aliased_crossings": 0.0,
+     "shift": [
+      0.335,
+      0.898
+     ]
+    },
+    "curtain_after": {
+     "edge_rms": 2.42,
+     "alias_max": 8.5,
+     "glow": 0,
+     "dips": 0,
+     "purity": 1.6,
+     "aliased_crossings": 0.054,
+     "shift": [
+      0.062,
+      0.025
+     ]
+    }
+   },
+   "handoff_before": {
+    "rms": 8.3,
+    "max": 186.0,
+    "shift": [
+     0.352,
+     0.806
+    ]
+   },
+   "handoff_after": {
+    "rms": 1.48,
+    "max": 44.0,
+    "shift": [
+     0.209,
+     0.07
+    ]
+   },
+   "variants": {
+    "v8_png_linear": {
+     "edge_rms": 27.81,
+     "alias_max": 51.5,
+     "glow": 0,
+     "dips": 0,
+     "purity": 23.0,
+     "aliased_crossings": 0.177,
+     "shift": [
+      0.394,
+      0.624
+     ]
+    },
+    "v8_png_unsnapped": {
+     "edge_rms": 14.63,
+     "alias_max": 38.9,
+     "glow": 0,
+     "dips": 0,
+     "purity": 5.0,
+     "aliased_crossings": 0.0,
+     "shift": [
+      -0.011,
+      0.265
+     ]
+    },
+    "fallback": {
+     "edge_rms": 8.99,
+     "alias_max": 14.5,
+     "glow": 0,
+     "dips": 0,
+     "purity": 0.6,
+     "aliased_crossings": 0.001,
+     "shift": [
+      -0.012,
+      -0.014
+     ]
+    },
+    "boot_before": {
+     "edge_rms": 4.02,
+     "alias_max": 12.4,
+     "glow": 0,
+     "dips": 4,
+     "purity": 13.0,
+     "aliased_crossings": 0.045,
+     "shift": [
+      -0.003,
+      0.094
+     ]
+    },
+    "boot_after": {
+     "edge_rms": 5.15,
+     "alias_max": 11.0,
+     "glow": 0,
+     "dips": 0,
+     "purity": 1.1,
+     "aliased_crossings": 0.024,
+     "shift": [
+      -0.148,
+      -0.046
+     ]
+    }
+   },
+   "boot_real": {
+    "after": {
+     "frame": "x_05.png",
+     "max_diff_vs_emulation": 1.0,
+     "metrics": {
+      "edge_rms": 5.12,
+      "alias_max": 11.0,
+      "glow": 0,
+      "dips": 0,
+      "purity": 1.1,
+      "aliased_crossings": 0.024,
+      "shift": [
+       -0.145,
+       -0.044
+      ]
+     }
+    },
+    "before": {
+     "frame": "x_06.png",
+     "max_diff_vs_emulation": 1.0,
+     "metrics": {
+      "edge_rms": 3.86,
+      "alias_max": 12.1,
+      "glow": 0,
+      "dips": 4,
+      "purity": 13.0,
+      "aliased_crossings": 0.048,
+      "shift": [
+       -0.018,
+       0.094
+      ]
+     }
+    }
+   },
+   "startup": {
+    "frames": 60,
+    "leave_frame": 27,
+    "gone_frame": 52,
+    "first_frame_vs_lab_curtain_max_diff": 0.0,
+    "exact_raster": true
+   },
+   "settle_frames": [
+    {
+     "frame": 27,
+     "settle": 1.0032,
+     "fade": 0.996,
+     "mean_abs_vs_vector": 0.33,
+     "purity": 2.2
+    },
+    {
+     "frame": 28,
+     "settle": 1.0063,
+     "fade": 0.984,
+     "mean_abs_vs_vector": 0.37,
+     "purity": 2.1
+    },
+    {
+     "frame": 29,
+     "settle": 1.0092,
+     "fade": 0.963,
+     "mean_abs_vs_vector": 0.29,
+     "purity": 2.3
+    },
+    {
+     "frame": 30,
+     "settle": 1.0119,
+     "fade": 0.934,
+     "mean_abs_vs_vector": 0.31,
+     "purity": 2.0
+    }
+   ],
+   "compression": {
+    "jpeg_q85": {
+     "edge_rms": 8.15,
+     "alias_max": 9.8,
+     "glow": 4420,
+     "dips": 1951,
+     "purity": 42.0,
+     "aliased_crossings": 0.014,
+     "shift": [
+      0.099,
+      0.101
+     ]
+    },
+    "jpeg_q60": {
+     "edge_rms": 11.5,
+     "alias_max": 12.0,
+     "glow": 6211,
+     "dips": 2325,
+     "purity": 48.0,
+     "aliased_crossings": 0.007,
+     "shift": [
+      0.069,
+      0.114
+     ]
+    }
+   }
+  },
+  "2778x1284": {
+   "name": "iPhone 12/13 Pro Max, 14 Plus (3x)",
+   "lockup_px": [
+    990.96,
+    413.127,
+    796.08,
+    457.746
+   ],
+   "crop": [
+    982,
+    405,
+    814,
+    474
+   ],
+   "stages": {
+    "launch_before": {
+     "edge_rms": 4.3,
+     "alias_max": 14.2,
+     "glow": 0,
+     "dips": 43,
+     "purity": 19.0,
+     "aliased_crossings": 0.008,
+     "shift": [
+      -0.034,
+      0.17
+     ]
+    },
+    "launch_after": {
+     "edge_rms": 5.76,
+     "alias_max": 10.8,
+     "glow": 0,
+     "dips": 0,
+     "purity": 0.9,
+     "aliased_crossings": 0.008,
+     "shift": [
+      -0.081,
+      0.021
+     ]
+    },
+    "curtain_before": {
+     "edge_rms": 35.32,
+     "alias_max": 71.0,
+     "glow": 0,
+     "dips": 0,
+     "purity": 6.0,
+     "aliased_crossings": 0.0,
+     "shift": [
+      -0.494,
+      0.948
+     ]
+    },
+    "curtain_after": {
+     "edge_rms": 2.35,
+     "alias_max": 8.4,
+     "glow": 0,
+     "dips": 0,
+     "purity": 1.6,
+     "aliased_crossings": 0.034,
+     "shift": [
+      0.043,
+      0.02
+     ]
+    }
+   },
+   "handoff_before": {
+    "rms": 8.79,
+    "max": 197.0,
+    "shift": [
+     -0.46,
+     0.778
+    ]
+   },
+   "handoff_after": {
+    "rms": 1.53,
+    "max": 56.0,
+    "shift": [
+     0.124,
+     -0.001
+    ]
+   },
+   "variants": {
+    "v8_png_linear": {
+     "edge_rms": 35.28,
+     "alias_max": 62.7,
+     "glow": 0,
+     "dips": 9,
+     "purity": 16.0,
+     "aliased_crossings": 0.069,
+     "shift": [
+      -0.608,
+      0.726
+     ]
+    },
+    "v8_png_unsnapped": {
+     "edge_rms": 12.99,
+     "alias_max": 35.2,
+     "glow": 0,
+     "dips": 0,
+     "purity": 5.0,
+     "aliased_crossings": 0.0,
+     "shift": [
+      -0.041,
+      0.241
+     ]
+    },
+    "fallback": {
+     "edge_rms": 9.02,
+     "alias_max": 11.1,
+     "glow": 0,
+     "dips": 0,
+     "purity": 0.6,
+     "aliased_crossings": 0.0,
+     "shift": [
+      -0.014,
+      0.025
+     ]
+    },
+    "boot_before": {
+     "edge_rms": 6.46,
+     "alias_max": 18.3,
+     "glow": 0,
+     "dips": 54,
+     "purity": 18.0,
+     "aliased_crossings": 0.01,
+     "shift": [
+      -0.02,
+      0.169
+     ]
+    },
+    "boot_after": {
+     "edge_rms": 6.41,
+     "alias_max": 12.0,
+     "glow": 0,
+     "dips": 0,
+     "purity": 1.1,
+     "aliased_crossings": 0.008,
+     "shift": [
+      -0.122,
+      0.028
+     ]
+    }
+   }
+  },
+  "1334x750": {
+   "name": "iPhone SE 2nd/3rd gen (2x)",
+   "lockup_px": [
+    434.5,
+    241.312,
+    465.0,
+    267.375
+   ],
+   "crop": [
+    426,
+    233,
+    482,
+    284
+   ],
+   "stages": {
+    "launch_before": {
+     "edge_rms": 8.51,
+     "alias_max": 20.6,
+     "glow": 0,
+     "dips": 0,
+     "purity": 15.0,
+     "aliased_crossings": 0.34,
+     "shift": [
+      0.013,
+      -0.104
+     ]
+    },
+    "launch_after": {
+     "edge_rms": 6.05,
+     "alias_max": 18.5,
+     "glow": 0,
+     "dips": 0,
+     "purity": 0.9,
+     "aliased_crossings": 0.197,
+     "shift": [
+      0.119,
+      -0.073
+     ]
+    },
+    "curtain_before": {
+     "edge_rms": 23.09,
+     "alias_max": 46.6,
+     "glow": 0,
+     "dips": 0,
+     "purity": 3.0,
+     "aliased_crossings": 0.0,
+     "shift": [
+      0.142,
+      0.519
+     ]
+    },
+    "curtain_after": {
+     "edge_rms": 2.38,
+     "alias_max": 6.8,
+     "glow": 0,
+     "dips": 0,
+     "purity": 1.6,
+     "aliased_crossings": 0.047,
+     "shift": [
+      0.043,
+      0.016
+     ]
+    }
+   },
+   "handoff_before": {
+    "rms": 8.57,
+    "max": 161.0,
+    "shift": [
+     0.128,
+     0.623
+    ]
+   },
+   "handoff_after": {
+    "rms": 2.05,
+    "max": 108.0,
+    "shift": [
+     -0.076,
+     0.088
+    ]
+   },
+   "variants": {
+    "v8_png_linear": {
+     "edge_rms": 21.48,
+     "alias_max": 39.0,
+     "glow": 0,
+     "dips": 0,
+     "purity": 13.0,
+     "aliased_crossings": 0.387,
+     "shift": [
+      0.194,
+      0.515
+     ]
+    },
+    "v8_png_unsnapped": {
+     "edge_rms": 12.63,
+     "alias_max": 28.2,
+     "glow": 0,
+     "dips": 0,
+     "purity": 3.0,
+     "aliased_crossings": 0.0,
+     "shift": [
+      0.042,
+      0.086
+     ]
+    },
+    "fallback": {
+     "edge_rms": 10.13,
+     "alias_max": 17.2,
+     "glow": 0,
+     "dips": 0,
+     "purity": 0.6,
+     "aliased_crossings": 0.0,
+     "shift": [
+      -0.0,
+      0.036
+     ]
+    },
+    "boot_before": {
+     "edge_rms": 8.87,
+     "alias_max": 21.6,
+     "glow": 0,
+     "dips": 0,
+     "purity": 16.0,
+     "aliased_crossings": 0.32,
+     "shift": [
+      0.021,
+      -0.114
+     ]
+    },
+    "boot_after": {
+     "edge_rms": 6.27,
+     "alias_max": 19.1,
+     "glow": 0,
+     "dips": 0,
+     "purity": 1.1,
+     "aliased_crossings": 0.194,
+     "shift": [
+      0.129,
+      -0.078
+     ]
+    }
+   }
+  },
+  "2732x2048": {
+   "name": "iPad Pro 12.9-inch (2x)",
+   "lockup_px": [
+    731.12,
+    658.944,
+    1269.76,
+    730.112
+   ],
+   "crop": [
+    723,
+    650,
+    1286,
+    748
+   ],
+   "stages": {
+    "launch_before": {
+     "edge_rms": 4.99,
+     "alias_max": 7.8,
+     "glow": 2152,
+     "dips": 3009,
+     "purity": 26.0,
+     "aliased_crossings": 0.0,
+     "shift": [
+      0.063,
+      0.163
+     ]
+    },
+    "launch_after": {
+     "edge_rms": 14.96,
+     "alias_max": 19.2,
+     "glow": 0,
+     "dips": 0,
+     "purity": 0.9,
+     "aliased_crossings": 0.0,
+     "shift": [
+      0.001,
+      -0.018
+     ]
+    },
+    "curtain_before": {
+     "edge_rms": 42.9,
+     "alias_max": 88.6,
+     "glow": 90,
+     "dips": 908,
+     "purity": 14.0,
+     "aliased_crossings": 0.0,
+     "shift": [
+      0.632,
+      1.217
+     ]
+    },
+    "curtain_after": {
+     "edge_rms": 2.47,
+     "alias_max": 8.9,
+     "glow": 0,
+     "dips": 0,
+     "purity": 1.6,
+     "aliased_crossings": 0.1,
+     "shift": [
+      0.042,
+      0.016
+     ]
+    }
+   },
+   "handoff_before": {
+    "rms": 8.59,
+    "max": 209.0,
+    "shift": [
+     0.569,
+     1.054
+    ]
+   },
+   "handoff_after": {
+    "rms": 3.0,
+    "max": 97.0,
+    "shift": [
+     0.041,
+     0.034
+    ]
+   },
+   "variants": {
+    "v8_png_linear": {
+     "edge_rms": 42.82,
+     "alias_max": 86.8,
+     "glow": 436,
+     "dips": 1041,
+     "purity": 15.0,
+     "aliased_crossings": 0.0,
+     "shift": [
+      0.629,
+      1.177
+     ]
+    },
+    "v8_png_unsnapped": {
+     "edge_rms": 10.45,
+     "alias_max": 19.0,
+     "glow": 34,
+     "dips": 753,
+     "purity": 13.0,
+     "aliased_crossings": 0.0,
+     "shift": [
+      -0.02,
+      0.144
+     ]
+    },
+    "fallback": {
+     "edge_rms": 10.67,
+     "alias_max": 14.4,
+     "glow": 0,
+     "dips": 0,
+     "purity": 0.6,
+     "aliased_crossings": 0.012,
+     "shift": [
+      0.001,
+      -0.003
+     ]
+    },
+    "boot_before": {
+     "edge_rms": 6.29,
+     "alias_max": 10.3,
+     "glow": 1776,
+     "dips": 2454,
+     "purity": 26.0,
+     "aliased_crossings": 0.0,
+     "shift": [
+      0.08,
+      0.162
+     ]
+    },
+    "boot_after": {
+     "edge_rms": 15.98,
+     "alias_max": 21.1,
+     "glow": 0,
+     "dips": 0,
+     "purity": 1.1,
+     "aliased_crossings": 0.0,
+     "shift": [
+      0.02,
+      -0.017
+     ]
+    }
+   }
+  }
+ },
+ "notes": {
+  "profile": {
+   "row": 172,
+   "x": [
+    261,
+    276
+   ]
+  }
+ }
+}
