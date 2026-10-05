@@ -1,5 +1,5 @@
 {
-  "art_version": "v10-dafc331423c1",
+  "art_version": "v10-af967001b9ea",
   "looks": 9200,
   "heaviest_look_tris": 32834,
   "heaviest_look_parts": [
@@ -80,9 +80,9 @@
     },
     "cloud_nine": {
       "outfit_part": "cloud",
-      "outfit_part_tris": 11940,
+      "outfit_part_tris": 12004,
       "headwear_tris": 0,
-      "heaviest_look_tris": 21602,
+      "heaviest_look_tris": 21666,
       "heaviest_look_parts": [
         "base",
         "cloud",
@@ -127,15 +127,15 @@
       "part_tris": {
         "dd_head": 10782,
         "dd_fringe": 3284,
-        "dd_suit": 18296
+        "dd_suit": 18536
       },
-      "look_tris": 32362,
+      "look_tris": 32602,
       "draw_calls": 3
     }
   },
-  "glb_bytes": 19342908,
-  "imported_scene_bytes": 9655156,
-  "all_parts_tris": 358550,
+  "glb_bytes": 19337604,
+  "imported_scene_bytes": 9737565,
+  "all_parts_tris": 358926,
   "parts_in_asset": 59,
   "part_tris": {
     "base": 9086,
