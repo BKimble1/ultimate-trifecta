@@ -451,3 +451,45 @@ test('request bounds and auth', async () => {
   assert.equal(cfg.body.apple_environment, 'Sandbox');
   assert.equal(cfg.body.catalogue_version, E.catalogueVersion());
 });
+
+
+// FINAL_RELEASE_SWEEP (brief section 7, concurrent spend/claim): one
+// account spending, claiming, buying Premium and receiving an App Store
+// pack at the same moment from two devices: each applies exactly once, the
+// balance is the exact sum and never negative, and nothing legitimate is lost.
+test('concurrent spend, claim, Premium and delivery on one account: each exactly once', async () => {
+  const ctx = setup();
+  const a = await user(ctx, 'T:_ann', 'Ann Otter');
+  const a2 = await user(ctx, 'T:_ann');   // a second device, the same profile
+  const pid = a.profile.profile_id;
+  assert.equal(a2.profile.profile_id, pid);
+  await grant(ctx, a, 2000);
+  const first10 = E.tiers('s1').slice(0, 10);
+  await ctx.env.DB.prepare(`INSERT INTO season_progress (profile_id, environment, season, xp, premium, updated_at) VALUES (?, 'sandbox', 's1', ?, 0, 0)
+    ON CONFLICT(profile_id, environment, season) DO UPDATE SET xp = excluded.xp`).bind(pid, first10[9].xp).run();
+  const free = first10.filter((t) => t.free).map((t) => ({ tier: t.tier, track: 'free' }));
+  const coinCells = first10.filter((t) => t.free && t.free.coins);
+  const claimCoins = coinCells.reduce((n, t) => n + t.free.coins, 0);
+  assert.ok(free.length >= 3 && coinCells.length >= 1, 'free item and Coin cells to claim');
+  const tok = (await wallet(ctx, a)).app_account_token;
+  const tx = storeTx(ctx, { appAccountToken: tok });
+  const spend = (u, item, key) => call(ctx, 'POST', '/v1/wallet/spend', { item_id: item, price: E.price(item), idempotency_key: key }, u.token);
+  const claimReq = (u) => call(ctx, 'POST', '/v1/season/s1/claim', { claims: free }, u.token);
+  const rs = await Promise.all([
+    spend(a, 'season:s1:premium', 'race-prem-1'), spend(a2, 'season:s1:premium', 'race-prem-2'),
+    spend(a, 'outfit:robe', 'race-robe-1'), spend(a2, 'outfit:robe', 'race-robe-1'),
+    claimReq(a), claimReq(a2), deliver(ctx, a, tx), deliver(ctx, a2, tx),
+  ]);
+  for (const r of rs) assert.ok([200, 409].includes(r.status), JSON.stringify(r.body));
+  assert.equal(rs.slice(0, 2).filter((r) => r.status === 200).length, 1, 'Premium bought once across two devices');
+  assert.ok(rs[2].status === 200 && rs[3].status === 200, 'the same key from two devices: one purchase, one replay');
+  const w = await wallet(ctx, a);
+  assert.equal(w.balance, 2000 - 1500 - 300 + claimCoins + 1500, `exact: 2000 - Premium - Robe + claims (${claimCoins}) + the pack`);
+  assert.ok(w.season.s1.premium);
+  assert.equal(w.season.s1.claimed.filter((k) => k.endsWith(':free')).length, free.length, 'each claimed cell once');
+  const ledger = (await call(ctx, 'GET', `/v1/admin/wallets/${pid}`, undefined, undefined, ADMIN)).body.ledger;
+  assert.equal(ledger.filter((l) => l.source === 'apple').length, 1, 'the pack once');
+  assert.equal(ledger.filter((l) => l.source === 'coin_purchase').length, 2, 'Premium and the Robe once each');
+  assert.equal(ledger.filter((l) => l.source === 'season_claim').length, coinCells.length, 'each Coin cell once');
+  assert.ok(ledger.every((l) => l.balance_after >= 0), 'never negative');
+});

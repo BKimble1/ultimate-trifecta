@@ -202,7 +202,12 @@ async function spend(req, env) {
   const q = H.db(env);
   const e = envName(env);
   const owned = await q.one('SELECT revoked_at FROM entitlements WHERE profile_id = ? AND environment = ? AND item_id = ?', p.id, e, id);
-  if (owned && !owned.revoked_at) throw new ApiError(409, 'already_owned', 'You already own this.');
+  if (owned && !owned.revoked_at) {
+    // the same request committed meanwhile (a retry racing its original):
+    // its result, not a refusal
+    if (await ledgerHas(env, idem)) return spendReplay(env, p.id, idem);
+    throw new ApiError(409, 'already_owned', 'You already own this.');
+  }
   // Pass 8: the service's clock at acceptance decides; a rotating item is
   // sold only through an offer on sale now, at that offer's price
   const t = H.clock(env);
