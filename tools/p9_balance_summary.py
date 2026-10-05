@@ -60,7 +60,7 @@ def summarize(rows):
         "dives": mean([r["dives"] for r in rows]),
         "gadgets": {k: v / n for k, v in sorted(g.items())},
         "turbo_n": len(turbo), "turbo_escape_pct": 100.0 * t_esc / len(turbo) if turbo else float("nan"),
-        "turbo_gain_m": mean(t_gain),
+        "turbo_gain_m": sorted(t_gain)[len(t_gain) // 2] if t_gain else float("nan"),
         "chases": ch / n if n else 0, "chase_escape_pct": 100.0 * ch_esc / ch if ch else float("nan"),
         "chase_caught_pct": 100.0 * ch_c / ch if ch else float("nan"),
         "speed": mean([r["runner_speed_moving"] for r in rows]),
@@ -77,7 +77,7 @@ def main():
         builds.append((label, json.load(open(path))))
     watches = sorted({r["watch"] for _, rows in builds for r in rows})
     cols = ["build", "rounds", "runner wins (95% CI)", "home / needed", "captures", "stamps", "round s",
-            "route s (home)", "1st capture s", "Tag hits", "dives", "gadget uses", "Turbo: no capture 10 s / gap +3 s",
+            "route s (home)", "1st capture s", "Tag hits", "dives", "gadget uses", "Turbo: no capture 10 s / median gap change 3 s",
             "chases: escaped / caught", "runner m/s moving"]
     for w in watches:
         print(f"\n### {w} Night Watch" + (" (default)" if w == 2 else ""))

@@ -1,0 +1,1391 @@
+[
+ {
+  "captures": 0,
+  "chase_caught": 0,
+  "chase_escaped": 0,
+  "chases": 0,
+  "dives": 21,
+  "dorm": "puddlesworth",
+  "first_capture_s": -1.0,
+  "first_stamp_s": 14.1,
+  "gadgets": {},
+  "home": 5,
+  "nav": "new",
+  "needed": 5,
+  "outcome": "runners",
+  "round_s": 107.0,
+  "route_first_s": 100.2,
+  "route_median_s": 104.5,
+  "runner_speed_moving": 5.81,
+  "runners": 7,
+  "seed": 2001,
+  "stamps": 21,
+  "tag_hits": 0,
+  "tags": 0,
+  "targets": [
+   0,
+   2,
+   5
+  ],
+  "turbo": [],
+  "watch": 1
+ },
+ {
+  "captures": 5,
+  "chase_caught": 5,
+  "chase_escaped": 1,
+  "chases": 6,
+  "dives": 26,
+  "dorm": "lanternfield",
+  "first_capture_s": 42.8,
+  "first_stamp_s": 11.2,
+  "gadgets": {
+   "2": 1
+  },
+  "home": 5,
+  "nav": "new",
+  "needed": 5,
+  "outcome": "runners",
+  "round_s": 185.5,
+  "route_first_s": 120.0,
+  "route_median_s": 158.0,
+  "runner_speed_moving": 5.82,
+  "runners": 7,
+  "seed": 2014,
+  "stamps": 21,
+  "tag_hits": 5,
+  "tags": 5,
+  "targets": [
+   1,
+   4,
+   5
+  ],
+  "turbo": [],
+  "watch": 1
+ },
+ {
+  "captures": 3,
+  "chase_caught": 3,
+  "chase_escaped": 0,
+  "chases": 3,
+  "dives": 20,
+  "dorm": "moonpenny",
+  "first_capture_s": 30.4,
+  "first_stamp_s": 21.8,
+  "gadgets": {},
+  "home": 5,
+  "nav": "new",
+  "needed": 5,
+  "outcome": "runners",
+  "round_s": 129.7,
+  "route_first_s": 121.6,
+  "route_median_s": 123.9,
+  "runner_speed_moving": 5.79,
+  "runners": 7,
+  "seed": 2027,
+  "stamps": 17,
+  "tag_hits": 3,
+  "tags": 3,
+  "targets": [
+   0,
+   1,
+   4
+  ],
+  "turbo": [],
+  "watch": 1
+ },
+ {
+  "captures": 5,
+  "chase_caught": 5,
+  "chase_escaped": 3,
+  "chases": 8,
+  "dives": 26,
+  "dorm": "puddlesworth",
+  "first_capture_s": 37.2,
+  "first_stamp_s": 23.6,
+  "gadgets": {},
+  "home": 5,
+  "nav": "new",
+  "needed": 5,
+  "outcome": "runners",
+  "round_s": 144.0,
+  "route_first_s": 119.3,
+  "route_median_s": 141.7,
+  "runner_speed_moving": 5.78,
+  "runners": 7,
+  "seed": 2040,
+  "stamps": 21,
+  "tag_hits": 5,
+  "tags": 5,
+  "targets": [
+   1,
+   2,
+   5
+  ],
+  "turbo": [],
+  "watch": 1
+ },
+ {
+  "captures": 3,
+  "chase_caught": 3,
+  "chase_escaped": 0,
+  "chases": 3,
+  "dives": 20,
+  "dorm": "lanternfield",
+  "first_capture_s": 63.4,
+  "first_stamp_s": 23.3,
+  "gadgets": {
+   "2": 1
+  },
+  "home": 5,
+  "nav": "new",
+  "needed": 5,
+  "outcome": "runners",
+  "round_s": 126.8,
+  "route_first_s": 123.0,
+  "route_median_s": 124.8,
+  "runner_speed_moving": 5.8,
+  "runners": 7,
+  "seed": 2053,
+  "stamps": 17,
+  "tag_hits": 3,
+  "tags": 3,
+  "targets": [
+   0,
+   2,
+   3
+  ],
+  "turbo": [],
+  "watch": 1
+ },
+ {
+  "captures": 10,
+  "chase_caught": 10,
+  "chase_escaped": 1,
+  "chases": 12,
+  "dives": 32,
+  "dorm": "moonpenny",
+  "first_capture_s": 21.8,
+  "first_stamp_s": 21.8,
+  "gadgets": {
+   "1": 1
+  },
+  "home": 5,
+  "nav": "new",
+  "needed": 5,
+  "outcome": "runners",
+  "round_s": 184.3,
+  "route_first_s": 119.0,
+  "route_median_s": 127.0,
+  "runner_speed_moving": 5.79,
+  "runners": 7,
+  "seed": 2066,
+  "stamps": 21,
+  "tag_hits": 10,
+  "tags": 10,
+  "targets": [
+   0,
+   4,
+   5
+  ],
+  "turbo": [
+   {
+    "caught10": true,
+    "gap0": 7.96054315567017,
+    "gap3": 7.79882097244263,
+    "slot": 0,
+    "t": 5527
+   }
+  ],
+  "watch": 1
+ },
+ {
+  "captures": 15,
+  "chase_caught": 15,
+  "chase_escaped": 0,
+  "chases": 15,
+  "dives": 37,
+  "dorm": "puddlesworth",
+  "first_capture_s": 32.6,
+  "first_stamp_s": 23.6,
+  "gadgets": {
+   "2": 2
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 5,
+  "outcome": "watch",
+  "round_s": 240.0,
+  "route_first_s": 128.6,
+  "route_median_s": 181.5,
+  "runner_speed_moving": 5.79,
+  "runners": 7,
+  "seed": 2079,
+  "stamps": 21,
+  "tag_hits": 15,
+  "tags": 15,
+  "targets": [
+   2,
+   3,
+   5
+  ],
+  "turbo": [],
+  "watch": 1
+ },
+ {
+  "captures": 1,
+  "chase_caught": 1,
+  "chase_escaped": 2,
+  "chases": 3,
+  "dives": 22,
+  "dorm": "lanternfield",
+  "first_capture_s": 121.7,
+  "first_stamp_s": 11.8,
+  "gadgets": {
+   "2": 1
+  },
+  "home": 5,
+  "nav": "new",
+  "needed": 5,
+  "outcome": "runners",
+  "round_s": 128.3,
+  "route_first_s": 119.6,
+  "route_median_s": 121.1,
+  "runner_speed_moving": 5.78,
+  "runners": 7,
+  "seed": 2092,
+  "stamps": 21,
+  "tag_hits": 1,
+  "tags": 1,
+  "targets": [
+   1,
+   2,
+   4
+  ],
+  "turbo": [],
+  "watch": 1
+ },
+ {
+  "captures": 5,
+  "chase_caught": 5,
+  "chase_escaped": 0,
+  "chases": 5,
+  "dives": 26,
+  "dorm": "moonpenny",
+  "first_capture_s": 56.3,
+  "first_stamp_s": 37.9,
+  "gadgets": {
+   "1": 1,
+   "2": 2,
+   "3": 1
+  },
+  "home": 5,
+  "nav": "new",
+  "needed": 5,
+  "outcome": "runners",
+  "round_s": 161.4,
+  "route_first_s": 124.1,
+  "route_median_s": 130.8,
+  "runner_speed_moving": 5.83,
+  "runners": 7,
+  "seed": 2105,
+  "stamps": 21,
+  "tag_hits": 5,
+  "tags": 5,
+  "targets": [
+   1,
+   3,
+   5
+  ],
+  "turbo": [
+   {
+    "caught10": true,
+    "gap0": 7.96753406524658,
+    "gap3": 8.22475337982178,
+    "slot": 0,
+    "t": 6176
+   }
+  ],
+  "watch": 1
+ },
+ {
+  "captures": 7,
+  "chase_caught": 7,
+  "chase_escaped": 1,
+  "chases": 9,
+  "dives": 29,
+  "dorm": "puddlesworth",
+  "first_capture_s": 63.2,
+  "first_stamp_s": 15.6,
+  "gadgets": {
+   "1": 1
+  },
+  "home": 5,
+  "nav": "new",
+  "needed": 5,
+  "outcome": "runners",
+  "round_s": 167.2,
+  "route_first_s": 113.3,
+  "route_median_s": 135.2,
+  "runner_speed_moving": 5.73,
+  "runners": 7,
+  "seed": 2118,
+  "stamps": 21,
+  "tag_hits": 7,
+  "tags": 7,
+  "targets": [
+   0,
+   2,
+   3
+  ],
+  "turbo": [
+   {
+    "caught10": true,
+    "gap0": 7.98567628860474,
+    "gap3": 7.19947862625122,
+    "slot": 5,
+    "t": 4914
+   }
+  ],
+  "watch": 1
+ },
+ {
+  "captures": 2,
+  "chase_caught": 2,
+  "chase_escaped": 0,
+  "chases": 2,
+  "dives": 23,
+  "dorm": "lanternfield",
+  "first_capture_s": 122.2,
+  "first_stamp_s": 38.9,
+  "gadgets": {
+   "2": 1
+  },
+  "home": 5,
+  "nav": "new",
+  "needed": 5,
+  "outcome": "runners",
+  "round_s": 138.7,
+  "route_first_s": 124.7,
+  "route_median_s": 129.5,
+  "runner_speed_moving": 5.82,
+  "runners": 7,
+  "seed": 2131,
+  "stamps": 21,
+  "tag_hits": 2,
+  "tags": 2,
+  "targets": [
+   2,
+   4,
+   5
+  ],
+  "turbo": [],
+  "watch": 1
+ },
+ {
+  "captures": 3,
+  "chase_caught": 3,
+  "chase_escaped": 0,
+  "chases": 4,
+  "dives": 24,
+  "dorm": "moonpenny",
+  "first_capture_s": 88.7,
+  "first_stamp_s": 21.8,
+  "gadgets": {
+   "1": 1
+  },
+  "home": 5,
+  "nav": "new",
+  "needed": 5,
+  "outcome": "runners",
+  "round_s": 141.2,
+  "route_first_s": 105.9,
+  "route_median_s": 118.8,
+  "runner_speed_moving": 5.79,
+  "runners": 7,
+  "seed": 2144,
+  "stamps": 21,
+  "tag_hits": 3,
+  "tags": 3,
+  "targets": [
+   0,
+   1,
+   3
+  ],
+  "turbo": [
+   {
+    "caught10": true,
+    "gap0": 7.97580099105835,
+    "gap3": 8.01152229309082,
+    "slot": 2,
+    "t": 7878
+   }
+  ],
+  "watch": 1
+ },
+ {
+  "captures": 9,
+  "chase_caught": 9,
+  "chase_escaped": 0,
+  "chases": 9,
+  "dives": 25,
+  "dorm": "puddlesworth",
+  "first_capture_s": 44.5,
+  "first_stamp_s": 23.6,
+  "gadgets": {
+   "2": 4,
+   "3": 2
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 207.8,
+  "route_first_s": 127.5,
+  "route_median_s": 188.8,
+  "runner_speed_moving": 5.68,
+  "runners": 6,
+  "seed": 2002,
+  "stamps": 16,
+  "tag_hits": 9,
+  "tags": 11,
+  "targets": [
+   1,
+   2,
+   3
+  ],
+  "turbo": [],
+  "watch": 2
+ },
+ {
+  "captures": 1,
+  "chase_caught": 1,
+  "chase_escaped": 0,
+  "chases": 2,
+  "dives": 19,
+  "dorm": "lanternfield",
+  "first_capture_s": 65.6,
+  "first_stamp_s": 37.9,
+  "gadgets": {},
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 135.5,
+  "route_first_s": 129.3,
+  "route_median_s": 130.7,
+  "runner_speed_moving": 5.81,
+  "runners": 6,
+  "seed": 2015,
+  "stamps": 18,
+  "tag_hits": 1,
+  "tags": 1,
+  "targets": [
+   2,
+   4,
+   5
+  ],
+  "turbo": [],
+  "watch": 2
+ },
+ {
+  "captures": 11,
+  "chase_caught": 11,
+  "chase_escaped": 2,
+  "chases": 13,
+  "dives": 26,
+  "dorm": "moonpenny",
+  "first_capture_s": 29.9,
+  "first_stamp_s": 21.4,
+  "gadgets": {
+   "2": 1
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 182.0,
+  "route_first_s": 129.3,
+  "route_median_s": 140.6,
+  "runner_speed_moving": 5.77,
+  "runners": 6,
+  "seed": 2028,
+  "stamps": 15,
+  "tag_hits": 11,
+  "tags": 11,
+  "targets": [
+   0,
+   3,
+   4
+  ],
+  "turbo": [],
+  "watch": 2
+ },
+ {
+  "captures": 8,
+  "chase_caught": 8,
+  "chase_escaped": 0,
+  "chases": 9,
+  "dives": 27,
+  "dorm": "puddlesworth",
+  "first_capture_s": 34.7,
+  "first_stamp_s": 26.4,
+  "gadgets": {},
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 185.8,
+  "route_first_s": 126.1,
+  "route_median_s": 176.0,
+  "runner_speed_moving": 5.74,
+  "runners": 6,
+  "seed": 2041,
+  "stamps": 17,
+  "tag_hits": 8,
+  "tags": 10,
+  "targets": [
+   1,
+   4,
+   5
+  ],
+  "turbo": [],
+  "watch": 2
+ },
+ {
+  "captures": 14,
+  "chase_caught": 14,
+  "chase_escaped": 0,
+  "chases": 15,
+  "dives": 32,
+  "dorm": "lanternfield",
+  "first_capture_s": 34.7,
+  "first_stamp_s": 23.0,
+  "gadgets": {
+   "1": 1
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 223.4,
+  "route_first_s": 129.0,
+  "route_median_s": 166.2,
+  "runner_speed_moving": 5.8,
+  "runners": 6,
+  "seed": 2054,
+  "stamps": 18,
+  "tag_hits": 14,
+  "tags": 14,
+  "targets": [
+   0,
+   3,
+   4
+  ],
+  "turbo": [
+   {
+    "caught10": true,
+    "gap0": 7.97567558288574,
+    "gap3": 7.79274034500122,
+    "slot": 0,
+    "t": 2720
+   }
+  ],
+  "watch": 2
+ },
+ {
+  "captures": 4,
+  "chase_caught": 4,
+  "chase_escaped": 1,
+  "chases": 5,
+  "dives": 20,
+  "dorm": "moonpenny",
+  "first_capture_s": 53.4,
+  "first_stamp_s": 11.9,
+  "gadgets": {
+   "1": 2,
+   "3": 1
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 135.4,
+  "route_first_s": 127.3,
+  "route_median_s": 134.8,
+  "runner_speed_moving": 5.82,
+  "runners": 6,
+  "seed": 2067,
+  "stamps": 16,
+  "tag_hits": 4,
+  "tags": 4,
+  "targets": [
+   1,
+   2,
+   5
+  ],
+  "turbo": [
+   {
+    "caught10": false,
+    "gap0": 7.9906325340271,
+    "gap3": 14.9782791137695,
+    "slot": 0,
+    "t": 4795
+   },
+   {
+    "caught10": true,
+    "gap0": 2.76982593536377,
+    "gap3": 0.0,
+    "slot": 5,
+    "t": 4869
+   }
+  ],
+  "watch": 2
+ },
+ {
+  "captures": 15,
+  "chase_caught": 15,
+  "chase_escaped": 2,
+  "chases": 20,
+  "dives": 34,
+  "dorm": "puddlesworth",
+  "first_capture_s": 31.5,
+  "first_stamp_s": 14.1,
+  "gadgets": {
+   "1": 3
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 233.7,
+  "route_first_s": 128.6,
+  "route_median_s": 190.9,
+  "runner_speed_moving": 5.81,
+  "runners": 6,
+  "seed": 2080,
+  "stamps": 18,
+  "tag_hits": 15,
+  "tags": 18,
+  "targets": [
+   0,
+   1,
+   4
+  ],
+  "turbo": [
+   {
+    "caught10": true,
+    "gap0": 7.98423957824707,
+    "gap3": 8.27558994293213,
+    "slot": 1,
+    "t": 4965
+   },
+   {
+    "caught10": true,
+    "gap0": 7.97450733184814,
+    "gap3": 6.45862483978271,
+    "slot": 5,
+    "t": 6575
+   },
+   {
+    "caught10": true,
+    "gap0": 7.99705505371094,
+    "gap3": 6.38637733459473,
+    "slot": 3,
+    "t": 8387
+   }
+  ],
+  "watch": 2
+ },
+ {
+  "captures": 7,
+  "chase_caught": 7,
+  "chase_escaped": 2,
+  "chases": 9,
+  "dives": 25,
+  "dorm": "lanternfield",
+  "first_capture_s": 36.1,
+  "first_stamp_s": 11.2,
+  "gadgets": {
+   "2": 2,
+   "3": 1
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 154.5,
+  "route_first_s": 127.2,
+  "route_median_s": 133.0,
+  "runner_speed_moving": 5.77,
+  "runners": 6,
+  "seed": 2093,
+  "stamps": 18,
+  "tag_hits": 7,
+  "tags": 7,
+  "targets": [
+   1,
+   4,
+   5
+  ],
+  "turbo": [],
+  "watch": 2
+ },
+ {
+  "captures": 20,
+  "chase_caught": 20,
+  "chase_escaped": 1,
+  "chases": 21,
+  "dives": 38,
+  "dorm": "moonpenny",
+  "first_capture_s": 35.6,
+  "first_stamp_s": 12.0,
+  "gadgets": {
+   "1": 2,
+   "2": 2,
+   "3": 1
+  },
+  "home": 3,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "watch",
+  "round_s": 240.0,
+  "route_first_s": 174.9,
+  "route_median_s": 177.5,
+  "runner_speed_moving": 5.81,
+  "runners": 6,
+  "seed": 2106,
+  "stamps": 18,
+  "tag_hits": 20,
+  "tags": 20,
+  "targets": [
+   2,
+   4,
+   5
+  ],
+  "turbo": [
+   {
+    "caught10": true,
+    "gap0": 7.96404504776001,
+    "gap3": 7.08634471893311,
+    "slot": 0,
+    "t": 5482
+   },
+   {
+    "caught10": true,
+    "gap0": 7.99389028549194,
+    "gap3": 8.3116569519043,
+    "slot": 4,
+    "t": 6242
+   }
+  ],
+  "watch": 2
+ },
+ {
+  "captures": 13,
+  "chase_caught": 13,
+  "chase_escaped": 2,
+  "chases": 15,
+  "dives": 29,
+  "dorm": "puddlesworth",
+  "first_capture_s": 25.8,
+  "first_stamp_s": 14.7,
+  "gadgets": {},
+  "home": 3,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "watch",
+  "round_s": 240.0,
+  "route_first_s": 105.3,
+  "route_median_s": 144.0,
+  "runner_speed_moving": 5.81,
+  "runners": 6,
+  "seed": 2119,
+  "stamps": 15,
+  "tag_hits": 13,
+  "tags": 14,
+  "targets": [
+   0,
+   4,
+   5
+  ],
+  "turbo": [],
+  "watch": 2
+ },
+ {
+  "captures": 12,
+  "chase_caught": 12,
+  "chase_escaped": 1,
+  "chases": 13,
+  "dives": 30,
+  "dorm": "lanternfield",
+  "first_capture_s": 61.0,
+  "first_stamp_s": 22.2,
+  "gadgets": {
+   "1": 2,
+   "2": 1
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 232.9,
+  "route_first_s": 119.0,
+  "route_median_s": 119.8,
+  "runner_speed_moving": 5.82,
+  "runners": 6,
+  "seed": 2132,
+  "stamps": 18,
+  "tag_hits": 12,
+  "tags": 12,
+  "targets": [
+   0,
+   2,
+   3
+  ],
+  "turbo": [
+   {
+    "caught10": true,
+    "gap0": 7.9595513343811,
+    "gap3": 5.12625694274902,
+    "slot": 4,
+    "t": 5202
+   },
+   {
+    "caught10": true,
+    "gap0": 7.98395872116089,
+    "gap3": 0.0,
+    "slot": 4,
+    "t": 7399
+   }
+  ],
+  "watch": 2
+ },
+ {
+  "captures": 14,
+  "chase_caught": 14,
+  "chase_escaped": 0,
+  "chases": 15,
+  "dives": 31,
+  "dorm": "moonpenny",
+  "first_capture_s": 44.6,
+  "first_stamp_s": 11.8,
+  "gadgets": {
+   "3": 2
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 231.9,
+  "route_first_s": 115.3,
+  "route_median_s": 218.9,
+  "runner_speed_moving": 5.75,
+  "runners": 6,
+  "seed": 2145,
+  "stamps": 17,
+  "tag_hits": 14,
+  "tags": 17,
+  "targets": [
+   0,
+   2,
+   3
+  ],
+  "turbo": [],
+  "watch": 2
+ },
+ {
+  "captures": 16,
+  "chase_caught": 16,
+  "chase_escaped": 2,
+  "chases": 18,
+  "dives": 31,
+  "dorm": "puddlesworth",
+  "first_capture_s": 41.4,
+  "first_stamp_s": 26.0,
+  "gadgets": {
+   "1": 3
+  },
+  "home": 2,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "watch",
+  "round_s": 240.0,
+  "route_first_s": 176.6,
+  "route_median_s": 232.4,
+  "runner_speed_moving": 5.74,
+  "runners": 5,
+  "seed": 2003,
+  "stamps": 15,
+  "tag_hits": 16,
+  "tags": 18,
+  "targets": [
+   1,
+   3,
+   4
+  ],
+  "turbo": [
+   {
+    "caught10": true,
+    "gap0": 7.9767746925354,
+    "gap3": 6.66312170028687,
+    "slot": 3,
+    "t": 4272
+   },
+   {
+    "caught10": true,
+    "gap0": 7.99443531036377,
+    "gap3": 8.32494258880615,
+    "slot": 0,
+    "t": 6908
+   },
+   {
+    "caught10": true,
+    "gap0": 3.15547060966492,
+    "gap3": 3.4626317024231,
+    "slot": 2,
+    "t": 8365
+   }
+  ],
+  "watch": 3
+ },
+ {
+  "captures": 13,
+  "chase_caught": 13,
+  "chase_escaped": 1,
+  "chases": 15,
+  "dives": 25,
+  "dorm": "lanternfield",
+  "first_capture_s": 37.6,
+  "first_stamp_s": 23.3,
+  "gadgets": {
+   "2": 2,
+   "3": 1
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 232.3,
+  "route_first_s": 126.7,
+  "route_median_s": 155.7,
+  "runner_speed_moving": 5.8,
+  "runners": 5,
+  "seed": 2016,
+  "stamps": 13,
+  "tag_hits": 13,
+  "tags": 14,
+  "targets": [
+   0,
+   2,
+   3
+  ],
+  "turbo": [],
+  "watch": 3
+ },
+ {
+  "captures": 13,
+  "chase_caught": 13,
+  "chase_escaped": 0,
+  "chases": 14,
+  "dives": 26,
+  "dorm": "moonpenny",
+  "first_capture_s": 33.6,
+  "first_stamp_s": 12.0,
+  "gadgets": {
+   "2": 3,
+   "3": 1
+  },
+  "home": 3,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "watch",
+  "round_s": 240.0,
+  "route_first_s": 127.3,
+  "route_median_s": 199.2,
+  "runner_speed_moving": 5.74,
+  "runners": 5,
+  "seed": 2029,
+  "stamps": 14,
+  "tag_hits": 13,
+  "tags": 14,
+  "targets": [
+   1,
+   2,
+   3
+  ],
+  "turbo": [],
+  "watch": 3
+ },
+ {
+  "captures": 25,
+  "chase_caught": 25,
+  "chase_escaped": 2,
+  "chases": 27,
+  "dives": 37,
+  "dorm": "puddlesworth",
+  "first_capture_s": 39.8,
+  "first_stamp_s": 23.6,
+  "gadgets": {
+   "1": 3
+  },
+  "home": 2,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "watch",
+  "round_s": 240.0,
+  "route_first_s": 181.2,
+  "route_median_s": 229.6,
+  "runner_speed_moving": 5.78,
+  "runners": 5,
+  "seed": 2042,
+  "stamps": 12,
+  "tag_hits": 25,
+  "tags": 30,
+  "targets": [
+   2,
+   4,
+   5
+  ],
+  "turbo": [
+   {
+    "caught10": true,
+    "gap0": 7.99471998214722,
+    "gap3": 8.19553375244141,
+    "slot": 0,
+    "t": 4141
+   },
+   {
+    "caught10": true,
+    "gap0": 7.74481391906738,
+    "gap3": 11.4495315551758,
+    "slot": 3,
+    "t": 4501
+   },
+   {
+    "caught10": false,
+    "gap0": 7.97494745254517,
+    "gap3": 8.63913631439209,
+    "slot": 4,
+    "t": 7279
+   }
+  ],
+  "watch": 3
+ },
+ {
+  "captures": 16,
+  "chase_caught": 16,
+  "chase_escaped": 1,
+  "chases": 18,
+  "dives": 29,
+  "dorm": "lanternfield",
+  "first_capture_s": 32.5,
+  "first_stamp_s": 11.2,
+  "gadgets": {
+   "1": 3,
+   "2": 2,
+   "3": 3
+  },
+  "home": 2,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "watch",
+  "round_s": 240.0,
+  "route_first_s": 190.4,
+  "route_median_s": 214.8,
+  "runner_speed_moving": 5.81,
+  "runners": 5,
+  "seed": 2055,
+  "stamps": 13,
+  "tag_hits": 16,
+  "tags": 18,
+  "targets": [
+   1,
+   2,
+   4
+  ],
+  "turbo": [
+   {
+    "caught10": true,
+    "gap0": 7.99119853973389,
+    "gap3": 7.02362966537476,
+    "slot": 1,
+    "t": 5793
+   },
+   {
+    "caught10": true,
+    "gap0": 7.98865127563477,
+    "gap3": 7.23969650268555,
+    "slot": 3,
+    "t": 7158
+   },
+   {
+    "caught10": true,
+    "gap0": 7.9921350479126,
+    "gap3": 7.24526691436768,
+    "slot": 0,
+    "t": 13369
+   }
+  ],
+  "watch": 3
+ },
+ {
+  "captures": 12,
+  "chase_caught": 12,
+  "chase_escaped": 0,
+  "chases": 15,
+  "dives": 25,
+  "dorm": "moonpenny",
+  "first_capture_s": 31.8,
+  "first_stamp_s": 12.3,
+  "gadgets": {
+   "2": 3
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 214.9,
+  "route_first_s": 169.5,
+  "route_median_s": 207.2,
+  "runner_speed_moving": 5.76,
+  "runners": 5,
+  "seed": 2068,
+  "stamps": 14,
+  "tag_hits": 12,
+  "tags": 14,
+  "targets": [
+   2,
+   3,
+   4
+  ],
+  "turbo": [],
+  "watch": 3
+ },
+ {
+  "captures": 12,
+  "chase_caught": 12,
+  "chase_escaped": 1,
+  "chases": 13,
+  "dives": 25,
+  "dorm": "puddlesworth",
+  "first_capture_s": 44.1,
+  "first_stamp_s": 14.0,
+  "gadgets": {
+   "1": 4,
+   "2": 1
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 221.8,
+  "route_first_s": 135.5,
+  "route_median_s": 150.4,
+  "runner_speed_moving": 5.82,
+  "runners": 5,
+  "seed": 2081,
+  "stamps": 13,
+  "tag_hits": 12,
+  "tags": 13,
+  "targets": [
+   0,
+   2,
+   5
+  ],
+  "turbo": [
+   {
+    "caught10": true,
+    "gap0": 7.97659063339233,
+    "gap3": 8.28941440582275,
+    "slot": 1,
+    "t": 4184
+   },
+   {
+    "caught10": true,
+    "gap0": 7.97217082977295,
+    "gap3": 6.65245771408081,
+    "slot": 4,
+    "t": 6001
+   },
+   {
+    "caught10": true,
+    "gap0": 7.98147201538086,
+    "gap3": 0.0,
+    "slot": 4,
+    "t": 8738
+   },
+   {
+    "caught10": false,
+    "gap0": 7.74831438064575,
+    "gap3": 16.2175846099854,
+    "slot": 4,
+    "t": 11918
+   }
+  ],
+  "watch": 3
+ },
+ {
+  "captures": 1,
+  "chase_caught": 1,
+  "chase_escaped": 0,
+  "chases": 1,
+  "dives": 16,
+  "dorm": "lanternfield",
+  "first_capture_s": 132.2,
+  "first_stamp_s": 38.3,
+  "gadgets": {
+   "2": 1
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 134.0,
+  "route_first_s": 129.6,
+  "route_median_s": 131.6,
+  "runner_speed_moving": 5.81,
+  "runners": 5,
+  "seed": 2094,
+  "stamps": 15,
+  "tag_hits": 1,
+  "tags": 1,
+  "targets": [
+   2,
+   4,
+   5
+  ],
+  "turbo": [],
+  "watch": 3
+ },
+ {
+  "captures": 23,
+  "chase_caught": 23,
+  "chase_escaped": 4,
+  "chases": 29,
+  "dives": 37,
+  "dorm": "moonpenny",
+  "first_capture_s": 28.6,
+  "first_stamp_s": 37.0,
+  "gadgets": {},
+  "home": 2,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "watch",
+  "round_s": 240.0,
+  "route_first_s": 219.8,
+  "route_median_s": 231.9,
+  "runner_speed_moving": 5.77,
+  "runners": 5,
+  "seed": 2107,
+  "stamps": 12,
+  "tag_hits": 23,
+  "tags": 26,
+  "targets": [
+   0,
+   1,
+   4
+  ],
+  "turbo": [],
+  "watch": 3
+ },
+ {
+  "captures": 18,
+  "chase_caught": 18,
+  "chase_escaped": 1,
+  "chases": 19,
+  "dives": 29,
+  "dorm": "puddlesworth",
+  "first_capture_s": 42.0,
+  "first_stamp_s": 23.6,
+  "gadgets": {
+   "2": 5
+  },
+  "home": 3,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "watch",
+  "round_s": 240.0,
+  "route_first_s": 175.6,
+  "route_median_s": 187.0,
+  "runner_speed_moving": 5.71,
+  "runners": 5,
+  "seed": 2120,
+  "stamps": 12,
+  "tag_hits": 18,
+  "tags": 20,
+  "targets": [
+   1,
+   2,
+   5
+  ],
+  "turbo": [],
+  "watch": 3
+ },
+ {
+  "captures": 20,
+  "chase_caught": 20,
+  "chase_escaped": 2,
+  "chases": 23,
+  "dives": 36,
+  "dorm": "lanternfield",
+  "first_capture_s": 30.5,
+  "first_stamp_s": 23.0,
+  "gadgets": {
+   "2": 1
+  },
+  "home": 1,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "watch",
+  "round_s": 240.0,
+  "route_first_s": 171.8,
+  "route_median_s": 171.8,
+  "runner_speed_moving": 5.81,
+  "runners": 5,
+  "seed": 2133,
+  "stamps": 14,
+  "tag_hits": 20,
+  "tags": 20,
+  "targets": [
+   0,
+   3,
+   4
+  ],
+  "turbo": [],
+  "watch": 3
+ },
+ {
+  "captures": 3,
+  "chase_caught": 3,
+  "chase_escaped": 0,
+  "chases": 3,
+  "dives": 18,
+  "dorm": "moonpenny",
+  "first_capture_s": 30.3,
+  "first_stamp_s": 21.4,
+  "gadgets": {
+   "2": 1
+  },
+  "home": 4,
+  "nav": "new",
+  "needed": 4,
+  "outcome": "runners",
+  "round_s": 143.4,
+  "route_first_s": 107.0,
+  "route_median_s": 137.8,
+  "runner_speed_moving": 5.83,
+  "runners": 5,
+  "seed": 2146,
+  "stamps": 15,
+  "tag_hits": 3,
+  "tags": 3,
+  "targets": [
+   0,
+   4,
+   5
+  ],
+  "turbo": [],
+  "watch": 3
+ }
+]
