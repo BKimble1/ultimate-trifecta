@@ -158,6 +158,18 @@ func _build_page() -> void:
 	Motion.stagger(parts)
 
 
+## Pass 8 hierarchy, top to bottom (the actions sit below, outside the
+## scroll, live at once):
+##   1. your team won / lost and why ("4 runners home", "Time expired: 3/4
+##      home"); a cancelled round says it doesn't count (never a loss)
+##   2. your contribution (home order and time or waters; Night Watch:
+##      tags and different runners)
+##   3. the series standing ("Series: tied 1st · 2 Round Wins", the roles
+##      context), party rounds
+##   4. rewards: Season XP and Coins, pending kept apart from what was
+##      added; the round's challenge lines go inside this card (the
+##      challenges stream's add_challenge_lines in _fill_rewards)
+##   then both teams' tables for the round.
 func _round_page() -> void:
 	var d := view_data
 	var practice := bool(results.get("practice", false)) or _practice()
@@ -167,29 +179,88 @@ func _round_page() -> void:
 	else:
 		head.add_child(UIKit.styled("Practice with bots", "overline", UIKit.IVORY_MUTED))
 	var oc := int(d["outcome"])
-	var title := "Runners win!" if oc == TC.Outcome.RUNNERS_WIN else ("Night Watch wins!" if oc == TC.Outcome.PATROL_WIN else "Round cancelled")
-	var tl := UIKit.styled(title, "display", UIKit.TEAL if oc == TC.Outcome.RUNNERS_WIN else (UIKit.PATROL if oc == TC.Outcome.PATROL_WIN else UIKit.IVORY))
+	var t := headline(d)
+	var tl := UIKit.styled(String(t[0]), "display", t[1])
+	tl.name = "Outcome"
 	head.add_child(tl)
-	var why := UIKit.styled(String(d["reason"]), "body", UIKit.IVORY_MUTED)
+	var why := UIKit.styled(String(t[2]), "body", UIKit.IVORY)
+	why.name = "Why"
 	why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	head.add_child(why)
 	_v.add_child(head)
 	if bool(d["cancelled"]):
 		var note := UIKit.panel(Color(UIKit.NAVY, 0.5), UIKit.R_CARD, 18)
-		var nl := UIKit.styled("No standings and no rewards for an interrupted round. It doesn't use up a round of the series.", "body", UIKit.IVORY)
+		var nl := UIKit.styled("It doesn't count: no Round Win, no loss and no rewards for anyone, and it doesn't use up a round of the series.", "body", UIKit.IVORY)
 		nl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		note.add_child(nl)
 		_v.add_child(note)
 		if not series_view().is_empty() and _party():
-			_series_so_far()
+			_series_so_far(true)
 		return
+	_v.add_child(_contribution_card(d))
+	var party_series := _party() and not series_view().is_empty()
+	if party_series:
+		_series_so_far(false)
+	_v.add_child(_rewards_card())
 	_v.add_child(_celebration(d))
 	_v.add_child(_team_table("Runners", d["runners"], TC.Role.RUNNER, int(d["winners"]) == TC.Role.RUNNER))
 	_v.add_child(_team_table("Night Watch", d["watch"], TC.Role.PATROL, int(d["winners"]) == TC.Role.PATROL))
-	_v.add_child(_rewards_card())
-	# (after the last round the footer and the Final standings button say so)
-	if _party() and not series_view().is_empty() and not series_over():
-		_series_so_far()
+	# the friends' standings so far (after the last round: Final standings)
+	if party_series and not series_over():
+		var sv := UIKit.vbox(6)
+		sv.add_child(UIKit.styled("Series standings", "overline", UIKit.IVORY_MUTED))
+		sv.add_child(standings_table(series_view(), Save.player_uid(), 3))
+		_v.add_child(sv)
+
+
+## [title, colour, why] for the top of the round page, from your side:
+## "Your team won!" / "Your team lost" (or the winning role when you
+## watched), and the reason in the round's real numbers.
+static func headline(d: Dictionary) -> Array:
+	var oc := int(d.get("outcome", TC.Outcome.NONE))
+	if bool(d.get("cancelled", false)):
+		return ["Round cancelled", UIKit.IVORY, "The round was interrupted (a connection or the host ended it)."]
+	var me: Dictionary = d.get("me", {})
+	var runners_won := oc == TC.Outcome.RUNNERS_WIN
+	var why := String(d.get("why_short", ""))
+	if me.is_empty():
+		return ["Runners win!" if runners_won else "Night Watch wins!", UIKit.TEAL if runners_won else UIKit.PATROL, why]
+	var won := int(me["role"]) == int(d["winners"])
+	var team := "Runners" if int(me["role"]) == TC.Role.RUNNER else "Night Watch"
+	return ["Your team won!" if won else "Your team lost", UIKit.AMBER if won else UIKit.IVORY,
+		"%s %s · %s" % [team, "won" if won else "lost", why]]
+
+
+## 2: what you did this round, in one card.
+func _contribution_card(d: Dictionary) -> Control:
+	var p := UIKit.panel(Color(UIKit.SLATE_HI, 0.85), UIKit.R_CARD, 14)
+	p.name = "Contribution"
+	var v := UIKit.vbox(2)
+	v.add_child(UIKit.styled("You", "overline", UIKit.IVORY_MUTED))
+	var me: Dictionary = d["me"]
+	var l := UIKit.styled(my_contribution(me), "label", UIKit.IVORY)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(l)
+	if not me.is_empty() and bool(me.get("away", false)):
+		v.add_child(UIKit.styled("Away for too much of the round: no Round Win.", "caption", UIKit.IVORY_MUTED))
+	p.add_child(v)
+	return p
+
+
+## "Home 2nd · 2:31 · 3/3 waters" / "Not home · 2/3 waters · caught 1" /
+## "3 tags · 2 different runners".
+static func my_contribution(me: Dictionary) -> String:
+	if me.is_empty():
+		return "You watched this round."
+	if int(me["role"]) == TC.Role.RUNNER:
+		var c := int(me.get("caught", 0))
+		var tail := " · caught %d" % c if c > 0 else " · never caught"
+		if bool(me["finished"]):
+			return "Home %s · %s · %d/3 waters%s" % [RoundRanking.ordinal(int(me["finish_order"])), _clock(float(me["finish_time"])), int(me["stamps"]), tail]
+		return "Not home · %d/3 waters%s" % [int(me["stamps"]), tail]
+	var tags := int(me.get("tags", 0))
+	var n := int(me.get("distinct", 0))
+	return "%d tag%s · %d different runner%s" % [tags, "" if tags == 1 else "s", n, "" if n == 1 else "s"]
 
 
 func _final_page() -> void:
@@ -293,7 +364,7 @@ func _team_table(title: String, rows: Array, role: int, winners: bool) -> Contro
 	for r in rows:
 		var vals: Array
 		if role == TC.Role.RUNNER:
-			vals = ["#%d · %s" % [int(r["finish_order"]), _clock(float(r["finish_time"]))] if bool(r["finished"]) else "–",
+			vals = ["#%d · %s" % [int(r["finish_order"]), _clock(float(r["finish_time"]))] if bool(r["finished"]) else "Not home",
 				"%d/3" % int(r["stamps"]), str(int(r["caught"]))]
 		else:
 			vals = [str(int(r["distinct"])), str(int(r["tags"]))]
@@ -488,16 +559,28 @@ func _big_number(n: String, label_text: String) -> Control:
 	return v
 
 
-func _series_so_far() -> void:
+## 3: your series standing in words, with the roles context.  `with_table`:
+## the friends' table too (a cancelled round shows nothing else).
+func _series_so_far(with_table: bool = true) -> void:
 	var view := series_view()
-	var p := UIKit.panel(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 16)
-	var sv := UIKit.vbox(8)
+	var p := UIKit.panel(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 14)
+	p.name = "Series"
+	var sv := UIKit.vbox(4)
 	var tally := LobbyScreen._tally(view)
-	sv.add_child(UIKit.styled("Series so far", "overline", UIKit.IVORY_MUTED))
-	var note := UIKit.styled("Runners %d – %d Night Watch by role. Your Round Wins are below." % [tally[0], tally[1]], "caption", UIKit.IVORY_MUTED)
+	sv.add_child(UIKit.styled("Series final" if series_over() else "Series so far", "overline", UIKit.IVORY_MUTED))
+	# Pass 8: your standing first, in words (never shaped like the pace)
+	var line := RoundRanking.series_line(view, Save.player_uid())
+	if line != "":
+		var sl := UIKit.styled(line, "label", UIKit.AMBER)
+		sl.name = "SeriesLine"
+		sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		sv.add_child(sl)
+	var note := UIKit.styled("Every member of the winning team earns a Round Win; roles change between rounds (by role so far: Runners %d – %d Night Watch)." % [tally[0], tally[1]], "caption", UIKit.IVORY_MUTED)
+	note.add_theme_font_size_override("font_size", 17)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sv.add_child(note)
-	sv.add_child(standings_table(view, Save.player_uid(), 3))
+	if with_table:
+		sv.add_child(standings_table(view, Save.player_uid(), 3))
 	p.add_child(sv)
 	_v.add_child(p)
 

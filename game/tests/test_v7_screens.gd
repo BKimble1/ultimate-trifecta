@@ -588,13 +588,25 @@ func test_home_results_and_standings_fit_every_device() -> void:
 		r2.session = host
 		await _show(r2)
 		await _audit(tag + " Series round", r2)
-		# the first view reaches the round's table: its first row is shown whole
+		# Pass 8 hierarchy (replaces V7's "first table row in the first
+		# view"): the first view shows whether your team won and why, your
+		# contribution and your series standing; the round's tables follow
+		# below the rewards and are reached by scrolling
+		for nm in ["Outcome", "Why", "Contribution", "SeriesLine"]:
+			var n := r2._v.find_child(nm, true, false) as Control
+			t.check(n != null and _fully_shown(n), "%s: %s is in the first view (%s)" % [tag, nm, str(n.get_global_rect()) if n else "none"])
 		var first: Control = null
 		for pc in r2._v.find_children("*", "PanelContainer", true, false):
 			if String((pc as Control).accessibility_name).contains(": "):
 				first = pc
 				break
-		t.check(first != null and _fully_shown(first), "%s: the round's first table row is in the first view (%s)" % [tag, str(first.get_global_rect()) if first else "none"])
+		t.check(first != null, "%s: the round's table rows are there" % tag)
+		if first != null:
+			r2._sc.ensure_control_visible(first)
+			await _frames(3)
+			t.check(_fully_shown(first), "%s: the round's first table row scrolls into view (%s)" % [tag, str(first.get_global_rect())])
+			r2._sc.scroll_vertical = 0
+			await _frames(2)
 		t.eq(r2._primary.text, "Final standings", "%s: the last round leads to Final standings" % tag)
 		await _click(r2._primary)
 		await _frames(4)

@@ -1,0 +1,143 @@
+{
+  "clipped_card_words": [],
+  "goal": "Team home 0/4 · Need 4 more 3:56",
+  "overlaps": [],
+  "personal_rows": [
+    "You: 0/3 waters",
+    "Next: Fountain",
+    "Runner pace: 1st/6"
+  ],
+  "points": [
+    843.916666666667,
+    390.0
+  ],
+  "rects": {
+    "goal_bar": {
+      "points": [
+        290.3,
+        6.5,
+        262.7,
+        32.5
+      ],
+      "units": [
+        536.0,
+        12.0,
+        485.0,
+        60.0
+      ]
+    },
+    "minimap": {
+      "points": [
+        665.8,
+        6.5,
+        81.3,
+        81.3
+      ],
+      "units": [
+        1229.2,
+        12.0,
+        150.0,
+        150.0
+      ]
+    },
+    "pause": {
+      "points": [
+        752.5,
+        6.5,
+        44.4,
+        44.0
+      ],
+      "units": [
+        1389.2,
+        12.0,
+        82.0,
+        81.2
+      ]
+    },
+    "personal_card": {
+      "points": [
+        49.2,
+        29.3,
+        169.0,
+        67.2
+      ],
+      "units": [
+        90.8,
+        54.0,
+        312.0,
+        124.0
+      ]
+    },
+    "thumb_gadget": {
+      "points": [
+        536.9,
+        255.0,
+        88.0,
+        88.0
+      ],
+      "units": [
+        991.2,
+        470.8,
+        162.5,
+        162.5
+      ]
+    },
+    "thumb_jump": {
+      "points": [
+        638.9,
+        219.0,
+        108.0,
+        108.0
+      ],
+      "units": [
+        1179.5,
+        404.3,
+        199.4,
+        199.4
+      ]
+    },
+    "thumb_sprint": {
+      "points": [
+        658.9,
+        127.0,
+        84.0,
+        84.0
+      ],
+      "units": [
+        1216.5,
+        234.5,
+        155.1,
+        155.1
+      ]
+    },
+    "thumb_stick": {
+      "points": [
+        101.0,
+        207.0,
+        116.0,
+        116.0
+      ],
+      "units": [
+        186.5,
+        382.2,
+        214.2,
+        214.2
+      ]
+    }
+  },
+  "rewards": "the build's real wallet state",
+  "safe": [
+    86.7692337036133,
+    12.0,
+    1384.46142578125,
+    669.230773925781
+  ],
+  "shot": "runner_0_waters",
+  "state": "DETERMINISTIC DEV STATE (driver: src/dev/capture_pass8_match.gd)",
+  "touch_min_units": 81.2307692307692,
+  "units_per_point": 1.84615384615385,
+  "viewport": [
+    1558.0,
+    720.0
+  ]
+}
