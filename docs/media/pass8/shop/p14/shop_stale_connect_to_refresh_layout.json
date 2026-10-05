@@ -278,7 +278,17 @@
         189.0,
         286.0
       ],
-      "text": "Raincoat Explorer"
+      "text": "New"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1071.0,
+        345.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "kind": "label",
@@ -288,17 +298,17 @@
         173.0,
         28.0
       ],
-      "text": "Raincoat Explorer"
+      "text": "Cloud Nine"
     },
     {
       "kind": "label",
       "rect": [
-        1131.0,
+        1122.0,
         552.0,
-        38.0,
+        56.0,
         28.0
       ],
-      "text": "800"
+      "text": "1,000"
     },
     {
       "kind": "label",
@@ -318,7 +328,17 @@
         189.0,
         286.0
       ],
-      "text": "Varsity Sprinter"
+      "text": "New"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1270.0,
+        345.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "kind": "label",
@@ -328,17 +348,17 @@
         173.0,
         28.0
       ],
-      "text": "Varsity Sprinter"
+      "text": "Bedtime Bandit"
     },
     {
       "kind": "label",
       "rect": [
-        1330.0,
+        1321.0,
         552.0,
-        38.0,
+        56.0,
         28.0
       ],
-      "text": "600"
+      "text": "1,000"
     },
     {
       "kind": "label",

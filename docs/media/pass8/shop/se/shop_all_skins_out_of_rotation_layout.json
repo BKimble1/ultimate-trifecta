@@ -238,7 +238,17 @@
         168.0,
         290.0
       ],
-      "text": "Lantern Scout"
+      "text": "New"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        906.0,
+        311.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "kind": "label",
@@ -248,17 +258,17 @@
         152.0,
         54.0
       ],
-      "text": "Lantern Scout"
+      "text": "Pumpkin Pajamas"
     },
     {
       "kind": "label",
       "rect": [
-        947.0,
+        956.0,
         522.0,
-        56.0,
+        38.0,
         28.0
       ],
-      "text": "1,200"
+      "text": "800"
     },
     {
       "kind": "label",
@@ -268,7 +278,7 @@
         152.0,
         25.0
       ],
-      "text": "Leaves in 02:11:00"
+      "text": "Leaves in 02:13:01"
     },
     {
       "kind": "button",
@@ -278,7 +288,17 @@
         168.0,
         290.0
       ],
-      "text": "Campus Courier"
+      "text": "New"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1084.0,
+        311.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "kind": "label",
@@ -288,7 +308,7 @@
         152.0,
         54.0
       ],
-      "text": "Campus Courier"
+      "text": "Arcade Sprinter"
     },
     {
       "kind": "label",
@@ -308,7 +328,7 @@
         152.0,
         25.0
       ],
-      "text": "Leaves in 02:11:00"
+      "text": "Leaves in 02:13:01"
     },
     {
       "clipped": "partly visible",
@@ -319,7 +339,17 @@
         168.0,
         290.0
       ],
-      "text": "Raincoat Explorer"
+      "text": "New"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        550.0,
+        611.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "clipped": "scrolled out",
@@ -330,18 +360,18 @@
         152.0,
         54.0
       ],
-      "text": "Raincoat Explorer"
+      "text": "Cloud Nine"
     },
     {
       "clipped": "scrolled out",
       "kind": "label",
       "rect": [
-        600.0,
+        591.0,
         822.0,
-        38.0,
+        56.0,
         28.0
       ],
-      "text": "800"
+      "text": "1,000"
     },
     {
       "clipped": "scrolled out",
@@ -363,7 +393,17 @@
         168.0,
         290.0
       ],
-      "text": "Varsity Sprinter"
+      "text": "New"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        728.0,
+        611.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "clipped": "scrolled out",
@@ -374,18 +414,18 @@
         152.0,
         54.0
       ],
-      "text": "Varsity Sprinter"
+      "text": "Bedtime Bandit"
     },
     {
       "clipped": "scrolled out",
       "kind": "label",
       "rect": [
-        778.0,
+        769.0,
         822.0,
-        38.0,
+        56.0,
         28.0
       ],
-      "text": "600"
+      "text": "1,000"
     },
     {
       "clipped": "scrolled out",
@@ -471,7 +511,7 @@
         522.0,
         890.0,
         168.0,
-        262.0
+        290.0
       ],
       "text": "Fluffy Robe"
     },
@@ -499,10 +539,296 @@
     },
     {
       "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        700.0,
+        890.0,
+        168.0,
+        290.0
+      ],
+      "text": "New"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        728.0,
+        911.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        708.0,
+        1062.0,
+        152.0,
+        54.0
+      ],
+      "text": "Midnight Mechanic"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        778.0,
+        1122.0,
+        38.0,
+        28.0
+      ],
+      "text": "900"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        708.0,
+        1156.0,
+        152.0,
+        22.0
+      ],
+      "text": "Not in current rotation"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        878.0,
+        890.0,
+        168.0,
+        290.0
+      ],
+      "text": "New"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        906.0,
+        911.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        886.0,
+        1062.0,
+        152.0,
+        54.0
+      ],
+      "text": "Moonwalk Cadet"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        947.0,
+        1122.0,
+        56.0,
+        28.0
+      ],
+      "text": "1,200"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        886.0,
+        1156.0,
+        152.0,
+        22.0
+      ],
+      "text": "Not in current rotation"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        1056.0,
+        890.0,
+        168.0,
+        290.0
+      ],
+      "text": "Lantern Scout"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        1064.0,
+        1062.0,
+        152.0,
+        54.0
+      ],
+      "text": "Lantern Scout"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        1125.0,
+        1122.0,
+        56.0,
+        28.0
+      ],
+      "text": "1,200"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        1064.0,
+        1156.0,
+        152.0,
+        22.0
+      ],
+      "text": "Not in current rotation"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        522.0,
+        1190.0,
+        168.0,
+        290.0
+      ],
+      "text": "Campus Courier"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        530.0,
+        1362.0,
+        152.0,
+        54.0
+      ],
+      "text": "Campus Courier"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        600.0,
+        1422.0,
+        38.0,
+        28.0
+      ],
+      "text": "900"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        530.0,
+        1456.0,
+        152.0,
+        22.0
+      ],
+      "text": "Not in current rotation"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        700.0,
+        1190.0,
+        168.0,
+        290.0
+      ],
+      "text": "Raincoat Explorer"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        708.0,
+        1362.0,
+        152.0,
+        54.0
+      ],
+      "text": "Raincoat Explorer"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        778.0,
+        1422.0,
+        38.0,
+        28.0
+      ],
+      "text": "800"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        708.0,
+        1456.0,
+        152.0,
+        22.0
+      ],
+      "text": "Not in current rotation"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "button",
+      "rect": [
+        878.0,
+        1190.0,
+        168.0,
+        290.0
+      ],
+      "text": "Varsity Sprinter"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        886.0,
+        1362.0,
+        152.0,
+        54.0
+      ],
+      "text": "Varsity Sprinter"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        956.0,
+        1422.0,
+        38.0,
+        28.0
+      ],
+      "text": "600"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        886.0,
+        1456.0,
+        152.0,
+        22.0
+      ],
+      "text": "Not in current rotation"
+    },
+    {
+      "clipped": "scrolled out",
       "kind": "label",
       "rect": [
         522.0,
-        1192.0,
+        1520.0,
         475.0,
         28.0
       ],
@@ -513,7 +839,7 @@
       "kind": "button",
       "rect": [
         1009.0,
-        1164.0,
+        1492.0,
         217.0,
         85.0
       ],

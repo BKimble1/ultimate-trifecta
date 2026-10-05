@@ -166,7 +166,7 @@
       "rect": [
         645.0,
         -155.0,
-        531.0,
+        528.0,
         25.0
       ],
       "text": "Rotating skins"
@@ -175,12 +175,12 @@
       "clipped": "scrolled out",
       "kind": "label",
       "rect": [
-        1188.0,
+        1185.0,
         -156.0,
-        246.0,
+        249.0,
         28.0
       ],
-      "text": "Shop refreshes in 02:11:08"
+      "text": "Shop refreshes in 02:13:05"
     },
     {
       "clipped": "scrolled out",
@@ -191,7 +191,18 @@
         189.0,
         286.0
       ],
-      "text": "Lantern Scout"
+      "text": "New"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        673.0,
+        -95.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "clipped": "scrolled out",
@@ -202,18 +213,18 @@
         173.0,
         28.0
       ],
-      "text": "Lantern Scout"
+      "text": "Pumpkin Pajamas"
     },
     {
       "clipped": "scrolled out",
       "kind": "label",
       "rect": [
-        724.0,
+        733.0,
         112.0,
-        56.0,
+        38.0,
         28.0
       ],
-      "text": "1,200"
+      "text": "800"
     },
     {
       "clipped": "scrolled out",
@@ -224,7 +235,7 @@
         173.0,
         25.0
       ],
-      "text": "Leaves in 02:11:08"
+      "text": "Leaves in 02:13:05"
     },
     {
       "clipped": "scrolled out",
@@ -235,7 +246,18 @@
         189.0,
         286.0
       ],
-      "text": "Campus Courier"
+      "text": "New"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        872.0,
+        -95.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "clipped": "scrolled out",
@@ -246,7 +268,7 @@
         173.0,
         28.0
       ],
-      "text": "Campus Courier"
+      "text": "Arcade Sprinter"
     },
     {
       "clipped": "scrolled out",
@@ -268,7 +290,7 @@
         173.0,
         25.0
       ],
-      "text": "Leaves in 02:11:08"
+      "text": "Leaves in 02:13:05"
     },
     {
       "clipped": "scrolled out",
@@ -279,7 +301,18 @@
         189.0,
         286.0
       ],
-      "text": "Raincoat Explorer"
+      "text": "New"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        1071.0,
+        -95.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "clipped": "scrolled out",
@@ -290,18 +323,18 @@
         173.0,
         28.0
       ],
-      "text": "Raincoat Explorer"
+      "text": "Cloud Nine"
     },
     {
       "clipped": "scrolled out",
       "kind": "label",
       "rect": [
-        1131.0,
+        1122.0,
         112.0,
-        38.0,
+        56.0,
         28.0
       ],
-      "text": "800"
+      "text": "1,000"
     },
     {
       "clipped": "scrolled out",
@@ -323,7 +356,18 @@
         189.0,
         286.0
       ],
-      "text": "Varsity Sprinter"
+      "text": "New"
+    },
+    {
+      "clipped": "scrolled out",
+      "kind": "label",
+      "rect": [
+        1270.0,
+        -95.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "clipped": "scrolled out",
@@ -334,18 +378,18 @@
         173.0,
         28.0
       ],
-      "text": "Varsity Sprinter"
+      "text": "Bedtime Bandit"
     },
     {
       "clipped": "scrolled out",
       "kind": "label",
       "rect": [
-        1330.0,
+        1321.0,
         112.0,
-        38.0,
+        56.0,
         28.0
       ],
-      "text": "600"
+      "text": "1,000"
     },
     {
       "clipped": "scrolled out",

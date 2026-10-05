@@ -165,7 +165,7 @@
       "rect": [
         522.0,
         188.0,
-        447.0,
+        448.0,
         25.0
       ],
       "text": "Rotating skins"
@@ -173,12 +173,12 @@
     {
       "kind": "label",
       "rect": [
-        981.0,
+        982.0,
         187.0,
-        245.0,
+        244.0,
         28.0
       ],
-      "text": "Shop refreshes in 02:13:10"
+      "text": "Shop refreshes in 23:59:11"
     },
     {
       "kind": "button",
@@ -188,17 +188,7 @@
         168.0,
         290.0
       ],
-      "text": "New"
-    },
-    {
-      "kind": "label",
-      "rect": [
-        550.0,
-        248.0,
-        34.0,
-        23.0
-      ],
-      "text": "New"
+      "text": "Lantern Scout"
     },
     {
       "kind": "label",
@@ -208,17 +198,17 @@
         152.0,
         54.0
       ],
-      "text": "Pumpkin Pajamas"
+      "text": "Lantern Scout"
     },
     {
       "kind": "label",
       "rect": [
-        600.0,
+        591.0,
         459.0,
-        38.0,
+        56.0,
         28.0
       ],
-      "text": "800"
+      "text": "1,200"
     },
     {
       "kind": "label",
@@ -228,7 +218,7 @@
         152.0,
         25.0
       ],
-      "text": "Leaves in 02:13:10"
+      "text": "Leaves in 1d 23h"
     },
     {
       "kind": "button",
@@ -238,17 +228,7 @@
         168.0,
         290.0
       ],
-      "text": "New"
-    },
-    {
-      "kind": "label",
-      "rect": [
-        728.0,
-        248.0,
-        34.0,
-        23.0
-      ],
-      "text": "New"
+      "text": "Campus Courier"
     },
     {
       "kind": "label",
@@ -258,7 +238,7 @@
         152.0,
         54.0
       ],
-      "text": "Arcade Sprinter"
+      "text": "Campus Courier"
     },
     {
       "kind": "label",
@@ -278,7 +258,7 @@
         152.0,
         25.0
       ],
-      "text": "Leaves in 02:13:10"
+      "text": "Leaves in 1d 23h"
     },
     {
       "kind": "button",
@@ -328,7 +308,7 @@
         152.0,
         25.0
       ],
-      "text": "Leaves in 1d 02h"
+      "text": "Leaves in 23:59:11"
     },
     {
       "kind": "button",
@@ -378,7 +358,7 @@
         152.0,
         25.0
       ],
-      "text": "Leaves in 1d 02h"
+      "text": "Leaves in 23:59:11"
     },
     {
       "kind": "label",
@@ -558,7 +538,7 @@
     905.0
   ],
   "screen": "ShopScreen",
-  "shot": "shop_featured",
+  "shot": "shop_change_after",
   "touch_min": 54.9999991804361,
   "units_per_point": 1.24999998137355,
   "viewport": [

@@ -165,7 +165,7 @@
       "rect": [
         645.0,
         215.0,
-        532.0,
+        534.0,
         25.0
       ],
       "text": "Rotating skins"
@@ -173,12 +173,12 @@
     {
       "kind": "label",
       "rect": [
-        1189.0,
+        1191.0,
         214.0,
-        245.0,
+        243.0,
         28.0
       ],
-      "text": "Shop refreshes in 02:11:36"
+      "text": "Shop refreshes in 02:13:17"
     },
     {
       "kind": "button",
@@ -188,7 +188,17 @@
         189.0,
         286.0
       ],
-      "text": "Lantern Scout"
+      "text": "New"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        673.0,
+        275.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "kind": "label",
@@ -198,17 +208,17 @@
         173.0,
         28.0
       ],
-      "text": "Lantern Scout"
+      "text": "Pumpkin Pajamas"
     },
     {
       "kind": "label",
       "rect": [
-        724.0,
+        733.0,
         482.0,
-        56.0,
+        38.0,
         28.0
       ],
-      "text": "1,200"
+      "text": "800"
     },
     {
       "kind": "label",
@@ -218,7 +228,7 @@
         173.0,
         25.0
       ],
-      "text": "Leaves in 02:11:36"
+      "text": "Leaves in 02:13:17"
     },
     {
       "kind": "button",
@@ -228,7 +238,17 @@
         189.0,
         286.0
       ],
-      "text": "Campus Courier"
+      "text": "New"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        872.0,
+        275.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "kind": "label",
@@ -238,7 +258,7 @@
         173.0,
         28.0
       ],
-      "text": "Campus Courier"
+      "text": "Arcade Sprinter"
     },
     {
       "kind": "label",
@@ -258,7 +278,7 @@
         173.0,
         25.0
       ],
-      "text": "Leaves in 02:11:36"
+      "text": "Leaves in 02:13:17"
     },
     {
       "kind": "button",
@@ -268,7 +288,17 @@
         189.0,
         286.0
       ],
-      "text": "Raincoat Explorer"
+      "text": "New"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1071.0,
+        275.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "kind": "label",
@@ -278,17 +308,17 @@
         173.0,
         28.0
       ],
-      "text": "Raincoat Explorer"
+      "text": "Cloud Nine"
     },
     {
       "kind": "label",
       "rect": [
-        1131.0,
+        1122.0,
         482.0,
-        38.0,
+        56.0,
         28.0
       ],
-      "text": "800"
+      "text": "1,000"
     },
     {
       "kind": "label",
@@ -308,7 +338,17 @@
         189.0,
         286.0
       ],
-      "text": "Varsity Sprinter"
+      "text": "New"
+    },
+    {
+      "kind": "label",
+      "rect": [
+        1270.0,
+        275.0,
+        34.0,
+        23.0
+      ],
+      "text": "New"
     },
     {
       "kind": "label",
@@ -318,17 +358,17 @@
         173.0,
         28.0
       ],
-      "text": "Varsity Sprinter"
+      "text": "Bedtime Bandit"
     },
     {
       "kind": "label",
       "rect": [
-        1330.0,
+        1321.0,
         482.0,
-        38.0,
+        56.0,
         28.0
       ],
-      "text": "600"
+      "text": "1,000"
     },
     {
       "kind": "label",

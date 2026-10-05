@@ -153,10 +153,9 @@ has art and the catalogue schedule drives the fixture).
 
 ## Open items
 
-- The six new outfits' art (SKINS stream). After the merge: re-run
-  `tools/capture_pass8_shop.sh` (it switches to the catalogue's own
-  schedule and adds the 00:00 UTC before/after shots) and
-  `test_catalogue`.
+- (Done at integration) The six outfits' art merged; `test_catalogue` is
+  green and the captures were re-run on the catalogue's own schedule,
+  including the 00:00 UTC before/after shots (33 shots, 0 layout issues).
 - The written schedule ends 2026-12-28; extend it before then (ECONOMY.md
   §2.1) and redeploy the service.
 - Real-device checks not possible here: iOS monotonic clock behaviour
