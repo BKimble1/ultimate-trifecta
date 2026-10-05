@@ -71,6 +71,14 @@ const SHORT := {CONNECT: "Refresh needed", NOT_IN_ROTATION: "Not in rotation"}
 ## deep links (set before NavShell.go("shop")): a section and/or an item
 static var focus_section := ""
 static var focus_item := ""
+## FINAL_RELEASE_SWEEP: the one Shop filter.  All skins and Accessories can
+## hide what you own (a switch above their grid; kept while the game runs).
+## It never applies to Featured, the Coin packs or Season Premium, never
+## shows an unexplained empty grid, and can't make anything buyable that
+## isn't (Season Pass rewards aren't sold; a rotating skin still needs its
+## offer).
+static var hide_owned := false
+const FILTER_SECTIONS := {"outfits": ["skin", "skins"], "accessories": ["accessory", "accessories"]}
 
 var section := "featured"
 var panel: PanelContainer
@@ -204,6 +212,11 @@ func _restore_stage() -> void:
 
 func _exit_tree() -> void:
 	Portraits.cancel_shared("shop:")
+	# FINAL_RELEASE_SWEEP: closed by anything but Back (a match starting, an
+	# invite, a deep link): the stage shows the real equipped look again.
+	# Previewing never touches the save.
+	if preview_id != "" and App.stage and is_instance_valid(App.stage) and not App.stage.is_queued_for_deletion():
+		_restore_stage()
 
 
 func _frame_stage() -> void:
@@ -396,6 +409,9 @@ func _build_section() -> void:
 	for k in strip_btns:
 		UIKit.set_selected(strip_btns[k], k == section)
 	for c in body.get_children():
+		# detached now (a rebuild of the same section, e.g. Hide owned, reuses
+		# the names: FilterRow, Grid_outfits, ...), freed at the frame's end
+		body.remove_child(c)
 		c.queue_free()
 	cards.clear()
 	rot_grid = null
@@ -406,17 +422,24 @@ func _build_section() -> void:
 		"featured":
 			_build_featured(gw)
 		"outfits":
+			body.add_child(_filter_row("outfits"))
 			_intro("Rotating skins are bought from Featured while they're in the Shop. " + RETURN_NOTE, gw)
-			body.add_child(_grid("outfits", _sorted(Catalogue.shop_items("outfits")), gw, CARD_W, 2, 6))
+			_filtered_grid("outfits", gw)
 		"accessories":
+			body.add_child(_filter_row("accessories"))
 			_intro("Always available.", gw)
-			body.add_child(_grid("accessories", _sorted(Catalogue.shop_items("accessories")), gw, CARD_W, 2, 6))
+			_filtered_grid("accessories", gw)
 		"coins":
 			_intro("Coins buy anything in the Shop. They never expire and never add XP. Prices come from the App Store.", gw)
 			body.add_child(_grid("coins", Catalogue.shop_items("coins"), gw, PACK_W, 1, 3))
 		"season":
-			_intro("%d tiers you earn by playing. Premium adds a second track of rewards." % Economy.max_tier(Catalogue.current_season_id()), gw)
+			_intro("%d tiers you earn by playing. Premium adds a second track of rewards. Season rewards are earned in the Season Pass, never sold." % Economy.max_tier(Catalogue.current_season_id()), gw)
 			body.add_child(_season_offer(gw))
+			var pass_link := UIKit.link("Open the Season Pass  ›", UIKit.T_LABEL)
+			pass_link.name = "Link_pass"
+			pass_link.custom_minimum_size.y = UIKit.row_h()
+			pass_link.pressed.connect(func() -> void: NavShell.go("pass"))
+			body.add_child(pass_link)
 	if section in ["featured", "outfits", "coins"]:
 		body.add_child(_restore_row())
 	_refresh_states()
@@ -434,6 +457,98 @@ func _intro(text: String, gw: float) -> Label:
 	il.custom_minimum_size.x = gw * 0.95
 	body.add_child(il)
 	return il
+
+
+## FINAL_RELEASE_SWEEP: the filter row above All skins / Accessories: how
+## many there are and how many you own, and the Hide owned switch (the whole
+## control is the 44 pt hit area; controller focusable).
+func _filter_row(key: String) -> Control:
+	var row := UIKit.hbox(UIKit.SP_M)
+	row.name = "FilterRow"
+	row.custom_minimum_size.y = UIKit.touch_min()
+	var count := UIKit.styled(filter_count_text(key), "caption", UIKit.IVORY_MUTED)
+	count.name = "FilterCount"
+	count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	count.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	count.clip_text = true
+	count.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	row.add_child(count)
+	var sw := SettingsScreen.Toggle.new()
+	sw.name = "HideOwned"
+	sw.text = "Hide owned"
+	sw.add_theme_font_size_override("font_size", UIKit.T_CAPTION)
+	sw.add_theme_color_override("font_color", UIKit.IVORY)
+	sw.add_theme_color_override("font_pressed_color", UIKit.IVORY)
+	sw.add_theme_color_override("font_hover_color", UIKit.IVORY)
+	sw.add_theme_color_override("font_hover_pressed_color", UIKit.IVORY)
+	sw.add_theme_color_override("font_focus_color", UIKit.IVORY)
+	var tw := ceilf(UIKit.font_w(600).get_string_size(sw.text, HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_CAPTION).x)
+	var track := clampf(UIKit.touch_min() * 0.62, 26.0, 56.0) * 1.72
+	sw.custom_minimum_size = Vector2(tw + track + 26.0, maxf(44.0, UIKit.touch_min()))
+	sw.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	sw.set_pressed_no_signal(hide_owned)
+	sw.accessibility_name = "Hide owned items"
+	sw.toggled.connect(_on_hide_owned)
+	row.add_child(sw)
+	return row
+
+
+## "13 skins · 4 owned" (the section's whole list, filter or not).
+func filter_count_text(key: String) -> String:
+	var all: Array = Catalogue.shop_items(key)
+	var owned := all.filter(func(it: Dictionary) -> bool: return Wallet.owns_id(String(it["id"]))).size()
+	var words: Array = FILTER_SECTIONS[key]
+	return "%d %s · %d owned" % [all.size(), String(words[1] if all.size() != 1 else words[0]), owned]
+
+
+func _on_hide_owned(on: bool) -> void:
+	hide_owned = on
+	_scroll_of[section] = 0
+	Portraits.cancel_shared("shop:")
+	_build_section()
+	Sfx.play("click")
+	# keep the controller's place on the (rebuilt) switch
+	var sw := body.find_child("HideOwned", true, false) as Control
+	if sw != null and Controls.active_joy >= 0:
+		sw.grab_focus.call_deferred()
+
+
+## The grid on show no longer matches Hide owned (never while a sheet is
+## open: it's applied when the sheet closes).
+func _filter_stale() -> bool:
+	if not hide_owned or detail != null or not FILTER_SECTIONS.has(section) or body == null:
+		return false
+	var want: Array = filtered_items(section).map(func(it: Dictionary) -> String: return String(it["id"]))
+	var have: Array = []
+	for c in cards:
+		if is_instance_valid(c):
+			have.append((c as ShopCard).id)
+	want.sort()
+	have.sort()
+	return want != have
+
+
+## The items a filtered section lists: hiding what's owned, if asked.
+func filtered_items(key: String) -> Array:
+	var items := _sorted(Catalogue.shop_items(key))
+	if hide_owned:
+		items = items.filter(func(it: Dictionary) -> bool: return not Wallet.owns_id(String(it["id"])))
+	return items
+
+
+## All skins / Accessories: the grid, or (everything here owned and hidden)
+## a line saying so instead of an empty grid.
+func _filtered_grid(key: String, gw: float) -> void:
+	var items := filtered_items(key)
+	if items.is_empty():
+		var words: Array = FILTER_SECTIONS[key]
+		var note := UIKit.styled("You own every %s here. They're in your Locker. Turn off Hide owned to see them." % String(words[0]), "body", UIKit.IVORY)
+		note.name = "AllOwned"
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		note.custom_minimum_size.x = gw * 0.95
+		body.add_child(note)
+		return
+	body.add_child(_grid(key, items, gw, CARD_W, 2, 6))
 
 
 ## An owned item is never shown as buyable: what can be bought now first,
@@ -707,11 +822,20 @@ static func premium_summary(sid: String) -> String:
 func _refresh_states() -> void:
 	if not is_inside_tree():
 		return
+	if _filter_stale():
+		# Hide owned is on and what's owned changed (a purchase, a restore, a
+		# wallet sync that landed after the grid was built): apply it again
+		_scroll_of[section] = scroll.scroll_vertical
+		_build_section()
+		return
 	banner.text = unavailable_line()
 	banner.visible = banner.text != ""
 	if rot_status != null and is_instance_valid(rot_status):
 		rot_status.text = _rotation_line()
 		rot_status.visible = rot_status.text != ""
+	var fc := body.find_child("FilterCount", true, false) as Label if FILTER_SECTIONS.has(section) else null
+	if fc != null:
+		fc.text = filter_count_text(section)
 	for c in cards:
 		if is_instance_valid(c):
 			c.refresh()
@@ -837,6 +961,8 @@ func _close_detail() -> void:
 	_d.clear()
 	preview("")
 	(panel.get_node("GridView") as Control).visible = true
+	if _filter_stale():
+		_build_section()   # bought or restored while the sheet was open
 	var at := int(_scroll_of.get(section, 0))
 	(func() -> void:
 		await get_tree().process_frame
@@ -1244,6 +1370,7 @@ class ShopCard:
 	var name_l: Label
 	var price_l: Label
 	var when_l: Label
+	var src_l: Label
 	var coin: Control
 	var art: Control
 	var lines := 1
@@ -1336,6 +1463,19 @@ class ShopCard:
 			when_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			v.add_child(when_l)
 			resized.connect(_fit_when)
+		elif Catalogue.kind(id) == "apple_skin":
+			# FINAL_RELEASE_SWEEP: a direct App Store outfit says so on its
+			# card, in the line a rotating skin uses for "Leaves in" (a
+			# permanent Coin item shows its Coin price; Owned shows Owned)
+			src_l = UIKit.styled("App Store", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+			src_l.name = "SourceTag"
+			src_l.add_theme_font_size_override("font_size", 17)
+			src_l.custom_minimum_size.y = CreatorScreen.STATE_H
+			src_l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			src_l.clip_text = true
+			src_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			src_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			v.add_child(src_l)
 		fit_cell(w, name_lines(w))
 
 	## Season 1 Premium: the emblem, the name, what it adds (counted from the
@@ -1460,7 +1600,7 @@ class ShopCard:
 		art.custom_minimum_size = Vector2(0, wh)
 		name_l.custom_minimum_size = Vector2(iw, CreatorScreen.name_block_h(n))
 		name_l.max_lines_visible = n
-		var extra := (CreatorScreen.ROW_GAP + CreatorScreen.STATE_H) if rot else 0.0
+		var extra := (CreatorScreen.ROW_GAP + CreatorScreen.STATE_H) if (rot or src_l != null) else 0.0
 		custom_minimum_size = Vector2(w, CreatorScreen.PAD * 2.0 + wh + CreatorScreen.ROW_GAP * 2.0 + CreatorScreen.name_block_h(n) + CreatorScreen.STATE_H + extra)
 
 	func refresh() -> void:
@@ -1473,6 +1613,8 @@ class ShopCard:
 		coin.visible = String(st["kind"]) in ["coins", "rotation"]
 		tick()
 		var when := ("" if when_l == null else ", " + when_l.text)
+		if Catalogue.kind(id) == "apple_skin":
+			when = ", App Store" + when
 		accessibility_name = "%s, %s%s%s" % [Catalogue.display_name(id), Catalogue.type_label(id),
 			", " + String(st["text"]) + (" Coins" if String(st["kind"]) in ["coins", "rotation"] else ""), when]
 
