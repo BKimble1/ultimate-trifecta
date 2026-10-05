@@ -782,6 +782,69 @@ export default {
    "cap": 2000,
    "per_online_round": 75,
    "per_practice_round": 38
+  },
+  "challenges": {
+   "_comment": "Pass 8: daily and weekly goals that add Season XP to the existing pass (no other currency, no boost, nothing to buy, no claim button). Progress comes only from eligible, service-verified, completed online rounds the player actively played (active_s: seconds of real input or objective play counted by the host's simulation; a round is active when active_s >= min(active.min_s, active.min_share x round time)). A round belongs to the UTC day (00:00 UTC) and week (Monday 00:00 UTC) of its registered start and can settle into that period until grace_s after the period ends. Contribution credits: each unique required-water stamp or each different runner tagged, at most credit_cap_per_round a round. Bonus XP is added in the round's settlement, once per player and challenge instance.",
+   "version": 1,
+   "grace_s": 86400,
+   "credit_cap_per_round": 3,
+   "active": {
+    "min_s": 60,
+    "min_share": 0.4,
+    "window_s": 5
+   },
+   "daily": [
+    {
+     "id": "night_shift",
+     "name": "Night Shift",
+     "task": "Play 2 online rounds",
+     "metric": "active_rounds",
+     "goal": 2,
+     "xp": 50
+    },
+    {
+     "id": "campus_contribution",
+     "name": "Campus Contribution",
+     "task": "Earn 6 contribution credits",
+     "metric": "credits",
+     "goal": 6,
+     "xp": 50
+    },
+    {
+     "id": "team_effort",
+     "name": "Team Effort",
+     "task": "Win 1 round, either role",
+     "metric": "round_wins",
+     "goal": 1,
+     "xp": 50
+    }
+   ],
+   "weekly": [
+    {
+     "id": "campus_regular",
+     "name": "Campus Regular",
+     "task": "Play 10 online rounds",
+     "metric": "active_rounds",
+     "goal": 10,
+     "xp": 150
+    },
+    {
+     "id": "pull_your_weight",
+     "name": "Pull Your Weight",
+     "task": "Earn 18 contribution credits",
+     "metric": "credits",
+     "goal": 18,
+     "xp": 150
+    },
+    {
+     "id": "strong_together",
+     "name": "Strong Together",
+     "task": "Win 4 rounds, either role",
+     "metric": "round_wins",
+     "goal": 4,
+     "xp": 150
+    }
+   ]
   }
  }
 };
