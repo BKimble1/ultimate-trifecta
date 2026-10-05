@@ -79,7 +79,7 @@ func test_launch_routing_for_each_receipt_kind() -> void:
 	var cases := [
 		[R.Receipt.APP_STORE, true, "production", "receipt", "App Store install (receipt)"],
 		[R.Receipt.SANDBOX, true, "sandbox", "receipt", "TestFlight / development (sandboxReceipt)"],
-		[R.Receipt.NONE, true, "sandbox", "receipt", "no receipt URL (simulator, development)"],
+		[R.Receipt.NONE, true, "production", "default", "no receipt URL (never on current iOS): production, the safe default"],
 		[R.Receipt.OTHER, true, "production", "default", "an unknown receipt name: production"],
 		[R.Receipt.UNAVAILABLE, true, "production", "default", "an older native library without the call: production"],
 		[R.Receipt.APP_STORE, false, "sandbox", "desktop", "desktop and tests: sandbox"],

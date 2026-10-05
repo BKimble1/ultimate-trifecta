@@ -16,9 +16,9 @@ extends Node
 ## own database and credits only its own App Store environment, so which one
 ## an install talks to is a routing choice, never a permission:
 ##  - at launch, from a hint: on iOS the App Store receipt's kind (UTShare
-##    receipt_kind(): "sandboxReceipt" -> sandbox (TestFlight, development),
-##    "receipt" -> production (App Store), no receipt URL -> sandbox);
-##    anything unknown, or an older native library without the call, ->
+##    receipt_kind(): "sandboxReceipt" -> sandbox (TestFlight, Xcode and
+##    simulator builds), "receipt" -> production (App Store)); no receipt
+##    URL, an unknown name, or an older native library without the call ->
 ##    production.  Production is the safe default: it credits only
 ##    Production-signed purchases, and the sandbox only holds an isolated
 ##    economy worth nothing.  Desktop and tests use the sandbox.
@@ -141,11 +141,14 @@ static func pick_route(available: Array, on_ios: bool, kind: int, moved: Diction
 	if not on_ios:
 		return {"deployment": "sandbox", "reason": "desktop"}
 	match kind:
-		Receipt.SANDBOX, Receipt.NONE:
+		Receipt.SANDBOX:
 			return {"deployment": "sandbox", "reason": "receipt"}
 		Receipt.APP_STORE:
 			return {"deployment": "production", "reason": "receipt"}
-	# an unknown receipt name, or no native answer: production
+	# no receipt URL (current iOS always has one, simulators and Xcode builds
+	# included: "sandboxReceipt"; only a future removal of the deprecated
+	# call would answer nothing), an unknown name, or no native answer:
+	# production, the safe default
 	return {"deployment": "production", "reason": "default"}
 
 
