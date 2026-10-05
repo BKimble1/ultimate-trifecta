@@ -5,7 +5,7 @@ config_version=5
 
 config/name="Ultimate Trifecta"
 config/description="A playful 3 a.m. campus chase: splash into three waters and get home before the Night Watch catches you."
-config/version="1.8"
+config/version="1.9"
 run/main_scene="res://src/main.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://assets/icon/icon.png"
