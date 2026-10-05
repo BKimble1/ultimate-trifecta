@@ -430,13 +430,22 @@ func _text_of(c: Control) -> String:
 
 ## The visible region of a control: its nearest scrolling list (or a
 ## clipping parent).
+## The region every clipping ancestor leaves visible (they nest: a card's
+## clipped art inside a scrolled list is cut by both). Rect2() when nothing
+## clips; a far 1x1 rect when the clips don't overlap at all (scrolled out).
 func _clip_rect(c: Control) -> Rect2:
+	var out := Rect2()
+	var have := false
 	var p := c.get_parent()
 	while p != null and p is Control:
 		if p is ScrollContainer or (p as Control).clip_contents:
-			return (p as Control).get_global_rect()
+			var r := (p as Control).get_global_rect()
+			if have and not out.intersects(r):
+				return Rect2(Vector2(-1e6, -1e6), Vector2.ONE)
+			out = out.intersection(r) if have else r
+			have = true
 		p = p.get_parent()
-	return Rect2()
+	return out
 
 
 func _trimmed(c: Control) -> bool:
