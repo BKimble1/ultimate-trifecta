@@ -187,7 +187,8 @@ func _runner(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 	if p.sprint > 0.75 and remaining_d > 25.0:
 		sprint_hold = 1.4
 	sprint_hold = maxf(0.0, sprint_hold - dt)
-	if sprint_hold > 0.0 or (goal_kind == "home" and remaining_d < 30.0):
+	# (Pass 8: an exhausted meter needs a release before it re-arms)
+	if not p.sprint_exhausted and (sprint_hold > 0.0 or (goal_kind == "home" and remaining_d < 30.0)):
 		cmd.held |= TC.BTN_SPRINT
 
 
@@ -302,7 +303,7 @@ func _flee(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 			best = cand
 	cmd.move = best
 	var d := p.pos2().distance_to(Vector2(threat.x, threat.z))
-	if p.sprint > 0.05:
+	if p.sprint > 0.05 and not p.sprint_exhausted:
 		cmd.held |= TC.BTN_SPRINT
 	if p.gadget == TC.Gadget.TURBO and d < 8.0:
 		cmd.pressed |= TC.BTN_GADGET

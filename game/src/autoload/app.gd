@@ -805,7 +805,7 @@ func _on_match_finished(results: Dictionary) -> void:
 		Save.mark()
 	_end_match_scene()
 	_ensure_background()
-	Sfx.music("menu")
+	Sfx.results_screen_shown()
 	var r := ResultsScreen.new()
 	r.results = results
 	r.reward = reward

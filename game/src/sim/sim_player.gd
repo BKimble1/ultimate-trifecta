@@ -27,6 +27,7 @@ var state_t: float = 0.0
 var sprint: float = 1.0
 var sprint_delay: float = 0.0
 var sprinting := false
+var sprint_exhausted := false   # Pass 8: ran the meter dry; no sprint until released and refilled (sprint_rearm_fraction)
 var coyote: float = 0.0
 var jump_buf: float = 0.0
 var on_floor := true
@@ -142,6 +143,15 @@ func history_pos(ticks_ago: int) -> Vector3:
 	return pos_history[idx]
 
 
+## Pass 8: a discrete state change (splash, cart, bump, capture, respawn)
+## ends any dive, its landing recovery and any buffered jump press, so no
+## stale press can fire a takeoff after it.
+func end_air_actions() -> void:
+	diving = false
+	dive_land = 0.0
+	jump_buf = 0.0
+
+
 func clear_history() -> void:
 	pos_history.clear()
 	hist_head = 0
@@ -165,6 +175,7 @@ func write_motor(buf: StreamPeerBuffer) -> void:
 	if sprinting: flags |= 1
 	if on_floor: flags |= 2
 	if diving: flags |= 4
+	if sprint_exhausted: flags |= 8
 	buf.put_u8(flags)
 	buf.put_float(coyote)
 	buf.put_float(jump_buf)
@@ -193,6 +204,7 @@ func read_motor(buf: StreamPeerBuffer) -> Dictionary:
 	d["sprinting"] = (flags & 1) != 0
 	d["on_floor"] = (flags & 2) != 0
 	d["diving"] = (flags & 4) != 0
+	d["sprint_exhausted"] = (flags & 8) != 0
 	d["coyote"] = buf.get_float()
 	d["jump_buf"] = buf.get_float()
 	d["dive_land"] = buf.get_float()
@@ -222,6 +234,7 @@ func apply_motor(d: Dictionary) -> void:
 	sprinting = d["sprinting"]
 	on_floor = d["on_floor"]
 	diving = d["diving"]
+	sprint_exhausted = d.get("sprint_exhausted", false)
 	coyote = d["coyote"]
 	jump_buf = d["jump_buf"]
 	dive_land = d["dive_land"]

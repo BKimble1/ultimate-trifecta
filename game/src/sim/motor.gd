@@ -5,6 +5,7 @@ extends RefCounted
 
 const CHAR_RADIUS := 0.35
 const CHAR_HEIGHT := 1.5
+const FLOOR_SNAP := 0.35
 
 
 static func make_character_body(name: String) -> CharacterBody3D:
@@ -13,7 +14,7 @@ static func make_character_body(name: String) -> CharacterBody3D:
 	b.collision_layer = TC.L_CHAR
 	b.collision_mask = TC.L_WORLD | TC.L_CART
 	b.floor_max_angle = deg_to_rad(50.0)
-	b.floor_snap_length = 0.35
+	b.floor_snap_length = FLOOR_SNAP
 	b.floor_stop_on_slope = true
 	b.floor_block_on_wall = true
 	b.max_slides = 5
@@ -130,13 +131,24 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 		control = 0.35
 
 	# --- sprint meter (runners only). Short, regenerates quickly, no long waits.
+	# Pass 8: running the meter dry latches "exhausted". While the latch is on
+	# a held sprint is an ordinary run (V4-V8 restarted it on every 15 % of
+	# refill: 0.38 s bursts every 1.3 s for as long as it was held). The latch
+	# clears once sprint is released (button up, or the stick back under its
+	# edge-sprint exit threshold, or the finger lifted) and the meter is back
+	# to sprint_rearm_fraction; the next press then sprints at once.
 	var move := cmd.move
 	var mag := minf(move.length(), 1.0)
-	var wants_sprint := runner and cmd.is_held(TC.BTN_SPRINT) and mag > 0.3 and control > 0.5
+	var sprint_held := runner and cmd.is_held(TC.BTN_SPRINT)
+	if p.sprint_exhausted and not sprint_held and p.sprint >= cfg.sprint_rearm_fraction:
+		p.sprint_exhausted = false
+	var wants_sprint := sprint_held and mag > 0.3 and control > 0.5 and not p.sprint_exhausted
 	if wants_sprint and p.sprint > 0.0 and (p.sprinting or p.sprint >= cfg.sprint_min_to_start):
 		p.sprinting = true
 		p.sprint = maxf(0.0, p.sprint - dt / cfg.sprint_capacity_s)
 		p.sprint_delay = cfg.sprint_regen_delay_s
+		if p.sprint <= 0.0:
+			p.sprint_exhausted = true
 	else:
 		p.sprinting = false
 		if p.sprint_delay > 0.0:
@@ -178,9 +190,15 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 		hv = hv.move_toward(target, accel * dt)
 
 	# --- jump / dive
+	# Pass 8: one dive per airborne sequence, and a dive's landing recovery
+	# (dive_land) must finish before the next takeoff. Presses during a dive
+	# are dropped; during recovery only a press within jump_buffer_s of its
+	# end may wait for it (V4-V8 buffered any press and jumped on the landing
+	# tick, so jump/dive presses chained into a sustained 8+ m/s).
+	var recovering := p.dive_land > 0.0
 	if cmd.is_pressed(TC.BTN_JUMP) and control > 0.0:
 		var grounded := p.on_floor or p.coyote > 0.0
-		if not grounded and runner and not p.diving and p.state == TC.PState.ACTIVE:
+		if not grounded and runner and not p.diving and not recovering and p.state == TC.PState.ACTIVE:
 			# second press while airborne: dive
 			p.diving = true
 			p.jump_buf = 0.0
@@ -189,11 +207,15 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 				dir = move.normalized()
 			hv = dir * maxf(hv.length(), cfg.dive_speed)
 			p.vel.y = maxf(p.vel.y, cfg.dive_up_velocity)
+		elif p.diving:
+			p.jump_buf = 0.0
+		elif recovering:
+			p.jump_buf = cfg.jump_buffer_s if p.dive_land <= cfg.jump_buffer_s else 0.0
 		else:
 			p.jump_buf = cfg.jump_buffer_s
 	else:
 		p.jump_buf = maxf(0.0, p.jump_buf - dt)
-	if p.jump_buf > 0.0 and (p.on_floor or p.coyote > 0.0) and not p.diving and control > 0.0 and p.tag_phase != SimPlayer.TagPhase.LUNGE:
+	if p.jump_buf > 0.0 and (p.on_floor or p.coyote > 0.0) and not p.diving and not recovering and control > 0.0 and p.tag_phase != SimPlayer.TagPhase.LUNGE:
 		p.vel.y = cfg.jump_velocity if runner else cfg.patrol_jump_velocity
 		p.jump_buf = 0.0
 		p.coyote = 0.0
@@ -214,6 +236,15 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 		p.yaw = rotate_toward(p.yaw, want, deg_to_rad(cfg.turn_rate_deg) * dt)
 
 	b.velocity = Vector3(hv.x, p.vel.y, hv.y)
+	# Pass 8: move_and_slide only snaps to the floor when the body was on it
+	# after its previous move, which is engine-internal state that a
+	# reconcile (apply_motor) can't restore. Tie the snap to the serialized
+	# p.on_floor instead, so a predicting client replays a landing on the
+	# same tick as the host (a stale "was on floor" snapped an airborne
+	# replay down up to 0.35 m early: a 0.27 m correction at every dive
+	# landing once landings stopped chaining into a jump). On the host the
+	# two always agree.
+	b.floor_snap_length = FLOOR_SNAP if p.on_floor else 0.0
 	b.move_and_slide()
 	var rv := b.velocity
 	p.vel = Vector3(rv.x, rv.y, rv.z)

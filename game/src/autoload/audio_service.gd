@@ -169,6 +169,45 @@ func stop_music() -> void:
 	_music_out.clear()
 
 
+# ---------------------------------------------------------------- results
+## Pass 8: RESULTS is one music state with one owner. The match controller
+## calls results() as a round's result is decided; the results screen calls
+## results_screen_shown(); going back to the lobby asks for "menu" as before.
+##   * With the owner's results track in the build (music_results_bed.ogg:
+##     a short finish flourish, then a bar-aligned loop from its import
+##     loop_offset) it starts once per round result and keeps looping under
+##     rewards, final standings and Ready, never restarted by reopening the
+##     screen or changing its page.
+##   * Without it (this build: the track hasn't been supplied), the V5
+##     results sting plays once and the lobby music continues under the
+##     results screen, exactly as before.
+##   * A cancelled round or a lost host plays no finish flourish.
+const RESULTS_BED := "results_bed"
+var _results_key := ""
+
+
+func results(round_key: String, cancelled: bool = false) -> void:
+	if round_key != "" and round_key == _results_key:
+		return
+	_results_key = round_key
+	if cancelled:
+		music("menu")
+	elif has_results_bed():
+		music(RESULTS_BED)
+	else:
+		music("results")
+
+
+func results_screen_shown() -> void:
+	if current_music() == RESULTS_BED:
+		return
+	music("menu")
+
+
+func has_results_bed() -> bool:
+	return _stream("music_" + RESULTS_BED) != null
+
+
 func set_volumes(sfx: float, mus: float) -> void:
 	sfx_volume = sfx
 	music_volume = mus

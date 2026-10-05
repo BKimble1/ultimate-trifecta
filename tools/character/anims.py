@@ -749,15 +749,33 @@ def clip_dive(t):
     return p
 
 
+DIVE_LAND_L = 0.45   # == RulesConfig.dive_land_s (Pass 8: the landing recovery a dive costs)
+
+
 def clip_dive_land(t):
-    # belly slide then push back up to standing (0.32 s)
-    u = t / 0.32
-    up = smoothstep(0.35, 1.0, u)
-    p = sym({'upper_arm.L': {'rot': (lerp(150, 10, up), lerp(-8, -20, up), 0)}, 'forearm.L': {'rot': (lerp(10, 30, up), 0, 0)},
-             'thigh.L': {'rot': (lerp(-10, 5, up), 0, 0)}, 'shin.L': {'rot': (lerp(-25, -10, up), 0, 0)}})
-    p['hips'] = {'rot': (lerp(-80, 0, up), 0, 0), 'loc': (0, 0, lerp(-0.25, 0.0, up))}
-    p['neck'] = {'rot': (lerp(20, 0, up), 0, 0)}
-    p['head'] = {'rot': (lerp(25, 0, up), 0, 0)}
+    """Pass 8: the landing recovery that a dive now costs, in three beats so
+    the cooldown reads at play distance: contact (belly down, hands catch,
+    0-0.10 s), tuck and plant (knees drive under the hips, hands push,
+    0.10-0.28 s), and the rise into a forward run-ready lean with one foot
+    stepping through (0.28-0.45 s), which hands over to the run."""
+    u = min(max(t / DIVE_LAND_L, 0.0), 1.0)
+    tuck = smoothstep(0.18, 0.60, u)
+    rise = smoothstep(0.58, 1.0, u)
+    push = smoothstep(0.10, 0.42, u) * (1.0 - rise)
+    p = sym({'upper_arm.L': {'rot': (lerp(lerp(150, 70, push), 18, rise), lerp(-10, -16, tuck), 0)},
+             'forearm.L': {'rot': (lerp(lerp(8, 24, push), 34, rise), 0, 0)},
+             'thigh.L': {'rot': (lerp(lerp(-10, 72, tuck), 38, rise), 0, 0)},
+             'shin.L': {'rot': (lerp(lerp(-22, -112, tuck), -52, rise), 0, 0)},
+             'foot.L': {'rot': (lerp(-30, 10, tuck), 0, 0)}})
+    # the right leg stays a little behind as the step-through foot
+    p['thigh.R']['rot'] = (lerp(lerp(-10, 58, tuck), -8, rise), 0, 0)
+    p['shin.R']['rot'] = (lerp(lerp(-22, -104, tuck), -26, rise), 0, 0)
+    p['upper_arm.R']['rot'] = (lerp(lerp(150, 70, push), -12, rise), lerp(10, 16, tuck), 0)
+    p['hips'] = {'rot': (lerp(lerp(-80, -38, tuck), -9, rise), 0, 0),
+                 'loc': (0, 0, lerp(lerp(-0.25, -0.33, tuck), -0.04, rise))}
+    p['spine'] = {'rot': (lerp(4, 10, tuck) * (1.0 - rise) + 4 * rise, 0, 0)}
+    p['neck'] = {'rot': (lerp(lerp(20, 8, tuck), 2, rise), 0, 0)}
+    p['head'] = {'rot': (lerp(lerp(25, 6, tuck), 0, rise), 0, 0)}
     return p
 
 
@@ -1342,7 +1360,7 @@ def library():
         'land_soft': (0.3, False, clip_land_soft),
         'land_hard': (0.45, False, clip_land_hard),
         'dive': (0.6, False, clip_dive),
-        'dive_land': (0.32, False, clip_dive_land),
+        'dive_land': (DIVE_LAND_L, False, clip_dive_land),
         'splash_walk': (SPLASH_L, False, lambda t: clip_splash('walk', t)),
         'splash_jump': (SPLASH_L, False, lambda t: clip_splash('jump', t)),
         'splash_dive': (SPLASH_L, False, lambda t: clip_splash('dive', t)),

@@ -124,10 +124,11 @@ class MiniMotor:
 			var acc: float = (cfg.ground_accel if target.length() >= hv.length() * 0.9 else cfg.ground_decel) if on_floor else cfg.air_accel
 			hv = hv.move_toward(target, acc * dt)
 		if bool(inp.get("jump", false)):
-			if on_floor:
+			# (as Motor, Pass 8: no takeoff or dive until a dive's landing recovery ends)
+			if on_floor and dive_land <= 0.0:
 				vel.y = cfg.jump_velocity if role == TC.Role.RUNNER else cfg.patrol_jump_velocity
 				on_floor = false
-			elif not diving and role == TC.Role.RUNNER:
+			elif not on_floor and not diving and dive_land <= 0.0 and role == TC.Role.RUNNER:
 				diving = true
 				var f2 := facing()
 				var dir := move.normalized() if mag > 0.2 else Vector2(f2.x, f2.z)

@@ -486,7 +486,7 @@ func _resolve_cart_requests(cmds: Dictionary) -> void:
 		c.occupant = p.id
 		c.exiting = false
 		p.cart_id = c.id
-		p.diving = false
+		p.end_air_actions()
 		p.tag_phase = SimPlayer.TagPhase.NONE
 		Motor.set_body_enabled(p.body, false)
 		_set_state(p, TC.PState.ENTERING)
@@ -670,7 +670,7 @@ func _capture(r: SimPlayer, by: SimPlayer) -> void:
 	by.captures += 1
 	by.captured_ids[r.id] = true
 	r.penalty = cfg.capture_penalty_s
-	r.diving = false
+	r.end_air_actions()
 	r.sprinting = false
 	r.turbo_t = 0.0
 	r.vel = Vector3.ZERO
@@ -696,6 +696,8 @@ func _respawn(p: SimPlayer) -> void:
 	Motor.set_body_enabled(p.body, true)
 	p.protect = cfg.respawn_protect_s
 	p.sprint = 1.0
+	p.sprint_exhausted = false
+	p.end_air_actions()
 	p.clear_history()
 	p.prev_pos = Vector3.INF
 	_set_state(p, TC.PState.ACTIVE)
@@ -759,7 +761,7 @@ func _check_water(p: SimPlayer) -> void:
 	p.splash_water = wi
 	p.splash_exit = RulesLogic.choose_splash_exit(w["exits"], pp, heading)
 	p.splash_stamped = false
-	p.diving = false
+	p.end_air_actions()
 	p.vel = Vector3.ZERO
 	Motor.set_body_enabled(p.body, false)
 	p.body.global_position = Vector3(pp.x, float(w["surface_y"]), pp.z)
@@ -843,7 +845,7 @@ func _check_bumps() -> void:
 			var push := minf(absf(c.speed) * 0.55 + 2.0, cfg.cart_bump_knockback_max)
 			r.vel = away * push + Vector3(0, 3.2, 0)
 			r.body.velocity = r.vel
-			r.diving = false
+			r.end_air_actions()
 			r.tag_phase = SimPlayer.TagPhase.NONE
 			r.bump_protect = cfg.bump_protect_s
 			_set_state(r, TC.PState.STUMBLE)

@@ -928,6 +928,13 @@ func _on_snapshot(s: Dictionary) -> void:
 		_reconcile(s)
 
 
+## One key per round result, so the results music starts once however many
+## times the result is presented (Pass 8).
+func _results_music_key(res: Dictionary) -> String:
+	var series: Dictionary = start.get("series", {})
+	return "%s:%d" % [str(res.get("match_id", start.get("match_id", ""))), int(series.get("round", 1))]
+
+
 func _reconcile(s: Dictionary) -> void:
 	if pred == null or not _me.has("motor"):
 		return
@@ -1482,7 +1489,8 @@ func _process(delta: float) -> void:
 		_finish_sent = true
 		if hud:
 			hud.round_over()   # V7: no menu or map left over the results
-		Sfx.music("results")
+		var oc := int(res.get("outcome", TC.Outcome.NONE))
+		Sfx.results(_results_music_key(res), oc == TC.Outcome.CANCELLED or oc == TC.Outcome.NONE)
 		get_tree().create_timer(cfg.results_hold_s).timeout.connect(func() -> void: finished.emit(res))
 	if info_phase < TC.Phase.PLAYING:
 		var cd := int(ceil(float(local_info().get("countdown", 0.0))))

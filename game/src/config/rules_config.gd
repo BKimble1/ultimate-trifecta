@@ -30,6 +30,7 @@ extends Resource
 @export var sprint_regen_delay_s: float = 0.35
 @export var sprint_regen_full_s: float = 3.6
 @export var sprint_min_to_start: float = 0.15
+@export var sprint_rearm_fraction: float = 0.45          # Pass 8: after running the meter dry, sprint re-arms only once it is released AND refilled this far
 @export var ground_accel: float = 46.0
 @export var ground_decel: float = 52.0
 @export var air_accel: float = 14.0
@@ -38,9 +39,9 @@ extends Resource
 @export var max_fall_speed: float = 30.0
 @export var coyote_time_s: float = 0.12
 @export var jump_buffer_s: float = 0.13
-@export var dive_speed: float = 8.6
+@export var dive_speed: float = 8.0                       # Pass 8: was 8.6 (a dive loop out-ran the Night Watch)
 @export var dive_up_velocity: float = 2.4
-@export var dive_land_s: float = 0.32
+@export var dive_land_s: float = 0.45                     # Pass 8: was 0.32; the landing recovery can no longer be skipped by a buffered jump
 @export var sneak_input_threshold: float = 0.5
 @export var turn_rate_deg: float = 900.0
 

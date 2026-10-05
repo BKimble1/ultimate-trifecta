@@ -15,7 +15,10 @@ extends RefCounted
 ## and, privately, the recipient's coin count (u8); EVENTS gain
 ## COIN_PICKUP.  Message types 60-79 are reserved for the V6 social
 ## messages (chat / hub); none of them is defined here.
-const VERSION := 6
+## Protocol 7 (Pass 8): the motor state's flags carry the sprint-exhausted
+## latch (bit 8), and the dive/landing rules changed, so a 1.7 peer can't
+## predict a 1.8 host: mismatched versions are refused at join.
+const VERSION := 7
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}

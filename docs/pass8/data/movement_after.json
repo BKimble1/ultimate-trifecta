@@ -1,0 +1,118 @@
+[
+  {
+    "avg_mps": 4.99,
+    "bursts_s": [],
+    "dives": 0,
+    "jumps": 0,
+    "label": "jog",
+    "max_mps": 5.0,
+    "secs": 25.0,
+    "sprint_toggles": 0
+  },
+  {
+    "avg_mps": 5.18,
+    "bursts_s": [
+      2.5
+    ],
+    "dives": 0,
+    "jumps": 0,
+    "label": "sprint held 30 s",
+    "max_mps": 7.4,
+    "secs": 30.0,
+    "sprint_toggles": 2
+  },
+  {
+    "avg_mps": 5.98,
+    "bursts_s": [
+      2.5,
+      1.25,
+      1.25,
+      1.25,
+      1.25,
+      1.25,
+      1.25,
+      1.25,
+      1.25
+    ],
+    "dives": 0,
+    "jumps": 0,
+    "label": "sprint, release, re-press at 50%",
+    "max_mps": 7.4,
+    "secs": 30.0,
+    "sprint_toggles": 18
+  },
+  {
+    "avg_mps": 5.19,
+    "bursts_s": [],
+    "dives": 22,
+    "jumps": 23,
+    "label": "jump taps 5/s",
+    "max_mps": 8.0,
+    "secs": 25.0,
+    "sprint_toggles": 0
+  },
+  {
+    "avg_mps": 5.52,
+    "bursts_s": [],
+    "dives": 23,
+    "jumps": 23,
+    "label": "jump/dive taps 10/s",
+    "max_mps": 8.0,
+    "secs": 25.0,
+    "sprint_toggles": 0
+  },
+  {
+    "avg_mps": 5.52,
+    "bursts_s": [
+      0.67,
+      0.67,
+      0.67,
+      0.67,
+      0.22,
+      0.38
+    ],
+    "dives": 23,
+    "jumps": 23,
+    "label": "jump/dive taps 10/s + sprint",
+    "max_mps": 8.0,
+    "secs": 25.0,
+    "sprint_toggles": 12
+  },
+  {
+    "avg_mps": 5.23,
+    "bursts_s": [],
+    "dives": 23,
+    "jumps": 23,
+    "label": "best jump/dive chain",
+    "max_mps": 8.0,
+    "secs": 25.0,
+    "sprint_toggles": 0
+  },
+  {
+    "avg_mps": 5.23,
+    "bursts_s": [
+      0.67,
+      0.67,
+      0.67,
+      0.67,
+      0.22,
+      0.38
+    ],
+    "dives": 23,
+    "jumps": 23,
+    "label": "best jump/dive chain + sprint",
+    "max_mps": 8.0,
+    "secs": 25.0,
+    "sprint_toggles": 12
+  },
+  {
+    "avg_mps": 5.06,
+    "bursts_s": [],
+    "dives": 9,
+    "jumps": 9,
+    "label": "run + one dive every 3 s",
+    "max_mps": 8.0,
+    "secs": 25.0,
+    "sprint_toggles": 0
+  }
+]

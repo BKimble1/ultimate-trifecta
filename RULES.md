@@ -114,9 +114,9 @@ One explicit contract, shown with the same values on the role reveal, in How to 
 | Move | Value |
 |---|---|
 | Run | 5 m/s |
-| Sprint | 7.4 m/s, from a meter of 2.5 s that regenerates fully in 3.6 s after a 0.35 s delay |
+| Sprint | 7.4 m/s, from a meter of 2.5 s that regenerates fully in 3.6 s after a 0.35 s delay. Running the meter dry leaves sprint off ("Sprint empty · ease off to recharge") until sprint is released (button up, or the thumb eased back from the stick's edge) and the meter is back to 45 %; the next press sprints at once |
 | Jump | Jump with 0.12 s coyote time and a 0.13 s jump buffer |
-| Dive | Press jump again in the air: an 8.6 m/s forward dive with a short landing |
+| Dive | Press jump again in the air: an 8.0 m/s forward dive, one per jump, then a 0.45 s landing recovery before the next jump (a press in its last 0.13 s jumps as it ends) |
 | Night Watch on foot | 6.6 m/s (see the tuning note) |
 
 Ground acceleration is high and turning is fast, so movement stays precise while the animation is silly.
@@ -138,8 +138,10 @@ Ground acceleration is high and turning is fast, so movement stays precise while
 | A 2 s sprint (gap gained) | +1.6 m | +1.5 m |
 
 - **Control/aim first.** In V3 the first "close-looking" press at 2.6 m missed every time: the wind-up cost 40% speed and the lunge kept its facing while the runner moved on. The assist and tracking, the faster wind-up and lunge and the tag-ready cue fixed the misses before any speed change.
-- **Then speed.** A runner cycling the sprint meter averaged ~5.8 m/s against 6.2 m/s, so straight pursuits took ~18 s. Night Watch foot speed went to 6.6 m/s and runner sprint to 7.4 m/s so a sprint is still a real burst (still slower than sprint, dive 8.6 and Turbo 8.0). Corners, walls, hedges, dives, water and the cart-free zones remain the runner's ways out.
+- **Then speed.** A runner cycling the sprint meter averaged ~5.8 m/s against 6.2 m/s, so straight pursuits took ~18 s. Night Watch foot speed went to 6.6 m/s and runner sprint to 7.4 m/s so a sprint is still a real burst (still slower than sprint, dive 8.6, now 8.0, and Turbo 8.0). Corners, walls, hedges, dives, water and the cart-free zones remain the runner's ways out.
 - These are measured scenario values, not device playtests; re-check with people on phones.
+
+**Pass 8 note (sprint pulsing and the dive loop).** Holding sprint used to restart it on every 15 % of refill, and a jump pressed during a dive fired on the landing tick and could dive again, so chained jump→dives held 8.05–8.45 m/s and out-ran the Night Watch. Now a held sprint stays off once the meter runs dry until it is released and back to 45 %, a dive is one per jump at 8.0 m/s, and its 0.45 s landing recovery can't be skipped. On flat ground the best dive loop averages 5.2 m/s, below sprinting in released-and-repressed bursts (6.0 m/s) and the Watch (6.6 m/s); in the pursuit scenario the Watch catches a dive-looping runner from 8 m in 4.5 s (it escaped before). Details and traces: `docs/pass8/movement.md`.
 
 ## Gadgets (runners)
 

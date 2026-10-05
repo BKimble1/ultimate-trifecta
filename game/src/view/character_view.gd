@@ -164,6 +164,7 @@ var _air_t := 0.0
 var _since_land := 9.0
 var _since_jump := 9.0
 var _dive_land_t := 0.0
+const DIVE_LAND_S := 0.45      # == RulesConfig.dive_land_s and the dive_land clip (Pass 8 landing recovery)
 var _arrive_t := 0.0
 var _ready_t := 0.0
 var _miss_t := 0.0
@@ -1099,7 +1100,7 @@ func _process_view(delta: float) -> void:
 	_air_vis = air and (vel.y > 1.0 or diving or _air_hold >= AIR_DEBOUNCE)
 	if _prev_air and not air and st == TC.PState.ACTIVE:
 		if _prev_diving or diving:
-			_dive_land_t = 0.32
+			_dive_land_t = DIVE_LAND_S
 		elif _fall_speed > 2.5 and _air_t > 0.12 and _since_land > 0.25:
 			_land(_fall_speed, speed)
 		_fall_speed = 0.0
