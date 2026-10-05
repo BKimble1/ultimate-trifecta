@@ -172,6 +172,41 @@ class MeshBuilder:
         return self
 
 
+# Pass 9: a trouser leg (or a ring on it) never crosses the body's midline
+# into the other leg.  Legs 21 cm apart with tubes up to 12-13 cm in radius
+# crossed by up to 2 cm at rest, so in a stride the inner face of one leg's
+# hem swept through the other thigh.  The inner side is eased onto a soft
+# floor MID_GAP from the midline (unchanged beyond MID_SOFT).
+MID_GAP = 0.003
+MID_SOFT = 0.02
+
+
+def clamp_midline(mb, start, side, gap=MID_GAP, soft=MID_SOFT, axis_x=0.105):
+    """Ease the vertices mb.v[start:] of one leg's piece (side -1 left, +1
+    right) off the midline: x*side >= gap, C1-continuous at x*side = soft.
+    The move is radial about the leg's axis (x = axis_x*side), so layers on
+    that leg (a hem ring on its trouser, a cuff on its sock) keep their
+    order and spacing at every angle.  Weights are left as computed (leg
+    weights depend on the height along the leg, not on x)."""
+    k = soft - gap
+    for i in range(start, len(mb.v)):
+        p = mb.v[i]
+        u = p.x * side
+        if u >= soft:
+            continue
+        dx = p.x - axis_x * side
+        c = -dx * side            # how far toward the midline (m)
+        if c <= 1e-9:
+            continue
+        u2 = gap + k * math.exp((u - soft) / k)
+        # scale the horizontal offset from the axis so x lands on u2
+        f = (axis_x - u2) / (axis_x - u)
+        # the axis is vertical to within a degree: y about the vertex's own
+        # height's axis point (the knee sits 1.2 cm forward)
+        ay = 0.012 * max(0.0, 1.0 - abs(p.z - 0.305) / 0.22)
+        mb.v[i] = Vector((axis_x * side + dx * f, ay + (p.y - ay) * f, p.z))
+
+
 def frame_from(tangent, up_hint=Vector((0, 1, 0))):
     t = Vector(tangent).normalized()
     if abs(t.dot(up_hint)) > 0.95:

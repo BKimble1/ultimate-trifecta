@@ -207,6 +207,7 @@ def build_starry():
             c, nn = leg_point(sx, z, ang, 0.022)
             star_at(mb, place_planar(c, nn, UP, prj), r, STAR_GOLD if k % 2 else STAR_CREAM, lambda q, sx=sx: leg_w(q, sx),
                     rot=0.5 * k, lift=0.002)
+    K.clamp_legs(mb)   # (Pass 9: the leg decals off the midline with the legs)
     return mb
 
 
@@ -301,10 +302,12 @@ def build_varsity():
     for sx in SIDES:
         s_end = rig.UPPER_LEN + rig.FORE_LEN - 0.03
         d = arm_dir(sx)
-        lathe(mb, shoulder(sx) + d * s_end, rot_align(d, FWD), [(-0.004, P.arm_radius(s_end) + 0.008), (0.0, P.arm_radius(s_end) + 0.02),
-              (0.026, P.arm_radius(s_end) + 0.02), (0.03, P.arm_radius(s_end) + 0.008)], WOOL_D, lambda q, sx=sx: arm_w(q, sx),
-              segs=16)
-        K.ring_on_arm(mb, sx, s_end + 0.013, 0.0205, 0.0032, IVORY, segs=16, squash=1.0, n=5)
+        # (Pass 9: the knit cuff hugs the wrist over the eased sleeve end; it
+        # stood 2 cm off the wrist at the old full sleeve width)
+        rc = P.sleeve_r(s_end + 0.015, 0.016) + 0.005
+        lathe(mb, shoulder(sx) + d * s_end, rot_align(d, FWD), [(-0.004, rc - 0.008), (0.0, rc), (0.026, rc), (0.03, rc - 0.008)],
+              WOOL_D, lambda q, sx=sx: arm_w(q, sx), segs=16)
+        K.ring_on_arm(mb, sx, s_end + 0.013, 0.0, 0.0032, IVORY, segs=16, squash=1.0, n=5, r=rc + 0.0005)
     # snaps down the front
     for k in range(5):
         z = 0.56 + 0.065 * k
@@ -329,9 +332,11 @@ def build_varsity():
     # track shorts with side stripes
     pelvis(mb, SHORTS_NAVY, 0.016, 0.60)
     for sx in SIDES:
-        K.leg_tube(mb, sx, 0.53, 0.41, lambda z: 0.028 + 0.012 * smoothstep(0.5, 0.41, z), SHORTS_NAVY, segs=18,
+        # (Pass 9: the hem follows the thigh with ~1.5 cm of air; it flared to
+        # 4 cm, a hoop round the leg)
+        K.leg_tube(mb, sx, 0.53, 0.41, lambda z: 0.028 - 0.014 * smoothstep(0.5, 0.41, z), SHORTS_NAVY, segs=18,
                    colfn=lambda p, sv, a, sx=sx: IVORY if (abs(p.x) > rig.HIP_X + 0.08 and abs(p.y) < 0.022) else None)
-        K.ring_on_leg(mb, sx, 0.413, 0.04, 0.007, IVORY)
+        K.ring_on_leg(mb, sx, 0.413, 0.014, 0.007, IVORY)
     leg_skin_and_socks(mb, 0.45, 0.205, SOCK_WHITE, stripes=([(0.165, 0.175), (0.183, 0.191)], S('#ffffff', T_PRIMARY, 0.9)))
     return mb
 
@@ -377,7 +382,7 @@ def build_raincoat():
         z += 0.025
     prof += [(0.875, 0.105), (0.88, 0.097), (0.86, 0.089)]
     lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, COAT, skirt_w, segs=40, ry_scale=TORSO_RY)
-    sleeves(mb, COAT, 0.024, bell=0.006, cuff_style=COAT_D, cuff_tube=0.02, lod=1)
+    sleeves(mb, COAT, 0.024, bell=0.006, cuff_style=COAT_D, cuff_tube=0.02, lod=1, cuff_ease=0.016)
     collar(mb, 0.036, COAT_D)
     # front placket
     pl = lambda u, v: coat_at(-u, v, 0.0)
@@ -413,7 +418,7 @@ def build_raincoat():
     sweep(mb, ell, [(0.012, 0.012)] * len(ell), COAT_D, lambda p, sv, i: hw(p), segs=8, twist_hint=FWD)
     # rain trousers between the hem and the boots
     for sx in SIDES:
-        K.leg_tube(mb, sx, 0.4, 0.26, 0.02, RAIN_TROUSER, segs=12)
+        K.leg_tube(mb, sx, 0.4, 0.235, 0.02, RAIN_TROUSER, segs=12)
     # tall rain boots (this outfit's own footwear)
     for sx in SIDES:
         _rain_boot(mb, sx)
@@ -426,13 +431,15 @@ def _rain_boot(mb, sx):
     cx = rig.HIP_X * sx
     slab(mb, P._foot_outline(sx, toe=0.175, heel=-0.075, w_heel=0.056, w_toe=0.07), 0.0, 0.03, BOOT_SOLE, fw, bevel=0.01)
     ellipsoid(mb, Vector((cx, 0.046, 0.026)), (0.066, 0.13, 0.078), BOOT, fw, segs=22, rings=14, cut_below=-0.05)
+    # (Pass 9: the shaft stops 4 cm under the knee: shin-rigid right up to
+    # it, its top and the trouser over it parted by 1.8 cm in a run)
     lathe(mb, Vector((cx, -0.004, 0)), Matrix.Identity(3),
-          [(0.04, 0.066), (0.1, 0.063), (0.18, 0.064), (0.25, 0.07), (0.285, 0.075), (0.293, 0.078), (0.296, 0.074),
-           (0.288, 0.066), (0.26, 0.062)], BOOT, fw, segs=22, ry_scale=1.04)
+          [(0.04, 0.066), (0.1, 0.063), (0.17, 0.064), (0.225, 0.069), (0.255, 0.074), (0.262, 0.077), (0.265, 0.073),
+           (0.257, 0.065), (0.235, 0.061)], BOOT, fw, segs=22, ry_scale=1.04)
     # sole band and a pull tab at the back of the shaft
     lathe(mb, Vector((cx, -0.004, 0)), Matrix.Identity(3), torus_profile(0.042, 0.066, 0.008, 8, 0.9), BOOT_SOLE, fw, segs=22,
           closed_profile=True, ry_scale=1.04)
-    ellipsoid(mb, Vector((cx, -0.073, 0.272)), (0.014, 0.006, 0.026), BOOT_SOLE, fw, segs=8, rings=6)
+    ellipsoid(mb, Vector((cx, -0.073, 0.242)), (0.014, 0.006, 0.026), BOOT_SOLE, fw, segs=8, rings=6)
 
 
 # ================================================================== CAMPUS COURIER
@@ -514,8 +521,8 @@ def build_courier():
     # cargo shorts with side pockets, skin legs and crew socks
     pelvis(mb, KHAKI_SHORTS, 0.016, 0.60)
     for sx in SIDES:
-        K.leg_tube(mb, sx, 0.53, 0.37, lambda z: 0.03 + 0.008 * smoothstep(0.5, 0.37, z), KHAKI_SHORTS, segs=16)
-        K.ring_on_leg(mb, sx, 0.374, 0.037, 0.009, KHAKI_SHORTS_D)
+        K.leg_tube(mb, sx, 0.53, 0.37, lambda z: 0.03 - 0.012 * smoothstep(0.5, 0.37, z), KHAKI_SHORTS, segs=16)
+        K.ring_on_leg(mb, sx, 0.374, 0.018, 0.009, KHAKI_SHORTS_D)
         prj = leg_project(sx, 0.036)
         c, nn = leg_point(sx, 0.46, 0.0, 0.036)
         decal(mb, K.rounded_rect(0.06, 0.07, 0.01), place_planar(c, nn, UP, prj), KHAKI_SHORTS_D, lambda q, sx=sx: leg_w(q, sx),
@@ -630,7 +637,9 @@ def build_scout():
         K.skin_arm(mb, sx, 0.22, SKIN)
         # epaulette tab
         c = shoulder(sx) + Vector((-0.035 * sx, 0, 0.05))
-        ellipsoid(mb, c, (0.05, 0.022, 0.008), SCOUT_KHAKI_D, lambda q, sx=sx: {'shoulder' + ('.L' if sx < 0 else '.R'): 1.0},
+        # (Pass 9: the epaulette follows the shoulder cap it lies on; rigid on
+        # the shoulder bone it lifted off the cap by up to 7 cm with the arm up)
+        ellipsoid(mb, c, (0.05, 0.022, 0.008), SCOUT_KHAKI_D, lambda q, sx=sx: P.shoulder_cap_w(q, sx),
                   segs=12, rings=6)
     vg = 0.036
     build_vest(mb, SCOUT_GREEN, S('#efe3c2', rough=0.8), vg, gap=lambda z: vest_gap(z, 0.2, 0.46))
@@ -640,13 +649,15 @@ def build_scout():
     lathe(mb, Vector((0, TORSO_CY - 0.006, 0)), Matrix.Identity(3), torus_profile(0.876, 0.112, 0.018, 8, 1.1), SCARF, torso_w,
           segs=24, closed_profile=True, ry_scale=0.92)
     for sx in SIDES:
-        pts = [torso_at(0.06 * sx, 0.862, g + 0.012)[0], torso_at(0.022 * sx, 0.8, g + 0.012)[0],
+        # (Pass 9: the tails meet under the woggle, which gathers them; they
+        # passed either side of it and the ring floated between them)
+        pts = [torso_at(0.06 * sx, 0.862, g + 0.012)[0], torso_at(0.009 * sx, 0.79, g + 0.012)[0],
                torso_at(0.012 * sx, 0.74, g + 0.01)[0], torso_at(0.022 * sx, 0.70, g + 0.008)[0]]
         pts = _smooth_path(pts, 0.012)
         sweep(mb, pts, [(lerp(0.006, 0.004, i / (len(pts) - 1)), lerp(0.016, 0.012, i / (len(pts) - 1))) for i in range(len(pts))],
               SCARF, lambda p, sv, i: torso_w(p), segs=6, twist_hint=FWD)
     p, n = torso_at(0.0, 0.79, g + 0.02)
-    lathe(mb, p, rot_align(UP, n), torus_profile(0.0, 0.014, 0.0055, 8), BRASS, torso_w, segs=14, closed_profile=True)
+    lathe(mb, p, rot_align(UP, n), torus_profile(0.0, 0.02, 0.0055, 8), BRASS, torso_w, segs=14, closed_profile=True, ry_scale=0.55)
     decal(mb, [(0.0, -0.11), (0.07, 0.0), (-0.07, 0.0)], place_back(0.0, 0.85, vg + 0.002), SCARF, torso_w, thick=0.004)
     # belt, buckle and the little lantern on the left hip
     lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), torus_profile(0.56, torso_r(0.56) + 0.024, 0.016, 6, 0.75), BELT,
@@ -657,8 +668,8 @@ def build_scout():
     # shorts, knee socks
     pelvis(mb, OLIVE, 0.016, 0.60)
     for sx in SIDES:
-        K.leg_tube(mb, sx, 0.53, 0.385, lambda z: 0.03 + 0.006 * smoothstep(0.5, 0.385, z), OLIVE, segs=16)
-        K.ring_on_leg(mb, sx, 0.388, 0.034, 0.008, OLIVE_D)
+        K.leg_tube(mb, sx, 0.53, 0.385, lambda z: 0.03 - 0.014 * smoothstep(0.5, 0.385, z), OLIVE, segs=16)
+        K.ring_on_leg(mb, sx, 0.388, 0.016, 0.008, OLIVE_D)
     leg_skin_and_socks(mb, 0.42, 0.265, SCOUT_GREEN, stripes=([(0.235, 0.255)], S('#efe3c2', rough=0.9)), rib=SCOUT_GREEN_D)
     return mb
 
@@ -852,16 +863,17 @@ def build_jogger():
             seam.append(Vector((sx * r, TORSO_CY, z)))
         K.path_tube(mb, seam, 0.0032, GLOW, torso_w, segs=4, hint=FWD, cap='flat')
         K.ring_on_arm(mb, sx, 0.22, 0.012, 0.0035, GLOW, segs=14, squash=1.0, n=4)
-        K.ring_on_arm(mb, sx, 0.302, 0.02, 0.0085, GLOW, segs=14, squash=1.0, n=5)
+        # (Pass 9: the wristband sits on the eased cuff)
+        K.ring_on_arm(mb, sx, 0.302, 0.0, 0.0085, GLOW, segs=14, squash=1.0, n=5, r=P.sleeve_r(0.302, 0.011) + 0.004)
     # running shorts over leggings with glow stripes and ankle bands
     pelvis(mb, JOG_SHORTS, 0.02, 0.60)
     for sx in SIDES:
-        K.leg_tube(mb, sx, 0.53, 0.44, lambda z: 0.03 + 0.006 * smoothstep(0.5, 0.44, z), JOG_SHORTS, segs=16)
-        K.ring_on_leg(mb, sx, 0.442, 0.036, 0.004, GLOW, segs=16, n=4)
+        K.leg_tube(mb, sx, 0.53, 0.44, lambda z: 0.03 - 0.008 * smoothstep(0.5, 0.44, z), JOG_SHORTS, segs=16)
+        K.ring_on_leg(mb, sx, 0.442, 0.022, 0.004, GLOW, segs=16, n=4)
         K.leg_tube(mb, sx, 0.47, 0.09, 0.012, JOG_TOP, segs=14)
         stripe = [leg_point(sx, z, 0.0, 0.014)[0] for z in (0.43, 0.34, 0.26, 0.18)]
         K.path_tube(mb, stripe, 0.003, GLOW, lambda q, sx=sx: leg_w(q, sx), segs=4, hint=Vector((sx, 0, 0)), cap='flat')
-        K.ring_on_leg(mb, sx, 0.15, 0.016, 0.004, GLOW, segs=14, n=4)
+        K.ring_on_leg(mb, sx, 0.15, 0.0135, 0.004, GLOW, segs=14, n=4)
     return mb
 
 
@@ -895,7 +907,9 @@ def build_cardigan():
     sleeves(mb, OAT, 0.026, cuff_style=OAT_D, cuff_tube=0.02, lod=1)
     # shirt cuffs out of the cardigan sleeves
     for sx in SIDES:
-        K.ring_on_arm(mb, sx, rig.UPPER_LEN + rig.FORE_LEN - 0.004, 0.006, 0.006, SHIRT_WHITE, segs=14, n=5)
+        # (Pass 9: the shirt cuff fills the eased cardigan cuff round the wrist)
+        K.ring_on_arm(mb, sx, rig.UPPER_LEN + rig.FORE_LEN - 0.004, 0.0, 0.0055, SHIRT_WHITE, segs=14, n=5,
+                      r=P.bare_arm_radius(rig.UPPER_LEN + rig.FORE_LEN - 0.004) + 0.0055)
         # suede elbow patches
         prj = sleeve_project(sx, 0.026)
         c, nn = arm_point(sx, rig.UPPER_LEN + 0.005, -110.0, P.arm_radius(rig.UPPER_LEN) + 0.026)
