@@ -282,20 +282,44 @@ def skin_leg(mb, side, top_z, bottom_z, skin_style, segs=14, grow=0.0):
 def leg_tube(mb, side, top_z, bottom_z, grow, style, segs=16, colfn=None, flat_end=False, rfn=None, step=0.025):
     """A trouser/sock tube between two heights along the leg."""
     from parts import _dense_path, leg_radius
+    from geo import clamp_midline
     poly = _clip_leg(rig.leg_path(side, 0.55), top_z, bottom_z)
     poly = _dense_path(poly, step)
     radii = []
     for q in poly:
         r = leg_radius(rig.leg_s(q, side)) + (grow(q.z) if callable(grow) else grow)
         radii.append((r, r * 0.96))
+    start = len(mb.v)
     sweep(mb, poly, radii, style, lambda p, sv, i: rig.leg_w(p, side), segs=segs, cap_start=None,
           cap_end='flat' if flat_end else None, twist_hint=FWD, colfn=colfn)
+    clamp_midline(mb, start, side)
     return poly, radii
+
+
+def clamp_legs(mb, start=0, z_max=0.46):
+    """Pass 9: every leg piece of a part (vertices whose main weight is one
+    leg's thigh, shin or foot, below the crotch) eased off the midline as the
+    trouser legs are (geo.clamp_midline), for pieces built on the analytic
+    leg surface after them (decals, boot collars)."""
+    from geo import clamp_midline
+    for i in range(start, len(mb.v)):
+        w = mb.w[i]
+        if not w or mb.v[i].z > z_max:
+            continue
+        b = max(w.items(), key=lambda kv: kv[1])[0]
+        if b.startswith(('thigh', 'shin', 'foot')):
+            side = -1 if b.endswith('.L') else 1
+            if mb.v[i].x * side < 0.02:
+                tmp = MeshBuilder('tmp')
+                tmp.v = [mb.v[i]]
+                clamp_midline(tmp, 0, side)
+                mb.v[i] = tmp.v[0]
 
 
 def ring_on_leg(mb, side, z, grow, tube, style, segs=16, squash=0.85, n=6):
     from parts import leg_radius
-    from geo import torus_profile
+    from geo import torus_profile, clamp_midline
+    start = len(mb.v)
     pts = rig.leg_path(side, 0.55)
     k, a = pts[1], pts[2]
     if z >= k.z:
@@ -308,14 +332,19 @@ def ring_on_leg(mb, side, z, grow, tube, style, segs=16, squash=0.85, n=6):
     r = leg_radius(rig.leg_s(c, side)) + grow
     lathe(mb, c, rot_align(-d, FWD), torus_profile(0.0, r, tube, n, squash), style, lambda p: rig.leg_w(p, side), segs=segs,
           closed_profile=True)
+    clamp_midline(mb, start, side)
 
 
-def ring_on_arm(mb, side, s, grow, tube, style, segs=16, squash=0.85, n=6):
+def ring_on_arm(mb, side, s, grow, tube, style, segs=16, squash=0.85, n=6, r=None):
+    """A ring round the arm at arm parameter s, its centre circle at
+    arm_radius(s) + grow, or (Pass 9) at radius r: pass the radius of the
+    surface it sits on (parts.sleeve_r for an eased sleeve end)."""
     from parts import arm_radius
     from geo import torus_profile
     d = rig.arm_dir(side)
     c = rig.shoulder(side) + d * s
-    lathe(mb, c, rot_align(d, FWD), torus_profile(0.0, arm_radius(s) + grow, tube, n, squash), style,
+    rr = arm_radius(s) + grow if r is None else r
+    lathe(mb, c, rot_align(d, FWD), torus_profile(0.0, rr, tube, n, squash), style,
           lambda p: rig.arm_w(p, side), segs=segs, closed_profile=True)
 
 
