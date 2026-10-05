@@ -108,9 +108,11 @@ static func draw_button(ci: CanvasItem, b: Dictionary, name: String, label: Stri
 
 
 ## The stick: base ring, the sprint threshold ring (runners, edge sprint)
-## and the knob.
+## and the knob.  Pass 8: `latched` (the sprint-exhausted latch) draws the
+## meter ring coral and dashed, and the stick never shows sprint as on while
+## the latch keeps it off (the caller passes `sprinting` false then).
 static func draw_stick(ci: CanvasItem, base: Vector2, knob: Vector2, R: float, knob_r: float, opacity: float, active: bool,
-		sprint_ring: float = 0.0, sprinting: bool = false, meter: float = -1.0) -> void:
+		sprint_ring: float = 0.0, sprinting: bool = false, meter: float = -1.0, latched: bool = false) -> void:
 	var a := (0.9 if active else 0.42) * opacity
 	ci.draw_circle(base, R, Color(UIKit.NAVY, 0.3 * a))
 	ci.draw_arc(base, R, 0, TAU, 56, Color(UIKit.IVORY, 0.42 * a), 2.5, true)
@@ -120,7 +122,13 @@ static func draw_stick(ci: CanvasItem, base: Vector2, knob: Vector2, R: float, k
 		for i in 24:
 			var a0 := TAU * float(i) / 24.0
 			ci.draw_arc(base, rr, a0, a0 + TAU / 48.0, 4, Color(UIKit.AMBER if sprinting else UIKit.IVORY, (0.8 if sprinting else 0.32) * a), 2.0, true)
-	if meter >= 0.0:
+	if meter >= 0.0 and latched:
+		# recharging: the filled part in short coral dashes (not colour alone)
+		var n := maxi(1, int(round(36.0 * meter)))
+		for i in n:
+			var a0 := -PI * 0.5 + TAU * meter * float(i) / float(n)
+			ci.draw_arc(base, R + 8, a0, a0 + TAU * meter / float(n) * 0.6, 4, Color(UIKit.BAD, 0.7 * opacity), 5.0, true)
+	elif meter >= 0.0:
 		var col := UIKit.AMBER if meter > 0.15 else UIKit.BAD
 		ci.draw_arc(base, R + 8, -PI * 0.5, -PI * 0.5 + TAU * meter, 48, Color(col, (0.75 if sprinting else 0.4) * opacity), 5.0, true)
 	ci.draw_circle(knob, knob_r, Color(UIKit.AMBER, 0.9 * opacity) if sprinting else Color(UIKit.IVORY, (0.45 * a + 0.2)))
@@ -374,6 +382,15 @@ class TouchSurface:
 			draw_string(f, Vector2(x + gw + 10.0, y + h * 0.5 + fs * 0.36), String(r[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UIKit.IVORY)
 			y += h + gap
 
+	## What the stick shows for sprint (Pass 8): on only while sprint is really
+	## running; `latched` while the exhausted latch keeps it off.
+	func stick_sprint_state() -> Dictionary:
+		var c := _ctx_cache
+		var info: Dictionary = mc.hud.info if mc != null and mc.hud else {}
+		var runner_foot: bool = c.get("role", 0) == TC.Role.RUNNER and not bool(c.get("in_cart", false))
+		var latched := runner_foot and bool(info.get("sprint_exhausted", false))
+		return {"sprinting": Controls.touch_sprint and not latched, "latched": latched}
+
 	func _draw() -> void:
 		if not _show():
 			_draw_hints()
@@ -390,9 +407,10 @@ class TouchSurface:
 		if active:
 			knob = router.knob_pos()   # the ring as drawn + the real offset
 		var runner_foot: bool = c.get("role", 0) == TC.Role.RUNNER and not bool(c.get("in_cart", false))
+		var spr := stick_sprint_state()
 		TouchControls.draw_stick(self, base, knob, R, float(res["knob_r"]), opacity, active,
-			router.sprint_on if runner_foot and router.edge_sprint else 0.0, Controls.touch_sprint,
-			float(info.get("sprint", 1.0)) if runner_foot else -1.0)
+			router.sprint_on if runner_foot and router.edge_sprint else 0.0, bool(spr["sprinting"]),
+			float(info.get("sprint", 1.0)) if runner_foot else -1.0, bool(spr["latched"]))
 		if bool(c.get("in_cart", false)):
 			var f0 := UIKit.font_w(650)
 			draw_string(f0, base + Vector2(-30, R + 34), "Steer", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(UIKit.IVORY, 0.75 * opacity))

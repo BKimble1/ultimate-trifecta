@@ -51,6 +51,8 @@ func test_edge_sprint_parks_rests_and_rearms() -> void:
 		var was := p.sprinting
 		var first_sprint := -1
 		var exhausted_seen := false
+		var shown_on_while_latched := 0
+		var shown_latched := 0
 		for i in int(float(ph[1]) * 60.0):
 			await t.get_tree().physics_frame
 			if p.sprinting and not was:
@@ -59,11 +61,17 @@ func test_edge_sprint_parks_rests_and_rearms() -> void:
 				first_sprint = i
 			was = p.sprinting
 			exhausted_seen = exhausted_seen or p.sprint_exhausted
+			# what the stick draws follows the motor (sampled once the HUD has the state)
+			if p.sprint_exhausted and mc.hud and bool(mc.hud.info.get("sprint_exhausted", false)):
+				var st: Dictionary = mc.touch.surface.stick_sprint_state()
+				shown_on_while_latched += 1 if bool(st["sprinting"]) else 0
+				shown_latched += 1 if bool(st["latched"]) else 0
 			# keep the runner on the clear straight (motor state untouched)
 			if (p.body.global_position - start).dot(fwd) > 34.0:
 				p.body.global_position -= fwd * 28.0
 		log[ph[0]] = {"bursts": bursts, "first": first_sprint, "end_sprinting": p.sprinting, "meter": p.sprint,
-			"exhausted": p.sprint_exhausted, "exhausted_seen": exhausted_seen, "held": Controls.touch_sprint}
+			"exhausted": p.sprint_exhausted, "exhausted_seen": exhausted_seen, "held": Controls.touch_sprint,
+			"shown_on_while_latched": shown_on_while_latched, "shown_latched": shown_latched}
 	sr._touch(0, last, false)
 	var park: Dictionary = log["park at the edge"]
 	var ease: Dictionary = log["ease off under the exit threshold"]
@@ -71,6 +79,8 @@ func test_edge_sprint_parks_rests_and_rearms() -> void:
 	t.check(int(park["first"]) >= 0 and int(park["first"]) <= 3, "the edge push sprints at once (tick %d)" % int(park["first"]))
 	t.eq(int(park["bursts"]), 1, "parked at the edge for 6 s: one burst, never restarted (%d bursts)" % int(park["bursts"]))
 	t.check(bool(park["exhausted"]) and not bool(park["end_sprinting"]), "and still parked, it runs with the meter empty")
+	t.check(int(park["shown_latched"]) > 60 and int(park["shown_on_while_latched"]) == 0,
+		"parked and latched, the stick shows the latch, never sprint on (%d latched frames, %d shown on)" % [int(park["shown_latched"]), int(park["shown_on_while_latched"])])
 	t.check(not bool(ease["held"]), "easing under the exit threshold releases sprint")
 	t.check(not bool(ease["exhausted"]) and float(ease["meter"]) >= Rules.cfg.sprint_rearm_fraction, "and lets the meter re-arm (%.2f)" % float(ease["meter"]))
 	t.check(int(again["first"]) >= 0 and int(again["first"]) <= 3, "pushing to the edge again sprints at once (tick %d)" % int(again["first"]))
