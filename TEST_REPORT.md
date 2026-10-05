@@ -81,6 +81,51 @@ builds. Details, traces and normal-speed clips: [docs/pass8/movement.md](docs/pa
 - The Shop's includes copy said the Locker's shoes stay for outfits that
   bring their own footwear; it now says what each outfit replaces.
 
+## P8.5 iOS build (CI iOS) and TestFlight
+
+- **Gating CI:** push run #110 (commit `7e9602a`, the final game code)
+  headless tests passed; upload run #112 (commit `406773c`, the same code
+  plus evidence and documentation): **482 tests, 102,855 checks, 0
+  failures**; Xcode project export, launch and branding audit **PASS**
+  (both launch images 1656², opaque, black corners; the logo's box matches
+  the vector exactly; 0 detached glow and 0 inner dip pixels; the boot
+  splash identical; 0 "powered by" strings); signed archive and upload,
+  `CFBundleShortVersionString` 1.8, `CFBundleVersion` 8; 40 Metal
+  `shader_cache` entries. The baking editor exited with code 250 after the
+  export (a Godot crash report on the runner, before the Simulator run);
+  the lane judged the export by its output, which was complete, and that
+  output was signed and uploaded (see TESTFLIGHT_RELEASE).
+- **Simulator (x86_64, ~1 fps):** cold launch running, no crash report for
+  the app, 0 script errors, 23 screenshots; still preparing the bot round
+  (phase 1) when the window closed. Not a phone.
+- **TestFlight:** **1.8 (8)** uploaded 2026-10-05 06:11:05 UTC; App Store
+  Connect build `39a7c5ae-4c47-4f82-997c-58b819b44d89`, processing `VALID`,
+  `INTERNAL_ONLY`, internal state `IN_BETA_TESTING` (external
+  `NOT_APPLICABLE`), What to Test set (1,772 characters); the existing
+  internal group receives every build automatically. Read from Apple's API
+  by run #112 at 06:25 UTC. No testers added, nothing submitted, no
+  purchase made. Status run #111 beforehand: builds 1–7, all eight in-app
+  products `MISSING`.
+
+## P8.6 Not verified (exact remaining checks)
+
+- Everything on a real iPhone/iPad: sprint and dive feel with a thumb
+  (edge sprint, Sprint button, controller), the HUD, card and pace at
+  phone scale and whether they read "at a glance" (no comprehension test
+  with people was run), the Shop countdowns across sleep, the new Season
+  Pass page, the six outfits at play distance, frame rate and heat.
+- The startup on a phone: PNG screenshots of the launch screen, the boot
+  splash and the curtain, ideally on an SE/XR-class 2x iPhone and a
+  13-inch iPad (upscaled 1.24× until the curtain, documented in
+  docs/pass8/logo.md).
+- Game Center rounds between two devices on protocol 7 (Runner pace on the
+  wire, the latch in prediction).
+- Live commerce: the service deployed, the eight products created and
+  priced, a rotating offer across 00:00 UTC, a Coin pack in Sandbox, a
+  challenge completed in a two-device round. None is possible until the
+  account holder's steps in TESTFLIGHT_RELEASE are done.
+- The results track (not supplied; the RESULTS state is ready for it).
+
 # V8 (version 1.7)
 
 V8 is the smoothness, animation and finish pass on 1.6 (6): bot path

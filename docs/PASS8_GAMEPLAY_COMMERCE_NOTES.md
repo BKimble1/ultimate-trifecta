@@ -23,6 +23,12 @@ evidence index):
 | Challenges (§10) | [docs/pass8/challenges.md](pass8/challenges.md) | [docs/media/pass8/challenges/](media/pass8/challenges/README.md) |
 | Startup logo edges (§11) | [docs/pass8/logo.md](pass8/logo.md) | [docs/media/pass8/logo/](media/pass8/logo/) |
 
+**Release:** 1.8 (8), uploaded by run #112 from commit `406773c` (the
+code of `7e9602a`), `VALID`, `INTERNAL_ONLY`, `IN_BETA_TESTING` for the
+existing internal group, What to Test set. Gate: 482 tests, 102,855 checks,
+0 failures; service 60/60. Details in TESTFLIGHT_RELEASE.md and
+TEST_REPORT.md (Pass 8).
+
 ## Defect register
 
 Owner symptom → reproduction → measured cause → change → evidence.
