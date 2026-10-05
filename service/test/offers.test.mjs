@@ -58,8 +58,9 @@ test('the catalogue schedule follows its written rule', () => {
   const sec = E.CATALOGUE.offers;
   const rule = sec.rule;
   const sched = O.buildSchedule(sec);
-  assert.ok(sched.offers.length >= 8 * 7 * 2, 'a bounded schedule of at least 8 weeks');
-  assert.ok(sched.offers.length <= 12 * 7 * 2 + 4, 'and at most about 12 weeks');
+  assert.ok(sched.offers.length >= 8 * 7 * 2, 'a written schedule of at least 8 weeks');
+  assert.ok(sched.offers[sched.offers.length - 1].ends_at >= Date.parse('2027-03-01T00:00:00Z'),
+    'written well past launch (FINAL_RELEASE_SWEEP: it used to end 2026-12-29)');
   assert.equal(rule.slots, 4, 'four Featured slots');
   assert.deepEqual(ROTATION.slice().sort(), ['outfit:arcade_sprinter', 'outfit:bedtime_bandit', 'outfit:campus_courier', 'outfit:cloud_nine',
     'outfit:lantern_scout', 'outfit:midnight_mechanic', 'outfit:moonwalk_cadet', 'outfit:pumpkin_pajamas', 'outfit:raincoat_explorer',
@@ -104,6 +105,65 @@ test('the catalogue schedule follows its written rule', () => {
   }
 });
 
+// FINAL_RELEASE_SWEEP: the Shop never runs out of offers.
+test('after the written schedule the rule continues from the cycle, from the service clock', async () => {
+  const sec = E.CATALOGUE.offers;
+  const sched = O.buildSchedule(sec);
+  assert.ok(sched.cycle, 'the catalogue has a cycle (tools/make_offer_schedule.py)');
+  const last = sched.offers[sched.offers.length - 1];
+  assert.ok(sched.cycle.from > sched.offers.reduce((m, o) => Math.max(m, o.starts_at), 0), 'the cycle starts after every written offer started');
+  // the seam and the next three years: always four distinct skins, one per
+  // slot, two changes a day, every offer 48 h, never straight back
+  const seen = new Map();
+  const start = last.ends_at - 30 * DAY;
+  const end = sched.cycle.from + 3 * 365 * DAY;
+  for (let t = start; t < end; t += 6 * HOUR) {
+    const on = O.activeAt(sched, t);
+    assert.equal(on.length, 4, `four offers at ${new Date(t).toISOString()}`);
+    assert.equal(new Set(on.map((o) => o.item_id)).size, 4, 'never the same skin twice at once');
+    assert.deepEqual(on.map((o) => o.slot).sort(), [1, 2, 3, 4]);
+    for (const o of on) {
+      assert.equal(o.ends_at - o.starts_at, 48 * HOUR);
+      assert.equal(o.price, E.item(o.item_id).price, 'the catalogue price');
+      const prev = seen.get(o.offer_id);
+      if (prev) assert.deepEqual(prev, o, 'an id always names the same offer');
+      seen.set(o.offer_id, o);
+    }
+  }
+  const byStart = [...seen.values()];
+  for (const o of byStart) {
+    assert.ok(!byStart.some((x) => x.item_id === o.item_id && x.starts_at === o.ends_at), `${o.offer_id}: ${o.item_id} doesn't come straight back`);
+    // a computed offer is found by its id exactly as it was listed
+    assert.deepEqual({ ...O.offerById(sched, o.offer_id) }, { ...o });
+  }
+  // ids the rule never produced are refused
+  assert.equal(O.offerById(sched, 'r1-20280601-s9'), null, 'no such slot');
+  assert.equal(O.offerById(sched, 'nonsense'), null);
+  assert.equal(O.offerById(sched, 'r1-20990230-s1'), null, 'an impossible date');
+  assert.equal(O.offerById(sched, 'r2-20280601-s1'), null, 'another revision');
+  // a purchase of a computed offer, far past the written schedule, on the service clock
+  const ctx = setup();
+  ctx.clock.t = Date.parse('2028-06-01T07:00:00Z');
+  const a = await user(ctx, 'T:_ann', 'Ann Otter');
+  await grant(ctx, a, 5000);
+  const cur = (await call(ctx, 'GET', '/v1/shop/offers')).body.current;
+  const pick = cur[0];
+  const ok = await spend(ctx, a, pick.item_id, pick.offer_id, pick.price, 'cycle-buy-01');
+  assert.equal(ok.status, 200, JSON.stringify(ok.body));
+  assert.equal(ok.body.offer.offer_id, pick.offer_id);
+  // its window ends: the same offer is refused without a charge
+  ctx.clock.t = pick.ends_at;
+  const b = await user(ctx, 'T:_ben', 'Ben Otter');
+  await grant(ctx, b, 5000);
+  const late = await spend(ctx, b, pick.item_id, pick.offer_id, pick.price, 'cycle-buy-02');
+  assert.equal(late.body.error, 'offer_changed');
+  assert.equal(late.body.reason, 'expired');
+  assert.equal((await wallet(ctx, b)).balance, 5000);
+  // a skin that isn't on sale now can't be bought through a cycle id from another day
+  const other = await spend(ctx, b, pick.item_id, 'r1-20280601-s9', pick.price, 'cycle-buy-03');
+  assert.equal(other.body.reason, 'unknown_offer');
+});
+
 test('the written schedule is what the tool generates from the rule', (t) => {
   const tool = fileURLToPath(new URL('../../tools/make_offer_schedule.py', import.meta.url));
   const r = spawnSync('python3', [tool, '--check'], { encoding: 'utf8' });
@@ -133,11 +193,15 @@ test('GET /v1/shop/offers: the service clock, the current and the upcoming offer
   ctx.clock.t = Date.parse('2026-10-07T00:00:00Z');
   const at = (await call(ctx, 'GET', '/v1/shop/offers')).body;
   assert.deepEqual(at.current.map((o) => o.item_id), ['outfit:lantern_scout', 'outfit:campus_courier', 'outfit:cloud_nine', 'outfit:bedtime_bandit']);
-  // past the written schedule: nothing on sale (the Shop says so), never a made-up offer
-  ctx.clock.t = Date.parse('2027-06-01T00:00:00Z');
+  // FINAL_RELEASE_SWEEP: past the written schedule the rule continues (the
+  // catalogue's cycle): four offers, never an empty Shop
+  ctx.clock.t = Date.parse('2028-06-01T07:00:00Z');
   const late = (await call(ctx, 'GET', '/v1/shop/offers')).body;
-  assert.deepEqual(late.current, []);
-  assert.equal(late.next_change_at, null);
+  assert.equal(late.current.length, 4);
+  assert.equal(new Set(late.current.map((o) => o.item_id)).size, 4);
+  assert.ok(late.current.every((o) => /^r1-2028(05(30|31)|0601)-s[1-4]$/.test(o.offer_id)), late.current.map((o) => o.offer_id).join());
+  assert.equal(late.next_change_at, Date.parse('2028-06-02T00:00:00Z'));
+  assert.ok(late.upcoming.length >= 4 && late.upcoming.every((o) => o.starts_at > late.server_time && o.starts_at <= late.known_until));
   const cfg = await call(ctx, 'GET', '/v1/config');
   assert.ok(cfg.body.features.includes('shop_offers'), 'the deployment says it serves offers');
 });

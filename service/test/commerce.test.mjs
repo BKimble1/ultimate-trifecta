@@ -105,7 +105,9 @@ test('App Store checks: bundle, environment, product, type', async () => {
   const ctx = setup();
   const a = await user(ctx, 'T:_ann', 'Ann Otter');
   assert.equal((await deliver(ctx, a, storeTx(ctx, { bundleId: 'com.other.app' }))).body.error, 'wrong_app');
-  assert.equal((await deliver(ctx, a, storeTx(ctx, { environment: 'Production' }))).body.error, 'wrong_environment', 'a production purchase never reaches the sandbox ledger');
+  const prodTx = await deliver(ctx, a, storeTx(ctx, { environment: 'Production' }));
+  assert.equal(prodTx.status, 409);
+  assert.equal(prodTx.body.error, 'production_purchase', 'a production purchase never reaches the sandbox ledger (the game moves to production)');
   assert.equal((await deliver(ctx, a, storeTx(ctx, { environment: 'Xcode' }))).body.error, 'wrong_environment', 'local Xcode StoreKit testing never reaches a ledger');
   assert.equal((await deliver(ctx, a, storeTx(ctx, { productId: 'com.idlery.ultimatetrifecta.coins.999999' }))).body.error, 'unknown_product');
   assert.equal((await deliver(ctx, a, storeTx(ctx, { type: 'Non-Consumable' }))).body.extra?.reason ?? (await deliver(ctx, a, storeTx(ctx, { type: 'Non-Consumable' }))).body.reason, 'type');
@@ -118,7 +120,9 @@ test('App Store checks: bundle, environment, product, type', async () => {
 test('production deployment: production purchases only, separate ledger', async () => {
   const ctx = setup({ ENVIRONMENT: 'production', APPLE_ENVIRONMENT: 'Production' });
   const a = await user(ctx, 'T:_ann', 'Ann Otter');
-  assert.equal((await deliver(ctx, a, storeTx(ctx))).body.error, 'wrong_environment', 'a sandbox (TestFlight) credit never becomes production Coins');
+  const sb = await deliver(ctx, a, storeTx(ctx));
+  assert.equal(sb.status, 409);
+  assert.equal(sb.body.error, 'sandbox_purchase', 'a sandbox (TestFlight / App Review) credit never becomes production Coins');
   const r = await deliver(ctx, a, storeTx(ctx, { environment: 'Production' }));
   assert.equal(r.body.wallet.balance, 1500);
   assert.equal(r.body.wallet.environment, 'production');

@@ -40,6 +40,8 @@ export function makeEnv(over = {}) {
     SESSION_KEY: 'test-session-key-0123456789abcdefghijklmnop',
     ADMISSION_PRIVATE_KEY: admPriv.export({ type: 'pkcs8', format: 'pem' }),
     ADMIN_TOKEN: 'test-admin-token-0123456789abcdef',
+    // the same key on both deployments (docs/COMMERCE_SETUP.md)
+    APP_ACCOUNT_TOKEN_KEY: 'test-app-account-token-key-0123456789abcdef',
     __now: () => clock.t,
     __fetch: async (url) => {
       fetches.push(url);

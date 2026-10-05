@@ -17,10 +17,19 @@
 //    service's time and have that price.  Otherwise nothing is charged
 //    (409 offer_changed).  A plain item-id spend for a rotating item is
 //    accepted only while that item has an active offer.
+//
+// FINAL_RELEASE_SWEEP: after the written schedule the rule continues from
+// the catalogue's "cycle" (one period of the rule's steady state, written by
+// tools/make_offer_schedule.py and checked there to equal the rule
+// continued), so the Shop never runs out of offers.  Those offers are
+// computed from this service's clock with the same ids the rule would have
+// written ("r<revision>-<YYYYMMDD>-s<slot>"), and are checked exactly like
+// written ones.
 import { ApiError, json } from './http.js';
 import * as E from './economy.js';
 
 const HOUR = 3600 * 1000;
+const DAY = 24 * HOUR;
 // how far ahead the client is told about (it rolls its countdowns forward
 // inside this window and asks again before it ends)
 export const LOOKAHEAD_MS = 72 * HOUR;
@@ -39,7 +48,67 @@ export function buildSchedule(section) {
     starts_at: toMs(o.starts_at_utc), ends_at: toMs(o.ends_at_utc),
   }));
   offers.sort((a, b) => a.starts_at - b.starts_at || a.slot - b.slot);
-  return { revision: sec.schedule_revision ?? 1, slots: (sec.rule && sec.rule.slots) || 4, offers, byId: new Map(offers.map((o) => [o.offer_id, o])) };
+  return { revision: sec.schedule_revision ?? 1, slots: (sec.rule && sec.rule.slots) || 4, offers, byId: new Map(offers.map((o) => [o.offer_id, o])),
+    cycle: buildCycle(sec.cycle, offers) };
+}
+
+// The fallback cycle: {from, anchor, period (days), span (ms), revision,
+// byDay: [[{slot, item_id, price}]]}, or null.  It starts only after every
+// written offer has started, so a moment's offers are written or computed,
+// never both for one slot.
+function buildCycle(c, written) {
+  if (!c || !Array.isArray(c.offers) || !(c.period_days > 0)) return null;
+  const from = toMs(c.from_utc);
+  const anchor = toMs(c.anchor_utc);
+  const period = c.period_days | 0;
+  const span = (c.offer_hours | 0) * HOUR;
+  if (from % DAY || anchor % DAY || span < 48 * HOUR || span % DAY || anchor > from) throw new Error('bad offer cycle');
+  if (written.some((o) => o.starts_at >= from)) throw new Error('offer cycle overlaps the written schedule');
+  const byDay = Array.from({ length: period }, () => []);
+  for (const o of c.offers) byDay[o.day | 0].push({ slot: o.slot | 0, item_id: String(o.item_id), price: o.price | 0 });
+  return { from, anchor, period, span, revision: c.revision ?? 1, byDay };
+}
+
+function ymd(t) {
+  return new Date(t).toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+function cycleOffer(cy, dayStart, row) {
+  return { offer_id: `r${cy.revision}-${ymd(dayStart)}-s${row.slot}`, item_id: row.item_id, slot: row.slot, price: row.price,
+    revision: cy.revision, starts_at: dayStart, ends_at: dayStart + cy.span, cycle: true };
+}
+
+function cycleRows(cy, dayStart) {
+  if (!cy || dayStart < cy.from) return [];
+  const k = (((dayStart - cy.anchor) / DAY) % cy.period + cy.period) % cy.period;
+  return cy.byDay[k];
+}
+
+// Computed offers whose window [starts_at, ends_at) meets [a, b].
+export function cycleBetween(sched, a, b) {
+  const cy = sched.cycle;
+  if (!cy || b < cy.from - cy.span) return [];
+  const out = [];
+  for (let d = Math.max(cy.from, Math.floor((a - cy.span) / DAY) * DAY + DAY); d <= b; d += DAY) {
+    for (const row of cycleRows(cy, d)) {
+      const o = cycleOffer(cy, d, row);
+      if (o.ends_at > a && o.starts_at <= b) out.push(o);
+    }
+  }
+  return out;
+}
+
+// A written offer by id, or the computed one the id names (null if none).
+export function offerById(sched, id) {
+  const w = sched.byId.get(id);
+  if (w) return w;
+  const cy = sched.cycle;
+  const m = cy && /^r([0-9]{1,4})-([0-9]{4})([0-9]{2})([0-9]{2})-s([0-9]{1,2})$/.exec(String(id));
+  if (!m || Number(m[1]) !== Number(cy.revision)) return null;
+  const d = Date.UTC(Number(m[2]), Number(m[3]) - 1, Number(m[4]));
+  if (!Number.isFinite(d) || ymd(d) !== m[2] + m[3] + m[4]) return null;
+  const row = cycleRows(cy, d).find((r) => r.slot === Number(m[5]));
+  return row ? cycleOffer(cy, d, row) : null;
 }
 
 const CATALOGUE_SCHEDULE = buildSchedule(E.CATALOGUE.offers);
@@ -57,7 +126,7 @@ export function isRotation(itemId) {
 }
 
 export function activeAt(sched, t) {
-  return sched.offers.filter((o) => o.starts_at <= t && t < o.ends_at);
+  return sched.offers.filter((o) => o.starts_at <= t && t < o.ends_at).concat(cycleBetween(sched, t, t).filter((o) => o.starts_at <= t && t < o.ends_at));
 }
 
 export function activeOfferFor(sched, itemId, t) {
@@ -90,7 +159,7 @@ export function checkOffer(env, itemId, offerId, shownPrice, t) {
   const now = current ? { current: publicOffer(current) } : {};
   let o = null;
   if (offerId) {
-    o = sched.byId.get(offerId) || null;
+    o = offerById(sched, offerId);
     if (!o) throw changed('unknown_offer', "This offer isn't in the Shop any more. Nothing was charged.", now);
     if (o.item_id !== itemId) throw changed('item_mismatch', "This offer is for a different item. Nothing was charged.", now);
     if (t < o.starts_at) throw changed('not_started', "This offer hasn't started yet. Nothing was charged.", now);
@@ -108,7 +177,9 @@ export function shopOffers(env, t) {
   const sched = scheduleFor(env);
   const current = activeAt(sched, t).sort((a, b) => a.slot - b.slot || a.starts_at - b.starts_at);
   const until = t + LOOKAHEAD_MS;
-  const upcoming = sched.offers.filter((o) => o.starts_at > t && o.starts_at <= until);
+  const upcoming = sched.offers.filter((o) => o.starts_at > t && o.starts_at <= until)
+    .concat(cycleBetween(sched, t + 1, until).filter((o) => o.starts_at > t))
+    .sort((a, b) => a.starts_at - b.starts_at || a.slot - b.slot);
   let next = null;
   for (const o of current) if (next === null || o.ends_at < next) next = o.ends_at;
   for (const o of upcoming) if (next === null || o.starts_at < next) next = o.starts_at;

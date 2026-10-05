@@ -43,12 +43,66 @@ function envName(env) {
 }
 
 // ---------------------------------------------------------------- wallet
+// FINAL_RELEASE_SWEEP: the StoreKit appAccountToken is derived, not random:
+// UUID(HMAC-SHA256(APP_ACCOUNT_TOKEN_KEY, "gamecenter:" + teamPlayerID)).
+// The key is one secret set identically on the sandbox and the production
+// deployment, so the same Game Center player has the same token in both:
+// a purchase the production deployment refuses as a sandbox (App Review)
+// transaction is credited by the sandbox deployment to the same player, and
+// nowhere else.  The token reveals nothing about the player without the key.
+// The same player keeps the token after deleting and recreating the profile
+// (so a direct skin can be restored to the new profile).
+const enc = new TextEncoder();
+const MIN_TOKEN_KEY = 32;
+
+export function accountTokenConfigured(env) {
+  return typeof env.APP_ACCOUNT_TOKEN_KEY === 'string' && env.APP_ACCOUNT_TOKEN_KEY.length >= MIN_TOKEN_KEY;
+}
+
+// The token for a verified Game Center subject (teamPlayerID), or null when
+// the deployment has no APP_ACCOUNT_TOKEN_KEY.
+export async function deriveAccountToken(env, subject) {
+  if (!accountTokenConfigured(env) || typeof subject !== 'string' || subject === '') return null;
+  const k = await crypto.subtle.importKey('raw', enc.encode(env.APP_ACCOUNT_TOKEN_KEY), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const b = new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode('gamecenter:' + subject))).slice(0, 16);
+  b[6] = (b[6] & 0x0f) | 0x80;   // version 8 (RFC 9562: vendor-defined)
+  b[8] = (b[8] & 0x3f) | 0x80;   // RFC variant
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+async function gcSubject(env, pid) {
+  const r = await H.db(env).one("SELECT subject FROM identities WHERE profile_id = ? AND provider = 'gamecenter' ORDER BY created_at LIMIT 1", pid);
+  return r ? String(r.subject) : null;
+}
+
+// A placeholder for the NOT NULL token column when no token can be derived
+// (no key, no Game Center identity): never a UUID, so no StoreKit
+// transaction's appAccountToken can ever match it.
+const unbound = (pid) => `unbound:${pid}`;
+const isUuid = (s) => typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(s);
+
 async function ensureWallet(env, pid) {
   const q = H.db(env);
   const t = H.clock(env);
-  await q.run('INSERT OR IGNORE INTO wallets (profile_id, environment, balance, debt, revision, app_account_token, created_at, updated_at) VALUES (?, ?, 0, 0, 0, ?, ?, ?)',
-    pid, envName(env), crypto.randomUUID(), t, t);
-  return q.one('SELECT * FROM wallets WHERE profile_id = ? AND environment = ?', pid, envName(env));
+  const e = envName(env);
+  const want = (await deriveAccountToken(env, await gcSubject(env, pid))) || unbound(pid);
+  const w = await q.one('SELECT * FROM wallets WHERE profile_id = ? AND environment = ?', pid, e);
+  if (w && w.app_account_token === want) return w;
+  // the token is unique: a stale row holding it (an earlier, deleted profile
+  // of the same player that was never cleaned up) gives it up first
+  await q.run("UPDATE wallets SET app_account_token = 'stale:' || profile_id || ':' || environment WHERE app_account_token = ? AND NOT (profile_id = ? AND environment = ?)",
+    want, pid, e);
+  if (w) {
+    // a row from before the derived tokens (random UUID), or written while the
+    // key was missing: it takes the derived token (no StoreKit purchase can
+    // carry the placeholder; the service was never deployed with random ones)
+    await q.run('UPDATE wallets SET app_account_token = ?, updated_at = ? WHERE profile_id = ? AND environment = ?', want, t, pid, e);
+  } else {
+    await q.run('INSERT OR IGNORE INTO wallets (profile_id, environment, balance, debt, revision, app_account_token, created_at, updated_at) VALUES (?, ?, 0, 0, 0, ?, ?, ?)',
+      pid, e, want, t, t);
+  }
+  return q.one('SELECT * FROM wallets WHERE profile_id = ? AND environment = ?', pid, e);
 }
 
 export async function snapshot(env, pid) {
@@ -75,7 +129,10 @@ export async function snapshot(env, pid) {
     season[sid].tier = E.tierForXp(sid, season[sid].xp);
   }
   return {
-    profile_id: pid, environment: e, balance: w.balance, debt: w.debt, revision: w.revision, app_account_token: w.app_account_token,
+    profile_id: pid, environment: e, balance: w.balance, debt: w.debt, revision: w.revision,
+    // null when this deployment can't bind purchases (no APP_ACCOUNT_TOKEN_KEY):
+    // the game then offers no App Store purchase
+    app_account_token: isUuid(w.app_account_token) ? w.app_account_token : null,
     entitlements: ents.map((x) => ({ item: x.item_id, source: x.source, revoked: !!x.revoked_at })),
     season, rounds: rounds.map((r) => ({ match_id: r.match_id, state: r.state, coins: r.coins, xp: r.xp, reason: r.reason || '',
       challenge_xp: r.challenge_xp || 0, challenges: r.challenge ? JSON.parse(r.challenge) : null })),
@@ -210,12 +267,46 @@ function normToken(s) {
   return typeof s === 'string' ? s.toLowerCase() : '';
 }
 
+// FINAL_RELEASE_SWEEP: the deployments' environment routing.  Each
+// deployment credits only its own App Store environment.  A verified Apple
+// transaction from the other one is not an error of the purchase but of the
+// routing: App Review runs the App Store build against Apple's sandbox, so
+// the production deployment answers 409 sandbox_purchase (nothing recorded,
+// nothing credited) and the game moves this install to the sandbox
+// deployment, where the still-unfinished transaction is delivered once.  The
+// reverse (a production purchase reaching the sandbox deployment) answers
+// production_purchase.  Neither reply can mint anything: the receiving
+// deployment verifies the transaction again and credits only its own
+// environment.  Anything else (Xcode's local StoreKit testing, an unknown
+// environment) stays wrong_environment.
+export function environmentMismatch(env, txEnvironment) {
+  const own = appleEnvironment(env);
+  if (txEnvironment === own) return null;
+  if (own === 'Production' && txEnvironment === 'Sandbox') {
+    return new ApiError(409, 'sandbox_purchase', 'This is an App Store sandbox purchase. It is added by the sandbox game service.', { apple_environment: 'Sandbox' });
+  }
+  if (own === 'Sandbox' && txEnvironment === 'Production') {
+    return new ApiError(409, 'production_purchase', 'This is an App Store purchase. It is added by the App Store game service.', { apple_environment: 'Production' });
+  }
+  return new ApiError(400, 'wrong_environment', 'This purchase is from a different App Store environment.');
+}
+
 async function appleDeliver(req, env) {
   const { profile: p } = await H.requireUser(req, env, { allowSuspended: true });
   const b = await readJson(req);
   await H.rateLimit(env, `apple:${p.id}`, 30, 60 * 1000);
+  if (!accountTokenConfigured(env)) {
+    // never deliver without the account binding (the game keeps the
+    // purchase unfinished and retries)
+    throw new ApiError(503, 'not_configured', "Purchases aren't set up on the game service yet. Your purchase is kept and added later.");
+  }
   const t = H.clock(env);
   let tx = await verifyAppleJws(str(b.jws, 'jws', { max: 16000 }), env, t);
+  // routing first: the other environment's transaction is never looked up
+  // on this deployment's App Store Server API host, nor recorded here
+  if (tx.bundleId !== env.BUNDLE_ID) throw new ApiError(400, 'wrong_app', 'This purchase is for a different app.');
+  const mis = environmentMismatch(env, tx.environment);
+  if (mis) throw mis;
   if (serverApiConfigured(env)) {
     // Apple's own record of the transaction is authoritative when available
     const api = await fetchTransaction(env, String(tx.transactionId), t);
@@ -229,7 +320,9 @@ export async function deliverTransaction(env, pid, tx, claimedId) {
   const e = envName(env);
   const t = H.clock(env);
   if (tx.bundleId !== env.BUNDLE_ID) throw new ApiError(400, 'wrong_app', 'This purchase is for a different app.');
-  if (tx.environment !== appleEnvironment(env)) throw new ApiError(400, 'wrong_environment', 'This purchase is from a different App Store environment.');
+  // (Apple's own copy is checked again: never credit another environment)
+  const mis = environmentMismatch(env, tx.environment);
+  if (mis) throw mis;
   const tid = String(tx.transactionId || '');
   if (!/^[0-9]{1,24}$/.test(tid) || (claimedId !== undefined && claimedId !== null && String(claimedId) !== tid)) {
     throw new ApiError(400, 'bad_transaction', "This purchase couldn't be verified with Apple.", { reason: 'transaction_id' });
@@ -338,6 +431,9 @@ async function appleNotification(req, env) {
   const n = await verifyAppleJws(str(b.signedPayload, 'signedPayload', { max: 16000 }), env, t);
   const data = n.data || {};
   if (data.bundleId !== env.BUNDLE_ID) throw new ApiError(400, 'wrong_app', 'Wrong app.');
+  // each deployment has its own notification URL in App Store Connect
+  // (Sandbox URL -> sandbox deployment, Production URL -> production): a
+  // notification for the other environment is refused, never applied
   if (data.environment !== appleEnvironment(env)) throw new ApiError(400, 'wrong_environment', 'Wrong environment.');
   const uuid = String(n.notificationUUID || '');
   if (!/^[0-9a-fA-F-]{8,64}$/.test(uuid)) throw new ApiError(400, 'bad_request', 'Missing notification id.');
@@ -346,6 +442,9 @@ async function appleNotification(req, env) {
   let tid = null;
   if (['REFUND', 'REVOKE'].includes(n.notificationType) && data.signedTransactionInfo) {
     const tx = await verifyAppleJws(String(data.signedTransactionInfo), env, t);
+    // the signed transaction inside must agree with the envelope
+    if (tx.bundleId !== env.BUNDLE_ID) throw new ApiError(400, 'wrong_app', 'Wrong app.');
+    if (tx.environment !== appleEnvironment(env)) throw new ApiError(400, 'wrong_environment', 'Wrong environment.');
     tid = String(tx.transactionId);
     const row = await q.one('SELECT * FROM apple_transactions WHERE environment = ? AND transaction_id = ?', envName(env), tid);
     if (row && row.state === 'delivered') await revokeTransaction(env, row, t);
@@ -365,6 +464,13 @@ async function subjectHash(env, pid) {
 
 async function legacyImport(req, env) {
   const { profile: p } = await H.requireUser(req, env);
+  // FINAL_RELEASE_SWEEP: pre-V6 balances only ever existed in TestFlight beta
+  // builds, so they belong to the sandbox economy: moving from TestFlight to
+  // the App Store never carries Coins into production (the device keeps its
+  // pre-V6 unlocks as "this device's" items, as before)
+  if (envName(env) === 'production') {
+    throw new ApiError(409, 'legacy_not_available', 'Beta Coins stay with the beta. Items you unlocked before still work on this device.');
+  }
   const b = await readJson(req);
   await H.rateLimit(env, `legacy:${p.id}`, 6, HOUR);
   const coins = int(b.coins ?? 0, 'coins', { min: 0, max: 1e9 });
