@@ -1,0 +1,23 @@
+{
+  "overlaps": [],
+  "points": [
+    843.916666666667,
+    390.0
+  ],
+  "rects": {},
+  "rewards": "the build's real wallet state",
+  "safe": [
+    86.7692337036133,
+    12.0,
+    1384.46142578125,
+    669.230773925781
+  ],
+  "shot": "results_runner_practice",
+  "state": "DETERMINISTIC DEV STATE (driver: src/dev/capture_pass8_match.gd)",
+  "touch_min_units": 81.2307692307692,
+  "units_per_point": 1.84615384615385,
+  "viewport": [
+    1558.0,
+    720.0
+  ]
+}

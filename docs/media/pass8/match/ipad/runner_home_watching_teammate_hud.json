@@ -1,0 +1,128 @@
+{
+  "clipped_card_words": [],
+  "goal": "Team home 1/4 · Need 3 more 3:29",
+  "overlaps": [],
+  "personal_rows": [
+    "Home · 1st to finish",
+    "Waiting for team · need 3 more"
+  ],
+  "points": [
+    1024.00001525879,
+    768.000011444092
+  ],
+  "rects": {
+    "goal_bar": {
+      "points": [
+        320.0,
+        24.0,
+        384.0,
+        48.0
+      ],
+      "units": [
+        400.0,
+        30.0,
+        480.0,
+        60.0
+      ]
+    },
+    "minimap": {
+      "points": [
+        832.0,
+        24.0,
+        120.0,
+        120.0
+      ],
+      "units": [
+        1040.0,
+        30.0,
+        150.0,
+        150.0
+      ]
+    },
+    "pause": {
+      "points": [
+        960.0,
+        24.0,
+        51.2,
+        51.2
+      ],
+      "units": [
+        1200.0,
+        30.0,
+        64.0,
+        64.0
+      ]
+    },
+    "personal_card": {
+      "points": [
+        16.0,
+        57.6,
+        249.6,
+        62.4
+      ],
+      "units": [
+        20.0,
+        72.0,
+        312.0,
+        78.0
+      ]
+    },
+    "thumb_cheer": {
+      "points": [
+        759.2,
+        630.0,
+        88.0,
+        88.0
+      ],
+      "units": [
+        949.0,
+        787.5,
+        110.0,
+        110.0
+      ]
+    },
+    "thumb_next": {
+      "points": [
+        857.2,
+        602.0,
+        100.0,
+        100.0
+      ],
+      "units": [
+        1071.5,
+        752.5,
+        125.0,
+        125.0
+      ]
+    },
+    "thumb_stick": {
+      "points": [
+        66.8,
+        586.0,
+        116.0,
+        116.0
+      ],
+      "units": [
+        83.5,
+        732.5,
+        145.0,
+        145.0
+      ]
+    }
+  },
+  "rewards": "the build's real wallet state",
+  "safe": [
+    16.0,
+    30.0,
+    1248.0,
+    905.0
+  ],
+  "shot": "runner_home_watching_teammate",
+  "state": "DETERMINISTIC DEV STATE (driver: src/dev/capture_pass8_match.gd)",
+  "touch_min_units": 54.9999991804361,
+  "units_per_point": 1.24999998137355,
+  "viewport": [
+    1280.0,
+    960.0
+  ]
+}

@@ -17,10 +17,12 @@ Results shots for a friend series use rows recorded through `PartySeries`
 shows settled or pending rewards it uses a **simulated wallet summary**
 (the service is not deployed), labelled in that shot's `_hud.json`.
 
-Next to each PNG: `<shot>.json` (render report) and `<shot>_hud.json`
-(viewport, units per point, safe area, the rects of the goal bar, the
-personal card, the danger chip, Pause, the minimap and the thumb clusters
-in canvas units **and points**, the card's words, any overlap found).
+Next to each image: `<shot>_hud.json` (viewport, units per point, safe
+area, the rects of the goal bar, the personal card, the danger chip, Pause,
+the minimap and the thumb clusters in canvas units **and points**, the
+card's words, any overlap found). The capture script also writes a
+`<shot>.json` render report and the full-size PNG; those stay out of the
+repository.
 
 | Folder | Device (points) | Scale | Safe area (pt L,T,R,B) |
 |---|---|---|---|
@@ -28,6 +30,13 @@ in canvas units **and points**, the card's words, any overlap found).
 | `p14/` | 844×390 | @3 | 47,0,47,21 |
 | `max/` | 926×428 | @3 | 47,0,47,21 |
 | `ipad/` | 1024×768 | @2 | 0,24,0,20 |
+
+Rendered at each device's full pixel size; stored as JPEG (quality 80), the
+@3 phones (`p14`, `max`) at two thirds of their pixel size (2 px per point).
+Runner shots: all four sizes; Night Watch shots: `p14`, `ipad`; series
+results: `se`, `max`, `ipad` (`max` has no `results_runner_practice`: that
+run hit its time limit before the shortened round ended). Every
+`_hud.json` here lists `"overlaps": []` and no clipped card words.
 
 Shots (where present in a folder):
 
