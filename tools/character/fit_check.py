@@ -129,8 +129,15 @@ def looks():
     src = open(COSMETICS).read()
     parts = _gd_dict(src, 'OUTFIT_PARTS')
     own = _gd_list(src, 'OUTFIT_OWN_SHOES')
+    # Pass 9: complete skins (Cosmetics.COMPLETE_SKINS) are the whole runner:
+    # their own head, hair and body with footwear, no base and no shoes
+    i = src.index('const COMPLETE_SKINS := {')
+    skins = set(re.findall(r'^\t"(\w+)": \{"head"', src[i:src.index('\n}', i)], re.M))
     out = {}
     for k, ps in parts.items():
+        if k in skins:
+            out[k] = list(ps)
+            continue
         lk = ['base'] + list(ps)
         if k not in own:
             lk.append(SHOWN_SHOES.get(k, 'shoe_slippers'))
@@ -817,7 +824,7 @@ def analyze(g, key, parts, poses, pose_data, want_anchors=False):  # noqa: C901
 # reproduce them from the imported scene (imported-vs-runtime comparison)
 REFERENCE_POSES = [('run', 0.3), ('dive', 0.3), ('emote_cheer', 0.3), ('land_hard', 0.15), ('cart_drive', 0.3)]
 REFERENCE_LOOKS = {'pj', 'midnight_mechanic', 'moonwalk_cadet', 'pumpkin_pajamas', 'arcade_sprinter', 'cloud_nine', 'bedtime_bandit',
-                   'after_hours_hoodie', 'night_owl', 'glow_jogger', 'library_cardigan'}
+                   'after_hours_hoodie', 'night_owl', 'glow_jogger', 'library_cardigan', 'record_breaker', 'dr_doom'}
 
 
 def make_anchors(look, trims, opens, pairs, grow, key):

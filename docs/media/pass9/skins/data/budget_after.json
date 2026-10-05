@@ -1,5 +1,5 @@
 {
-  "art_version": "v10-8aa7d2363cbe",
+  "art_version": "v10-af967001b9ea",
   "looks": 9200,
   "heaviest_look_tris": 32834,
   "heaviest_look_parts": [
@@ -80,9 +80,9 @@
     },
     "cloud_nine": {
       "outfit_part": "cloud",
-      "outfit_part_tris": 11940,
+      "outfit_part_tris": 12004,
       "headwear_tris": 0,
-      "heaviest_look_tris": 21602,
+      "heaviest_look_tris": 21666,
       "heaviest_look_parts": [
         "base",
         "cloud",
@@ -112,10 +112,10 @@
       ],
       "part_tris": {
         "rb_head": 9132,
-        "rb_hair": 7159,
+        "rb_hair": 8471,
         "rb_body": 14812
       },
-      "look_tris": 31103,
+      "look_tris": 32415,
       "draw_calls": 3
     },
     "dr_doom": {
@@ -127,15 +127,15 @@
       "part_tris": {
         "dd_head": 10782,
         "dd_fringe": 3284,
-        "dd_suit": 18296
+        "dd_suit": 18536
       },
-      "look_tris": 32362,
+      "look_tris": 32602,
       "draw_calls": 3
     }
   },
-  "glb_bytes": 19286480,
-  "imported_scene_bytes": 9633461,
-  "all_parts_tris": 357238,
+  "glb_bytes": 19337604,
+  "imported_scene_bytes": 9737565,
+  "all_parts_tris": 358926,
   "parts_in_asset": 59,
   "part_tris": {
     "base": 9086,

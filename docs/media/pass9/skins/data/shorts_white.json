@@ -1,0 +1,169 @@
+{
+ "method": "Mean sRGB (0-255) of fixed pixel boxes in the same render of Record Breaker (centre), Moonwalk Cadet (left) and the default runner, standing, front view at 2.6 m, fov 30, 600x450 cell; plus Record Breaker's eye white in a head close-up. Desktop Godot 4.7.2 Mobile renderer on llvmpipe; same camera, same lights before and after.",
+ "boxes_px": {
+  "shorts_front_left": [
+   252,
+   246,
+   290,
+   284
+  ],
+  "shorts_front_right": [
+   310,
+   246,
+   348,
+   284
+  ],
+  "cadet_suit_thigh": [
+   50,
+   275,
+   100,
+   315
+  ],
+  "rb_eye_white": [
+   812,
+   220,
+   822,
+   232
+  ]
+ },
+ "lights": {
+  "dorm": {
+   "before": {
+    "shorts_front_left": [
+     93.0,
+     88.9,
+     106.3
+    ],
+    "shorts_front_right": [
+     99.1,
+     92.6,
+     107.3
+    ],
+    "cadet_suit_thigh": [
+     92.5,
+     86.7,
+     99.5
+    ],
+    "rb_eye_white": [
+     171.5,
+     171.4,
+     176.3
+    ]
+   },
+   "after": {
+    "shorts_front_left": [
+     171.8,
+     170.1,
+     173.1
+    ],
+    "shorts_front_right": [
+     173.7,
+     171.3,
+     173.5
+    ],
+    "cadet_suit_thigh": [
+     92.5,
+     86.7,
+     99.5
+    ],
+    "rb_eye_white": [
+     171.5,
+     171.4,
+     176.3
+    ]
+   }
+  },
+  "campus": {
+   "before": {
+    "shorts_front_left": [
+     149.5,
+     166.2,
+     221.0
+    ],
+    "shorts_front_right": [
+     156.2,
+     172.7,
+     225.5
+    ],
+    "cadet_suit_thigh": [
+     161.5,
+     175.2,
+     220.9
+    ],
+    "rb_eye_white": [
+     229.9,
+     235.6,
+     253.7
+    ]
+   },
+   "after": {
+    "shorts_front_left": [
+     222.3,
+     227.7,
+     249.8
+    ],
+    "shorts_front_right": [
+     224.5,
+     230.0,
+     251.8
+    ],
+    "cadet_suit_thigh": [
+     161.3,
+     175.1,
+     220.8
+    ],
+    "rb_eye_white": [
+     229.9,
+     235.6,
+     253.7
+    ]
+   }
+  },
+  "studio": {
+   "before": {
+    "shorts_front_left": [
+     110.1,
+     125.1,
+     148.3
+    ],
+    "shorts_front_right": [
+     110.1,
+     125.2,
+     148.3
+    ],
+    "cadet_suit_thigh": [
+     108.4,
+     121.0,
+     139.8
+    ],
+    "rb_eye_white": [
+     179.3,
+     183.3,
+     191.3
+    ]
+   },
+   "after": {
+    "shorts_front_left": [
+     176.9,
+     181.2,
+     188.4
+    ],
+    "shorts_front_right": [
+     177.4,
+     181.6,
+     188.7
+    ],
+    "cadet_suit_thigh": [
+     108.4,
+     121.0,
+     139.8
+    ],
+    "rb_eye_white": [
+     179.3,
+     183.3,
+     191.3
+    ]
+   }
+  }
+ }
+}

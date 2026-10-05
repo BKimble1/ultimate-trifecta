@@ -47,6 +47,7 @@ from rig import (torso_w, skirt_w, arm_w, leg_w, rigid, torso_r, shoulder, arm_d
 import parts as P
 from parts import UP, FWD, SIDES, _dense_path, _path_s, _foot_outline
 import kit6 as K
+import outfits_p8 as P8
 
 # the face shape keys, in build_character.SHAPE_KEYS order (asserted there)
 FACE_KEYS = ('blink', 'squint', 'smile', 'open', 'brow_up', 'brow_angry', 'face_bright', 'face_sleepy', 'brow_flat')
@@ -814,9 +815,9 @@ def front(ang):
 # ================================================================== RECORD BREAKER: hair
 RB_HAIRLINE = [(0.0, 1.020), (0.8, 1.045), (1.2, 1.100), (1.40, 1.172), (1.55, 1.236), (1.72, 1.226), (1.84, 1.168),
                (1.95, 1.172), (2.05, 1.250), (2.30, 1.330), (2.60, 1.370), (math.pi, 1.386)]
-RB_HAIR_ROOT = srgb('#6b4429')
-RB_HAIR_MID = srgb('#a2764b')
-RB_HAIR_TIP = srgb('#dcae74')
+RB_HAIR_ROOT = srgb('#6a4328')
+RB_HAIR_MID = srgb('#a67b4e')
+RB_HAIR_TIP = srgb('#dcb07a')
 
 
 def rb_hairline(ang):
@@ -824,10 +825,35 @@ def rb_hairline(ang):
     return table(RB_HAIRLINE, a) + 0.006 * math.sin(7.0 * ang + 0.4) + 0.004 * math.sin(13.0 * ang + 1.0)
 
 
-def rb_volume(ang, z):
-    """A little extra grow of the scalp mass under the clumps: fuller on top."""
-    top = smoothstep(1.24, 1.46, z)
-    return (0.004 + 0.014 * top) * smoothstep(rb_hairline(ang) - 0.004, rb_hairline(ang) + 0.05, z)
+def rb_base(a, z):
+    """The hair mass's smooth height above the scalp (m), under its clumps
+    and locks: fuller on top and at the front, where it is swept up off the
+    forehead; full at the sides above the ears; short at the nape.  A
+    little fuller on the character's left of the crown (asymmetric)."""
+    top = smoothstep(1.21, 1.45, z)
+    f = smoothstep(0.30, 0.95, front(a))
+    side = math.sin(a) ** 2
+    h = 0.005 + 0.024 * top + 0.012 * top * f
+    h += 0.022 * side * smoothstep(1.17, 1.30, z) * (1.0 - 0.5 * top)
+    h += 0.006 * (1.0 - f) * smoothstep(1.06, 1.26, z) * (1.0 - top)
+    h *= 1.0 + 0.12 * smoothstep(0.2, 1.4, a) * top        # a > 0: the character's left
+    return h
+
+
+def rb_fade(a, z):
+    """0 at the hairline, 1 where the mass has its full height: a steep rise
+    at the front (the swept-up edge), softer at the sides and nape."""
+    z0 = rb_hairline(a)
+    rise = lerp(0.040, 0.022, smoothstep(0.55, 0.95, front(a)))
+    return smoothstep(z0 - 0.002, z0 + rise, z)
+
+
+def rb_dir(nn, a, z):
+    """The direction the mass grows at a scalp point: its normal, turned
+    upward and a little back at the front, so the front lifts off the
+    forehead instead of jutting over it."""
+    f = smoothstep(0.55, 0.95, front(a)) * (1.0 - smoothstep(1.43, 1.48, z))
+    return (nn + UP * (1.1 * f) + Vector((0.0, -0.2 * f, 0.0))).normalized()
 
 
 def _hair_col(t, light, hi=0.0):
@@ -836,7 +862,7 @@ def _hair_col(t, light, hi=0.0):
     return (c.x, c.y, c.z)
 
 
-def _clump(mb, root, nn, tdir, length, width, thick, lift, droop, flick, twist, light, segs=8, npts=7):
+def _clump(mb, root, nn, tdir, length, width, thick, lift, droop, flick, twist, light, segs=8, npts=7, tip=0.5):
     """One sculpted clump of hair: a wide, flattened lock that leaves the
     scalp at `lift`, follows the head round (`droop`) and flicks its tip up
     and out (`flick`), turning sideways by `twist`; it narrows to a rounded
@@ -857,7 +883,7 @@ def _clump(mb, root, nn, tdir, length, width, thick, lift, droop, flick, twist, 
     radii = [(thick * 0.8, width * 0.85)]
     for i in range(npts):
         t = i / (npts - 1)
-        k = lerp(1.0, 0.5, smoothstep(0.25, 1.0, t)) * (0.92 + 0.08 * math.sin(math.pi * t))
+        k = lerp(1.0, tip, smoothstep(0.2, 1.0, t)) * (0.92 + 0.08 * math.sin(math.pi * t))
         radii.append((thick * k, width * k))
     tot = sum((b - a).length for a, b in zip(pts, pts[1:]))
 
@@ -867,32 +893,26 @@ def _clump(mb, root, nn, tdir, length, width, thick, lift, droop, flick, twist, 
     sweep(mb, pts, radii, S('#ffffff', rough=0.62), HW, segs=segs, cap_start=None, cap_end='round', twist_hint=nn, colfn=colfn)
 
 
-RB_WHORL = Vector((0.035, -0.135, 1.462))
-
-
 def _rb_flow(q, nn, a, z):
-    """Hair flow at q: away from the crown's whorl; over the forehead it
-    lifts up and sweeps toward the character's left (-X)."""
-    flow = q - RB_WHORL
+    """Hair flow at q: swept up and back.  Over the top it runs from the
+    forehead back toward the crown, at the sides back and down, at the back
+    of the head down; a slight lean toward the character's left on top."""
+    flow = Vector((0.06, -1.0, -0.15 - 0.85 * (1.0 - smoothstep(1.30, 1.46, z))))
     flow = flow - nn * flow.dot(nn)
-    if flow.length < 1e-6:
-        flow = Vector((0, 1, 0))
-    flow.normalize()
-    frontal = smoothstep(0.62, 0.95, front(a)) * (1.0 - smoothstep(1.43, 1.50, z))
-    upish = UP - nn * UP.dot(nn)
-    if upish.length > 1e-6 and frontal > 0:
-        lean = Vector((-1.0, 0.0, 0.0))
-        lean = lean - nn * lean.dot(nn)
-        flow = flow.lerp((upish.normalized() + lean * 0.5).normalized(), frontal * 0.8).normalized()
-    return flow, frontal
+    if flow.length < 1e-4:
+        flow = Vector((0.0, 0.0, -1.0)) - nn * (-nn.z)
+    return flow.normalized()
 
 
 def _rb_clumps(g):
-    """The hair mass's clumps: oriented ridges (centre, flow, side, length,
-    width, height, bend, light) over the scalp, larger on top and at the
-    front, smaller at the sides and back."""
+    """The hair mass's sculpted locks, as a height field: long, overlapping,
+    tapering locks laid along the swept-up-and-back flow like shingles
+    (each rises from its root, is fullest past its middle and ends in a
+    soft point over the next one), larger on top and toward the front,
+    smaller at the sides and back.  Each: (root, flow, side, length,
+    width, height, bend, wave, light)."""
     out = []
-    n = 190
+    n = 60
     ga = math.pi * (3 - math.sqrt(5))
     for i in range(n):
         zz = 1 - 2 * (i + 0.5) / n
@@ -901,64 +921,84 @@ def _rb_clumps(g):
         dv = Vector((rr * math.cos(th), rr * math.sin(th), zz))
         z = HEAD_C.z + dv.z * (HEAD_R[2] + g)
         a = math.atan2(-dv.x, -dv.y)
-        if z < rb_hairline(a) - 0.01:
+        if z < rb_hairline(a) - 0.03:
             continue
         q = P._shell_point(a, z, g)
         nn = head_normal(q, g)
-        flow, frontal = _rb_flow(q, nn, a, z)
-        top = smoothstep(1.26, 1.46, z)
+        flow = _rb_flow(q, nn, a, z)
+        top = smoothstep(1.25, 1.45, z)
+        f = smoothstep(0.4, 0.95, front(a))
         sideness = abs(math.sin(a)) * (1.0 - top)
-        big = max(top, frontal)
-        h = [hsh(i, k) for k in range(11, 18)]
-        # each clump turned off the flow a little and its centre nudged
-        # along the scalp, so no regular pattern shows
+        big = max(top, f * 0.8)
+        h = [hsh(i, k) for k in range(11, 19)]
+        # each lock turned off the flow and nudged along the scalp (tousled)
         side0 = nn.cross(flow).normalized()
-        ang = lerp(-0.55, 0.55, hsh(i, 31))
+        ang = lerp(-0.45, 0.45, hsh(i, 31))
         flow = (flow * math.cos(ang) + side0 * math.sin(ang)).normalized()
-        q = q + side0 * lerp(-0.012, 0.012, hsh(i, 32)) + flow * lerp(-0.012, 0.012, hsh(i, 33))
-        la = lerp(0.030, 0.050, big) * lerp(0.75, 1.3, h[0])
-        lc = lerp(0.016, 0.026, h[1]) * lerp(1.0, 0.85, sideness)
-        amp = lerp(0.009, 0.030, big) * lerp(0.75, 1.15, h[2]) * lerp(1.0, 0.65, sideness)
-        if q.x < 0 and top > 0.4:
-            amp *= 1.15          # fuller on the left of the crown: an asymmetric silhouette
-        bend = lerp(-14.0, 14.0, h[3])
+        q = q + side0 * lerp(-0.022, 0.022, hsh(i, 32)) + flow * lerp(-0.022, 0.022, hsh(i, 33))
+        ln = lerp(0.115, 0.170, big) * lerp(0.85, 1.15, h[0])
+        wd = lerp(0.050, 0.064, big) * lerp(0.85, 1.15, h[1]) * lerp(1.0, 0.85, sideness)
+        amp = lerp(0.018, 0.040, big) * lerp(0.8, 1.15, h[2]) * lerp(1.0, 0.75, sideness)
+        bend = lerp(-6.0, 6.0, h[3])
+        wave = lerp(-0.008, 0.008, h[5])
         side = nn.cross(flow).normalized()
-        out.append((q, flow, side, nn, la, lc, amp, bend, h[4]))
+        out.append((q - flow * (ln * 0.45), flow, side, ln, wd, amp, bend, wave, h[4]))
     return out
 
 
 def build_rb_hair():
-    """Full, tousled, curly/wavy medium-brown crop.  The hair mass is a shell
-    sculpted into irregular clumps (each an oriented, slightly bent ridge of
-    its own length, width and height: fuller on top and at the front,
-    shorter at the sides and back, fuller on the left of the crown), shaded
-    darker in the hollows and with warm highlights on the crests; lifted
-    clumps on the crown and a fringe of larger clumps that rise off the
-    forehead and sweep toward the character's left give the airy,
-    asymmetric silhouette."""
+    """Full, tousled, wavy medium-brown hair with real volume, swept up and
+    back: the hair mass is a shell grown off the scalp (tallest at the
+    front, where it lifts off the forehead, full on top and at the sides
+    above the ears, short at the nape), sculpted into long wavy clumps that
+    lie along the swept-back flow, darker in the hollows and warm on the
+    crests.  Lifted clumps along the front edge and over the crown give the
+    airy, asymmetric outline, and a few loose locks fall forward over the
+    forehead."""
     mb = MeshBuilder('rb_hair')
-    g = 0.012
-    clumps = _rb_clumps(g)
+    g = 0.010
+    clumps = []
 
     def field(q):
         """(extra height, crest 0..1, light) of the clump field at q."""
         acc = 0.0
         crest = 0.0
         light = 0.5
-        for c, f, sd, nn, la, lc, amp, bend, lt in clumps:
+        best = 0.0
+        for c, f, sd, ln, wd, amp, bend, wave, lt in clumps:
             d = q - c
-            if d.length_squared > 0.016:
+            if d.length_squared > 0.045:
                 continue
             al = d.dot(f)
-            ac = d.dot(sd) - bend * al * al
-            e = math.exp(-0.5 * ((al / la) ** 2 + (ac / lc) ** 2))
-            v = amp * e * (1.0 + 0.35 * max(-1.0, min(1.0, al / la)))     # fuller toward its tip
-            acc += v ** 3
-            if e > crest:
-                crest = e
+            if al < -0.25 * ln or al > ln:
+                continue
+            u = al / ln
+            ac = d.dot(sd) - bend * al * al - wave * math.sin(2.6 * u)
+            w = wd * (1.0 - 0.75 * smoothstep(0.35, 1.0, u))          # narrowing to a soft point
+            x = ac / max(w, 1e-4)
+            if abs(x) >= 1.0:
+                continue
+            across = (1.0 - x * x) ** 0.6                              # a rounded cross-section
+            along = smoothstep(-0.25, 0.35, u) * (1.0 - smoothstep(0.82, 1.0, u)) * (0.7 + 0.3 * u)
+            v = amp * across * along
+            acc += v ** 8
+            if v > best:
+                best = v
+                crest = (1.0 - abs(x)) ** 0.8 * smoothstep(-0.1, 0.3, u)    # light along the lock's ridge
                 light = lt
-        return acc ** (1.0 / 3.0), crest, light
-    segs, rows = 88, 22
+        return acc ** (1.0 / 8.0), crest, light
+
+    def mass(a, z):
+        """(surface point, growth direction, crest, light) of the mass over
+        the scalp point at (a, z)."""
+        q0 = P._shell_point(a, z, g)
+        nn = head_normal(q0, g)
+        hgt, crest, light = field(q0)
+        fd = rb_fade(a, z)
+        dv = rb_dir(nn, a, z)
+        return q0 + dv * ((rb_base(a, z) + hgt) * fd), dv, crest * fd, light
+
+    segs, rows = 72, 18
     rz = HEAD_R[2] + g
     ztop = HEAD_C.z + rz * 0.9995
     angs = [-math.pi + 2.0 * math.pi * k / segs for k in range(segs)]
@@ -970,69 +1010,152 @@ def build_rb_hair():
         for a, z0 in zip(angs, edge):
             if r < 0:
                 z = z0 + 0.004
-                q = P._shell_point(a, z, g - 0.012)
+                q = P._shell_point(a, z, g - 0.010)
                 c = _hair_col(0.05, 0.5)
             else:
                 u = r / float(rows)
                 t0 = math.acos(max(-1.0, min(1.0, (z0 - HEAD_C.z) / rz)))
-                z = min(HEAD_C.z + rz * math.cos(t0 * (1.0 - u)), ztop)
-                q0 = P._shell_point(a, z, g)
-                hgt, crest, light = field(q0)
-                fade = smoothstep(z0 - 0.002, z0 + 0.045, z)
-                base = 0.003 + 0.026 * smoothstep(1.26, 1.47, z) + 0.008 * smoothstep(0.6, 0.95, front(a)) * smoothstep(1.32, 1.42, z)
-                q = P._shell_point(a, z, g + (base + hgt) * fade)
-                c = _hair_col(lerp(0.12, 0.95, smoothstep(0.15, 0.95, crest)) * lerp(0.6, 1.0, fade), light)
+                # rows bunch toward the hairline, where the front rises steeply
+                uu = u ** 1.25
+                z = min(HEAD_C.z + rz * math.cos(t0 * (1.0 - uu)), ztop)
+                q, _, crest, light = mass(a, z)
+                c = _hair_col(lerp(0.18, 0.42, rb_fade(a, z)), 0.5)
             row.append(mb.vert(q, S('#ffffff', rough=0.66), (0, q.z), HW(q), '', None, c))
         grid.append(row)
     top = Vector((HEAD_C.x, HEAD_C.y, HEAD_C.z + rz))
     hgt, crest, light = field(top)
-    top = top + Vector((0, 0, 0.026 + hgt))
+    top = top + Vector((0, 0, rb_base(0.0, top.z) + hgt))
     pole = mb.vert(top, S('#ffffff', rough=0.66), (0, top.z), HW(top), '', None, _hair_col(0.5 + 0.4 * crest, light))
     mb.grid(grid, True, None, pole)
 
-    def mass_point(a, z):
-        q0 = P._shell_point(a, z, g)
-        hgt, _, _ = field(q0)
-        gv = g + (0.003 + 0.026 * smoothstep(1.26, 1.47, z) + 0.008 * smoothstep(0.6, 0.95, front(a)) * smoothstep(1.32, 1.42, z)
-                  + hgt) * smoothstep(rb_hairline(a) - 0.002, rb_hairline(a) + 0.045, z)
-        q = P._shell_point(a, z, gv)
-        return q, head_normal(q, gv)
-    # lifted clumps over the crown and a few at the sides (the airy outline)
-    for i, (a, z) in enumerate(((-0.4, 1.47), (0.5, 1.465), (1.2, 1.43), (-1.3, 1.42), (2.2, 1.45), (-2.3, 1.44), (2.75, 1.43),
-                                (-2.8, 1.42), (0.0, 1.42), (1.7, 1.37), (-1.75, 1.36), (0.95, 1.30), (-1.0, 1.29))):
-        q, nn = mass_point(a, z)
-        flow, frontal = _rb_flow(q, nn, a, z)
-        h = [hsh(i, k) for k in range(21, 28)]
-        _clump(mb, q - nn * 0.008, nn, flow, lerp(0.050, 0.075, h[0]), lerp(0.020, 0.026, h[1]), 0.011, lerp(0.35, 0.6, h[2]),
-               lerp(0.2, 0.5, h[3]), lerp(0.8, 1.6, h[4]), lerp(-1.2, 1.2, h[5]), h[6], segs=7, npts=6)
-    # the fringe: larger clumps that lift off the hairline, sweep toward the
-    # character's left and flick their tips up
-    for k, (x, ln, lean, lf, fl, tw) in enumerate(((-0.14, 0.080, -0.6, 0.9, 1.2, -0.6), (-0.085, 0.092, -0.5, 1.0, 1.5, 0.3),
-                                                    (-0.03, 0.096, -0.35, 1.05, 1.6, -0.2), (0.025, 0.092, -0.25, 1.0, 1.4, 0.4),
-                                                    (0.08, 0.085, -0.05, 0.9, 1.2, -0.3), (0.135, 0.070, 0.2, 0.8, 1.0, 0.5),
-                                                    (-0.055, 0.075, -0.45, 1.15, 1.9, 0.8), (0.05, 0.072, -0.2, 1.1, 1.7, -0.7))):
+    def scalp_of(p):
+        """(a, z) of the scalp point under p (along the ray from the head
+        centre), the parameters mass() takes."""
+        d = p - HEAD_C
+        u = Vector((d.x / HEAD_R[0], d.y / HEAD_R[1], d.z / HEAD_R[2])).normalized()
+        return math.atan2(-u.x, -u.y), HEAD_C.z + u.z * (HEAD_R[2] + g)
+
+    def lock(k, a, z, tdir, length, width, thick, rise, flick, twist, npts=7, segs=7, tip=0.25):
+        """A sculpted lock laid on the mass from (a, z) along tdir: its
+        centreline follows the mass surface, standing `rise` off it in the
+        middle, and its tip lifts off by `flick`; it bends sideways by
+        `twist` (a wave) and narrows to a soft point."""
+        s0, dv0, _, _ = mass(a, z)
+        t = tdir - dv0 * tdir.dot(dv0)
+        t.normalize()
+        step = length / (npts - 1)
+        on = [(s0, dv0)]
+        p = s0
+        for i in range(1, npts):
+            u = i / (npts - 1.0)
+            side = on[-1][1].cross(t).normalized()
+            pn = p + t * step + side * (math.sin(twist * u * math.pi) * 0.35 * step)
+            sn, dvn, _, _ = mass(*scalp_of(pn))
+            t = sn - p
+            t = t - dvn * t.dot(dvn)
+            t.normalize()
+            p = sn
+            on.append((sn, dvn))
+        # (the root starts under the mass a step behind the lock and rises
+        # out of it at a shallow angle: a root standing straight out of the
+        # surface turned through a right angle and folded its inner side)
+        t0 = (on[1][0] - s0).normalized()
+        path = [s0 - dv0 * (thick * 0.30) - t0 * (step * 0.9)]
+        radii = [(thick * 0.6, width * 0.8)]
+        for i, (sp, dvp) in enumerate(on):
+            u = i / (npts - 1.0)
+            hgt = (thick * (0.10 + 0.40 * smoothstep(0.0, 0.35, u)) + rise * smoothstep(0.0, 0.55, u) * (1.0 - 0.45 * smoothstep(0.6, 1.0, u))
+                   + flick * smoothstep(0.45, 1.0, u) ** 2)
+            path.append(sp + dvp * hgt)
+            kk = lerp(1.0, tip, smoothstep(0.2, 1.0, u)) * (0.94 + 0.06 * math.sin(math.pi * u))
+            radii.append((thick * kk, width * kk))
+        # (two smoothing passes over the centreline: where it follows the
+        # mass over the swept-up front edge it turns faster than the lock is
+        # thick, and the inside of the turn folded)
+        for _ in range(2):
+            path = [path[0]] + [path[i] * 0.5 + (path[i - 1] + path[i + 1]) * 0.25 for i in range(1, len(path) - 1)] + [path[-1]]
+        tot = sum((q1 - q0).length for q0, q1 in zip(path, path[1:]))
+        light = 0.45 + 0.55 * hsh(k, 8)
+
+        def colfn(q, sv, ang):
+            # from the mass's colour at the root to warm, lighter tips; the
+            # lock's upper side catches more light
+            return _hair_col(lerp(0.32, 1.0, max(0.0, min(1.0, sv / max(tot, 1e-6)))), light, 0.5 + 0.5 * math.cos(ang))
+        sweep(mb, path, radii, S('#ffffff', rough=0.62), HW, segs=segs, cap_start=None, cap_end='round',
+              twist_hint=on[len(on) // 2][1], colfn=colfn)
+
+    def at_x(x):
         a = math.pi - math.asin(max(-0.95, min(0.95, x / 0.30)))
-        if a > math.pi:
-            a -= 2 * math.pi
-        lz = rb_hairline(a) + 0.012 + (0.03 if k >= 6 else 0.0)
-        q, nn = mass_point(a, lz)
-        up = (UP - nn * UP.dot(nn)).normalized()
-        sd = Vector((1.0, 0.0, 0.0))
-        sd = (sd - nn * sd.dot(nn)).normalized()
-        _clump(mb, q - nn * 0.006, nn, (up + sd * lean).normalized(), ln, 0.030, 0.015, lf, 0.9, fl, tw, 0.5 + 0.5 * hsh(k, 8),
-               segs=7, npts=7)
+        return a - 2 * math.pi if a > math.pi else a
+    BACK = Vector((0.0, -1.0, 0.0))
+    S10 = dict(segs=9, npts=8)
+    # the swept-up front: chunky locks that rise off the hairline and roll
+    # back over the top, their tips lifting
+    for k, (x, ln, lean, w) in enumerate(((-0.165, 0.150, -0.45, 0.060), (-0.085, 0.185, -0.20, 0.070), (0.0, 0.195, 0.02, 0.072),
+                                          (0.085, 0.185, 0.22, 0.070), (0.165, 0.150, 0.45, 0.060))):
+        a = at_x(x)
+        h = [hsh(k, j) for j in range(51, 56)]
+        lock(k, a, rb_hairline(a) + 0.004, Vector((lean, -1.0, 0.0)), ln * lerp(0.94, 1.06, h[0]), w, 0.032,
+             lerp(0.030, 0.040, h[2]), lerp(0.028, 0.040, h[3]), lerp(-0.35, 0.35, h[4]), tip=0.35, **S10)
+    # over the top and crown: locks swept back, tips lifting up and out
+    for i, (a, z, ln, w) in enumerate(((2.65, 1.455, 0.160, 0.066), (-2.60, 1.452, 0.155, 0.064), (2.05, 1.448, 0.150, 0.064),
+                                       (-2.00, 1.445, 0.145, 0.062), (1.40, 1.448, 0.145, 0.064), (-1.35, 1.445, 0.140, 0.062),
+                                       (0.75, 1.462, 0.140, 0.064), (-0.75, 1.46, 0.135, 0.062), (0.0, 1.47, 0.135, 0.066))):
+        h = [hsh(i, j) for j in range(21, 28)]
+        out = Vector((-math.sin(a), -math.cos(a), 0.0)) * 0.30
+        lock(20 + i, a, z, BACK + out + Vector((0.0, 0.0, -0.3)), ln * lerp(0.92, 1.08, h[0]), w, 0.029,
+             lerp(0.018, 0.026, h[2]), lerp(0.030, 0.044, h[3]), lerp(-0.45, 0.45, h[4]), tip=0.35, **S10)
+    # the sides: locks swept back above the ears, tips flicking out
+    for i, (a, z, ln) in enumerate(((2.15, 1.345, 0.130), (-2.15, 1.34, 0.125), (1.55, 1.335, 0.125), (-1.55, 1.33, 0.120),
+                                    (0.95, 1.335, 0.115), (-0.95, 1.33, 0.115))):
+        h = [hsh(i, j) for j in range(61, 68)]
+        lock(40 + i, a, z, Vector((0.0, -1.0, -0.55)), ln * lerp(0.92, 1.08, h[0]), lerp(0.054, 0.062, h[1]), 0.025,
+             lerp(0.016, 0.022, h[2]), lerp(0.020, 0.030, h[3]), lerp(-0.4, 0.4, h[4]), tip=0.35, segs=8, npts=7)
+    # the back: locks falling to the nape, tips turning out
+    for i, (a, z) in enumerate(((0.45, 1.37), (-0.45, 1.365), (0.0, 1.30))):
+        h = [hsh(i, j) for j in range(71, 78)]
+        lock(50 + i, a, z, Vector((0.0, 0.0, -1.0)), lerp(0.110, 0.125, h[0]), lerp(0.058, 0.064, h[1]), 0.024,
+             lerp(0.010, 0.014, h[2]), lerp(0.016, 0.024, h[3]), lerp(-0.4, 0.4, h[4]), tip=0.4, segs=8, npts=7)
+    # the lower back: shorter locks down to the nape
+    for i, a in enumerate((1.30, -1.30, 0.65, -0.65, 0.0)):
+        h = [hsh(i, j) for j in range(81, 88)]
+        z = 1.255 if abs(a) > 1.0 else 1.22
+        lock(55 + i, a, z, Vector((0.0, -0.3, -1.0)), lerp(0.085, 0.100, h[0]), lerp(0.052, 0.060, h[1]), 0.020,
+             lerp(0.006, 0.010, h[2]), lerp(0.012, 0.018, h[3]), lerp(-0.4, 0.4, h[4]), tip=0.45, segs=8, npts=6)
+    # a loose lock falling forward over the forehead, toward the character's left
+    a = at_x(-0.035)
+    lock(60, a, rb_hairline(a) + 0.024, Vector((-0.55, 1.0, -1.0)), 0.100, 0.030, 0.014, 0.010, 0.012, 0.5, tip=0.3)
     return reshape(mb, RB_SHAPE)
 
 
 # ================================================================== DR. DOOM: fringe
-DD_LOW = [(0.0, 0.985), (0.7, 1.005), (1.10, 1.075), (1.36, 1.190), (1.60, 1.208), (1.76, 1.172), (1.88, 1.178), (1.97, 1.212)]
-DD_HIGH = [(0.0, 1.238), (0.8, 1.248), (1.2, 1.262), (1.6, 1.264), (1.80, 1.248), (1.92, 1.228), (1.97, 1.214)]
-DD_END = 1.97
-FRINGE = [srgb('#8f7766'), srgb('#b19883'), srgb('#d5c2ae')]
+DD_LOW = [(0.0, 0.985), (0.7, 1.005), (1.10, 1.075), (1.36, 1.188), (1.60, 1.206), (1.76, 1.170), (1.92, 1.170), (2.06, 1.186),
+          (2.16, 1.212), (2.22, 1.250)]
+DD_HIGH = [(0.0, 1.250), (0.8, 1.262), (1.2, 1.292), (1.5, 1.322), (1.78, 1.334), (1.98, 1.326), (2.10, 1.306), (2.18, 1.282),
+           (2.22, 1.258)]
+DD_END = 2.22
+FRINGE = [srgb('#a48a72'), srgb('#c6ad93'), srgb('#e4d3bd')]      # warm grey-brown: shadow, body, light
 
 
 def dd_high(a):
     return table(DD_HIGH, abs(a)) + 0.006 * math.sin(9.0 * a + 0.3) + 0.004 * math.sin(17.0 * a + 1.1)
+
+
+# The fringe takes the skin's material class (warm wrap light and a little
+# transmission, untinted): fine short hair over the scalp.  As cloth, a
+# light grey-brown went charcoal in shadow under the scenes' cool light.
+FRINGE_STYLE = Style('#ffffff', T_NONE, 0.8, MAT_SKIN)
+
+
+def dd_band(a, f):
+    """How far the fringe stands off the scalp at angle a, a fraction f of
+    the way from its lower to its upper edge: fullest above and around the
+    ears (so it frames the face from the front), thin at the back, thinning
+    to nothing at both edges and at the temples' ends."""
+    end = smoothstep(DD_END, DD_END - 0.26, abs(a))
+    puff = 0.028 * math.exp(-((abs(a) - 1.78) / 0.48) ** 2)
+    prof = math.sin(math.pi * min(1.0, f * 1.05 + 0.04)) ** 0.7
+    return (0.0012 + (0.0050 + puff) * prof) * lerp(0.35, 1.0, end)
 
 
 def build_dd_fringe():
@@ -1053,11 +1176,9 @@ def build_dd_fringe():
             hi = max(hi, lo + 0.004)
             f = max(0.0, r) / (nr - 1)
             z = lerp(lo, hi, f) + (0.004 if r < 0 else 0.0)
-            end = smoothstep(DD_END, DD_END - 0.3, abs(a))
-            puff = 0.0035 * math.exp(-((abs(a) - 1.45) / 0.35) ** 2)        # fuller above and behind the ears
-            gr = (0.0012 + (0.0036 + puff) * math.sin(math.pi * min(1.0, f * 1.1 + 0.12))) * lerp(0.3, 1.0, end)
+            gr = dd_band(a, f)
             if 0 < r < nr - 1:
-                gr += 0.0011 * (hsh(k, r, 5) - 0.5)          # a fine, uneven surface
+                gr += 0.0014 * (hsh(k, r, 5) - 0.5)          # a fine, uneven surface
             if r == nr - 1:
                 gr = -0.0015
             if r < 0:
@@ -1067,7 +1188,7 @@ def build_dd_fringe():
             m = hsh(k // 3, r // 2)
             c = Vector(FRINGE[1]).lerp(Vector(FRINGE[2]), (0.35 * streak + 0.15 * m) * (0.45 + 0.55 * f))
             c = c.lerp(Vector(FRINGE[0]), 0.3 * (1.0 - f) * (1.0 - streak) + 0.25 * (r < 0))
-            row.append(mb.vert(q, S('#ffffff', rough=0.85), (0, q.z), HW(q), '', None, (c.x, c.y, c.z)))
+            row.append(mb.vert(q, FRINGE_STYLE, (0, q.z), HW(q), '', None, (c.x, c.y, c.z)))
         rows.append(row)
     for r in range(len(rows) - 1):
         a_, b_ = rows[r], rows[r + 1]
@@ -1080,14 +1201,16 @@ def build_dd_fringe():
     for k in range(26):
         a = lerp(-DD_END + 0.12, DD_END - 0.12, (k + 0.5) / 26.0) + 0.03 * math.sin(k * 2.7)
         hi = dd_high(a) - lerp(0.004, 0.016, hsh(k, 2))
-        q = P._shell_point(a, hi, 0.003)
-        nn = head_normal(q, 0.003)
+        lo = table(DD_LOW, abs(a))
+        gt = dd_band(a, (hi - lo) / max(0.004, dd_high(a) - lo)) + 0.0008
+        q = P._shell_point(a, hi, gt)
+        nn = head_normal(q, gt)
         back = Vector((0.0, -1.0, 0.35 + 0.4 * hsh(k, 5)))
         back = (back - nn * back.dot(nn)).normalized()
-        L = lerp(0.014, 0.026, hsh(k, 3))
-        pts = [q - nn * 0.002, q + back * L * 0.5 + nn * 0.0022, q + back * L + nn * 0.0006]
+        L = lerp(0.018, 0.032, hsh(k, 3))
+        pts = [q - nn * 0.002, q + back * L * 0.5 + nn * 0.0028, q + back * L + nn * 0.0010]
         c = Vector(FRINGE[1]).lerp(Vector(FRINGE[2]), 0.25 + 0.5 * hsh(k, 4))
-        sweep(mb, pts, [(0.0018, 0.0052), (0.0015, 0.0044), (0.0007, 0.0018)], S(tuple(c), rough=0.85), HW, segs=4, cap_start=None,
+        sweep(mb, pts, [(0.0022, 0.0062), (0.0018, 0.0052), (0.0008, 0.0020)], FRINGE_STYLE.with_col(tuple(c)), HW, segs=4, cap_start=None,
               cap_end='round', twist_hint=nn)
     # short tufts along the lower edge (pointing down at the nape and back at the sides)
     for k in range(16):
@@ -1100,7 +1223,7 @@ def build_dd_fringe():
         L = lerp(0.010, 0.018, hsh(k, 8))
         pts = [q - nn * 0.002, q + down * L * 0.5 + nn * 0.0016, q + down * L]
         c = Vector(FRINGE[0]).lerp(Vector(FRINGE[1]), 0.3 + 0.5 * hsh(k, 9))
-        sweep(mb, pts, [(0.0016, 0.0046), (0.0013, 0.0038), (0.0006, 0.0015)], S(tuple(c), rough=0.85), HW, segs=4, cap_start=None,
+        sweep(mb, pts, [(0.0016, 0.0046), (0.0013, 0.0038), (0.0006, 0.0015)], FRINGE_STYLE.with_col(tuple(c)), HW, segs=4, cap_start=None,
               cap_end='round', twist_hint=nn)
     return reshape(mb, DD_SHAPE)
 
@@ -1166,9 +1289,15 @@ RB_TORSO = [(0.455, 0.0), (0.462, 0.07), (0.475, 0.125), (0.50, 0.160), (0.53, 0
             (0.93, 0.066), (0.96, 0.0)]
 RB_RY = 0.82
 RB_SKIN_LEG = -0.004       # the leaner legs (under the leg radius)
-SHORTS = S('#f5f4ef', rough=0.88)
-SHORTS_BAND = S('#ecebe5', rough=0.9)
-SHORTS_SEAM = S('#d6d4cc', rough=0.9)
+# The shorts are the game's white: the eye whites' and teeth's lit class
+# (a little neutral self-light), not the cloth class.  As cloth, a 0.91
+# albedo white took only the scenes' cool ambient and moonlight (plus the
+# cloth's blue rim sheen) and read grey-blue in every light, like the other
+# cloth whites; measured in docs/pass9/skins.md.  A very rough surface keeps
+# the class's specular a broad, soft sheen.
+SHORTS = S('#f5f4ef', rough=0.92, mat=MAT_LIT)
+SHORTS_BAND = S('#eeede8', rough=0.94, mat=MAT_LIT)
+SHORTS_SEAM = S('#d9d7cf', rough=0.94, mat=MAT_LIT)
 SANDAL_SOLE = S('#3b2a1f', rough=0.7, mat=MAT_RUBBER)
 SANDAL_BED = S('#9b6b43', rough=0.62, mat=MAT_RUBBER)
 SANDAL_STRAP = S('#7d4c2b', rough=0.5, mat=MAT_RUBBER)
@@ -1248,8 +1377,12 @@ def build_rb_body():
     for sx in SIDES:
         sfx = '.L' if sx < 0 else '.R'
         sh = shoulder(sx)
+        # (the shoulder ball takes the weights of the surface under it,
+        # torso on the body side and the arm's on the arm side, as the
+        # shoulder caps do (parts.shoulder_cap_w): with a fixed 55/45 split
+        # it parted from the arm by 1.7 cm with the arms raised)
         ellipsoid(mb, sh + Vector((0.006 * sx, 0.0, -0.006)), (0.058, 0.056, 0.050), sk,
-                  lambda q, sfx=sfx: {'upper_arm' + sfx: 0.55, 'shoulder' + sfx: 0.45}, segs=16, rings=10)
+                  lambda q, sx=sx: P.shoulder_cap_w(q, sx), segs=16, rings=10)
         path = P._arm_path(sx, -0.02)
         s = _path_s(path)
         sweep(mb, path, [((P.bare_arm_radius(v - 0.02) * 0.97 + 0.003 * math.exp(-((v - 0.10) / 0.045) ** 2)),) * 2 for v in s], sk,
@@ -1330,7 +1463,11 @@ def _boxer_shorts(mb):
         z += 0.013
     prof.append((0.598, rb_r(0.598) + g))
     i0 = len(mb.v)
-    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, SHORTS, torso_w, segs=40, ry_scale=RB_RY)
+    # (round the torso's real surface: rb_pec flattens the front and back of
+    # the lean middle by up to 2.4 cm; on rb_r alone the waist stood 2.6 cm
+    # off the belly)
+    lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, SHORTS, torso_w, segs=40, ry_scale=RB_RY,
+          rfn=lambda r, th, z: r + rb_pec(th, z))
     mark(mb, 'shorts_seat', i0)
     # the waistband: soft ribs, a rolled top edge and its inside
     zb0, zb1 = 0.590, 0.628
@@ -1339,13 +1476,13 @@ def _boxer_shorts(mb):
             (zb1 - 0.004, rbase(zb1) + 0.0028), (zb1, rbase(zb1) + 0.0010), (zb1 + 0.0015, rbase(zb1) - 0.003),
             (zb1 - 0.006, rbase(zb1) - 0.0085)]
     lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), prof, SHORTS_BAND, torso_w, segs=60, ry_scale=RB_RY,
-          rfn=lambda r, th, z: r + 0.0009 * math.cos(th * 30.0),
+          rfn=lambda r, th, z: r + rb_pec(th, z) + 0.0009 * math.cos(th * 30.0),
           colfn=lambda p, z, th: (0.95, 0.948, 0.94) if math.cos(th * 30.0) < 0 else None)
     # stitched line just under the band
     ring = []
     for k in range(40):
         th = 2 * math.pi * k / 40
-        r = rb_r(0.584) + g + 0.0008
+        r = rb_r(0.584) + g + 0.0008 + rb_pec(th, 0.584)
         ring.append(Vector((math.cos(th) * r, TORSO_CY + math.sin(th) * r * RB_RY, 0.584)))
     K.path_tube(mb, ring, 0.0011, SHORTS_SEAM, torso_w, segs=3, hint=UP, closed=True)
     # front seam: from the band down and round toward the centre
@@ -1354,7 +1491,7 @@ def _boxer_shorts(mb):
         t = i / 7.0
         x = 0.014 * (1.0 - t * t)
         z = lerp(0.584, 0.488, t)
-        q = Vector((x, TORSO_CY + math.sqrt(max(0.0, (rb_r(z) + g) ** 2 - x * x)) * RB_RY + 0.0008, z))
+        q = Vector((x, TORSO_CY + math.sqrt(max(0.0, (rb_r(z) + g + rb_pec(math.pi / 2, z)) ** 2 - x * x)) * RB_RY + 0.0008, z))
         pts.append(q)
     K.path_tube(mb, pts, 0.0011, SHORTS_SEAM, torso_w, segs=4, hint=FWD)
     # legs, folded hems
@@ -1368,7 +1505,7 @@ def _boxer_shorts(mb):
         # side seam: down the seat's side, then the leg's outside to the hem
         seam = []
         for z in (0.586, 0.572, 0.558):
-            r = rb_r(z) + g + 0.0009
+            r = rb_r(z) + g + 0.0009 + rb_pec(0.0 if sx > 0 else math.pi, z)
             seam.append(Vector((sx * r, TORSO_CY, z)))
         for q, rr in zip(poly, radii):
             if q.z < 0.545 and q.z > 0.398:
@@ -1402,6 +1539,7 @@ def dd_tw(p):
 
 SUIT = srgb('#93673f')
 SUIT_EDGE = S('#6f4a2d', rough=0.85)
+SOCK = S('#3d322b', rough=0.92)
 SUIT_LINING = S('#6a4a30', rough=0.6, mat=MAT_SATIN)
 SHIRT = srgb('#d6e4f3')
 SHIRT_STRIPE = srgb('#93b0d6')
@@ -1496,8 +1634,22 @@ def lower_w(p):
 
 
 def jw(p):
-    """Jacket weights: the torso's above the waist, the hips' field (lower_w) below."""
-    return lower_w(p) if p.z < 0.60 else dd_tw(p)
+    """Jacket weights: the torso's above the waist, the hips' field (lower_w)
+    below (lower_w is dd_tw above 0.60 m, so this is lower_w).  Pass 9 fit:
+    every piece of the suit (shirt, tie, belt, buttons, jacket, trousers)
+    uses this one field, so pieces that touch at the waist (the shirt's
+    tucked hem in the trousers, a button on the jacket's edge) cannot part:
+    on dd_tw they parted by up to 2.2 cm in a splash jump (fit_check)."""
+    return lower_w(p)
+
+
+def ankle_w(sx):
+    """The shoes and the trouser hems over them share one field round the
+    ankle (the V6 boots' foot weights, which turn into the leg's at the back
+    of the ankle: outfits_p8.foot_w), so the hem resting on the shoe and the
+    shoe under it move together: with the hem on the leg's weights and the
+    shoe on the foot's they parted by 3.5 cm in a hard landing (fit_check)."""
+    return P8.foot_w(sx)
 
 
 def build_dd_suit():
@@ -1543,7 +1695,7 @@ def _dd_shirt(mb):
             row = []
             for t in cols:
                 p, n = dd_at(t, z, SHIRT_G - 0.012 * smoothstep(0.84, 0.876, z))
-                i = mb.vert(p, st, (0, p.z), dd_tw(p))
+                i = mb.vert(p, st, (0, p.z), lower_w(p))
                 mb.nrm[i] = n
                 row.append(i)
             rows.append(row)
@@ -1554,7 +1706,7 @@ def _dd_shirt(mb):
     mark(mb, 'shirt', i0)
     # the collar band round the neck, and two pointed collar tips over the knot
     lathe(mb, Vector((0, TORSO_CY - 0.004, 0)), Matrix.Identity(3), torus_profile(0.874, 0.092, 0.019, 10), SHIRT_COLLAR,
-          lambda p: dd_tw(p), segs=26, closed_profile=True, ry_scale=0.92)
+          lambda p: lower_w(p), segs=26, closed_profile=True, ry_scale=0.92)
     for sx in SIDES:
         cx, cz = 0.042 * sx, 0.846
 
@@ -1564,11 +1716,11 @@ def _dd_shirt(mb):
         tip = [(-0.030 * sx, 0.024), (0.026 * sx, 0.020), (0.022 * sx, -0.004), (0.010 * sx, -0.033), (-0.016 * sx, 0.000)]
         if sx < 0:
             tip.reverse()
-        K.decal(mb, tip, cplace, SHIRT_COLLAR, dd_tw, lift=0.0, thick=0.003, side_style=S('#b9cbe0', rough=0.85))
+        K.decal(mb, tip, cplace, SHIRT_COLLAR, lower_w, lift=0.0, thick=0.003, side_style=S('#b9cbe0', rough=0.85))
     # a placket line and two small buttons below the knot
     for z in (0.79, 0.73):
         p, n = dd_at(math.pi / 2 + 0.035, z, SHIRT_G + 0.001)
-        ellipsoid(mb, p, (0.0055, 0.0055, 0.0022), S('#f2f5f8', rough=0.3, mat=MAT_GLOSS), dd_tw, segs=8, rings=4, rot=rot_align(n, UP))
+        ellipsoid(mb, p, (0.0055, 0.0055, 0.0022), S('#f2f5f8', rough=0.3, mat=MAT_GLOSS), lower_w, segs=8, rings=4, rot=rot_align(n, UP))
     # cuffs out of the jacket sleeves
     for sx in SIDES:
         d = arm_dir(sx)
@@ -1638,7 +1790,7 @@ def _dd_tie(mb):
             for u in us:
                 v = (qq * period - u * half_w(0.6) * slope) / L
                 p, n = pos(u, v)
-                i = mb.vert(p, st, (0, p.z), dd_tw(p))
+                i = mb.vert(p, st, (0, p.z), lower_w(p))
                 mb.nrm[i] = n
                 row.append(i)
             rows.append(row)
@@ -1650,9 +1802,9 @@ def _dd_tie(mb):
         vs = [i / 30.0 for i in range(31)]
         top = [pos(side, v)[0] for v in vs]
         bot = [pos(side, v, 0.0005)[0] for v in vs]
-        ti = [mb.vert(p, Style(_tie_colour((v * L + side * half_w(v) * slope) / period), T_NONE, 0.5, MAT_SATIN), (0, p.z), dd_tw(p))
+        ti = [mb.vert(p, Style(_tie_colour((v * L + side * half_w(v) * slope) / period), T_NONE, 0.5, MAT_SATIN), (0, p.z), lower_w(p))
               for p, v in zip(top, vs)]
-        bi = [mb.vert(p, Style(TIE_GOLD, T_NONE, 0.5, MAT_SATIN), (0, p.z), dd_tw(p)) for p in bot]
+        bi = [mb.vert(p, Style(TIE_GOLD, T_NONE, 0.5, MAT_SATIN), (0, p.z), lower_w(p)) for p in bot]
         for k in range(30):
             if side > 0:
                 mb.face(ti[k], bi[k], bi[k + 1], ti[k + 1])
@@ -1672,7 +1824,7 @@ def _dd_tie(mb):
         if 0.0035 <= d < 0.0065:
             return TIE_LIGHT
         return TIE_GOLD
-    ellipsoid(mb, p, (0.023, 0.012, 0.0185), S('#ffffff', rough=0.5, mat=MAT_SATIN), dd_tw, segs=16, rings=10, rot=R @ rot_x(90.0),
+    ellipsoid(mb, p, (0.023, 0.012, 0.0185), S('#ffffff', rough=0.5, mat=MAT_SATIN), lower_w, segs=16, rings=10, rot=R @ rot_x(90.0),
               power=2.6, deform=kd, colfn=knot_col)
 
 
@@ -1702,13 +1854,13 @@ def _dd_trousers(mb):
         th = math.pi / 2 - math.atan2(x, 0.2)
         q, n = dd_at(th, z, g + 0.0009 - 0.4 * dd_belly(th, z))     # on the seat (0.6 of the belly)
         pts.append(q)
-    K.path_tube(mb, pts, 0.0012, SUIT_EDGE, dd_tw, segs=4, hint=FWD)
+    K.path_tube(mb, pts, 0.0012, SUIT_EDGE, lower_w, segs=4, hint=FWD)
     for sx in SIDES:
         def crease(p, sv, a):
             c = suit_style(p, 0.8)
             k = math.exp(-(a / 0.22) ** 2) if a < math.pi else math.exp(-((a - 2 * math.pi) / 0.22) ** 2)
             return Style(tuple(min(1.0, x * (1.0 + 0.07 * k)) for x in c.col), T_NONE, 0.9, MAT_CLOTH)
-        grow = lambda z: lerp(0.005, 0.026, smoothstep(0.48, 0.40, z)) + 0.004 * smoothstep(0.30, 0.12, z)
+        grow = lambda z: lerp(0.005, 0.024, smoothstep(0.48, 0.40, z)) - 0.002 * smoothstep(0.30, 0.12, z)
         i0 = len(mb.v)
         # (the legs leave the seat just above the crotch, under the jacket's
         # skirt, which rides on the thighs there: a leg tube reaching up
@@ -1724,25 +1876,36 @@ def _dd_trousers(mb):
         dd = (poly[-1] - poly[-2]).normalized()
         P._sleeve_hem(mb, e, dd, radii[-1][1], P.leg_radius(rig.leg_s(e, sx)) * 0.96, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), None, 0.012,
                       lambda q, sx=sx: leg_w(q, sx), 18, ry=1.0 / 0.96)
+        # a dark sock round the ankle, from inside the shoe to inside the
+        # trouser leg: what shows under the hem (the trousers have no leg in
+        # them; without it the hem opened onto nothing, 5 cm round the back
+        # of the shoe's low heel counter: fit_check "over_shoe")
+        K.leg_tube(mb, sx, 0.175, 0.045, -0.001, SOCK, segs=12, step=0.03)
+        # the bottom of the leg, its hem and the sock join the ankle's field
+        aw = ankle_w(sx)
+        for i in range(i0, len(mb.v)):
+            k = smoothstep(0.16, 0.12, mb.v[i].z)
+            if k > 0.0:
+                mb.w[i] = rig.mix((mb.w[i], 1.0 - k), (aw(mb.v[i]), k))
     # belt and buckle
     zb0, zb1 = 0.594, 0.616
     rb = lambda z: max(torso_r(z), 0.06) + g + 0.0035
     lathe(mb, Vector((0, TORSO_CY, 0)), Matrix.Identity(3), [(zb0 - 0.002, rb(zb0) - 0.004), (zb0, rb(zb0)), (zb1, rb(zb1)),
-                                                           (zb1 + 0.002, rb(zb1) - 0.004)], BELT, dd_tw, segs=40, ry_scale=TORSO_RY,
+                                                           (zb1 + 0.002, rb(zb1) - 0.004)], BELT, lower_w, segs=40, ry_scale=TORSO_RY,
           rfn=lambda r, th, z: r + 0.6 * dd_belly(th, z))
     p, n = dd_at(math.pi / 2, 0.605, g + 0.007 + 0.6 * dd_belly(math.pi / 2, 0.605) - dd_belly(math.pi / 2, 0.605))
     R = rot_align(n, UP)
     outer = K.rounded_rect(0.036, 0.026, 0.004)
     inner = K.rounded_rect(0.026, 0.016, 0.003)
     place = K.place_planar(p, n, UP)
-    K.decal(mb, outer, place, BUCKLE, dd_tw, lift=0.0, thick=0.0035)
-    K.decal(mb, inner, place, BELT, dd_tw, lift=0.0032, thick=0.0012)
+    K.decal(mb, outer, place, BUCKLE, lower_w, lift=0.0, thick=0.0035)
+    K.decal(mb, inner, place, BELT, lower_w, lift=0.0032, thick=0.0012)
     K.path_tube(mb, [p + R @ Vector((-0.0005, -0.009, 0.0)) + n * 0.005, p + R @ Vector((0.0015, 0.009, 0.0)) + n * 0.005], 0.0016, BUCKLE,
-                dd_tw, segs=5, hint=n)
+                lower_w, segs=5, hint=n)
     for th in (math.pi / 2 - 0.62, math.pi / 2 + 0.62, -math.pi / 2 - 0.45, -math.pi / 2 + 0.45):
         q0, nn = dd_at(th, 0.590, g + 0.0035 + 0.6 * dd_belly(th, 0.59) - dd_belly(th, 0.59))
         q1, _ = dd_at(th, 0.620, g + 0.0035 + 0.6 * dd_belly(th, 0.62) - dd_belly(th, 0.62))
-        K.path_tube(mb, [q0 + nn * 0.004, q1 + nn * 0.004], 0.0038, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), dd_tw, segs=6, hint=nn, flat=0.5)
+        K.path_tube(mb, [q0 + nn * 0.004, q1 + nn * 0.004], 0.0038, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), lower_w, segs=6, hint=nn, flat=0.5)
 
 
 def _dd_jacket(mb):
@@ -1828,11 +1991,11 @@ def _dd_jacket(mb):
             inner.append((th_in, z))
             outer.append((th_out, z))
         o, i_ = (outer, inner) if side > 0 else (list(reversed(outer)), list(reversed(inner)))
-        K.strip_decal(mb, o, i_, lapel_place, suit_style(Vector((side, 0.5, 0.7)), 0.6, srgb('#875d38')), dd_tw, lift=0.0005,
+        K.strip_decal(mb, o, i_, lapel_place, suit_style(Vector((side, 0.5, 0.7)), 0.6, srgb('#875d38')), lower_w, lift=0.0005,
                       thick=0.0045, sink=0.001)
         # the lapel's edge
         pts = [jacket_at(th, z, 0.0052)[0] for th, z in outer]
-        K.path_tube(mb, pts, 0.0024, SUIT_EDGE, dd_tw, segs=5, hint=FWD)
+        K.path_tube(mb, pts, 0.0024, SUIT_EDGE, lower_w, segs=5, hint=FWD)
     # collar round the back of the neck, folded down
     pts, nrm = [], []
     for k in range(25):
@@ -1843,7 +2006,7 @@ def _dd_jacket(mb):
         out = Vector((math.cos(a), math.sin(a), 0.0))
         pts.append(p)
         nrm.append((out * 0.75 + UP * 0.66).normalized())
-    K.ribbon(mb, pts, nrm, 0.020, 0.0042, S('#875d38', rough=0.9), dd_tw, closed=False, segs=8)
+    K.ribbon(mb, pts, nrm, 0.020, 0.0042, S('#875d38', rough=0.9), lower_w, closed=False, segs=8)
     # pockets: flaps at the hips, a breast welt on the left chest
     for side in (1.0, -1.0):
         th = math.pi / 2 + side * 0.80
@@ -1851,13 +2014,13 @@ def _dd_jacket(mb):
         K.decal(mb, K.rounded_rect(0.080, 0.028, 0.004), place, suit_style(Vector((side, 0.3, 0.5)), 0.6, srgb('#875d38')), jw, lift=0.0,
                 thick=0.004, side_style=SUIT_EDGE)
     place = (lambda u, v: jacket_at(math.pi / 2 + 0.80 + u / 0.25, 0.765 + v, 0.0008))
-    K.decal(mb, K.rounded_rect(0.056, 0.011, 0.002), place, suit_style(Vector((0.1, 0.2, 0.3)), 0.6, srgb('#875d38')), dd_tw, lift=0.0,
+    K.decal(mb, K.rounded_rect(0.056, 0.011, 0.002), place, suit_style(Vector((0.1, 0.2, 0.3)), 0.6, srgb('#875d38')), lower_w, lift=0.0,
             thick=0.0035, side_style=SUIT_EDGE)
     # two horn buttons on the left front edge
     for z in (0.645, 0.585):
         th = math.pi / 2 + jacket_gap(z) + 0.075
         p, n = jacket_at(th, z, 0.003)
-        ellipsoid(mb, p, (0.0105, 0.0105, 0.0035), HORN, dd_tw if z > 0.53 else jw, segs=12, rings=5, rot=rot_align(n, UP),
+        ellipsoid(mb, p, (0.0105, 0.0105, 0.0035), HORN, jw, segs=12, rings=5, rot=rot_align(n, UP),
                   colfn=lambda q, lp: S('#22160e', rough=0.5) if abs(abs(lp.x) - 0.003) < 0.0016 and abs(abs(lp.y) - 0.003) < 0.0016 else None)
     # sleeves (shoulders fitted by their caps), ending above the shirt cuffs
     P.sleeves(mb, Style(SUIT, T_NONE, 0.9, MAT_CLOTH), 0.026, s1=rig.UPPER_LEN + rig.FORE_LEN - 0.020, cuff_style=None, lod=1)
@@ -1886,7 +2049,7 @@ def _tweed_recolour(mb):
 def _dd_shoe(mb, sx):
     """Polished dark-brown formal shoe: a sleek rounded upper, a darker sole
     with a raised heel, a toe-cap seam, a lacing panel with laces."""
-    fw = foot_w(sx)
+    fw = ankle_w(sx)
     cx = rig.HIP_X * sx
     slab(mb, _foot_outline(sx, heel=-0.082, toe=0.192, w_heel=0.053, w_toe=0.064, n=28), 0.0, 0.014, SHOE_SOLE, fw, bevel=0.004)
     heel = [(x, y) for x, y in _foot_outline(sx, heel=-0.080, toe=0.10, w_heel=0.051, w_toe=0.056, n=20) if y < -0.02]
