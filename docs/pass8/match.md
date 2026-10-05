@@ -26,7 +26,7 @@ Symptoms are the owner's (brief §2/§5/§6); causes are from the source.
 | M7 | Map dots didn't say who or how old | Opponents were plain dots / rings; age not shown; team all discs | Team marks by role shape (runner disc, Watch diamond); a seen opponent is a role badge (Watch: diamond + whistle, cart glyph while driving; runner: disc + drop) with a facing tick, an amber ring when a Watch is within 20 m; lost sight: hollow, frozen at the last point, dimming, with "3s" on the expanded map; gone after the existing 5 s TTL. Legend "You · Team · Watch in sight · Last seen" (+ waters, home doors) | `test_map::test_sight_walls_lost_sight_and_expiry` |
 | M8 | Home / caught spectators scanned from their own (home or held) body | `_scan_seen` always used the local slot | Sightings come from the character the view follows (the followed-view policy): your own while in play, the watched teammate while caught or home; pure spectators unchanged (nothing) | same test (`sight_slot`) |
 | M9 | A guest whose link died could keep a frozen opponent "live" | `_scan_seen` read interpolated buffers with no freshness check | No new sightings from snapshots older than 600 ms (`SEEN_STALE_MS`) | `test_map::test_a_dead_link_adds_no_sightings` (loopback rig) |
-| M10 | Long capture sentence; permanent "HOME SAFE!" | V4/V6 overlays | Caught: "Caught by X · back in 6" / "2/3 waters kept · back at Fountain · protected 2 s" (return place from the last stamp event). Home: "Home · 2nd to finish · Waiting for team" for 3.5 s, then the view follows a teammate | `test_runner_card_in_every_state` |
+| M10 | Long capture sentence; permanent "HOME SAFE!" | V4/V6 overlays | Caught: "Caught by X · back in 6" / "2/3 waters kept · back at Fountain · protected 2 s" (the return place follows the simulation's own rule: the host reads its last stamped water, or "inside <dorm>" before any; a guest uses its latest stamp event and says "your last splash" if it has none, e.g. after a reconnect). Home: "Home · 2nd to finish · Waiting for team" for 3.5 s, then the view follows a teammate | `test_runner_card_in_every_state` |
 | M11 | Noise chevrons had no context | — | The loudest close noise (≥ 0.5) gets "footsteps nearby" / "cart nearby" beside its chevron; still a bearing only | code (`DrawLayer`) |
 | M12 | (coordinator request) Sprint latch feedback | Integrator's `SimPlayer.sprint_exhausted` (commit 001d16a) | "Sprint empty · ease off to recharge" with a coral, hatched mini meter (and a tick at `sprint_rearm_fraction`) while the local runner is latched **and** still holds sprint; gone as soon as either stops. The controller meter is tinted/hatched while latched. Read defensively (`"sprint_exhausted" in p`); placed above the thumb clusters | `test_sprint_empty_hint_follows_the_latch_and_the_hold`, layout test |
 
@@ -106,7 +106,13 @@ runner's goal. `test_snapshot_block_is_runners_only_and_positionless`,
 | HUD refresh (goal bar, card fitting, pace, danger, sprint hint) | every frame | p50 137 µs, p95 373 µs, one 24 ms outlier in 300 calls (`[hud refresh]` in `test_match_hud_pass8`, same load) |
 
 Nothing waits for the worker: until the fields are in, pace is
-stamp-based. On a phone the worker time will be several times longer; the
+stamp-based. The field task is queued as a *high-priority* worker task on
+purpose: Godot runs low-priority tasks on a small share of the pool (one
+thread on a 4–6 core phone), and that share is where the V8 bot path
+searches run with their fixed delivery ticks, so a field build there could
+make a delivery wait; as one high-priority task it takes another thread.
+The grid copy holds the foot grid's search lock (bots search only after
+GO; the copy happens during loading). On a phone the worker time will be several times longer; the
 4 s reveal + 3 s countdown cover it, and it is skipped entirely on later
 rounds with the same waters/dorm. Not measured on a device.
 

@@ -115,7 +115,11 @@ static func _start(lay: CampusLayout, specs: Array) -> void:
 	for s in specs:
 		_task_keys.append(s["key"])
 	stats["tasks"] = int(stats["tasks"]) + 1
-	_task = WorkerThreadPool.add_task(_job.bind(nav, specs), false, "pace fields")
+	# high priority on purpose: Godot runs low-priority tasks on a small share
+	# of the pool (one thread on a 4-6 core phone), the share the bots' path
+	# searches use; a field build queued there could make a scheduled path
+	# delivery wait.  This one task takes another thread instead.
+	_task = WorkerThreadPool.add_task(_job.bind(nav, specs), true, "pace fields")
 	_mutex.unlock()
 
 

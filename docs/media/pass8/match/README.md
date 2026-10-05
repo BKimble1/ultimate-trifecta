@@ -38,7 +38,7 @@ Shots (where present in a folder):
 | `runner_3_waters_return_inside` | "Return inside <dorm>" (two lines), the doors glowing |
 | `runner_watch_in_sight_danger` | a Night Watch in plain sight: danger chip "Night Watch in sight · 15 m", the minimap badge |
 | `map_runner_watch_in_sight` | expanded map: live Watch badge with facing, legend, Runner pace standings with BOT labels and the help line |
-| `map_runner_last_seen_2s` | the same Watch behind a building: hollow mark frozen where last seen, "2s" |
+| `map_runner_last_seen_2s` | the same Watch behind a building: hollow mark frozen where last seen, "2s" (the sighting's age is pinned at 2 s by the driver: llvmpipe frames take seconds here and the sighting clock is wall time) |
 | `runner_caught` | "Caught by … · back in 6", waters kept, return place, protection; the card's countdown |
 | `runner_protected` | "Protected · 2" after the return |
 | `runner_home_waiting_for_team` | "Home · 1st to finish · Waiting for team", tracker 1/4 |
