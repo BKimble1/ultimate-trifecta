@@ -73,7 +73,7 @@ func build() -> void:
 	bottom.add_child(col)
 	var tut_done: bool = Save.data.get("tutorial_done", false)
 	if not tut_done:
-		var hint := UIKit.styled("New here? Practice starts with a short tutorial.", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
+		var hint := UIKit.outlined(UIKit.styled("New here? Practice starts with a short tutorial.", "caption", Color(UIKit.IVORY, 0.88), HORIZONTAL_ALIGNMENT_RIGHT))
 		col.add_child(hint)
 	play_btn = UIKit.primary("Play with Friends", Vector2(400, 100), 31)
 	play_btn.pressed.connect(func() -> void: App.goto(OnlineScreen))
@@ -134,15 +134,24 @@ func profile_chip() -> Button:
 
 ## Soft gradients behind the title (upper left) and the actions (right),
 ## so text reads over the room without a slab.
+## (Final sweep) The right shade starts in the lower-right corner, where text
+## sits on the room (the home hint, the party's status lines, beside the
+## panels), and is gone before the middle of the screen: it used to run
+## across the whole width, dimming the characters by 10-15 % and the lamp
+## corner by up to half.  The panels carry their own surfaces.
 static func add_shades(parent: Control, right: float = 0.5, top_left: float = 0.4) -> void:
-	for spec in [[Vector2(1.0, 0.5), Vector2(0.0, 0.5), right, 0.5], [Vector2(0.0, 0.0), Vector2(0.55, 0.6), top_left, 0.0]]:
+	for spec in [[Vector2(1.0, 1.0), Vector2(0.0, 0.2), right, 0.5], [Vector2(0.0, 0.0), Vector2(0.55, 0.6), top_left, 0.0]]:
 		var a: float = spec[2]
 		if a <= 0.0:
 			continue
 		var g := Gradient.new()
-		g.set_color(0, Color(UIKit.NAVY, a))
-		g.set_color(1, Color(UIKit.NAVY, 0.0))
-		g.add_point(float(spec[3]) * 0.5, Color(UIKit.NAVY, a * 0.55))
+		if spec[3] > 0.0:
+			g.offsets = PackedFloat32Array([0.0, 0.3, 0.62])
+			g.colors = PackedColorArray([Color(UIKit.NAVY, a), Color(UIKit.NAVY, a * 0.6), Color(UIKit.NAVY, 0.0)])
+		else:
+			g.set_color(0, Color(UIKit.NAVY, a))
+			g.set_color(1, Color(UIKit.NAVY, 0.0))
+			g.add_point(0.0, Color(UIKit.NAVY, a * 0.55))
 		var t := GradientTexture2D.new()
 		t.gradient = g
 		t.fill = GradientTexture2D.FILL_LINEAR if spec[3] > 0.0 else GradientTexture2D.FILL_RADIAL
