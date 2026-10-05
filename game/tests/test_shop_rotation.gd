@@ -38,7 +38,9 @@ func _begin(service: bool = true, store: bool = true) -> void:
 	if service:
 		rig.svc.clock_ms = func() -> float: return svc_t
 		await rig.sign_in()
-	_saved = {"size": t.get_tree().root.size}
+	# a test may begin again after rig.end(): keep the size from the first begin
+	if _saved.is_empty():
+		_saved = {"size": t.get_tree().root.size}
 	t.get_tree().root.size = Vector2i(1280, 720)
 	for c in t.get_tree().root.get_children():
 		if c is BootCurtain:
@@ -48,6 +50,7 @@ func _begin(service: bool = true, store: bool = true) -> void:
 
 func _end() -> void:
 	t.get_tree().root.size = _saved["size"]
+	_saved = {}
 	await rig.end()
 
 

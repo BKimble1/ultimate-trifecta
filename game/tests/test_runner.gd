@@ -49,7 +49,7 @@ func _ready() -> void:
 			var mname: String = m["name"]
 			if not mname.begins_with("test_"):
 				continue
-			if filter != "" and not (f + ":" + mname).contains(filter):
+			if filter != "" and not _matches(f + ":" + mname):
 				continue
 			current = f.trim_suffix(".gd") + "::" + mname
 			total += 1
@@ -67,6 +67,16 @@ func _ready() -> void:
 	for f in failures:
 		print("  FAIL: " + f)
 	get_tree().quit(1 if failures.size() > 0 else 0)
+
+
+## The filter is a substring of "file:method"; several, comma-separated, run
+## together in one process (in the usual order), e.g. to find a test whose
+## leftover state breaks a later one.
+func _matches(key: String) -> bool:
+	for part in filter.split(","):
+		if part != "" and key.contains(part):
+			return true
+	return false
 
 
 func check(cond: bool, msg: String) -> bool:
