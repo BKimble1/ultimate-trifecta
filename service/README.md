@@ -145,7 +145,7 @@ against the deleted profile are closed as "profile deleted".
 | `GET /v1/shop/offers` | none | Pass 8: the service's clock and the Shop's rotating offers on sale now and in the next 72 h (`src/offers.js`); a rotating skin's spend must name an active `offer_id` (checked on this clock at acceptance, `409 offer_changed` otherwise) |
 | `POST /v1/wallet/apple` | session | V6: deliver a StoreKit 2 transaction (`jws`) once; refunds/revocations |
 | `POST /v1/wallet/legacy-import` | session | V6: the one-time, bounded import of a pre-V6 device balance |
-| `POST /v1/season/:id/claim` | session | V6: claim Season rewards (idempotent) |
+| `POST /v1/season/:id/claim` | session | V6: claim Season rewards (idempotent: a cell once, Coins once, an owned item `already_owned`). Pass 9 (100 tiers): `{claims: [{tier, track, reward?}]}`, up to every cell of the table; `reward` names what the game showed (`coins:75`, an item id) and a cell whose reward differs is not granted (`reward_changed`); the reply has `claimed` (`result`, `reward`) and `skipped` (`no_reward`, `already_claimed`, `locked`, `premium_required`, `reward_changed`); the snapshot's season has `tiers` (the last tier this service grants) and `tier` |
 | `POST /v1/rounds`, `POST /v1/rounds/:id/report` | room host | V6: register a round's admitted players; report its result (bounds-checked) |
 | `POST /v1/rounds/:id/ack`, `GET /v1/rounds/:id/me` | session | V6: confirm the row your game received; settlement status (Pass 8: with the round's challenge result) |
 | `GET /v1/challenges` | session | Pass 8: the daily/weekly challenges (also in every wallet snapshot); progress and bonus Season XP come only from round settlement |
@@ -153,8 +153,10 @@ against the deleted profile are closed as "profile deleted".
 | `GET /v1/admin/wallets/:id`, `POST …/adjust` | `ADMIN_TOKEN` | V6: wallet, ledger and App Store rows; support grants / forgive debt |
 
 V6 commerce (wallet, ledger, App Store verification, Season 1, round
-settlement) and Pass 8 challenges (`src/challenges.js`, migration
-`0004_challenges.sql`, ECONOMY.md §10): see [docs/ECONOMY.md](../docs/ECONOMY.md) and
+settlement), Pass 8 challenges (`src/challenges.js`, migration
+`0004_challenges.sql`, ECONOMY.md §10) and the Pass 9 Season 1 extension to
+100 tiers (migration `0005_season_100.sql`, ECONOMY.md §4,
+[docs/pass9/season.md](../docs/pass9/season.md)): see [docs/ECONOMY.md](../docs/ECONOMY.md) and
 [docs/COMMERCE_SETUP.md](../docs/COMMERCE_SETUP.md). Vars: `APPLE_ENVIRONMENT`
 (`Sandbox` for the default/TestFlight deployment, `Production` in
 `[env.production]`). Optional secrets: `ASC_IAP_KEY_ID`, `ASC_IAP_ISSUER_ID`,

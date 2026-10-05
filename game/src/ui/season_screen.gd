@@ -180,7 +180,7 @@ func build() -> void:
 	_build_detail()
 	_build_challenges()
 
-	var st := Wallet.season_state(sid)
+	var st := season()
 	var tier := maxi(1, Economy.tier_for_xp(sid, int(st["xp"])))
 	var first := Wallet.claimable(sid) if bool(Wallet.can_transact()["ok"]) else []
 	if not first.is_empty():
@@ -437,9 +437,24 @@ func _nav_row() -> Control:
 	return nav_row
 
 
+## The wallet's Season state, read once per frame (a refresh of 88 cells
+## and their columns asks for it a few hundred times); a wallet change
+## (_refresh) reads it again at once.
+var _st: Dictionary = {}
+var _st_frame := -1
+
+
+func season() -> Dictionary:
+	var f := Engine.get_process_frames()
+	if f != _st_frame or _st.is_empty():
+		_st = Wallet.season_state(sid)
+		_st_frame = f
+	return _st
+
+
 ## The tier the player's recorded Season XP reaches (at least 1).
 func current_tier() -> int:
-	return maxi(1, Economy.tier_for_xp(sid, int(Wallet.season_state(sid)["xp"])))
+	return maxi(1, Economy.tier_for_xp(sid, int(season()["xp"])))
 
 
 ## Pass 9: the featured skin at a tier ("outfit:dr_doom"; "" when none).
@@ -476,7 +491,7 @@ func jump_current() -> void:
 
 
 func jump_next_reward() -> void:
-	var st := Wallet.season_state(sid)
+	var st := season()
 	var n := Economy.next_reward_tier(sid, current_tier(), bool(st["premium"]))
 	jump_to(n if n > 0 else Economy.max_tier(sid))
 
@@ -484,7 +499,7 @@ func jump_next_reward() -> void:
 func _refresh_nav() -> void:
 	if not is_instance_valid(nav_row):
 		return
-	var st := Wallet.season_state(sid)
+	var st := season()
 	var xp := int(st["xp"])
 	var tier := current_tier()
 	now_chip.set_text_lines("You're at", "Tier %d" % tier)
@@ -541,7 +556,8 @@ func claim_status() -> Dictionary:
 func _refresh() -> void:
 	if not is_inside_tree():
 		return
-	var st := Wallet.season_state(sid)
+	_st_frame = -1
+	var st := season()
 	var xp := int(st["xp"])
 	var prog := Economy.tier_progress(sid, xp)
 	tier_lbl.text = "Tier %d / %d" % [maxi(1, int(prog["tier"])), Economy.max_tier(sid)]
@@ -575,7 +591,7 @@ func _refresh() -> void:
 
 
 func cell_state(tier: int, track: String) -> String:
-	var st := Wallet.season_state(sid)
+	var st := season()
 	return Economy.cell_state(sid, tier, track, int(st["xp"]), bool(st["premium"]), st["claimed"])
 
 
@@ -589,7 +605,7 @@ func display_state(tier: int, track: String) -> String:
 	if s == "claimable":
 		if Wallet.claim_pending(sid, tier, track):
 			return "pending"
-		if tier > int(Wallet.season_state(sid)["service_tiers"]):
+		if tier > int(season()["service_tiers"]):
 			return "service_update"
 		if not bool(claim_status()["ok"]):
 			return "earned"
@@ -628,6 +644,8 @@ var _from_empty := false
 func focus(tier: int, track: String, from_empty: bool = false) -> void:
 	if not Economy.has_reward(sid, tier):
 		track = "progress"
+	elif track == "progress":
+		track = best_track(tier)
 	focus_tier = tier
 	focus_track = track
 	_from_empty = from_empty
@@ -796,7 +814,7 @@ func _refresh_reward_detail() -> void:
 	var action: Button = _d["action"]
 	var state_l: Label = _d["state"]
 	var reason_l: Label = _d["reason"]
-	var xp := int(Wallet.season_state(sid)["xp"])
+	var xp := int(season()["xp"])
 	var need := Economy.tier_xp(sid, focus_tier) - xp
 	var into := "wallet" if r.has("coins") else "Locker"
 	var lead := ("No Free reward at Tier %d. " % focus_tier) if _from_empty else ""
@@ -806,7 +824,7 @@ func _refresh_reward_detail() -> void:
 			action.visible = false
 		"locked":
 			state_l.text = lead + "Reach Tier %d: %s more Season XP from online rounds. No tier skips." % [focus_tier, Catalogue.format_coins(maxi(0, need))]
-			if focus_track == "premium" and not bool(Wallet.season_state(sid)["premium"]):
+			if focus_track == "premium" and not bool(season()["premium"]):
 				state_l.text += " Premium track: needs Premium too."
 			action.visible = false
 		"premium_locked":
@@ -858,7 +876,7 @@ func _refresh_progress_detail() -> void:
 	art.visible = (_d["page"] as Control).size.y >= 560.0
 	(_d["name"] as Label).text = "Progress tiers" if last > first else "Progress tier"
 	(_d["type"] as Label).text = "No reward on either track"
-	var xp := int(Wallet.season_state(sid)["xp"])
+	var xp := int(season()["xp"])
 	var tier := current_tier()
 	var nxt := last + 1 if last < Economy.max_tier(sid) else -1
 	var leads := ""
@@ -897,6 +915,11 @@ func _show_preview(r: Dictionary) -> void:
 	if eid < 0 and skin == "":
 		if is_instance_valid(_preview):
 			_preview.visible = false
+			if _preview_skin != "":
+				# give the runner its own look back (the next emote shows on it)
+				_preview_skin = ""
+				_preview_view.set_appearance(TC.Role.RUNNER, Cosmetics.sanitize(Save.data["cosmetic"]))
+				_preview_view.set_facing(PI + 0.3)
 		art.visible = true
 		_preview_emote = -1
 		return
@@ -1003,8 +1026,12 @@ func _claim(which: Array) -> void:
 			Sfx.play("pickup")
 			UIKit.toast(self, ("Claimed %d reward%s" % [got.size(), "" if got.size() == 1 else "s"]) if got.size() != 1 else "Claimed!", 2.0)
 		elif String(r.get("message", "")) == "":
-			# (another device or a retried request claimed it first)
-			UIKit.toast(self, "Already claimed", 2.0)
+			# another device or a retried request claimed it first, or this
+			# screen was a step behind the service (the reply's snapshot has
+			# already refreshed it)
+			var sk: Array = r.get("skipped", [])
+			var dup := sk.all(func(x: Variant) -> bool: return x is Dictionary and String(x.get("reason", "")) == "already_claimed")
+			UIKit.toast(self, "Already claimed" if dup else "Nothing claimed: your Season Pass was refreshed", 2.0)
 		if String(r.get("message", "")) != "":
 			dialog(String(r["message"]))
 	else:

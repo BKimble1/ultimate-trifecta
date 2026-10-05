@@ -519,3 +519,54 @@ func _move(from: Vector2, to: Vector2, steps: int) -> void:
 		t.get_viewport().push_input(e)
 		prev = p
 		await t.get_tree().process_frame
+
+
+func test_the_shop_never_advertises_100_rewards() -> void:
+	var line := ShopScreen.premium_summary("s1")
+	t.check(line.begins_with("44 Premium rewards over 100 tiers"), "the Shop counts the real rewards: %s" % line)
+	t.check(line.contains("5 outfits") and line.contains("1,125 Coins"), "with the real mix")
+	t.check(not line.contains("100 rewards") and not line.contains("100 Premium"), "never 100 rewards")
+
+
+## The featured-skin code path with art present, exercised with an outfit
+## whose art is in every build (Glow Jogger, Premium 15) standing in for the
+## two skins until the skins workstream's art merges: the milestone chip
+## asks Portraits for the skin's face, the detail turns the real skin on a
+## live runner, and Reduced Motion holds it still.
+func test_featured_preview_renders_the_real_art_when_present() -> void:
+	await _begin()
+	var season: Dictionary = Catalogue.season("s1")
+	var saved := {"featured": season["featured"].duplicate(), "milestones": season["milestones"].duplicate()}
+	season["featured"] = [15, 50, 100]
+	season["milestones"] = [15, 50, 100]
+	rig.svc.wallet(Cloud.profile_id())["season"]["s1"]["xp"] = 3400
+	await Wallet.refresh()
+	await _device("p14_844x390")
+	App.goto(SeasonScreen)
+	await _frames(8)
+	var sp := App.screen as SeasonScreen
+	var chip: SeasonScreen.NavChip = sp.milestone_chips[15]
+	t.eq(chip.skin, "outfit:glow_jogger", "the chip features the tier's skin")
+	t.check(chip.pic_key != "", "and asked Portraits for its face (the art exists)")
+	sp.jump_to(15)
+	await _frames(30)
+	t.eq([sp.focus_tier, sp.focus_track], [15, "premium"], "the featured cell")
+	t.check(is_instance_valid(sp._preview) and sp._preview.visible and not (sp._d["art"] as Control).visible, "a live preview instead of the static picture")
+	t.eq(sp._preview_skin, "outfit:glow_jogger", "turning the featured skin")
+	t.eq(String(sp._preview_view.cosmetic.get("outfit", "")), "glow_jogger", "on the real character")
+	t.eq((sp._d["note"] as Label).text, "", "no missing-art note")
+	var turn0 := sp._turn
+	await _frames(20)
+	t.check(sp._turn > turn0, "it turns slowly")
+	Save.set_setting("reduced_motion", true)
+	var turn1 := sp._turn
+	await _frames(20)
+	t.eq(sp._turn, turn1, "Reduced Motion: it holds still")
+	Save.set_setting("reduced_motion", false)
+	# an ordinary reward after it: the preview gives the runner back
+	sp.focus(14, "premium")
+	await _frames(3)
+	t.eq(sp._preview_skin, "", "the preview is released")
+	season["featured"] = saved["featured"]
+	season["milestones"] = saved["milestones"]
+	await _end()

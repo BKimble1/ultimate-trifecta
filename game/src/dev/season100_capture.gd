@@ -18,6 +18,9 @@ extends Node
 ##   10  a claim waiting for the service (network down): "Claiming…"
 ##   11  an older game service (catalogue version 2, 30 tiers): tier 50
 ##       earned, "the game service hasn't been updated for this tier"
+##   12  (only while the skins' art isn't in the build) the featured-skin
+##       preview path with a STAND-IN: Glow Jogger as a featured tier, its
+##       face on the milestone chip and the live, turning preview; labelled
 ##   20  service off (the shipped state): honest preview, milestones work
 ## The two skins' art comes from the SKINS9 stream: until it is merged the
 ## pass shows their neutral picture and says "Preview not available in this
@@ -321,6 +324,25 @@ func _run() -> void:
 		sp.jump_to(50)
 		await _wait(0.6))
 	svc.legacy_tiers = 0
+	# ------------------------------------------------------------------ the live preview path, with a stand-in
+	# The two skins' art isn't in this branch: the featured-preview path is
+	# shown with Glow Jogger (Premium 15), labelled as a stand-in.
+	var season: Dictionary = Catalogue.season("s1")
+	var keep_f: Array = season["featured"].duplicate()
+	var keep_m: Array = season["milestones"].duplicate()
+	if not Catalogue.has_art("outfit:record_breaker"):
+		season["featured"] = [15, 50, 100]
+		season["milestones"] = [15, 50, 100]
+		pid = await _online("T:_standin")
+		_set_season(pid, 3400, true)
+		await Wallet.refresh()
+		await _reopen()
+		_label(FIXTURE + " · STAND-IN: Glow Jogger shows the featured-skin preview path (the two skins' art is not in this branch)")
+		await _pass("12_svcon_test_featured_preview_path_standin", func(sp: SeasonScreen) -> void:
+			sp.jump_to(15)
+			await _wait(1.6))
+		season["featured"] = keep_f
+		season["milestones"] = keep_m
 	# ------------------------------------------------------------------ service off (the shipped state)
 	FakeService.uninstall()
 	Purchases.use_adapter(StoreAdapter.new())

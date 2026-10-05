@@ -1,7 +1,8 @@
-# Economy: catalogue, products, earning, wallet, Season XP and claims (V6, Pass 8 Shop)
+# Economy: catalogue, products, earning, wallet, Season XP and claims (V6, Pass 8 Shop, Pass 9 Season to tier 100)
 
 This is the economy as implemented in V6, with the Pass 8 Shop changes
-(scheduled rotating offers, §2.1; six Coin packs). The numbers live in one file,
+(scheduled rotating offers, §2.1; six Coin packs) and the Pass 9 extension of
+Season 1 from 30 to 100 tiers (§4; catalogue version 3). The numbers live in one file,
 [`game/config/catalogue.json`](../game/config/catalogue.json): the game reads
 it (`Catalogue`, `Economy`) and the service reads a generated copy
 (`service/src/catalogue_data.js`, checked by a test and by `deploy.sh`).
@@ -41,7 +42,8 @@ See [COMMERCE_SETUP.md](COMMERCE_SETUP.md) for the owner's steps.
 Kinds: `coin_item` (Shop, Coins), `apple_skin` (Shop, permanent App Store
 non-consumable), `coin_pack` (Shop, App Store consumable), `season_premium`
 (Shop, Coins), `season_reward` (earned in the pass; never sold under any
-ID). Pass 8: a `coin_item` with `"rotation": true` is sold **only through a
+ID; Pass 9: the featured skins `outfit:record_breaker` and `outfit:dr_doom`
+are Season rewards, not Shop or rotation items). Pass 8: a `coin_item` with `"rotation": true` is sold **only through a
 scheduled rotating offer** (§2.1); its item ID is still the permanent
 entitlement. Runner options with no catalogue entry and Cosmetics cost 0 are the free
 base options everyone owns. The catalogue is versioned
@@ -243,7 +245,8 @@ Night Watch, 2.2 splashes as a runner.
   completes rounds (~11) ≈ 136.
 - Season XP from the rounds themselves (base): runner 50 + 2.2×10 +
   0.6×20 + 0.5×15 = 91.5; Night Watch 50 + 1.5×15 + 0.5×15 = 80; average
-  **85.75 XP** → tier 30 (8,300 XP) in **≈ 97 rounds without challenges**.
+  **85.75 XP** → tier 30 (8,300 XP) in **≈ 97 rounds without challenges**
+  (Pass 9: tier 100, 32,800 XP, in ≈ 383; §4 has the model with challenges).
 - Time: a round is up to 4 minutes of play plus reveal, countdown, loading
   and results, about 4-6 minutes in all, so ≈ 98 rounds is roughly 6.5-10
   hours of play for Premium.
@@ -252,8 +255,8 @@ Night Watch, 2.2 splashes as a runner.
 
 Challenges (§10) add Season XP to the same pass: at most **150 a day**
 (three daily goals × 50) and **450 a week** (three weekly goals × 150).
-They change nothing above: not the base table, not the 30 tiers or their
-thresholds, not Coins. The Coins → Premium model above is separate and
+They change nothing above: not the base table, not the tier thresholds,
+not Coins (Pass 9 extended the pass to 100 tiers from this model: §4). The Coins → Premium model above is separate and
 unchanged (challenges never pay Coins).
 
 The model uses the same assumptions, with every round eligible and actively
@@ -292,11 +295,15 @@ results and how often goals complete.
 
 ## 4. Season 1 · After Hours
 
-30 tiers, a Free and a Premium track. Tier 1 is reached at 0 XP; tiers 2-10
-cost 200 XP each, 11-20 cost 300, 21-30 cost 350 (8,300 XP for tier 30).
-Premium costs 1,500 Coins in the Shop, is permanent for Season 1, and is
-never a subscription. Buying it never adds XP and there are no paid tier
-skips.
+**100 tiers** (Pass 9; 30 before), a Free and a Premium track, in the same
+season: nothing was reset. Tier 1 is reached at 0 XP; tiers 2-10 cost 200 XP
+each, 11-20 cost 300, 21-30 cost 350 (8,300 XP for tier 30), and tiers
+31-100 continue at 350 each (15,300 XP for tier 50, 32,800 for tier 100;
+the curve is chosen in "Pacing to tier 100" below). Premium costs 1,500
+Coins in the Shop, is permanent for Season 1, and is never a subscription.
+Buying it never adds XP and there are no paid tier skips.
+
+### Tiers 1-30 (unchanged since V6)
 
 | Tier | XP | Free | Premium |
 |---|---|---|---|
@@ -331,25 +338,163 @@ skips.
 | 29 | 7,950 | — | 50 Coins |
 | 30 | 8,300 | Badge: Season 1 Finisher | Outfit: Library Cardigan |
 
-- **Free** (15 rewards): an outfit, 2 hats, 1 pair of shoes, 2 emotes, 3 name
-  cards, 3 badges, 100 Coins. **Premium** (30 rewards): 3 outfits, 2 hats,
-  1 pair of shoes, 2 emotes, 5 name cards, 5 badges, 600 Coins. Premium
-  Coins never pay back the 1,500-Coin pass (tested).
+### Tiers 31-100 (Pass 9)
+
+A reward on both tracks every fifth tier; the tiers between are **progress
+tiers** with no reward on either track (the pass shows each run of them as
+one compact column, "36–39", with a step per tier, and never as empty reward
+cells). Every tier and its threshold is explicit in
+`game/config/catalogue.json` (each with `"added_in": 3`).
+
+| Tier | XP | Free | Premium |
+|---|---|---|---|
+| 31-34 | 8,650 / 9,000 / 9,350 / 9,700 | progress tiers (no reward) | progress tiers (no reward) |
+| **35** | 10,050 | 50 Coins | 75 Coins |
+| 36-39 | 10,400 / 10,750 / 11,100 / 11,450 | progress tiers | progress tiers |
+| **40** | 11,800 | Name card: Finish Line | Badge: Big Dive |
+| 41-44 | 12,150 / 12,500 / 12,850 / 13,200 | progress tiers | progress tiers |
+| **45** | 13,550 | 50 Coins | 75 Coins |
+| 46-49 | 13,900 / 14,250 / 14,600 / 14,950 | progress tiers | progress tiers |
+| **50** | 15,300 | Badge: Record Pace | **Outfit: Record Breaker** |
+| 51-54 | 15,650 / 16,000 / 16,350 / 16,700 | progress tiers | progress tiers |
+| **55** | 17,050 | 50 Coins | 75 Coins |
+| 56-59 | 17,400 / 17,750 / 18,100 / 18,450 | progress tiers | progress tiers |
+| **60** | 18,800 | Name card: Rooftop Stars | Name card: Midnight Oil |
+| 61-64 | 19,150 / 19,500 / 19,850 / 20,200 | progress tiers | progress tiers |
+| **65** | 20,550 | 50 Coins | 75 Coins |
+| 66-69 | 20,900 / 21,250 / 21,600 / 21,950 | progress tiers | progress tiers |
+| **70** | 22,300 | Badge: Night Runner | Badge: High Jump |
+| 71-74 | 22,650 / 23,000 / 23,350 / 23,700 | progress tiers | progress tiers |
+| **75** | 24,050 | 50 Coins | 75 Coins |
+| 76-79 | 24,400 / 24,750 / 25,100 / 25,450 | progress tiers | progress tiers |
+| **80** | 25,800 | Name card: Night Garden | Name card: After Midnight |
+| 81-84 | 26,150 / 26,500 / 26,850 / 27,200 | progress tiers | progress tiers |
+| **85** | 27,550 | 50 Coins | 75 Coins |
+| 86-89 | 27,900 / 28,250 / 28,600 / 28,950 | progress tiers | progress tiers |
+| **90** | 29,300 | Badge: Campus Crown | Name card: Office Hours |
+| 91-94 | 29,650 / 30,000 / 30,350 / 30,700 | progress tiers | progress tiers |
+| **95** | 31,050 | 50 Coins | 75 Coins |
+| 96-99 | 31,400 / 31,750 / 32,100 / 32,450 | progress tiers | progress tiers |
+| **100** | 32,800 | Badge: Season 1 Legend (tier-100 completion) | **Outfit: Dr. Doom** |
+
+- **Record Breaker** (`outfit:record_breaker`, Premium 50): "The clock has a
+  new problem." Includes: "Signature tousled curls, white athletic shorts,
+  green wristband, and brown sandals." **Dr. Doom** (`outfit:dr_doom`,
+  Premium 100): "Office hours are over. His rounds aren't." Includes:
+  "Signature bald crown and side fringe, brown suit, striped shirt, gold
+  striped tie, and formal shoes." Both are complete character skins whose
+  art comes from the skins workstream (`Cosmetics` keys `record_breaker`,
+  `dr_doom`); they are Season rewards only: never sold, never in the
+  rotation, no App Store product.
+- **Kept at 30**: Library Cardigan (Premium) and the Season 1 Finisher badge
+  (Free) stay where they were earned; nothing is clawed back. The separate
+  **Season 1 Legend** badge marks tier 100.
+- **Totals.** **Free** (29 rewards): an outfit, 2 hats, 1 pair of shoes, 2
+  emotes, 6 name cards, 7 badges, 10 Coin rewards (450 Coins).
+  **Premium** (44 rewards): 5 outfits, 2 hats, 1 pair of shoes, 2 emotes, 8
+  name cards, 7 badges, 19 Coin rewards (1,125 Coins). The pass advertises
+  "44 Premium rewards over 100 tiers", never 100 rewards. Premium Coins
+  never pay back the 1,500-Coin pass (75%; tested). No item is granted by
+  two cells.
+- **Reward types used.** Coins; the two skins; twelve new lightweight
+  profile rewards (6 name cards with their colours and a catalogue `motif`,
+  6 badges with an existing emblem or the new stopwatch, all drawn by
+  `CommerceArt`). Every existing Cosmetics accessory or emote with a price is
+  already sold in the Shop or granted in tiers 1-30, so none was reused.
 - Outfit, hat, shoe and emote names and meshes come from the art workstream
   (`Cosmetics`); name cards and badges are drawn by the UI
   (`CommerceArt`), shown in the Locker's Profile category and on the profile
-  chip. Every reward has art or is tested to need it.
-- Rules (service-enforced; mirrored by `Economy.cell_state`):
-  - A cell is **locked** until its tier is reached, **Premium-locked** when
-    reached without Premium, **claimable**, or **claimed**.
-  - Free players progress and claim the Free track without buying.
-  - Buying Premium later makes every Premium reward already earned
-    claimable at once.
-  - Claim and Claim all are idempotent: each (season, tier, track) can be
-    claimed once (primary key); repeating does nothing.
-  - A reward item already owned (e.g. granted by support) is marked claimed
-    with result `already_owned` and is not granted twice.
-  - Coins go to the wallet, items to the Locker, permanently.
+  chip. Every reward has art or is tested to need it
+  (`test_catalogue::test_every_referenced_item_exists_in_cosmetics` lists
+  the two skins until the skins workstream's `Cosmetics` entries merge).
+
+### Pacing to tier 100 (Pass 9)
+
+A tuning model, **not a measured rate** (no real eligible rounds have been
+played with the service), from the same inputs as §3: 85.75 base Season XP
+a typical eligible round, challenges at most 150 a day and 450 a week, and
+the three modelled weeks of "With challenges" (§3). A round is 4-6 minutes
+in all (play, reveal, countdown, loading, results).
+
+| Player | Week | Season XP a week | Tier 30 | Tier 50 | Tier 100 |
+|---|---|---|---|---|---|
+| Modest | 2 days × 3 rounds | ≈ 715 | 11.6 weeks | 21.4 weeks, 128 rounds (8.6-12.8 h) | 45.9 weeks, 275 rounds (18.4-27.5 h) |
+| Regular | 5 days × 4 rounds | ≈ 2,915 | 2.85 weeks, 57 rounds | **5.25 weeks, 105 rounds (7.0-10.5 h)** | **11.25 weeks, 225 rounds (15-22.5 h)** |
+| Frequent | 7 days × 8 rounds | ≈ 6,302 | 1.3 weeks, 74 rounds | 2.4 weeks, 136 rounds (9.1-13.6 h) | 5.2 weeks, 291 rounds (19.4-29.1 h) |
+| Base XP only | (no challenges) | 85.75 a round | 97 rounds | 178 rounds | 383 rounds |
+
+How the curve was chosen (the targets, then the candidates measured
+against them):
+
+- **Targets.** (1) A regular player finishes inside a 12-week horizon, the
+  length of the written Shop schedule (§2.1) and a common season length,
+  with Record Breaker near the middle. (2) Later tiers never cost less than
+  tiers 21-30 (350), so the pass never feels like it inflates. (3) Nothing
+  is a multiple of the old cap: the extension prices each new tier from
+  the earning model. Modest players are not expected to finish in one
+  season; with no end date set (beta) nothing they earn expires.
+- **Candidates** (tiers 31-100 per tier → tier 100 XP → regular weeks):
+  300 → 29,300 → 10.1 (cheaper than tiers 21-30: rejected); **350 → 32,800
+  → 11.25 (chosen)**; 400 → 36,300 → 12.45 (misses the horizon); +50 every
+  ten tiers (400-700) → 46,800 → 16.1 (a late grind); the old cap scaled by
+  100/30 → 27,667 (an arbitrary multiplication, not a model).
+- Rewards every fifth tier: one reward pair every 1,750 Season XP, about 12
+  regular rounds (an hour of play). Tiers 1-30 front-load rewards (one on
+  nearly every tier) to teach the pass; 31-100 is the longer chase.
+- `test_catalogue::test_pass_to_tier_100_pacing_model` recomputes this table
+  from the live catalogue and fails if it drifts; re-tune once real
+  playtests measure rounds and goal completion.
+
+### Rules (service-enforced; mirrored by `Economy.cell_state`)
+
+- A cell is **locked** until its tier is reached, **Premium-locked** when
+  reached without Premium, **claimable**, or **claimed**. A progress tier has
+  no cell to claim. Premium alone never unlocks an unearned tier, and Season
+  XP alone never grants a Premium reward (tested at tiers 50 and 100).
+- Free players progress and claim the Free track without buying.
+- Buying Premium later makes every Premium reward already earned
+  claimable at once.
+- Claim and Claim all are idempotent: each (season, tier, track) can be
+  claimed once (primary key), Coins once per cell (ledger key
+  `claim:<season>:<tier>:<track>:<profile>`); repeating does nothing.
+- A reward item already owned (e.g. granted by support) is marked claimed
+  with result `already_owned` and is not granted twice.
+- Coins go to the wallet, items to the Locker, permanently.
+- **Pass 9 claim protocol** (`POST /v1/season/:id/claim`): the game sends
+  `{claims: [{tier, track, reward}]}` where `reward` is what it showed
+  (`coins:75`, `outfit:record_breaker`), at most 60 cells a request (a whole
+  100-tier Claim all is two requests, each its own idempotency key; a
+  current service accepts up to every cell of its table). Every requested
+  cell is answered: `claimed` (`granted` / `already_owned`, with the reward)
+  or `skipped` (`already_claimed`, `locked`, `premium_required`,
+  `no_reward`, `reward_changed`). A cell whose reward differs from the
+  service's table is never granted.
+- **Catalogue mismatch.** The snapshot's season carries `tiers`, the last
+  tier the service grants (100). A game reading an older service's
+  snapshot (catalogue version 2, no `tiers`) knows it has only the tiers
+  added up to version 2 (30): tiers 31-100 show "Earned" with "the game
+  service hasn't been updated for this tier yet", never a Claim that does
+  nothing. An older (30-tier) game against the current service claims
+  tiers 1-30 as before (they are identical in both tables) and simply
+  never shows 31-100; the extra claims and items in its snapshot are
+  ignored safely.
+- **Pending.** A claim waiting in the outbox (offline, or its reply was
+  lost) shows "Claiming…" and is never queued twice; it is retried with the
+  same key until the service answers (already claimed, if it had applied).
+
+### Migration of existing accounts (Pass 9)
+
+Nothing is rewritten. `season_progress.xp` was never capped at the old last
+tier, so Season XP earned past 8,300 is already recorded and now counts
+toward tiers 31-100; the tier shown is always computed from the recorded XP
+and the current table. Claims stay keyed by (season, tier, track) and tiers
+1-30 are identical, so every claim, item, Premium entitlement and Coin
+balance keeps its meaning and nothing is granted twice. Migration
+`0005_season_100.sql` only adds `season_claims.catalogue_version` (the
+table a claim was granted under; NULL for earlier rows, all from version 2).
+No XP is invented for anyone. Example (tested on both sides): 12,000 XP with
+every tier 1-30 claimed shows tier 40 and offers exactly tiers 35 and 40.
+
 - Dates: `starts_at` / `ends_at` are server-UTC fields, deliberately `null`
   for this beta: no countdown is shown and purchased access never expires.
   When a later season arrives, Season 1 claims and items stay (they're
@@ -473,6 +618,7 @@ server simulation would be the real fix.
 | Rotating offers (Pass 8) | none ("come from the game service") | last offers previewable, "Connect to refresh Shop", not buyable | live countdowns, buyable while on sale |
 | Round rewards | not added (said on results) | queued confirmation, settled later | settled |
 | Challenges (Pass 8) | goal previews, no progress, "Preview" status | last known progress for the current period ("Offline · progress as of …"), else previews | live |
+| Season Pass, 100 tiers (Pass 9) | browse all 100 tiers, milestones and the skins' previews; earned rewards read "Earned" with the reason | last snapshot's XP and claims; a queued claim shows "Claiming…" | live; tiers an older service lacks say so |
 
 ## 9. Results interface
 
@@ -620,7 +766,8 @@ all (`service/migrations/0004_challenges.sql`):
 
 ### In the game
 
-- **Season Pass:** the side panel has two pages, **Challenges** and
+- **Season Pass:** (Pass 9: the track has a navigation row above it and
+  shows progress tiers as compact runs; docs/pass9/season.md) the side panel has two pages, **Challenges** and
   **Reward**. "Challenges · Earn Season XP" opens first: the role line,
   Daily and Weekly with their local reset time, one card per goal (name,
   task, progress bar and "4/6", "+50 Season XP", a check when done) and one
