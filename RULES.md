@@ -17,7 +17,7 @@ All values come from one resource, `game/config/rules_default.tres` (`RulesConfi
 - Eight gameplay slots; bots fill empty seats and stay labelled. `runners = 8 − Night Watch`, `home to win = ceil(2 × runners / 3)` (`PartySeries.required_home`).
 - **Rounds:** 1, 3 (recommended for friends) or 5. The lobby shows one summary line, e.g. "3 rounds · 2 Night Watch · 6 runners · 4 home to win", and Reset to recommended.
 - Only the host can change them, only in the lobby before a series starts. A change bumps a revision, clears guests' Ready and tells them why. Settings lock when the series starts; ending the series (with confirmation) unlocks them. Guests see the host's values read-only.
-- Each round starts from an immutable snapshot of the locked settings carried in START; incompatible clients are refused with "Update the game to join." (protocol 6 since V6; a guest whose dorm geometry differs from the round's is refused the same way).
+- Each round starts from an immutable snapshot of the locked settings carried in START; incompatible clients are refused with "Update the game to join." (protocol 7 since Pass 8; a guest whose dorm geometry differs from the round's is refused the same way).
 
 ## Roles
 
@@ -161,7 +161,9 @@ Ground acceleration is high and turning is fast, so movement stays precise while
 - **Spotted cue.** A spotted runner gets a restrained vignette and icon for 2.2 s, from the host's actual detection.
 - **Noise.** Each side receives anonymous noise directions (chevrons and sound): runner sprint 24 m, jog 14 m (walking softly is silent), Night Watch steps 12 m, carts 45 m.
 - **Splashes.** A stamp marks that water for the Night Watch for 3 s: the place, never the runner.
-- **Maps (V4).** The minimap and the full map (tap the minimap, or Map on a controller / M) show your own team openly, tonight's waters, the dorm and, for the Night Watch, carts and splash markers. Opponents appear only as **last seen**: solid while actually in line of sight and view range from your own head, then a fading ring labelled with its age for 5 s, then gone. Losing sight stops tracking; there are no live dots through walls. Spectating follows the same rules.
+- **Maps (V4).** The minimap and the full map (tap the minimap, or Map on a controller / M) show your own team openly, tonight's waters, the dorm and, for the Night Watch, carts and splash markers. Opponents appear only as **last seen**: solid while actually in line of sight and view range from your own head, then a fading ring labelled with its age for 5 s, then gone. Losing sight stops tracking; there are no live dots through walls. Spectating follows the same rules. Pass 8: an opponent in sight shows as a role badge with a facing tick; when sight is lost the mark stays where they were last seen, hollow, with its age on the full map, for 5 s. Caught or home, sightings come from the teammate you are watching. A guest's sightings stop when its snapshots are more than 0.6 s old. The full map's legend reads You · Team · Watch in sight · Last seen; while the Night Watch is in sight a runner's HUD says "Night Watch in sight · N m".
+- **Match HUD (Pass 8).** One goal line and one clock: runners see "Team home n/N · Need k more", the Night Watch "Runners home n/N · Hold until m:ss" (amber under 30 s, coral under 10 s). Below it one personal next action: the waters still to stamp and "Next: <water>" with its direction and distance, "Return inside <dorm>", "Caught by X · back in 6", "Protected", or "Home · 2nd to finish · Waiting for team"; the Night Watch reads "You: 3 tags · 2 different runners". A pinned challenge shows in the pause menu and the expanded map.
+- **Runner pace (Pass 8).** Runners (only) see "Runner pace: 3rd/6": home runners first by the tick they crossed a door, then by unique waters stamped, then by the estimated remaining route (through every remaining water in its best order, then to a door, over the same walking grid the bots use; routes within 4 m share a place, competition style 1, 2, 2, 4; a caught runner adds the hold left × 5 m/s). Bots are ranked and counted; "Not home" at the end. While routes are still being measured it says "updating", and a runner whose route can't be measured is placed by stamps and marked approximate. The host computes it every half second from precomputed route fields (no per-player path search) and sends each runner only places and stamp counts, never a position or another runner's next goal. Pace earns no reward.
 - **What the network actually carries.** For smooth movement the host sends each player the positions of opponents within 45 m, or within 90 m in line of sight, whether or not they are visible on screen. The maps and HUD only present what was seen, but a modified client could read more: this is presentation policy, **not anti-cheat secrecy**. The Night Watch's private snapshot block also carries its own tag-ready flag and the runner the assist would pick (always someone already in its line of sight).
 - **Bots** read the same `can_see`, `noises_for` and splash-marker data and nothing else.
 
@@ -202,6 +204,21 @@ Full tables, the earning calculation and the trust model: [docs/ECONOMY.md](docs
   from Coins and is separate from Season 1.
 - **What Coins buy:** outfits and accessories in the Shop, and Season 1
   Premium (1,500 Coins). Everyone has identical abilities.
+- **Rotating skins (Pass 8).** Ten Shop outfits (the six Pass 8 outfits and
+  the four V6 Coin outfits) are sold only while their offer is on: four
+  featured slots, each offer 48 h, changing at 00:00 UTC (two slots a day),
+  on a published schedule; each card says when it leaves. The game service's
+  clock decides: a purchase it accepts before the offer ends is delivered,
+  one it receives after is refused with nothing charged. A bought skin is
+  yours to keep; Shop skins may return.
+- **Challenges (Pass 8).** 3 daily (50 Season XP each) and 3 weekly (150)
+  goals, reset at 00:00 UTC and Monday 00:00 UTC (a round counts for the
+  period it started in, settled up to 24 h late). Only verified online
+  rounds you actively play count (at least 60 s, or 40 % of a short round,
+  of real input or objective play); contribution goals credit each water
+  you splash or different runner you tag, at most 3 a round; either role
+  can complete them. Practice never counts. Each goal's bonus is paid once,
+  with the round's settlement; Season XP only (no Coins, no tier skips).
 
 ### Gold coins in the round (V6)
 
