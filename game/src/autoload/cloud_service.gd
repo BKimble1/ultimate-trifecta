@@ -7,17 +7,66 @@ extends Node
 ## the service is "off": practice and local play work, online names stay
 ## local, and nothing pretends to be verified.  Network failures are reported
 ## as such and never treated as success.
+##
+## FINAL_RELEASE_SWEEP: two deployments, one build (docs/final/commerce.md).
+## service.cfg names the App Store deployment (production_url,
+## production_admission_public_key) and the sandbox one (sandbox_url,
+## sandbox_admission_public_key); the old single url /
+## admission_public_key is a development fallback.  Each deployment has its
+## own database and credits only its own App Store environment, so which one
+## an install talks to is a routing choice, never a permission:
+##  - at launch, from a hint: on iOS the App Store receipt's kind (UTShare
+##    receipt_kind(): "sandboxReceipt" -> sandbox (TestFlight, development),
+##    "receipt" -> production (App Store), no receipt URL -> sandbox);
+##    anything unknown, or an older native library without the call, ->
+##    production.  Production is the safe default: it credits only
+##    Production-signed purchases, and the sandbox only holds an isolated
+##    economy worth nothing.  Desktop and tests use the sandbox.
+##  - automatically, once per launch, when a deployment refuses a verified
+##    Apple purchase as the other environment's (409 sandbox_purchase in App
+##    Review, production_purchase): move_to() signs out here, signs in there
+##    with the same Game Center player (the same appAccountToken) and the
+##    still-unfinished transaction is delivered there.  The move is kept for
+##    this install (user://service_route.cfg) while its receipt kind stays
+##    the same, and waits while a party is open (a room lives in one
+##    deployment).
+## There is no user-facing switch.  Everything else calls the service only
+## through this node, so it follows the routing by itself.
 
 signal changed
+## FINAL_RELEASE_SWEEP: the install moved to another deployment
+signal deployment_changed(from: String, to: String)
 
 const CFG_PATH := "res://config/service.cfg"
+const ROUTE_PATH := "user://service_route.cfg"
 const TIMEOUT_S := 12.0
+## UTShare.receipt_kind() answers (native/ut_share/src/ut_share_platform.h)
+enum Receipt { UNAVAILABLE = -1, NONE = 0, APP_STORE = 1, SANDBOX = 2, OTHER = 3 }
 ## per-request timeout (dev evidence runs on a software renderer raise it:
 ## a 1 fps frame rate there is not a network failure)
 var timeout_s := TIMEOUT_S
 
 var base_url := ""
 var admission_key: CryptoKey
+## the configured deployments: "production" / "sandbox" (or "single", the
+## development fallback) -> {url, key_pem}
+var endpoints: Dictionary = {}
+## the deployment in use ("" when the service is off)
+var deployment := ""
+## why: receipt | default | desktop | moved | only | off
+var route_reason := ""
+## the receipt kind read at launch (Receipt; -2 before it was asked)
+var receipt_kind := -2
+## where the automatic move is remembered (tests point it elsewhere)
+var route_path := ROUTE_PATH
+## tests: the native receipt query (func() -> int) and the platform (1 iOS, 0 not)
+var receipt_override: Callable
+var ios_override := -1
+## tests: one HTTP layer per deployment ("production"/"sandbox" -> Callable)
+var transport_overrides: Dictionary = {}
+var _moved_this_run := false
+var _pending_move: Array = []    # [target, reason] waiting for the party to end
+var _move_timer: Timer
 var token := ""
 var token_exp_ms := 0
 var profile: Dictionary = {}       # profile_id, display_name, discriminator, needs_name, status, ...
@@ -36,14 +85,192 @@ var identity_override: Callable
 func _ready() -> void:
 	var cf := ConfigFile.new()
 	if cf.load(CFG_PATH) == OK:
-		base_url = String(cf.get_value("service", "url", "")).strip_edges().trim_suffix("/")
-		admission_key = Admission.load_public_key(String(cf.get_value("service", "admission_public_key", "")))
+		load_endpoints(cf)
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--service-url="):
-			base_url = a.get_slice("=", 1).trim_suffix("/")
-	state = "signed_out" if configured() else "off"
+			# development captures: one explicit endpoint
+			var pem := String(endpoints.get("single", {}).get("key_pem", ""))
+			endpoints = {"single": {"url": a.get_slice("=", 1).trim_suffix("/"), "key_pem": pem}}
+	apply_route()
+	_move_timer = Timer.new()
+	_move_timer.wait_time = 2.0
+	_move_timer.timeout.connect(_try_pending_move)
+	add_child(_move_timer)
 	if base_url != "":
 		fetch_config.call_deferred()
+
+
+# ------------------------------------------------------------------ routing
+## Reads the deployments from service.cfg: the production / sandbox pair, or
+## the single development url.
+func load_endpoints(cf: ConfigFile) -> void:
+	endpoints = {}
+	for d in ["production", "sandbox"]:
+		var u := String(cf.get_value("service", d + "_url", "")).strip_edges().trim_suffix("/")
+		if u != "":
+			endpoints[d] = {"url": u, "key_pem": String(cf.get_value("service", d + "_admission_public_key", ""))}
+	var single := String(cf.get_value("service", "url", "")).strip_edges().trim_suffix("/")
+	if endpoints.is_empty() and single != "":
+		endpoints["single"] = {"url": single, "key_pem": String(cf.get_value("service", "admission_public_key", ""))}
+
+
+## The App Store receipt kind from the native library (Receipt), or
+## UNAVAILABLE where there is none (desktop, an older library).
+func read_receipt_kind() -> int:
+	if receipt_override.is_valid():
+		return int(receipt_override.call())
+	if ClassDB.class_exists("UTShare") and ClassDB.class_has_method("UTShare", "receipt_kind"):
+		return int(ClassDB.class_call_static("UTShare", "receipt_kind"))
+	return Receipt.UNAVAILABLE
+
+
+func _on_ios() -> bool:
+	return OS.get_name() == "iOS" if ios_override < 0 else ios_override == 1
+
+
+## The routing decision (pure): {deployment, reason}.  `moved` is the
+## remembered automatic move ({deployment, receipt_kind}) or {}.
+static func pick_route(available: Array, on_ios: bool, kind: int, moved: Dictionary) -> Dictionary:
+	if available.is_empty():
+		return {"deployment": "", "reason": "off"}
+	if not (available.has("production") and available.has("sandbox")):
+		return {"deployment": String(available[0]), "reason": "only"}
+	var m := String(moved.get("deployment", ""))
+	if m in ["production", "sandbox"] and int(moved.get("receipt_kind", -9)) == kind:
+		return {"deployment": m, "reason": "moved"}
+	if not on_ios:
+		return {"deployment": "sandbox", "reason": "desktop"}
+	match kind:
+		Receipt.SANDBOX, Receipt.NONE:
+			return {"deployment": "sandbox", "reason": "receipt"}
+		Receipt.APP_STORE:
+			return {"deployment": "production", "reason": "receipt"}
+	# an unknown receipt name, or no native answer: production
+	return {"deployment": "production", "reason": "default"}
+
+
+## Chooses the deployment for this launch and points the client at it.
+func apply_route() -> void:
+	receipt_kind = read_receipt_kind()
+	var r := pick_route(_available(), _on_ios(), receipt_kind, _load_move())
+	route_reason = String(r["reason"])
+	_use(String(r["deployment"]))
+	state = "signed_out" if configured() else "off"
+
+
+func _available() -> Array:
+	var out: Array = []
+	for d in ["production", "sandbox", "single"]:
+		if endpoints.has(d):
+			out.append(d)
+	return out
+
+
+func _use(d: String) -> void:
+	deployment = d
+	var e: Dictionary = endpoints.get(d, {})
+	base_url = String(e.get("url", ""))
+	var pem := String(e.get("key_pem", ""))
+	admission_key = Admission.load_public_key(pem) if pem != "" else null
+
+
+## The wallet environment this deployment's snapshots carry ("production" /
+## "sandbox"), or "" when it isn't known (the development single endpoint).
+func wallet_environment() -> String:
+	return deployment if deployment in ["production", "sandbox"] else ""
+
+
+func _load_move() -> Dictionary:
+	var cf := ConfigFile.new()
+	if cf.load(route_path) != OK:
+		return {}
+	return {"deployment": String(cf.get_value("route", "deployment", "")), "receipt_kind": int(cf.get_value("route", "receipt_kind", -9)),
+		"reason": String(cf.get_value("route", "reason", ""))}
+
+
+func _save_move(d: String, reason: String) -> void:
+	var cf := ConfigFile.new()
+	cf.set_value("route", "deployment", d)
+	cf.set_value("route", "receipt_kind", receipt_kind)
+	cf.set_value("route", "reason", reason)
+	cf.set_value("route", "at", int(Time.get_unix_time_from_system()))
+	cf.save(route_path)
+
+
+## Can this install move to `target` now (both deployments configured, not
+## already there, not moved yet in this launch)?
+func can_move_to(target: String) -> bool:
+	return target in ["production", "sandbox"] and endpoints.has("production") and endpoints.has("sandbox") \
+		and deployment != target and not _moved_this_run
+
+
+## A party is open (its room lives in this deployment): a move waits.
+func _party_open() -> bool:
+	var app := get_node_or_null("/root/App")
+	if app == null:
+		return false
+	var s: Variant = app.get("session")
+	return String(app.get("party_code")) != "" or (s is Object and is_instance_valid(s))
+
+
+## Moves this install to the other deployment after it refused a verified
+## purchase as the other environment's (`reason`: the refusal's code).
+## Signs out here, signs in there with the same Game Center player, keeps the
+## choice for this install.  Returns false when it can't move now (with a
+## party open it moves by itself once the party ends).
+func move_to(target: String, reason: String) -> bool:
+	if not can_move_to(target):
+		return false
+	if _party_open():
+		_pending_move = [target, reason]
+		if _move_timer and _move_timer.is_stopped():
+			_move_timer.start()
+		return false
+	_moved_this_run = true
+	_pending_move = []
+	var from := deployment
+	var name_before: Variant = profile.get("display_name")
+	if signed_in():
+		await sign_out()
+	_use(target)
+	route_reason = "moved"
+	_save_move(target, reason)
+	token = ""
+	token_exp_ms = 0
+	profile = {}
+	service_config = {}
+	state = "signed_out"
+	deployment_changed.emit(from, target)
+	changed.emit()
+	fetch_config()
+	var s := await sign_in()
+	# the same player, a new profile there: keep the approved name (that
+	# deployment moderates it again)
+	if bool(s.get("ok", false)) and bool(profile.get("needs_name", false)) and name_before is String and String(name_before) != "":
+		await set_display_name(String(name_before))
+	return true
+
+
+func _try_pending_move() -> void:
+	if _pending_move.is_empty():
+		_move_timer.stop()
+		return
+	if not _party_open():
+		var p: Array = _pending_move
+		_move_timer.stop()
+		move_to(String(p[0]), String(p[1]))
+
+
+## The deployment a move waits for ("" when none).
+func pending_move() -> String:
+	return "" if _pending_move.is_empty() else String(_pending_move[0])
+
+
+## Tests: forget this run's move and the remembered one.
+func reset_route_for_tests() -> void:
+	_moved_this_run = false
+	_pending_move = []
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(route_path))
 
 
 func fetch_config() -> void:
@@ -65,7 +292,7 @@ func update_required() -> bool:
 
 
 func configured() -> bool:
-	return base_url != "" or transport_override.is_valid()
+	return base_url != "" or transport_override.is_valid() or transport_overrides.has(deployment)
 
 
 func signed_in() -> bool:
@@ -91,6 +318,8 @@ func _http(method: int, path: String, body: Variant, auth: bool) -> Dictionary:
 		headers.append("Content-Type: application/json")
 	if auth and token != "":
 		headers.append("Authorization: Bearer %s" % token)
+	if transport_overrides.has(deployment):
+		return await (transport_overrides[deployment] as Callable).call(method, path, body, headers)
 	if transport_override.is_valid():
 		return await transport_override.call(method, path, body, headers)
 	var h := HTTPRequest.new()

@@ -52,13 +52,17 @@ func purchase(product_id: String, app_account_token: String) -> void:
 	if mgr == null or p == null:
 		purchase_result.emit.call_deferred({}, Status.INVALID_PRODUCT, "This item isn't available right now.")
 		return
-	# the purchase is bound to the player's game account (appAccountToken, a
-	# UUID the service issued); the service checks it before delivering Coins
-	var opts := Array([], TYPE_OBJECT, &"StoreProductPurchaseOption", null)
-	if app_account_token != "":
-		var o: Object = ClassDB.class_call_static(&"StoreProductPurchaseOption", &"app_account_token", app_account_token)
-		if o != null:
-			opts.append(o)
+	# the purchase is bound to the player's game account (appAccountToken, the
+	# UUID the service derives for this Game Center player); the service
+	# checks it before delivering.  FINAL_RELEASE_SWEEP: never an unbound
+	# purchase (the plugin returns null for a string that isn't a UUID)
+	var o: Object = null
+	if app_account_token != "" and ClassDB.class_exists(&"StoreProductPurchaseOption"):
+		o = ClassDB.class_call_static(&"StoreProductPurchaseOption", &"app_account_token", app_account_token)
+	if o == null:
+		purchase_result.emit.call_deferred({}, Status.INVALID_PRODUCT, "This item isn't available right now.")
+		return
+	var opts := Array([o], TYPE_OBJECT, &"StoreProductPurchaseOption", null)
 	mgr.call("purchase_with_options", p, opts)
 
 

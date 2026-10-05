@@ -140,7 +140,7 @@ func service_state() -> String:
 ## The snapshot belongs to the signed-in profile.
 func synced() -> bool:
 	var a: Dictionary = state.get("account", {})
-	return not a.is_empty() and Cloud.profile_id() != "" and String(a.get("profile_id", "")) == Cloud.profile_id()
+	return not a.is_empty() and Cloud.profile_id() != "" and String(a.get("profile_id", "")) == Cloud.profile_id() and not _cached().is_empty()
 
 
 ## Can the player spend, claim or buy right now?  {ok, message}
@@ -173,7 +173,7 @@ func balance() -> int:
 		return int(state["account"].get("balance", 0))
 	if legacy_pending():
 		return legacy_coins()
-	var a: Dictionary = state.get("account", {})
+	var a := _cached()
 	if not a.is_empty() and Cloud.profile_id() == "" and String(a.get("profile_id", "")) != "":
 		return int(a.get("balance", 0))   # offline: the last verified balance
 	return 0
@@ -241,7 +241,7 @@ func ownership_source(id: String) -> String:
 		return String(ent[id].get("source", "account"))
 	if not synced():
 		# offline: the last verified snapshot still counts for this profile
-		var a: Dictionary = state.get("account", {})
+		var a := _cached()
 		var e2: Dictionary = a.get("entitlements", {})
 		if Cloud.profile_id() == "" and e2.has(id) and not bool(e2[id].get("revoked", false)):
 			return String(e2[id].get("source", "account"))
@@ -277,7 +277,19 @@ func season_state(sid: String) -> Dictionary:
 func _season_account() -> Dictionary:
 	var a: Dictionary = _account()
 	if a.is_empty() and Cloud.profile_id() == "":
-		a = state.get("account", {})   # offline view of the last snapshot
+		a = _cached()   # offline view of the last snapshot
+	return a
+
+
+## FINAL_RELEASE_SWEEP: the last snapshot for offline views, only when it
+## came from the deployment this install talks to now: an App Store install
+## never shows a TestFlight (sandbox) balance or item, nor the other way
+## round.  (The development single endpoint has no environment to compare.)
+func _cached() -> Dictionary:
+	var a: Dictionary = state.get("account", {})
+	var want := Cloud.wallet_environment()
+	if a.is_empty() or (want != "" and String(a.get("environment", "")) != want):
+		return {}
 	return a
 
 
@@ -331,9 +343,14 @@ func apply_snapshot(w: Variant) -> void:
 	if not (w is Dictionary) or (w as Dictionary).is_empty():
 		return
 	var wd: Dictionary = w
+	# FINAL_RELEASE_SWEEP: a reply from the deployment this install just left
+	# (it was in flight during a move) is never applied as this one's
+	var env := String(wd.get("environment", ""))
+	if Cloud.wallet_environment() != "" and env != "" and env != Cloud.wallet_environment():
+		return
 	var pid := String(wd.get("profile_id", Cloud.profile_id()))
 	var cur: Dictionary = state.get("account", {})
-	if String(cur.get("profile_id", "")) == pid and int(wd.get("revision", 0)) < int(cur.get("revision", 0)):
+	if String(cur.get("profile_id", "")) == pid and String(cur.get("environment", "")) == env and int(wd.get("revision", 0)) < int(cur.get("revision", 0)):
 		return   # an older reply arriving late
 	var ent := {}
 	for e in wd.get("entitlements", []):
@@ -353,7 +370,8 @@ func apply_snapshot(w: Variant) -> void:
 	state["account"] = {
 		"profile_id": pid, "environment": String(wd.get("environment", "")), "balance": maxi(0, int(wd.get("balance", 0))),
 		"revision": int(wd.get("revision", 0)), "debt": int(wd.get("debt", 0)),
-		"app_account_token": String(wd.get("app_account_token", "")), "entitlements": ent, "season": seasons,
+		# (null when the service can't bind purchases: then nothing is bought)
+		"app_account_token": String(wd["app_account_token"]) if wd.get("app_account_token") is String else "", "entitlements": ent, "season": seasons,
 		"synced_at": now(), "catalogue_version": int(wd.get("catalogue_version", Catalogue.version())),
 	}
 	var ch: Variant = wd.get("challenges")
@@ -922,7 +940,7 @@ func _round_message(rec: Dictionary) -> String:
 func _challenge_snapshot() -> Dictionary:
 	var a: Dictionary = _account()
 	if a.is_empty() and Cloud.profile_id() == "":
-		a = state.get("account", {})
+		a = _cached()
 	var c: Variant = a.get("challenges")
 	return c if c is Dictionary else {}
 
