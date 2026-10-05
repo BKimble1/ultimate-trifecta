@@ -1632,8 +1632,8 @@ class ShopCard:
 				note = "Adding to your account…"
 			"pending_approval":
 				note = "Waiting for approval"
-			"unavailable":
-				note = "Not available from the App Store"
+			# "unavailable": the pill already says "Not available" (a tap says
+			# why); FINAL_RELEASE_SWEEP removed the repeated, clipped note
 		if note == "" and can and Purchases.best_value_pack() == Catalogue.product_of(id):
 			note = "Best value"
 		_note.text = note

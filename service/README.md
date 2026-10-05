@@ -58,29 +58,62 @@ resources. The code, migrations, tests and deployment scripts are complete.
 `npm test` runs the whole API against an in-memory D1 (`node:sqlite`) with a
 per-run test certificate. That proves the logic, not a live deployment.
 
-## Deploy (owner, about 10 minutes)
+## Deploy (owner, about 20 minutes): two deployments
 
 Prerequisites: Node.js 22.13+ and a Cloudflare account.
 
+The service runs as **two deployments with separate databases**, both from
+this folder (FINAL_RELEASE_SWEEP; design in
+[docs/final/commerce.md](../docs/final/commerce.md)):
+
+| | sandbox (default) | production (`[env.production]`) |
+|---|---|---|
+| Worker | `trifecta-service` | `trifecta-service-production` |
+| D1 database | `trifecta` | `trifecta-production` |
+| `ENVIRONMENT` / `APPLE_ENVIRONMENT` | `sandbox` / `Sandbox` | `production` / `Production` |
+| Who | TestFlight, Xcode builds, App Review purchases | App Store customers |
+| Credits | only Apple **Sandbox** transactions | only Apple **Production** transactions |
+
+The same build talks to either: it routes by the App Store receipt kind at
+launch and moves to the sandbox deployment by itself when production
+answers a verified sandbox purchase with `409 sandbox_purchase` (App
+Review). Neither deployment can mint the other's value.
+
 ```sh
 cd service
-npm test                                  # all tests must pass
-npx wrangler login                        # or export CLOUDFLARE_API_TOKEN
-npx wrangler d1 create trifecta           # copy the printed database_id ...
-#   ... into wrangler.toml -> [[d1_databases]] database_id
-scripts/gen_keys.sh                       # writes service/.secrets/ (git-ignored)
-#   prints the admission PUBLIC key -> game/config/service.cfg admission_public_key
-scripts/deploy.sh                         # migrations, secrets, deploy
+npm test                                    # all tests must pass
+npx wrangler login                          # or export CLOUDFLARE_API_TOKEN
+npx wrangler d1 create trifecta             # database_id -> wrangler.toml [[d1_databases]]
+npx wrangler d1 create trifecta-production  # database_id -> wrangler.toml [[env.production.d1_databases]]
+scripts/gen_keys.sh                         # writes service/.secrets/ (git-ignored)
+#   prints the admission PUBLIC key -> game/config/service.cfg (both *_admission_public_key)
+scripts/deploy.sh                           # sandbox: migrations, secrets, deploy
+DEPLOY_ENV=production scripts/deploy.sh     # production: the same secrets, its own database
 curl -s https://trifecta-service.<your-subdomain>.workers.dev/v1/health
+curl -s https://trifecta-service-production.<your-subdomain>.workers.dev/v1/config   # apple_environment: Production
 ```
 
-Then set the game's `game/config/service.cfg`. The public key is not secret.
+Then set the game's `game/config/service.cfg`. Only public values go there.
 
 ```ini
 [service]
-url="https://trifecta-service.<your-subdomain>.workers.dev"
-admission_public_key="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+production_url="https://trifecta-service-production.<your-subdomain>.workers.dev"
+production_admission_public_key="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+sandbox_url="https://trifecta-service.<your-subdomain>.workers.dev"
+sandbox_admission_public_key="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+url=""
+admission_public_key=""
 ```
+
+(`url` / `admission_public_key` remain a single-endpoint fallback for
+development, used only when neither pair is set.)
+
+App Store Connect › the app › App Information › App Store Server
+Notifications, Version 2: **Production Server URL**
+`https://trifecta-service-production.<your-subdomain>.workers.dev/v1/appstore/notifications`,
+**Sandbox Server URL**
+`https://trifecta-service.<your-subdomain>.workers.dev/v1/appstore/notifications`.
+Each deployment refuses the other environment's notifications.
 
 Keep `service/.secrets/` out of git and out of chat. `deploy.sh` reads it
 and uploads the secrets with `wrangler secret put`.
@@ -89,7 +122,8 @@ and uploads the secrets with `wrangler secret put`.
 
 | Name | Meaning |
 |---|---|
-| `ENVIRONMENT` | Label bound into tokens. Use `production` for TestFlight/App Store builds (Game Center has no separate sandbox for them). |
+| `ENVIRONMENT` | `sandbox` (default deployment) or `production` (`[env.production]`). Bound into session tokens (a token of one deployment is refused by the other) and written on every wallet, ledger and App Store row. |
+| `APPLE_ENVIRONMENT` | `Sandbox` or `Production`: the only App Store environment this deployment credits, and its App Store Server API host. |
 | `BUNDLE_ID` | Must equal the app's bundle ID (`com.idlery.ultimatetrifecta`). Signatures for other bundles are rejected. |
 | `GC_KEY_HOSTS` | Hosts allowed for Apple's public-key URL. Keep `static.gc.apple.com`. |
 | `MIN_CLIENT_BUILD` | Older clients are told to update before online play (`App.build_number()`, e.g. 1.1 → 101). |
@@ -97,8 +131,14 @@ and uploads the secrets with `wrangler secret put`.
 
 ### Secrets (`wrangler secret put`, done by `deploy.sh`)
 
-`SESSION_KEY` (HMAC for session tokens), `ADMIN_TOKEN` (moderation API), and
-`ADMISSION_PRIVATE_KEY` (PKCS#8 PEM, signs admission tokens).
+`SESSION_KEY` (HMAC for session tokens), `ADMIN_TOKEN` (moderation API),
+`ADMISSION_PRIVATE_KEY` (PKCS#8 PEM, signs admission tokens) and
+`APP_ACCOUNT_TOKEN_KEY` (FINAL_RELEASE_SWEEP: derives each player's StoreKit
+appAccountToken as UUID(HMAC-SHA256(key, "gamecenter:" + teamPlayerID));
+**it must be the same on both deployments**, which deploying both from one
+`.secrets/` folder does, and must never change once purchases exist; a
+deployment without it delivers no purchase). Optional: `ASC_IAP_KEY_ID`,
+`ASC_IAP_ISSUER_ID`, `ASC_IAP_PRIVATE_KEY` (App Store Server API).
 
 ## Moderation (owner)
 
@@ -140,11 +180,11 @@ against the deleted profile are closed as "profile deleted".
 | `POST /v1/rooms/:code/heartbeat` | host session | Keep alive, report state and connected players |
 | `POST /v1/rooms/:code/leave`, `/kick`, `DELETE /v1/rooms/:code` | session / host | Leave, remove, close |
 | `/v1/admin/*` | `ADMIN_TOKEN` | Reports, profiles, actions, reserved names, audit |
-| `GET /v1/wallet` | session | V6: Coins, debt, revision, appAccountToken, entitlements, Season progress/claims, recent round settlements |
+| `GET /v1/wallet` | session | V6: Coins, debt, revision, appAccountToken (derived per Game Center player; `null` without `APP_ACCOUNT_TOKEN_KEY`), entitlements, Season progress/claims, recent round settlements |
 | `POST /v1/wallet/spend` | session | V6: buy a Coin item or Season Premium (`item_id`, `price`, `idempotency_key`): atomic debit + entitlement |
-| `GET /v1/shop/offers` | none | Pass 8: the service's clock and the Shop's rotating offers on sale now and in the next 72 h (`src/offers.js`); a rotating skin's spend must name an active `offer_id` (checked on this clock at acceptance, `409 offer_changed` otherwise) |
-| `POST /v1/wallet/apple` | session | V6: deliver a StoreKit 2 transaction (`jws`) once; refunds/revocations |
-| `POST /v1/wallet/legacy-import` | session | V6: the one-time, bounded import of a pre-V6 device balance |
+| `GET /v1/shop/offers` | none | Pass 8: the service's clock and the Shop's rotating offers on sale now and in the next 72 h (`src/offers.js`); a rotating skin's spend must name an active `offer_id` (checked on this clock at acceptance, `409 offer_changed` otherwise). FINAL_RELEASE_SWEEP: after the written schedule the rule continues from the catalogue's cycle (same id form), so there are always four offers |
+| `POST /v1/wallet/apple` | session | V6: deliver a StoreKit 2 transaction (`jws`) once; refunds/revocations. FINAL_RELEASE_SWEEP: a verified transaction of the other App Store environment answers `409 sandbox_purchase` (production deployment) / `production_purchase` (sandbox deployment), recording nothing |
+| `POST /v1/wallet/legacy-import` | session | V6: the one-time, bounded import of a pre-V6 device balance (sandbox deployment only; production answers `409 legacy_not_available`) |
 | `POST /v1/season/:id/claim` | session | V6: claim Season rewards (idempotent: a cell once, Coins once, an owned item `already_owned`). Pass 9 (100 tiers): `{claims: [{tier, track, reward?}]}`, up to every cell of the table; `reward` names what the game showed (`coins:75`, an item id) and a cell whose reward differs is not granted (`reward_changed`); the reply has `claimed` (`result`, `reward`) and `skipped` (`no_reward`, `already_claimed`, `locked`, `premium_required`, `reward_changed`); the snapshot's season has `tiers` (the last tier this service grants) and `tier` |
 | `POST /v1/rounds`, `POST /v1/rounds/:id/report` | room host | V6: register a round's admitted players; report its result (bounds-checked) |
 | `POST /v1/rounds/:id/ack`, `GET /v1/rounds/:id/me` | session | V6: confirm the row your game received; settlement status (Pass 8: with the round's challenge result) |
@@ -159,9 +199,12 @@ settlement), Pass 8 challenges (`src/challenges.js`, migration
 [docs/pass9/season.md](../docs/pass9/season.md)): see [docs/ECONOMY.md](../docs/ECONOMY.md) and
 [docs/COMMERCE_SETUP.md](../docs/COMMERCE_SETUP.md). Vars: `APPLE_ENVIRONMENT`
 (`Sandbox` for the default/TestFlight deployment, `Production` in
-`[env.production]`). Optional secrets: `ASC_IAP_KEY_ID`, `ASC_IAP_ISSUER_ID`,
+`[env.production]`). Secret `APP_ACCOUNT_TOKEN_KEY` (identical on both).
+Optional secrets: `ASC_IAP_KEY_ID`, `ASC_IAP_ISSUER_ID`,
 `ASC_IAP_PRIVATE_KEY` (App Store Server API), uploaded by `deploy.sh` from
-`.secrets/` when present.
+`.secrets/` when present. The environment routing, the App Review fallback
+and their tests: [docs/final/commerce.md](../docs/final/commerce.md),
+`test/environments.test.mjs`.
 
 ## Why parties can't form without their host
 

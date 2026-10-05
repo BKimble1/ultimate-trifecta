@@ -33,7 +33,11 @@ SUPPORT_URL = ""
 PRIVACY_URL = ""
 
 # V6: the App Store build's deployment (production App Store purchases, its
-# own D1 database).  Not needed for TestFlight.  Deploy with
+# own D1 database).  FINAL_RELEASE_SWEEP: the same build serves TestFlight
+# (sandbox, above) and the App Store (here); App Review's sandbox purchases
+# are answered 409 sandbox_purchase here and the game moves that install to
+# the sandbox deployment.  APP_ACCOUNT_TOKEN_KEY must be the same secret on
+# both.  Deploy with
 #   DEPLOY_ENV=production scripts/deploy.sh
 # after `npx wrangler d1 create trifecta-production` (copy its id here).
 [env.production]

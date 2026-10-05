@@ -450,6 +450,7 @@ func test_coin_pack_cards_are_compact_priced_by_storekit_and_honest() -> void:
 	await rig.until(func() -> bool: return Purchases.products_state == "loaded")
 	await _frames(2)
 	t.eq((packs[0] as ShopScreen.ShopCard).price_l.text, "Not available", "a missing product: Not available")
+	t.check(not (packs[0] as ShopScreen.ShopCard)._note.visible, "said once (no repeated, clipped note beside the pill)")
 	t.check(not (packs[0] as ShopScreen.ShopCard).price_l.text.contains("$"), "never a made-up price")
 	t.eq(Purchases.best_value_pack(), "", "and no claim from a partial flat list")
 	# a tap is the purchase: Apple's sheet, once

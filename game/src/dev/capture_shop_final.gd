@@ -45,9 +45,15 @@ func _own(ids: Array) -> void:
 	await Wallet.refresh()
 
 
-func _set_tag(extra: String) -> void:
+## A shot-specific label (short enough for the iPhone SE width), or the
+## standard one ("").
+func _set_tag(text: String) -> void:
 	if _tag:
-		_tag.text = _tag_text() + extra
+		_tag.text = text if text != "" else _tag_text()
+		var bg := _tag.get_parent() as Control
+		var vs := get_viewport().get_visible_rect().size
+		bg.reset_size()
+		bg.position = Vector2((vs.x - bg.get_combined_minimum_size().x) * 0.5, vs.y - bg.get_combined_minimum_size().y - 2.0)
 
 
 func _all_owned_states() -> float:
@@ -93,7 +99,7 @@ func _coins_sim() -> float:
 	if s:
 		s._close_detail()
 		s.select_section("coins")
-	_set_tag(" · Coin prices: simulated store \"(test price)\"")
+	_set_tag("DEV FIXTURE: simulated store prices \"(test price)\" · test-double service · desktop render")
 	_later(2.0, "shop_coins_simulated_prices")
 	return 2.6
 
@@ -103,7 +109,7 @@ func _coins_sim() -> float:
 func _coins_unavailable() -> float:
 	store.catalog.clear()
 	Purchases.load_products(true)
-	_set_tag(" · simulated store returning NO products: price unavailable")
+	_set_tag("DEV FIXTURE: simulated store with NO products (price unavailable) · desktop render")
 	_later(2.4, "shop_coins_price_unavailable")
 	return 3.0
 
@@ -126,6 +132,6 @@ func _after_schedule() -> float:
 	if s:
 		s.select_section("featured")
 		s.scroll.scroll_vertical = 0
-	_set_tag(" · service clock 2027-06-01 (after the written schedule: the rule's cycle)")
+	_set_tag("DEV FIXTURE: service clock 2027-06-01, past the written schedule · desktop render")
 	_later(3.5, "shop_featured_after_written_schedule")
 	return 4.2
