@@ -102,4 +102,13 @@ PCK=$(find build/ios -maxdepth 1 -name '*.pck' | head -1)
 N=$( { strings -n 8 "$PCK" 2>/dev/null | grep -c "shader_cache" ; } || true)
 { echo "shader baker requested: ${SHADER_BAKE:-0} · baking export used: $BAKED (its exit code: ${BAKE_RC:-n/a}) · shader_cache entries in the game data: ${N:-0}"
   grep -i "shader baker" build/ios/export.log | head -5 || true; } | tee build/ios/shader_bake.txt
+# the game reads its service endpoints and links from res://config/*.cfg,
+# which are not Godot resources: they ship only through the preset's
+# include_filter.  A pack without them would run with the service off.
+for f in config/service.cfg; do
+  if ! { strings -n 8 "$PCK" 2>/dev/null | grep -q "$f"; }; then
+    echo "::error::$f is missing from the exported game data ($PCK)"; exit 1
+  fi
+done
+echo "config files in the game data: OK"
 echo "Exported Xcode project: build/ios/UltimateTrifecta.xcodeproj (version $VERSION build $BUILD)"

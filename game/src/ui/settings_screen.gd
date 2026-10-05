@@ -96,10 +96,10 @@ func build() -> void:
 
 	var priv_s := _section("Privacy")
 	priv_s.add_child(_note(_privacy_text()))
-	# the owner's real links only (from the service); nothing shown until set
+	# the owner's real links only (config/links.cfg, else the service); nothing shown until set
 	var links := UIKit.hbox(12)
 	for l in [["privacy_url", "Privacy policy"], ["support_url", "Support"]]:
-		var url := Cloud.link(String(l[0]))
+		var url := AppLinks.get_link(String(l[0]))
 		if url != "":
 			var lb := UIKit.quiet(String(l[1]), Vector2(0, UIKit.touch_min()), UIKit.T_LABEL)
 			lb.pressed.connect(func() -> void: OS.shell_open(url))

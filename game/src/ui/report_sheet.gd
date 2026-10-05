@@ -177,7 +177,7 @@ func _show_unavailable() -> void:
 	_title("Reports aren't available here")
 	_text("Reports go to the game's moderators through the online moderation service, which isn't available for this player in this party. Nothing has been sent.")
 	_text("You can mute or block %s from their player card." % target_name)
-	var support := Cloud.link("support_url")
+	var support := AppLinks.get_link("support_url")
 	if support != "":
 		_text("Need help? %s" % support)
 	var ok := UIKit.secondary("OK", Vector2(200, 72))
