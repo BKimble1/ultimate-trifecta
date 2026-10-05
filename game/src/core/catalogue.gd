@@ -164,6 +164,13 @@ static func blurb(id: String) -> String:
 	return String(item(id).get("blurb", ""))
 
 
+## Pass 9: what a Season reward skin includes, as the catalogue words it
+## ("" when the catalogue has no such line: the Locker lists Cosmetics').
+static func includes_text(id: String) -> String:
+	var v: Variant = item(id).get("includes", "")
+	return String(v) if v is String else ""
+
+
 ## Every catalogue ID this item grants (one; listed so a bundle could name
 ## exactly what it includes).
 static func grants(id: String) -> Array:
@@ -269,6 +276,25 @@ static func current_season_id() -> String:
 
 static func season_tiers(sid: String) -> Array:
 	return season(sid).get("tiers", [])
+
+
+## Pass 9: the track's milestone shortcuts ([30, 50, 100] for Season 1).
+static func season_milestones(sid: String) -> Array:
+	return (season(sid).get("milestones", []) as Array).map(func(x: Variant) -> int: return int(x))
+
+
+## Pass 9: the tiers whose Premium skin the pass features ([50, 100]).
+static func season_featured(sid: String) -> Array:
+	return (season(sid).get("featured", []) as Array).map(func(x: Variant) -> int: return int(x))
+
+
+## Pass 9: the catalogue version that added a tier (tiers 1-30: 1; tiers
+## 31-100: 3).  A game service on an older catalogue doesn't have it.
+static func tier_added_in(sid: String, tier: int) -> int:
+	var ts := season_tiers(sid)
+	if tier < 1 or tier > ts.size():
+		return 0
+	return maxi(1, int((ts[tier - 1] as Dictionary).get("added_in", 1)))
 
 
 static func economy() -> Dictionary:

@@ -13,7 +13,8 @@
 //    exactly once per transaction ID, bound to the account's token; refunds
 //    and revocations by transaction or by App Store Server Notification.
 //  - Season 1: XP from verified rounds only, idempotent claims, Premium
-//    bought with Coins.
+//    bought with Coins.  Pass 9: the same season runs to tier 100 (tiers
+//    1-30 unchanged; migration 0005 records the table a claim used).
 //  - Pass 8: rotating Shop skins are sold only through a scheduled offer
 //    (offers.js): the offer, its item and its price are checked against the
 //    service's own clock when the spend is accepted, and the acceptance is
@@ -66,6 +67,12 @@ export async function snapshot(env, pid) {
   for (const it of ents) {
     const m = /^season:([a-z0-9]+):premium$/.exec(it.item_id);
     if (m && !it.revoked_at && season[m[1]]) season[m[1]].premium = true;
+  }
+  // Pass 9: the last tier this service can grant and the tier the recorded
+  // XP reaches in its table (the XP itself is never capped or rewritten)
+  for (const sid of Object.keys(season)) {
+    season[sid].tiers = E.maxTier(sid);
+    season[sid].tier = E.tierForXp(sid, season[sid].xp);
   }
   return {
     profile_id: pid, environment: e, balance: w.balance, debt: w.debt, revision: w.revision, app_account_token: w.app_account_token,
@@ -390,13 +397,28 @@ async function legacyImport(req, env) {
 }
 
 // ---------------------------------------------------------------- season
+// Why a requested cell was not granted (Pass 9: every requested cell gets an
+// answer, so a game on another catalogue can say why).
+const CLAIM_SKIP = { empty: 'no_reward', claimed: 'already_claimed', locked: 'locked', premium_locked: 'premium_required' };
+
+// Claim Season rewards: {claims: [{tier, track, reward?}]}.  Idempotent by
+// construction: a (season, tier, track) cell is claimed once (primary key),
+// Coins once per cell (ledger key), an item already owned is recorded as
+// already_owned and never granted twice.  Pass 9 (100 tiers): a request may
+// name every cell of the table (older games send at most 60); a claim that
+// names the reward its game showed ("coins:50", an item id) is granted only
+// if this service's table has that reward in that cell (else
+// reward_changed: nothing granted), so a game and a service on different
+// catalogues never grant something the player wasn't shown.  An older game
+// that names no reward gets this table's reward; tiers 1-30 are identical in
+// both tables.
 async function claim(req, env, sid) {
   const { profile: p } = await H.requireUser(req, env);
   const s = E.season(sid);
   if (!s) throw new ApiError(404, 'no_season', 'No such season.');
   const b = await readJson(req);
   await H.rateLimit(env, `claim:${p.id}`, 30, 60 * 1000);
-  const want = Array.isArray(b.claims) ? b.claims.slice(0, 60) : [];
+  const want = Array.isArray(b.claims) ? b.claims.slice(0, 2 * E.maxTier(sid)) : [];
   await ensureWallet(env, p.id);
   const q = H.db(env);
   const e = envName(env);
@@ -408,14 +430,24 @@ async function claim(req, env, sid) {
     const t = H.clock(env);
     const stmts = [];
     const done = [];
+    const skipped = [];
     const seen = new Set();
     for (const c of want) {
       const tier = Number(c && c.tier);
       const track = c && c.track;
       if (!Number.isInteger(tier) || !['free', 'premium'].includes(track) || seen.has(E.claimKey(tier, track))) continue;
       seen.add(E.claimKey(tier, track));
-      if (E.cellState(sid, tier, track, st.xp, st.premium, claimed) !== 'claimable') continue;
+      const state = E.cellState(sid, tier, track, st.xp, st.premium, claimed);
+      if (state !== 'claimable') {
+        skipped.push({ tier, track, reason: CLAIM_SKIP[state] || state });
+        continue;
+      }
       const r = E.rewardAt(sid, tier, track);
+      const shown = c && typeof c.reward === 'string' ? c.reward.slice(0, 64) : '';
+      if (shown !== '' && shown !== E.rewardKey(r)) {
+        skipped.push({ tier, track, reason: 'reward_changed', reward: E.rewardKey(r) });
+        continue;
+      }
       let result = 'granted';
       if (r.coins) {
         stmts.push(...grantStmts(env, q, p.id, r.coins, `claim:${sid}:${tier}:${track}:${p.id}`, 'season_claim', `${sid}:${tier}:${track}`, t));
@@ -426,21 +458,22 @@ async function claim(req, env, sid) {
           p.id, e, r.item, `${sid}:${tier}:${track}`, t));
         owned.add(r.item);
       }
-      stmts.push(q.stmt('INSERT INTO season_claims (profile_id, environment, season, tier, track, reward, result, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        p.id, e, sid, tier, track, r.coins ? `coins:${r.coins}` : r.item, result, t));
-      done.push({ tier, track, result });
+      stmts.push(q.stmt('INSERT INTO season_claims (profile_id, environment, season, tier, track, reward, result, at, catalogue_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        p.id, e, sid, tier, track, E.rewardKey(r), result, t, E.catalogueVersion()));
+      done.push({ tier, track, result, reward: E.rewardKey(r) });
     }
-    if (done.length === 0) return reply(env, p.id, { claimed: [] });
+    if (done.length === 0) return reply(env, p.id, { claimed: [], skipped });
     stmts.push(q.stmt('UPDATE wallets SET revision = revision + 1, updated_at = ? WHERE profile_id = ? AND environment = ?', t, p.id, e));
     try {
       await q.batch(stmts);
-      return reply(env, p.id, { claimed: done });
+      return reply(env, p.id, { claimed: done, skipped });
     } catch (err) {
       if (!failure(err).includes('UNIQUE') || attempt > 0) throw err;
-      // a racing Claim: recompute from the new state (idempotent)
+      // a racing Claim (another device, a retried request): recompute from
+      // the new state (idempotent)
     }
   }
-  return reply(env, p.id, { claimed: [] });
+  return reply(env, p.id, { claimed: [], skipped: [] });
 }
 
 // ---------------------------------------------------------------- rounds

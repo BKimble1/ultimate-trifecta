@@ -1,0 +1,18 @@
+-- Pass 9: Season 1 · After Hours grows from 30 to 100 tiers.  The same
+-- season, no reset (docs/ECONOMY.md §4, docs/pass9/season.md).
+--
+-- Nothing is rewritten:
+--  - season_progress.xp was never capped at the old last tier (8,300 XP).
+--    XP recorded past it stays exactly as it is and now counts toward tiers
+--    31-100; the tier shown is computed from that XP and the catalogue's
+--    table (economy.js tierForXp).  No XP is invented for anyone.
+--  - Claims stay keyed by (season, tier, track).  Tiers 1-30 keep their
+--    thresholds and rewards, so every existing claim, entitlement, Premium
+--    flag (season:s1:premium) and balance keeps its meaning, and a claimed
+--    cell can never be granted again (primary key).
+--
+-- New: the catalogue version a claim was granted under, i.e. the table its
+-- reward came from (2 = tiers 1-30, 3 = tiers 1-100).  NULL on rows written
+-- before this migration (all of them from version 2).  Audit only: the
+-- primary key, not this column, makes a claim happen once.
+ALTER TABLE season_claims ADD COLUMN catalogue_version INTEGER;

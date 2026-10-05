@@ -41,6 +41,14 @@ var schedule_revision := 1
 var offers_supported := true
 var offer_sales := {}       # idem key -> {offer_id, item_id, price, accepted_at}
 const LOOKAHEAD_MS := 72 * 3600 * 1000
+## Pass 9: act as a service still on an older catalogue (e.g. 30 for the
+## version 2 table): no tier past it, no "tiers" in the snapshot, its
+## catalogue version, at most 60 claims a request.  0 = the current service.
+var legacy_tiers := 0
+var legacy_version := 2
+## Pass 9: test a catalogue mismatch: "tier:track" -> the reward key this
+## double's table has in that cell instead of the game's.
+var reward_override := {}
 
 
 func _init() -> void:
@@ -106,9 +114,15 @@ func snapshot(pid: String) -> Dictionary:
 		if not st.is_empty():
 			rs.append({"match_id": mid, "state": st["state"], "coins": st["coins"], "xp": st["xp"], "reason": st.get("reason", ""),
 				"challenge_xp": int(st.get("challenge_xp", 0)), "challenges": st.get("challenges")})
+	var season: Dictionary = w["season"].duplicate(true)
+	if legacy_tiers <= 0:
+		# Pass 9 (service/src/commerce.js snapshot): the last tier this table has
+		for sid in season:
+			season[sid]["tiers"] = Economy.max_tier(String(sid))
+			season[sid]["tier"] = Economy.tier_for_xp(String(sid), int(season[sid]["xp"]))
 	return {"profile_id": pid, "environment": environment.to_lower(), "balance": w["balance"], "revision": w["revision"], "debt": w["debt"],
-		"app_account_token": w["token"], "entitlements": ents, "season": w["season"].duplicate(true), "catalogue_version": Catalogue.version(),
-		"rounds": rs, "challenges": _challenges_view(pid)}
+		"app_account_token": w["token"], "entitlements": ents, "season": season,
+		"catalogue_version": legacy_version if legacy_tiers > 0 else Catalogue.version(), "rounds": rs, "challenges": _challenges_view(pid)}
 
 
 func _bump(pid: String) -> void:
@@ -336,29 +350,58 @@ func _legacy(pid: String, b: Dictionary) -> Dictionary:
 	return _ok(pid, {"imported_coins": coins, "imported_items": items})
 
 
+## Season claims as service/src/commerce.js claim(): each cell once, Coins
+## once, an owned item recorded as already_owned; every requested cell is
+## answered (claimed or skipped with a reason); a cell whose reward the game
+## named differently is not granted (reward_changed).
 func _claim(pid: String, sid: String, b: Dictionary) -> Dictionary:
 	var w := wallet(pid)
 	var s: Dictionary = w["season"][sid]
 	var claimed := {}
 	for k in s["claimed"]:
 		claimed[k] = true
+	var top := legacy_tiers if legacy_tiers > 0 else Economy.max_tier(sid)
 	var done: Array = []
-	for c in b.get("claims", []):
-		var tier := int(c["tier"])
-		var track := String(c["track"])
-		if Economy.cell_state(sid, tier, track, int(s["xp"]), bool(s["premium"]), claimed) != "claimable":
+	var skipped: Array = []
+	var seen := {}
+	var want: Array = b.get("claims", [])
+	want = want.slice(0, 60 if legacy_tiers > 0 else 2 * top)
+	for c in want:
+		if not (c is Dictionary):
+			continue
+		var tier := int(c.get("tier", 0))
+		var track := String(c.get("track", ""))
+		var key := Economy.claim_key(tier, track)
+		if not track in ["free", "premium"] or seen.has(key):
+			continue
+		seen[key] = true
+		var st := "empty" if tier < 1 or tier > top else Economy.cell_state(sid, tier, track, int(s["xp"]), bool(s["premium"]), claimed)
+		if st != "claimable":
+			skipped.append({"tier": tier, "track": track, "reason": {"empty": "no_reward", "claimed": "already_claimed", "locked": "locked",
+				"premium_locked": "premium_required"}.get(st, st)})
 			continue
 		var r := Economy.reward_at(sid, tier, track)
+		var have := String(reward_override.get(key, Economy.reward_key(r)))
+		var shown := String(c.get("reward", "")) if legacy_tiers <= 0 else ""   # (an older service ignored it)
+		if shown != "" and shown != have:
+			skipped.append({"tier": tier, "track": track, "reason": "reward_changed", "reward": have})
+			continue
+		var result := "granted"
 		if r.has("coins"):
 			w["balance"] = int(w["balance"]) + int(r["coins"])
-		elif not (w["entitlements"] as Dictionary).has(String(r["item"])):
+		elif (w["entitlements"] as Dictionary).has(String(r["item"])):
+			result = "already_owned"
+		else:
 			w["entitlements"][String(r["item"])] = {"source": "season"}
-		claimed[Economy.claim_key(tier, track)] = true
-		(s["claimed"] as Array).append(Economy.claim_key(tier, track))
-		done.append({"tier": tier, "track": track})
+		claimed[key] = true
+		(s["claimed"] as Array).append(key)
+		done.append({"tier": tier, "track": track, "result": result, "reward": have})
 	if not done.is_empty():
 		_bump(pid)
-	return _ok(pid, {"claimed": done})
+	if legacy_tiers > 0:
+		# an older service answered only what it granted
+		return _ok(pid, {"claimed": done.map(func(d: Dictionary) -> Dictionary: return {"tier": d["tier"], "track": d["track"], "result": d["result"]})})
+	return _ok(pid, {"claimed": done, "skipped": skipped})
 
 
 func _round_register(pid: String, b: Dictionary) -> Dictionary:

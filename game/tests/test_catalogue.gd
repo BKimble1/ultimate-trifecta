@@ -1,10 +1,20 @@
 extends RefCounted
 ## V6 catalogue, economy and Season 1 tables: one authoritative catalogue
 ## with stable IDs, honest products (no stored real-money prices), every
-## advertised item backed by art, Season 1 complete (30 tiers, Free and
-## Premium, ascending XP), earning numbers in the documented target band,
-## and the round rules (cancelled/practice/away/bots/repeat captures).
+## advertised item backed by art, Season 1 complete (Pass 9: 100 tiers, the
+## first 30 exactly as version 2 shipped them, Free and Premium, ascending
+## XP), earning numbers in the documented target band, the 100-tier pacing
+## model, and the round rules (cancelled/practice/away/bots/repeat captures).
 var t
+
+## The Season 1 table as catalogue version 2 shipped it (30 tiers).
+const V2_TABLE := "res://tests/data/season_s1_v2.json"
+
+
+static func v2_table() -> Dictionary:
+	var f := FileAccess.open(V2_TABLE, FileAccess.READ)
+	var d: Variant = JSON.parse_string(f.get_as_text()) if f else {}
+	return d if d is Dictionary else {}
 
 
 func test_ids_are_stable_and_unique() -> void:
@@ -90,7 +100,9 @@ func test_rotation_pool_and_schedule() -> void:
 	for id in want:
 		t.eq(Catalogue.kind(id), "coin_item", "%s is a Coin item" % id)
 		t.eq(Catalogue.price(id), int(want[id]), "%s costs %d Coins" % [id, int(want[id])])
-		t.check(Catalogue.is_new(id), "%s is new in this catalogue version" % id)
+		t.eq(int(Catalogue.item(id).get("added_in", 0)), 2, "%s was added in catalogue version 2 (Pass 8)" % id)
+		# Pass 9 (catalogue version 3) adds no Shop item, so none is "New"
+		t.eq(Catalogue.is_new(id), int(Catalogue.item(id).get("added_in", 0)) >= Catalogue.version(), "%s: New only in the version that added it" % id)
 	for id in ["outfit:moonlight_runner", "outfit:starry_sleeper", "season:s1:premium", "coins:250", "hat:crown", "outfit:robe"]:
 		t.check(not Catalogue.is_rotation(id), "%s stays always available" % id)
 	var always: Array = Catalogue.shop_items("always").map(func(i: Dictionary) -> String: return String(i["id"]))
@@ -112,7 +124,9 @@ func test_rotation_pool_and_schedule() -> void:
 
 ## Run after the art merge: every runner item the Shop or the Season Pass
 ## advertises must have its Cosmetics entry (name, meshes).  Until the art
-## workstream's entries land this lists what's missing.
+## workstream's entries land this lists what's missing (Pass 9: the
+## PASS100 branch alone lists outfit:record_breaker and outfit:dr_doom
+## until the SKINS9 stream's Cosmetics entries merge).
 func test_every_referenced_item_exists_in_cosmetics() -> void:
 	var missing: Array[String] = []
 	for it in Catalogue.all_items():
@@ -134,51 +148,139 @@ func test_every_referenced_item_exists_in_cosmetics() -> void:
 
 func test_season_table_is_complete() -> void:
 	var tiers := Catalogue.season_tiers("s1")
-	t.eq(tiers.size(), 30, "30 tiers")
+	t.eq(tiers.size(), 100, "Pass 9: 100 tiers in the same season")
+	t.eq(Catalogue.version(), 3, "one catalogue version bump for the extension")
 	var prev := -1
 	var free_n := 0
+	var prem_n := 0
+	var seen := {}
 	for i in tiers.size():
 		var tr: Dictionary = tiers[i]
 		t.eq(int(tr["tier"]), i + 1, "tier %d in order" % (i + 1))
 		t.check(int(tr["xp"]) > prev, "tier %d needs more XP than tier %d" % [i + 1, i])
 		prev = int(tr["xp"])
-		t.check(tr.get("premium") is Dictionary, "tier %d has a Premium reward" % (i + 1))
+		if i < 30:
+			t.check(tr.get("premium") is Dictionary, "tier %d has a Premium reward" % (i + 1))
+		else:
+			t.eq(int(tr.get("added_in", 0)), 3, "tier %d marked as added in catalogue version 3" % (i + 1))
 		for track in ["free", "premium"]:
 			var r: Variant = tr.get(track)
 			if r is Dictionary:
 				var rd: Dictionary = r
 				t.check(rd.has("item") != rd.has("coins"), "tier %d %s: exactly one item or a Coin amount" % [i + 1, track])
 				if rd.has("item"):
-					t.check(Catalogue.has(String(rd["item"])), "tier %d %s item is catalogued" % [i + 1, track])
+					var id := String(rd["item"])
+					t.check(Catalogue.has(id), "tier %d %s item is catalogued" % [i + 1, track])
+					t.check(not seen.has(id), "%s is granted by one cell only (no repeated grant of an owned item)" % id)
+					seen[id] = true
 				else:
 					t.check(int(rd["coins"]) > 0 and int(rd["coins"]) <= 100, "tier %d %s: a modest Coin reward" % [i + 1, track])
 				if track == "free":
 					free_n += 1
+				else:
+					prem_n += 1
 	t.eq(int(tiers[0]["xp"]), 0, "tier 1 is reached at once")
-	t.eq(free_n, 15, "15 Free rewards")
+	t.eq(free_n, 15 + 14, "Free rewards: 15 in tiers 1-30, 14 in tiers 31-100")
+	t.eq(prem_n, 30 + 14, "Premium rewards: 30 in tiers 1-30, 14 in tiers 31-100")
 	t.eq(Catalogue.season("s1").get("ends_at"), null, "no fabricated end date")
-	t.check(Economy.season_coin_total("s1", "premium") < Catalogue.price("season:s1:premium"), "Premium Coins never pay back the pass")
+	t.check(Economy.season_coin_total("s1", "premium") < Catalogue.price("season:s1:premium"), "Premium Coins never pay back the pass (%d)" % Economy.season_coin_total("s1", "premium"))
+	t.eq(Economy.season_coin_total("s1", "premium"), 600 + 7 * 75, "Premium Coins: 600 + 7 x 75")
+	t.eq(Economy.season_coin_total("s1", "free"), 100 + 7 * 50, "Free Coins: 100 + 7 x 50")
 	# the advertised item mix: outfits, accessories, emotes, profile cosmetics
 	var types := {}
 	for rid in Catalogue.season_reward_ids("s1"):
 		types[Catalogue.type_label(rid)] = int(types.get(Catalogue.type_label(rid), 0)) + 1
-	t.eq(int(types.get("Outfit", 0)), 4, "4 outfits")
+	t.eq(int(types.get("Outfit", 0)), 6, "6 outfits (Pass 9: + Record Breaker, Dr. Doom)")
 	t.eq(int(types.get("Hat", 0)), 4, "4 hats")
 	t.eq(int(types.get("Shoes", 0)), 2, "2 shoes")
 	t.eq(int(types.get("Emote", 0)), 4, "4 emotes")
+	t.eq(int(types.get("Name card", 0)), 8 + 6, "name cards: 8 + 6 new")
+	t.eq(int(types.get("Badge", 0)), 8 + 6, "badges: 8 + 6 new (one the tier-100 completion badge)")
+
+
+## Pass 9: tiers 1-30 exactly as catalogue version 2 shipped them; the two
+## featured skins at Premium 50 and 100; Library Cardigan and the old
+## finisher stay at 30; a separate tier-100 completion badge; the extension
+## follows the documented rule (350 Season XP a tier, a reward every fifth
+## tier, progress tiers between).
+func test_season_extension_keeps_tiers_1_to_30() -> void:
+	var v2 := v2_table()
+	var old: Array = v2.get("tiers", [])
+	t.eq(old.size(), 30, "the version 2 table fixture")
+	var tiers := Catalogue.season_tiers("s1")
+	for i in 30:
+		t.eq(tiers[i], old[i], "tier %d unchanged (threshold, rewards)" % (i + 1))
+	t.eq(String(Catalogue.season("s1")["premium_item"]), String(v2["premium_item"]), "the same Premium entitlement")
+	t.eq(Catalogue.price("season:s1:premium"), int(v2["premium_price"]), "the same 1,500-Coin price")
+	t.eq(Economy.reward_at("s1", 30, "premium"), {"item": "outfit:library_cardigan"}, "Library Cardigan stays at Premium 30")
+	t.eq(Economy.reward_at("s1", 30, "free"), {"item": "badge:s1_finisher"}, "the old finisher badge stays at Free 30")
+	t.eq(Economy.reward_at("s1", 50, "premium"), {"item": "outfit:record_breaker"}, "Record Breaker at Premium 50")
+	t.eq(Economy.reward_at("s1", 100, "premium"), {"item": "outfit:dr_doom"}, "Dr. Doom at Premium 100")
+	t.eq(Economy.reward_at("s1", 100, "free"), {"item": "badge:s1_legend"}, "a separate tier-100 completion badge")
+	t.eq(Catalogue.display_name("badge:s1_legend"), "Season 1 Legend", "its name")
+	for i in range(30, 100):
+		var n := i + 1
+		t.eq(int(tiers[i]["xp"]) - int(tiers[i - 1]["xp"]), 350, "tier %d costs 350 Season XP (the tier 21-30 step)" % n)
+		t.eq(Economy.has_reward("s1", n), n % 5 == 0, "tier %d: %s" % [n, "a reward on both tracks" if n % 5 == 0 else "a progress tier"])
+		if n % 5 == 0:
+			t.check(not Economy.reward_at("s1", n, "free").is_empty() and not Economy.reward_at("s1", n, "premium").is_empty(), "tier %d rewards both tracks" % n)
+	t.eq(Economy.tier_xp("s1", 50), 15300, "tier 50 at 15,300 Season XP")
+	t.eq(Economy.tier_xp("s1", 100), 32800, "tier 100 at 32,800 Season XP")
+	t.eq(Catalogue.season_milestones("s1"), [30, 50, 100], "milestone shortcuts")
+	t.eq(Catalogue.season_featured("s1"), [50, 100], "featured skins")
+	t.eq(Economy.tiers_in_version("s1", 2), 30, "a version 2 service has 30 tiers")
+	t.eq(Economy.tiers_in_version("s1", 3), 100, "a version 3 service has 100")
+	var runs := Economy.progress_runs("s1")
+	t.eq(runs.size(), 14, "14 runs of progress tiers")
+	t.eq(runs[0], [31, 34], "the first run")
+	t.eq(runs[-1], [96, 99], "the last run")
+	# the two skins: Season rewards only, named and described as the brief says
+	var want := {
+		"outfit:record_breaker": ["Record Breaker", "The clock has a new problem.",
+			"Signature tousled curls, white athletic shorts, green wristband, and brown sandals."],
+		"outfit:dr_doom": ["Dr. Doom", "Office hours are over. His rounds aren't.",
+			"Signature bald crown and side fringe, brown suit, striped shirt, gold striped tie, and formal shoes."],
+	}
+	for id in want:
+		var it := Catalogue.item(id)
+		t.eq(String(it.get("kind", "")), "season_reward", "%s is a Season reward" % id)
+		t.eq(String(it.get("season", "")), "s1", "%s belongs to Season 1" % id)
+		t.eq(Catalogue.display_name(id), String(want[id][0]), "%s display name" % id)
+		t.eq(Catalogue.blurb(id), String(want[id][1]), "%s description" % id)
+		t.eq(Catalogue.includes_text(id), String(want[id][2]), "%s includes" % id)
+		t.eq(Catalogue.price(id), 0, "%s is not sold for Coins" % id)
+		t.check(not Catalogue.is_rotation(id) and Catalogue.product_of(id) == "", "%s: no rotating offer, no App Store product" % id)
+		t.eq(Catalogue.source_of(id), "season", "%s comes from the Season Pass" % id)
+		t.eq(Catalogue.season_tier_of(id)[1], 50 if id == "outfit:record_breaker" else 100, "%s tier" % id)
+	# new profile rewards render with existing systems (badge icons and card motifs)
+	for rid in Catalogue.season_reward_ids("s1"):
+		var it2 := Catalogue.item(String(rid))
+		if int(it2.get("added_in", 0)) == 3 and String(rid).begins_with("badge:"):
+			t.check(it2.has("icon") and it2.has("color") and it2.has("name"), "%s has an icon, a colour and a name" % rid)
+		if int(it2.get("added_in", 0)) == 3 and String(rid).begins_with("card:"):
+			t.check((it2.get("colors", []) as Array).size() == 2 and it2.has("accent") and it2.has("name"), "%s has its colours and a name" % rid)
 
 
 func test_tier_boundaries_and_claim_states() -> void:
 	t.eq(Economy.tier_for_xp("s1", 0), 1, "0 XP: tier 1")
 	t.eq(Economy.tier_for_xp("s1", 199), 1, "199 XP: still tier 1")
 	t.eq(Economy.tier_for_xp("s1", 200), 2, "200 XP: tier 2 exactly")
-	t.eq(Economy.tier_for_xp("s1", 8299), 29, "one short of the last tier")
-	t.eq(Economy.tier_for_xp("s1", 8300), 30, "the last tier")
-	t.eq(Economy.tier_for_xp("s1", 999999), 30, "never past 30 (no paid skips either)")
+	t.eq(Economy.tier_for_xp("s1", 8299), 29, "one short of tier 30")
+	t.eq(Economy.tier_for_xp("s1", 8300), 30, "tier 30 (the old last tier)")
+	t.eq(Economy.tier_for_xp("s1", 8649), 30, "XP past the old cap counts toward tier 31")
+	t.eq(Economy.tier_for_xp("s1", 8650), 31, "tier 31")
+	t.eq(Economy.tier_for_xp("s1", 15299), 49, "one short of tier 50")
+	t.eq(Economy.tier_for_xp("s1", 15300), 50, "tier 50")
+	t.eq(Economy.tier_for_xp("s1", 32799), 99, "one short of tier 100")
+	t.eq(Economy.tier_for_xp("s1", 32800), 100, "the last tier")
+	t.eq(Economy.tier_for_xp("s1", 999999), 100, "never past 100 (no paid skips either)")
 	var p := Economy.tier_progress("s1", 250)
 	t.eq(int(p["next"]), 3, "next tier")
 	t.eq(int(p["need"]), 150, "150 XP to tier 3")
 	t.near(float(p["frac"]), 0.25, 0.001, "a quarter of the way")
+	var p2 := Economy.tier_progress("s1", 12000)
+	t.eq([int(p2["tier"]), int(p2["next"]), int(p2["need"])], [40, 41, 12150 - 12000], "12,000 XP: tier 40, 150 to tier 41")
+	t.eq(int(Economy.tier_progress("s1", 40000)["next"]), -1, "every tier reached")
 	# free player at tier 3: free rewards claimable, premium earned but locked
 	var c := {}
 	t.eq(Economy.cell_state("s1", 3, "free", 400, false, c), "claimable", "free reward claimable without buying")
@@ -192,6 +294,19 @@ func test_tier_boundaries_and_claim_states() -> void:
 	t.eq(late.size(), 5, "tiers 1-3 premium + 2 free")
 	c[Economy.claim_key(1, "free")] = true
 	t.eq(Economy.cell_state("s1", 1, "free", 400, true, c), "claimed", "claimed stays claimed")
+	# Pass 9: tier 50 and 100 need both the tier and Premium
+	t.eq(Economy.cell_state("s1", 50, "premium", 15299, true, {}), "locked", "Premium alone never unlocks an unearned tier")
+	t.eq(Economy.cell_state("s1", 50, "premium", 15300, false, {}), "premium_locked", "XP alone never grants a Premium reward")
+	t.eq(Economy.cell_state("s1", 50, "premium", 15300, true, {}), "claimable", "both: Record Breaker claimable")
+	t.eq(Economy.cell_state("s1", 100, "premium", 32800, true, {}), "claimable", "both: Dr. Doom claimable")
+	t.eq(Economy.cell_state("s1", 37, "free", 32800, true, {}), "empty", "a progress tier has nothing to claim")
+	t.eq(Economy.claimable("s1", 32800, true, {}, 30).size(), 45, "a 30-tier service: only tiers 1-30 are offered")
+	t.eq(Economy.next_reward_tier("s1", 43, true), 45, "next reward after tier 43")
+	t.eq(Economy.next_reward_tier("s1", 2, false), 3, "a free player's next reward skips Premium-only tiers")
+	t.eq(Economy.next_reward_tier("s1", 3, false), 5, "(tier 4 is Premium only)")
+	t.eq(Economy.next_reward_tier("s1", 100, true), -1, "none left at 100")
+	t.eq(Economy.reward_key(Economy.reward_at("s1", 35, "premium")), "coins:75", "a Coin reward as the service names it")
+	t.eq(Economy.reward_key(Economy.reward_at("s1", 50, "premium")), "outfit:record_breaker", "an item reward")
 
 
 func _row(role: int, o: Dictionary = {}) -> Dictionary:
@@ -292,7 +407,7 @@ func test_earning_rate_meets_the_pass_target() -> void:
 	# Season XP from the rounds themselves (unchanged by Pass 8 challenges)
 	var base := _base_season_xp()
 	t.near(base, 85.75, 0.01, "base Season XP per typical eligible round (docs/ECONOMY.md §3)")
-	var to30 := float(Catalogue.season_tiers("s1")[-1]["xp"]) / base
+	var to30 := float(Economy.tier_xp("s1", 30)) / base
 	t.check(to30 >= 70.0 and to30 <= 130.0, "base only: tier 30 in %.0f typical eligible rounds" % to30)
 
 
@@ -335,8 +450,8 @@ func _model_week(days: int, per_day: int) -> Dictionary:
 func test_challenges_accelerate_the_pass_as_documented() -> void:
 	t.eq(ChallengeRules.max_xp("daily"), 150, "daily challenges: at most 150 Season XP a day")
 	t.eq(ChallengeRules.max_xp("weekly"), 450, "weekly challenges: at most 450 Season XP a week")
-	var tier30 := float(Catalogue.season_tiers("s1")[-1]["xp"])
-	t.eq(int(tier30), 8300, "the pass and its thresholds are unchanged")
+	var tier30 := float(Economy.tier_xp("s1", 30))
+	t.eq(int(tier30), 8300, "tier 30 and its threshold are unchanged")
 	var light := _model_week(2, 3)
 	var typical := _model_week(5, 4)
 	var heavy := _model_week(7, 8)
@@ -360,6 +475,46 @@ func test_challenges_accelerate_the_pass_as_documented() -> void:
 	for d in ChallengeRules.defs():
 		t.check(not (d as Dictionary).has("coins") and String(d["metric"]) in ["active_rounds", "credits", "round_wins"],
 			"%s: Season XP from play only (no Coins, no purchase metric)" % d["id"])
+
+
+## Pass 9: the 100-tier pacing model (docs/ECONOMY.md §4 "Pacing to tier
+## 100"), recomputed from the live table and the same modest / regular /
+## frequent weeks as the challenge model.  The extension's 350 XP a tier was
+## chosen from these numbers: a regular player finishes inside the 12-week
+## horizon of the written Shop schedule with Record Breaker near mid-season;
+## the extension never costs less per tier than tiers 21-30.
+func test_pass_to_tier_100_pacing_model() -> void:
+	var t50 := float(Economy.tier_xp("s1", 50))
+	var t100 := float(Economy.tier_xp("s1", 100))
+	var modest := _model_week(2, 3)
+	var regular := _model_week(5, 4)
+	var frequent := _model_week(7, 8)
+	var base := _base_season_xp()
+	# regular: 5 days x 4 rounds
+	t.near(t50 / float(regular["total"]), 5.25, 0.01, "regular: tier 50 in about 5.25 weeks")
+	t.near(t100 / float(regular["total"]), 11.25, 0.01, "regular: tier 100 in about 11.25 weeks")
+	t.check(t100 / float(regular["total"]) <= 12.0, "regular: inside a 12-week season")
+	t.near(t100 / (float(regular["total"]) / 20.0), 225.0, 0.5, "regular: about 225 rounds to tier 100")
+	t.near(t50 / (float(regular["total"]) / 20.0), 105.0, 0.5, "regular: about 105 rounds to tier 50")
+	# frequent: 7 days x 8 rounds
+	t.near(t50 / float(frequent["total"]), 2.43, 0.01, "frequent: tier 50 in about 2.4 weeks")
+	t.near(t100 / float(frequent["total"]), 5.20, 0.01, "frequent: tier 100 in about 5.2 weeks")
+	t.near(t100 / (float(frequent["total"]) / 56.0), 291.5, 0.5, "frequent: about 291 rounds")
+	t.check(t100 / float(frequent["total"]) >= 4.5, "not finished in a month even playing every day")
+	# modest: 2 days x 3 rounds
+	t.near(t50 / float(modest["total"]), 21.41, 0.01, "modest: tier 50 in about 21 weeks")
+	t.near(t100 / float(modest["total"]), 45.91, 0.01, "modest: tier 100 in about 46 weeks (not expected in one season)")
+	t.near(float(Economy.tier_xp("s1", 30)) / float(modest["total"]), 11.6, 0.05, "modest: tier 30 as before (11.6 weeks)")
+	# base Season XP only (no challenges)
+	t.near(t100 / base, 382.5, 0.5, "base only: about 383 rounds to tier 100")
+	# the curve rule: tiers 31-100 never cheaper than tiers 21-30, never a
+	# multiple of the old cap
+	var step_21_30 := (Economy.tier_xp("s1", 30) - Economy.tier_xp("s1", 20)) / 10
+	for n in range(31, 101):
+		t.check(Economy.tier_xp("s1", n) - Economy.tier_xp("s1", n - 1) >= step_21_30, "tier %d costs at least the tier 21-30 step" % n)
+	t.near(t100 / float(Economy.tier_xp("s1", 30)), 3.95, 0.01, "tier 100 = 3.95 x the old cap (70 more tiers of 350), not a multiplied cap")
+	# hours: a round is 4-6 minutes in all (docs/ECONOMY.md §3)
+	t.near(225.0 * 4.0 / 60.0, 15.0, 0.01, "regular to tier 100: 15-22.5 hours")
 
 
 func test_legacy_import_is_bounded() -> void:
