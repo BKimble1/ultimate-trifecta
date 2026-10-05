@@ -219,6 +219,36 @@ func test_watch_card_tags_and_pause_info() -> void:
 	t.check(pi.contains("Runners home 0/4 · Hold until") and pi.contains("You: 3 tags · 2 different runners"), "the menu says where you stand (%s)" % pi)
 	t.check(not pi.contains("Series"), "practice: no series line")
 	mc.hud.close_pause()
+	await _frames(2)
+	# the pinned challenge (the challenges stream's Wallet text): one line in
+	# the pause menu and the map; practice passes no live row (never counts)
+	if not Wallet.has_method("pinned_challenge_text"):
+		t.eq(MatchHUD.wallet_pin({}), "", "without the challenges stream: no pin line")
+	if MatchHUD.wallet_pin({}) == "":
+		t.check(not pi.contains("Challenge"), "nothing pinned: no line")
+	var asked: Array = []
+	mc.hud.pin_source = func(row: Dictionary) -> String:
+		asked.append(row)
+		return "Campus Contribution 4/6 · +50 Season XP"
+	mc.hud.open_pause()
+	await _frames(2)
+	pi = mc.hud._info_lbl.text
+	t.check(pi.ends_with("\nChallenge: Campus Contribution 4/6 · +50 Season XP"), "the pinned goal in the menu (%s)" % pi)
+	t.eq(asked[-1] if not asked.is_empty() else null, {}, "practice: no live row (no provisional count)")
+	mc.hud.close_pause()
+	await _frames(2)
+	mc.hud.open_map()
+	await _frames(2)
+	t.eq(mc.hud.map_view.pin_lbl.text, "Challenge: Campus Contribution 4/6 · +50 Season XP", "and on the map")
+	t.check(mc.hud.map_view.pin_lbl.visible, "shown")
+	mc.hud.close_map()
+	var was: Variant = mc.start.get("practice", false)
+	mc.start["practice"] = false
+	t.eq(mc.hud.challenge_pin_line(), "Challenge: Campus Contribution 4/6 · +50 Season XP", "online")
+	t.eq(asked[-1], {"role": TC.Role.PATROL, "stamps": 0, "unique_captures": 2}, "online: the Watch's row so far (different runners)")
+	mc.start["practice"] = was
+	mc.hud.pin_source = func(_row: Dictionary) -> String: return ""
+	t.eq(mc.hud.challenge_pin_line(), "", "unpinned: nothing")
 	await _end(mc)
 
 

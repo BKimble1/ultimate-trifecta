@@ -59,7 +59,7 @@ Shots (where present in a folder):
 | `watch_in_cart` | "Driving · hop out to tag" |
 | `watch_urgent_clock` | the Watch's clock under 10 s |
 | `results_patrol_practice` | the runners' real finishes: "Your team lost · Night Watch lost · 4 runners home" |
-| `results_round2_your_team_won_series_tied` | series round: Your team won, contribution, "Series: tied 1st · 1 Round Win", settled rewards and the challenges slot (simulated wallet) |
+| `results_round2_your_team_won_series_tied` | series round: Your team won, contribution, "Series: tied 1st · 1 Round Win", settled rewards (simulated wallet; its challenge lines appear inside the rewards card only once the challenges stream is merged, so they are not in this shot) |
 | `results_round3_your_team_lost_last_round` | last round, Night Watch lost; "Series final" |
 | `results_final_standings_ties_late_join_away` | final standings: shared places, joined round 3, away 1 |
 | `results_round1_your_team_lost_time_expired` | "Time expired: 2/4 home", pending rewards (simulated wallet) |

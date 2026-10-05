@@ -22,7 +22,7 @@ Symptoms are the owner's (brief §2/§5/§6); causes are from the source.
 | M3 | No sense of progress against other runners | Nothing compared runners during a round | **Runner pace** (RunnerPace, PaceFields; below): "Runner pace: 3rd/6", ties "tied 2nd/6", "updating" before data, "Not home" at the end | `test_runner_pace` (8 tests) |
 | M4 | The Night Watch's contribution unclear | "n catches" counted tags only | "You: 3 tags · 2 different runners" from the reliable CAPTURE events (host and guest alike); Tag state line ("Tag ready", "Tag recharging", "Driving · hop out to tag", "In the shed · out in 4") | `test_watch_card_tags_and_pause_info` |
 | M5 | Series standing invisible during a round | Only on results | "Series: tied 1st · 2 Round Wins" (+ "joined round 2", "away 1") in the pause menu, the map panel and results; nothing before the first results; bots never placed | `test_series_line_never_fakes_a_place` |
-| M6 | Results led with portraits and tables | V6 order | 1 "Your team won!/lost" + why ("Runners won · 4 runners home · 3:19", "Time expired: 2/4 home"); 2 your contribution; 3 series line + roles context; 4 rewards (settled vs pending as before) + the **CHALLENGES slot**; then both teams' tables and the friends' standings. Cancelled: "It doesn't count: no Round Win, no loss and no rewards". Unfinished runners: "Not home" | `test_v7_screens` (first view holds Outcome, Why, Contribution, SeriesLine at all seven device sizes; the table scrolls into view), captures |
+| M6 | Results led with portraits and tables | V6 order | 1 "Your team won!/lost" + why ("Runners won · 4 runners home · 3:19", "Time expired: 2/4 home"); 2 your contribution; 3 series line + roles context; 4 rewards (settled vs pending as before; the round's challenge lines go inside this card: the challenges stream's `add_challenge_lines`, merged by the integrator); then both teams' tables and the friends' standings. Cancelled: "It doesn't count: no Round Win, no loss and no rewards". Unfinished runners: "Not home" | `test_v7_screens` (first view holds Outcome, Why, Contribution, SeriesLine at all seven device sizes; the table scrolls into view), captures |
 | M7 | Map dots didn't say who or how old | Opponents were plain dots / rings; age not shown; team all discs | Team marks by role shape (runner disc, Watch diamond); a seen opponent is a role badge (Watch: diamond + whistle, cart glyph while driving; runner: disc + drop) with a facing tick, an amber ring when a Watch is within 20 m; lost sight: hollow, frozen at the last point, dimming, with "3s" on the expanded map; gone after the existing 5 s TTL. Legend "You · Team · Watch in sight · Last seen" (+ waters, home doors) | `test_map::test_sight_walls_lost_sight_and_expiry` |
 | M8 | Home / caught spectators scanned from their own (home or held) body | `_scan_seen` always used the local slot | Sightings come from the character the view follows (the followed-view policy): your own while in play, the watched teammate while caught or home; pure spectators unchanged (nothing) | same test (`sight_slot`) |
 | M9 | A guest whose link died could keep a frozen opponent "live" | `_scan_seen` read interpolated buffers with no freshness check | No new sightings from snapshots older than 600 ms (`SEEN_STALE_MS`) | `test_map::test_a_dead_link_adds_no_sightings` (loopback rig) |
@@ -31,6 +31,7 @@ Symptoms are the owner's (brief §2/§5/§6); causes are from the source.
 | M12 | (coordinator request) Sprint latch feedback | Integrator's `SimPlayer.sprint_exhausted` (commit 001d16a) | "Sprint empty · ease off to recharge" with a coral, hatched mini meter (and a tick at `sprint_rearm_fraction`) while the local runner is latched **and** still holds sprint; gone as soon as either stops. The controller meter is tinted/hatched while latched. Read defensively (`"sprint_exhausted" in p`); placed above the thumb clusters | `test_sprint_empty_hint_follows_the_latch_and_the_hold`, layout test |
 
 | M13 | (found in the captures) "Watching Sockfoot · next: ⟳" overlapped the Cheer button at 667×375 | Fixed `vs.y − 150` placement, older than this pass | The watching line and the sprint hint are placed above the resolved thumb clusters (`MatchHUD.thumbs_top`) | layout test (watching line vs Next/Cheer at every size) |
+| M14 | (challenges stream hand-off) The pinned challenge had no place in a round | `Wallet.pinned_challenge_text(live_row)` exists on the challenges branch, unwired | One line "Challenge: Campus Contribution 4/6 · +50 Season XP" in the pause menu's where-you-stand lines and under the series line on the expanded map, only when a goal is pinned. An online round passes the local row so far (`{role, stamps, unique_captures}`: waters splashed / different runners tagged) for the provisional "+n this round"; practice passes `{}` (never counts). Called through `Wallet.has_method`, so it shows nothing until that stream is merged | `test_watch_card_tags_and_pause_info` (injected source: menu, map, practice vs online row, unpinned) |
 
 Removed: the unused `MatchHUD.Compass` class (dead since V2; it pointed at
 waters by straight line and would have contradicted the card).
@@ -156,7 +157,7 @@ has no focusable controls; the map and pause keep their V7 focus.
 driver teleports players, sets stamps, calls the simulation's own capture
 and doorway-finish rules, shortens the clock; results shots use rows
 recorded through `PartySeries` and, where named, a **simulated wallet**
-summary). Each PNG has `<shot>_hud.json` with the measured rects in canvas
+summary). Each image has `<shot>_hud.json` with the measured rects in canvas
 units and points and the overlaps found (none expected). Desktop llvmpipe
 renders: layout and look only, not frame rate or device input.
 
@@ -167,7 +168,7 @@ See `docs/media/pass8/match/README.md` for the shot list.
 | File | What |
 |---|---|
 | `tests/test_runner_pace.gd` (new) | order rules, shared places, unknown routes, enumeration, playable routes vs straight lines, optimal order, in-round pace with a bot, caught cost, debounce, budget/no path search, snapshot block, guest runner vs guest Watch over loopback |
-| `tests/test_match_hud_pass8.gd` (new) | goal bar for 1/2/3 Watch, clock urgency, runner card in every state, Watch card and pause info, sprint hint, series line, HUD refresh cost, layout at four sizes × orientations × roles |
+| `tests/test_match_hud_pass8.gd` (new) | goal bar for 1/2/3 Watch, clock urgency, runner card in every state, Watch card and pause info (and the pinned challenge line), sprint hint, series line, HUD refresh cost, layout at four sizes × orientations × roles |
 | `tests/test_map.gd` (extended) | walls, live badge, lost sight frozen and aged, TTL, danger chip, followed view, carts, a dead link |
 | `tests/test_v7_screens.gd` (one check updated) | V7's "first table row in the first view" → Pass 8's first view (outcome, why, contribution, series line); the table still scrolls into view. Changed transparently because §5D reorders the page |
 
@@ -188,17 +189,35 @@ test_trust.
   `sprint_exhausted` and `sprint_held`; tinting the stick meter with
   `MatchHUD.SprintMeter.paint(ci, rect, value, latched, rearm)` would
   match the HUD's.
-- **Challenges block**: the results slot reads
-  `Wallet.round_summary(match_id)["challenges"]` as
-  `[{title, state: settled|pending|progress, xp, progress, goal}]`; the
-  CHALLENGES stream may use another shape — adjust
-  `ResultsScreen._challenges_block` at merge.
+- **Challenges in results**: this branch no longer has its own results
+  slot (its assumed list shape didn't match the challenges stream's
+  `{state, result, xp, lines, message}`); the challenges stream's
+  `add_challenge_lines` in `_fill_rewards` is the one place, inside the
+  rewards card (step 4 of the hierarchy). The capture driver's simulated
+  wallet already carries that shape: re-run
+  `tools/capture_pass8_match.sh <dir> results se max ipad` after the merge
+  to show the lines.
 
 ## For the integrator
 
-- Merge conflict expected in `game/src/net/protocol.gd`'s header (both
-  branches set `VERSION := 7`): keep both comment paragraphs, one
-  `const VERSION := 7`.
+- Merging into `p8-integ` (a trial merge-tree against 9eb6390, nothing
+  written) conflicts in three places, all "keep both":
+  - `game/src/net/protocol.gd` header: keep both Protocol 7 comment
+    paragraphs (motor flags / active_s, then the pace block); one
+    `const VERSION := 7`.
+  - `game/src/sim/match_sim.gd` members: keep both `var activity :=
+    ActivityMeter.new()` and `var pace: RunnerPace = null` with their
+    comments.
+  - `game/src/dev/capture.gd`: keep both `elif` branches (`"shop_p8"` and
+    `"pass8_match"`). Each declares its own local `p8`; the two lines after
+    the markers (`p8.set("cap", self)` / `add_child(p8)`) are shared, so
+    repeat them at the end of the first branch.
+  - `results_screen.gd` and `match_controller.gd` merge cleanly; keep the
+    challenges stream's `add_challenge_lines` call in `_fill_rewards`.
+- After merging, run: test_runner_pace, test_match_hud_pass8, test_map,
+  test_pause_input, test_home_results_and_standings_fit_every_device,
+  test_results_layout, test_challenges, and re-capture the results part
+  (above).
 - `RULES.md` (yours): update "Protocol 6" mentions to 7 and add:
   - Information › Maps: "Opponents appear only while you see them, as a
     role badge with a facing tick; when sight is lost the mark stays where

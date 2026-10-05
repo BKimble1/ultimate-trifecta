@@ -498,8 +498,10 @@ func _show_results(res: Dictionary, ps: PartySeries, idx: int) -> ResultsScreen:
 ## SIMULATED WALLET (dev fixture, labelled in the shot JSON): the game
 ## service isn't deployed, so these shots show the results card's settled
 ## and pending states from a stand-in Wallet.round_summary - the same shape
-## the real wallet returns (docs/ECONOMY.md); a "challenges" list in the
-## CHALLENGES stream's documented shape shows that slot.
+## the real wallet returns (docs/ECONOMY.md), with the round's part in
+## challenges in the challenges stream's shape (Wallet._round_challenges:
+## {state, result, xp, lines, message}).  The rewards card shows those
+## lines once that stream's add_challenge_lines is merged; before, nothing.
 var _wallet_state := ""
 
 
@@ -509,8 +511,10 @@ func _sim_wallet(mid: String) -> Dictionary:
 		"coins_collected": 3, "coins": 18 if settled else 0, "coins_projected": 18, "season_xp": 85 if settled else 0, "season_xp_projected": 85,
 		"tier_before": 6, "tier_after": 7, "frac_before": 0.82, "frac_after": 0.11,
 		"lines": [["Completed the round", 10], ["Each coin", 3], ["Team win", 4], ["Home", 3]], "season_lines": [["Completed the round", 50], ["Splashes", 30]]}
-	if settled:
-		d["challenges"] = [{"title": "Campus Contribution", "state": "settled", "xp": 50}, {"title": "Night Shift", "state": "progress", "progress": 1, "goal": 2}]
+	d["challenge_xp"] = 50 if settled else 0
+	d["challenges"] = {"state": _wallet_state, "result": "applied" if settled else "", "xp": 50, "message": "",
+		"lines": [{"id": "campus_contribution", "name": "Campus Contribution", "period": "daily", "progress": 6, "goal": 6, "inc": 2, "completed_now": true, "xp": 50},
+			{"id": "night_shift", "name": "Night Shift", "period": "daily", "progress": 1, "goal": 2, "inc": 1, "completed_now": false, "xp": 50}]}
 	return d
 
 

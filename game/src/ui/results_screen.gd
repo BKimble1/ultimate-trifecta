@@ -166,8 +166,9 @@ func _build_page() -> void:
 ##      tags and different runners)
 ##   3. the series standing ("Series: tied 1st · 2 Round Wins", the roles
 ##      context), party rounds
-##   4. rewards: Season XP, challenges (the CHALLENGES stream's slot) and
-##      Coins, pending kept apart from what was added
+##   4. rewards: Season XP and Coins, pending kept apart from what was
+##      added; the round's challenge lines go inside this card (the
+##      challenges stream's add_challenge_lines in _fill_rewards)
 ##   then both teams' tables for the round.
 func _round_page() -> void:
 	var d := view_data
@@ -201,9 +202,6 @@ func _round_page() -> void:
 	if party_series:
 		_series_so_far(false)
 	_v.add_child(_rewards_card())
-	var ch := _challenges_block(String(results.get("match_id", "")))
-	if ch != null:
-		_v.add_child(ch)
 	_v.add_child(_celebration(d))
 	_v.add_child(_team_table("Runners", d["runners"], TC.Role.RUNNER, int(d["winners"]) == TC.Role.RUNNER))
 	_v.add_child(_team_table("Night Watch", d["watch"], TC.Role.PATROL, int(d["winners"]) == TC.Role.PATROL))
@@ -263,40 +261,6 @@ static func my_contribution(me: Dictionary) -> String:
 	var tags := int(me.get("tags", 0))
 	var n := int(me.get("distinct", 0))
 	return "%d tag%s · %d different runner%s" % [tags, "" if tags == 1 else "s", n, "" if n == 1 else "s"]
-
-
-## CHALLENGES SLOT (Pass 8): the challenges stream's block for this round
-## goes here, between the rewards and the round's tables.  It reads
-## Wallet.round_summary(match_id)["challenges"] - [{title, progress, goal,
-## xp, state: "settled" | "pending" | "progress", period}] - when that
-## stream provides it; with nothing to show it adds nothing (no mock rows).
-func _challenges_block(mid: String) -> Control:
-	var ws := RoundRewards._wallet(mid)
-	var list: Variant = ws.get("challenges", [])
-	if not (list is Array) or (list as Array).is_empty():
-		return null
-	var p := UIKit.panel(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 14)
-	p.name = "Challenges"
-	var v := UIKit.vbox(4)
-	v.add_child(UIKit.styled("Challenges · Earn Season XP", "overline", UIKit.IVORY_MUTED))
-	for c in list:
-		if not (c is Dictionary):
-			continue
-		var st := String(c.get("state", "progress"))
-		var t := String(c.get("title", ""))
-		var line := ""
-		match st:
-			"settled":
-				line = "%s complete · +%d Season XP" % [t, int(c.get("xp", 0))]
-			"pending":
-				line = "%s complete · +%d Season XP (not added yet)" % [t, int(c.get("xp", 0))]
-			_:
-				line = "%s · %d/%d" % [t, int(c.get("progress", 0)), int(c.get("goal", 0))]
-		var l := UIKit.styled(line, "caption", UIKit.TEAL if st == "settled" else UIKit.IVORY)
-		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		v.add_child(l)
-	p.add_child(v)
-	return p
 
 
 func _final_page() -> void:

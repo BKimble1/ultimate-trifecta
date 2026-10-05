@@ -522,7 +522,38 @@ func pause_info() -> String:
 	var sl := series_line()
 	if int(sr.get("total", 1)) > 1:
 		lines.append("Round %d/%d%s" % [int(sr.get("round", 1)), int(sr.get("total", 1)), (" · " + sl) if sl != "" else " · no series results yet"])
+	var pin := challenge_pin_line()
+	if pin != "":
+		lines.append(pin)
 	return "\n".join(lines)
+
+
+## Pass 8: the one pinned challenge, for the pause menu and the expanded
+## map ("Challenge: Campus Contribution 4/6 · +50 Season XP"), "" when none
+## is pinned.  The text is the challenges stream's
+## Wallet.pinned_challenge_text(live_row); before that stream is merged the
+## method is absent and nothing shows.  An online round passes the local
+## player's row so far (its provisional "+n this round"); practice never
+## counts, so it passes none.  Tests set pin_source.
+var pin_source := Callable()
+
+
+func challenge_pin_line() -> String:
+	if mc == null:
+		return ""
+	var role := int(info.get("role", TC.Role.SPECTATOR))
+	var row := {}
+	if not bool(mc.start.get("practice", false)) and (role == TC.Role.RUNNER or role == TC.Role.PATROL):
+		row = {"role": role, "stamps": _bits(int(info.get("stamps", 0))) if role == TC.Role.RUNNER else 0,
+			"unique_captures": int(info.get("distinct", 0)) if role == TC.Role.PATROL else 0}
+	var s := String(pin_source.call(row)) if pin_source.is_valid() else wallet_pin(row)
+	return ("Challenge: " + s) if s != "" else ""
+
+
+static func wallet_pin(live_row: Dictionary) -> String:
+	if not Wallet.has_method("pinned_challenge_text"):
+		return ""
+	return String(Wallet.call("pinned_challenge_text", live_row))
 
 
 ## Tests and tools: the pause menu's state and its controls.
@@ -2257,6 +2288,7 @@ class FullMap:
 	var help_card: Control
 	var home_lbl: Label
 	var series_lbl: Label
+	var pin_lbl: Label
 	var list_title: Label
 	var _rows_sig := ""
 
@@ -2298,6 +2330,13 @@ class FullMap:
 		series_lbl = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
 		series_lbl.add_theme_font_size_override("font_size", 18)
 		v.add_child(series_lbl)
+		pin_lbl = UIKit.styled("", "caption", UIKit.TEAL)
+		pin_lbl.name = "ChallengePin"
+		pin_lbl.add_theme_font_size_override("font_size", 17)
+		pin_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		pin_lbl.custom_minimum_size = Vector2(350, 0)
+		pin_lbl.visible = false
+		v.add_child(pin_lbl)
 		# the legend: You · Team · Watch in sight · Last seen, then waters / home
 		var role := int(hud.info.get("role", 0))
 		var team_col := UIKit.PATROL if role == TC.Role.PATROL else UIKit.RUNNER
@@ -2370,6 +2409,9 @@ class FullMap:
 		var sl := hud.series_line()
 		series_lbl.text = sl
 		series_lbl.visible = sl != ""
+		var pin := hud.challenge_pin_line()
+		pin_lbl.text = pin
+		pin_lbl.visible = pin != ""
 		var rows := standings_rows()
 		var sig := JSON.stringify(rows)
 		if sig == _rows_sig:
