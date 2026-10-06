@@ -238,7 +238,7 @@ func _feature(w: Dictionary, f: Dictionary, k: MeshKit, mat: ShaderMaterial) -> 
 				var d2 := Vector3(cos(ang), 0, sin(ang))
 				var top := Vector3(p.x - c.x, hp + 0.03 - y, p.y - c.y) + d2 * 0.55
 				var bot := Vector3(p.x - c.x, 0.02, p.y - c.y) + d2 * 0.75
-				var side := Vector3(-d2.z, 0, d2.x) * 0.05
+				var side := Vector3(-d2.z, 0, d2.x) * 0.025
 				k.quad(top - side, top + side, bot + side, bot - side, Color(0.86, 0.93, 0.98))
 				k.quad(bot - side, bot + side, top + side, top - side, Color(0.86, 0.93, 0.98))
 			k.mat = 0.0
