@@ -28,9 +28,10 @@ class ScriptedBrain:
 		return fn.call(p)
 
 
-## the splash: where the chasing Night Watch starts (x, z), where the runner
-## jumps, and whether it dives (a second press in the air)
-const WATCH_FROM := Vector2(13.0, 25.0)
+## the splash: where the chasing Night Watch starts (x, z; --store-watch=x,z
+## overrides), where the runner jumps, and whether it dives (a second press
+## in the air)
+var watch_from := Vector2(10.0, 20.5)
 const JUMP_Z := 31.4
 const DIVE := true
 
@@ -47,6 +48,9 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--store-part="):
 			store_part = a.get_slice("=", 1)
+		elif a.begins_with("--store-watch="):
+			var v := a.get_slice("=", 1).split(",")
+			watch_from = Vector2(v[0].to_float(), v[1].to_float())
 	part = "store_" + store_part
 	_at = 2.0
 	# the game's Standard graphics (the evidence driver uses Battery Saver)
@@ -136,7 +140,7 @@ func _splash_stage() -> float:
 	# runner (its stick held by the driver: straight at the runner; one
 	# lunge once the runner is in the water, where a tag can't land)
 	var w := _first(TC.Role.PATROL)
-	var wat := Vector3(WATCH_FROM.x, 0.1, WATCH_FROM.y)
+	var wat := Vector3(watch_from.x, 0.1, watch_from.y)
 	_on_foot(w)
 	_put(w, wat, _yaw_to(wat, start))
 	var lunged := {"done": false}
