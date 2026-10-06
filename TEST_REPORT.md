@@ -28,8 +28,8 @@ is desktop Linux, the service's Node tests, and CI iOS.
 Full game suite on the integrated code (local, headless; Commerce, Friends,
 Season Pass and Lighting merged): **561 tests, 107,281 checks, 0 failures**
 (703 s). Service (`service/`, Node): **93 tests, 93 pass**. The final
-gate on the release-candidate commit, and the CI gate of the upload run,
-are in FRS.5.
+gate on the release-candidate commit is in FRS.4, the CI gate of the
+upload run in FRS.5.
 
 | Suite (new in the sweep) | What it exercises |
 |---|---|
@@ -73,6 +73,51 @@ transport.
 | Friends panel states, toast, entry points at four shapes | `docs/media/final/friends/` |
 | Shop filters, App Store outfits, Coin packs, the schedule fallback | `docs/media/final/commerce/` |
 | App Store screenshot candidates | `docs/media/final/store/` |
+
+## FRS.4 Final checks on the release candidate (local)
+
+On commit `66e7575` (all four area merges, ARTFIX's garment fixes, the
+release-lane fixes; later commits change only documentation and store
+screenshots, which aren't in the app):
+- **Full game suite: 561 tests, 107,274 checks, 0 failures** (783 s,
+  headless). Seven fewer checks than FRS.1 because ARTFIX's new fit
+  anchors sample slightly different points; no test was removed.
+- **Service: 93 tests, 93 pass.**
+- **Garments** (ARTFIX, [docs/final/artfix.md](docs/final/artfix.md)):
+  `fit_check.py` on the merged asset (art version `v10-49a45748ffed`):
+  24 looks × 567 poses and 52 hat × hair looks, **0 failures** (the new
+  standoff rule finds 29 on the 1.9 asset); the character and Season suites
+  60 tests, 1,689 checks, 0 failures; import clean.
+- **Screen sweep** (`tools/capture_v7_screens.sh`, iPhone 14 and SE shapes,
+  18 screens each): **0 layout issues** after R10 (a 16-character outfit name
+  was cut off on the results team card).
+
+## FRS.5 iOS build (CI iOS) and TestFlight
+
+_In progress:_ upload run #145
+(https://github.com/BKimble1/ultimate-trifecta/actions/runs/37431364875)
+on commit `66e7575` with `upload=true` and `distribution=app_store`. Its
+headless test job passed; the signed archive, upload and Apple's
+processing were still running when this was written. This section is
+replaced with the result.
+
+## FRS.6 Not verified (exact remaining checks)
+
+Nothing below has been observed; each needs a device, Apple's sandbox or the
+deployed service ([docs/OWNER_SETUP_GUIDE.md](docs/OWNER_SETUP_GUIDE.md) E):
+- **Purchases:** six localized prices; a pack delivered once; force-quit on
+  Apple's success sheet; restore of both outfits on a reinstall; a Coin item,
+  Premium and Claim all; cancel, Ask to Buy, a sandbox refund; the receipt
+  kind of a TestFlight install (docs/final/commerce.md §12).
+- **Friends:** two accounts on two devices see each other online, invite,
+  accept, the same party; the native permission prompt and its text
+  (docs/final/friends.md §11).
+- **Online:** a round between two devices on different networks over Game
+  Center; rewards after it.
+- **On screen:** the lighter lobby and characters on Metal; the Season Pass
+  drag feel; text at the notch and home bar; frame rate and heat on an A12
+  phone.
+- **Account deletion** against the live service.
 
 # Pass 9 (version 1.9)
 
