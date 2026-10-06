@@ -58,6 +58,8 @@ func _tag_text() -> String:
 
 
 func _label_overlay() -> void:
+	if (load("res://src/dev/store_shot.gd") as GDScript).call("on"):
+		return   # --store-shot: nothing stamped (_set_tag() then has no label to set)
 	var layer := CanvasLayer.new()
 	layer.layer = 110
 	add_child(layer)

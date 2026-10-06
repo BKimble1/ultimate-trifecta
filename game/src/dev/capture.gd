@@ -42,6 +42,11 @@ extends Node
 ##             earlier rounds, all recorded through PartySeries (real Round
 ##             Wins, standings and role tally); two bot seats are relabelled
 ##             as friends.  Layout evidence only: no network play happens.
+##   store_match  App Store screenshots of a staged practice round
+##             (store_match_capture.gd; tools/capture_store_screenshots.sh)
+## --store-shot (store_shot.gd): PNGs saved RGB, no overlay; nothing stamped.
+
+const StoreShot := preload("res://src/dev/store_shot.gd")
 
 var scenario := ""
 var out_dir := ""
@@ -67,6 +72,7 @@ var results_path := ""
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	DirAccess.make_dir_recursive_absolute(out_dir)
+	StoreShot.quiet_overlays()
 	var dg: GDScript = load("res://src/dev/diag.gd")
 	_diag = dg.new()
 	add_child(_diag)
@@ -109,6 +115,12 @@ func _ready() -> void:
 		var p8: Node = (load("res://src/dev/capture_shop_p8.gd") as GDScript).new()
 		p8.set("cap", self)
 		add_child(p8)
+	elif scenario == "store_match":
+		# App Store screenshots (tools/capture_store_screenshots.sh): the
+		# Pass 8 match driver's staging, store framing, nothing stamped
+		var sm: Node = (load("res://src/dev/store_match_capture.gd") as GDScript).new()
+		sm.set("cap", self)
+		add_child(sm)
 	elif scenario == "pass8_match":
 		# Pass 8 match clarity evidence (HUD states, map, results) with
 		# measured HUD rects: its own driver (--p8-part=runner|patrol|results)
@@ -127,7 +139,10 @@ func snap(shot_name: String) -> void:
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
 	var path := out_dir.path_join(shot_name + ".png")
-	img.save_png(path)
+	if StoreShot.on():
+		StoreShot.save_rgb(img, path)   # --store-shot: RGB, nothing stamped
+	else:
+		img.save_png(path)
 	var rep: Dictionary = _diag.snapshot()
 	rep["shot"] = shot_name
 	rep["label"] = label

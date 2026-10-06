@@ -30,6 +30,7 @@ extends Node
 const FakeService := preload("res://src/dev/fake_commerce_service.gd")
 const TestStore := preload("res://src/dev/test_store_adapter.gd")
 const MenusCapture := preload("res://src/dev/menus_capture.gd")
+const StoreShot := preload("res://src/dev/store_shot.gd")
 const FIXTURE := "Dev fixture · test-double service (not the live service) · desktop render"
 const SVC_OFF := "Service off (as shipped in 1.9): preview only · desktop render"
 
@@ -60,7 +61,9 @@ func _ready() -> void:
 	_tag.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	_tag.add_theme_constant_override("outline_size", 4)
 	_tag.position = Vector2(8, 0)
+	_tag.visible = not StoreShot.on()   # --store-shot: nothing stamped
 	layer.add_child(_tag)
+	StoreShot.quiet_overlays()
 	_run.call_deferred()
 
 
@@ -80,7 +83,10 @@ func _wanted(shot: String) -> bool:
 func snap(shot: String) -> void:
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
-	img.save_png(out_dir.path_join(shot + ".png"))
+	if StoreShot.on():
+		StoreShot.save_rgb(img, out_dir.path_join(shot + ".png"))
+	else:
+		img.save_png(out_dir.path_join(shot + ".png"))
 	measures[shot] = _measure()
 	var f := FileAccess.open(out_dir.path_join("measure.json"), FileAccess.WRITE)
 	if f:

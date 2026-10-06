@@ -15,6 +15,7 @@ extends Node
 
 const STAMP := "desktop render · test-double service (fictional players; not Game Center or a live service)"
 const STAMP_BEFORE := "BEFORE (baseline) · desktop render (fictional names)"
+const StoreShot := preload("res://src/dev/store_shot.gd")
 
 var out_dir := ""
 var mode := "after"
@@ -43,7 +44,9 @@ func _ready() -> void:
 	_tag.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	_tag.add_theme_constant_override("outline_size", 4)
 	_tag.position = Vector2(8, 0)
+	_tag.visible = not StoreShot.on()   # --store-shot: nothing stamped
 	layer.add_child(_tag)
+	StoreShot.quiet_overlays()
 	_run.call_deferred()
 
 
@@ -63,7 +66,10 @@ func snap(shot: String, what: String) -> void:
 	await _wait(0.6)
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
-	img.save_png(out_dir.path_join(shot + ".png"))
+	if StoreShot.on():
+		StoreShot.save_rgb(img, out_dir.path_join(shot + ".png"))
+	else:
+		img.save_png(out_dir.path_join(shot + ".png"))
 	printerr("CAPTURE %s %dx%d %s" % [shot, img.get_width(), img.get_height(), what])
 
 
