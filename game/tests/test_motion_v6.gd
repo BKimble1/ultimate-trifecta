@@ -63,3 +63,29 @@ func test_lock_stays_out_of_the_way() -> void:
 	v.reset_motion()
 	t.eq(v.foot_lock.pinned, [false, false], "a teleport releases both feet")
 	v.queue_free()
+
+
+func test_release_is_stable_at_any_frame_length() -> void:
+	# a stepped spring blew up when a frame was long next to FADE (a far
+	# character's batched time, a slow frame): the pose went to inf, then NaN
+	var o0 := Vector3(0.2, 0.0, -0.15)
+	var v0 := Vector3(-3.0, 0.0, 2.0)
+	for dt in [1.0 / 60.0, 0.1, 0.25, 0.5, 2.0]:
+		var o := o0
+		var v := v0
+		var worst := 0.0
+		for i in 40:
+			var r := CharacterFootLock.release_step(o, v, dt)
+			o = r[0]
+			v = r[1]
+			worst = maxf(worst, o.length())
+		t.check(o.is_finite() and v.is_finite() and o.length() < 1e-3, "release with %.3f s frames settles (%.2e m left)" % [dt, o.length()])
+		t.check(worst < 0.5, "and never flies off (largest %.3f m)" % worst)
+	# a long frame lands where many short ones do
+	var a := CharacterFootLock.release_step(o0, v0, 0.1)
+	var b := [o0, v0]
+	for i in 100:
+		b = CharacterFootLock.release_step(b[0], b[1], 0.001)
+	t.check(((a[0] as Vector3) - (b[0] as Vector3)).length() < 1e-4, "one 0.1 s step matches a hundred 1 ms steps")
+	var bad := CharacterFootLock.release_step(Vector3(INF, 0, 0), Vector3.ZERO, 0.1)
+	t.eq(bad[0], Vector3.ZERO, "a non-finite pull is dropped, not carried")

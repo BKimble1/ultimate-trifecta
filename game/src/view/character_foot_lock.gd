@@ -31,6 +31,9 @@ extends SkeletonModifier3D
 const MAX_PULL := 0.26
 ## time constant of the release in the air (s)
 const FADE := 0.12
+## largest rate of change a pull hands to its release (m/s): a pin's step
+## divided by a tiny frame delta is not a velocity
+const MAX_OFF_V := 20.0
 ## the animated ankle counts as on the floor below this height (m, model
 ## space; the stance ankle runs 0.085-0.107 m)
 const PLANT_H := 0.108
@@ -175,21 +178,18 @@ func _modify(delta: float) -> void:
 				want = want.limit_length(MAX_PULL)
 				_pin[side] = ankle_w + want
 			if delta > 0.0:
-				_off_v[side] = (want - (_off[side] as Vector3)) / delta
+				_off_v[side] = ((want - (_off[side] as Vector3)) / delta).limit_length(MAX_OFF_V)
 			_off[side] = want
 			_twist[side] = clampf(wrapf(float(_pin_yaw[side]) - body_yaw, -PI, PI), -MAX_TWIST, MAX_TWIST)
 		else:
 			# released: a critically damped return that starts with the
-			# pull's own velocity (no kink at toe-off)
-			var o: Vector3 = _off[side]
-			var ov: Vector3 = _off_v[side]
-			var dt := maxf(delta, 0.0)
-			var om := 2.0 / FADE
-			var acc: Vector3 = -o * om * om - ov * 2.0 * om
-			ov += acc * dt
-			o += ov * dt
-			_off[side] = o
-			_off_v[side] = ov
+			# pull's own velocity (no kink at toe-off).  Solved exactly, not
+			# stepped: a stepped spring blew up (to inf, then a NaN skeleton
+			# for good) when a frame's delta was long next to FADE (a far
+			# character's batched animation time, a slow device frame)
+			var r := release_step(_off[side], _off_v[side], delta)
+			_off[side] = r[0]
+			_off_v[side] = r[1]
 			_twist[side] = float(_twist[side]) * decay
 		pull[side] = (_off[side] as Vector3) * _w
 		# the height: the planted foot's ground lift; any foot gets back what
@@ -200,6 +200,21 @@ func _modify(delta: float) -> void:
 		var off: Vector3 = _off[side]
 		var target: Vector3 = inv * (ankle_w + off * _w + Vector3(0, lift, 0))
 		_solve(sk, b, target, float(_twist[side]) * _w)
+
+
+## The release in the air, one frame: the critically damped return of the
+## pull `o` (moving at `ov`) towards zero, in closed form, so any delta is
+## stable; returns [pull, velocity].  Anything non-finite comes back as zero.
+static func release_step(o: Vector3, ov: Vector3, delta: float) -> Array:
+	var dt := maxf(delta, 0.0)
+	var om := 2.0 / FADE
+	var e := exp(-om * dt)
+	var cv := ov + o * om
+	var o2 := (o + cv * dt) * e
+	var v2 := (ov - cv * (om * dt)) * e
+	if not (o2.is_finite() and v2.is_finite()):
+		return [Vector3.ZERO, Vector3.ZERO]
+	return [o2, v2]
 
 
 ## Two-bone IK in skeleton space: thigh and shin reach `target` keeping the
