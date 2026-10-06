@@ -214,11 +214,13 @@ func stamp_trees() -> void:
 		_stamp(canopy, t["pos"], 5.0, 0.55, 0.8)
 
 
-func stamp_buildings() -> void:
+func stamp_buildings(from: int = 0, to: int = -1) -> void:
 	var dorm_of: Dictionary = {}
 	for id in CampusDorms.ids():
 		dorm_of[String(CampusDorms.geometry(id).get("building", ""))] = id
-	for bd in _layout.buildings:
+	var last := _layout.buildings.size() if to < 0 else mini(to, _layout.buildings.size())
+	for bi in range(from, last):
+		var bd: Dictionary = _layout.buildings[bi]
 		if bool(bd["background"]):
 			continue
 		var poly: PackedVector2Array = bd["poly"]
@@ -324,21 +326,31 @@ func _stamp_rect(grid: PackedFloat32Array, rect: Rect2, falloff: float, amount: 
 
 
 ## Polygon stamp: `amount` inside, fading to 0 at `falloff` outside (or,
-## with `edge_only`, only the band outside the walls).
+## with `edge_only`, only the band outside the walls).  Inside is found per
+## row from the polygon's crossings (no point-in-polygon per cell).
 func _stamp_poly(grid: PackedFloat32Array, poly: PackedVector2Array, falloff: float, amount: float, edge_only: bool = false) -> void:
 	if poly.size() < 3:
 		return
 	var b := CampusLayout.BOUNDS
 	var big := CampusData.bounds(poly).grow(falloff)
+	var i0 := maxi(0, int((big.position.x - b.position.x) / CELL))
+	var i1 := mini(_w, int((big.end.x - b.position.x) / CELL) + 2)
 	for j in range(maxi(0, int((big.position.y - b.position.y) / CELL)), mini(_d, int((big.end.y - b.position.y) / CELL) + 2)):
-		for i in range(maxi(0, int((big.position.x - b.position.x) / CELL)), mini(_w, int((big.end.x - b.position.x) / CELL) + 2)):
-			var p := Vector2(b.position.x + i * CELL, b.position.y + j * CELL)
-			var inside := Geometry2D.is_point_in_polygon(p, poly)
+		var z := b.position.y + j * CELL
+		var xs := CampusBuilder.scan_row(poly, z)
+		var k := 0
+		for i in range(i0, i1):
+			var x := b.position.x + i * CELL
+			while k < xs.size() and xs[k] <= x:
+				k += 1
+			var inside := (k % 2) == 1
 			if inside and edge_only:
 				continue
-			var dist := 0.0 if inside else CampusData.dist_to_edge(p, poly)
-			if dist >= falloff:
-				continue
+			var dist := 0.0
+			if not inside:
+				dist = CampusData.dist_to_edge(Vector2(x, z), poly)
+				if dist >= falloff:
+					continue
 			var idx := j * _w + i
 			grid[idx] = minf(1.0, grid[idx] + amount * (1.0 - dist / falloff))
 
@@ -368,15 +380,34 @@ const COOL := Color(0.05, 0.20, 0.24)
 ## per 2 m cell, ~100 KB) that the world shaders sample per fragment, so no
 ## vertex is baked on the CPU and the MultiMesh vegetation is lit by it too.
 func field_texture() -> ImageTexture:
-	var bytes := PackedByteArray()
-	bytes.resize(_w * _d * 4)
-	for i in _w * _d:
-		bytes[i * 4] = clampi(int(ao[i] * 255.0 + 0.5), 0, 255)
-		bytes[i * 4 + 1] = clampi(int(warm[i] * 255.0 + 0.5), 0, 255)
-		bytes[i * 4 + 2] = clampi(int(cool[i] * 255.0 + 0.5), 0, 255)
-		bytes[i * 4 + 3] = 255
-	var img := Image.create_from_data(_w, _d, false, Image.FORMAT_RGBA8, bytes)
+	field_rows(0, _d)
+	return field_finish()
+
+
+## The texture's bytes for rows [j0, j1) (the staged build fills it in a few
+## steps, then field_finish() makes the texture).
+var _tex_bytes := PackedByteArray()
+
+
+func field_rows(j0: int, j1: int) -> void:
+	if _tex_bytes.size() != _w * _d * 4:
+		_tex_bytes.resize(_w * _d * 4)
+	for i in range(j0 * _w, mini(j1, _d) * _w):
+		_tex_bytes[i * 4] = clampi(int(ao[i] * 255.0 + 0.5), 0, 255)
+		_tex_bytes[i * 4 + 1] = clampi(int(warm[i] * 255.0 + 0.5), 0, 255)
+		_tex_bytes[i * 4 + 2] = clampi(int(cool[i] * 255.0 + 0.5), 0, 255)
+		_tex_bytes[i * 4 + 3] = 255
+
+
+func field_finish() -> ImageTexture:
+	var img := Image.create_from_data(_w, _d, false, Image.FORMAT_RGBA8, _tex_bytes)
+	_tex_bytes = PackedByteArray()
 	return ImageTexture.create_from_image(img)
+
+
+## Rows of the field grid (for staging field_rows).
+func rows() -> int:
+	return _d
 
 
 ## Shader parameters that place the field texture in the world.

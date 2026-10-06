@@ -83,30 +83,213 @@ func building(bd: Dictionary, doors: Array = []) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(String(bd["id"]))
 	var warm := 0.55 if String(bd["kind"]) != "residence" else 0.62
+	var passages: Array = bd["passages"]
 	for pi in parts.size():
 		var part: Dictionary = parts[pi]
 		var poly: PackedVector2Array = part["poly"]
 		var h := float(part["h"])
 		var base := float(part.get("base", 0.0))
 		var nfl := floors if floors > 0 and pi == 0 else maxi(1, int(round((h - base) / (3.3 if String(bd["kind"]) == "residence" else 4.0))))
-		_mass(bd, part, parts, wall_spec, trim, base, h, doors)
+		_mass(bd, part, parts, wall_spec, trim, base, h, doors, passages)
 		if win != "none" and String(style.get("wall", "")) != "glass":
-			_windows(bd, part, parts, win, nfl, base, h, trim, warm, rng, doors)
+			_windows(bd, part, parts, win, nfl, base, h, trim, warm, rng, doors, passages)
 		elif String(style.get("wall", "")) == "glass":
 			_curtain_mullions(poly, base, h, trim)
 		_roof(part, poly, h, roof_spec, wall_spec, trim)
+	_passage_art(bd, wall_spec, trim, doors)
 	for e in bd["entrances"]:
 		var ep := CampusLayout._v2(e.get("p", [0, 0]))
 		var at_door := false
 		for dr in doors:
 			if ep.distance_to(dr["pos"]) < float(dr["w"]) * 0.5 + 1.5:
 				at_door = true
+		var ps := _passage_near(ep, passages)
+		if not ps.is_empty():
+			# an entrance at an open porch or breezeway: its door stands on the
+			# far wall of the passage (the mouth's columns are the portico)
+			var face := deg_to_rad(float(e.get("face", 0.0)))
+			var n := Vector2(sin(face), -cos(face))
+			var back := _far_side(ep, n, ps["poly"])
+			if back != Vector2.INF and not at_door:
+				var e2: Dictionary = (e as Dictionary).duplicate()
+				e2["p"] = [back.x, back.y]
+				e2["kind"] = "double" if float(e.get("w", 2.4)) > 2.6 else "door"
+				var near_door := false
+				for dr in doors:
+					if back.distance_to(dr["pos"]) < float(dr["w"]) * 0.5 + 1.5:
+						near_door = true
+				if not near_door:
+					_entrance(bd, e2, trim, wall_spec)
+			continue
 		if not at_door:
 			_entrance(bd, e, trim, wall_spec)
 		elif String(e.get("kind", "")) == "portico":
-			var face := deg_to_rad(float(e.get("face", 0.0)))
-			var n3 := Vector3(sin(face), 0, -cos(face))
+			var face2 := deg_to_rad(float(e.get("face", 0.0)))
+			var n3 := Vector3(sin(face2), 0, -cos(face2))
 			portico(_k(ep.x, ep.y), Vector3(ep.x, 0, ep.y) + n3 * 0.06, n3, Vector3(-n3.z, 0, n3.x), portico_width(e), clampf(float(bd["h"]) * 0.75, 5.0, 11.0), trim if trim.a > 0.0 else TRIM)
+
+
+# ---------------------------------------------------------------------------
+# Open passages (porches, breezeways, arcades): the data's `passages`
+# ---------------------------------------------------------------------------
+static func _in_passages(p: Vector2, passages: Array) -> Dictionary:
+	for ps in passages:
+		if Geometry2D.is_point_in_polygon(p, ps["poly"]):
+			return ps
+	return {}
+
+
+static func _passage_near(p: Vector2, passages: Array) -> Dictionary:
+	for ps in passages:
+		if Geometry2D.is_point_in_polygon(p, ps["poly"]) or CampusData.dist_to_edge(p, ps["poly"]) < 1.2:
+			return ps
+	return {}
+
+
+## Where a line from `p` (on a passage's mouth) inward against `n` leaves the
+## passage on its far side, or INF.
+static func _far_side(p: Vector2, n: Vector2, poly: PackedVector2Array) -> Vector2:
+	var best := Vector2.INF
+	var bd := INF
+	var m := poly.size()
+	for i in m:
+		var hit: Variant = Geometry2D.segment_intersects_segment(p - n * 0.3, p - n * 60.0, poly[i], poly[(i + 1) % m])
+		if hit != null:
+			var d := p.distance_to(hit)
+			if d > 0.5 and d < bd:
+				bd = d
+				best = hit
+	return best
+
+
+## Open spans of the edge a->b where a passage meets it (sampled 0.25 m
+## apart just inside the wall): [[centre, half length, clear height]].
+static func passage_holes(a: Vector2, b: Vector2, passages: Array) -> Array:
+	var out: Array = []
+	if passages.is_empty():
+		return out
+	var d := b - a
+	var len := d.length()
+	if len < 0.05:
+		return out
+	var dir := d / len
+	var inward := Vector2(-dir.y, dir.x)
+	var steps := maxi(2, int(len / 0.25))
+	var run0 := -1.0
+	var run_clear := 0.0
+	for si in steps + 1:
+		var t := len * float(si) / float(steps)
+		var ps := _in_passages(a + dir * clampf(t, 0.02, len - 0.02) + inward * 0.15, passages)
+		var inside := not ps.is_empty()
+		if inside and run0 < 0.0:
+			run0 = t
+			run_clear = float(ps["clear"])
+		if (not inside or si == steps) and run0 >= 0.0:
+			var t1 := t if not inside else len
+			if t1 - run0 > 0.3:
+				out.append([(run0 + t1) * 0.5, (t1 - run0) * 0.5, run_clear])
+			run0 = -1.0
+	return out
+
+
+## The columns standing in the open mouths of a building's passages (where
+## a passage meets the outline): [[position, radius, height]].  Drawn by
+## _passage_art and used for the colliders and the nav grid, so they agree.
+static func passage_columns(bd: Dictionary) -> Array:
+	var out: Array = []
+	var foot: PackedVector2Array = CampusData.ccw(bd["poly"])
+	var n := foot.size()
+	for i in n:
+		var a := foot[i]
+		var b := foot[(i + 1) % n]
+		var len := a.distance_to(b)
+		if len < 0.5:
+			continue
+		var dir := (b - a) / len
+		for hl in passage_holes(a, b, bd["passages"]):
+			var clear := float(hl[2])
+			var span := float(hl[1]) * 2.0
+			if clear < 3.4 or span < 4.0:
+				continue
+			var r := clampf(clear * 0.045, 0.25, 0.55)
+			var cnt := maxi(2, int(round(span / 3.4)) + 1)
+			var t0 := float(hl[0]) - float(hl[1]) + r + 0.1
+			var t1 := float(hl[0]) + float(hl[1]) - r - 0.1
+			for ci in cnt:
+				var t := lerpf(t0, t1, float(ci) / float(cnt - 1))
+				out.append([a + dir * t - Vector2(dir.y, -dir.x) * (r + 0.15), r, clear])
+	return out
+
+
+## Inside each passage: side walls in the wall material (with any dorm
+## doorway cut), a soffit at the clear height, paving underfoot,
+## downlights; giant columns in the open mouths.
+func _passage_art(bd: Dictionary, wall_spec: Array, trim: Color, doors: Array) -> void:
+	var foot: PackedVector2Array = bd["poly"]
+	var col: Color = wall_spec[0]
+	var tc := trim if trim.a > 0.0 else TRIM
+	for ps in bd["passages"]:
+		var pp: PackedVector2Array = CampusData.ccw(ps["poly"])
+		var clear := float(ps["clear"])
+		var c := CampusData.centroid(pp)
+		var k := _k(c.x, c.y)
+		var idx := CampusData.triangulate(pp)
+		k.mat = MeshKit.M_PAVING
+		for t in range(0, idx.size(), 3):
+			CampusBuilder._tri_up(k, Vector3(pp[idx[t]].x, 0.085, pp[idx[t]].y), Vector3(pp[idx[t + 1]].x, 0.085, pp[idx[t + 1]].y), Vector3(pp[idx[t + 2]].x, 0.085, pp[idx[t + 2]].y), Color(0.62, 0.60, 0.56))
+		k.mat = MeshKit.M_PLASTER
+		for t in range(0, idx.size(), 3):
+			_tri_facing(k, Vector3(pp[idx[t]].x, clear, pp[idx[t]].y), Vector3(pp[idx[t + 1]].x, clear, pp[idx[t + 1]].y), Vector3(pp[idx[t + 2]].x, clear, pp[idx[t + 2]].y), tc.darkened(0.3), Vector3.DOWN)
+		var m := pp.size()
+		for i in m:
+			var a := pp[i]
+			var b := pp[(i + 1) % m]
+			var len := a.distance_to(b)
+			if len < 0.1:
+				continue
+			var mid := (a + b) * 0.5
+			if not Geometry2D.is_point_in_polygon(mid, foot) or CampusData.dist_to_edge(mid, foot) < 0.3:
+				continue      # a mouth (on the outline): open
+			var dir := (b - a) / len
+			var inw := Vector3(-dir.y, 0, dir.x)
+			var holes := edge_holes(b, a, doors)
+			k.mat = wall_spec[1]
+			for sp in solid_spans(len, holes):
+				# edge_holes ran b->a: flip the spans back onto a->b
+				var s0 := b - dir * float(sp[0])
+				var s1 := b - dir * float(sp[1])
+				_quad_facing(k, Vector3(s0.x, 0.0, s0.y), Vector3(s1.x, 0.0, s1.y), Vector3(s1.x, clear, s1.y), Vector3(s0.x, clear, s0.y), col.darkened(0.08), inw)
+			for hl in holes:
+				var h0 := b - dir * (float(hl[0]) - float(hl[1]))
+				var h1 := b - dir * (float(hl[0]) + float(hl[1]))
+				_quad_facing(k, Vector3(h0.x, float(hl[2]), h0.y), Vector3(h1.x, float(hl[2]), h1.y), Vector3(h1.x, clear, h1.y), Vector3(h0.x, clear, h0.y), col.darkened(0.08), inw)
+			k.mat = 0.0
+		# downlights along the passage's long axis
+		var obb := obb_of(pp)
+		var ax: Vector2 = obb["axis"]
+		var size: Vector2 = obb["size"]
+		if size.y > size.x:
+			ax = Vector2(-ax.y, ax.x)
+		var plen := maxf(size.x, size.y)
+		var kd := _k(c.x, c.y, true)
+		for li in maxi(1, int(plen / 4.0)):
+			var lp: Vector2 = (obb["center"] as Vector2) + ax * (plen * ((float(li) + 0.5) / maxf(1.0, float(int(plen / 4.0))) - 0.5))
+			if not Geometry2D.is_point_in_polygon(lp, pp):
+				continue
+			kd.mat = MeshKit.M_GLASS
+			kd.box(Vector3(lp.x, clear - 0.02, lp.y), Vector3(0.24, 0.03, 0.24), Color(1.0, 0.86, 0.62), 0.0, 1.0)
+			kd.mat = 0.0
+			B.glow_disc(Vector3(lp.x, 0.1, lp.y), 1.8)
+	# giant columns in the mouths, and a beam over each mouth
+	for cl in passage_columns(bd):
+		var q: Vector2 = cl[0]
+		var r := float(cl[1])
+		var h := float(cl[2])
+		var k2 := _k(q.x, q.y)
+		k2.mat = MeshKit.M_PLASTER
+		k2.revolve(Vector3(q.x, 0, q.y), PackedVector2Array([Vector2(r * 1.35, 0.0), Vector2(r * 1.35, 0.35), Vector2(r * 1.1, 0.5), Vector2(r, h * 0.5), Vector2(r * 0.9, h - 0.6), Vector2(r * 1.2, h - 0.3), Vector2(r * 1.4, h)]),
+			PackedColorArray([tc.darkened(0.12), tc.darkened(0.06), tc, tc, tc, tc.lightened(0.04), tc.lightened(0.06)]), 12)
+		k2.mat = 0.0
 
 
 ## Door openings along the edge a->b: [[distance from a, half width,
@@ -147,7 +330,7 @@ static func solid_spans(len: float, holes: Array) -> Array:
 
 ## Walls of one mass: one quad per footprint edge in the wall material, a
 ## darker plinth band and a cornice band in the trim colour.
-func _mass(bd: Dictionary, part: Dictionary, parts: Array, wall_spec: Array, trim: Color, base: float, h: float, doors: Array = []) -> void:
+func _mass(bd: Dictionary, part: Dictionary, parts: Array, wall_spec: Array, trim: Color, base: float, h: float, doors: Array = [], passages: Array = []) -> void:
 	var poly: PackedVector2Array = CampusData.ccw(part["poly"])
 	var c := CampusData.centroid(poly)
 	var k := _k(c.x, c.y)
@@ -162,22 +345,31 @@ func _mass(bd: Dictionary, part: Dictionary, parts: Array, wall_spec: Array, tri
 			continue
 		var out := Vector3(d.normalized().y, 0, -d.normalized().x)
 		var shade := col.darkened(0.06 * absf(out.x))
-		var holes := edge_holes(a, b, doors) if base < 0.5 else []
+		# a wall another part of this building stands against is hidden: only
+		# what rises above the neighbour is drawn (and nothing cuts through
+		# an open interior)
+		var y0 := maxf(base, _cover_height(a, b, Vector2(out.x, out.z), part, parts))
+		if y0 >= h - 0.05:
+			continue
+		var holes := edge_holes(a, b, doors) if y0 < 0.5 else []
+		if y0 < 0.5:
+			holes.append_array(passage_holes(a, b, passages))
+			holes.sort_custom(func(x: Array, y: Array) -> bool: return float(x[0]) - float(x[1]) < float(y[0]) - float(y[1]))
 		var dir := d.normalized()
 		k.mat = mat
 		if holes.is_empty():
-			_quad_facing(k, Vector3(a.x, base, a.y), Vector3(b.x, base, b.y), Vector3(b.x, h, b.y), Vector3(a.x, h, a.y), shade, out)
+			_quad_facing(k, Vector3(a.x, y0, a.y), Vector3(b.x, y0, b.y), Vector3(b.x, h, b.y), Vector3(a.x, h, a.y), shade, out)
 		else:
 			for sp in solid_spans(d.length(), holes):
 				var s0 := a + dir * float(sp[0])
 				var s1 := a + dir * float(sp[1])
-				_quad_facing(k, Vector3(s0.x, base, s0.y), Vector3(s1.x, base, s1.y), Vector3(s1.x, h, s1.y), Vector3(s0.x, h, s0.y), shade, out)
+				_quad_facing(k, Vector3(s0.x, y0, s0.y), Vector3(s1.x, y0, s1.y), Vector3(s1.x, h, s1.y), Vector3(s0.x, h, s0.y), shade, out)
 			for hl in holes:
 				var h0 := a + dir * (float(hl[0]) - float(hl[1]))
 				var h1 := a + dir * (float(hl[0]) + float(hl[1]))
 				var top := float(hl[2])
 				_quad_facing(k, Vector3(h0.x, top, h0.y), Vector3(h1.x, top, h1.y), Vector3(h1.x, h, h1.y), Vector3(h0.x, h, h0.y), shade, out)
-		if base < 0.5:
+		if y0 < 0.5:
 			# plinth: a dressed band at the foot of the wall
 			k.mat = MeshKit.M_STONE
 			var po := out * 0.08
@@ -196,7 +388,7 @@ func _mass(bd: Dictionary, part: Dictionary, parts: Array, wall_spec: Array, tri
 
 
 ## Windows of one mass, bay by bay along each edge, one row per floor.
-func _windows(bd: Dictionary, part: Dictionary, parts: Array, style: String, floors: int, base: float, h: float, trim: Color, warm: float, rng: RandomNumberGenerator, doors: Array = []) -> void:
+func _windows(bd: Dictionary, part: Dictionary, parts: Array, style: String, floors: int, base: float, h: float, trim: Color, warm: float, rng: RandomNumberGenerator, doors: Array = [], passages: Array = []) -> void:
 	var poly: PackedVector2Array = CampusData.ccw(part["poly"])
 	var n := poly.size()
 	var resid := String(bd["kind"]) == "residence" or String(bd["kind"]) == "house"
@@ -219,6 +411,7 @@ func _windows(bd: Dictionary, part: Dictionary, parts: Array, style: String, flo
 		var mid := (a + b) * 0.5
 		var k := _k(mid.x, mid.y)
 		var holes := edge_holes(a, b, doors)
+		holes.append_array(passage_holes(a, b, passages))
 		for r in floors:
 			var y := base + 0.6 + fl_h * (float(r) + 0.5)
 			if y + 0.9 > h - 0.4:
@@ -241,6 +434,24 @@ func _windows(bd: Dictionary, part: Dictionary, parts: Array, style: String, flo
 				var w := 1.15 if style != "ribbon" else step * 0.82
 				var hh := 0.8 if style != "ribbon" else 0.62
 				_window(k, ctr, Vector3(dir.x, 0, dir.y), out, w, hh, rng.randf() < warm, rng, trim, style != "ribbon")
+
+
+## How high the other parts of the building stand against the outer face of
+## the edge a-b (the lowest over three samples; 0 when open).
+static func _cover_height(a: Vector2, b: Vector2, out: Vector2, me: Dictionary, parts: Array) -> float:
+	if parts.size() < 2:
+		return 0.0
+	var lowest := INF
+	for f: float in [0.2, 0.5, 0.8]:
+		var p := a.lerp(b, f) + out * 0.3
+		var top := 0.0
+		for other in parts:
+			if other == me:
+				continue
+			if float(other.get("base", 0.0)) < 0.5 and Geometry2D.is_point_in_polygon(p, other["poly"]):
+				top = maxf(top, float(other["h"]))
+		lowest = minf(lowest, top)
+	return lowest
 
 
 func _covered(p: Vector2, y: float, me: Dictionary, parts: Array) -> bool:

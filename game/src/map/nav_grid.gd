@@ -280,6 +280,8 @@ func _r_buildings(part: int, parts: int) -> void:
 		for e in bd["entrances"]:
 			for cp in CampusArchitecture.portico_columns(e):
 				_solid_circle(foot, cp, 0.31 + FOOT_INF)
+		for cl in CampusArchitecture.passage_columns(bd):
+			_solid_circle(foot, cl[0], float(cl[1]) + FOOT_INF)
 
 
 ## Hedges and tall fences are solid; low walls and rails are hopped at a

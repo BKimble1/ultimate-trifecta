@@ -62,18 +62,31 @@ func _wall_quad(k: MeshKit, a: Vector2, b: Vector2, y0: float, y1: float, facing
 		k.cu_emission_last(6, emis)
 
 
-## One start dorm, inside and out.
+## One start dorm, inside and out (the staged build calls the halves as
+## two steps).
 func dorm(id: String) -> void:
+	exterior(id)
+	inside(id)
+
+
+## The building through the generic generator, its doorways cut open.
+func exterior(id: String) -> void:
 	var g := CampusDorms.geometry(id)
-	if g.is_empty():
-		return
-	var bd := L.building_by_id(String(g["building"]))
-	if bd.is_empty():
+	var bd := L.building_by_id(String(g.get("building", "")))
+	if g.is_empty() or bd.is_empty():
 		return
 	var holes: Array = []
 	for dr in g["doors"]:
 		holes.append({"pos": dr["pos"], "normal": dr["normal"], "w": float(dr["w"]), "h": CampusDorms.DOOR_H})
 	A.building(bd, holes)
+
+
+## The doorways' dressing and the open interior.
+func inside(id: String) -> void:
+	var g := CampusDorms.geometry(id)
+	var bd := L.building_by_id(String(g.get("building", "")))
+	if g.is_empty() or bd.is_empty():
+		return
 	var d := CampusDorms.def(id)
 	_doorways(bd, g, d)
 	_interior(g, d)
@@ -104,14 +117,15 @@ func _doorways(bd: Dictionary, g: Dictionary, d: Dictionary) -> void:
 		var k := _k(p.x, p.y)
 		var kd := _k(p.x, p.y, true)
 		var main := i == 0
-		# reveals: the cut through the wall, both sides, and the soffit
+		# the cut through the wall: its sides are the corridor's walls
+		# (_interior); here the soffit and the lintel's inner face up to the
+		# ceiling
 		var inner := p + n_in * t
+		var C := float(g["ceil"])
 		k.mat = MeshKit.M_PLASTER
-		for sgn: float in [-1.0, 1.0]:
-			var e0 := p + tg * (hw * sgn)
-			var e1 := inner + tg * (hw * sgn)
-			_wall_quad(k, e0, e1, 0.0, DH, Vector3(-tg.x * sgn, 0, -tg.y * sgn), INNER.darkened(0.2), 0.12)
 		A._quad_facing(k, _v(p - tg * hw, DH), _v(p + tg * hw, DH), _v(inner + tg * hw, DH), _v(inner - tg * hw, DH), INNER.darkened(0.3), Vector3.DOWN)
+		if C > DH + 0.05:
+			_wall_quad(k, inner - tg * hw, inner + tg * hw, DH, C, Vector3(n_in.x, 0, n_in.y), INNER.darkened(0.1), 0.2)
 		# stone surround with a keystone, a lit transom over the opening
 		k.mat = MeshKit.M_STONE
 		for sgn2: float in [-1.0, 1.0]:
@@ -129,7 +143,7 @@ func _doorways(bd: Dictionary, g: Dictionary, d: Dictionary) -> void:
 			kd.box(fan + t3 * mx + Vector3.UP * 0.275 + n3 * 0.02, Vector3(0.06, 0.6, 0.04), TRIM, yaw)
 		kd.mat = 0.0
 		# a porch hood on brackets where no portico stands
-		var has_portico := false
+		var has_portico := not CampusArchitecture._passage_near(p, bd["passages"]).is_empty()
 		for pp in porticos:
 			if (pp as Vector2).distance_to(p) < hw + 1.5:
 				has_portico = true
@@ -161,26 +175,55 @@ func _doorways(bd: Dictionary, g: Dictionary, d: Dictionary) -> void:
 # ---------------------------------------------------------------------------
 # Interior: the commons
 # ---------------------------------------------------------------------------
-## Openings in a room edge a->b where a door corridor meets it: [[distance
-## from a, half width, height]].
-static func _room_holes(a: Vector2, b: Vector2, doors: Array) -> Array:
-	var out: Array = []
-	var d := b - a
-	var len := d.length()
-	if len < 0.01:
+## The open interior as polygons: the commons and the door corridors merged,
+## clipped to the building's footprint.
+static func open_space(g: Dictionary) -> Array[PackedVector2Array]:
+	var parts: Array[PackedVector2Array] = []
+	for ip in g["interior"]:
+		var poly: PackedVector2Array = ip
+		var merged := false
+		for i in parts.size():
+			var outer := _outer(Geometry2D.merge_polygons(parts[i], poly))
+			if outer.size() == 1:
+				parts[i] = outer[0]
+				merged = true
+				break
+		if not merged:
+			parts.append(poly)
+	var out: Array[PackedVector2Array] = []
+	var foot: PackedVector2Array = g["footprint"]
+	for pc in parts:
+		for q in _outer(Geometry2D.intersect_polygons(pc, foot)):
+			out.append(CampusData.ccw(q))
+	return out
+
+
+## The outer rings of a Clipper result (holes wind the other way).
+static func _outer(res: Array) -> Array[PackedVector2Array]:
+	var out: Array[PackedVector2Array] = []
+	if res.is_empty():
 		return out
-	var dir := d / len
+	var big: PackedVector2Array = res[0]
+	for r in res:
+		if absf(CampusData.area(r)) > absf(CampusData.area(big)):
+			big = r
+	var cw := Geometry2D.is_polygon_clockwise(big)
+	for r in res:
+		if Geometry2D.is_polygon_clockwise(r) == cw:
+			out.append(r)
+	return out
+
+
+## Is the edge a-b a doorway mouth (on the outer wall where a door is)?
+static func _mouth(a: Vector2, b: Vector2, doors: Array) -> bool:
+	var m := (a + b) * 0.5
 	for dr in doors:
 		var p: Vector2 = dr["pos"]
-		var n_in: Vector2 = dr["n_in"]
-		var hit: Variant = Geometry2D.segment_intersects_segment(p - n_in * 0.5, p + n_in * 40.0, a, b)
-		if hit == null:
-			continue
-		var t := ((hit as Vector2) - a).dot(dir)
-		var hw := float(dr["w"]) * 0.5 / maxf(0.3, absf(n_in.dot(Vector2(dir.y, -dir.x))))
-		out.append([clampf(t, 0.0, len), hw, CampusDorms.DOOR_H])
-	out.sort_custom(func(x: Array, y: Array) -> bool: return float(x[0]) < float(y[0]))
-	return out
+		var n: Vector2 = dr["normal"]
+		# on the outer face (the corridor reaches 0.4 m past it)
+		if absf((m - p).dot(n)) < 0.45 and absf((m - p).dot(Vector2(-n.y, n.x))) <= float(dr["w"]) * 0.5 + 0.2:
+			return true
+	return false
 
 
 func _interior(g: Dictionary, d: Dictionary) -> void:
@@ -196,47 +239,60 @@ func _interior(g: Dictionary, d: Dictionary) -> void:
 	var fabric := _col(d, "fabric", FABRIC)
 	var accent := _col(d, "accent", ACCENT)
 	var doors: Array = g["doors"]
-	# floor, ceiling
-	var idx := CampusData.triangulate(room)
-	k.mat = MeshKit.M_WOOD
-	for t in range(0, idx.size(), 3):
-		CampusBuilder._tri_up(k, _v(room[idx[t]], 0.02), _v(room[idx[t + 1]], 0.02), _v(room[idx[t + 2]], 0.02), floor_c)
-	k.cu_emission_last(idx.size(), 0.14)
-	k.mat = MeshKit.M_PLASTER
-	for t in range(0, idx.size(), 3):
-		A._tri_facing(k, _v(room[idx[t]], C), _v(room[idx[t + 1]], C), _v(room[idx[t + 2]], C), inner.darkened(0.1), Vector3.DOWN)
-	k.cu_emission_last(idx.size(), 0.18)
-	# walls: plaster above a wainscot, open where the corridors come in
-	var n := room.size()
 	var longest := -1
 	var longest_len := 0.0
-	for i in n:
-		var a := room[i]
-		var b := room[(i + 1) % n]
-		var len := a.distance_to(b)
-		if len < 0.05:
-			continue
-		var dir := (b - a) / len
-		var nin := Vector3(-dir.y, 0, dir.x)      # into the room (ccw)
-		var holes := _room_holes(a, b, doors)
-		if holes.is_empty() and len > longest_len:
-			longest_len = len
-			longest = i
-		for sp in CampusArchitecture.solid_spans(len, holes):
-			var s0 := a + dir * float(sp[0])
-			var s1 := a + dir * float(sp[1])
-			k.mat = MeshKit.M_PLASTER
-			_wall_quad(k, s0, s1, 1.12, C, nin, inner, 0.22)
-			k.mat = MeshKit.M_WOOD
-			_wall_quad(k, s0, s1, 0.0, 1.12, nin, WOOD_DARK.lightened(0.1), 0.1)
+	var longest_poly := PackedVector2Array()
+	for sp in open_space(g):
+		var kc := _k(CampusData.centroid(sp).x, CampusData.centroid(sp).y)
+		# floor and ceiling
+		var idx := CampusData.triangulate(sp)
+		kc.mat = MeshKit.M_WOOD
+		for t in range(0, idx.size(), 3):
+			CampusBuilder._tri_up(kc, _v(sp[idx[t]], 0.02), _v(sp[idx[t + 1]], 0.02), _v(sp[idx[t + 2]], 0.02), floor_c)
+		kc.cu_emission_last(idx.size(), 0.14)
+		kc.mat = MeshKit.M_PLASTER
+		for t in range(0, idx.size(), 3):
+			A._tri_facing(kc, _v(sp[idx[t]], C), _v(sp[idx[t + 1]], C), _v(sp[idx[t + 2]], C), inner.darkened(0.1), Vector3.DOWN)
+		kc.cu_emission_last(idx.size(), 0.18)
+		# walls: plaster above a wainscot, open only at the doorway mouths
+		var n := sp.size()
+		for i in n:
+			var a := sp[i]
+			var b := sp[(i + 1) % n]
+			var len := a.distance_to(b)
+			if len < 0.05 or _mouth(a, b, doors):
+				continue
+			var dir := (b - a) / len
+			var nin := Vector3(-dir.y, 0, dir.x)      # into the space (ccw)
+			var kw := _k((a.x + b.x) * 0.5, (a.y + b.y) * 0.5)
+			kw.mat = MeshKit.M_PLASTER
+			_wall_quad(kw, a, b, 1.12, C, nin, inner, 0.22)
+			kw.mat = MeshKit.M_WOOD
+			_wall_quad(kw, a, b, 0.0, 1.12, nin, WOOD_DARK.lightened(0.1), 0.1)
 			var off := Vector2(nin.x, nin.z) * 0.02
-			_wall_quad(k, s0 + off, s1 + off, 1.02, 1.12, nin, WOOD_DARK.lightened(0.25), 0.12)
-		for hl in holes:
-			var h0 := a + dir * (float(hl[0]) - float(hl[1]))
-			var h1 := a + dir * (float(hl[0]) + float(hl[1]))
-			k.mat = MeshKit.M_PLASTER
-			_wall_quad(k, h0, h1, CampusDorms.DOOR_H, C, nin, inner, 0.22)
-		k.mat = 0.0
+			_wall_quad(kw, a + off, b + off, 1.02, 1.12, nin, WOOD_DARK.lightened(0.25), 0.12)
+			kw.mat = 0.0
+			# the longest wall of the commons (for pictures and plants)
+			var mid := (a + b) * 0.5
+			if len > longest_len and CampusData.dist_to_edge(mid, room) < 0.3:
+				longest_len = len
+				longest = i
+				longest_poly = sp
+	# ceiling lights along each corridor, from the doorway to the commons
+	for dr in doors:
+		var lp0: Vector2 = dr["line_p"]
+		var n_in: Vector2 = dr["n_in"]
+		var dist := 2.0
+		while dist < 60.0:
+			var q := lp0 + n_in * dist
+			if Geometry2D.is_point_in_polygon(q, room):
+				break
+			var kq := _k(q.x, q.y, true)
+			kq.mat = MeshKit.M_GLASS
+			kq.box(Vector3(q.x, C - 0.03, q.y), Vector3(0.5, 0.05, 0.5), Color(1.0, 0.86, 0.62), 0.0, 0.9)
+			kq.mat = 0.0
+			B.glow_disc(Vector3(q.x, 0.06, q.y), 1.8)
+			dist += 4.5
 	# beams across the room's short axis and pendant lights between them
 	var obb := CampusArchitecture.obb_of(room)
 	var ax: Vector2 = obb["axis"]
@@ -281,8 +337,9 @@ func _interior(g: Dictionary, d: Dictionary) -> void:
 		_furniture(k, bx, fabric, accent)
 	# pictures and sconces on the longest closed wall, plants in its corners
 	if longest >= 0:
-		var a2 := room[longest]
-		var b2 := room[(longest + 1) % n]
+		var lpn := longest_poly.size()
+		var a2 := longest_poly[longest]
+		var b2 := longest_poly[(longest + 1) % lpn]
 		var dir2 := (b2 - a2).normalized()
 		var nin2 := Vector2(-dir2.y, dir2.x)
 		var wl := a2.distance_to(b2)

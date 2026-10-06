@@ -280,6 +280,12 @@ func _building_collision(world: StaticBody3D, bd: Dictionary, dorm_id: String) -
 	for e in bd["entrances"]:
 		for cp in CampusArchitecture.portico_columns(e):
 			_box(world, Vector3(cp.x, 3.0, cp.y), Vector3(0.62, 6.0, 0.62))
+	for cl in CampusArchitecture.passage_columns(bd):
+		var cq: Vector2 = cl[0]
+		var cyl := CylinderShape3D.new()
+		cyl.radius = float(cl[1])
+		cyl.height = float(cl[2])
+		_add_shape(world, cyl, Transform3D(Basis.IDENTITY, Vector3(cq.x, float(cl[2]) * 0.5, cq.y)))
 	if bd.get("landmark") != null and String(bd["landmark"]) == "bell_tower":
 		for so in CampusTower.solids(bd):
 			for cv in CampusData.convex_pieces(so["poly"]):
@@ -512,9 +518,9 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_add("light_trees", func() -> void:
 		kit = CampusKit.new(L, false)
 		kit.stamp_trees())
-	_add("light_buildings", func() -> void:
-		kit.stamp_buildings()
-		kit.stamp_barriers())
+	for bi in range(0, L.buildings.size(), 6):
+		_add("light_buildings", func() -> void: kit.stamp_buildings(bi, bi + 6))
+	_add("light_barriers", func() -> void: kit.stamp_barriers())
 	_add("light_lamps", func() -> void:
 		kit.stamp_lights()
 		kit.stamp_paths())
@@ -543,7 +549,8 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 			continue      # DormArt builds it, with its open doorways
 		_add("building_" + String(bd["id"]), func() -> void: arch.building(bd))
 	for id in CampusDorms.ids():
-		_add("dorm_" + id, func() -> void: dorm_art.dorm(id))
+		_add("dorm_" + id, func() -> void: dorm_art.exterior(id))
+		_add("dorm_inside_" + id, func() -> void: dorm_art.inside(id))
 	_add("walls", arch.walls)
 	for hi in range(0, L.hedges.size(), 8):
 		_add("hedges", func() -> void: arch.hedges(hi, hi + 8))
@@ -554,7 +561,10 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	for li in range(0, L.lamps.size(), 20):
 		_add("lamps", func() -> void: arch.lamps(li, li + 20))
 	_add("small", arch.small_things)
-	_add("light_texture", func() -> void: _field_tex = kit.field_texture())
+	var field_rows := int(CampusLayout.BOUNDS.size.y / CampusKit.CELL) + 1
+	for j0 in range(0, field_rows, 120):
+		_add("light_texture", func() -> void: kit.field_rows(j0, j0 + 120))
+	_add("light_texture", func() -> void: _field_tex = kit.field_finish())
 	_add("background", marks.background)
 	_add("shader_world", func() -> void: _warm_material(WORLD_SHADER))
 	_add("shader_foliage", func() -> void: _warm_material(FOLIAGE_SHADER))

@@ -10,34 +10,49 @@ extends Node3D
 var out_dir := ""
 var quality := 1
 var cam: Camera3D
+var world_env: Node
+
+
+var extra: Array = []      # --view=name:x,y,z:tx,ty,tz (repeatable)
+var only_extra := false
 
 
 func _views() -> Array:
+	if only_extra:
+		return extra
 	var L := CampusLayout.shared()
 	var out: Array = []
-	var did := CampusDorms.default_id()
-	var doors: Array = L.home_doors(did)
-	if not doors.is_empty():
-		var d: Dictionary = doors[0]
-		var p: Vector3 = d["pos"] if d["pos"] is Vector3 else Vector3((d["pos"] as Vector2).x, 0, (d["pos"] as Vector2).y)
-		var n: Vector3 = d["normal"] if d["normal"] is Vector3 else Vector3((d["normal"] as Vector2).x, 0, (d["normal"] as Vector2).y)
-		out.append(["dorm_entrance", p + n * 8.0 + Vector3(0, 2.3, 0), p + Vector3(0, 1.6, 0)])
-		out.append(["dorm_doorway_close", p + n * 3.2 + Vector3(0, 1.5, 0), p + Vector3(0, 1.2, 0)])
-	out.append(["quad", Vector3(0, 2.6, 34), Vector3(0, 1.2, 0)])
-	for wi in [0, 2, 4]:
-		if wi >= L.waters.size():
+	# each start dorm's doors, from outside
+	for did in CampusDorms.ids():
+		var doors: Array = L.home_doors(did)
+		for di in doors.size():
+			var d: Dictionary = doors[di]
+			var p := Vector3((d["pos"] as Vector2).x, 0, (d["pos"] as Vector2).y)
+			var n := Vector3((d["normal"] as Vector2).x, 0, (d["normal"] as Vector2).y)
+			out.append(["dorm_%s_%s" % [did, d["id"]], p + n * 9.0 + Vector3(0, 2.3, 0), p + Vector3(0, 1.8, 0)])
+		var g := CampusDorms.geometry(did)
+		if not g.is_empty() and not (g["pads"] as Array).is_empty():
+			var pad: Vector2 = g["pads"][0]["pos"]
+			var dr: Dictionary = doors[0]
+			var lp: Vector2 = dr["line_p"]
+			var back := (pad - lp).normalized()
+			out.append(["dorm_%s_inside" % did, Vector3(pad.x + back.x * 3.0, 1.8, pad.y + back.y * 3.0), Vector3(lp.x, 1.4, lp.y)])
+	# landmarks: from the south-west at a walker's height and from above
+	for bd in L.buildings:
+		if bd.get("landmark") == null or String(bd["landmark"]) == "":
 			continue
-		var c: Vector2 = L.waters[wi]["center"]
-		var dir := (Vector2(0, 0) - c).normalized() if c.length() > 1.0 else Vector2(0, 1)
-		var at := Vector3(c.x, 0.5, c.y)
-		out.append(["water_%d" % wi, at + Vector3(dir.x, 0, dir.y) * 13.0 + Vector3(0, 2.6, 0), at])
-	if L.waters.size() >= 2:
-		var a: Vector2 = L.waters[0]["center"]
-		var b: Vector2 = L.waters[1]["center"]
-		var m := (a + b) * 0.5
-		var f := (b - a).normalized()
-		out.append(["chase_route", Vector3(m.x - f.x * 6.0, 2.2, m.y - f.y * 6.0), Vector3(m.x + f.x * 6.0, 1.0, m.y + f.y * 6.0)])
-	out.append(["overview", Vector3(0, 45, 150), Vector3(0, 0, 20)])
+		var c := CampusData.centroid(bd["poly"])
+		var r := sqrt(absf(CampusData.area(bd["poly"]))) * 0.5 + 6.0
+		out.append(["lm_%s" % bd["id"], Vector3(c.x - r * 1.6, 2.0, c.y + r * 1.6), Vector3(c.x, minf(float(bd["h"]) * 0.45, 9.0), c.y)])
+		out.append(["lm_%s_high" % bd["id"], Vector3(c.x - r * 2.2, r * 1.6 + 8.0, c.y + r * 2.2), Vector3(c.x, 2.0, c.y)])
+	for wi in L.waters.size():
+		var w: Dictionary = L.waters[wi]
+		var c2: Vector2 = w["center"]
+		var rr := maxf(6.0, (w["rect"] as Rect2).size.length() * 0.5)
+		out.append(["water_%s" % w["id"], Vector3(c2.x + rr * 0.7, 2.6 + rr * 0.15, c2.y + rr * 1.2), Vector3(c2.x, 0.3, c2.y)])
+	var cc := CampusLayout.BOUNDS.get_center()
+	out.append(["overview", Vector3(cc.x, 260.0, cc.y + 420.0), Vector3(cc.x, 0, cc.y)])
+	out.append_array(extra)
 	return out
 
 
@@ -47,18 +62,26 @@ func _ready() -> void:
 			out_dir = a.get_slice("=", 1)
 		elif a.begins_with("--quality="):
 			quality = int(a.get_slice("=", 1))
+		elif a.begins_with("--view="):
+			var parts := a.get_slice("=", 1).split(":")
+			var p0 := parts[1].split_floats(",")
+			var p1 := parts[2].split_floats(",")
+			extra.append([parts[0], Vector3(p0[0], p0[1], p0[2]), Vector3(p1[0], p1[1], p1[2])])
+		elif a == "--only-views":
+			only_extra = true
 	if out_dir == "":
 		out_dir = OS.get_user_data_dir().path_join("campus_views")
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	QualityPreset.apply(quality)
-	add_child(EnvFactory.make_environment(quality))
+	world_env = EnvFactory.make_environment(quality)
+	add_child(world_env)
 	add_child(EnvFactory.make_moon(quality))
 	var root := Node3D.new()
 	add_child(root)
 	CampusBuilder.new(CampusLayout.shared()).build_visuals(root, quality)
 	cam = Camera3D.new()
 	cam.fov = 62.0
-	cam.far = 600.0
+	cam.far = 1400.0
 	add_child(cam)
 	cam.current = true
 	_run.call_deferred()
@@ -66,6 +89,10 @@ func _ready() -> void:
 
 func _run() -> void:
 	for v in _views():
+		# overviews look across the whole campus: no distance fog for them
+		var env: Environment = world_env.get("environment") if world_env != null else null
+		if env != null:
+			env.fog_enabled = not String(v[0]).begins_with("overview")
 		cam.look_at_from_position(v[1], v[2])
 		for i in 8:
 			await get_tree().process_frame
