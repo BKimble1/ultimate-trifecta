@@ -81,4 +81,45 @@ registers are in each area's notes.
 
 ## Unresolved blockers
 
-_Completed at the end of the sweep._
+### Before the App Store submission (owner; [OWNER_SETUP_GUIDE.md](OWNER_SETUP_GUIDE.md))
+
+These keep the 2.0 candidate **provisional**. The code for each is done
+and tested on desktop; the missing piece is an account action, a deployed
+service or a device.
+
+| # | Blocker | Why it blocks | Guide step |
+|---|---|---|---|
+| U1 | The game service isn't deployed; `game/config/service.cfg` is empty | Coins, purchases, Season rewards, challenges, rotating offers, verified names, typed chat, reports and Friends status all show as unavailable; App Review would find the purchases unusable | C |
+| U2 | The eight App Store products don't exist (status run #132: 8 planned, 0 present) | Nothing can be bought; the first purchase of each type must be submitted with a version | B, G |
+| U3 | Paid Apps Agreement, tax and banking (not readable by the API key) | StoreKit returns no products without it | A |
+| U4 | No privacy policy or support URL (`config/links.cfg` and the service variables are empty) | Required in the app and on the version page | C.8, F |
+| U5 | Nothing verified on a device or with Apple's sandbox: purchases, restore, Premium, claims, Friends between two accounts, an online round between two devices, Delete Game Profile on the live service | Only a device, a sandbox account and the deployed service can show them | E |
+| U6 | Content rights: written permission from the two people Record Breaker and Dr. Doom are based on; mureka.ai's terms for both music loops; whether to keep the "Dr. Doom" label | Guideline 5.2 (intellectual property, likeness) | F |
+| U7 | The version page: App Privacy answers, age rating, screenshots, review contact, copyright | Only the account holder can enter them | F |
+
+### Known, not blocking
+
+- **Device-only checks** (APP_STORE_READINESS D1–D5): frame rate and heat,
+  lighting on Metal (the desktop renders needed `GALLIUM_OVERRIDE_CPU_CAPS=avx`
+  to light characters correctly, [final/lobby.md](final/lobby.md)), the
+  Season Pass drag feel, the native Friends permission prompt and
+  authorization values, `recipients` pre-selection in Apple's invite sheet,
+  GKError codes.
+- **Parties don't cross service deployments**: a TestFlight player and an
+  App Store player (or a review device before and after its first purchase)
+  are in different economies. Written into the review notes.
+- **Promoted in-app purchases** aren't handled: keep promotion off.
+- **Refund reversals** (`REFUND_REVERSED`) aren't re-granted automatically;
+  support can grant through the admin API.
+- **Service capacity**: Friends presence is about 4,300 writes per playing
+  user per day; the free Cloudflare tiers cover a few dozen concurrent
+  players. The owner sizes the plan.
+- **The offer schedule** is written to 2027-04-06 and then repeats the
+  rule's cycle; extend it with `tools/make_offer_schedule.py` when you want
+  new rotations.
+- **Turning a model**: the Season Pass has drag, Turn, Reset and the right
+  stick; the Shop and the Locker keep their drag-to-turn without Turn and
+  Reset buttons. Left as is for this release (both work; changing their
+  input this late was the larger risk).
+- **No dSYMs** for the four plugin frameworks (crashes inside them won't be
+  symbolicated).
