@@ -1,10 +1,12 @@
 class_name CampusChapel
 extends RefCounted
-## The prayer chapel: a faceted single-storey pavilion under one steep hip
-## roof that rises from every facet of its outline to a glazed square
-## cupola; glass walls between white columns on a brick base, a white
-## entablature band, a few solid panels with plain bronze roundels, the
-## pedimented portico from the data's entrances, and the walk-through
+## The prayer chapel: a faceted single-storey pavilion: a steep hip roof
+## over the octagonal core rising to a glazed square cupola, and on the
+## core's diagonal facets the gabled wings, each roof running back into the
+## core's and closed by a white pediment with a ring moulding; glass walls
+## between white columns on a brick base, a white entablature band, a few
+## solid panels with plain bronze roundels, the porticos from the data's
+## entrances (flat-topped under a wing's pediment), and the walk-through
 ## atrium (the data's `passages`): open at both ends, brick walls with
 ## engaged white columns either side, brick pavers underfoot and a cedar
 ## ceiling with downlights at the passage's clear height.
@@ -29,11 +31,19 @@ const BAND := 0.9          # entablature depth at the top of the wall
 const COL_STEP := 2.6      # white columns along the glass walls
 
 
-## The roof frame: the convex outline the roof follows, its centre, the
+## The roof frame: the convex outline the roof follows (the core: the
+## data's largest pyramid part, else the whole outline), its centre, the
 ## eave height, inradius, the top ring's scale and the roof's top height.
 static func frame(bd: Dictionary) -> Dictionary:
 	var poly := CampusData.ccw(bd["poly"])
-	var hull_raw := Geometry2D.convex_hull(poly)
+	var core := poly
+	var best := 0.0
+	for p in bd.get("parts", []):
+		var pa := absf(CampusData.area(p["poly"]))
+		if String((p.get("roof", {}) as Dictionary).get("type", "")) == "pyramid" and pa > best:
+			best = pa
+			core = CampusData.ccw(p["poly"])
+	var hull_raw := Geometry2D.convex_hull(core)
 	var hull := PackedVector2Array()
 	for i in hull_raw.size() - 1:           # the hull repeats its first point
 		hull.append(hull_raw[i])
@@ -63,6 +73,7 @@ static func build(B: CampusBuilder, bd: Dictionary) -> void:
 	_walls(k, kd, f, passages)
 	_atrium(B, k, kd, f, passages)
 	_roof(k, f)
+	_wings(B, k, f, bd)
 	_cupola(k, kd, f)
 	for e in bd["entrances"]:
 		var p := CampusLayout._v2(e.get("p", [0, 0]))
@@ -71,9 +82,19 @@ static func build(B: CampusBuilder, bd: Dictionary) -> void:
 				var face := deg_to_rad(float(e.get("face", 0.0)))
 				var n := Vector3(sin(face), 0, -cos(face))
 				var rt := Vector3(-n.z, 0, n.x)
-				B.arch.portico(k, Vector3(p.x, 0, p.y) + n * 0.06, n, rt, CampusArchitecture.portico_width(e), float(f["wall_h"]) - 0.4, WHITE)
+				# the wing's own pediment is above it: a flat-topped porch
+				B.arch.portico(k, Vector3(p.x, 0, p.y) + n * 0.06, n, rt, CampusArchitecture.portico_width(e), float(f["wall_h"]) - 0.4, WHITE, not _under_wing(p, bd))
 			continue
 		B.arch._entrance(bd, e, WHITE, [BRICK, MeshKit.M_BRICK])
+
+
+## Whether an entrance at `p` stands at the outer end of a gabled wing (the
+## data's gable parts), whose pediment is drawn above it.
+static func _under_wing(p: Vector2, bd: Dictionary) -> bool:
+	for part in bd.get("parts", []):
+		if String((part.get("roof", {}) as Dictionary).get("type", "")) == "gable" and CampusData.dist_to_edge(p, part["poly"]) < 1.5:
+			return true
+	return false
 
 
 static func _near_passage(p: Vector2, passages: Array, d: float) -> bool:
@@ -334,6 +355,34 @@ static func _roof(k: MeshKit, f: Dictionary) -> void:
 		var tb2 := c + (hull[(i + 1) % n] - c) * s
 		CampusBuilder._tri_up(k, Vector3(c.x, top, c.y), Vector3(ta2.x, top, ta2.y), Vector3(tb2.x, top, tb2.y), SHINGLE)
 	k.mat = 0.0
+
+
+## The gabled wings (the data's gable parts on the core's facets): a gable
+## roof each, ridge running out from the core and carried back until it is
+## inside the core roof, and a white pediment with a ring moulding over the
+## outer end (R009).
+static func _wings(B: CampusBuilder, k: MeshKit, f: Dictionary, bd: Dictionary) -> void:
+	var c: Vector2 = f["c"]
+	var wall_h := float(f["wall_h"])
+	for p in bd.get("parts", []):
+		var rf: Dictionary = p.get("roof", {})
+		if String(rf.get("type", "")) != "gable":
+			continue
+		var obb := CampusArchitecture.obb_of(CampusData.ccw(p["poly"]))
+		var wc: Vector2 = obb["center"]
+		var out := (wc - c).normalized()
+		var ax: Vector2 = obb["axis"]
+		var size: Vector2 = obb["size"]
+		var radial_x := absf(ax.dot(out)) >= 0.7071
+		var width := size.y if radial_x else size.x
+		var depth := size.x if radial_x else size.y
+		var pitch := deg_to_rad(clampf(float(rf.get("pitch", 45.0)), 5.0, 60.0))
+		var ext := width * 0.5 * tan(pitch) / tan(float(f["pitch"])) + 0.6
+		var long := depth + ext
+		var e_obb := {"center": wc - out * (ext * 0.5), "axis": ax, "size": Vector2(long, width) if radial_x else Vector2(width, long)}
+		var face := rad_to_deg(atan2(out.x, -out.y))
+		B.arch._pitched(k, e_obb, wall_h, pitch, "gable", str(face), SHINGLE, MeshKit.M_ROOF, [BRICK, MeshKit.M_BRICK], WHITE,
+			{"face": face, "disc": "roundel"})
 
 
 ## The cupola: a white square base, a glazed lantern lit from inside, a

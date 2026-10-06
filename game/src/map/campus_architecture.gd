@@ -824,8 +824,9 @@ static func is_pediment(ped: Variant, facing: Vector3) -> bool:
 
 ## A classical pediment on the gable end at `g` (eave height, facing `nr`):
 ## the tympanum in the trim colour (painted, not the wall's brick), a
-## horizontal cornice closing it, a round window in its middle (`disc`:
-## "oculus" glazed, "louvre" slatted, "clock" a plain face, no lettering)
+## horizontal cornice closing it, a round element in its middle (`disc`:
+## "oculus" glazed, "louvre" slatted, "clock" a plain face, no lettering,
+## "roundel" a ring moulding)
 ## and, given `entablature` (m), a band of that depth under the eave across
 ## the end wall, down to the tops of a giant portico's columns.
 func pediment(k: MeshKit, g: Vector3, nr: Vector3, aw: Vector3, half_w: float, ov: float, rise: float, ped: Dictionary, col: Color) -> void:
@@ -853,6 +854,9 @@ func pediment(k: MeshKit, g: Vector3, nr: Vector3, aw: Vector3, half_w: float, o
 			var hand := (aw * 0.8 + Vector3.UP * 0.6).normalized()
 			var side := hand.cross(nr).normalized() * 0.03
 			_quad_facing(k, face - side, face + side, face + side + hand * (r * 0.45), face - side + hand * (r * 0.45), ink, nr)
+		elif disc == "roundel":
+			# a ring moulding (no opening): a shadow line inside the ring
+			_vdisc(k, c + nr * 0.005, nr, aw, r * 0.7, r * 0.8, col.darkened(0.22))
 		elif disc == "louvre":
 			# louvred: light slats over a dark opening, inside the white ring
 			_vdisc(k, c - nr * 0.03, nr, aw, 0.0, r * 0.8, Color(0.30, 0.32, 0.36))
@@ -1023,8 +1027,9 @@ static func portico_entrances(bd: Dictionary) -> Array:
 
 
 ## A classical portico: a row of columns before the door, an entablature and
-## a triangular pediment in the trim colour.
-func portico(k: MeshKit, base: Vector3, nr: Vector3, rt: Vector3, width: float, height: float, col: Color) -> void:
+## a triangular pediment in the trim colour (none with `gable` false: under
+## a pedimented gable of the building itself it is a flat-topped porch).
+func portico(k: MeshKit, base: Vector3, nr: Vector3, rt: Vector3, width: float, height: float, col: Color, gable: bool = true) -> void:
 	var depth := PORTICO_DEPTH
 	var cols := portico_count(width)
 	k.mat = MeshKit.M_STONE
@@ -1036,6 +1041,9 @@ func portico(k: MeshKit, base: Vector3, nr: Vector3, rt: Vector3, width: float, 
 			PackedColorArray([col.darkened(0.12), col.darkened(0.06), col, col, col, col.lightened(0.04), col.lightened(0.06)]), 12)
 	var yaw := atan2(-rt.z, rt.x)
 	k.chamfer_box(base + nr * (depth * 0.5) + Vector3(0, height + 0.25, 0), Vector3(width + 0.9, 0.5, depth + 0.4), col, 0.06, yaw)
+	if not gable:
+		k.mat = 0.0
+		return
 	var ped := minf(1.8, width * 0.18)
 	var front := base + nr * (depth + 0.2) + Vector3(0, height + 0.5, 0)
 	_tri_facing(k, front - rt * (width * 0.5 + 0.45), front + rt * (width * 0.5 + 0.45), front + Vector3(0, ped, 0), col.lightened(0.03), nr)

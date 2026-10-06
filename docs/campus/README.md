@@ -169,10 +169,17 @@ closed form and stable for any delta (`CharacterFootLock.release_step`, regressi
 
 Thirteen reference photos were posed in the campus frame (five at medium confidence, eight low) and
 rendered from the same cameras at the photo's field of view. The side-by-sides are delivered privately,
-since they show the reference photos. What they show:
+since they show the reference photos. (A first set framed the six photos narrower than 16:9 too
+tightly: the game side showed about two thirds of the photo's field of view, so it looked zoomed in.
+They are re-rendered with a field of view that matches after the crop.) What they show:
 
 - **Massing, placement and storey counts** read right for the start halls, the chapel, the bell tower
   and the science centre.
+- **Chapel roof and wings.** One roof was drawn over the chapel's whole outline, wings included, so it
+  rose about 1.7 times too high against the walls and the four gabled wings did not show. The roof now
+  covers the octagonal core only, and each diagonal wing has its own gable running back into it,
+  closed by a white pediment with a ring moulding, as the photos show. The atrium's two porches are
+  flat-topped under those pediments.
 - **Chapel entrance axis.** Two photos show a pedimented, columned entrance gable facing north-west,
   and walks reach the garden ring from the NW, SW and SE. The data's walk-through atrium runs NE–SW,
   traced from a video frame and the ring walks. The atrium's axis needs a closer check (it may be
@@ -189,7 +196,12 @@ since they show the reference photos. What they show:
   - The administration hall: a white pediment with a plain clock face (no lettering).
   The fifth row of windows in the North Hall photo is the exposed basement on the sloping site.
 - **Garden fountain.** It was drawn as a generic upright form. It is now a slender pillar with a bronze
-  bowl and four falls, as the evidence describes.
+  bowl and four falls, as the evidence describes. In the photo the water leaves from spouts at the top
+  of the pillar under the bowl; the game's falls drop from the bowl's lip.
+- **Village Pond.** The pose fitted on the four homes beyond it puts the camera inside the traced
+  outline. The photo shows only about 15 m of water to the jet and 20 m to the far bank, so the built
+  pond is probably smaller, or further north, than the design-plan circle the data uses (no overhead
+  image after 2022 shows it). It is left as traced; newer imagery would settle it.
 
 ## Gaps
 
@@ -199,6 +211,9 @@ since they show the reference photos. What they show:
 - Hall doors are 3.2 m wide (wider than the real doors) so the game's door rules work. The thresholds
   and the finish line are unchanged.
 - The garden run is modelled as a wadeable channel.
+- Village Pond's shoreline is the 2023 design plan's; a 2025 photo suggests the built pond is smaller
+  or further north (Paired views, above). It is an objective water, so a correction would move its
+  exits and change the route table.
 - The chapel atrium's route is assumed straight. A plaque wall may make the real route jog.
 - North Hall rounds don't fit the timer, and North Pond is in no curated combination (above).
 - Every inventory code is traced (`NEUTRAL_NAMES.md`), but these are low-confidence:
