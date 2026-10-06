@@ -134,7 +134,9 @@ func build() -> void:
 	roster_col = UIKit.vbox(10)
 	roster_col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	mid.add_child(roster_col)
-	count_lbl = UIKit.styled("", "overline", UIKit.IVORY_MUTED)
+	# (Final sweep) lines drawn straight on the room: a stronger ivory and a
+	# soft halo, so they stay readable over the lighter room
+	count_lbl = UIKit.outlined(UIKit.styled("", "overline", Color(UIKit.IVORY, 0.88)))
 	roster_col.add_child(count_lbl)
 	_grid = GridContainer.new()
 	_grid.columns = 2
@@ -179,12 +181,12 @@ func build() -> void:
 	var pcol := UIKit.vbox(6)
 	pcol.alignment = BoxContainer.ALIGNMENT_END
 	bottom.add_child(pcol)
-	status_lbl = UIKit.styled("", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
+	status_lbl = UIKit.outlined(UIKit.styled("", "caption", Color(UIKit.IVORY, 0.88), HORIZONTAL_ALIGNMENT_RIGHT))
 	pcol.add_child(status_lbl)
 	var prow := UIKit.hbox(12)
 	prow.alignment = BoxContainer.ALIGNMENT_END
 	pcol.add_child(prow)
-	sub_lbl = UIKit.styled("", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
+	sub_lbl = UIKit.outlined(UIKit.styled("", "caption", Color(UIKit.IVORY, 0.88), HORIZONTAL_ALIGNMENT_RIGHT))
 	sub_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	prow.add_child(sub_lbl)
 	primary_btn = UIKit.primary("Start", Vector2(340, 96))
