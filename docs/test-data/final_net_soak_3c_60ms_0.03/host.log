@@ -1,0 +1,33 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: Condition "init_state != InitState::MUTABLE" is true.
+   at: bind_integer_constant (core/object/gdtype.cpp:76)
+ERROR: Condition "init_state != InitState::MUTABLE" is true.
+   at: bind_integer_constant (core/object/gdtype.cpp:76)
+ERROR: Condition "init_state != InitState::MUTABLE" is true.
+   at: bind_integer_constant (core/object/gdtype.cpp:76)
+ERROR: Condition "init_state != InitState::MUTABLE" is true.
+   at: bind_integer_constant (core/object/gdtype.cpp:76)
+ERROR: Condition "init_state != InitState::MUTABLE" is true.
+   at: bind_integer_constant (core/object/gdtype.cpp:76)
+ERROR: Condition "init_state != InitState::MUTABLE" is true.
+   at: bind_integer_constant (core/object/gdtype.cpp:76)
+ERROR: Condition "init_state != InitState::MUTABLE" is true.
+   at: bind_integer_constant (core/object/gdtype.cpp:76)
+[load] round prepared in 1321 ms over 79 frames (longest frame of work 20.4 ms; longest job campus:ground 20.4 ms)
+SOAK t=5 mode=1 phase=2 slot=0 host_peer=-1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[166786301, 892993094, 1312123447] match=true fps=56
+COST t=5 frames=288 proc_avg=24.87 proc_max=98.79 phys_avg=12.66 phys_max=57.11 steps_max=6 multi=4 objects=5982 nodes=1791 orphans=0 mem_mb=244.8
+SOAK t=10 mode=1 phase=3 slot=0 host_peer=-1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[166786301, 892993094, 1312123447] match=true fps=60
+COST t=10 frames=300 proc_avg=9.39 proc_max=29.88 phys_avg=1.75 phys_max=2.78 steps_max=1 multi=0 objects=5952 nodes=1791 orphans=0 mem_mb=247.0
+SOAK t=15 mode=1 phase=4 slot=0 host_peer=-1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[166786301, 892993094, 1312123447] match=true fps=60
+COST t=15 frames=300 proc_avg=5.93 proc_max=9.25 phys_avg=3.50 phys_max=6.67 steps_max=1 multi=0 objects=5985 nodes=1791 orphans=0 mem_mb=247.1
+SOAK t=20 mode=1 phase=4 slot=0 host_peer=-1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[166786301, 892993094, 1312123447] match=true fps=60
+COST t=20 frames=300 proc_avg=7.63 proc_max=18.34 phys_avg=3.53 phys_max=4.32 steps_max=1 multi=0 objects=6015 nodes=1791 orphans=0 mem_mb=247.2
+SOAK t=25 mode=1 phase=4 slot=0 host_peer=-1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[166786301, 892993094, 1312123447] match=true fps=60
+COST t=25 frames=300 proc_avg=4.94 proc_max=7.97 phys_avg=4.07 phys_max=7.25 steps_max=1 multi=0 objects=6035 nodes=1791 orphans=0 mem_mb=247.3
+SOAK t=30 mode=1 phase=4 slot=0 host_peer=-1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[166786301, 892993094, 1312123447] match=true fps=60
+COST t=30 frames=300 proc_avg=8.39 proc_max=15.25 phys_avg=5.39 phys_max=9.46 steps_max=1 multi=0 objects=6035 nodes=1791 orphans=0 mem_mb=247.3
+SOAK t=35 mode=1 phase=4 slot=0 host_peer=-1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[166786301, 892993094, 1312123447] match=true fps=60
+COST t=35 frames=300 proc_avg=8.65 proc_max=15.25 phys_avg=7.34 phys_max=12.90 steps_max=1 multi=0 objects=6034 nodes=1791 orphans=0 mem_mb=247.3
+SOAK t=40 mode=1 phase=4 slot=0 host_peer=-1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[166786301, 892993094, 1312123447] match=true fps=60
+COST t=40 frames=300 proc_avg=6.55 proc_max=7.22 phys_avg=7.10 phys_max=12.72 steps_max=1 multi=0 objects=6036 nodes=1791 orphans=0 mem_mb=247.3
