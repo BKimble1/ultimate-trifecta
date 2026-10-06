@@ -608,7 +608,7 @@ func _devices() -> Array:
 func test_layout_four_devices_long_names() -> void:
 	for d in _devices():
 		await _begin(d[1])
-		ff.native.set_friends([["Wolfgang Amadeus Mozart-Fan", "T:_long1"], ["Ada Lark", "T:_ada"], ["ÉmilieTheGreatest", "T:_long2"]])
+		ff.native.set_friends([["Bartholomew Quillfeather-Fan", "T:_long1"], ["Ada Lark", "T:_ada"], ["ÉmilieTheGreatest", "T:_long2"]])
 		ff.mutual = {"T:_long1": {"name": "Wobbly Hedgehog", "status": "online"}, "T:_ada": {"name": "Comfy Frog", "status": "match"}}
 		await _signin()
 		await App.host_room_gamekit()
@@ -641,7 +641,7 @@ func test_layout_four_devices_long_names() -> void:
 				t.check(minf((b as Button).size.x, (b as Button).size.y) >= UIKit.touch_min() - 0.5, "%s: '%s' a full touch target" % [tag, (b as Button).text])
 		var first: FriendsPanel.Row = p.rows_in_order()[0]
 		t.eq(first.name_l.text, "Wobbly Hedgehog", "%s: the verified game name first" % tag)
-		t.check(first.status_l.text.contains("Mozart"), "%s: with the Game Center name" % tag)
+		t.check(first.status_l.text.contains("Quillfeath"), "%s: with the Game Center name" % tag)
 		p.close()
 		await _frames(2)
 		# the toast in the party room at this size

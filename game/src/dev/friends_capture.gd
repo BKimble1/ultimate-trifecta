@@ -122,7 +122,7 @@ func _before() -> void:
 func _friends_fixture() -> void:
 	ff = load("res://src/dev/fake_friends.gd").new()
 	ff.native.set_friends([["Ada Lark", "T:_ada"], ["Bo Reyes", "T:_bo"], ["Cy Moss", "T:_cy"], ["Di Wren", "T:_di"],
-		["Eve Sato", "T:_eve"], ["Abe Fox", "T:_abe"], ["Wolfgang Amadeus Mozart-Fan", "T:_long"], ["Juniper Q", "T:_jun"]])
+		["Eve Sato", "T:_eve"], ["Abe Fox", "T:_abe"], ["Bartholomew Quillfeather-Fan", "T:_long"], ["Juniper Q", "T:_jun"]])
 	ff.mutual = {
 		"T:_ada": {"name": "Comfy Frog", "status": "online"},
 		"T:_abe": {"name": "Busy Badger", "status": "online"},
