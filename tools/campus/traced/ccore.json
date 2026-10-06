@@ -2120,12 +2120,12 @@
    "rim_h": 0.3,
    "features": [
     {
-     "kind": "statue_base",
+     "kind": "pillar_bowl",
      "p": [
       97.4,
       -103.1
      ],
-     "r": 0.35,
+     "r": 0.27,
      "h": 2.6,
      "note": "upright dark stone pillar with a bronze bowl on top; water spills from the bowl into the basin"
     }

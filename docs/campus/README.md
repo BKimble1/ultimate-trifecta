@@ -110,8 +110,66 @@ owner's options, none of them taken:
 | 4 Physics before/after | `test_campus_invariants.gd` pins every rule and body value; `git diff b3e5d74` of the motor and rules is empty | passing |
 | 5 Routes from both halls | `test_routes_bots.gd` (bots complete curated routes from both halls; measured times) and `route_table.json` | passing, with the timer conflict above |
 | 6 Online | protocol 9; the round carries the campus data hash and the hall geometry hash; a guest with other data refuses | passing (`test_dorms`, `test_coins`, network tests) |
-| 7 Polish / frame time | see Performance | see Performance |
+| 7 Polish / frame time | `tools/match_bench.sh` against the 2.0 baseline; loading steps; draw counts per view | p50 unchanged, p99 +0.6 ms, a few rare long frames (see Performance); not device-verified |
 | 8 Shipping content | `tools/campus/scan_shipping.py` | 0 findings |
+
+## Performance
+
+These are this desktop container's numbers, never a phone's. No iPhone was available to this work, so
+device frame rate, GPU time, heat and memory pressure are unverified.
+
+**Gameplay bench.** `tools/match_bench.sh`: three Practice rounds of 75 s, every slot bot-driven, 60 fps
+cap, seed 7, headless (CPU side). Two runs each, median (range):
+
+| | 2.0 release candidate (old map) | Rebuilt campus |
+|---|---|---|
+| Frame interval p50 | 16.66 ms | 16.66 ms |
+| Frame interval p95 | 17.21 ms | 17.51 ms |
+| Frame interval p99 | 18.07 ms | 18.68 ms (18.57–18.80) |
+| Frames over 33 ms (in 13,500) | 0 (0–1) | 6 (5–7) |
+| Simulation tick p99 | 2.73 ms | 3.47 ms |
+| Bots p99 | 1.09 ms | 1.44 ms |
+| Nodes in a round | 1,654 | 6,161 |
+| Static memory | 245–265 MB | 380–440 MB |
+
+The median frame is unchanged and the tail is about 0.5 ms higher. The long frames are rare (about one
+every 35 s of play, 34–91 ms) and no instrumented section explains them. The engine's own process and
+physics times for those frames are small. A likely cause is CPU contention from the much longer
+background work (path searches and pace fields on a grid 4 times the size) on a 4-core shared machine,
+but that is not proven. **Profile on a device before release.** Memory and node counts are up, mostly
+the 3,565 collision shapes (one node each) and the larger campus meshes.
+
+**Draw cost.** `campus_views.gd` prints what each view drew, campus only and software rendered. At
+player height, 43–144 draw calls and 52k–284k primitives per view. The old map's gameplay frames
+measured about 316 draws and 456k primitives (with characters and HUD), so this is not like for like.
+
+**Loading** (`test_loading`, this machine). A round prepares in about 3.6 s over about 350 frames. The
+longest single job is about 40 ms; it was 125 ms before this pass's fixes:
+- the ground height field is split into 16 tiles, built one per step and kept warm;
+- the height grid is computed on a worker;
+- the collision recipe is shared between rounds;
+- build steps are time-sliced;
+- the paved-area and shore-distance queries are indexed.
+
+## Paired views (gate 2) findings
+
+Thirteen reference photos were posed in the campus frame (five at medium confidence, eight low) and
+rendered from the same cameras at the photo's field of view. The side-by-sides are delivered privately,
+since they show the reference photos. What they show:
+
+- **Massing, placement and storey counts** read right for the start halls, the chapel, the bell tower
+  and the science centre.
+- **Chapel entrance axis.** Two photos show a pedimented, columned entrance gable facing north-west,
+  and walks reach the garden ring from the NW, SW and SE. The data's walk-through atrium runs NE–SW,
+  traced from a video frame and the ring walks. The atrium's axis needs a closer check (it may be
+  NW–SE). It is left as traced until then.
+- **Bell tower.** It matches from the north-east. The pier pair's orientation may be off by a few tens
+  of degrees.
+- **North Hall.** The pediment is white with an oculus and the portico columns are white in reality;
+  the generic gable draws it in brick. The fifth row of windows in the photo is the exposed basement
+  on the sloping site.
+- **Garden fountain.** It was drawn as a generic upright form. It is now a slender pillar with a bronze
+  bowl and four falls, as the evidence describes.
 
 ## Gaps
 

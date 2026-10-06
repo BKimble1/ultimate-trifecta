@@ -211,6 +211,38 @@ func _feature(w: Dictionary, f: Dictionary, k: MeshKit, mat: ShaderMaterial) -> 
 				PackedColorArray([Color(0.85, 0.92, 0.98), Color(0.9, 0.95, 1.0), Color(0.95, 0.98, 1.0), Color(0.95, 0.98, 1.0), Color(0.9, 0.95, 1.0), Color(0.85, 0.92, 0.98), Color(0.8, 0.9, 0.96)]), 14)
 			k.mat = 0.0
 			mat.set_shader_parameter("fountain", 0.0)
+		"pillar_bowl":
+			# a slender tapered dark-stone pillar standing in the basin, an open
+			# bronze bowl on top, water spilling from its lip into the basin
+			var kk2 := B.kit_at(p.x, p.y)
+			var hp := float(f.get("h", 2.4))
+			var r0 := float(f.get("r", 0.3))
+			var fl := float(w["floor_y"])
+			kk2.mat = MeshKit.M_STONE
+			var steps := 4
+			for si in steps:
+				var t0 := float(si) / steps
+				var t1 := float(si + 1) / steps
+				var wdt := r0 * 2.0 * lerpf(1.0, 0.72, (t0 + t1) * 0.5)
+				var yb := lerpf(fl, hp - 0.25, t0)
+				var yt := lerpf(fl, hp - 0.25, t1)
+				kk2.box(Vector3(p.x, (yb + yt) * 0.5, p.y), Vector3(wdt, yt - yb + 0.02, wdt), Color(0.24, 0.24, 0.26).lightened(0.04 * si), 0.0)
+			kk2.mat = MeshKit.M_METAL
+			kk2.revolve(Vector3(p.x, hp - 0.27, p.y), PackedVector2Array([Vector2(0.12, 0.0), Vector2(0.3, 0.12), Vector2(0.5, 0.26), Vector2(0.56, 0.3), Vector2(0.5, 0.32)]),
+				PackedColorArray([Color(0.30, 0.22, 0.14), Color(0.34, 0.25, 0.16), Color(0.40, 0.30, 0.18), Color(0.46, 0.35, 0.22), Color(0.36, 0.27, 0.17)]), 14)
+			kk2.mat = 0.0
+			# four thin falls from the lip to the surface (the flowing-water material)
+			k.mat = M_FLOW
+			for fi in 4:
+				var ang := TAU * (float(fi) + 0.5) / 4.0
+				var d2 := Vector3(cos(ang), 0, sin(ang))
+				var top := Vector3(p.x - c.x, hp + 0.03 - y, p.y - c.y) + d2 * 0.55
+				var bot := Vector3(p.x - c.x, 0.02, p.y - c.y) + d2 * 0.75
+				var side := Vector3(-d2.z, 0, d2.x) * 0.05
+				k.quad(top - side, top + side, bot + side, bot - side, Color(0.86, 0.93, 0.98))
+				k.quad(bot - side, bot + side, top + side, top - side, Color(0.86, 0.93, 0.98))
+			k.mat = 0.0
+			mat.set_shader_parameter("fountain", 0.0)
 		"statue_base", "centerpiece":
 			# an abstract upright form on a plinth (bronze-toned), not a replica
 			var kk := B.kit_at(p.x, p.y)

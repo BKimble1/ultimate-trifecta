@@ -4,6 +4,7 @@ extends Node3D
 ## the quality preset given), the same camera positions on any build, so
 ## before/after stills compare like for like.  Each view is a PNG in --out.
 ##   xvfb-run tools/gd.sh --path game --resolution 1280x720 res://src/dev/campus_views.tscn -- --out=DIR [--quality=1]
+##     [--view=name:x,y,z:tx,ty,tz[:hfov] ...] [--only-views]
 ## Desktop llvmpipe rendering: composition and lighting evidence, not
 ## frame-rate or device evidence.
 
@@ -63,10 +64,15 @@ func _ready() -> void:
 		elif a.begins_with("--quality="):
 			quality = int(a.get_slice("=", 1))
 		elif a.begins_with("--view="):
+			# --view=name:x,y,z:tx,ty,tz[:hfov] (hfov: horizontal degrees, to
+			# match a reference photo's framing)
 			var parts := a.get_slice("=", 1).split(":")
 			var p0 := parts[1].split_floats(",")
 			var p1 := parts[2].split_floats(",")
-			extra.append([parts[0], Vector3(p0[0], p0[1], p0[2]), Vector3(p1[0], p1[1], p1[2])])
+			var v := [parts[0], Vector3(p0[0], p0[1], p0[2]), Vector3(p1[0], p1[1], p1[2])]
+			if parts.size() > 3:
+				v.append(float(parts[3]))
+			extra.append(v)
 		elif a == "--only-views":
 			only_extra = true
 	if out_dir == "":
@@ -97,6 +103,12 @@ func _run() -> void:
 		# and nothing culled by its play-time view distance (chunks fade out a
 		# few hundred metres away; an overview stands farther off than that)
 		_set_ranges(self, over)
+		if v.size() > 3:
+			cam.keep_aspect = Camera3D.KEEP_WIDTH
+			cam.fov = float(v[3])
+		else:
+			cam.keep_aspect = Camera3D.KEEP_HEIGHT
+			cam.fov = 62.0
 		cam.look_at_from_position(v[1], v[2])
 		for i in 8:
 			await get_tree().process_frame

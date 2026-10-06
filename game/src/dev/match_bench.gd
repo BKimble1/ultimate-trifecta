@@ -129,6 +129,11 @@ func _process(delta: float) -> void:
 			rec[k] = float(p["us"][k]) / 1000.0
 		for k in sim_d:
 			rec["sim_" + k] = float(sim_d[k]) / 1000.0
+		# the engine's own measure of the last frame's process and physics
+		# passes (catches time no instrumented section explains)
+		rec["eng_process"] = Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+		rec["eng_physics"] = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+		rec["pace_tasks"] = float(PaceFields.stats.get("tasks", 0))
 		var names: Array = []
 		for ev in _pending_events:
 			var key := "%d:%d" % [_round, int(ev)]
