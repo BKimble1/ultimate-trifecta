@@ -13,7 +13,7 @@ no agreement was accepted. The design and its evidence are in
 | Shop, Locker, Season Pass | implemented; tested headless; captured on llvmpipe with labelled test adapters |
 | Native StoreKit 2 | the pinned GodotApplePlugins release's StoreKit module (`tools/fetch_deps.sh`, build `bfade13`), wrapped by `StoreKitAdapter` / `Purchases`; audited against the plugin source; **never run on a device or in a sandbox** |
 | One build for TestFlight, App Review and the App Store | implemented: two service deployments (sandbox, production), launch routing from the App Store receipt kind (new `UTShare.receipt_kind()`), automatic move to the sandbox deployment when production refuses an Apple *sandbox* purchase (App Review); tested with the service harness and the simulated store; **never run on a device** |
-| Wallet / ledger service | implemented in `service/` with tests (`npm test`, 80); **not deployed** |
+| Wallet / ledger service | implemented in `service/` with tests (`npm test`, 93 incl. Friends); **not deployed** |
 | App Store products | **not created**: 8 planned (`tools/asc.py iap-plan`) |
 | Real sandbox purchase | **never performed** |
 
@@ -100,7 +100,7 @@ still-unfinished purchase there, once. Details and the security argument:
 
 ```sh
 cd service
-npm test                                    # all must pass (80)
+npm test                                    # all must pass (93)
 npx wrangler login                          # or export CLOUDFLARE_API_TOKEN
 npx wrangler d1 create trifecta             # id -> wrangler.toml [[d1_databases]] database_id
 npx wrangler d1 create trifecta-production  # id -> wrangler.toml [[env.production.d1_databases]] database_id
@@ -125,6 +125,7 @@ curl -s https://trifecta-service.<sub>.workers.dev/v1/shop/offers         # serv
 | `ADMIN_TOKEN` | `admin_token` | moderation and support API |
 | `ADMISSION_PRIVATE_KEY` | `admission_private.pem` | signs party admission and chat tokens |
 | `APP_ACCOUNT_TOKEN_KEY` | `app_account_token_key` | **new**: derives each player's StoreKit appAccountToken. **The same value on both deployments** (deploying both from one `.secrets/` folder does that). Never change it once purchases exist: unfinished purchases carry tokens derived from it. Without it a deployment refuses to deliver purchases (`503`, kept unfinished) and the game offers none. |
+| `FRIEND_HASH_KEY` | `friend_hash_key` | **new**: keys the hashes of Game Center friend IDs (Friends status and invites). At least 32 characters; `deploy.sh` refuses to deploy without it. Keep it stable (a new key orphans stored friend lists until each game uploads its list again). |
 | `ASC_IAP_KEY_ID`, `ASC_IAP_ISSUER_ID`, `ASC_IAP_PRIVATE_KEY` | `asc_iap_*` | optional: Apple's App Store Server API copy of each transaction |
 
 **The game's configuration** (`game/config/service.cfg`; public values only):
