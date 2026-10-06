@@ -307,7 +307,10 @@ static func outlined(l: Label, px: int = 8) -> Label:
 ## Keep a name readable: on resize, use the largest of `sizes` at which the
 ## whole text fits the label's width; only the smallest size trims (and the
 ## full text stays available on tap).
-static func fit_text(l: Label, sizes: Array = [T_LABEL, T_CAPTION, 18]) -> void:
+## `wrap_last`: when even the smallest size doesn't fit on one line, wrap
+## onto two lines at that size instead of trimming (player names in narrow
+## cards: a 16-character name stays whole).
+static func fit_text(l: Label, sizes: Array = [T_LABEL, T_CAPTION, 18], wrap_last: bool = false) -> void:
 	l.clip_text = true
 	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	var refit := func() -> void:
@@ -318,8 +321,13 @@ static func fit_text(l: Label, sizes: Array = [T_LABEL, T_CAPTION, 18]) -> void:
 		for fs in sizes:
 			if f.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, int(fs)).x <= w:
 				l.add_theme_font_size_override("font_size", int(fs))
+				if wrap_last:
+					l.autowrap_mode = TextServer.AUTOWRAP_OFF
 				return
 		l.add_theme_font_size_override("font_size", int(sizes[-1]))
+		if wrap_last:
+			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			l.max_lines_visible = 2
 	l.resized.connect(refit)
 	l.set_meta(&"refit", refit)
 
