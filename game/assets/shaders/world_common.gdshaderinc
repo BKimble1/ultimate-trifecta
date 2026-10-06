@@ -13,6 +13,9 @@
 //  13 petals (tinted per instance: INSTANCE_CUSTOM.rgb)  14 metal
 //  15 glass         16 tiles          17 plaster        18 paving verge
 //  19 gravel verge  20 flowing water (fountain jets; UV.y runs along)
+//  21 instanced window glass: shaded as glass, its emission scaled per
+//     instance by INSTANCE_CUSTOM.a (lit or dark room); the room colour is
+//     the MultiMesh instance colour (it multiplies COLOR)
 //
 // 18 blends a path into the lawn beside it: COLOR is the path's colour,
 // COLOR.a the position across the verge (0 path side .. 1 lawn side) and
@@ -66,6 +69,9 @@ void vertex() {
 	v_tint = vec3(1.0);
 	if (UV.x > 12.5 && UV.x < 13.5) {
 		v_tint = INSTANCE_CUSTOM.rgb;
+	}
+	if (UV.x > 20.5 && UV.x < 21.5) {
+		v_emis = CUSTOM0.x * INSTANCE_CUSTOM.a;
 	}
 	float sway = CUSTOM0.y * wind_strength;
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -292,7 +298,7 @@ void fragment() {
 		rough = 0.32;
 		spec = 0.55;
 		metal = 0.5;
-	} else if (m == 15) {
+	} else if (m == 15 || m == 21) {
 		rough = 0.12;
 		spec = 0.6;
 	} else if (m == 16) {

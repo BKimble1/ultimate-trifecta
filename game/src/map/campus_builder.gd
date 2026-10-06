@@ -435,6 +435,22 @@ func _kit_at(x: float, z: float, foliage: bool = false, detail: bool = false) ->
 	return store[key]
 
 
+## One window instance (CampusArchitecture._window): the glass, scaled to the
+## window, in the room's colour with its emission; the frame at real size.
+func window_add(ctr: Vector3, right: Vector3, normal: Vector3, width: float, height: float, room: Color, em: float, variant: int, trim: Color, frames: bool) -> void:
+	var key := coarse_key(ctr.x, ctr.z)
+	# a right-handed basis (x across to the viewer's right, y up, z out of
+	# the wall): instances can't be mirrored without flipping their faces
+	var across := Vector3.UP.cross(normal).normalized()
+	if across.dot(right) < 0.0 and variant > 0:
+		variant = 3 - variant      # the curtain stays on the same side
+	right = across
+	var xf := Transform3D(Basis(right * width, Vector3.UP * height * 2.0, normal), ctr + normal * 0.04)
+	_mm_add(_win, key, "glass%d" % variant, xf, room, Color(0, 0, 0, em))
+	if frames:
+		_mm_add(_win, key, "frame", Transform3D(Basis(right, Vector3.UP, normal), ctr + normal * 0.07), trim, Color(1, 1, 1))
+
+
 ## The chunk mesh kit for a world point (public: architecture and landmarks).
 func kit_at(x: float, z: float, foliage: bool = false, detail: bool = false) -> MeshKit:
 	return _kit_at(x, z, foliage, detail)
@@ -485,6 +501,7 @@ var _trees: Dictionary = {}       # chunk key -> {species: [[Transform3D, tint, 
 var _decor: Dictionary = {}       # coarse key -> {kind: [[Transform3D, tint, custom], ...]}
 var _far: Dictionary = {}         # 3x coarse key -> {species: [...]} (woods beyond the bounds)
 var _proxy: Dictionary = {}       # coarse key -> {family: [...]} (tree shadow casters)
+var _win: Dictionary = {}         # coarse key -> {glass0|glass1|glass2|frame: [...]} (instanced windows)
 var _field_tex: ImageTexture
 var _mm_queue: Array = []
 var _mm_started := false
@@ -506,6 +523,7 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_decor.clear()
 	_far.clear()
 	_proxy.clear()
+	_win.clear()
 	_commit_keys.clear()
 	_commit_started = false
 	_mm_queue.clear()
@@ -524,11 +542,8 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_add("light_lamps", func() -> void:
 		kit.stamp_lights()
 		kit.stamp_paths())
-	var nx := int(ceil(CampusLayout.BOUNDS.size.x / CHUNK.x))
-	var nz := int(ceil(CampusLayout.BOUNDS.size.y / CHUNK.y))
-	for gz in nz:
-		for gx in nx:
-			_add("ground", func() -> void: _ground_chunk(Vector2i(gx, gz)))
+	_add("ground_prep", _ground_prep)
+	_add("ground", _ground_next)
 	for ai in range(0, L.areas.size(), 4):
 		_add("areas", func() -> void:
 			for i in range(ai, mini(ai + 4, L.areas.size())):
@@ -602,6 +617,9 @@ func abort() -> Array[int]:
 	var ids: Array[int] = []
 	for item in _commit_keys:
 		ids.append(int(item[2]))
+	for tid in _ground_tasks:
+		ids.append(int(tid))
+	_ground_tasks.clear()
 	_commit_keys.clear()
 	_step_i = step_names.size()
 	_release()
@@ -616,12 +634,13 @@ func _release() -> void:
 	arch = null
 	marks = null
 	dorm_art = null
-	kit = null
+	# (the light-field kit stays until the builder goes: a cancelled build's
+	# ground tasks may still read it; they hold the builder until they end)
 	_root = null
 	_glow_st = null
 	_world_mat = null
 	_field_tex = null
-	for d: Dictionary in [_chunks, _foliage, _detail, _trees, _decor, _far, _proxy]:
+	for d: Dictionary in [_chunks, _foliage, _detail, _trees, _decor, _far, _proxy, _win]:
 		d.clear()
 	_mm_queue.clear()
 	_commit_keys.clear()
@@ -800,6 +819,8 @@ func _mm_next() -> bool:
 			_mm_queue.append([_far, key, 3.0])
 		for key in _proxy:
 			_mm_queue.append([_proxy, key, 2.0])
+		for key in _win:
+			_mm_queue.append([_win, key, 2.0])
 	if _mm_queue.is_empty():
 		return false
 	var item: Array = _mm_queue.pop_front()
@@ -816,6 +837,11 @@ func _mm_next() -> bool:
 			if store == _far:
 				mmi.visibility_range_end += 120.0
 			container.add_child(mmi)
+		elif store == _win:
+			var wm := _mmi(CampusArchitecture.window_mesh(kind), list, center, _world_mat, kind != "frame")
+			wm.name = "Windows_%s_%d_%d" % [kind, key.x, key.y]
+			wm.visibility_range_end = (DETAIL_M if kind == "frame" else CHUNK_END_M) * (1.0 if _quality >= 1 else 0.8)
+			container.add_child(wm)
 		elif store == _proxy:
 			if _quality < 1:
 				continue
@@ -887,20 +913,54 @@ const GROUND_TINT := ["woods", "farm", "sand", "gravel", "yard", "construction"]
 ## One chunk's ground: its share of the 2 m grid as an indexed mesh section,
 ## coloured on the CPU (lawn noise, woods floor, worn grass, banks) and lit
 ## on the GPU.
-func _ground_chunk(key: Vector2i) -> void:
-	var b := CampusLayout.BOUNDS
-	var nx := int(b.size.x / GROUND_STEP)
-	var nz := int(b.size.y / GROUND_STEP)
-	var per_x := int(CHUNK.x / GROUND_STEP)
-	var per_z := int(CHUNK.y / GROUND_STEP)
-	var x0 := key.x * per_x
-	var z0 := key.y * per_z
-	var x1 := mini(x0 + per_x, nx)
-	var z1 := mini(z0 + per_z, nz)
-	if x0 >= x1 or z0 >= z1:
-		return
+## The ground is generated chunk by chunk on the worker thread pool (each
+## task writes only its own chunk's MeshKit and reads the layout, the
+## height grid, the light field and the noise, all finished before): the
+## real campus is ~300 chunks, most of the build's work.
+var _ground_tasks: Array = []
+var _ground_started := false
+
+
+func _ground_keys() -> Array:
+	var out: Array = []
+	var nx := int(ceil(CampusLayout.BOUNDS.size.x / CHUNK.x))
+	var nz := int(ceil(CampusLayout.BOUNDS.size.y / CHUNK.y))
+	for gz in nz:
+		for gx in nx:
+			out.append(Vector2i(gx, gz))
+	return out
+
+
+func _ground_prep() -> void:
+	height_grid(L)
 	_ensure_noise()
-	var rect := Rect2(b.position.x + x0 * GROUND_STEP, b.position.y + z0 * GROUND_STEP, (x1 - x0) * GROUND_STEP, (z1 - z0) * GROUND_STEP)
+	for key in _ground_keys():
+		if not _chunks.has(key):
+			_chunks[key] = MeshKit.new()
+	_ground_started = false
+	_ground_tasks.clear()
+
+
+func _ground_next() -> bool:
+	if not _ground_started:
+		_ground_started = true
+		for key in _ground_keys():
+			_ground_tasks.append(WorkerThreadPool.add_task(_ground_chunk.bind(key, _chunks[key]), false, "campus ground"))
+		return true
+	while not _ground_tasks.is_empty():
+		if not WorkerThreadPool.is_task_completed(int(_ground_tasks[0])):
+			return true
+		WorkerThreadPool.wait_for_task_completion(int(_ground_tasks.pop_front()))
+	return false
+
+
+## One ground chunk (on a worker): a 2 m grid, flat and cheap where no water
+## is near, 4 m where the chunk lies wholly beyond the play area.
+func _ground_chunk(key: Vector2i, k: MeshKit) -> void:
+	var b := CampusLayout.BOUNDS
+	var rect := Rect2(b.position + Vector2(key) * CHUNK, CHUNK).intersection(b)
+	if rect.size.x <= 0.01 or rect.size.y <= 0.01:
+		return
 	var tinting: Array = []
 	for a in L.areas:
 		if String(a["kind"]) in GROUND_TINT and (a["rect"] as Rect2).intersects(rect):
@@ -909,16 +969,22 @@ func _ground_chunk(key: Vector2i) -> void:
 	for w in L.waters:
 		if (w["rect"] as Rect2).grow(3.0).intersects(rect):
 			near_water.append(w)
-	var k := _kit_at(rect.position.x + 1.0, rect.position.y + 1.0)
-	var w2 := x1 - x0 + 1
+	var step := GROUND_STEP
+	if near_water.is_empty() and not CampusData.bounds(L.play_boundary).grow(8.0).intersects(rect):
+		step = GROUND_STEP * 2.0
+	var nxs := int(ceil(rect.size.x / step - 0.001))
+	var nzs := int(ceil(rect.size.y / step - 0.001))
+	var w2 := nxs + 1
 	var ids := PackedInt32Array()
-	ids.resize(w2 * (z1 - z0 + 1))
-	for zi in range(z0, z1 + 1):
-		var z := b.position.y + zi * GROUND_STEP
-		for xi in range(x0, x1 + 1):
-			var x := b.position.x + xi * GROUND_STEP
+	ids.resize(w2 * (nzs + 1))
+	for zi in nzs + 1:
+		var z := minf(rect.position.y + zi * step, rect.end.y)
+		for xi in nxs + 1:
+			var x := minf(rect.position.x + xi * step, rect.end.x)
 			var e := _ground_vertex(x, z, tinting, near_water)
-			ids[(zi - z0) * w2 + (xi - x0)] = k.grid_vertex(e[0], e[1], e[2], Vector2(e[3], 0.0))
+			ids[zi * w2 + xi] = k.grid_vertex(e[0], e[1], e[2], Vector2(e[3], 0.0))
+	var z1 := nzs
+	var z0 := 0
 	for zi in range(z1 - z0):
 		for xi in range(w2 - 1):
 			var a := ids[zi * w2 + xi]
@@ -970,12 +1036,20 @@ func lawn_color(x: float, z: float) -> Color:
 
 ## One ground vertex: [position, smooth normal, colour, material id].
 func _ground_vertex(x: float, z: float, tinting: Array, near_water: Array) -> Array:
-	var y := grid_y(L, x, z)
-	var hl := grid_y(L, x - GROUND_STEP, z)
-	var hr := grid_y(L, x + GROUND_STEP, z)
-	var hd := grid_y(L, x, z - GROUND_STEP)
-	var hu := grid_y(L, x, z + GROUND_STEP)
-	var n := Vector3((hl - hr) / (2.0 * GROUND_STEP), 1.0, (hd - hu) / (2.0 * GROUND_STEP)).normalized()
+	var y := 0.0
+	var hl := 0.0
+	var hr := 0.0
+	var hd := 0.0
+	var hu := 0.0
+	var n := Vector3.UP
+	if not near_water.is_empty():
+		# only around the waters is the ground anything but flat
+		y = grid_y(L, x, z)
+		hl = grid_y(L, x - GROUND_STEP, z)
+		hr = grid_y(L, x + GROUND_STEP, z)
+		hd = grid_y(L, x, z - GROUND_STEP)
+		hu = grid_y(L, x, z + GROUND_STEP)
+		n = Vector3((hl - hr) / (2.0 * GROUND_STEP), 1.0, (hd - hu) / (2.0 * GROUND_STEP)).normalized()
 	var col := lawn_color(x, z)
 	var mat := MeshKit.M_LAWN
 	var p2 := Vector2(x, z)

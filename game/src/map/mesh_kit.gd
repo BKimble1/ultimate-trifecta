@@ -45,6 +45,7 @@ const M_GLASS := 15.0
 const M_TILE := 16.0
 const M_PLASTER := 17.0
 const M_VERGE := 18.0
+const M_WINDOW := 21.0     # instanced window glass (emission per instance)
 
 
 func is_empty() -> bool:

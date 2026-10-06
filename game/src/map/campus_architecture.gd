@@ -463,55 +463,78 @@ func _covered(p: Vector2, y: float, me: Dictionary, parts: Array) -> bool:
 	return false
 
 
-## One window: a dark reveal, the glass with a lit interior that varies,
-## curtains; frame, mullion, lintel and sill in the near-field detail mesh.
-func _window(k: MeshKit, ctr: Vector3, right: Vector3, normal: Vector3, width: float, height: float, lit: bool, rng: RandomNumberGenerator, trim: Color, frames: bool) -> void:
-	var up := Vector3.UP
-	var hw := right * (width * 0.5)
-	var hh := up * height
-	k.mat = MeshKit.M_PLAIN
-	var rv := ctr + normal * 0.04
-	_quad_facing(k, rv - hw * 1.16 + hh * 1.1, rv + hw * 1.16 + hh * 1.1, rv + hw * 1.16 - hh * 1.1, rv - hw * 1.16 - hh * 1.1, Color(0.12, 0.11, 0.13), normal)
-	var g0 := ctr + normal * 0.05
-	k.mat = MeshKit.M_GLASS
+## One window: the glass with a lit interior that varies (warm lamps, some
+## cooler screens, dark rooms), curtains half drawn in many, and in the
+## near field the frame, mullion and sill.  Drawn as GPU instances of a few
+## small window meshes (window_mesh), not merged geometry: the real campus
+## has tens of thousands of windows.
+func _window(_mk: MeshKit, ctr: Vector3, right: Vector3, normal: Vector3, width: float, height: float, lit: bool, rng: RandomNumberGenerator, trim: Color, frames: bool) -> void:
+	var room := Color(0.10, 0.14, 0.24)
+	var em := 0.04
+	var variant := 0
 	if lit:
 		var tone := rng.randf()
-		var room := Color(1.0, 0.76, 0.42) if tone < 0.6 else (Color(0.96, 0.62, 0.34) if tone < 0.85 else Color(0.62, 0.72, 0.95))
-		var em := rng.randf_range(0.55, 0.9)
-		_quad_facing(k, g0 - hw + hh, g0 + hw + hh, g0 + hw, g0 - hw, room.darkened(0.12), normal)
-		k.cu_emission_last(6, em * 0.85)
-		_quad_facing(k, g0 - hw, g0 + hw, g0 + hw - hh, g0 - hw - hh, room, normal)
-		k.cu_emission_last(6, em)
+		room = Color(1.0, 0.76, 0.42) if tone < 0.6 else (Color(0.96, 0.62, 0.34) if tone < 0.85 else Color(0.62, 0.72, 0.95))
+		em = rng.randf_range(0.55, 0.9)
 		if rng.randf() < 0.65:
-			var cur := Color(0.70, 0.40, 0.26) if rng.randf() < 0.5 else Color(0.56, 0.46, 0.40)
-			var cw := width * rng.randf_range(0.14, 0.26)
-			var side := -1.0 if rng.randf() < 0.5 else 1.0
-			var e := g0 + right * (width * 0.5 * side) + normal * 0.005
-			var inner := e - right * (cw * side)
-			_quad_facing(k, e + hh, inner + hh, inner - hh, e - hh, cur, normal)
-			k.cu_emission_last(6, em * 0.45)
+			variant = 1 if rng.randf() < 0.5 else 2
+	B.window_add(ctr, right, normal, width, height, room, em, variant, trim if trim.a > 0.0 else TRIM, frames)
+
+
+## The punched window size the frame mesh is built for (metres).
+const WIN_W := 1.15
+const WIN_HH := 0.8
+static var _win_meshes: Dictionary = {}
+
+
+## The window meshes (built once): "glass0" plain, "glass1"/"glass2" with a
+## curtain drawn to the left/right, in unit size (scaled per instance: x
+## across, y up, z out of the wall); "frame" frame, mullion and sill at
+## the punched window's real size (only punched windows have frames).
+static func window_mesh(kind: String) -> ArrayMesh:
+	if _win_meshes.has(kind):
+		return _win_meshes[kind]
+	var k := MeshKit.new()
+	var Z := Vector3(0, 0, 1)
+	if kind.begins_with("glass"):
+		k.mat = MeshKit.M_PLAIN
+		k.quad(Vector3(-0.58, 0.55, 0.0), Vector3(0.58, 0.55, 0.0), Vector3(0.58, -0.55, 0.0), Vector3(-0.58, -0.55, 0.0), Color(0.13, 0.12, 0.14))
+		k.mat = MeshKit.M_WINDOW
+		k.quad(Vector3(-0.5, 0.5, 0.01), Vector3(0.5, 0.5, 0.01), Vector3(0.5, 0.0, 0.01), Vector3(-0.5, 0.0, 0.01), Color(0.88, 0.88, 0.88))
+		k.cu_emission_last(6, 0.85)
+		k.quad(Vector3(-0.5, 0.0, 0.01), Vector3(0.5, 0.0, 0.01), Vector3(0.5, -0.5, 0.01), Vector3(-0.5, -0.5, 0.01), Color(1, 1, 1))
+		k.cu_emission_last(6, 1.0)
+		if kind != "glass0":
+			var side := -1.0 if kind == "glass1" else 1.0
+			var e := 0.5 * side
+			var inner := e - 0.22 * side
+			k.mat = MeshKit.M_PLAIN
+			var a := Vector3(e, 0.5, 0.016)
+			var b := Vector3(inner, 0.5, 0.016)
+			var c := Vector3(inner + 0.03 * side, -0.5, 0.016)
+			var d := Vector3(e, -0.5, 0.016)
+			if side < 0.0:
+				k.quad(a, b, c, d, Color(0.74, 0.52, 0.42))
+			else:
+				k.quad(b, a, d, c, Color(0.74, 0.52, 0.42))
+			k.cu_emission_last(6, 0.4)
 	else:
-		_quad_facing(k, g0 - hw + hh, g0 + hw + hh, g0 + hw - hh, g0 - hw - hh, Color(0.10, 0.14, 0.24), normal)
-		k.cu_emission_last(6, 0.04)
-		_quad_facing(k, g0 - hw * 0.2 + hh * 0.9 + normal * 0.003, g0 + hw * 0.1 + hh * 0.9 + normal * 0.003, g0 - hw * 0.5 - hh * 0.4 + normal * 0.003, g0 - hw * 0.8 - hh * 0.4 + normal * 0.003, Color(0.32, 0.38, 0.55), normal)
-		k.cu_emission_last(6, 0.12)
+		var hw := WIN_W * 0.5
+		var hh := WIN_HH
+		var t := 0.08
+		k.mat = MeshKit.M_WOOD
+		var w := Color(1, 1, 1)
+		k.box(Vector3(0, hh + t * 0.5, 0), Vector3(WIN_W + t * 2.0, t, 0.06), w)
+		k.box(Vector3(0, -hh - t * 0.5, 0), Vector3(WIN_W + t * 2.0, t, 0.06), w)
+		k.box(Vector3(-hw - t * 0.5, 0, 0), Vector3(t, hh * 2.0, 0.06), w)
+		k.box(Vector3(hw + t * 0.5, 0, 0), Vector3(t, hh * 2.0, 0.06), w)
+		k.box(Vector3(0, 0, 0), Vector3(0.06, hh * 2.0, 0.04), w.darkened(0.08))
+		k.mat = MeshKit.M_STONE
+		k.chamfer_box(Vector3(0, -hh - 0.12, 0.03), Vector3(WIN_W + 0.35, 0.11, 0.22), Color(1, 1, 1), 0.03)
 	k.mat = 0.0
-	if not frames:
-		return
-	var kd := _k(ctr.x, ctr.z, true)
-	var frame := trim if trim.a > 0.0 else TRIM
-	var f0 := ctr + normal * 0.07
-	var t := 0.08
-	kd.mat = MeshKit.M_WOOD
-	_quad_facing(kd, f0 - hw - right * t + hh + up * t, f0 + hw + right * t + hh + up * t, f0 + hw + right * t + hh, f0 - hw - right * t + hh, frame, normal)
-	_quad_facing(kd, f0 - hw - right * t - hh, f0 + hw + right * t - hh, f0 + hw + right * t - hh - up * t, f0 - hw - right * t - hh - up * t, frame, normal)
-	_quad_facing(kd, f0 - hw - right * t + hh, f0 - hw + hh, f0 - hw - hh, f0 - hw - right * t - hh, frame, normal)
-	_quad_facing(kd, f0 + hw + hh, f0 + hw + right * t + hh, f0 + hw + right * t - hh, f0 + hw - hh, frame, normal)
-	_quad_facing(kd, f0 - right * 0.03 + hh, f0 + right * 0.03 + hh, f0 + right * 0.03 - hh, f0 - right * 0.03 - hh, frame.darkened(0.08), normal)
-	kd.mat = MeshKit.M_STONE
-	var yaw := atan2(-right.z, right.x)
-	kd.chamfer_box(ctr - hh - up * 0.12 + normal * 0.1, Vector3(width + 0.35, 0.11, 0.22), STONE_TRIM.lightened(0.08), 0.03, yaw)
-	kd.mat = 0.0
+	var m := k.commit()
+	_win_meshes[kind] = m
+	return m
 
 
 ## Glass walls: mullions every ~1.6 m and a transom band per floor.
