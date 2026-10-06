@@ -3133,7 +3133,8 @@
     "trim": "white",
     "roof_mat": "shingle_grey",
     "windows": "punched",
-    "notes": "four-storey brick residence hall with white-framed windows, stone sills and a pale band above the ground floor; cross plan: long north-south front range facing east with a central giant-order white portico and pediment, rear west wing with gable and oculus; raised site: wide front stair with white railings and a concrete ramp/terrace to its north; photographed interiors: main lobby lounge behind the front doors (R207), basement game room (R208), floor lounge corridor (R209)"
+    "notes": "four-storey brick residence hall with white-framed windows, stone sills and a pale band above the ground floor; cross plan: long north-south front range facing east with a central giant-order white portico and pediment, rear west wing with gable and oculus; raised site: wide front stair with white railings and a concrete ramp/terrace to its north; photographed interiors: main lobby lounge behind the front doors (R207), basement game room (R208), floor lounge corridor (R209)",
+    "band": "white"
    },
    "entrances": [
     {

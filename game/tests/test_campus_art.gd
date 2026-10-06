@@ -10,7 +10,7 @@ var t
 
 ## Recorded on the CAMPUS pass data (game/data/campus, CampusData.campus_hash
 ## below).  A change here is a gameplay change: re-record deliberately.
-const CAMPUS_HASH := "c36ed977b66b5b6f"
+const CAMPUS_HASH := "63760eea719e3747"
 const CAMPUS_COLLISION := "555371db83ab0e519985552a1474dfdc83a2803324b824c676c80e7c74211f97"
 const CAMPUS_NAV := "d1c055bb2e1554a5d9000e5ad58bc544d36bb225b1d982c4943051525e6aa28b"
 const CAMPUS_LAYOUT := "0a6e6e647b46f15188b0512dbe30175c67e8bbaa667b644c8824a381e9465e7d"

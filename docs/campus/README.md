@@ -195,6 +195,9 @@ They are re-rendered with a field of view that matches after the crop.) What the
     cupolas.
   - The administration hall: a white pediment with a plain clock face (no lettering).
   The fifth row of windows in the North Hall photo is the exposed basement on the sloping site.
+- **Facades.** West Hall's and East Hall's windows stack in vertical strips with grey panels between
+  them, and North Hall has a white band above its ground floor. Both were in the style notes but not
+  drawn; now they are (`style.spandrel`, `style.band`).
 - **Garden fountain.** It was drawn as a generic upright form. It is now a slender pillar with a bronze
   bowl and four falls, as the evidence describes. In the photo the water leaves from spouts at the top
   of the pillar under the bowl; the game's falls drop from the bowl's lip.

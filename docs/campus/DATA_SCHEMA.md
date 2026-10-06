@@ -59,7 +59,9 @@ or measured in a dated photo; **medium** = georeferenced plan/diagram
                                       finish (a white cupola on a brick hall)
  "style": {"wall": "brick_red|brick_brown|brick_tan|stone_light|siding_white|siding_grey|glass|metal_light|metal_dark|concrete",
            "trim": "white|stone|dark|none", "roof_mat": "shingle_dark|shingle_grey|metal_grey|metal_dark|membrane|copper",
-           "windows": "punched|ribbon|curtain|sparse|none", "notes": "..."},
+           "windows": "punched|ribbon|curtain|sparse|none", "notes": "...",
+           "band": "white|stone",          optional: a string course at the first floor line
+           "spandrel": "grey|beige"},      optional: panels between each bay's stacked windows
  "entrances": [{"p": [x, z], "face": <deg, 0 = facing north (-Z), 90 = east>, "w": 3.0, "kind": "door|double|portico|canopy|garage"}],
  "passages": [{"polygon": [...], "floor": 0.0, "clear": 3.0, "note": "..."}],   genuinely open walk-throughs;
                                       at a giant portico (clear 6 m or more) the facade behind the

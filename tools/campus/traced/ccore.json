@@ -762,7 +762,8 @@
     "trim": "white",
     "roof_mat": "shingle_grey",
     "windows": "punched",
-    "notes": "long 3-storey red-brick bar (89 x 13 m) with grey panels between stacked windows; centred full-height white portico of 4 columns with a pediment (oculus) on the north facade; white cupola on the cross gable; flat-roofed lounge stem and a low gravel-roofed annex on the south side"
+    "notes": "long 3-storey red-brick bar (89 x 13 m) with grey panels between stacked windows; centred full-height white portico of 4 columns with a pediment (oculus) on the north facade; white cupola on the cross gable; flat-roofed lounge stem and a low gravel-roofed annex on the south side",
+    "spandrel": "grey"
    },
    "entrances": [
     {
@@ -1075,7 +1076,8 @@
     "trim": "white",
     "roof_mat": "shingle_grey",
     "windows": "punched",
-    "notes": "twin of the west hall: long classical 3-storey brick facade with a centred white 4-column portico and pediment on the north side, cupola on the cross gable; light flat-roofed stem and low annex on the south side"
+    "notes": "twin of the west hall: long classical 3-storey brick facade with a centred white 4-column portico and pediment on the north side, cupola on the cross gable; light flat-roofed stem and low annex on the south side",
+    "spandrel": "grey"
    },
    "entrances": [
     {

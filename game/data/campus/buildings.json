@@ -4818,6 +4818,7 @@
    "style": {
     "notes": "twin of the west hall: long classical 3-storey brick facade with a centred white 4-column portico and pediment on the north side, cupola on the cross gable; light flat-roofed stem and low annex on the south side",
     "roof_mat": "shingle_grey",
+    "spandrel": "grey",
     "trim": "white",
     "wall": "brick_red",
     "windows": "punched"
@@ -12283,6 +12284,7 @@
    },
    "status": "existing",
    "style": {
+    "band": "white",
     "notes": "four-storey brick residence hall with white-framed windows, stone sills and a pale band above the ground floor; cross plan: long north-south front range facing east with a central giant-order white portico and pediment, rear west wing with gable and oculus; raised site: wide front stair with white railings and a concrete ramp/terrace to its north; photographed interiors: main lobby lounge behind the front doors (R207), basement game room (R208), floor lounge corridor (R209)",
     "roof_mat": "shingle_grey",
     "trim": "white",
@@ -16242,6 +16244,7 @@
    "style": {
     "notes": "long 3-storey red-brick bar (89 x 13 m) with grey panels between stacked windows; centred full-height white portico of 4 columns with a pediment (oculus) on the north facade; white cupola on the cross gable; flat-roofed lounge stem and a low gravel-roofed annex on the south side",
     "roof_mat": "shingle_grey",
+    "spandrel": "grey",
     "trim": "white",
     "wall": "brick_red",
     "windows": "punched"

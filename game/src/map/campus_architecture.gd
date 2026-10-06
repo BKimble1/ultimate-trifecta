@@ -40,6 +40,8 @@ const WALLS := {
 	"concrete": [Color(0.70, 0.69, 0.66), MeshKit.M_STONE],
 }
 const TRIMS := {"white": TRIM, "stone": STONE_TRIM, "dark": Color(0.22, 0.22, 0.25), "none": Color(0, 0, 0, 0)}
+## style.spandrel: panels between a bay's stacked windows
+const SPANDRELS := {"grey": Color(0.70, 0.71, 0.70), "beige": Color(0.80, 0.74, 0.62)}
 const ROOFS := {
 	"shingle_dark": [Color(0.22, 0.23, 0.27), MeshKit.M_ROOF],
 	"shingle_grey": [Color(0.38, 0.39, 0.42), MeshKit.M_ROOF],
@@ -93,7 +95,11 @@ func building(bd: Dictionary, doors: Array = []) -> void:
 		var nfl := floors if floors > 0 and pi == 0 else maxi(1, int(round((h - base) / (3.3 if String(bd["kind"]) == "residence" else 4.0))))
 		# a part can have its own wall finish (a white cupola on a brick hall)
 		var pw: Array = WALLS.get(String(part.get("wall", "")), wall_spec)
-		_mass(bd, part, parts, pw, trim, base, h, doors, passages)
+		# style.band: a string course at the first floor line
+		var band_y := -1.0
+		if TRIMS.has(String(style.get("band", ""))) and nfl >= 2:
+			band_y = base + 0.6 + (h - base - 0.6) / float(nfl)
+		_mass(bd, part, parts, pw, trim, base, h, doors, passages, band_y, TRIMS.get(String(style.get("band", "")), TRIM))
 		if win != "none" and String(style.get("wall", "")) != "glass":
 			_windows(bd, part, parts, win, nfl, base, h, trim, warm, rng, doors, passages)
 		elif String(style.get("wall", "")) == "glass":
@@ -409,8 +415,9 @@ static func solid_spans(len: float, holes: Array) -> Array:
 
 
 ## Walls of one mass: one quad per footprint edge in the wall material, a
-## darker plinth band and a cornice band in the trim colour.
-func _mass(bd: Dictionary, part: Dictionary, parts: Array, wall_spec: Array, trim: Color, base: float, h: float, doors: Array = [], passages: Array = []) -> void:
+## darker plinth band, the data's string course (`band_y`, style.band) and a
+## cornice band in the trim colour.
+func _mass(bd: Dictionary, part: Dictionary, parts: Array, wall_spec: Array, trim: Color, base: float, h: float, doors: Array = [], passages: Array = [], band_y: float = -1.0, band_col: Color = TRIM) -> void:
 	var poly: PackedVector2Array = CampusData.ccw(part["poly"])
 	var c := CampusData.centroid(poly)
 	var k := _k(c.x, c.y)
@@ -458,6 +465,15 @@ func _mass(bd: Dictionary, part: Dictionary, parts: Array, wall_spec: Array, tri
 				var p1 := a + dir * float(sp2[1])
 				_quad_facing(k, Vector3(p0.x, 0.0, p0.y) + po, Vector3(p1.x, 0.0, p1.y) + po, Vector3(p1.x, 0.62, p1.y) + po, Vector3(p0.x, 0.62, p0.y) + po, col.darkened(0.3).lerp(STONE_TRIM.darkened(0.25), 0.5), out)
 				_quad_facing(k, Vector3(p0.x, 0.62, p0.y) + po, Vector3(p1.x, 0.62, p1.y) + po, Vector3(p1.x, 0.62, p1.y), Vector3(p0.x, 0.62, p0.y), STONE_TRIM.darkened(0.2), Vector3.UP)
+		if band_y > 0.0 and band_col.a > 0.0 and y0 < band_y - 0.2:
+			# the string course, over doors but not across a tall open mouth
+			k.mat = MeshKit.M_STONE
+			var bo := out * 0.07
+			for sp3 in solid_spans(d.length(), holes.filter(func(hl: Array) -> bool: return float(hl[2]) >= band_y - 0.3)):
+				var q0 := a + dir * float(sp3[0])
+				var q1 := a + dir * float(sp3[1])
+				_quad_facing(k, Vector3(q0.x, band_y - 0.15, q0.y) + bo, Vector3(q1.x, band_y - 0.15, q1.y) + bo, Vector3(q1.x, band_y + 0.15, q1.y) + bo, Vector3(q0.x, band_y + 0.15, q0.y) + bo, band_col, out)
+				_quad_facing(k, Vector3(q0.x, band_y + 0.15, q0.y) + bo, Vector3(q1.x, band_y + 0.15, q1.y) + bo, Vector3(q1.x, band_y + 0.15, q1.y), Vector3(q0.x, band_y + 0.15, q0.y), band_col.darkened(0.12), Vector3.UP)
 		if trim.a > 0.0:
 			# cornice: a moulded band projecting from the wall top
 			k.mat = MeshKit.M_STONE
@@ -492,6 +508,7 @@ func _windows(bd: Dictionary, part: Dictionary, parts: Array, style: String, flo
 		var k := _k(mid.x, mid.y)
 		var holes := edge_holes(a, b, doors)
 		holes.append_array(passage_holes(a, b, passages))
+		var stacked := {}       # bay -> floors with a window (for the spandrel panels)
 		for r in floors:
 			var y := base + 0.6 + fl_h * (float(r) + 0.5)
 			if y + 0.9 > h - 0.4:
@@ -514,6 +531,28 @@ func _windows(bd: Dictionary, part: Dictionary, parts: Array, style: String, flo
 				var w := 1.15 if style != "ribbon" else step * 0.82
 				var hh := 0.8 if style != "ribbon" else 0.62
 				_window(k, ctr, Vector3(dir.x, 0, dir.y), out, w, hh, rng.randf() < warm, rng, trim, style != "ribbon")
+				if not stacked.has(c):
+					stacked[c] = []
+				(stacked[c] as Array).append(r)
+		# style.spandrel: a panel between each pair of stacked windows, so a
+		# bay reads as one vertical strip up the facade
+		var sp_col: Color = SPANDRELS.get(String((bd["style"] as Dictionary).get("spandrel", "")), Color(0, 0, 0, 0))
+		if sp_col.a > 0.0 and style != "ribbon":
+			k.mat = MeshKit.M_PLASTER
+			for c in stacked:
+				var rows: Array = stacked[c]
+				var p2 := a + dir * (0.5 + step * (float(c) + 0.5))
+				for j in rows.size() - 1:
+					if int(rows[j + 1]) != int(rows[j]) + 1:
+						continue
+					var y0 := base + 0.6 + fl_h * (float(rows[j]) + 0.5) + WIN_HH + 0.04
+					var y1 := base + 0.6 + fl_h * (float(rows[j + 1]) + 0.5) - WIN_HH - 0.1
+					if y1 <= y0:
+						continue
+					var e0 := p2 - dir * (WIN_W * 0.5 + 0.04)
+					var e1 := p2 + dir * (WIN_W * 0.5 + 0.04)
+					_quad_facing(k, Vector3(e0.x, y0, e0.y) + out * 0.03, Vector3(e1.x, y0, e1.y) + out * 0.03, Vector3(e1.x, y1, e1.y) + out * 0.03, Vector3(e0.x, y1, e0.y) + out * 0.03, sp_col, out)
+			k.mat = 0.0
 
 
 ## How high the other parts of the building stand against the outer face of
