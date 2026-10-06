@@ -15,6 +15,12 @@ OUT=${1:?out dir}; NAME=${2:?name}; SECS=${3:-8}
 ROOT=${GAME_ROOT:-$PWD}
 mkdir -p "$OUT"; OUT=$(cd "$OUT" && pwd)
 if [ "${GALLIUM_OVERRIDE_CPU_CAPS:-avx}" = native ]; then unset GALLIUM_OVERRIDE_CPU_CAPS; else export GALLIUM_OVERRIDE_CPU_CAPS=${GALLIUM_OVERRIDE_CPU_CAPS:-avx}; fi
+# Movie Maker records the project's window size (it ignores --resolution):
+# a temporary override.cfg sets the phone canvas, as capture_p9_movement.sh
+for i in $(seq 180); do [ -e "$ROOT/game/override.cfg" ] || break; sleep 20; done
+[ -e "$ROOT/game/override.cfg" ] && { echo "override.cfg exists in $ROOT/game; not touching it"; exit 1; }
+printf '[display]\n\nwindow/size/window_width_override=1558\nwindow/size/window_height_override=720\n' > "$ROOT/game/override.cfg"
+trap 'rm -f "$ROOT/game/override.cfg"' EXIT
 XDG_DATA_HOME=$(mktemp -d) timeout "${CAPTURE_TIMEOUT:-1800}" nice -n 10 xvfb-run -a -s "-screen 0 1640x800x24" \
   tools/gd.sh --path "$ROOT/game" --resolution 1558x720 --write-movie "$OUT/loadin_$NAME.avi" --fixed-fps 30 -- \
   --no-gamecenter --skip-onboarding --name="Comfy Frog" --emulate-phone=1.846 --emulate-safe=47,0,47,21 \
