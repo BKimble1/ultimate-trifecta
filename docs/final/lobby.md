@@ -239,6 +239,9 @@ campus night light. Evidence: `match_unchanged.jpg`.
   failures) and `test_lobby, test_lobby_flow, …` (37 tests, 12,095 checks,
   0 failures). The 3 "Lambda capture at index 0 was freed" errors in that log
   appear identically on the base tree.
+- Final run on the finished branch, all of the above plus `test_season100,
+  test_motion_v5, test_quality_governor`: **103 tests, 13,140 checks, 0
+  failures**.
 
 ## Evidence index (`docs/media/final/lobby/`)
 
