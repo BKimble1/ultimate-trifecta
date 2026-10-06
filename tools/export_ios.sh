@@ -105,8 +105,11 @@ N=$( { strings -n 8 "$PCK" 2>/dev/null | grep -c "shader_cache" ; } || true)
 # the game reads its service endpoints and links from res://config/*.cfg,
 # which are not Godot resources: they ship only through the preset's
 # include_filter.  A pack without them would run with the service off.
+# (count every match: `grep -q` would stop early, `strings` would then die
+# of SIGPIPE, and with pipefail a present file would read as missing)
 for f in config/service.cfg; do
-  if ! { strings -n 8 "$PCK" 2>/dev/null | grep -q "$f"; }; then
+  C=$( { strings -n 8 "$PCK" 2>/dev/null | grep -c "$f"; } || true)
+  if [ "${C:-0}" -lt 1 ]; then
     echo "::error::$f is missing from the exported game data ($PCK)"; exit 1
   fi
 done

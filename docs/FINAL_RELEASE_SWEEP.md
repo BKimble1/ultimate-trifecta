@@ -76,6 +76,7 @@ registers are in each area's notes.
 | R6 | Privacy policy and Support links absent whenever the service is off or unreachable | Settings › Privacy without a service | Links came only from the service's `/v1/config` | `config/links.cfg` (owner-filled, https only, ships in every build) with the service as fallback (`AppLinks`) | `test_release_config` |
 | R7 | "Diagnostics (beta)" in the release Settings, "beta diagnostics" in the shared summary | Settings | Beta-era wording | "Diagnostics" | `test_v7_screens` |
 | R8 | GitHub's Linux runners cancelled every queued job after 15 minutes from about 19:54 UTC on 2026-10-05 | Runs #126–#131 | Outside the repository (runner assignment); no job output | Retried; see the release section | run list |
+| R9 | The new pack check failed a good export on CI (push run #139: "config/service.cfg is missing") | Locally: `strings pack | grep -q config/service.cfg` under `pipefail` → exit 141 on a pack that contains it | `grep -q` exits at the first match, `strings` dies of SIGPIPE, and `pipefail` turns that into failure (run #138 passed only because the match came late) | Count matches (`grep -c`, whole stream) instead | same pack: old check "missing" (rc 141), new check count 1 |
 
 ## Unresolved blockers
 
