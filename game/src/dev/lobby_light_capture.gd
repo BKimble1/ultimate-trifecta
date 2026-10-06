@@ -25,6 +25,7 @@ extends Node
 ##   tools/capture_final_lobby.sh OUT_DIR NAME [devices...]
 
 const LABEL := "desktop render, llvmpipe"
+const StoreShot := preload("res://src/dev/store_shot.gd")
 
 var out_dir := ""
 var only := ""
@@ -65,7 +66,9 @@ func _ready() -> void:
 	_tag.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	_tag.add_theme_constant_override("outline_size", 4)
 	_tag.text = LABEL
+	_tag.visible = not StoreShot.on()   # --store-shot: nothing stamped
 	_tag_layer.add_child(_tag)
+	StoreShot.quiet_overlays()
 	_run.call_deferred()
 
 
@@ -103,7 +106,10 @@ func snap(shot: String) -> void:
 	await _wait(0.5)
 	await RenderingServer.frame_post_draw
 	var img := vp.get_texture().get_image()
-	img.save_png(out_dir.path_join(shot + ".png"))
+	if StoreShot.on():
+		StoreShot.save_rgb(img.duplicate(), out_dir.path_join(shot + ".png"))
+	else:
+		img.save_png(out_dir.path_join(shot + ".png"))
 	var rep := _report(img)
 	# the 3D alone (the UI layer hidden for a frame), then the room alone
 	var ui: CanvasLayer = App._ui_layer
