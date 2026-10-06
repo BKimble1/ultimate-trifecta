@@ -91,12 +91,14 @@ func building(bd: Dictionary, doors: Array = []) -> void:
 		var h := float(part["h"])
 		var base := float(part.get("base", 0.0))
 		var nfl := floors if floors > 0 and pi == 0 else maxi(1, int(round((h - base) / (3.3 if String(bd["kind"]) == "residence" else 4.0))))
-		_mass(bd, part, parts, wall_spec, trim, base, h, doors, passages)
+		# a part can have its own wall finish (a white cupola on a brick hall)
+		var pw: Array = WALLS.get(String(part.get("wall", "")), wall_spec)
+		_mass(bd, part, parts, pw, trim, base, h, doors, passages)
 		if win != "none" and String(style.get("wall", "")) != "glass":
 			_windows(bd, part, parts, win, nfl, base, h, trim, warm, rng, doors, passages)
 		elif String(style.get("wall", "")) == "glass":
 			_curtain_mullions(poly, base, h, trim)
-		_roof(part, poly, h, roof_spec, wall_spec, trim)
+		_roof(part, poly, h, roof_spec, pw, trim)
 	_passage_art(bd, wall_spec, trim, doors)
 	for e in bd["entrances"]:
 		var ep := CampusLayout._v2(e.get("p", [0, 0]))
@@ -273,6 +275,8 @@ func _passage_art(bd: Dictionary, wall_spec: Array, trim: Color, doors: Array) -
 				var s0 := b - dir * float(sp[0])
 				var s1 := b - dir * float(sp[1])
 				_quad_facing(k, Vector3(s0.x, 0.0, s0.y), Vector3(s1.x, 0.0, s1.y), Vector3(s1.x, clear, s1.y), Vector3(s0.x, clear, s0.y), col.darkened(0.08), inw)
+			if clear >= RECESS_CLEAR and len >= 6.0:
+				_recess_windows(bd, a, dir, len, inw, clear, trim, _passage_doors(bd, ps, doors))
 			for hl in holes:
 				var h0 := b - dir * (float(hl[0]) - float(hl[1]))
 				var h1 := b - dir * (float(hl[0]) + float(hl[1]))
@@ -312,6 +316,60 @@ func _passage_art(bd: Dictionary, wall_spec: Array, trim: Color, doors: Array) -
 		k2.revolve(Vector3(q.x, 0, q.y), PackedVector2Array([Vector2(r * 1.35, 0.0), Vector2(r * 1.35, 0.35), Vector2(r * 1.1, 0.5), Vector2(r, h * 0.5), Vector2(r * 0.9, h - 0.6), Vector2(r * 1.2, h - 0.3), Vector2(r * 1.4, h)]),
 			PackedColorArray([tc.darkened(0.12), tc.darkened(0.06), tc, tc, tc, tc.lightened(0.04), tc.lightened(0.06)]), 12)
 		k2.mat = 0.0
+
+
+## Where doors stand in a passage: a start hall's doorways and the entrance
+## doors drawn on its far wall, as [[point, half width]].
+static func _passage_doors(bd: Dictionary, ps: Dictionary, doors: Array) -> Array:
+	var out: Array = []
+	for dr in doors:
+		out.append([dr["pos"], float(dr["w"]) * 0.5])
+	for e in bd["entrances"]:
+		var ep := CampusLayout._v2(e.get("p", [0, 0]))
+		if _passage_near(ep, [ps]).is_empty():
+			continue
+		var face := deg_to_rad(float(e.get("face", 0.0)))
+		var back := _far_side(ep, Vector2(sin(face), -cos(face)), ps["poly"])
+		if back != Vector2.INF:
+			out.append([back, clampf(float(e.get("w", 2.4)) * 0.8, 1.2, 3.4) * 0.5])
+	return out
+
+
+## A portico at least this tall (m) is a giant order standing before the
+## facade, whose upper floors show between the columns (a porch or a
+## breezeway below it is just a covered way).
+const RECESS_CLEAR := 6.0
+
+
+## Windows on the wall behind a giant portico, floor by floor under the
+## portico's soffit; on the ground floor none within reach of a door
+## (`door_pts`: [[point, half width]]).
+func _recess_windows(bd: Dictionary, a: Vector2, dir: Vector2, len: float, inw: Vector3, clear: float, trim: Color, door_pts: Array) -> void:
+	var floors := int(bd.get("floors", 0))
+	if floors < 2 or not String(bd["kind"]) in ["residence", "academic"]:
+		return
+	var fl_h := (float(bd["h"]) - 0.6) / float(floors)
+	var bay := 2.9 if String(bd["kind"]) == "residence" else 3.4
+	var bays := int(floor((len - 1.0) / bay))
+	if bays <= 0:
+		return
+	var step := (len - 1.0) / float(bays)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(String(bd["id"]) + ":recess")
+	var mid := a + dir * (len * 0.5)
+	var k := _k(mid.x, mid.y)
+	for r in floors:
+		var y := 0.6 + fl_h * (float(r) + 0.5)
+		if y + WIN_HH + 0.05 > clear:
+			continue
+		for c in bays:
+			var p := a + dir * (0.5 + step * (float(c) + 0.5))
+			var by_door := false
+			for dp in door_pts:
+				if r == 0 and p.distance_to(dp[0]) < float(dp[1]) + WIN_W * 0.5 + 0.6:
+					by_door = true
+			if not by_door:
+				_window(k, Vector3(p.x, y, p.y), Vector3(-dir.x, 0, -dir.y), inw, WIN_W, WIN_HH, rng.randf() < 0.55, rng, trim, true)
 
 
 ## Door openings along the edge a->b: [[distance from a, half width,
@@ -615,7 +673,7 @@ func _roof(part: Dictionary, poly: PackedVector2Array, h: float, roof_spec: Arra
 	var pitch := deg_to_rad(clampf(float(roof.get("pitch", 30.0)), 5.0, 60.0))
 	match kind:
 		"gable", "hip", "pyramid", "shed":
-			_pitched(k, obb, h, pitch, kind, String(roof.get("ridge", "long")), col, mat, wall_spec, trim)
+			_pitched(k, obb, h, pitch, kind, String(roof.get("ridge", "long")), col, mat, wall_spec, trim, roof.get("pediment", {}))
 		"dome":
 			_flat(k, poly, h, Color(0.52, 0.52, 0.53), trim, false)
 			var r := minf((obb["size"] as Vector2).x, (obb["size"] as Vector2).y) * 0.5 * float(roof.get("scale", 0.8))
@@ -663,8 +721,10 @@ func _flat(k: MeshKit, poly: PackedVector2Array, h: float, col: Color, trim: Col
 
 
 ## A pitched roof over an oriented box: gable (ridge along `ridge`), hip,
-## pyramid or shed, with eaves, soffits, fascia and gable-end walls.
-func _pitched(k: MeshKit, obb: Dictionary, h: float, pitch: float, kind: String, ridge: String, col: Color, mat: float, wall_spec: Array, trim: Color) -> void:
+## pyramid or shed, with eaves, soffits, fascia and gable-end walls.  A
+## gable end the data marks as a pediment (`roof.pediment`) is a classical
+## one instead (`pediment`).
+func _pitched(k: MeshKit, obb: Dictionary, h: float, pitch: float, kind: String, ridge: String, col: Color, mat: float, wall_spec: Array, trim: Color, ped: Variant = {}) -> void:
 	var c: Vector2 = obb["center"]
 	var size: Vector2 = obb["size"]
 	var ax2: Vector2 = obb["axis"]          # unit vector along size.x
@@ -698,8 +758,13 @@ func _pitched(k: MeshKit, obb: Dictionary, h: float, pitch: float, kind: String,
 				_quad_facing(k, e0, e1, e1 + aw * (-ov * sg) + Vector3.UP * drop, e0 + aw * (-ov * sg) + Vector3.UP * drop, col.darkened(0.55), Vector3.DOWN)
 			k.mat = wall_spec[1]
 			for se: float in [-1.0, 1.0]:
+				if is_pediment(ped, ax * se):
+					continue
 				var g := base + ax * (half_l * se)
 				_tri_facing(k, g - aw * half_w, g + aw * half_w, g + Vector3.UP * rise, (wall_spec[0] as Color).darkened(0.06), ax * se)
+			for se: float in [-1.0, 1.0]:
+				if is_pediment(ped, ax * se):
+					pediment(k, base + ax * (half_l * se), ax * se, aw, half_w, ov, rise, ped as Dictionary, trim if trim.a > 0.0 else TRIM)
 			k.mat = MeshKit.M_WOOD
 			var fas := trim if trim.a > 0.0 else TRIM.darkened(0.12)
 			for se: float in [-1.0, 1.0]:
@@ -743,6 +808,82 @@ func _pitched(k: MeshKit, obb: Dictionary, h: float, pitch: float, kind: String,
 			var g2b := base + aw * half_w + ax * half_l
 			_quad_facing(k, g2a, g2b, g2b + Vector3.UP * rise, g2a + Vector3.UP * rise, (wall_spec[0] as Color).darkened(0.04), aw)
 	k.mat = 0.0
+
+
+## Whether the gable end facing `facing` is a pediment: the data's
+## `roof.pediment` ({} for none), on the end facing its `face` (degrees,
+## 0 = north) or on both ends without one.
+static func is_pediment(ped: Variant, facing: Vector3) -> bool:
+	if not (ped is Dictionary) or (ped as Dictionary).is_empty():
+		return false
+	if not (ped as Dictionary).has("face"):
+		return true
+	var f := deg_to_rad(float(ped["face"]))
+	return Vector2(facing.x, facing.z).dot(Vector2(sin(f), -cos(f))) > 0.7
+
+
+## A classical pediment on the gable end at `g` (eave height, facing `nr`):
+## the tympanum in the trim colour (painted, not the wall's brick), a
+## horizontal cornice closing it, a round window in its middle (`disc`:
+## "oculus" glazed, "louvre" slatted, "clock" a plain face, no lettering)
+## and, given `entablature` (m), a band of that depth under the eave across
+## the end wall, down to the tops of a giant portico's columns.
+func pediment(k: MeshKit, g: Vector3, nr: Vector3, aw: Vector3, half_w: float, ov: float, rise: float, ped: Dictionary, col: Color) -> void:
+	var yaw := atan2(-aw.z, aw.x)
+	k.mat = MeshKit.M_PLASTER
+	_tri_facing(k, g - aw * half_w, g + aw * half_w, g + Vector3.UP * rise, col.darkened(0.03), nr)
+	k.chamfer_box(g + nr * 0.2 + Vector3.UP * 0.16, Vector3(half_w * 2.0 + ov * 2.0, 0.32, 0.62), col, 0.04, yaw)
+	var ent := float(ped.get("entablature", 0.0))
+	if ent > 0.0:
+		k.chamfer_box(g + nr * 0.12 - Vector3.UP * (ent * 0.5), Vector3(half_w * 2.0 + 0.3, ent, 0.3), col.darkened(0.02), 0.03, yaw)
+		k.chamfer_box(g + nr * 0.16 - Vector3.UP * (ent - 0.09), Vector3(half_w * 2.0 + 0.36, 0.18, 0.36), col.darkened(0.08), 0.02, yaw)
+	var disc := String(ped.get("disc", ""))
+	if disc != "":
+		var c := g + nr * 0.06 + Vector3.UP * (rise * 0.4)
+		var r := clampf(rise * 0.16, 0.35, 0.85)
+		k.mat = MeshKit.M_PLASTER
+		_vdisc(k, c, nr, aw, r * 0.8, r, col.lightened(0.05))
+		if disc == "clock":
+			var ink := Color(0.12, 0.12, 0.14)
+			_vdisc(k, c + nr * 0.005, nr, aw, r * 0.72, r * 0.8, ink)
+			_vdisc(k, c, nr, aw, 0.0, r * 0.72, Color(0.96, 0.95, 0.90))
+			k.mat = MeshKit.M_METAL
+			var face := c + nr * 0.02
+			_quad_facing(k, face - aw * 0.03, face + aw * 0.03, face + aw * 0.03 + Vector3.UP * (r * 0.62), face - aw * 0.03 + Vector3.UP * (r * 0.62), ink, nr)
+			var hand := (aw * 0.8 + Vector3.UP * 0.6).normalized()
+			var side := hand.cross(nr).normalized() * 0.03
+			_quad_facing(k, face - side, face + side, face + side + hand * (r * 0.45), face - side + hand * (r * 0.45), ink, nr)
+		elif disc == "louvre":
+			# louvred: light slats over a dark opening, inside the white ring
+			_vdisc(k, c - nr * 0.03, nr, aw, 0.0, r * 0.8, Color(0.30, 0.32, 0.36))
+			k.mat = MeshKit.M_WOOD
+			for i in 5:
+				var y := (float(i) - 2.0) * r * 0.28
+				var hw := sqrt(maxf(0.0, r * r * 0.64 - y * y))
+				var q := c + Vector3.UP * y
+				_quad_facing(k, q - aw * hw, q + aw * hw, q + aw * hw + Vector3.UP * 0.07, q - aw * hw + Vector3.UP * 0.07, Color(0.55, 0.57, 0.60), nr)
+		else:
+			# a round window: dark glass behind a cross of white muntins
+			k.mat = MeshKit.M_GLASS
+			_vdisc(k, c - nr * 0.03, nr, aw, 0.0, r * 0.8, Color(0.16, 0.20, 0.28))
+			k.mat = MeshKit.M_WOOD
+			var m := c + nr * 0.01
+			_quad_facing(k, m - aw * (r * 0.8) - Vector3.UP * 0.035, m + aw * (r * 0.8) - Vector3.UP * 0.035, m + aw * (r * 0.8) + Vector3.UP * 0.035, m - aw * (r * 0.8) + Vector3.UP * 0.035, col, nr)
+			_quad_facing(k, m - aw * 0.035 - Vector3.UP * (r * 0.8), m + aw * 0.035 - Vector3.UP * (r * 0.8), m + aw * 0.035 + Vector3.UP * (r * 0.8), m - aw * 0.035 + Vector3.UP * (r * 0.8), col, nr)
+	k.mat = 0.0
+
+
+## A flat ring (a disc when `r_in` is 0) standing upright at `c`, facing `nr`.
+func _vdisc(k: MeshKit, c: Vector3, nr: Vector3, aw: Vector3, r_in: float, r_out: float, col: Color, seg: int = 20) -> void:
+	for i in seg:
+		var a0 := TAU * float(i) / float(seg)
+		var a1 := TAU * float(i + 1) / float(seg)
+		var d0 := aw * cos(a0) + Vector3.UP * sin(a0)
+		var d1 := aw * cos(a1) + Vector3.UP * sin(a1)
+		if r_in <= 0.0:
+			_tri_facing(k, c, c + d0 * r_out, c + d1 * r_out, col, nr)
+		else:
+			_quad_facing(k, c + d0 * r_in, c + d0 * r_out, c + d1 * r_out, c + d1 * r_in, col, nr)
 
 
 ## A dome on a short drum: smooth hemisphere (revolve) with a lantern cap.

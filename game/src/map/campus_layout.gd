@@ -167,7 +167,7 @@ func _build_buildings() -> void:
 			var pp: PackedVector2Array = CampusData.ccw(p.get("footprint", PackedVector2Array()))
 			if pp.size() >= 3:
 				parts.append({"poly": pp, "h": float(p.get("h", it.get("h", 8.0))), "base": float(p.get("base", 0.0)),
-					"roof": p.get("roof", it.get("roof", {})), "rect": CampusData.bounds(pp)})
+					"roof": p.get("roof", it.get("roof", {})), "rect": CampusData.bounds(pp), "wall": String(p.get("wall", ""))})
 		var h := float(it.get("h", 0.0))
 		if h <= 0.0:
 			for p in parts:

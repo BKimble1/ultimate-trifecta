@@ -47,13 +47,23 @@ or measured in a dated photo; **medium** = georeferenced plan/diagram
  "footprint": [[x, z], ...],          ground outline, no repeated last point
  "h": 12.0,                           eave/parapet height above ground (m)
  "floors": 3,
- "roof": {"type": "flat|gable|hip|pyramid|dome|shed|complex", "pitch": 30, "ridge": "long|short|<deg>"},
- "parts": [{"footprint": [...], "h": 8.0, "base": 0.0, "roof": {...}}],   optional sub-masses
+ "roof": {"type": "flat|gable|hip|pyramid|dome|shed|complex", "pitch": 30, "ridge": "long|short|<deg>",
+          "pediment": {"face": <deg>, "disc": "oculus|louvre|clock", "entablature": 1.3}},
+                                      pediment (gable only, optional): the gable end facing `face`
+                                      (both ends without it) is a classical pediment in the trim
+                                      colour with a closing cornice, a round glazed window, louvre
+                                      or plain clock face (no lettering), and a band `entablature` m
+                                      deep under the eave down to a giant portico's column tops
+ "parts": [{"footprint": [...], "h": 8.0, "base": 0.0, "roof": {...}, "wall": "siding_white"}],
+                                      optional sub-masses; `wall` (optional) gives one part its own
+                                      finish (a white cupola on a brick hall)
  "style": {"wall": "brick_red|brick_brown|brick_tan|stone_light|siding_white|siding_grey|glass|metal_light|metal_dark|concrete",
            "trim": "white|stone|dark|none", "roof_mat": "shingle_dark|shingle_grey|metal_grey|metal_dark|membrane|copper",
            "windows": "punched|ribbon|curtain|sparse|none", "notes": "..."},
  "entrances": [{"p": [x, z], "face": <deg, 0 = facing north (-Z), 90 = east>, "w": 3.0, "kind": "door|double|portico|canopy|garage"}],
- "passages": [{"polygon": [...], "floor": 0.0, "clear": 3.0, "note": "..."}],   genuinely open walk-throughs
+ "passages": [{"polygon": [...], "floor": 0.0, "clear": 3.0, "note": "..."}],   genuinely open walk-throughs;
+                                      at a giant portico (clear 6 m or more) the facade behind the
+                                      columns carries its windows floor by floor
  "landmark": null | "bell_tower" | "prayer_chapel" | ...,   custom builder key
  "background": false,                 true = outside the play boundary (cheap LOD, no interior)
  "ev": {...}}

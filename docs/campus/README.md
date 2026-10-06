@@ -179,16 +179,23 @@ since they show the reference photos. What they show:
   NW–SE). It is left as traced until then.
 - **Bell tower.** It matches from the north-east. The pier pair's orientation may be off by a few tens
   of degrees.
-- **North Hall.** The pediment is white with an oculus and the portico columns are white in reality;
-  the generic gable draws it in brick. The fifth row of windows in the photo is the exposed basement
-  on the sloping site.
+- **Porticos.** The generic gable drew the start halls' pediments in brick; the photos show white
+  ones. Now drawn from the evidence (`roof.pediment` in `DATA_SCHEMA.md`):
+  - North Hall: a white pediment with a round louvre, a white entablature, the giant columns rising
+    to it (the portico is open to about 12.3 m) and windows on the wall behind; the west gable end
+    is a white pediment with a louvre too.
+  - West Hall and East Hall: a white pediment with a glazed oculus over the giant columns, and white
+    cupolas.
+  - The administration hall: a white pediment with a plain clock face (no lettering).
+  The fifth row of windows in the North Hall photo is the exposed basement on the sloping site.
 - **Garden fountain.** It was drawn as a generic upright form. It is now a slender pillar with a bronze
   bowl and four falls, as the evidence describes.
 
 ## Gaps
 
 - North Hall's raised front porch is simplified to grade (the porch floor is 1.8 m up a stair in
-  reality).
+  reality). Its cupola is not drawn: the roof where the ranges cross is modelled flat.
+- The halls' side-door canopies are drawn as flat slabs; the photos show small white gabled ones.
 - Hall doors are 3.2 m wide (wider than the real doors) so the game's door rules work. The thresholds
   and the finish line are unchanged.
 - The garden run is modelled as a wadeable channel.

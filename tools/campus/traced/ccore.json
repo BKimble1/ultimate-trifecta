@@ -670,8 +670,14 @@
      "roof": {
       "type": "gable",
       "pitch": 38,
-      "ridge": "short"
-     }
+      "ridge": "short",
+      "pediment": {
+       "face": 13,
+       "disc": "oculus",
+       "entablature": 1.3
+      }
+     },
+     "note": "portico block: white pediment with a round glazed oculus over the four giant columns, white entablature from the column tops (9.5 m) to the eave (R093, R182; lettering omitted)"
     },
     {
      "footprint": [
@@ -696,7 +702,9 @@
      "base": 13.8,
      "roof": {
       "type": "dome"
-     }
+     },
+     "wall": "siding_white",
+     "note": "white cupola on the cross gable (R093, R182)"
     },
     {
      "footprint": [
@@ -975,8 +983,14 @@
      "roof": {
       "type": "gable",
       "pitch": 38,
-      "ridge": "short"
-     }
+      "ridge": "short",
+      "pediment": {
+       "face": 342,
+       "disc": "oculus",
+       "entablature": 1.3
+      }
+     },
+     "note": "portico block: white pediment with a round glazed oculus over the four giant columns, white entablature from the column tops (9.5 m) to the eave (R251, R267; lettering omitted)"
     },
     {
      "footprint": [
@@ -1001,7 +1015,9 @@
      "base": 13.8,
      "roof": {
       "type": "dome"
-     }
+     },
+     "wall": "siding_white",
+     "note": "white cupola on the cross gable (R251, R267)"
     },
     {
      "footprint": [

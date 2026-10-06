@@ -2244,7 +2244,12 @@
      "roof": {
       "type": "gable",
       "pitch": 28,
-      "ridge": "short"
+      "ridge": "short",
+      "pediment": {
+       "face": 0,
+       "disc": "clock",
+       "entablature": 1.7
+      }
      },
      "note": "classical white portico: four two-storey columns, pediment with round clock face (omit lettering)"
     },
@@ -2337,8 +2342,8 @@
       ]
      ],
      "floor": 0.6,
-     "clear": 7.5,
-     "note": "open portico floor between the columns"
+     "clear": 8.3,
+     "note": "open portico floor between the columns; the columns carry the entablature along the main block's eave line (R053), about 8.3 m above grade"
     }
    ],
    "ev": {
@@ -3080,7 +3085,11 @@
      "roof": {
       "type": "gable",
       "pitch": 28,
-      "ridge": "long"
+      "ridge": "long",
+      "pediment": {
+       "face": 270,
+       "disc": "louvre"
+      }
      },
      "note": "west gable end with round oculus (R203)"
     },
@@ -3109,7 +3118,12 @@
      "roof": {
       "type": "gable",
       "pitch": 30,
-      "ridge": "short"
+      "ridge": "short",
+      "pediment": {
+       "face": 90,
+       "disc": "louvre",
+       "entablature": 1.0
+      }
      },
      "note": "full-height white portico: four giant columns plus end columns, pediment with oculus, white cupola on the ridge (about 305.5, -337), brick chimney north of the portico"
     }
@@ -3224,8 +3238,8 @@
       ]
      ],
      "floor": 1.8,
-     "clear": 10.0,
-     "note": "open portico floor in front of the front doors, raised about 1.8 m above the front lawn (stair below)"
+     "clear": 12.3,
+     "note": "open portico floor in front of the front doors, raised about 1.8 m above the front lawn (stair below); the giant columns rise from it to the entablature under the pediment (R200, R306), so it is open to about 12.3 m above grade while the porch is drawn at grade"
     }
    ],
    "ev": {
