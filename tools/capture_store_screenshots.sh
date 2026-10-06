@@ -25,7 +25,8 @@
 #   OUT_DIR/raw/<device>/   every frame the drivers took, with their logs
 #   OUT_DIR/iphone_6.9/, OUT_DIR/ipad_13/   the sets (NN_name.png)
 #   OUT_DIR/iap/            App Review references (iPhone size; labelled)
-#   ONLY="menus splash cart iap"  the parts to (re)render (default: all);
+#   ONLY="menus splash cart iap"  the parts to (re)render (default: all;
+#       ONLY=none re-assembles the sets from OUT_DIR/raw only);
 #       parts not rendered are taken from OUT_DIR/raw if already there
 #   SPLASH_PICK / CART_PICK   the gameplay frame for each set (defaults
 #       below: the frames chosen at review; the round is deterministic on
@@ -88,7 +89,7 @@ match() {   # device part role
 }
 
 # the gameplay frame picked for each set (see the README)
-pick_splash() { case $1 in iphone) echo "${SPLASH_PICK:-splash_approach_c}";; ipad) echo "${SPLASH_PICK:-splash_approach_c}";; esac; }
+pick_splash() { case $1 in iphone) echo "${SPLASH_PICK:-splash_air_0}";; ipad) echo "${SPLASH_PICK:-splash_air_0}";; esac; }
 pick_cart() { case $1 in iphone) echo "${CART_PICK:-cart_d}";; ipad) echo "${CART_PICK:-cart_d}";; esac; }
 
 for d in $DEVICES; do
