@@ -11,6 +11,11 @@ point scale (44 pt touch targets) and safe area; the picture has the
 canvas's pixels. Before and after use the same scale per device. Converted
 to JPEG q85.
 
+The **after** pictures were re-rendered on 2026-10-06 from commit `5891d0b`:
+the long Game Center nickname example is now an invented name, and
+`tools/gd.sh` limits llvmpipe to AVX so characters are lit as on a device
+(docs/final/lobby.md, L1). The **before** pictures are unchanged.
+
 | Folder | Device shape | Canvas, point scale, safe area (pt L,T,R,B) |
 |---|---|---|
 | `se/` | iPhone SE 667×375 pt | 1334×750, 2, none |

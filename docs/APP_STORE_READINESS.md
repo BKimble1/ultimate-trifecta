@@ -76,7 +76,7 @@ submission). Apple decides approval; nothing here guarantees it.
 | # | Requirement | Status | Evidence | Owner action |
 |---|---|---|---|---|
 | M1 | Name, subtitle, description, keywords, promotional text within limits and accurate | READY (drafted) | APP_STORE.md (counts checked) | Paste; adjust if you wish |
-| M2 | Screenshots: 6.9" iPhone and 13" iPad | READY as candidates | `docs/media/final/store/` | Approve or replace with device shots |
+| M2 | Screenshots: 6.9" iPhone and 13" iPad | READY as candidates | `docs/media/final/store/`: 8 iPhone shots at 2868 × 1320 and 8 iPad shots at 2752 × 2064, rendered from the release art, `store_shot_check.py` 19/19 pass, fictional names, no debug text; desktop renders, not device captures | Approve or replace with device shots; `03`, `04`, `06`, `08` show the likeness skins (M6) |
 | M3 | Review notes, contact, demo | READY (drafted) · OWNER fields | APP_STORE.md review notes | Contact details; optional two-device video |
 | M4 | Age rating questionnaire | READY (answers drafted) · OWNER enters | APP_STORE.md table | Answer in App Store Connect |
 | M5 | Export compliance | READY | `ITSAppUsesNonExemptEncryption=false` (HTTPS only) | Confirm the answer |

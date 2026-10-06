@@ -278,10 +278,23 @@ current specification):
   2778 × 1284 if 6.9" isn't provided. Up to 10.
 - **iPad 13" display:** 2752 × 2064 (landscape). Up to 10.
 
-The final set is in `docs/media/final/store/` (see its README for what each
-shows and how it was made). They are real renders of the release candidate
-with fictional player names; App Store Connect accepts renders of the app,
-but **owner:** approve the set, or replace any with on-device screenshots.
+Two proposed sets are in `docs/media/final/store/`: `iphone_6.9/` (8 shots,
+2868 × 1320) and `ipad_13/` (8 shots, 2752 × 2064), PNG, 8-bit RGB, no
+alpha, sRGB, all passing `tools/store_shot_check.py` (see the README for
+what each shows and how it was made). They are renders of the release
+candidate's code and art (`v10-49a45748ffed`) with fictional player names
+and no debug text, not device captures. **Owner:** approve the set, or
+replace any with on-device screenshots; re-render with
+`tools/capture_store_screenshots.sh` if the art changes.
+
+- **Likeness:** `03_party_of_eight`, `04_season_pass_record_breaker`,
+  `06_friends_invite` and `08_final_standings` (a small portrait) show
+  Record Breaker or Dr. Doom. Use them only with the written permission
+  under "Content rights"; otherwise upload `01`, `02`, `05` and `07`, which
+  don't show the two skins.
+- **In-app purchase review screenshots** are separate (one per product) and
+  must be taken on a device once the products exist: `docs/media/final/store/iap/`
+  holds labelled references for what to capture, not uploadable images.
 
 ## If the service is not live
 

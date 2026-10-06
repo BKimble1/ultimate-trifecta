@@ -20,11 +20,19 @@ Per-area notes:
 - [final/season.md](final/season.md): the Season Pass preview and hierarchy.
 - [final/friends.md](final/friends.md): Friends, presence and invitations.
 - [final/commerce.md](final/commerce.md): environments, the Shop and purchase flows.
+- [final/artfix.md](final/artfix.md): garments that floated at the large preview scale.
+- [final/store.md](final/store.md): the App Store screenshot sets.
 - [APP_STORE.md](APP_STORE.md): the submission package.
 - [APP_STORE_READINESS.md](APP_STORE_READINESS.md): requirement by requirement.
 
 ## What changed (by area)
 
+- **Garments** ([final/artfix.md](final/artfix.md)): belly panels and hood
+  rims on the hooded onesies, Dr. Doom's jacket, the headlamp and head bands
+  now sit on the body at the Season Pass's large preview scale; fit_check's
+  new standoff rule found 29 such problems in 1.9's asset and finds 0 now.
+- **App Store screenshots** ([final/store.md](final/store.md)): 8 iPhone
+  6.9" and 8 iPad 13" shots at Apple's sizes from the release art.
 - **Lobby lighting** ([final/lobby.md](final/lobby.md)): the dorm is a
   little lighter and friendlier at night with the same lights and cost
   (ambient 0.55 → 0.62, cool fill 0.22 → 0.32, lamps up slightly, walls
@@ -78,6 +86,7 @@ registers are in each area's notes.
 | R8 | GitHub's Linux runners cancelled every queued job after 15 minutes from about 19:54 UTC on 2026-10-05 | Runs #126–#131 | Outside the repository (runner assignment); no job output | Retried; runs from #132 on ran normally | run list |
 | R9 | The new pack check failed a good export on CI (push run #139: "config/service.cfg is missing") | Locally: `strings pack | grep -q config/service.cfg` under `pipefail` → exit 141 on a pack that contains it | `grep -q` exits at the first match, `strings` dies of SIGPIPE, and `pipefail` turns that into failure (run #138 passed only because the match came late) | Count matches (`grep -c`, whole stream) instead | same pack: old check "missing" (rc 141), new check count 1 |
 | R10 | A 16-character outfit name was cut off on the results team card ("Marigold Moo…") | `tools/capture_v7_screens.sh OUT p14`: results and final standings report `trimmed label 'Marigold Moonpup'` | The portrait card shrank the name to 18 px and then truncated it with an ellipsis | `UIKit.fit_text(..., wrap_last=true)`: below the smallest size the name wraps onto a second line instead | v7 sweep at p14 and SE: 0 layout issues on both results screens |
+| R11 | A real person's name in the Friends layout test and its evidence pictures | `test_friends.gd` and `friends_capture.gd`: the long Game Center nickname case | A famous composer's name was used as the long-name example | An invented long nickname that still exercises the 23-character trim; the Friends evidence re-rendered | `test_friends` 13 tests, 0 failures; `git grep` finds the name nowhere |
 
 ## Release candidate
 

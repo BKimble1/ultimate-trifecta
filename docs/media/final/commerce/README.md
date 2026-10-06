@@ -1,5 +1,12 @@
 # FINAL_RELEASE_SWEEP · Commerce evidence (Shop)
 
+> **Lighting caveat.** These were rendered before `tools/gd.sh` limited
+> llvmpipe to AVX (docs/final/lobby.md, L1). On the capture machine's CPU,
+> llvmpipe drops the directional light on characters, so runners here look
+> darker (tan faces, navy instead of sky blue) than they do on a device.
+> Layout, states and text are unaffected. The App Store sets in
+> `docs/media/final/store/` show the same screens with correct lighting.
+
 **What these are**: desktop renders of the real game (Linux, llvmpipe,
 Mobile renderer) at each device's resolution with its point scale and safe
 area emulated, made by `tools/capture_final_shop.sh` (driver

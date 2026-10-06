@@ -140,7 +140,9 @@ Policy URL (the pages from C.8), App Privacy answers (the table, **not**
 non-exempt encryption), review contact (**yours**) and the review notes
 (sign in to Game Center; no password needed; ideally a link to a short
 two-device Friends video). Screenshots: the 6.9" iPhone and 13" iPad sets
-in `docs/media/final/store/` (or your own device screenshots). Also decide:
+in `docs/media/final/store/` (or your own device screenshots); shots `03`,
+`04`, `06` and `08` show Record Breaker or Dr. Doom, so use them only with
+the permission below. Also decide:
 written permission from the two people Record Breaker and Dr. Doom are
 based on; mureka.ai's terms for the music; whether to keep the "Dr. Doom"
 label.

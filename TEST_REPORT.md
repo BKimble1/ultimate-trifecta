@@ -72,7 +72,8 @@ transport.
 | Season Pass before/after at four shapes, skin inspection, a normal-speed clip | `docs/media/final/season/` |
 | Friends panel states, toast, entry points at four shapes | `docs/media/final/friends/` |
 | Shop filters, App Store outfits, Coin packs, the schedule fallback | `docs/media/final/commerce/` |
-| App Store screenshot candidates | `docs/media/final/store/` |
+| Garment fixes before/after (seven sheets, desktop render) | `docs/media/final/artfix/` |
+| App Store screenshot sets (8 iPhone 6.9", 8 iPad 13") and IAP review references | `docs/media/final/store/` |
 
 ## FRS.4 Final checks on the release candidate (local)
 

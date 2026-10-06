@@ -54,6 +54,12 @@ Mascot in `03`, `07`; Frog Onesie in `07`; Cloud Nine and Bedtime Bandit
 cards in `05`; Starry Sleeper (sleep mask) in `07` and on a runner in `02`.
 If character art changes again, re-run the script.
 
+**Likeness (owner decision).** `03`, `04`, `06` and `08` (a small portrait
+in the standings) show Record Breaker or Dr. Doom, the two skins based on
+real people. Upload them only with those people's written permission
+(docs/APP_STORE.md, "Content rights"); otherwise use `01`, `02`, `05` and
+`07`.
+
 ## App Review references (`iap/`, iPhone size, NOT store assets)
 
 | File | What |

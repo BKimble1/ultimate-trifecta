@@ -2,6 +2,13 @@
 
 Notes: [../../../final/season.md](../../../final/season.md).
 
+> **Lighting caveat.** These were rendered before `tools/gd.sh` limited
+> llvmpipe to AVX (docs/final/lobby.md, L1). On the capture machine's CPU,
+> llvmpipe drops the directional light on characters, so runners here look
+> darker (tan faces, navy instead of sky blue) than they do on a device.
+> Layout, states and text are unaffected. The App Store sets in
+> `docs/media/final/store/` show the same screens with correct lighting.
+
 ## How these were made
 
 - **Renderer:** the real Season Pass, rendered by Godot 4.7.2's Mobile
