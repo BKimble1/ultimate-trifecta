@@ -674,7 +674,7 @@ func host_start_match(seed_override: int = -1) -> void:
 	# immutable round configuration that reconnects and replays keep
 	var dorm_id := CampusDorms.default_id() if tutorial else CampusDorms.pick(seed_v, prev_dorm)
 	prev_dorm = dorm_id
-	var targets := RulesLogic.pick_targets(seed_v, prev_targets, RulesLogic.curated_combos(dorm_id))
+	var targets := RulesLogic.pick_targets(seed_v, prev_targets, RulesLogic.curated_combos(dorm_id, CampusLayout.round_data().pool_size()))
 	prev_targets = targets
 	var start_roster: Array = []
 	for e in roster:

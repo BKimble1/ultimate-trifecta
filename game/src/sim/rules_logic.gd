@@ -27,10 +27,11 @@ static func all_combos(n: int = 6) -> Array:
 	return out
 
 
-## Curated fair combinations (from route analysis). Falls back to all combos.
-## V6: per home dorm (route_table.json "dorms"); without a dorm, the
-## Puddlesworth Hall set (the V5 table's own list).
-static func curated_combos(dorm_id: String = "") -> Array:
+## Curated fair combinations (from route analysis, per home dorm in
+## route_table.json "dorms"; without a dorm, the default dorm's set).  Only
+## combinations of waters in the pool (`pool` objective waters) count; with
+## none left, every combination of the pool.
+static func curated_combos(dorm_id: String = "", pool: int = 6) -> Array:
 	var rt := route_table()
 	var src: Variant = rt.get("curated", [])
 	if dorm_id != "" and rt.get("dorms", {}) is Dictionary and (rt.get("dorms", {}) as Dictionary).has(dorm_id):
@@ -38,9 +39,12 @@ static func curated_combos(dorm_id: String = "") -> Array:
 	if src is Array and (src as Array).size() > 0:
 		var out: Array = []
 		for c in src:
-			out.append([int(c[0]), int(c[1]), int(c[2])])
-		return out
-	return all_combos()
+			var cb := [int(c[0]), int(c[1]), int(c[2])]
+			if cb.max() < pool:
+				out.append(cb)
+		if not out.is_empty():
+			return out
+	return all_combos(pool)
 
 
 ## Choose the shared targets from the match seed, avoiding an immediate repeat.
