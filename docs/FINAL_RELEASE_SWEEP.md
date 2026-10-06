@@ -68,16 +68,30 @@ registers are in each area's notes.
 
 | # | Symptom | Reproduction | Cause | Fix | Evidence |
 |---|---|---|---|---|---|
-| R1 | 1.9 (9) can't be submitted to the App Store | App Store Connect lists it as `INTERNAL_ONLY` | `ios.yml` hard-coded `INTERNAL_ONLY: "true"` and `build_ios.sh` defaulted `testFlightInternalTestingOnly` to true | A `distribution` workflow input (`internal_only` default, `app_store`); `build_ios.sh` refuses a signed export unless `INTERNAL_ONLY` is explicitly `true` or `false`; after processing, `asc.py audience` checks the audience Apple recorded and fails the run on a mismatch | workflow and script diff; the 2.0 upload run's audience line |
+| R1 | 1.9 (9) can't be submitted to the App Store | App Store Connect lists it as `INTERNAL_ONLY` | `ios.yml` hard-coded `INTERNAL_ONLY: "true"` and `build_ios.sh` defaulted `testFlightInternalTestingOnly` to true | A `distribution` workflow input (`internal_only` default, `app_store`); `build_ios.sh` refuses a signed export unless `INTERNAL_ONLY` is explicitly `true` or `false`; after processing, `asc.py audience` checks the audience Apple recorded and fails the run on a mismatch | workflow and script diff; run #145: Apple recorded `APP_STORE_ELIGIBLE` for 2.0 (10) and the audience check passed |
 | R2 | An upload run could end green when Apple rejected the build | Read the "Wait for App Store Connect processing" step | The step ended with `exit 0` whatever `asc.py wait` returned | FAILED/INVALID fails the job; still-processing is a warning that says "uploaded, not yet available" | workflow diff |
 | R3 | A read-only `iap=list` run was cancelled | Run #127 cancelled by the next push | Product runs shared the cancellable "build" concurrency group | Product (`iap`) and status runs have their own, non-cancelling groups | run #127; workflow diff |
-| R4 | **The game service could never turn on in an iOS build** | A local `--export-pack "iOS"` of 1.9's code: `config/service.cfg` is not in the pack | `.cfg` files aren't Godot resources; the preset's `include_filter` was empty, so the export dropped them. Filling in the service URL and rebuilding would still have shipped a game with the service off | `include_filter="config/*.cfg"`; `export_ios.sh` fails the export if the pack lacks `config/service.cfg`; `test_release_config` | packs before/after: `config/service.cfg` 0 → 1 occurrence |
+| R4 | **The game service could never turn on in an iOS build** | A local `--export-pack "iOS"` of 1.9's code: `config/service.cfg` is not in the pack | `.cfg` files aren't Godot resources; the preset's `include_filter` was empty, so the export dropped them. Filling in the service URL and rebuilding would still have shipped a game with the service off | `include_filter="config/*.cfg"`; `export_ios.sh` fails the export if the pack lacks `config/service.cfg`; `test_release_config` | packs before/after: `config/service.cfg` 0 → 1 occurrence; run #145: "config files in the game data: OK" |
 | R5 | The privacy manifest would declare nothing once the service has two endpoints, and missed the Friends data | Read `export_ios.sh` | It looked only at `url=` and the pre-Friends data types | Declares when any endpoint is set; adds Contacts (friends list as keyed hashes) and Product Interaction (in-game status); portable `sed -E` for macOS | script diff; APP_STORE.md App Privacy table |
 | R6 | Privacy policy and Support links absent whenever the service is off or unreachable | Settings › Privacy without a service | Links came only from the service's `/v1/config` | `config/links.cfg` (owner-filled, https only, ships in every build) with the service as fallback (`AppLinks`) | `test_release_config` |
 | R7 | "Diagnostics (beta)" in the release Settings, "beta diagnostics" in the shared summary | Settings | Beta-era wording | "Diagnostics" | `test_v7_screens` |
-| R8 | GitHub's Linux runners cancelled every queued job after 15 minutes from about 19:54 UTC on 2026-10-05 | Runs #126–#131 | Outside the repository (runner assignment); no job output | Retried; see the release section | run list |
+| R8 | GitHub's Linux runners cancelled every queued job after 15 minutes from about 19:54 UTC on 2026-10-05 | Runs #126–#131 | Outside the repository (runner assignment); no job output | Retried; runs from #132 on ran normally | run list |
 | R9 | The new pack check failed a good export on CI (push run #139: "config/service.cfg is missing") | Locally: `strings pack | grep -q config/service.cfg` under `pipefail` → exit 141 on a pack that contains it | `grep -q` exits at the first match, `strings` dies of SIGPIPE, and `pipefail` turns that into failure (run #138 passed only because the match came late) | Count matches (`grep -c`, whole stream) instead | same pack: old check "missing" (rc 141), new check count 1 |
 | R10 | A 16-character outfit name was cut off on the results team card ("Marigold Moo…") | `tools/capture_v7_screens.sh OUT p14`: results and final standings report `trimmed label 'Marigold Moonpup'` | The portrait card shrank the name to 18 px and then truncated it with an ellipsis | `UIKit.fit_text(..., wrap_last=true)`: below the smallest size the name wraps onto a second line instead | v7 sweep at p14 and SE: 0 layout issues on both results screens |
+
+## Release candidate
+
+**2.0 (10)**, App Store Connect build `1730ad62-0823-49a6-a534-1e7bb79e3935`,
+from commit `66e7575`, uploaded 2026-10-06 08:02:44 UTC by run #145
+(`distribution=app_store`). Apple's API, read by the run at 08:20 UTC:
+processing **`VALID`**, audience **`APP_STORE_ELIGIBLE`**, internal
+`IN_BETA_TESTING` for the existing internal group, What to Test set.
+CI gate 561 tests, 0 failures; the same commit passed the full suite and the
+service tests locally (TEST_REPORT FRS.4–FRS.5).
+
+It is **provisional**: the service is off and no App Store product exists,
+so it is not the launch build and shouldn't be submitted. Nothing was
+submitted, released, priced or bought, and no tester or group was added.
 
 ## Unresolved blockers
 

@@ -15,17 +15,16 @@ Apple's rules were rechecked on 2026-10-05 (App Review Guidelines, upload
 requirements, screenshot specifications, age-rating questionnaire, IAP
 submission). Apple decides approval; nothing here guarantees it.
 
-_This table is completed at the end of the final sweep with the release
-candidate's build identifiers; see the "Release candidate" section._
-
 ## Release candidate
 
 | | |
 |---|---|
-| Version (build) | 2.0 (to be filled with the uploaded build) |
-| Commit | (to be filled) |
-| Distribution | App Store-eligible (`testFlightInternalTestingOnly=false`), internal TestFlight group only |
-| Apple processing | (to be filled) |
+| Version (build) | **2.0 (10)**, App Store Connect build `1730ad62-0823-49a6-a534-1e7bb79e3935` |
+| Commit | `66e7575` |
+| Upload | GitHub Actions run #145 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37431364875), `upload=true`, `distribution=app_store`; uploaded 2026-10-06 08:02:44 UTC; CI gate 561 tests, 107,273 checks, 0 failures |
+| Distribution | Audience **`APP_STORE_ELIGIBLE`** as recorded by Apple (`testFlightInternalTestingOnly=false`); delivered to the existing internal group only |
+| Apple processing | **`VALID`**; internal `IN_BETA_TESTING`; external `READY_FOR_BETA_SUBMISSION` (nothing sent); What to Test set (1,813 characters); read from Apple's API by run #145 at 08:20 UTC |
+| Label | **Provisional**: the service is off (`service.cfg` empty) and no product exists. Not the launch build; don't submit it. The launch build is the next `distribution=app_store` upload after OWNER_SETUP_GUIDE A–C. |
 
 ## Requirements
 
@@ -33,16 +32,16 @@ candidate's build identifiers; see the "Release candidate" section._
 
 | # | Requirement | Status | Evidence | Owner action |
 |---|---|---|---|---|
-| B1 | Built with Xcode 26+ and the iOS 26 SDK (Apple's upload requirement since 2026-04-28) | READY | CI build facts: Xcode 26.6 (17F113), iOS SDK 26.5 (run #125; the 2.0 run below) | – |
+| B1 | Built with Xcode 26+ and the iOS 26 SDK (Apple's upload requirement since 2026-04-28) | READY | 2.0 (10) build facts (run #145): Xcode 26.6 (17F113), iOS SDK 26.5 | – |
 | B2 | Deployment target, architecture, devices, orientations | READY | iOS 17.0+, arm64, iPhone and iPad, landscape left/right, `iphone-ipad-minimum-performance-a12` (build facts, Info.plist) | – |
-| B3 | An App Store-eligible build (not "TestFlight internal testing only") | READY when the 2.0 upload reports `APP_STORE_ELIGIBLE` | `distribution=app_store` input; `build_ios.sh` refuses an unset audience; the run checks Apple's recorded audience (R1) | Choose this build in the 2.0 version page |
+| B3 | An App Store-eligible build (not "TestFlight internal testing only") | READY | 2.0 (10): Apple recorded `APP_STORE_ELIGIBLE` (run #145's audience check); `build_ios.sh` refuses an unset audience (R1) | Choose the **configured** rebuild (not 2.0 (10)) in the version page |
 | B4 | Version and build numbers increase | READY | 2.0 (build = highest + 1); one marketing version everywhere (`test_release_config`) | – |
 | B5 | Entitlements and capabilities | READY | Game Center entitlement only; In-App Purchase needs none; Game Center enabled on the app ID (existing) | – |
-| B6 | Embedded frameworks are device slices | READY | build facts: GameCenter, StoreKit, SwiftGodotRuntime, UTShare (arm64) | – |
+| B6 | Embedded frameworks are device slices | READY | run #145 build facts: GodotApplePluginsGameCenter, GodotApplePluginsStoreKit, SwiftGodotRuntime and UTShare embedded in the signed iphoneos archive; the app binary and UTShare checked arm64; Apple processed the build `VALID` | – |
 | B7 | No development or test code, fixtures or grants in the build | READY | export preset excludes `tests/`, `tools/`, `src/dev/`; a local iOS pack contains none of them; dev flags need a command line iOS doesn't have (`test_release_config`) | – |
 | B8 | Config files the game needs actually ship | READY | `config/*.cfg` in the preset; `export_ios.sh` fails without `config/service.cfg` in the pack (R4) | – |
 | B9 | A green job can't hide a failed upload or rejected build | READY | FAILED/INVALID fails the run; audience mismatch fails the run; still-processing is a warning, never reported as available (R2) | – |
-| B10 | Launch screen and branding | READY | CI launch and branding audit PASS (one black storyboard, 1656² launch images, no "powered by") | – |
+| B10 | Launch screen and branding | READY | run #145 launch and branding audit PASS (one black storyboard, 1656² launch images, logo box off by 0.0000, no "powered by") | – |
 | B11 | Symbols | READY (warning) | Xcode notes no dSYMs for the four plugin frameworks; the app's own symbols upload | – |
 
 ### Services and commerce

@@ -94,12 +94,47 @@ screenshots, which aren't in the app):
 
 ## FRS.5 iOS build (CI iOS) and TestFlight
 
-_In progress:_ upload run #145
-(https://github.com/BKimble1/ultimate-trifecta/actions/runs/37431364875)
-on commit `66e7575` with `upload=true` and `distribution=app_store`. Its
-headless test job passed; the signed archive, upload and Apple's
-processing were still running when this was written. This section is
-replaced with the result.
+- **Gating CI:** upload run #145
+  (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37431364875),
+  `upload=true`, **`distribution=app_store`**, on commit `66e7575`.
+  - Headless tests: **561 tests, 107,273 checks, 0 failures** (588.8 s;
+    one check fewer than the local run: some suites' check counts depend on
+    timing, no test differs).
+  - Xcode project export with the baked shaders (exit code 0; **40**
+    `shader_cache` entries); "config files in the game data: OK" (R4); the
+    privacy manifest step: no game service configured, no collected data
+    declared (as expected while `service.cfg` is empty).
+  - Launch and branding audit **PASS**: one black storyboard; both launch
+    images and the boot splash 1656², opaque, black corners; the logo's box
+    off by 0.0000; 0 detached glow and 0 inner dip pixels; 0 "powered by".
+  - Signed archive and upload with `testFlightInternalTestingOnly: false`:
+    ARCHIVE SUCCEEDED, EXPORT SUCCEEDED, "Upload succeeded".
+    `CFBundleShortVersionString` 2.0, `CFBundleVersion` 10, arm64, 302 MB,
+    Xcode 26.6 (17F113), iOS SDK 26.5; entitlements Game Center only;
+    `ITSAppUsesNonExemptEncryption` false; the 2.0 friends purpose string.
+  - Xcode warned that the four embedded plugin frameworks have no dSYMs, as
+    before. A diagnostic excerpt in the export step printed "grep: stdout:
+    Broken pipe" (a `grep | head` of the export log, `|| true`); it has no
+    effect on the export.
+- **Simulator (iPhone Air, iOS 26.2 runtime, x86_64, ~1 fps):** cold launch
+  running, no crash report for the app, 0 script errors, 23 screenshots;
+  still preparing the bot round (phase 1) when the window closed. Not a
+  phone.
+- **TestFlight:** **2.0 (10)** uploaded 2026-10-06 08:02:44 UTC.
+  - App Store Connect build `1730ad62-0823-49a6-a534-1e7bb79e3935`.
+  - Processing **`VALID`**; audience **`APP_STORE_ELIGIBLE`** (the run's
+    audience check passed).
+  - Internal state `IN_BETA_TESTING`; external `READY_FOR_BETA_SUBMISSION`
+    (eligible to be sent; nothing was sent).
+  - What to Test set (1,813 characters).
+  - The existing internal group receives every build automatically.
+  - Read from Apple's API by run #145 at 08:20 UTC.
+  - No testers added, nothing submitted for review, nothing released, no
+    price set, no purchase made.
+  - Status run #132 beforehand: builds 1–9, no 2.0.
+  - **Provisional:** the service is off and no product exists; the launch
+    build is the next `distribution=app_store` upload after the owner
+    setup.
 
 ## FRS.6 Not verified (exact remaining checks)
 
