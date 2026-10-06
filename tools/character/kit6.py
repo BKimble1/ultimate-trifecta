@@ -157,6 +157,49 @@ def head_project(grow):
     return f
 
 
+def conform(center, rot, project):
+    """deform= for geo.ellipsoid (final sweep): bends a flat piece (its local
+    z along the surface normal at `center`) so it follows the surface under
+    it instead of its tangent plane.  A flat disc on a round belly or hood
+    stood off at its rim by the surface's fall-off (a belly panel 6-10 cm, an
+    owl hood's eye discs: fit_check "patches"); bent, every point
+    keeps the height above the surface it has at the centre, so the piece
+    keeps its outline, thickness and triangle count.
+    project(p) -> (point on the surface, normal)."""
+    c = Vector(center)
+    n0 = (rot @ Vector((0, 0, 1))).normalized()
+
+    def height(p):
+        # p's height above the surface measured along n0 (Newton on the
+        # surface's tangent plane where the line through p meets it)
+        t = 0.0
+        for _ in range(8):
+            x = p + n0 * t
+            q, n = project(x)
+            dn = n.dot(n0)
+            if abs(dn) < 0.2:
+                break
+            step = (q - x).dot(n) / dn
+            t += step
+            if abs(step) < 1e-6:
+                break
+        return -t
+    h0 = height(c)
+
+    def f(lp):
+        sag = height(c + rot @ Vector((lp.x, lp.y, 0.0))) - h0
+        return Vector((lp.x, lp.y, lp.z - sag))
+    return f
+
+
+def torso_project(grow_fn):
+    """Projector onto a torso shell whose grow at height z is grow_fn(z)
+    (a torso_lathe with `extra`), straight forward or back at the same x, z."""
+    def f(p):
+        return torso_at(p.x, p.z, grow_fn(p.z), back=p.y < TORSO_CY)
+    return f
+
+
 # ------------------------------------------------------------------ builders
 def decal(mb, outline, place, style, wfn, lift=0.0015, thick=0.004, side_style=None, sink=0.002):
     """A raised patch: flat top fan + sides sunk just under the surface."""

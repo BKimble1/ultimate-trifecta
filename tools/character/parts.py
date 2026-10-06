@@ -793,10 +793,56 @@ def build_robe():
     return mb
 
 
-def _hood(mb, base, rim_style, extra_grow=0.035, opening=(0.228, 0.19, 1.145)):
+HOOD_OPENING = (0.228, 0.19, 1.145)
+# Final sweep: the hood's face opening rolls in to the face.  The shell kept
+# its full grow (3.5 cm) to the opening, so the rim's inner side stood 1.5 cm
+# off the cheeks and forehead and, seen in profile on the large preview
+# stage, the rim read as a flat ring forward of the face with the face set
+# back inside it (fit_check "bands").  Over the last HOOD_ROLL of the
+# opening's elliptic radius the shell now comes down to HOOD_EDGE_GROW, and
+# the rim (tube 2 cm) is centred there: its inner side sits 4.5 mm off the
+# face, just clear of it (test_outfits_p8 keeps every hood 4 mm off the skin,
+# so the face's shape keys never meet it).
+HOOD_EDGE_GROW = 0.0245
+HOOD_ROLL = 0.28
+
+
+def hood_grow(p, extra_grow=0.035, opening=HOOD_OPENING):
+    """The hood shell's grow at a point over its front (x, z of p)."""
+    ox, oz, oc = opening
+    r = math.hypot(p.x / ox, (p.z - oc) / oz)
+    t = smoothstep(1.0 + HOOD_ROLL, 1.0, r) * smoothstep(0.0, 0.08, p.y - HEAD_C.y)
+    return lerp(extra_grow, HOOD_EDGE_GROW, t)
+
+
+def hood_point(x, z, extra_grow=0.035, opening=HOOD_OPENING, lift=0.0):
+    """Point and normal on the front of the hood shell (the face opening's
+    roll included), `lift` above it."""
+    g = hood_grow(Vector((x, 1.0, z)), extra_grow, opening)
+    p = head_point(x, z, g + lift)
+    return p, head_normal(p, g + lift)
+
+
+def hood_project(extra_grow=0.035, opening=HOOD_OPENING):
+    """Projector onto the hood shell (roll included): p -> (point, normal)."""
+    import kit6 as K
+
+    def f(p):
+        q = Vector(p)
+        g = extra_grow
+        for _ in range(3):
+            g = hood_grow(q, extra_grow, opening)
+            q = K.head_project(g)(q)[0]
+        return q, head_normal(q, g)
+    return f
+
+
+def _hood(mb, base, rim_style, extra_grow=0.035, opening=HOOD_OPENING):
     """Mascot hood: a shell over the head with a face opening and a rolled rim.
     opening: the face opening's half-width, half-height and centre height
-    (Pass 8: the rotating outfits' hoods open a little wider, clear of the brows)."""
+    (Pass 8: the rotating outfits' hoods open a little wider, clear of the brows).
+    Final sweep: the shell rolls in to the face round the opening
+    (hood_grow), and the rim sits on that edge."""
     ox, oz, oc = opening
 
     def keep(p):
@@ -809,6 +855,7 @@ def _hood(mb, base, rim_style, extra_grow=0.035, opening=(0.228, 0.19, 1.145)):
         return True
     hw = lambda p: rig.seg_weights(p.z, [('neck', 0.95), ('head', None)], 0.03)
     f0 = len(mb.f)
+    v0 = len(mb.v)
     ellipsoid(mb, HEAD_C, (HEAD_R[0] + extra_grow, HEAD_R[1] + extra_grow, HEAD_R[2] + extra_grow), base, hw,
               segs=36, rings=26, power=HEAD_P, keep=keep, deform=rig.head_deform(extra_grow))
     # V6: the face opening was cut by dropping whole quads, a stepped edge
@@ -829,14 +876,24 @@ def _hood(mb, base, rim_style, extra_grow=0.035, opening=(0.228, 0.19, 1.145)):
         if r < 1e-6 or r > 1.8:
             continue
         x, z = ox * u / r, oc + oz * w / r
-        mb.v[i] = Vector((x, head_front_y(x, z, extra_grow), z))
+        mb.v[i] = Vector((x, head_front_y(x, z, HOOD_EDGE_GROW), z))
+    # the roll: the shell round the opening comes down toward the face
+    for i in range(v0, len(mb.v)):
+        if i in edge_v:
+            continue
+        p = mb.v[i]
+        if p.y <= HEAD_C.y or p.z < 0.94:
+            continue
+        g = hood_grow(p, extra_grow, opening)
+        if g < extra_grow - 1e-6:
+            mb.v[i] = p - head_normal(p, extra_grow) * (extra_grow - g)
     # rim
     pts = []
     for i in range(32):
         a = 2 * math.pi * i / 32
         x = ox * math.cos(a)
         z = oc + oz * math.sin(a)
-        p = head_point(x, z, extra_grow)
+        p = head_point(x, z, HOOD_EDGE_GROW)
         pts.append(p)
     sweep(mb, pts, [(0.02, 0.02)] * len(pts), rim_style, lambda p, sv, i: {'head': 1.0}, segs=10, closed=True,
           twist_hint=FWD)
@@ -845,10 +902,41 @@ def _hood(mb, base, rim_style, extra_grow=0.035, opening=(0.228, 0.19, 1.145)):
           lambda p: rig.seg_weights(p.z, [('chest', 0.89), ('neck', 0.95), ('head', None)], 0.03), segs=24, ry_scale=0.92)
 
 
+BELLY_SINK = 0.012     # the belly panel's centre under the suit's surface (it shows 1.8 cm proud)
+
+
+def belly_panel(mb, style, grow_fn, z, radii, wfn=torso_w, segs=18, rings=12):
+    """Final sweep: a mascot suit's belly panel, bent onto the suit.  It was a
+    flat disc on the round belly, so in profile its rim stood 6-10 cm off the
+    body as a floating oval (fit_check "patches").  Now its centre sits
+    BELLY_SINK under the surface and every point keeps that height above the
+    surface under it: it shows as a soft pad radii[2] - BELLY_SINK proud
+    whose edge meets the suit.  The radii are the visible outline grown by
+    the share the sink hides (so it reads the same size from the front).
+    The duck, frog and owl panels sit 1 cm higher and 1 cm shorter than the
+    flat disc (the bandit's 1 cm higher), so the lower edge stays clear of
+    where the coarse suit turns in under the crotch.
+    Returns the point and normal at its centre and a function giving its
+    top's height above the suit at (x, z) (for what sits on it)."""
+    import kit6 as K
+    prj = K.torso_project(grow_fn)
+    p, n = prj(Vector((0.0, 1.0, z)))
+    show = math.sqrt(max(0.0, 1.0 - (BELLY_SINK / radii[2]) ** 2))
+    r = (radii[0] / show, radii[1] / show, radii[2])
+    R = rot_align(n, UP)
+    c = p - n * BELLY_SINK
+    ellipsoid(mb, c, r, style, wfn, segs=segs, rings=rings, rot=R, deform=K.conform(c, R, prj))
+
+    def top(x, zz):
+        u = (x / r[0]) ** 2 + ((zz - z) / r[1]) ** 2
+        return -BELLY_SINK + r[2] * math.sqrt(max(0.0, 1.0 - u))
+    return p, n, top
+
+
 def _mascot_body(mb, style, belly):
-    torso_lathe(mb, style, 0.05, 0.46, 0.88, bottom_pole=True, extra=lambda z: 0.025 * math.sin(math.pi * smoothstep(0.46, 0.86, z)))
-    p, n = on_torso(0.0, 0.66, 0.085)
-    ellipsoid(mb, p - n * 0.012, (0.15, 0.17, 0.03), belly, lambda q: torso_w(q), segs=18, rings=12, rot=rot_align(n, UP))
+    bulge = lambda z: 0.025 * math.sin(math.pi * smoothstep(0.46, 0.86, z))
+    torso_lathe(mb, style, 0.05, 0.46, 0.88, bottom_pole=True, extra=bulge)
+    belly_panel(mb, belly, lambda z: 0.05 + bulge(z), 0.67, (0.15, 0.16, 0.03), wfn=lambda q: torso_w(q))
     sleeves(mb, style, 0.03)
     pant_legs(mb, style, 0.03)
 
@@ -865,8 +953,8 @@ def build_duck():
         ellipsoid(mb, Vector((0.03 * (i - 1), -0.255, 0.53)), (0.045, 0.02, 0.085), yel, lambda q: {'hips': 1.0}, segs=10,
                   rings=8, rot=R)
     _hood(mb, yel, belly)
-    # bill on the hood forehead
-    bp = head_point(0.0, 1.37, 0.035)
+    # bill on the hood forehead (on the hood's roll above the face opening)
+    bp = hood_point(0.0, 1.37)[0]
     R = rot_x(-12)
     ellipsoid(mb, bp + Vector((0, 0.06, -0.005)), (0.12, 0.10, 0.03), orange, rigid('head'), segs=18, rings=10, rot=R, power=2.3)
     # hood eyes
@@ -900,10 +988,13 @@ def build_frog():
         ellipsoid(mb, c + fwd * 0.074, (0.022, 0.03, 0.01), Style('#1b1d2b', T_NONE, 0.2, MAT_GLOSS), rigid('head'),
                   segs=10, rings=8, rot=R)
     # cheek spots on the hood
+    # (final sweep: on the hood beside its roll into the face, bent onto it)
+    import kit6 as K
     for sx in SIDES:
-        p = head_point(0.25 * sx, 1.07, 0.04)
+        p, n = hood_point(0.25 * sx, 1.07, lift=0.004)
+        R = rot_align(n, UP)
         ellipsoid(mb, p, (0.025, 0.025, 0.006), Style('#ff9fb0', T_NONE, 0.9, MAT_CLOTH), rigid('head'), segs=10, rings=6,
-                  rot=rot_align(head_normal(p, 0.04), UP))
+                  rot=R, deform=K.conform(p, R, hood_project()))
     return mb
 
 

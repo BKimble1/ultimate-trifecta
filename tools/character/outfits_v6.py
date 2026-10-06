@@ -231,8 +231,11 @@ def build_sleepmask():
     """Sleep mask pushed up onto the forehead (worn with starry_sleeper)."""
     mb = MeshBuilder('acc_sleepmask')
     hw = rigid('head')
-    grow = 0.03
-    cz = 1.382
+    # (final sweep: on the hair, a little higher: at 3 cm it rested on the
+    # bob's bangs and stood up to 3 cm off the forehead with the other
+    # styles, and its strap 0.9-1.1 cm off the hair, a halo from behind)
+    grow = HAIR_BAND_G + 0.001
+    cz = 1.392
     c = P.head_point(0.0, cz, grow)
     n = rig.head_normal(c, grow)
     prj = head_project(grow)
@@ -253,9 +256,11 @@ def build_sleepmask():
             y0 = 0.006 - 0.018 * math.sin(math.radians(a))
             K.surface_tube(mb, [(x0, y0), (x0 + 0.006 * math.cos(math.radians(a)), y0 - 0.011)], top, 0.0018, MASK_D, hw, segs=5)
     # elastic strap around the head at the same height
-    # a flat elastic lying on the hair, a little lower at the back
-    pts, nrm = K.head_band_points(cz, cz - 0.03, 0.025)
-    K.ribbon(mb, pts, nrm, 0.012, 0.0025, MASK, hw, segs=6)
+    # a flat elastic lying on the hair, a little lower at the back; 9 mm
+    # thick like the headlamp's strap, so where it presses into a bob it
+    # still shows as one band (7 mm showed only in dashes)
+    pts, nrm = K.head_band_points(cz, cz - 0.03, HAIR_BAND_G)
+    K.ribbon(mb, pts, nrm, 0.012, 0.0045, MASK, hw, segs=6)
     return mb
 
 
@@ -777,26 +782,29 @@ def _feather(w, h, n=10):
 def build_owl():
     mb = MeshBuilder('owl')
     g = 0.05
-    torso_lathe(mb, TAWNY, g, 0.46, 0.88, bottom_pole=True, extra=lambda z: 0.025 * math.sin(math.pi * smoothstep(0.46, 0.86, z)))
+    bulge = lambda z: 0.025 * math.sin(math.pi * smoothstep(0.46, 0.86, z))
+    torso_lathe(mb, TAWNY, g, 0.46, 0.88, bottom_pole=True, extra=bulge)
     # feathered belly: a cream patch with rows of scalloped feathers
-    gb = g + 0.025 * math.sin(math.pi * smoothstep(0.46, 0.86, 0.66))
-    p, n = torso_at(0.0, 0.665, gb)
-    ellipsoid(mb, p - n * 0.012, (0.15, 0.17, 0.03), OWL_BELLY, torso_w, segs=18, rings=12, rot=rot_align(n, UP))
+    # (final sweep: the patch is bent onto the belly, and the feathers lie on
+    # its top; the flat patch's rim stood up to 6 cm off the body in profile)
+    _, _, top = P.belly_panel(mb, OWL_BELLY, lambda z: g + bulge(z), 0.675, (0.15, 0.16, 0.03))
     for row, z in enumerate((0.75, 0.705, 0.66, 0.615, 0.57)):
         cols = 4 if row % 2 == 0 else 3
         for c in range(cols):
             x = (c - (cols - 1) / 2) * 0.052
             if abs(x) > 0.11:
                 continue
-            gz = g + 0.025 * math.sin(math.pi * smoothstep(0.46, 0.86, z)) + 0.016
-            decal(mb, _feather(0.04, 0.034, 9), place_front(x, z, gz), OWL_SCALE, torso_w, thick=0.003)
+            on_patch = (lambda u, v, x=x, z=z: torso_at(x - u, z + v, g + bulge(z + v) + top(x - u, z + v) - 0.001))
+            decal(mb, _feather(0.04, 0.034, 9), on_patch, OWL_SCALE, torso_w, thick=0.003)
     # wing sleeves: tawny with darker feather rows on the outside and three
     # flight feathers at each wrist
     sleeves(mb, TAWNY, 0.03, lod=1)
     for sx in SIDES:
-        prj = sleeve_project(sx, 0.03)
+        # (final sweep: on the sleeve's own radius, which gathers into the
+        # cuff over its last 6 cm: the wrist feathers stood 0.7 cm off it)
+        prj = cyl_project(shoulder(sx), arm_dir(sx), lambda s: P.sleeve_r(s, 0.03))
         for k, (s, ang) in enumerate(((0.06, 10.0), (0.1, -25.0), (0.14, 15.0), (0.19, -20.0), (0.23, 10.0), (0.27, -15.0))):
-            c, nn = arm_point(sx, s, ang - 40.0, P.arm_radius(s) + 0.03)
+            c, nn = arm_point(sx, s, ang - 40.0, P.sleeve_r(s, 0.03))
             decal(mb, _feather(0.042, 0.05, 9), place_planar(c, nn, -arm_dir(sx), prj), TAWNY_D, lambda q, sx=sx: arm_w(q, sx),
                   thick=0.004, lift=0.002)
         d = arm_dir(sx)
@@ -814,14 +822,15 @@ def build_owl():
     # the hood: face opening, rim, owl eyes and beak, ear tufts
     P._hood(mb, TAWNY, OWL_BELLY)
     hw = rigid('head')
+    hp = P.hood_project()
     for sx in SIDES:
-        c = P.head_point(0.105 * sx, 1.415, 0.035)
-        n = rig.head_normal(c, 0.035)
+        c, n = P.hood_point(0.105 * sx, 1.415)
         R2 = rot_align(n, UP)
-        ellipsoid(mb, c, (0.088, 0.08, 0.022), OWL_BELLY, hw, segs=18, rings=8, rot=R2)
-        ellipsoid(mb, c + n * 0.014, (0.058, 0.055, 0.015), EYE_WHITE, hw, segs=16, rings=8, rot=R2)
-        ellipsoid(mb, c + n * 0.024, (0.04, 0.04, 0.011), AMBER, hw, segs=16, rings=8, rot=R2)
-        ellipsoid(mb, c + n * 0.031, (0.022, 0.023, 0.008), PUPIL, hw, segs=12, rings=6, rot=R2)
+        # (final sweep: each disc bent onto the hood, so its rim meets it;
+        # flat, its rim stood off the round hood)
+        for off, radii, st, sg, rg in ((0.0, (0.088, 0.08, 0.022), OWL_BELLY, 18, 8), (0.014, (0.058, 0.055, 0.015), EYE_WHITE, 16, 8),
+                                       (0.024, (0.04, 0.04, 0.011), AMBER, 16, 8), (0.031, (0.022, 0.023, 0.008), PUPIL, 12, 6)):
+            ellipsoid(mb, c + n * off, radii, st, hw, segs=sg, rings=rg, rot=R2, deform=K.conform(c + n * off, R2, hp))
         up = R2 @ Vector((0, 1, 0))
         side = R2 @ Vector((1, 0, 0))
         ellipsoid(mb, c + n * 0.037 + up * 0.014 - side * 0.01 * sx, (0.008, 0.008, 0.003), SHINE, hw, segs=8, rings=4, rot=R2)
@@ -831,8 +840,8 @@ def build_owl():
             dirv = (rot_y(-sx * (22 + spread)) @ Vector((0, 0.1, 1))).normalized()
             ellipsoid(mb, root + dirv * ln * 0.5, (0.03, 0.017, ln * 0.55), TAWNY_D if k == 1 else TAWNY, hw, segs=12, rings=8,
                       rot=rot_align(dirv, FWD))
-    bp = P.head_point(0.0, 1.345, 0.04)
-    bn = rig.head_normal(bp, 0.04)
+    # (on the hood's roll above the face opening)
+    bp, bn = P.hood_point(0.0, 1.345, lift=0.005)
     lathe(mb, bp, rot_align((bn + Vector((0, 0, -0.6))).normalized(), FWD), [(0.0, 0.0), (0.0, 0.028), (0.025, 0.02), (0.055, 0.0)],
           BEAK, hw, segs=12, ry_scale=0.8)
     return mb
@@ -953,23 +962,61 @@ LENS = S('#fff1c4', rough=0.1, mat=MAT_EMIT)
 CHROME = S('#cfd5e0', rough=0.2, mat=MAT_GLOSS)
 
 
+# Final sweep: bands and straps worn round the head lie on the hair.  At a
+# fixed 2.5-2.7 cm off the head they rested on the bob (2.4 cm) and stood
+# 0.8-1.1 cm off the thinner tuft, curls and buns (1.6-1.8 cm), so from
+# behind on the large preview stage the band read as a halo round the head
+# (fit_check "bands").  Their inner side now lies on the thinner styles and
+# presses a few millimetres into the bob, and the straps are thick enough to
+# stay in view on it.
+HAIR_BAND_G = 0.0175        # a band's inner side on the hair (tuft 1.8, curls and buns 1.6, bob 2.4 cm)
+FOREHEAD_G = 0.0015         # a band's inner side on the bare forehead
+
+
+def _band_ring(z_front, z_back, z_hair, front_g, n=40, dip=(150.0, 170.0)):
+    """Points and normals of a headlamp's band: on the hair round the back,
+    the sides and the temples (at z_hair, above the short styles' hairline,
+    1.34-1.37 m), dipping onto the bare forehead (front_g, z_front) between
+    the temples, under the lamp (the short styles' hairline crossed the old
+    band at different places, 122-139 degrees, so its temples stood off the
+    skin with one style or sank into the hair with another)."""
+    pts, nrm = [], []
+    for k in range(n):
+        ang = -math.pi + 2 * math.pi * k / n
+        f = 0.5 - 0.5 * math.cos(ang)
+        dz = smoothstep(math.radians(dip[0]), math.radians(dip[1]), abs(ang))
+        dg = smoothstep(math.radians(dip[0] + 2.0), math.radians(dip[0] + 10.0), abs(ang))
+        z = lerp(lerp(z_back, z_hair, f), z_front, dz)
+        g = lerp(HAIR_BAND_G, front_g, dg)
+        p = P._shell_point(ang, z, g)
+        pts.append(p)
+        nrm.append(rig.head_normal(p, g))
+    return pts, nrm
+
+
 def build_headlamp():
     mb = MeshBuilder('hat_headlamp')
     hw = rigid('head')
     # worn tilted, as a headlamp sits: low on the forehead, high at the back
-    # (over the curly crop's smooth band)
-    pts, nrm = K.head_band_points(1.335, 1.378, 0.025)
-    K.ribbon(mb, pts, nrm, 0.014, 0.003, STRAP, hw, segs=8)
-    K.ribbon(mb, pts, nrm, 0.0035, 0.0014, REFLECT, hw, segs=4, lift=0.0055)
+    # (over the curly crop's smooth band); final sweep: on the hair round the
+    # back, sides and temples, down onto the forehead under the lamp (under
+    # a bob's bangs there), 9 mm thick (6) so it shows where it presses into
+    # a bob
+    pts, nrm = _band_ring(1.335, 1.378, 1.376, FOREHEAD_G)
+    K.ribbon(mb, pts, nrm, 0.014, 0.0045, STRAP, hw, segs=8)
+    K.ribbon(mb, pts, nrm, 0.0035, 0.0014, REFLECT, hw, segs=4, lift=0.0095)
+    # (the strap over the crown ends under the band at the sides: past it,
+    # down to 78 degrees, it hung over the bare temples above the ears)
     top, tn = [], []
     for k in range(17):
-        a = math.radians(-78 + 156 * k / 16)
-        q, n = head_project(0.025)(Vector((math.sin(a) * 0.4, -0.02, HEAD_C.z + math.cos(a) * 0.4)))
+        a = math.radians(-66 + 132 * k / 16)
+        q, n = head_project(HAIR_BAND_G)(Vector((math.sin(a) * 0.4, -0.02, HEAD_C.z + math.cos(a) * 0.4)))
         top.append(q)
         tn.append(n)
-    K.ribbon(mb, top, tn, 0.01, 0.0028, STRAP, hw, closed=False, segs=6)
-    c = P.head_point(0.0, 1.335, 0.026)
-    n = rig.head_normal(c, 0.026)
+    K.ribbon(mb, top, tn, 0.01, 0.0045, STRAP, hw, closed=False, segs=6)
+    # (the lamp on the strap's front: the strap's outer face is 1 cm off the forehead)
+    c = P.head_point(0.0, 1.335, FOREHEAD_G + 0.011)
+    n = rig.head_normal(c, FOREHEAD_G + 0.011)
     R = rot_align(n, UP)
     ellipsoid(mb, c + n * 0.026, (0.056, 0.04, 0.034), LAMP, hw, segs=16, rings=10, rot=R, power=3.0)
     lathe(mb, c + n * 0.057, R, torus_profile(0.0, 0.027, 0.006, 6), CHROME, hw, segs=16, closed_profile=True)
@@ -1013,12 +1060,17 @@ HEAD_R = rig.HEAD_R
 def build_glowband():
     mb = MeshBuilder('hat_glowband')
     hw = rigid('head')
-    pts, nrm = K.head_band_points(1.385, 1.36, 0.027)
+    # (final sweep: on the hair all round, just above the short styles'
+    # hairline in front; it stood 1.1-1.3 cm off the tuft, curls and buns.
+    # The star is smaller so its points stay on the band's crown)
+    zf = 1.392
+    pts, nrm = K.head_band_points(zf, 1.36, HAIR_BAND_G)
     K.ribbon(mb, pts, nrm, 0.02, 0.0065, S('#ffffff', T_PRIMARY, 1.0), hw, segs=10)
     K.ribbon(mb, pts, nrm, 0.0045, 0.002, GLOW, hw, segs=4, lift=0.012)
-    c = P.head_point(0.0, 1.385, 0.0405)
-    n = rig.head_normal(c, 0.0405)
-    decal(mb, K.star_outline(0.017), place_planar(c, n, UP, head_project(0.0405)), GLOW, hw, thick=0.003)
+    gs = HAIR_BAND_G + 0.0135
+    c = P.head_point(0.0, zf, gs)
+    n = rig.head_normal(c, gs)
+    decal(mb, K.star_outline(0.015), place_planar(c, n, UP, head_project(gs)), GLOW, hw, thick=0.003)
     return mb
 
 
@@ -1027,8 +1079,11 @@ def build_owlears():
     hw = rigid('head')
     band, bn = [], []
     for k in range(21):
-        a = math.radians(-82 + 164 * k / 20)
-        q, n = head_project(0.026)(Vector((math.sin(a) * 0.45, 0.01, HEAD_C.z + 0.02 + math.cos(a) * 0.45)))
+        # (final sweep: on the hair, and ending at the short styles'
+        # hairline above the ears; at 2.6 cm and down to 82 degrees it stood
+        # 1.2 cm off the tuft and 1.9 cm off the bare temples)
+        a = math.radians(-74 + 148 * k / 20)
+        q, n = head_project(HAIR_BAND_G)(Vector((math.sin(a) * 0.45, 0.01, HEAD_C.z + 0.02 + math.cos(a) * 0.45)))
         band.append(q)
         bn.append(n)
     K.ribbon(mb, band, bn, 0.007, 0.0035, S('#6b4a30', rough=0.6), hw, closed=False, segs=6)
