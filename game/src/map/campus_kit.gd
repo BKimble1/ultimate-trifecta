@@ -9,12 +9,11 @@ extends RefCounted
 ##                lilies and three rock shapes.  Nothing heavy is generated
 ##                at runtime; CampusBuilder places them as chunked MultiMesh
 ##                instances.
-##  Species       which tree each CampusLayout tree is drawn as.  Collider
+##  Species       which tree each CampusLayout tree is drawn as: the traced
+##                species where the evidence shows one, otherwise a regional
+##                mix by kind (deciduous, conifer, ornamental).  Collider
 ##                trees keep their place, radius and collider; only the look
-##                is chosen here: groves of related species (a conifer stand,
-##                a birch glade, mixed oaks) from a low-frequency field, linden
-##                avenues along the loop road, autumn maples and blossom trees
-##                as accents on the quad, the dorm lawns and Lily Basin.
+##                is chosen here.  One early-autumn night: no blossom.
 ##  Light field   a 2 m grid of soft ambient occlusion (trunks, buildings,
 ##                walls, hedges, shrubs, rocks), warm light (lamps, entrances,
 ##                lit windows), cool light (the pool's and fountain's glow),
@@ -145,55 +144,25 @@ static func _hash01(x: float, z: float, salt: int = 0) -> float:
 	return float(posmod(h, 10007)) / 10007.0
 
 
-## Grove field: one of four stands per ~26 m cell (smoothed by jitter so the
-## boundaries are not a grid).
-static func _grove(p: Vector2) -> int:
-	var j := Vector2(sin(p.y * 0.11) * 6.0, cos(p.x * 0.09) * 6.0)
-	var c := ((p + j) / 26.0).floor()
-	return posmod(hash(Vector2i(int(c.x), int(c.y))), 4)
-
-
-## The species a layout tree is drawn as (visual only).
+## The species a layout tree is drawn as (visual only).  A traced tree
+## carries its species when the evidence shows one; otherwise its kind picks
+## a plausible mix for this region (deciduous: oak, maple, linden, birch;
+## conifer: spruce, pine, fir; ornamental: maple and birch).  One coherent
+## early-autumn night: no spring blossom.
 static func species_of(t: Dictionary) -> String:
+	var sp := String(t.get("species", ""))
+	if sp in BROAD and sp != "blossom":
+		return sp
+	if sp in CONIFER:
+		return sp
 	var p: Vector2 = t["pos"]
-	var pine := String(t["kind"]) == "pine"
 	var r := _hash01(p.x, p.y, 7)
-	# avenue trees along the College Loop and the quad's north row
-	var avenue := (absf(absf(p.x) - 84.0) < 0.01 or absf(p.y + 63.5) < 0.01 or absf(p.y - 93.5) < 0.01)
-	if avenue and not pine:
-		return "linden"
-	if absf(p.y + 8.0) < 0.01 and absf(p.x) <= 24.0:
-		return "maple"
-	# the pond woods: conifer stands, birch glades and mixed oak groves
-	if p.x < -92.0 and p.y > -10.0 and p.y < 86.0:
-		match _grove(p):
-			0, 1:
-				return "fir" if r < 0.8 else "oak"
-			2:
-				return "birch" if r < 0.6 else ("oak" if r < 0.85 else "fir")
-			_:
-				return "oak" if r < 0.65 else ("fir" if r < 0.85 else "birch")
-	# north-west quarry woods: stout pines and spruce on the rocky ground
-	if p.x < -100.0 and p.y < -100.0:
-		return "pine" if r < 0.6 else "spruce"
-	# Lily Basin / greenhouse side: blossom and linden
-	if p.x > 60.0 and p.y < -60.0:
-		if pine:
-			return "spruce"
-		return "blossom" if r < 0.45 else ("linden" if r < 0.75 else "birch")
-	# dorm lawns: blossom, birch, the odd maple
-	if p.y > 94.0 and absf(p.x) < 80.0:
-		if pine:
-			return "fir"
-		return "blossom" if r < 0.4 else ("birch" if r < 0.7 else "maple")
-	# the quad (between library and science): warm maples among oaks
-	if absf(p.x) < 40.0 and p.y > -12.0 and p.y < 60.0:
-		if pine:
-			return "spruce"
-		return "maple" if r < 0.45 else ("oak" if r < 0.8 else "blossom")
-	if pine:
-		return "fir" if r < 0.5 else ("spruce" if r < 0.8 else "pine")
-	return "oak" if r < 0.45 else ("linden" if r < 0.7 else ("maple" if r < 0.85 else "birch"))
+	match String(t.get("kind", "deciduous")):
+		"conifer", "pine":
+			return "spruce" if r < 0.45 else ("pine" if r < 0.8 else "fir")
+		"ornamental":
+			return "maple" if r < 0.6 else "birch"
+	return "oak" if r < 0.4 else ("maple" if r < 0.65 else ("linden" if r < 0.88 else "birch"))
 
 
 ## Per-instance tint for a tree (crowns vary a little in value and warmth).
@@ -246,22 +215,22 @@ func stamp_trees() -> void:
 
 
 func stamp_buildings() -> void:
+	var dorm_of: Dictionary = {}
+	for id in CampusDorms.ids():
+		dorm_of[String(CampusDorms.geometry(id).get("building", ""))] = id
 	for bd in _layout.buildings:
-		var pos: Vector2 = bd["pos"]
-		var size: Vector2 = bd["size"]
-		if bd.has("dorm_id"):
-			# V6 dorm: shade around the closed part only; the common room is
-			# lit warm inside (and spills a little out of its doors)
-			var g := CampusDorms.geometry(String(bd["dorm_id"]))
-			var room: Rect2 = g["room"]
-			var fp: Rect2 = g["footprint"]
-			_stamp_rect(ao, Rect2(fp.position.x, room.end.y, fp.size.x, fp.end.y - room.end.y), 3.2, 0.5)
-			_stamp_rect(warm, room, 1.2, 0.95)
+		if bool(bd["background"]):
 			continue
-		_stamp_rect(ao, Rect2(pos - size * 0.5, size), 3.2, 0.5)
+		var poly: PackedVector2Array = bd["poly"]
+		_stamp_poly(ao, poly, 3.2, 0.5)
+		if dorm_of.has(String(bd["id"])):
+			# a start dorm: its commons is lit warm inside and spills a little
+			# out of its doors
+			_stamp_poly(warm, CampusDorms.geometry(String(dorm_of[bd["id"]]))["room"], 1.2, 0.95)
+			continue
 		# lit windows spill a little warmth onto the ground along the walls
-		if not bd.get("dome", false) and String(bd["id"]) not in ["shed", "tower"]:
-			_stamp_rect(warm, Rect2(pos - size * 0.5, size), 3.0, 0.16 * float(bd.get("warm", 0.5)) * 2.0)
+		if String(bd["kind"]) not in ["shed", "garage", "utility"] and bd.get("landmark") == null:
+			_stamp_poly(warm, poly, 3.0, 0.16 if String(bd["kind"]) != "residence" else 0.2, true)
 
 
 func stamp_barriers() -> void:
@@ -284,13 +253,15 @@ func stamp_lights() -> void:
 		var dn: Vector2 = dd["normal"]
 		_stamp(warm, dp + dn * 2.0, 6.0, 0.8, 1.2)
 	for w in _layout.waters:
-		var c: Vector2 = w["center"]
-		match String(w["id"]):
+		match String(w["kind"]):
 			"pool":
-				_stamp_rect(cool, Rect2(c - w["size"] * 0.5, w["size"]), 5.0, 0.55)
+				for poly in w["polys"]:
+					_stamp_poly(cool, poly, 5.0, 0.55)
 			"fountain":
-				_stamp(cool, c, 11.0, 0.35, 1.0)
-				_stamp(warm, c, 13.0, 0.25, 1.0)
+				var c: Vector2 = w["center"]
+				var r := maxf(4.0, (w["rect"] as Rect2).size.length() * 0.5)
+				_stamp(cool, c, r + 6.0, 0.35, 1.0)
+				_stamp(warm, c, r + 8.0, 0.25, 1.0)
 
 
 func stamp_paths() -> void:
@@ -346,6 +317,26 @@ func _stamp_rect(grid: PackedFloat32Array, rect: Rect2, falloff: float, amount: 
 			var dx := maxf(maxf(rect.position.x - p.x, p.x - rect.end.x), 0.0)
 			var dz := maxf(maxf(rect.position.y - p.y, p.y - rect.end.y), 0.0)
 			var dist := Vector2(dx, dz).length()
+			if dist >= falloff:
+				continue
+			var idx := j * _w + i
+			grid[idx] = minf(1.0, grid[idx] + amount * (1.0 - dist / falloff))
+
+
+## Polygon stamp: `amount` inside, fading to 0 at `falloff` outside (or,
+## with `edge_only`, only the band outside the walls).
+func _stamp_poly(grid: PackedFloat32Array, poly: PackedVector2Array, falloff: float, amount: float, edge_only: bool = false) -> void:
+	if poly.size() < 3:
+		return
+	var b := CampusLayout.BOUNDS
+	var big := CampusData.bounds(poly).grow(falloff)
+	for j in range(maxi(0, int((big.position.y - b.position.y) / CELL)), mini(_d, int((big.end.y - b.position.y) / CELL) + 2)):
+		for i in range(maxi(0, int((big.position.x - b.position.x) / CELL)), mini(_w, int((big.end.x - b.position.x) / CELL) + 2)):
+			var p := Vector2(b.position.x + i * CELL, b.position.y + j * CELL)
+			var inside := Geometry2D.is_point_in_polygon(p, poly)
+			if inside and edge_only:
+				continue
+			var dist := 0.0 if inside else CampusData.dist_to_edge(p, poly)
 			if dist >= falloff:
 				continue
 			var idx := j * _w + i

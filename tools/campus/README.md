@@ -1,15 +1,37 @@
-# Campus art kit (V5)
+# Campus tools
 
-Original, procedural assets for Moonbrook College. No third-party art,
-scans or asset packs are used. Everything here is generated from the
-parameters in these scripts.
+Two pipelines live here:
+
+1. **Campus data** (the reference-campus rebuild): the layer data in
+   `game/data/campus/*.json` is traced over a public-domain 2022 orthophoto
+   into `tools/campus/traced/<zone>.json` and merged by `build_data.py`.
+   The schema is `docs/campus/DATA_SCHEMA.md`. The reference pack (photos,
+   maps, the atlas) stays outside the repository; set `CAMPUS_REF` to its
+   folder for the raster tools.
+2. **Art kit**: original, procedural vegetation and rock meshes. No
+   third-party art, scans or asset packs are used. Everything is generated
+   from the parameters in these scripts.
+
+## Campus data
+
+| Script | Does |
+|---|---|
+| `geo.py` | The metric frame: EPSG:26916 (UTM 16N), x = E - 627300, z = 4479400 - N (+x east, +z south). Raster helpers. |
+| `tile.py` | Renders an aerial tile with a labelled metre grid (`--src` draws traced data on top). |
+| `overlay.py` | Draws whole layers over the aerial for checking. |
+| `georef.py` | Fits (least squares affine) and warps newer plans/diagrams onto the frame. |
+| `build_data.py` | Validates the traced zones (ids, kinds, polygons, evidence, a private real-name screen) and writes `game/data/campus/<layer>.json`. `--check` validates only. |
+
+`game/data/campus/gameplay.json` (play boundary, start dorms, objective
+pool, spawns, gadget and coin spots) is written by hand, not traced.
+
+## Art kit
 
 | Script | Runs in | Writes |
 |---|---|---|
 | `build_kit.py` | Blender 4.5 as a Python module (`bpy`) | `art_src/campus/raw/<mesh>.utm` + `manifest.json` |
 | `make_textures.py` | python3 + numpy + Pillow | `game/assets/campus/campus_detail_a.png`, `campus_detail_b.png` |
 | `import_kit.gd` | Godot 4.7.2, headless | `game/assets/campus/campus_kit.res` (MeshLibrary) |
-| `bake_dressing.gd` | Godot 4.7.2, headless | `game/assets/campus/campus_dressing.res` |
 | `build.sh` | all of the above, in order | |
 
 ```
@@ -35,7 +57,7 @@ BPY_PYTHON=/path/to/python tools/campus/build.sh   # another bpy install
 - `CampusKit.load_kit()` loads the MeshLibrary.
 - `CampusKit.lod_mesh(base)` packs `base_0/1/2` into one ArrayMesh with native mesh LODs. The keys are scaled to the render height so LOD distances are the same on every screen.
 - `CampusBuilder` places the kit as chunked MultiMeshes.
-- `CampusDressing` holds the decorative placement rules (corridor clearances, obstacle hugging). They run offline in `bake_dressing.gd`, and `test_campus_art` checks the result.
+- Shrubs and trees come from the traced vegetation layer (`trees.json`); there is no random dressing pass.
 
 ## Iterating
 

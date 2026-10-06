@@ -31,7 +31,12 @@ extends RefCounted
 ## full speed; bit 8, the latch, is retired); snapshot player flag 4 is
 ## "fast" too; the private block loses the meter byte. A 7 and an 8 game
 ## refuse each other at join ("Update the game to join.").
-const VERSION := 8
+## Protocol 9 (reference campus): the campus is about 1.2 x 1.0 km, beyond the
+## +-512 m an int16 at 1/64 m can hold, so world positions carry x and z as
+## 24-bit signed values (same 1/64 m precision, +-131 km); y stays int16.
+## START names the campus data's hash (`campus`) so two builds with different
+## maps can never share a round.  An 8 and a 9 game refuse each other at join.
+const VERSION := 9
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}
@@ -63,7 +68,8 @@ const MAX_STR := 64
 const MAX_TOKEN := 4096
 const MAX_JSON := 32768
 
-const POS_SCALE := 64.0     # 1/64 m precision, int16 range +-512 m
+const POS_SCALE := 64.0     # 1/64 m precision; x/z 24-bit (+-131 km), y int16 (+-512 m)
+const POS_MAX24 := 8388607
 const VEL_SCALE := 100.0
 
 
@@ -134,13 +140,28 @@ static func get_json(b: StreamPeerBuffer) -> Dictionary:
 
 
 static func put_vec3(b: StreamPeerBuffer, v: Vector3) -> void:
-	b.put_16(clampi(int(round(v.x * POS_SCALE)), -32767, 32767))
+	_put_24(b, clampi(int(round(v.x * POS_SCALE)), -POS_MAX24, POS_MAX24))
 	b.put_16(clampi(int(round(v.y * POS_SCALE)), -32767, 32767))
-	b.put_16(clampi(int(round(v.z * POS_SCALE)), -32767, 32767))
+	_put_24(b, clampi(int(round(v.z * POS_SCALE)), -POS_MAX24, POS_MAX24))
 
 
 static func get_vec3(b: StreamPeerBuffer) -> Vector3:
-	return Vector3(float(b.get_16()) / POS_SCALE, float(b.get_16()) / POS_SCALE, float(b.get_16()) / POS_SCALE)
+	var x := _get_24(b)
+	var y := b.get_16()
+	var z := _get_24(b)
+	return Vector3(float(x) / POS_SCALE, float(y) / POS_SCALE, float(z) / POS_SCALE)
+
+
+## 24-bit two's complement: the low byte, then the signed high 16 bits.
+static func _put_24(b: StreamPeerBuffer, v: int) -> void:
+	b.put_u8(v & 0xFF)
+	b.put_16(v >> 8)
+
+
+static func _get_24(b: StreamPeerBuffer) -> int:
+	var lo := b.get_u8()
+	var hi := b.get_16()
+	return (hi << 8) | lo
 
 
 static func put_vel(b: StreamPeerBuffer, v: Vector3) -> void:

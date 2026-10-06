@@ -1,26 +1,52 @@
 class_name CampusArchitecture
 extends RefCounted
-## Buildings, walls, hedges, fences, lamps, benches, props and signs for the
-## campus look (V5).  Visual only: every collider comes from CampusLayout via
-## CampusBuilder.build_collision, so nothing here may stand where a runner
-## walks unless a collider already does (porch roofs are wall-bracketed,
-## steps are a few centimetres, signs stand beside the paths).
+## Buildings, walls, hedges, fences, lamps, benches and props for the
+## reference campus, generated from the traced data (visual only: every
+## collider comes from CampusLayout via CampusBuilder.build_collision).
 ##
-## A small modular kit shared by all buildings: brick or plaster walls on a
-## dressed-stone plinth with quoins and a moulded cornice, recessed windows
-## with lit interiors that vary (warm lamp, cooler screen glow, curtains
-## half drawn), stone lintels and sills, roofs with thickness, a fascia, a
-## ridge cap and chimneys, and readable entrances (lit door, transom, porch
-## roof, a step and a name board).
+## A building is its footprint (or its parts, each a mass with its own
+## height and roof) extruded with the game's established modular look:
+## walls in their material on a dressed plinth, a moulded cornice, recessed
+## windows with lit interiors that vary (warm lamps, cooler screens, curtains
+## half drawn), frames, lintels and sills, roofs with thickness (flat behind
+## a parapet, gable, hip, pyramid, dome, shed), and the real entrances (a
+## lit door with a canopy, or a classical portico with columns and a
+## pediment).  Windows follow each facade in bays per floor and skip walls
+## another part of the same building stands against.  Background buildings
+## (beyond the play boundary) get the cheap version: massing, roof and a
+## scatter of lit windows.
 
 var B: CampusBuilder
 var L: CampusLayout
 
-const BRICK := Color(0.64, 0.34, 0.30)
-const TRIM := Color(0.90, 0.88, 0.84)
-const STONE_TRIM := Color(0.74, 0.72, 0.70)
+const TRIM := Color(0.92, 0.91, 0.88)
+const STONE_TRIM := Color(0.76, 0.73, 0.68)
 const IRON := Color(0.17, 0.19, 0.25)
 const WOOD := Color(0.62, 0.42, 0.27)
+const BRICK := Color(0.62, 0.33, 0.28)
+
+const WALLS := {
+	# style.wall: [colour, material id]
+	"brick_red": [Color(0.62, 0.33, 0.28), MeshKit.M_BRICK],
+	"brick_brown": [Color(0.50, 0.31, 0.25), MeshKit.M_BRICK],
+	"brick_tan": [Color(0.72, 0.58, 0.45), MeshKit.M_BRICK],
+	"stone_light": [Color(0.78, 0.75, 0.68), MeshKit.M_STONE],
+	"siding_white": [Color(0.90, 0.89, 0.86), MeshKit.M_WOOD],
+	"siding_grey": [Color(0.64, 0.66, 0.68), MeshKit.M_WOOD],
+	"glass": [Color(0.36, 0.50, 0.58), MeshKit.M_GLASS],
+	"metal_light": [Color(0.78, 0.80, 0.82), MeshKit.M_METAL],
+	"metal_dark": [Color(0.30, 0.32, 0.36), MeshKit.M_METAL],
+	"concrete": [Color(0.70, 0.69, 0.66), MeshKit.M_STONE],
+}
+const TRIMS := {"white": TRIM, "stone": STONE_TRIM, "dark": Color(0.22, 0.22, 0.25), "none": Color(0, 0, 0, 0)}
+const ROOFS := {
+	"shingle_dark": [Color(0.22, 0.23, 0.27), MeshKit.M_ROOF],
+	"shingle_grey": [Color(0.38, 0.39, 0.42), MeshKit.M_ROOF],
+	"metal_grey": [Color(0.50, 0.53, 0.56), MeshKit.M_METAL],
+	"metal_dark": [Color(0.25, 0.28, 0.32), MeshKit.M_METAL],
+	"membrane": [Color(0.52, 0.52, 0.53), MeshKit.M_STONE],
+	"copper": [Color(0.30, 0.48, 0.42), MeshKit.M_METAL],
+}
 
 
 func _init(builder: CampusBuilder) -> void:
@@ -29,230 +55,955 @@ func _init(builder: CampusBuilder) -> void:
 
 
 func _k(x: float, z: float, detail: bool = false) -> MeshKit:
-	return B._kit_at(x, z, false, detail)
+	return B.kit_at(x, z, false, detail)
 
 
 # ---------------------------------------------------------------------------
 # Buildings
 # ---------------------------------------------------------------------------
-func building(bd: Dictionary) -> void:
-	var pos: Vector2 = bd["pos"]
-	var size: Vector2 = bd["size"]
-	var h: float = bd["h"]
-	var k := _k(pos.x, pos.y)
-	var wall: Color = bd["wall"]
-	var roof: Color = bd["roof"]
-	var warm: float = float(bd.get("warm", 0.5))
-	var id: String = bd["id"]
-	var hx := size.x * 0.5
-	var hz := size.y * 0.5
-	var brick := wall.is_equal_approx(BRICK)
-	var wall_mat := MeshKit.M_BRICK if brick else MeshKit.M_PLASTER
-	if id == "tower":
-		_tower(bd, k)
+## `doors`: open doorways cut through the walls (a start dorm's, from
+## CampusDorms): [{pos, normal, w, h}].  No wall, window or entrance door is
+## drawn across them; a portico at one is still drawn.
+func building(bd: Dictionary, doors: Array = []) -> void:
+	if bd.get("landmark") != null and String(bd["landmark"]) != "":
+		if B.marks.landmark(bd):
+			return
+	if bool(bd["background"]):
+		_background_building(bd)
 		return
-	if id == "shed":
-		_shed(bd, k)
-		return
-	if bd.has("dorm_id"):
-		B.dorm_art.shell(bd)   # V6: a shell with a common room (DormArt)
-		return
-	if bd.get("dome", false):
-		_observatory(bd, k)
-		return
-	var top_col := wall.lightened(0.1)
-	k.mat = wall_mat
-	k.box(Vector3(pos.x, h * 0.5, pos.y), Vector3(size.x, h, size.y), wall, 0.0, 0.0 if not bd.get("glass", false) else 0.25, top_col)
-	# plinth, a moulded cornice and corner quoins in dressed stone
-	k.mat = MeshKit.M_STONE
-	k.chamfer_box(Vector3(pos.x, 0.35, pos.y), Vector3(size.x + 0.5, 0.7, size.y + 0.5), wall.darkened(0.25).lerp(STONE_TRIM.darkened(0.3), 0.5), 0.1)
-	k.chamfer_box(Vector3(pos.x, h - 0.2, pos.y), Vector3(size.x + 0.6, 0.5, size.y + 0.6), STONE_TRIM.lerp(wall.lightened(0.25), 0.4), 0.12)
-	k.chamfer_box(Vector3(pos.x, h - 0.55, pos.y), Vector3(size.x + 0.3, 0.2, size.y + 0.3), STONE_TRIM.lerp(wall.lightened(0.18), 0.4), 0.06)
-	if not bd.get("glass", false):
-		for cx: float in [-1.0, 1.0]:
-			for cz: float in [-1.0, 1.0]:
-				k.chamfer_box(Vector3(pos.x + cx * (hx - 0.05), (h - 0.7) * 0.5 + 0.35, pos.y + cz * (hz - 0.05)), Vector3(0.7, h - 1.4, 0.7), STONE_TRIM.lerp(wall.lightened(0.16), 0.5), 0.08)
-	k.mat = 0.0
-	if bd.get("glass", false):
-		k.mat = MeshKit.M_GLASS
-		k.box(Vector3(pos.x, h * 0.5, pos.y), Vector3(size.x + 0.05, h * 0.8, size.y + 0.05), Color(0.55, 0.9, 0.8), 0.0, 0.35)
-		# glazing bars
-		k.mat = MeshKit.M_METAL
-		for i in int(size.y / 2.0) + 1:
-			var zz := pos.y - hz + float(i) * size.y / float(int(size.y / 2.0))
-			for sx: float in [-1.0, 1.0]:
-				k.box(Vector3(pos.x + sx * (hx + 0.06), h * 0.5, zz), Vector3(0.08, h * 0.8, 0.1), Color(0.86, 0.9, 0.88))
+	var style: Dictionary = bd["style"]
+	var wall_spec: Array = WALLS.get(String(style.get("wall", "brick_red")), WALLS["brick_red"])
+	var trim: Color = TRIMS.get(String(style.get("trim", "stone")), STONE_TRIM)
+	var roof_spec: Array = ROOFS.get(String(style.get("roof_mat", "shingle_dark")), ROOFS["shingle_dark"])
+	var win := String(style.get("windows", "punched"))
+	var parts: Array = bd["parts"]
+	if parts.is_empty():
+		parts = [{"poly": bd["poly"], "h": float(bd["h"]), "base": 0.0, "roof": bd["roof"]}]
+	var floors := int(bd.get("floors", 0))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(String(bd["id"]))
+	var warm := 0.55 if String(bd["kind"]) != "residence" else 0.62
+	for pi in parts.size():
+		var part: Dictionary = parts[pi]
+		var poly: PackedVector2Array = part["poly"]
+		var h := float(part["h"])
+		var base := float(part.get("base", 0.0))
+		var nfl := floors if floors > 0 and pi == 0 else maxi(1, int(round((h - base) / (3.3 if String(bd["kind"]) == "residence" else 4.0))))
+		_mass(bd, part, parts, wall_spec, trim, base, h, doors)
+		if win != "none" and String(style.get("wall", "")) != "glass":
+			_windows(bd, part, parts, win, nfl, base, h, trim, warm, rng, doors)
+		elif String(style.get("wall", "")) == "glass":
+			_curtain_mullions(poly, base, h, trim)
+		_roof(part, poly, h, roof_spec, wall_spec, trim)
+	for e in bd["entrances"]:
+		var ep := CampusLayout._v2(e.get("p", [0, 0]))
+		var at_door := false
+		for dr in doors:
+			if ep.distance_to(dr["pos"]) < float(dr["w"]) * 0.5 + 1.5:
+				at_door = true
+		if not at_door:
+			_entrance(bd, e, trim, wall_spec)
+		elif String(e.get("kind", "")) == "portico":
+			var face := deg_to_rad(float(e.get("face", 0.0)))
+			var n3 := Vector3(sin(face), 0, -cos(face))
+			portico(_k(ep.x, ep.y), Vector3(ep.x, 0, ep.y) + n3 * 0.06, n3, Vector3(-n3.z, 0, n3.x), portico_width(e), clampf(float(bd["h"]) * 0.75, 5.0, 11.0), trim if trim.a > 0.0 else TRIM)
+
+
+## Door openings along the edge a->b: [[distance from a, half width,
+## height]] for every door standing on it (within 0.7 m, facing out).
+static func edge_holes(a: Vector2, b: Vector2, doors: Array) -> Array:
+	var out: Array = []
+	var d := b - a
+	var len := d.length()
+	if len < 0.01:
+		return out
+	var dir := d / len
+	var nrm := Vector2(dir.y, -dir.x)
+	for dr in doors:
+		var p: Vector2 = dr["pos"]
+		var t := (p - a).dot(dir)
+		if t < -0.5 or t > len + 0.5:
+			continue
+		if absf((p - a).dot(nrm)) > 0.7 or (dr["normal"] as Vector2).dot(nrm) < 0.7:
+			continue
+		out.append([clampf(t, 0.0, len), float(dr["w"]) * 0.5, float(dr.get("h", 3.0))])
+	out.sort_custom(func(x: Array, y: Array) -> bool: return float(x[0]) < float(y[0]))
+	return out
+
+
+## The solid stretches of a->b between holes: [[t0, t1]].
+static func solid_spans(len: float, holes: Array) -> Array:
+	var out: Array = []
+	var t := 0.0
+	for hl in holes:
+		var h0 := float(hl[0]) - float(hl[1])
+		if h0 > t + 0.001:
+			out.append([t, h0])
+		t = maxf(t, float(hl[0]) + float(hl[1]))
+	if t < len - 0.001:
+		out.append([t, len])
+	return out
+
+
+## Walls of one mass: one quad per footprint edge in the wall material, a
+## darker plinth band and a cornice band in the trim colour.
+func _mass(bd: Dictionary, part: Dictionary, parts: Array, wall_spec: Array, trim: Color, base: float, h: float, doors: Array = []) -> void:
+	var poly: PackedVector2Array = CampusData.ccw(part["poly"])
+	var c := CampusData.centroid(poly)
+	var k := _k(c.x, c.y)
+	var col: Color = wall_spec[0]
+	var mat: float = wall_spec[1]
+	var n := poly.size()
+	for i in n:
+		var a := poly[i]
+		var b := poly[(i + 1) % n]
+		var d := b - a
+		if d.length() < 0.05:
+			continue
+		var out := Vector3(d.normalized().y, 0, -d.normalized().x)
+		var shade := col.darkened(0.06 * absf(out.x))
+		var holes := edge_holes(a, b, doors) if base < 0.5 else []
+		var dir := d.normalized()
+		k.mat = mat
+		if holes.is_empty():
+			_quad_facing(k, Vector3(a.x, base, a.y), Vector3(b.x, base, b.y), Vector3(b.x, h, b.y), Vector3(a.x, h, a.y), shade, out)
+		else:
+			for sp in solid_spans(d.length(), holes):
+				var s0 := a + dir * float(sp[0])
+				var s1 := a + dir * float(sp[1])
+				_quad_facing(k, Vector3(s0.x, base, s0.y), Vector3(s1.x, base, s1.y), Vector3(s1.x, h, s1.y), Vector3(s0.x, h, s0.y), shade, out)
+			for hl in holes:
+				var h0 := a + dir * (float(hl[0]) - float(hl[1]))
+				var h1 := a + dir * (float(hl[0]) + float(hl[1]))
+				var top := float(hl[2])
+				_quad_facing(k, Vector3(h0.x, top, h0.y), Vector3(h1.x, top, h1.y), Vector3(h1.x, h, h1.y), Vector3(h0.x, h, h0.y), shade, out)
+		if base < 0.5:
+			# plinth: a dressed band at the foot of the wall
+			k.mat = MeshKit.M_STONE
+			var po := out * 0.08
+			for sp2 in solid_spans(d.length(), holes):
+				var p0 := a + dir * float(sp2[0])
+				var p1 := a + dir * float(sp2[1])
+				_quad_facing(k, Vector3(p0.x, 0.0, p0.y) + po, Vector3(p1.x, 0.0, p1.y) + po, Vector3(p1.x, 0.62, p1.y) + po, Vector3(p0.x, 0.62, p0.y) + po, col.darkened(0.3).lerp(STONE_TRIM.darkened(0.25), 0.5), out)
+				_quad_facing(k, Vector3(p0.x, 0.62, p0.y) + po, Vector3(p1.x, 0.62, p1.y) + po, Vector3(p1.x, 0.62, p1.y), Vector3(p0.x, 0.62, p0.y), STONE_TRIM.darkened(0.2), Vector3.UP)
+		if trim.a > 0.0:
+			# cornice: a moulded band projecting from the wall top
+			k.mat = MeshKit.M_STONE
+			var co := out * 0.22
+			_quad_facing(k, Vector3(a.x, h - 0.45, a.y) + co, Vector3(b.x, h - 0.45, b.y) + co, Vector3(b.x, h, b.y) + co, Vector3(a.x, h, a.y) + co, trim, out)
+			_quad_facing(k, Vector3(a.x, h - 0.45, a.y), Vector3(b.x, h - 0.45, b.y), Vector3(b.x, h - 0.45, b.y) + co, Vector3(a.x, h - 0.45, a.y) + co, trim.darkened(0.35), Vector3.DOWN)
 		k.mat = 0.0
-		roof_gable(k, pos, size, h, 3.0, roof, 0.2, wall, false)
-		return
-	var rise := minf(size.x, size.y) * (0.32 if size.x * size.y > 300.0 else 0.4)
-	roof_gable(k, pos, size, h, rise, roof, 0.6, wall, brick)
-	if bd.get("columns", false):
-		k.mat = MeshKit.M_STONE
-		for i in 6:
-			var cz := pos.y - hz + 4.0 + float(i) * (size.y - 8.0) / 5.0
-			# a fluted column: base, shaft with entasis, capital
-			k.revolve(Vector3(pos.x + hx + 1.4, 0, cz), PackedVector2Array([Vector2(0.62, 0.0), Vector2(0.62, 0.3), Vector2(0.5, 0.42), Vector2(0.46, 0.6),
-				Vector2(0.44, h * 0.5), Vector2(0.4, h - 1.6), Vector2(0.52, h - 1.35), Vector2(0.62, h - 1.0)]),
-				PackedColorArray([TRIM.darkened(0.2), TRIM.darkened(0.1), TRIM, TRIM, TRIM, TRIM, TRIM.lightened(0.04), TRIM.lightened(0.06)]), 12)
-		k.chamfer_box(Vector3(pos.x + hx + 1.4, h - 0.6, pos.y), Vector3(2.0, 0.8, size.y - 4.0), TRIM, 0.08)
-		k.mat = 0.0
-	if bd.get("dorm", false):
-		_dorm_extras(bd, k)
-	else:
-		_entrance(bd, k, roof)
 
 
-static func has_windows(bd: Dictionary) -> bool:
-	return not (String(bd["id"]) in ["tower", "shed"] or bd.get("dome", false) or bd.get("glass", false) or bd.has("dorm_id"))
+## Windows of one mass, bay by bay along each edge, one row per floor.
+func _windows(bd: Dictionary, part: Dictionary, parts: Array, style: String, floors: int, base: float, h: float, trim: Color, warm: float, rng: RandomNumberGenerator, doors: Array = []) -> void:
+	var poly: PackedVector2Array = CampusData.ccw(part["poly"])
+	var n := poly.size()
+	var resid := String(bd["kind"]) == "residence" or String(bd["kind"]) == "house"
+	var bay := 2.9 if resid else 3.4
+	var fl_h := (h - base - 0.6) / maxf(1.0, float(floors))
+	for i in n:
+		var a := poly[i]
+		var b := poly[(i + 1) % n]
+		var d := b - a
+		var len := d.length()
+		if len < 2.6:
+			continue
+		var dir := d / len
+		var out := Vector3(dir.y, 0, -dir.x)
+		var out2 := Vector2(dir.y, -dir.x)
+		var bays := int(floor((len - 1.0) / bay))
+		if bays <= 0:
+			continue
+		var step := (len - 1.0) / float(bays)
+		var mid := (a + b) * 0.5
+		var k := _k(mid.x, mid.y)
+		var holes := edge_holes(a, b, doors)
+		for r in floors:
+			var y := base + 0.6 + fl_h * (float(r) + 0.5)
+			if y + 0.9 > h - 0.4:
+				continue
+			for c in bays:
+				var t := 0.5 + step * (float(c) + 0.5)
+				var p := a + dir * t
+				# a wall another part of this building stands against: no window
+				if _covered(p + out2 * 0.6, y, part, parts):
+					continue
+				if style == "sparse" and (c % 2 == 1):
+					continue
+				var by_door := false
+				for hl in holes:
+					if absf(t - float(hl[0])) < float(hl[1]) + 0.9 and y - 0.9 < float(hl[2]) + 0.6:
+						by_door = true
+				if by_door:
+					continue
+				var ctr := Vector3(p.x, y, p.y)
+				var w := 1.15 if style != "ribbon" else step * 0.82
+				var hh := 0.8 if style != "ribbon" else 0.62
+				_window(k, ctr, Vector3(dir.x, 0, dir.y), out, w, hh, rng.randf() < warm, rng, trim, style != "ribbon")
 
 
-## One face's windows (a separate build step per face: the dorm has ~100).
-func windows(bd: Dictionary, face: int) -> void:
-	var pos: Vector2 = bd["pos"]
-	var size: Vector2 = bd["size"]
-	var h: float = bd["h"]
-	var hx := size.x * 0.5
-	var hz := size.y * 0.5
-	var warm: float = float(bd.get("warm", 0.5))
-	var k := _k(pos.x, pos.y)
-	var rng_b := RandomNumberGenerator.new()
-	rng_b.seed = hash(String(bd["id"])) + face * 7919
-	match face:
-		0: _window_face(k, Vector3(pos.x, 0, pos.y - hz), Vector3(-1, 0, 0), Vector3(0, 0, -1), size.x - 2.0, h - 0.8, warm, rng_b)
-		1: _window_face(k, Vector3(pos.x, 0, pos.y + hz), Vector3(1, 0, 0), Vector3(0, 0, 1), size.x - 2.0, h - 0.8, warm, rng_b)
-		2: _window_face(k, Vector3(pos.x - hx, 0, pos.y), Vector3(0, 0, 1), Vector3(-1, 0, 0), size.y - 2.0, h - 0.8, warm, rng_b)
-		_: _window_face(k, Vector3(pos.x + hx, 0, pos.y), Vector3(0, 0, -1), Vector3(1, 0, 0), size.y - 2.0, h - 0.8, warm, rng_b)
+func _covered(p: Vector2, y: float, me: Dictionary, parts: Array) -> bool:
+	for other in parts:
+		if other == me:
+			continue
+		if y < float(other["h"]) and y > float(other.get("base", 0.0)) and Geometry2D.is_point_in_polygon(p, other["poly"]):
+			return true
+	return false
 
 
-## Windows on one face: a dark recess, the glass with a lit interior that
-## varies, curtains, frame and mullions, a stone lintel and a sill.
-func _window_face(k: MeshKit, origin: Vector3, right: Vector3, normal: Vector3, width: float, height: float, warm: float, rng: RandomNumberGenerator, y_start: float = 1.2) -> void:
-	var cols := int(width / 3.2)
-	var rows := int((height - y_start) / 3.0)
-	if cols <= 0 or rows <= 0:
-		return
+## One window: a dark reveal, the glass with a lit interior that varies,
+## curtains; frame, mullion, lintel and sill in the near-field detail mesh.
+func _window(k: MeshKit, ctr: Vector3, right: Vector3, normal: Vector3, width: float, height: float, lit: bool, rng: RandomNumberGenerator, trim: Color, frames: bool) -> void:
 	var up := Vector3.UP
-	var spacing_x := width / float(cols)
+	var hw := right * (width * 0.5)
+	var hh := up * height
+	k.mat = MeshKit.M_PLAIN
+	var rv := ctr + normal * 0.04
+	_quad_facing(k, rv - hw * 1.16 + hh * 1.1, rv + hw * 1.16 + hh * 1.1, rv + hw * 1.16 - hh * 1.1, rv - hw * 1.16 - hh * 1.1, Color(0.12, 0.11, 0.13), normal)
+	var g0 := ctr + normal * 0.05
+	k.mat = MeshKit.M_GLASS
+	if lit:
+		var tone := rng.randf()
+		var room := Color(1.0, 0.76, 0.42) if tone < 0.6 else (Color(0.96, 0.62, 0.34) if tone < 0.85 else Color(0.62, 0.72, 0.95))
+		var em := rng.randf_range(0.55, 0.9)
+		_quad_facing(k, g0 - hw + hh, g0 + hw + hh, g0 + hw, g0 - hw, room.darkened(0.12), normal)
+		k.cu_emission_last(6, em * 0.85)
+		_quad_facing(k, g0 - hw, g0 + hw, g0 + hw - hh, g0 - hw - hh, room, normal)
+		k.cu_emission_last(6, em)
+		if rng.randf() < 0.65:
+			var cur := Color(0.70, 0.40, 0.26) if rng.randf() < 0.5 else Color(0.56, 0.46, 0.40)
+			var cw := width * rng.randf_range(0.14, 0.26)
+			var side := -1.0 if rng.randf() < 0.5 else 1.0
+			var e := g0 + right * (width * 0.5 * side) + normal * 0.005
+			var inner := e - right * (cw * side)
+			_quad_facing(k, e + hh, inner + hh, inner - hh, e - hh, cur, normal)
+			k.cu_emission_last(6, em * 0.45)
+	else:
+		_quad_facing(k, g0 - hw + hh, g0 + hw + hh, g0 + hw - hh, g0 - hw - hh, Color(0.10, 0.14, 0.24), normal)
+		k.cu_emission_last(6, 0.04)
+		_quad_facing(k, g0 - hw * 0.2 + hh * 0.9 + normal * 0.003, g0 + hw * 0.1 + hh * 0.9 + normal * 0.003, g0 - hw * 0.5 - hh * 0.4 + normal * 0.003, g0 - hw * 0.8 - hh * 0.4 + normal * 0.003, Color(0.32, 0.38, 0.55), normal)
+		k.cu_emission_last(6, 0.12)
+	k.mat = 0.0
+	if not frames:
+		return
+	var kd := _k(ctr.x, ctr.z, true)
+	var frame := trim if trim.a > 0.0 else TRIM
+	var f0 := ctr + normal * 0.07
+	var t := 0.08
+	kd.mat = MeshKit.M_WOOD
+	_quad_facing(kd, f0 - hw - right * t + hh + up * t, f0 + hw + right * t + hh + up * t, f0 + hw + right * t + hh, f0 - hw - right * t + hh, frame, normal)
+	_quad_facing(kd, f0 - hw - right * t - hh, f0 + hw + right * t - hh, f0 + hw + right * t - hh - up * t, f0 - hw - right * t - hh - up * t, frame, normal)
+	_quad_facing(kd, f0 - hw - right * t + hh, f0 - hw + hh, f0 - hw - hh, f0 - hw - right * t - hh, frame, normal)
+	_quad_facing(kd, f0 + hw + hh, f0 + hw + right * t + hh, f0 + hw + right * t - hh, f0 + hw - hh, frame, normal)
+	_quad_facing(kd, f0 - right * 0.03 + hh, f0 + right * 0.03 + hh, f0 + right * 0.03 - hh, f0 - right * 0.03 - hh, frame.darkened(0.08), normal)
+	kd.mat = MeshKit.M_STONE
 	var yaw := atan2(-right.z, right.x)
-	for r in rows:
-		for c in cols:
-			var lit := rng.randf() < warm
-			var cx := -width * 0.5 + spacing_x * (float(c) + 0.5)
-			var cy := y_start + 3.0 * float(r) + 0.9
-			var ctr := origin + right * cx + up * cy
-			var hw := right * 0.6
-			var hh := up * 0.8
-			# recess: the reveal reads as depth (dark band around the pane)
-			k.mat = MeshKit.M_PLAIN
-			var rv := ctr + normal * 0.04
-			k.quad(rv - hw * 1.18 + hh * 1.12, rv + hw * 1.18 + hh * 1.12, rv + hw * 1.18 - hh * 1.12, rv - hw * 1.18 - hh * 1.12, Color(0.12, 0.11, 0.13))
-			# the glass, pushed back: interior variation per window
-			var g0 := ctr + normal * 0.05
-			k.mat = MeshKit.M_GLASS
-			if lit:
-				var tone := rng.randf()
-				var room := Color(1.0, 0.76, 0.42) if tone < 0.6 else (Color(0.96, 0.62, 0.34) if tone < 0.85 else Color(0.62, 0.72, 0.95))
-				var em := rng.randf_range(0.6, 0.95)
-				# brighter lower half (lamp light), dimmer ceiling, and
-				# curtains drawn part-way on one or both sides
-				k.quad(g0 - hw + hh, g0 + hw + hh, g0 + hw, g0 - hw, room.darkened(0.12), em * 0.85)
-				k.quad(g0 - hw, g0 + hw, g0 + hw - hh, g0 - hw - hh, room, em)
-				var cur := Color(0.70, 0.40, 0.26) if rng.randf() < 0.5 else Color(0.56, 0.46, 0.40)
-				var cw := rng.randf_range(0.18, 0.32)
-				var sides: Array = [-1.0, 1.0] if rng.randf() < 0.6 else [-1.0 if rng.randf() < 0.5 else 1.0]
-				for side: float in sides:
-					var e := g0 + right * (0.6 * side) + normal * 0.005
-					var inner := e - right * (cw * side)
-					_quad_facing(k, e + hh, inner + hh, inner - hh, e - hh, cur, normal)
-					k.cu_emission_last(6, em * 0.45)
-			else:
-				k.quad(g0 - hw + hh, g0 + hw + hh, g0 + hw - hh, g0 - hw - hh, Color(0.10, 0.14, 0.24), 0.04)
-				# a faint moon reflection streak on dark glass
-				k.quad(g0 - hw * 0.2 + hh * 0.9 + normal * 0.003, g0 + hw * 0.1 + hh * 0.9 + normal * 0.003, g0 - hw * 0.5 - hh * 0.4 + normal * 0.003, g0 - hw * 0.8 - hh * 0.4 + normal * 0.003, Color(0.32, 0.38, 0.55), 0.12)
+	kd.chamfer_box(ctr - hh - up * 0.12 + normal * 0.1, Vector3(width + 0.35, 0.11, 0.22), STONE_TRIM.lightened(0.08), 0.03, yaw)
+	kd.mat = 0.0
+
+
+## Glass walls: mullions every ~1.6 m and a transom band per floor.
+func _curtain_mullions(poly: PackedVector2Array, base: float, h: float, trim: Color) -> void:
+	var cp := CampusData.ccw(poly)
+	var n := cp.size()
+	for i in n:
+		var a := cp[i]
+		var b := cp[(i + 1) % n]
+		var len := a.distance_to(b)
+		if len < 1.0:
+			continue
+		var dir := (b - a) / len
+		var out := Vector3(dir.y, 0, -dir.x)
+		var mid := (a + b) * 0.5
+		var kd := _k(mid.x, mid.y, true)
+		kd.mat = MeshKit.M_METAL
+		var cnt := int(len / 1.6)
+		for m in range(1, cnt):
+			var p := a + dir * (len * float(m) / float(cnt))
+			var q := Vector3(p.x, 0, p.y) + out * 0.05
+			_quad_facing(kd, q - Vector3(dir.x, 0, dir.y) * 0.05 + Vector3(0, base, 0), q + Vector3(dir.x, 0, dir.y) * 0.05 + Vector3(0, base, 0), q + Vector3(dir.x, 0, dir.y) * 0.05 + Vector3(0, h, 0), q - Vector3(dir.x, 0, dir.y) * 0.05 + Vector3(0, h, 0), Color(0.80, 0.83, 0.85), out)
+		var fl := base + 4.0
+		while fl < h - 0.5:
+			var a3 := Vector3(a.x, fl, a.y) + out * 0.05
+			var b3 := Vector3(b.x, fl, b.y) + out * 0.05
+			_quad_facing(kd, a3, b3, b3 + Vector3(0, 0.12, 0), a3 + Vector3(0, 0.12, 0), Color(0.80, 0.83, 0.85), out)
+			fl += 4.0
+		kd.mat = 0.0
+		# the lit interior behind the glass (cool office light, some warm)
+		var k := _k(mid.x, mid.y)
+		k.mat = MeshKit.M_GLASS
+		var g := Vector3(0, 0, 0) + out * 0.02
+		_quad_facing(k, Vector3(a.x, base + 0.2, a.y) + g, Vector3(b.x, base + 0.2, b.y) + g, Vector3(b.x, h - 0.4, b.y) + g, Vector3(a.x, h - 0.4, a.y) + g, Color(0.62, 0.74, 0.86), out)
+		k.cu_emission_last(6, 0.32)
+		k.mat = 0.0
+
+
+# ---------------------------------------------------------------------------
+# Roofs
+# ---------------------------------------------------------------------------
+## The roof of one mass, by type; pitched roofs sit on the mass's oriented
+## bounding box (most masses are near-rectangular; complex shapes are split
+## into parts by the data, and anything else falls back to flat).
+func _roof(part: Dictionary, poly: PackedVector2Array, h: float, roof_spec: Array, wall_spec: Array, trim: Color) -> void:
+	var roof: Dictionary = part.get("roof", {})
+	var kind := String(roof.get("type", "flat"))
+	var col: Color = roof_spec[0]
+	var mat: float = roof_spec[1]
+	var c := CampusData.centroid(poly)
+	var k := _k(c.x, c.y)
+	var obb := obb_of(poly)
+	var fill := absf(CampusData.area(poly)) / maxf(1.0, (obb["size"] as Vector2).x * (obb["size"] as Vector2).y)
+	if kind in ["gable", "hip", "pyramid", "shed"] and fill < 0.82:
+		kind = "flat"
+	var pitch := deg_to_rad(clampf(float(roof.get("pitch", 30.0)), 5.0, 60.0))
+	match kind:
+		"gable", "hip", "pyramid", "shed":
+			_pitched(k, obb, h, pitch, kind, String(roof.get("ridge", "long")), col, mat, wall_spec, trim)
+		"dome":
+			_flat(k, poly, h, Color(0.52, 0.52, 0.53), trim, false)
+			var r := minf((obb["size"] as Vector2).x, (obb["size"] as Vector2).y) * 0.5 * float(roof.get("scale", 0.8))
+			dome(k, Vector3(c.x, h, c.y), r, Color(0.88, 0.89, 0.90), float(roof.get("drum", 2.5)))
+		_:
+			_flat(k, poly, h, col if mat != MeshKit.M_ROOF else Color(0.50, 0.50, 0.52), trim, true)
+
+
+## Flat roof: the membrane, a parapet with a coping, and a few rooftop units
+## on larger roofs.
+func _flat(k: MeshKit, poly: PackedVector2Array, h: float, col: Color, trim: Color, units: bool) -> void:
+	var idx := CampusData.triangulate(poly)
+	k.mat = MeshKit.M_STONE
+	for t in range(0, idx.size(), 3):
+		CampusBuilder._tri_up(k, Vector3(poly[idx[t]].x, h + 0.02, poly[idx[t]].y), Vector3(poly[idx[t + 1]].x, h + 0.02, poly[idx[t + 1]].y), Vector3(poly[idx[t + 2]].x, h + 0.02, poly[idx[t + 2]].y), col)
+	# parapet: inner face and coping
+	var cp := CampusData.ccw(poly)
+	var n := cp.size()
+	var cop := trim if trim.a > 0.0 else STONE_TRIM
+	for i in n:
+		var a := cp[i]
+		var b := cp[(i + 1) % n]
+		var d := b - a
+		if d.length() < 0.05:
+			continue
+		var dn := d.normalized()
+		var inw := Vector3(-dn.y, 0, dn.x)
+		var a3 := Vector3(a.x, h, a.y)
+		var b3 := Vector3(b.x, h, b.y)
+		_quad_facing(k, a3 + inw * 0.3, b3 + inw * 0.3, b3 + inw * 0.3 + Vector3(0, 0.7, 0), a3 + inw * 0.3 + Vector3(0, 0.7, 0), col.darkened(0.15), inw)
+		_quad_facing(k, a3 + Vector3(0, 0.7, 0) - inw * 0.1, b3 + Vector3(0, 0.7, 0) - inw * 0.1, b3 + Vector3(0, 0.7, 0) + inw * 0.32, a3 + Vector3(0, 0.7, 0) + inw * 0.32, cop, Vector3.UP)
+		_quad_facing(k, a3 - inw * 0.1, b3 - inw * 0.1, b3 - inw * 0.1 + Vector3(0, 0.7, 0), a3 - inw * 0.1 + Vector3(0, 0.7, 0), cop.darkened(0.08), -inw)
+	k.mat = 0.0
+	var area := absf(CampusData.area(poly))
+	if units and area > 400.0:
+		var c := CampusData.centroid(poly)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = int(c.x * 13.0 + c.y * 7.0)
+		k.mat = MeshKit.M_METAL
+		for u in clampi(int(area / 600.0), 1, 4):
+			var p := c + Vector2(rng.randf_range(-1, 1), rng.randf_range(-1, 1)) * sqrt(area) * 0.18
+			if Geometry2D.is_point_in_polygon(p, poly):
+				k.chamfer_box(Vector3(p.x, h + 0.6, p.y), Vector3(rng.randf_range(2.0, 3.6), 1.2, rng.randf_range(1.6, 2.6)), Color(0.62, 0.64, 0.66), 0.08)
+		k.mat = 0.0
+
+
+## A pitched roof over an oriented box: gable (ridge along `ridge`), hip,
+## pyramid or shed, with eaves, soffits, fascia and gable-end walls.
+func _pitched(k: MeshKit, obb: Dictionary, h: float, pitch: float, kind: String, ridge: String, col: Color, mat: float, wall_spec: Array, trim: Color) -> void:
+	var c: Vector2 = obb["center"]
+	var size: Vector2 = obb["size"]
+	var ax2: Vector2 = obb["axis"]          # unit vector along size.x
+	var aw2 := Vector2(-ax2.y, ax2.x)       # along size.y
+	var along_x := size.x >= size.y
+	if ridge == "short":
+		along_x = not along_x
+	elif ridge.is_valid_float():
+		var rd := deg_to_rad(float(ridge))
+		var rv := Vector2(sin(rd), -cos(rd))
+		along_x = absf(rv.dot(ax2)) >= absf(rv.dot(aw2))
+	var ax := Vector3(ax2.x, 0, ax2.y) if along_x else Vector3(aw2.x, 0, aw2.y)
+	var aw := Vector3(aw2.x, 0, aw2.y) if along_x else Vector3(ax2.x, 0, ax2.y)
+	var half_l := (size.x if along_x else size.y) * 0.5
+	var half_w := (size.y if along_x else size.x) * 0.5
+	var ov := 0.5
+	var rise := half_w * tan(pitch)
+	if kind == "shed":
+		rise = half_w * 2.0 * tan(pitch) * 0.5
+	var base := Vector3(c.x, h, c.y)
+	var drop := ov * tan(pitch)
+	k.mat = mat
+	match kind:
+		"gable":
+			var r0 := base + Vector3.UP * rise - ax * (half_l + ov)
+			var r1 := base + Vector3.UP * rise + ax * (half_l + ov)
+			for sg: float in [-1.0, 1.0]:
+				var e0 := base + aw * ((half_w + ov) * sg) - ax * (half_l + ov) - Vector3.UP * drop
+				var e1 := base + aw * ((half_w + ov) * sg) + ax * (half_l + ov) - Vector3.UP * drop
+				_quad_facing(k, r0, r1, e1, e0, col.darkened(0.1) if sg < 0.0 else col, (aw * sg + Vector3.UP).normalized())
+				_quad_facing(k, e0, e1, e1 + aw * (-ov * sg) + Vector3.UP * drop, e0 + aw * (-ov * sg) + Vector3.UP * drop, col.darkened(0.55), Vector3.DOWN)
+			k.mat = wall_spec[1]
+			for se: float in [-1.0, 1.0]:
+				var g := base + ax * (half_l * se)
+				_tri_facing(k, g - aw * half_w, g + aw * half_w, g + Vector3.UP * rise, (wall_spec[0] as Color).darkened(0.06), ax * se)
+			k.mat = MeshKit.M_WOOD
+			var fas := trim if trim.a > 0.0 else TRIM.darkened(0.12)
+			for se: float in [-1.0, 1.0]:
+				var gb := base + ax * ((half_l + ov) * se)
+				for sg: float in [-1.0, 1.0]:
+					var lo := gb + aw * ((half_w + ov) * sg) - Vector3.UP * drop
+					var hi := gb + Vector3.UP * rise
+					_quad_facing(k, lo, hi, hi - Vector3.UP * 0.28, lo - Vector3.UP * 0.28, fas, ax * se)
+			k.mat = mat
+			k.chamfer_box(base + Vector3.UP * (rise + 0.06), Vector3(half_l * 2.0 + ov * 2.0, 0.16, 0.3), col.lightened(0.12), 0.05, atan2(-ax.z, ax.x))
+		"hip", "pyramid":
+			var rl := 0.0 if kind == "pyramid" else maxf(0.0, half_l - half_w)
+			var t0 := base + Vector3.UP * rise - ax * rl
+			var t1 := base + Vector3.UP * rise + ax * rl
+			var corners := []
+			for s in [[-1.0, -1.0], [1.0, -1.0], [1.0, 1.0], [-1.0, 1.0]]:
+				corners.append(base + ax * ((half_l + ov) * float(s[0])) + aw * ((half_w + ov) * float(s[1])) - Vector3.UP * drop)
+			# long sides (trapezoids) and ends (triangles)
+			_quad_facing(k, corners[0], corners[1], t1, t0, col.darkened(0.1), (-aw + Vector3.UP).normalized())
+			_quad_facing(k, corners[3], corners[2], t1, t0, col, (aw + Vector3.UP).normalized())
+			_tri_facing(k, corners[0], corners[3], t0, col.darkened(0.05), (-ax + Vector3.UP).normalized())
+			_tri_facing(k, corners[1], corners[2], t1, col.darkened(0.03), (ax + Vector3.UP).normalized())
+			for i in 4:
+				var e0: Vector3 = corners[i]
+				var e1: Vector3 = corners[(i + 1) % 4]
+				var inward: Vector3 = (base - (e0 + e1) * 0.5)
+				inward.y = 0.0
+				inward = inward.normalized() * ov
+				_quad_facing(k, e0, e1, e1 + inward + Vector3.UP * drop, e0 + inward + Vector3.UP * drop, col.darkened(0.55), Vector3.DOWN)
+		"shed":
+			var lo0 := base - aw * (half_w + ov) - ax * (half_l + ov)
+			var lo1 := base - aw * (half_w + ov) + ax * (half_l + ov)
+			var hi0 := base + aw * (half_w + ov) - ax * (half_l + ov) + Vector3.UP * rise
+			var hi1 := base + aw * (half_w + ov) + ax * (half_l + ov) + Vector3.UP * rise
+			_quad_facing(k, lo0, lo1, hi1, hi0, col, (-aw + Vector3.UP * 2.0).normalized())
+			k.mat = wall_spec[1]
+			for se: float in [-1.0, 1.0]:
+				var g := base + ax * (half_l * se)
+				_tri_facing(k, g - aw * half_w, g + aw * half_w, g + aw * half_w + Vector3.UP * rise, (wall_spec[0] as Color).darkened(0.06), ax * se)
+			var g2a := base + aw * half_w - ax * half_l
+			var g2b := base + aw * half_w + ax * half_l
+			_quad_facing(k, g2a, g2b, g2b + Vector3.UP * rise, g2a + Vector3.UP * rise, (wall_spec[0] as Color).darkened(0.04), aw)
+	k.mat = 0.0
+
+
+## A dome on a short drum: smooth hemisphere (revolve) with a lantern cap.
+func dome(k: MeshKit, base: Vector3, r: float, col: Color, drum: float) -> void:
+	k.mat = MeshKit.M_STONE
+	k.revolve(base, PackedVector2Array([Vector2(r * 1.04, 0.0), Vector2(r * 1.04, drum * 0.15), Vector2(r, drum * 0.2), Vector2(r, drum)]),
+		PackedColorArray([STONE_TRIM, STONE_TRIM, STONE_TRIM.darkened(0.05), STONE_TRIM.darkened(0.05)]), 28)
+	k.mat = MeshKit.M_METAL
+	var prof := PackedVector2Array()
+	var cols := PackedColorArray()
+	for i in 9:
+		var a := PI * 0.5 * float(i) / 8.0
+		prof.append(Vector2(r * cos(a), drum + r * 0.92 * sin(a)))
+		cols.append(col.darkened(0.12 * (1.0 - float(i) / 8.0)))
+	k.revolve(base, prof, cols, 28)
+	k.revolve(base + Vector3(0, drum + r * 0.92, 0), PackedVector2Array([Vector2(r * 0.12, 0), Vector2(r * 0.12, 0.9), Vector2(0.05, 1.3)]), PackedColorArray([TRIM, TRIM, TRIM]), 10)
+	k.mat = 0.0
+
+
+## Minimum-area oriented bounding box of a polygon (rotating the hull's edges).
+static func obb_of(poly: PackedVector2Array) -> Dictionary:
+	var hull := Geometry2D.convex_hull(poly)
+	var best := {"area": INF}
+	var n := hull.size()
+	for i in n - 1:
+		var e := (hull[i + 1] - hull[i])
+		if e.length() < 1e-4:
+			continue
+		var ax := e.normalized()
+		var aw := Vector2(-ax.y, ax.x)
+		var mn := Vector2(INF, INF)
+		var mx := Vector2(-INF, -INF)
+		for p in hull:
+			var u := p.dot(ax)
+			var v := p.dot(aw)
+			mn = Vector2(minf(mn.x, u), minf(mn.y, v))
+			mx = Vector2(maxf(mx.x, u), maxf(mx.y, v))
+		var a := (mx.x - mn.x) * (mx.y - mn.y)
+		if a < float(best["area"]):
+			var cu := (mn + mx) * 0.5
+			best = {"area": a, "axis": ax, "size": mx - mn, "center": ax * cu.x + aw * cu.y}
+	if not best.has("axis"):
+		var r := CampusData.bounds(poly)
+		return {"area": r.get_area(), "axis": Vector2(1, 0), "size": r.size, "center": r.get_center()}
+	return best
+
+
+# ---------------------------------------------------------------------------
+# Entrances
+# ---------------------------------------------------------------------------
+## A real entrance: a lit door (double where wide) with a transom; a canopy
+## on brackets, or a classical portico (columns, entablature, pediment) for
+## "portico"; a step and two wall lanterns.
+func _entrance(bd: Dictionary, e: Dictionary, trim: Color, wall_spec: Array) -> void:
+	var p := CampusLayout._v2(e.get("p", [0, 0]))
+	var face := deg_to_rad(float(e.get("face", 0.0)))
+	var n := Vector2(sin(face), -cos(face))          # 0 = facing north (-Z)
+	var right := Vector2(-n.y, n.x)
+	var w := float(e.get("w", 2.4))
+	var kind := String(e.get("kind", "door"))
+	var nr := Vector3(n.x, 0, n.y)
+	var rt := Vector3(right.x, 0, right.y)
+	var base := Vector3(p.x, 0, p.y) + nr * 0.06
+	var k := _k(p.x, p.y)
+	var dw := clampf(w * 0.8, 1.2, 3.4)
+	k.mat = MeshKit.M_GLASS
+	_quad_facing(k, base - rt * (dw * 0.5) + Vector3(0, 2.5, 0), base + rt * (dw * 0.5) + Vector3(0, 2.5, 0), base + rt * (dw * 0.5) + Vector3(0, 0.05, 0), base - rt * (dw * 0.5) + Vector3(0, 0.05, 0), Color(1.0, 0.78, 0.48), nr)
+	k.cu_emission_last(6, 0.9)
+	_quad_facing(k, base - rt * (dw * 0.5) + Vector3(0, 3.1, 0), base + rt * (dw * 0.5) + Vector3(0, 3.1, 0), base + rt * (dw * 0.5) + Vector3(0, 2.65, 0), base - rt * (dw * 0.5) + Vector3(0, 2.65, 0), Color(1.0, 0.82, 0.55), nr)
+	k.cu_emission_last(6, 0.7)
+	k.mat = MeshKit.M_WOOD
+	var fr := trim if trim.a > 0.0 else TRIM
+	k.chamfer_box(base + Vector3(0, 2.58, 0) + nr * 0.03, Vector3(dw + 0.3, 0.12, 0.12), fr, 0.03, atan2(-rt.z, rt.x))
+	for s: float in [-1.0, 1.0]:
+		k.chamfer_box(base + rt * (s * (dw * 0.5 + 0.08)) + Vector3(0, 1.58, 0) + nr * 0.03, Vector3(0.16, 3.16, 0.14), fr, 0.03, atan2(-rt.z, rt.x))
+	if dw > 1.8:
+		k.chamfer_box(base + Vector3(0, 1.3, 0) + nr * 0.03, Vector3(0.08, 2.5, 0.1), fr.darkened(0.15), 0.02, atan2(-rt.z, rt.x))
+	k.mat = MeshKit.M_STONE
+	k.chamfer_box(base + nr * 0.6 + Vector3(0, 0.06, 0), Vector3(dw + 1.2, 0.12, 1.2), STONE_TRIM, 0.03, atan2(-rt.z, rt.x))
+	k.mat = 0.0
+	match kind:
+		"portico":
+			portico(k, base, nr, rt, portico_width(e), clampf(float(bd["h"]) * 0.75, 5.0, 11.0), fr)
+		"canopy", "double", "door":
+			k.mat = MeshKit.M_METAL if kind == "canopy" else MeshKit.M_WOOD
+			k.chamfer_box(base + nr * 0.9 + Vector3(0, 3.5, 0), Vector3(dw + 1.0, 0.22, 1.8), fr.darkened(0.05) if kind != "canopy" else Color(0.32, 0.34, 0.38), 0.05, atan2(-rt.z, rt.x))
 			k.mat = 0.0
-			# painted frame, mullions, lintel and sill (near-field detail mesh)
-			var kd := _k(ctr.x, ctr.z, true)
-			var frame := TRIM
-			var f0 := ctr + normal * 0.07
-			var t := 0.09
-			kd.mat = MeshKit.M_WOOD
-			kd.quad(f0 - hw - right * t + hh + up * t, f0 + hw + right * t + hh + up * t, f0 + hw + right * t + hh, f0 - hw - right * t + hh, frame)
-			kd.quad(f0 - hw - right * t - hh, f0 + hw + right * t - hh, f0 + hw + right * t - hh - up * t, f0 - hw - right * t - hh - up * t, frame)
-			kd.quad(f0 - hw - right * t + hh, f0 - hw + hh, f0 - hw - hh, f0 - hw - right * t - hh, frame)
-			kd.quad(f0 + hw + hh, f0 + hw + right * t + hh, f0 + hw + right * t - hh, f0 + hw - hh, frame)
-			kd.quad(f0 - right * 0.035 + hh, f0 + right * 0.035 + hh, f0 + right * 0.035 - hh, f0 - right * 0.035 - hh, frame.darkened(0.08))
-			kd.quad(f0 - hw + up * 0.035 + up * 0.15, f0 + hw + up * 0.035 + up * 0.15, f0 + hw - up * 0.035 + up * 0.15, f0 - hw - up * 0.035 + up * 0.15, frame.darkened(0.08))
-			kd.mat = MeshKit.M_STONE
-			kd.chamfer_box(ctr - hh - up * 0.14 + normal * 0.1, Vector3(1.55, 0.12, 0.24), STONE_TRIM.lightened(0.08), 0.03, yaw)
-			kd.chamfer_box(ctr + hh + up * 0.2 + normal * 0.06, Vector3(1.6, 0.26, 0.14), STONE_TRIM, 0.04, yaw)
+	for s: float in [-1.0, 1.0]:
+		wall_lantern(Vector3(p.x, 0, p.y) + rt * (s * (dw * 0.5 + 0.7)) + nr * 0.1, nr)
+
+
+const PORTICO_DEPTH := 2.6
+
+
+static func portico_width(e: Dictionary) -> float:
+	var w := float(e.get("w", 2.4))
+	return maxf(w, clampf(w * 0.8, 1.2, 3.4) + 2.0)
+
+
+## Where an entrance's portico columns stand (none unless it is a portico):
+## the same placement `portico` draws, for the colliders.
+static func portico_columns(e: Dictionary) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	if String(e.get("kind", "door")) != "portico":
+		return out
+	var p := CampusLayout._v2(e.get("p", [0, 0]))
+	var face := deg_to_rad(float(e.get("face", 0.0)))
+	var n := Vector2(sin(face), -cos(face))
+	var rt := Vector2(-n.y, n.x)
+	var width := portico_width(e)
+	var cols := clampi(int(width / 2.0) + 1, 2, 6)
+	for i in cols:
+		var u := -width * 0.5 + width * float(i) / float(cols - 1)
+		out.append(p + n * (0.06 + PORTICO_DEPTH - 0.35) + rt * u)
+	return out
+
+
+## A classical portico: a row of columns before the door, an entablature and
+## a triangular pediment in the trim colour.
+func portico(k: MeshKit, base: Vector3, nr: Vector3, rt: Vector3, width: float, height: float, col: Color) -> void:
+	var depth := PORTICO_DEPTH
+	var cols := clampi(int(width / 2.0) + 1, 2, 6)
+	k.mat = MeshKit.M_STONE
+	k.chamfer_box(base + nr * (depth * 0.5) + Vector3(0, 0.12, 0), Vector3(width + 0.6, 0.24, depth + 0.6), STONE_TRIM, 0.04, atan2(-rt.z, rt.x))
+	for i in cols:
+		var u := -width * 0.5 + width * float(i) / float(cols - 1)
+		var cp := base + nr * (depth - 0.35) + rt * u
+		k.revolve(cp, PackedVector2Array([Vector2(0.34, 0.24), Vector2(0.34, 0.45), Vector2(0.27, 0.6), Vector2(0.26, height * 0.5), Vector2(0.23, height - 0.6), Vector2(0.31, height - 0.4), Vector2(0.36, height - 0.2)]),
+			PackedColorArray([col.darkened(0.12), col.darkened(0.06), col, col, col, col.lightened(0.04), col.lightened(0.06)]), 12)
+	var yaw := atan2(-rt.z, rt.x)
+	k.chamfer_box(base + nr * (depth * 0.5) + Vector3(0, height + 0.25, 0), Vector3(width + 0.9, 0.5, depth + 0.4), col, 0.06, yaw)
+	var ped := minf(1.8, width * 0.18)
+	var front := base + nr * (depth + 0.2) + Vector3(0, height + 0.5, 0)
+	_tri_facing(k, front - rt * (width * 0.5 + 0.45), front + rt * (width * 0.5 + 0.45), front + Vector3(0, ped, 0), col.lightened(0.03), nr)
+	var back := base + Vector3(0, height + 0.5, 0)
+	k.mat = MeshKit.M_ROOF
+	for s: float in [-1.0, 1.0]:
+		var e0 := front + rt * (s * (width * 0.5 + 0.45))
+		var e1 := back + rt * (s * (width * 0.5 + 0.45))
+		var r0 := front + Vector3(0, ped, 0)
+		var r1 := back + Vector3(0, ped, 0)
+		_quad_facing(k, e0, e1, r1, r0, Color(0.28, 0.29, 0.33), (rt * s + Vector3.UP).normalized())
+	k.mat = 0.0
+
+
+func wall_lantern(p: Vector3, nrm: Vector3) -> void:
+	var kd := _k(p.x, p.z, true)
+	var at := p + Vector3(0, 2.4, 0) + nrm * 0.18
+	kd.mat = MeshKit.M_METAL
+	kd.chamfer_box(at, Vector3(0.24, 0.36, 0.24), IRON, 0.03)
+	kd.mat = MeshKit.M_GLASS
+	kd.box(at + Vector3(0, -0.02, 0), Vector3(0.18, 0.24, 0.18), Color(1.0, 0.82, 0.5), 0.0, 0.9)
+	kd.mat = 0.0
+	B.glow_disc(Vector3(p.x, 0.07, p.z) + nrm * 1.3, 2.2)
+
+
+## A building beyond the play boundary: its massing, a simple roof and a
+## scatter of lit windows (no frames, no detail mesh).
+func _background_building(bd: Dictionary) -> void:
+	var poly: PackedVector2Array = CampusData.ccw(bd["poly"])
+	var h := float(bd["h"])
+	var style: Dictionary = bd["style"]
+	var wall_spec: Array = WALLS.get(String(style.get("wall", "siding_white")), WALLS["siding_white"])
+	var roof_spec: Array = ROOFS.get(String(style.get("roof_mat", "shingle_dark")), ROOFS["shingle_dark"])
+	var c := CampusData.centroid(poly)
+	var k := _k(c.x, c.y)
+	var col: Color = wall_spec[0]
+	k.mat = wall_spec[1]
+	var n := poly.size()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(String(bd["id"]))
+	for i in n:
+		var a := poly[i]
+		var b := poly[(i + 1) % n]
+		var d := b - a
+		if d.length() < 0.05:
+			continue
+		var out := Vector3(d.normalized().y, 0, -d.normalized().x)
+		_quad_facing(k, Vector3(a.x, 0, a.y), Vector3(b.x, 0, b.y), Vector3(b.x, h, b.y), Vector3(a.x, h, a.y), col.darkened(0.08 * absf(out.x)), out)
+		# a few lit windows
+		var len := d.length()
+		k.mat = MeshKit.M_GLASS
+		var cnt := int(len / 4.0)
+		for j in cnt:
+			if rng.randf() > 0.35:
+				continue
+			var q := a + d.normalized() * (len * (float(j) + 0.5) / float(cnt))
+			var y := 1.4 + 3.0 * float(rng.randi_range(0, maxi(0, int(h / 3.0) - 1)))
+			if y + 1.0 > h:
+				continue
+			var ctr := Vector3(q.x, y, q.y) + out * 0.04
+			var rt := Vector3(d.normalized().x, 0, d.normalized().y)
+			_quad_facing(k, ctr - rt * 0.5 + Vector3(0, 0.6, 0), ctr + rt * 0.5 + Vector3(0, 0.6, 0), ctr + rt * 0.5 - Vector3(0, 0.6, 0), ctr - rt * 0.5 - Vector3(0, 0.6, 0), Color(1.0, 0.76, 0.45), out)
+			k.cu_emission_last(6, 0.75)
+		k.mat = wall_spec[1]
+	k.mat = 0.0
+	var part := {"poly": poly, "h": h, "roof": bd["roof"]}
+	_roof(part, poly, h, roof_spec, wall_spec, Color(0, 0, 0, 0))
+
+
+# ---------------------------------------------------------------------------
+# Walls, hedges, fences, bollards
+# ---------------------------------------------------------------------------
+func walls() -> void:
+	for s in L.walls:
+		var a: Vector2 = s["a"]
+		var b: Vector2 = s["b"]
+		var h := float(s["h"])
+		var t := float(s["t"])
+		var c := (a + b) * 0.5
+		var k := _k(c.x, c.y)
+		var d := b - a
+		var yaw := atan2(-d.y, d.x)
+		var col := Color(0.66, 0.60, 0.54) if String(s.get("kind", "")) != "wall_retaining" else Color(0.58, 0.56, 0.52)
+		k.mat = MeshKit.M_STONE
+		k.chamfer_box(Vector3(c.x, h * 0.5, c.y), Vector3(d.length() + t, h, t), col, 0.06, yaw)
+		k.chamfer_box(Vector3(c.x, h + 0.05, c.y), Vector3(d.length() + t + 0.08, 0.1, t + 0.12), col.lightened(0.12), 0.03, yaw)
+		k.mat = 0.0
+
+
+func hedges(from: int, to: int) -> void:
+	for s in L.hedges.slice(from, mini(to, L.hedges.size())):
+		var a: Vector2 = s["a"]
+		var b: Vector2 = s["b"]
+		var h := float(s["h"])
+		var t := float(s["t"])
+		var len := a.distance_to(b)
+		var pieces := maxi(1, int(ceil(len / 3.0)))
+		for i in pieces:
+			var p0 := a.lerp(b, float(i) / pieces)
+			var p1 := a.lerp(b, float(i + 1) / pieces)
+			var c := (p0 + p1) * 0.5
+			var kf := B.kit_at(c.x, c.y, true)
+			var d := p1 - p0
+			var tone := 0.92 + 0.12 * fposmod(c.x * 0.37 + c.y * 0.21, 1.0)
+			kf.mat = MeshKit.M_LEAF
+			kf.chamfer_box(Vector3(c.x, h * 0.5, c.y), Vector3(d.length() + 0.15, h, t), Color(0.15, 0.32, 0.18) * tone, 0.3, atan2(-d.y, d.x))
+			kf.mat = 0.0
+
+
+func fences(from: int, to: int) -> void:
+	for s in L.fences.slice(from, mini(to, L.fences.size())):
+		var a: Vector2 = s["a"]
+		var b: Vector2 = s["b"]
+		var h := float(s["h"])
+		var kind := String(s.get("kind", "fence_iron"))
+		var len := a.distance_to(b)
+		if len < 0.1:
+			continue
+		var dir := (b - a) / len
+		var c := (a + b) * 0.5
+		var kd := _k(c.x, c.y, true)
+		var k := _k(c.x, c.y)
+		var yaw := atan2(-dir.y, dir.x)
+		var post_step := 2.4 if kind != "fence_construction" else 3.0
+		var posts := maxi(1, int(ceil(len / post_step)))
+		match kind:
+			"fence_chain":
+				k.mat = MeshKit.M_METAL
+				for i in posts + 1:
+					var p := a + dir * (len * float(i) / posts)
+					k.chamfer_box(Vector3(p.x, h * 0.5, p.y), Vector3(0.08, h, 0.08), Color(0.62, 0.64, 0.66), 0.02)
+				k.chamfer_box(Vector3(c.x, h - 0.03, c.y), Vector3(len, 0.06, 0.06), Color(0.62, 0.64, 0.66), 0.02, yaw)
+				# the mesh: a faint, see-through-looking panel
+				var n3 := Vector3(-dir.y, 0, dir.x)
+				_quad_facing(kd, Vector3(a.x, 0.05, a.y), Vector3(b.x, 0.05, b.y), Vector3(b.x, h, b.y), Vector3(a.x, h, a.y), Color(0.42, 0.45, 0.47, 0.35), n3)
+				_quad_facing(kd, Vector3(a.x, 0.05, a.y), Vector3(b.x, 0.05, b.y), Vector3(b.x, h, b.y), Vector3(a.x, h, a.y), Color(0.42, 0.45, 0.47, 0.35), -n3)
+			"fence_construction":
+				k.mat = MeshKit.M_PLAIN
+				for i in posts:
+					var p := a + dir * (len * (float(i) + 0.5) / posts)
+					k.chamfer_box(Vector3(p.x, h * 0.5, p.y), Vector3(len / posts - 0.1, h, 0.05), Color(0.78, 0.80, 0.80), 0.01, yaw)
+					k.chamfer_box(Vector3(p.x, 0.15, p.y), Vector3(0.5, 0.3, 0.6), Color(0.55, 0.22, 0.12), 0.05, yaw)
+			_:
+				k.mat = MeshKit.M_METAL
+				for i in posts + 1:
+					var p := a + dir * (len * float(i) / posts)
+					k.chamfer_box(Vector3(p.x, h * 0.5, p.y), Vector3(0.1, h, 0.1), IRON, 0.02)
+				for y: float in ([h - 0.12, 0.3] if kind != "rail" else [h - 0.05, h * 0.5]):
+					k.chamfer_box(Vector3(c.x, y, c.y), Vector3(len, 0.05, 0.05), IRON, 0.01, yaw)
+				if kind == "fence_iron":
+					var pick := maxi(1, int(len / 0.16))
+					for i in pick:
+						var p := a + dir * (len * (float(i) + 0.5) / pick)
+						kd.mat = MeshKit.M_METAL
+						kd.box(Vector3(p.x, h * 0.5, p.y), Vector3(0.025, h - 0.1, 0.025), IRON)
+		k.mat = 0.0
+		kd.mat = 0.0
+
+
+func bollards(from: int, to: int) -> void:
+	for s in L.cart_blockers.slice(from, mini(to, L.cart_blockers.size())):
+		if bool(s.get("hidden", false)):
+			continue
+		var a: Vector2 = s["a"]
+		var b: Vector2 = s["b"]
+		var len := a.distance_to(b)
+		var n := maxi(1, int(round(len / 1.5)))
+		for i in n + 1:
+			var p := a.lerp(b, float(i) / n)
+			var kd := _k(p.x, p.y, true)
+			kd.mat = MeshKit.M_METAL
+			kd.revolve(Vector3(p.x, 0, p.y), PackedVector2Array([Vector2(0.11, 0), Vector2(0.11, 0.85), Vector2(0.09, 0.95), Vector2(0.02, 1.0)]), PackedColorArray([IRON, IRON, IRON.lightened(0.2), IRON]), 8)
 			kd.mat = 0.0
 
 
-## Gable roof with thickness: slopes (shingle pattern), a fascia board along
-## the eaves, a rounded ridge cap, gable ends in the wall material, and two
-## chimneys on brick buildings.
-func roof_gable(k: MeshKit, center: Vector2, size: Vector2, y0: float, rise: float, col: Color, overhang: float, wall: Color, chimneys: bool) -> void:
-	var along_x := size.x >= size.y
-	var L2 := (size.x if along_x else size.y) * 0.5 + overhang
-	var W := (size.y if along_x else size.x) * 0.5 + overhang
-	var th := 0.22
-	var ax := Vector3(1, 0, 0) if along_x else Vector3(0, 0, 1)
-	var aw := Vector3(0, 0, 1) if along_x else Vector3(1, 0, 0)
-	var c := Vector3(center.x, y0, center.y)
-	var eave_drop := overhang * rise / maxf(W - overhang, 0.1)
-	var ridge := c + Vector3.UP * rise
-	k.mat = MeshKit.M_ROOF
-	for sg: float in [-1.0, 1.0]:
-		var e0 := c + aw * (W * sg) - ax * L2 - Vector3.UP * eave_drop
-		var e1 := c + aw * (W * sg) + ax * L2 - Vector3.UP * eave_drop
-		var r0 := ridge - ax * L2
-		var r1 := ridge + ax * L2
-		var shade := col.darkened(0.1) if sg < 0.0 else col
-		_quad_facing(k, r0, r1, e1, e0, shade, (aw * sg + Vector3.UP * (W / rise) * 0.25).normalized())
-		# underside of the overhang (soffit), dark
-		var s0 := e0 - Vector3.UP * th
-		var s1 := e1 - Vector3.UP * th
-		var i0 := c + aw * ((W - overhang) * sg) - ax * L2
-		var i1 := c + aw * ((W - overhang) * sg) + ax * L2
-		_quad_facing(k, s0, s1, i1, i0, col.darkened(0.55), Vector3.DOWN)
-	k.mat = MeshKit.M_WOOD
-	for sg: float in [-1.0, 1.0]:
-		# fascia board along each eave
-		var e0b := c + aw * (W * sg) - ax * L2 - Vector3.UP * eave_drop
-		var e1b := c + aw * (W * sg) + ax * L2 - Vector3.UP * eave_drop
-		_quad_facing(k, e0b, e1b, e1b - Vector3.UP * th, e0b - Vector3.UP * th, TRIM.darkened(0.12), aw * sg)
-	# gable ends: wall triangles + bargeboards
-	k.mat = MeshKit.M_PLASTER if not wall.is_equal_approx(BRICK) else MeshKit.M_BRICK
-	for se: float in [-1.0, 1.0]:
-		var g := c + ax * ((L2 - overhang) * se)
-		var wl := g - aw * (W - overhang)
-		var wr := g + aw * (W - overhang)
-		var tp := g + Vector3.UP * rise
-		_tri_facing(k, wl, wr, tp, wall.darkened(0.06), ax * se)
-	k.mat = MeshKit.M_WOOD
-	for se: float in [-1.0, 1.0]:
-		var gb := c + ax * (L2 * se)
-		for sg: float in [-1.0, 1.0]:
-			var lo := gb + aw * (W * sg) - Vector3.UP * eave_drop
-			var hi := gb + Vector3.UP * rise
-			_quad_facing(k, lo, hi, hi - Vector3.UP * 0.3, lo - Vector3.UP * 0.3, TRIM.darkened(0.08), ax * se)
-	# ridge cap
-	k.mat = MeshKit.M_ROOF
-	k.chamfer_box(ridge + Vector3.UP * 0.06, Vector3(L2 * 2.0 + 0.1, 0.18, 0.34) if along_x else Vector3(0.34, 0.18, L2 * 2.0 + 0.1), col.lightened(0.12), 0.06)
-	k.mat = 0.0
-	if chimneys:
-		k.mat = MeshKit.M_BRICK
-		for se: float in [-0.6, 0.6]:
-			var cp := c + ax * ((L2 - overhang) * se) + aw * ((W - overhang) * 0.35)
-			var base_y := y0 + rise * (1.0 - 0.35) - 0.2
-			k.chamfer_box(Vector3(cp.x, base_y + 1.1, cp.z), Vector3(1.0, 2.2, 0.8), BRICK.darkened(0.08), 0.05)
-			k.mat = MeshKit.M_STONE
-			k.chamfer_box(Vector3(cp.x, base_y + 2.25, cp.z), Vector3(1.2, 0.18, 1.0), STONE_TRIM, 0.04)
-			k.mat = MeshKit.M_BRICK
+# ---------------------------------------------------------------------------
+# Lamps, benches, props
+# ---------------------------------------------------------------------------
+## Campus lamps: a cast-iron post with a lantern head; parking-lot and road
+## lights are taller poles.  Collider: the same 0.14 m post everywhere.
+func lamps(from: int, to: int) -> void:
+	for lp in L.lamps.slice(from, mini(to, L.lamps.size())):
+		var tall := L.is_on_road(lp, 2.0)
+		var kd := _k(lp.x, lp.y, true)
+		var k := _k(lp.x, lp.y)
+		k.mat = MeshKit.M_METAL
+		var h := 7.5 if tall else 3.6
+		k.revolve(Vector3(lp.x, 0, lp.y), PackedVector2Array([Vector2(0.2, 0), Vector2(0.2, 0.35), Vector2(0.09, 0.5), Vector2(0.07, h - 0.4), Vector2(0.1, h - 0.3)]),
+			PackedColorArray([IRON, IRON, IRON, IRON, IRON]), 8)
+		k.mat = MeshKit.M_GLASS
+		if tall:
+			k.chamfer_box(Vector3(lp.x, h, lp.y), Vector3(0.8, 0.2, 0.4), Color(1.0, 0.86, 0.6), 0.04)
+			k.cu_emission_last(36, 1.0)
+		else:
+			k.box(Vector3(lp.x, h - 0.05, lp.y), Vector3(0.36, 0.5, 0.36), Color(1.0, 0.84, 0.56), 0.0, 1.0)
+		k.mat = MeshKit.M_METAL
+		kd.mat = MeshKit.M_METAL
+		kd.chamfer_box(Vector3(lp.x, h + 0.28, lp.y), Vector3(0.46, 0.12, 0.46), IRON, 0.03)
+		kd.mat = 0.0
+		k.mat = 0.0
+		B.glow_disc(Vector3(lp.x, 0.08, lp.y), 5.5 if tall else 4.2)
+
+
+## Benches, props, rocks: one step for all of them.
+func small_things() -> void:
+	for bn in L.benches:
+		_bench(bn["pos"], float(bn["rot"]))
+	for pr in L.props:
+		_prop(pr)
+	for r in L.rocks:
+		var rp: Vector3 = r["pos"]
+		var k := _k(rp.x, rp.z)
+		k.mat = MeshKit.M_ROCK
+		k.chamfer_box(rp + Vector3(0, float(r["size"].y) * 0.5, 0), r["size"], Color(0.48, 0.47, 0.46), 0.25, float(r["rot"]))
 		k.mat = 0.0
 
 
+func _bench(p: Vector2, rot: float) -> void:
+	var kd := _k(p.x, p.y, true)
+	var k := _k(p.x, p.y)
+	var f := Vector3(sin(rot), 0, cos(rot))       # facing (seat front)
+	var r := Vector3(cos(rot), 0, -sin(rot))
+	k.mat = MeshKit.M_WOOD
+	k.chamfer_box(Vector3(p.x, 0.45, p.y), Vector3(1.8, 0.07, 0.5), WOOD, 0.02, rot)
+	k.chamfer_box(Vector3(p.x, 0.75, p.y) - f * 0.24, Vector3(1.8, 0.4, 0.06), WOOD.darkened(0.05), 0.02, rot)
+	kd.mat = MeshKit.M_METAL
+	for s: float in [-0.75, 0.75]:
+		kd.chamfer_box(Vector3(p.x, 0.22, p.y) + r * s, Vector3(0.07, 0.44, 0.5), IRON, 0.02, rot)
+	kd.mat = 0.0
+	k.mat = 0.0
+
+
+## Colliding size of a prop (Vector3.ZERO: no collider).
+static func prop_collider(pr: Dictionary) -> Vector3:
+	match String(pr["kind"]):
+		"bike_rack":
+			return Vector3(maxf(2.0, float(pr.get("len", 2.0))), 0.9, 0.5)
+		"bin":
+			return Vector3(0.6, 1.0, 0.6)
+		"planter":
+			return Vector3(1.2, 0.8, 1.2)
+		"table":
+			return Vector3(1.8, 0.8, 1.8)
+		"sign_blank":
+			return Vector3(1.6, 1.3, 0.35)
+		"bleachers":
+			return Vector3(maxf(4.0, float(pr.get("len", 8.0))), 1.6, 3.0)
+		"dugout":
+			return Vector3(maxf(6.0, float(pr.get("len", 8.0))), 2.2, 2.0)
+	return Vector3.ZERO
+
+
+func _prop(pr: Dictionary) -> void:
+	var p: Vector2 = pr["pos"]
+	var rot := float(pr["rot"])
+	var k := _k(p.x, p.y)
+	var kd := _k(p.x, p.y, true)
+	var kind := String(pr["kind"])
+	match kind:
+		"bike_rack":
+			var len := maxf(2.0, float(pr.get("len", 2.0)))
+			kd.mat = MeshKit.M_METAL
+			var n := maxi(2, int(len / 0.8))
+			var r := Vector3(cos(rot), 0, -sin(rot))
+			for i in n:
+				var q := Vector3(p.x, 0, p.y) + r * (-len * 0.5 + len * (float(i) + 0.5) / n)
+				kd.chamfer_box(q + Vector3(0, 0.45, 0), Vector3(0.06, 0.9, 0.5), Color(0.55, 0.58, 0.62), 0.03, rot)
+			kd.mat = 0.0
+		"bin":
+			k.mat = MeshKit.M_METAL
+			k.revolve(Vector3(p.x, 0, p.y), PackedVector2Array([Vector2(0.28, 0), Vector2(0.3, 0.95), Vector2(0.32, 1.0)]), PackedColorArray([IRON, IRON, IRON.lightened(0.15)]), 10)
+			k.mat = 0.0
+		"planter":
+			k.mat = MeshKit.M_STONE
+			k.chamfer_box(Vector3(p.x, 0.4, p.y), Vector3(1.2, 0.8, 1.2), STONE_TRIM.darkened(0.1), 0.06, rot)
+			k.mat = 0.0
+			B.mm_add("decor", Vector3(p.x, 0.8, p.y), "shrub_bloom", Transform3D(Basis(Vector3.UP, rot).scaled(Vector3(0.9, 0.7, 0.9)), Vector3(p.x, 0.8, p.y)), Color(1, 1, 1), Color(0.22, 0.42, 0.24))
+		"table":
+			k.mat = MeshKit.M_WOOD
+			k.chamfer_box(Vector3(p.x, 0.75, p.y), Vector3(1.8, 0.06, 0.8), WOOD, 0.02, rot)
+			for s: float in [-0.7, 0.7]:
+				k.chamfer_box(Vector3(p.x, 0.45, p.y) + Vector3(cos(rot), 0, -sin(rot)) * 0.0 + Vector3(sin(rot), 0, cos(rot)) * s, Vector3(1.8, 0.05, 0.3), WOOD.darkened(0.05), 0.02, rot)
+			k.mat = 0.0
+		"flagpole":
+			k.mat = MeshKit.M_METAL
+			k.revolve(Vector3(p.x, 0, p.y), PackedVector2Array([Vector2(0.09, 0), Vector2(0.06, 9.0), Vector2(0.1, 9.1)]), PackedColorArray([Color(0.8, 0.82, 0.84), Color(0.8, 0.82, 0.84), Color(0.85, 0.75, 0.4)]), 8)
+			k.mat = 0.0
+		"sign_blank":
+			k.mat = MeshKit.M_STONE
+			k.chamfer_box(Vector3(p.x, 0.65, p.y), Vector3(1.6, 1.3, 0.35), Color(0.55, 0.36, 0.30), 0.05, rot)
+			k.mat = 0.0
+		"bleachers":
+			var len := maxf(4.0, float(pr.get("len", 8.0)))
+			k.mat = MeshKit.M_METAL
+			var f := Vector3(sin(rot), 0, cos(rot))
+			for i in 4:
+				k.chamfer_box(Vector3(p.x, 0.25 + 0.4 * i, p.y) - f * (0.75 * i - 1.1), Vector3(len, 0.08, 0.7), Color(0.70, 0.72, 0.74), 0.02, rot)
+			k.mat = 0.0
+		"goal":
+			k.mat = MeshKit.M_METAL
+			var r := Vector3(cos(rot), 0, -sin(rot))
+			for s: float in [-3.6, 3.6]:
+				k.chamfer_box(Vector3(p.x, 1.2, p.y) + r * s, Vector3(0.12, 2.4, 0.12), Color(0.92, 0.92, 0.92), 0.02)
+			k.chamfer_box(Vector3(p.x, 2.4, p.y), Vector3(7.4, 0.12, 0.12), Color(0.92, 0.92, 0.92), 0.02, rot)
+			k.mat = 0.0
+		"dugout":
+			var len := maxf(6.0, float(pr.get("len", 8.0)))
+			k.mat = MeshKit.M_STONE
+			k.chamfer_box(Vector3(p.x, 1.1, p.y), Vector3(len, 2.2, 2.0), Color(0.55, 0.53, 0.50), 0.05, rot)
+			k.mat = 0.0
+		"pergola", "pavilion":
+			B.marks.shelter(pr)
+		_:
+			pass
+
+
+# ---------------------------------------------------------------------------
+# Surface markings
+# ---------------------------------------------------------------------------
+## Parking stalls: lines square to each long edge of the lot, 2.7 m apart.
+func lot_markings(a: Dictionary) -> void:
+	var poly: PackedVector2Array = CampusData.ccw(a["poly"])
+	var n := poly.size()
+	var col := Color(0.86, 0.86, 0.84)
+	for i in n:
+		var p0 := poly[i]
+		var p1 := poly[(i + 1) % n]
+		var len := p0.distance_to(p1)
+		if len < 14.0:
+			continue
+		var dir := (p1 - p0) / len
+		var inw := Vector2(-dir.y, dir.x)
+		var cnt := int((len - 3.0) / 2.7)
+		for j in cnt + 1:
+			var q := p0 + dir * (1.5 + 2.7 * j) + inw * 0.4
+			var q2 := q + inw * 4.8
+			if not Geometry2D.is_point_in_polygon(q2, poly):
+				continue
+			_k(q.x, q.y, true).ribbon(PackedVector2Array([q, q2]), 0.1, 0.034, col, 0.0, false)
+
+
+## Field lines: the outline and a centre line on fields and courts; the
+## track gets lane lines from its outline inward.
+func field_markings(a: Dictionary) -> void:
+	var poly: PackedVector2Array = CampusData.ccw(a["poly"])
+	var kind := String(a["kind"])
+	var col := Color(0.9, 0.9, 0.88)
+	var y := 0.03
+	if kind == "track":
+		for lane in 6:
+			var off := CampusData.offset(poly, -1.22 * float(lane + 1))
+			if off.size() < 3:
+				break
+			var closed := off.duplicate()
+			closed.append(off[0])
+			var c := CampusData.centroid(off)
+			_k(c.x, c.y, true).ribbon(closed, 0.06, y, col, 0.0, false)
+		return
+	var closed2 := poly.duplicate()
+	closed2.append(poly[0])
+	var c2 := CampusData.centroid(poly)
+	_k(c2.x, c2.y, true).ribbon(closed2, 0.12 if kind != "court" else 0.06, y, col, 0.0, false)
+	var obb := obb_of(poly)
+	var ax: Vector2 = obb["axis"]
+	var aw := Vector2(-ax.y, ax.x)
+	var size: Vector2 = obb["size"]
+	var along_x := size.x >= size.y
+	var long_v := ax if along_x else aw
+	var short_v := aw if along_x else ax
+	var half_s := (size.y if along_x else size.x) * 0.5
+	var half_l := (size.x if along_x else size.y) * 0.5
+	var cen: Vector2 = obb["center"]
+	_k(cen.x, cen.y, true).ribbon(PackedVector2Array([cen - short_v * half_s, cen + short_v * half_s]), 0.12, y, col, 0.0, false)
+	if kind == "field_turf" and half_l > 40.0:
+		# yard lines every ~9 m
+		var step := 9.14
+		var t := -half_l + step
+		while t < half_l - 1.0:
+			var m := cen + long_v * t
+			_k(m.x, m.y, true).ribbon(PackedVector2Array([m - short_v * half_s, m + short_v * half_s]), 0.1, y, col, 0.0, false)
+			t += step
+
+
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
 func _quad_facing(k: MeshKit, a: Vector3, b: Vector3, c: Vector3, d: Vector3, col: Color, facing: Vector3) -> void:
 	# MeshKit quads are clockwise from the front; flip to face `facing`
 	if ((b - a).cross(c - a)).dot(facing) < 0.0:
@@ -266,728 +1017,3 @@ func _tri_facing(k: MeshKit, a: Vector3, b: Vector3, c: Vector3, col: Color, fac
 		k.tri(a, b, c, col)
 	else:
 		k.tri(a, c, b, col)
-
-
-func _tower(bd: Dictionary, k: MeshKit) -> void:
-	var pos: Vector2 = bd["pos"]
-	var size: Vector2 = bd["size"]
-	var h: float = bd["h"]
-	var wall: Color = bd["wall"]
-	var roof: Color = bd["roof"]
-	var hx := size.x * 0.5
-	var base_y: float = bd["base_y"]
-	k.mat = MeshKit.M_STONE
-	for sx: float in [-1.0, 1.0]:
-		k.chamfer_box(Vector3(pos.x + sx * 2.6, base_y * 0.5, pos.y), Vector3(0.8, base_y, size.y), wall.darkened(0.1), 0.08)
-	# the arch: a rounded soffit over the pedestrian tunnel
-	var arch_pts := 9
-	for i in arch_pts:
-		var a0 := PI * float(i) / float(arch_pts)
-		var a1 := PI * float(i + 1) / float(arch_pts)
-		var p0 := Vector3(pos.x + cos(a0) * 2.2, base_y - 0.6 + sin(a0) * 0.6, pos.y)
-		var p1 := Vector3(pos.x + cos(a1) * 2.2, base_y - 0.6 + sin(a1) * 0.6, pos.y)
-		k.quad(p1 + Vector3(0, 0, -size.y * 0.5), p0 + Vector3(0, 0, -size.y * 0.5), p0 + Vector3(0, 0, size.y * 0.5), p1 + Vector3(0, 0, size.y * 0.5), wall.darkened(0.25))
-	k.mat = MeshKit.M_STONE
-	k.box(Vector3(pos.x, (base_y + h) * 0.5, pos.y), Vector3(size.x, h - base_y, size.y), wall)
-	# string courses and a belfry band
-	for yy in [base_y + 0.4, h - 6.4, h - 1.6]:
-		k.chamfer_box(Vector3(pos.x, yy, pos.y), Vector3(size.x + 0.5, 0.35, size.y + 0.5), wall.lightened(0.15), 0.08)
-	for face: Vector3 in [Vector3(0, 0, -1), Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(-1, 0, 0)]:
-		var cpos: Vector3 = Vector3(pos.x, h - 4.0, pos.y) + face * (hx + 0.08)
-		var right := Vector3.UP.cross(face).normalized()
-		# clock face: glowing disc with a dark bezel
-		k.mat = MeshKit.M_PLAIN
-		for i in 24:
-			var a0 := TAU * float(i) / 24.0
-			var a1 := TAU * float(i + 1) / 24.0
-			var q0 := cpos + (right * cos(a0) + Vector3.UP * sin(a0)) * 1.8
-			var q1 := cpos + (right * cos(a1) + Vector3.UP * sin(a1)) * 1.8
-			var o0 := cpos + (right * cos(a0) + Vector3.UP * sin(a0)) * 2.05 - face * 0.03
-			var o1 := cpos + (right * cos(a1) + Vector3.UP * sin(a1)) * 2.05 - face * 0.03
-			_tri_facing(k, cpos, q0, q1, Color(0.98, 0.94, 0.78), face)
-			k.mat = MeshKit.M_METAL
-			_quad_facing(k, q0, q1, o1, o0, Color(0.22, 0.20, 0.18), face)
-			k.mat = MeshKit.M_PLAIN
-		k.cu_emission_last(24 * 3, 0.9)
-		# hour marks and hands pointing to 3:00
-		k.mat = MeshKit.M_METAL
-		for i in 12:
-			var a := TAU * float(i) / 12.0
-			k.box(cpos + face * 0.04 + (right * cos(a) + Vector3.UP * sin(a)) * 1.55, Vector3(0.12, 0.12, 0.12), Color(0.15, 0.13, 0.12))
-		k.box(cpos + face * 0.05 + right * 0.55, Vector3(1.1, 0.18, 0.18).abs() if face.x == 0 else Vector3(0.18, 0.18, 1.1), Color(0.1, 0.1, 0.15))
-		k.box(cpos + face * 0.06 + Vector3.UP * 0.75, Vector3(0.14, 1.5, 0.14), Color(0.1, 0.1, 0.15))
-		k.mat = 0.0
-	# copper spire: a curved, flared roof with a lantern finial
-	k.mat = MeshKit.M_ROOF
-	var prof := PackedVector2Array([Vector2(4.3, 0.0), Vector2(4.5, -0.2), Vector2(3.6, 0.6), Vector2(2.4, 2.4), Vector2(1.3, 4.8), Vector2(0.55, 7.0), Vector2(0.12, 8.2)])
-	var cols := PackedColorArray([roof.darkened(0.3), roof.darkened(0.2), roof, roof.lightened(0.04), roof.lightened(0.08), roof.lightened(0.1), roof.lightened(0.12)])
-	k.revolve(Vector3(pos.x, h, pos.y), prof, cols, 4, PackedFloat32Array(), 0.0, PI * 0.25)
-	k.mat = 0.0
-	k.soft_blob(Vector3(pos.x, h + 8.4, pos.y), Vector3(0.35, 0.35, 0.35), Color(1.0, 0.85, 0.4), 3, 8, 0.0, 0.0, 0, 1.5)
-
-
-func _shed(bd: Dictionary, k: MeshKit) -> void:
-	var pos: Vector2 = bd["pos"]
-	var size: Vector2 = bd["size"]
-	var h: float = bd["h"]
-	var wall: Color = bd["wall"]
-	var hx := size.x * 0.5
-	var hz := size.y * 0.5
-	k.mat = MeshKit.M_WOOD
-	k.box(Vector3(pos.x, h * 0.5, pos.y - hz + 0.3), Vector3(size.x, h, 0.6), wall)
-	k.box(Vector3(pos.x - hx + 0.3, h * 0.5, pos.y), Vector3(0.6, h, size.y), wall)
-	k.box(Vector3(pos.x + hx - 0.3, h * 0.5, pos.y), Vector3(0.6, h, size.y), wall)
-	k.mat = 0.0
-	roof_gable(k, pos, size, h, 2.0, bd["roof"], 0.6, wall, false)
-	k.mat = MeshKit.M_ASPHALT
-	k.quad(Vector3(pos.x - hx + 0.6, 0.06, pos.y - hz + 0.6), Vector3(pos.x + hx - 0.6, 0.06, pos.y - hz + 0.6), Vector3(pos.x + hx - 0.6, 0.06, pos.y + hz), Vector3(pos.x - hx + 0.6, 0.06, pos.y + hz), Color(0.3, 0.3, 0.32))
-	k.mat = 0.0
-	# sign + warm work light
-	k.box(Vector3(pos.x, h + 0.2, pos.y + hz + 0.4), Vector3(9.0, 1.4, 0.2), Color(0.95, 0.75, 0.25))
-	k.box(Vector3(pos.x, h + 0.2, pos.y + hz + 0.52), Vector3(8.0, 0.25, 0.05), Color(0.2, 0.15, 0.1))
-	B.glow_disc(Vector3(pos.x, 0.12, pos.y + hz + 2.0), 9.0)
-	k.blob(Vector3(pos.x, h - 0.6, pos.y + hz - 0.4), Vector3(0.5, 0.25, 0.5), Color(1.0, 0.9, 0.6), 2, 6, 2.0)
-
-
-func _observatory(bd: Dictionary, k: MeshKit) -> void:
-	var pos: Vector2 = bd["pos"]
-	var size: Vector2 = bd["size"]
-	var h: float = bd["h"]
-	var wall: Color = bd["wall"]
-	var roof: Color = bd["roof"]
-	var hx := size.x * 0.5
-	k.mat = MeshKit.M_STONE
-	k.revolve(Vector3(pos.x, 0, pos.y), PackedVector2Array([Vector2(hx + 0.35, 0.0), Vector2(hx + 0.3, 0.6), Vector2(hx, 0.7), Vector2(hx, h - 0.4),
-		Vector2(hx + 0.3, h - 0.3), Vector2(hx + 0.3, h)]), PackedColorArray([wall.darkened(0.3), wall.darkened(0.2), wall, wall, wall.lightened(0.2), wall.lightened(0.22)]), 24)
-	var dome := PackedVector2Array()
-	var dcol := PackedColorArray()
-	for di in 9:
-		var a := PI * 0.5 * float(di) / 8.0
-		dome.append(Vector2(hx * cos(a), h + hx * 0.85 * sin(a)))
-		dcol.append(roof.lightened(0.04 * float(di)))
-	k.mat = MeshKit.M_METAL
-	k.revolve(Vector3(pos.x, 0, pos.y), dome, dcol, 24, PackedFloat32Array(), 0.15)
-	k.mat = 0.0
-	k.box(Vector3(pos.x, h + hx * 0.4, pos.y + 1.0), Vector3(1.2, 2.2, hx * 1.6), Color(0.12, 0.14, 0.25))
-
-
-## A readable entrance on the face toward the campus centre: a lit door with
-## a transom, a bracketed porch roof (no posts: the colliders are the
-## building's), a low step, a lantern each side and a name board.
-func _entrance(bd: Dictionary, k: MeshKit, roof: Color) -> void:
-	var pos: Vector2 = bd["pos"]
-	var size: Vector2 = bd["size"]
-	var hx := size.x * 0.5
-	var hz := size.y * 0.5
-	var to_c := (Vector2.ZERO - pos)
-	var face_n := Vector2(signf(to_c.x), 0) if absf(to_c.x) * size.y > absf(to_c.y) * size.x else Vector2(0, signf(to_c.y))
-	var fp := pos + face_n * (Vector2(hx, hz) * face_n.abs()).length()
-	var right4 := Vector3(face_n.y, 0, -face_n.x)
-	var nrm4 := Vector3(face_n.x, 0, face_n.y)
-	var base4 := Vector3(fp.x, 0, fp.y) + nrm4 * 0.08
-	var pyaw := atan2(-right4.z, right4.x)
-	# door: dark recess, two leaves with glazing, lit transom
-	k.mat = MeshKit.M_PLAIN
-	_quad_facing(k, base4 - right4 * 1.15 + Vector3.UP * 2.75, base4 + right4 * 1.15 + Vector3.UP * 2.75, base4 + right4 * 1.15, base4 - right4 * 1.15, Color(0.1, 0.09, 0.1), nrm4)
-	k.mat = MeshKit.M_WOOD
-	for side: float in [-1.0, 1.0]:
-		var dc := base4 + right4 * (0.5 * side) + nrm4 * 0.02
-		_quad_facing(k, dc - right4 * 0.46 + Vector3.UP * 2.2, dc + right4 * 0.46 + Vector3.UP * 2.2, dc + right4 * 0.46, dc - right4 * 0.46, Color(0.40, 0.25, 0.17), nrm4)
-	k.mat = MeshKit.M_GLASS
-	for side: float in [-1.0, 1.0]:
-		var gc := base4 + right4 * (0.5 * side) + nrm4 * 0.03 + Vector3.UP * 1.55
-		_quad_facing(k, gc - right4 * 0.28 + Vector3.UP * 0.42, gc + right4 * 0.28 + Vector3.UP * 0.42, gc + right4 * 0.28 - Vector3.UP * 0.42, gc - right4 * 0.28 - Vector3.UP * 0.42, Color(1.0, 0.82, 0.52), nrm4)
-	var tc := base4 + nrm4 * 0.03 + Vector3.UP * 2.48
-	_quad_facing(k, tc - right4 * 0.95 + Vector3.UP * 0.2, tc + right4 * 0.95 + Vector3.UP * 0.2, tc + right4 * 0.95 - Vector3.UP * 0.2, tc - right4 * 0.95 - Vector3.UP * 0.2, Color(1.0, 0.84, 0.55), nrm4)
-	k.cu_emission_last(18, 1.1)
-	k.mat = MeshKit.M_STONE
-	var trim := TRIM
-	# surround, porch roof on brackets, step
-	for side: float in [-1.0, 1.0]:
-		k.chamfer_box(base4 + right4 * (1.28 * side) + Vector3.UP * 1.45 + nrm4 * 0.06, Vector3(0.24, 2.9, 0.16), STONE_TRIM, 0.04, pyaw)
-	k.chamfer_box(base4 + Vector3.UP * 2.98 + nrm4 * 0.07, Vector3(2.9, 0.3, 0.2), STONE_TRIM.lightened(0.05), 0.05, pyaw)
-	k.mat = MeshKit.M_WOOD
-	k.chamfer_box(base4 + nrm4 * 1.0 + Vector3.UP * 3.25, Vector3(3.6, 0.22, 2.2), trim, 0.06, pyaw, trim.lightened(0.04))
-	k.mat = MeshKit.M_ROOF
-	k.chamfer_box(base4 + nrm4 * 1.0 + Vector3.UP * 3.48, Vector3(3.3, 0.26, 1.95), Color(roof.r, roof.g, roof.b).lightened(0.05), 0.1, pyaw)
-	k.mat = MeshKit.M_WOOD
-	for side: float in [-1.0, 1.0]:
-		k.chamfer_box(base4 + nrm4 * 0.45 + right4 * (1.5 * side) + Vector3.UP * 2.9, Vector3(0.16, 0.6, 0.9), trim.darkened(0.08), 0.04, pyaw)
-	k.mat = MeshKit.M_STONE
-	k.chamfer_box(Vector3(fp.x, 0.05, fp.y) + nrm4 * 0.9, Vector3(3.4, 0.1, 1.6), Color(0.72, 0.7, 0.72), 0.04, pyaw, Color(0.8, 0.78, 0.8))
-	k.mat = 0.0
-	# wall lanterns either side
-	for side: float in [-1.0, 1.0]:
-		_wall_lantern(base4 + right4 * (1.75 * side) + Vector3.UP * 2.2, nrm4)
-	B.glow_disc(Vector3(fp.x + face_n.x * 1.8, 0.11, fp.y + face_n.y * 1.8), 4.2)
-
-
-func _wall_lantern(p: Vector3, nrm: Vector3) -> void:
-	var kd := _k(p.x, p.z, true)
-	kd.mat = MeshKit.M_METAL
-	kd.box(p + nrm * 0.12 + Vector3.UP * 0.05, Vector3(0.08, 0.08, 0.08) + nrm.abs() * 0.18, IRON)
-	kd.revolve(p + nrm * 0.24 - Vector3.UP * 0.2, PackedVector2Array([Vector2(0.05, 0.0), Vector2(0.12, 0.04), Vector2(0.12, 0.3), Vector2(0.16, 0.34), Vector2(0.02, 0.46)]),
-		PackedColorArray([IRON, IRON, IRON, IRON.lightened(0.1), IRON]), 6)
-	kd.mat = MeshKit.M_GLASS
-	kd.revolve(p + nrm * 0.24 - Vector3.UP * 0.16, PackedVector2Array([Vector2(0.1, 0.0), Vector2(0.1, 0.24)]), PackedColorArray([Color(1.0, 0.85, 0.55)]), 6, PackedFloat32Array(), 2.0)
-	kd.mat = 0.0
-
-
-## The dorm: four doors (lit, trimmed, with porch hoods and steps), house
-## banners, a canopy over the front door and a crest.
-func _dorm_extras(bd: Dictionary, k: MeshKit) -> void:
-	var pos: Vector2 = bd["pos"]
-	var size: Vector2 = bd["size"]
-	var h: float = bd["h"]
-	var hz := size.y * 0.5
-	for dd in L.dorm_doors:
-		var dp: Vector2 = dd["pos"]
-		var n: Vector2 = dd["normal"]
-		var right3 := Vector3(n.y, 0, -n.x)
-		var nn3 := Vector3(n.x, 0, n.y)
-		var base := Vector3(dp.x, 0, dp.y) + nn3 * 0.08
-		var door_yaw := -atan2(-right3.z, right3.x)
-		k.mat = MeshKit.M_PLAIN
-		_quad_facing(k, base - right3 * 1.25 + Vector3.UP * 2.95, base + right3 * 1.25 + Vector3.UP * 2.95, base + right3 * 1.25, base - right3 * 1.25, Color(0.1, 0.08, 0.09), nn3)
-		k.mat = MeshKit.M_WOOD
-		k.box(base + Vector3.UP * 1.15 + nn3 * 0.01, Vector3(2.3, 2.3, 0.08), Color(0.36, 0.22, 0.16), -door_yaw)
-		k.mat = MeshKit.M_GLASS
-		for side: float in [-1.0, 1.0]:
-			k.box(base + right3 * (0.56 * side) + Vector3.UP * 1.62 + nn3 * 0.06, Vector3(0.5, 0.62, 0.03), Color(1.0, 0.78, 0.45), -door_yaw, 1.3)
-		k.box(base + Vector3.UP * 2.56 + nn3 * 0.05, Vector3(2.2, 0.4, 0.03), Color(1.0, 0.8, 0.5), -door_yaw, 1.5)
-		k.mat = MeshKit.M_METAL
-		for side: float in [-1.0, 1.0]:
-			k.box(base + right3 * (0.16 * side) + Vector3.UP * 1.05 + nn3 * 0.09, Vector3(0.06, 0.14, 0.05), Color(0.95, 0.8, 0.4), -door_yaw)
-		k.mat = MeshKit.M_STONE
-		for side2: float in [-1.0, 1.0]:
-			k.chamfer_box(base + right3 * (1.32 * side2) + Vector3.UP * 1.5 + nn3 * 0.08, Vector3(0.28, 3.0, 0.18), TRIM, 0.04, -door_yaw)
-		k.chamfer_box(base + Vector3.UP * 3.05 + nn3 * 0.1, Vector3(3.0, 0.3, 0.22), TRIM, 0.05, -door_yaw)
-		# porch hood on brackets
-		k.mat = MeshKit.M_ROOF
-		k.chamfer_box(base + Vector3.UP * 3.4 + nn3 * 0.75, Vector3(3.4, 0.24, 3.4) * Vector3(absf(right3.x) + absf(n.x) * 0.45, 1, absf(right3.z) + absf(n.y) * 0.45), Color(0.30, 0.34, 0.50), 0.08)
-		k.mat = MeshKit.M_WOOD
-		for side3: float in [-1.0, 1.0]:
-			k.chamfer_box(base + right3 * (1.5 * side3) + Vector3.UP * 3.05 + nn3 * 0.45, Vector3(0.16, 0.55, 0.16) + Vector3(absf(nn3.x), 0, absf(nn3.z)) * 0.7, TRIM.darkened(0.08), 0.04)
-		k.mat = MeshKit.M_STONE
-		k.chamfer_box(Vector3(dp.x, 0.05, dp.y) + nn3 * 0.62, Vector3(3.1, 0.1, 3.1) * Vector3(absf(right3.x) + absf(n.x) * 0.4, 1, absf(right3.z) + absf(n.y) * 0.4), Color(0.72, 0.70, 0.74), 0.04, 0.0, Color(0.80, 0.78, 0.82))
-		k.mat = 0.0
-		k.soft_blob(base + Vector3.UP * 3.15 + nn3 * 0.35, Vector3(0.24, 0.28, 0.24), Color(1.0, 0.85, 0.5), 3, 8, 0.0, 0.0, 0, 2.5)
-		B.glow_disc(Vector3(dp.x + n.x * 2.0, 0.11, dp.y + n.y * 2.0), 5.0)
-		# a welcome mat in house red
-		k.mat = MeshKit.M_PLAIN
-		k.quad(Vector3(dp.x, 0.09, dp.y) + nn3 * 0.3 - right3 * 1.0, Vector3(dp.x, 0.09, dp.y) + nn3 * 0.3 + right3 * 1.0, Vector3(dp.x, 0.09, dp.y) + nn3 * 1.6 + right3 * 1.0, Vector3(dp.x, 0.09, dp.y) + nn3 * 1.6 - right3 * 1.0, Color(0.72, 0.24, 0.24))
-		k.mat = 0.0
-	# hanging house banners either side of the front door (blue + gold duck crest colours)
-	for bx: float in [-4.5, 4.5]:
-		k.mat = MeshKit.M_PLAIN
-		k.box(Vector3(pos.x + bx, h - 3.2, pos.y - hz - 0.12), Vector3(1.6, 4.2, 0.1), Color(0.24, 0.32, 0.78))
-		k.box(Vector3(pos.x + bx, h - 4.6, pos.y - hz - 0.18), Vector3(0.9, 0.9, 0.06), Color(1.0, 0.8, 0.25), 0.0, 0.3)
-		k.mat = MeshKit.M_METAL
-		k.box(Vector3(pos.x + bx, h - 1.05, pos.y - hz - 0.2), Vector3(1.9, 0.08, 0.08), Color(0.85, 0.7, 0.35))
-	k.mat = 0.0
-
-
-# ---------------------------------------------------------------------------
-# Walls, hedges, fences, bollards
-# ---------------------------------------------------------------------------
-func walls() -> void:
-	for s in L.walls:
-		var a: Vector2 = s["a"]
-		var b: Vector2 = s["b"]
-		var k := _k((a.x + b.x) * 0.5, (a.y + b.y) * 0.5)
-		var d := b - a
-		var mid := (a + b) * 0.5
-		var h: float = s["h"]
-		var t: float = s["t"]
-		var yaw := atan2(-d.y, d.x)
-		# dressed stone body with a rounded coping
-		k.mat = MeshKit.M_STONE
-		k.chamfer_box(Vector3(mid.x, (h - 0.1) * 0.5, mid.y), Vector3(d.length() + t, h - 0.1, t), Color(0.50, 0.48, 0.53), 0.05, yaw)
-		k.chamfer_box(Vector3(mid.x, h - 0.06, mid.y), Vector3(d.length() + t + 0.1, 0.14, t + 0.12), Color(0.68, 0.66, 0.70), 0.06, yaw)
-		k.mat = 0.0
-
-
-## A stretch [t0, t1] of one hedge (long boundary hedges take several steps).
-func hedge_part(i: int, t0: float, t1: float) -> void:
-	var s: Dictionary = L.hedges[i]
-	var a0: Vector2 = s["a"]
-	var b0: Vector2 = s["b"]
-	_hedge_piece(s, a0.lerp(b0, t0), a0.lerp(b0, t1), t1 >= 0.999)
-
-
-func _hedge_piece(s: Dictionary, a: Vector2, b: Vector2, last: bool) -> void:
-	var k := _k((a.x + b.x) * 0.5, (a.y + b.y) * 0.5)
-	var h: float = s["h"]
-	var t: float = s["t"]
-	var col := Color(0.18, 0.40, 0.23)
-	var d2 := b - a
-	var mid := (a + b) * 0.5
-	var L2 := a.distance_to(b)
-	k.mat = MeshKit.M_LEAF
-	# a clipped body with soft edges and a row of rounded tops
-	k.chamfer_box(Vector3(mid.x, (h - 0.25) * 0.5, mid.y), Vector3(L2 + t * 0.2, h - 0.25, t), col.darkened(0.08), 0.18, atan2(-d2.y, d2.x), col.lightened(0.04))
-	var n := int(L2 / 1.4)
-	for i in (n + 1 if last else n):
-		var p := a.lerp(b, float(i) / float(max(n, 1)))
-		k.soft_blob(Vector3(p.x, h - 0.3, p.y), Vector3(t * 0.6, 0.42, t * 0.6), col.lightened(0.04 + 0.05 * float(i % 2)), 3, 7, 0.25)
-	k.mat = 0.0
-
-
-func fence(i: int) -> void:
-	_fence(L.fences[i])
-
-
-func bollards(from: int, to: int) -> void:
-	for i in range(from, mini(to, L.cart_blockers.size())):
-		_bollards(L.cart_blockers[i])
-
-
-func _fence(s: Dictionary) -> void:
-	var a: Vector2 = s["a"]
-	var b: Vector2 = s["b"]
-	var h: float = s["h"]
-	var kind: String = s["kind"]
-	var k := _k((a.x + b.x) * 0.5, (a.y + b.y) * 0.5)
-	var L2 := a.distance_to(b)
-	if kind == "buoy":
-		k.segment_box(a, b, -0.35, 0.05, 0.05, Color(0.9, 0.9, 0.85))
-		var n := int(L2 / 1.2)
-		for i in n + 1:
-			var p := a.lerp(b, float(i) / float(max(n, 1)))
-			k.soft_blob(Vector3(p.x, -0.3, p.y), Vector3(0.28, 0.24, 0.28), Color(0.95, 0.25, 0.2) if i % 2 == 0 else Color(0.95, 0.95, 0.9), 3, 7)
-		return
-	if kind == "iron":
-		k.mat = MeshKit.M_METAL
-		var step := 2.0
-		var n2 := int(L2 / step)
-		for i in n2 + 1:
-			var p2 := a.lerp(b, float(i) / float(max(n2, 1)))
-			# square posts with ball finials
-			k.box(Vector3(p2.x, h * 0.5, p2.y), Vector3(0.12, h, 0.12), IRON)
-			k.soft_blob(Vector3(p2.x, h + 0.06, p2.y), Vector3(0.09, 0.09, 0.09), IRON.lightened(0.15), 2, 6)
-		k.segment_box(a, b, h - 0.14, 0.07, 0.07, IRON)
-		k.segment_box(a, b, 0.3, 0.07, 0.07, IRON)
-		var bars := int(L2 / 0.22)
-		var kd := _k((a.x + b.x) * 0.5, (a.y + b.y) * 0.5, true)
-		kd.mat = MeshKit.M_METAL
-		for i in bars:
-			var p3 := a.lerp(b, (float(i) + 0.5) / float(bars))
-			kd.box(Vector3(p3.x, h * 0.5 - 0.02, p3.y), Vector3(0.035, h - 0.18, 0.035), IRON)
-		kd.mat = 0.0
-		k.mat = 0.0
-		return
-	# split-rail / lake rail: weathered wood posts with two rails
-	var post_col := Color(0.45, 0.32, 0.22)
-	k.mat = MeshKit.M_WOOD
-	var n3 := int(L2 / 2.4)
-	for i in n3 + 1:
-		var p4 := a.lerp(b, float(i) / float(max(n3, 1)))
-		k.chamfer_box(Vector3(p4.x, h * 0.5, p4.y), Vector3(0.16, h, 0.16), post_col, 0.03)
-	k.segment_box(a, b, h * 0.45, 0.12, 0.12, post_col.lightened(0.1))
-	k.segment_box(a, b, h * 0.85, 0.12, 0.12, post_col.lightened(0.1))
-	k.mat = 0.0
-
-
-func _bollards(s: Dictionary) -> void:
-	if bool(s.get("hidden", false)):
-		return   # V6: a dorm doorway's cart stop (its threshold is drawn by DormArt)
-	var a: Vector2 = s["a"]
-	var b: Vector2 = s["b"]
-	var L2 := a.distance_to(b)
-	var n := int(ceil(L2 / 2.0))
-	var grey := Color(0.32, 0.33, 0.38)
-	var band := Color(1.0, 0.82, 0.25)
-	for i in n + 1:
-		var p := a.lerp(b, float(i) / float(max(n, 1)))
-		var k := _k(p.x, p.y, true)
-		k.mat = MeshKit.M_METAL
-		# rounded-top bollard with a reflective band
-		k.revolve(Vector3(p.x, 0, p.y), PackedVector2Array([Vector2(0.15, 0.0), Vector2(0.13, 0.6)]),
-			PackedColorArray([grey.darkened(0.35), grey]), 7)
-		k.revolve(Vector3(p.x, 0, p.y), PackedVector2Array([Vector2(0.135, 0.6), Vector2(0.135, 0.72)]), PackedColorArray([band]), 7, PackedFloat32Array(), 0.6)
-		k.revolve(Vector3(p.x, 0, p.y), PackedVector2Array([Vector2(0.13, 0.72), Vector2(0.11, 0.87), Vector2(0.0, 0.93)]),
-			PackedColorArray([grey, grey.lightened(0.1), grey.lightened(0.15)]), 7)
-		k.mat = 0.0
-
-
-# ---------------------------------------------------------------------------
-# Lamps (three styles as navigation cues), benches, props
-# ---------------------------------------------------------------------------
-## Lamp style by place: twin-globe lamps around the fountain and the dorm
-## (the heart of the campus), rustic post lanterns on the gravel trails and
-## the woods, the classic cast-iron lamp everywhere else.  Collider: the
-## same 0.14 m post in every style.
-func lamps(from: int = 0, to: int = 1 << 30) -> void:
-	for lp in L.lamps.slice(from, mini(to, L.lamps.size())):
-		var style := 0
-		if lp.distance_to(Vector2(0, 22)) < 20.0 or (lp.y > 88.0 and absf(lp.x) < 40.0):
-			style = 1
-		elif L.is_on_path(lp, 2.6) and not _near_stone_path(lp):
-			style = 2
-		_lamp(lp, style)
-
-
-func _near_stone_path(p: Vector2) -> bool:
-	for pth in L.paths:
-		if not (pth["color"] as Color).is_equal_approx(Color(0.62, 0.56, 0.46)):
-			var pts: PackedVector2Array = pth["pts"]
-			for i in pts.size() - 1:
-				if CampusLayout._dist_to_segment(p, pts[i], pts[i + 1]) <= float(pth["w"]) * 0.5 + 2.6:
-					return true
-	return false
-
-
-func _lamp(lp: Vector2, style: int) -> void:
-	var k := _k(lp.x, lp.y, true)
-	var b := Vector3(lp.x, 0, lp.y)
-	k.mat = MeshKit.M_METAL
-	if style == 2:
-		# a timber post with a hanging lantern
-		k.mat = MeshKit.M_WOOD
-		k.chamfer_box(b + Vector3(0, 1.4, 0), Vector3(0.18, 2.8, 0.18), Color(0.40, 0.29, 0.20), 0.03)
-		k.chamfer_box(b + Vector3(0.28, 2.72, 0), Vector3(0.7, 0.12, 0.12), Color(0.40, 0.29, 0.20), 0.02)
-		k.mat = MeshKit.M_METAL
-		k.revolve(b + Vector3(0.52, 2.08, 0), PackedVector2Array([Vector2(0.08, 0.0), Vector2(0.16, 0.06), Vector2(0.16, 0.08)]), PackedColorArray([IRON]), 6)
-		k.revolve(b + Vector3(0.52, 2.44, 0), PackedVector2Array([Vector2(0.18, 0.0), Vector2(0.06, 0.16), Vector2(0.02, 0.24)]), PackedColorArray([IRON, IRON.lightened(0.1), IRON]), 6)
-		k.mat = MeshKit.M_GLASS
-		k.revolve(b + Vector3(0.52, 2.14, 0), PackedVector2Array([Vector2(0.13, 0.0), Vector2(0.15, 0.15), Vector2(0.13, 0.3)]), PackedColorArray([Color(1.0, 0.72, 0.42)]), 6, PackedFloat32Array(), 1.15)
-		k.mat = 0.0
-		B.glow_disc(Vector3(lp.x + 0.5, 0.1, lp.y), 3.6)
-		return
-	# a turned cast-iron post: stepped base, slim fluted shaft, collar
-	k.revolve(b, PackedVector2Array([Vector2(0.27, 0.0), Vector2(0.26, 0.12), Vector2(0.17, 0.2), Vector2(0.16, 0.36), Vector2(0.09, 0.46),
-		Vector2(0.075, 3.0), Vector2(0.12, 3.12), Vector2(0.16, 3.22), Vector2(0.06, 3.3)]),
-		PackedColorArray([IRON.darkened(0.3), IRON.darkened(0.2), IRON, IRON, IRON, IRON.lightened(0.05), IRON.lightened(0.08), IRON.lightened(0.08), IRON]), 10)
-	if style == 1:
-		# twin globes on a curled cross-arm
-		k.chamfer_box(b + Vector3(0, 3.36, 0), Vector3(1.1, 0.08, 0.08), IRON, 0.02)
-		for sx: float in [-0.55, 0.55]:
-			k.mat = MeshKit.M_GLASS
-			k.soft_blob(b + Vector3(sx, 3.62, 0), Vector3(0.2, 0.22, 0.2), Color(1.0, 0.78, 0.48), 4, 10, 0.0, 0.0, 0, 1.0)
-			k.mat = MeshKit.M_METAL
-			k.revolve(b + Vector3(sx, 3.36, 0), PackedVector2Array([Vector2(0.03, 0.0), Vector2(0.1, 0.06), Vector2(0.1, 0.1)]), PackedColorArray([IRON]), 8)
-			k.revolve(b + Vector3(sx, 3.8, 0), PackedVector2Array([Vector2(0.12, 0.0), Vector2(0.03, 0.08), Vector2(0.0, 0.14)]), PackedColorArray([IRON]), 8)
-		k.mat = 0.0
-		B.glow_disc(Vector3(lp.x, 0.1, lp.y), 5.0)
-		return
-	# glass lantern (warm, emissive) with a rounded cap and finial
-	k.mat = MeshKit.M_GLASS
-	k.revolve(b, PackedVector2Array([Vector2(0.06, 3.3), Vector2(0.2, 3.36), Vector2(0.27, 3.62), Vector2(0.24, 3.76)]),
-		PackedColorArray([Color(1.0, 0.74, 0.44)]), 8, PackedFloat32Array(), 1.05)
-	k.mat = MeshKit.M_METAL
-	k.revolve(b, PackedVector2Array([Vector2(0.24, 3.74), Vector2(0.4, 3.8), Vector2(0.24, 3.94), Vector2(0.05, 4.12), Vector2(0.0, 4.16)]),
-		PackedColorArray([IRON, IRON.lightened(0.1), IRON.lightened(0.12), IRON, IRON]), 8)
-	k.mat = 0.0
-	B.glow_disc(Vector3(lp.x, 0.1, lp.y), 4.4)
-
-
-## part 0: quarry boulders and platforms, 1: ramps and benches, 2: props
-func small_things(part: int = -1) -> void:
-	if part == 0 or part < 0:
-		_rocks_and_platforms()
-	if part == 1 or part < 0:
-		for rp2 in L.ramps:
-			_ramp_visual(rp2)
-		for bn in L.benches:
-			_bench(bn)
-	if part == 2 or part < 0:
-		for pr in L.props:
-			_prop(pr)
-
-
-func _rocks_and_platforms() -> void:
-	# quarry boulders: the kit's layered rock fitted to each collider box
-	for r in L.rocks:
-		var rp: Vector3 = r["pos"]
-		var sz: Vector3 = r["size"]
-		var xf := Transform3D(Basis(Vector3.UP, float(r["rot"])).scaled(sz * Vector3(1.04, 1.0, 1.04)), rp)
-		var sd := int(rp.x * 13 + rp.z * 7)
-		var tint := Color(1, 1, 1).lerp(Color(0.92, 0.94, 1.0), float(posmod(sd, 5)) / 4.0)
-		B._mm_add(B._decor, CampusBuilder.coarse_key(rp.x, rp.z), "rock_layer" if posmod(sd, 3) != 0 else "rock_round", xf, tint, Color(1, 1, 1))
-	for p in L.platforms:
-		var pc: Vector3 = p["center"]
-		var ps: Vector3 = p["size"]
-		var k2 := _k(pc.x, pc.z)
-		if p.get("dock", false):
-			_dock(p, k2)
-		else:
-			k2.mat = MeshKit.M_STONE
-			k2.chamfer_box(pc - Vector3(0, ps.y * 0.5, 0) + Vector3(0, ps.y * 0.5, 0), ps, p["color"], 0.08)
-			k2.mat = MeshKit.M_ROCK
-			k2.box(Vector3(pc.x, pc.y * 0.5 - 0.3, pc.z), Vector3(ps.x * 0.9, pc.y, ps.z * 0.9), Color(0.45, 0.43, 0.48))
-			k2.mat = 0.0
-
-
-## The inlet dock: planks with gaps over stringers, pilings with caps that
-## stand proud of the deck only at its corners and outer end, a cleat or
-## two and a mooring rope - the deck itself stays clear to run and jump.
-func _dock(p: Dictionary, k: MeshKit) -> void:
-	var pc: Vector3 = p["center"]
-	var ps: Vector3 = p["size"]
-	var top := pc.y + ps.y * 0.5
-	var wood := Color(0.55, 0.40, 0.28)
-	k.mat = MeshKit.M_WOOD
-	# stringers under the deck
-	for sx: float in [-1.0, 1.0]:
-		k.box(Vector3(pc.x + sx * ps.x * 0.38, top - 0.28, pc.z), Vector3(0.18, 0.24, ps.z), wood.darkened(0.4))
-	var n := int(ps.z / 0.42)
-	for i in n:
-		var z := pc.z - ps.z * 0.5 + (float(i) + 0.5) * ps.z / float(n)
-		var tone := wood.lerp(wood.darkened(0.18), float(posmod(i * 7, 5)) / 4.0)
-		k.box(Vector3(pc.x, top - 0.05, z), Vector3(ps.x, 0.1, ps.z / float(n) - 0.05), tone, 0.0, 0.0, tone.lightened(0.05))
-	# pilings
-	for zz in range(int(-ps.z * 0.5), int(ps.z * 0.5) + 1, 3):
-		for sx: float in [-1.0, 1.0]:
-			var tall := absf(float(zz)) >= ps.z * 0.5 - 1.0 and (zz < 0 or true)
-			var py := top + (0.45 if tall else -0.02)
-			k.revolve(Vector3(pc.x + sx * (ps.x * 0.5 + 0.12), -1.8, pc.z + zz), PackedVector2Array([Vector2(0.15, 0.0), Vector2(0.15, py + 1.8 - 0.05), Vector2(0.12, py + 1.8)]),
-				PackedColorArray([wood.darkened(0.55), wood.darkened(0.3), wood.darkened(0.2)]), 8)
-	k.mat = MeshKit.M_METAL
-	for zc in [-ps.z * 0.25, ps.z * 0.25]:
-		k.box(Vector3(pc.x + ps.x * 0.5 - 0.15, top + 0.05, pc.z + zc), Vector3(0.1, 0.08, 0.36), IRON.lightened(0.2))
-	k.mat = 0.0
-
-
-func _ramp_visual(rp: Dictionary) -> void:
-	var from: Vector3 = rp["from"]
-	var to: Vector3 = rp["to"]
-	var w: float = rp["w"]
-	var k := _k(from.x, from.z)
-	var d := to - from
-	var x_axis := d.normalized()
-	var z_axis := x_axis.cross(Vector3.UP).normalized()
-	var y_axis := z_axis.cross(x_axis).normalized()
-	var basis := Basis(x_axis * d.length(), y_axis * 0.4, z_axis * w)
-	k.mat = MeshKit.M_STONE
-	k.box_xf(Transform3D(basis, (from + to) * 0.5 - y_axis * 0.2), rp["color"])
-	# step ridges
-	var n := int(d.length() / 0.7)
-	for i in n:
-		var p := from.lerp(to, (float(i) + 0.5) / float(n))
-		k.box(p + Vector3(0, 0.02, 0), Vector3(0.12, 0.06, w * 0.96), Color(0.7, 0.68, 0.7), atan2(-x_axis.z, x_axis.x))
-	k.mat = 0.0
-
-
-func _bench(bn: Dictionary) -> void:
-	var p: Vector2 = bn["pos"]
-	var yaw: float = bn["rot"]
-	var k := _k(p.x, p.y, true)
-	var wood := Color(0.66, 0.45, 0.29)
-	var b := Basis(Vector3.UP, yaw)
-	k.mat = MeshKit.M_WOOD
-	# three seat slats and two back slats on cast-iron ends with armrests
-	for i in 3:
-		k.chamfer_box(Vector3(p.x, 0.46, p.y) + b * Vector3(0, 0, -0.17 + 0.17 * float(i)), Vector3(1.9, 0.06, 0.14), wood.darkened(0.04 * float(i)), 0.025, yaw, wood.lightened(0.06))
-	for j in 2:
-		k.chamfer_box(Vector3(p.x, 0.7 + 0.2 * float(j), p.y) + b * Vector3(0, 0, 0.3), Vector3(1.9, 0.12, 0.05), wood, 0.02, yaw, wood.lightened(0.06))
-	k.mat = MeshKit.M_METAL
-	for sx: float in [-0.86, 0.86]:
-		var off := b * Vector3(sx, 0, 0)
-		k.box(Vector3(p.x, 0.22, p.y) + off, Vector3(0.08, 0.45, 0.55), IRON, yaw)
-		k.box(Vector3(p.x, 0.66, p.y) + off + b * Vector3(0, 0, 0.27), Vector3(0.08, 0.5, 0.08), IRON, yaw)
-		k.chamfer_box(Vector3(p.x, 0.66, p.y) + off + b * Vector3(0, 0, 0.02), Vector3(0.09, 0.05, 0.5), IRON, 0.02, yaw)
-	k.mat = 0.0
-
-
-func _prop(pr: Dictionary) -> void:
-	var p: Vector2 = pr["pos"]
-	var k := _k(p.x, p.y)
-	match String(pr["kind"]):
-		"bike_rack":
-			k.mat = MeshKit.M_METAL
-			for i in 4:
-				# hoops
-				var cx := p.x - 1.5 + float(i)
-				var prof := PackedVector2Array()
-				for s in 7:
-					var a := PI * float(s) / 6.0
-					prof.append(Vector2(cos(a) * 0.32, sin(a) * 0.32 + 0.45))
-				for s in 6:
-					var a0 := Vector3(cx, prof[s].y, p.y + prof[s].x)
-					var a1 := Vector3(cx, prof[s + 1].y, p.y + prof[s + 1].x)
-					k.box((a0 + a1) * 0.5, Vector3(0.05, maxf(absf(a1.y - a0.y), 0.05), maxf(absf(a1.z - a0.z), 0.05)), Color(0.55, 0.6, 0.7))
-				for sz: float in [-0.32, 0.32]:
-					k.box(Vector3(cx, 0.22, p.y + sz), Vector3(0.05, 0.45, 0.05), Color(0.55, 0.6, 0.7))
-			k.mat = 0.0
-		"noticeboard":
-			k.mat = MeshKit.M_WOOD
-			k.chamfer_box(Vector3(p.x, 1.3, p.y), Vector3(2.0, 1.4, 0.15), Color(0.55, 0.4, 0.3), 0.04)
-			k.chamfer_box(Vector3(p.x, 2.08, p.y), Vector3(2.3, 0.14, 0.4), Color(0.45, 0.3, 0.22), 0.04)
-			for sx: float in [-0.9, 0.9]:
-				k.box(Vector3(p.x + sx, 0.6, p.y), Vector3(0.1, 1.2, 0.1), Color(0.45, 0.3, 0.22))
-			k.mat = 0.0
-			k.box(Vector3(p.x, 1.35, p.y - 0.09), Vector3(1.7, 1.1, 0.02), Color(0.9, 0.85, 0.7), 0.0, 0.15)
-			var rng := RandomNumberGenerator.new()
-			rng.seed = 9
-			for i in 6:
-				k.box(Vector3(p.x - 0.6 + 0.24 * float(i), 1.35 + rng.randf_range(-0.3, 0.3), p.y - 0.105), Vector3(0.2, 0.26, 0.01), [Color(1, 0.6, 0.6), Color(0.6, 0.8, 1), Color(1, 0.95, 0.6)][i % 3], 0.0, 0.2)
-		"lifeguard":
-			k.mat = MeshKit.M_WOOD
-			for sx: float in [-0.4, 0.4]:
-				for sz: float in [-0.4, 0.4]:
-					k.box(Vector3(p.x + sx, 1.0, p.y + sz), Vector3(0.1, 2.0, 0.1), Color(0.95, 0.95, 0.95))
-			k.chamfer_box(Vector3(p.x, 1.6, p.y), Vector3(1.0, 0.1, 1.0), Color(0.95, 0.95, 0.95), 0.03)
-			k.chamfer_box(Vector3(p.x, 2.0, p.y + 0.4), Vector3(1.0, 0.7, 0.1), Color(0.95, 0.95, 0.95), 0.03)
-			k.mat = 0.0
-			k.chamfer_box(Vector3(p.x, 2.55, p.y), Vector3(1.4, 0.08, 1.4), Color(0.95, 0.3, 0.25), 0.03)
-			k.box(Vector3(p.x, 2.3, p.y), Vector3(0.05, 0.5, 0.05), Color(0.9, 0.9, 0.9))
-		"gazebo":
-			var cream := Color(0.95, 0.95, 0.92)
-			k.mat = MeshKit.M_STONE
-			k.revolve(Vector3(p.x, 0, p.y), PackedVector2Array([Vector2(3.3, 0.0), Vector2(3.25, 0.2), Vector2(3.1, 0.28), Vector2(0.0, 0.3)]),
-				PackedColorArray([Color(0.7, 0.68, 0.66), Color(0.85, 0.82, 0.78), Color(0.88, 0.85, 0.8), Color(0.88, 0.85, 0.8)]), 12)
-			k.mat = MeshKit.M_WOOD
-			for i in 6:
-				var a := TAU * float(i) / 6.0
-				k.revolve(Vector3(p.x + cos(a) * 2.8, 0.28, p.y + sin(a) * 2.8), PackedVector2Array([Vector2(0.16, 0.0), Vector2(0.11, 0.14), Vector2(0.1, 2.4), Vector2(0.16, 2.52)]),
-					PackedColorArray([cream.darkened(0.1), cream, cream, cream]), 8)
-			# a softly flared roof with a finial
-			var rf := Color(0.75, 0.35, 0.45)
-			k.mat = MeshKit.M_ROOF
-			k.revolve(Vector3(p.x, 2.78, p.y), PackedVector2Array([Vector2(3.0, -0.05), Vector2(3.7, 0.0), Vector2(3.5, 0.18), Vector2(2.2, 0.75), Vector2(0.8, 1.55), Vector2(0.2, 1.9), Vector2(0.0, 2.0)]),
-				PackedColorArray([rf.darkened(0.35), rf.darkened(0.1), rf, rf.lightened(0.05), rf.lightened(0.08), rf.lightened(0.1), rf.lightened(0.1)]), 12)
-			k.mat = 0.0
-			k.soft_blob(Vector3(p.x, 4.85, p.y), Vector3(0.16, 0.2, 0.16), Color(1.0, 0.85, 0.45), 3, 6)
-			# a lantern hanging inside
-			k.soft_blob(Vector3(p.x, 2.5, p.y), Vector3(0.2, 0.25, 0.2), Color(1.0, 0.82, 0.5), 3, 8, 0.0, 0.0, 0, 2.0)
-			B.glow_disc(Vector3(p.x, 0.32, p.y), 3.4)
-		"canoe":
-			k.soft_blob(Vector3(p.x, 0.2, p.y), Vector3(0.6, 0.25, 2.2), Color(0.85, 0.3, 0.2), 4, 12)
-			k.soft_blob(Vector3(p.x, 0.32, p.y), Vector3(0.45, 0.06, 1.9), Color(0.25, 0.16, 0.12), 3, 10)
-		"frog":
-			# a frog statue on a mossy rock
-			k.mat = MeshKit.M_ROCK
-			k.soft_blob(Vector3(p.x, 0.2, p.y), Vector3(0.75, 0.32, 0.65), Color(0.42, 0.44, 0.38), 4, 10)
-			k.mat = MeshKit.M_PLAIN
-			k.soft_blob(Vector3(p.x, 0.68, p.y), Vector3(0.6, 0.42, 0.5), Color(0.32, 0.7, 0.32), 5, 12)
-			k.soft_blob(Vector3(p.x, 0.62, p.y - 0.42), Vector3(0.4, 0.2, 0.12), Color(0.85, 0.85, 0.55), 3, 8)
-			for sx: float in [-0.25, 0.25]:
-				k.soft_blob(Vector3(p.x + sx, 1.02, p.y - 0.28), Vector3(0.17, 0.17, 0.17), Color(1, 1, 1), 3, 8)
-				k.soft_blob(Vector3(p.x + sx, 1.04, p.y - 0.4), Vector3(0.07, 0.07, 0.05), Color(0.05, 0.05, 0.05), 2, 6)
-			k.mat = 0.0
-
-
-## Fictional name boards (Label3D, warm cream on a dark board): one at each
-## building's main face and wayfinding fingerposts at the main junctions.
-## Each label is drawn only near the camera.
-const SIGN_FONT := preload("res://assets/fonts/Manrope-Bold.ttf")
-func signs() -> void:
-	var names_done := {}
-	for bd in L.buildings:
-		var id := String(bd["id"])
-		var nm := String(bd["name"])
-		if names_done.has(nm) or id in ["tower", "chapel_e"]:
-			continue
-		names_done[nm] = true
-		var pos: Vector2 = bd["pos"]
-		var size: Vector2 = bd["size"]
-		var h: float = bd["h"]
-		var to_c := (Vector2.ZERO - pos)
-		var face_n := Vector2(signf(to_c.x), 0) if absf(to_c.x) * size.y > absf(to_c.y) * size.x else Vector2(0, signf(to_c.y))
-		if id == "dorm" or bd.has("dorm_id"):
-			face_n = Vector2(0, -1)
-		if id == "chapel_w":
-			pos = Vector2(0, -30)
-			size = Vector2(22, 14)
-			face_n = Vector2(0, 1)
-		var fp := pos + face_n * (Vector2(size.x, size.y) * 0.5 * face_n.abs()).length()
-		var y := minf(h - 1.4, 4.4) if id != "dorm" else 5.6
-		if bd.has("dorm_id"):
-			y = CampusDorms.CEIL + 1.0   # V6: above the front porch hood
-		if id == "chapel_w":
-			y = 5.0
-		_board(Vector3(fp.x, y, fp.y) + Vector3(face_n.x, 0, face_n.y) * 0.12, Vector3(face_n.x, 0, face_n.y), nm, 0.55 if nm.length() < 18 else 0.48)
-	# wayfinding posts: [position, [[text, toward (x, z)], ...]]
-	var posts := [
-		[Vector2(4.2, 80.0), [["Puddlesworth Hall", Vector2(0, 112)], ["Founders' Fountain", Vector2(0, 22)]]],
-		[Vector2(-81.0, 49.5), [["Froggy Pond", Vector2(-120, 46)], ["Noodle Commons", Vector2(-42, 66)]]],
-		[Vector2(80.5, 35.5), [["Splashdown Pool", Vector2(112, 32)], ["Student Union", Vector2(42, 66)]]],
-		[Vector2(95.5, -61.5), [["Lily Basin", Vector2(92, -88)], ["Greenhouse", Vector2(130, -88)]]],
-		[Vector2(-103.5, -61.5), [["Old Quarry Lagoon", Vector2(-100, -90)], ["Stargazer Observatory", Vector2(-138, -118)]]],
-		[Vector2(-23.5, -96.0), [["Boathouse Inlet", Vector2(-19, -137)], ["Bellweather Tower", Vector2(0, -30)]]],
-	]
-	if not L.legacy:
-		# V6: the two new dorms from the yard junctions
-		posts.append([Vector2(-76.8, 95.2), [["Lanternfield House", Vector2(-96, 104)], ["Puddlesworth Hall", Vector2(0, 103)]]])
-		posts.append([Vector2(76.8, 95.2), [["Moonpenny Lodge", Vector2(96, 100)], ["Puddlesworth Hall", Vector2(0, 103)]]])
-	for pst in posts:
-		_fingerpost(pst[0], pst[1])
-
-
-func _board(p: Vector3, nrm: Vector3, text: String, size_m: float) -> void:
-	var right := Vector3(-nrm.z, 0, nrm.x)
-	var w := maxf(2.0, float(text.length()) * size_m * 0.42 + 0.6)
-	var k := _k(p.x, p.z, true)
-	k.mat = MeshKit.M_WOOD
-	k.chamfer_box(p - nrm * 0.05, Vector3(w, size_m * 1.5, 0.1) if absf(nrm.z) > 0.5 else Vector3(0.1, size_m * 1.5, w), Color(0.16, 0.18, 0.26), 0.03)
-	k.mat = MeshKit.M_METAL
-	k.chamfer_box(p - nrm * 0.06, Vector3(w + 0.12, size_m * 1.5 + 0.12, 0.06) if absf(nrm.z) > 0.5 else Vector3(0.06, size_m * 1.5 + 0.12, w + 0.12), Color(0.8, 0.66, 0.36), 0.02)
-	k.mat = 0.0
-	_label(p + nrm * 0.03, nrm, text, size_m, w)
-
-
-func _label(p: Vector3, nrm: Vector3, text: String, size_m: float, width: float) -> void:
-	var lb := Label3D.new()
-	lb.text = text
-	lb.font = SIGN_FONT
-	lb.font_size = 64
-	lb.pixel_size = size_m / 64.0 * 0.9
-	lb.modulate = Color(1.0, 0.93, 0.78)
-	lb.outline_size = 0
-	lb.shaded = false
-	lb.double_sided = false
-	lb.alpha_cut = Label3D.ALPHA_CUT_DISCARD
-	lb.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	lb.width = width / lb.pixel_size
-	lb.position = p
-	lb.basis = Basis.looking_at(-nrm, Vector3.UP)
-	lb.visibility_range_end = 45.0
-	lb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	lb.name = "Sign_" + text.validate_node_name()
-	B.container.add_child(lb)
-
-
-## A fingerpost beside a junction: a timber post with arrow boards pointing
-## the way to each place (and naming it), a small lantern on top.
-func _fingerpost(p: Vector2, boards: Array) -> void:
-	var k := _k(p.x, p.y, true)
-	k.mat = MeshKit.M_WOOD
-	k.chamfer_box(Vector3(p.x, 1.25, p.y), Vector3(0.16, 2.5, 0.16), Color(0.38, 0.27, 0.19), 0.03)
-	k.mat = MeshKit.M_METAL
-	k.soft_blob(Vector3(p.x, 2.6, p.y), Vector3(0.12, 0.12, 0.12), Color(1.0, 0.84, 0.5), 3, 8, 0.0, 0.0, 0, 1.6)
-	k.mat = 0.0
-	for i in boards.size():
-		var txt: String = boards[i][0]
-		var to: Vector2 = boards[i][1]
-		var d := (to - p).normalized()
-		var y := 2.15 - 0.42 * float(i)
-		var dir3 := Vector3(d.x, 0, d.y)
-		var w := float(txt.length()) * 0.105 + 0.35
-		var c := Vector3(p.x, y, p.y) + dir3 * (w * 0.5 + 0.05)
-		var yaw := atan2(-d.y, d.x)
-		k.mat = MeshKit.M_WOOD
-		k.chamfer_box(c, Vector3(w, 0.3, 0.06), Color(0.86, 0.80, 0.66), 0.02, yaw)
-		# arrow tip
-		var tip := Vector3(p.x, y, p.y) + dir3 * (w + 0.22)
-		var nrm := Vector3(-d.y, 0, d.x)
-		k.tri(c + dir3 * w * 0.5 + Vector3.UP * 0.15 + nrm * 0.031, tip + nrm * 0.031, c + dir3 * w * 0.5 - Vector3.UP * 0.15 + nrm * 0.031, Color(0.86, 0.80, 0.66))
-		k.tri(c + dir3 * w * 0.5 + Vector3.UP * 0.15 - nrm * 0.031, c + dir3 * w * 0.5 - Vector3.UP * 0.15 - nrm * 0.031, tip - nrm * 0.031, Color(0.86, 0.80, 0.66))
-		k.mat = 0.0
-		for sg: float in [1.0]:
-			var lb := Label3D.new()
-			lb.text = txt
-			lb.font = SIGN_FONT
-			lb.font_size = 48
-			lb.pixel_size = 0.0042
-			lb.modulate = Color(0.16, 0.18, 0.26)
-			lb.outline_size = 0
-			lb.shaded = true
-			lb.alpha_cut = Label3D.ALPHA_CUT_DISCARD
-			lb.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-			lb.position = c + nrm * (0.036 * sg)
-			lb.basis = Basis.looking_at(-nrm * sg, Vector3.UP)
-			lb.double_sided = false
-			lb.visibility_range_end = 32.0
-			lb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			lb.name = "Fingerpost_%s_%d" % [txt.validate_node_name(), int(sg)]
-			B.container.add_child(lb)

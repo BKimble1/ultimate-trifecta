@@ -1,40 +1,49 @@
 class_name CampusBuilder
 extends RefCounted
-## Generates collision and visuals for Moonbrook College from CampusLayout.
+## Generates collision and visuals for the reference campus from CampusLayout.
 ##
-## Collision (build_collision, the height field) is authoritative and is the
-## same code as V4: the V5 art pass changes only what is drawn
-## (test_campus_art checks every shape and both nav grids against V4).
+## Collision (build_collision, the height field) is authoritative and comes
+## from the data alone, so host and guests build identical worlds:
+##   * one square 1 m height field over BOUNDS (flat ground at y = 0, every
+##     water a basin at its floor with a bank: soft for ponds and the lake,
+##     hard behind a rim for fountains and pools);
+##   * buildings as convex prisms (the footprint minus genuine open passages
+##     and the start dorms' interiors, which get a slab overhead);
+##   * walls, hedges, fences, bollards (cart-only), tree trunks, lamp posts,
+##     benches, water rims, decks and ramps;
+##   * invisible walls along the play boundary.
 ##
-## Visuals (V5) are built in short staged steps under the loading screen
+## Visuals are built in short staged steps under the loading screen
 ## (begin_visuals / step), once per session:
-##   * merged per-chunk meshes (MeshKit) for ground, paths, buildings and
-##     props, with the light field baked into vertex colours and a material
-##     id per vertex for the world shaders' detail patterns;
-##   * the Blender kit (CampusKit) as chunked MultiMeshes: trees by species,
-##     shrubs, flowers, grass, reeds, lilies, rocks and the forest beyond the
-##     boundary, each with authored LODs in Godot's native mesh LOD and, for
-##     trees, a low-poly shadow proxy;
-##   * the six water landmarks (CampusLandmarks) and the buildings and props
-##     (CampusArchitecture).
+##   * merged per-chunk meshes (MeshKit) for ground, surfaces (fields, lots,
+##     plazas, roads, paths), buildings and props, with a material id per
+##     vertex for the world shaders' detail patterns and the light field
+##     (CampusKit) sampled on the GPU;
+##   * the Blender kit (CampusKit) as chunked MultiMeshes: trees by species
+##     with authored LODs, shrubs, rocks and the woods beyond the boundary;
+##   * the waters (CampusLandmarks) and the buildings (CampusArchitecture).
 
-const CHUNK := Vector2(64.0, 60.0)
+const CHUNK := Vector2(64.0, 64.0)
 const WORLD_SHADER := preload("res://assets/shaders/world_vc.gdshader")
 const FOLIAGE_SHADER := preload("res://assets/shaders/world_foliage.gdshader")
 const WATER_SHADER := preload("res://assets/shaders/water.gdshader")
 const GLOW_SHADER := preload("res://assets/shaders/glow_add.gdshader")
 const DETAIL_A := preload("res://assets/campus/campus_detail_a.png")
 const DETAIL_B := preload("res://assets/campus/campus_detail_b.png")
+## Near-field detail (lamps, bollards, window frames) stops drawing beyond this.
+const DETAIL_M := 100.0
+## Whole chunks (ground, surfaces, buildings) stop drawing beyond this
+## (measured to the chunk centre; the night fog ends at 300 m).
+const CHUNK_END_M := 380.0
 
 var L: CampusLayout
-var _chunks: Dictionary = {}
-var _foliage: Dictionary = {}   # (unused since V4 trees became MultiMeshes)
-var _detail: Dictionary = {}    # small props per chunk, drawn only near the camera
-const DETAIL_M := 100.0
-## the shared canopy material (MatchController feeds it the followed character)
-var foliage_material: ShaderMaterial
+var _chunks: Dictionary = {}     # chunk key -> MeshKit (ground, surfaces, buildings)
+var _foliage: Dictionary = {}    # chunk key -> MeshKit (hedges, swaying things)
+var _detail: Dictionary = {}     # chunk key -> MeshKit (near-field detail)
 var _glow_st: SurfaceTool
 var _glow_count := 0
+## the shared canopy material (MatchController feeds it the followed character)
+var foliage_material: ShaderMaterial
 
 
 func _init(layout: CampusLayout) -> void:
@@ -42,21 +51,21 @@ func _init(layout: CampusLayout) -> void:
 
 
 # ---------------------------------------------------------------------------
-# Height function (shared by collision + visuals)
+# Height field (shared by collision + visuals)
 # ---------------------------------------------------------------------------
-static func ground_y(layout: CampusLayout, x: float, z: float) -> float:
-	var p := Vector2(x, z)
-	for w in layout.waters:
-		if CampusLayout.in_water_shape(w, p):
-			return float(w["floor_y"])
-	return 0.0
-
-
 static var _grid_cache: PackedFloat32Array
 static var _grid_layout: CampusLayout
+const BANK_SOFT := 2.6
+const BANK_HARD := 0.6
 
 
-## 1 m height grid over BOUNDS (row-major z, x), cached per layout.
+static func ground_y(layout: CampusLayout, x: float, z: float) -> float:
+	return grid_y(layout, x, z)
+
+
+## 1 m height grid over BOUNDS (row-major z, x; sample (i, j) sits at
+## BOUNDS.position + (i, j)), cached per layout.  Each water is scanline-
+## filled, then a chamfer distance inward from its edge shapes the bank.
 static func height_grid(layout: CampusLayout) -> PackedFloat32Array:
 	if _grid_layout == layout and not _grid_cache.is_empty():
 		return _grid_cache
@@ -67,20 +76,104 @@ static func height_grid(layout: CampusLayout) -> PackedFloat32Array:
 	data.resize(w * d)
 	data.fill(0.0)
 	for wt in layout.waters:
-		var c: Vector2 = wt["center"]
-		var ext := 16.0
-		for zi in range(int(c.y - ext - b.position.y), int(c.y + ext - b.position.y) + 1):
-			if zi < 0 or zi >= d:
-				continue
-			for xi in range(int(c.x - ext - b.position.x), int(c.x + ext - b.position.x) + 1):
-				if xi < 0 or xi >= w:
+		var rect: Rect2 = (wt["rect"] as Rect2).grow(1.0)
+		var i0 := clampi(int(floor(rect.position.x - b.position.x)), 0, w - 1)
+		var j0 := clampi(int(floor(rect.position.y - b.position.y)), 0, d - 1)
+		var i1 := clampi(int(ceil(rect.end.x - b.position.x)), 0, w - 1)
+		var j1 := clampi(int(ceil(rect.end.y - b.position.y)), 0, d - 1)
+		var rw := i1 - i0 + 1
+		var rd := j1 - j0 + 1
+		if rw <= 0 or rd <= 0:
+			continue
+		var inside := PackedByteArray()
+		inside.resize(rw * rd)
+		inside.fill(0)
+		for poly in wt["polys"]:
+			for jj in rd:
+				var z := b.position.y + float(j0 + jj)
+				var xs := scan_row(poly, z)
+				for k in range(0, xs.size() - 1, 2):
+					var xa := int(ceil(xs[k] - b.position.x)) - i0
+					var xb := int(floor(xs[k + 1] - b.position.x)) - i0
+					for ii in range(maxi(xa, 0), mini(xb, rw - 1) + 1):
+						inside[jj * rw + ii] = 1
+		var dist := chamfer_inside(inside, rw, rd)
+		var bank := BANK_HARD if float(wt["rim_h"]) > 0.0 or String(wt["kind"]) in ["fountain", "pool"] else BANK_SOFT
+		var fl := float(wt["floor_y"])
+		for jj in rd:
+			for ii in rw:
+				var dd := dist[jj * rw + ii]
+				if dd <= 0.0:
 					continue
-				var p := Vector2(b.position.x + xi, b.position.y + zi)
-				if CampusLayout.in_water_shape(wt, p):
-					data[zi * w + xi] = float(wt["floor_y"])
+				var y := fl * smoothstep(0.0, bank, dd)
+				var idx := (j0 + jj) * w + (i0 + ii)
+				data[idx] = minf(data[idx], y)
 	_grid_cache = data
 	_grid_layout = layout
 	return data
+
+
+## x positions where a polygon's boundary crosses the horizontal line z,
+## sorted (pairs bound the inside spans).
+static func scan_row(poly: PackedVector2Array, z: float) -> PackedFloat32Array:
+	var xs := PackedFloat32Array()
+	var n := poly.size()
+	for i in n:
+		var a := poly[i]
+		var c := poly[(i + 1) % n]
+		if (a.y <= z and c.y > z) or (c.y <= z and a.y > z):
+			xs.append(a.x + (z - a.y) / (c.y - a.y) * (c.x - a.x))
+	xs.sort()
+	return xs
+
+
+## Distance (m, 1 m cells) from each inside cell to the nearest outside
+## cell: a two-pass 3-4 chamfer transform; 0 outside.
+static func chamfer_inside(inside: PackedByteArray, w: int, d: int) -> PackedFloat32Array:
+	var big := 1e6
+	var dist := PackedFloat32Array()
+	dist.resize(w * d)
+	for i in w * d:
+		dist[i] = big if inside[i] == 1 else 0.0
+	for j in d:
+		for i in w:
+			var idx := j * w + i
+			if dist[idx] == 0.0:
+				continue
+			var v := dist[idx]
+			if i > 0:
+				v = minf(v, dist[idx - 1] + 1.0)
+			else:
+				v = minf(v, 1.0)
+			if j > 0:
+				v = minf(v, dist[idx - w] + 1.0)
+				if i > 0:
+					v = minf(v, dist[idx - w - 1] + 1.414)
+				if i < w - 1:
+					v = minf(v, dist[idx - w + 1] + 1.414)
+			else:
+				v = minf(v, 1.0)
+			dist[idx] = v
+	for j in range(d - 1, -1, -1):
+		for i in range(w - 1, -1, -1):
+			var idx := j * w + i
+			if dist[idx] == 0.0:
+				continue
+			var v := dist[idx]
+			if i < w - 1:
+				v = minf(v, dist[idx + 1] + 1.0)
+			else:
+				v = minf(v, 1.0)
+			if j < d - 1:
+				v = minf(v, dist[idx + w] + 1.0)
+				if i < w - 1:
+					v = minf(v, dist[idx + w + 1] + 1.414)
+				if i > 0:
+					v = minf(v, dist[idx + w - 1] + 1.414)
+			else:
+				v = minf(v, 1.0)
+			dist[idx] = v
+	return dist
 
 
 static func grid_y(layout: CampusLayout, x: float, z: float) -> float:
@@ -91,10 +184,7 @@ static func grid_y(layout: CampusLayout, x: float, z: float) -> float:
 
 
 static func water_at(layout: CampusLayout, p: Vector2) -> int:
-	for i in layout.waters.size():
-		if CampusLayout.in_water_shape(layout.waters[i], p):
-			return i
-	return -1
+	return layout.water_index_at(p)
 
 
 # ---------------------------------------------------------------------------
@@ -109,32 +199,18 @@ func build_collision(root: Node3D) -> void:
 	blockers.name = "CartBlockers"
 	blockers.collision_layer = TC.L_CART_BLOCK
 	blockers.collision_mask = 0
-	# shapes go on the bodies before they enter the tree: added one by one
-	# to a body already in the physics space, each one rebuilt the body's
-	# compound shape (~45 ms for the campus; ~5 ms this way)
-
-	# Ground heightmap at 1 m resolution with real pits under every water body.
+	# shapes go on the bodies before they enter the tree: added one by one to
+	# a body already in the physics space, each one rebuilt the body's
+	# compound shape
 	_add_shape(world, ground_shape(L), Transform3D(Basis.IDENTITY, ground_shape_origin()))
 
+	var dorm_of: Dictionary = {}
+	for id in CampusDorms.ids():
+		dorm_of[String(CampusDorms.geometry(id).get("building", ""))] = id
 	for bd in L.buildings:
-		var pos: Vector2 = bd["pos"]
-		var size: Vector2 = bd["size"]
-		var h: float = bd["h"]
-		var y0: float = float(bd.get("base_y", 0.0))
-		if bd.has("dorm_id"):
-			# V6 dorm: a shell with a common room and open doorways
-			for bx in CampusDorms.geometry(String(bd["dorm_id"]))["boxes"]:
-				_box(world, bx[0], bx[1])
+		if bool(bd["background"]):
 			continue
-		if bd["id"] == "shed":
-			# open front (south): back + two side walls + roof slab
-			var hz := size.y * 0.5
-			_box(world, Vector3(pos.x, h * 0.5, pos.y - hz + 0.3), Vector3(size.x, h, 0.6))
-			_box(world, Vector3(pos.x - size.x * 0.5 + 0.3, h * 0.5, pos.y), Vector3(0.6, h, size.y))
-			_box(world, Vector3(pos.x + size.x * 0.5 - 0.3, h * 0.5, pos.y), Vector3(0.6, h, size.y))
-			_box(world, Vector3(pos.x, h - 0.3, pos.y), Vector3(size.x, 0.6, size.y))
-			continue
-		_box(world, Vector3(pos.x, y0 + (h - y0) * 0.5, pos.y), Vector3(size.x, h - y0, size.y), float(bd.get("rot", 0.0)))
+		_building_collision(world, bd, String(dorm_of.get(bd["id"], "")))
 	for s in L.walls:
 		_seg(world, s["a"], s["b"], 0.0, s["h"], s["t"])
 	for s in L.hedges:
@@ -144,15 +220,17 @@ func build_collision(root: Node3D) -> void:
 	for s in L.cart_blockers:
 		_seg(blockers, s["a"], s["b"], 0.0, 1.6, 0.5)
 	for t in L.trees:
+		if not bool(t.get("collide", true)):
+			continue
 		var tp: Vector2 = t["pos"]
 		var cyl := CylinderShape3D.new()
 		cyl.radius = 0.42
 		cyl.height = 4.0
-		_add_shape(world, cyl, Transform3D(Basis.IDENTITY, Vector3(tp.x, 2.0, tp.y)))
+		_add_shape(world, cyl, Transform3D(Basis.IDENTITY, Vector3(tp.x, grid_y(L, tp.x, tp.y) + 2.0, tp.y)))
 	for r in L.rocks:
 		_box(world, r["pos"] + Vector3(0, float(r["size"].y) * 0.5, 0), r["size"], float(r["rot"]))
 	for p in L.platforms:
-		_box(world, p["center"] - Vector3(0, float(p["size"].y) * 0.5 - 0.0, 0) + Vector3(0, 0, 0), p["size"])
+		_box(world, p["center"] - Vector3(0, float(p["size"].y) * 0.5, 0), p["size"], float(p.get("yaw", 0.0)))
 	for rp in L.ramps:
 		_ramp(world, rp["from"], rp["to"], rp["w"])
 	for lp in L.lamps:
@@ -167,51 +245,101 @@ func build_collision(root: Node3D) -> void:
 		var sp: Vector2 = so["pos"]
 		var ss: Vector3 = so["size"]
 		_box(world, Vector3(sp.x, ss.y * 0.5, sp.y), ss, float(so["rot"]))
-	# Water rims and fountain pedestal
+	for pr in L.props:
+		var ps := CampusArchitecture.prop_collider(pr)
+		if ps != Vector3.ZERO:
+			var pp: Vector2 = pr["pos"]
+			_box(world, Vector3(pp.x, ps.y * 0.5, pp.y), ps, float(pr["rot"]))
+	# water rims (fountains, pools): a low wall around every hard edge
 	for wt in L.waters:
-		var rim: float = float(wt.get("rim_h", 0.0))
-		var c: Vector2 = wt["center"]
+		var rim := float(wt.get("rim_h", 0.0))
 		if rim <= 0.0:
 			continue
-		var th: float = float(wt.get("rim_t", 0.5))
-		if wt["shape"] == "circle":
-			var r0: float = float(wt["radius"])
-			var n := 20
+		var th := float(wt.get("rim_t", 0.5))
+		for poly in wt["polys"]:
+			var cp := CampusData.ccw(poly)
+			var n := cp.size()
 			for i in n:
-				var a := TAU * (float(i) + 0.5) / float(n)
-				var seg_len := TAU * (r0 + th) / float(n) + 0.15
-				var cpos := c + Vector2(cos(a), sin(a)) * (r0 + th * 0.5)
-				_box(world, Vector3(cpos.x, rim * 0.5, cpos.y), Vector3(th, rim, seg_len), -a)
-			var ped := CylinderShape3D.new()
-			ped.radius = 1.3
-			ped.height = 2.6
-			_add_shape(world, ped, Transform3D(Basis.IDENTITY, Vector3(c.x, 0.0, c.y)))
-		elif wt["shape"] == "rect":
-			var hs: Vector2 = wt["size"] * 0.5
-			_box(world, Vector3(c.x, rim * 0.5, c.y - hs.y - th * 0.5), Vector3(hs.x * 2.0 + th * 2.0, rim, th))
-			_box(world, Vector3(c.x, rim * 0.5, c.y + hs.y + th * 0.5), Vector3(hs.x * 2.0 + th * 2.0, rim, th))
-			_box(world, Vector3(c.x - hs.x - th * 0.5, rim * 0.5, c.y), Vector3(th, rim, hs.y * 2.0))
-			_box(world, Vector3(c.x + hs.x + th * 0.5, rim * 0.5, c.y), Vector3(th, rim, hs.y * 2.0))
-	# Invisible outer walls (tall) so nobody leaves the campus
-	var bb := CampusLayout.BOUNDS.grow(1.0)
-	_box(world, Vector3(bb.position.x, 5, bb.get_center().y), Vector3(1, 10, bb.size.y))
-	_box(world, Vector3(bb.end.x, 5, bb.get_center().y), Vector3(1, 10, bb.size.y))
-	_box(world, Vector3(bb.get_center().x, 5, bb.position.y), Vector3(bb.size.x, 10, 1))
-	_box(world, Vector3(bb.get_center().x, 5, bb.end.y), Vector3(bb.size.x, 10, 1))
+				var a := cp[i]
+				var c := cp[(i + 1) % n]
+				var dd := (c - a).normalized()
+				var out := Vector2(dd.y, -dd.x) * (th * 0.5)
+				_seg(world, a + out, c + out, 0.0, rim, th)
+	# the play boundary: invisible walls, tall
+	var bp2 := L.play_boundary
+	for i in bp2.size():
+		_seg(world, bp2[i], bp2[(i + 1) % bp2.size()], -2.0, 14.0, 1.0)
 	root.add_child(world)
 	root.add_child(blockers)
+
+
+## One building: convex prisms of what is solid at ground level (the
+## footprint or its parts, minus open passages and a start dorm's interior),
+## raised parts from their base, and slabs over the open spaces.
+func _building_collision(world: StaticBody3D, bd: Dictionary, dorm_id: String) -> void:
+	for e in bd["entrances"]:
+		for cp in CampusArchitecture.portico_columns(e):
+			_box(world, Vector3(cp.x, 3.0, cp.y), Vector3(0.62, 6.0, 0.62))
+	if bd.get("landmark") != null and String(bd["landmark"]) == "bell_tower":
+		for so in CampusTower.solids(bd):
+			for cv in CampusData.convex_pieces(so["poly"]):
+				_prism(world, cv, float(so["base"]), float(so["h"]))
+		return
+	var holes: Array = []
+	for ps in bd["passages"]:
+		holes.append(ps["poly"])
+	var g: Dictionary = CampusDorms.geometry(dorm_id) if dorm_id != "" else {}
+	if not g.is_empty():
+		holes.append_array(g["interior"])
+	var parts: Array = bd["parts"]
+	if parts.is_empty():
+		parts = [{"poly": bd["poly"], "h": float(bd["h"]), "base": 0.0}]
+	for part in parts:
+		var h := float(part["h"])
+		var base := float(part.get("base", 0.0))
+		if h <= base + 0.05:
+			continue
+		if base < 1.0:
+			for piece in CampusData.subtract(part["poly"], holes):
+				for cv in CampusData.convex_pieces(piece):
+					_prism(world, cv, 0.0, h)
+		else:
+			for cv in CampusData.convex_pieces(part["poly"]):
+				_prism(world, cv, base, h)
+	var top := float(bd["h"])
+	for ps in bd["passages"]:
+		var clear := float(ps["clear"])
+		if top > clear + 0.05:
+			for cv in CampusData.convex_pieces(ps["poly"]):
+				_prism(world, cv, clear, top)
+	if not g.is_empty():
+		var ceil_y := float(g["ceil"])
+		for ip in g["interior"]:
+			for cv in CampusData.convex_pieces(ip):
+				_prism(world, cv, ceil_y, maxf(top, ceil_y + 0.5))
+		for bx in g["boxes"]:
+			_box(world, bx[0], bx[1], float(bx[3]))
+
+
+func _prism(body: CollisionObject3D, poly: PackedVector2Array, y0: float, y1: float) -> void:
+	var pts := PackedVector3Array()
+	for p in poly:
+		pts.append(Vector3(p.x, y0, p.y))
+		pts.append(Vector3(p.x, y1, p.y))
+	var cs := ConvexPolygonShape3D.new()
+	cs.points = pts
+	_add_shape(body, cs, Transform3D.IDENTITY)
 
 
 static var _hm_shape: HeightMapShape3D
 static var _hm_layout: CampusLayout
 
 
-## The ground heightmap shape, shared by every round's collision (host sim
-## and client world alike), so the physics engine builds it once.  It is
-## square on purpose: Jolt only makes a real height field from a square map
-## and falls back to a ~190k-triangle mesh otherwise (161 ms to build and
-## slower to query; measured 6 ms square).  The extra rows lie beyond the
-## campus's outer walls at ground level.
+## The ground height field, shared by every round's collision (host sim and
+## client world alike), so the physics engine builds it once.  It is square
+## on purpose: Jolt only makes a real height field from a square map (and
+## falls back to a huge triangle mesh otherwise).  The extra rows lie beyond
+## the play boundary at ground level.
 static func ground_shape(layout: CampusLayout) -> HeightMapShape3D:
 	if _hm_layout == layout and _hm_shape != null:
 		return _hm_shape
@@ -221,16 +349,13 @@ static func ground_shape(layout: CampusLayout) -> HeightMapShape3D:
 	var n := maxi(w, d)
 	var grid := height_grid(layout)
 	var data := PackedFloat32Array()
-	var pad := PackedFloat32Array()
-	pad.resize(n - w)
-	pad.fill(0.0)
+	data.resize(n * n)
+	data.fill(0.0)
 	for zi in d:
-		data.append_array(grid.slice(zi * w, zi * w + w))
-		data.append_array(pad)
-	var tail := PackedFloat32Array()
-	tail.resize((n - d) * n)
-	tail.fill(0.0)
-	data.append_array(tail)
+		for xi in w:
+			var v := grid[zi * w + xi]
+			if v != 0.0:
+				data[zi * n + xi] = v
 	var hm := HeightMapShape3D.new()
 	hm.map_width = n
 	hm.map_depth = n
@@ -245,6 +370,14 @@ static func ground_shape_origin() -> Vector3:
 	var b := CampusLayout.BOUNDS
 	var n := maxi(int(b.size.x), int(b.size.y))
 	return Vector3(b.position.x + n * 0.5, 0.0, b.position.y + n * 0.5)
+
+
+## Drops the static caches (tests that swap the campus data).
+static func drop_caches() -> void:
+	_grid_cache = PackedFloat32Array()
+	_grid_layout = null
+	_hm_shape = null
+	_hm_layout = null
 
 
 func _add_shape(body: CollisionObject3D, shape: Shape3D, xf: Transform3D) -> void:
@@ -283,9 +416,8 @@ func _ramp(body: CollisionObject3D, from: Vector3, to: Vector3, w: float) -> voi
 	_add_shape(body, bs, Transform3D(basis, center))
 
 
-
 # ---------------------------------------------------------------------------
-# Visuals
+# Visual chunks
 # ---------------------------------------------------------------------------
 ## detail: small near-field props (lamps, bollards, benches, window frames)
 ## in their own per-chunk mesh that stops drawing beyond DETAIL_M.
@@ -297,6 +429,11 @@ func _kit_at(x: float, z: float, foliage: bool = false, detail: bool = false) ->
 	return store[key]
 
 
+## The chunk mesh kit for a world point (public: architecture and landmarks).
+func kit_at(x: float, z: float, foliage: bool = false, detail: bool = false) -> MeshKit:
+	return _kit_at(x, z, foliage, detail)
+
+
 static func chunk_key(x: float, z: float) -> Vector2i:
 	return Vector2i(int(floor((x - CampusLayout.BOUNDS.position.x) / CHUNK.x)), int(floor((z - CampusLayout.BOUNDS.position.y) / CHUNK.y)))
 
@@ -306,8 +443,8 @@ static func chunk_center(key: Vector2i, scale: float = 1.0) -> Vector3:
 	return Vector3(b.x + (float(key.x) + 0.5) * CHUNK.x * scale, 0.0, b.y + (float(key.y) + 0.5) * CHUNK.y * scale)
 
 
-## Coarser batches (2 x 2 chunks): dressing and tree shadow proxies; the
-## forest beyond the boundary uses 3 x 3.
+## Coarser batches (2 x 2 chunks): tree shadow proxies; the woods beyond the
+## boundary use 3 x 3.
 static func coarse_key(x: float, z: float, scale: float = 2.0) -> Vector2i:
 	return Vector2i(int(floor((x - CampusLayout.BOUNDS.position.x) / (CHUNK.x * scale))), int(floor((z - CampusLayout.BOUNDS.position.y) / (CHUNK.y * scale))))
 
@@ -329,7 +466,6 @@ var _steps: Array[Callable] = []
 ## a short name per step (diagnostics: dev_shots and test_campus_art time them)
 var step_names: PackedStringArray = PackedStringArray()
 var _step_i := 0
-var _rng: RandomNumberGenerator
 var _quality := 1
 var _root: Node3D
 var _commit_keys: Array = []
@@ -339,12 +475,10 @@ var kit: CampusKit
 var arch: CampusArchitecture
 var marks: CampusLandmarks
 var dorm_art: DormArt
-var dressing: Dictionary = {}
 var _trees: Dictionary = {}       # chunk key -> {species: [[Transform3D, tint, custom], ...]}
 var _decor: Dictionary = {}       # coarse key -> {kind: [[Transform3D, tint, custom], ...]}
-var _far: Dictionary = {}         # 3x coarse key -> {species: [...]} (forest beyond the bounds)
+var _far: Dictionary = {}         # 3x coarse key -> {species: [...]} (woods beyond the bounds)
 var _proxy: Dictionary = {}       # coarse key -> {family: [...]} (tree shadow casters)
-var _ground_end: Dictionary = {}  # chunk key -> vertex count after the ground
 var _field_tex: ImageTexture
 var _mm_queue: Array = []
 var _mm_started := false
@@ -357,8 +491,6 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_glow_st = SurfaceTool.new()
 	_glow_st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_glow_count = 0
-	_rng = RandomNumberGenerator.new()
-	_rng.seed = 77
 	_quality = quality
 	_root = root
 	_step_i = 0
@@ -368,17 +500,15 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_decor.clear()
 	_far.clear()
 	_proxy.clear()
-	_ground_end.clear()
 	_commit_keys.clear()
 	_commit_started = false
 	_mm_queue.clear()
 	_mm_started = false
+	water_nodes = {}
 	arch = CampusArchitecture.new(self)
 	marks = CampusLandmarks.new(self)
 	dorm_art = DormArt.new(self, arch)
-	_add("kit", func() -> void:
-		CampusKit.load_kit(quality)
-		dressing = CampusDressing.load_baked())
+	_add("kit", func() -> void: CampusKit.load_kit(quality))
 	_add("light_trees", func() -> void:
 		kit = CampusKit.new(L, false)
 		kit.stamp_trees())
@@ -388,57 +518,50 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_add("light_lamps", func() -> void:
 		kit.stamp_lights()
 		kit.stamp_paths())
-	_add("light_decor", _stamp_decor)
-	for gz in range(int(ceil(CampusLayout.BOUNDS.size.y / CHUNK.y))):
-		for gx in range(int(ceil(CampusLayout.BOUNDS.size.x / CHUNK.x))):
+	var nx := int(ceil(CampusLayout.BOUNDS.size.x / CHUNK.x))
+	var nz := int(ceil(CampusLayout.BOUNDS.size.y / CHUNK.y))
+	for gz in nz:
+		for gx in nx:
 			_add("ground", func() -> void: _ground_chunk(Vector2i(gx, gz)))
-	_add("plazas", _plazas)
-	_add("roads", _roads)
-	for i0 in range(0, L.paths.size(), 2):
+	for ai in range(0, L.areas.size(), 4):
+		_add("areas", func() -> void:
+			for i in range(ai, mini(ai + 4, L.areas.size())):
+				_area(L.areas[i]))
+	for ri in range(0, L.roads.size(), 3):
+		_add("roads", func() -> void:
+			for i in range(ri, mini(ri + 3, L.roads.size())):
+				_road(L.roads[i]))
+	for pi in range(0, L.paths.size(), 6):
 		_add("paths", func() -> void:
-			for i in range(i0, mini(i0 + 2, L.paths.size())):
+			for i in range(pi, mini(pi + 6, L.paths.size())):
 				_path(L.paths[i]))
+	var dorm_buildings: Dictionary = {}
+	for id in CampusDorms.ids():
+		dorm_buildings[String(CampusDorms.geometry(id).get("building", ""))] = true
 	for bd in L.buildings:
+		if dorm_buildings.has(String(bd["id"])):
+			continue      # DormArt builds it, with its open doorways
 		_add("building_" + String(bd["id"]), func() -> void: arch.building(bd))
-		if CampusArchitecture.has_windows(bd):
-			for face in 4:
-				_add("windows_" + String(bd["id"]), func() -> void: arch.windows(bd, face))
-		if bd.has("dorm_id"):
-			# V6 dorms: one step per part (each a few ms)
-			_add("dorm_windows", func() -> void: dorm_art.windows(bd))
-			_add("dorm_entrances", func() -> void: dorm_art.entrances(bd))
-			_add("dorm_interior", func() -> void: dorm_art.interior(bd))
+	for id in CampusDorms.ids():
+		_add("dorm_" + id, func() -> void: dorm_art.dorm(id))
 	_add("walls", arch.walls)
-	for hi in L.hedges.size():
-		var hl: float = (L.hedges[hi]["a"] as Vector2).distance_to(L.hedges[hi]["b"])
-		var parts := maxi(1, int(ceil(hl / 70.0)))
-		for pi in parts:
-			_add("hedges", func() -> void: arch.hedge_part(hi, float(pi) / float(parts), float(pi + 1) / float(parts)))
-	for fi in L.fences.size():
-		_add("fence", func() -> void: arch.fence(fi))
-	for bi in range(0, L.cart_blockers.size(), 2):
-		_add("bollards", func() -> void: arch.bollards(bi, bi + 2))
-	_add("trees", func() -> void:
-		_place_trees()
-		_merge_species())
-	_add("decor", _place_decor)
-	for part in 3:
-		_add("small", func() -> void: arch.small_things(part))
-	for li in range(0, L.lamps.size(), 10):
-		_add("lamps", func() -> void: arch.lamps(li, li + 10))
+	for hi in range(0, L.hedges.size(), 8):
+		_add("hedges", func() -> void: arch.hedges(hi, hi + 8))
+	for fi in range(0, L.fences.size(), 8):
+		_add("fences", func() -> void: arch.fences(fi, fi + 8))
+	_add("bollards", func() -> void: arch.bollards(0, L.cart_blockers.size()))
+	_add("trees", _place_trees)
+	for li in range(0, L.lamps.size(), 20):
+		_add("lamps", func() -> void: arch.lamps(li, li + 20))
+	_add("small", arch.small_things)
 	_add("light_texture", func() -> void: _field_tex = kit.field_texture())
-	_add("horizon", marks.horizon)
+	_add("background", marks.background)
 	_add("shader_world", func() -> void: _warm_material(WORLD_SHADER))
 	_add("shader_foliage", func() -> void: _warm_material(FOLIAGE_SHADER))
 	_add("shader_water", func() -> void: _warm_material(WATER_SHADER))
 	_add("containers", _containers)
 	for wi in L.waters.size():
 		_add("water_" + String(L.waters[wi]["id"]), func() -> void: marks.water(wi))
-		if String(L.waters[wi]["id"]) == "fountain":
-			_add("fountain_jets", func() -> void: marks.fountain_jets(wi))
-	# signs add board geometry to the chunks: before they are committed
-	_add("signs", arch.signs)
-	_add("dorm_signs", dorm_art.yard_signs)
 	_add("commit", _commit_next)
 	_add("multimesh", _mm_next)
 	_add("glow", _glow_mesh)
@@ -462,10 +585,9 @@ func step() -> bool:
 	return false
 
 
-## V6: the round was cancelled mid-build (Cancel on the loading screen).
-## Returns the chunk jobs still on the worker pool; the caller hands them
-## to App, which waits for each only once it has finished, so cancelling
-## never blocks a frame.
+## The round was cancelled mid-build (Cancel on the loading screen).
+## Returns the chunk jobs still on the worker pool; the caller waits for
+## each only once it has finished, so cancelling never blocks a frame.
 func abort() -> Array[int]:
 	var ids: Array[int] = []
 	for item in _commit_keys:
@@ -476,12 +598,9 @@ func abort() -> Array[int]:
 	return ids
 
 
-## V6: the build is over (finished or cancelled).  Its step closures refer
-## back to the builder, as do the architecture/landmark helpers, so without
-## this the builder and everything it gathered (mesh kits, the light-field
-## kit, tree and decor tables) stayed alive after every cold campus build.
-## Only what the round reads afterwards is kept: container, water_nodes,
-## foliage_material and step_names.
+## The build is over (finished or cancelled): drop everything only the
+## build needed.  Only what the round reads afterwards is kept: container,
+## water_nodes, foliage_material and step_names.
 func _release() -> void:
 	_steps.clear()
 	arch = null
@@ -489,12 +608,10 @@ func _release() -> void:
 	dorm_art = null
 	kit = null
 	_root = null
-	_rng = null
 	_glow_st = null
 	_world_mat = null
 	_field_tex = null
-	dressing = {}
-	for d: Dictionary in [_chunks, _foliage, _detail, _trees, _decor, _far, _proxy, _ground_end]:
+	for d: Dictionary in [_chunks, _foliage, _detail, _trees, _decor, _far, _proxy]:
 		d.clear()
 	_mm_queue.clear()
 	_commit_keys.clear()
@@ -510,14 +627,16 @@ func progress() -> float:
 	return float(_step_i) / float(maxi(step_names.size(), 1))
 
 
-func _stamp_decor() -> void:
-	for kind in dressing:
-		if not (kind in CampusDressing.MID):
-			continue
-		var a: PackedFloat32Array = dressing[kind]
-		var r0: float = CampusDressing.RADIUS[kind]
-		for i in range(0, a.size(), CampusDressing.STRIDE):
-			kit.stamp_contact(Vector2(a[i], a[i + 2]), r0 * a[i + 4] * 1.8, 0.22)
+func mm_add(store_name: String, p: Vector3, kind: String, xf: Transform3D, tint: Color, custom: Color) -> void:
+	match store_name:
+		"trees":
+			_mm_add(_trees, chunk_key(p.x, p.z), kind, xf, tint, custom)
+		"decor":
+			_mm_add(_decor, coarse_key(p.x, p.z), kind, xf, tint, custom)
+		"far":
+			_mm_add(_far, coarse_key(p.x, p.z, 3.0), kind, xf, tint, custom)
+		"proxy":
+			_mm_add(_proxy, coarse_key(p.x, p.z), kind, xf, tint, custom)
 
 
 func _mm_add(store: Dictionary, key: Vector2i, kind: String, xf: Transform3D, tint: Color, custom: Color) -> void:
@@ -529,27 +648,36 @@ func _mm_add(store: Dictionary, key: Vector2i, kind: String, xf: Transform3D, ti
 	(per[kind] as Array).append([xf, tint, custom])
 
 
-## One MultiMesh instance per tree, by species (visual only - the collider
-## and nav cell come from CampusLayout and are unchanged): uniform scale to
-## its height, a turn, and a gentle tint.
+## One MultiMesh instance per tree, by species (visual only - the trunk
+## collider and nav cell come from CampusLayout): uniform scale to its
+## height, a turn, a gentle tint.  Shrubs go to the decor batches.
 func _place_trees() -> void:
 	for t in L.trees:
 		var p: Vector2 = t["pos"]
-		var sp := CampusKit.species_of(t)
-		var s: float = float(t["h"]) / CampusKit.REF_H
+		var y := grid_y(L, p.x, p.y)
 		var yaw := fposmod(p.x * 1.7 + p.y * 2.3, TAU)
-		var xf := Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(s, s, s)), Vector3(p.x, ground_y(L, p.x, p.y), p.y))
-		_mm_add(_trees, chunk_key(p.x, p.y), sp, xf, CampusKit.tint_of(t), Color(1, 1, 1))
-		_mm_add(_proxy, coarse_key(p.x, p.y), "fir" if sp in CampusKit.CONIFER else "oak", xf, Color(1, 1, 1), Color(1, 1, 1))
+		if String(t["kind"]) == "shrub":
+			var r := float(t["r"])
+			var s := clampf(r / 0.9, 0.5, 2.6)
+			var xf := Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(s, s * 0.8, s)), Vector3(p.x, y, p.y))
+			# bushes: rounded and tall forms (no spring bloom on an autumn night)
+			var form := "shrub_round" if CampusKit._hash01(p.x, p.y, 3) < 0.65 else "shrub_tall"
+			_mm_add(_decor, coarse_key(p.x, p.y), form, xf, CampusKit.tint_of(t), Color(0.22, 0.42, 0.24) * CampusKit.tint_of(t).v)
+			continue
+		var sp := CampusKit.species_of(t)
+		var sc: float = float(t["h"]) / CampusKit.REF_H
+		var xf2 := Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(sc, sc, sc)), Vector3(p.x, y, p.y))
+		_mm_add(_trees, chunk_key(p.x, p.y), sp, xf2, CampusKit.tint_of(t), Color(1, 1, 1))
+		_mm_add(_proxy, coarse_key(p.x, p.y), "fir" if sp in CampusKit.CONIFER else "oak", xf2, Color(1, 1, 1), Color(1, 1, 1))
+	_merge_species()
 
 
-## Keeps tree batches few: a chunk with more than two species draws its
-## rarest ones as the commonest species of the same family (broadleaf or
-## conifer).  Visual only.
+## Keeps tree batches few: a chunk with more than three species draws its
+## rarest ones as the commonest species of the same family.  Visual only.
 func _merge_species() -> void:
 	for key in _trees:
 		var per: Dictionary = _trees[key]
-		while per.size() > 2:
+		while per.size() > 3:
 			var names: Array = per.keys()
 			names.sort_custom(func(a: String, b: String) -> bool: return (per[a] as Array).size() < (per[b] as Array).size())
 			var rare: String = names[0]
@@ -564,39 +692,8 @@ func _merge_species() -> void:
 			per.erase(rare)
 
 
-## The baked dressing list into chunked MultiMesh batches.
-func _place_decor() -> void:
-	var species := CampusDressing.species_list()
-	for kind in dressing:
-		var a: PackedFloat32Array = dressing[kind]
-		for i in range(0, a.size(), CampusDressing.STRIDE):
-			var p := Vector3(a[i], a[i + 1], a[i + 2])
-			var s: float = a[i + 4]
-			var sc := Vector3(s, s, s)
-			var tint := Color(a[i + 5], a[i + 6], a[i + 7])
-			var custom := Color(a[i + 8], a[i + 9], a[i + 10])
-			var batch: String = kind
-			if kind.begins_with("shrub"):
-				# one shrub batch: the blooming shrub's flower heads take the
-				# leaf colour on plain shrubs; tall ones are stretched
-				batch = "shrub_bloom"
-				if kind != "shrub_bloom":
-					custom = Color(0.22, 0.42, 0.24) * tint.v
-				if kind == "shrub_tall":
-					sc = Vector3(s * 0.85, s * 1.55, s * 0.85)
-			elif kind == "rock_flat":
-				batch = "rock_round"
-				sc = Vector3(s * 1.1, s * 0.4, s * 1.0)
-			var xf := Transform3D(Basis(Vector3.UP, a[i + 3]).scaled(sc), p)
-			if kind == CampusDressing.FOREST:
-				_mm_add(_far, coarse_key(p.x, p.z, 3.0), String(species[int(custom.r)]), xf, tint, Color(1, 1, 1))
-			else:
-				_mm_add(_decor, coarse_key(p.x, p.z), batch, xf, tint, custom)
-
-
-## A material's shader is compiled on first use: one step per shader, so
-## no other work shares those frames.  (Compiling on the worker pool
-## deadlocked the renderer here; it stays on the main thread.)
+## A material's shader is compiled on first use: one step per shader, so no
+## other work shares those frames (on the main thread).
 func _warm_material(sh: Shader) -> void:
 	var m := ShaderMaterial.new()
 	m.shader = sh
@@ -604,18 +701,29 @@ func _warm_material(sh: Shader) -> void:
 	sh.get_shader_uniform_list()
 
 
+func world_material() -> ShaderMaterial:
+	return _world_mat
+
+
+func field_texture() -> ImageTexture:
+	return _field_tex
+
+
+func field_params() -> Dictionary:
+	return kit.field_params() if kit != null else {}
+
+
 func _containers() -> void:
 	_world_mat = ShaderMaterial.new()
 	_world_mat.shader = WORLD_SHADER
 	var fmat := ShaderMaterial.new()
 	fmat.shader = FOLIAGE_SHADER
-	var field_tex := _field_tex
 	var field := kit.field_params()
 	for m: ShaderMaterial in [_world_mat, fmat]:
 		m.set_shader_parameter("detail_a", DETAIL_A)
 		m.set_shader_parameter("detail_b", DETAIL_B)
 		m.set_shader_parameter("detail_level", 1.0 if _quality >= 1 else 0.55)
-		m.set_shader_parameter("light_field", field_tex)
+		m.set_shader_parameter("light_field", _field_tex)
 		m.set_shader_parameter("field_on", 1.0)
 		for pk in field:
 			m.set_shader_parameter(pk, field[pk])
@@ -627,8 +735,7 @@ func _containers() -> void:
 
 ## Chunk meshes: every chunk's ArrayMesh is packed on the worker thread
 ## pool (the heaviest native work of the build), then each step adds the
-## finished ones to the scene.  (V4 baked the light field into the vertex
-## colours here; V5 samples it on the GPU, see CampusKit.field_texture.)
+## finished ones to the scene.
 func _commit_next() -> bool:
 	if not _commit_started:
 		_commit_started = true
@@ -636,6 +743,8 @@ func _commit_next() -> bool:
 			var store: Dictionary = [_chunks, _foliage, _detail][pass_i]
 			for key in store:
 				var mk: MeshKit = store[key]
+				if mk.is_empty():
+					continue
 				var out := []
 				var tid := WorkerThreadPool.add_task(func() -> void: out.append(mk.commit()), false, "campus chunk")
 				_commit_keys.append([pass_i, key, tid, out])
@@ -656,23 +765,20 @@ func _commit_next() -> bool:
 		mi.mesh = mesh
 		mi.material_override = foliage_material if pass_i == 1 else _world_mat
 		mi.name = (["Chunk_%d_%d", "Foliage_%d_%d", "Detail_%d_%d"][pass_i]) % [key.x, key.y]
-		# buildings and walls cast; the near-field detail (lamps, bollards,
-		# frames) does not (V5: fewer shadow draws, softer ground)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if (_quality >= 1 and pass_i == 0) else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 		if pass_i == 2:
-			# measured to the chunk's centre: covers the camera's surroundings
 			mi.visibility_range_end = DETAIL_M if _quality >= 1 else DETAIL_M * 0.7
-			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+		else:
+			mi.visibility_range_end = CHUNK_END_M if _quality >= 1 else CHUNK_END_M * 0.8
 		container.add_child(mi)
 	return not _commit_keys.is_empty()
 
 
-## Trees (by species) and dressing (by kind) for one chunk per call.  Each
-## batch is one MultiMesh with the kit's authored LODs in Godot's mesh LOD
-## (chosen per batch from its nearest point), so a chunk the camera stands
-## in is drawn at full detail and far chunks at the light LODs.  Trees cast
-## through a separate low-poly shadow proxy (Standard only).
-const TREE_END_M := 240.0
+## Trees (by species) and decor (by kind) for one batch per call, each a
+## MultiMesh with the kit's authored LODs.  Trees cast through a separate
+## low-poly shadow proxy (Standard only).
+const TREE_END_M := 260.0
 func _mm_next() -> bool:
 	if not _mm_started:
 		_mm_started = true
@@ -695,15 +801,14 @@ func _mm_next() -> bool:
 		var list: Array = per[kind]
 		if store == _trees or store == _far:
 			var mmi := _mmi(CampusKit.lod_mesh("tree_" + kind), list, center, foliage_material, false)
-			mmi.name = ("Trees_%s_%d_%d" if store == _trees else "Forest_%s_%d_%d") % [kind, key.x, key.y]
-			mmi.visibility_range_end = TREE_END_M if _quality >= 1 else 160.0
+			mmi.name = ("Trees_%s_%d_%d" if store == _trees else "Woods_%s_%d_%d") % [kind, key.x, key.y]
+			mmi.visibility_range_end = TREE_END_M if _quality >= 1 else 170.0
 			if store == _far:
-				mmi.visibility_range_end += 80.0
+				mmi.visibility_range_end += 120.0
 			container.add_child(mmi)
 		elif store == _proxy:
 			if _quality < 1:
 				continue
-			# trees cast through low-poly proxies, one batch per family
 			var sh := _mmi(CampusKit.kit_mesh("tree_%s_2" % kind), list, center, _world_mat, false)
 			sh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 			sh.name = "TreeShadows_%s_%d_%d" % [kind, key.x, key.y]
@@ -711,11 +816,10 @@ func _mm_next() -> bool:
 			container.add_child(sh)
 		else:
 			var rock := kind.begins_with("rock")
-			var mmi2 := _mmi(CampusKit.lod_mesh(CampusKit.DECOR_MESH[kind]), list, center, _world_mat if rock else foliage_material, kind == "flowers" or kind == "lilies" or kind == "shrub_bloom")
+			var mesh_name: String = CampusKit.DECOR_MESH.get(kind, kind)
+			var mmi2 := _mmi(CampusKit.lod_mesh(mesh_name), list, center, _world_mat if rock else foliage_material, kind == "flowers" or kind == "lilies" or kind == "shrub_bloom")
 			mmi2.name = "Decor_%s_%d_%d" % [kind, key.x, key.y]
-			# measured to the batch centre (128 x 120 m batches): near-only
-			# pieces stop issuing draws once their batch is far away
-			var vis := {"grass": 105.0, "flowers": 110.0, "shrub_bloom": 130.0, "reeds": 120.0, "lilies": 120.0}
+			var vis := {"grass": 105.0, "flowers": 110.0, "shrub_bloom": 150.0, "reeds": 120.0, "lilies": 120.0}
 			mmi2.visibility_range_end = float(vis.get(kind, 200.0)) * (1.0 if _quality >= 1 else 0.75)
 			container.add_child(mmi2)
 	return not _mm_queue.is_empty()
@@ -756,6 +860,7 @@ func _glow_mesh() -> void:
 	gmi.material_override = gm
 	gmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	gmi.name = "LampPools"
+	gmi.visibility_range_end = 220.0
 	container.add_child(gmi)
 
 
@@ -765,19 +870,17 @@ func _glow_mesh() -> void:
 const GROUND_STEP := 2.0
 var _noise: FastNoiseLite
 var _noise2: FastNoiseLite
+## areas that tint the ground under them (woods floor, farm fields, sand...)
+const GROUND_TINT := ["woods", "farm", "sand", "gravel", "yard", "construction"]
 
 
-func ground_rows() -> int:
-	return int(CampusLayout.BOUNDS.size.y / GROUND_STEP)
-
-
-## One chunk's ground: its share of the 2 m grid as an indexed mesh section
-## (each vertex shared by up to six triangles), coloured on the CPU (lawn
-## noise, forest floor, worn grass, banks) and lit on the GPU.
+## One chunk's ground: its share of the 2 m grid as an indexed mesh section,
+## coloured on the CPU (lawn noise, woods floor, worn grass, banks) and lit
+## on the GPU.
 func _ground_chunk(key: Vector2i) -> void:
 	var b := CampusLayout.BOUNDS
 	var nx := int(b.size.x / GROUND_STEP)
-	var nz := ground_rows()
+	var nz := int(b.size.y / GROUND_STEP)
 	var per_x := int(CHUNK.x / GROUND_STEP)
 	var per_z := int(CHUNK.y / GROUND_STEP)
 	var x0 := key.x * per_x
@@ -787,28 +890,33 @@ func _ground_chunk(key: Vector2i) -> void:
 	if x0 >= x1 or z0 >= z1:
 		return
 	_ensure_noise()
-	var k := _kit_at(b.position.x + x0 * GROUND_STEP + 1.0, b.position.y + z0 * GROUND_STEP + 1.0)
-	var w := x1 - x0 + 1
+	var rect := Rect2(b.position.x + x0 * GROUND_STEP, b.position.y + z0 * GROUND_STEP, (x1 - x0) * GROUND_STEP, (z1 - z0) * GROUND_STEP)
+	var tinting: Array = []
+	for a in L.areas:
+		if String(a["kind"]) in GROUND_TINT and (a["rect"] as Rect2).intersects(rect):
+			tinting.append(a)
+	var near_water: Array = []
+	for w in L.waters:
+		if (w["rect"] as Rect2).grow(3.0).intersects(rect):
+			near_water.append(w)
+	var k := _kit_at(rect.position.x + 1.0, rect.position.y + 1.0)
+	var w2 := x1 - x0 + 1
 	var ids := PackedInt32Array()
-	ids.resize(w * (z1 - z0 + 1))
+	ids.resize(w2 * (z1 - z0 + 1))
 	for zi in range(z0, z1 + 1):
-		var row := _ground_row_part(zi, x0, x1)
-		for j in row.size():
-			var e: Array = row[j]
-			ids[(zi - z0) * w + j] = k.grid_vertex(e[0], e[1], e[2], Vector2(e[3], 1.0 if _mown(e[0]) else 0.0))
+		var z := b.position.y + zi * GROUND_STEP
+		for xi in range(x0, x1 + 1):
+			var x := b.position.x + xi * GROUND_STEP
+			var e := _ground_vertex(x, z, tinting, near_water)
+			ids[(zi - z0) * w2 + (xi - x0)] = k.grid_vertex(e[0], e[1], e[2], Vector2(e[3], 0.0))
 	for zi in range(z1 - z0):
-		for xi in range(w - 1):
-			var a := ids[zi * w + xi]
-			var bb := ids[zi * w + xi + 1]
-			var c := ids[(zi + 1) * w + xi + 1]
-			var d := ids[(zi + 1) * w + xi]
+		for xi in range(w2 - 1):
+			var a := ids[zi * w2 + xi]
+			var bb := ids[zi * w2 + xi + 1]
+			var c := ids[(zi + 1) * w2 + xi + 1]
+			var d := ids[(zi + 1) * w2 + xi]
 			k.grid_tri(a, bb, c)
 			k.grid_tri(a, c, d)
-
-
-## The formal lawns get mowing stripes: the quad and the dorm grounds.
-static func _mown(p: Vector3) -> bool:
-	return (absf(p.x) < 74.0 and p.z > -12.0 and p.z < 84.0) or (absf(p.x) < 74.0 and p.z > 92.0 and p.z < 136.0)
 
 
 func _ensure_noise() -> void:
@@ -828,10 +936,12 @@ const NEEDLES := Color(0.29, 0.26, 0.17)
 const WORN := Color(0.38, 0.46, 0.26)
 const MUD := Color(0.30, 0.27, 0.22)
 const SAND := Color(0.52, 0.47, 0.36)
+const FARM := Color(0.36, 0.38, 0.22)
+const DIRT := Color(0.40, 0.33, 0.25)
 
 
-## Unlit lawn colour at (x, z): two noise scales, forest floor under the
-## groves (moss and needles), worn grass beside paths, sandy banks.
+## Unlit lawn colour at (x, z): two noise scales, woods floor under the
+## crowns (moss and needles), worn grass beside paths.
 func lawn_color(x: float, z: float) -> Color:
 	_ensure_noise()
 	var t := 0.5 + 0.5 * _noise.get_noise_2d(x, z)
@@ -848,45 +958,48 @@ func lawn_color(x: float, z: float) -> Color:
 	return col
 
 
-## Part of one row of ground vertices (columns x0..x1):
-## [position, smooth normal, colour, material id].
-func _ground_row_part(zi: int, x0: int, x1: int) -> Array:
-	var b := CampusLayout.BOUNDS
-	var out: Array = []
-	var z := b.position.y + zi * GROUND_STEP
-	var near_water := []
-	for w in L.waters:
-		var c: Vector2 = w["center"]
-		if absf(z - c.y) < 24.0:
-			near_water.append(w)
-	for xi in range(x0, x1 + 1):
-		var x := b.position.x + xi * GROUND_STEP
-		var y := grid_y(L, x, z)
-		var hl := grid_y(L, x - GROUND_STEP, z)
-		var hr := grid_y(L, x + GROUND_STEP, z)
-		var hd := grid_y(L, x, z - GROUND_STEP)
-		var hu := grid_y(L, x, z + GROUND_STEP)
-		var n := Vector3((hl - hr) / (2.0 * GROUND_STEP), 1.0, (hd - hu) / (2.0 * GROUND_STEP)).normalized()
-		var p := Vector3(x, y, z)
-		var col := lawn_color(x, z)
-		var mat := MeshKit.M_LAWN
-		var low := minf(minf(y, hl), minf(minf(hr, hd), hu))
-		if low < -0.1:
-			col = col.lerp(MUD, 1.0 if y < -0.1 else 0.7)
-			mat = MeshKit.M_GRAVEL
-		else:
-			# a sandy, pebbly band around the natural waters
-			for w in near_water:
-				if String(w["id"]) in ["pond", "quarry", "inlet"] and CampusLayout.in_water_shape(w, Vector2(x, z), 2.2):
-					col = col.lerp(SAND if String(w["id"]) != "pond" else SAND.lerp(MUD, 0.4), 0.65)
+## One ground vertex: [position, smooth normal, colour, material id].
+func _ground_vertex(x: float, z: float, tinting: Array, near_water: Array) -> Array:
+	var y := grid_y(L, x, z)
+	var hl := grid_y(L, x - GROUND_STEP, z)
+	var hr := grid_y(L, x + GROUND_STEP, z)
+	var hd := grid_y(L, x, z - GROUND_STEP)
+	var hu := grid_y(L, x, z + GROUND_STEP)
+	var n := Vector3((hl - hr) / (2.0 * GROUND_STEP), 1.0, (hd - hu) / (2.0 * GROUND_STEP)).normalized()
+	var col := lawn_color(x, z)
+	var mat := MeshKit.M_LAWN
+	var p2 := Vector2(x, z)
+	for a in tinting:
+		if (a["rect"] as Rect2).has_point(p2) and Geometry2D.is_point_in_polygon(p2, a["poly"]):
+			match String(a["kind"]):
+				"woods":
+					col = col.lerp(MOSS.lerp(NEEDLES, 0.5 + 0.5 * _noise2.get_noise_2d(x * 0.5, z * 0.5)), 0.7)
+				"farm":
+					col = FARM.lerp(col, 0.25)
+				"sand":
+					col = SAND
 					mat = MeshKit.M_GRAVEL
-		out.append([p, n, col, mat])
-	return out
+				"gravel", "construction":
+					col = DIRT.lerp(SAND, 0.3 + 0.3 * _noise2.get_noise_2d(x, z))
+					mat = MeshKit.M_GRAVEL
+				"yard":
+					col = col.darkened(0.04)
+	var low := minf(minf(y, hl), minf(minf(hr, hd), hu))
+	if low < -0.1:
+		col = col.lerp(MUD, 1.0 if y < -0.1 else 0.7)
+		mat = MeshKit.M_GRAVEL
+	else:
+		for w in near_water:
+			if String(w["kind"]) in ["lake", "pond"] and CampusLayout.in_water_shape(w, p2, 2.0):
+				col = col.lerp(SAND.lerp(MUD, 0.4), 0.55)
+				mat = MeshKit.M_GRAVEL
+				break
+	return [Vector3(x, y, z), n, col, mat]
 
 
 ## The lawn colour packed for a verge (sRGB bytes r*65536 + g*256 + b);
 ## the shader lights it with the light field like the ground around it.
-func _lawn_packed(x: float, z: float) -> float:
+func lawn_packed(x: float, z: float) -> float:
 	var col := lawn_color(x, z)
 	var r := clampi(int(round(col.r * 255.0)), 0, 255)
 	var g := clampi(int(round(col.g * 255.0)), 0, 255)
@@ -895,35 +1008,148 @@ func _lawn_packed(x: float, z: float) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Plazas, roads and paths
+# Surfaces: areas, roads, paths
 # ---------------------------------------------------------------------------
 const PATH_Y := 0.075
 const VERGE_Y := 0.062
 const VERGE_W := 0.32
+const AREA_STYLE := {
+	# kind: [y, colour, material id]
+	"field_grass": [0.012, Color(0.22, 0.44, 0.24), MeshKit.M_LAWN],
+	"field_turf": [0.016, Color(0.16, 0.42, 0.22), MeshKit.M_LAWN],
+	"infield": [0.02, Color(0.50, 0.36, 0.25), MeshKit.M_GRAVEL],
+	"track": [0.02, Color(0.50, 0.24, 0.20), MeshKit.M_ASPHALT],
+	"court": [0.024, Color(0.20, 0.36, 0.44), MeshKit.M_ASPHALT],
+	"bed": [0.018, Color(0.25, 0.19, 0.14), MeshKit.M_GRAVEL],
+	"parking": [0.03, Color(0.17, 0.18, 0.22), MeshKit.M_ASPHALT],
+	"pavement": [0.045, Color(0.58, 0.56, 0.52), MeshKit.M_PAVING],
+	"plaza": [0.05, Color(0.66, 0.60, 0.52), MeshKit.M_PAVING],
+	"lawn": [0.0, Color(0, 0, 0), MeshKit.M_LAWN],
+}
 
 
-static func _path_mat(col: Color) -> float:
-	if col.is_equal_approx(Color(0.62, 0.56, 0.46)):
-		return MeshKit.M_GRAVEL
-	if col.is_equal_approx(Color(0.55, 0.40, 0.28)):
-		return MeshKit.M_WOOD
+## One surface polygon (fields, lots, plazas, courts, beds): triangulated
+## flat, its triangles shared out to the chunks they sit in.
+func _area(a: Dictionary) -> void:
+	var kind := String(a["kind"])
+	if not AREA_STYLE.has(kind) or kind == "lawn":
+		return
+	var st: Array = AREA_STYLE[kind]
+	var y: float = st[0]
+	var col: Color = st[1]
+	var mat: float = st[2]
+	var poly: PackedVector2Array = a["poly"]
+	var idx := CampusData.triangulate(poly)
+	if idx.is_empty():
+		idx = _fan(poly)
+	for t in range(0, idx.size(), 3):
+		var p0 := poly[idx[t]]
+		var p1 := poly[idx[t + 1]]
+		var p2 := poly[idx[t + 2]]
+		var c := (p0 + p1 + p2) / 3.0
+		var k := _kit_at(c.x, c.y)
+		k.mat = mat
+		_tri_up(k, _v3(p0, y), _v3(p1, y), _v3(p2, y), col)
+		k.mat = 0.0
+	if kind == "parking":
+		arch.lot_markings(a)
+	elif kind in ["field_turf", "field_grass", "court", "track"]:
+		arch.field_markings(a)
+
+
+static func _fan(poly: PackedVector2Array) -> PackedInt32Array:
+	var out := PackedInt32Array()
+	for i in range(1, poly.size() - 1):
+		out.append_array([0, i, i + 1])
+	return out
+
+
+## Roads: asphalt in 4 m pieces, a raised kerb on each side where the data
+## says so, faint centre dashes on two-way streets.
+func _road(r: Dictionary) -> void:
+	var asphalt := Color(0.17, 0.18, 0.22)
+	var kerb := Color(0.50, 0.50, 0.54)
+	var pts: PackedVector2Array = r["pts"]
+	var hw: float = float(r["w"]) * 0.5
+	var curb := bool(r.get("curb", true)) and String(r.get("kind", "")) != "lot_aisle"
+	for i in pts.size() - 1:
+		var a := pts[i]
+		var bb := pts[i + 1]
+		var seg := a.distance_to(bb)
+		if seg < 0.05:
+			continue
+		var dir := (bb - a) / seg
+		var nrm := Vector2(-dir.y, dir.x)
+		var pieces := maxi(1, int(ceil(seg / 4.0)))
+		for s in pieces:
+			var p0 := a + dir * (seg * float(s) / float(pieces))
+			var p1 := a + dir * (seg * float(s + 1) / float(pieces))
+			var mid := (p0 + p1) * 0.5
+			var k := _kit_at(mid.x, mid.y)
+			k.mat = MeshKit.M_ASPHALT
+			_quad_up(k, _v3(p0 - nrm * hw, 0.05), _v3(p1 - nrm * hw, 0.05), _v3(p1 + nrm * hw, 0.05), _v3(p0 + nrm * hw, 0.05), asphalt)
+			if curb:
+				k.mat = MeshKit.M_STONE
+				for sg: float in [-1.0, 1.0]:
+					var e0 := p0 + nrm * sg * hw
+					var e1 := p1 + nrm * sg * hw
+					var o0 := p0 + nrm * sg * (hw + 0.35)
+					var o1 := p1 + nrm * sg * (hw + 0.35)
+					if L.is_on_road(mid + nrm * sg * (hw + 1.0)) or _paved_area(mid + nrm * sg * (hw + 1.0)):
+						continue
+					_quad_up(k, _v3(e0, 0.12), _v3(e1, 0.12), _v3(o1, 0.12), _v3(o0, 0.12), kerb)
+					_quad_side(k, _v3(e0, 0.12), _v3(e1, 0.12), _v3(e1, 0.05), _v3(e0, 0.05), kerb.darkened(0.25), Vector3(-nrm.x * sg, 0, -nrm.y * sg))
+			k.mat = 0.0
+		if String(r.get("kind", "")) in ["street", "campus"] and hw >= 3.0:
+			var sd := 2.0
+			while sd < seg - 2.0:
+				var q0 := a + dir * sd
+				var q1 := a + dir * (sd + 1.6)
+				_kit_at(q0.x, q0.y).ribbon(PackedVector2Array([q0, q1]), 0.18, 0.06, Color(0.95, 0.82, 0.35), 0.25, false)
+				sd += 5.0
+	for i in range(1, pts.size() - 1):
+		var k3 := _kit_at(pts[i].x, pts[i].y)
+		k3.mat = MeshKit.M_ASPHALT
+		k3.disc(Vector3(pts[i].x, 0.051, pts[i].y), hw, asphalt, 16)
+		k3.mat = 0.0
+
+
+const PATH_COLORS := {
+	"concrete": Color(0.66, 0.64, 0.60), "brick": Color(0.58, 0.36, 0.30), "asphalt": Color(0.24, 0.25, 0.28),
+	"gravel": Color(0.62, 0.56, 0.46), "boardwalk": Color(0.55, 0.40, 0.28),
+}
+
+
+static func _path_mat(surface: String) -> float:
+	match surface:
+		"gravel":
+			return MeshKit.M_GRAVEL
+		"boardwalk":
+			return MeshKit.M_WOOD
+		"asphalt":
+			return MeshKit.M_ASPHALT
+		"brick":
+			return MeshKit.M_BRICK
 	return MeshKit.M_PAVING
 
 
-## A path: paving (or gravel / boards) with a ragged lawn verge on both
-## sides, in ~2 m pieces so the baked light and the lawn colour follow it.
+## A path: paving with a soft lawn verge on both sides, in ~2 m pieces so
+## the light field and the lawn colour follow it.
 func _path(pth: Dictionary) -> void:
 	var pts: PackedVector2Array = pth["pts"]
-	var pc: Color = pth["color"]
+	var surface := String(pth.get("surface", "concrete"))
+	var pc: Color = PATH_COLORS.get(surface, PATH_COLORS["concrete"])
 	var hw: float = float(pth["w"]) * 0.5
-	var mat := _path_mat(pc)
+	var mat := _path_mat(surface)
 	var vmat := 19.0 if mat == MeshKit.M_GRAVEL else MeshKit.M_VERGE
-	var hin := hw - VERGE_W
+	var hin := maxf(0.2, hw - VERGE_W)
 	var hout := hw + VERGE_W
 	for i in pts.size() - 1:
 		var a := pts[i]
 		var b := pts[i + 1]
 		var seg := a.distance_to(b)
+		if seg < 0.05:
+			continue
 		var d := (b - a) / seg
 		var nrm := Vector2(-d.y, d.x)
 		var pieces := maxi(1, int(ceil(seg / 2.0)))
@@ -933,50 +1159,36 @@ func _path(pth: Dictionary) -> void:
 			var mid := (p0 + p1) * 0.5
 			var k := _kit_at(mid.x, mid.y)
 			k.mat = mat
-			k.quad(_v3(p0 - nrm * hin, PATH_Y), _v3(p1 - nrm * hin, PATH_Y), _v3(p1 + nrm * hin, PATH_Y), _v3(p0 + nrm * hin, PATH_Y), pc)
+			_quad_up(k, _v3(p0 - nrm * hin, PATH_Y), _v3(p1 - nrm * hin, PATH_Y), _v3(p1 + nrm * hin, PATH_Y), _v3(p0 + nrm * hin, PATH_Y), pc)
 			k.mat = 0.0
 			for sg: float in [-1.0, 1.0]:
 				var outer := mid + nrm * sg * (hw + 0.25)
 				if _paved(outer):
-					# another path, a plaza or a road continues here: pave on
 					k.mat = mat
 					_quad_up(k, _v3(p0 + nrm * sg * hin, PATH_Y - 0.004), _v3(p1 + nrm * sg * hin, PATH_Y - 0.004), _v3(p1 + nrm * sg * hw, PATH_Y - 0.004), _v3(p0 + nrm * sg * hw, PATH_Y - 0.004), pc)
 					k.mat = 0.0
 					continue
-				var lp := _lawn_packed(mid.x + nrm.x * sg * (hw + 0.6), mid.y + nrm.y * sg * (hw + 0.6))
-				_verge_quad(k, p0 + nrm * sg * hin, p1 + nrm * sg * hin, p1 + nrm * sg * hout, p0 + nrm * sg * hout, pc, lp, vmat, sg < 0.0)
+				var lp := lawn_packed(mid.x + nrm.x * sg * (hw + 0.6), mid.y + nrm.y * sg * (hw + 0.6))
+				_verge_quad(k, p0 + nrm * sg * hin, p1 + nrm * sg * hin, p1 + nrm * sg * hout, p0 + nrm * sg * hout, pc, lp, vmat)
 	for i in pts.size():
 		var c := pts[i]
 		var k2 := _kit_at(c.x, c.y)
 		k2.mat = mat
-		k2.disc(Vector3(c.x, PATH_Y + 0.0015, c.y), hin, pc, 16)
+		k2.disc(Vector3(c.x, PATH_Y + 0.0015, c.y), hin, pc, 14)
 		k2.mat = 0.0
-		var on_plaza := false
-		for pl in L.plazas:
-			if pl["shape"] == "circle":
-				on_plaza = on_plaza or c.distance_to(pl["center"]) < float(pl["radius"]) + hw
-			else:
-				var phs: Vector2 = pl["size"] * 0.5 + Vector2(hw, hw)
-				var pcn: Vector2 = pl["center"]
-				on_plaza = on_plaza or (absf(c.x - pcn.x) < phs.x and absf(c.y - pcn.y) < phs.y)
-		if not on_plaza and not L.is_on_road(c, hw):
-			_verge_ring(k2, c, hin, hout, pc, _lawn_packed(c.x + hw, c.y), vmat, VERGE_Y - 0.004, 16)
+		if not _paved_area(c) and not L.is_on_road(c, hw):
+			_verge_ring(k2, c, hin, hout, pc, lawn_packed(c.x + hw, c.y), vmat, VERGE_Y - 0.004, 14)
 
 
-## True where the ground is already paved (a plaza or road; a path other
-## than the one being built is caught by is_on_path at the outer edge).
+## True where the ground is already paved (a road, a path, a plaza or lot).
 func _paved(p: Vector2) -> bool:
-	if L.is_on_road(p, 0.2) or L.is_on_path(p, 0.0):
-		return true
-	for pl in L.plazas:
-		if pl["shape"] == "circle":
-			if p.distance_to(pl["center"]) < float(pl["radius"]):
-				return true
-		else:
-			var hs: Vector2 = pl["size"] * 0.5
-			var c: Vector2 = pl["center"]
-			if absf(p.x - c.x) < hs.x and absf(p.y - c.y) < hs.y:
-				return true
+	return L.is_on_road(p, 0.2) or L.is_on_path(p, 0.0) or _paved_area(p)
+
+
+func _paved_area(p: Vector2) -> bool:
+	for a in L.areas:
+		if String(a["kind"]) in ["plaza", "pavement", "parking", "court", "track"] and (a["rect"] as Rect2).has_point(p) and Geometry2D.is_point_in_polygon(p, a["poly"]):
+			return true
 	return false
 
 
@@ -992,8 +1204,23 @@ static func _quad_up(k: MeshKit, A: Vector3, B: Vector3, C: Vector3, D: Vector3,
 		k.quad(D, C, B, A, col)
 
 
+static func _tri_up(k: MeshKit, A: Vector3, B: Vector3, C: Vector3, col: Color) -> void:
+	if ((B - A).cross(C - A)).y < 0.0:
+		k.tri(A, B, C, col, 0.0, 0.0, Vector3.UP)
+	else:
+		k.tri(A, C, B, col, 0.0, 0.0, Vector3.UP)
+
+
+## A vertical quad facing `facing` whatever the corner order.
+static func _quad_side(k: MeshKit, A: Vector3, B: Vector3, C: Vector3, D: Vector3, col: Color, facing: Vector3) -> void:
+	if ((B - A).cross(C - A)).dot(facing) < 0.0:
+		k.quad(A, B, C, D, col)
+	else:
+		k.quad(D, C, B, A, col)
+
+
 ## A verge quad: inner edge (path side, alpha 0) a0-b0, outer edge a1-b1.
-func _verge_quad(k: MeshKit, a0: Vector2, b0: Vector2, b1: Vector2, a1: Vector2, pc: Color, packed: float, vmat: float, flip: bool) -> void:
+func _verge_quad(k: MeshKit, a0: Vector2, b0: Vector2, b1: Vector2, a1: Vector2, pc: Color, packed: float, vmat: float) -> void:
 	var ci := Color(pc.r, pc.g, pc.b, 0.0)
 	var co := Color(pc.r, pc.g, pc.b, 1.0)
 	var uv := Vector2(vmat, packed)
@@ -1002,7 +1229,6 @@ func _verge_quad(k: MeshKit, a0: Vector2, b0: Vector2, b1: Vector2, a1: Vector2,
 	var C := _v3(b1, VERGE_Y)
 	var D := _v3(a1, VERGE_Y)
 	var up := Vector3.UP
-	# clockwise seen from above
 	if ((B - A).cross(C - A)).y < 0.0:
 		k.tri_full(A, B, C, up, up, up, ci, ci, co, uv, uv, uv)
 		k.tri_full(A, C, D, up, up, up, ci, co, co, uv, uv, uv)
@@ -1025,144 +1251,6 @@ func _verge_ring(k: MeshKit, c: Vector2, r_in: float, r_out: float, pc: Color, p
 		var o1 := Vector3(c.x + cos(a1) * r_out, y, c.y + sin(a1) * r_out)
 		k.tri_full(i0, o1, o0, up, up, up, ci, co, co, uv, uv, uv)
 		k.tri_full(i0, i1, o1, up, up, up, ci, ci, co, uv, uv, uv)
-
-
-func _plazas() -> void:
-	for pl in L.plazas:
-		var c: Vector2 = pl["center"]
-		var k := _kit_at(c.x, c.y)
-		var pc: Color = pl["color"]
-		if pl["shape"] == "circle":
-			var r: float = pl["radius"]
-			# a paved rosette: rings of slightly different stone
-			k.mat = MeshKit.M_PAVING
-			var rings := [0.0, r * 0.45, r * 0.52, r * 0.82, r * 0.88, r - VERGE_W]
-			for ri in rings.size() - 1:
-				var tone := pc.darkened(0.06) if ri % 2 == 1 else pc.lightened(0.02 * float(ri))
-				_annulus(k, c, rings[ri], rings[ri + 1], 0.03, tone, 48)
-			k.mat = 0.0
-			_verge_ring(k, c, r - VERGE_W, r + VERGE_W, pc, _lawn_packed(c.x + r + 1.0, c.y), MeshKit.M_VERGE, 0.028, 48)
-			continue
-		var hs: Vector2 = pl["size"] * 0.5
-		var tile_mat := MeshKit.M_PAVING
-		if pc.is_equal_approx(Color(0.80, 0.82, 0.86)):
-			tile_mat = MeshKit.M_TILE
-		elif pc.is_equal_approx(Color(0.58, 0.62, 0.52)):
-			tile_mat = MeshKit.M_GRAVEL
-		elif pc.is_equal_approx(Color(0.40, 0.40, 0.42)):
-			tile_mat = MeshKit.M_ASPHALT
-		elif pc.is_equal_approx(Color(0.55, 0.40, 0.28)):
-			tile_mat = MeshKit.M_WOOD
-		var overlaps_water := false
-		for w in L.waters:
-			if float(w["surface_y"]) < 0.0 and Rect2(c - hs, hs * 2.0).grow(1.0).has_point(w["center"]):
-				overlaps_water = true
-		# 2 m tiles (1 m beside water so the opening follows the shore)
-		var step := 1.0 if overlaps_water else 2.0
-		var x0 := c.x - hs.x
-		var z0 := c.y - hs.y
-		var nx := int(ceil(hs.x * 2.0 / step))
-		var nz := int(ceil(hs.y * 2.0 / step))
-		k.mat = tile_mat
-		for iz in nz:
-			for ix in nx:
-				var xa := x0 + ix * step
-				var za := z0 + iz * step
-				var xb := minf(xa + step, c.x + hs.x)
-				var zb := minf(za + step, c.y + hs.y)
-				if overlaps_water:
-					var tc := Vector2((xa + xb) * 0.5, (za + zb) * 0.5)
-					var wet := false
-					for w2 in L.waters:
-						if CampusLayout.in_water_shape(w2, tc, 0.3):
-							wet = true
-							break
-					if wet:
-						continue
-				var kk := _kit_at((xa + xb) * 0.5, (za + zb) * 0.5)
-				kk.mat = tile_mat
-				kk.quad(Vector3(xa, 0.03, za), Vector3(xb, 0.03, za), Vector3(xb, 0.03, zb), Vector3(xa, 0.03, zb), pc)
-				kk.mat = 0.0
-		k.mat = 0.0
-		# a lawn verge around the plaza
-		var corners := [Vector2(-hs.x, -hs.y), Vector2(hs.x, -hs.y), Vector2(hs.x, hs.y), Vector2(-hs.x, hs.y)]
-		var vm := 19.0 if tile_mat == MeshKit.M_GRAVEL else MeshKit.M_VERGE
-		if tile_mat in [MeshKit.M_PAVING, MeshKit.M_GRAVEL]:
-			for ci in 4:
-				var a: Vector2 = c + corners[ci]
-				var b: Vector2 = c + corners[(ci + 1) % 4]
-				var dd := (b - a).normalized()
-				var out := Vector2(dd.y, -dd.x)
-				var length := a.distance_to(b)
-				var pieces := maxi(1, int(ceil(length / 2.0)))
-				for s in pieces:
-					var p0 := a + dd * (length * float(s) / float(pieces))
-					var p1 := a + dd * (length * float(s + 1) / float(pieces))
-					var m := (p0 + p1) * 0.5 + out
-					_verge_quad(_kit_at(m.x, m.y), p0 - out * VERGE_W, p1 - out * VERGE_W, p1 + out * VERGE_W, p0 + out * VERGE_W, pc, _lawn_packed(m.x, m.y), vm, false)
-
-
-func _annulus(k: MeshKit, c: Vector2, r0: float, r1: float, y: float, col: Color, seg: int) -> void:
-	for i in seg:
-		var a0 := TAU * float(i) / float(seg)
-		var a1 := TAU * float(i + 1) / float(seg)
-		var o0 := Vector3(c.x + cos(a0) * r1, y, c.y + sin(a0) * r1)
-		var o1 := Vector3(c.x + cos(a1) * r1, y, c.y + sin(a1) * r1)
-		if r0 <= 0.001:
-			k.tri(Vector3(c.x, y, c.y), o0, o1, col, 0.0, 0.0, Vector3.UP)
-			continue
-		var i0 := Vector3(c.x + cos(a0) * r0, y, c.y + sin(a0) * r0)
-		var i1 := Vector3(c.x + cos(a1) * r0, y, c.y + sin(a1) * r0)
-		k.tri(i0, o0, o1, col, 0.0, 0.0, Vector3.UP)
-		k.tri(i0, o1, i1, col, 0.0, 0.0, Vector3.UP)
-
-
-## Roads: asphalt in 4 m pieces, a raised kerb on each side, glowing dashes.
-func _roads() -> void:
-	var asphalt := Color(0.17, 0.18, 0.22)
-	var kerb := Color(0.50, 0.50, 0.54)
-	for r in L.roads:
-		var pts: PackedVector2Array = r["pts"]
-		var hw: float = float(r["w"]) * 0.5
-		for i in pts.size() - 1:
-			var a := pts[i]
-			var bb := pts[i + 1]
-			var seg := a.distance_to(bb)
-			var dir := (bb - a) / seg
-			var nrm := Vector2(-dir.y, dir.x)
-			var pieces := maxi(1, int(ceil(seg / 4.0)))
-			for s in pieces:
-				var p0 := a + dir * (seg * float(s) / float(pieces))
-				var p1 := a + dir * (seg * float(s + 1) / float(pieces))
-				var mid := (p0 + p1) * 0.5
-				var k := _kit_at(mid.x, mid.y)
-				k.mat = MeshKit.M_ASPHALT
-				k.quad(_v3(p0 - nrm * hw, 0.05), _v3(p1 - nrm * hw, 0.05), _v3(p1 + nrm * hw, 0.05), _v3(p0 + nrm * hw, 0.05), asphalt)
-				k.mat = MeshKit.M_STONE
-				for sg: float in [-1.0, 1.0]:
-					var e0 := p0 + nrm * sg * hw
-					var e1 := p1 + nrm * sg * hw
-					var o0 := p0 + nrm * sg * (hw + 0.35)
-					var o1 := p1 + nrm * sg * (hw + 0.35)
-					if sg > 0.0:
-						k.quad(_v3(e0, 0.12), _v3(e1, 0.12), _v3(o1, 0.12), _v3(o0, 0.12), kerb)
-						k.quad(_v3(e1, 0.12), _v3(e0, 0.12), _v3(e0, 0.05), _v3(e1, 0.05), kerb.darkened(0.25))
-					else:
-						k.quad(_v3(o0, 0.12), _v3(o1, 0.12), _v3(e1, 0.12), _v3(e0, 0.12), kerb)
-						k.quad(_v3(e0, 0.12), _v3(e1, 0.12), _v3(e1, 0.05), _v3(e0, 0.05), kerb.darkened(0.25))
-				k.mat = 0.0
-			# centre-line dashes (slightly emissive so roads read at night)
-			var sd := 2.0
-			while sd < seg - 2.0:
-				var q0 := a + dir * sd
-				var q1 := a + dir * (sd + 1.6)
-				_kit_at(q0.x, q0.y).ribbon(PackedVector2Array([q0, q1]), 0.22, 0.06, Color(0.95, 0.82, 0.35), 0.35, false)
-				sd += 4.0
-		for i in range(1, pts.size() - 1):
-			var k3 := _kit_at(pts[i].x, pts[i].y)
-			k3.mat = MeshKit.M_ASPHALT
-			k3.disc(Vector3(pts[i].x, 0.052, pts[i].y), hw, asphalt, 16)
-			k3.mat = 0.0
 
 
 # ---------------------------------------------------------------------------

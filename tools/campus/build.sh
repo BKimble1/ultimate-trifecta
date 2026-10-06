@@ -13,5 +13,4 @@ BPY="${BPY_PYTHON:-$ROOT/tools/.cache/bpyenv/bin/python}"
 python3 "$HERE/make_textures.py"
 "$ROOT/tools/gd.sh" --headless --path "$ROOT/game" --import >/dev/null 2>&1 || true
 "$ROOT/tools/gd.sh" --headless --path "$ROOT/game" -s "$HERE/import_kit.gd"
-"$ROOT/tools/gd.sh" --headless --path "$ROOT/game" -s "$HERE/bake_dressing.gd"
 "$ROOT/tools/gd.sh" --headless --path "$ROOT/game" --import >/dev/null 2>&1 || true

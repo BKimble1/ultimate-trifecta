@@ -32,14 +32,18 @@ const float RIPPLE_LIFE = 1.8;
 const float RIPPLE_SPEED = 3.2;   // m/s
 uniform vec4 ripples[RIPPLES];    // x, z, age (s), strength; strength 0 = unused
 uniform vec2 shape_half = vec2(5.0, 5.0);
-uniform float shape_kind = 0.0; // 0 = ellipse/circle, 1 = rect
+uniform float shape_kind = 0.0; // 0 = ellipse/circle, 1 = rect, 2 = polygon (per-vertex distance in UV.y)
 
 varying vec3 v_world;
 varying vec2 v_local;
 varying float v_marker;
 varying float v_emis;
+varying float v_edge;
 
 float edge_dist(vec2 local) {
+	if (shape_kind > 1.5) {
+		return v_edge;
+	}
 	if (shape_kind > 0.5) {
 		vec2 d = shape_half - abs(local);
 		return min(d.x, d.y);
@@ -52,6 +56,7 @@ float edge_dist(vec2 local) {
 void vertex() {
 	v_marker = UV.x > 8.5 && UV.x < 9.5 ? 1.0 : 0.0;
 	v_emis = CUSTOM0.x;
+	v_edge = UV.y;
 	float t = TIME;
 	if (v_marker > 0.5) {
 		if (active < 0.5) {

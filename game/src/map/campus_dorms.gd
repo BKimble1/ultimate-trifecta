@@ -1,84 +1,71 @@
 class_name CampusDorms
 extends RefCounted
-## The three playable dorms (V6): fictional halls built from the campus kit,
-## each with a compact ground-floor common room behind the front facade and
-## real door openings onto the campus.  One of them is tonight's home dorm
-## (chosen by the host per round): runners spawn inside it and finish by
-## running back in through one of its doors.
+## The start dorms (the reference campus's two men's halls): runners spawn in
+## tonight's home dorm and finish by running back in through one of its
+## doors.  The host picks the dorm per round and publishes it; nothing here
+## is derived independently by a client.
 ##
-## Everything a dorm is made of is computed here from a few numbers, so the
-## colliders (CampusBuilder.build_collision), both navigation grids (NavGrid),
-## the look (CampusArchitecture / DormArt), the spawn and respawn pads, the
-## finish thresholds, the bots' door points, the maps and the tests can't
-## drift apart.  Coordinates as CampusLayout: metres, +X east, +Z south.
+## Defined by the gameplay layer (game/data/campus/gameplay.json, items of
+## kind "start_dorm"): the building it belongs to, the open interior at
+## ground level (a commons `room` polygon plus short door `corridors`, all
+## inside the traced footprint), the ceiling height, and the doors at the
+## building's real entrances.  Everything a dorm is made of is computed here
+## from that, so the colliders (CampusBuilder), the navigation grids, the
+## look (DormArt), the spawn and respawn pads, the finish thresholds, the
+## bots' door points, the maps and the tests can't drift apart.
 ##
-## Shape of a dorm (all three face north, toward the campus):
+##      outer wall face ─┬── door (p, outward normal n) ──┬─
+##                       │  corridor (DOOR_W wide)         │
+##      inner face ── threshold line (line_p = p - n*wall_t)
+##                       │  commons room (open, ceiling)   │
 ##
-##      front face (z_f) ──┬── front door ──┬──
-##      │  common room (interior)           │   <- west / east doors in the
-##      │  open, ceiling at CEIL            │      end walls, mid-room
-##      ├───────────────────────────────────┤ block_z
-##      │  closed block (rooms upstairs)    │
-##      └───────────────────────────────────┘ z_b
-##
-## The common room is one storey (CEIL) under a solid upper block; the
-## closed part behind it is one solid box.  Door openings are DOOR_W wide
-## and DOOR_H tall, with a lintel above.  No moving doors: an open, lit
-## entrance is identical on every client and can't block anyone.
+## The rest of the footprint is solid; above `ceil` the whole building is
+## solid.  Door openings are open, lit and identical on every client.
 
 ## Geometry version: part of every round's configuration.  Bump it with ANY
-## change to a dorm's walls, doors, pads or thresholds (a client with other
-## geometry is refused rather than simulating a different building).
-const VERSION := 1
+## change to a dorm's interior, doors, pads or thresholds (a client with
+## other geometry is refused rather than simulating a different building).
+const VERSION := 2
 
-const WALL_T := 0.5      # outer wall thickness around the common room
+const WALL_T := 0.5      # default outer wall thickness at a door
 const DOOR_W := 3.2      # clear opening
 const DOOR_H := 3.0      # opening height (lintel above)
-const CEIL := 4.6        # common-room ceiling (the upper block starts here)
+const CEIL := 4.6        # default commons ceiling
 ## Threshold: the line across the door at the wall's inner face.  A runner's
-## centre must cross it inward within this half-width (the capsule can't get
-## nearer the jambs anyway) at a feet height inside FINISH_Y.
+## centre must cross it inward within this half-width at a feet height
+## inside FINISH_Y.
 const THRESH_HALF_W := 1.5
 const FINISH_Y := Vector2(-0.5, 1.6)
 ## A crossing longer than this in one tick is a teleport, never a finish.
 const MAX_STEP_M := 3.0
+const PAD_COUNT := 8
 
-const DORMS := [
-	{"id": "puddlesworth", "name": "Puddlesworth Hall", "short": "Puddlesworth",
-		"pos": Vector2(0, 112), "size": Vector2(44, 18), "h": 11.0, "gallery": 9.5,
-		"wall": Color(0.64, 0.34, 0.30), "roof": Color(0.26, 0.30, 0.42), "accent": Color(0.24, 0.32, 0.78),
-		"inner": Color(0.93, 0.80, 0.62), "floor": Color(0.44, 0.30, 0.21), "fabric": Color(0.62, 0.22, 0.22), "style": "brick", "warm": 0.9},
-	{"id": "lanternfield", "name": "Lanternfield House", "short": "Lanternfield",
-		"pos": Vector2(-96, 114), "size": Vector2(28, 20), "h": 9.5, "gallery": 9.5,
-		"wall": Color(0.88, 0.82, 0.68), "roof": Color(0.20, 0.44, 0.46), "accent": Color(0.96, 0.74, 0.30),
-		"inner": Color(0.96, 0.86, 0.66), "floor": Color(0.50, 0.37, 0.25), "fabric": Color(0.18, 0.46, 0.48), "style": "cupola", "warm": 0.85},
-	{"id": "moonpenny", "name": "Moonpenny Lodge", "short": "Moonpenny",
-		"pos": Vector2(96, 113), "size": Vector2(24, 26), "h": 8.5, "gallery": 9.5,
-		"wall": Color(0.55, 0.64, 0.50), "roof": Color(0.50, 0.21, 0.21), "accent": Color(0.40, 0.78, 0.74),
-		"inner": Color(0.92, 0.78, 0.60), "floor": Color(0.40, 0.28, 0.20), "fabric": Color(0.78, 0.56, 0.20), "style": "lodge", "warm": 0.85},
-]
-
-## The areas V6 rebuilt around the dorms (layout, colliders and nav may
-## differ from V5 only inside these; test_campus_art proves the rest is
-## identical).  Puddlesworth keeps its V5 grounds; the other two dorms
-## stand on what were open lawns between the service roads.
-const DISTRICTS := {
-	"puddlesworth": Rect2(-28.0, 98.0, 56.0, 26.0),
-	"lanternfield": Rect2(-118.5, 89.0, 45.0, 50.0),
-	"moonpenny": Rect2(73.5, 89.0, 45.0, 50.0),
-}
-
-## The cart-free strip of dorm yards along the south of the campus
-## (Puddlesworth's grounds and the two new yards, bollards all round).
-const YARDS := Rect2(-116.4, 91.8, 232.8, 44.8)
-
+static var _defs: Array = []
 static var _geo: Dictionary = {}
 
 
+static func _load() -> void:
+	if not _defs.is_empty():
+		return
+	for it in CampusData.shared().items("gameplay"):
+		if String(it.get("kind", "")) == "start_dorm":
+			_defs.append(it)
+	# the default dorm first
+	_defs.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return bool(a.get("default", false)) and not bool(b.get("default", false)))
+
+
+## Drops cached definitions and geometry (tests that swap data).
+static func reset() -> void:
+	_defs.clear()
+	_geo.clear()
+
+
 static func ids() -> Array[String]:
+	_load()
 	var out: Array[String] = []
-	for d in DORMS:
-		out.append(String(d["id"]))
+	for d in _defs:
+		out.append(String(d["dorm"]))
 	return out
 
 
@@ -87,9 +74,12 @@ static func has_dorm(id: String) -> bool:
 
 
 static func def(id: String) -> Dictionary:
-	for d in DORMS:
-		if String(d["id"]) == id:
-			return d
+	_load()
+	for d in _defs:
+		if String(d["dorm"]) == id:
+			var out := (d as Dictionary).duplicate()
+			out["id"] = id
+			return out
 	return {}
 
 
@@ -98,14 +88,19 @@ static func display_name(id: String) -> String:
 
 
 static func default_id() -> String:
-	return String(DORMS[0]["id"])
+	_load()
+	return String(_defs[0]["dorm"]) if not _defs.is_empty() else ""
 
 
-## Tonight's home dorm from the round seed, never the same as last round's
-## when another is available.  Every client derives nothing itself: the host
-## publishes the choice in the round configuration.
+## Tonight's home dorm: the default dorm when there is no previous round,
+## otherwise never the same as last round's when another is available.
+## Every client derives nothing itself: the host publishes the choice.
 static func pick(seed_v: int, previous: String) -> String:
 	var all := ids()
+	if all.is_empty():
+		return ""
+	if previous == "" or not all.has(previous):
+		return all[0]
 	var h := posmod(int(hash([seed_v, "home-dorm"])), all.size())
 	var choice := all[h]
 	if all.size() > 1 and choice == previous:
@@ -117,14 +112,17 @@ static func pick(seed_v: int, previous: String) -> String:
 # Geometry
 # ---------------------------------------------------------------------------
 ## Everything about one dorm's shape (cached):
-##   room      Rect2 interior of the common room (XZ)
-##   boxes     [[center Vector3, size Vector3, kind]] world colliders
-##   foot      [Rect2] footprints that block walking (nav)
-##   footprint Rect2 of the whole building
-##   doors     [{id, name, dorm, pos, normal, line_p, n_in, tangent, half_w, approach, inside}]
-##   pads      [{pos, yaw}] runner spawn pads inside, facing an exit
-##   respawn   [Vector2] pre-first-stamp return pads, one inside each door
+##   room       PackedVector2Array: the commons interior (XZ)
+##   interior   [PackedVector2Array]: room + door corridors (open at ground level)
+##   footprint  PackedVector2Array of the whole building
+##   solid      [PackedVector2Array]: footprint minus the interior (walls)
+##   boxes      [[center Vector3, size Vector3, kind, yaw]] extra colliders (lintels, furniture)
+##   foot       [PackedVector2Array]: what blocks walking at ground level (nav)
+##   doors      [{id, name, dorm, pos, normal, line_p, n_in, tangent, half_w, approach, inside}]
+##   pads       [{pos, yaw, door}] runner spawn pads inside, facing an exit
+##   respawn    [Vector2] pre-first-stamp return pads, one inside each door
 ##   cart_lines [[a, b]] cart-only blockers across every door opening
+##   ceil, h    ceiling of the commons, building height
 static func geometry(id: String) -> Dictionary:
 	if _geo.has(id):
 		return _geo[id]
@@ -137,111 +135,139 @@ static func geometry(id: String) -> Dictionary:
 
 
 static func _build(d: Dictionary) -> Dictionary:
-	var pos: Vector2 = d["pos"]
-	var size: Vector2 = d["size"]
-	var h: float = d["h"]
-	var gal: float = d["gallery"]
-	var T := WALL_T
-	var xw := pos.x - size.x * 0.5
-	var xe := pos.x + size.x * 0.5
-	var zf := pos.y - size.y * 0.5
-	var zb := pos.y + size.y * 0.5
-	var bz := zf + gal                    # front of the closed block
-	var room := Rect2(xw + T, zf + T, size.x - 2.0 * T, gal - T)
-	var cx := pos.x
-	var side_z := zf + T + (gal - T) * 0.5
-	var hw := DOOR_W * 0.5
-	var boxes: Array = []
-	var add := func(x0: float, x1: float, y0: float, y1: float, z0: float, z1: float, kind: String) -> void:
-		boxes.append([Vector3((x0 + x1) * 0.5, (y0 + y1) * 0.5, (z0 + z1) * 0.5), Vector3(x1 - x0, y1 - y0, z1 - z0), kind])
-	# closed block (the rest of the building, full height)
-	add.call(xw, xe, 0.0, h, bz, zb, "block")
-	# upper block over the common room (ceiling and the floors above)
-	add.call(xw, xe, CEIL, h, zf, bz, "upper")
-	# front wall with the front door
-	add.call(xw, cx - hw, 0.0, CEIL, zf, zf + T, "wall")
-	add.call(cx + hw, xe, 0.0, CEIL, zf, zf + T, "wall")
-	add.call(cx - hw, cx + hw, DOOR_H, CEIL, zf, zf + T, "lintel")
-	# end walls with the west / east doors (between the front wall and the block)
-	for side in [-1.0, 1.0]:
-		var x0: float = xw if side < 0.0 else xe - T
-		var x1: float = x0 + T
-		add.call(x0, x1, 0.0, CEIL, zf + T, side_z - hw, "wall")
-		add.call(x0, x1, 0.0, CEIL, side_z + hw, bz, "wall")
-		add.call(x0, x1, DOOR_H, CEIL, side_z - hw, side_z + hw, "lintel")
-	# furniture with collision (nothing a runner could clip into): two sofa
-	# runs and the fireplace hearth along the back wall of the common room
-	var w := room.size.x
-	for s in [-1.0, 1.0]:
-		var a: float = cx + s * w * 0.18
-		var b: float = cx + s * w * 0.40
-		add.call(minf(a, b), maxf(a, b), 0.0, 0.85, bz - 1.0, bz, "sofa")
-	add.call(cx - 1.4, cx + 1.4, 0.0, 1.1, bz - 0.45, bz, "hearth")
-	var foot: Array = []
-	for bx in boxes:
-		var c: Vector3 = bx[0]
-		var sz: Vector3 = bx[1]
-		if c.y - sz.y * 0.5 < 1.0:
-			foot.append(Rect2(c.x - sz.x * 0.5, c.z - sz.z * 0.5, sz.x, sz.z))
-	# doors: outer face point, outward normal, threshold at the inner face
+	var data := CampusData.shared()
+	var bld := data.item(String(d.get("building", "")))
+	var footprint: PackedVector2Array = CampusData.ccw(bld.get("footprint", PackedVector2Array()))
+	var h := float(d.get("h", bld.get("h", 10.0)))
+	var ceil_y := float(d.get("ceil", CEIL))
+	var room: PackedVector2Array = CampusData.ccw(d.get("room", PackedVector2Array()))
+	var interior: Array[PackedVector2Array] = [room]
 	var doors: Array = []
-	var specs := [
-		["front", "Front door", Vector2(cx, zf), Vector2(0, -1)],
-		["west", "West door", Vector2(xw, side_z), Vector2(-1, 0)],
-		["east", "East door", Vector2(xe, side_z), Vector2(1, 0)],
-	]
-	for sp in specs:
-		var p: Vector2 = sp[2]
-		var n: Vector2 = sp[3]
+	var boxes: Array = []
+	var specs: Array = d.get("doors", [])
+	for i in specs.size():
+		var sp: Dictionary = specs[i]
+		var p := CampusLayout._v2(sp.get("p", [0, 0]))
+		var n := CampusLayout._v2(sp.get("normal", [0, -1])).normalized()
+		var t := float(sp.get("wall_t", WALL_T))
+		var depth := float(sp.get("depth", t + 1.0))   # corridor length inside the wall
+		var w := float(sp.get("w", DOOR_W))
 		var n_in := -n
-		var line_p := p + n_in * T
-		doors.append({"id": String(sp[0]), "name": String(sp[1]), "dorm": String(d["id"]), "pos": p, "normal": n,
-			"line_p": line_p, "n_in": n_in, "tangent": Vector2(-n_in.y, n_in.x), "half_w": THRESH_HALF_W,
-			"approach": p + n * 2.5, "inside": line_p + n_in * 2.0})
-	# runner pads: three before the front door, two toward each end door
-	var x0r := room.position.x
-	var x1r := room.end.x
-	var z0r := room.position.y
-	var pad_pts := [
-		[Vector2(cx, z0r + 5.5), 0], [Vector2(cx - 2.6, z0r + 4.5), 0], [Vector2(cx + 2.6, z0r + 4.5), 0],
-		[Vector2(x0r + 0.24 * w, z0r + 3.6), 1], [Vector2(x1r - 0.24 * w, z0r + 3.6), 2],
-		[Vector2(x0r + 0.36 * w, z0r + 6.0), 1], [Vector2(x1r - 0.36 * w, z0r + 6.0), 2],
-		[Vector2(cx, z0r + 3.0), 0],
-	]
-	var pads: Array = []
-	for pp in pad_pts:
-		var at: Vector2 = pp[0]
-		var to: Vector2 = (doors[int(pp[1])] as Dictionary)["line_p"]
-		var dir := (to - at).normalized()
-		pads.append({"pos": at, "yaw": atan2(-dir.x, -dir.y), "door": int(pp[1])})
+		var tg := Vector2(-n_in.y, n_in.x)
+		var line_p := p + n_in * t
+		# the opening: from just outside the outer face to `depth` inside it
+		var o0 := p + n * 0.4
+		var o1 := p + n_in * depth
+		var hw := w * 0.5
+		var corridor := CampusData.ccw(PackedVector2Array([o0 - tg * hw, o0 + tg * hw, o1 + tg * hw, o1 - tg * hw]))
+		interior.append(corridor)
+		doors.append({"id": String(sp.get("id", "door%d" % i)), "name": String(sp.get("name", "Door")), "dorm": String(d["id"]),
+			"pos": p, "normal": n, "line_p": line_p, "n_in": n_in, "tangent": tg, "half_w": THRESH_HALF_W,
+			"approach": p + n * 2.5, "inside": line_p + n_in * 2.0, "w": w, "wall_t": t})
+		# lintel over the opening, between the door height and the ceiling
+		var lc := p + n_in * (t * 0.5)
+		boxes.append([Vector3(lc.x, (DOOR_H + ceil_y) * 0.5, lc.y), Vector3(w + 0.2, ceil_y - DOOR_H, t + 0.02), "lintel", atan2(n.x, n.y)])
+	for cpoly in d.get("corridors", []):
+		var cp := CampusData.ccw(CampusData.to_poly(cpoly) if cpoly is Array else cpoly)
+		if cp.size() >= 3:
+			interior.append(cp)
+	var solid := CampusData.subtract(footprint, interior) if footprint.size() >= 3 else ([] as Array[PackedVector2Array])
+	var foot: Array = []
+	for s in solid:
+		foot.append(s)
+	for f in d.get("furniture", []):
+		var fp := CampusLayout._v2(f.get("p", [0, 0]))
+		var fs: Array = f.get("size", [1, 0.8, 1])
+		var fy := deg_to_rad(float(f.get("yaw", 0.0)))
+		boxes.append([Vector3(fp.x, float(fs[1]) * 0.5, fp.y), Vector3(float(fs[0]), float(fs[1]), float(fs[2])), String(f.get("kind", "furniture")), fy])
+		foot.append(_obox(fp, Vector2(float(fs[0]), float(fs[2])), fy))
+	var pads := _pads(room, doors, d.get("pads", []))
 	var respawn: Array = []
 	for dr in doors:
 		respawn.append((dr["line_p"] as Vector2) + (dr["n_in"] as Vector2) * 2.6)
 	var cart_lines: Array = []
 	for dr in doors:
 		var p2: Vector2 = (dr["pos"] as Vector2) + (dr["normal"] as Vector2) * 0.35
-		var tg: Vector2 = dr["tangent"]
-		cart_lines.append([p2 - tg * (hw + 0.4), p2 + tg * (hw + 0.4)])
-	return {"id": String(d["id"]), "room": room, "boxes": boxes, "foot": foot, "doors": doors, "pads": pads,
-		"respawn": respawn, "cart_lines": cart_lines, "footprint": Rect2(xw, zf, size.x, size.y),
-		"block_z": bz, "ceil": CEIL, "h": h}
+		var tg2: Vector2 = dr["tangent"]
+		var hw2 := float(dr["w"]) * 0.5
+		cart_lines.append([p2 - tg2 * (hw2 + 0.4), p2 + tg2 * (hw2 + 0.4)])
+	return {"id": String(d["id"]), "building": String(d.get("building", "")), "room": room, "interior": interior,
+		"footprint": footprint, "solid": solid, "boxes": boxes, "foot": foot, "doors": doors, "pads": pads,
+		"respawn": respawn, "cart_lines": cart_lines, "ceil": ceil_y, "h": h,
+		"room_rect": CampusData.bounds(room)}
 
 
-## Is a point inside this dorm's common room (feet below the ceiling)?
+## An oriented rectangle as a polygon (centre, size along its own x/z, yaw).
+static func _obox(c: Vector2, size: Vector2, yaw: float) -> PackedVector2Array:
+	var ax := Vector2(cos(yaw), -sin(yaw)) * size.x * 0.5
+	var az := Vector2(sin(yaw), cos(yaw)) * size.y * 0.5
+	return PackedVector2Array([c - ax - az, c + ax - az, c + ax + az, c - ax + az])
+
+
+## Runner pads: explicit ones from the data ([x, z, door]), else up to
+## PAD_COUNT points on a 1.7 m grid inside the room (1.3 m from its walls),
+## nearest the room's centre first, each facing its nearest door.
+static func _pads(room: PackedVector2Array, doors: Array, explicit: Array) -> Array:
+	var out: Array = []
+	var pts: Array = []
+	if not explicit.is_empty():
+		for e in explicit:
+			pts.append([Vector2(float(e[0]), float(e[1])), int(e[2]) if (e as Array).size() > 2 else -1])
+	elif room.size() >= 3:
+		var inner := CampusData.offset(room, -1.3)
+		var r := CampusData.bounds(inner if inner.size() >= 3 else room)
+		var c := CampusData.centroid(room)
+		var cand: Array = []
+		var step := 1.7
+		var x := r.position.x + 0.5
+		while x <= r.end.x:
+			var z := r.position.y + 0.5
+			while z <= r.end.y:
+				var p := Vector2(x, z)
+				if inner.size() >= 3 and Geometry2D.is_point_in_polygon(p, inner):
+					cand.append(p)
+				z += step
+			x += step
+		cand.sort_custom(func(a: Vector2, b: Vector2) -> bool:
+			var da := a.distance_squared_to(c)
+			var db := b.distance_squared_to(c)
+			return da < db if absf(da - db) > 1e-6 else (a.x < b.x if a.x != b.x else a.y < b.y))
+		for p in cand.slice(0, PAD_COUNT):
+			pts.append([p, -1])
+	for pp in pts:
+		var at: Vector2 = pp[0]
+		var di := int(pp[1])
+		if di < 0 or di >= doors.size():
+			var best := INF
+			for i in doors.size():
+				var dd := at.distance_to(doors[i]["line_p"])
+				if dd < best:
+					best = dd
+					di = i
+		var to: Vector2 = (doors[di]["line_p"] as Vector2) if di >= 0 else at + Vector2(0, -1)
+		var dir := (to - at).normalized()
+		out.append({"pos": at, "yaw": atan2(-dir.x, -dir.y), "door": di})
+	return out
+
+
+## Is a point inside this dorm's open interior (feet below the ceiling)?
 static func in_room(id: String, p: Vector3, margin: float = 0.0) -> bool:
 	var g := geometry(id)
 	if g.is_empty():
 		return false
-	var r: Rect2 = g["room"]
-	return r.grow(-margin).has_point(Vector2(p.x, p.z)) and p.y < CEIL - 1.0 and p.y > -1.0
+	if p.y >= float(g["ceil"]) - 1.0 or p.y <= -1.0:
+		return false
+	var q := Vector2(p.x, p.z)
+	var room: PackedVector2Array = g["room"]
+	if not Geometry2D.is_point_in_polygon(q, room):
+		return false
+	return margin <= 0.0 or CampusData.dist_to_edge(q, room) >= margin
 
 
 ## The outside->inside threshold test for one door (pure geometry; the sim
 ## adds the collision check).  a = position at the start of the tick, b = at
 ## its end.  True when the centre crossed the line at the inner face of the
-## wall inward, within the opening, at a plausible feet height.  A move of
-## any speed counts (it's a swept segment, not a sampled point); moving out,
-## standing still or sliding along the line does not.
+## wall inward, within the opening, at a plausible feet height.
 static func crosses(door: Dictionary, a: Vector3, b: Vector3) -> bool:
 	var lp: Vector2 = door["line_p"]
 	var n: Vector2 = door["n_in"]
@@ -268,9 +294,14 @@ static func geometry_hash(id: String) -> String:
 	var g := geometry(id)
 	if g.is_empty():
 		return ""
-	var parts := PackedStringArray([str(VERSION), id])
+	var parts := PackedStringArray([str(VERSION), id, "%.3f" % float(g["ceil"])])
+	for poly in g["interior"]:
+		var s := PackedStringArray()
+		for p in poly:
+			s.append(_v2s(p))
+		parts.append(";".join(s))
 	for bx in g["boxes"]:
-		parts.append("%s|%s|%s" % [_v3s(bx[0]), _v3s(bx[1]), bx[2]])
+		parts.append("%s|%s|%s|%.3f" % [_v3s(bx[0]), _v3s(bx[1]), bx[2], float(bx[3])])
 	for dr in g["doors"]:
 		parts.append("%s|%s|%s|%.3f" % [dr["id"], _v2s(dr["line_p"]), _v2s(dr["n_in"]), float(dr["half_w"])])
 	for pd in g["pads"]:
@@ -291,20 +322,15 @@ static func _v2s(v: Vector2) -> String:
 	return "%.3f,%.3f" % [v.x, v.y]
 
 
-static func in_yards(p: Vector2) -> bool:
-	return YARDS.has_point(p)
+## Kept for API compatibility (the fictional campus's cart-free yards): no
+## such strip exists on the reference campus.
+static func in_yards(_p: Vector2) -> bool:
+	return false
 
 
-## Which district rect (if any) a point lies in.
-static func district_of(p: Vector2) -> String:
-	for k in DISTRICTS:
-		if (DISTRICTS[k] as Rect2).has_point(p):
-			return k
+static func district_of(_p: Vector2) -> String:
 	return ""
 
 
-static func in_any_district(r: Rect2) -> bool:
-	for k in DISTRICTS:
-		if (DISTRICTS[k] as Rect2).intersects(r):
-			return true
+static func in_any_district(_r: Rect2) -> bool:
 	return false
