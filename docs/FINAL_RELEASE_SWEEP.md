@@ -23,6 +23,44 @@ Per-area notes:
 - [APP_STORE.md](APP_STORE.md): the submission package.
 - [APP_STORE_READINESS.md](APP_STORE_READINESS.md): requirement by requirement.
 
+## What changed (by area)
+
+- **Lobby lighting** ([final/lobby.md](final/lobby.md)): the dorm is a
+  little lighter and friendlier at night with the same lights and cost
+  (ambient 0.55 → 0.62, cool fill 0.22 → 0.32, lamps up slightly, walls
+  lifted); the right-hand menu shade no longer dims the characters; lines
+  drawn on the room get a soft halo. Home room mean luma 88 → 97,
+  near-black pixels 17 % → 10 %, the runner +6 luma, nothing clipped;
+  every line on the room at 4.97:1 contrast or better (was 3.18).
+- **Season Pass** ([final/season.md](final/season.md)): the selected reward
+  stands on the large dorm stage (about 2.9× the old preview's height on
+  phones) with drag, Turn, Reset and right-stick rotation that never fights
+  an automatic sway (none under Reduced Motion); a compact season header,
+  one status line when claiming is unavailable, requirements from the
+  account ("15,300 XP to unlock", "Needs Premium · 1,500 Coins"), one fixed
+  action (Claim, View Premium, Equip, View in Locker). Previewing never
+  saves; every exit restores the saved look.
+- **Friends** ([final/friends.md](final/friends.md)): a Friends panel on
+  Home, Play with Friends and in the party shows which Game Center friends
+  are online, in a party or in a round, but only mutual friends who both
+  play and allowed friends access (keyed hashes on the service; presence
+  expires 60 s after the last heartbeat); Invite sends a real invitation to
+  your current party, the friend accepts and joins through the same
+  admission as a typed code. Party codes and Apple's invite sheet stay.
+- **Commerce** ([final/commerce.md](final/commerce.md)): one build routes
+  to the sandbox (TestFlight, App Review) or production (App Store) service
+  by the App Store receipt kind and moves itself to the sandbox when
+  production refuses a sandbox purchase; the appAccountToken is derived
+  from the verified Game Center ID and is the same on both; each deployment
+  credits only its own Apple environment. Shop: Hide owned, App Store
+  labels, both Apple outfits and all six Coin packs always reachable, offers
+  that never run out (written to 2027-04-06, then the rule's cycle).
+- **Release lane** (this file): an App Store-eligible upload option with an
+  audience check, version 2.0, config files that actually ship, privacy and
+  support links in every build, the final privacy manifest, Game Center
+  matchmaking failures shown to the player, service requests off the main
+  thread.
+
 ## Defect register (release lane and integration)
 
 Each entry: symptom → reproduction → cause → fix → evidence. The per-area

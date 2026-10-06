@@ -1,11 +1,9 @@
-1.9 internal beta (pass 9: one steady full speed, new round music, Season Pass to tier 100 with two new skins, better-fitting outfits). Please tell us your iPhone model:
+2.0 release candidate, provisional: the game service isn't connected in this build yet, so Friends status, invites, purchases, Coins and Season rewards say they're unavailable. That's expected; please don't try to buy anything. Tell us your iPhone or iPad model:
 
-- Running: push the stick all the way and hold it. You keep one steady full speed for as long as you hold it. There is no Sprint button, meter or recharge any more. A gentle push walks (silent), a part push jogs (quieter). On a controller or keyboard: left stick all the way, or WASD. Tell us if the speed ever dips or pulses, or if full speed is hard to reach with your thumb.
-- Night Watch: you are a little faster than a runner on foot, so on a straight you close in slowly. Press Tag when it lights up. Tell us if chases feel too long or too short, and who wins most rounds.
-- Music: rounds now play "Soft Bounce Loop". When a round starts it should blend in from the lobby music on the beat, with the lobby music fading away underneath. Tell us if the change ever sounds abrupt, off-beat or too loud or quiet next to the sound effects.
-- Dive: unchanged. One dive per jump, then a short landing.
-- Turbo Sneakers are now a real escape for 3 seconds. Tell us if they feel too strong.
-- Season Pass: now 100 tiers. Your Season XP, claims and Premium are kept. Try "You're at", "Next reward" and the 30, 50 and 100 shortcuts above the track. Record Breaker is the Premium reward at tier 50 and Dr. Doom at tier 100. Open them to preview.
-- Outfits: watch for clothes floating off the body, gaps, or anything poking through while running, turning, jumping, diving and splashing. A screenshot helps.
-- Online: everyone in a party needs 1.9. Older versions are asked to update.
-- The game service and App Store products are still not set up, so buying, claiming and challenge progress say they're unavailable in this build. That's expected; please don't try to buy anything.
+- Home and the party room: the dorm behind the menus is a little lighter. Check that it still feels like night, that your runner stands out, and that the small lines beside Start are easy to read.
+- Season Pass: tap Tier 50 or Tier 100 (or any outfit in the track). It stands large on the left. Drag sideways on it to turn it, or use Turn and Reset; the track still scrolls by finger. Leave the pass: your runner should wear your own look. Tell us if anything is hard to read or tap.
+- Friends: on Home (top right) and in a party. It asks for Game Center friends access, then lists your friends. In this build their status says it's unavailable. Party codes and Invite with Game Center still work. Tell us if the list, the permission prompt or the buttons feel wrong.
+- Shop: try Hide owned on All skins and Accessories. The six Coin packs and the two App Store outfits are always listed; buying says it's unavailable in this build.
+- Online parties: create a party and join from a second device with the code, then play a full round. If joining fails, the game should now say why instead of waiting.
+- Running, diving, tagging and the music are unchanged from 1.9. Tell us if anything got worse.
+- Look for any text cut off, overlapping or hidden behind the notch or home bar, on iPhone and iPad.
