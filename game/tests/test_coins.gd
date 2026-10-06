@@ -29,7 +29,8 @@ func test_candidate_spots_are_on_routes_and_reachable() -> void:
 			t.check(p.distance_to(g) >= 4.0, "spot %d is not on a gadget pickup" % i)
 		for d in lay.dorm_doors:
 			t.check(p.distance_to(d["pos"]) >= 10.0, "spot %d is away from every dorm door" % i)
-		t.check(CampusDorms.district_of(p) == "" or not CampusDorms.in_room(CampusDorms.district_of(p), Vector3(p.x, 0, p.y)), "spot %d is outdoors" % i)
+		t.check(lay.building_at(p, 0.5) < 0, "spot %d is outdoors, clear of every building" % i)
+		t.check(lay.in_play(p), "spot %d is inside the play area" % i)
 		for w in lay.waters:
 			for e in w["exits"]:
 				t.check(p.distance_to(Vector2((e as Vector3).x, (e as Vector3).z)) >= 6.0, "spot %d clear of %s's exits" % [i, w["id"]])

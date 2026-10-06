@@ -553,40 +553,31 @@ func test_guest_refuses_other_dorm_geometry() -> void:
 	await t.get_tree().process_frame
 
 
-## What V6 added around the dorms with a collider (lamp posts, benches,
-## trees, monument signs) stands beside the new paths, never on them, and
-## never in a doorway or on a door's approach.
-func test_yard_colliders_keep_routes_clear() -> void:
-	var v6 := CampusLayout.shared()
-	var v5 := CampusLayout.legacy_shared()
-	var added: Array = []
-	for l in v6.lamps:
-		if not v5.lamps.has(l):
-			added.append(["lamp", l, 0.2])
-	for b in v6.benches:
-		if not v5.benches.has(b):
-			added.append(["bench", b["pos"], 1.0])
-	for tr in v6.trees:
-		if CampusDorms.district_of(tr["pos"]) != "" and not v5.trees.has(tr):
-			added.append(["tree", tr["pos"], 0.45])
-	for so in v6.solids:
-		added.append(["sign", so["pos"], 1.5])
-	t.check(added.size() >= 20, "V6 yard colliders found (%d)" % added.size())
-	var new_paths: Array = v6.paths.filter(func(p: Dictionary) -> bool:
-		for q in v5.paths:
-			if q["pts"] == p["pts"]:
-				return false
-		return true)
-	t.check(new_paths.size() >= 6, "new approach paths (%d)" % new_paths.size())
-	for it in added:
-		var p: Vector2 = it[1]
-		var r: float = it[2]
-		for pth in new_paths:
-			var pts: PackedVector2Array = pth["pts"]
-			for i in pts.size() - 1:
-				t.check(CampusLayout._dist_to_segment(p, pts[i], pts[i + 1]) >= float(pth["w"]) * 0.5 + r - 0.05, "%s at %s stands beside the path, not on it" % [it[0], str(p)])
-		for d in v6.dorm_doors:
-			t.check(p.distance_to(d["approach"]) >= 2.5 + r and p.distance_to(d["pos"]) >= 3.0 + r, "%s at %s keeps clear of %s's %s door" % [it[0], str(p), d["dorm"], d["id"]])
+## Nothing with a collider (lamp posts, benches, tree trunks, props) stands
+## in a start dorm's doorway or on the line from a door out to its approach
+## point, where runners leave and come home.
+func test_doorways_and_approaches_are_clear() -> void:
+	var lay := CampusLayout.shared()
+	var things: Array = []
+	for l in lay.lamps:
+		things.append(["lamp", l, 0.2])
+	for b in lay.benches:
+		things.append(["bench", b["pos"], 1.0])
+	for tr in lay.trees:
+		if bool(tr.get("collide", true)):
+			things.append(["tree", tr["pos"], 0.45])
+	for pr in lay.props:
+		var ps := CampusArchitecture.prop_collider(pr)
+		if ps != Vector3.ZERO:
+			things.append([pr["kind"], pr["pos"], Vector2(ps.x, ps.z).length() * 0.5])
+	t.check(lay.dorm_doors.size() >= 2, "start dorm doors found (%d)" % lay.dorm_doors.size())
+	for d in lay.dorm_doors:
+		var a: Vector2 = d["pos"]
+		var b: Vector2 = d["approach"]
+		var hw := float(d["w"]) * 0.5
+		for it in things:
+			var p: Vector2 = it[1]
+			t.check(CampusData.dist_to_segment(p, a, b) >= hw + float(it[2]) - 0.3, "%s at %s keeps clear of %s's %s doorway" % [it[0], str(p), d["dorm"], d["id"]])
 
 
 ## The follow camera never clips into the dorm: from every pad and every

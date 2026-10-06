@@ -320,17 +320,3 @@ static func _v3s(v: Vector3) -> String:
 
 static func _v2s(v: Vector2) -> String:
 	return "%.3f,%.3f" % [v.x, v.y]
-
-
-## Kept for API compatibility (the fictional campus's cart-free yards): no
-## such strip exists on the reference campus.
-static func in_yards(_p: Vector2) -> bool:
-	return false
-
-
-static func district_of(_p: Vector2) -> String:
-	return ""
-
-
-static func in_any_district(_r: Rect2) -> bool:
-	return false

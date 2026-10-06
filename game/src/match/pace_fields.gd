@@ -3,7 +3,7 @@ extends RefCounted
 ## Pass 8: route-distance fields for the live runner pace (RunnerPace).
 ##
 ## One field per water and one per home dorm: the cost of walking from any
-## 1 m cell of the runners' navigation grid (NavGrid.foot: the same solid
+## cell (NavGrid.CELL metres square) of the runners' navigation grid (NavGrid.foot: the same solid
 ## cells, low-wall and fence costs and corner rule the bots' A* uses) to the
 ## nearest of that place's sources.  A field is a multi-source Dijkstra
 ## (a bucket queue: integer step costs 10 straight / 14 diagonal, times the
@@ -22,13 +22,15 @@ extends RefCounted
 ## from the layout, and starts one worker-pool task; nothing waits for it.
 ## Until a field is ready the pace says so (stamp-based shared places).
 ## Fields depend on the layout only (not the round), so they are kept for
-## later rounds: at most 6 waters + 3 dorms = 9 fields (~3.4 MB).
+## later rounds: at most 6 waters + 2 dorms = 8 fields (~10 MB on the 2 m grid).
 ## Bot path searches are unaffected: the grid is read under the same lock
 ## a bot search takes (once per layout, ~tens of ms, in loading).
 
 const UNREACH := 0x3FFFFFFF
-## cost units per metre (10 = straight step of 1 m on an ordinary cell)
+## cost units per cell step (10 = one straight step on an ordinary cell,
+## which is NavGrid.CELL metres)
 const UNIT := 10.0
+const CELL := NavGrid.CELL
 const BUCKETS := 128            # > the largest step cost (14 x weight 6 = 84)
 ## how far a position may be from an open cell (capsules stand in the
 ## inflation band around walls; the dorm floor next to furniture)
@@ -238,8 +240,8 @@ static func clear() -> void:
 static func cell_of(p: Vector2) -> int:
 	if _solid.is_empty():
 		return -1
-	var cx := clampi(int(floor(p.x - _origin.x)), 0, _w - 1)
-	var cy := clampi(int(floor(p.y - _origin.y)), 0, _h - 1)
+	var cx := clampi(int(floor((p.x - _origin.x) / CELL)), 0, _w - 1)
+	var cy := clampi(int(floor((p.y - _origin.y) / CELL)), 0, _h - 1)
 	var c := cy * _w + cx
 	if _solid[c] == 0:
 		return c
@@ -257,7 +259,7 @@ static func cell_of(p: Vector2) -> int:
 				var q := y * _w + x
 				if _solid[q] != 0:
 					continue
-				var d := Vector2(_origin.x + float(x) + 0.5, _origin.y + float(y) + 0.5).distance_squared_to(p)
+				var d := Vector2(_origin.x + (float(x) + 0.5) * CELL, _origin.y + (float(y) + 0.5) * CELL).distance_squared_to(p)
 				if d < bd:
 					bd = d
 					best = q
@@ -271,7 +273,7 @@ static func metres(f: Dictionary, cell: int) -> float:
 	if cell < 0 or f.is_empty():
 		return INF
 	var d: int = (f["d"] as PackedInt32Array)[cell]
-	return INF if d >= UNREACH else float(d) / UNIT
+	return INF if d >= UNREACH else float(d) / UNIT * CELL
 
 
 ## The source label (door index for a home field) nearest by route, or -1.

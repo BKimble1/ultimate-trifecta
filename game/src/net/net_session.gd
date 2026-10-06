@@ -688,6 +688,7 @@ func host_start_match(seed_override: int = -1) -> void:
 	current_start = {
 		"home_dorm": dorm_id,
 		"dorm": {"id": dorm_id, "ver": CampusDorms.VERSION, "geo": CampusDorms.geometry_hash(dorm_id), "spawns": spawns},
+		"campus": CampusData.shared().campus_hash,
 		"coins": RulesLogic.pick_coins(seed_v, CampusLayout.round_data(), dorm_id, targets, round_cfg),
 		"timing": {"reveal_s": round_cfg.role_reveal_s, "countdown_s": round_cfg.start_countdown_s, "head_start_s": round_cfg.runner_head_start_s},
 		"match_id": "%s-%d-%08x" % [room_code, round_no, seed_v], "seed": seed_v, "targets": targets,
@@ -1315,9 +1316,14 @@ func _fix_start(d: Dictionary) -> Dictionary:
 	var sd: Dictionary = se if se is Dictionary else {}
 	out["series"] = {"id": String(sd.get("id", "")).substr(0, 16), "round": clampi(int(sd.get("round", 1)), 1, 5),
 		"total": clampi(int(sd.get("total", 1)), 1, 5)}
+	# the campus itself: the same layer data (so the same colliders, waters,
+	# pads and doors) or the round is refused as incompatible
+	if String(d.get("campus", "")) != CampusData.shared().campus_hash:
+		return {"_incompatible": true}
+	var pool := CampusLayout.round_data().pool_size()
 	var t: Array = []
 	for x in d["targets"]:
-		if not (x is float or x is int) or int(x) < 0 or int(x) > 5 or t.has(int(x)):
+		if not (x is float or x is int) or int(x) < 0 or int(x) >= pool or t.has(int(x)):
 			return {}
 		t.append(int(x))
 	if t.size() != 3:

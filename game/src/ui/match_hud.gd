@@ -1922,16 +1922,18 @@ class Minimap:
 		var s := size
 		var half := minf(s.x, s.y) * 0.5
 		var c := s * 0.5
-		# the baked campus, clipped to a disc by drawing it as a textured
-		# polygon (no shader, no extra node)
-		if _ring.size() == 0 or not is_equal_approx(_uv[0].x, 1.0 - 0.0) or _ring[0] != c + Vector2(half, 0):
-			_ring.clear()
-			_uv.clear()
-			for i in 48:
-				var a := TAU * float(i) / 48.0
-				var d := Vector2(cos(a), sin(a))
-				_ring.append(c + d * (half - 1.0))
-				_uv.append(Vector2(0.5, 0.5) + d * 0.5 * (half - 1.0) / half)
+		# the baked campus around you, clipped to a disc by drawing it as a
+		# textured polygon (no shader, no extra node): the window's UVs in
+		# the whole-campus bake follow your position
+		var focus := MapPainter.focus(hud)
+		_ring.resize(48)
+		_uv.resize(48)
+		var span := CampusMap.MINI_SPAN_M
+		for i in 48:
+			var a := TAU * float(i) / 48.0
+			var d := Vector2(cos(a), sin(a))
+			_ring[i] = c + d * (half - 1.0)
+			_uv[i] = CampusMap.uv_of(focus + d * span * (half - 1.0) / half)
 		draw_circle(c, half, Color(0.05, 0.08, 0.16, 0.85))
 		var tex := CampusMap.shared().texture(hud.mc.layout, CampusMap.MINI_PX)
 		draw_polygon(_ring, PackedColorArray([Color(1, 1, 1, 0.94)]), _uv, tex)
@@ -1949,12 +1951,41 @@ class MapPainter:
 	## policy here): [{kind, pos, ...}] in map units for a square of
 	## half-size `half` centred on `c`.  kinds: target, home, team, cart,
 	## splash, seen (an opponent: live while in sight, else fading), me.
+	## Where the minimap is centred: you (or the campus centre before you
+	## have a position).
+	static func focus(hud: MatchHUD) -> Vector2:
+		var me: Dictionary = hud.info.get("rs", {})
+		if me.has("pos"):
+			var p: Vector3 = me["pos"]
+			return Vector2(p.x, p.z)
+		return CampusLayout.BOUNDS.get_center()
+
 	static func items(hud: MatchHUD, c: Vector2, half: float, full: bool) -> Array:
+		var out := _items(hud, c, half, full)
+		if full:
+			return out
+		# the minimap: what lies beyond its rim sits on the rim, pointing the
+		# way (doors and opponents' cues out there are left out)
+		var keep: Array = []
+		var rim := half - 9.0
+		for it in out:
+			var d: Vector2 = (it["pos"] as Vector2) - c
+			if d.length() <= rim:
+				keep.append(it)
+				continue
+			if String(it["kind"]) in ["target", "home", "team"]:
+				it["pos"] = c + d.normalized() * rim
+				it["edge"] = true
+				keep.append(it)
+		return keep
+
+	static func _items(hud: MatchHUD, c: Vector2, half: float, full: bool) -> Array:
 		var out: Array = []
 		var info := hud.info
 		var me: Dictionary = info.get("rs", {})
 		var L := hud.mc.layout
-		var to_map := func(p: Vector2) -> Vector2: return CampusMap.to_map(p, c, half)
+		var fc := focus(hud)
+		var to_map := func(p: Vector2) -> Vector2: return CampusMap.to_map(p, c, half) if full else CampusMap.to_view(p, c, half, fc, CampusMap.MINI_SPAN_M)
 		var tg: Array = info.get("targets", [])
 		var stamps: int = info.get("stamps", 0)
 		var role: int = info.get("role", 0)
@@ -2088,7 +2119,7 @@ class MapPainter:
 					var w: Dictionary = L.waters[int(it["water"])]
 					var done := bool(it["done"])
 					var col: Color = w["color"]
-					var r := 15.0 * k
+					var r := 15.0 * k * (0.75 if bool(it.get("edge", false)) else 1.0)
 					if bool(it.get("next", false)):
 						# the personal card's suggestion: a still ring (any
 						# remaining water counts; this is a good next one)
