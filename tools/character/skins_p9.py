@@ -1631,12 +1631,79 @@ def jacket_gap(z):
 def jacket_base(z):
     """The jacket's own line below the waist: it hangs over the hips and
     the tops of the trouser legs (a little flare), never pinched in under
-    them like the torso's own profile."""
+    them like the torso's own profile.  Final sweep: below the waist only.
+    The same floor (0.196 m) also held the jacket out above the chest,
+    where the torso narrows to the neck (0.145 m at the shoulders): the
+    jacket stood up to 9 cm off the shoulders and upper back and its top
+    ended in a flat ring round the neck, so in profile the back read as a
+    square slab and the front edges stood 2.4-4 cm off the shirt."""
+    if z >= 0.60:
+        return max(torso_r(z), 0.06)
     return max(torso_r(z), 0.196 + 0.028 * smoothstep(0.57, 0.45, z))
 
 
+JACKET_EDGE_G = SHIRT_G + 0.008     # final sweep: the front edges' grow, 8 mm over the shirt
+JACKET_BELT_G = 0.032               # ... and over the belt (the trousers' 2.2 cm, the belt 0.35 cm more)
+JACKET_SEAT_EASE = 0.025            # the back of the skirt over the trousers' seat
+JACKET_TAPER = 0.45                 # how fast the back of the skirt may come in going down (m per m)
+
+
+def jacket_edge_pull(th, z):
+    """Final sweep: how far the jacket comes in toward the shirt near its
+    front edges.  At JACKET_G the edges stood 2.4-3.2 cm off the shirt, so in
+    profile on the large preview stage the edge, its facing and the lapels
+    read as dark strips standing away from the shirt (fit_check "edges":
+    4.0 cm).  Over the last 0.42 rad (about 10 cm) the jacket now rolls in
+    to JACKET_EDGE_G, from the waist up to below the gorge (the cutaway skirt
+    hangs free below the button, and the gorge meets the shirt collar)."""
+    g = jacket_gap(z)
+    d = min(abs(th - (math.pi / 2 + g)), abs((2.5 * math.pi - g) - th))
+    w = smoothstep(0.42, 0.0, d) * smoothstep(0.56, 0.60, z) * (1.0 - smoothstep(0.80, 0.86, z))
+    # (over the belt, 0.594-0.616 m, the edge keeps clear of it)
+    target = lerp(JACKET_BELT_G, JACKET_EDGE_G, smoothstep(0.618, 0.63, z))
+    return w * max(0.0, jacket_grow(z) - target)
+
+
+def _seat_r(z):
+    """The trousers' seat radius (_dd_trousers), its belly share aside."""
+    return max(torso_r(z), 0.06) + 0.022 - 0.008 * smoothstep(0.585, 0.53, z)
+
+
+def _jacket_r(z):
+    return jacket_base(z) + jacket_grow(z)
+
+
+def jacket_back_fit(z):
+    """Final sweep: the back of the skirt follows the seat.  It hung straight
+    down from the widest point of the back (z 0.62) and flared, so in profile
+    the back read as a flat slab hanging away from the body, its hem 6.6 cm
+    behind the seat and 12 cm behind the backs of the thighs.  Going down from
+    the waist it now comes in at most JACKET_TAPER per metre, never closer
+    than JACKET_SEAT_EASE over the seat: the radius it loses at height z."""
+    if z >= 0.60:
+        return 0.0
+    r, zz = _jacket_r(0.60), 0.60
+    while zz > z + 1e-9:
+        dz = min(0.005, zz - z)
+        zz -= dz
+        floor = _seat_r(zz) + JACKET_SEAT_EASE if zz >= 0.47 else 0.0
+        r = min(_jacket_r(zz), max(floor, r - JACKET_TAPER * dz))
+    return max(0.0, _jacket_r(z) - r)
+
+
+def _col(t):
+    """The jacket's columns round the body (0..1 from the left front edge
+    round the back to the right one): closer together at the front edges,
+    where they roll in to the shirt, wider apart across the back (the same
+    40 columns)."""
+    return t - 0.35 * math.sin(2 * math.pi * t) / (2 * math.pi)
+
+
 def jacket_at(th, z, lift=0.0):
-    return dd_at(th, z, jacket_grow(z) + lift + jacket_base(z) - max(torso_r(z), 0.06))
+    # (the fitted back: full behind, none at the front; the sides between)
+    back = smoothstep(0.15, -0.55, math.sin(th))
+    return dd_at(th, z, jacket_grow(z) + lift + jacket_base(z) - max(torso_r(z), 0.06) - jacket_edge_pull(th, z)
+                 - back * jacket_back_fit(z))
 
 
 def lower_w(p):
@@ -1950,7 +2017,7 @@ def _dd_jacket(mb):
         g = jacket_gap(z)
         row = []
         for k in range(segs + 1):
-            th = math.pi / 2 + g + (2 * math.pi - 2 * g) * k / segs
+            th = math.pi / 2 + g + (2 * math.pi - 2 * g) * _col(k / segs)
             p, n = jacket_at(th, z)
             row.append(mb.vert(p, suit_style(p), (0, p.z), jw(p)))
         rows.append(row)
@@ -1975,7 +2042,7 @@ def _dd_jacket(mb):
     hem = []
     for k in range(segs + 1):
         g = jacket_gap(zs[0])
-        th = math.pi / 2 + g + (2 * math.pi - 2 * g) * k / segs
+        th = math.pi / 2 + g + (2 * math.pi - 2 * g) * _col(k / segs)
         a, _ = jacket_at(th, zs[0], -0.003)
         b, _ = jacket_at(th, zs[0] + 0.028, -0.007)
         hem.append((mb.vert(a, SUIT_LINING, (0, a.z), jw(a)), mb.vert(b, SUIT_LINING, (0, b.z), jw(b))))
@@ -1993,7 +2060,7 @@ def _dd_jacket(mb):
     pts = []
     for k in range(segs + 1):
         g = jacket_gap(zs[0])
-        th = math.pi / 2 + g + (2 * math.pi - 2 * g) * k / segs
+        th = math.pi / 2 + g + (2 * math.pi - 2 * g) * _col(k / segs)
         p, n = jacket_at(th, zs[0] + 0.002, -0.0015)
         pts.append(p)
     K.path_tube(mb, pts, 0.0032, SUIT_EDGE, jw, segs=6, hint=UP, cap='round')

@@ -1,6 +1,6 @@
 # Test report: Ultimate Trifecta
 
-This report records what was actually run, where, and what each result proves. Version 1.9 (Pass 9) is reported first. The Pass 8 (1.8), V8 (1.7), V7 (1.6), V6 (1.5), V5 (1.4), V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
+This report records what was actually run, where, and what each result proves. Version 2.0 (the final release sweep) is reported first. The Pass 9 (1.9), Pass 8 (1.8), V8 (1.7), V7 (1.6), V6 (1.5), V5 (1.4), V4 (1.3), V3 (1.2), V2 (1.1) and V1 (1.0) reports follow unchanged as the baseline. The evidence comes from these sources, each labelled by what it is:
 
 | Label | What it is | What it can prove |
 |---|---|---|
@@ -11,7 +11,113 @@ This report records what was actually run, where, and what each result proves. V
 | **Desktop render** | The game rendered by Godot's Mobile renderer on Mesa **llvmpipe** (software Vulkan) under Xvfb, at device resolutions, with a fixed frame clock (`--fixed-fps 60`, or Movie Maker) | Layout, framing, art, render-path dimensions (render size vs displayed size, MSAA, scale) and engine counters (draw calls, primitives). **Not** frame rate, frame pacing, GPU cost or device smoothness |
 | **CI iOS** | GitHub Actions `macos-26` runner: Xcode project export, unsigned arm64 device archive (or, from V3, a signed archive and TestFlight upload), x86_64 Simulator build and run, App Store Connect API checks | That the iOS project compiles, links, signs and uploads, launches in the Simulator, and what App Store Connect reports for the build; *not* device performance or a device install |
 
-**Not done: no physical iPhone or iPad was available, so nothing in V1–V8, Pass 8 or Pass 9 has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+**Not done: no physical iPhone or iPad was available, so nothing in V1–V8, Pass 8, Pass 9 or the final sweep has been device-tested.** Touch feel, frame rate, thermals and Game Center on hardware are unverified; see V5.9. V4 added an in-game diagnostics panel so the owner can measure them (docs/V4_NOTES.md); V5 adds the name of a slow preparation job to it.
+
+# Final release sweep (version 2.0)
+
+The last pass before the App Store (docs/FINAL_RELEASE_SWEEP.md): a lighter
+lobby, the Season Pass preview on the large stage, Friends with real status
+and lobby invitations, commerce that keeps sandbox and production apart in
+one build, an App Store-eligible release lane, and the App Store package
+(docs/APP_STORE.md, docs/APP_STORE_READINESS.md). **No iPhone or iPad, no
+deployed service and no App Store product was available**: everything below
+is desktop Linux, the service's Node tests, and CI iOS.
+
+## FRS.1 Automated tests
+
+Full game suite on the integrated code (local, headless; Commerce, Friends,
+Season Pass and Lighting merged): **561 tests, 107,281 checks, 0 failures**
+(703 s). Service (`service/`, Node): **93 tests, 93 pass**. The final
+gate on the release-candidate commit is in FRS.4, the CI gate of the
+upload run in FRS.5.
+
+| Suite (new in the sweep) | What it exercises |
+|---|---|
+| `test_commerce_routing` | receipt kind → deployment; the production refusal of a sandbox purchase moves the install to the sandbox and the still-unfinished transaction is delivered there once; the move is remembered; a cached snapshot from another deployment is never shown |
+| `test_shop_filters` | Hide owned on All skins and Accessories, counts, the explained empty state, never hiding Featured, Coin packs or Premium; selection after filtering; App Store labels |
+| `test_friends` (13) | panel states and sorting, polling only while open, heartbeat cadence and pause in the background, the invite toast never over the controls in a round, accept → the code-join path, leave-party confirmation, revocation clean-up, layout at four device shapes with long names |
+| `test_season_stage` (7) | turn ownership (one finger, dead zone, vertical drags don't turn), no automatic sway after a touch or under Reduced Motion, restore of the saved look on every exit and before a round, distinct reward states, outage copy, layout with the figure ≥ 2× on phones |
+| `test_room_failed` (2) | a Game Center matchmaking failure takes a waiting guest home with the reason; a host keeps the party |
+| `test_release_config` (3) | `config/*.cfg` ships and dev/test code doesn't; one marketing version everywhere; links bundled https or nothing |
+| Service: `environments.test.mjs`, `friends.test.mjs` | sandbox/production crediting, the derived appAccountToken, forged/Xcode/wrong-bundle transactions, notifications per environment; mutual-only presence, enumeration attempts, blocks both ways, presence expiry and session ordering, invite limits/dedup/expiry/accept re-checks, deletion and sweep |
+
+**Desktop UDP soak** (`SOAK_OUT=docs/test-data/final_net_soak_3c_60ms_0.03
+tools/net_soak.sh 3 60 10 0.03 3`): a host and 3 client processes over real
+UDP (ENet), 60 ms one-way lag, 10 ms jitter, 3 % loss, a 3-round series with
+automation input. Every round completed on all four processes with the same
+result (runners, 4/4 home); RTT 146–171 ms; 59–60 fps; average correction
+0.5–9.6 mm, largest single correction 0.22–1.33 m per client and round (the
+same range as earlier soaks: one correction after a loss burst); host
+input starvation 707 / 564 skipped ticks over the series (the 3 % loss).
+Desktop processes on one Linux machine; not iPhones and not the Game Center
+transport.
+
+## FRS.2 Measured (desktop render, labelled)
+
+- **Lobby lighting** (iPhone 14 shape, Mesa limited to AVX): Home room mean
+  luma 88 → 97, near-black pixels 17 % → 10 %, the runner +6 luma, nothing
+  clipped; every line on the room at 4.97:1 or better (was 3.18).
+- **Season Pass figure height** (points): SE 70 → 204, 844×390 70 → 203,
+  926×428 80 → 231, iPad 206 → 348.
+- **Rendering fault found:** on this machine's CPU (AVX-512 FP16) llvmpipe
+  drops the directional light on characters in Mobile-renderer captures;
+  `tools/gd.sh` now limits llvmpipe to AVX (matches Forward+). Character
+  pictures rendered here before this sweep under-light the characters.
+
+## FRS.3 Evidence
+
+| What | Where |
+|---|---|
+| Lobby before/after, load-in clips, the L1 fault comparison | `docs/media/final/lobby/` |
+| Season Pass before/after at four shapes, skin inspection, a normal-speed clip | `docs/media/final/season/` |
+| Friends panel states, toast, entry points at four shapes | `docs/media/final/friends/` |
+| Shop filters, App Store outfits, Coin packs, the schedule fallback | `docs/media/final/commerce/` |
+| App Store screenshot candidates | `docs/media/final/store/` |
+
+## FRS.4 Final checks on the release candidate (local)
+
+On commit `66e7575` (all four area merges, ARTFIX's garment fixes, the
+release-lane fixes; later commits change only documentation and store
+screenshots, which aren't in the app):
+- **Full game suite: 561 tests, 107,274 checks, 0 failures** (783 s,
+  headless). Seven fewer checks than FRS.1 because ARTFIX's new fit
+  anchors sample slightly different points; no test was removed.
+- **Service: 93 tests, 93 pass.**
+- **Garments** (ARTFIX, [docs/final/artfix.md](docs/final/artfix.md)):
+  `fit_check.py` on the merged asset (art version `v10-49a45748ffed`):
+  24 looks × 567 poses and 52 hat × hair looks, **0 failures** (the new
+  standoff rule finds 29 on the 1.9 asset); the character and Season suites
+  60 tests, 1,689 checks, 0 failures; import clean.
+- **Screen sweep** (`tools/capture_v7_screens.sh`, iPhone 14 and SE shapes,
+  18 screens each): **0 layout issues** after R10 (a 16-character outfit name
+  was cut off on the results team card).
+
+## FRS.5 iOS build (CI iOS) and TestFlight
+
+_In progress:_ upload run #145
+(https://github.com/BKimble1/ultimate-trifecta/actions/runs/37431364875)
+on commit `66e7575` with `upload=true` and `distribution=app_store`. Its
+headless test job passed; the signed archive, upload and Apple's
+processing were still running when this was written. This section is
+replaced with the result.
+
+## FRS.6 Not verified (exact remaining checks)
+
+Nothing below has been observed; each needs a device, Apple's sandbox or the
+deployed service ([docs/OWNER_SETUP_GUIDE.md](docs/OWNER_SETUP_GUIDE.md) E):
+- **Purchases:** six localized prices; a pack delivered once; force-quit on
+  Apple's success sheet; restore of both outfits on a reinstall; a Coin item,
+  Premium and Claim all; cancel, Ask to Buy, a sandbox refund; the receipt
+  kind of a TestFlight install (docs/final/commerce.md §12).
+- **Friends:** two accounts on two devices see each other online, invite,
+  accept, the same party; the native permission prompt and its text
+  (docs/final/friends.md §11).
+- **Online:** a round between two devices on different networks over Game
+  Center; rewards after it.
+- **On screen:** the lighter lobby and characters on Metal; the Season Pass
+  drag feel; text at the notch and home bar; frame rate and heat on an A12
+  phone.
+- **Account deletion** against the live service.
 
 # Pass 9 (version 1.9)
 

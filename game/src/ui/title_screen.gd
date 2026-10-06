@@ -117,7 +117,7 @@ func _go_back() -> void:
 	pass  # home is the root
 
 
-## Name, level and coins in one compact chip (tap: Settings, Profile first).
+## Name and level in one compact chip (tap: Settings, Profile first).
 func profile_chip() -> Button:
 	var b := UIKit.card_button(Vector2(0, UIKit.touch_min()), Color(UIKit.SLATE, 0.92))
 	b.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -136,15 +136,12 @@ func profile_chip() -> Button:
 	lv.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lv.size_flags_vertical = Control.SIZE_FILL
 	h.add_child(lv)
-	var coins := UIKit.styled("%d ¢" % int(Save.data["coins"]), "num", UIKit.AMBER)
-	coins.add_theme_font_size_override("font_size", UIKit.T_CAPTION)
-	coins.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	coins.size_flags_vertical = Control.SIZE_FILL
-	h.add_child(coins)
+	# (final sweep) no Coins here: the Coins badge with the coin icon is on
+	# Home already, and "0 ¢" read like cents
 	f.add_child(h)
 	# the chip sizes itself to its content (names up to 16 characters)
 	UIKit.fit_card(b, h, 36.0)
-	b.accessibility_name = "%s, level %d, %d coins" % [Save.player_name(), int(Save.data["level"]), int(Save.data["coins"])]
+	b.accessibility_name = "%s, level %d" % [Save.player_name(), int(Save.data["level"])]
 	b.pressed.connect(func() -> void: App.goto(SettingsScreen))
 	return b
 

@@ -279,7 +279,7 @@ func _diag_live(live: Label) -> void:
 static func _privacy_text() -> String:
 	var t := "Settings, level and stats are stored on this device. The game has no ads, tracking or analytics. Online parties use Game Center for invitations and matchmaking. App Store purchases are handled by Apple; the game never sees your payment details."
 	if Cloud.configured():
-		t += " When you play online, the Ultimate Trifecta service stores your player name, runner look, a Game Center-linked account ID, your block list and any reports you send, so parties and safety tools work. It also keeps your Coins, purchases (App Store transaction IDs, never payment details), Season progress and rewarded rounds, so they're delivered once and restore on any device. Delete Game Profile removes it."
+		t += " When you play online, the Ultimate Trifecta service stores your player name, runner look, a Game Center-linked account ID, your block list and any reports you send, so parties and safety tools work. It also keeps your Coins, purchases (App Store transaction IDs, never payment details), Season progress and rewarded rounds, so they're delivered once and restore on any device. With Friends, it keeps your Game Center friends list as scrambled IDs and your status (online, in a party, in a round) for about a minute, shown only to friends who list you too; turn off Show when I'm playing in Friends to hide it. Delete Game Profile removes all of this."
 	return t
 
 

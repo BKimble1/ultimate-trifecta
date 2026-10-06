@@ -823,11 +823,13 @@ def build_cloud():
         a = 2 * math.pi * (i + 0.5) / n_p
         x = (HOOD_OPEN[0] + 0.008) * math.cos(a)
         z = HOOD_OPEN[2] + (HOOD_OPEN[1] + 0.008) * math.sin(a)
-        q = P.head_point(x, z, HOOD_G)
-        nq = rig.head_normal(q, HOOD_G)
+        # (final sweep: on the hood's roll into the face, round the rim, and
+        # 9 mm lower, so the shush hand meets them no more than it meets the
+        # shipped hoods, whose rims also came in: outfit_check)
+        q, nq = P.hood_point(x, z, HOOD_G, HOOD_OPEN)
         out = Vector((math.cos(a) * 0.012, 0.0, math.sin(a) * 0.012))
         r = 0.027 if i % 2 == 0 else 0.022
-        _puff(mb, q + nq * 0.009 + out, r, nq, CLOUD, hw, segs=9, rings=6)
+        _puff(mb, q + out, r, nq, CLOUD, hw, segs=9, rings=6)
     for x, y, z, r in ((0.0, -0.035, 1.53, 0.058), (0.095, 0.01, 1.49, 0.046), (-0.095, 0.01, 1.49, 0.046), (0.06, -0.115, 1.46, 0.044),
                        (-0.06, -0.115, 1.46, 0.044)):
         rp, rn = head_project(HOOD_G)(Vector((x, y, z)))
@@ -879,13 +881,26 @@ EYE_W = S('#fbfaf4', rough=0.3, mat=MAT_GLOSS)
 EYE_D = S('#22232b', rough=0.25, mat=MAT_GLOSS)
 
 
-def mask_outline(n=13):
+def _mask_bump(u):
+    return math.exp(-((abs(u) - 0.085) / 0.05) ** 2)
+
+
+def mask_top(u):
     """A bandit mask band (hood surface units): pointed ends, deeper over the
-    two hood eyes, narrow at the bridge.  CCW, star-shaped about its centre."""
+    two hood eyes, narrow at the bridge: its top edge ..."""
+    return 0.016 - 0.014 * (u / 0.2) ** 2 + 0.02 * _mask_bump(u)
+
+
+def mask_bottom(u):
+    """... and its bottom edge."""
+    return -0.01 + 0.008 * (u / 0.2) ** 2 - 0.02 * _mask_bump(u) + 0.008 * math.exp(-(u / 0.03) ** 2)
+
+
+def mask_outline(n=13):
+    """The mask's outline, CCW, star-shaped about its centre."""
     us = [lerp(0.2, -0.2, i / (n - 1)) for i in range(n)]
-    bump = lambda u: math.exp(-((abs(u) - 0.085) / 0.05) ** 2)
-    top = [(u, 0.016 - 0.014 * (u / 0.2) ** 2 + 0.02 * bump(u)) for u in us]
-    bot = [(u, -0.01 + 0.008 * (u / 0.2) ** 2 - 0.02 * bump(u) + 0.008 * math.exp(-(u / 0.03) ** 2)) for u in reversed(us)]
+    top = [(u, mask_top(u)) for u in us]
+    bot = [(u, mask_bottom(u)) for u in reversed(us)]
     return top[:-1] + [(-0.205, 0.002)] + bot[1:-1] + [(0.205, 0.002)]
 
 
@@ -904,8 +919,9 @@ def build_bandit():
     g = 0.045
     belly = lambda z: 0.022 * math.sin(math.pi * smoothstep(0.46, 0.86, z))
     torso_lathe(mb, CHAR, g, 0.46, 0.88, bottom_pole=True, extra=belly)
-    p, n = P.on_torso(0.0, 0.665, g + belly(0.665) + 0.032)
-    ellipsoid(mb, p - n * 0.012, (0.14, 0.165, 0.028), B_CREAM, torso_w, segs=18, rings=12, rot=rot_align(n, UP))
+    # (final sweep: the cream belly panel bent onto the suit; it was a flat
+    # disc 2 cm proud of the belly, so in profile it stood off as an oval)
+    P.belly_panel(mb, B_CREAM, lambda z: g + belly(z), 0.675, (0.14, 0.165, 0.028))
     # a little moon on the chest (bedtime), a darker zip line
     o, i = K.crescent(0.022, 0.78, 0.48, 12, math.radians(25))
     strip_decal(mb, o, i, place_front(-0.105, 0.79, g + belly(0.79)), MOON, torso_w, thick=0.003)
@@ -928,12 +944,16 @@ def build_bandit():
     # the hood: raccoon mask band above the face opening, cream brows, round ears
     P._hood(mb, CHAR, B_CREAM, extra_grow=HOOD_G, opening=HOOD_OPEN)
     hw = rigid('head')
-    hp = head_project(HOOD_G)
-    mask = mask_outline()
-    mc = P.head_point(0.0, 1.395, HOOD_G)
-    mpl = place_planar(mc, rig.head_normal(mc, HOOD_G), UP, hp)
-    decal(mb, mask, mpl, B_RING, hw, thick=0.0035, lift=0.001)
-    top = place_planar(mc, rig.head_normal(mc, HOOD_G), UP, lambda q: (lambda a: (a[0] + a[1] * 0.0045, a[1]))(hp(q)))
+    # (final sweep: everything on the hood follows its roll into the face
+    # opening; the mask is a strip between its top and bottom edges, so it
+    # lies on the round hood across its whole width (as one fan from its
+    # centre its middle sank into the hood and its eyes stood 8 mm off it)
+    hp = P.hood_project(HOOD_G, HOOD_OPEN)
+    mc, mn = P.hood_point(0.0, 1.395, HOOD_G, HOOD_OPEN)
+    mpl = place_planar(mc, mn, UP, hp)
+    us = [lerp(0.2, -0.2, i / 11.0) for i in range(12)]
+    K.strip_decal(mb, [(u, mask_top(u)) for u in us], [(u, mask_bottom(u)) for u in us], mpl, B_RING, hw, thick=0.0035, lift=0.001)
+    top = place_planar(mc, mn, UP, lambda q: (lambda a: (a[0] + a[1] * 0.0045, a[1]))(hp(q)))
     for sx in SIDES:
         bpts = [(sx * (0.04 + 0.1 * k / 6), 0.052 + 0.016 * math.sin(math.pi * k / 6) - 0.01 * k / 6) for k in range(7)]
         K.surface_tube(mb, bpts, mpl, 0.0085, B_CREAM, hw, segs=6, flat=0.7, lift=0.003)

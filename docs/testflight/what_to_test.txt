@@ -3,6 +3,7 @@
 - Home and the party room: the dorm behind the menus is a little lighter. Check that it still feels like night, that your runner stands out, and that the small lines beside Start are easy to read.
 - Season Pass: tap Tier 50 or Tier 100 (or any outfit in the track). It stands large on the left. Drag sideways on it to turn it, or use Turn and Reset; the track still scrolls by finger. Leave the pass: your runner should wear your own look. Tell us if anything is hard to read or tap.
 - Friends: on Home (top right) and in a party. It asks for Game Center friends access, then lists your friends. In this build their status says it's unavailable. Party codes and Invite with Game Center still work. Tell us if the list, the permission prompt or the buttons feel wrong.
+- Outfits up close: the hooded onesies (Night Owl, Bedtime Bandit and others), Dr. Doom's jacket and the Glow Jogger headlamp should now sit on the body in the Season Pass, Shop and Locker previews. Tell us about anything that floats or pokes through.
 - Shop: try Hide owned on All skins and Accessories. The six Coin packs and the two App Store outfits are always listed; buying says it's unavailable in this build.
 - Online parties: create a party and join from a second device with the code, then play a full round. If joining fails, the game should now say why instead of waiting.
 - Running, diving, tagging and the music are unchanged from 1.9. Tell us if anything got worse.

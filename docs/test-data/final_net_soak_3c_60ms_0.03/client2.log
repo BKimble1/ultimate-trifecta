@@ -31,3 +31,372 @@ SOAK t=35 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "
 COST t=35 frames=300 proc_avg=5.30 proc_max=10.30 phys_avg=7.90 phys_max=18.70 steps_max=1 multi=0 objects=5961 nodes=1775 orphans=0 mem_mb=227.5
 SOAK t=40 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
 COST t=40 frames=300 proc_avg=6.93 proc_max=10.30 phys_avg=6.31 phys_max=10.07 steps_max=1 multi=0 objects=5964 nodes=1775 orphans=0 mem_mb=227.5
+SOAK t=45 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=45 frames=300 proc_avg=6.65 proc_max=9.79 phys_avg=5.38 phys_max=8.09 steps_max=1 multi=0 objects=5972 nodes=1777 orphans=0 mem_mb=227.6
+SOAK t=50 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=50 frames=300 proc_avg=10.80 proc_max=16.74 phys_avg=9.33 phys_max=17.14 steps_max=1 multi=0 objects=5979 nodes=1779 orphans=0 mem_mb=227.7
+SOAK t=55 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=55 frames=300 proc_avg=5.45 proc_max=8.33 phys_avg=4.11 phys_max=8.66 steps_max=1 multi=0 objects=5978 nodes=1779 orphans=0 mem_mb=227.7
+SOAK t=60 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=60 frames=300 proc_avg=5.15 proc_max=6.81 phys_avg=4.38 phys_max=5.86 steps_max=1 multi=0 objects=5979 nodes=1779 orphans=0 mem_mb=227.7
+SOAK t=65 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=65 frames=300 proc_avg=5.19 proc_max=10.21 phys_avg=6.46 phys_max=15.66 steps_max=1 multi=0 objects=5983 nodes=1779 orphans=0 mem_mb=227.7
+SOAK t=70 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=70 frames=300 proc_avg=6.86 proc_max=10.21 phys_avg=5.22 phys_max=7.97 steps_max=1 multi=0 objects=5985 nodes=1781 orphans=0 mem_mb=227.7
+SOAK t=75 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=75 frames=300 proc_avg=6.87 proc_max=11.31 phys_avg=3.79 phys_max=5.58 steps_max=1 multi=0 objects=5985 nodes=1781 orphans=0 mem_mb=227.7
+SOAK t=80 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=80 frames=297 proc_avg=6.29 proc_max=8.69 phys_avg=4.15 phys_max=5.70 steps_max=3 multi=2 objects=5982 nodes=1781 orphans=0 mem_mb=227.7
+SOAK t=85 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=85 frames=300 proc_avg=5.95 proc_max=7.26 phys_avg=3.78 phys_max=7.33 steps_max=1 multi=0 objects=5981 nodes=1781 orphans=0 mem_mb=227.7
+SOAK t=90 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=90 frames=300 proc_avg=5.28 proc_max=7.10 phys_avg=4.68 phys_max=12.51 steps_max=1 multi=0 objects=5982 nodes=1781 orphans=0 mem_mb=227.7
+SOAK t=95 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=95 frames=300 proc_avg=6.25 proc_max=11.33 phys_avg=5.77 phys_max=12.51 steps_max=1 multi=0 objects=5983 nodes=1781 orphans=0 mem_mb=227.7
+SOAK t=100 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=100 frames=300 proc_avg=6.36 proc_max=14.04 phys_avg=4.99 phys_max=14.31 steps_max=1 multi=0 objects=5982 nodes=1781 orphans=0 mem_mb=227.7
+SOAK t=105 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=105 frames=300 proc_avg=5.76 proc_max=9.63 phys_avg=6.91 phys_max=14.31 steps_max=1 multi=0 objects=5987 nodes=1781 orphans=0 mem_mb=227.8
+SOAK t=110 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=110 frames=300 proc_avg=5.46 proc_max=9.90 phys_avg=4.47 phys_max=8.70 steps_max=1 multi=0 objects=5989 nodes=1781 orphans=0 mem_mb=227.8
+SOAK t=115 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=115 frames=300 proc_avg=7.17 proc_max=18.11 phys_avg=4.80 phys_max=6.94 steps_max=1 multi=0 objects=5989 nodes=1781 orphans=0 mem_mb=227.8
+SOAK t=120 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=59
+COST t=120 frames=299 proc_avg=5.58 proc_max=8.91 phys_avg=7.52 phys_max=35.06 steps_max=2 multi=1 objects=5990 nodes=1781 orphans=0 mem_mb=227.8
+SOAK t=125 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=125 frames=300 proc_avg=4.58 proc_max=8.31 phys_avg=9.65 phys_max=35.06 steps_max=1 multi=0 objects=5996 nodes=1781 orphans=0 mem_mb=227.8
+SOAK t=130 mode=2 phase=0 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-"] connected=true peers=[1] match=false fps=60
+COST t=130 frames=295 proc_avg=5.09 proc_max=12.97 phys_avg=3.53 phys_max=6.29 steps_max=6 multi=2 objects=4061 nodes=541 orphans=215 mem_mb=217.9
+[load] round prepared in 368 ms over 13 frames (longest frame of work 37.8 ms; longest job hud 37.8 ms)
+SOAK t=135 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=135 frames=289 proc_avg=31.79 proc_max=121.40 phys_avg=41.38 phys_max=190.99 steps_max=6 multi=5 objects=5987 nodes=1775 orphans=0 mem_mb=224.1
+SOAK t=140 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=140 frames=296 proc_avg=7.94 proc_max=13.30 phys_avg=5.90 phys_max=12.00 steps_max=4 multi=2 objects=5999 nodes=1775 orphans=0 mem_mb=224.2
+SOAK t=145 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=145 frames=300 proc_avg=6.67 proc_max=14.55 phys_avg=6.77 phys_max=14.30 steps_max=1 multi=0 objects=6001 nodes=1775 orphans=0 mem_mb=224.2
+SOAK t=150 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=150 frames=293 proc_avg=24.57 proc_max=90.04 phys_avg=12.26 phys_max=35.74 steps_max=4 multi=3 objects=6000 nodes=1775 orphans=0 mem_mb=224.2
+SOAK t=155 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=155 frames=300 proc_avg=14.29 proc_max=28.83 phys_avg=10.27 phys_max=18.68 steps_max=1 multi=0 objects=6001 nodes=1775 orphans=0 mem_mb=224.2
+SOAK t=160 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=160 frames=300 proc_avg=5.68 proc_max=12.56 phys_avg=5.31 phys_max=12.21 steps_max=1 multi=0 objects=6010 nodes=1777 orphans=0 mem_mb=224.3
+SOAK t=165 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=165 frames=300 proc_avg=7.66 proc_max=13.19 phys_avg=3.93 phys_max=9.82 steps_max=1 multi=0 objects=6004 nodes=1777 orphans=0 mem_mb=224.2
+SOAK t=170 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=170 frames=300 proc_avg=9.42 proc_max=15.81 phys_avg=8.31 phys_max=17.10 steps_max=1 multi=0 objects=6005 nodes=1777 orphans=0 mem_mb=224.3
+SOAK t=175 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=175 frames=292 proc_avg=13.48 proc_max=42.13 phys_avg=10.43 phys_max=17.69 steps_max=6 multi=4 objects=6006 nodes=1777 orphans=0 mem_mb=224.3
+SOAK t=180 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=180 frames=295 proc_avg=12.37 proc_max=16.01 phys_avg=10.19 phys_max=16.68 steps_max=4 multi=2 objects=6008 nodes=1777 orphans=0 mem_mb=224.3
+SOAK t=185 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=185 frames=300 proc_avg=6.65 proc_max=12.60 phys_avg=7.01 phys_max=12.95 steps_max=1 multi=0 objects=6018 nodes=1779 orphans=0 mem_mb=224.4
+SOAK t=190 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=190 frames=300 proc_avg=17.58 proc_max=40.30 phys_avg=13.23 phys_max=19.09 steps_max=1 multi=0 objects=6014 nodes=1779 orphans=0 mem_mb=224.4
+SOAK t=195 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=195 frames=292 proc_avg=16.97 proc_max=30.95 phys_avg=14.54 phys_max=29.55 steps_max=3 multi=7 objects=6011 nodes=1779 orphans=0 mem_mb=224.4
+SOAK t=200 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=200 frames=294 proc_avg=43.21 proc_max=171.28 phys_avg=8.31 phys_max=11.94 steps_max=6 multi=2 objects=6015 nodes=1779 orphans=0 mem_mb=224.4
+SOAK t=205 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=205 frames=299 proc_avg=12.15 proc_max=24.97 phys_avg=10.81 phys_max=20.57 steps_max=2 multi=1 objects=6029 nodes=1781 orphans=0 mem_mb=224.4
+SOAK t=210 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=210 frames=288 proc_avg=7.89 proc_max=17.75 phys_avg=6.72 phys_max=14.24 steps_max=6 multi=3 objects=6020 nodes=1781 orphans=0 mem_mb=224.4
+SOAK t=215 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=215 frames=300 proc_avg=12.05 proc_max=26.21 phys_avg=6.49 phys_max=12.06 steps_max=1 multi=0 objects=6016 nodes=1781 orphans=0 mem_mb=224.5
+SOAK t=220 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=59
+COST t=220 frames=300 proc_avg=7.11 proc_max=11.65 phys_avg=5.51 phys_max=8.99 steps_max=1 multi=0 objects=6015 nodes=1781 orphans=0 mem_mb=224.4
+SOAK t=225 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=61
+COST t=225 frames=293 proc_avg=12.20 proc_max=18.72 phys_avg=7.25 phys_max=11.62 steps_max=6 multi=4 objects=6022 nodes=1781 orphans=0 mem_mb=224.4
+SOAK t=230 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=230 frames=297 proc_avg=18.64 proc_max=58.60 phys_avg=13.23 phys_max=39.64 steps_max=2 multi=3 objects=6020 nodes=1781 orphans=0 mem_mb=224.5
+SOAK t=235 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=235 frames=300 proc_avg=5.89 proc_max=8.06 phys_avg=5.06 phys_max=6.47 steps_max=1 multi=0 objects=6019 nodes=1781 orphans=0 mem_mb=224.4
+SOAK t=240 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=240 frames=294 proc_avg=6.91 proc_max=11.04 phys_avg=5.66 phys_max=7.15 steps_max=4 multi=4 objects=6021 nodes=1781 orphans=0 mem_mb=224.5
+SOAK t=245 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=57
+COST t=245 frames=293 proc_avg=19.64 proc_max=68.32 phys_avg=8.09 phys_max=17.54 steps_max=4 multi=4 objects=6034 nodes=1787 orphans=0 mem_mb=224.5
+[load] round prepared in 113 ms over 5 frames (longest frame of work 15.9 ms; longest job views 11.5 ms)
+SOAK t=250 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=57
+COST t=250 frames=292 proc_avg=44.32 proc_max=188.35 phys_avg=13.77 phys_max=60.49 steps_max=6 multi=5 objects=6003 nodes=1775 orphans=0 mem_mb=224.0
+SOAK t=255 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=255 frames=300 proc_avg=4.59 proc_max=20.80 phys_avg=5.61 phys_max=60.49 steps_max=1 multi=0 objects=6004 nodes=1775 orphans=0 mem_mb=224.0
+SOAK t=260 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=260 frames=300 proc_avg=7.19 proc_max=13.49 phys_avg=6.50 phys_max=13.69 steps_max=1 multi=0 objects=6004 nodes=1775 orphans=0 mem_mb=224.0
+SOAK t=265 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=58
+COST t=265 frames=296 proc_avg=6.73 proc_max=10.04 phys_avg=5.00 phys_max=8.07 steps_max=4 multi=2 objects=6007 nodes=1775 orphans=0 mem_mb=224.0
+SOAK t=270 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=270 frames=296 proc_avg=8.45 proc_max=13.20 phys_avg=6.39 phys_max=9.49 steps_max=4 multi=2 objects=6006 nodes=1775 orphans=0 mem_mb=224.0
+SOAK t=275 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=275 frames=300 proc_avg=10.79 proc_max=22.57 phys_avg=6.46 phys_max=12.00 steps_max=1 multi=0 objects=6008 nodes=1775 orphans=0 mem_mb=224.0
+SOAK t=280 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=280 frames=300 proc_avg=7.00 proc_max=12.71 phys_avg=4.35 phys_max=6.05 steps_max=1 multi=0 objects=6007 nodes=1775 orphans=0 mem_mb=224.0
+SOAK t=285 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=285 frames=300 proc_avg=5.61 proc_max=11.39 phys_avg=5.01 phys_max=11.11 steps_max=1 multi=0 objects=6006 nodes=1775 orphans=0 mem_mb=224.0
+SOAK t=290 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=290 frames=297 proc_avg=9.15 proc_max=18.96 phys_avg=6.63 phys_max=11.11 steps_max=3 multi=2 objects=6013 nodes=1777 orphans=0 mem_mb=224.1
+SOAK t=295 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=295 frames=300 proc_avg=6.30 proc_max=10.06 phys_avg=4.25 phys_max=8.83 steps_max=1 multi=0 objects=6020 nodes=1779 orphans=0 mem_mb=224.1
+SOAK t=300 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=300 frames=300 proc_avg=7.34 proc_max=14.12 phys_avg=6.31 phys_max=13.06 steps_max=1 multi=0 objects=6017 nodes=1779 orphans=0 mem_mb=224.1
+SOAK t=305 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=305 frames=300 proc_avg=4.77 proc_max=10.54 phys_avg=4.84 phys_max=11.01 steps_max=1 multi=0 objects=6014 nodes=1779 orphans=0 mem_mb=224.1
+SOAK t=310 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=58
+COST t=310 frames=294 proc_avg=9.94 proc_max=20.37 phys_avg=5.35 phys_max=9.01 steps_max=6 multi=3 objects=6019 nodes=1779 orphans=0 mem_mb=224.1
+SOAK t=315 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=315 frames=300 proc_avg=7.11 proc_max=8.63 phys_avg=4.53 phys_max=7.26 steps_max=1 multi=0 objects=6022 nodes=1781 orphans=0 mem_mb=224.2
+SOAK t=320 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=320 frames=294 proc_avg=7.63 proc_max=14.91 phys_avg=7.01 phys_max=11.05 steps_max=6 multi=2 objects=6022 nodes=1781 orphans=0 mem_mb=224.2
+SOAK t=325 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=325 frames=300 proc_avg=7.81 proc_max=16.14 phys_avg=11.38 phys_max=22.22 steps_max=1 multi=0 objects=6022 nodes=1781 orphans=0 mem_mb=224.2
+SOAK t=330 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=330 frames=300 proc_avg=8.26 proc_max=16.14 phys_avg=5.41 phys_max=7.44 steps_max=1 multi=0 objects=6021 nodes=1781 orphans=0 mem_mb=224.2
+SOAK t=335 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=335 frames=300 proc_avg=8.44 proc_max=10.27 phys_avg=7.28 phys_max=16.08 steps_max=1 multi=0 objects=6023 nodes=1781 orphans=0 mem_mb=224.2
+SOAK t=340 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=38
+COST t=340 frames=278 proc_avg=12.60 proc_max=46.32 phys_avg=5.18 phys_max=17.87 steps_max=6 multi=10 objects=6024 nodes=1781 orphans=0 mem_mb=224.2
+SOAK t=345 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=60
+COST t=345 frames=295 proc_avg=97.74 proc_max=437.03 phys_avg=6.19 phys_max=17.87 steps_max=4 multi=4 objects=6022 nodes=1781 orphans=0 mem_mb=224.2
+SOAK t=350 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=23
+COST t=350 frames=276 proc_avg=7.08 proc_max=10.15 phys_avg=14.17 phys_max=832.97 steps_max=6 multi=9 objects=6022 nodes=1781 orphans=0 mem_mb=224.2
+SOAK t=355 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=57
+COST t=355 frames=296 proc_avg=13.07 proc_max=29.85 phys_avg=12.94 phys_max=44.98 steps_max=4 multi=3 objects=6027 nodes=1781 orphans=0 mem_mb=224.2
+SOAK t=360 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=54
+COST t=360 frames=280 proc_avg=80.56 proc_max=332.57 phys_avg=14.09 phys_max=44.98 steps_max=6 multi=12 objects=6024 nodes=1781 orphans=0 mem_mb=224.2
+SOAK t=365 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=59
+COST t=365 frames=296 proc_avg=20.56 proc_max=46.11 phys_avg=13.37 phys_max=32.28 steps_max=4 multi=2 objects=6027 nodes=1781 orphans=0 mem_mb=224.2
+SOAK t=370 mode=2 phase=1 slot=3 host_peer=1 humans=4 roster=["0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-"] connected=true peers=[1] match=true fps=46
+COST t=370 frames=289 proc_avg=65.00 proc_max=259.51 phys_avg=9.92 phys_max=15.03 steps_max=6 multi=4 objects=6033 nodes=1785 orphans=0 mem_mb=224.2
+ERROR: Pages in use exist at exit in PagedAllocator: N20RasterizerSceneDummy21GeometryInstanceDummyE
+   at: ~PagedAllocator (./core/templates/paged_allocator.h:170)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: Leaked instance dependency: Bug - did not call instance_notify_deleted when freeing.
+   at: ~Dependency (servers/rendering/storage/utilities.cpp:56)
+WARNING: 464 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 13 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)
+ERROR: 52 RID allocations of type 'N13RendererDummy15MaterialStorage13DummyMaterialE' were leaked at exit.
+ERROR: 4 RID allocations of type 'N13RendererDummy15MaterialStorage11DummyShaderE' were leaked at exit.
+ERROR: 104 RID allocations of type 'N13RendererDummy11MeshStorage14DummyMultiMeshE' were leaked at exit.
+ERROR: 127 RID allocations of type 'N13RendererDummy9DummyMeshE' were leaked at exit.
+ERROR: 9 RID allocations of type 'PN13RendererDummy14TextureStorage12DummyTextureE' were leaked at exit.
+ERROR: 214 RID allocations of type 'N17RendererSceneCull8InstanceE' were leaked at exit.
+ERROR: 91 RID allocations of type 'PN18TextServerAdvanced22ShapedTextDataAdvancedE' were leaked at exit.
+ERROR: 1 RID allocations of type 'PN18TextServerAdvanced12FontAdvancedE' were leaked at exit.
+ERROR: 1 RID allocations of type 'PN18TextServerAdvanced27FontAdvancedLinkedVariationE' were leaked at exit.

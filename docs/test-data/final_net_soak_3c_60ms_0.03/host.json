@@ -1,0 +1,89 @@
+[
+  {
+    "corr_avg_m": 0.0,
+    "corr_max_m": 0.0,
+    "dropped_by_shaper": 269,
+    "finished": 4,
+    "fps_avg": 60.0,
+    "host_skipped": {
+      "1": 207,
+      "2": 179,
+      "3": 178
+    },
+    "host_starved": {
+      "1": 186,
+      "2": 163,
+      "3": 358
+    },
+    "humans": 4,
+    "lag_ms": 60.0,
+    "loss": 0.03,
+    "mode": "host",
+    "outcome": 1,
+    "reward_coins": 17,
+    "round": 1,
+    "round_time": 118.933333333333,
+    "rtt_ms": 100.0,
+    "sent": 8936,
+    "slot": 0,
+    "snapshots": 0
+  },
+  {
+    "corr_avg_m": 0.0,
+    "corr_max_m": 0.0,
+    "dropped_by_shaper": 528,
+    "finished": 4,
+    "fps_avg": 60.0,
+    "host_skipped": {
+      "1": 207,
+      "2": 179,
+      "3": 178
+    },
+    "host_starved": {
+      "1": 186,
+      "2": 163,
+      "3": 358
+    },
+    "humans": 4,
+    "lag_ms": 60.0,
+    "loss": 0.03,
+    "mode": "host",
+    "outcome": 1,
+    "reward_coins": 10,
+    "round": 2,
+    "round_time": 108.85,
+    "rtt_ms": 100.0,
+    "sent": 17168,
+    "slot": 0,
+    "snapshots": 0
+  },
+  {
+    "corr_avg_m": 0.0,
+    "corr_max_m": 0.0,
+    "dropped_by_shaper": 790,
+    "finished": 4,
+    "fps_avg": 59.0,
+    "host_skipped": {
+      "1": 207,
+      "2": 179,
+      "3": 178
+    },
+    "host_starved": {
+      "1": 186,
+      "2": 163,
+      "3": 358
+    },
+    "humans": 4,
+    "lag_ms": 60.0,
+    "loss": 0.03,
+    "mode": "host",
+    "outcome": 1,
+    "reward_coins": 17,
+    "round": 3,
+    "round_time": 118.883333333333,
+    "rtt_ms": 100.0,
+    "sent": 26103,
+    "slot": 0,
+    "snapshots": 0
+  }
+]

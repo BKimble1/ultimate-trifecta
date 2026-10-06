@@ -316,7 +316,7 @@ func _portrait_card(r: Dictionary, role: int) -> Control:
 	v.add_child(av)
 	var nm := UIKit.styled("You" if me else String(r["name"]), "label", UIKit.AMBER if me else UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
 	nm.custom_minimum_size = Vector2(124, 0)
-	UIKit.fit_text(nm, [UIKit.T_LABEL, UIKit.T_CAPTION, 17])
+	UIKit.fit_text(nm, [UIKit.T_LABEL, UIKit.T_CAPTION, 17], true)
 	v.add_child(nm)
 	var tag := "BOT" if bool(r["is_bot"]) else (_short_stat(r))
 	v.add_child(UIKit.styled(tag, "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
