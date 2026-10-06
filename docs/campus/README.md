@@ -151,6 +151,20 @@ longest single job is about 40 ms; it was 125 ms before this pass's fixes:
 - build steps are time-sliced;
 - the paved-area and shore-distance queries are indexed.
 
+## Walkthrough
+
+`tools/capture_campus_walkthrough.sh OUT_DIR` records one real Practice round on the rebuilt campus
+with Movie Maker: West Hall start, the local runner driven by the game's own bot (`--local-bot`),
+the follow camera and HUD, out to the round's three waters and back inside. It is composition
+evidence on a software renderer, not device or frame-rate footage. The recording is delivered
+privately with the other captures.
+
+The first recording found a character bug unrelated to the map: far characters' skeletons went
+NaN after a long frame. The planted-foot lock's release spring was stepped explicitly and
+diverged when a frame's delta was long next to its 0.12 s time constant. It is now solved in
+closed form and stable for any delta (`CharacterFootLock.release_step`, regression test in
+`test_motion_v6`).
+
 ## Paired views (gate 2) findings
 
 Thirteen reference photos were posed in the campus frame (five at medium confidence, eight low) and
