@@ -2206,6 +2206,10 @@ class MapPainter:
 				ci.draw_string(UIKit.font_num(700), at, "%ds" % maxi(1, int(float(it["age"]))), HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
 					Color(UIKit.IVORY, 0.35 + 0.5 * float(it["fade"])))
 		if full:
+			# the campus's landmarks by their neutral names, where room is left
+			for lm in L.landmarks:
+				labels.append({"at": CampusMap.to_map(lm["pos"], c, half), "text": String(lm["name"]), "size": 13, "prio": 0,
+					"col": Color(UIKit.IVORY, 0.62), "r": 2.0})
 			var area := Rect2(c - Vector2.ONE * half, Vector2.ONE * half * 2.0).grow(-6.0)
 			for lb in CampusMap.place_labels(labels, f, area, blocked):
 				var rect: Rect2 = lb["rect"]
