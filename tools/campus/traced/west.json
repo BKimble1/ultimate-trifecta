@@ -3401,7 +3401,8 @@
     "conf": "low",
     "note": "relocated west leg of the campus loop shown on the 2026 wayfinding map (west of the old leg, through the former track site); placed with a local 10-point affine fit of the map (RMS 4.7 m)",
     "open": "true alignment, width and junction with the north perimeter street need newer imagery; may be offset 5-10 m"
-   }
+   },
+   "ref": "C02"
   },
   {
    "id": "west_street",
@@ -8354,7 +8355,7 @@
    "pts": [
     [
      -190,
-     -207.5
+     -202.3
     ],
     [
      -190,
@@ -8369,7 +8370,8 @@
     ],
     "date": "2022",
     "conf": "medium",
-    "note": "fence line east of the turf (dark line + shadow in aerial)"
+    "note": "fence line east of the turf (dark line + shadow in aerial)",
+    "open": "integrator: top end follows the north fence"
    }
   },
   {
@@ -8378,11 +8380,11 @@
    "pts": [
     [
      -262,
-     -207.5
+     -202.3
     ],
     [
      -190,
-     -207.5
+     -202.3
     ]
    ],
    "h": 1.8,
@@ -8393,7 +8395,7 @@
     "date": "2022",
     "conf": "low",
     "note": "north end fence inferred from the line at the apron edge",
-    "open": "gates/openings"
+    "open": "gates/openings; integrator: moved to the fence line at the field edge (z -202, posts visible in the 2022 aerial); the concrete band north of it is the walk"
    }
   },
   {
@@ -8450,28 +8452,36 @@
    "kind": "fence_chain",
    "pts": [
     [
-     -163,
+     -163.2,
      -137
     ],
     [
-     -163,
-     -193
+     -160.6,
+     -160
+    ],
+    [
+     -159.4,
+     -185
+    ],
+    [
+     -159.0,
+     -190.6
     ],
     [
      -150,
-     -194.5
+     -191.9
     ],
     [
      -130,
-     -196
+     -193.0
     ],
     [
      -110,
-     -196
+     -193.0
     ],
     [
      -92,
-     -193
+     -191.2
     ],
     [
      -76,
@@ -8510,7 +8520,8 @@
     ],
     "date": "2022",
     "conf": "medium",
-    "note": "outfield fence on the outer edge of the warning track"
+    "note": "outfield fence on the outer edge of the warning track",
+    "open": "integrator: west side and north edge re-placed on the dark fence line at the outer edge of the warning track (2022 aerial; it had been drawn 3-4 m out, across the walk and in the lot)"
    }
   },
   {

@@ -176,7 +176,7 @@ func _build_buildings() -> void:
 		for ps in it.get("passages", []):
 			var pg: PackedVector2Array = ps.get("polygon", PackedVector2Array())
 			if pg.size() >= 3:
-				passages.append({"poly": CampusData.ccw(pg), "floor": float(ps.get("floor", 0.0)), "clear": float(ps.get("clear", 3.0))})
+				passages.append({"poly": snap_to_outline(CampusData.ccw(pg), poly), "floor": float(ps.get("floor", 0.0)), "clear": float(ps.get("clear", 3.0))})
 		var rect := CampusData.bounds(poly)
 		buildings.append({
 			"id": String(it.get("id", "")), "name": String(it.get("label", "")), "kind": String(it.get("kind", "")),
@@ -186,6 +186,35 @@ func _build_buildings() -> void:
 			"passages": passages, "landmark": it.get("landmark", null), "background": bool(it.get("background", false)),
 			"ref": it.get("ref", ""),
 		})
+
+
+## A passage traced a hair inside the footprint (an open pavilion's posts
+## line, a pergola along a facade) would leave a thin solid ring round it:
+## its corners within SNAP_CORNER of a footprint corner move onto it, the
+## others within SNAP_EDGE of an outline edge onto that edge.
+const SNAP_CORNER := 0.8
+const SNAP_EDGE := 0.5
+
+
+static func snap_to_outline(pg: PackedVector2Array, foot: PackedVector2Array) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	var n := foot.size()
+	for q in pg:
+		var best := q
+		var bd := SNAP_CORNER
+		for c in foot:
+			if c.distance_to(q) < bd:
+				bd = c.distance_to(q)
+				best = c
+		if best == q:
+			bd = SNAP_EDGE
+			for i in n:
+				var e := Geometry2D.get_closest_point_to_segment(q, foot[i], foot[(i + 1) % n])
+				if e.distance_to(q) < bd:
+					bd = e.distance_to(q)
+					best = e
+		out.append(best)
+	return CampusData.ccw(out) if absf(CampusData.area(out)) > 0.5 else pg
 
 
 func building_by_id(id: String) -> Dictionary:
@@ -225,6 +254,7 @@ func _water_from_items(ids: Array, pres: Dictionary) -> Dictionary:
 	var surface := INF
 	var floor_y := INF
 	var rim_h := -1.0
+	var rim_t := 0.5
 	var edge := ""
 	var features: Array = []
 	var center := Vector2.ZERO
@@ -242,6 +272,7 @@ func _water_from_items(ids: Array, pres: Dictionary) -> Dictionary:
 		surface = minf(surface, float(it.get("surface", dep[0])))
 		floor_y = minf(floor_y, float(it.get("floor", dep[1])))
 		rim_h = maxf(rim_h, float(it.get("rim_h", dep[2])))
+		rim_t = maxf(rim_t, float(it.get("rim_t", 0.5)))
 		edge = String(it.get("edge", edge))
 		features.append_array(it.get("features", []))
 		if it.has("circle"):
@@ -273,7 +304,7 @@ func _water_from_items(ids: Array, pres: Dictionary) -> Dictionary:
 		"short": String(pres.get("short", pres.get("name", ""))), "kind": kind,
 		"shape": "circle" if (radius > 0.0 and polys.size() == 1) else "poly", "polys": polys,
 		"center": center if (radius > 0.0 and polys.size() == 1) else c, "radius": radius, "rect": rect,
-		"surface_y": surface, "floor_y": floor_y, "rim_h": maxf(0.0, rim_h), "rim_t": 0.5, "edge": edge,
+		"surface_y": surface, "floor_y": floor_y, "rim_h": maxf(0.0, rim_h), "rim_t": rim_t, "edge": edge,
 		"features": features, "objective": bool(pres.get("objective", false)),
 		# a shallow decorative runnel: drawn, walked through, never a splash
 		"wade": wade and not bool(pres.get("objective", false)),
@@ -391,7 +422,9 @@ func _build_water_points() -> void:
 			step = 9.0
 		elif kind == "channel":
 			step = 10.0
-		var out_d := 1.3 + float(w["rim_h"]) * 1.2 + (0.4 if float(w["rim_h"]) > 0.0 else 0.0)
+		# exits stand just outside the rim (its real width: a fountain's
+		# wide coping puts them further out than a thin kerb does)
+		var out_d := 1.3 + float(w["rim_h"]) * 1.2 + (float(w["rim_t"]) if float(w["rim_h"]) > 0.0 else 0.0)
 		var exits: Array = []
 		var jumps: Array = []
 		var pads: Array = []
@@ -412,12 +445,41 @@ func _build_water_points() -> void:
 			var c: Vector2 = w["center"]
 			exits.append(Vector3(c.x, 0.0, c.y + 4.0))
 			jumps.append(c)
+		var reach := 0.0
+		for poly in w["polys"]:
+			for q in poly:
+				reach = maxf(reach, (q as Vector2).distance_to(w["center"]))
+		if reach < SMALL_WATER_R:
+			# a small basin: pads 5 m out would all sit within a lunge or two
+			# of anyone guarding its rim, so they ring it ~15 m beyond the
+			# exits instead (two campers can never cover the respawn)
+			pads = _ring_pads(w["center"], reach + out_d + PAD_RING_OUT)
 		if pads.is_empty():
 			for e in exits.slice(0, 4):
 				pads.append(Vector2(e.x, e.z))
 		w["exits"] = exits
 		w["jump_points"] = jumps
 		w["pads"] = pads
+
+
+const SMALL_WATER_R := 9.0    # basins smaller than this get a pad ring
+const PAD_RING_OUT := 12.0    # the ring's distance beyond the exits
+
+
+## Up to 10 respawn pads on open ground round a point, one per bearing,
+## each at the first clear radius near `r`.
+func _ring_pads(c: Vector2, r: float) -> Array:
+	var out: Array = []
+	for k in 12:
+		var dir := Vector2.from_angle(TAU * float(k) / 12.0)
+		for dr in [0.0, 2.0, -1.5, 4.0, 6.0]:
+			var q := c + dir * (r + float(dr))
+			if _open_ground(q, 1.0):
+				out.append(q)
+				break
+		if out.size() >= 10:
+			break
+	return out
 
 
 ## Walkable, unobstructed ground: inside the play area, not water, not a

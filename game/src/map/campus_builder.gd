@@ -69,6 +69,41 @@ static func ground_y(layout: CampusLayout, x: float, z: float) -> float:
 static func height_grid(layout: CampusLayout) -> PackedFloat32Array:
 	if _grid_layout == layout and not _grid_cache.is_empty():
 		return _grid_cache
+	if _grid_task >= 0:
+		# being computed on a worker (height_grid_step): take that result
+		WorkerThreadPool.wait_for_task_completion(_grid_task)
+		_grid_task = -1
+		_grid_cache = _grid_result
+		_grid_layout = _grid_task_layout
+		_grid_result = PackedFloat32Array()
+		if _grid_layout == layout:
+			return _grid_cache
+	_grid_cache = _compute_height_grid(layout)
+	_grid_layout = layout
+	return _grid_cache
+
+
+static var _grid_task := -1
+static var _grid_task_layout: CampusLayout
+static var _grid_result: PackedFloat32Array
+
+
+## The height grid on a worker thread (~50 ms of script on the real campus,
+## mostly the lake's banks); true while it is not ready.  Loading polls it.
+static func height_grid_step(layout: CampusLayout) -> bool:
+	if _grid_layout == layout and not _grid_cache.is_empty():
+		return false
+	if _grid_task < 0:
+		_grid_task_layout = layout
+		_grid_task = WorkerThreadPool.add_task(func() -> void: _grid_result = _compute_height_grid(layout), false, "campus height grid")
+		return true
+	if not WorkerThreadPool.is_task_completed(_grid_task):
+		return true
+	height_grid(layout)
+	return false
+
+
+static func _compute_height_grid(layout: CampusLayout) -> PackedFloat32Array:
 	var b := CampusLayout.BOUNDS
 	var w := int(b.size.x) + 1
 	var d := int(b.size.y) + 1
@@ -108,8 +143,6 @@ static func height_grid(layout: CampusLayout) -> PackedFloat32Array:
 				var y := fl * smoothstep(0.0, bank, dd)
 				var idx := (j0 + jj) * w + (i0 + ii)
 				data[idx] = minf(data[idx], y)
-	_grid_cache = data
-	_grid_layout = layout
 	return data
 
 
@@ -199,18 +232,107 @@ func build_collision(root: Node3D) -> void:
 	blockers.name = "CartBlockers"
 	blockers.collision_layer = TC.L_CART_BLOCK
 	blockers.collision_mask = 0
+	# the ground height field tiles have a body of their own: Jolt numbers a
+	# hit's sub-shape in 32 bits, and a height field (~18 bits a tile) inside
+	# a compound of the ~1,500 other shapes (~11 bits) would not fit, so the
+	# whole compound failed to build and nothing collided
+	var ground := StaticBody3D.new()
+	ground.name = "GroundCollision"
+	ground.collision_layer = TC.L_WORLD
+	ground.collision_mask = 0
 	# shapes go on the bodies before they enter the tree: added one by one to
 	# a body already in the physics space, each one rebuilt the body's
 	# compound shape
-	_add_shape(world, ground_shape(L), Transform3D(Basis.IDENTITY, ground_shape_origin()))
+	for tile in ground_tiles(L):
+		_attach(ground, tile[0], Transform3D(Basis.IDENTITY, tile[1]))
+	for r in collision_recipe(L):
+		_attach(world if int(r[0]) == RB_WORLD else blockers, r[1], r[2])
+	root.add_child(ground)
+	root.add_child(world)
+	root.add_child(blockers)
 
+
+# ---- the collision recipe: every shape but the ground, computed once per
+# campus (the geometry work, ~120 ms cold, is the expensive part) in slices
+# a loading frame can afford, and shared by every round's bodies (host sim
+# and client world alike: Shape3D resources are shared, not copied)
+const RB_WORLD := 0
+const RB_BLOCK := 1
+const RECIPE_SLICE := 12        # buildings per preparation step
+
+var _rec: Array = []            # [[body, Shape3D, Transform3D]] being recorded
+
+static var _recipe: Array = []
+static var _recipe_layout: CampusLayout = null
+static var _recipe_maker: CampusBuilder = null
+static var _recipe_bi := 0
+
+
+## One slice of the recipe; true while more remains (MatchController runs
+## it during loading; collision_recipe finishes whatever is left).
+static func collision_step(layout: CampusLayout) -> bool:
+	if _recipe_layout == layout and _recipe_maker == null:
+		return false
+	if _recipe_layout != layout:
+		_recipe_layout = layout
+		_recipe = []
+		_recipe_maker = CampusBuilder.new(layout)
+		_recipe_bi = 0
+	var m := _recipe_maker
+	var n := layout.buildings.size()
+	if _recipe_bi < n:
+		var to2 := mini(_recipe_bi + RECIPE_SLICE, n)
+		m._buildings_recipe(_recipe_bi, to2)
+		_recipe_bi = to2
+		return true
+	m._rest_recipe()
+	_recipe = m._rec
+	_recipe_maker = null
+	return false
+
+
+## Puts shapes on a static body in a private physics space: the engine
+## builds each shape now.  `keep`: the body stays, owning the build (the
+## engine drops a shape's build with its last owner).  Only the ground tiles
+## need this: the ~1,500 convex shapes cost ~8 ms cold in all.
+static func _warm(items: Array, keep: bool = false) -> void:
+	if items.is_empty():
+		return
+	if not _warm_space.is_valid():
+		_warm_space = PhysicsServer3D.space_create()
+	var body := PhysicsServer3D.body_create()
+	PhysicsServer3D.body_set_mode(body, PhysicsServer3D.BODY_MODE_STATIC)
+	for it in items:
+		PhysicsServer3D.body_add_shape(body, (it[1] as Shape3D).get_rid(), it[2])
+	PhysicsServer3D.body_set_space(body, _warm_space)
+	if keep:
+		_warm_bodies.append(body)
+	else:
+		PhysicsServer3D.free_rid(body)
+
+
+static var _warm_bodies: Array[RID] = []
+
+
+static func collision_recipe(layout: CampusLayout) -> Array:
+	while collision_step(layout):
+		pass
+	return _recipe
+
+
+func _buildings_recipe(from: int, to: int) -> void:
 	var dorm_of: Dictionary = {}
 	for id in CampusDorms.ids():
 		dorm_of[String(CampusDorms.geometry(id).get("building", ""))] = id
-	for bd in L.buildings:
+	for bi in range(from, to):
+		var bd: Dictionary = L.buildings[bi]
 		if bool(bd["background"]):
 			continue
-		_building_collision(world, bd, String(dorm_of.get(bd["id"], "")))
+		_building_collision(RB_WORLD, bd, String(dorm_of.get(bd["id"], "")))
+
+
+func _rest_recipe() -> void:
+	var world := RB_WORLD
 	for s in L.walls:
 		_seg(world, s["a"], s["b"], 0.0, s["h"], s["t"])
 	for s in L.hedges:
@@ -218,7 +340,7 @@ func build_collision(root: Node3D) -> void:
 	for s in L.fences:
 		_seg(world, s["a"], s["b"], 0.0, s["h"], 0.25)
 	for s in L.cart_blockers:
-		_seg(blockers, s["a"], s["b"], 0.0, 1.6, 0.5)
+		_seg(RB_BLOCK, s["a"], s["b"], 0.0, 1.6, 0.5)
 	for t in L.trees:
 		if not bool(t.get("collide", true)):
 			continue
@@ -269,15 +391,13 @@ func build_collision(root: Node3D) -> void:
 	var bp2 := L.play_boundary
 	for i in bp2.size():
 		_seg(world, bp2[i], bp2[(i + 1) % bp2.size()], -2.0, 14.0, 1.0)
-	root.add_child(world)
-	root.add_child(blockers)
 
 
 ## One building: convex prisms of what is solid at ground level (the
 ## footprint or its parts, minus open passages and a start dorm's interior),
 ## raised parts from their base, and slabs over the open spaces.
-func _building_collision(world: StaticBody3D, bd: Dictionary, dorm_id: String) -> void:
-	for e in bd["entrances"]:
+func _building_collision(world: int, bd: Dictionary, dorm_id: String) -> void:
+	for e in CampusArchitecture.portico_entrances(bd):
 		for cp in CampusArchitecture.portico_columns(e):
 			_box(world, Vector3(cp.x, 3.0, cp.y), Vector3(0.62, 6.0, 0.62))
 	for cl in CampusArchitecture.passage_columns(bd):
@@ -327,7 +447,7 @@ func _building_collision(world: StaticBody3D, bd: Dictionary, dorm_id: String) -
 			_box(world, bx[0], bx[1], float(bx[3]))
 
 
-func _prism(body: CollisionObject3D, poly: PackedVector2Array, y0: float, y1: float) -> void:
+func _prism(body: int, poly: PackedVector2Array, y0: float, y1: float) -> void:
 	var pts := PackedVector3Array()
 	for p in poly:
 		pts.append(Vector3(p.x, y0, p.y))
@@ -337,69 +457,117 @@ func _prism(body: CollisionObject3D, poly: PackedVector2Array, y0: float, y1: fl
 	_add_shape(body, cs, Transform3D.IDENTITY)
 
 
-static var _hm_shape: HeightMapShape3D
-static var _hm_layout: CampusLayout
+## The ground height field, in GROUND_TILES x GROUND_TILES square tiles
+## shared by every round's collision (host sim and client world alike).
+## Square on purpose: Jolt only makes a real height field from a square map
+## (and falls back to a huge triangle mesh otherwise).  Tiles, not one
+## field: Jolt builds a shape when a body using it enters a space (~100 ms
+## for one 1191-sample field, ~7 ms for a 299-sample tile) and keeps the
+## build while some body owns it, so loading builds the tiles one per step
+## on bodies of a private space that stay (ground_tile_step).  A tile
+## shares its edge samples with its neighbours; samples beyond BOUNDS lie at
+## ground level.
+const GROUND_TILES := 4
+const TILE_CELLS := 298           # metres per tile (299 samples a side)
+
+static var _tiles: Array = []     # [[HeightMapShape3D, Vector3 origin]]
+static var _tiles_layout: CampusLayout
+static var _warm_space := RID()
 
 
-## The ground height field, shared by every round's collision (host sim and
-## client world alike), so the physics engine builds it once.  It is square
-## on purpose: Jolt only makes a real height field from a square map (and
-## falls back to a huge triangle mesh otherwise).  The extra rows lie beyond
-## the play boundary at ground level.
-static func ground_shape(layout: CampusLayout) -> HeightMapShape3D:
-	if _hm_layout == layout and _hm_shape != null:
-		return _hm_shape
+static func ground_tiles(layout: CampusLayout) -> Array:
+	while ground_tile_step(layout):
+		pass
+	return _tiles
+
+
+## Builds (and warms in the physics engine) the next ground tile; true
+## while more remain.  Needs the height grid (computed here if not ready).
+static func ground_tile_step(layout: CampusLayout, warm: bool = true) -> bool:
+	if _tiles_layout != layout:
+		_tiles = []
+		_tiles_layout = layout
+	var n := GROUND_TILES * GROUND_TILES
+	if _tiles.size() >= n:
+		return false
+	var k := _tiles.size()
+	var ti := k % GROUND_TILES
+	var tj := k / GROUND_TILES
+	var grid := height_grid(layout)
 	var b := CampusLayout.BOUNDS
 	var w := int(b.size.x) + 1
 	var d := int(b.size.y) + 1
-	var n := maxi(w, d)
-	var grid := height_grid(layout)
+	var s := TILE_CELLS + 1
 	var data := PackedFloat32Array()
-	data.resize(n * n)
-	data.fill(0.0)
-	for zi in d:
-		for xi in w:
-			var v := grid[zi * w + xi]
-			if v != 0.0:
-				data[zi * n + xi] = v
+	var zero := PackedFloat32Array()
+	zero.resize(s)
+	zero.fill(0.0)
+	var x0 := ti * TILE_CELLS
+	for zi in s:
+		var gz := tj * TILE_CELLS + zi
+		if gz >= d or x0 >= w:
+			data.append_array(zero)
+			continue
+		var x1 := mini(x0 + s, w)
+		var row := grid.slice(gz * w + x0, gz * w + x1)
+		data.append_array(row)
+		if row.size() < s:
+			data.append_array(zero.slice(0, s - row.size()))
 	var hm := HeightMapShape3D.new()
-	hm.map_width = n
-	hm.map_depth = n
+	hm.map_width = s
+	hm.map_depth = s
 	hm.map_data = data
-	_hm_shape = hm
-	_hm_layout = layout
-	return hm
-
-
-## Where the square ground shape sits (its samples start at BOUNDS' corner).
-static func ground_shape_origin() -> Vector3:
-	var b := CampusLayout.BOUNDS
-	var n := maxi(int(b.size.x), int(b.size.y))
-	return Vector3(b.position.x + n * 0.5, 0.0, b.position.y + n * 0.5)
+	var origin := Vector3(b.position.x + x0 + TILE_CELLS * 0.5, 0.0, b.position.y + tj * TILE_CELLS + TILE_CELLS * 0.5)
+	_tiles.append([hm, origin])
+	if warm:
+		# built in the engine now (and kept), not when the round's world body
+		# enters the tree
+		_warm([[0, hm, Transform3D(Basis.IDENTITY, origin)]], true)
+		# and once on a collision node (the first attach of a shape to a
+		# node costs ~6 ms for a tile, paid here instead of in the round)
+		var sb := StaticBody3D.new()
+		_attach(sb, hm, Transform3D(Basis.IDENTITY, origin))
+		sb.free()
+	return _tiles.size() < n
 
 
 ## Drops the static caches (tests that swap the campus data).
 static func drop_caches() -> void:
 	_grid_cache = PackedFloat32Array()
 	_grid_layout = null
-	_hm_shape = null
-	_hm_layout = null
+	if _grid_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_grid_task)
+		_grid_task = -1
+	_tiles = []
+	_tiles_layout = null
+	for body in _warm_bodies:
+		PhysicsServer3D.free_rid(body)
+	_warm_bodies.clear()
+	_recipe = []
+	_recipe_layout = null
+	_recipe_maker = null
+	_recipe_bi = 0
 
 
-func _add_shape(body: CollisionObject3D, shape: Shape3D, xf: Transform3D) -> void:
+## Records a shape for the recipe (body: RB_WORLD or RB_BLOCK).
+func _add_shape(body: int, shape: Shape3D, xf: Transform3D) -> void:
+	_rec.append([body, shape, xf])
+
+
+static func _attach(body: CollisionObject3D, shape: Shape3D, xf: Transform3D) -> void:
 	var cs := CollisionShape3D.new()
 	cs.shape = shape
 	cs.transform = xf
 	body.add_child(cs)
 
 
-func _box(body: CollisionObject3D, center: Vector3, size: Vector3, yaw: float = 0.0) -> void:
+func _box(body: int, center: Vector3, size: Vector3, yaw: float = 0.0) -> void:
 	var bs := BoxShape3D.new()
 	bs.size = size
 	_add_shape(body, bs, Transform3D(Basis(Vector3.UP, yaw), center))
 
 
-func _seg(body: CollisionObject3D, a: Vector2, b: Vector2, y0: float, h: float, t: float) -> void:
+func _seg(body: int, a: Vector2, b: Vector2, y0: float, h: float, t: float) -> void:
 	var dd := b - a
 	var L2 := dd.length()
 	if L2 < 0.01:
@@ -409,7 +577,7 @@ func _seg(body: CollisionObject3D, a: Vector2, b: Vector2, y0: float, h: float, 
 	_box(body, Vector3(c.x, y0 + h * 0.5, c.y), Vector3(L2 + t, h, t), yaw)
 
 
-func _ramp(body: CollisionObject3D, from: Vector3, to: Vector3, w: float) -> void:
+func _ramp(body: int, from: Vector3, to: Vector3, w: float) -> void:
 	var d := to - from
 	var len := d.length()
 	var x_axis := d.normalized()
@@ -532,30 +700,20 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	arch = CampusArchitecture.new(self)
 	marks = CampusLandmarks.new(self)
 	dorm_art = DormArt.new(self, arch)
-	_add("kit", func() -> void: CampusKit.load_kit(quality))
-	_add("light_trees", func() -> void:
-		kit = CampusKit.new(L, false)
-		kit.stamp_trees())
-	for bi in range(0, L.buildings.size(), 6):
-		_add("light_buildings", func() -> void: kit.stamp_buildings(bi, bi + 6))
+	_add("kit", func() -> void:
+		height_grid_step(L)       # starts the height grid on a worker
+		CampusKit.load_kit(quality))
+	_add("light_kit", func() -> void: kit = CampusKit.new(L, false))
+	_add_sliced("light_trees", L.trees.size(), func(i: int) -> void: kit.stamp_trees(i, i + 1))
+	_add_sliced("light_buildings", L.buildings.size(), func(i: int) -> void: kit.stamp_buildings(i, i + 1))
 	_add("light_barriers", func() -> void: kit.stamp_barriers())
-	_add("light_lamps", func() -> void:
-		kit.stamp_lights()
-		kit.stamp_paths())
+	_add("light_lamps", func() -> void: kit.stamp_lights())
+	_add_sliced("light_paths", L.paths.size(), func(i: int) -> void: kit.stamp_paths(i, i + 1))
 	_add("ground_prep", _ground_prep)
 	_add("ground", _ground_next)
-	for ai in range(0, L.areas.size(), 4):
-		_add("areas", func() -> void:
-			for i in range(ai, mini(ai + 4, L.areas.size())):
-				_area(L.areas[i]))
-	for ri in range(0, L.roads.size(), 3):
-		_add("roads", func() -> void:
-			for i in range(ri, mini(ri + 3, L.roads.size())):
-				_road(L.roads[i]))
-	for pi in range(0, L.paths.size(), 6):
-		_add("paths", func() -> void:
-			for i in range(pi, mini(pi + 6, L.paths.size())):
-				_path(L.paths[i]))
+	_add_sliced("areas", L.areas.size(), func(i: int) -> void: _area(L.areas[i]))
+	_add_sliced("roads", L.roads.size(), func(i: int) -> void: _road(L.roads[i]))
+	_add_sliced("paths", L.paths.size(), func(i: int) -> void: _path(L.paths[i]))
 	var dorm_buildings: Dictionary = {}
 	for id in CampusDorms.ids():
 		dorm_buildings[String(CampusDorms.geometry(id).get("building", ""))] = true
@@ -567,14 +725,12 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 		_add("dorm_" + id, func() -> void: dorm_art.exterior(id))
 		_add("dorm_inside_" + id, func() -> void: dorm_art.inside(id))
 	_add("walls", arch.walls)
-	for hi in range(0, L.hedges.size(), 8):
-		_add("hedges", func() -> void: arch.hedges(hi, hi + 8))
-	for fi in range(0, L.fences.size(), 8):
-		_add("fences", func() -> void: arch.fences(fi, fi + 8))
+	_add_sliced("hedges", L.hedges.size(), func(i: int) -> void: arch.hedges(i, i + 1))
+	_add_sliced("fences", L.fences.size(), func(i: int) -> void: arch.fences(i, i + 1))
 	_add("bollards", func() -> void: arch.bollards(0, L.cart_blockers.size()))
-	_add("trees", _place_trees)
-	for li in range(0, L.lamps.size(), 20):
-		_add("lamps", func() -> void: arch.lamps(li, li + 20))
+	_add_sliced("trees", L.trees.size(), func(i: int) -> void: _place_tree(L.trees[i]))
+	_add("trees_merge", _merge_species)
+	_add_sliced("lamps", L.lamps.size(), func(i: int) -> void: arch.lamps(i, i + 1))
 	_add("small", arch.small_things)
 	var field_rows := int(CampusLayout.BOUNDS.size.y / CampusKit.CELL) + 1
 	for j0 in range(0, field_rows, 120):
@@ -595,6 +751,26 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 func _add(step_name: String, f: Callable) -> void:
 	_steps.append(f)
 	step_names.append(step_name)
+
+
+## A step over n items that runs items until SLICE_US has passed and then
+## yields (the same step runs again next time): batches size themselves to
+## the items (a long road or a big building costs many small ones).
+const SLICE_US := 6000
+
+
+func _add_sliced(step_name: String, n: int, per_item: Callable) -> void:
+	if n <= 0:
+		return
+	var cursor := [0]
+	_add(step_name, func() -> bool:
+		var t0 := Time.get_ticks_usec()
+		while cursor[0] < n:
+			per_item.call(cursor[0])
+			cursor[0] += 1
+			if Time.get_ticks_usec() - t0 >= SLICE_US:
+				break
+		return cursor[0] < n)
 
 
 ## Runs the next step; true while there is more to do.
@@ -680,25 +856,23 @@ func _mm_add(store: Dictionary, key: Vector2i, kind: String, xf: Transform3D, ti
 ## One MultiMesh instance per tree, by species (visual only - the trunk
 ## collider and nav cell come from CampusLayout): uniform scale to its
 ## height, a turn, a gentle tint.  Shrubs go to the decor batches.
-func _place_trees() -> void:
-	for t in L.trees:
-		var p: Vector2 = t["pos"]
-		var y := grid_y(L, p.x, p.y)
-		var yaw := fposmod(p.x * 1.7 + p.y * 2.3, TAU)
-		if String(t["kind"]) == "shrub":
-			var r := float(t["r"])
-			var s := clampf(r / 0.9, 0.5, 2.6)
-			var xf := Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(s, s * 0.8, s)), Vector3(p.x, y, p.y))
-			# bushes: rounded and tall forms (no spring bloom on an autumn night)
-			var form := "shrub_round" if CampusKit._hash01(p.x, p.y, 3) < 0.65 else "shrub_tall"
-			_mm_add(_decor, coarse_key(p.x, p.y), form, xf, CampusKit.tint_of(t), Color(0.22, 0.42, 0.24) * CampusKit.tint_of(t).v)
-			continue
-		var sp := CampusKit.species_of(t)
-		var sc: float = float(t["h"]) / CampusKit.REF_H
-		var xf2 := Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(sc, sc, sc)), Vector3(p.x, y, p.y))
-		_mm_add(_trees, chunk_key(p.x, p.y), sp, xf2, CampusKit.tint_of(t), Color(1, 1, 1))
-		_mm_add(_proxy, coarse_key(p.x, p.y), "fir" if sp in CampusKit.CONIFER else "oak", xf2, Color(1, 1, 1), Color(1, 1, 1))
-	_merge_species()
+func _place_tree(t: Dictionary) -> void:
+	var p: Vector2 = t["pos"]
+	var y := grid_y(L, p.x, p.y)
+	var yaw := fposmod(p.x * 1.7 + p.y * 2.3, TAU)
+	if String(t["kind"]) == "shrub":
+		var r := float(t["r"])
+		var s := clampf(r / 0.9, 0.5, 2.6)
+		var xf := Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(s, s * 0.8, s)), Vector3(p.x, y, p.y))
+		# bushes: rounded and tall forms (no spring bloom on an autumn night)
+		var form := "shrub_round" if CampusKit._hash01(p.x, p.y, 3) < 0.65 else "shrub_tall"
+		_mm_add(_decor, coarse_key(p.x, p.y), form, xf, CampusKit.tint_of(t), Color(0.22, 0.42, 0.24) * CampusKit.tint_of(t).v)
+		return
+	var sp := CampusKit.species_of(t)
+	var sc: float = float(t["h"]) / CampusKit.REF_H
+	var xf2 := Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(sc, sc, sc)), Vector3(p.x, y, p.y))
+	_mm_add(_trees, chunk_key(p.x, p.y), sp, xf2, CampusKit.tint_of(t), Color(1, 1, 1))
+	_mm_add(_proxy, coarse_key(p.x, p.y), "fir" if sp in CampusKit.CONIFER else "oak", xf2, Color(1, 1, 1), Color(1, 1, 1))
 
 
 ## Keeps tree batches few: a chunk with more than three species draws its
@@ -931,14 +1105,18 @@ func _ground_keys() -> Array:
 	return out
 
 
-func _ground_prep() -> void:
-	height_grid(L)
+func _ground_prep() -> bool:
+	# the height grid comes from a worker (started with the build's first
+	# step); waiting a few frames here beats a ~50 ms frame
+	if height_grid_step(L):
+		return true
 	_ensure_noise()
 	for key in _ground_keys():
 		if not _chunks.has(key):
 			_chunks[key] = MeshKit.new()
 	_ground_started = false
 	_ground_tasks.clear()
+	return false
 
 
 func _ground_next() -> bool:
@@ -1270,10 +1448,35 @@ func _paved(p: Vector2) -> bool:
 
 
 func _paved_area(p: Vector2) -> bool:
-	for a in L.areas:
-		if String(a["kind"]) in ["plaza", "pavement", "parking", "court", "track"] and (a["rect"] as Rect2).has_point(p) and Geometry2D.is_point_in_polygon(p, a["poly"]):
+	if _paved_cells.is_empty():
+		_index_paved()
+	for ai in _paved_cells.get(Vector2i(floori(p.x / PAVED_CELL), floori(p.y / PAVED_CELL)), []):
+		var a: Dictionary = L.areas[ai]
+		if (a["rect"] as Rect2).has_point(p) and Geometry2D.is_point_in_polygon(p, a["poly"]):
 			return true
 	return false
+
+
+const PAVED_KINDS := ["plaza", "pavement", "parking", "court", "track"]
+const PAVED_CELL := 32.0
+var _paved_cells := {}          # cell -> [area index]: the paved areas there
+
+
+## Paved areas by 32 m cell (every path piece asks twice: scanning all
+## areas each time cost ~0.6 s of the build).
+func _index_paved() -> void:
+	_paved_cells[Vector2i(1 << 30, 0)] = []      # built, even if empty
+	for ai in L.areas.size():
+		var a: Dictionary = L.areas[ai]
+		if not PAVED_KINDS.has(String(a["kind"])):
+			continue
+		var r: Rect2 = a["rect"]
+		for cx in range(floori(r.position.x / PAVED_CELL), floori(r.end.x / PAVED_CELL) + 1):
+			for cy in range(floori(r.position.y / PAVED_CELL), floori(r.end.y / PAVED_CELL) + 1):
+				var key := Vector2i(cx, cy)
+				if not _paved_cells.has(key):
+					_paved_cells[key] = []
+				(_paved_cells[key] as Array).append(ai)
 
 
 static func _v3(p: Vector2, y: float) -> Vector3:

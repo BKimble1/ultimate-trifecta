@@ -65,6 +65,8 @@ or measured in a dated photo; **medium** = georeferenced plan/diagram
  "polygon": [[x, z], ...] | "circle": [[x, z], r],
  "surface": -0.4, "floor": -2.0,     y of the water surface and basin floor
  "edge": "natural|stone|concrete|rim", "rim_h": 0.0,
+ "rim_t": 0.5,                       width of the rim or coping (m, optional): drawn,
+                                     collides, and the exits stand just beyond it
  "features": [{"kind": "jet|statue_base|bridge|dock|beach|island", ...}],
  "objective": true|false,            in the round's water pool (see gameplay)
  "wade": false,                      true: a shallow decorative runnel (a dry-creek

@@ -36,7 +36,8 @@ func test_candidate_spots_are_on_routes_and_reachable() -> void:
 				t.check(p.distance_to(Vector2((e as Vector3).x, (e as Vector3).z)) >= 6.0, "spot %d clear of %s's exits" % [i, w["id"]])
 		for dm in lay.dorms:
 			var path := nav.find_path(dm["geo"]["pads"][0]["pos"], p)
-			t.check(path.size() >= 2 and path[-1].distance_to(p) < 1.0, "spot %d reachable on foot from %s" % [i, dm["id"]])
+			# the path ends on the goal's cell centre (a 2 m grid)
+			t.check(path.size() >= 2 and path[-1].distance_to(p) < NavGrid.CELL * 0.75, "spot %d reachable on foot from %s" % [i, dm["id"]])
 
 
 func test_round_coins_seeded_spread_and_clear() -> void:
@@ -168,10 +169,19 @@ func test_who_cannot_collect() -> void:
 
 func test_bots_collect_but_results_mark_them() -> void:
 	var h := _h()
-	# a runner bot heading out with a coin just off its way
-	h.make([R, P], [0, 1, 2], [0], 9, {"coins": [_coin_at(0, 72, "s00")]})
+	# a runner bot heading out with a coin just off its way: the candidate
+	# spot nearest the home hall (open ground on a walk), the bot 5 m off it
+	var lay := CampusLayout.shared()
+	var home := CampusData.centroid(CampusDorms.geometry(CampusDorms.default_id())["footprint"])
+	var spot: Vector2 = lay.coin_spots[0]
+	for q in lay.coin_spots:
+		if (q as Vector2).distance_to(home) < spot.distance_to(home):
+			spot = q
+	var nav := NavGrid.shared(lay)
+	var at := nav.to_world(nav.nearest_open(nav.foot, spot + Vector2(3.0, 4.0), 4))
+	h.make([R, P], [0, 1, 2], [0], 9, {"coins": [_coin_at(spot.x, spot.y, "s00")]})
 	await h.to_playing()
-	h.place(0, Vector3(3.0, 0.05, 76))
+	h.place(0, Vector3(at.x, CampusBuilder.grid_y(lay, at.x, at.y) + 0.05, at.y))
 	var k := 0
 	while h.sim.player(0).coins_picked == 0 and k < 600:
 		await h.step()

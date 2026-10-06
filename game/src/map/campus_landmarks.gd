@@ -77,24 +77,29 @@ func _surface(k: MeshKit, poly: PackedVector2Array, origin: Vector2) -> void:
 	var area := r.get_area()
 	var step := clampf(sqrt(area) / 18.0, 1.2, 5.0)
 	var pts := PackedVector2Array()
+	var dist := PackedFloat32Array()
 	for s in CampusData.boundary_samples(poly, step * 0.7):
 		pts.append(s[0])
+		dist.append(0.0)
+	# shore distance: the shader reads it only near the shore (< 3.5 m), so
+	# only edges within SHORE_CAP count (bucketed: a big lake has many
+	# points and edges, and every-edge-for-every-point cost 70 ms)
+	var near := CampusData.edge_buckets(poly, SHORE_CAP)
 	var x := r.position.x + step * 0.5
 	while x < r.end.x:
 		var z := r.position.y + step * 0.5
 		while z < r.end.y:
 			var p := Vector2(x + fposmod(z * 0.37, 0.3), z)
-			if Geometry2D.is_point_in_polygon(p, poly) and CampusData.dist_to_edge(p, poly) > step * 0.4:
-				pts.append(p)
+			if Geometry2D.is_point_in_polygon(p, poly):
+				var d := CampusData.near_edge_dist(p, poly, near, SHORE_CAP)
+				if d > step * 0.4:
+					pts.append(p)
+					dist.append(d)
 			z += step
 		x += step
 	# grow the outline a little so the surface tucks under the bank
 	var grown := CampusData.offset(poly, 0.35)
 	var tris := Geometry2D.triangulate_delaunay(pts)
-	var dist := PackedFloat32Array()
-	dist.resize(pts.size())
-	for i in pts.size():
-		dist[i] = 0.0 if not Geometry2D.is_point_in_polygon(pts[i], poly) else CampusData.dist_to_edge(pts[i], poly)
 	for t in range(0, tris.size(), 3):
 		var a := pts[tris[t]]
 		var b := pts[tris[t + 1]]
@@ -113,6 +118,9 @@ func _surface(k: MeshKit, poly: PackedVector2Array, origin: Vector2) -> void:
 			k.tri_full(A, Bv, C, up, up, up, Color.WHITE, Color.WHITE, Color.WHITE, ua, ub, uc)
 		else:
 			k.tri_full(A, C, Bv, up, up, up, Color.WHITE, Color.WHITE, Color.WHITE, ua, uc, ub)
+
+
+const SHORE_CAP := 8.0
 
 
 ## Floating lanterns (objective markers, hidden unless active) along the

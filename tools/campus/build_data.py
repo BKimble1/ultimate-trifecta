@@ -127,6 +127,160 @@ def validate(merged):
     return errs, warns
 
 
+GATE_KINDS = {"wall_low", "fence_iron", "fence_chain", "hedge", "rail"}
+
+
+def _cross(a, b, c, d):
+    """Intersection parameter (t along a-b, u along c-d) of two segments, or None."""
+    rx, rz = b[0] - a[0], b[1] - a[1]
+    sx, sz = d[0] - c[0], d[1] - c[1]
+    den = rx * sz - rz * sx
+    if abs(den) < 1e-9:
+        return None
+    qx, qz = c[0] - a[0], c[1] - a[1]
+    t = (qx * sz - qz * sx) / den
+    u = (qx * rz - qz * rx) / den
+    if 0.0 <= t <= 1.0 and 0.0 <= u <= 1.0:
+        return t, u
+    return None
+
+
+def cut_gates(merged):
+    """Where a traced walk or road crosses a fence, hedge, rail or low wall
+    (at more than 25 degrees), the barrier gets a gap as wide as the walk
+    plus 0.8 m: the tracers drew barriers and walks separately, and a real
+    walk through a fence line passes a gate.  Construction fences and retaining walls are
+    left closed.  Returns the number of gaps cut."""
+    walks = list(merged["paths"]) + list(merged["roads"])
+    out, cuts = [], 0
+    for br in merged["barriers"]:
+        pts = br.get("pts") or []
+        if br.get("kind") not in GATE_KINDS or len(pts) < 2:
+            out.append(br)
+            continue
+        # cumulative distance along the barrier, and the gaps as [s0, s1]
+        acc = [0.0]
+        for i in range(1, len(pts)):
+            acc.append(acc[-1] + math.dist(pts[i - 1], pts[i]))
+        gaps = []
+        for w in walks:
+            wp = w.get("pts") or []
+            hw = float(w.get("w", 2.0)) * 0.5 + 0.4
+            for j in range(len(wp) - 1):
+                for i in range(len(pts) - 1):
+                    r = _cross(pts[i], pts[i + 1], wp[j], wp[j + 1])
+                    if r is None:
+                        continue
+                    bx, bz = pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]
+                    wx, wz = wp[j + 1][0] - wp[j][0], wp[j + 1][1] - wp[j][1]
+                    lb, lw = math.hypot(bx, bz), math.hypot(wx, wz)
+                    if lb < 1e-6 or lw < 1e-6:
+                        continue
+                    sin_a = abs(bx * wz - bz * wx) / (lb * lw)
+                    if sin_a < math.sin(math.radians(25)):
+                        continue
+                    sc = acc[i] + r[0] * lb
+                    half = hw / sin_a
+                    gaps.append([sc - half, sc + half])
+        if not gaps:
+            out.append(br)
+            continue
+        gaps.sort()
+        merged_g = [gaps[0]]
+        for g in gaps[1:]:
+            if g[0] <= merged_g[-1][1]:
+                merged_g[-1][1] = max(merged_g[-1][1], g[1])
+            else:
+                merged_g.append(g)
+        cuts += len(merged_g)
+
+        def at(sv):
+            for i in range(1, len(pts)):
+                if sv <= acc[i] or i == len(pts) - 1:
+                    seg = acc[i] - acc[i - 1]
+                    f = 0.0 if seg < 1e-9 else min(1.0, max(0.0, (sv - acc[i - 1]) / seg))
+                    return [round(pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, 2), round(pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f, 2)]
+        keep, s0 = [], 0.0
+        for g in merged_g + [[acc[-1], acc[-1]]]:
+            s1 = min(g[0], acc[-1])
+            if s1 - s0 >= 0.4:
+                piece = [at(s0)] + [list(pts[i]) for i in range(1, len(pts) - 1) if s0 < acc[i] < s1] + [at(s1)]
+                keep.append(piece)
+            s0 = max(s0, g[1])
+        for n, piece in enumerate(keep):
+            nb = dict(br)
+            nb["pts"] = piece
+            if n:
+                nb["id"] = "%s_g%d" % (br["id"], n)
+            ev = dict(nb.get("ev") or {})
+            note = "gate gap(s) cut where traced walks cross (merge rule)"
+            ev["open"] = (ev.get("open", "") + "; " + note).strip("; ") if note not in ev.get("open", "") else ev.get("open", "")
+            nb["ev"] = ev
+            out.append(nb)
+    merged["barriers"] = out
+    return cuts
+
+
+# half sizes (m) of what stands beside a walk: a tree's trunk collider, props
+HALF = {"tree": 0.42, "bench": 0.5, "table": 0.9, "planter": 0.6, "sign_blank": 0.8, "bike_rack": 1.0,
+        "lamp": 0.14, "light_pole": 0.2, "bin": 0.3}
+
+
+def _closest(p, a, b):
+    ax, az = b[0] - a[0], b[1] - a[1]
+    L2 = ax * ax + az * az
+    t = 0.0 if L2 < 1e-12 else max(0.0, min(1.0, ((p[0] - a[0]) * ax + (p[1] - a[1]) * az) / L2))
+    return (a[0] + ax * t, a[1] + az * t), (ax, az)
+
+
+def _walk_hit(p, half, walks, skip=None):
+    """The walk segment whose band (half width + half + 0.1) holds p, as
+    (walk, closest point, segment direction, needed distance), or None."""
+    for w in walks:
+        if w is skip:
+            continue
+        need = float(w.get("w", 2.0)) * 0.5 + half + 0.1
+        wp = w.get("pts") or []
+        for a, b in zip(wp, wp[1:]):
+            q, d = _closest(p, a, b)
+            if math.dist(p, q) < need:
+                return w, q, d, need
+    return None
+
+
+def nudge_off_walks(merged):
+    """Trunks and props whose traced spot falls on a walk (crowns and
+    pole shadows put them a little off) move straight out to the walk's
+    edge, unless that lands them on another walk.  Returns (moved, left)."""
+    walks = merged["paths"]
+    moved = left = 0
+    for layer, key in (("trees", "pos"), ("props", "p")):
+        for it in merged[layer]:
+            half = HALF.get("tree" if layer == "trees" else it.get("kind", ""), 0.0)
+            if half <= 0.0 or not it.get(key) or (layer == "trees" and it.get("collide") is False):
+                continue
+            p = tuple(it[key])
+            hit = _walk_hit(p, half, walks)
+            if hit is None:
+                continue
+            w, q, d, need = hit
+            nx, nz = p[0] - q[0], p[1] - q[1]
+            L = math.hypot(nx, nz)
+            if L < 1e-3:
+                L2 = math.hypot(d[0], d[1]) or 1.0
+                nx, nz, L = -d[1] / L2, d[0] / L2, 1.0
+            np_ = (round(q[0] + nx / L * (need + 0.05), 2), round(q[1] + nz / L * (need + 0.05), 2))
+            if _walk_hit(np_, half, walks) is not None:
+                left += 1
+                continue
+            it[key] = [np_[0], np_[1]]
+            ev = dict(it.get("ev") or {})
+            ev["open"] = (ev.get("open", "") + "; nudged %.1f m off a traced walk (merge rule)" % math.dist(p, np_)).strip("; ")
+            it["ev"] = ev
+            moved += 1
+    return moved, left
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
@@ -143,6 +297,9 @@ def main():
             for it in d.get(k, []):
                 it.setdefault("zone", zone)
                 merged[k].append(it)
+    gates = cut_gates(merged)
+    print("gate gaps cut where walks cross barriers:", gates)
+    print("trunks/props nudged off walks (moved, left in place):", nudge_off_walks(merged))
     errs, warns = validate(merged)
     for w in warns:
         print("warning:", w)

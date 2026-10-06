@@ -25,9 +25,11 @@ extends RefCounted
 ## Geometry version: part of every round's configuration.  Bump it with ANY
 ## change to a dorm's interior, doors, pads or thresholds (a client with
 ## other geometry is refused rather than simulating a different building).
-const VERSION := 2
+const VERSION := 3
 
 const WALL_T := 0.5      # default outer wall thickness at a door
+const CART_KEEP_M := 7.0  # carts are held this far from a start hall's doors
+const CART_ARC_SEGS := 8
 const DOOR_W := 3.2      # clear opening
 const DOOR_H := 3.0      # opening height (lintel above)
 const CEIL := 4.6        # default commons ceiling
@@ -142,6 +144,7 @@ static func _build(d: Dictionary) -> Dictionary:
 	var ceil_y := float(d.get("ceil", CEIL))
 	var room: PackedVector2Array = CampusData.ccw(d.get("room", PackedVector2Array()))
 	var interior: Array[PackedVector2Array] = [room]
+	var inside: Array[PackedVector2Array] = [room]    # past the thresholds
 	var doors: Array = []
 	var boxes: Array = []
 	var specs: Array = d.get("doors", [])
@@ -161,6 +164,8 @@ static func _build(d: Dictionary) -> Dictionary:
 		var hw := w * 0.5
 		var corridor := CampusData.ccw(PackedVector2Array([o0 - tg * hw, o0 + tg * hw, o1 + tg * hw, o1 - tg * hw]))
 		interior.append(corridor)
+		if depth > t + 0.05:
+			inside.append(CampusData.ccw(PackedVector2Array([line_p - tg * hw, line_p + tg * hw, o1 + tg * hw, o1 - tg * hw])))
 		doors.append({"id": String(sp.get("id", "door%d" % i)), "name": String(sp.get("name", "Door")), "dorm": String(d["id"]),
 			"pos": p, "normal": n, "line_p": line_p, "n_in": n_in, "tangent": tg, "half_w": THRESH_HALF_W,
 			"approach": p + n * 2.5, "inside": line_p + n_in * 2.0, "w": w, "wall_t": t})
@@ -171,6 +176,7 @@ static func _build(d: Dictionary) -> Dictionary:
 		var cp := CampusData.ccw(CampusData.to_poly(cpoly) if cpoly is Array else cpoly)
 		if cp.size() >= 3:
 			interior.append(cp)
+			inside.append(cp)
 	var solid := CampusData.subtract(footprint, interior) if footprint.size() >= 3 else ([] as Array[PackedVector2Array])
 	var foot: Array = []
 	for s in solid:
@@ -191,9 +197,21 @@ static func _build(d: Dictionary) -> Dictionary:
 		var tg2: Vector2 = dr["tangent"]
 		var hw2 := float(dr["w"]) * 0.5
 		cart_lines.append([p2 - tg2 * (hw2 + 0.4), p2 + tg2 * (hw2 + 0.4)])
+		# a cart-only keep-out arc round the door (runners pass through): the
+		# old map's bollard yards did this; no cart parks within reach of a
+		# start hall's doorway
+		var c2: Vector2 = dr["pos"]
+		var n2: Vector2 = dr["normal"]
+		var prev := Vector2.INF
+		for k in CART_ARC_SEGS + 1:
+			var ang := lerpf(-PI * 0.5, PI * 0.5, float(k) / float(CART_ARC_SEGS))
+			var q := c2 + (n2 * cos(ang) + tg2 * sin(ang)) * CART_KEEP_M
+			if prev != Vector2.INF:
+				cart_lines.append([prev, q])
+			prev = q
 	return {"id": String(d["id"]), "building": String(d.get("building", "")), "room": room, "interior": interior,
 		"footprint": footprint, "solid": solid, "boxes": boxes, "foot": foot, "doors": doors, "pads": pads,
-		"respawn": respawn, "cart_lines": cart_lines, "ceil": ceil_y, "h": h,
+		"respawn": respawn, "cart_lines": cart_lines, "ceil": ceil_y, "h": h, "inside": _merge(inside),
 		"room_rect": CampusData.bounds(room)}
 
 
@@ -264,11 +282,36 @@ static func in_room(id: String, p: Vector3, margin: float = 0.0) -> bool:
 		return false
 	if p.y >= float(g["ceil"]) - 1.0 or p.y <= -1.0:
 		return false
+	# the room and every hallway past a door's threshold (a long entrance
+	# hall is as much "home" as the lounge it leads to)
 	var q := Vector2(p.x, p.z)
-	var room: PackedVector2Array = g["room"]
-	if not Geometry2D.is_point_in_polygon(q, room):
-		return false
-	return margin <= 0.0 or CampusData.dist_to_edge(q, room) >= margin
+	for poly in g["inside"]:
+		if Geometry2D.is_point_in_polygon(q, poly):
+			return margin <= 0.0 or CampusData.dist_to_edge(q, poly) >= margin
+	return false
+
+
+## Overlapping interior pieces as one outline each (Clipper union; holes,
+## which an interior never has, are dropped).
+static func _merge(polys: Array[PackedVector2Array]) -> Array[PackedVector2Array]:
+	var out: Array[PackedVector2Array] = []
+	for poly in polys:
+		var cur: PackedVector2Array = poly
+		var i := 0
+		while i < out.size():
+			var res := Geometry2D.merge_polygons(out[i], cur)
+			var outer: Array[PackedVector2Array] = []
+			for r in res:
+				if not Geometry2D.is_polygon_clockwise(r):
+					outer.append(r)
+			if outer.size() == 1:
+				cur = outer[0]
+				out.remove_at(i)
+				i = 0
+				continue
+			i += 1
+		out.append(CampusData.ccw(cur))
+	return out
 
 
 ## The outside->inside threshold test for one door (pure geometry; the sim

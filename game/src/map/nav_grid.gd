@@ -204,7 +204,7 @@ func _rasterize() -> void:
 ## Beyond the play boundary: solid for both, row by row (the complement of
 ## the boundary's spans).
 func _r_outside(part: int, parts: int) -> void:
-	var bnd := layout.play_boundary
+	var bnd := _inner_boundary()
 	var sl := _slice(dims.y, part, parts)
 	for j in range(sl.x, sl.y):
 		var z := origin.y + (float(j) + 0.5) * CELL
@@ -220,6 +220,22 @@ func _r_outside(part: int, parts: int) -> void:
 		if x < dims.x:
 			foot.fill_solid_region(Rect2i(x, j, dims.x - x, 1), true)
 			cart.fill_solid_region(Rect2i(x, j, dims.x - x, 1), true)
+
+
+var _inner_bnd := PackedVector2Array()
+
+
+## The play boundary pulled in by the invisible wall's half thickness
+## (CampusBuilder: 1 m, centred on the line) plus FOOT_INF, so no open cell
+## puts a runner against that wall.
+func _inner_boundary() -> PackedVector2Array:
+	if _inner_bnd.is_empty() and layout.play_boundary.size() >= 3:
+		var best := PackedVector2Array()
+		for q in Geometry2D.offset_polygon(layout.play_boundary, -(0.5 + FOOT_INF)):
+			if absf(CampusData.area(q)) > absf(CampusData.area(best)):
+				best = q
+		_inner_bnd = best if best.size() >= 3 else layout.play_boundary
+	return _inner_bnd
 
 
 ## Roads and parking lots: carts at full speed there (weight 1).
@@ -277,7 +293,7 @@ func _r_buildings(part: int, parts: int) -> void:
 		for poly in polys:
 			for piece in CampusData.subtract(poly, holes):
 				_solid_poly(foot, piece, FOOT_INF)
-		for e in bd["entrances"]:
+		for e in CampusArchitecture.portico_entrances(bd):
 			for cp in CampusArchitecture.portico_columns(e):
 				_solid_circle(foot, cp, 0.31 + FOOT_INF)
 		for cl in CampusArchitecture.passage_columns(bd):
@@ -543,8 +559,11 @@ func find_path_budgeted(a: Vector2, b: Vector2, for_cart: bool = false) -> Packe
 		_unreachable.erase(ukey)
 	if _cache.has(key):
 		var cached: PackedVector2Array = _cache[key]
-		# reuse from here only if the first leg is clear from this start
-		if cached.size() >= 2 and _clear_line(g, ca, nearest_open(g, cached[1])):
+		# reuse from here only if the first leg is clear from this start (a
+		# first waypoint on a neighbouring cell is: string-pulling never tests
+		# the first step, which may enter a costlier cell)
+		var c1 := nearest_open(g, cached[1]) if cached.size() >= 2 else ca
+		if cached.size() >= 2 and (_clear_line(g, ca, c1) or maxi(absi(c1.x - ca.x), absi(c1.y - ca.y)) <= 1):
 			path_stats["cache"] += 1
 			var out := cached.duplicate()
 			out[0] = to_world(ca)

@@ -1,0 +1,513 @@
+{
+ "zone": "north",
+ "paths": [
+  {
+   "id": "walk_no_001",
+   "kind": "walk",
+   "pts": [
+    [
+     -99.16,
+     -431.52
+    ],
+    [
+     -98.57,
+     -420.6
+    ]
+   ],
+   "w": 3.5,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_002",
+   "kind": "walk",
+   "pts": [
+    [
+     -65.82,
+     -438.6
+    ],
+    [
+     -65.52,
+     -439.78
+    ],
+    [
+     -58.59,
+     -439.92
+    ],
+    [
+     -56.97,
+     -437.42
+    ],
+    [
+     -57.26,
+     -435.65
+    ]
+   ],
+   "w": 5.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_003",
+   "kind": "walk",
+   "pts": [
+    [
+     38.62,
+     -408.51
+    ],
+    [
+     28.59,
+     -408.21
+    ],
+    [
+     27.7,
+     -409.69
+    ],
+    [
+     27.7,
+     -415.0
+    ]
+   ],
+   "w": 2.4,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_004",
+   "kind": "walk",
+   "pts": [
+    [
+     65.76,
+     -415.39
+    ],
+    [
+     63.11,
+     -413.23
+    ],
+    [
+     63.11,
+     -411.46
+    ],
+    [
+     62.22,
+     -410.87
+    ]
+   ],
+   "w": 1.8,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_005",
+   "kind": "walk",
+   "pts": [
+    [
+     63.7,
+     -422.08
+    ],
+    [
+     63.99,
+     -420.01
+    ],
+    [
+     66.06,
+     -417.95
+    ],
+    [
+     65.76,
+     -415.39
+    ]
+   ],
+   "w": 1.8,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_006",
+   "kind": "walk",
+   "pts": [
+    [
+     65.76,
+     -415.39
+    ],
+    [
+     70.92,
+     -413.97
+    ],
+    [
+     86.12,
+     -414.11
+    ],
+    [
+     92.02,
+     -415.59
+    ],
+    [
+     102.15,
+     -414.8
+    ]
+   ],
+   "w": 4.1,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_007",
+   "kind": "walk",
+   "pts": [
+    [
+     102.15,
+     -414.8
+    ],
+    [
+     105.3,
+     -412.93
+    ],
+    [
+     107.07,
+     -414.7
+    ],
+    [
+     105.59,
+     -415.88
+    ],
+    [
+     102.15,
+     -414.8
+    ]
+   ],
+   "w": 2.4,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_008",
+   "kind": "walk",
+   "pts": [
+    [
+     138.63,
+     -415.39
+    ],
+    [
+     135.98,
+     -413.52
+    ],
+    [
+     134.06,
+     -415.14
+    ],
+    [
+     115.92,
+     -415.0
+    ],
+    [
+     113.85,
+     -412.93
+    ],
+    [
+     112.08,
+     -413.23
+    ]
+   ],
+   "w": 4.7,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_009",
+   "kind": "walk",
+   "pts": [
+    [
+     138.63,
+     -415.39
+    ],
+    [
+     136.57,
+     -445.38
+    ],
+    [
+     122.41,
+     -445.38
+    ],
+    [
+     116.8,
+     -444.2
+    ]
+   ],
+   "w": 2.1,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_010",
+   "kind": "walk",
+   "pts": [
+    [
+     179.64,
+     -414.41
+    ],
+    [
+     152.79,
+     -414.41
+    ]
+   ],
+   "w": 1.8,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_011",
+   "kind": "walk",
+   "pts": [
+    [
+     198.82,
+     -414.7
+    ],
+    [
+     218.58,
+     -416.47
+    ],
+    [
+     225.07,
+     -415.88
+    ],
+    [
+     227.44,
+     -414.7
+    ]
+   ],
+   "w": 3.5,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_012",
+   "kind": "walk",
+   "pts": [
+    [
+     243.96,
+     -414.7
+    ],
+    [
+     242.19,
+     -415.88
+    ],
+    [
+     233.63,
+     -415.59
+    ],
+    [
+     232.45,
+     -416.47
+    ]
+   ],
+   "w": 2.4,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_013",
+   "kind": "walk",
+   "pts": [
+    [
+     248.38,
+     -422.67
+    ],
+    [
+     248.38,
+     -417.06
+    ],
+    [
+     251.63,
+     -415.29
+    ]
+   ],
+   "w": 2.4,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_014",
+   "kind": "walk",
+   "pts": [
+    [
+     256.94,
+     -416.77
+    ],
+    [
+     262.99,
+     -416.62
+    ],
+    [
+     262.54,
+     -422.37
+    ]
+   ],
+   "w": 2.4,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_015",
+   "kind": "walk",
+   "pts": [
+    [
+     284.57,
+     -416.77
+    ],
+    [
+     278.47,
+     -417.06
+    ]
+   ],
+   "w": 2.1,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  },
+  {
+   "id": "walk_no_016",
+   "kind": "walk",
+   "pts": [
+    [
+     298.24,
+     -417.36
+    ],
+    [
+     315.35,
+     -417.95
+    ]
+   ],
+   "w": 2.4,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up"
+   }
+  }
+ ]
+}

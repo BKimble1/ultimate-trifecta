@@ -175,7 +175,25 @@ func test_tag_reach_cooldown_and_walls() -> void:
 	await h.step(60)
 	# through a wall: library east wall at x = -39; runner inside? use the dorm: runner north of
 	# the north face, patrol just south of it inside... instead use a hedge segment between them.
-	var hedge: Dictionary = h.sim.layout.hedges[3]  # garden ring hedge segment
+	# a tall hedge or fence segment (>= 1.5 m, >= 3 m long) with open ground
+	# on both sides
+	var lay := h.sim.layout
+	var hedge: Dictionary = {}
+	for sgm in lay.hedges + lay.fences:
+		var sa: Vector2 = sgm["a"]
+		var sb: Vector2 = sgm["b"]
+		if float(sgm["h"]) < 1.5 or sa.distance_to(sb) < 3.0:
+			continue
+		var m0 := (sa + sb) * 0.5
+		var n0 := (sb - sa).normalized().orthogonal()
+		var ok := true
+		for q in [m0 + n0 * 0.95, m0 - n0 * 0.95]:
+			if not lay.in_play(q) or lay.building_at(q, 0.6) >= 0 or lay.water_index_at(q, 0.6) >= 0:
+				ok = false
+		if ok:
+			hedge = sgm
+			break
+	t.check(not hedge.is_empty(), "a tall hedge or fence to tag across")
 	var a: Vector2 = hedge["a"]
 	var b: Vector2 = hedge["b"]
 	var mid := (a + b) * 0.5

@@ -160,6 +160,10 @@ func test_navigation_through_every_door() -> void:
 			t.check(not nav.is_drivable(ins), "%s %s: no cart inside" % [id, dr["id"]])
 			t.check(nav.find_path(shed, ins, true).is_empty() or nav.find_path(shed, ins, true)[-1].distance_to(ins) > 3.0, "%s %s: carts can't path in" % [id, dr["id"]])
 		for w in lay.waters:
+			# wadeable runs have no jump points (not splash targets); scenery
+			# waters beyond the play area are out of reach on purpose
+			if (w["jump_points"] as Array).is_empty() or not lay.in_play(w["center"]):
+				continue
 			var pth := nav.find_path(g["pads"][0]["pos"], w["jump_points"][0])
 			t.check(pth.size() >= 2, "%s: every water reachable on foot (%s)" % [id, w["id"]])
 
@@ -410,6 +414,7 @@ func test_doors_dont_snag() -> void:
 			var n_in: Vector2 = dr["n_in"]
 			var tg: Vector2 = dr["tangent"]
 			var lp: Vector2 = dr["line_p"]
+			var approaches := 0
 			for ang in [-60.0, -30.0, 0.0, 30.0, 60.0]:
 				for off in [-1.0, 0.0, 1.0]:
 					r.stamps = 7
@@ -419,6 +424,16 @@ func test_doors_dont_snag() -> void:
 					var dir := n_in.rotated(deg_to_rad(ang))
 					var target: Vector2 = lp + tg * float(off)
 					var start: Vector2 = target - dir * 6.0
+					# a door in an inside corner (the real halls are L-shaped)
+					# can't be reached from every angle: a start inside the
+					# other wing, or with no straight way to the doorway, is
+					# not an approach
+					var bi := h.sim.layout.building_at(start, 0.4)
+					var in_wall := bi >= 0 and CampusArchitecture._in_passages(start, h.sim.layout.buildings[bi]["passages"]).is_empty()
+					var mouth: Vector2 = (dr["pos"] as Vector2) + (dr["normal"] as Vector2) * 0.3 + tg * float(off) * 0.5
+					if in_wall or not h.sim.has_los(Vector3(start.x, 1.0, start.y), Vector3(mouth.x, 1.0, mouth.y)):
+						continue
+					approaches += 1
 					h.place(0, Vector3(start.x, 0.05, start.y), atan2(-dir.x, -dir.y))
 					h.cmd(0).move = dir
 					var ticks := 0
@@ -432,6 +447,7 @@ func test_doors_dont_snag() -> void:
 					worst = maxf(worst, float(ticks) / 60.0)
 					t.check(r.state == TC.PState.FINISHED and ticks < 150, "%s %s: in from %d deg, offset %.0f (%.2f s)" % [d, dr["id"], int(ang), off, float(ticks) / 60.0])
 					h.sim.finished_count = 0
+			t.check(approaches >= 9, "%s %s: tried from most angles (%d of 15)" % [d, dr["id"], approaches])
 			# sliding along the outer wall into the opening
 			for side in [-1.0, 1.0]:
 				r.stamps = 7

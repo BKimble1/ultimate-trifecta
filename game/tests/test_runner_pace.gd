@@ -93,6 +93,10 @@ func test_routes_are_playable_and_orders_are_optimal() -> void:
 	var n := 0
 	for i in 400:
 		var p := Vector2(rng.randf_range(-150, 150), rng.randf_range(-140, 140))
+		# open ground only: a point inside a building (the real library is
+		# 65 x 86 m) is looked up at an open cell up to 8 m away
+		if lay.building_at(p) >= 0 or lay.water_index_at(p, 1.0) >= 0:
+			continue
 		var c := PaceFields.cell_of(p)
 		var m := PaceFields.metres(f0, c)
 		if m == INF:
@@ -295,7 +299,7 @@ func test_snapshot_block_is_runners_only_and_positionless() -> void:
 	t.eq((ws["me"]["pace"] as Dictionary).size(), 0, "the Night Watch gets no pace")
 	t.eq(int(ws["me"]["next_goal"]), RunnerPace.NO_GOAL, "and no runner's goal")
 	t.check(data.size() < 1000, "the snapshot still fits one packet (%d bytes)" % data.size())
-	t.eq(Protocol.VERSION, 8, "protocol 8 (Pass 9 steady movement; the Pass 8 pace block kept)")
+	t.eq(Protocol.VERSION, 9, "protocol 9 (Pass 9 steady movement; the Pass 8 pace block kept; 24-bit positions for the rebuilt campus)")
 	h.free_sim()
 
 

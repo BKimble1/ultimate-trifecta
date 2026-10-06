@@ -10,10 +10,10 @@ var t
 
 ## Recorded on the CAMPUS pass data (game/data/campus, CampusData.campus_hash
 ## below).  A change here is a gameplay change: re-record deliberately.
-const CAMPUS_HASH := ""
-const CAMPUS_COLLISION := ""
-const CAMPUS_NAV := ""
-const CAMPUS_LAYOUT := ""
+const CAMPUS_HASH := "6b053d4423b6aa81"
+const CAMPUS_COLLISION := "89bfe9426b586f7e17c4e1aac44e2ad5a6edc3e5a96d2a08ec8c8065742d2340"
+const CAMPUS_NAV := "d1c055bb2e1554a5d9000e5ad58bc544d36bb225b1d982c4943051525e6aa28b"
+const CAMPUS_LAYOUT := "d49131b91d4c04e05b3e49741a5943262b431e630f7d04fae9ed119d27cec1aa"
 
 
 func test_fingerprints_are_deterministic() -> void:
@@ -74,9 +74,10 @@ func test_staged_build_steps_are_short() -> void:
 	var last := 0.0
 	var monotonic := true
 	var more := true
-	var guard := 0
-	while more and guard < 200000:
-		guard += 1
+	# steps that wait on worker jobs (ground chunks) return at once until
+	# the jobs are done: bound the loop by time, not by count
+	var t_end := Time.get_ticks_msec() + 120000
+	while more and Time.get_ticks_msec() < t_end:
 		var nm := b.next_step_name()
 		var s0 := Time.get_ticks_usec()
 		more = b.step()
@@ -152,7 +153,13 @@ func test_builder_is_freed_after_a_build_and_after_a_cancel() -> void:
 		if i == 2:
 			for k in 40:
 				b.step()
-			b.abort()
+			# like MatchController: the chunk jobs still on the worker pool are
+			# collected once they finish (they hold the builder until then)
+			var ids := b.abort()
+			for id in ids:
+				while not WorkerThreadPool.is_task_completed(id):
+					await t.get_tree().process_frame
+				WorkerThreadPool.wait_for_task_completion(id)
 		else:
 			while b.step():
 				pass

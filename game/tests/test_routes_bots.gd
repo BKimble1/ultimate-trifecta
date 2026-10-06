@@ -79,12 +79,22 @@ func test_bots_complete_routes_from_every_dorm() -> void:
 			continue
 		var cur := RulesLogic.curated_combos(d)
 		var lens := {}
+		var fits := {}
 		for cb in ((rt.get("dorms", {}) as Dictionary).get(d, {}) as Dictionary).get("combos", []):
 			lens[str(cb["targets"].map(func(x): return int(x)))] = float(cb["length_m"])
+			fits[str(cb["targets"].map(func(x): return int(x)))] = bool(cb.get("fits_round", true))
 		cur.sort_custom(func(a: Array, b: Array) -> bool: return float(lens.get(str(a), 0.0)) < float(lens.get(str(b), 0.0)))
 		var pick := [cur[0], cur[cur.size() / 2], cur[-1]]
 		for ci in pick.size():
 			var targets: Array = pick[ci]
+			var fit := bool(fits.get(str(targets.map(func(x): return int(x))), true))
+			var round_s := Rules.cfg.match_duration_s
+			# measured, not assumed: at the real campus's scale some of a hall's
+			# combinations cannot fit the 240 s round (route_table.json says
+			# which); for those the round is lengthened for this measurement
+			# only (restored below), so the bots' real time is seen
+			if not fit:
+				Rules.cfg.match_duration_s = round_s * 1.6
 			var h := SimHarness.new(t)
 			h.make([R, R, R, R, R, R, P, P], targets, [0, 1, 2, 3, 4, 5], 300 + ci, {"dorm": d})
 			h.sim.cfg.runners_needed = 7
@@ -104,7 +114,11 @@ func test_bots_complete_routes_from_every_dorm() -> void:
 				if p.is_runner() and p.finished_tick >= 0:
 					times.append(snappedf(float(p.finished_tick - start) / 60.0, 0.1))
 			h.sim.cfg.runners_needed = 4
+			Rules.cfg.match_duration_s = round_s
 			var names := targets.map(func(i): return h.sim.layout.waters[i]["short"])
-			print("ROUTE %s %s finished %d/6 times %s" % [d, str(names), times.size(), str(times)])
+			var in_round := times.filter(func(x): return float(x) <= round_s).size()
+			print("ROUTE %s %s finished %d/6 (%d inside the round; ideal run %s the round) times %s" % [d, str(names), times.size(), in_round, "fits" if fit else "does not fit", str(times)])
 			t.check(times.size() >= 5, "%s %s: runner bots leave, splash and come back inside (%d/6)" % [d, str(names), times.size()])
+			if fit:
+				t.check(in_round >= 5, "%s %s: and inside the round (%d/6)" % [d, str(names), in_round])
 			h.free_sim()

@@ -115,12 +115,20 @@ def main():
         for dr in d["doors"]:
             doors.append(Point(dr["p"]))
     inner = region.buffer(-8)
+    # where runners climb out of each water (CampusLayout: 1.3 m beyond the
+    # shore, more over a rim): coins keep 6 m from those exits
+    def out_d(w):
+        rim = float(w.get("rim_h", {"pool": 0.45, "fountain": 0.5}.get(w.get("kind"), 0.0)))
+        return 1.3 + rim * 1.2 + (float(w.get("rim_t", 0.5)) if rim > 0.0 else 0.0)
+    exits_zone = unary_union([water_geom(w).buffer(out_d(w)) for w in wat if not w.get("wade")])
 
-    def ok(p, clear):
+    def ok(p, clear, coin=False):
         pt = Point(p)
         if not inner.contains(pt):
             return False
         if solid_u.distance(pt) < clear:
+            return False
+        if coin and exits_zone.distance(pt) < 6.3:
             return False
         if trunks is not None and trunks.distance(pt) < 1.2:
             return False
@@ -143,7 +151,7 @@ def main():
             plaza_pts.append((c.x, c.y))
 
     # ---- coin candidates: greedy spread over the walk samples
-    cand = [p for p in samples if ok(p, 2.5)]
+    cand = [p for p in samples if ok(p, 2.5, coin=True)]
     cand.sort(key=lambda p: (round(p[0] / 37.0), round(p[1] / 41.0), p[0], p[1]))
     coins = []
     for p in cand:

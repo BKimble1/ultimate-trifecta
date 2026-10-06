@@ -66,3 +66,16 @@ teleport shortcuts.
   The players' movement does not.
 - Views: the camera far plane and fog stay as they were. The minimap becomes a window centred on the
   player.
+- Geometry that keeps the old guarantees on the real campus (no rule value changes):
+  - Water exits stand just beyond each water's real rim. The garden fountain's coping is 1.2 m wide,
+    so its exits are further out than a thin kerb's, and no single spot covers them all within two
+    lunges.
+  - Small basins (under 9 m across) get their respawn pads on a ring about 12 m beyond the exits. Two
+    campers on the rim can then never cover the respawn (at least 15 m, as before).
+  - Carts are held 7 m from each start hall's doors by a hidden, cart-only arc (runners pass through).
+    The old map's bollard yards did the same.
+  - The home hall's safe inside is the room plus every hallway past a door's threshold. The real halls'
+    entrances are long corridors, and the old rooms opened straight onto their doors.
+  - Open passages (porches, breezeways, the chapel's atrium, the bell tower's gap) keep a straight way
+    through. Columns and posts come in even counts, so the middle bay is open. A portico at an open porch
+    is drawn by the porch's own columns, and its colliders follow what is drawn.

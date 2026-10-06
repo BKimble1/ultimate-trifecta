@@ -23,7 +23,10 @@ func _guard_spots(w: Dictionary) -> Array:
 
 func test_water_exits_and_pads_beat_two_campers() -> void:
 	var cover := Rules.cfg.tag_reach_m + Rules.cfg.tag_lunge_speed * Rules.cfg.tag_lunge_s
-	for w in CampusLayout.shared().waters:
+	var lay := CampusLayout.shared()
+	for wi in lay.pool_size():
+		# the objective pool (decorative waters are never round targets)
+		var w: Dictionary = lay.waters[wi]
 		var exits: Array = w["exits"]
 		var name: String = w["short"]
 		t.check(exits.size() >= 2, "%s: at least two shore exits (%d)" % [name, exits.size()])
@@ -91,14 +94,17 @@ func test_dorm_doors_spread_and_cart_free() -> void:
 					min_gap = minf(min_gap, (a["approach"] as Vector2).distance_to(b["approach"]))
 		t.check(min_gap >= cover * 2.0 + 4.0, "%s: no spot covers two doors within two lunges (closest approaches %.1f m)" % [dm["id"], min_gap])
 	for dm in lay.dorms:
-		var c0: Vector2 = dm["pos"]
-		# from the roads around the cart-free dorm yards, straight at the dorm
-		var approaches := [
-			[Vector3(c0.x, 0.3, 86.0), Vector3(0, 0, 1)],      # the College Loop (north)
-			[Vector3(-120.0, 0.3, c0.y), Vector3(1, 0, 0)],    # the west service road
-			[Vector3(120.0, 0.3, c0.y), Vector3(-1, 0, 0)],    # the east service road
-			[Vector3(c0.x, 0.3, 141.0), Vector3(0, 0, -1)],    # the back service road (south)
-		]
+		# straight at each door from 40 m out (over lawns and walks: the real
+		# halls have no yards), and straight at the hall from four sides
+		var c0 := CampusData.centroid(dm["geo"]["footprint"])
+		var approaches: Array = []
+		for d0 in doors_of(dm):
+			var nn: Vector2 = d0["normal"]
+			var s0: Vector2 = (d0["pos"] as Vector2) + nn * 40.0
+			approaches.append([Vector3(s0.x, 0.3, s0.y), Vector3(-nn.x, 0, -nn.y)])
+		for dv in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]:
+			var s1: Vector2 = c0 + dv * 90.0
+			approaches.append([Vector3(s1.x, 0.3, s1.y), Vector3(-dv.x, 0, -dv.y)])
 		for ap in approaches:
 			var h := _h()
 			h.make([R, P], [0, 1, 2], [], 11, {"dorm": String(dm["id"])})

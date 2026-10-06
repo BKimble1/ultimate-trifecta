@@ -2564,6 +2564,7 @@
    "h": 4.0,
    "id": "ctx_bldg_001",
    "kind": "context",
+   "ref": "C04",
    "roof": {
     "pitch": 20,
     "ridge": "long",
@@ -2609,6 +2610,7 @@
    "h": 4.5,
    "id": "ctx_bldg_002",
    "kind": "context",
+   "ref": "C04",
    "roof": {
     "pitch": 22,
     "ridge": "long",
@@ -2662,6 +2664,7 @@
    "h": 3.5,
    "id": "ctx_house_001",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -2708,6 +2711,7 @@
    "h": 3.5,
    "id": "ctx_house_002",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -2753,6 +2757,7 @@
    "h": 3.5,
    "id": "ctx_house_003",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -2798,6 +2803,7 @@
    "h": 3.5,
    "id": "ctx_house_004",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -2851,6 +2857,7 @@
    "h": 3.5,
    "id": "ctx_house_005",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -2896,6 +2903,7 @@
    "h": 3.5,
    "id": "ctx_house_006",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -2941,6 +2949,7 @@
    "h": 3.5,
    "id": "ctx_house_007",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -2994,6 +3003,7 @@
    "h": 3.5,
    "id": "ctx_house_008",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3039,6 +3049,7 @@
    "h": 3.5,
    "id": "ctx_house_009",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3084,6 +3095,7 @@
    "h": 3.5,
    "id": "ctx_house_010",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3129,6 +3141,7 @@
    "h": 3.5,
    "id": "ctx_house_011",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3174,6 +3187,7 @@
    "h": 3.5,
    "id": "ctx_house_012",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3227,6 +3241,7 @@
    "h": 3.5,
    "id": "ctx_house_013",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3272,6 +3287,7 @@
    "h": 3.5,
    "id": "ctx_house_014",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3325,6 +3341,7 @@
    "h": 3.5,
    "id": "ctx_house_015",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3378,6 +3395,7 @@
    "h": 3.5,
    "id": "ctx_house_016",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3423,6 +3441,7 @@
    "h": 3.5,
    "id": "ctx_house_017",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3468,6 +3487,7 @@
    "h": 3.5,
    "id": "ctx_house_018",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3513,6 +3533,7 @@
    "h": 3.5,
    "id": "ctx_house_019",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3558,6 +3579,7 @@
    "h": 3.5,
    "id": "ctx_house_020",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3603,6 +3625,7 @@
    "h": 3.5,
    "id": "ctx_house_021",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3648,6 +3671,7 @@
    "h": 3.5,
    "id": "ctx_house_022",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3693,6 +3717,7 @@
    "h": 3.5,
    "id": "ctx_house_023",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3746,6 +3771,7 @@
    "h": 4.5,
    "id": "ctx_house_024",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3807,6 +3833,7 @@
    "h": 3.5,
    "id": "ctx_house_025",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3852,6 +3879,7 @@
    "h": 3.5,
    "id": "ctx_house_026",
    "kind": "house",
+   "ref": "C04",
    "roof": {
     "pitch": 30,
     "ridge": "long",
@@ -3897,6 +3925,7 @@
    "h": 2.8,
    "id": "ctx_shed_001",
    "kind": "context",
+   "ref": "C04",
    "roof": {
     "pitch": 22,
     "ridge": "long",
@@ -3942,6 +3971,7 @@
    "h": 2.8,
    "id": "ctx_shed_002",
    "kind": "context",
+   "ref": "C04",
    "roof": {
     "pitch": 22,
     "ridge": "long",
@@ -3988,6 +4018,7 @@
    "h": 3.0,
    "id": "ctx_shed_003",
    "kind": "context",
+   "ref": "C04",
    "roof": {
     "pitch": 22,
     "ridge": "long",
@@ -4033,6 +4064,7 @@
    "h": 2.8,
    "id": "ctx_shed_004",
    "kind": "context",
+   "ref": "C04",
    "roof": {
     "pitch": 22,
     "ridge": "long",
@@ -4078,6 +4110,7 @@
    "h": 2.8,
    "id": "ctx_shed_005",
    "kind": "context",
+   "ref": "C04",
    "roof": {
     "pitch": 22,
     "ridge": "long",
@@ -9646,6 +9679,2240 @@
    "zone": "ncore"
   },
   {
+   "background": true,
+   "entrances": [
+    {
+     "face": 358,
+     "kind": "portico",
+     "p": [
+      49.88,
+      -900.17
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 358,
+     "kind": "portico",
+     "p": [
+      58.77,
+      -900.48
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 358,
+     "kind": "portico",
+     "p": [
+      67.07,
+      -900.77
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 358,
+     "kind": "portico",
+     "p": [
+      75.96,
+      -901.08
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 358,
+     "kind": "garage",
+     "p": [
+      46.44,
+      -898.33
+     ],
+     "w": 2.6
+    },
+    {
+     "face": 358,
+     "kind": "garage",
+     "p": [
+      62.98,
+      -898.91
+     ],
+     "w": 3.6
+    },
+    {
+     "face": 358,
+     "kind": "garage",
+     "p": [
+      79.53,
+      -899.49
+     ],
+     "w": 2.6
+    }
+   ],
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "detached site ~400 m north of the north perimeter street; outline = the inset building shape on the 2026 wayfinding, georeferenced locally to the four street crossings around the block (fit residual 0.1 m; the inset's E-W lane lands within 1.3 m of the 2025 parcels' alley strip, an independent check), then shifted 2.5 m west so the rows sit centred in their 2025 parcel (as drawn, building 07 would reach 3 m into the street right-of-way); the block is open lawn and paving in the 2022 overview and an apartment-class (402) parcel in 2025; 2 storeys + garage wings counted in R150 (2-storey eave ~6.3 m, garage eave ~3.0 m)",
+    "open": "outline is the inset's stylised shape at its drawn scale: building length 36 m on the inset vs ~30-32 m estimated from R150's facade (lobe ~9-10 m wide, garages ~3 m), so each wing/lobe split is +-3 m and positions +-3 m; front side per row inferred from driveway access (row 1 north, row 2 south, east building west); unit count per building inferred (R150 door numbers 3 and 4); no post-2022 overhead image",
+    "src": [
+     "wayfinding2026",
+     "overview2022",
+     "parcels2025",
+     "R150",
+     "R160"
+    ]
+   },
+   "floors": 2,
+   "footprint": [
+    [
+     45.26,
+     -888.82
+    ],
+    [
+     48.27,
+     -888.93
+    ],
+    [
+     48.33,
+     -887.21
+    ],
+    [
+     61.22,
+     -887.66
+    ],
+    [
+     61.16,
+     -889.38
+    ],
+    [
+     65.46,
+     -889.53
+    ],
+    [
+     65.52,
+     -887.81
+    ],
+    [
+     78.41,
+     -888.26
+    ],
+    [
+     78.35,
+     -889.98
+    ],
+    [
+     81.36,
+     -890.08
+    ],
+    [
+     81.03,
+     -899.54
+    ],
+    [
+     78.02,
+     -899.43
+    ],
+    [
+     77.96,
+     -901.15
+    ],
+    [
+     65.07,
+     -900.7
+    ],
+    [
+     65.13,
+     -898.98
+    ],
+    [
+     60.83,
+     -898.83
+    ],
+    [
+     60.77,
+     -900.55
+    ],
+    [
+     47.88,
+     -900.1
+    ],
+    [
+     47.94,
+     -898.38
+    ],
+    [
+     44.93,
+     -898.28
+    ]
+   ],
+   "h": 6.3,
+   "id": "north_court_home_01",
+   "kind": "residence",
+   "label": "North Court Homes",
+   "parts": [
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       45.26,
+       -888.82
+      ],
+      [
+       48.27,
+       -888.93
+      ],
+      [
+       47.94,
+       -898.38
+      ],
+      [
+       44.93,
+       -898.28
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       48.33,
+       -887.21
+      ],
+      [
+       61.22,
+       -887.66
+      ],
+      [
+       60.77,
+       -900.55
+      ],
+      [
+       47.88,
+       -900.1
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       61.16,
+       -889.38
+      ],
+      [
+       65.46,
+       -889.53
+      ],
+      [
+       65.13,
+       -898.98
+      ],
+      [
+       60.83,
+       -898.83
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       65.52,
+       -887.81
+      ],
+      [
+       78.41,
+       -888.26
+      ],
+      [
+       77.96,
+       -901.15
+      ],
+      [
+       65.07,
+       -900.7
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       78.35,
+       -889.98
+      ],
+      [
+       81.36,
+       -890.08
+      ],
+      [
+       81.03,
+       -899.54
+      ],
+      [
+       78.02,
+       -899.43
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    }
+   ],
+   "ref": "B45",
+   "roof": {
+    "pitch": 20,
+    "ridge": "long",
+    "type": "hip"
+   },
+   "status": "existing",
+   "style": {
+    "notes": "4-unit townhome building: two two-storey unit blocks (white board-and-batten fronts, lap siding elsewhere, black fascia and gutters, low hip roofs) with one-storey garage wings at both ends and a garage pair in the middle (modelled as one 3.6 m opening); shed-roofed front porches on white posts beside the garages; white vinyl privacy-fenced patios at the back (R150, R160)",
+    "roof_mat": "shingle_grey",
+    "trim": "dark",
+    "wall": "siding_white",
+    "windows": "punched"
+   },
+   "zone": "north"
+  },
+  {
+   "background": true,
+   "entrances": [
+    {
+     "face": 358,
+     "kind": "portico",
+     "p": [
+      88.52,
+      -901.56
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 358,
+     "kind": "portico",
+     "p": [
+      97.41,
+      -901.87
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 358,
+     "kind": "portico",
+     "p": [
+      105.71,
+      -902.16
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 358,
+     "kind": "portico",
+     "p": [
+      114.6,
+      -902.47
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 358,
+     "kind": "garage",
+     "p": [
+      85.07,
+      -899.72
+     ],
+     "w": 2.6
+    },
+    {
+     "face": 358,
+     "kind": "garage",
+     "p": [
+      101.62,
+      -900.3
+     ],
+     "w": 3.6
+    },
+    {
+     "face": 358,
+     "kind": "garage",
+     "p": [
+      118.16,
+      -900.88
+     ],
+     "w": 2.6
+    }
+   ],
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "detached site ~400 m north of the north perimeter street; outline = the inset building shape on the 2026 wayfinding, georeferenced locally to the four street crossings around the block (fit residual 0.1 m; the inset's E-W lane lands within 1.3 m of the 2025 parcels' alley strip, an independent check), then shifted 2.5 m west so the rows sit centred in their 2025 parcel (as drawn, building 07 would reach 3 m into the street right-of-way); the block is open lawn and paving in the 2022 overview and an apartment-class (402) parcel in 2025; 2 storeys + garage wings counted in R150 (2-storey eave ~6.3 m, garage eave ~3.0 m)",
+    "open": "outline is the inset's stylised shape at its drawn scale: building length 36 m on the inset vs ~30-32 m estimated from R150's facade (lobe ~9-10 m wide, garages ~3 m), so each wing/lobe split is +-3 m and positions +-3 m; front side per row inferred from driveway access (row 1 north, row 2 south, east building west); unit count per building inferred (R150 door numbers 3 and 4); no post-2022 overhead image",
+    "src": [
+     "wayfinding2026",
+     "overview2022",
+     "parcels2025",
+     "R150",
+     "R160"
+    ]
+   },
+   "floors": 2,
+   "footprint": [
+    [
+     83.9,
+     -890.21
+    ],
+    [
+     86.91,
+     -890.32
+    ],
+    [
+     86.97,
+     -888.6
+    ],
+    [
+     99.86,
+     -889.05
+    ],
+    [
+     99.8,
+     -890.77
+    ],
+    [
+     104.1,
+     -890.92
+    ],
+    [
+     104.16,
+     -889.2
+    ],
+    [
+     117.05,
+     -889.65
+    ],
+    [
+     116.99,
+     -891.37
+    ],
+    [
+     120.0,
+     -891.48
+    ],
+    [
+     119.67,
+     -900.93
+    ],
+    [
+     116.66,
+     -900.82
+    ],
+    [
+     116.6,
+     -902.54
+    ],
+    [
+     103.71,
+     -902.09
+    ],
+    [
+     103.77,
+     -900.37
+    ],
+    [
+     99.47,
+     -900.22
+    ],
+    [
+     99.41,
+     -901.94
+    ],
+    [
+     86.52,
+     -901.49
+    ],
+    [
+     86.58,
+     -899.77
+    ],
+    [
+     83.57,
+     -899.67
+    ]
+   ],
+   "h": 6.3,
+   "id": "north_court_home_02",
+   "kind": "residence",
+   "parts": [
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       83.9,
+       -890.21
+      ],
+      [
+       86.91,
+       -890.32
+      ],
+      [
+       86.58,
+       -899.77
+      ],
+      [
+       83.57,
+       -899.67
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       86.97,
+       -888.6
+      ],
+      [
+       99.86,
+       -889.05
+      ],
+      [
+       99.41,
+       -901.94
+      ],
+      [
+       86.52,
+       -901.49
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       99.8,
+       -890.77
+      ],
+      [
+       104.1,
+       -890.92
+      ],
+      [
+       103.77,
+       -900.37
+      ],
+      [
+       99.47,
+       -900.22
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       104.16,
+       -889.2
+      ],
+      [
+       117.05,
+       -889.65
+      ],
+      [
+       116.6,
+       -902.54
+      ],
+      [
+       103.71,
+       -902.09
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       116.99,
+       -891.37
+      ],
+      [
+       120.0,
+       -891.48
+      ],
+      [
+       119.67,
+       -900.93
+      ],
+      [
+       116.66,
+       -900.82
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    }
+   ],
+   "ref": "B45",
+   "roof": {
+    "pitch": 20,
+    "ridge": "long",
+    "type": "hip"
+   },
+   "status": "existing",
+   "style": {
+    "notes": "4-unit townhome building: two two-storey unit blocks (white board-and-batten fronts, lap siding elsewhere, black fascia and gutters, low hip roofs) with one-storey garage wings at both ends and a garage pair in the middle (modelled as one 3.6 m opening); shed-roofed front porches on white posts beside the garages; white vinyl privacy-fenced patios at the back (R150, R160)",
+    "roof_mat": "shingle_grey",
+    "trim": "dark",
+    "wall": "siding_white",
+    "windows": "punched"
+   },
+   "zone": "north"
+  },
+  {
+   "background": true,
+   "entrances": [
+    {
+     "face": 358,
+     "kind": "portico",
+     "p": [
+      127.37,
+      -902.96
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 358,
+     "kind": "portico",
+     "p": [
+      136.27,
+      -903.27
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 358,
+     "kind": "portico",
+     "p": [
+      144.56,
+      -903.56
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 358,
+     "kind": "portico",
+     "p": [
+      153.46,
+      -903.87
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 358,
+     "kind": "garage",
+     "p": [
+      123.93,
+      -901.12
+     ],
+     "w": 2.6
+    },
+    {
+     "face": 358,
+     "kind": "garage",
+     "p": [
+      140.47,
+      -901.7
+     ],
+     "w": 3.6
+    },
+    {
+     "face": 358,
+     "kind": "garage",
+     "p": [
+      157.02,
+      -902.28
+     ],
+     "w": 2.6
+    }
+   ],
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "detached site ~400 m north of the north perimeter street; outline = the inset building shape on the 2026 wayfinding, georeferenced locally to the four street crossings around the block (fit residual 0.1 m; the inset's E-W lane lands within 1.3 m of the 2025 parcels' alley strip, an independent check), then shifted 2.5 m west so the rows sit centred in their 2025 parcel (as drawn, building 07 would reach 3 m into the street right-of-way); the block is open lawn and paving in the 2022 overview and an apartment-class (402) parcel in 2025; 2 storeys + garage wings counted in R150 (2-storey eave ~6.3 m, garage eave ~3.0 m)",
+    "open": "outline is the inset's stylised shape at its drawn scale: building length 36 m on the inset vs ~30-32 m estimated from R150's facade (lobe ~9-10 m wide, garages ~3 m), so each wing/lobe split is +-3 m and positions +-3 m; front side per row inferred from driveway access (row 1 north, row 2 south, east building west); unit count per building inferred (R150 door numbers 3 and 4); no post-2022 overhead image",
+    "src": [
+     "wayfinding2026",
+     "overview2022",
+     "parcels2025",
+     "R150",
+     "R160"
+    ]
+   },
+   "floors": 2,
+   "footprint": [
+    [
+     122.75,
+     -891.61
+    ],
+    [
+     125.76,
+     -891.72
+    ],
+    [
+     125.82,
+     -890.0
+    ],
+    [
+     138.71,
+     -890.45
+    ],
+    [
+     138.65,
+     -892.17
+    ],
+    [
+     142.95,
+     -892.32
+    ],
+    [
+     143.01,
+     -890.6
+    ],
+    [
+     155.9,
+     -891.05
+    ],
+    [
+     155.84,
+     -892.77
+    ],
+    [
+     158.85,
+     -892.88
+    ],
+    [
+     158.52,
+     -902.33
+    ],
+    [
+     155.51,
+     -902.22
+    ],
+    [
+     155.45,
+     -903.94
+    ],
+    [
+     142.56,
+     -903.49
+    ],
+    [
+     142.62,
+     -901.77
+    ],
+    [
+     138.32,
+     -901.62
+    ],
+    [
+     138.26,
+     -903.34
+    ],
+    [
+     125.37,
+     -902.89
+    ],
+    [
+     125.43,
+     -901.17
+    ],
+    [
+     122.42,
+     -901.07
+    ]
+   ],
+   "h": 6.3,
+   "id": "north_court_home_03",
+   "kind": "residence",
+   "parts": [
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       122.75,
+       -891.61
+      ],
+      [
+       125.76,
+       -891.72
+      ],
+      [
+       125.43,
+       -901.17
+      ],
+      [
+       122.42,
+       -901.07
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       125.82,
+       -890.0
+      ],
+      [
+       138.71,
+       -890.45
+      ],
+      [
+       138.26,
+       -903.34
+      ],
+      [
+       125.37,
+       -902.89
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       138.65,
+       -892.17
+      ],
+      [
+       142.95,
+       -892.32
+      ],
+      [
+       142.62,
+       -901.77
+      ],
+      [
+       138.32,
+       -901.62
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       143.01,
+       -890.6
+      ],
+      [
+       155.9,
+       -891.05
+      ],
+      [
+       155.45,
+       -903.94
+      ],
+      [
+       142.56,
+       -903.49
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       155.84,
+       -892.77
+      ],
+      [
+       158.85,
+       -892.88
+      ],
+      [
+       158.52,
+       -902.33
+      ],
+      [
+       155.51,
+       -902.22
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    }
+   ],
+   "ref": "B45",
+   "roof": {
+    "pitch": 20,
+    "ridge": "long",
+    "type": "hip"
+   },
+   "status": "existing",
+   "style": {
+    "notes": "4-unit townhome building: two two-storey unit blocks (white board-and-batten fronts, lap siding elsewhere, black fascia and gutters, low hip roofs) with one-storey garage wings at both ends and a garage pair in the middle (modelled as one 3.6 m opening); shed-roofed front porches on white posts beside the garages; white vinyl privacy-fenced patios at the back (R150, R160)",
+    "roof_mat": "shingle_grey",
+    "trim": "dark",
+    "wall": "siding_white",
+    "windows": "punched"
+   },
+   "zone": "north"
+  },
+  {
+   "background": true,
+   "entrances": [
+    {
+     "face": 178,
+     "kind": "portico",
+     "p": [
+      50.93,
+      -869.53
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 178,
+     "kind": "portico",
+     "p": [
+      59.83,
+      -869.84
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 178,
+     "kind": "portico",
+     "p": [
+      68.12,
+      -870.13
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 178,
+     "kind": "portico",
+     "p": [
+      77.02,
+      -870.44
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 178,
+     "kind": "garage",
+     "p": [
+      47.37,
+      -871.12
+     ],
+     "w": 2.6
+    },
+    {
+     "face": 178,
+     "kind": "garage",
+     "p": [
+      63.92,
+      -871.7
+     ],
+     "w": 3.6
+    },
+    {
+     "face": 178,
+     "kind": "garage",
+     "p": [
+      80.46,
+      -872.28
+     ],
+     "w": 2.6
+    }
+   ],
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "detached site ~400 m north of the north perimeter street; outline = the inset building shape on the 2026 wayfinding, georeferenced locally to the four street crossings around the block (fit residual 0.1 m; the inset's E-W lane lands within 1.3 m of the 2025 parcels' alley strip, an independent check), then shifted 2.5 m west so the rows sit centred in their 2025 parcel (as drawn, building 07 would reach 3 m into the street right-of-way); the block is open lawn and paving in the 2022 overview and an apartment-class (402) parcel in 2025; 2 storeys + garage wings counted in R150 (2-storey eave ~6.3 m, garage eave ~3.0 m)",
+    "open": "outline is the inset's stylised shape at its drawn scale: building length 36 m on the inset vs ~30-32 m estimated from R150's facade (lobe ~9-10 m wide, garages ~3 m), so each wing/lobe split is +-3 m and positions +-3 m; front side per row inferred from driveway access (row 1 north, row 2 south, east building west); unit count per building inferred (R150 door numbers 3 and 4); no post-2022 overhead image",
+    "src": [
+     "wayfinding2026",
+     "overview2022",
+     "parcels2025",
+     "R150",
+     "R160"
+    ]
+   },
+   "floors": 2,
+   "footprint": [
+    [
+     45.54,
+     -880.53
+    ],
+    [
+     48.54,
+     -880.63
+    ],
+    [
+     48.48,
+     -882.35
+    ],
+    [
+     61.38,
+     -882.8
+    ],
+    [
+     61.44,
+     -881.08
+    ],
+    [
+     65.73,
+     -881.23
+    ],
+    [
+     65.67,
+     -882.95
+    ],
+    [
+     78.57,
+     -883.4
+    ],
+    [
+     78.63,
+     -881.68
+    ],
+    [
+     81.63,
+     -881.79
+    ],
+    [
+     81.96,
+     -872.33
+    ],
+    [
+     78.96,
+     -872.23
+    ],
+    [
+     79.02,
+     -870.51
+    ],
+    [
+     66.12,
+     -870.06
+    ],
+    [
+     66.06,
+     -871.78
+    ],
+    [
+     61.77,
+     -871.63
+    ],
+    [
+     61.83,
+     -869.91
+    ],
+    [
+     48.93,
+     -869.46
+    ],
+    [
+     48.87,
+     -871.18
+    ],
+    [
+     45.87,
+     -871.07
+    ]
+   ],
+   "h": 6.3,
+   "id": "north_court_home_04",
+   "kind": "residence",
+   "parts": [
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       45.54,
+       -880.53
+      ],
+      [
+       48.54,
+       -880.63
+      ],
+      [
+       48.87,
+       -871.18
+      ],
+      [
+       45.87,
+       -871.07
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       48.48,
+       -882.35
+      ],
+      [
+       61.38,
+       -882.8
+      ],
+      [
+       61.83,
+       -869.91
+      ],
+      [
+       48.93,
+       -869.46
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       61.44,
+       -881.08
+      ],
+      [
+       65.73,
+       -881.23
+      ],
+      [
+       66.06,
+       -871.78
+      ],
+      [
+       61.77,
+       -871.63
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       65.67,
+       -882.95
+      ],
+      [
+       78.57,
+       -883.4
+      ],
+      [
+       79.02,
+       -870.51
+      ],
+      [
+       66.12,
+       -870.06
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       78.63,
+       -881.68
+      ],
+      [
+       81.63,
+       -881.79
+      ],
+      [
+       81.96,
+       -872.33
+      ],
+      [
+       78.96,
+       -872.23
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    }
+   ],
+   "ref": "B45",
+   "roof": {
+    "pitch": 20,
+    "ridge": "long",
+    "type": "hip"
+   },
+   "status": "existing",
+   "style": {
+    "notes": "4-unit townhome building: two two-storey unit blocks (white board-and-batten fronts, lap siding elsewhere, black fascia and gutters, low hip roofs) with one-storey garage wings at both ends and a garage pair in the middle (modelled as one 3.6 m opening); shed-roofed front porches on white posts beside the garages; white vinyl privacy-fenced patios at the back (R150, R160)",
+    "roof_mat": "shingle_grey",
+    "trim": "dark",
+    "wall": "siding_white",
+    "windows": "punched"
+   },
+   "zone": "north"
+  },
+  {
+   "background": true,
+   "entrances": [
+    {
+     "face": 178,
+     "kind": "portico",
+     "p": [
+      89.79,
+      -870.93
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 178,
+     "kind": "portico",
+     "p": [
+      98.68,
+      -871.24
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 178,
+     "kind": "portico",
+     "p": [
+      106.98,
+      -871.53
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 178,
+     "kind": "portico",
+     "p": [
+      115.87,
+      -871.84
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 178,
+     "kind": "garage",
+     "p": [
+      86.23,
+      -872.52
+     ],
+     "w": 2.6
+    },
+    {
+     "face": 178,
+     "kind": "garage",
+     "p": [
+      102.77,
+      -873.1
+     ],
+     "w": 3.6
+    },
+    {
+     "face": 178,
+     "kind": "garage",
+     "p": [
+      119.32,
+      -873.68
+     ],
+     "w": 2.6
+    }
+   ],
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "detached site ~400 m north of the north perimeter street; outline = the inset building shape on the 2026 wayfinding, georeferenced locally to the four street crossings around the block (fit residual 0.1 m; the inset's E-W lane lands within 1.3 m of the 2025 parcels' alley strip, an independent check), then shifted 2.5 m west so the rows sit centred in their 2025 parcel (as drawn, building 07 would reach 3 m into the street right-of-way); the block is open lawn and paving in the 2022 overview and an apartment-class (402) parcel in 2025; 2 storeys + garage wings counted in R150 (2-storey eave ~6.3 m, garage eave ~3.0 m)",
+    "open": "outline is the inset's stylised shape at its drawn scale: building length 36 m on the inset vs ~30-32 m estimated from R150's facade (lobe ~9-10 m wide, garages ~3 m), so each wing/lobe split is +-3 m and positions +-3 m; front side per row inferred from driveway access (row 1 north, row 2 south, east building west); unit count per building inferred (R150 door numbers 3 and 4); no post-2022 overhead image",
+    "src": [
+     "wayfinding2026",
+     "overview2022",
+     "parcels2025",
+     "R150",
+     "R160"
+    ]
+   },
+   "floors": 2,
+   "footprint": [
+    [
+     84.39,
+     -881.93
+    ],
+    [
+     87.4,
+     -882.03
+    ],
+    [
+     87.34,
+     -883.75
+    ],
+    [
+     100.23,
+     -884.2
+    ],
+    [
+     100.29,
+     -882.48
+    ],
+    [
+     104.59,
+     -882.63
+    ],
+    [
+     104.53,
+     -884.35
+    ],
+    [
+     117.42,
+     -884.8
+    ],
+    [
+     117.48,
+     -883.08
+    ],
+    [
+     120.49,
+     -883.19
+    ],
+    [
+     120.82,
+     -873.73
+    ],
+    [
+     117.81,
+     -873.63
+    ],
+    [
+     117.87,
+     -871.91
+    ],
+    [
+     104.98,
+     -871.46
+    ],
+    [
+     104.92,
+     -873.18
+    ],
+    [
+     100.62,
+     -873.03
+    ],
+    [
+     100.68,
+     -871.31
+    ],
+    [
+     87.79,
+     -870.86
+    ],
+    [
+     87.73,
+     -872.58
+    ],
+    [
+     84.72,
+     -872.47
+    ]
+   ],
+   "h": 6.3,
+   "id": "north_court_home_05",
+   "kind": "residence",
+   "parts": [
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       84.39,
+       -881.93
+      ],
+      [
+       87.4,
+       -882.03
+      ],
+      [
+       87.73,
+       -872.58
+      ],
+      [
+       84.72,
+       -872.47
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       87.34,
+       -883.75
+      ],
+      [
+       100.23,
+       -884.2
+      ],
+      [
+       100.68,
+       -871.31
+      ],
+      [
+       87.79,
+       -870.86
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       100.29,
+       -882.48
+      ],
+      [
+       104.59,
+       -882.63
+      ],
+      [
+       104.92,
+       -873.18
+      ],
+      [
+       100.62,
+       -873.03
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       104.53,
+       -884.35
+      ],
+      [
+       117.42,
+       -884.8
+      ],
+      [
+       117.87,
+       -871.91
+      ],
+      [
+       104.98,
+       -871.46
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       117.48,
+       -883.08
+      ],
+      [
+       120.49,
+       -883.19
+      ],
+      [
+       120.82,
+       -873.73
+      ],
+      [
+       117.81,
+       -873.63
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    }
+   ],
+   "ref": "B45",
+   "roof": {
+    "pitch": 20,
+    "ridge": "long",
+    "type": "hip"
+   },
+   "status": "existing",
+   "style": {
+    "notes": "4-unit townhome building: two two-storey unit blocks (white board-and-batten fronts, lap siding elsewhere, black fascia and gutters, low hip roofs) with one-storey garage wings at both ends and a garage pair in the middle (modelled as one 3.6 m opening); shed-roofed front porches on white posts beside the garages; white vinyl privacy-fenced patios at the back (R150, R160)",
+    "roof_mat": "shingle_grey",
+    "trim": "dark",
+    "wall": "siding_white",
+    "windows": "punched"
+   },
+   "zone": "north"
+  },
+  {
+   "background": true,
+   "entrances": [
+    {
+     "face": 178,
+     "kind": "portico",
+     "p": [
+      128.64,
+      -872.33
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 178,
+     "kind": "portico",
+     "p": [
+      137.54,
+      -872.64
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 178,
+     "kind": "portico",
+     "p": [
+      145.83,
+      -872.93
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 178,
+     "kind": "portico",
+     "p": [
+      154.73,
+      -873.24
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 178,
+     "kind": "garage",
+     "p": [
+      125.08,
+      -873.92
+     ],
+     "w": 2.6
+    },
+    {
+     "face": 178,
+     "kind": "garage",
+     "p": [
+      141.62,
+      -874.5
+     ],
+     "w": 3.6
+    },
+    {
+     "face": 178,
+     "kind": "garage",
+     "p": [
+      158.17,
+      -875.08
+     ],
+     "w": 2.6
+    }
+   ],
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "detached site ~400 m north of the north perimeter street; outline = the inset building shape on the 2026 wayfinding, georeferenced locally to the four street crossings around the block (fit residual 0.1 m; the inset's E-W lane lands within 1.3 m of the 2025 parcels' alley strip, an independent check), then shifted 2.5 m west so the rows sit centred in their 2025 parcel (as drawn, building 07 would reach 3 m into the street right-of-way); the block is open lawn and paving in the 2022 overview and an apartment-class (402) parcel in 2025; 2 storeys + garage wings counted in R150 (2-storey eave ~6.3 m, garage eave ~3.0 m)",
+    "open": "outline is the inset's stylised shape at its drawn scale: building length 36 m on the inset vs ~30-32 m estimated from R150's facade (lobe ~9-10 m wide, garages ~3 m), so each wing/lobe split is +-3 m and positions +-3 m; front side per row inferred from driveway access (row 1 north, row 2 south, east building west); unit count per building inferred (R150 door numbers 3 and 4); no post-2022 overhead image",
+    "src": [
+     "wayfinding2026",
+     "overview2022",
+     "parcels2025",
+     "R150",
+     "R160"
+    ]
+   },
+   "floors": 2,
+   "footprint": [
+    [
+     123.25,
+     -883.33
+    ],
+    [
+     126.25,
+     -883.43
+    ],
+    [
+     126.19,
+     -885.15
+    ],
+    [
+     139.09,
+     -885.6
+    ],
+    [
+     139.15,
+     -883.88
+    ],
+    [
+     143.44,
+     -884.03
+    ],
+    [
+     143.38,
+     -885.75
+    ],
+    [
+     156.28,
+     -886.2
+    ],
+    [
+     156.34,
+     -884.48
+    ],
+    [
+     159.34,
+     -884.59
+    ],
+    [
+     159.67,
+     -875.13
+    ],
+    [
+     156.67,
+     -875.03
+    ],
+    [
+     156.73,
+     -873.31
+    ],
+    [
+     143.83,
+     -872.86
+    ],
+    [
+     143.77,
+     -874.58
+    ],
+    [
+     139.48,
+     -874.43
+    ],
+    [
+     139.54,
+     -872.71
+    ],
+    [
+     126.64,
+     -872.26
+    ],
+    [
+     126.58,
+     -873.98
+    ],
+    [
+     123.58,
+     -873.87
+    ]
+   ],
+   "h": 6.3,
+   "id": "north_court_home_06",
+   "kind": "residence",
+   "parts": [
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       123.25,
+       -883.33
+      ],
+      [
+       126.25,
+       -883.43
+      ],
+      [
+       126.58,
+       -873.98
+      ],
+      [
+       123.58,
+       -873.87
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       126.19,
+       -885.15
+      ],
+      [
+       139.09,
+       -885.6
+      ],
+      [
+       139.54,
+       -872.71
+      ],
+      [
+       126.64,
+       -872.26
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       139.15,
+       -883.88
+      ],
+      [
+       143.44,
+       -884.03
+      ],
+      [
+       143.77,
+       -874.58
+      ],
+      [
+       139.48,
+       -874.43
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       143.38,
+       -885.75
+      ],
+      [
+       156.28,
+       -886.2
+      ],
+      [
+       156.73,
+       -873.31
+      ],
+      [
+       143.83,
+       -872.86
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       156.34,
+       -884.48
+      ],
+      [
+       159.34,
+       -884.59
+      ],
+      [
+       159.67,
+       -875.13
+      ],
+      [
+       156.67,
+       -875.03
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    }
+   ],
+   "ref": "B45",
+   "roof": {
+    "pitch": 20,
+    "ridge": "long",
+    "type": "hip"
+   },
+   "status": "existing",
+   "style": {
+    "notes": "4-unit townhome building: two two-storey unit blocks (white board-and-batten fronts, lap siding elsewhere, black fascia and gutters, low hip roofs) with one-storey garage wings at both ends and a garage pair in the middle (modelled as one 3.6 m opening); shed-roofed front porches on white posts beside the garages; white vinyl privacy-fenced patios at the back (R150, R160)",
+    "roof_mat": "shingle_grey",
+    "trim": "dark",
+    "wall": "siding_white",
+    "windows": "punched"
+   },
+   "zone": "north"
+  },
+  {
+   "background": true,
+   "entrances": [
+    {
+     "face": 268,
+     "kind": "portico",
+     "p": [
+      150.93,
+      -854.13
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 268,
+     "kind": "portico",
+     "p": [
+      151.24,
+      -845.24
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 268,
+     "kind": "portico",
+     "p": [
+      151.53,
+      -836.94
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 268,
+     "kind": "portico",
+     "p": [
+      151.84,
+      -828.05
+     ],
+     "w": 2.0
+    },
+    {
+     "face": 268,
+     "kind": "garage",
+     "p": [
+      152.52,
+      -857.69
+     ],
+     "w": 2.6
+    },
+    {
+     "face": 268,
+     "kind": "garage",
+     "p": [
+      153.1,
+      -841.15
+     ],
+     "w": 3.6
+    },
+    {
+     "face": 268,
+     "kind": "garage",
+     "p": [
+      153.68,
+      -824.6
+     ],
+     "w": 2.6
+    }
+   ],
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "detached site ~400 m north of the north perimeter street; outline = the inset building shape on the 2026 wayfinding, georeferenced locally to the four street crossings around the block (fit residual 0.1 m; the inset's E-W lane lands within 1.3 m of the 2025 parcels' alley strip, an independent check), then shifted 2.5 m west so the rows sit centred in their 2025 parcel (as drawn, building 07 would reach 3 m into the street right-of-way); the block is open lawn and paving in the 2022 overview and an apartment-class (402) parcel in 2025; 2 storeys + garage wings counted in R150 (2-storey eave ~6.3 m, garage eave ~3.0 m)",
+    "open": "outline is the inset's stylised shape at its drawn scale: building length 36 m on the inset vs ~30-32 m estimated from R150's facade (lobe ~9-10 m wide, garages ~3 m), so each wing/lobe split is +-3 m and positions +-3 m; front side per row inferred from driveway access (row 1 north, row 2 south, east building west); unit count per building inferred (R150 door numbers 3 and 4); no post-2022 overhead image",
+    "src": [
+     "wayfinding2026",
+     "overview2022",
+     "parcels2025",
+     "R150",
+     "R160"
+    ]
+   },
+   "floors": 2,
+   "footprint": [
+    [
+     161.93,
+     -859.53
+    ],
+    [
+     162.03,
+     -856.52
+    ],
+    [
+     163.75,
+     -856.58
+    ],
+    [
+     164.2,
+     -843.69
+    ],
+    [
+     162.48,
+     -843.63
+    ],
+    [
+     162.63,
+     -839.33
+    ],
+    [
+     164.35,
+     -839.39
+    ],
+    [
+     164.8,
+     -826.5
+    ],
+    [
+     163.08,
+     -826.44
+    ],
+    [
+     163.19,
+     -823.43
+    ],
+    [
+     153.73,
+     -823.1
+    ],
+    [
+     153.63,
+     -826.11
+    ],
+    [
+     151.91,
+     -826.05
+    ],
+    [
+     151.46,
+     -838.94
+    ],
+    [
+     153.18,
+     -839.0
+    ],
+    [
+     153.03,
+     -843.3
+    ],
+    [
+     151.31,
+     -843.24
+    ],
+    [
+     150.86,
+     -856.13
+    ],
+    [
+     152.58,
+     -856.19
+    ],
+    [
+     152.47,
+     -859.2
+    ]
+   ],
+   "h": 6.3,
+   "id": "north_court_home_07",
+   "kind": "residence",
+   "parts": [
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       161.93,
+       -859.53
+      ],
+      [
+       162.03,
+       -856.52
+      ],
+      [
+       152.58,
+       -856.19
+      ],
+      [
+       152.47,
+       -859.2
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       163.75,
+       -856.58
+      ],
+      [
+       164.2,
+       -843.69
+      ],
+      [
+       151.31,
+       -843.24
+      ],
+      [
+       150.86,
+       -856.13
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       162.48,
+       -843.63
+      ],
+      [
+       162.63,
+       -839.33
+      ],
+      [
+       153.18,
+       -839.0
+      ],
+      [
+       153.03,
+       -843.3
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       164.35,
+       -839.39
+      ],
+      [
+       164.8,
+       -826.5
+      ],
+      [
+       151.91,
+       -826.05
+      ],
+      [
+       151.46,
+       -838.94
+      ]
+     ],
+     "h": 6.3,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       163.08,
+       -826.44
+      ],
+      [
+       163.19,
+       -823.43
+      ],
+      [
+       153.73,
+       -823.1
+      ],
+      [
+       153.63,
+       -826.11
+      ]
+     ],
+     "h": 3.0,
+     "roof": {
+      "pitch": 20,
+      "ridge": "long",
+      "type": "hip"
+     }
+    }
+   ],
+   "ref": "B45",
+   "roof": {
+    "pitch": 20,
+    "ridge": "long",
+    "type": "hip"
+   },
+   "status": "existing",
+   "style": {
+    "notes": "4-unit townhome building: two two-storey unit blocks (white board-and-batten fronts, lap siding elsewhere, black fascia and gutters, low hip roofs) with one-storey garage wings at both ends and a garage pair in the middle (modelled as one 3.6 m opening); shed-roofed front porches on white posts beside the garages; white vinyl privacy-fenced patios at the back (R150, R160)",
+    "roof_mat": "shingle_grey",
+    "trim": "dark",
+    "wall": "siding_white",
+    "windows": "punched"
+   },
+   "zone": "north"
+  },
+  {
    "entrances": [
     {
      "face": 90,
@@ -11697,6 +13964,109 @@
     "windows": "none"
    },
    "zone": "west"
+  },
+  {
+   "background": false,
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "outline = the pin-6 rectangle on the 2026 wayfinding, fitted locally to the street crossings either side and the B05 corners (affine RMS 2.0 m), moved 2.5 m north to undo the map's street-side squeeze measured on B05; block a fills the street-side parcel (class 500, vacant, in the 2025 parcels), block b the parcel behind it; aligned with the ~1.9 deg town grid; neither block is in the 2022 overview",
+    "open": "position +-4 m and size +-2 m (diagram); height, floors, roof and walls unknown (no photo: the inventory gap 'exterior detail needed' remains); the 2025 parcels still class the rear parcel as a single-family dwelling (a 2022 house stands at ~x 259-272, z -650..-641), so whether block b replaced it or the map exaggerates that house is unresolved; entrances not evidenced",
+    "src": [
+     "wayfinding2026",
+     "overview2022",
+     "parcels2025"
+    ]
+   },
+   "floors": 2,
+   "footprint": [
+    [
+     242.65,
+     -634.46
+    ],
+    [
+     269.44,
+     -635.34
+    ],
+    [
+     269.81,
+     -624.05
+    ],
+    [
+     243.03,
+     -623.16
+    ]
+   ],
+   "h": 6.2,
+   "id": "terrace_apartments_a",
+   "kind": "residence",
+   "label": "Terrace Apartments",
+   "ref": "B06",
+   "roof": {
+    "pitch": 30,
+    "ridge": "long",
+    "type": "gable"
+   },
+   "status": "existing",
+   "style": {
+    "notes": "one of two equal E-W residential blocks (street-side block a, rear block b) with a parking strip off the alley to the west; storeys, roof form and cladding are NOT evidenced (no photo, built after the 2022 imagery): 2 storeys, gable roof and white siding are placeholders",
+    "roof_mat": "shingle_grey",
+    "trim": "white",
+    "wall": "siding_white",
+    "windows": "punched"
+   },
+   "zone": "north"
+  },
+  {
+   "background": false,
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "outline = the pin-6 rectangle on the 2026 wayfinding, fitted locally to the street crossings either side and the B05 corners (affine RMS 2.0 m), moved 2.5 m north to undo the map's street-side squeeze measured on B05; block a fills the street-side parcel (class 500, vacant, in the 2025 parcels), block b the parcel behind it; aligned with the ~1.9 deg town grid; neither block is in the 2022 overview",
+    "open": "position +-4 m and size +-2 m (diagram); height, floors, roof and walls unknown (no photo: the inventory gap 'exterior detail needed' remains); the 2025 parcels still class the rear parcel as a single-family dwelling (a 2022 house stands at ~x 259-272, z -650..-641), so whether block b replaced it or the map exaggerates that house is unresolved; entrances not evidenced",
+    "src": [
+     "wayfinding2026",
+     "overview2022",
+     "parcels2025"
+    ]
+   },
+   "floors": 2,
+   "footprint": [
+    [
+     242.19,
+     -648.35
+    ],
+    [
+     268.97,
+     -649.24
+    ],
+    [
+     269.35,
+     -637.94
+    ],
+    [
+     242.56,
+     -637.06
+    ]
+   ],
+   "h": 6.2,
+   "id": "terrace_apartments_b",
+   "kind": "residence",
+   "ref": "B06",
+   "roof": {
+    "pitch": 30,
+    "ridge": "long",
+    "type": "gable"
+   },
+   "status": "existing",
+   "style": {
+    "notes": "one of two equal E-W residential blocks (street-side block a, rear block b) with a parking strip off the alley to the west; storeys, roof form and cladding are NOT evidenced (no photo, built after the 2022 imagery): 2 storeys, gable roof and white siding are placeholders",
+    "roof_mat": "shingle_grey",
+    "trim": "white",
+    "wall": "siding_white",
+    "windows": "punched"
+   },
+   "zone": "north"
   },
   {
    "background": false,

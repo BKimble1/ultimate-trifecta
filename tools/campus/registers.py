@@ -136,7 +136,7 @@ def main():
     nn.write("chosen for this game, not the institution's names.\n\n")
     nn.write("| Code | Neutral id | In-game label | Traced as |\n|---|---|---|---|\n")
     by_ref = {}
-    for k in ("buildings", "water"):
+    for k in LAYERS:
         for it in data[k]:
             for r in re.split(r"[ ,]+", str(it.get("ref") or "")):
                 if r:

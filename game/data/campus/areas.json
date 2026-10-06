@@ -2890,6 +2890,41 @@
   },
   {
    "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "grey parking strip with the P symbol on the 2026 inset, west of building 07, from the alley strip to the southern E-W street; part of the paved lot visible there in the 2022 overview (x ~135-166)",
+    "open": "stall layout and exact edges unknown; whether the rest of the 2022 lot remains paved is unknown",
+    "src": [
+     "wayfinding2026",
+     "overview2022",
+     "parcels2025"
+    ]
+   },
+   "id": "north_court_homes_lot",
+   "kind": "parking",
+   "polygon": [
+    [
+     133.26,
+     -863.28
+    ],
+    [
+     148.1,
+     -863.81
+    ],
+    [
+     149.58,
+     -820.28
+    ],
+    [
+     134.74,
+     -819.75
+    ]
+   ],
+   "ref": "B45",
+   "zone": "north"
+  },
+  {
+   "ev": {
     "conf": "high",
     "date": "2022",
     "note": "Paved landing at the foot of the front stair joining the loop-side walk.",
@@ -4525,6 +4560,40 @@
    ],
    "ref": "A01",
    "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "parking strip drawn west of the two blocks on the 2026 wayfinding (u 1274.5-1284 -> x ~230-239), placed between the alley (centre x ~232, 2022 overview) and the blocks",
+    "open": "stall layout and surface unknown; may include the alley itself",
+    "src": [
+     "wayfinding2026",
+     "overview2022"
+    ]
+   },
+   "id": "terrace_apartments_lot",
+   "kind": "parking",
+   "polygon": [
+    [
+     232.89,
+     -648.04
+    ],
+    [
+     239.09,
+     -648.25
+    ],
+    [
+     239.93,
+     -623.06
+    ],
+    [
+     233.73,
+     -622.85
+    ]
+   ],
+   "ref": "B06",
+   "zone": "north"
   },
   {
    "ev": {

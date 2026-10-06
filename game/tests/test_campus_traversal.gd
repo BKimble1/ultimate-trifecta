@@ -55,6 +55,74 @@ func _mouths(bd: Dictionary, poly: PackedVector2Array) -> Array:
 	return out
 
 
+## The colliders exist: a ray down hits the ground in the open and every
+## (sampled) building's top over its footprint.  Guards the other checks,
+## which would pass vacuously if a collision body failed to build (Jolt
+## refuses a compound whose sub-shape ids need more than 32 bits).
+func test_colliders_are_built() -> void:
+	var h := _h()
+	h.make([R, P], [0, 1, 2], [], 41)
+	await h.step(2)
+	var lay := h.sim.layout
+	var space := h.sim.player(0).body.get_world_3d().direct_space_state
+	var ground := 0
+	var tops := 0
+	var tried := 0
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var b := CampusLayout.BOUNDS
+	while tried < 200:
+		var p := Vector2(rng.randf_range(b.position.x, b.end.x), rng.randf_range(b.position.y, b.end.y))
+		if not Geometry2D.is_point_in_polygon(p, lay.play_boundary):
+			continue
+		tried += 1
+		var q := PhysicsRayQueryParameters3D.create(Vector3(p.x, 60.0, p.y), Vector3(p.x, -30.0, p.y))
+		q.collision_mask = TC.L_WORLD
+		if not space.intersect_ray(q).is_empty():
+			ground += 1
+	t.check(ground == tried, "a ray down hits a collider at every sampled point of the play area (%d/%d)" % [ground, tried])
+	var nb := 0
+	for bd in lay.buildings:
+		if bool(bd["background"]) or float(bd["h"]) < 3.0:
+			continue
+		nb += 1
+		if nb % 5 != 0:
+			continue
+		var c := CampusData.centroid(bd["poly"]) if Geometry2D.is_point_in_polygon(CampusData.centroid(bd["poly"]), bd["poly"]) else Vector2.INF
+		if c == Vector2.INF:
+			continue
+		var q2 := PhysicsRayQueryParameters3D.create(Vector3(c.x, 80.0, c.y), Vector3(c.x, -30.0, c.y))
+		q2.collision_mask = TC.L_WORLD
+		var hit := space.intersect_ray(q2)
+		if not hit.is_empty() and float(hit["position"].y) > 2.0:
+			tops += 1
+		else:
+			t.check(false, "%s: a ray down over its middle hits the building (got %s)" % [bd["id"], "nothing" if hit.is_empty() else "y %.2f" % float(hit["position"].y)])
+	t.check(tops > 10, "building tops hit (%d)" % tops)
+	h.free_sim()
+
+
+## A start (or goal) point outside a mouth: straight out from the mouth's
+## middle, or, where a post or column stands there, from the nearest clear
+## lane along the mouth, as far out (up to 3 m) as is clear.  INF: the
+## mouth is closed off outside (it abuts another building).
+func _lane(h: SimHarness, mouth: Array) -> Vector2:
+	var m: Vector2 = mouth[0]
+	var nrm: Vector2 = mouth[1]
+	var tang := Vector2(-nrm.y, nrm.x)
+	for u in [0.0, 0.7, -0.7, 1.4, -1.4, 2.1, -2.1]:
+		var q := m + tang * float(u)
+		if _capsule_query(h, q + nrm * 0.6) or _capsule_query(h, q - nrm * 0.6):
+			continue
+		var best := q + nrm * 0.6
+		for out in [1.2, 2.0, 3.0]:
+			if _capsule_query(h, q + nrm * float(out)):
+				break
+			best = q + nrm * float(out)
+		return best
+	return Vector2.INF
+
+
 func test_open_passages_are_walkable() -> void:
 	var h := _h()
 	h.make([R, P], [0, 1, 2], [], 41)
@@ -76,11 +144,16 @@ func test_open_passages_are_walkable() -> void:
 			continue
 		for ps in bd["passages"]:
 			var poly: PackedVector2Array = ps["poly"]
-			var ms := _mouths(bd, poly)
-			if ms.is_empty():
-				continue
 			if float(ps["clear"]) < 2.2:
 				continue    # too low to run under: not a walk-through
+			var ms: Array = []
+			for mo in _mouths(bd, poly):
+				var ln := _lane(h, mo)
+				if ln != Vector2.INF:
+					ms.append([mo[0], mo[1], ln])
+			if ms.is_empty():
+				t.check(false, "%s: its open passage has a clear way in" % bd["id"])
+				continue
 			var best := [ms[0], ms[0]]
 			var bdist := -1.0
 			for i in ms.size():
@@ -89,10 +162,10 @@ func test_open_passages_are_walkable() -> void:
 					if dd > bdist:
 						bdist = dd
 						best = [ms[i], ms[j]]
-			var a: Vector2 = (best[0][0] as Vector2) + (best[0][1] as Vector2) * 3.0
+			var a: Vector2 = best[0][2]
 			if bdist > 0.0:
 				# a breezeway: in at one mouth, out at the other
-				var b: Vector2 = (best[1][0] as Vector2) + (best[1][1] as Vector2) * 3.0
+				var b: Vector2 = best[1][2]
 				var res2: Array = await _run(h, a, b, a.distance_to(b) / 6.0 * 2.0 + 1.5)
 				t.check(bool(res2[0]), "%s: through its open passage (%.1f m, %.2f s)" % [bd["id"], a.distance_to(b), float(res2[1])])
 			else:

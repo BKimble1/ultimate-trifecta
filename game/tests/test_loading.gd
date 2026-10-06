@@ -37,7 +37,7 @@ func test_round_is_prepared_in_bounded_steps() -> void:
 	t.check(not mc.prepared, "nothing heavy happens in _ready")
 	t.check(mc.sim == null, "the sim waits for its step")
 	var frames := 0
-	while not mc.prepared and frames < 400:
+	while not mc.prepared and frames < 1500:
 		await t.get_tree().process_frame
 		frames += 1
 	t.check(mc.prepared, "prepared")
@@ -47,7 +47,7 @@ func test_round_is_prepared_in_bounded_steps() -> void:
 	t.check(mc.prep_max_ms < 120.0, "no long freeze while loading (%.1f ms)" % mc.prep_max_ms)
 	t.check(mc.sim != null and mc.views.size() == mc.roster.size(), "sim and every character ready")
 	t.check(mc.round_live(), "practice goes live once prepared")
-	t.check(mc.water_nodes.size() == 6, "six waters")
+	t.check(mc.water_nodes.size() == mc.layout.waters.size() and mc.layout.pool_size() == 6, "every water drawn, six in the objective pool")
 	_end(mc)
 	await t.get_tree().process_frame
 	s.queue_free()
@@ -361,7 +361,7 @@ func test_preparation_budget_follows_a_slow_device() -> void:
 	var s := _offline()
 	var mc := _start(s)
 	var frames := 0
-	while not mc.prepared and frames < 400:
+	while not mc.prepared and frames < 1500:
 		OS.delay_msec(60)
 		await t.get_tree().process_frame
 		frames += 1

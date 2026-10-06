@@ -23,6 +23,7 @@ const TRIM := Color(0.92, 0.91, 0.88)
 const STONE_TRIM := Color(0.76, 0.73, 0.68)
 const IRON := Color(0.17, 0.19, 0.25)
 const WOOD := Color(0.62, 0.42, 0.27)
+const POST_R := 0.14     # slender timber posts in low open mouths (pavilions)
 const BRICK := Color(0.62, 0.33, 0.28)
 
 const WALLS := {
@@ -209,15 +210,28 @@ static func passage_columns(bd: Dictionary) -> Array:
 		for hl in passage_holes(a, b, bd["passages"]):
 			var clear := float(hl[2])
 			var span := float(hl[1]) * 2.0
-			if clear < 3.4 or span < 4.0:
+			# tall, wide mouths: giant columns; lower ones (open pavilions,
+			# pergolas): slender timber posts.  Narrow mouths stay clear.
+			var giant := clear >= 3.4 and span >= 4.0
+			if not giant and span < 5.0:
 				continue
-			var r := clampf(clear * 0.045, 0.25, 0.55)
-			var cnt := maxi(2, int(round(span / 3.4)) + 1)
+			var r := clampf(clear * 0.045, 0.25, 0.55) if giant else POST_R
+			var cnt := maxi(2, int(round(span / (3.4 if giant else 3.6))) + 1)
+			if cnt % 2 == 1:
+				# an even count leaves the middle bay open (the straight way in)
+				cnt = cnt - 1 if span / float(cnt - 2) <= (4.6 if giant else 4.2) else cnt + 1
 			var t0 := float(hl[0]) - float(hl[1]) + r + 0.1
 			var t1 := float(hl[0]) + float(hl[1]) - r - 0.1
 			for ci in cnt:
 				var t := lerpf(t0, t1, float(ci) / float(cnt - 1))
-				out.append([a + dir * t - Vector2(dir.y, -dir.x) * (r + 0.15), r, clear])
+				var q := a + dir * t - Vector2(dir.y, -dir.x) * (r + 0.15)
+				var dup := false
+				for o in out:
+					if (o[0] as Vector2).distance_to(q) < 0.9:
+						dup = true
+						break
+				if not dup:
+					out.append([q, r, clear])
 	return out
 
 
@@ -286,6 +300,14 @@ func _passage_art(bd: Dictionary, wall_spec: Array, trim: Color, doors: Array) -
 		var r := float(cl[1])
 		var h := float(cl[2])
 		var k2 := _k(q.x, q.y)
+		if r <= POST_R + 0.001:
+			# a square timber post with a small cap, stained like the frame
+			var wood := WOOD.darkened(0.45) if col.get_luminance() < 0.3 else WOOD
+			k2.mat = MeshKit.M_WOOD
+			k2.chamfer_box(Vector3(q.x, h * 0.5, q.y), Vector3(r * 2.0, h, r * 2.0), wood, 0.02, 0.0)
+			k2.chamfer_box(Vector3(q.x, h - 0.08, q.y), Vector3(r * 2.0 + 0.1, 0.16, r * 2.0 + 0.1), wood.darkened(0.1), 0.02, 0.0)
+			k2.mat = 0.0
+			continue
 		k2.mat = MeshKit.M_PLASTER
 		k2.revolve(Vector3(q.x, 0, q.y), PackedVector2Array([Vector2(r * 1.35, 0.0), Vector2(r * 1.35, 0.35), Vector2(r * 1.1, 0.5), Vector2(r, h * 0.5), Vector2(r * 0.9, h - 0.6), Vector2(r * 1.2, h - 0.3), Vector2(r * 1.4, h)]),
 			PackedColorArray([tc.darkened(0.12), tc.darkened(0.06), tc, tc, tc, tc.lightened(0.04), tc.lightened(0.06)]), 12)
@@ -831,10 +853,31 @@ static func portico_columns(e: Dictionary) -> PackedVector2Array:
 	var n := Vector2(sin(face), -cos(face))
 	var rt := Vector2(-n.y, n.x)
 	var width := portico_width(e)
-	var cols := clampi(int(width / 2.0) + 1, 2, 6)
+	var cols := portico_count(width)
 	for i in cols:
 		var u := -width * 0.5 + width * float(i) / float(cols - 1)
 		out.append(p + n * (0.06 + PORTICO_DEPTH - 0.35) + rt * u)
+	return out
+
+
+## Columns in a portico: an even count at least 2 m apart, so the middle
+## bay (the one before the door) is open and the way in is straight.
+static func portico_count(width: float) -> int:
+	var cols := clampi(int(width / 2.0) + 1, 2, 6)
+	return cols if cols % 2 == 0 else maxi(2, cols - 1)
+
+
+## The entrances whose portico is built (and collides): a generic building
+## draws none at an open porch or breezeway (the passage's own columns are
+## the portico there); the chapel draws every one.
+static func portico_entrances(bd: Dictionary) -> Array:
+	var out: Array = []
+	var chapel := bd.get("landmark") != null and String(bd["landmark"]) == "prayer_chapel"
+	for e in bd["entrances"]:
+		if String(e.get("kind", "door")) != "portico":
+			continue
+		if chapel or _passage_near(CampusLayout._v2(e.get("p", [0, 0])), bd["passages"]).is_empty():
+			out.append(e)
 	return out
 
 
@@ -842,7 +885,7 @@ static func portico_columns(e: Dictionary) -> PackedVector2Array:
 ## a triangular pediment in the trim colour.
 func portico(k: MeshKit, base: Vector3, nr: Vector3, rt: Vector3, width: float, height: float, col: Color) -> void:
 	var depth := PORTICO_DEPTH
-	var cols := clampi(int(width / 2.0) + 1, 2, 6)
+	var cols := portico_count(width)
 	k.mat = MeshKit.M_STONE
 	k.chamfer_box(base + nr * (depth * 0.5) + Vector3(0, 0.12, 0), Vector3(width + 0.6, 0.24, depth + 0.6), STONE_TRIM, 0.04, atan2(-rt.z, rt.x))
 	for i in cols:

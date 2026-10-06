@@ -155,10 +155,31 @@ func test_sight_walls_lost_sight_and_expiry() -> void:
 			watch = p
 		elif p.is_runner() and p.id != mc.local_slot and mate == null:
 			mate = p
-	# the Inkwell Library (22 x 34 m) between you and the Night Watch
-	var lib := Vector2(-50, 18)
-	var a := Vector3(lib.x - 14.0, 0.05, lib.y)
-	var behind := Vector3(lib.x + 14.0, 0.05, lib.y)
+	# a solid building 18-40 m across between you and the Night Watch: the
+	# first one (in data order) with open ground 4 m beyond both sides
+	var lay := mc.sim.layout
+	var lib := Vector2.INF
+	var half := 0.0
+	for bd in lay.buildings:
+		if bool(bd["background"]) or float(bd["h"]) < 6.0 or not (bd["passages"] as Array).is_empty():
+			continue
+		var r: Rect2 = bd["rect"]
+		var c := r.get_center()
+		if r.size.x < 18.0 or r.size.x > 40.0 or not Geometry2D.is_point_in_polygon(c, bd["poly"]):
+			continue
+		var pa := c - Vector2(r.size.x * 0.5 + 4.0, 0)
+		var pb := c + Vector2(r.size.x * 0.5 + 4.0, 0)
+		var ok := true
+		for q in [pa, pb, pa + Vector2(-10.0, 0)]:
+			if not lay.in_play(q) or lay.building_at(q, 1.5) >= 0 or lay.water_index_at(q, 1.0) >= 0:
+				ok = false
+		if ok:
+			lib = c
+			half = r.size.x * 0.5
+			break
+	t.check(lib != Vector2.INF, "a building to hide behind")
+	var a := Vector3(lib.x - half - 4.0, 0.05, lib.y)
+	var behind := Vector3(lib.x + half + 4.0, 0.05, lib.y)
 	me.body.global_position = a
 	watch.body.global_position = behind
 	await t.get_tree().physics_frame
@@ -170,7 +191,7 @@ func test_sight_walls_lost_sight_and_expiry() -> void:
 	t.eq(_seen_items(mc).size(), 0, "no marker")
 	# out in the open on your side: seen live, with its facing and role badge
 	var open := Vector3.INF
-	for c in [Vector3(lib.x - 14.0, 0.05, lib.y + 12.0), Vector3(lib.x - 14.0, 0.05, lib.y - 12.0), Vector3(lib.x - 24.0, 0.05, lib.y)]:
+	for c in [a + Vector3(0, 0, 12.0), a + Vector3(0, 0, -12.0), a + Vector3(-10.0, 0, 0)]:
 		if _clear(mc, a, c):
 			open = c
 			break

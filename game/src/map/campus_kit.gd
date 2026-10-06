@@ -208,8 +208,8 @@ func _init(layout: CampusLayout, fill: bool = true) -> void:
 		stamp_paths()
 
 
-func stamp_trees() -> void:
-	for t in _layout.trees:
+func stamp_trees(from: int = 0, to: int = -1) -> void:
+	for t in _layout.trees.slice(from, _layout.trees.size() if to < 0 else to):
 		_stamp(ao, t["pos"], 3.6, 0.45, 1.6)
 		_stamp(canopy, t["pos"], 5.0, 0.55, 0.8)
 
@@ -266,8 +266,8 @@ func stamp_lights() -> void:
 				_stamp(warm, c, r + 8.0, 0.25, 1.0)
 
 
-func stamp_paths() -> void:
-	for pth in _layout.paths:
+func stamp_paths(from: int = 0, to: int = -1) -> void:
+	for pth in _layout.paths.slice(from, _layout.paths.size() if to < 0 else to):
 		var pts: PackedVector2Array = pth["pts"]
 		var hw: float = float(pth["w"]) * 0.5
 		for i in pts.size() - 1:
@@ -333,6 +333,7 @@ func _stamp_poly(grid: PackedFloat32Array, poly: PackedVector2Array, falloff: fl
 		return
 	var b := CampusLayout.BOUNDS
 	var big := CampusData.bounds(poly).grow(falloff)
+	var near := CampusData.edge_buckets(poly, falloff)
 	var i0 := maxi(0, int((big.position.x - b.position.x) / CELL))
 	var i1 := mini(_w, int((big.end.x - b.position.x) / CELL) + 2)
 	for j in range(maxi(0, int((big.position.y - b.position.y) / CELL)), mini(_d, int((big.end.y - b.position.y) / CELL) + 2)):
@@ -348,7 +349,7 @@ func _stamp_poly(grid: PackedFloat32Array, poly: PackedVector2Array, falloff: fl
 				continue
 			var dist := 0.0
 			if not inside:
-				dist = CampusData.dist_to_edge(Vector2(x, z), poly)
+				dist = CampusData.near_edge_dist(Vector2(x, z), poly, near, falloff)
 				if dist >= falloff:
 					continue
 			var idx := j * _w + i

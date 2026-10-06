@@ -3817,7 +3817,8 @@
     "note": "East side of the campus loop from the north perimeter street (cut at z = -385) south to the main entrance (cut at z = -150); asphalt about 7 m, widening to about 10 m between z -205 and -180 (lay-by on the east side).",
     "open": "Purpose of the widened section (bus/drop-off lay-by) unverified."
    },
-   "zone": "ncore"
+   "zone": "ncore",
+   "ref": "C02"
   },
   {
    "id": "campus_loop_northwest",
@@ -3881,7 +3882,8 @@
     "note": "North-west part of the campus loop from the north perimeter street (cut at z = -385) to the campus-center drop-off; centreline drifts east from x 57.5 to 65.8 (brightness profiles every 15 m). In 2026 the wayfinding shows this road ending at the campus-center drop-off: the 2022 curve south-west from here toward the lake side is gone (see changes).",
     "open": "Exact 2026 termination/turnaround geometry at the south end not visible in any source."
    },
-   "zone": "ncore"
+   "zone": "ncore",
+   "ref": "C02"
   },
   {
    "id": "innovation_center_dropoff",

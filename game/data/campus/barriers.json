@@ -121,6 +121,7 @@
     "conf": "medium",
     "date": "2022",
     "note": "outfield fence on the outer edge of the warning track",
+    "open": "integrator: west side and north edge re-placed on the dark fence line at the outer edge of the warning track (2022 aerial; it had been drawn 3-4 m out, across the walk and in the lot)",
     "src": [
      "aerial2022",
      "R059"
@@ -131,28 +132,36 @@
    "kind": "fence_chain",
    "pts": [
     [
-     -163,
+     -163.2,
      -137
     ],
     [
-     -163,
-     -193
+     -160.6,
+     -160
+    ],
+    [
+     -159.4,
+     -185
+    ],
+    [
+     -159.0,
+     -190.6
     ],
     [
      -150,
-     -194.5
+     -191.9
     ],
     [
      -130,
-     -196
+     -193.0
     ],
     [
      -110,
-     -196
+     -193.0
     ],
     [
      -92,
-     -193
+     -191.2
     ],
     [
      -76,
@@ -359,7 +368,7 @@
     "conf": "low",
     "date": "2026",
     "note": "Curved brick seat wall (west half) framing the round court at the north entrance.",
-    "open": "Radius/position estimated.",
+    "open": "Radius/position estimated.; gate gap(s) cut where traced walks cross (merge rule)",
     "src": [
      "R336",
      "User155234"
@@ -398,8 +407,30 @@
      -373.53
     ],
     [
-     144.75,
-     -375.14
+     143.79,
+     -374.02
+    ]
+   ],
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "Curved brick seat wall (west half) framing the round court at the north entrance.",
+    "open": "Radius/position estimated.; gate gap(s) cut where traced walks cross (merge rule)",
+    "src": [
+     "R336",
+     "User155234"
+    ]
+   },
+   "h": 0.55,
+   "id": "innovation_center_seat_wall_w_g1",
+   "kind": "wall_low",
+   "pts": [
+    [
+     146.15,
+     -376.05
     ],
     [
      146.53,
@@ -445,7 +476,7 @@
     "conf": "medium",
     "date": "2022",
     "note": "Enclosure with equipment against the music center's west wall.",
-    "open": "Fence type not seen.",
+    "open": "Fence type not seen.; gate gap(s) cut where traced walks cross (merge rule)",
     "src": [
      "aerial2022"
     ]
@@ -464,6 +495,56 @@
     ],
     [
      75.2,
+     -193.28
+    ]
+   ],
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "Enclosure with equipment against the music center's west wall.",
+    "open": "Fence type not seen.; gate gap(s) cut where traced walks cross (merge rule)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 2.0,
+   "id": "music_center_mech_yard_fence_g1",
+   "kind": "fence_iron",
+   "pts": [
+    [
+     75.2,
+     -188.65
+    ],
+    [
+     75.2,
+     -187.8
+    ],
+    [
+     76.01,
+     -187.8
+    ]
+   ],
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "Enclosure with equipment against the music center's west wall.",
+    "open": "Fence type not seen.; gate gap(s) cut where traced walks cross (merge rule)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 2.0,
+   "id": "music_center_mech_yard_fence_g2",
+   "kind": "fence_iron",
+   "pts": [
+    [
+     80.44,
      -187.8
     ],
     [
@@ -879,6 +960,7 @@
     "conf": "medium",
     "date": "2022",
     "note": "fence line east of the turf (dark line + shadow in aerial)",
+    "open": "integrator: top end follows the north fence",
     "src": [
      "aerial2022",
      "R181"
@@ -890,7 +972,7 @@
    "pts": [
     [
      -190,
-     -207.5
+     -202.3
     ],
     [
      -190,
@@ -904,7 +986,7 @@
     "conf": "low",
     "date": "2022",
     "note": "north end fence inferred from the line at the apron edge",
-    "open": "gates/openings",
+    "open": "gates/openings; integrator: moved to the fence line at the field edge (z -202, posts visible in the 2022 aerial); the concrete band north of it is the walk",
     "src": [
      "aerial2022"
     ]
@@ -915,11 +997,11 @@
    "pts": [
     [
      -262,
-     -207.5
+     -202.3
     ],
     [
      -190,
-     -207.5
+     -202.3
     ]
    ],
    "zone": "west"
@@ -1054,104 +1136,140 @@
    "kind": "wall_low",
    "pts": [
     [
-     88.8,
-     25.0
+     89.77,
+     25.14
     ],
     [
-     88.76,
-     26.22
+     89.73,
+     26.43
     ],
     [
-     88.64,
-     27.43
+     89.6,
+     27.72
     ],
     [
-     88.44,
-     28.63
+     89.39,
+     29.0
     ],
     [
-     90.68,
-     30.49
+     91.51,
+     30.91
     ],
     [
-     90.27,
-     31.81
+     91.09,
+     32.31
     ],
     [
-     89.79,
-     33.11
+     90.57,
+     33.67
     ],
     [
-     89.21,
-     34.38
+     89.97,
+     35.0
     ],
     [
-     86.31,
-     34.3
+     87.12,
+     35.04
     ],
     [
-     85.67,
-     35.33
+     86.43,
+     36.14
     ],
     [
-     84.96,
-     36.32
+     85.68,
+     37.19
     ],
     [
-     84.18,
-     37.26
+     84.86,
+     38.2
     ],
     [
-     85.19,
-     39.99
+     85.74,
+     40.91
     ],
     [
-     84.18,
-     40.94
+     84.67,
+     41.91
     ],
     [
-     83.11,
-     41.82
+     83.55,
+     42.83
     ],
     [
-     81.98,
-     42.63
+     82.36,
+     43.68
     ],
     [
-     79.5,
-     41.11
+     79.87,
+     42.29
     ],
     [
-     78.43,
-     41.68
+     78.73,
+     42.9
     ],
     [
-     77.32,
-     42.18
+     77.55,
+     43.43
     ],
     [
-     76.18,
-     42.61
+     76.33,
+     43.89
     ],
     [
-     75.69,
-     45.48
+     75.74,
+     46.68
     ],
     [
-     74.34,
-     45.79
+     74.32,
+     47.01
     ],
     [
-     72.97,
-     46.02
+     72.88,
+     47.25
     ],
     [
-     71.59,
-     46.15
+     71.43,
+     47.39
     ],
     [
-     70.2,
-     43.6
+     69.97,
+     44.94
+    ],
+    [
+     68.68,
+     44.9
+    ],
+    [
+     67.39,
+     44.77
+    ],
+    [
+     66.11,
+     44.56
+    ],
+    [
+     64.2,
+     46.68
+    ],
+    [
+     62.8,
+     46.26
+    ],
+    [
+     61.44,
+     45.74
+    ],
+    [
+     60.11,
+     45.14
+    ],
+    [
+     60.07,
+     42.29
+    ],
+    [
+     58.97,
+     41.6
     ]
    ],
    "zone": "ccore"
@@ -1173,24 +1291,84 @@
    "kind": "wall_low",
    "pts": [
     [
-     63.39,
-     45.07
+     52.21,
+     33.9
     ],
     [
-     62.09,
-     44.59
+     51.68,
+     32.72
     ],
     [
-     60.82,
-     44.01
+     51.22,
+     31.5
     ],
     [
-     60.9,
-     41.11
+     48.43,
+     30.91
     ],
     [
-     59.87,
-     40.47
+     48.1,
+     29.49
+    ],
+    [
+     47.86,
+     28.05
+    ],
+    [
+     47.72,
+     26.6
+    ],
+    [
+     50.17,
+     25.14
+    ],
+    [
+     50.21,
+     23.85
+    ],
+    [
+     50.34,
+     22.56
+    ],
+    [
+     50.55,
+     21.28
+    ],
+    [
+     48.43,
+     19.37
+    ],
+    [
+     48.85,
+     17.97
+    ],
+    [
+     49.37,
+     16.61
+    ],
+    [
+     49.97,
+     15.28
+    ],
+    [
+     52.82,
+     15.24
+    ],
+    [
+     53.51,
+     14.14
+    ],
+    [
+     54.26,
+     13.09
+    ],
+    [
+     55.08,
+     12.08
+    ],
+    [
+     54.2,
+     9.37
     ]
    ],
    "zone": "ccore"
@@ -1212,64 +1390,48 @@
    "kind": "wall_low",
    "pts": [
     [
-     52.57,
-     36.78
+     68.51,
+     2.89
     ],
     [
-     54.09,
-     34.3
+     69.97,
+     5.34
     ],
     [
-     53.52,
-     33.23
+     71.26,
+     5.38
     ],
     [
-     53.02,
-     32.12
+     72.55,
+     5.51
     ],
     [
-     52.59,
-     30.98
+     73.83,
+     5.72
     ],
     [
-     49.72,
-     30.49
+     75.74,
+     3.6
     ],
     [
-     49.41,
-     29.14
+     77.14,
+     4.02
     ],
     [
-     49.18,
-     27.77
+     78.5,
+     4.54
     ],
     [
-     49.05,
-     26.39
+     79.83,
+     5.14
     ],
     [
-     51.6,
-     25.0
+     79.87,
+     7.99
     ],
     [
-     51.64,
-     23.78
-    ],
-    [
-     51.76,
-     22.57
-    ],
-    [
-     51.96,
-     21.37
-    ],
-    [
-     49.72,
-     19.51
-    ],
-    [
-     50.13,
-     18.19
+     80.97,
+     8.68
     ]
    ],
    "zone": "ccore"
@@ -1291,142 +1453,44 @@
    "kind": "wall_low",
    "pts": [
     [
-     55.44,
-     13.68
+     88.51,
+     12.75
     ],
     [
-     56.22,
-     12.74
+     87.12,
+     15.24
     ],
     [
-     55.21,
-     10.01
+     87.73,
+     16.38
     ],
     [
-     56.22,
-     9.06
-    ]
-   ],
-   "zone": "ccore"
-  },
-  {
-   "ev": {
-    "conf": "medium",
-    "date": "2022",
-    "note": "low brick garden walls with stone coping ringing the chapel garden, stepped into alcoves with benches",
-    "open": "alcove count and depth approximate (12 alcoves modelled)",
-    "src": [
-     "aerial2022",
-     "R009",
-     "R012"
-    ]
-   },
-   "h": 0.6,
-   "id": "wall_cc_chapel_04",
-   "kind": "wall_low",
-   "pts": [
-    [
-     68.81,
-     3.85
+     88.26,
+     17.56
     ],
     [
-     70.2,
-     6.4
+     88.72,
+     18.78
     ],
     [
-     71.42,
-     6.44
+     91.51,
+     19.37
     ],
     [
-     72.63,
-     6.56
+     91.84,
+     20.79
     ],
     [
-     73.83,
-     6.76
-    ],
-    [
-     75.69,
-     4.52
-    ],
-    [
-     77.01,
-     4.93
-    ],
-    [
-     78.31,
-     5.41
-    ],
-    [
-     79.58,
-     5.99
-    ],
-    [
-     79.5,
-     8.89
-    ],
-    [
-     80.53,
-     9.53
-    ]
-   ],
-   "zone": "ccore"
-  },
-  {
-   "ev": {
-    "conf": "medium",
-    "date": "2022",
-    "note": "low brick garden walls with stone coping ringing the chapel garden, stepped into alcoves with benches",
-    "open": "alcove count and depth approximate (12 alcoves modelled)",
-    "src": [
-     "aerial2022",
-     "R009",
-     "R012"
-    ]
-   },
-   "h": 0.6,
-   "id": "wall_cc_chapel_05",
-   "kind": "wall_low",
-   "pts": [
-    [
-     87.83,
-     13.22
-    ],
-    [
-     86.31,
-     15.7
-    ],
-    [
-     86.88,
-     16.77
-    ],
-    [
-     87.38,
-     17.88
-    ],
-    [
-     87.81,
-     19.02
-    ],
-    [
-     90.68,
-     19.51
-    ],
-    [
-     90.99,
-     20.86
-    ],
-    [
-     91.22,
+     92.08,
      22.23
     ],
     [
-     91.35,
-     23.61
+     92.22,
+     23.68
     ],
     [
-     88.8,
-     25.0
+     89.77,
+     25.14
     ]
    ],
    "zone": "ccore"

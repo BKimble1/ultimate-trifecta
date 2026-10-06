@@ -65,15 +65,14 @@ static func frame(bd: Dictionary) -> Dictionary:
 
 ## Every solid of the tower: [{poly, base, h}].  Piers (with their base
 ## course), tie beams across the gap, the bell assembly's footprint and the
-## plaque plinth in front.
+## plaque plinth beside the walk-through.
 static func solids(bd: Dictionary) -> Array:
 	var f := frame(bd)
 	var out: Array = []
 	if bool(f.get("traced", false)):
 		for pt in bd["parts"]:
 			out.append({"poly": pt["poly"], "base": float(pt.get("base", 0.0)), "h": float(pt["h"]), "kind": "pier" if float(pt.get("base", 0.0)) < 1.0 else "bells"})
-		var pc: Vector2 = (f["c"] as Vector2) - (f["back"] as Vector2) * (float(f["len"]) * 0.5 + 1.5)
-		var ff := {"c": pc, "back": f["back"], "right": f["right"]}
+		var ff := {"c": plinth_center(f), "back": f["back"], "right": f["right"]}
 		out.append({"poly": _rect(ff, 0.0, 0.0, 0.7, 1.1), "base": 0.0, "h": 1.05, "kind": "plinth"})
 		return out
 	for p in PIERS:
@@ -82,8 +81,16 @@ static func solids(bd: Dictionary) -> Array:
 	var h := float(f["h"])
 	for y in _beam_heights(h):
 		out.append({"poly": _rect(f, float(f["len"]) / 3.0, 0.0, float(f["len"]) / 3.0, float(f["gap"]) + 0.2), "base": y, "h": y + 0.55, "kind": "beam"})
-	out.append({"poly": _rect(f, -float(f["len"]) * 0.5 - 1.5, 0.0, 0.7, 1.1), "base": 0.0, "h": 1.05, "kind": "plinth"})
+	out.append({"poly": _rect({"c": plinth_center(f), "back": f["back"], "right": f["right"]}, 0.0, 0.0, 0.7, 1.1), "base": 0.0, "h": 1.05, "kind": "plinth"})
 	return out
+
+
+## The plaque plinth stands in front of the pier beside the walk-through,
+## clear of the gap's axis (the way through stays straight and open).
+static func plinth_center(f: Dictionary) -> Vector2:
+	var right: Vector2 = f.get("right", Vector2(-(f["back"] as Vector2).y, (f["back"] as Vector2).x))
+	var gap := float(f.get("gap", MIN_GAP))
+	return (f["c"] as Vector2) - (f["back"] as Vector2) * (float(f["len"]) * 0.5 + 1.5) + right * (gap * 0.5 + 1.2)
 
 
 static func _beam_heights(h: float) -> PackedFloat32Array:
@@ -155,7 +162,7 @@ static func build(B: CampusBuilder, bd: Dictionary) -> void:
 
 ## The traced tower: each pier part a brick shaft (base course, slots, a
 ## stone cap), the raised part the bell frame with its bells, the plaque
-## plinth in front of the gap, up-lights at the piers' feet.
+## plinth beside the gap, up-lights at the piers' feet.
 static func _build_traced(B: CampusBuilder, bd: Dictionary, f: Dictionary) -> void:
 	var c: Vector2 = f["c"]
 	var k := B.kit_at(c.x, c.y)
@@ -178,7 +185,7 @@ static func _build_traced(B: CampusBuilder, bd: Dictionary, f: Dictionary) -> vo
 			_pier(k, kd, f, q, h, yaw, side)
 		else:
 			_bells_at(k, oc, back, f["right"], du, dv, base, h, yaw)
-	_plinth(k, kd, {"c": c, "back": back, "len": f["len"]}, yaw)
+	_plinth(k, kd, f, yaw)
 	for pt2 in bd["parts"]:
 		if float(pt2.get("base", 0.0)) >= 1.0:
 			continue
@@ -301,12 +308,12 @@ static func _bells(k: MeshKit, f: Dictionary, yaw: float) -> void:
 	k.mat = 0.0
 
 
-## A low plinth in front of the walk-through with a blank bronze panel (no
+## A low plinth beside the walk-through with a blank bronze panel (no
 ## inscription is reproduced).
 static func _plinth(k: MeshKit, kd: MeshKit, f: Dictionary, yaw: float) -> void:
 	var c: Vector2 = f["c"]
 	var back: Vector2 = f["back"]
-	var o := c - back * (float(f["len"]) * 0.5 + 1.5)
+	var o := plinth_center(f)
 	k.mat = MeshKit.M_BRICK
 	k.chamfer_box(Vector3(o.x, 0.48, o.y), Vector3(1.1, 0.96, 0.7), BRICK.darkened(0.04), 0.04, yaw + PI * 0.5, CAP)
 	k.mat = MeshKit.M_STONE

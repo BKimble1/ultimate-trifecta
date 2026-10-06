@@ -20,10 +20,44 @@ Two pipelines live here:
 | `tile.py` | Renders an aerial tile with a labelled metre grid (`--src` draws traced data on top). |
 | `overlay.py` | Draws whole layers over the aerial for checking. |
 | `georef.py` | Fits (least squares affine) and warps newer plans/diagrams onto the frame. |
-| `build_data.py` | Validates the traced zones (ids, kinds, polygons, evidence, a private real-name screen) and writes `game/data/campus/<layer>.json`. `--check` validates only. |
+| `build_data.py` | Validates the traced zones (ids, kinds, polygons, evidence, a private real-name screen) and writes `game/data/campus/<layer>.json`. `--check` validates only. Two merge rules run first (below). |
+| `make_gameplay.py` | Writes `game/data/campus/gameplay.json` from the merged layers and the hand-written `gameplay_spec.json` (below). `--check` prints only. |
+| `registers.py` | Writes the evidence, change and neutral-name registers in `docs/campus/` from the merged data, screened against the private deny list. |
+| `scan_shipping.py` | Acceptance gate 8: scans everything that ships (game/, the export filters) for real names, branding and reference imagery. |
 
-`game/data/campus/gameplay.json` (play boundary, start dorms, objective
-pool, spawns, gadget and coin spots) is written by hand, not traced.
+### Merge rules (`build_data.py`)
+
+The zones were traced separately, layer by layer. Two conflicts between
+layers are resolved at merge time, and each changed item says so in its
+evidence (`ev.open`):
+
+- **Gates.** Where a traced walk or road crosses a fence, hedge, rail or low
+  wall at more than 25°, the barrier gets a gap as wide as the walk plus
+  0.8 m. A real walk through a fence line passes a gate. Construction fences
+  and retaining walls stay closed.
+- **Off the walk.** A tree trunk or a prop (bench, table, planter, sign, bike
+  rack, lamp, pole, bin) whose traced spot falls on a walk moves straight out
+  to the walk's edge. Crowns and pole shadows place them a little off. If
+  that would land it on another walk, it stays where it was (and the count is
+  printed).
+
+### The gameplay layer (`make_gameplay.py`)
+
+`gameplay_spec.json` holds the design decisions: the two start halls (each
+one's open interior, its doors at the building's real entrances, furniture),
+the objective pool (which six real waters stand in for the game's six slots,
+with names, colours and icons), where the Night Watch starts, and the
+landmark labels. The script computes the rest from the place:
+
+- **Play boundary.** Every campus feature grown by 30 m, merged, closed back
+  in by 18 m and simplified.
+- **Coin candidates.** Spread along the walks at least 26 m apart, clear of
+  buildings, water, trunks and doors, and 6 m from every water's exits.
+- **Gadget spots.** Farthest-point order over walks and plazas.
+- **Night Watch and cart spawns.**
+
+It refuses an objective water that is missing from the data or lies outside
+the play area.
 
 ## Art kit
 

@@ -91,13 +91,34 @@ func _run() -> void:
 	for v in _views():
 		# overviews look across the whole campus: no distance fog for them
 		var env: Environment = world_env.get("environment") if world_env != null else null
+		var over := String(v[0]).begins_with("overview")
 		if env != null:
-			env.fog_enabled = not String(v[0]).begins_with("overview")
+			env.fog_enabled = not over
+		# and nothing culled by its play-time view distance (chunks fade out a
+		# few hundred metres away; an overview stands farther off than that)
+		_set_ranges(self, over)
 		cam.look_at_from_position(v[1], v[2])
 		for i in 8:
 			await get_tree().process_frame
 		await RenderingServer.frame_post_draw
 		var img := get_viewport().get_texture().get_image()
 		img.save_png(out_dir.path_join("%s.png" % v[0]))
-		printerr("VIEW %s" % v[0])
+		# what the frame drew (software rendering: counts, not timings)
+		printerr("VIEW %s draws %d objects %d primitives %d" % [v[0],
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)])
 	get_tree().quit()
+
+
+var _ranges := {}     # GeometryInstance3D -> its own visibility_range_end
+
+
+func _set_ranges(n: Node, unlimited: bool) -> void:
+	for c in n.get_children():
+		var gi := c as GeometryInstance3D
+		if gi != null:
+			if not _ranges.has(gi):
+				_ranges[gi] = gi.visibility_range_end
+			gi.visibility_range_end = 0.0 if unlimited else float(_ranges[gi])
+		_set_ranges(c, unlimited)

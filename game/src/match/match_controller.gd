@@ -403,9 +403,15 @@ func _prep_world() -> void:
 
 
 ## Data every round shares, built once per session in steps of their own:
-## the ground collision shape and (host) the bots' navigation grid.
-func _prep_ground() -> void:
-	CampusBuilder.ground_shape(layout)
+## the height grid (on a worker), the ground tiles (one a step, each built
+## in the physics engine as it goes), the collision recipe (in slices) and
+## (host) the bots' navigation grid.
+func _prep_ground() -> bool:
+	if CampusBuilder.height_grid_step(layout):
+		return true
+	if CampusBuilder.ground_tile_step(layout):
+		return true
+	return CampusBuilder.collision_step(layout)
 
 
 ## (V5) in slices, one per call, so the loading frame never holds the whole

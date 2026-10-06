@@ -32,20 +32,34 @@ func _ask(nav: NavGrid, a: Vector2, b: Vector2, cart := false) -> Array:
 	return [PackedVector2Array(), 60]
 
 
+## A water's k-th shore exit (open ground) as a 2D point.
+func _ex(lay: CampusLayout, wi: int, k: int) -> Vector2:
+	var ex: Array = lay.waters[wi]["exits"]
+	var e: Vector3 = ex[k % ex.size()]
+	return Vector2(e.x, e.z)
+
+
 func test_searches_run_off_the_main_thread_on_a_fixed_schedule() -> void:
+	# the counters are the shared grid's: let any match a previous test freed
+	# (an online rig tears down over a few frames) stop asking first
+	for i in 20:
+		await t.get_tree().physics_frame
 	var nav := _nav()
 	await t.get_tree().physics_frame
 	var lay := CampusLayout.shared()
-	var a: Vector2 = lay.waters[0]["center"]
-	var b: Vector2 = lay.waters[3]["center"]
-	var c: Vector2 = lay.waters[5]["center"]
+	# shore exits: open ground by construction (a centre plus a few metres
+	# can be in the water on the real campus, whose lake is 200 m across)
+	var a1 := _ex(lay, 0, 0)
+	var b1 := _ex(lay, 3, 0)
+	var b2 := _ex(lay, 3, 1)
+	var c1 := _ex(lay, 5, 0)
 	var direct_us := Time.get_ticks_usec()
-	var ref := nav.find_path(b + Vector2(-12, 0), c + Vector2(0, -12))
+	var ref := nav.find_path(b2, c1)
 	direct_us = Time.get_ticks_usec() - direct_us
 	var f0 := Engine.get_physics_frames()
 	var t0 := Time.get_ticks_usec()
-	var p1 := nav.find_path_budgeted(a + Vector2(0, 12), b + Vector2(0, 12))
-	var p2 := nav.find_path_budgeted(b + Vector2(-12, 0), c + Vector2(0, -12))
+	var p1 := nav.find_path_budgeted(a1, b1)
+	var p2 := nav.find_path_budgeted(b2, c1)
 	var ask_us := Time.get_ticks_usec() - t0
 	t.check(p1.is_empty() and p2.is_empty() and nav.deferred, "both requests are queued, not searched on this thread")
 	t.check(ref.size() >= 0, "(direct reference search: %d points)" % ref.size())
@@ -56,12 +70,12 @@ func test_searches_run_off_the_main_thread_on_a_fixed_schedule() -> void:
 	for i in NavGrid.ASYNC_DELAY + NavGrid.ASYNC_SPACING + 3:
 		await t.get_tree().physics_frame
 		if got1 < 0:
-			var p := nav.find_path_budgeted(a + Vector2(0, 12), b + Vector2(0, 12))
+			var p := nav.find_path_budgeted(a1, b1)
 			if not nav.deferred:
 				got1 = Engine.get_physics_frames() - f0
 				t.check(p.size() >= 2, "the first answer is a path (%d points)" % p.size())
 		if got2 < 0:
-			var q := nav.find_path_budgeted(b + Vector2(-12, 0), c + Vector2(0, -12))
+			var q := nav.find_path_budgeted(b2, c1)
 			if not nav.deferred:
 				got2 = Engine.get_physics_frames() - f0
 				t.eq(q.size(), ref.size(), "the background answer is the direct search's path (%d points)" % ref.size())
@@ -76,8 +90,8 @@ func test_a_slow_worker_is_waited_for_on_the_due_tick() -> void:
 	var nav := _nav()
 	await t.get_tree().physics_frame
 	var lay := CampusLayout.shared()
-	var a: Vector2 = lay.waters[1]["center"] + Vector2(0, 14)
-	var b: Vector2 = lay.waters[4]["center"] + Vector2(12, 0)
+	var a := _ex(lay, 1, 0)
+	var b := _ex(lay, 4, 0)
 	nav.debug_job_sleep_ms = 400
 	var waits := nav.stat_wait_n
 	var r: Array = await _ask(nav, a, b)
@@ -100,7 +114,7 @@ func test_clear_line_and_nearby_start_need_no_search() -> void:
 	# a long path, then the same goal from another point of the same start
 	# cell in the next tick (a start a few metres away reuses it only when its
 	# first leg is clear - checked, not assumed)
-	var far: Vector2 = lay.waters[4]["center"] + Vector2(10, 10)
+	var far := _ex(lay, 4, 1)
 	var p1: PackedVector2Array = (await _ask(nav, from, far))[0]
 	await t.get_tree().physics_frame
 	var searches := int(nav.path_stats["search"])

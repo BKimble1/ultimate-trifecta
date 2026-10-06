@@ -5093,6 +5093,3678 @@
   },
   {
    "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_001",
+   "kind": "walk",
+   "pts": [
+    [
+     -38.38,
+     -179.27
+    ],
+    [
+     -38.68,
+     -168.65
+    ],
+    [
+     -37.79,
+     -167.18
+    ],
+    [
+     -35.73,
+     -150.95
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_002",
+   "kind": "walk",
+   "pts": [
+    [
+     -27.76,
+     -275.16
+    ],
+    [
+     -22.74,
+     -277.22
+    ],
+    [
+     -17.43,
+     -276.93
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.1,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_003",
+   "kind": "walk",
+   "pts": [
+    [
+     -26.58,
+     -203.76
+    ],
+    [
+     -25.4,
+     -216.15
+    ],
+    [
+     -27.76,
+     -221.76
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_004",
+   "kind": "walk",
+   "pts": [
+    [
+     -22.45,
+     -193.14
+    ],
+    [
+     -24.51,
+     -191.66
+    ],
+    [
+     -24.81,
+     -186.94
+    ],
+    [
+     -21.86,
+     -153.02
+    ],
+    [
+     -21.56,
+     -151.54
+    ],
+    [
+     -20.09,
+     -150.66
+    ],
+    [
+     -17.43,
+     -150.66
+    ],
+    [
+     -10.35,
+     -160.1
+    ],
+    [
+     -0.62,
+     -169.54
+    ],
+    [
+     13.25,
+     -179.57
+    ],
+    [
+     20.92,
+     -187.24
+    ],
+    [
+     27.41,
+     -195.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_005",
+   "kind": "walk",
+   "pts": [
+    [
+     3.81,
+     -206.42
+    ],
+    [
+     2.04,
+     -207.89
+    ],
+    [
+     0.86,
+     -207.6
+    ],
+    [
+     -0.77,
+     -203.17
+    ],
+    [
+     -5.34,
+     -202.58
+    ],
+    [
+     -6.66,
+     -201.4
+    ],
+    [
+     -10.94,
+     -202.88
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_006",
+   "kind": "walk",
+   "pts": [
+    [
+     -4.16,
+     -150.07
+    ],
+    [
+     2.92,
+     -150.95
+    ],
+    [
+     29.77,
+     -158.62
+    ],
+    [
+     40.1,
+     -163.64
+    ],
+    [
+     48.65,
+     -171.01
+    ],
+    [
+     54.55,
+     -179.57
+    ],
+    [
+     57.8,
+     -187.24
+    ],
+    [
+     57.8,
+     -191.66
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_007",
+   "kind": "walk",
+   "pts": [
+    [
+     16.79,
+     -343.9
+    ],
+    [
+     9.71,
+     -350.68
+    ],
+    [
+     8.82,
+     -354.22
+    ],
+    [
+     10.89,
+     -356.14
+    ],
+    [
+     10.89,
+     -359.53
+    ],
+    [
+     9.12,
+     -364.55
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_008",
+   "kind": "walk",
+   "pts": [
+    [
+     37.36,
+     -296.6
+    ],
+    [
+     40.69,
+     -294.04
+    ],
+    [
+     47.18,
+     -294.33
+    ],
+    [
+     50.13,
+     -292.86
+    ],
+    [
+     55.63,
+     -294.04
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_009",
+   "kind": "walk",
+   "pts": [
+    [
+     46.0,
+     -209.66
+    ],
+    [
+     46.88,
+     -207.6
+    ],
+    [
+     49.24,
+     -206.12
+    ],
+    [
+     49.24,
+     -203.47
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.2,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_010",
+   "kind": "walk",
+   "pts": [
+    [
+     48.95,
+     -196.68
+    ],
+    [
+     52.78,
+     -193.43
+    ],
+    [
+     57.8,
+     -191.66
+    ]
+   ],
+   "surface": "concrete",
+   "w": 4.2,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_011",
+   "kind": "walk",
+   "pts": [
+    [
+     49.54,
+     -307.61
+    ],
+    [
+     55.34,
+     -309.08
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_012",
+   "kind": "walk",
+   "pts": [
+    [
+     55.34,
+     -309.08
+    ],
+    [
+     52.78,
+     -379.89
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_013",
+   "kind": "walk",
+   "pts": [
+    [
+     55.34,
+     -309.08
+    ],
+    [
+     56.32,
+     -297.58
+    ],
+    [
+     55.63,
+     -294.04
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_014",
+   "kind": "walk",
+   "pts": [
+    [
+     59.86,
+     -215.86
+    ],
+    [
+     57.21,
+     -281.35
+    ],
+    [
+     56.62,
+     -291.38
+    ],
+    [
+     55.63,
+     -294.04
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.1,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_015",
+   "kind": "walk",
+   "pts": [
+    [
+     58.68,
+     -207.3
+    ],
+    [
+     59.86,
+     -204.94
+    ],
+    [
+     59.86,
+     -199.93
+    ],
+    [
+     59.27,
+     -193.73
+    ],
+    [
+     57.8,
+     -191.66
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_016",
+   "kind": "walk",
+   "pts": [
+    [
+     61.04,
+     -171.01
+    ],
+    [
+     63.4,
+     -176.03
+    ],
+    [
+     65.37,
+     -177.01
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_017",
+   "kind": "walk",
+   "pts": [
+    [
+     66.06,
+     -314.39
+    ],
+    [
+     65.47,
+     -337.7
+    ],
+    [
+     64.58,
+     -340.36
+    ],
+    [
+     63.4,
+     -359.24
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_018",
+   "kind": "walk",
+   "pts": [
+    [
+     68.12,
+     -170.72
+    ],
+    [
+     65.37,
+     -177.01
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_019",
+   "kind": "walk",
+   "pts": [
+    [
+     65.37,
+     -177.01
+    ],
+    [
+     67.24,
+     -186.94
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_020",
+   "kind": "walk",
+   "pts": [
+    [
+     66.65,
+     -297.87
+    ],
+    [
+     67.83,
+     -277.52
+    ],
+    [
+     68.81,
+     -273.58
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_021",
+   "kind": "walk",
+   "pts": [
+    [
+     68.81,
+     -273.58
+    ],
+    [
+     68.12,
+     -272.21
+    ],
+    [
+     68.42,
+     -263.06
+    ],
+    [
+     70.48,
+     -258.34
+    ],
+    [
+     70.78,
+     -242.11
+    ],
+    [
+     71.66,
+     -240.34
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_022",
+   "kind": "walk",
+   "pts": [
+    [
+     87.59,
+     -288.43
+    ],
+    [
+     74.17,
+     -275.89
+    ],
+    [
+     68.81,
+     -273.58
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.1,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_023",
+   "kind": "walk",
+   "pts": [
+    [
+     83.76,
+     -235.92
+    ],
+    [
+     74.61,
+     -240.05
+    ],
+    [
+     71.66,
+     -240.34
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_024",
+   "kind": "walk",
+   "pts": [
+    [
+     79.33,
+     -186.65
+    ],
+    [
+     72.55,
+     -193.73
+    ],
+    [
+     70.34,
+     -194.76
+    ],
+    [
+     69.3,
+     -197.56
+    ],
+    [
+     69.3,
+     -201.7
+    ],
+    [
+     71.66,
+     -207.89
+    ],
+    [
+     70.78,
+     -216.45
+    ],
+    [
+     71.66,
+     -240.34
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_025",
+   "kind": "walk",
+   "pts": [
+    [
+     84.05,
+     -359.83
+    ],
+    [
+     86.41,
+     -377.53
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_026",
+   "kind": "walk",
+   "pts": [
+    [
+     102.94,
+     -396.71
+    ],
+    [
+     90.54,
+     -396.12
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_027",
+   "kind": "walk",
+   "pts": [
+    [
+     99.1,
+     -243.29
+    ],
+    [
+     97.92,
+     -238.57
+    ],
+    [
+     96.15,
+     -238.28
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_028",
+   "kind": "walk",
+   "pts": [
+    [
+     145.42,
+     -163.44
+    ],
+    [
+     143.35,
+     -162.75
+    ],
+    [
+     134.21,
+     -152.13
+    ],
+    [
+     130.96,
+     -150.07
+    ],
+    [
+     128.31,
+     -150.66
+    ],
+    [
+     121.82,
+     -155.97
+    ],
+    [
+     120.64,
+     -159.51
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_029",
+   "kind": "walk",
+   "pts": [
+    [
+     134.21,
+     -295.51
+    ],
+    [
+     127.42,
+     -302.0
+    ],
+    [
+     124.77,
+     -307.61
+    ],
+    [
+     125.65,
+     -308.79
+    ],
+    [
+     133.32,
+     -309.38
+    ],
+    [
+     139.81,
+     -307.31
+    ],
+    [
+     142.02,
+     -305.69
+    ],
+    [
+     144.24,
+     -301.12
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.3,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_030",
+   "kind": "walk",
+   "pts": [
+    [
+     147.48,
+     -264.54
+    ],
+    [
+     144.53,
+     -265.72
+    ],
+    [
+     141.88,
+     -268.37
+    ],
+    [
+     140.11,
+     -270.44
+    ],
+    [
+     139.52,
+     -273.39
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_031",
+   "kind": "walk",
+   "pts": [
+    [
+     145.42,
+     -163.44
+    ],
+    [
+     146.01,
+     -150.95
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_032",
+   "kind": "walk",
+   "pts": [
+    [
+     146.01,
+     -218.22
+    ],
+    [
+     150.14,
+     -217.92
+    ],
+    [
+     164.6,
+     -211.43
+    ],
+    [
+     175.88,
+     -200.23
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.2,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_033",
+   "kind": "walk",
+   "pts": [
+    [
+     146.01,
+     -218.22
+    ],
+    [
+     145.42,
+     -203.47
+    ],
+    [
+     146.01,
+     -169.83
+    ],
+    [
+     146.7,
+     -168.55
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_034",
+   "kind": "walk",
+   "pts": [
+    [
+     146.7,
+     -168.55
+    ],
+    [
+     150.43,
+     -170.72
+    ],
+    [
+     175.88,
+     -200.23
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_035",
+   "kind": "walk",
+   "pts": [
+    [
+     167.55,
+     -292.27
+    ],
+    [
+     167.11,
+     -299.5
+    ],
+    [
+     164.89,
+     -299.64
+    ],
+    [
+     155.74,
+     -294.04
+    ],
+    [
+     147.78,
+     -291.68
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_036",
+   "kind": "walk",
+   "pts": [
+    [
+     151.02,
+     -230.61
+    ],
+    [
+     156.92,
+     -229.72
+    ],
+    [
+     192.33,
+     -230.31
+    ],
+    [
+     195.57,
+     -229.33
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_037",
+   "kind": "walk",
+   "pts": [
+    [
+     151.32,
+     -366.61
+    ],
+    [
+     155.74,
+     -368.53
+    ],
+    [
+     152.79,
+     -371.33
+    ],
+    [
+     143.06,
+     -376.05
+    ],
+    [
+     131.85,
+     -383.13
+    ],
+    [
+     127.72,
+     -384.61
+    ],
+    [
+     117.98,
+     -391.39
+    ],
+    [
+     114.15,
+     -392.87
+    ],
+    [
+     112.08,
+     -395.38
+    ],
+    [
+     113.26,
+     -396.41
+    ],
+    [
+     117.39,
+     -396.71
+    ],
+    [
+     149.69,
+     -396.86
+    ],
+    [
+     160.76,
+     -397.79
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.9,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_038",
+   "kind": "walk",
+   "pts": [
+    [
+     162.53,
+     -373.4
+    ],
+    [
+     161.35,
+     -375.46
+    ],
+    [
+     159.87,
+     -387.85
+    ],
+    [
+     160.76,
+     -397.79
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.6,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_039",
+   "kind": "walk",
+   "pts": [
+    [
+     160.76,
+     -397.79
+    ],
+    [
+     171.09,
+     -397.89
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_040",
+   "kind": "walk",
+   "pts": [
+    [
+     194.98,
+     -291.38
+    ],
+    [
+     193.51,
+     -291.09
+    ],
+    [
+     175.51,
+     -301.41
+    ],
+    [
+     170.64,
+     -303.03
+    ],
+    [
+     169.91,
+     -304.36
+    ],
+    [
+     170.2,
+     -310.85
+    ],
+    [
+     171.68,
+     -312.62
+    ],
+    [
+     172.27,
+     -316.16
+    ],
+    [
+     171.68,
+     -322.06
+    ],
+    [
+     170.5,
+     -323.24
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.2,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_041",
+   "kind": "walk",
+   "pts": [
+    [
+     186.72,
+     -189.6
+    ],
+    [
+     175.88,
+     -200.23
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_042",
+   "kind": "walk",
+   "pts": [
+    [
+     195.47,
+     -223.33
+    ],
+    [
+     192.62,
+     -221.76
+    ],
+    [
+     186.72,
+     -212.91
+    ],
+    [
+     182.89,
+     -209.66
+    ],
+    [
+     182.3,
+     -207.6
+    ],
+    [
+     175.88,
+     -200.23
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_043",
+   "kind": "walk",
+   "pts": [
+    [
+     193.51,
+     -157.44
+    ],
+    [
+     182.0,
+     -150.95
+    ],
+    [
+     176.4,
+     -150.66
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_044",
+   "kind": "walk",
+   "pts": [
+    [
+     177.87,
+     -373.99
+    ],
+    [
+     183.18,
+     -377.23
+    ],
+    [
+     186.57,
+     -377.67
+    ],
+    [
+     188.2,
+     -363.07
+    ],
+    [
+     189.97,
+     -361.3
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_045",
+   "kind": "walk",
+   "pts": [
+    [
+     186.72,
+     -394.05
+    ],
+    [
+     186.87,
+     -382.39
+    ],
+    [
+     189.67,
+     -382.84
+    ],
+    [
+     191.15,
+     -384.31
+    ],
+    [
+     198.82,
+     -395.23
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_046",
+   "kind": "walk",
+   "pts": [
+    [
+     195.47,
+     -223.33
+    ],
+    [
+     196.16,
+     -222.64
+    ],
+    [
+     196.46,
+     -211.43
+    ],
+    [
+     197.64,
+     -207.4
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_047",
+   "kind": "walk",
+   "pts": [
+    [
+     195.47,
+     -223.33
+    ],
+    [
+     195.57,
+     -229.33
+    ]
+   ],
+   "surface": "concrete",
+   "w": 4.0,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_048",
+   "kind": "walk",
+   "pts": [
+    [
+     195.57,
+     -229.33
+    ],
+    [
+     198.82,
+     -230.61
+    ],
+    [
+     203.83,
+     -236.21
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_049",
+   "kind": "walk",
+   "pts": [
+    [
+     195.87,
+     -394.35
+    ],
+    [
+     200.88,
+     -395.23
+    ],
+    [
+     208.55,
+     -388.74
+    ],
+    [
+     226.85,
+     -369.86
+    ],
+    [
+     228.03,
+     -357.76
+    ],
+    [
+     229.21,
+     -354.81
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_050",
+   "kind": "walk",
+   "pts": [
+    [
+     205.31,
+     -199.93
+    ],
+    [
+     203.54,
+     -201.11
+    ],
+    [
+     200.0,
+     -206.42
+    ],
+    [
+     197.64,
+     -207.4
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_051",
+   "kind": "walk",
+   "pts": [
+    [
+     197.64,
+     -187.24
+    ],
+    [
+     197.64,
+     -207.4
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_052",
+   "kind": "walk",
+   "pts": [
+    [
+     197.64,
+     -187.24
+    ],
+    [
+     198.82,
+     -176.32
+    ],
+    [
+     198.23,
+     -168.95
+    ],
+    [
+     200.0,
+     -166.29
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_053",
+   "kind": "walk",
+   "pts": [
+    [
+     203.83,
+     -270.73
+    ],
+    [
+     204.13,
+     -250.67
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_054",
+   "kind": "walk",
+   "pts": [
+    [
+     205.31,
+     -399.95
+    ],
+    [
+     206.19,
+     -399.07
+    ],
+    [
+     219.47,
+     -399.36
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_055",
+   "kind": "walk",
+   "pts": [
+    [
+     209.5,
+     -322.64
+    ],
+    [
+     214.16,
+     -314.1
+    ],
+    [
+     215.93,
+     -305.25
+    ],
+    [
+     215.63,
+     -299.94
+    ],
+    [
+     212.09,
+     -288.73
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_056",
+   "kind": "walk",
+   "pts": [
+    [
+     213.27,
+     -339.47
+    ],
+    [
+     230.09,
+     -339.47
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_057",
+   "kind": "walk",
+   "pts": [
+    [
+     245.14,
+     -160.1
+    ],
+    [
+     225.37,
+     -160.69
+    ],
+    [
+     223.6,
+     -162.16
+    ],
+    [
+     220.06,
+     -160.1
+    ],
+    [
+     215.34,
+     -159.51
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_058",
+   "kind": "walk",
+   "pts": [
+    [
+     222.42,
+     -255.39
+    ],
+    [
+     217.11,
+     -249.78
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_059",
+   "kind": "walk",
+   "pts": [
+    [
+     219.47,
+     -273.98
+    ],
+    [
+     224.19,
+     -266.01
+    ],
+    [
+     227.14,
+     -262.76
+    ],
+    [
+     229.4,
+     -261.98
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_060",
+   "kind": "walk",
+   "pts": [
+    [
+     230.09,
+     -339.47
+    ],
+    [
+     228.62,
+     -351.86
+    ],
+    [
+     229.21,
+     -354.81
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_061",
+   "kind": "walk",
+   "pts": [
+    [
+     283.19,
+     -355.7
+    ],
+    [
+     259.89,
+     -355.7
+    ],
+    [
+     258.71,
+     -357.47
+    ],
+    [
+     256.94,
+     -380.48
+    ],
+    [
+     250.0,
+     -377.38
+    ],
+    [
+     247.2,
+     -372.22
+    ],
+    [
+     231.57,
+     -355.7
+    ],
+    [
+     229.21,
+     -354.81
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.2,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_062",
+   "kind": "walk",
+   "pts": [
+    [
+     229.4,
+     -261.98
+    ],
+    [
+     233.34,
+     -259.52
+    ],
+    [
+     243.07,
+     -258.63
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_063",
+   "kind": "walk",
+   "pts": [
+    [
+     229.4,
+     -261.98
+    ],
+    [
+     238.94,
+     -271.91
+    ],
+    [
+     240.71,
+     -272.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_064",
+   "kind": "walk",
+   "pts": [
+    [
+     235.7,
+     -297.28
+    ],
+    [
+     234.22,
+     -299.05
+    ],
+    [
+     230.09,
+     -339.47
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_065",
+   "kind": "walk",
+   "pts": [
+    [
+     230.09,
+     -339.47
+    ],
+    [
+     249.56,
+     -339.62
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_066",
+   "kind": "walk",
+   "pts": [
+    [
+     243.07,
+     -258.63
+    ],
+    [
+     242.78,
+     -266.01
+    ],
+    [
+     240.71,
+     -272.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_067",
+   "kind": "walk",
+   "pts": [
+    [
+     284.37,
+     -320.59
+    ],
+    [
+     283.49,
+     -317.93
+    ],
+    [
+     249.27,
+     -282.53
+    ],
+    [
+     240.71,
+     -272.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_068",
+   "kind": "walk",
+   "pts": [
+    [
+     243.07,
+     -258.63
+    ],
+    [
+     243.07,
+     -244.77
+    ],
+    [
+     245.14,
+     -242.11
+    ],
+    [
+     251.04,
+     -241.82
+    ],
+    [
+     255.46,
+     -239.16
+    ],
+    [
+     266.38,
+     -238.57
+    ],
+    [
+     272.57,
+     -237.1
+    ],
+    [
+     282.6,
+     -232.08
+    ],
+    [
+     287.76,
+     -232.23
+    ],
+    [
+     287.62,
+     -236.7
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.6,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_069",
+   "kind": "walk",
+   "pts": [
+    [
+     271.98,
+     -252.44
+    ],
+    [
+     265.49,
+     -256.27
+    ],
+    [
+     263.43,
+     -258.63
+    ],
+    [
+     243.07,
+     -258.63
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_070",
+   "kind": "walk",
+   "pts": [
+    [
+     249.56,
+     -339.62
+    ],
+    [
+     251.33,
+     -335.34
+    ],
+    [
+     256.64,
+     -330.33
+    ],
+    [
+     260.08,
+     -328.85
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_071",
+   "kind": "walk",
+   "pts": [
+    [
+     249.56,
+     -339.62
+    ],
+    [
+     250.74,
+     -343.6
+    ],
+    [
+     254.28,
+     -347.73
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_072",
+   "kind": "walk",
+   "pts": [
+    [
+     260.08,
+     -328.85
+    ],
+    [
+     259.59,
+     -338.0
+    ],
+    [
+     256.64,
+     -339.77
+    ],
+    [
+     249.56,
+     -339.62
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.6,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_073",
+   "kind": "walk",
+   "pts": [
+    [
+     260.08,
+     -328.85
+    ],
+    [
+     261.95,
+     -325.6
+    ],
+    [
+     266.82,
+     -323.98
+    ],
+    [
+     268.44,
+     -320.59
+    ],
+    [
+     279.06,
+     -320.59
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.6,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_074",
+   "kind": "walk",
+   "pts": [
+    [
+     271.39,
+     -209.66
+    ],
+    [
+     277.29,
+     -209.37
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_075",
+   "kind": "walk",
+   "pts": [
+    [
+     283.78,
+     -325.01
+    ],
+    [
+     274.34,
+     -325.01
+    ]
+   ],
+   "surface": "concrete",
+   "w": 4.1,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_076",
+   "kind": "walk",
+   "pts": [
+    [
+     280.54,
+     -258.93
+    ],
+    [
+     289.31,
+     -259.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_077",
+   "kind": "walk",
+   "pts": [
+    [
+     291.16,
+     -157.25
+    ],
+    [
+     289.68,
+     -156.26
+    ],
+    [
+     286.73,
+     -150.66
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_078",
+   "kind": "walk",
+   "pts": [
+    [
+     287.62,
+     -236.7
+    ],
+    [
+     288.8,
+     -241.52
+    ],
+    [
+     289.31,
+     -259.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_079",
+   "kind": "walk",
+   "pts": [
+    [
+     289.78,
+     -266.21
+    ],
+    [
+     289.09,
+     -273.39
+    ],
+    [
+     289.98,
+     -280.47
+    ],
+    [
+     288.8,
+     -283.12
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_080",
+   "kind": "walk",
+   "pts": [
+    [
+     289.31,
+     -259.0
+    ],
+    [
+     289.78,
+     -266.21
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_081",
+   "kind": "walk",
+   "pts": [
+    [
+     289.31,
+     -259.0
+    ],
+    [
+     295.29,
+     -261.29
+    ],
+    [
+     299.72,
+     -255.98
+    ],
+    [
+     302.81,
+     -244.32
+    ],
+    [
+     310.34,
+     -243.59
+    ],
+    [
+     320.37,
+     -244.57
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_082",
+   "kind": "walk",
+   "pts": [
+    [
+     296.47,
+     -150.36
+    ],
+    [
+     295.0,
+     -151.25
+    ],
+    [
+     293.23,
+     -155.67
+    ],
+    [
+     291.16,
+     -157.25
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_083",
+   "kind": "walk",
+   "pts": [
+    [
+     305.62,
+     -397.89
+    ],
+    [
+     303.85,
+     -391.39
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_084",
+   "kind": "walk",
+   "pts": [
+    [
+     314.17,
+     -161.87
+    ],
+    [
+     315.65,
+     -161.28
+    ],
+    [
+     319.48,
+     -162.46
+    ],
+    [
+     328.92,
+     -160.39
+    ],
+    [
+     332.76,
+     -158.03
+    ],
+    [
+     337.18,
+     -153.61
+    ],
+    [
+     339.39,
+     -152.87
+    ],
+    [
+     341.61,
+     -160.1
+    ],
+    [
+     345.15,
+     -166.59
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_085",
+   "kind": "walk",
+   "pts": [
+    [
+     320.37,
+     -244.57
+    ],
+    [
+     323.02,
+     -243.59
+    ],
+    [
+     345.74,
+     -244.47
+    ],
+    [
+     345.15,
+     -249.19
+    ],
+    [
+     339.54,
+     -256.86
+    ],
+    [
+     340.72,
+     -265.42
+    ],
+    [
+     338.36,
+     -275.45
+    ],
+    [
+     338.07,
+     -281.35
+    ],
+    [
+     335.71,
+     -283.12
+    ],
+    [
+     325.09,
+     -282.53
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_086",
+   "kind": "walk",
+   "pts": [
+    [
+     320.37,
+     -244.57
+    ],
+    [
+     322.43,
+     -250.67
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_087",
+   "kind": "walk",
+   "pts": [
+    [
+     344.26,
+     -390.8
+    ],
+    [
+     343.38,
+     -385.79
+    ],
+    [
+     343.67,
+     -364.25
+    ],
+    [
+     341.31,
+     -361.6
+    ],
+    [
+     341.61,
+     -348.91
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_088",
+   "kind": "walk",
+   "pts": [
+    [
+     347.51,
+     -226.77
+    ],
+    [
+     347.8,
+     -212.91
+    ],
+    [
+     351.64,
+     -202.88
+    ],
+    [
+     352.23,
+     -198.74
+    ],
+    [
+     351.93,
+     -189.6
+    ],
+    [
+     351.05,
+     -183.99
+    ],
+    [
+     350.16,
+     -183.11
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_089",
+   "kind": "walk",
+   "pts": [
+    [
+     353.41,
+     -152.43
+    ],
+    [
+     357.84,
+     -151.84
+    ],
+    [
+     392.06,
+     -153.31
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial (integrator), cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_nc_090",
+   "kind": "walk",
+   "pts": [
+    [
+     110.61,
+     -388.74
+    ],
+    [
+     112.67,
+     -386.67
+    ],
+    [
+     111.19,
+     -384.31
+    ],
+    [
+     109.13,
+     -387.85
+    ],
+    [
+     110.61,
+     -388.74
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_001",
+   "kind": "walk",
+   "pts": [
+    [
+     -99.16,
+     -431.52
+    ],
+    [
+     -98.57,
+     -420.6
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.5,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_002",
+   "kind": "walk",
+   "pts": [
+    [
+     -65.82,
+     -438.6
+    ],
+    [
+     -65.52,
+     -439.78
+    ],
+    [
+     -58.59,
+     -439.92
+    ],
+    [
+     -56.97,
+     -437.42
+    ],
+    [
+     -57.26,
+     -435.65
+    ]
+   ],
+   "surface": "concrete",
+   "w": 5.0,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_003",
+   "kind": "walk",
+   "pts": [
+    [
+     38.62,
+     -408.51
+    ],
+    [
+     28.59,
+     -408.21
+    ],
+    [
+     27.7,
+     -409.69
+    ],
+    [
+     27.7,
+     -415.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_004",
+   "kind": "walk",
+   "pts": [
+    [
+     65.76,
+     -415.39
+    ],
+    [
+     63.11,
+     -413.23
+    ],
+    [
+     63.11,
+     -411.46
+    ],
+    [
+     62.22,
+     -410.87
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_005",
+   "kind": "walk",
+   "pts": [
+    [
+     63.7,
+     -422.08
+    ],
+    [
+     63.99,
+     -420.01
+    ],
+    [
+     66.06,
+     -417.95
+    ],
+    [
+     65.76,
+     -415.39
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_006",
+   "kind": "walk",
+   "pts": [
+    [
+     65.76,
+     -415.39
+    ],
+    [
+     70.92,
+     -413.97
+    ],
+    [
+     86.12,
+     -414.11
+    ],
+    [
+     92.02,
+     -415.59
+    ],
+    [
+     102.15,
+     -414.8
+    ]
+   ],
+   "surface": "concrete",
+   "w": 4.1,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_007",
+   "kind": "walk",
+   "pts": [
+    [
+     102.15,
+     -414.8
+    ],
+    [
+     105.3,
+     -412.93
+    ],
+    [
+     107.07,
+     -414.7
+    ],
+    [
+     105.59,
+     -415.88
+    ],
+    [
+     102.15,
+     -414.8
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_008",
+   "kind": "walk",
+   "pts": [
+    [
+     138.63,
+     -415.39
+    ],
+    [
+     135.98,
+     -413.52
+    ],
+    [
+     134.06,
+     -415.14
+    ],
+    [
+     115.92,
+     -415.0
+    ],
+    [
+     113.85,
+     -412.93
+    ],
+    [
+     112.08,
+     -413.23
+    ]
+   ],
+   "surface": "concrete",
+   "w": 4.7,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_009",
+   "kind": "walk",
+   "pts": [
+    [
+     138.63,
+     -415.39
+    ],
+    [
+     136.57,
+     -445.38
+    ],
+    [
+     122.41,
+     -445.38
+    ],
+    [
+     116.8,
+     -444.2
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.1,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_010",
+   "kind": "walk",
+   "pts": [
+    [
+     179.64,
+     -414.41
+    ],
+    [
+     152.79,
+     -414.41
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_011",
+   "kind": "walk",
+   "pts": [
+    [
+     198.82,
+     -414.7
+    ],
+    [
+     218.58,
+     -416.47
+    ],
+    [
+     225.07,
+     -415.88
+    ],
+    [
+     227.44,
+     -414.7
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.5,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_012",
+   "kind": "walk",
+   "pts": [
+    [
+     243.96,
+     -414.7
+    ],
+    [
+     242.19,
+     -415.88
+    ],
+    [
+     233.63,
+     -415.59
+    ],
+    [
+     232.45,
+     -416.47
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_013",
+   "kind": "walk",
+   "pts": [
+    [
+     248.38,
+     -422.67
+    ],
+    [
+     248.38,
+     -417.06
+    ],
+    [
+     251.63,
+     -415.29
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_014",
+   "kind": "walk",
+   "pts": [
+    [
+     256.94,
+     -416.77
+    ],
+    [
+     262.99,
+     -416.62
+    ],
+    [
+     262.54,
+     -422.37
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_015",
+   "kind": "walk",
+   "pts": [
+    [
+     284.57,
+     -416.77
+    ],
+    [
+     278.47,
+     -417.06
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.1,
+   "zone": "north"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street-front sidewalks and building approaches from the 2022 aerial (integrator); the north zone lies mostly beyond the aerial's coverage",
+    "open": "widths +-0.5 m; segments under crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_no_016",
+   "kind": "walk",
+   "pts": [
+    [
+     298.24,
+     -417.36
+    ],
+    [
+     315.35,
+     -417.95
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "north"
+  },
+  {
+   "ev": {
     "conf": "high",
     "date": "2022",
     "note": "paved walk traced on the 2022 aerial",

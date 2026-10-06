@@ -306,3 +306,35 @@ static func _split_through(pc: PackedVector2Array, hole: PackedVector2Array) -> 
 ## Triangulates a simple polygon (indices into poly); empty on failure.
 static func triangulate(poly: PackedVector2Array) -> PackedInt32Array:
 	return Geometry2D.triangulate_polygon(poly)
+
+
+## Edge indices of a polygon by `cap`-sized cell: each edge is filed in
+## every cell its box, grown by `cap`, touches (for near_edge_dist).
+static func edge_buckets(poly: PackedVector2Array, cap: float) -> Dictionary:
+	var out := {}
+	var n := poly.size()
+	for i in n:
+		var a := poly[i]
+		var b := poly[(i + 1) % n]
+		var lo := Vector2i(floori((minf(a.x, b.x) - cap) / cap), floori((minf(a.y, b.y) - cap) / cap))
+		var hi := Vector2i(floori((maxf(a.x, b.x) + cap) / cap), floori((maxf(a.y, b.y) + cap) / cap))
+		for cx in range(lo.x, hi.x + 1):
+			for cy in range(lo.y, hi.y + 1):
+				var key := Vector2i(cx, cy)
+				if not out.has(key):
+					out[key] = PackedInt32Array()
+				(out[key] as PackedInt32Array).append(i)
+	return out
+
+
+## Distance to the nearest edge, or `cap` when none is that close: only
+## the edges filed in p's cell are tried (edge_buckets with the same cap).
+static func near_edge_dist(p: Vector2, poly: PackedVector2Array, near: Dictionary, cap: float) -> float:
+	var key := Vector2i(floori(p.x / cap), floori(p.y / cap))
+	if not near.has(key):
+		return cap
+	var best := cap
+	var n := poly.size()
+	for i in near[key]:
+		best = minf(best, p.distance_to(Geometry2D.get_closest_point_to_segment(p, poly[i], poly[(i + 1) % n])))
+	return best

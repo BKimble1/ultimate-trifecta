@@ -114,7 +114,11 @@ static func pick_coins(seed_v: int, layout: CampusLayout, dorm_id: String, targe
 					clash = true
 					break
 			if not clash:
-				out.append({"id": "s%02d" % i, "x": p2.x, "z": p2.y})
+				# centimetres, as the nearest double to the 2-decimal value: the
+				# round configuration crosses the wire as JSON, and neither a
+				# float32 spot's long decimal nor snappedf's product (a hair off
+				# that double) would come back identical
+				out.append({"id": "s%02d" % i, "x": String.num(p2.x, 2).to_float(), "z": String.num(p2.y, 2).to_float()})
 		if out.size() >= cfg.coin_spawns_per_round:
 			break
 	return out

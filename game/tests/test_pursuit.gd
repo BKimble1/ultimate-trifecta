@@ -33,6 +33,11 @@ func _free(sim: MatchSim, a: Vector3, d: Vector2, length: float) -> bool:
 				return false
 		if CampusBuilder.water_at(sim.layout, Vector2(p1.x, p1.z)) >= 0 or absf(CampusBuilder.grid_y(sim.layout, p1.x, p1.z)) > 0.05:
 			return false
+		# inside the play area, clear of its edge (the rebuilt campus has open
+		# ground beyond the boundary that a lane must not use)
+		var q := Vector2(p1.x, p1.z)
+		if not sim.layout.in_play(q) or CampusData.dist_to_edge(q, sim.layout.play_boundary) < 4.0:
+			return false
 		s += 6.0
 	return true
 

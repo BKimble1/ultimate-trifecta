@@ -1,7 +1,7 @@
 {
   "band": 0.16,
   "bot_time_median_s": 120.2,
-  "campus": "67d068f6e27bc066",
+  "campus": "6b053d4423b6aa81",
   "combos": [
     {
       "best_order": [
@@ -9,7 +9,7 @@
         2,
         1
       ],
-      "first_m": 265.8,
+      "first_m": 268.6,
       "fits_round": true,
       "ideal_s": 160.2,
       "length_m": 934.3,
@@ -26,10 +26,10 @@
         3,
         1
       ],
-      "first_m": 265.8,
+      "first_m": 268.6,
       "fits_round": false,
-      "ideal_s": 255.2,
-      "length_m": 1504.3,
+      "ideal_s": 255.7,
+      "length_m": 1507.1,
       "targets": [
         0,
         1,
@@ -45,8 +45,8 @@
       ],
       "first_m": 75.0,
       "fits_round": false,
-      "ideal_s": 205.6,
-      "length_m": 1206.7,
+      "ideal_s": 206.3,
+      "length_m": 1210.7,
       "targets": [
         0,
         1,
@@ -60,10 +60,10 @@
         5,
         1
       ],
-      "first_m": 265.8,
+      "first_m": 268.6,
       "fits_round": true,
-      "ideal_s": 158.0,
-      "length_m": 921.1,
+      "ideal_s": 159.3,
+      "length_m": 929.1,
       "targets": [
         0,
         1,
@@ -77,10 +77,10 @@
         2,
         3
       ],
-      "first_m": 265.8,
+      "first_m": 268.6,
       "fits_round": false,
-      "ideal_s": 279.2,
-      "length_m": 1648.3,
+      "ideal_s": 279.4,
+      "length_m": 1649.1,
       "targets": [
         0,
         2,
@@ -94,7 +94,7 @@
         2,
         4
       ],
-      "first_m": 265.8,
+      "first_m": 268.6,
       "fits_round": false,
       "ideal_s": 221.6,
       "length_m": 1302.3,
@@ -111,16 +111,16 @@
         2,
         5
       ],
-      "first_m": 265.8,
+      "first_m": 268.6,
       "fits_round": false,
-      "ideal_s": 217.2,
-      "length_m": 1275.9,
+      "ideal_s": 217.6,
+      "length_m": 1278.3,
       "targets": [
         0,
         2,
         5
       ],
-      "vs_median": 0.77
+      "vs_median": 0.78
     },
     {
       "best_order": [
@@ -130,8 +130,8 @@
       ],
       "first_m": 633.8,
       "fits_round": false,
-      "ideal_s": 330.1,
-      "length_m": 1953.5,
+      "ideal_s": 330.3,
+      "length_m": 1954.7,
       "targets": [
         0,
         3,
@@ -145,10 +145,10 @@
         3,
         5
       ],
-      "first_m": 265.8,
+      "first_m": 268.6,
       "fits_round": false,
-      "ideal_s": 306.9,
-      "length_m": 1814.7,
+      "ideal_s": 307.8,
+      "length_m": 1819.9,
       "targets": [
         0,
         3,
@@ -162,10 +162,10 @@
         4,
         5
       ],
-      "first_m": 265.8,
+      "first_m": 268.6,
       "fits_round": false,
-      "ideal_s": 239.4,
-      "length_m": 1409.5,
+      "ideal_s": 240.3,
+      "length_m": 1414.7,
       "targets": [
         0,
         4,
@@ -181,8 +181,8 @@
       ],
       "first_m": 75.0,
       "fits_round": false,
-      "ideal_s": 295.6,
-      "length_m": 1746.7,
+      "ideal_s": 295.8,
+      "length_m": 1747.5,
       "targets": [
         1,
         2,
@@ -214,9 +214,9 @@
         2
       ],
       "first_m": 75.0,
-      "fits_round": true,
-      "ideal_s": 203.9,
-      "length_m": 1196.3,
+      "fits_round": false,
+      "ideal_s": 204.3,
+      "length_m": 1198.7,
       "targets": [
         1,
         2,
@@ -249,8 +249,8 @@
       ],
       "first_m": 75.0,
       "fits_round": false,
-      "ideal_s": 269.2,
-      "length_m": 1588.3,
+      "ideal_s": 269.6,
+      "length_m": 1590.7,
       "targets": [
         1,
         3,
@@ -266,8 +266,8 @@
       ],
       "first_m": 75.0,
       "fits_round": true,
-      "ideal_s": 147.6,
-      "length_m": 858.3,
+      "ideal_s": 147.8,
+      "length_m": 859.5,
       "targets": [
         1,
         4,
@@ -283,8 +283,8 @@
       ],
       "first_m": 633.8,
       "fits_round": false,
-      "ideal_s": 363.2,
-      "length_m": 2152.3,
+      "ideal_s": 363.3,
+      "length_m": 2153.1,
       "targets": [
         2,
         3,
@@ -298,10 +298,10 @@
         3,
         2
       ],
-      "first_m": 247.0,
+      "first_m": 248.2,
       "fits_round": false,
-      "ideal_s": 347.3,
-      "length_m": 2057.1,
+      "ideal_s": 347.9,
+      "length_m": 2060.3,
       "targets": [
         2,
         3,
@@ -315,10 +315,10 @@
         4,
         2
       ],
-      "first_m": 247.0,
+      "first_m": 248.2,
       "fits_round": false,
-      "ideal_s": 278.0,
-      "length_m": 1641.1,
+      "ideal_s": 278.2,
+      "length_m": 1642.3,
       "targets": [
         2,
         4,
@@ -334,8 +334,8 @@
       ],
       "first_m": 633.8,
       "fits_round": false,
-      "ideal_s": 357.9,
-      "length_m": 2120.3,
+      "ideal_s": 358.1,
+      "length_m": 2121.5,
       "targets": [
         3,
         4,
@@ -357,16 +357,11 @@
     ],
     [
       1,
-      2,
-      5
-    ],
-    [
-      1,
       4,
       5
     ]
   ],
-  "dorm_version": 2,
+  "dorm_version": 3,
   "dorms": {
     "north_hall": {
       "bot_time_median_s": 120.2,
@@ -390,14 +385,14 @@
         },
         {
           "best_order": [
-            3,
+            0,
             1,
-            0
+            3
           ],
-          "first_m": 728.4,
+          "first_m": 292.4,
           "fits_round": false,
-          "ideal_s": 336.6,
-          "length_m": 1992.4,
+          "ideal_s": 337.1,
+          "length_m": 1995.6,
           "targets": [
             0,
             1,
@@ -411,7 +406,7 @@
             1,
             4
           ],
-          "first_m": 295.2,
+          "first_m": 292.4,
           "fits_round": false,
           "ideal_s": 272.7,
           "length_m": 1609.2,
@@ -424,14 +419,14 @@
         },
         {
           "best_order": [
+            0,
             1,
-            5,
-            0
+            5
           ],
-          "first_m": 613.6,
+          "first_m": 292.4,
           "fits_round": false,
-          "ideal_s": 251.6,
-          "length_m": 1482.4,
+          "ideal_s": 252.0,
+          "length_m": 1485.2,
           "targets": [
             0,
             1,
@@ -445,7 +440,7 @@
             0,
             2
           ],
-          "first_m": 728.4,
+          "first_m": 731.2,
           "fits_round": false,
           "ideal_s": 262.3,
           "length_m": 1546.8,
@@ -464,8 +459,8 @@
           ],
           "first_m": 637.6,
           "fits_round": false,
-          "ideal_s": 246.3,
-          "length_m": 1450.8,
+          "ideal_s": 246.0,
+          "length_m": 1449.2,
           "targets": [
             0,
             2,
@@ -479,10 +474,10 @@
             0,
             2
           ],
-          "first_m": 783.2,
+          "first_m": 784.4,
           "fits_round": false,
-          "ideal_s": 268.4,
-          "length_m": 1583.2,
+          "ideal_s": 268.8,
+          "length_m": 1585.6,
           "targets": [
             0,
             2,
@@ -496,27 +491,27 @@
             3,
             4
           ],
-          "first_m": 295.2,
+          "first_m": 292.4,
           "fits_round": false,
-          "ideal_s": 399.8,
-          "length_m": 2372.0,
+          "ideal_s": 398.2,
+          "length_m": 2362.0,
           "targets": [
             0,
             3,
             4
           ],
-          "vs_median": 1.44
+          "vs_median": 1.43
         },
         {
           "best_order": [
-            3,
+            0,
             5,
-            0
+            3
           ],
-          "first_m": 728.4,
+          "first_m": 292.4,
           "fits_round": false,
-          "ideal_s": 387.9,
-          "length_m": 2300.4,
+          "ideal_s": 388.8,
+          "length_m": 2306.0,
           "targets": [
             0,
             3,
@@ -530,10 +525,10 @@
             5,
             4
           ],
-          "first_m": 295.2,
+          "first_m": 292.4,
           "fits_round": false,
-          "ideal_s": 306.0,
-          "length_m": 1809.2,
+          "ideal_s": 306.2,
+          "length_m": 1810.4,
           "targets": [
             0,
             4,
@@ -547,10 +542,10 @@
             1,
             2
           ],
-          "first_m": 728.4,
+          "first_m": 731.2,
           "fits_round": false,
-          "ideal_s": 340.5,
-          "length_m": 2016.0,
+          "ideal_s": 341.0,
+          "length_m": 2018.8,
           "targets": [
             1,
             2,
@@ -583,8 +578,8 @@
           ],
           "first_m": 613.6,
           "fits_round": false,
-          "ideal_s": 255.5,
-          "length_m": 1506.0,
+          "ideal_s": 255.9,
+          "length_m": 1508.4,
           "targets": [
             1,
             2,
@@ -598,10 +593,10 @@
             1,
             4
           ],
-          "first_m": 728.4,
+          "first_m": 731.2,
           "fits_round": false,
-          "ideal_s": 400.0,
-          "length_m": 2372.8,
+          "ideal_s": 400.4,
+          "length_m": 2375.6,
           "targets": [
             1,
             3,
@@ -611,20 +606,20 @@
         },
         {
           "best_order": [
-            3,
+            1,
             5,
-            1
+            3
           ],
-          "first_m": 728.4,
+          "first_m": 613.6,
           "fits_round": false,
-          "ideal_s": 373.7,
-          "length_m": 2215.2,
+          "ideal_s": 374.6,
+          "length_m": 2220.4,
           "targets": [
             1,
             3,
             5
           ],
-          "vs_median": 1.34
+          "vs_median": 1.35
         },
         {
           "best_order": [
@@ -634,8 +629,8 @@
           ],
           "first_m": 613.6,
           "fits_round": false,
-          "ideal_s": 291.8,
-          "length_m": 1723.6,
+          "ideal_s": 292.0,
+          "length_m": 1724.8,
           "targets": [
             1,
             4,
@@ -651,8 +646,8 @@
           ],
           "first_m": 637.6,
           "fits_round": false,
-          "ideal_s": 398.4,
-          "length_m": 2363.2,
+          "ideal_s": 397.3,
+          "length_m": 2356.8,
           "targets": [
             2,
             3,
@@ -666,10 +661,10 @@
             5,
             2
           ],
-          "first_m": 728.4,
+          "first_m": 731.2,
           "fits_round": false,
-          "ideal_s": 391.8,
-          "length_m": 2324.0,
+          "ideal_s": 392.7,
+          "length_m": 2329.2,
           "targets": [
             2,
             3,
@@ -685,8 +680,8 @@
           ],
           "first_m": 637.6,
           "fits_round": false,
-          "ideal_s": 310.0,
-          "length_m": 1833.2,
+          "ideal_s": 310.2,
+          "length_m": 1834.4,
           "targets": [
             2,
             4,
@@ -700,10 +695,10 @@
             5,
             4
           ],
-          "first_m": 728.4,
+          "first_m": 731.2,
           "fits_round": false,
-          "ideal_s": 428.1,
-          "length_m": 2541.6,
+          "ideal_s": 428.8,
+          "length_m": 2545.6,
           "targets": [
             3,
             4,
@@ -736,64 +731,64 @@
       "pair_m": [
         [
           0.0,
-          295.2,
+          292.4,
           613.6,
           183.6,
-          728.4,
+          731.2,
           637.6,
-          783.2
+          784.4
         ],
         [
-          295.2,
+          292.4,
           0.0,
-          324.4,
-          135.2,
+          327.2,
+          132.4,
           512.4,
-          507.2,
-          494.0
+          508.4,
+          498.0
         ],
         [
           613.6,
-          324.4,
+          327.2,
           0.0,
           462.0,
           654.8,
           362.8,
-          90.0
+          91.2
         ],
         [
           183.6,
-          135.2,
+          132.4,
           462.0,
           0.0,
-          617.2,
+          618.0,
           601.2,
-          631.6
+          632.8
         ],
         [
-          728.4,
+          731.2,
           512.4,
           654.8,
-          617.2,
+          618.0,
           0.0,
-          937.6,
-          793.2
+          930.4,
+          794.4
         ],
         [
           637.6,
-          507.2,
+          508.4,
           362.8,
           601.2,
-          937.6,
+          930.4,
           0.0,
           393.2
         ],
         [
-          783.2,
-          494.0,
-          90.0,
-          631.6,
-          793.2,
+          784.4,
+          498.0,
+          91.2,
+          632.8,
+          794.4,
           393.2,
           0.0
         ]
@@ -809,7 +804,7 @@
             2,
             1
           ],
-          "first_m": 265.8,
+          "first_m": 268.6,
           "fits_round": true,
           "ideal_s": 160.2,
           "length_m": 934.3,
@@ -826,10 +821,10 @@
             3,
             1
           ],
-          "first_m": 265.8,
+          "first_m": 268.6,
           "fits_round": false,
-          "ideal_s": 255.2,
-          "length_m": 1504.3,
+          "ideal_s": 255.7,
+          "length_m": 1507.1,
           "targets": [
             0,
             1,
@@ -845,8 +840,8 @@
           ],
           "first_m": 75.0,
           "fits_round": false,
-          "ideal_s": 205.6,
-          "length_m": 1206.7,
+          "ideal_s": 206.3,
+          "length_m": 1210.7,
           "targets": [
             0,
             1,
@@ -860,10 +855,10 @@
             5,
             1
           ],
-          "first_m": 265.8,
+          "first_m": 268.6,
           "fits_round": true,
-          "ideal_s": 158.0,
-          "length_m": 921.1,
+          "ideal_s": 159.3,
+          "length_m": 929.1,
           "targets": [
             0,
             1,
@@ -877,10 +872,10 @@
             2,
             3
           ],
-          "first_m": 265.8,
+          "first_m": 268.6,
           "fits_round": false,
-          "ideal_s": 279.2,
-          "length_m": 1648.3,
+          "ideal_s": 279.4,
+          "length_m": 1649.1,
           "targets": [
             0,
             2,
@@ -894,7 +889,7 @@
             2,
             4
           ],
-          "first_m": 265.8,
+          "first_m": 268.6,
           "fits_round": false,
           "ideal_s": 221.6,
           "length_m": 1302.3,
@@ -911,16 +906,16 @@
             2,
             5
           ],
-          "first_m": 265.8,
+          "first_m": 268.6,
           "fits_round": false,
-          "ideal_s": 217.2,
-          "length_m": 1275.9,
+          "ideal_s": 217.6,
+          "length_m": 1278.3,
           "targets": [
             0,
             2,
             5
           ],
-          "vs_median": 0.77
+          "vs_median": 0.78
         },
         {
           "best_order": [
@@ -930,8 +925,8 @@
           ],
           "first_m": 633.8,
           "fits_round": false,
-          "ideal_s": 330.1,
-          "length_m": 1953.5,
+          "ideal_s": 330.3,
+          "length_m": 1954.7,
           "targets": [
             0,
             3,
@@ -945,10 +940,10 @@
             3,
             5
           ],
-          "first_m": 265.8,
+          "first_m": 268.6,
           "fits_round": false,
-          "ideal_s": 306.9,
-          "length_m": 1814.7,
+          "ideal_s": 307.8,
+          "length_m": 1819.9,
           "targets": [
             0,
             3,
@@ -962,10 +957,10 @@
             4,
             5
           ],
-          "first_m": 265.8,
+          "first_m": 268.6,
           "fits_round": false,
-          "ideal_s": 239.4,
-          "length_m": 1409.5,
+          "ideal_s": 240.3,
+          "length_m": 1414.7,
           "targets": [
             0,
             4,
@@ -981,8 +976,8 @@
           ],
           "first_m": 75.0,
           "fits_round": false,
-          "ideal_s": 295.6,
-          "length_m": 1746.7,
+          "ideal_s": 295.8,
+          "length_m": 1747.5,
           "targets": [
             1,
             2,
@@ -1014,9 +1009,9 @@
             2
           ],
           "first_m": 75.0,
-          "fits_round": true,
-          "ideal_s": 203.9,
-          "length_m": 1196.3,
+          "fits_round": false,
+          "ideal_s": 204.3,
+          "length_m": 1198.7,
           "targets": [
             1,
             2,
@@ -1049,8 +1044,8 @@
           ],
           "first_m": 75.0,
           "fits_round": false,
-          "ideal_s": 269.2,
-          "length_m": 1588.3,
+          "ideal_s": 269.6,
+          "length_m": 1590.7,
           "targets": [
             1,
             3,
@@ -1066,8 +1061,8 @@
           ],
           "first_m": 75.0,
           "fits_round": true,
-          "ideal_s": 147.6,
-          "length_m": 858.3,
+          "ideal_s": 147.8,
+          "length_m": 859.5,
           "targets": [
             1,
             4,
@@ -1083,8 +1078,8 @@
           ],
           "first_m": 633.8,
           "fits_round": false,
-          "ideal_s": 363.2,
-          "length_m": 2152.3,
+          "ideal_s": 363.3,
+          "length_m": 2153.1,
           "targets": [
             2,
             3,
@@ -1098,10 +1093,10 @@
             3,
             2
           ],
-          "first_m": 247.0,
+          "first_m": 248.2,
           "fits_round": false,
-          "ideal_s": 347.3,
-          "length_m": 2057.1,
+          "ideal_s": 347.9,
+          "length_m": 2060.3,
           "targets": [
             2,
             3,
@@ -1115,10 +1110,10 @@
             4,
             2
           ],
-          "first_m": 247.0,
+          "first_m": 248.2,
           "fits_round": false,
-          "ideal_s": 278.0,
-          "length_m": 1641.1,
+          "ideal_s": 278.2,
+          "length_m": 1642.3,
           "targets": [
             2,
             4,
@@ -1134,8 +1129,8 @@
           ],
           "first_m": 633.8,
           "fits_round": false,
-          "ideal_s": 357.9,
-          "length_m": 2120.3,
+          "ideal_s": 358.1,
+          "length_m": 2121.5,
           "targets": [
             3,
             4,
@@ -1157,11 +1152,6 @@
         ],
         [
           1,
-          2,
-          5
-        ],
-        [
-          1,
           4,
           5
         ]
@@ -1173,64 +1163,64 @@
       "pair_m": [
         [
           0.0,
-          265.8,
+          268.6,
           75.0,
           403.8,
           633.8,
           304.6,
-          247.0
+          248.2
         ],
         [
-          265.8,
+          268.6,
           0.0,
-          324.4,
-          135.2,
+          327.2,
+          132.4,
           512.4,
-          507.2,
-          494.0
+          508.4,
+          498.0
         ],
         [
           75.0,
-          324.4,
+          327.2,
           0.0,
           462.0,
           654.8,
           362.8,
-          90.0
+          91.2
         ],
         [
           403.8,
-          135.2,
+          132.4,
           462.0,
           0.0,
-          617.2,
+          618.0,
           601.2,
-          631.6
+          632.8
         ],
         [
           633.8,
           512.4,
           654.8,
-          617.2,
+          618.0,
           0.0,
-          937.6,
-          793.2
+          930.4,
+          794.4
         ],
         [
           304.6,
-          507.2,
+          508.4,
           362.8,
           601.2,
-          937.6,
+          930.4,
           0.0,
           393.2
         ],
         [
-          247.0,
-          494.0,
-          90.0,
-          631.6,
-          793.2,
+          248.2,
+          498.0,
+          91.2,
+          632.8,
+          794.4,
           393.2,
           0.0
         ]
@@ -1240,7 +1230,7 @@
   },
   "feasible_share": 0.85,
   "generated_by": "tools/route_analysis.gd",
-  "median_m": 1648.3,
+  "median_m": 1649.1,
   "nodes": [
     "dorm",
     "garden_fountain",
@@ -1253,64 +1243,64 @@
   "pair_m": [
     [
       0.0,
-      265.8,
+      268.6,
       75.0,
       403.8,
       633.8,
       304.6,
-      247.0
+      248.2
     ],
     [
-      265.8,
+      268.6,
       0.0,
-      324.4,
-      135.2,
+      327.2,
+      132.4,
       512.4,
-      507.2,
-      494.0
+      508.4,
+      498.0
     ],
     [
       75.0,
-      324.4,
+      327.2,
       0.0,
       462.0,
       654.8,
       362.8,
-      90.0
+      91.2
     ],
     [
       403.8,
-      135.2,
+      132.4,
       462.0,
       0.0,
-      617.2,
+      618.0,
       601.2,
-      631.6
+      632.8
     ],
     [
       633.8,
       512.4,
       654.8,
-      617.2,
+      618.0,
       0.0,
-      937.6,
-      793.2
+      930.4,
+      794.4
     ],
     [
       304.6,
-      507.2,
+      508.4,
       362.8,
       601.2,
-      937.6,
+      930.4,
       0.0,
       393.2
     ],
     [
-      247.0,
-      494.0,
-      90.0,
-      631.6,
-      793.2,
+      248.2,
+      498.0,
+      91.2,
+      632.8,
+      794.4,
       393.2,
       0.0
     ]
@@ -1318,7 +1308,7 @@
   "round_s": 240.0,
   "rule": "keep combinations whose ideal run fits 85% of the round (fewer than 3: the shortest)",
   "runner_estimate_s": {
-    "max": 428.0,
+    "max": 429.0,
     "median": 279.0,
     "min": 148.0
   },

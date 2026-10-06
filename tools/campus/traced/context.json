@@ -51,7 +51,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_002",
@@ -96,7 +97,8 @@
     "conf": "low",
     "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)",
     "open": "outline soft under trees"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_003",
@@ -140,7 +142,8 @@
     "date": "2022",
     "conf": "low",
     "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m); set at an angle along the street curve"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_004",
@@ -184,7 +187,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m); brown roof"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_005",
@@ -236,7 +240,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_006",
@@ -280,7 +285,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_007",
@@ -324,7 +330,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m); house with a rear wing"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_008",
@@ -376,7 +383,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_009",
@@ -420,7 +428,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_010",
@@ -464,7 +473,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_011",
@@ -508,7 +518,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_012",
@@ -552,7 +563,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_013",
@@ -604,7 +616,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "one-storey ranch house facing the north perimeter street; footprint from the 2022 aerial (roof outline)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_014",
@@ -648,7 +661,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "one-storey ranch house facing the north perimeter street; footprint from the 2022 aerial (roof outline); brown roof"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_015",
@@ -700,7 +714,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "one-storey ranch house facing the north perimeter street; footprint from the 2022 aerial (roof outline)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_016",
@@ -752,7 +767,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "one-storey ranch house facing the north perimeter street; footprint from the 2022 aerial (roof outline)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_shed_001",
@@ -796,7 +812,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "detached garage / shed behind the houses"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_shed_002",
@@ -840,7 +857,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "detached garage / shed"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_shed_003",
@@ -885,7 +903,8 @@
     "conf": "medium",
     "note": "outbuilding with a deck (pool house?) behind a house",
     "open": "use unclear"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_shed_004",
@@ -929,7 +948,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "detached garage / shed"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_017",
@@ -973,7 +993,8 @@
     "date": "2022",
     "conf": "low",
     "note": "house around the subdivision cul-de-sac; overview raster (+-1.5 m); set diagonally to the circle; brown roof"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_018",
@@ -1017,7 +1038,8 @@
     "date": "2022",
     "conf": "low",
     "note": "house around the subdivision cul-de-sac; overview raster (+-1.5 m)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_019",
@@ -1061,7 +1083,8 @@
     "date": "2022",
     "conf": "low",
     "note": "house around the subdivision cul-de-sac; overview raster (+-1.5 m); brown roof"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_020",
@@ -1105,7 +1128,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house around the subdivision cul-de-sac; overview raster (+-1.5 m)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_021",
@@ -1149,7 +1173,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house around the subdivision cul-de-sac; overview raster (+-1.5 m)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_022",
@@ -1193,7 +1218,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house around the subdivision cul-de-sac; overview raster (+-1.5 m)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_023",
@@ -1237,7 +1263,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house facing the north perimeter street; 2022 aerial"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_024",
@@ -1289,7 +1316,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house facing the north perimeter street; 2022 aerial; taller central mass (one and a half storeys)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_025",
@@ -1349,7 +1377,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house facing the north perimeter street; 2022 aerial; L-shaped with a lower front wing"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_house_026",
@@ -1393,7 +1422,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "house facing the north perimeter street; 2022 aerial"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_bldg_001",
@@ -1463,7 +1493,8 @@
     "conf": "medium",
     "note": "large one-storey complex (long N-S spine with a west wing); overview raster, simplified union outline",
     "open": "wall material and roof form not verified (dark grey pitched roofs read from the overview)"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_bldg_002",
@@ -1507,7 +1538,8 @@
     "date": "2022",
     "conf": "low",
     "note": "square pavilion/court block on the west side of the complex"
-   }
+   },
+   "ref": "C04"
   },
   {
    "id": "ctx_shed_005",
@@ -1551,7 +1583,8 @@
     "date": "2022",
     "conf": "medium",
     "note": "small white-roofed service building at the complex lot"
-   }
+   },
+   "ref": "C04"
   }
  ],
  "roads": [

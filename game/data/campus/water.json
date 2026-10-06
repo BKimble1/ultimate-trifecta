@@ -703,6 +703,7 @@
    "objective": true,
    "ref": "W05",
    "rim_h": 0.3,
+   "rim_t": 1.2,
    "surface": 0.15,
    "zone": "ccore"
   },

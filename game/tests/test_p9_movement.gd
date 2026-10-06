@@ -501,14 +501,14 @@ func test_guest_prediction_of_full_speed_and_dives() -> void:
 ## game. Update the game to join.") and it never gets a slot; a newer
 ## protocol is refused the same way; the current build stays in the room.
 func test_old_protocol_is_refused_with_update_needed() -> void:
-	t.eq(Protocol.VERSION, 8, "protocol 8 (Pass 9 movement semantics)")
+	t.eq(Protocol.VERSION, 9, "protocol 9 (Pass 9 movement semantics; 24-bit positions for the rebuilt campus)")
 	var rig := NetRig.new()
 	t.add_child(rig)
 	rig.setup(20.0, 0.0, 0.0, 1)
 	var c: NetSession = rig.clients[0]
 	await rig.wait_until(func() -> bool: return c.local_slot >= 0, 300)
 	var before := rig.host.roster.filter(func(e): return e != null).size()
-	for ver in [7, 9]:
+	for ver in [8, 10]:
 		var other := LoopbackTransport.new(rig.hub, false)
 		rig.hub.link(other.id, rig.host_t.id)
 		var got: Array = []

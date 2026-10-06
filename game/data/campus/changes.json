@@ -24,6 +24,27 @@
   {
    "change": "added",
    "ev": {
+    "conf": "medium",
+    "date": "2026",
+    "note": "2022 overview shows no buildings on the block; the 2025 parcels give both parcels apartment class 402 (the class of B05's parcel); the 2026 wayfinding inset (pin 44) shows the seven buildings; R150/R160 show them finished and occupied",
+    "open": "construction date unknown",
+    "src": [
+     "overview2022",
+     "parcels2025",
+     "wayfinding2026",
+     "R150",
+     "R160"
+    ]
+   },
+   "id": "chg_north_court_homes",
+   "ref": "B45",
+   "since": "2022-2026",
+   "what": "seven townhome buildings, read as 4 units each (two rows of three on the block between the two N-S town streets at x ~36-175, one N-S building on the east part of the next block south, with a parking strip) on a block that is open lawn with a paved apron and lot in the 2022 overview",
+   "zone": "north"
+  },
+  {
+   "change": "added",
+   "ev": {
     "conf": "low",
     "date": "2026",
     "note": "pixel search of all cyan/orange markers: numbers 1-44 only",
@@ -36,6 +57,25 @@
    "ref": "B46",
    "since": "2026",
    "what": "studio house listed as legend item 45 on the 2026 wayfinding but no marker exists on the map (44 markers found); location unresolved, not modelled as its own building",
+   "zone": "north"
+  },
+  {
+   "change": "replaced",
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "2022 overview (0.66 m/px), 2025 parcel class codes (street-side parcel 500 = vacant residential lot, rear parcel 510 = single-family), 2026 wayfinding pin 6",
+    "open": "construction date and the fate of the rear-parcel house unresolved; no post-2022 overhead image or photograph in the pack",
+    "src": [
+     "overview2022",
+     "parcels2025",
+     "wayfinding2026"
+    ]
+   },
+   "id": "chg_terrace_apartments",
+   "ref": "B06",
+   "since": "2022-2026",
+   "what": "east half-block north of the E-W street beyond B05 (x ~232-273, z -652..-622): the 2022 overview shows a house (~x 262-274, z -635..-625) and an outbuilding by the alley (~x 235-243, z -630..-621) on the street-side parcel and a house (~x 259-272, z -650..-641) on the parcel behind; the 2025 parcels class the street-side parcel as vacant and the 2026 wayfinding draws the two B06 blocks and a parking strip there",
    "zone": "north"
   },
   {
