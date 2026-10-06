@@ -108,16 +108,39 @@ func test_routes_are_playable_and_orders_are_optimal() -> void:
 	t.check(worst_ratio > 1.3, "obstacles really bend routes (a %.2f detour)" % worst_ratio)
 	# behind tonight's dorm (no door on that side): the way home goes round
 	var g := CampusDorms.geometry(sim.home_dorm)
-	var fp: Rect2 = g["footprint"]
-	var behind := Vector2(fp.get_center().x, fp.end.y + 2.5)
+	# behind the dorm: outside the wall farthest from every door
+	var fp: PackedVector2Array = CampusData.ccw(g["footprint"])
+	var behind := Vector2.INF
+	var far := -1.0
+	for i in fp.size():
+		var a := fp[i]
+		var b := fp[(i + 1) % fp.size()]
+		if a.distance_to(b) < 6.0:
+			continue
+		var dd := (b - a).normalized()
+		var q := (a + b) * 0.5 + Vector2(dd.y, -dd.x) * 3.0
+		var near := INF
+		for d in g["doors"]:
+			near = minf(near, (d["pos"] as Vector2).distance_to(q))
+		if near > far and h.sim.layout.building_at(q, 0.5) < 0:
+			far = near
+			behind = q
 	var hf := PaceFields.field(PaceFields.home_key(sim.home_dorm))
 	var straight_door := INF
-	for d in g["doors"]:
+	var by_route := INF
+	var best_door := -1
+	var nav := NavGrid.shared(h.sim.layout)
+	for di in (g["doors"] as Array).size():
+		var d: Dictionary = g["doors"][di]
 		straight_door = minf(straight_door, (d["approach"] as Vector2).distance_to(behind))
+		var pth := nav.find_path(behind, d["approach"])
+		if pth.size() >= 2 and nav.path_length(pth) < by_route:
+			by_route = nav.path_length(pth)
+			best_door = di
 	var hm := PaceFields.metres(hf, PaceFields.cell_of(behind))
 	t.check(hm != INF and hm > straight_door + 3.0, "behind the dorm, home is round the building (%.1f m by route vs %.1f m straight)" % [hm, straight_door])
 	var door := PaceFields.label_at(hf, PaceFields.cell_of(behind))
-	t.check(door >= 1, "and the suggested door is a side door, not the front through the building (door %d)" % door)
+	t.eq(door, best_door, "and the suggested door is the nearest by route, never through the building (door %d)" % door)
 	# the pace's route = the best of every order, checked by hand
 	var p0 := sim.player(0)
 	h.place(0, Vector3(-30, 0.05, 40))

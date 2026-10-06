@@ -1,6 +1,8 @@
 extends RefCounted
-## V6 dorms: three playable dorms with real common rooms, a home dorm per
-## round, spawning inside it, and the outside->inside threshold finish.
+## The start dorms (the reference campus's two men's halls, West Hall the
+## default): real common rooms reached by corridors from the buildings'
+## real entrances, a home dorm per round, spawning inside it, and the
+## outside->inside threshold finish.
 ##  * geometry: doors, openings, pads (inside, apart, facing an exit, clear
 ##    line to it), respawn pads, ceilings, cart blockers;
 ##  * navigation: every pad reaches every door, every door's outside reaches
@@ -21,48 +23,61 @@ func _h() -> SimHarness:
 	return SimHarness.new(t)
 
 
-func test_three_dorms_with_real_doors_and_pads() -> void:
+func test_start_dorms_with_real_doors_and_pads() -> void:
 	var lay := CampusLayout.shared()
-	t.check(lay.dorms.size() >= 3, "at least three playable dorms (%d)" % lay.dorms.size())
+	t.check(lay.dorms.size() >= 2, "two start dorms (%d)" % lay.dorms.size())
+	t.eq(CampusDorms.default_id(), "west_hall", "the default start is West Hall")
+	t.check(CampusDorms.has_dorm("north_hall"), "North Hall is the second start")
 	var names := {}
-	var walls := {}
 	var hashes := {}
 	for d in lay.dorms:
 		var id := String(d["id"])
 		var g: Dictionary = d["geo"]
 		names[String(d["name"])] = true
-		walls[str(d["wall"])] = true
 		hashes[CampusDorms.geometry_hash(id)] = true
+		var bd := lay.building_by_id(String(g["building"]))
+		t.check(not bd.is_empty(), "%s: stands in a traced building" % id)
+		var foot: PackedVector2Array = g["footprint"]
 		var doors: Array = g["doors"]
-		t.check(doors.size() >= 3, "%s: three entrances" % id)
-		var faces := {}
+		t.check(doors.size() >= 2, "%s: at least two entrances (%d)" % [id, doors.size()])
 		for dr in doors:
-			faces[str(dr["normal"])] = true
-		t.eq(faces.size(), doors.size(), "%s: each door on its own face" % id)
+			# a real entrance: on the building's outline (or the back wall of
+			# an open porch), near a traced entrance
+			var p: Vector2 = dr["pos"]
+			var on_wall := CampusData.dist_to_edge(p, foot) < 0.7
+			for ps in bd["passages"]:
+				on_wall = on_wall or CampusData.dist_to_edge(p, ps["poly"]) < 0.7
+			t.check(on_wall, "%s %s: the door is in an outer wall" % [id, dr["id"]])
+			var near := INF
+			for e in bd["entrances"]:
+				near = minf(near, p.distance_to(CampusLayout._v2(e.get("p", [0, 0]))))
+			t.check(near < 6.0, "%s %s: at a traced entrance (%.1f m)" % [id, dr["id"], near])
 		var min_gap := INF
 		for a in doors:
 			for b in doors:
 				if a != b:
 					min_gap = minf(min_gap, (a["pos"] as Vector2).distance_to(b["pos"]))
-		t.check(min_gap >= 12.0, "%s: doors far apart (closest %.1f m)" % [id, min_gap])
+		t.check(min_gap >= 8.0, "%s: doors apart (closest %.1f m)" % [id, min_gap])
 		t.check(CampusDorms.DOOR_W >= 3.0 and CampusDorms.DOOR_H >= 2.8, "openings wide and tall enough")
-		var room: Rect2 = g["room"]
-		t.check(room.size.x >= 20.0 and room.size.y >= 8.0, "%s: a real common room (%.0f x %.0f m)" % [id, room.size.x, room.size.y])
+		var room: PackedVector2Array = g["room"]
+		t.check(absf(CampusData.area(room)) >= 120.0, "%s: a real common room (%.0f m2)" % [id, absf(CampusData.area(room))])
+		for q in room:
+			t.check(Geometry2D.is_point_in_polygon(q, foot) and CampusData.dist_to_edge(q, foot) >= 0.5, "%s: the room stays inside the walls" % id)
 		var pads: Array = g["pads"]
 		t.check(pads.size() >= 7, "%s: a pad for every runner (%d)" % [id, pads.size()])
-		var furniture: Array = (g["boxes"] as Array).filter(func(bx: Array) -> bool: return String(bx[2]) in ["sofa", "hearth"])
+		var furniture: Array = (g["boxes"] as Array).filter(func(bx: Array) -> bool: return String(bx[2]) not in ["lintel"])
 		for i in pads.size():
 			var pp: Vector2 = pads[i]["pos"]
-			t.check(room.grow(-1.0).has_point(pp), "%s pad %d inside the room, clear of the walls" % [id, i])
+			t.check(Geometry2D.is_point_in_polygon(pp, room) and CampusData.dist_to_edge(pp, room) >= 1.0, "%s pad %d inside the room, clear of the walls" % [id, i])
 			for j in range(i + 1, pads.size()):
 				t.check(pp.distance_to(pads[j]["pos"]) >= 1.6, "%s pads %d/%d don't overlap" % [id, i, j])
 			for dr in doors:
 				t.check(pp.distance_to(dr["line_p"]) >= 2.4, "%s pad %d not in a doorway" % [id, i])
 			for bx in furniture:
 				var c: Vector3 = bx[0]
-				var s: Vector3 = bx[1]
-				t.check(not Rect2(c.x - s.x * 0.5, c.z - s.z * 0.5, s.x, s.z).grow(0.6).has_point(pp), "%s pad %d clear of furniture" % [id, i])
-			# faces an exit: the pad's yaw points at one of the doors
+				var sz: Vector3 = bx[1]
+				var fp2 := CampusDorms._obox(Vector2(c.x, c.z), Vector2(sz.x, sz.z), float(bx[3]))
+				t.check(not Geometry2D.is_point_in_polygon(pp, fp2) and CampusData.dist_to_edge(pp, fp2) >= 0.6, "%s pad %d clear of furniture" % [id, i])
 			var yaw: float = pads[i]["yaw"]
 			var face := Vector2(-sin(yaw), -cos(yaw))
 			var best := -1.0
@@ -70,11 +85,13 @@ func test_three_dorms_with_real_doors_and_pads() -> void:
 				best = maxf(best, face.dot(((dr["line_p"] as Vector2) - pp).normalized()))
 			t.check(best > 0.98, "%s pad %d faces an exit" % [id, i])
 		for rp in g["respawn"]:
-			t.check(room.grow(-0.8).has_point(rp), "%s: respawn pad inside the room" % id)
+			var inside := false
+			for sp in DormArt.open_space(g):
+				inside = inside or Geometry2D.is_point_in_polygon(rp, sp)
+			t.check(inside, "%s: respawn pad inside the open interior" % id)
 	t.eq(names.size(), lay.dorms.size(), "distinct dorm names")
-	t.eq(walls.size(), lay.dorms.size(), "distinct facade colours")
 	t.eq(hashes.size(), lay.dorms.size(), "distinct geometry fingerprints")
-	t.eq(CampusDorms.geometry_hash("puddlesworth"), CampusDorms.geometry_hash("puddlesworth"), "fingerprint is stable")
+	t.eq(CampusDorms.geometry_hash(CampusDorms.default_id()), CampusDorms.geometry_hash(CampusDorms.default_id()), "fingerprint is stable")
 
 
 ## The colliders match the plan: doorways are clear to run through and
@@ -110,10 +127,9 @@ func test_collision_openings_ceiling_and_cart_blockers() -> void:
 			t.check(not ss.intersect_ray(high).is_empty(), "%s %s: lintel above the opening" % [id, dr["id"]])
 			var cart := PhysicsRayQueryParameters3D.create(Vector3(outside.x, 0.6, outside.y), Vector3(inside.x, 0.6, inside.y), TC.L_CART_BLOCK)
 			t.check(not ss.intersect_ray(cart).is_empty(), "%s %s: carts can't drive in" % [id, dr["id"]])
-		var room: Rect2 = g["room"]
-		var c := room.get_center()
+		var c := CampusData.centroid(g["room"])
 		var up := ss.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(c.x, 1.0, c.y), Vector3(c.x, 20.0, c.y), TC.L_WORLD))
-		t.check(not up.is_empty() and absf(float((up["position"] as Vector3).y) - CampusDorms.CEIL) < 0.05, "%s: ceiling at %.1f m" % [id, CampusDorms.CEIL])
+		t.check(not up.is_empty() and absf(float((up["position"] as Vector3).y) - float(g["ceil"])) < 0.05, "%s: ceiling at %.1f m" % [id, float(g["ceil"])])
 		for pd in g["pads"]:
 			var pp: Vector2 = pd["pos"]
 			var dr2: Dictionary = g["doors"][int(pd["door"])]
@@ -140,7 +156,7 @@ func test_navigation_through_every_door() -> void:
 			t.check(through.size() >= 2 and nav.path_length(through) < 8.0, "%s %s: straight through the door (%.1f m)" % [id, dr["id"], nav.path_length(through)])
 			for pd in g["pads"]:
 				var out := nav.find_path(pd["pos"], appr)
-				t.check(out.size() >= 2 and nav.path_length(out) < (g["room"] as Rect2).size.x + 12.0, "%s: pad %s reaches the %s door" % [id, str(pd["pos"]), dr["id"]])
+				t.check(out.size() >= 2 and nav.path_length(out) < CampusData.perimeter(g["room"]) * 0.5 + 60.0, "%s: pad %s reaches the %s door" % [id, str(pd["pos"]), dr["id"]])
 			t.check(not nav.is_drivable(ins), "%s %s: no cart inside" % [id, dr["id"]])
 			t.check(nav.find_path(shed, ins, true).is_empty() or nav.find_path(shed, ins, true)[-1].distance_to(ins) > 3.0, "%s %s: carts can't path in" % [id, dr["id"]])
 		for w in lay.waters:
@@ -159,8 +175,6 @@ func test_spawn_inside_and_no_tags_before_go() -> void:
 				roles.append(P if i >= 8 - watch else R)
 			var h := _h()
 			h.make(roles, [0, 1, 2], [], 21, {"dorm": d})
-			var g := CampusDorms.geometry(d)
-			var room: Rect2 = g["room"]
 			var seen := []
 			for p in h.sim.players:
 				if p.is_runner():
@@ -182,7 +196,7 @@ func test_spawn_inside_and_no_tags_before_go() -> void:
 				await h.step()
 				tagged = tagged or not h.events_of(TC.Ev.CAPTURE).is_empty() or w0.tag_phase != SimPlayer.TagPhase.NONE
 			t.check(not tagged, "%s/%dW: no tag during the reveal or countdown" % [d, watch])
-			t.check(room.has_point(r0.pos2()), "%s/%dW: runners wait inside until GO" % [d, watch])
+			t.check(CampusDorms.in_room(d, r0.pos()), "%s/%dW: runners wait inside until GO" % [d, watch])
 			h.free_sim()
 
 
@@ -262,7 +276,7 @@ func test_other_dorms_never_finish() -> void:
 
 ## The swept threshold test itself: direction, width, height, step length.
 func test_threshold_geometry() -> void:
-	var dr: Dictionary = CampusDorms.geometry("puddlesworth")["doors"][0]
+	var dr: Dictionary = CampusDorms.geometry(CampusDorms.default_id())["doors"][0]
 	var lp: Vector2 = dr["line_p"]
 	var n: Vector2 = dr["n_in"]
 	var tg: Vector2 = dr["tangent"]
@@ -598,7 +612,8 @@ func test_camera_never_clips_into_the_dorm() -> void:
 	var worst := INF
 	for d in CampusDorms.ids():
 		var g := CampusDorms.geometry(d)
-		var room: Rect2 = g["room"]
+		var room: PackedVector2Array = g["room"]
+		var ceil_y := float(g["ceil"])
 		var pts: Array = []
 		for pd in g["pads"]:
 			pts.append(pd["pos"])
@@ -620,9 +635,9 @@ func test_camera_never_clips_into_the_dorm() -> void:
 					q.transform = Transform3D(Basis.IDENTITY, cp)
 					var clear := ss.intersect_shape(q, 1).is_empty()
 					var los := ss.intersect_ray(PhysicsRayQueryParameters3D.create(cp, p + Vector3(0, 1.2, 0), TC.L_WORLD)).is_empty()
-					if room.has_point(Vector2(cp.x, cp.z)):
-						worst = minf(worst, CampusDorms.CEIL - cp.y)
-						t.check(cp.y < CampusDorms.CEIL - 0.1, "%s: camera under the ceiling (%s)" % [d, str(cp)])
+					if Geometry2D.is_point_in_polygon(Vector2(cp.x, cp.z), room):
+						worst = minf(worst, ceil_y - cp.y)
+						t.check(cp.y < ceil_y - 0.1, "%s: camera under the ceiling (%s)" % [d, str(cp)])
 					t.check(clear and los, "%s: camera clear of every collider and sees the runner (pad %s, yaw %d/8, pitch %.2f -> %s)" % [d, str(pp), yi, pitch, str(cp)])
 	print("[dorms] closest the camera came to a ceiling: %.2f m" % worst)
 	cam.queue_free()
