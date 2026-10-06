@@ -41,6 +41,17 @@ are in FRS.5.
 | `test_release_config` (3) | `config/*.cfg` ships and dev/test code doesn't; one marketing version everywhere; links bundled https or nothing |
 | Service: `environments.test.mjs`, `friends.test.mjs` | sandbox/production crediting, the derived appAccountToken, forged/Xcode/wrong-bundle transactions, notifications per environment; mutual-only presence, enumeration attempts, blocks both ways, presence expiry and session ordering, invite limits/dedup/expiry/accept re-checks, deletion and sweep |
 
+**Desktop UDP soak** (`SOAK_OUT=docs/test-data/final_net_soak_3c_60ms_0.03
+tools/net_soak.sh 3 60 10 0.03 3`): a host and 3 client processes over real
+UDP (ENet), 60 ms one-way lag, 10 ms jitter, 3 % loss, a 3-round series with
+automation input. Every round completed on all four processes with the same
+result (runners, 4/4 home); RTT 146–171 ms; 59–60 fps; average correction
+0.5–9.6 mm, largest single correction 0.22–1.33 m per client and round (the
+same range as earlier soaks: one correction after a loss burst); host
+input starvation 707 / 564 skipped ticks over the series (the 3 % loss).
+Desktop processes on one Linux machine; not iPhones and not the Game Center
+transport.
+
 ## FRS.2 Measured (desktop render, labelled)
 
 - **Lobby lighting** (iPhone 14 shape, Mesa limited to AVX): Home room mean
