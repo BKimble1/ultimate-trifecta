@@ -353,6 +353,8 @@ func _r_waters(part: int, parts: int) -> void:
 	var sl := _slice(layout.waters.size(), part, parts)
 	for wi in range(sl.x, sl.y):
 		var w: Dictionary = layout.waters[wi]
+		if bool(w.get("wade", false)):
+			continue      # a shallow runnel: walked through
 		var rim := float(w.get("rim_t", 0.0)) if float(w.get("rim_h", 0.0)) > 0.0 else 0.0
 		for poly in w["polys"]:
 			_solid_poly(foot, poly, FOOT_INF + rim + 0.1)

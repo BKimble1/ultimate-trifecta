@@ -67,6 +67,9 @@ or measured in a dated photo; **medium** = georeferenced plan/diagram
  "edge": "natural|stone|concrete|rim", "rim_h": 0.0,
  "features": [{"kind": "jet|statue_base|bridge|dock|beach|island", ...}],
  "objective": true|false,            in the round's water pool (see gameplay)
+ "wade": false,                      true: a shallow decorative runnel (a dry-creek
+                                     garden channel): drawn and walked through, never
+                                     a splash, not an objective, not a nav obstacle
  "ev": {...}}
 ```
 

@@ -1,0 +1,147 @@
+{
+ "items": [
+  {
+   "change": "replaced",
+   "ev": {
+    "conf": "medium",
+    "date": "2026",
+    "note": "2023 plan still shows the office (proposal 4 'future building' on it); 2026 wayfinding shows the hall",
+    "open": "demolition date unknown",
+    "src": [
+     "aerial2022",
+     "plan2023p4",
+     "wayfinding2026",
+     "S10",
+     "S11"
+    ]
+   },
+   "id": "chg_founders_hall",
+   "ref": "B02",
+   "since": "2024-2026",
+   "what": "single-storey office building (2022 footprint ~x 66-128, z -442..-422) and the south half of its parking lot replaced by the L-shaped residence hall B02 (west wing open 2026, south wing under construction to 2027)",
+   "zone": "north"
+  },
+  {
+   "change": "added",
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "pixel search of all cyan/orange markers: numbers 1-44 only",
+    "open": "location needed from the owner; one candidate is the unnumbered single-storey building lodge_west_building",
+    "src": [
+     "wayfinding2026"
+    ]
+   },
+   "id": "chg_studio_house_unresolved",
+   "ref": "B46",
+   "since": "2026",
+   "what": "studio house listed as legend item 45 on the 2026 wayfinding but no marker exists on the map (44 markers found); location unresolved, not modelled as its own building",
+   "zone": "north"
+  },
+  {
+   "change": "realigned",
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "2026 map + the university's note that online maps show the old loop route",
+    "open": "exact alignment and opening year",
+    "src": [
+     "wayfinding2026",
+     "S01"
+    ]
+   },
+   "id": "chg_west_loop_relocated",
+   "since": "2024",
+   "what": "campus loop west leg moved west (x~-139) from the north perimeter street, curving south-east to rejoin the old leg near (-31,-160); modelled as campus_loop_west_new",
+   "zone": "west"
+  },
+  {
+   "change": "removed",
+   "ev": {
+    "conf": "medium",
+    "date": "2026",
+    "note": "the 2023 plan base still shows faint lanes under its parking overlay; the 2026 map has no track",
+    "open": "what surface now occupies the east half (lawn, parking or construction staging for the new assembly centre)",
+    "src": [
+     "aerial2022",
+     "plan2023p4",
+     "wayfinding2026"
+    ]
+   },
+   "id": "chg_west_old_track_removed",
+   "since": "2023",
+   "what": "400 m running track and infield north of the stadium (2022 aerial, oval x -157..-55, z -393..-218); not on the 2026 map, which instead shows the relocated campus loop crossing its west end and lawn/walks; the 2023 plan drew a proposed L-shaped parking lot over its east half (proposal, not modelled)",
+   "zone": "west"
+  },
+  {
+   "change": "replaced",
+   "ev": {
+    "conf": "medium",
+    "date": "2026",
+    "note": "2023 plan proposes courts here; 2026 map shows them; R055 shows the finished complex",
+    "open": "completion year; exact position (+-10 m)",
+    "src": [
+     "wayfinding2026",
+     "R055",
+     "plan2023p4",
+     "aerial2022"
+    ]
+   },
+   "id": "chg_west_racket_courts_added",
+   "since": "2024",
+   "what": "grass soccer field west of the west street (2022, goals at x -561/-462) replaced by the racket court complex (9 tennis + 8 pickleball courts, central kiosk)",
+   "zone": "west"
+  },
+  {
+   "change": "removed",
+   "ev": {
+    "conf": "medium",
+    "date": "2026",
+    "note": "cross-reference for the core zone",
+    "src": [
+     "wayfinding2026",
+     "aerial2022"
+    ]
+   },
+   "id": "chg_west_tennis_north_removed",
+   "since": "2024",
+   "what": "older tennis courts north of the campus centre (2022 aerial, x ~-45..+10, z ~-390..-280) are NOT in this zone (core zone handles them); noted here only because the current racket courts moved to this zone",
+   "zone": "west"
+  },
+  {
+   "change": "added",
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "status at Oct 2026 assumed open; 2023 plan showed a different layout",
+    "open": "completion and as-built layout",
+    "src": [
+     "wayfinding2026",
+     "plan2023p4"
+    ]
+   },
+   "id": "chg_west_track_complex_added",
+   "since": "2026",
+   "what": "new track and field complex on the farm field / lawn south of the farm lane (2026 map: 'opening fall 2026'); modelled as a finished E-W 400 m oval with a sprint extension",
+   "zone": "west"
+  },
+  {
+   "change": "added",
+   "ev": {
+    "conf": "low",
+    "date": "2025",
+    "note": "photo shows new hardscape; training hall itself is present in 2022",
+    "open": "exact extent",
+    "src": [
+     "R058",
+     "aerial2022"
+    ]
+   },
+   "id": "chg_west_trainhall_plaza_added",
+   "since": "2023",
+   "what": "brick plaza, planting bed and walks on the south side of the training hall (R058, not in 2022 aerial)",
+   "zone": "west"
+  }
+ ],
+ "version": 1
+}

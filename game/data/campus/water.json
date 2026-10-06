@@ -1,0 +1,1663 @@
+{
+ "items": [
+  {
+   "edge": "stone",
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "two lobes (north ~20 x 33 m, south ~21 x 37 m) joined by a narrow neck under the bridge, water edge traced on the 2022 aerial (dark smooth water mask, 8 px/m); the 2026 wayfinding draws the same two lobes; a stream leaves the south lobe SW toward the lake (water/lake_creek)",
+    "open": "water level vs bank height unknown; the neck between the lobes may be a culvert rather than open water",
+    "src": [
+     "aerial2022",
+     "R240",
+     "R076",
+     "wayfinding2026"
+    ]
+   },
+   "features": [
+    {
+     "deck": 0.4,
+     "kind": "bridge",
+     "note": "concrete deck with black steel railings on both sides, level with the plaza (R240)",
+     "pts": [
+      [
+       -31.0,
+       218.8
+      ],
+      [
+       -20.8,
+       224.5
+      ]
+     ],
+     "w": 3.0
+    },
+    {
+     "kind": "beach",
+     "note": "edge: large limestone boulders and stacked stone-block retaining walls with stepped seating along the plaza side (R240); natural grass banks elsewhere"
+    }
+   ],
+   "floor": -2.0,
+   "id": "bridge_pond",
+   "kind": "pond",
+   "label": "Bridge Pond",
+   "objective": false,
+   "polygon": [
+    [
+     -16,
+     182.5
+    ],
+    [
+     -10,
+     182
+    ],
+    [
+     -5,
+     183.5
+    ],
+    [
+     -2.5,
+     188
+    ],
+    [
+     -3.5,
+     198
+    ],
+    [
+     -2.5,
+     208
+    ],
+    [
+     -4,
+     215
+    ],
+    [
+     -10,
+     216
+    ],
+    [
+     -15,
+     215
+    ],
+    [
+     -17,
+     214.5
+    ],
+    [
+     -17.5,
+     217
+    ],
+    [
+     -21.2,
+     223.5
+    ],
+    [
+     -21.2,
+     229
+    ],
+    [
+     -19,
+     237
+    ],
+    [
+     -20,
+     243
+    ],
+    [
+     -23,
+     248
+    ],
+    [
+     -30,
+     250.5
+    ],
+    [
+     -36,
+     249
+    ],
+    [
+     -39.5,
+     243
+    ],
+    [
+     -40,
+     235
+    ],
+    [
+     -38.5,
+     229
+    ],
+    [
+     -34,
+     223
+    ],
+    [
+     -30,
+     218
+    ],
+    [
+     -28,
+     215
+    ],
+    [
+     -25,
+     213.5
+    ],
+    [
+     -19.5,
+     212.5
+    ],
+    [
+     -19.5,
+     206
+    ],
+    [
+     -20.5,
+     203
+    ],
+    [
+     -20.5,
+     193
+    ],
+    [
+     -20,
+     185
+    ]
+   ],
+   "ref": "W02",
+   "rim_h": 0.0,
+   "surface": -0.6,
+   "zone": "south"
+  },
+  {
+   "edge": "natural",
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "water edge traced on the 2022 aerial (dark-water mask at 4 px/m, simplified to 0.8 m); west side is a dam with a light stone face; the south shore is smoothed through the overhanging crowns of the wooded bank (true edge may be 1-3 m further south there); ~2.9 ha; one of the game's objective waters",
+    "open": "south-shore water line under tree crowns (+-2 m); small notch at x -272 z 410-413 may be the outlet/spillway; 2026 shoreline and swim-raft positions (seasonal) unverified",
+    "src": [
+     "aerial2022",
+     "R071",
+     "wayfinding2026"
+    ]
+   },
+   "features": [
+    {
+     "kind": "dock",
+     "note": "L-shaped floating swim dock (grated walkway + caution-signed head) from the north beach (R071; 2022 aerial)",
+     "pts": [
+      [
+       -263.8,
+       251.0
+      ],
+      [
+       -263.0,
+       265.5
+      ],
+      [
+       -258.5,
+       265.5
+      ]
+     ],
+     "w": 2.0
+    },
+    {
+     "kind": "island",
+     "note": "small floating swim raft (2022 aerial; R071)",
+     "p": [
+      -283.8,
+      281.8
+     ],
+     "size": [
+      3.0,
+      3.0
+     ]
+    },
+    {
+     "kind": "island",
+     "note": "floating swim raft",
+     "p": [
+      -262.5,
+      284.2
+     ],
+     "size": [
+      3.0,
+      3.0
+     ]
+    },
+    {
+     "kind": "island",
+     "note": "larger floating platform with a ladder/diving frame (R071)",
+     "p": [
+      -247.5,
+      293.0
+     ],
+     "rot": 20,
+     "size": [
+      3.5,
+      7.0
+     ]
+    },
+    {
+     "kind": "dock",
+     "note": "small fishing dock on the east shore (2022 aerial)",
+     "pts": [
+      [
+       -91.0,
+       316.0
+      ],
+      [
+       -94.0,
+       326.0
+      ]
+     ],
+     "w": 1.8
+    },
+    {
+     "kind": "beach",
+     "note": "sand swimming beach at the north landing (2022 aerial)",
+     "polygon": [
+      [
+       -264.0,
+       251.5
+      ],
+      [
+       -256.0,
+       256.5
+      ],
+      [
+       -246.4,
+       260.1
+      ],
+      [
+       -243.6,
+       262.6
+      ],
+      [
+       -235.6,
+       264.6
+      ],
+      [
+       -227.0,
+       269.6
+      ],
+      [
+       -221.5,
+       269.5
+      ],
+      [
+       -224.0,
+       262.0
+      ],
+      [
+       -236.0,
+       256.0
+      ],
+      [
+       -248.0,
+       250.5
+      ],
+      [
+       -258.0,
+       247.0
+      ]
+     ]
+    }
+   ],
+   "floor": -4.0,
+   "id": "campus_lake",
+   "kind": "lake",
+   "label": "Campus Lake",
+   "objective": true,
+   "polygon": [
+    [
+     -319.5,
+     228.5
+    ],
+    [
+     -321.5,
+     240.0
+    ],
+    [
+     -324.5,
+     275.0
+    ],
+    [
+     -328.4,
+     317.0
+    ],
+    [
+     -328.4,
+     338.0
+    ],
+    [
+     -325.0,
+     367.0
+    ],
+    [
+     -320.5,
+     388.0
+    ],
+    [
+     -317.0,
+     405.5
+    ],
+    [
+     -313.5,
+     409.0
+    ],
+    [
+     -305.0,
+     408.5
+    ],
+    [
+     -298.0,
+     409.0
+    ],
+    [
+     -290.0,
+     405.5
+    ],
+    [
+     -280.0,
+     405.0
+    ],
+    [
+     -276.5,
+     409.0
+    ],
+    [
+     -272.0,
+     413.0
+    ],
+    [
+     -268.8,
+     410.5
+    ],
+    [
+     -268.5,
+     405.5
+    ],
+    [
+     -262.5,
+     406.8
+    ],
+    [
+     -253.0,
+     407.2
+    ],
+    [
+     -246.0,
+     403.5
+    ],
+    [
+     -238.0,
+     400.6
+    ],
+    [
+     -230.6,
+     401.5
+    ],
+    [
+     -226.5,
+     401.0
+    ],
+    [
+     -214.6,
+     391.6
+    ],
+    [
+     -210.0,
+     386.5
+    ],
+    [
+     -197.0,
+     383.5
+    ],
+    [
+     -190.0,
+     379.5
+    ],
+    [
+     -181.0,
+     379.0
+    ],
+    [
+     -172.0,
+     383.0
+    ],
+    [
+     -160.0,
+     382.5
+    ],
+    [
+     -149.0,
+     380.5
+    ],
+    [
+     -141.0,
+     384.5
+    ],
+    [
+     -131.0,
+     382.0
+    ],
+    [
+     -120.0,
+     383.5
+    ],
+    [
+     -110.0,
+     388.0
+    ],
+    [
+     -104.0,
+     387.0
+    ],
+    [
+     -94.0,
+     384.5
+    ],
+    [
+     -86.0,
+     382.0
+    ],
+    [
+     -78.0,
+     381.5
+    ],
+    [
+     -71.5,
+     378.5
+    ],
+    [
+     -66.5,
+     372.0
+    ],
+    [
+     -65.2,
+     365.0
+    ],
+    [
+     -67.5,
+     359.0
+    ],
+    [
+     -69.4,
+     353.0
+    ],
+    [
+     -70.6,
+     347.5
+    ],
+    [
+     -74.0,
+     344.4
+    ],
+    [
+     -77.0,
+     341.0
+    ],
+    [
+     -78.0,
+     334.5
+    ],
+    [
+     -82.0,
+     331.5
+    ],
+    [
+     -84.6,
+     326.6
+    ],
+    [
+     -93.0,
+     325.0
+    ],
+    [
+     -98.1,
+     320.1
+    ],
+    [
+     -99.6,
+     314.6
+    ],
+    [
+     -106.9,
+     314.6
+    ],
+    [
+     -110.6,
+     311.1
+    ],
+    [
+     -116.6,
+     313.0
+    ],
+    [
+     -120.5,
+     309.0
+    ],
+    [
+     -120.0,
+     304.0
+    ],
+    [
+     -124.6,
+     301.5
+    ],
+    [
+     -128.5,
+     301.0
+    ],
+    [
+     -133.0,
+     303.5
+    ],
+    [
+     -137.5,
+     300.5
+    ],
+    [
+     -143.4,
+     299.1
+    ],
+    [
+     -146.1,
+     296.4
+    ],
+    [
+     -159.1,
+     295.9
+    ],
+    [
+     -175.4,
+     292.4
+    ],
+    [
+     -202.1,
+     273.4
+    ],
+    [
+     -213.4,
+     271.6
+    ],
+    [
+     -221.5,
+     269.5
+    ],
+    [
+     -227.1,
+     269.6
+    ],
+    [
+     -235.6,
+     264.6
+    ],
+    [
+     -243.6,
+     262.6
+    ],
+    [
+     -246.4,
+     260.1
+    ],
+    [
+     -256.0,
+     256.5
+    ],
+    [
+     -264.0,
+     251.5
+    ],
+    [
+     -268.0,
+     249.8
+    ],
+    [
+     -272.0,
+     244.6
+    ],
+    [
+     -276.6,
+     242.1
+    ],
+    [
+     -280.5,
+     246.0
+    ],
+    [
+     -285.0,
+     244.5
+    ],
+    [
+     -285.0,
+     232.0
+    ],
+    [
+     -287.5,
+     223.5
+    ],
+    [
+     -293.0,
+     222.0
+    ],
+    [
+     -300.0,
+     221.5
+    ],
+    [
+     -308.0,
+     223.0
+    ],
+    [
+     -313.0,
+     222.8
+    ],
+    [
+     -315.6,
+     227.4
+    ]
+   ],
+   "ref": "W01",
+   "rim_h": 0.0,
+   "surface": -1.0,
+   "zone": "south"
+  },
+  {
+   "circle": [
+    [
+     97.4,
+     -103.1
+    ],
+    1.5
+   ],
+   "edge": "rim",
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "small round basin on the SE edge of the walk hub west of the library: water r~1.5 m inside a ~1 m light coping ring (outer r 2.7); the pillar's 2.3 m shadow points NW; user image 155324 looks from it to the bell tower with the library close on the right, R098 shows the brick seat wall beside it",
+    "open": "not the jet pool listed with V03/V10 (that is the separate pool at (213,-46), traced as garden_run_pool); basin depth and rim height estimated",
+    "src": [
+     "aerial2022",
+     "user155324",
+     "R098"
+    ]
+   },
+   "features": [
+    {
+     "h": 2.6,
+     "kind": "statue_base",
+     "note": "upright dark stone pillar with a bronze bowl on top; water spills from the bowl into the basin",
+     "p": [
+      97.4,
+      -103.1
+     ],
+     "r": 0.35
+    }
+   ],
+   "floor": -0.3,
+   "id": "garden_fountain",
+   "kind": "fountain",
+   "label": "Garden Fountain",
+   "objective": true,
+   "ref": "W05",
+   "rim_h": 0.3,
+   "surface": 0.15,
+   "zone": "ccore"
+  },
+  {
+   "edge": "stone",
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "a stony, planted dry-creek channel meandering from the small pool by the science centre across the south lawn (dark stone band in the aerial; drawn blue on the diagrams); walks cross it",
+    "open": "whether it carries water except after rain; exact width (1.5-3 m) and the western end",
+    "src": [
+     "aerial2022",
+     "plan2023p4",
+     "wayfinding2026"
+    ]
+   },
+   "features": [],
+   "floor": -0.3,
+   "id": "garden_run",
+   "kind": "channel",
+   "label": "Garden Run",
+   "objective": false,
+   "polygon": [
+    [
+     202.02,
+     -26.51
+    ],
+    [
+     195.14,
+     -15.69
+    ],
+    [
+     185.24,
+     -5.79
+    ],
+    [
+     171.21,
+     7.24
+    ],
+    [
+     159.18,
+     21.27
+    ],
+    [
+     149.24,
+     32.2
+    ],
+    [
+     137.39,
+     42.07
+    ],
+    [
+     123.63,
+     48.95
+    ],
+    [
+     109.69,
+     51.94
+    ],
+    [
+     96.42,
+     57.05
+    ],
+    [
+     87.74,
+     64.76
+    ],
+    [
+     76.41,
+     60.98
+    ],
+    [
+     63.39,
+     54.97
+    ],
+    [
+     50.25,
+     50.93
+    ],
+    [
+     38.18,
+     48.91
+    ],
+    [
+     37.82,
+     51.09
+    ],
+    [
+     49.75,
+     53.07
+    ],
+    [
+     62.61,
+     57.03
+    ],
+    [
+     75.59,
+     63.02
+    ],
+    [
+     88.26,
+     67.24
+    ],
+    [
+     97.58,
+     58.95
+    ],
+    [
+     110.31,
+     54.06
+    ],
+    [
+     124.37,
+     51.05
+    ],
+    [
+     138.61,
+     43.93
+    ],
+    [
+     150.76,
+     33.8
+    ],
+    [
+     160.82,
+     22.73
+    ],
+    [
+     172.79,
+     8.76
+    ],
+    [
+     186.76,
+     -4.21
+    ],
+    [
+     196.86,
+     -14.31
+    ],
+    [
+     203.98,
+     -25.49
+    ],
+    [
+     209.02,
+     -37.58
+    ],
+    [
+     206.98,
+     -38.42
+    ]
+   ],
+   "ref": "W06",
+   "rim_h": 0.0,
+   "surface": -0.06,
+   "wade": true,
+   "zone": "ccore"
+  },
+  {
+   "circle": [
+    [
+     213.3,
+     -45.9
+    ],
+    4.4
+   ],
+   "edge": "rim",
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "round pool r 4.4 m (dark water edge in the aerial) with a central jet and a few boulders, a brown stone rim, a curved concrete walk around its north side; it is the head of the garden run: a rock cascade leaves it to the south (V03)",
+    "open": "rim height and depth estimated",
+    "src": [
+     "aerial2022",
+     "V03",
+     "V10",
+     "wayfinding2026"
+    ]
+   },
+   "features": [
+    {
+     "h": 1.5,
+     "kind": "jet",
+     "p": [
+      213.3,
+      -45.9
+     ]
+    }
+   ],
+   "floor": -0.5,
+   "id": "garden_run_pool",
+   "kind": "fountain",
+   "label": "Garden Run Pool",
+   "objective": true,
+   "ref": "W06",
+   "rim_h": 0.45,
+   "surface": 0.25,
+   "zone": "ccore"
+  },
+  {
+   "edge": "natural",
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "narrow stream in a wooded ravine from the bridge pond's south lobe SW to the lake's east arm (2022 aerial: a dark line between bare-tree crowns); width ~2 m assumed",
+    "open": "true channel width and whether it carries water year-round unknown; crossings (culverts/footbridges) under the south-lot walk not verified",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "features": [],
+   "floor": -1.6,
+   "id": "lake_creek",
+   "kind": "channel",
+   "objective": false,
+   "polygon": [
+    [
+     -36.7,
+     248.8
+    ],
+    [
+     -41.8,
+     254.4
+    ],
+    [
+     -46.8,
+     261.4
+    ],
+    [
+     -52.8,
+     269.4
+    ],
+    [
+     -58.9,
+     279.6
+    ],
+    [
+     -63.0,
+     289.8
+    ],
+    [
+     -64.0,
+     297.7
+    ],
+    [
+     -67.4,
+     305.7
+    ],
+    [
+     -70.5,
+     315.8
+    ],
+    [
+     -72.0,
+     325.9
+    ],
+    [
+     -73.0,
+     336.0
+    ],
+    [
+     -72.5,
+     345.1
+    ],
+    [
+     -70.5,
+     344.9
+    ],
+    [
+     -71.0,
+     336.0
+    ],
+    [
+     -70.0,
+     326.1
+    ],
+    [
+     -68.5,
+     316.2
+    ],
+    [
+     -65.6,
+     306.3
+    ],
+    [
+     -62.0,
+     298.3
+    ],
+    [
+     -61.0,
+     290.2
+    ],
+    [
+     -57.1,
+     280.4
+    ],
+    [
+     -51.2,
+     270.6
+    ],
+    [
+     -45.2,
+     262.6
+    ],
+    [
+     -40.2,
+     255.6
+    ],
+    [
+     -35.3,
+     250.2
+    ]
+   ],
+   "ref": "W02",
+   "rim_h": 0.0,
+   "surface": -1.2,
+   "zone": "south"
+  },
+  {
+   "edge": "natural",
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "water edge traced on the 2022 leaf-off aerial; west lobe open, east lobe edged with trees",
+    "open": "east lobe edge partly under tree crowns; current shore detail",
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ]
+   },
+   "features": [
+    {
+     "kind": "jet",
+     "note": "aerator/fountain ring visible on the surface",
+     "p": [
+      -377,
+      -350
+     ]
+    }
+   ],
+   "floor": -2.5,
+   "id": "north_pond",
+   "kind": "pond",
+   "label": "North Pond",
+   "objective": false,
+   "polygon": [
+    [
+     -399.5,
+     -363.5
+    ],
+    [
+     -396,
+     -368
+    ],
+    [
+     -390,
+     -370.5
+    ],
+    [
+     -380,
+     -371.5
+    ],
+    [
+     -372,
+     -371
+    ],
+    [
+     -363.5,
+     -370.3
+    ],
+    [
+     -353.5,
+     -368.4
+    ],
+    [
+     -348,
+     -367.2
+    ],
+    [
+     -343.5,
+     -368.4
+    ],
+    [
+     -335,
+     -370
+    ],
+    [
+     -325,
+     -371
+    ],
+    [
+     -318,
+     -370.5
+    ],
+    [
+     -313,
+     -367.5
+    ],
+    [
+     -311,
+     -363
+    ],
+    [
+     -312.5,
+     -357.5
+    ],
+    [
+     -318,
+     -355
+    ],
+    [
+     -329,
+     -353.4
+    ],
+    [
+     -340.5,
+     -351.3
+    ],
+    [
+     -346.5,
+     -349
+    ],
+    [
+     -350.7,
+     -345
+    ],
+    [
+     -358,
+     -340.6
+    ],
+    [
+     -368,
+     -334.5
+    ],
+    [
+     -378,
+     -330
+    ],
+    [
+     -388,
+     -329.5
+    ],
+    [
+     -396,
+     -330.5
+    ],
+    [
+     -399.5,
+     -332.5
+    ],
+    [
+     -400.3,
+     -342
+    ],
+    [
+     -400.3,
+     -355
+    ]
+   ],
+   "ref": "W07",
+   "rim_h": 0.0,
+   "surface": -0.5,
+   "zone": "west"
+  },
+  {
+   "edge": "rim",
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "Water edge traced at 30 px/m from the 2022 aerial: NE basin centre (154.08, -223.80), outer rim radius 2.20 m, white concrete rim about 0.25 m thick and 0.55 m high that also forms the divider with the SW basin; paired with the SW basin; brick-paved court with a stamped round pad holding a standing statue in front (south-west) and the curved glass entrance of the arts center behind.",
+    "open": "Water depth and rim height estimated from User155151; whether the two basins share water through a gap in the dividing rim.",
+    "src": [
+     "aerial2022",
+     "User155151",
+     "R308",
+     "R310",
+     "R312",
+     "V05"
+    ]
+   },
+   "features": [
+    {
+     "kind": "statue_base",
+     "note": "running figure with a child (sculpture; rights treated separately)",
+     "p": [
+      154.6,
+      -223.6
+     ]
+    }
+   ],
+   "floor": -0.1,
+   "id": "reflection_court_basin_ne",
+   "kind": "fountain",
+   "label": "Reflection Court",
+   "objective": false,
+   "polygon": [
+    [
+     156.03,
+     -223.8
+    ],
+    [
+     155.93,
+     -223.2
+    ],
+    [
+     155.66,
+     -222.65
+    ],
+    [
+     155.23,
+     -222.22
+    ],
+    [
+     154.68,
+     -221.95
+    ],
+    [
+     154.08,
+     -221.85
+    ],
+    [
+     153.48,
+     -221.95
+    ],
+    [
+     152.93,
+     -222.22
+    ],
+    [
+     152.5,
+     -222.65
+    ],
+    [
+     152.23,
+     -223.2
+    ],
+    [
+     152.13,
+     -223.8
+    ],
+    [
+     152.23,
+     -224.4
+    ],
+    [
+     152.5,
+     -224.95
+    ],
+    [
+     152.93,
+     -225.38
+    ],
+    [
+     153.48,
+     -225.65
+    ],
+    [
+     154.08,
+     -225.75
+    ],
+    [
+     154.68,
+     -225.65
+    ],
+    [
+     155.23,
+     -225.38
+    ],
+    [
+     155.66,
+     -224.95
+    ],
+    [
+     155.93,
+     -224.4
+    ]
+   ],
+   "ref": "W04",
+   "rim_h": 0.55,
+   "surface": 0.42,
+   "zone": "ncore"
+  },
+  {
+   "edge": "rim",
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "SW basin centre (151.83, -221.33), outer rim radius 2.25 m; its outline is a crescent where it meets the NE basin's rim, so the pair reads as a curved figure-eight, not a circle.",
+    "open": "Exact statue positions within the basins are estimated from the photo.",
+    "src": [
+     "aerial2022",
+     "User155151",
+     "R308",
+     "R310",
+     "R312"
+    ]
+   },
+   "features": [
+    {
+     "kind": "statue_base",
+     "note": "reclining figure with a dog (sculpture; rights treated separately)",
+     "p": [
+      151.2,
+      -221.0
+     ]
+    }
+   ],
+   "floor": -0.1,
+   "id": "reflection_court_basin_sw",
+   "kind": "fountain",
+   "label": "Reflection Court",
+   "objective": false,
+   "polygon": [
+    [
+     151.28,
+     -223.26
+    ],
+    [
+     150.93,
+     -223.11
+    ],
+    [
+     150.38,
+     -222.71
+    ],
+    [
+     150.1,
+     -222.33
+    ],
+    [
+     149.9,
+     -221.88
+    ],
+    [
+     149.83,
+     -221.28
+    ],
+    [
+     149.9,
+     -220.8
+    ],
+    [
+     150.06,
+     -220.4
+    ],
+    [
+     150.45,
+     -219.9
+    ],
+    [
+     150.83,
+     -219.61
+    ],
+    [
+     151.28,
+     -219.41
+    ],
+    [
+     151.88,
+     -219.33
+    ],
+    [
+     152.36,
+     -219.41
+    ],
+    [
+     152.76,
+     -219.58
+    ],
+    [
+     153.26,
+     -219.96
+    ],
+    [
+     153.55,
+     -220.33
+    ],
+    [
+     153.71,
+     -220.71
+    ],
+    [
+     153.83,
+     -221.38
+    ],
+    [
+     153.78,
+     -221.63
+    ],
+    [
+     153.13,
+     -221.81
+    ],
+    [
+     152.65,
+     -222.13
+    ],
+    [
+     152.18,
+     -222.68
+    ],
+    [
+     151.93,
+     -223.31
+    ]
+   ],
+   "ref": "W04",
+   "rim_h": 0.55,
+   "surface": 0.42,
+   "zone": "ncore"
+  },
+  {
+   "edge": "natural",
+   "ev": {
+    "conf": "medium",
+    "date": "2025",
+    "note": "outline = the blue pond on plan p16 (near-circular, ~69 m across, centre (346.5, 345)), placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); R101/R135 (2025) show the pond with a central fountain jet and four village homes beyond; not in the 2022 aerial (open field)",
+    "open": "as-built shoreline unknown (plan is a design drawing; the 2026 wayfinding does not draw this pond); fountain position estimated; water levels assumed",
+    "src": [
+     "plan2023p16",
+     "R101",
+     "R135"
+    ]
+   },
+   "features": [
+    {
+     "h": 4.0,
+     "kind": "jet",
+     "note": "floating aerating fountain, spray ~4 m (R101, R135)",
+     "p": [
+      348.0,
+      340.0
+     ]
+    },
+    {
+     "kind": "beach",
+     "note": "narrow light gravel/stone rim at the water line all round (R101), grass banks above"
+    }
+   ],
+   "floor": -2.5,
+   "id": "village_pond",
+   "kind": "pond",
+   "label": "Village Pond",
+   "objective": false,
+   "polygon": [
+    [
+     380.9,
+     345.0
+    ],
+    [
+     380.0,
+     352.7
+    ],
+    [
+     377.5,
+     359.9
+    ],
+    [
+     373.4,
+     366.4
+    ],
+    [
+     367.9,
+     371.9
+    ],
+    [
+     361.4,
+     376.0
+    ],
+    [
+     354.2,
+     378.5
+    ],
+    [
+     346.5,
+     379.4
+    ],
+    [
+     338.8,
+     378.5
+    ],
+    [
+     331.6,
+     376.0
+    ],
+    [
+     325.1,
+     371.9
+    ],
+    [
+     319.6,
+     366.4
+    ],
+    [
+     315.5,
+     359.9
+    ],
+    [
+     313.0,
+     352.7
+    ],
+    [
+     312.1,
+     345.0
+    ],
+    [
+     313.0,
+     337.3
+    ],
+    [
+     315.5,
+     330.1
+    ],
+    [
+     319.6,
+     323.6
+    ],
+    [
+     325.1,
+     318.1
+    ],
+    [
+     331.6,
+     314.0
+    ],
+    [
+     338.8,
+     311.5
+    ],
+    [
+     346.5,
+     310.6
+    ],
+    [
+     354.2,
+     311.5
+    ],
+    [
+     361.4,
+     314.0
+    ],
+    [
+     367.9,
+     318.1
+    ],
+    [
+     373.4,
+     323.6
+    ],
+    [
+     377.5,
+     330.1
+    ],
+    [
+     380.0,
+     337.3
+    ]
+   ],
+   "ref": "W03",
+   "rim_h": 0.0,
+   "surface": -0.6,
+   "zone": "south"
+  },
+  {
+   "edge": "natural",
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pond in the north-west woods (marshy margins), not in the inventory",
+    "open": "edge partly marsh; water level varies",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "features": [
+    {
+     "kind": "dock",
+     "len": 8,
+     "note": "small pier/platform on the east side",
+     "p": [
+      -733.5,
+      -252
+     ]
+    }
+   ],
+   "floor": -2.0,
+   "id": "woods_pond_west",
+   "kind": "pond",
+   "objective": false,
+   "polygon": [
+    [
+     -739,
+     -284
+    ],
+    [
+     -730,
+     -287
+    ],
+    [
+     -722,
+     -283
+    ],
+    [
+     -720,
+     -272
+    ],
+    [
+     -721,
+     -258
+    ],
+    [
+     -722,
+     -240
+    ],
+    [
+     -724,
+     -228
+    ],
+    [
+     -728,
+     -217
+    ],
+    [
+     -734,
+     -212.5
+    ],
+    [
+     -740,
+     -213.5
+    ],
+    [
+     -745,
+     -219
+    ],
+    [
+     -748,
+     -230
+    ],
+    [
+     -749,
+     -245
+    ],
+    [
+     -748.5,
+     -262
+    ],
+    [
+     -746,
+     -275
+    ]
+   ],
+   "rim_h": 0.0,
+   "surface": -0.4,
+   "zone": "west"
+  }
+ ],
+ "version": 1
+}

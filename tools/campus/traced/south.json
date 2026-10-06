@@ -1,0 +1,6713 @@
+{
+ "zone": "south",
+ "buildings": [
+  {
+   "id": "bridge_hall",
+   "ref": "B32",
+   "label": "Bridge Hall",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     6,
+     224
+    ],
+    [
+     21,
+     223.5
+    ],
+    [
+     21,
+     224.5
+    ],
+    [
+     33,
+     224.5
+    ],
+    [
+     46,
+     238
+    ],
+    [
+     46,
+     253
+    ],
+    [
+     36.6,
+     253
+    ],
+    [
+     36.6,
+     255.5
+    ],
+    [
+     31.8,
+     255.5
+    ],
+    [
+     31.8,
+     252
+    ],
+    [
+     26.4,
+     252
+    ],
+    [
+     26.4,
+     257.7
+    ],
+    [
+     17.7,
+     257.7
+    ],
+    [
+     17.7,
+     251.4
+    ],
+    [
+     9.3,
+     251.4
+    ],
+    [
+     9.3,
+     243.5
+    ],
+    [
+     5,
+     243.5
+    ],
+    [
+     5,
+     229
+    ],
+    [
+     6,
+     229
+    ]
+   ],
+   "h": 13.6,
+   "floors": 4,
+   "roof": {
+    "type": "flat"
+   },
+   "style": {
+    "wall": "brick_red",
+    "trim": "dark",
+    "roof_mat": "membrane",
+    "windows": "punched",
+    "notes": "staggered 4-storey red-brick blocks with flat roofs and dark metal coping, recessed grey metal-panel links between blocks, small punched windows; low ground-floor entrance canopy on the north (R213, R214)"
+   },
+   "entrances": [
+    {
+     "p": [
+      25.0,
+      223.8
+     ],
+     "face": 0,
+     "w": 3.0,
+     "kind": "canopy"
+    },
+    {
+     "p": [
+      40.0,
+      231.5
+     ],
+     "face": 45,
+     "w": 2.5,
+     "kind": "door"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R213",
+     "R214",
+     "R084",
+     "plan2023p16"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "roof outline traced on the 2022 aerial (flat roofs, staggered blocks); 4 floors counted in R213/R214; plan p16 footprint agrees within ~2 m",
+    "open": "south-side outline partly under shadow; the boundary with the glazed link (x 5) is where the roof material changes; north entrance positions from walks"
+   }
+  },
+  {
+   "id": "waterside_hall",
+   "ref": "B33",
+   "label": "Waterside Hall",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     0,
+     250.5
+    ],
+    [
+     9,
+     250.5
+    ],
+    [
+     10,
+     264
+    ],
+    [
+     13,
+     266
+    ],
+    [
+     9.5,
+     286
+    ],
+    [
+     7,
+     288
+    ],
+    [
+     3,
+     305
+    ],
+    [
+     1,
+     308
+    ],
+    [
+     -2.4,
+     323
+    ],
+    [
+     -11,
+     321
+    ],
+    [
+     -13,
+     317
+    ],
+    [
+     -24,
+     316
+    ],
+    [
+     -26,
+     300
+    ],
+    [
+     -24,
+     293
+    ],
+    [
+     -35,
+     293
+    ],
+    [
+     -40,
+     288
+    ],
+    [
+     -41,
+     262
+    ],
+    [
+     -35,
+     260
+    ],
+    [
+     -21,
+     263
+    ],
+    [
+     -11,
+     261
+    ],
+    [
+     -7,
+     256
+    ]
+   ],
+   "h": 12.8,
+   "floors": 4,
+   "roof": {
+    "type": "hip",
+    "pitch": 25
+   },
+   "style": {
+    "wall": "brick_red",
+    "trim": "dark",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "red-brick wings with dark shingle hipped roofs and white flat-roofed stair/vent blocks on the ridge line; long N-S spine plus a W wing; the glazed commons link faces the pond (R240)"
+   },
+   "entrances": [
+    {
+     "p": [
+      -38.0,
+      290.5
+     ],
+     "face": 225,
+     "w": 2.5,
+     "kind": "door"
+    },
+    {
+     "p": [
+      -6.5,
+      322.0
+     ],
+     "face": 180,
+     "w": 2.5,
+     "kind": "door"
+    },
+    {
+     "p": [
+      -25.0,
+      316.5
+     ],
+     "face": 180,
+     "w": 2.5,
+     "kind": "door"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R240",
+     "R076",
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "outline traced on the 2022 aerial (hip-roof eaves, so walls may sit ~0.5 m inside); 4 window rows in R240 (left wing); plan p16 / 2026 wayfinding footprints agree",
+    "open": "exact eave overhang; which wing has 3 vs 4 storeys (terrain falls toward the pond/lake); entrances on the west/south from walks only"
+   }
+  },
+  {
+   "id": "waterside_link",
+   "ref": "B33",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     -12.5,
+     246
+    ],
+    [
+     -6,
+     242
+    ],
+    [
+     2,
+     242
+    ],
+    [
+     2,
+     229
+    ],
+    [
+     5,
+     229
+    ],
+    [
+     5,
+     243.5
+    ],
+    [
+     9.3,
+     243.5
+    ],
+    [
+     9.3,
+     250.5
+    ],
+    [
+     0,
+     250.5
+    ],
+    [
+     -7,
+     256
+    ],
+    [
+     -11,
+     261
+    ],
+    [
+     -14,
+     258
+    ],
+    [
+     -15,
+     250
+    ]
+   ],
+   "h": 8.0,
+   "floors": 2,
+   "roof": {
+    "type": "flat"
+   },
+   "style": {
+    "wall": "glass",
+    "trim": "white",
+    "roof_mat": "membrane",
+    "windows": "curtain",
+    "notes": "two-storey glazed commons joining the two halls: curved curtain-wall front toward the pond with a wide white fascia band, entrance doors at the bridge/plaza level (R240, R242)"
+   },
+   "entrances": [
+    {
+     "p": [
+      -3.0,
+      242.2
+     ],
+     "face": 315,
+     "w": 3.0,
+     "kind": "double"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R240",
+     "R242",
+     "R213"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "dark flat roof between the two halls on the 2022 aerial; glazed 2-storey commons in R240/R242",
+    "open": "the curved glass front's exact plan curve is simplified to straight segments; boundary to each hall approximate"
+   }
+  },
+  {
+   "id": "elm_hall",
+   "ref": "B31",
+   "label": "Elm Hall",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     67.5,
+     244.5
+    ],
+    [
+     66.8,
+     253.1
+    ],
+    [
+     68.5,
+     256.4
+    ],
+    [
+     70.9,
+     268.3
+    ],
+    [
+     71.3,
+     268.6
+    ],
+    [
+     75.0,
+     268.1
+    ],
+    [
+     77.0,
+     276.6
+    ],
+    [
+     71.4,
+     277.6
+    ],
+    [
+     74.0,
+     291.0
+    ],
+    [
+     80.7,
+     291.5
+    ],
+    [
+     82.5,
+     299.6
+    ],
+    [
+     85.2,
+     299.2
+    ],
+    [
+     87.0,
+     307.2
+    ],
+    [
+     97.4,
+     304.9
+    ],
+    [
+     99.2,
+     309.6
+    ],
+    [
+     112.0,
+     306.6
+    ],
+    [
+     110.3,
+     298.3
+    ],
+    [
+     113.3,
+     296.9
+    ],
+    [
+     111.5,
+     288.9
+    ],
+    [
+     99.8,
+     291.1
+    ],
+    [
+     98.7,
+     285.8
+    ],
+    [
+     96.6,
+     281.6
+    ],
+    [
+     101.8,
+     280.1
+    ],
+    [
+     99.7,
+     271.4
+    ],
+    [
+     94.4,
+     272.9
+    ],
+    [
+     93.4,
+     268.7
+    ],
+    [
+     92.6,
+     267.1
+    ],
+    [
+     94.5,
+     267.6
+    ],
+    [
+     93.4,
+     261.6
+    ],
+    [
+     104.5,
+     259.1
+    ],
+    [
+     102.8,
+     250.8
+    ],
+    [
+     99.4,
+     251.0
+    ],
+    [
+     97.5,
+     243.2
+    ],
+    [
+     84.9,
+     246.2
+    ],
+    [
+     84.5,
+     243.5
+    ],
+    [
+     76.9,
+     241.5
+    ]
+   ],
+   "h": 10.4,
+   "floors": 3,
+   "roof": {
+    "type": "flat"
+   },
+   "parts": [
+    {
+     "footprint": [
+      [
+       97.5,
+       243.2
+      ],
+      [
+       84.8,
+       246.2
+      ],
+      [
+       85.0,
+       251.2
+      ],
+      [
+       74.8,
+       253.7
+      ],
+      [
+       76.5,
+       261.9
+      ],
+      [
+       74.0,
+       262.9
+      ],
+      [
+       76.2,
+       271.6
+      ],
+      [
+       87.5,
+       268.2
+      ],
+      [
+       89.0,
+       273.9
+      ],
+      [
+       81.0,
+       276.2
+      ],
+      [
+       83.0,
+       284.9
+      ],
+      [
+       90.8,
+       282.8
+      ],
+      [
+       92.3,
+       288.1
+      ],
+      [
+       80.7,
+       291.4
+      ],
+      [
+       82.5,
+       299.6
+      ],
+      [
+       85.2,
+       299.1
+      ],
+      [
+       87.0,
+       307.2
+      ],
+      [
+       97.5,
+       304.9
+      ],
+      [
+       99.0,
+       309.6
+      ],
+      [
+       112.0,
+       306.6
+      ],
+      [
+       110.3,
+       298.2
+      ],
+      [
+       113.3,
+       297.1
+      ],
+      [
+       111.5,
+       288.9
+      ],
+      [
+       99.8,
+       291.2
+      ],
+      [
+       98.7,
+       285.8
+      ],
+      [
+       96.5,
+       281.6
+      ],
+      [
+       101.8,
+       280.1
+      ],
+      [
+       99.8,
+       271.4
+      ],
+      [
+       94.3,
+       272.9
+      ],
+      [
+       93.3,
+       268.4
+      ],
+      [
+       92.5,
+       266.8
+      ],
+      [
+       94.5,
+       267.6
+      ],
+      [
+       93.3,
+       261.6
+      ],
+      [
+       104.5,
+       259.1
+      ],
+      [
+       102.8,
+       250.8
+      ],
+      [
+       99.5,
+       251.2
+      ]
+     ],
+     "h": 10.4,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "footprint": [
+      [
+       67.5,
+       244.5
+      ],
+      [
+       77,
+       241.5
+      ],
+      [
+       84.5,
+       243.5
+      ],
+      [
+       84.8,
+       246.2
+      ],
+      [
+       85.0,
+       251.2
+      ],
+      [
+       74.8,
+       253.7
+      ],
+      [
+       76.5,
+       261.9
+      ],
+      [
+       74.0,
+       262.9
+      ],
+      [
+       75.0,
+       268.0
+      ],
+      [
+       71.0,
+       268.6
+      ],
+      [
+       68.5,
+       256.5
+      ],
+      [
+       66.8,
+       253.0
+      ]
+     ],
+     "h": 7.2,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 25
+     }
+    },
+    {
+     "footprint": [
+      [
+       71.4,
+       277.6
+      ],
+      [
+       81.0,
+       276.2
+      ],
+      [
+       83.0,
+       284.9
+      ],
+      [
+       80.7,
+       291.4
+      ],
+      [
+       74.0,
+       291.0
+      ],
+      [
+       72.8,
+       285.0
+      ]
+     ],
+     "h": 7.2,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 25
+     }
+    },
+    {
+     "footprint": [
+      [
+       75.0,
+       268.0
+      ],
+      [
+       87.5,
+       268.2
+      ],
+      [
+       89.0,
+       273.9
+      ],
+      [
+       81.0,
+       276.2
+      ],
+      [
+       77.0,
+       276.8
+      ]
+     ],
+     "h": 7.2,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 25
+     }
+    }
+   ],
+   "style": {
+    "wall": "brick_red",
+    "trim": "dark",
+    "roof_mat": "membrane",
+    "windows": "punched",
+    "notes": "three staggered 3-storey brick blocks on a N-S spine, beige siding inset panels between window bays; lower west wings with dark shingle hip roofs"
+   },
+   "entrances": [
+    {
+     "p": [
+      93.0,
+      256.5
+     ],
+     "face": 90,
+     "w": 3.0,
+     "kind": "door"
+    },
+    {
+     "p": [
+      74.0,
+      258.0
+     ],
+     "face": 270,
+     "w": 2.5,
+     "kind": "door"
+    },
+    {
+     "p": [
+      97.0,
+      309.0
+     ],
+     "face": 180,
+     "w": 2.5,
+     "kind": "door"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R269",
+     "R281",
+     "R082",
+     "plan2023p16"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "white-roof blocks extracted from the 2022 aerial (threshold contour, eps 0.7 m); west low wings hand-traced; 3 floors counted in R269/R281",
+    "open": "west wing heights and roof form inferred from roof colour/hip lines (no photo of that side); entrance positions from walks meeting the building"
+   }
+  },
+  {
+   "id": "health_house",
+   "ref": "B49",
+   "label": "Health House",
+   "kind": "service",
+   "status": "existing",
+   "footprint": [
+    [
+     145.0,
+     302.7
+    ],
+    [
+     145.0,
+     308.0
+    ],
+    [
+     143.4,
+     309.0
+    ],
+    [
+     143.4,
+     313.6
+    ],
+    [
+     146.3,
+     313.2
+    ],
+    [
+     146.4,
+     315.7
+    ],
+    [
+     149.5,
+     316.1
+    ],
+    [
+     150.0,
+     323.6
+    ],
+    [
+     171.6,
+     322.7
+    ],
+    [
+     171.4,
+     306.3
+    ],
+    [
+     169.5,
+     302.0
+    ],
+    [
+     163.2,
+     302.0
+    ],
+    [
+     160.5,
+     300.0
+    ],
+    [
+     155.0,
+     300.0
+    ],
+    [
+     154.4,
+     302.5
+    ]
+   ],
+   "h": 4.6,
+   "floors": 1,
+   "roof": {
+    "type": "flat"
+   },
+   "parts": [
+    {
+     "footprint": [
+      [
+       149.1,
+       306.8
+      ],
+      [
+       157.7,
+       306.6
+      ],
+      [
+       158.2,
+       303.9
+      ],
+      [
+       161.8,
+       303.9
+      ],
+      [
+       162.0,
+       306.4
+      ],
+      [
+       171.4,
+       306.4
+      ],
+      [
+       171.6,
+       322.7
+      ],
+      [
+       150.0,
+       323.6
+      ],
+      [
+       149.5,
+       316.0
+      ],
+      [
+       146.4,
+       315.7
+      ],
+      [
+       146.4,
+       313.2
+      ],
+      [
+       149.1,
+       313.0
+      ]
+     ],
+     "h": 4.6,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "footprint": [
+      [
+       145.0,
+       302.7
+      ],
+      [
+       154.5,
+       302.5
+      ],
+      [
+       155.0,
+       300.0
+      ],
+      [
+       160.5,
+       300.0
+      ],
+      [
+       163.2,
+       302.0
+      ],
+      [
+       169.5,
+       302.0
+      ],
+      [
+       171.4,
+       306.4
+      ],
+      [
+       162.0,
+       306.4
+      ],
+      [
+       161.8,
+       303.9
+      ],
+      [
+       158.2,
+       303.9
+      ],
+      [
+       157.7,
+       306.6
+      ],
+      [
+       149.1,
+       306.8
+      ],
+      [
+       149.1,
+       313.0
+      ],
+      [
+       146.4,
+       313.2
+      ],
+      [
+       143.4,
+       313.6
+      ],
+      [
+       143.4,
+       309.0
+      ],
+      [
+       145.0,
+       308.0
+      ]
+     ],
+     "h": 3.4,
+     "base": 0.0,
+     "roof": {
+      "type": "shed",
+      "pitch": 10
+     }
+    }
+   ],
+   "style": {
+    "wall": "brick_red",
+    "trim": "white",
+    "roof_mat": "membrane",
+    "windows": "punched",
+    "notes": "low support building at the west end of the village row; white parapet coping visible from above"
+   },
+   "entrances": [
+    {
+     "p": [
+      152.0,
+      301.5
+     ],
+     "face": 0,
+     "w": 2.5,
+     "kind": "canopy"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R004",
+     "wayfinding2026",
+     "plan2023p16"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "traced from the 2022 aerial; still shown at the west end of the village row on the 2026 wayfinding (unnumbered, non-residence colour) and on plan p16; brick low building at the end of the row in R004",
+    "open": "this is the only built structure at the west end of the row: no separate village community building is evidenced (R003's small block was a 2023 sketch); its 2026 use and height (1 storey assumed from shadows) unverified"
+   }
+  },
+  {
+   "id": "health_house_shed",
+   "ref": "B49",
+   "kind": "service",
+   "status": "existing",
+   "footprint": [
+    [
+     148.2,
+     266.4
+    ],
+    [
+     151.4,
+     266.4
+    ],
+    [
+     151.4,
+     269.6
+    ],
+    [
+     148.2,
+     269.6
+    ]
+   ],
+   "h": 2.6,
+   "floors": 1,
+   "roof": {
+    "type": "flat"
+   },
+   "style": {
+    "wall": "siding_grey",
+    "trim": "none",
+    "roof_mat": "metal_grey",
+    "windows": "none"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "small shed/utility box north of the support building, 2022 aerial",
+    "open": "not visible in any photo; may be a transformer/utility enclosure rather than a shed"
+   }
+  },
+  {
+   "id": "lakeview_hall",
+   "ref": "B37",
+   "label": "Lakeview Hall",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     -213.5,
+     42.3
+    ],
+    [
+     -220.7,
+     49.7
+    ],
+    [
+     -220.3,
+     50.2
+    ],
+    [
+     -225.8,
+     55.7
+    ],
+    [
+     -192.6,
+     88.2
+    ],
+    [
+     -180.2,
+     75.7
+    ],
+    [
+     -208.1,
+     48.6
+    ],
+    [
+     -207.6,
+     48.0
+    ]
+   ],
+   "h": 14.0,
+   "floors": 4,
+   "roof": {
+    "type": "flat"
+   },
+   "parts": [
+    {
+     "footprint": [
+      [
+       -213.5,
+       43.4
+      ],
+      [
+       -180.2,
+       75.7
+      ],
+      [
+       -192.6,
+       88.2
+      ],
+      [
+       -225.8,
+       55.7
+      ]
+     ],
+     "h": 14.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "footprint": [
+      [
+       -213.5,
+       42.3
+      ],
+      [
+       -207.6,
+       48.0
+      ],
+      [
+       -214.7,
+       55.4
+      ],
+      [
+       -220.7,
+       49.7
+      ]
+     ],
+     "h": 14.6,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    }
+   ],
+   "style": {
+    "wall": "brick_tan",
+    "trim": "dark",
+    "roof_mat": "membrane",
+    "windows": "punched",
+    "notes": "long 4-storey tan-red brick slab with punched windows; at the N corner a full-height dark-framed glass block wrapping onto the NE facade, flat dark entrance canopy on the NW face; brick terrace with low stone-capped walls and an iron railing in front of it (R226)"
+   },
+   "entrances": [
+    {
+     "p": [
+      -217.9,
+      53.7
+     ],
+     "face": 315,
+     "w": 4.0,
+     "kind": "canopy"
+    },
+    {
+     "p": [
+      -186.4,
+      89.4
+     ],
+     "face": 135,
+     "w": 2.5,
+     "kind": "door"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R226",
+     "R074",
+     "plan2023p4"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "roof outline from the 2022 aerial (46.4 x 17.4 m), shifted 2.5 m NE onto the visible NE wall base (roof lean); 4 floors counted in R226 (glass block 4 bands, end bay 4 window rows); glazed corner is at the N corner (woods behind it, the dining hall in the distance)",
+    "open": "lean along the long axis not measurable (assumed 0); glazed block extent (~8 x 10 m) estimated from R226; the dark area NW of the slab is mostly its shadow, containing the terrace"
+   }
+  },
+  {
+   "id": "dining_commons",
+   "ref": "B35",
+   "label": "Dining Commons",
+   "kind": "dining",
+   "status": "existing",
+   "footprint": [
+    [
+     -116.7,
+     67.0
+    ],
+    [
+     -132.9,
+     67.0
+    ],
+    [
+     -133.0,
+     65.4
+    ],
+    [
+     -143.0,
+     65.4
+    ],
+    [
+     -143.6,
+     66.5
+    ],
+    [
+     -158.5,
+     66.5
+    ],
+    [
+     -160.5,
+     77.3
+    ],
+    [
+     -160.6,
+     81.3
+    ],
+    [
+     -181.5,
+     81.3
+    ],
+    [
+     -182.3,
+     85.8
+    ],
+    [
+     -182.3,
+     99.0
+    ],
+    [
+     -177.0,
+     99.1
+    ],
+    [
+     -177.0,
+     135.0
+    ],
+    [
+     -169.7,
+     135.4
+    ],
+    [
+     -146.2,
+     135.2
+    ],
+    [
+     -146.2,
+     122.1
+    ],
+    [
+     -145.9,
+     121.2
+    ],
+    [
+     -115.4,
+     120.8
+    ],
+    [
+     -115.3,
+     112.5
+    ],
+    [
+     -100.5,
+     112.5
+    ],
+    [
+     -100.5,
+     87.9
+    ],
+    [
+     -101.5,
+     85.5
+    ],
+    [
+     -108.6,
+     84.6
+    ],
+    [
+     -111.0,
+     83.9
+    ],
+    [
+     -111.0,
+     76.0
+    ],
+    [
+     -116.7,
+     75.9
+    ]
+   ],
+   "h": 7.0,
+   "floors": 1,
+   "roof": {
+    "type": "complex"
+   },
+   "parts": [
+    {
+     "footprint": [
+      [
+       -181.5,
+       81.3
+      ],
+      [
+       -160.5,
+       81.3
+      ],
+      [
+       -160.5,
+       77.5
+      ],
+      [
+       -158.5,
+       66.5
+      ],
+      [
+       -143.5,
+       66.5
+      ],
+      [
+       -143.0,
+       65.4
+      ],
+      [
+       -133.0,
+       65.4
+      ],
+      [
+       -133.0,
+       67.0
+      ],
+      [
+       -116.7,
+       67.0
+      ],
+      [
+       -116.7,
+       76.0
+      ],
+      [
+       -111.0,
+       76.0
+      ],
+      [
+       -111.0,
+       84.0
+      ],
+      [
+       -109.0,
+       84.5
+      ],
+      [
+       -101.5,
+       85.5
+      ],
+      [
+       -100.5,
+       88.0
+      ],
+      [
+       -100.5,
+       112.5
+      ],
+      [
+       -115.4,
+       112.5
+      ],
+      [
+       -115.4,
+       120.8
+      ],
+      [
+       -146.0,
+       121.2
+      ],
+      [
+       -146.0,
+       122.0
+      ],
+      [
+       -177.0,
+       122.0
+      ],
+      [
+       -177.0,
+       99.0
+      ],
+      [
+       -182.3,
+       99.0
+      ],
+      [
+       -182.3,
+       86.0
+      ]
+     ],
+     "h": 7.0,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 25
+     }
+    },
+    {
+     "footprint": [
+      [
+       -177.0,
+       121.5
+      ],
+      [
+       -146.2,
+       121.2
+      ],
+      [
+       -146.2,
+       135.2
+      ],
+      [
+       -168.7,
+       135.4
+      ],
+      [
+       -177.0,
+       135.0
+      ]
+     ],
+     "h": 6.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    }
+   ],
+   "style": {
+    "wall": "brick_red",
+    "trim": "dark",
+    "roof_mat": "shingle_dark",
+    "windows": "curtain",
+    "notes": "cluster of hipped dark-shingle roofs over a 1-2 level hall; NE entrance under a tall glazed gable with a flat canopy on brick piers and wide steps (R339); newer flat-roofed brick wing with tall windows and beige siding bands at the SW (R340); timber pergola along the south facade (prop dining_pergola)"
+   },
+   "entrances": [
+    {
+     "p": [
+      -104.0,
+      85.0
+     ],
+     "face": 20,
+     "w": 6.0,
+     "kind": "canopy"
+    },
+    {
+     "p": [
+      -150.0,
+      66.0
+     ],
+     "face": 0,
+     "w": 4.0,
+     "kind": "garage"
+    },
+    {
+     "p": [
+      -130.0,
+      121.5
+     ],
+     "face": 180,
+     "w": 3.0,
+     "kind": "double"
+    },
+    {
+     "p": [
+      -182.0,
+      92.0
+     ],
+     "face": 270,
+     "w": 2.5,
+     "kind": "door"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "plan2023p16",
+     "wayfinding2026",
+     "R008",
+     "R339",
+     "R340",
+     "R341",
+     "R342",
+     "R344"
+    ],
+    "date": "2026",
+    "conf": "medium",
+    "note": "2022 mass hand-traced from the aerial (high); SW wing x -177..-146, z 121..135 placed from plan p16 (navy block, fit RMS 2.5 m) and confirmed as built by the 2026 wayfinding outline and the newer wing in R340/R008",
+    "open": "SW wing's exact west end (aligned here with the 2022 west wall) and depth; whether other parts were re-roofed or extended in the 2024 renovation; loading-dock outline on the north side approximate"
+   }
+  },
+  {
+   "id": "dining_pergola",
+   "ref": "B35",
+   "kind": "dining",
+   "status": "existing",
+   "footprint": [
+    [
+     -145.8,
+     121.4
+    ],
+    [
+     -117.0,
+     121.1
+    ],
+    [
+     -117.0,
+     125.3
+    ],
+    [
+     -145.8,
+     125.6
+    ]
+   ],
+   "h": 3.4,
+   "floors": 1,
+   "roof": {
+    "type": "flat"
+   },
+   "passages": [
+    {
+     "polygon": [
+      [
+       -145.4,
+       121.8
+      ],
+      [
+       -117.4,
+       121.5
+      ],
+      [
+       -117.4,
+       124.9
+      ],
+      [
+       -145.4,
+       125.2
+      ]
+     ],
+     "floor": 0.0,
+     "clear": 2.9,
+     "note": "open timber pergola (posts + slatted beams) along the south facade; walk-through everywhere"
+    }
+   ],
+   "style": {
+    "wall": "brick_brown",
+    "trim": "none",
+    "roof_mat": "metal_dark",
+    "windows": "none",
+    "notes": "honey-coloured timber pergola: square posts with knee braces, open slatted top (no cover); render as open frame, not a solid roof"
+   },
+   "ev": {
+    "src": [
+     "R340",
+     "R008",
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "R340 shows a timber pergola along the south facade, east of the newer flat-roofed wing, fronting the fire-pit terrace; position = the paved strip on plan p16 (placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m))",
+    "open": "pergola length and depth estimated (~29 x 4 m); exact east end unverified"
+   }
+  },
+  {
+   "id": "lakeside_pavilion",
+   "ref": "B34",
+   "label": "Lakeside Pavilion",
+   "kind": "dining",
+   "status": "existing",
+   "footprint": [
+    [
+     -86.4,
+     135.8
+    ],
+    [
+     -73.4,
+     148.2
+    ],
+    [
+     -80.4,
+     155.4
+    ],
+    [
+     -93.4,
+     143.0
+    ]
+   ],
+   "h": 3.6,
+   "floors": 1,
+   "roof": {
+    "type": "gable",
+    "pitch": 35,
+    "ridge": "long"
+   },
+   "passages": [
+    {
+     "polygon": [
+      [
+       -86.4,
+       136.3
+      ],
+      [
+       -74.0,
+       148.2
+      ],
+      [
+       -80.4,
+       154.9
+      ],
+      [
+       -92.8,
+       143.0
+      ]
+     ],
+     "floor": 0.0,
+     "clear": 3.3,
+     "note": "open-sided timber pavilion: posts with knee braces, no walls"
+    }
+   ],
+   "style": {
+    "wall": "metal_dark",
+    "trim": "none",
+    "roof_mat": "metal_dark",
+    "windows": "none",
+    "notes": "dark-stained heavy-timber frame (6 bays of braced posts), open gable ends with timber truss and vertical boards in the gable, dark standing-seam metal roof; concrete apron, fire-pit seating ring beside it (R347)"
+   },
+   "ev": {
+    "src": [
+     "R347",
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "navy block on plan p16 and an outline in the 2026 wayfinding at the same spot SE of the dining hall; R347 shows the timber pavilion with a curving concrete approach; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "size from the plan block (19.5 x 11.6 incl. its outline) reduced to ~18 x 10; ridge orientation assumed along the long axis (R347: gable end on the short side)"
+   }
+  },
+  {
+   "id": "village_home_01",
+   "ref": "B30",
+   "label": "Village Home 01",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     181.9,
+     299.7
+    ],
+    [
+     181.9,
+     314.3
+    ],
+    [
+     185.5,
+     314.3
+    ],
+    [
+     185.6,
+     316.2
+    ],
+    [
+     193.6,
+     316.2
+    ],
+    [
+     193.7,
+     314.3
+    ],
+    [
+     197.3,
+     314.3
+    ],
+    [
+     197.3,
+     299.7
+    ],
+    [
+     193.7,
+     299.7
+    ],
+    [
+     193.6,
+     297.8
+    ],
+    [
+     185.6,
+     297.8
+    ],
+    [
+     185.5,
+     299.7
+    ]
+   ],
+   "h": 9.0,
+   "floors": 3,
+   "roof": {
+    "type": "hip",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "parts": [
+    {
+     "footprint": [
+      [
+       181.9,
+       299.7
+      ],
+      [
+       197.3,
+       299.7
+      ],
+      [
+       197.3,
+       314.3
+      ],
+      [
+       181.9,
+       314.3
+      ]
+     ],
+     "h": 9.0,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 30
+     }
+    },
+    {
+     "footprint": [
+      [
+       185.6,
+       297.8
+      ],
+      [
+       193.6,
+       297.8
+      ],
+      [
+       193.6,
+       299.7
+      ],
+      [
+       185.6,
+       299.7
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    },
+    {
+     "footprint": [
+      [
+       185.6,
+       314.3
+      ],
+      [
+       193.6,
+       314.3
+      ],
+      [
+       193.6,
+       316.2
+      ],
+      [
+       185.6,
+       316.2
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    }
+   ],
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)"
+   },
+   "entrances": [
+    {
+     "p": [
+      189.6,
+      297.8
+     ],
+     "face": 0,
+     "w": 2.0,
+     "kind": "portico"
+    },
+    {
+     "p": [
+      189.6,
+      316.2
+     ],
+     "face": 180,
+     "w": 2.0,
+     "kind": "portico"
+    }
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026",
+     "R004",
+     "R017",
+     "R134",
+     "R149",
+     "R101",
+     "R135",
+     "R002",
+     "R313"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; colour from R004 (row seen from the east: white home at the west end next to the brick support building, two grey ones); small side stoops on the plan outline omitted"
+   }
+  },
+  {
+   "id": "village_home_02",
+   "ref": "B30",
+   "label": "Village Home 02",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     207.0,
+     298.7
+    ],
+    [
+     207.0,
+     313.3
+    ],
+    [
+     210.6,
+     313.3
+    ],
+    [
+     210.7,
+     315.2
+    ],
+    [
+     218.7,
+     315.2
+    ],
+    [
+     218.8,
+     313.3
+    ],
+    [
+     222.4,
+     313.3
+    ],
+    [
+     222.4,
+     298.7
+    ],
+    [
+     218.8,
+     298.7
+    ],
+    [
+     218.7,
+     296.8
+    ],
+    [
+     210.7,
+     296.8
+    ],
+    [
+     210.6,
+     298.7
+    ]
+   ],
+   "h": 9.0,
+   "floors": 3,
+   "roof": {
+    "type": "hip",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "parts": [
+    {
+     "footprint": [
+      [
+       207.0,
+       298.7
+      ],
+      [
+       222.4,
+       298.7
+      ],
+      [
+       222.4,
+       313.3
+      ],
+      [
+       207.0,
+       313.3
+      ]
+     ],
+     "h": 9.0,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 30
+     }
+    },
+    {
+     "footprint": [
+      [
+       210.7,
+       296.8
+      ],
+      [
+       218.7,
+       296.8
+      ],
+      [
+       218.7,
+       298.7
+      ],
+      [
+       210.7,
+       298.7
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    },
+    {
+     "footprint": [
+      [
+       210.7,
+       313.3
+      ],
+      [
+       218.7,
+       313.3
+      ],
+      [
+       218.7,
+       315.2
+      ],
+      [
+       210.7,
+       315.2
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    }
+   ],
+   "style": {
+    "wall": "siding_grey",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)"
+   },
+   "entrances": [
+    {
+     "p": [
+      214.7,
+      296.8
+     ],
+     "face": 0,
+     "w": 2.0,
+     "kind": "portico"
+    },
+    {
+     "p": [
+      214.7,
+      315.2
+     ],
+     "face": 180,
+     "w": 2.0,
+     "kind": "portico"
+    }
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026",
+     "R004",
+     "R017",
+     "R134",
+     "R149",
+     "R101",
+     "R135",
+     "R002",
+     "R313"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; colour from R004 (row seen from the east: white home at the west end next to the brick support building, two grey ones); small side stoops on the plan outline omitted"
+   }
+  },
+  {
+   "id": "village_home_03",
+   "ref": "B30",
+   "label": "Village Home 03",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     231.8,
+     298.2
+    ],
+    [
+     231.8,
+     312.8
+    ],
+    [
+     235.4,
+     312.8
+    ],
+    [
+     235.5,
+     314.7
+    ],
+    [
+     243.5,
+     314.7
+    ],
+    [
+     243.6,
+     312.8
+    ],
+    [
+     247.2,
+     312.8
+    ],
+    [
+     247.2,
+     298.2
+    ],
+    [
+     243.6,
+     298.2
+    ],
+    [
+     243.5,
+     296.3
+    ],
+    [
+     235.5,
+     296.3
+    ],
+    [
+     235.4,
+     298.2
+    ]
+   ],
+   "h": 9.0,
+   "floors": 3,
+   "roof": {
+    "type": "hip",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "parts": [
+    {
+     "footprint": [
+      [
+       231.8,
+       298.2
+      ],
+      [
+       247.2,
+       298.2
+      ],
+      [
+       247.2,
+       312.8
+      ],
+      [
+       231.8,
+       312.8
+      ]
+     ],
+     "h": 9.0,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 30
+     }
+    },
+    {
+     "footprint": [
+      [
+       235.5,
+       296.3
+      ],
+      [
+       243.5,
+       296.3
+      ],
+      [
+       243.5,
+       298.2
+      ],
+      [
+       235.5,
+       298.2
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    },
+    {
+     "footprint": [
+      [
+       235.5,
+       312.8
+      ],
+      [
+       243.5,
+       312.8
+      ],
+      [
+       243.5,
+       314.7
+      ],
+      [
+       235.5,
+       314.7
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    }
+   ],
+   "style": {
+    "wall": "siding_grey",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)"
+   },
+   "entrances": [
+    {
+     "p": [
+      239.5,
+      296.3
+     ],
+     "face": 0,
+     "w": 2.0,
+     "kind": "portico"
+    },
+    {
+     "p": [
+      239.5,
+      314.7
+     ],
+     "face": 180,
+     "w": 2.0,
+     "kind": "portico"
+    }
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026",
+     "R004",
+     "R017",
+     "R134",
+     "R149",
+     "R101",
+     "R135",
+     "R002",
+     "R313"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; colour from R004 (row seen from the east: white home at the west end next to the brick support building, two grey ones); small side stoops on the plan outline omitted"
+   }
+  },
+  {
+   "id": "village_home_04",
+   "ref": "B30",
+   "label": "Village Home 04",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     277.5,
+     286.4
+    ],
+    [
+     277.5,
+     301.0
+    ],
+    [
+     281.1,
+     301.0
+    ],
+    [
+     281.2,
+     302.9
+    ],
+    [
+     289.2,
+     302.9
+    ],
+    [
+     289.3,
+     301.0
+    ],
+    [
+     292.9,
+     301.0
+    ],
+    [
+     292.9,
+     286.4
+    ],
+    [
+     289.3,
+     286.4
+    ],
+    [
+     289.2,
+     284.5
+    ],
+    [
+     281.2,
+     284.5
+    ],
+    [
+     281.1,
+     286.4
+    ]
+   ],
+   "h": 9.0,
+   "floors": 3,
+   "roof": {
+    "type": "hip",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "parts": [
+    {
+     "footprint": [
+      [
+       277.5,
+       286.4
+      ],
+      [
+       292.9,
+       286.4
+      ],
+      [
+       292.9,
+       301.0
+      ],
+      [
+       277.5,
+       301.0
+      ]
+     ],
+     "h": 9.0,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 30
+     }
+    },
+    {
+     "footprint": [
+      [
+       281.2,
+       284.5
+      ],
+      [
+       289.2,
+       284.5
+      ],
+      [
+       289.2,
+       286.4
+      ],
+      [
+       281.2,
+       286.4
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    },
+    {
+     "footprint": [
+      [
+       281.2,
+       301.0
+      ],
+      [
+       289.2,
+       301.0
+      ],
+      [
+       289.2,
+       302.9
+      ],
+      [
+       281.2,
+       302.9
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    }
+   ],
+   "style": {
+    "wall": "siding_grey",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)"
+   },
+   "entrances": [
+    {
+     "p": [
+      285.2,
+      284.5
+     ],
+     "face": 0,
+     "w": 2.0,
+     "kind": "portico"
+    },
+    {
+     "p": [
+      285.2,
+      302.9
+     ],
+     "face": 180,
+     "w": 2.0,
+     "kind": "portico"
+    }
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026",
+     "R004",
+     "R017",
+     "R134",
+     "R149",
+     "R101",
+     "R135",
+     "R002",
+     "R313"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; wall colour per building not matched to photos (R101/R135 show white and grey variants); small side stoops on the plan outline omitted"
+   }
+  },
+  {
+   "id": "village_home_05",
+   "ref": "B30",
+   "label": "Village Home 05",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     302.3,
+     276.1
+    ],
+    [
+     302.3,
+     290.7
+    ],
+    [
+     305.9,
+     290.7
+    ],
+    [
+     306.0,
+     292.6
+    ],
+    [
+     314.0,
+     292.6
+    ],
+    [
+     314.1,
+     290.7
+    ],
+    [
+     317.7,
+     290.7
+    ],
+    [
+     317.7,
+     276.1
+    ],
+    [
+     314.1,
+     276.1
+    ],
+    [
+     314.0,
+     274.2
+    ],
+    [
+     306.0,
+     274.2
+    ],
+    [
+     305.9,
+     276.1
+    ]
+   ],
+   "h": 9.0,
+   "floors": 3,
+   "roof": {
+    "type": "hip",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "parts": [
+    {
+     "footprint": [
+      [
+       302.3,
+       276.1
+      ],
+      [
+       317.7,
+       276.1
+      ],
+      [
+       317.7,
+       290.7
+      ],
+      [
+       302.3,
+       290.7
+      ]
+     ],
+     "h": 9.0,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 30
+     }
+    },
+    {
+     "footprint": [
+      [
+       306.0,
+       274.2
+      ],
+      [
+       314.0,
+       274.2
+      ],
+      [
+       314.0,
+       276.1
+      ],
+      [
+       306.0,
+       276.1
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    },
+    {
+     "footprint": [
+      [
+       306.0,
+       290.7
+      ],
+      [
+       314.0,
+       290.7
+      ],
+      [
+       314.0,
+       292.6
+      ],
+      [
+       306.0,
+       292.6
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    }
+   ],
+   "style": {
+    "wall": "siding_grey",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)"
+   },
+   "entrances": [
+    {
+     "p": [
+      310.0,
+      274.2
+     ],
+     "face": 0,
+     "w": 2.0,
+     "kind": "portico"
+    },
+    {
+     "p": [
+      310.0,
+      292.6
+     ],
+     "face": 180,
+     "w": 2.0,
+     "kind": "portico"
+    }
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026",
+     "R004",
+     "R017",
+     "R134",
+     "R149",
+     "R101",
+     "R135",
+     "R002",
+     "R313"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; wall colour per building not matched to photos (R101/R135 show white and grey variants); small side stoops on the plan outline omitted"
+   }
+  },
+  {
+   "id": "village_home_06",
+   "ref": "B30 C03",
+   "label": "Village Home 06",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     327.0,
+     262.3
+    ],
+    [
+     327.0,
+     276.9
+    ],
+    [
+     330.6,
+     276.9
+    ],
+    [
+     330.7,
+     278.8
+    ],
+    [
+     338.7,
+     278.8
+    ],
+    [
+     338.8,
+     276.9
+    ],
+    [
+     342.4,
+     276.9
+    ],
+    [
+     342.4,
+     262.3
+    ],
+    [
+     338.8,
+     262.3
+    ],
+    [
+     338.7,
+     260.4
+    ],
+    [
+     330.7,
+     260.4
+    ],
+    [
+     330.6,
+     262.3
+    ]
+   ],
+   "h": 9.0,
+   "floors": 3,
+   "roof": {
+    "type": "hip",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "parts": [
+    {
+     "footprint": [
+      [
+       327.0,
+       262.3
+      ],
+      [
+       342.4,
+       262.3
+      ],
+      [
+       342.4,
+       276.9
+      ],
+      [
+       327.0,
+       276.9
+      ]
+     ],
+     "h": 9.0,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 30
+     }
+    },
+    {
+     "footprint": [
+      [
+       330.7,
+       260.4
+      ],
+      [
+       338.7,
+       260.4
+      ],
+      [
+       338.7,
+       262.3
+      ],
+      [
+       330.7,
+       262.3
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    },
+    {
+     "footprint": [
+      [
+       330.7,
+       276.9
+      ],
+      [
+       338.7,
+       276.9
+      ],
+      [
+       338.7,
+       278.8
+      ],
+      [
+       330.7,
+       278.8
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    }
+   ],
+   "style": {
+    "wall": "siding_grey",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)"
+   },
+   "entrances": [
+    {
+     "p": [
+      334.7,
+      260.4
+     ],
+     "face": 0,
+     "w": 2.0,
+     "kind": "portico"
+    },
+    {
+     "p": [
+      334.7,
+      278.8
+     ],
+     "face": 180,
+     "w": 2.0,
+     "kind": "portico"
+    }
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026",
+     "R100",
+     "R101",
+     "R102",
+     "R002",
+     "R313"
+    ],
+    "date": "2025",
+    "conf": "medium",
+    "note": "built 2025 (one of the two additions; drawn as a proposed light-grey block on plan p16 and present on the 2026 wayfinding); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; wall colour per building not matched to photos (R101/R135 show white and grey variants); small side stoops on the plan outline omitted"
+   }
+  },
+  {
+   "id": "village_home_07",
+   "ref": "B30 C03",
+   "label": "Village Home 07",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     351.6,
+     244.4
+    ],
+    [
+     351.6,
+     259.0
+    ],
+    [
+     355.2,
+     259.0
+    ],
+    [
+     355.3,
+     260.9
+    ],
+    [
+     363.3,
+     260.9
+    ],
+    [
+     363.4,
+     259.0
+    ],
+    [
+     367.0,
+     259.0
+    ],
+    [
+     367.0,
+     244.4
+    ],
+    [
+     363.4,
+     244.4
+    ],
+    [
+     363.3,
+     242.5
+    ],
+    [
+     355.3,
+     242.5
+    ],
+    [
+     355.2,
+     244.4
+    ]
+   ],
+   "h": 9.0,
+   "floors": 3,
+   "roof": {
+    "type": "hip",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "parts": [
+    {
+     "footprint": [
+      [
+       351.6,
+       244.4
+      ],
+      [
+       367.0,
+       244.4
+      ],
+      [
+       367.0,
+       259.0
+      ],
+      [
+       351.6,
+       259.0
+      ]
+     ],
+     "h": 9.0,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 30
+     }
+    },
+    {
+     "footprint": [
+      [
+       355.3,
+       242.5
+      ],
+      [
+       363.3,
+       242.5
+      ],
+      [
+       363.3,
+       244.4
+      ],
+      [
+       355.3,
+       244.4
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    },
+    {
+     "footprint": [
+      [
+       355.3,
+       259.0
+      ],
+      [
+       363.3,
+       259.0
+      ],
+      [
+       363.3,
+       260.9
+      ],
+      [
+       355.3,
+       260.9
+      ]
+     ],
+     "h": 3.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     }
+    }
+   ],
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)"
+   },
+   "entrances": [
+    {
+     "p": [
+      359.3,
+      242.5
+     ],
+     "face": 0,
+     "w": 2.0,
+     "kind": "portico"
+    },
+    {
+     "p": [
+      359.3,
+      260.9
+     ],
+     "face": 180,
+     "w": 2.0,
+     "kind": "portico"
+    }
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026",
+     "R100",
+     "R101",
+     "R102",
+     "R002",
+     "R313"
+    ],
+    "date": "2025",
+    "conf": "medium",
+    "note": "built 2025 (one of the two additions; drawn as a proposed light-grey block on plan p16 and present on the 2026 wayfinding); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; wall colour per building not matched to photos (R101/R135 show white and grey variants); small side stoops on the plan outline omitted"
+   }
+  }
+ ],
+ "water": [
+  {
+   "id": "bridge_pond",
+   "ref": "W02",
+   "label": "Bridge Pond",
+   "kind": "pond",
+   "polygon": [
+    [
+     -16,
+     182.5
+    ],
+    [
+     -10,
+     182
+    ],
+    [
+     -5,
+     183.5
+    ],
+    [
+     -2.5,
+     188
+    ],
+    [
+     -3.5,
+     198
+    ],
+    [
+     -2.5,
+     208
+    ],
+    [
+     -4,
+     215
+    ],
+    [
+     -10,
+     216
+    ],
+    [
+     -15,
+     215
+    ],
+    [
+     -17,
+     214.5
+    ],
+    [
+     -17.5,
+     217
+    ],
+    [
+     -21.2,
+     223.5
+    ],
+    [
+     -21.2,
+     229
+    ],
+    [
+     -19,
+     237
+    ],
+    [
+     -20,
+     243
+    ],
+    [
+     -23,
+     248
+    ],
+    [
+     -30,
+     250.5
+    ],
+    [
+     -36,
+     249
+    ],
+    [
+     -39.5,
+     243
+    ],
+    [
+     -40,
+     235
+    ],
+    [
+     -38.5,
+     229
+    ],
+    [
+     -34,
+     223
+    ],
+    [
+     -30,
+     218
+    ],
+    [
+     -28,
+     215
+    ],
+    [
+     -25,
+     213.5
+    ],
+    [
+     -19.5,
+     212.5
+    ],
+    [
+     -19.5,
+     206
+    ],
+    [
+     -20.5,
+     203
+    ],
+    [
+     -20.5,
+     193
+    ],
+    [
+     -20,
+     185
+    ]
+   ],
+   "surface": -0.6,
+   "floor": -2.0,
+   "edge": "stone",
+   "rim_h": 0.0,
+   "features": [
+    {
+     "kind": "bridge",
+     "pts": [
+      [
+       -31.0,
+       218.8
+      ],
+      [
+       -20.8,
+       224.5
+      ]
+     ],
+     "w": 3.0,
+     "deck": 0.4,
+     "note": "concrete deck with black steel railings on both sides, level with the plaza (R240)"
+    },
+    {
+     "kind": "beach",
+     "note": "edge: large limestone boulders and stacked stone-block retaining walls with stepped seating along the plaza side (R240); natural grass banks elsewhere"
+    }
+   ],
+   "objective": false,
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R240",
+     "R076",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "two lobes (north ~20 x 33 m, south ~21 x 37 m) joined by a narrow neck under the bridge, water edge traced on the 2022 aerial (dark smooth water mask, 8 px/m); the 2026 wayfinding draws the same two lobes; a stream leaves the south lobe SW toward the lake (water/lake_creek)",
+    "open": "water level vs bank height unknown; the neck between the lobes may be a culvert rather than open water"
+   }
+  },
+  {
+   "id": "village_pond",
+   "ref": "W03",
+   "label": "Village Pond",
+   "kind": "pond",
+   "polygon": [
+    [
+     380.9,
+     345.0
+    ],
+    [
+     380.0,
+     352.7
+    ],
+    [
+     377.5,
+     359.9
+    ],
+    [
+     373.4,
+     366.4
+    ],
+    [
+     367.9,
+     371.9
+    ],
+    [
+     361.4,
+     376.0
+    ],
+    [
+     354.2,
+     378.5
+    ],
+    [
+     346.5,
+     379.4
+    ],
+    [
+     338.8,
+     378.5
+    ],
+    [
+     331.6,
+     376.0
+    ],
+    [
+     325.1,
+     371.9
+    ],
+    [
+     319.6,
+     366.4
+    ],
+    [
+     315.5,
+     359.9
+    ],
+    [
+     313.0,
+     352.7
+    ],
+    [
+     312.1,
+     345.0
+    ],
+    [
+     313.0,
+     337.3
+    ],
+    [
+     315.5,
+     330.1
+    ],
+    [
+     319.6,
+     323.6
+    ],
+    [
+     325.1,
+     318.1
+    ],
+    [
+     331.6,
+     314.0
+    ],
+    [
+     338.8,
+     311.5
+    ],
+    [
+     346.5,
+     310.6
+    ],
+    [
+     354.2,
+     311.5
+    ],
+    [
+     361.4,
+     314.0
+    ],
+    [
+     367.9,
+     318.1
+    ],
+    [
+     373.4,
+     323.6
+    ],
+    [
+     377.5,
+     330.1
+    ],
+    [
+     380.0,
+     337.3
+    ]
+   ],
+   "surface": -0.6,
+   "floor": -2.5,
+   "edge": "natural",
+   "rim_h": 0.0,
+   "features": [
+    {
+     "kind": "jet",
+     "p": [
+      348.0,
+      340.0
+     ],
+     "h": 4.0,
+     "note": "floating aerating fountain, spray ~4 m (R101, R135)"
+    },
+    {
+     "kind": "beach",
+     "note": "narrow light gravel/stone rim at the water line all round (R101), grass banks above"
+    }
+   ],
+   "objective": false,
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "R101",
+     "R135"
+    ],
+    "date": "2025",
+    "conf": "medium",
+    "note": "outline = the blue pond on plan p16 (near-circular, ~69 m across, centre (346.5, 345)), placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); R101/R135 (2025) show the pond with a central fountain jet and four village homes beyond; not in the 2022 aerial (open field)",
+    "open": "as-built shoreline unknown (plan is a design drawing; the 2026 wayfinding does not draw this pond); fountain position estimated; water levels assumed"
+   }
+  },
+  {
+   "id": "campus_lake",
+   "ref": "W01",
+   "label": "Campus Lake",
+   "kind": "lake",
+   "polygon": [
+    [
+     -319.5,
+     228.5
+    ],
+    [
+     -321.5,
+     240.0
+    ],
+    [
+     -324.5,
+     275.0
+    ],
+    [
+     -328.4,
+     317.0
+    ],
+    [
+     -328.4,
+     338.0
+    ],
+    [
+     -325.0,
+     367.0
+    ],
+    [
+     -320.5,
+     388.0
+    ],
+    [
+     -317.0,
+     405.5
+    ],
+    [
+     -313.5,
+     409.0
+    ],
+    [
+     -305.0,
+     408.5
+    ],
+    [
+     -298.0,
+     409.0
+    ],
+    [
+     -290.0,
+     405.5
+    ],
+    [
+     -280.0,
+     405.0
+    ],
+    [
+     -276.5,
+     409.0
+    ],
+    [
+     -272.0,
+     413.0
+    ],
+    [
+     -268.8,
+     410.5
+    ],
+    [
+     -268.5,
+     405.5
+    ],
+    [
+     -262.5,
+     406.8
+    ],
+    [
+     -253.0,
+     407.2
+    ],
+    [
+     -246.0,
+     403.5
+    ],
+    [
+     -238.0,
+     400.6
+    ],
+    [
+     -230.6,
+     401.5
+    ],
+    [
+     -226.5,
+     401.0
+    ],
+    [
+     -214.6,
+     391.6
+    ],
+    [
+     -210.0,
+     386.5
+    ],
+    [
+     -197.0,
+     383.5
+    ],
+    [
+     -190.0,
+     379.5
+    ],
+    [
+     -181.0,
+     379.0
+    ],
+    [
+     -172.0,
+     383.0
+    ],
+    [
+     -160.0,
+     382.5
+    ],
+    [
+     -149.0,
+     380.5
+    ],
+    [
+     -141.0,
+     384.5
+    ],
+    [
+     -131.0,
+     382.0
+    ],
+    [
+     -120.0,
+     383.5
+    ],
+    [
+     -110.0,
+     388.0
+    ],
+    [
+     -104.0,
+     387.0
+    ],
+    [
+     -94.0,
+     384.5
+    ],
+    [
+     -86.0,
+     382.0
+    ],
+    [
+     -78.0,
+     381.5
+    ],
+    [
+     -71.5,
+     378.5
+    ],
+    [
+     -66.5,
+     372.0
+    ],
+    [
+     -65.2,
+     365.0
+    ],
+    [
+     -67.5,
+     359.0
+    ],
+    [
+     -69.4,
+     353.0
+    ],
+    [
+     -70.6,
+     347.5
+    ],
+    [
+     -74.0,
+     344.4
+    ],
+    [
+     -77.0,
+     341.0
+    ],
+    [
+     -78.0,
+     334.5
+    ],
+    [
+     -82.0,
+     331.5
+    ],
+    [
+     -84.6,
+     326.6
+    ],
+    [
+     -93.0,
+     325.0
+    ],
+    [
+     -98.1,
+     320.1
+    ],
+    [
+     -99.6,
+     314.6
+    ],
+    [
+     -106.9,
+     314.6
+    ],
+    [
+     -110.6,
+     311.1
+    ],
+    [
+     -116.6,
+     313.0
+    ],
+    [
+     -120.5,
+     309.0
+    ],
+    [
+     -120.0,
+     304.0
+    ],
+    [
+     -124.6,
+     301.5
+    ],
+    [
+     -128.5,
+     301.0
+    ],
+    [
+     -133.0,
+     303.5
+    ],
+    [
+     -137.5,
+     300.5
+    ],
+    [
+     -143.4,
+     299.1
+    ],
+    [
+     -146.1,
+     296.4
+    ],
+    [
+     -159.1,
+     295.9
+    ],
+    [
+     -175.4,
+     292.4
+    ],
+    [
+     -202.1,
+     273.4
+    ],
+    [
+     -213.4,
+     271.6
+    ],
+    [
+     -221.5,
+     269.5
+    ],
+    [
+     -227.1,
+     269.6
+    ],
+    [
+     -235.6,
+     264.6
+    ],
+    [
+     -243.6,
+     262.6
+    ],
+    [
+     -246.4,
+     260.1
+    ],
+    [
+     -256.0,
+     256.5
+    ],
+    [
+     -264.0,
+     251.5
+    ],
+    [
+     -268.0,
+     249.8
+    ],
+    [
+     -272.0,
+     244.6
+    ],
+    [
+     -276.6,
+     242.1
+    ],
+    [
+     -280.5,
+     246.0
+    ],
+    [
+     -285.0,
+     244.5
+    ],
+    [
+     -285.0,
+     232.0
+    ],
+    [
+     -287.5,
+     223.5
+    ],
+    [
+     -293.0,
+     222.0
+    ],
+    [
+     -300.0,
+     221.5
+    ],
+    [
+     -308.0,
+     223.0
+    ],
+    [
+     -313.0,
+     222.8
+    ],
+    [
+     -315.6,
+     227.4
+    ]
+   ],
+   "surface": -1.0,
+   "floor": -4.0,
+   "edge": "natural",
+   "rim_h": 0.0,
+   "features": [
+    {
+     "kind": "dock",
+     "pts": [
+      [
+       -263.8,
+       251.0
+      ],
+      [
+       -263.0,
+       265.5
+      ],
+      [
+       -258.5,
+       265.5
+      ]
+     ],
+     "w": 2.0,
+     "note": "L-shaped floating swim dock (grated walkway + caution-signed head) from the north beach (R071; 2022 aerial)"
+    },
+    {
+     "kind": "island",
+     "p": [
+      -283.8,
+      281.8
+     ],
+     "size": [
+      3.0,
+      3.0
+     ],
+     "note": "small floating swim raft (2022 aerial; R071)"
+    },
+    {
+     "kind": "island",
+     "p": [
+      -262.5,
+      284.2
+     ],
+     "size": [
+      3.0,
+      3.0
+     ],
+     "note": "floating swim raft"
+    },
+    {
+     "kind": "island",
+     "p": [
+      -247.5,
+      293.0
+     ],
+     "size": [
+      3.5,
+      7.0
+     ],
+     "rot": 20,
+     "note": "larger floating platform with a ladder/diving frame (R071)"
+    },
+    {
+     "kind": "dock",
+     "pts": [
+      [
+       -91.0,
+       316.0
+      ],
+      [
+       -94.0,
+       326.0
+      ]
+     ],
+     "w": 1.8,
+     "note": "small fishing dock on the east shore (2022 aerial)"
+    },
+    {
+     "kind": "beach",
+     "polygon": [
+      [
+       -264.0,
+       251.5
+      ],
+      [
+       -256.0,
+       256.5
+      ],
+      [
+       -246.4,
+       260.1
+      ],
+      [
+       -243.6,
+       262.6
+      ],
+      [
+       -235.6,
+       264.6
+      ],
+      [
+       -227.0,
+       269.6
+      ],
+      [
+       -221.5,
+       269.5
+      ],
+      [
+       -224.0,
+       262.0
+      ],
+      [
+       -236.0,
+       256.0
+      ],
+      [
+       -248.0,
+       250.5
+      ],
+      [
+       -258.0,
+       247.0
+      ]
+     ],
+     "note": "sand swimming beach at the north landing (2022 aerial)"
+    }
+   ],
+   "objective": true,
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R071",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "water edge traced on the 2022 aerial (dark-water mask at 4 px/m, simplified to 0.8 m); west side is a dam with a light stone face; the south shore is smoothed through the overhanging crowns of the wooded bank (true edge may be 1-3 m further south there); ~2.9 ha; one of the game's objective waters",
+    "open": "south-shore water line under tree crowns (+-2 m); small notch at x -272 z 410-413 may be the outlet/spillway; 2026 shoreline and swim-raft positions (seasonal) unverified"
+   }
+  },
+  {
+   "id": "lake_creek",
+   "ref": "W02",
+   "kind": "channel",
+   "polygon": [
+    [
+     -36.7,
+     248.8
+    ],
+    [
+     -41.8,
+     254.4
+    ],
+    [
+     -46.8,
+     261.4
+    ],
+    [
+     -52.8,
+     269.4
+    ],
+    [
+     -58.9,
+     279.6
+    ],
+    [
+     -63.0,
+     289.8
+    ],
+    [
+     -64.0,
+     297.7
+    ],
+    [
+     -67.4,
+     305.7
+    ],
+    [
+     -70.5,
+     315.8
+    ],
+    [
+     -72.0,
+     325.9
+    ],
+    [
+     -73.0,
+     336.0
+    ],
+    [
+     -72.5,
+     345.1
+    ],
+    [
+     -70.5,
+     344.9
+    ],
+    [
+     -71.0,
+     336.0
+    ],
+    [
+     -70.0,
+     326.1
+    ],
+    [
+     -68.5,
+     316.2
+    ],
+    [
+     -65.6,
+     306.3
+    ],
+    [
+     -62.0,
+     298.3
+    ],
+    [
+     -61.0,
+     290.2
+    ],
+    [
+     -57.1,
+     280.4
+    ],
+    [
+     -51.2,
+     270.6
+    ],
+    [
+     -45.2,
+     262.6
+    ],
+    [
+     -40.2,
+     255.6
+    ],
+    [
+     -35.3,
+     250.2
+    ]
+   ],
+   "surface": -1.2,
+   "floor": -1.6,
+   "edge": "natural",
+   "rim_h": 0.0,
+   "features": [],
+   "objective": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "narrow stream in a wooded ravine from the bridge pond's south lobe SW to the lake's east arm (2022 aerial: a dark line between bare-tree crowns); width ~2 m assumed",
+    "open": "true channel width and whether it carries water year-round unknown; crossings (culverts/footbridges) under the south-lot walk not verified"
+   }
+  }
+ ],
+ "roads": [
+  {
+   "id": "south_perimeter_road",
+   "kind": "street",
+   "pts": [
+    [
+     -330.0,
+     421.6
+    ],
+    [
+     -270.0,
+     420.8
+    ],
+    [
+     -170.0,
+     419.0
+    ],
+    [
+     -95.0,
+     417.1
+    ],
+    [
+     -20.0,
+     415.1
+    ],
+    [
+     30.0,
+     413.3
+    ],
+    [
+     80.0,
+     411.6
+    ],
+    [
+     155.0,
+     410.6
+    ],
+    [
+     230.0,
+     408.6
+    ],
+    [
+     305.0,
+     406.5
+    ],
+    [
+     380.0,
+     404.4
+    ],
+    [
+     423.5,
+     403.0
+    ]
+   ],
+   "w": 6.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "south perimeter road, asphalt ~6 m with grass verges, centre measured on the 2022 aerial every 25-75 m (it drifts ~1.4 deg off grid east, i.e. it follows true east); begins on the x=-330 zone line",
+    "open": "west of x=-270 the centre is extrapolated (tree shade); not re-checked against 2026 imagery"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "east_perimeter_street",
+   "kind": "street",
+   "pts": [
+    [
+     416.9,
+     200.0
+    ],
+    [
+     418.0,
+     240.0
+    ],
+    [
+     419.9,
+     280.0
+    ],
+    [
+     420.9,
+     300.0
+    ],
+    [
+     422.3,
+     340.0
+    ],
+    [
+     423.2,
+     360.0
+    ],
+    [
+     423.5,
+     380.0
+    ],
+    [
+     423.8,
+     403.0
+    ],
+    [
+     424.3,
+     420.0
+    ],
+    [
+     424.8,
+     440.0
+    ]
+   ],
+   "w": 14.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "east perimeter street (3-lane with hatched centre/turn lane, no kerbs) from the z=200 zone line south past the south road junction; centre from the 2022 aerial (z<=400) and the overview aerial (z>400)",
+    "open": "east edge truncated by the 2022 campus aerial at x 436.7; south of the junction from the coarser overview aerial"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "south_road_east_stub",
+   "kind": "street",
+   "pts": [
+    [
+     423.8,
+     403.0
+    ],
+    [
+     440.0,
+     397.5
+    ],
+    [
+     460.0,
+     395.0
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial_overview"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "the south road continues east of the junction with a northward jog (overview aerial); ends on the x=460 zone edge",
+    "open": "from the 0.66 m overview aerial only (outside the 2022 campus aerial)"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "south_drive",
+   "kind": "campus",
+   "pts": [
+    [
+     129.5,
+     200.0
+    ],
+    [
+     129.6,
+     215.0
+    ],
+    [
+     130.2,
+     232.0
+    ],
+    [
+     132.0,
+     245.0
+    ],
+    [
+     133.3,
+     255.0
+    ],
+    [
+     134.2,
+     280.0
+    ],
+    [
+     134.6,
+     300.0
+    ],
+    [
+     135.2,
+     325.0
+    ],
+    [
+     137.5,
+     345.0
+    ],
+    [
+     141.5,
+     357.0
+    ],
+    [
+     144.5,
+     363.0
+    ],
+    [
+     146.5,
+     370.0
+    ],
+    [
+     147.5,
+     382.0
+    ],
+    [
+     147.8,
+     395.0
+    ],
+    [
+     147.8,
+     410.6
+    ]
+   ],
+   "w": 8.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "campus drive from the loop (begins on the z=200 zone line) south past the dorm lot, the support building and the south lot to the south perimeter road; asphalt with white edge lines (2022 aerial)",
+    "open": "exact kerb width varies 7-10 m (wider by the dorm lot)"
+   }
+  },
+  {
+   "id": "english_service_drive",
+   "kind": "service",
+   "pts": [
+    [
+     69.5,
+     323.5
+    ],
+    [
+     69.8,
+     300.0
+    ],
+    [
+     70.0,
+     280.0
+    ],
+    [
+     70.5,
+     268.0
+    ]
+   ],
+   "w": 6.5,
+   "curb": true,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "service drive with a few stalls running north from the south lot to the courtyard west of Elm Hall (2022 aerial)"
+   }
+  },
+  {
+   "id": "dorm_lot_aisle_1",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     47.0,
+     194.0
+    ],
+    [
+     121.0,
+     194.0
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "dorm lot aisle (2022 aerial stall rows)"
+   }
+  },
+  {
+   "id": "dorm_lot_aisle_2",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     47.0,
+     228.0
+    ],
+    [
+     121.0,
+     228.0
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "dorm lot aisle (2022 aerial stall rows)"
+   }
+  },
+  {
+   "id": "dorm_lot_aisle_3",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     48.5,
+     194.0
+    ],
+    [
+     48.5,
+     228.0
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "dorm lot aisle (2022 aerial stall rows)"
+   }
+  },
+  {
+   "id": "dorm_lot_aisle_4",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     70.0,
+     194.0
+    ],
+    [
+     70.0,
+     228.0
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "dorm lot aisle (2022 aerial stall rows)"
+   }
+  },
+  {
+   "id": "dorm_lot_aisle_5",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     87.0,
+     194.0
+    ],
+    [
+     87.0,
+     228.0
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "dorm lot aisle (2022 aerial stall rows)"
+   }
+  },
+  {
+   "id": "dorm_lot_aisle_6",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     103.0,
+     194.0
+    ],
+    [
+     103.0,
+     228.0
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "dorm lot aisle (2022 aerial stall rows)"
+   }
+  },
+  {
+   "id": "village_west_lot_aisle_1",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     150.0,
+     207.5
+    ],
+    [
+     230.0,
+     207.5
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "west village lot aisle (2022 aerial)"
+   }
+  },
+  {
+   "id": "village_west_lot_aisle_2",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     150.0,
+     231.5
+    ],
+    [
+     230.0,
+     231.5
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "west village lot aisle (2022 aerial)"
+   }
+  },
+  {
+   "id": "village_west_lot_aisle_3",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     148.5,
+     200.0
+    ],
+    [
+     148.5,
+     243.0
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "west village lot aisle (2022 aerial)"
+   }
+  },
+  {
+   "id": "village_west_lot_aisle_4",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     137.0,
+     247.5
+    ],
+    [
+     150.0,
+     243.0
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "west village lot aisle (2022 aerial)"
+   }
+  },
+  {
+   "id": "village_west_lot_entry_n",
+   "kind": "drive",
+   "pts": [
+    [
+     155.0,
+     200.0
+    ],
+    [
+     155.0,
+     194.5
+    ]
+   ],
+   "w": 7.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "lot entry toward the loop; ends on the z=200 zone line",
+    "open": "exact entry position"
+   }
+  },
+  {
+   "id": "south_lot_aisle_n",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -48.0,
+     333.0
+    ],
+    [
+     -30.0,
+     328.5
+    ],
+    [
+     0.0,
+     329.5
+    ],
+    [
+     40.0,
+     329.5
+    ],
+    [
+     80.0,
+     327.0
+    ],
+    [
+     107.0,
+     324.0
+    ],
+    [
+     131.0,
+     317.5
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "north aisle of the south lot, continuing east as its entry from the south drive"
+   }
+  },
+  {
+   "id": "south_lot_aisle_s",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -48.0,
+     337.0
+    ],
+    [
+     -30.0,
+     344.0
+    ],
+    [
+     0.0,
+     348.5
+    ],
+    [
+     40.0,
+     350.0
+    ],
+    [
+     80.0,
+     345.0
+    ],
+    [
+     107.0,
+     338.0
+    ],
+    [
+     107.0,
+     324.0
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "south aisle of the south lot (ring round the median islands)"
+   }
+  },
+  {
+   "id": "village_lot_aisle",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     134.2,
+     281.5
+    ],
+    [
+     157.0,
+     281.5
+    ],
+    [
+     200.0,
+     280.2
+    ],
+    [
+     240.0,
+     276.5
+    ],
+    [
+     260.0,
+     271.5
+    ],
+    [
+     280.0,
+     263.5
+    ],
+    [
+     300.0,
+     255.5
+    ],
+    [
+     318.0,
+     247.0
+    ],
+    [
+     332.0,
+     239.0
+    ],
+    [
+     345.0,
+     230.5
+    ],
+    [
+     357.0,
+     222.5
+    ],
+    [
+     363.5,
+     217.0
+    ]
+   ],
+   "w": 7.0,
+   "curb": false,
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "central aisle of the village lot, entered from the south drive at its west end (plan p16 drive stub 278-285; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m))",
+    "open": "the 2026 wayfinding draws this as the village drive; NE end connection unverified"
+   }
+  }
+ ],
+ "paths": [
+  {
+   "id": "path_s_001",
+   "pts": [
+    [
+     -88.0,
+     83.5
+    ],
+    [
+     -71.0,
+     83.4
+    ],
+    [
+     -62.0,
+     84.8
+    ],
+    [
+     -54.0,
+     86.7
+    ],
+    [
+     -40.0,
+     90.4
+    ]
+   ],
+   "w": 3.2,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "walk from the dining NE entrance east to the loop; ends on the x=-40 zone line (ccore continues)"
+   }
+  },
+  {
+   "id": "path_s_002",
+   "pts": [
+    [
+     -89.0,
+     85.5
+    ],
+    [
+     -40.0,
+     125.4
+    ]
+   ],
+   "w": 2.8,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "diagonal walk from the dining NE entrance SE to the loop walk; ends on x=-40"
+   }
+  },
+  {
+   "id": "path_s_003",
+   "pts": [
+    [
+     -99.4,
+     86.5
+    ],
+    [
+     -99.4,
+     112.3
+    ]
+   ],
+   "w": 2.4,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "walk along the dining hall east facade"
+   }
+  },
+  {
+   "id": "path_s_004",
+   "pts": [
+    [
+     -116.0,
+     58.4
+    ],
+    [
+     -40.0,
+     58.4
+    ]
+   ],
+   "w": 2.2,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "sidewalk along the south edge of the north dining lot; ends on x=-40"
+   }
+  },
+  {
+   "id": "path_s_005",
+   "pts": [
+    [
+     -97.0,
+     85.5
+    ],
+    [
+     -87.0,
+     88.5
+    ],
+    [
+     -79.0,
+     94.0
+    ],
+    [
+     -74.5,
+     101.0
+    ],
+    [
+     -74.0,
+     108.0
+    ],
+    [
+     -77.0,
+     115.0
+    ],
+    [
+     -83.0,
+     121.0
+    ],
+    [
+     -91.0,
+     124.5
+    ],
+    [
+     -100.0,
+     126.5
+    ]
+   ],
+   "w": 3.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "curving walk from the NE entrance round to the south terrace (plan p16; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m))",
+    "open": "as-built curve radius unverified"
+   }
+  },
+  {
+   "id": "path_s_006",
+   "pts": [
+    [
+     -96.5,
+     127.0
+    ],
+    [
+     -97.5,
+     129.5
+    ]
+   ],
+   "w": 3.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "link terrace walk -> round node, plan p16"
+   }
+  },
+  {
+   "id": "path_s_007",
+   "pts": [
+    [
+     -94.0,
+     126.0
+    ],
+    [
+     -87.0,
+     131.5
+    ],
+    [
+     -80.0,
+     138.0
+    ],
+    [
+     -73.0,
+     145.5
+    ],
+    [
+     -67.5,
+     153.0
+    ],
+    [
+     -66.3,
+     162.0
+    ],
+    [
+     -65.5,
+     175.0
+    ],
+    [
+     -63.5,
+     186.0
+    ],
+    [
+     -61.0,
+     194.0
+    ]
+   ],
+   "w": 3.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026",
+     "R347"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "walk from the terrace past the NE side of the pavilion south to the lake walk (plan p16; R347 shows the curving concrete approach); placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "junction with the 2022 lake walk inferred"
+   }
+  },
+  {
+   "id": "path_s_008",
+   "pts": [
+    [
+     -140.0,
+     139.5
+    ],
+    [
+     -137.0,
+     145.0
+    ],
+    [
+     -133.8,
+     150.0
+    ],
+    [
+     -133.0,
+     162.5
+    ],
+    [
+     -135.0,
+     175.0
+    ]
+   ],
+   "w": 2.5,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "walk leaving the terrace SW corner toward the lake (plan p16, figure ends here); placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "where it ends south of z 175 (the figure fades); not visible in photos"
+   }
+  },
+  {
+   "id": "path_v_001",
+   "pts": [
+    [
+     135.5,
+     291.2
+    ],
+    [
+     200.0,
+     291.2
+    ],
+    [
+     240.0,
+     290.8
+    ],
+    [
+     255.6,
+     290.6
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "sidewalk along the south edge of the village lot to the round node; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_002",
+   "pts": [
+    [
+     256.0,
+     289.0
+    ],
+    [
+     268.0,
+     279.5
+    ],
+    [
+     291.2,
+     271.0
+    ],
+    [
+     306.5,
+     265.5
+    ],
+    [
+     318.8,
+     257.8
+    ],
+    [
+     331.2,
+     250.8
+    ],
+    [
+     343.5,
+     242.4
+    ],
+    [
+     355.8,
+     233.0
+    ],
+    [
+     366.0,
+     226.5
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "sidewalk along the SE edge of the curving village lot; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_003",
+   "pts": [
+    [
+     189.6,
+     291.2
+    ],
+    [
+     189.6,
+     297.8
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_004",
+   "pts": [
+    [
+     214.7,
+     291.2
+    ],
+    [
+     214.7,
+     296.8
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_005",
+   "pts": [
+    [
+     239.5,
+     290.8
+    ],
+    [
+     239.5,
+     296.3
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_006",
+   "pts": [
+    [
+     189.6,
+     316.2
+    ],
+    [
+     189.6,
+     324.2
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_007",
+   "pts": [
+    [
+     214.7,
+     315.2
+    ],
+    [
+     214.7,
+     324.2
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_008",
+   "pts": [
+    [
+     239.5,
+     314.7
+    ],
+    [
+     239.5,
+     324.1
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_009",
+   "pts": [
+    [
+     201.9,
+     291.2
+    ],
+    [
+     201.9,
+     324.2
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_010",
+   "pts": [
+    [
+     226.8,
+     291.0
+    ],
+    [
+     226.8,
+     324.2
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_011",
+   "pts": [
+    [
+     177.5,
+     324.2
+    ],
+    [
+     230.0,
+     324.0
+    ],
+    [
+     269.6,
+     323.0
+    ],
+    [
+     275.8,
+     321.2
+    ],
+    [
+     288.0,
+     313.5
+    ],
+    [
+     298.8,
+     305.8
+    ],
+    [
+     309.6,
+     301.2
+    ],
+    [
+     321.9,
+     296.0
+    ],
+    [
+     331.0,
+     290.5
+    ],
+    [
+     343.5,
+     285.0
+    ],
+    [
+     352.7,
+     279.6
+    ],
+    [
+     358.8,
+     275.0
+    ],
+    [
+     359.5,
+     266.0
+    ],
+    [
+     359.5,
+     261.0
+    ]
+   ],
+   "w": 2.4,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "walk along the south (pond) side of the homes, curving NE to home 07; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_012",
+   "pts": [
+    [
+     260.6,
+     295.1
+    ],
+    [
+     262.7,
+     301.2
+    ],
+    [
+     266.5,
+     313.5
+    ],
+    [
+     269.6,
+     323.0
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "round node south to the south walk (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_013",
+   "pts": [
+    [
+     284.2,
+     275.8
+    ],
+    [
+     284.2,
+     284.5
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_014",
+   "pts": [
+    [
+     285.6,
+     302.9
+    ],
+    [
+     286.6,
+     314.0
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_015",
+   "pts": [
+    [
+     308.0,
+     265.5
+    ],
+    [
+     308.0,
+     274.2
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_016",
+   "pts": [
+    [
+     310.6,
+     292.6
+    ],
+    [
+     310.6,
+     301.4
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_017",
+   "pts": [
+    [
+     294.2,
+     268.5
+    ],
+    [
+     296.5,
+     284.2
+    ],
+    [
+     298.8,
+     301.2
+    ],
+    [
+     298.8,
+     305.8
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_018",
+   "pts": [
+    [
+     332.7,
+     251.5
+    ],
+    [
+     333.5,
+     260.4
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_019",
+   "pts": [
+    [
+     336.0,
+     278.8
+    ],
+    [
+     336.0,
+     288.5
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_020",
+   "pts": [
+    [
+     358.0,
+     225.5
+    ],
+    [
+     358.8,
+     242.5
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_021",
+   "pts": [
+    [
+     279.6,
+     238.0
+    ],
+    [
+     286.0,
+     253.0
+    ]
+   ],
+   "w": 2.0,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_022",
+   "pts": [
+    [
+     298.1,
+     314.2
+    ],
+    [
+     305.0,
+     312.0
+    ],
+    [
+     315.8,
+     313.5
+    ],
+    [
+     328.0,
+     309.6
+    ],
+    [
+     343.5,
+     303.5
+    ],
+    [
+     352.7,
+     300.4
+    ],
+    [
+     358.8,
+     296.5
+    ],
+    [
+     368.0,
+     295.0
+    ],
+    [
+     377.3,
+     297.3
+    ],
+    [
+     383.5,
+     303.5
+    ],
+    [
+     385.0,
+     311.2
+    ],
+    [
+     383.5,
+     320.4
+    ],
+    [
+     384.2,
+     331.2
+    ],
+    [
+     385.0,
+     340.4
+    ],
+    [
+     383.5,
+     349.6
+    ],
+    [
+     377.3,
+     360.4
+    ],
+    [
+     368.0,
+     371.2
+    ],
+    [
+     355.8,
+     380.4
+    ],
+    [
+     346.5,
+     384.2
+    ],
+    [
+     335.8,
+     385.0
+    ],
+    [
+     323.5,
+     381.9
+    ],
+    [
+     312.7,
+     375.8
+    ],
+    [
+     305.0,
+     366.5
+    ],
+    [
+     300.4,
+     354.2
+    ],
+    [
+     298.0,
+     338.8
+    ],
+    [
+     297.3,
+     323.5
+    ],
+    [
+     298.1,
+     314.2
+    ]
+   ],
+   "w": 2.4,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "loop walk round the village pond (plan p16); placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_023",
+   "pts": [
+    [
+     288.0,
+     313.5
+    ],
+    [
+     298.1,
+     314.2
+    ]
+   ],
+   "w": 2.4,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "south walk -> pond loop (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)"
+   }
+  },
+  {
+   "id": "path_v_024",
+   "pts": [
+    [
+     285.0,
+     396.5
+    ],
+    [
+     315.8,
+     392.7
+    ],
+    [
+     346.5,
+     386.5
+    ],
+    [
+     377.3,
+     371.2
+    ],
+    [
+     392.7,
+     354.2
+    ],
+    [
+     402.0,
+     331.2
+    ],
+    [
+     406.5,
+     300.4
+    ],
+    [
+     407.3,
+     285.0
+    ]
+   ],
+   "w": 2.4,
+   "surface": "concrete",
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "low",
+    "note": "long curving walk south and east of the pond toward the east street side (plan p16); placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "figure fades north of z 285 and west of x 285; whether it was built is unverified (not on the 2026 wayfinding)"
+   }
+  }
+ ],
+ "areas": [
+  {
+   "id": "lakeside_plaza",
+   "ref": "B36",
+   "kind": "plaza",
+   "polygon": [
+    [
+     -146.0,
+     125.8
+    ],
+    [
+     -117.0,
+     125.4
+    ],
+    [
+     -100.0,
+     125.6
+    ],
+    [
+     -99.0,
+     128.5
+    ],
+    [
+     -122.5,
+     128.5
+    ],
+    [
+     -122.5,
+     140.6
+    ],
+    [
+     -129.4,
+     140.6
+    ],
+    [
+     -129.4,
+     133.5
+    ],
+    [
+     -133.0,
+     133.5
+    ],
+    [
+     -133.0,
+     140.6
+    ],
+    [
+     -140.0,
+     140.6
+    ],
+    [
+     -140.0,
+     128.5
+    ],
+    [
+     -146.0,
+     128.5
+    ]
+   ],
+   "ev": {
+    "src": [
+     "R340",
+     "R008",
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "fire-pit terrace south of the dining hall (R340: concrete paving, brick fire-pit benches, planting); outline from plan p16 (U-shaped paving round a lawn panel); placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "exact paving edges and fire-pit positions; whether the lawn panel is lawn or planting"
+   }
+  },
+  {
+   "id": "lakeside_plaza_lawn",
+   "ref": "B36",
+   "kind": "lawn",
+   "polygon": [
+    [
+     -137.5,
+     128.5
+    ],
+    [
+     -124.4,
+     128.5
+    ],
+    [
+     -124.4,
+     133.1
+    ],
+    [
+     -137.5,
+     133.1
+    ]
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "lawn panel inside the terrace on plan p16; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)"
+   }
+  },
+  {
+   "id": "dining_circle_plaza",
+   "ref": "B36",
+   "kind": "plaza",
+   "polygon": [
+    [
+     -93.2,
+     134.8
+    ],
+    [
+     -93.6,
+     136.9
+    ],
+    [
+     -94.8,
+     138.8
+    ],
+    [
+     -96.7,
+     140.0
+    ],
+    [
+     -98.8,
+     140.4
+    ],
+    [
+     -100.9,
+     140.0
+    ],
+    [
+     -102.8,
+     138.8
+    ],
+    [
+     -104.0,
+     136.9
+    ],
+    [
+     -104.4,
+     134.8
+    ],
+    [
+     -104.0,
+     132.7
+    ],
+    [
+     -102.8,
+     130.8
+    ],
+    [
+     -100.9,
+     129.6
+    ],
+    [
+     -98.8,
+     129.2
+    ],
+    [
+     -96.7,
+     129.6
+    ],
+    [
+     -94.8,
+     130.8
+    ],
+    [
+     -93.6,
+     132.7
+    ]
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "small round paved node with a planted centre on plan p16 between the terrace walk and the pavilion; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "not visible in any photo; centre planting size unknown"
+   }
+  },
+  {
+   "id": "dining_circle_bed",
+   "kind": "bed",
+   "polygon": [
+    [
+     -96.8,
+     134.8
+    ],
+    [
+     -97.1,
+     135.8
+    ],
+    [
+     -97.8,
+     136.5
+    ],
+    [
+     -98.8,
+     136.8
+    ],
+    [
+     -99.8,
+     136.5
+    ],
+    [
+     -100.5,
+     135.8
+    ],
+    [
+     -100.8,
+     134.8
+    ],
+    [
+     -100.5,
+     133.8
+    ],
+    [
+     -99.8,
+     133.1
+    ],
+    [
+     -98.8,
+     132.8
+    ],
+    [
+     -97.8,
+     133.1
+    ],
+    [
+     -97.1,
+     133.8
+    ]
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "planted centre of the round node, plan p16",
+    "open": "planting type unknown"
+   }
+  },
+  {
+   "id": "dining_ne_forecourt",
+   "ref": "B35",
+   "kind": "plaza",
+   "polygon": [
+    [
+     -117.0,
+     58.5
+    ],
+    [
+     -104.0,
+     58.5
+    ],
+    [
+     -98.0,
+     78.0
+    ],
+    [
+     -88.0,
+     79.0
+    ],
+    [
+     -80.0,
+     81.0
+    ],
+    [
+     -80.0,
+     85.5
+    ],
+    [
+     -88.0,
+     86.5
+    ],
+    [
+     -100.4,
+     86.5
+    ],
+    [
+     -104.0,
+     84.0
+    ],
+    [
+     -111.0,
+     67.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R339"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "concrete forecourt from the north lot to the glazed NE entrance and its steps (2022 aerial; R339)",
+    "open": "kerb/step lines inside the forecourt not traced"
+   }
+  },
+  {
+   "id": "dorm_lot",
+   "kind": "parking",
+   "polygon": [
+    [
+     44.5,
+     180.0
+    ],
+    [
+     121.5,
+     180.0
+    ],
+    [
+     121.5,
+     232.5
+    ],
+    [
+     52.0,
+     232.5
+    ],
+    [
+     44.5,
+     226.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "large lot north of Bridge Hall / Elm Hall between the loop and the dorms, asphalt edge (2022 aerial)"
+   }
+  },
+  {
+   "id": "village_west_lot",
+   "kind": "parking",
+   "polygon": [
+    [
+     150.0,
+     194.5
+    ],
+    [
+     226.0,
+     194.5
+    ],
+    [
+     232.0,
+     198.0
+    ],
+    [
+     232.5,
+     243.0
+    ],
+    [
+     150.0,
+     243.5
+    ],
+    [
+     146.0,
+     240.0
+    ],
+    [
+     146.0,
+     200.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "lot north of the village, east of the south drive (2022 aerial)"
+   }
+  },
+  {
+   "id": "south_lot",
+   "kind": "parking",
+   "polygon": [
+    [
+     -46.0,
+     322.0
+    ],
+    [
+     -38.0,
+     317.5
+    ],
+    [
+     -24.0,
+     318.0
+    ],
+    [
+     -16.0,
+     322.0
+    ],
+    [
+     -4.0,
+     325.0
+    ],
+    [
+     10.0,
+     323.0
+    ],
+    [
+     42.0,
+     323.5
+    ],
+    [
+     64.0,
+     325.0
+    ],
+    [
+     75.0,
+     322.5
+    ],
+    [
+     88.0,
+     319.5
+    ],
+    [
+     108.0,
+     315.5
+    ],
+    [
+     125.0,
+     313.0
+    ],
+    [
+     131.0,
+     309.0
+    ],
+    [
+     131.0,
+     326.0
+    ],
+    [
+     124.9,
+     320.9
+    ],
+    [
+     112.0,
+     322.0
+    ],
+    [
+     107.5,
+     326.0
+    ],
+    [
+     108.0,
+     333.0
+    ],
+    [
+     111.0,
+     346.0
+    ],
+    [
+     100.0,
+     348.0
+    ],
+    [
+     80.0,
+     350.0
+    ],
+    [
+     55.0,
+     355.5
+    ],
+    [
+     30.0,
+     358.5
+    ],
+    [
+     0.0,
+     356.0
+    ],
+    [
+     -20.0,
+     352.0
+    ],
+    [
+     -35.0,
+     347.0
+    ],
+    [
+     -48.0,
+     342.0
+    ],
+    [
+     -53.0,
+     339.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "long curved lot south of the south dorms, entered from the south drive (2022 aerial, asphalt edge; south edge smoothed under parked cars)"
+   }
+  },
+  {
+   "id": "south_lot_island_w",
+   "kind": "bed",
+   "polygon": [
+    [
+     -28.0,
+     336.0
+    ],
+    [
+     5.0,
+     335.0
+    ],
+    [
+     5.0,
+     340.0
+    ],
+    [
+     -28.0,
+     341.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "planted median island with lamp posts in the south lot"
+   }
+  },
+  {
+   "id": "south_lot_island_e",
+   "kind": "bed",
+   "polygon": [
+    [
+     8.0,
+     334.5
+    ],
+    [
+     60.0,
+     334.0
+    ],
+    [
+     99.0,
+     331.0
+    ],
+    [
+     99.0,
+     336.0
+    ],
+    [
+     60.0,
+     340.0
+    ],
+    [
+     8.0,
+     340.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "planted median island with lamp posts in the south lot"
+   }
+  },
+  {
+   "id": "village_lot",
+   "kind": "parking",
+   "polygon": [
+    [
+     157.0,
+     272.5
+    ],
+    [
+     200.0,
+     270.5
+    ],
+    [
+     240.0,
+     267.0
+    ],
+    [
+     260.0,
+     262.0
+    ],
+    [
+     280.0,
+     254.5
+    ],
+    [
+     291.0,
+     251.0
+    ],
+    [
+     314.0,
+     242.7
+    ],
+    [
+     331.0,
+     233.5
+    ],
+    [
+     343.5,
+     224.2
+    ],
+    [
+     352.7,
+     218.0
+    ],
+    [
+     362.0,
+     212.0
+    ],
+    [
+     366.5,
+     222.5
+    ],
+    [
+     355.8,
+     230.4
+    ],
+    [
+     343.5,
+     239.7
+    ],
+    [
+     331.2,
+     248.1
+    ],
+    [
+     318.8,
+     255.0
+    ],
+    [
+     306.5,
+     262.7
+    ],
+    [
+     291.2,
+     268.1
+    ],
+    [
+     268.0,
+     276.5
+    ],
+    [
+     245.0,
+     281.2
+    ],
+    [
+     230.0,
+     287.5
+    ],
+    [
+     200.0,
+     289.5
+    ],
+    [
+     157.0,
+     289.8
+    ]
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026",
+     "R004",
+     "R017"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "double-loaded lot curving along the north side of the village homes (paved band on plan p16; grey lot on the 2026 wayfinding; R004/R017 show stalls right in front of the porches); placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "as-built edges +-3-5 m; islands at the walk crossings not modelled; NE end and its connection to the older arc lot unverified"
+   }
+  },
+  {
+   "id": "village_round_node",
+   "kind": "plaza",
+   "polygon": [
+    [
+     264.8,
+     290.5
+    ],
+    [
+     264.4,
+     292.3
+    ],
+    [
+     263.5,
+     293.8
+    ],
+    [
+     262.0,
+     294.7
+    ],
+    [
+     260.2,
+     295.1
+    ],
+    [
+     258.4,
+     294.7
+    ],
+    [
+     256.9,
+     293.8
+    ],
+    [
+     256.0,
+     292.3
+    ],
+    [
+     255.6,
+     290.5
+    ],
+    [
+     256.0,
+     288.7
+    ],
+    [
+     256.9,
+     287.2
+    ],
+    [
+     258.4,
+     286.3
+    ],
+    [
+     260.2,
+     285.9
+    ],
+    [
+     262.0,
+     286.3
+    ],
+    [
+     263.5,
+     287.2
+    ],
+    [
+     264.4,
+     288.7
+    ]
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "medium",
+    "note": "round paved node with a planted centre and a horseshoe planting bed, between homes 03 and 04 on plan p16 and the 2026 wayfinding; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)"
+   }
+  },
+  {
+   "id": "village_round_node_bed",
+   "kind": "bed",
+   "polygon": [
+    [
+     261.7,
+     290.5
+    ],
+    [
+     261.4,
+     291.4
+    ],
+    [
+     260.7,
+     291.9
+    ],
+    [
+     259.7,
+     291.9
+    ],
+    [
+     259.0,
+     291.4
+    ],
+    [
+     258.7,
+     290.5
+    ],
+    [
+     259.0,
+     289.6
+    ],
+    [
+     259.7,
+     289.1
+    ],
+    [
+     260.7,
+     289.1
+    ],
+    [
+     261.4,
+     289.6
+    ]
+   ],
+   "ev": {
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ],
+    "date": "2024",
+    "conf": "low",
+    "note": "planted centre of the round node"
+   }
+  },
+  {
+   "id": "lake_dam_face",
+   "kind": "gravel",
+   "polygon": [
+    [
+     -319.8,
+     222.0
+    ],
+    [
+     -321.0,
+     228.5
+    ],
+    [
+     -322.6,
+     240.0
+    ],
+    [
+     -325.5,
+     275.0
+    ],
+    [
+     -329.4,
+     317.0
+    ],
+    [
+     -329.4,
+     338.0
+    ],
+    [
+     -326.0,
+     367.0
+    ],
+    [
+     -321.5,
+     388.0
+    ],
+    [
+     -318.0,
+     405.5
+    ],
+    [
+     -315.5,
+     409.5
+    ],
+    [
+     -313.5,
+     409.0
+    ],
+    [
+     -317.0,
+     405.5
+    ],
+    [
+     -320.5,
+     388.0
+    ],
+    [
+     -325.0,
+     367.0
+    ],
+    [
+     -328.4,
+     338.0
+    ],
+    [
+     -328.4,
+     317.0
+    ],
+    [
+     -324.5,
+     275.0
+    ],
+    [
+     -321.5,
+     240.0
+    ],
+    [
+     -319.5,
+     228.5
+    ],
+    [
+     -317.5,
+     222.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "light stone (rip-rap or gravel) face of the west dam along the water line, ~1-2.5 m wide (2022 aerial); the strip straddles the x=-330 line at z 300-340",
+    "open": "rip-rap vs gravel walk not distinguishable at 0.3 m/px; west zone may see its outer half"
+   }
+  }
+ ],
+ "barriers": [],
+ "changes": []
+}

@@ -19,6 +19,13 @@ extends SceneTree
 
 const BAND := 0.16       # nav-distance band (used when no measured times exist)
 const TIME_BAND := 0.12  # measured bot-time band around the median
+## Real scale: the reference campus's routes are far longer than the old
+## map's, and the round stays 240 s.  A combination is kept only when its
+## ideal run (full speed on the measured route, three splashes) fits in
+## this share of the round, leaving time to dodge the Night Watch; if fewer
+## than MIN_CURATED fit, the shortest ones are kept (and reported).
+const FEASIBLE_SHARE := 0.85
+const MIN_CURATED := 3
 
 
 func _initialize() -> void:
@@ -63,27 +70,37 @@ func _initialize() -> void:
 		var r: Dictionary = per_dorm[id]
 		var measured: Dictionary = (measured_all.get("dorms", {}) as Dictionary).get(id, {})
 		var curated: Array = []
+		var limit := float(cfg.match_duration_s) * FEASIBLE_SHARE
 		for cb in r["combos"]:
 			var L2: float = cb["length_m"]
 			cb["vs_median"] = snappedf(L2 / median, 0.01)
 			# the ideal run: full speed on the measured route, three splash
 			# sequences, nothing in the way (a floor, not a forecast)
 			cb["ideal_s"] = snappedf(L2 / speed + 3.0 * splash, 0.1)
+			cb["fits_round"] = float(cb["ideal_s"]) <= limit
 			var key := str(cb["targets"])
 			if measured.has(key):
 				cb["bot_time_s"] = measured[key]
 				cb["time_vs_median"] = snappedf(float(measured[key]) / tmed, 0.01) if tmed > 0.0 else 0.0
-			var ok := absf(L2 / median - 1.0) <= BAND
-			if measured.has(key) and tmed > 0.0:
-				ok = ok and absf(float(measured[key]) / tmed - 1.0) <= TIME_BAND
+			var ok := bool(cb["fits_round"])
+			if measured.has(key):
+				ok = ok and float(measured[key]) <= float(cfg.match_duration_s) * 0.95
 			if ok:
 				curated.append(cb["targets"])
+		if curated.size() < MIN_CURATED:
+			var by_len: Array = (r["combos"] as Array).duplicate()
+			by_len.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return float(x["length_m"]) < float(y["length_m"]))
+			for cb2 in by_len:
+				if curated.size() >= MIN_CURATED:
+					break
+				if not curated.has(cb2["targets"]):
+					curated.append(cb2["targets"])
 		dorms_out[id] = {"curated": curated, "combos": r["combos"], "pair_m": r["pair_m"], "bot_time_median_s": tmed,
 			"door_m": r["door_m"], "unreachable": r["unreachable"]}
 		print("%s: curated %d/%d" % [id, curated.size(), (r["combos"] as Array).size()])
 		for cb in r["combos"]:
 			print("  %-36s best %-36s %7.1f m  ideal %5.1f s  (%.2f)%s" % [str(cb["targets"].map(func(i): return lay.waters[i]["short"])), str(cb["best_order"].map(func(i): return lay.waters[i]["short"])),
-				cb["length_m"], cb["ideal_s"], cb["vs_median"], "" if curated.has(cb["targets"]) else "   EXCLUDED"])
+				cb["length_m"], cb["ideal_s"], cb["vs_median"], ("" if curated.has(cb["targets"]) else "   EXCLUDED") + ("" if bool(cb["fits_round"]) else " (does not fit the round)")])
 		if not (r["unreachable"] as Array).is_empty():
 			print("  UNREACHABLE: %s" % str(r["unreachable"]))
 	var home: Dictionary = dorms_out[CampusDorms.default_id()]
@@ -93,6 +110,8 @@ func _initialize() -> void:
 	var round_s := float(cfg.match_duration_s)
 	var out := {
 		"generated_by": "tools/route_analysis.gd", "band": BAND, "time_band": TIME_BAND, "median_m": snappedf(median, 0.1),
+		"rule": "keep combinations whose ideal run fits %.0f%% of the round (fewer than %d: the shortest)" % [FEASIBLE_SHARE * 100.0, MIN_CURATED],
+		"feasible_share": FEASIBLE_SHARE,
 		"nodes": names, "pair_m": home["pair_m"], "combos": home["combos"], "curated": home["curated"],
 		"unreachable": home["unreachable"], "bot_time_median_s": home["bot_time_median_s"],
 		"dorms": dorms_out, "dorm_version": CampusDorms.VERSION, "campus": CampusData.shared().campus_hash,

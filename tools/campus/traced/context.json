@@ -1,0 +1,2472 @@
+{
+ "zone": "context",
+ "buildings": [
+  {
+   "id": "ctx_house_001",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -360,
+     -574
+    ],
+    [
+     -351,
+     -574
+    ],
+    [
+     -351,
+     -550.5
+    ],
+    [
+     -370,
+     -550.5
+    ],
+    [
+     -370,
+     -563
+    ],
+    [
+     -360,
+     -563
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
+   }
+  },
+  {
+   "id": "ctx_house_002",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -397,
+     -571
+    ],
+    [
+     -381,
+     -571
+    ],
+    [
+     -381,
+     -555
+    ],
+    [
+     -397,
+     -555
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)",
+    "open": "outline soft under trees"
+   }
+  },
+  {
+   "id": "ctx_house_003",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -341.71,
+     -565.28
+    ],
+    [
+     -323.16,
+     -572.77
+    ],
+    [
+     -318.29,
+     -560.72
+    ],
+    [
+     -336.84,
+     -553.23
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m); set at an angle along the street curve"
+   }
+  },
+  {
+   "id": "ctx_house_004",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -319,
+     -598
+    ],
+    [
+     -307,
+     -598
+    ],
+    [
+     -307,
+     -580
+    ],
+    [
+     -319,
+     -580
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m); brown roof"
+   }
+  },
+  {
+   "id": "ctx_house_005",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -268,
+     -575
+    ],
+    [
+     -250,
+     -575
+    ],
+    [
+     -250,
+     -556
+    ],
+    [
+     -262,
+     -556
+    ],
+    [
+     -262,
+     -562
+    ],
+    [
+     -268,
+     -562
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
+   }
+  },
+  {
+   "id": "ctx_house_006",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -398,
+     -615
+    ],
+    [
+     -380,
+     -615
+    ],
+    [
+     -380,
+     -603
+    ],
+    [
+     -398,
+     -603
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
+   }
+  },
+  {
+   "id": "ctx_house_007",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -390,
+     -516
+    ],
+    [
+     -376,
+     -516
+    ],
+    [
+     -376,
+     -494
+    ],
+    [
+     -390,
+     -494
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m); house with a rear wing"
+   }
+  },
+  {
+   "id": "ctx_house_008",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -369,
+     -513
+    ],
+    [
+     -350,
+     -513
+    ],
+    [
+     -350,
+     -496
+    ],
+    [
+     -358,
+     -496
+    ],
+    [
+     -358,
+     -487
+    ],
+    [
+     -369,
+     -487
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
+   }
+  },
+  {
+   "id": "ctx_house_009",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -339,
+     -513
+    ],
+    [
+     -319,
+     -513
+    ],
+    [
+     -319,
+     -497
+    ],
+    [
+     -339,
+     -497
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
+   }
+  },
+  {
+   "id": "ctx_house_010",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -312,
+     -514
+    ],
+    [
+     -290,
+     -514
+    ],
+    [
+     -290,
+     -500
+    ],
+    [
+     -312,
+     -500
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
+   }
+  },
+  {
+   "id": "ctx_house_011",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -283,
+     -514
+    ],
+    [
+     -268,
+     -514
+    ],
+    [
+     -268,
+     -503
+    ],
+    [
+     -283,
+     -503
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
+   }
+  },
+  {
+   "id": "ctx_house_012",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -262,
+     -518
+    ],
+    [
+     -242,
+     -518
+    ],
+    [
+     -242,
+     -502
+    ],
+    [
+     -262,
+     -502
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house in the residential subdivision north-west of the campus; traced on the 0.66 m overview raster (+-1.5 m)"
+   }
+  },
+  {
+   "id": "ctx_house_013",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -354.5,
+     -440.5
+    ],
+    [
+     -345,
+     -440.5
+    ],
+    [
+     -345,
+     -415.5
+    ],
+    [
+     -368.5,
+     -415.5
+    ],
+    [
+     -368.5,
+     -434.5
+    ],
+    [
+     -354.5,
+     -434.5
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "hip",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "one-storey ranch house facing the north perimeter street; footprint from the 2022 aerial (roof outline)"
+   }
+  },
+  {
+   "id": "ctx_house_014",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -339,
+     -436.5
+    ],
+    [
+     -313,
+     -436.5
+    ],
+    [
+     -313,
+     -415
+    ],
+    [
+     -339,
+     -415
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "hip",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "one-storey ranch house facing the north perimeter street; footprint from the 2022 aerial (roof outline); brown roof"
+   }
+  },
+  {
+   "id": "ctx_house_015",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -297.0,
+     -437.5
+    ],
+    [
+     -284,
+     -437.5
+    ],
+    [
+     -284,
+     -419.5
+    ],
+    [
+     -306.5,
+     -419.5
+    ],
+    [
+     -306.5,
+     -430.5
+    ],
+    [
+     -297.0,
+     -430.5
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "hip",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "one-storey ranch house facing the north perimeter street; footprint from the 2022 aerial (roof outline)"
+   }
+  },
+  {
+   "id": "ctx_house_016",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -263.0,
+     -434.5
+    ],
+    [
+     -251.5,
+     -434.5
+    ],
+    [
+     -251.5,
+     -419.5
+    ],
+    [
+     -270.5,
+     -419.5
+    ],
+    [
+     -270.5,
+     -429.5
+    ],
+    [
+     -263.0,
+     -429.5
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "one-storey ranch house facing the north perimeter street; footprint from the 2022 aerial (roof outline)"
+   }
+  },
+  {
+   "id": "ctx_shed_001",
+   "kind": "context",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -389.7,
+     -470.7
+    ],
+    [
+     -381.7,
+     -470.7
+    ],
+    [
+     -381.7,
+     -464
+    ],
+    [
+     -389.7,
+     -464
+    ]
+   ],
+   "h": 2.8,
+   "roof": {
+    "type": "gable",
+    "pitch": 22,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "detached garage / shed behind the houses"
+   }
+  },
+  {
+   "id": "ctx_shed_002",
+   "kind": "context",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -367,
+     -457.4
+    ],
+    [
+     -358,
+     -457.4
+    ],
+    [
+     -358,
+     -450.7
+    ],
+    [
+     -367,
+     -450.7
+    ]
+   ],
+   "h": 2.8,
+   "roof": {
+    "type": "gable",
+    "pitch": 22,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "detached garage / shed"
+   }
+  },
+  {
+   "id": "ctx_shed_003",
+   "kind": "context",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -335,
+     -460.7
+    ],
+    [
+     -323,
+     -460.7
+    ],
+    [
+     -323,
+     -451
+    ],
+    [
+     -335,
+     -451
+    ]
+   ],
+   "h": 3.0,
+   "roof": {
+    "type": "gable",
+    "pitch": 22,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "outbuilding with a deck (pool house?) behind a house",
+    "open": "use unclear"
+   }
+  },
+  {
+   "id": "ctx_shed_004",
+   "kind": "context",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -249.5,
+     -472
+    ],
+    [
+     -241.5,
+     -472
+    ],
+    [
+     -241.5,
+     -465
+    ],
+    [
+     -249.5,
+     -465
+    ]
+   ],
+   "h": 2.8,
+   "roof": {
+    "type": "gable",
+    "pitch": 22,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "detached garage / shed"
+   }
+  },
+  {
+   "id": "ctx_house_017",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -231.93,
+     -582.08
+    ],
+    [
+     -217.19,
+     -571.75
+    ],
+    [
+     -224.07,
+     -561.92
+    ],
+    [
+     -238.81,
+     -572.25
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "house around the subdivision cul-de-sac; overview raster (+-1.5 m); set diagonally to the circle; brown roof"
+   }
+  },
+  {
+   "id": "ctx_house_018",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -209.91,
+     -596.35
+    ],
+    [
+     -192.18,
+     -599.47
+    ],
+    [
+     -190.09,
+     -587.65
+    ],
+    [
+     -207.82,
+     -584.53
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "house around the subdivision cul-de-sac; overview raster (+-1.5 m)"
+   }
+  },
+  {
+   "id": "ctx_house_019",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -186.03,
+     -580.56
+    ],
+    [
+     -166.97,
+     -569.56
+    ],
+    [
+     -173.97,
+     -557.44
+    ],
+    [
+     -193.03,
+     -568.44
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "house around the subdivision cul-de-sac; overview raster (+-1.5 m); brown roof"
+   }
+  },
+  {
+   "id": "ctx_house_020",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -186,
+     -545
+    ],
+    [
+     -168,
+     -545
+    ],
+    [
+     -168,
+     -523
+    ],
+    [
+     -186,
+     -523
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house around the subdivision cul-de-sac; overview raster (+-1.5 m)"
+   }
+  },
+  {
+   "id": "ctx_house_021",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -205,
+     -517
+    ],
+    [
+     -178,
+     -517
+    ],
+    [
+     -178,
+     -500
+    ],
+    [
+     -205,
+     -500
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house around the subdivision cul-de-sac; overview raster (+-1.5 m)"
+   }
+  },
+  {
+   "id": "ctx_house_022",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -236,
+     -520
+    ],
+    [
+     -218,
+     -520
+    ],
+    [
+     -218,
+     -505
+    ],
+    [
+     -236,
+     -505
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house around the subdivision cul-de-sac; overview raster (+-1.5 m)"
+   }
+  },
+  {
+   "id": "ctx_house_023",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -217,
+     -437
+    ],
+    [
+     -192,
+     -437
+    ],
+    [
+     -192,
+     -420
+    ],
+    [
+     -217,
+     -420
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "hip",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house facing the north perimeter street; 2022 aerial"
+   }
+  },
+  {
+   "id": "ctx_house_024",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -163,
+     -452
+    ],
+    [
+     -152,
+     -452
+    ],
+    [
+     -152,
+     -425
+    ],
+    [
+     -172,
+     -425
+    ],
+    [
+     -172,
+     -440
+    ],
+    [
+     -163,
+     -440
+    ]
+   ],
+   "h": 4.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house facing the north perimeter street; 2022 aerial; taller central mass (one and a half storeys)"
+   }
+  },
+  {
+   "id": "ctx_house_025",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -117.5,
+     -455
+    ],
+    [
+     -100,
+     -455
+    ],
+    [
+     -100,
+     -432.5
+    ],
+    [
+     -110,
+     -432.5
+    ],
+    [
+     -110,
+     -424
+    ],
+    [
+     -125,
+     -424
+    ],
+    [
+     -125,
+     -435
+    ],
+    [
+     -117.5,
+     -435
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house facing the north perimeter street; 2022 aerial; L-shaped with a lower front wing"
+   }
+  },
+  {
+   "id": "ctx_house_026",
+   "kind": "house",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -97,
+     -452
+    ],
+    [
+     -70,
+     -452
+    ],
+    [
+     -70,
+     -431
+    ],
+    [
+     -97,
+     -431
+    ]
+   ],
+   "h": 3.5,
+   "roof": {
+    "type": "hip",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "house facing the north perimeter street; 2022 aerial"
+   }
+  },
+  {
+   "id": "ctx_bldg_001",
+   "kind": "context",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -134.5,
+     -579
+    ],
+    [
+     -96,
+     -579
+    ],
+    [
+     -96,
+     -590
+    ],
+    [
+     -76.5,
+     -590
+    ],
+    [
+     -76.5,
+     -487
+    ],
+    [
+     -95,
+     -487
+    ],
+    [
+     -95,
+     -530
+    ],
+    [
+     -127.5,
+     -530
+    ],
+    [
+     -127.5,
+     -542.5
+    ],
+    [
+     -134.5,
+     -542.5
+    ]
+   ],
+   "h": 4.0,
+   "roof": {
+    "type": "gable",
+    "pitch": 20,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "brick_brown",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "overview2022",
+     "parcels2025"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "large one-storey complex (long N-S spine with a west wing); overview raster, simplified union outline",
+    "open": "wall material and roof form not verified (dark grey pitched roofs read from the overview)"
+   }
+  },
+  {
+   "id": "ctx_bldg_002",
+   "kind": "context",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -106,
+     -529
+    ],
+    [
+     -94.5,
+     -529
+    ],
+    [
+     -94.5,
+     -512
+    ],
+    [
+     -106,
+     -512
+    ]
+   ],
+   "h": 4.5,
+   "roof": {
+    "type": "hip",
+    "pitch": 22,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "brick_brown",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "square pavilion/court block on the west side of the complex"
+   }
+  },
+  {
+   "id": "ctx_shed_005",
+   "kind": "context",
+   "status": "existing",
+   "background": true,
+   "footprint": [
+    [
+     -115,
+     -517
+    ],
+    [
+     -107.5,
+     -517
+    ],
+    [
+     -107.5,
+     -509.5
+    ],
+    [
+     -115,
+     -509.5
+    ]
+   ],
+   "h": 2.8,
+   "roof": {
+    "type": "gable",
+    "pitch": 22,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "metal_light",
+    "trim": "none",
+    "roof_mat": "metal_grey",
+    "windows": "punched"
+   },
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "small white-roofed service building at the complex lot"
+   }
+  }
+ ],
+ "roads": [
+  {
+   "id": "ctx_road_001",
+   "kind": "drive",
+   "pts": [
+    [
+     -140,
+     -481
+    ],
+    [
+     -100,
+     -481.5
+    ],
+    [
+     -51,
+     -482
+    ]
+   ],
+   "w": 6.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "drive from the N-S town street along the south side of the complex"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_002",
+   "kind": "drive",
+   "pts": [
+    [
+     -51,
+     -592
+    ],
+    [
+     -78,
+     -592
+    ]
+   ],
+   "w": 5.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "north service drive of the complex"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_003",
+   "kind": "street",
+   "pts": [
+    [
+     -419.4,
+     -397
+    ],
+    [
+     -420.6,
+     -500
+    ],
+    [
+     -423.2,
+     -600
+    ],
+    [
+     -426.5,
+     -700
+    ],
+    [
+     -429.5,
+     -800
+    ],
+    [
+     -430.4,
+     -830
+    ]
+   ],
+   "w": 7.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022",
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "west street north of the north perimeter street; straight, drifting ~0.04 m/m west going north; profiles every 25 m"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_004",
+   "kind": "street",
+   "pts": [
+    [
+     -421.4,
+     -532
+    ],
+    [
+     -392,
+     -532.5
+    ],
+    [
+     -355.5,
+     -533.5
+    ],
+    [
+     -328,
+     -538.5
+    ],
+    [
+     -310,
+     -545.5
+    ],
+    [
+     -294,
+     -552.5
+    ],
+    [
+     -287,
+     -556
+    ],
+    [
+     -283.6,
+     -572.7
+    ],
+    [
+     -279.5,
+     -593
+    ],
+    [
+     -278.3,
+     -609
+    ],
+    [
+     -279,
+     -641
+    ],
+    [
+     -280.5,
+     -686
+    ],
+    [
+     -283,
+     -732
+    ],
+    [
+     -285,
+     -800
+    ],
+    [
+     -285.5,
+     -830
+    ]
+   ],
+   "w": 7.5,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "curving residential street of the north-west subdivision (from the west street, then north)"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_005",
+   "kind": "street",
+   "pts": [
+    [
+     -287,
+     -556
+    ],
+    [
+     -278,
+     -546
+    ],
+    [
+     -260,
+     -539
+    ],
+    [
+     -240,
+     -537.5
+    ],
+    [
+     -226,
+     -539.5
+    ]
+   ],
+   "w": 7.5,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "east branch of the subdivision street ending in a cul-de-sac (circle r~10 m around (-210,-545))"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_006",
+   "kind": "street",
+   "pts": [
+    [
+     -226,
+     -539.5
+    ],
+    [
+     -217,
+     -536.5
+    ],
+    [
+     -206.5,
+     -537.5
+    ],
+    [
+     -201,
+     -544
+    ],
+    [
+     -203,
+     -552.5
+    ],
+    [
+     -211,
+     -555.5
+    ],
+    [
+     -219,
+     -551.5
+    ],
+    [
+     -221,
+     -545
+    ],
+    [
+     -226,
+     -539.5
+    ]
+   ],
+   "w": 8.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "cul-de-sac turning circle drawn as a ring centre line (outer radius ~10 m)"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_007",
+   "kind": "street",
+   "pts": [
+    [
+     -51.5,
+     -404
+    ],
+    [
+     -50.8,
+     -500
+    ],
+    [
+     -50.2,
+     -608.5
+    ]
+   ],
+   "w": 7.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022",
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); N-S street from the north perimeter street to the first E-W street"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_008",
+   "kind": "street",
+   "pts": [
+    [
+     -10,
+     -830
+    ],
+    [
+     -10,
+     -775
+    ]
+   ],
+   "w": 7.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); short N-S street ending in a cul-de-sac"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_009",
+   "kind": "street",
+   "pts": [
+    [
+     -10,
+     -775
+    ],
+    [
+     -2,
+     -768
+    ],
+    [
+     -3,
+     -760
+    ],
+    [
+     -10,
+     -755
+    ],
+    [
+     -18,
+     -760
+    ],
+    [
+     -18,
+     -768
+    ],
+    [
+     -10,
+     -775
+    ]
+   ],
+   "w": 8.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "cul-de-sac turning circle (ring centre line, radius ~10 m)"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_010",
+   "kind": "street",
+   "pts": [
+    [
+     41.0,
+     -830
+    ],
+    [
+     41.4,
+     -770
+    ],
+    [
+     43.0,
+     -730
+    ],
+    [
+     44.4,
+     -690
+    ],
+    [
+     45.6,
+     -650
+    ],
+    [
+     47.6,
+     -610
+    ],
+    [
+     49.0,
+     -570
+    ],
+    [
+     51.0,
+     -530
+    ],
+    [
+     51.3,
+     -508
+    ]
+   ],
+   "w": 7.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); ends at the E-W street on the north edge of the campus strip (continues south in the north zone)"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_011",
+   "kind": "street",
+   "pts": [
+    [
+     178.5,
+     -830
+    ],
+    [
+     180.5,
+     -760
+    ],
+    [
+     182.0,
+     -700
+    ],
+    [
+     183.0,
+     -612
+    ],
+    [
+     185.5,
+     -560
+    ],
+    [
+     187.5,
+     -513
+    ]
+   ],
+   "w": 7.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); ends at the E-W street on the north edge of the campus strip (continues south between campus lots)"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_012",
+   "kind": "street",
+   "pts": [
+    [
+     228.0,
+     -717
+    ],
+    [
+     228.5,
+     -665
+    ],
+    [
+     229.0,
+     -614
+    ]
+   ],
+   "w": 4.5,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); narrow street/lane between two E-W streets"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_013",
+   "kind": "street",
+   "pts": [
+    [
+     273.5,
+     -830
+    ],
+    [
+     274.5,
+     -770
+    ],
+    [
+     277.0,
+     -720
+    ],
+    [
+     279.0,
+     -670
+    ],
+    [
+     281.0,
+     -614
+    ],
+    [
+     283.0,
+     -560
+    ],
+    [
+     284.5,
+     -514
+    ]
+   ],
+   "w": 7.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m)"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_014",
+   "kind": "street",
+   "pts": [
+    [
+     325.0,
+     -830
+    ],
+    [
+     326.5,
+     -770
+    ],
+    [
+     329.0,
+     -720
+    ],
+    [
+     331.5,
+     -660
+    ],
+    [
+     333.0,
+     -616
+    ],
+    [
+     335.5,
+     -515
+    ]
+   ],
+   "w": 7.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m)"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_015",
+   "kind": "street",
+   "pts": [
+    [
+     389.8,
+     -486
+    ],
+    [
+     388.2,
+     -530
+    ],
+    [
+     386.2,
+     -570
+    ],
+    [
+     384.2,
+     -610
+    ],
+    [
+     382.5,
+     -650
+    ],
+    [
+     379.6,
+     -730
+    ],
+    [
+     378.0,
+     -770
+    ],
+    [
+     376.6,
+     -810
+    ],
+    [
+     376.0,
+     -830
+    ]
+   ],
+   "w": 9.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "east perimeter street north of the campus strip; profiles every 40 m (two lanes, ~8-9 m)"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_016",
+   "kind": "street",
+   "pts": [
+    [
+     -10,
+     -816
+    ],
+    [
+     100,
+     -815
+    ],
+    [
+     180,
+     -818
+    ],
+    [
+     276,
+     -820.5
+    ],
+    [
+     376.5,
+     -822
+    ]
+   ],
+   "w": 7.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); E-W street on the northern edge of the band"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_017",
+   "kind": "street",
+   "pts": [
+    [
+     327,
+     -758.5
+    ],
+    [
+     378.5,
+     -760
+    ]
+   ],
+   "w": 7.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); short E-W street"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_018",
+   "kind": "street",
+   "pts": [
+    [
+     42.5,
+     -712.5
+    ],
+    [
+     100,
+     -713.1
+    ],
+    [
+     140,
+     -714.4
+    ],
+    [
+     180,
+     -716.5
+    ],
+    [
+     228,
+     -717
+    ],
+    [
+     277,
+     -718.5
+    ],
+    [
+     329,
+     -719.8
+    ],
+    [
+     380.5,
+     -721
+    ]
+   ],
+   "w": 7.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m)"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_019",
+   "kind": "street",
+   "pts": [
+    [
+     -50.2,
+     -608.5
+    ],
+    [
+     0,
+     -609
+    ],
+    [
+     47.5,
+     -610
+    ],
+    [
+     100,
+     -610.5
+    ],
+    [
+     140,
+     -611.2
+    ],
+    [
+     183,
+     -612.9
+    ],
+    [
+     229,
+     -614
+    ],
+    [
+     281,
+     -614.9
+    ],
+    [
+     333,
+     -616.5
+    ],
+    [
+     384.2,
+     -618.5
+    ]
+   ],
+   "w": 7.0,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m)"
+   },
+   "ref": "C01"
+  },
+  {
+   "id": "ctx_road_020",
+   "kind": "street",
+   "pts": [
+    [
+     51.3,
+     -507
+    ],
+    [
+     100,
+     -507.6
+    ],
+    [
+     140,
+     -509.5
+    ],
+    [
+     187.5,
+     -511.5
+    ],
+    [
+     230,
+     -512.5
+    ],
+    [
+     284.5,
+     -514
+    ],
+    [
+     335.5,
+     -514.5
+    ],
+    [
+     389.5,
+     -515.5
+    ]
+   ],
+   "w": 7.5,
+   "curb": true,
+   "ev": {
+    "src": [
+     "overview2022",
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); E-W street along the north edge of the campus strip (north zone south of it)"
+   },
+   "ref": "C01"
+  }
+ ],
+ "areas": [
+  {
+   "id": "ctx_area_001",
+   "kind": "parking",
+   "polygon": [
+    [
+     -137,
+     -527
+    ],
+    [
+     -110,
+     -527
+    ],
+    [
+     -110,
+     -512
+    ],
+    [
+     -96,
+     -512
+    ],
+    [
+     -96,
+     -483
+    ],
+    [
+     -137,
+     -483
+    ]
+   ],
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "parking west of the complex spine (asphalt outline, overview)"
+   }
+  },
+  {
+   "id": "ctx_area_002",
+   "kind": "parking",
+   "polygon": [
+    [
+     -75.5,
+     -542
+    ],
+    [
+     -56,
+     -542
+    ],
+    [
+     -56,
+     -488
+    ],
+    [
+     -75.5,
+     -488
+    ]
+   ],
+   "ev": {
+    "src": [
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "parking along the east side of the complex"
+   }
+  }
+ ]
+}

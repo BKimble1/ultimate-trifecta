@@ -230,11 +230,13 @@ func _water_from_items(ids: Array, pres: Dictionary) -> Dictionary:
 	var center := Vector2.ZERO
 	var radius := 0.0
 	var any := false
+	var wade := false
 	for id in ids:
 		var it := data.item(String(id))
 		if it.is_empty():
 			continue
 		any = true
+		wade = wade or bool(it.get("wade", false))
 		kind = String(it.get("kind", "pond"))
 		var dep: Array = KIND_DEPTH.get(kind, KIND_DEPTH["pond"])
 		surface = minf(surface, float(it.get("surface", dep[0])))
@@ -273,6 +275,8 @@ func _water_from_items(ids: Array, pres: Dictionary) -> Dictionary:
 		"center": center if (radius > 0.0 and polys.size() == 1) else c, "radius": radius, "rect": rect,
 		"surface_y": surface, "floor_y": floor_y, "rim_h": maxf(0.0, rim_h), "rim_t": 0.5, "edge": edge,
 		"features": features, "objective": bool(pres.get("objective", false)),
+		# a shallow decorative runnel: drawn, walked through, never a splash
+		"wade": wade and not bool(pres.get("objective", false)),
 		"color": _color(pres.get("color", [0.6, 0.8, 1.0])), "icon": String(pres.get("icon", "drop")),
 		"exits": [], "pads": [], "jump_points": [],
 	}
@@ -377,6 +381,8 @@ func water_index_at(p: Vector2, margin: float = 0.0) -> int:
 ## pads a few metres further out.  Deterministic: data order, fixed steps.
 func _build_water_points() -> void:
 	for w in waters:
+		if bool(w.get("wade", false)):
+			continue
 		var step := 6.0
 		var kind := String(w["kind"])
 		if kind == "lake":
@@ -610,6 +616,7 @@ func _index() -> void:
 		for i in pts.size() - 1:
 			_add_seg(_path_cells, pts[i], pts[i + 1], hw, [pts[i], pts[i + 1], hw])
 	for i in waters.size():
-		_add_rect(_water_cells, (waters[i]["rect"] as Rect2).grow(1.0), i)
+		if not bool(waters[i].get("wade", false)):
+			_add_rect(_water_cells, (waters[i]["rect"] as Rect2).grow(1.0), i)
 	for i in buildings.size():
 		_add_rect(_bld_cells, (buildings[i]["rect"] as Rect2).grow(1.0), i)

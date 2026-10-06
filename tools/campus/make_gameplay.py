@@ -209,6 +209,13 @@ def main():
     items.append({"id": "cart_spawns", "kind": "cart_spawns", "spots": carts})
     items.append({"id": "gadget_spots", "kind": "gadget_spots", "pts": [[r2(x), r2(z)] for x, z in gadgets]})
     items.append({"id": "coin_spots", "kind": "coin_spots", "pts": [[r2(x), r2(z)] for x, z in coins]})
+    by_id = {b["id"]: b for b in bld}
+    for bid in spec.get("label_buildings", []):
+        b = by_id.get(bid)
+        if b is None:
+            continue
+        c = poly(b["footprint"]).representative_point()
+        items.append({"id": "label_" + bid, "kind": "landmark_label", "label": b.get("label", bid), "p": [r2(c.x), r2(c.y)]})
     for lb in spec.get("landmark_labels", []):
         items.append({"id": "label_" + lb["id"], "kind": "landmark_label", "label": lb["label"], "p": lb["p"]})
     out = {"version": 1, "items": items}

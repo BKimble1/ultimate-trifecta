@@ -1,0 +1,2348 @@
+{
+ "items": [
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "sidewalk lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0001",
+   "kind": "lamp",
+   "p": [
+    48.5,
+    -455.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "sidewalk lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0002",
+   "kind": "lamp",
+   "p": [
+    48.5,
+    -436.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "sidewalk lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0003",
+   "kind": "lamp",
+   "p": [
+    48.5,
+    -417.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0004",
+   "kind": "light_pole",
+   "p": [
+    70.5,
+    -464.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "sidewalk lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0005",
+   "kind": "lamp",
+   "p": [
+    9.5,
+    -407.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "sidewalk lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0006",
+   "kind": "lamp",
+   "p": [
+    20.5,
+    -407.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0007",
+   "kind": "lamp",
+   "p": [
+    101.0,
+    -397.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0008",
+   "kind": "lamp",
+   "p": [
+    136.0,
+    -397.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0009",
+   "kind": "lamp",
+   "p": [
+    80.5,
+    -372.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0010",
+   "kind": "lamp",
+   "p": [
+    99.5,
+    -361.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0011",
+   "kind": "lamp",
+   "p": [
+    80.5,
+    -349.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0012",
+   "kind": "light_pole",
+   "p": [
+    52.0,
+    -326.3
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0013",
+   "kind": "light_pole",
+   "p": [
+    32.6,
+    -307.9
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0014",
+   "kind": "light_pole",
+   "p": [
+    10.5,
+    -324.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0015",
+   "kind": "light_pole",
+   "p": [
+    45.2,
+    -352.8
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0016",
+   "kind": "light_pole",
+   "p": [
+    66.6,
+    -340.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0017",
+   "kind": "light_pole",
+   "p": [
+    70.0,
+    -286.2
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0018",
+   "kind": "light_pole",
+   "p": [
+    70.0,
+    -201.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0019",
+   "kind": "lamp",
+   "p": [
+    103.0,
+    -299.8
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0020",
+   "kind": "lamp",
+   "p": [
+    103.9,
+    -333.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "lamp head seen from above",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0021",
+   "kind": "lamp",
+   "p": [
+    55.5,
+    -253.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "road light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0022",
+   "kind": "light_pole",
+   "p": [
+    12.0,
+    -141.7
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "road light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0023",
+   "kind": "light_pole",
+   "p": [
+    47.5,
+    -158.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "leaf-off 2022 aerial; deciduous placed from the shadow pattern or the visible crown",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0024",
+   "kind": "lamp",
+   "p": [
+    60.0,
+    -170.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0025",
+   "kind": "light_pole",
+   "p": [
+    31.2,
+    -106.4
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0026",
+   "kind": "light_pole",
+   "p": [
+    63.7,
+    -106.4
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0027",
+   "kind": "light_pole",
+   "p": [
+    0.6,
+    -106.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "leaf-off 2022 aerial; deciduous placed from the shadow pattern or the visible crown",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0028",
+   "kind": "lamp",
+   "p": [
+    100.3,
+    -115.4
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0029",
+   "kind": "lamp",
+   "p": [
+    9.5,
+    5.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0030",
+   "kind": "lamp",
+   "p": [
+    44.5,
+    3.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0031",
+   "kind": "lamp",
+   "p": [
+    78.5,
+    -1.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0032",
+   "kind": "lamp",
+   "p": [
+    114.0,
+    -5.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0033",
+   "kind": "lamp",
+   "p": [
+    119.7,
+    30.9
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0034",
+   "kind": "lamp",
+   "p": [
+    28.6,
+    -48.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "bicycles visible on the paved pad by the residence hall",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0035",
+   "kind": "bike_rack",
+   "len": 12.0,
+   "p": [
+    64.0,
+    116.0
+   ],
+   "rot": 10.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0036",
+   "kind": "light_pole",
+   "p": [
+    249.5,
+    -468.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0037",
+   "kind": "light_pole",
+   "p": [
+    270.5,
+    -457.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0038",
+   "kind": "lamp",
+   "p": [
+    249.5,
+    -405.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "sidewalk lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0039",
+   "kind": "lamp",
+   "p": [
+    205.5,
+    -441.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "sidewalk lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0040",
+   "kind": "lamp",
+   "p": [
+    200.5,
+    -462.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "dark rectangle on the front lawn read as a bench",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0041",
+   "kind": "bench",
+   "p": [
+    258.0,
+    -417.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "post with short shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0042",
+   "kind": "lamp",
+   "p": [
+    184.0,
+    -392.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "post with short shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0043",
+   "kind": "lamp",
+   "p": [
+    177.0,
+    -369.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "post with short shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0044",
+   "kind": "lamp",
+   "p": [
+    180.5,
+    -344.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0045",
+   "kind": "lamp",
+   "p": [
+    201.9,
+    -325.9
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0046",
+   "kind": "lamp",
+   "p": [
+    178.9,
+    -290.7
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0047",
+   "kind": "lamp",
+   "p": [
+    198.3,
+    -273.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0048",
+   "kind": "lamp",
+   "p": [
+    213.3,
+    -307.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0049",
+   "kind": "lamp",
+   "p": [
+    231.3,
+    -299.8
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "row of small objects in front of the residence hall read as bikes at a rack",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0050",
+   "kind": "bike_rack",
+   "len": 12.0,
+   "p": [
+    275.0,
+    -322.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "white bench tops visible in the paved court",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0051",
+   "kind": "bench",
+   "p": [
+    188.8,
+    -97.3
+   ],
+   "rot": 90.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "white bench tops visible in the paved court",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0052",
+   "kind": "bench",
+   "p": [
+    188.8,
+    -92.8
+   ],
+   "rot": 90.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "white bench tops visible in the paved court",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0053",
+   "kind": "bench",
+   "p": [
+    188.8,
+    -88.4
+   ],
+   "rot": 90.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "white bench tops visible in the paved court",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0054",
+   "kind": "bench",
+   "p": [
+    197.2,
+    -97.4
+   ],
+   "rot": 90.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "white bench tops visible in the paved court",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0055",
+   "kind": "bench",
+   "p": [
+    197.3,
+    -88.2
+   ],
+   "rot": 90.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "white bench tops visible in the paved court",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0056",
+   "kind": "bench",
+   "p": [
+    203.8,
+    -97.6
+   ],
+   "rot": 90.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "white bench tops visible in the paved court",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0057",
+   "kind": "bench",
+   "p": [
+    203.8,
+    -88.4
+   ],
+   "rot": 90.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "white bench tops visible in the paved court",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0058",
+   "kind": "bench",
+   "p": [
+    213.4,
+    -97.8
+   ],
+   "rot": 90.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "white bench tops visible in the paved court",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0059",
+   "kind": "bench",
+   "p": [
+    213.6,
+    -93.2
+   ],
+   "rot": 90.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "white bench tops visible in the paved court",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0060",
+   "kind": "bench",
+   "p": [
+    213.6,
+    -88.7
+   ],
+   "rot": 90.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0061",
+   "kind": "lamp",
+   "p": [
+    202.0,
+    -114.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0062",
+   "kind": "lamp",
+   "p": [
+    174.8,
+    -78.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0063",
+   "kind": "lamp",
+   "p": [
+    204.0,
+    -62.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0064",
+   "kind": "lamp",
+   "p": [
+    144.0,
+    -185.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0065",
+   "kind": "lamp",
+   "p": [
+    201.0,
+    -154.4
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0066",
+   "kind": "light_pole",
+   "p": [
+    344.4,
+    -415.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0067",
+   "kind": "light_pole",
+   "p": [
+    397.2,
+    -462.8
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0068",
+   "kind": "light_pole",
+   "p": [
+    399.0,
+    -410.9
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0069",
+   "kind": "light_pole",
+   "p": [
+    401.9,
+    -358.1
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0070",
+   "kind": "light_pole",
+   "p": [
+    341.7,
+    -459.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0071",
+   "kind": "light_pole",
+   "p": [
+    299.0,
+    -440.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0072",
+   "kind": "lamp",
+   "p": [
+    340.3,
+    -365.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "leaf-off 2022 aerial; deciduous placed from the shadow pattern or the visible crown",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0073",
+   "kind": "lamp",
+   "p": [
+    354.6,
+    -356.4
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0074",
+   "kind": "lamp",
+   "p": [
+    342.3,
+    -323.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0075",
+   "kind": "light_pole",
+   "p": [
+    404.0,
+    -306.3
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0076",
+   "kind": "light_pole",
+   "p": [
+    402.9,
+    -258.3
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0077",
+   "kind": "light_pole",
+   "p": [
+    396.3,
+    -205.1
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0078",
+   "kind": "light_pole",
+   "p": [
+    424.3,
+    -225.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0079",
+   "kind": "light_pole",
+   "p": [
+    429.4,
+    -249.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0080",
+   "kind": "light_pole",
+   "p": [
+    288.2,
+    -218.4
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "leaf-off 2022 aerial; deciduous placed from the shadow pattern or the visible crown",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0081",
+   "kind": "lamp",
+   "p": [
+    318.8,
+    -246.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "road light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0082",
+   "kind": "light_pole",
+   "p": [
+    354.6,
+    -249.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "road light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0083",
+   "kind": "light_pole",
+   "p": [
+    360.7,
+    -221.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0084",
+   "kind": "light_pole",
+   "p": [
+    346.4,
+    -197.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "light slab beside the gateway walk read as a bench",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0085",
+   "kind": "bench",
+   "p": [
+    345.0,
+    -155.5
+   ],
+   "rot": 14.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "light slab beside the gateway walk read as a bench",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0086",
+   "kind": "bench",
+   "p": [
+    346.5,
+    -124.0
+   ],
+   "rot": 14.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "leaf-off 2022 aerial; deciduous placed from the shadow pattern or the visible crown",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0087",
+   "kind": "lamp",
+   "p": [
+    335.7,
+    -158.1
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0088",
+   "kind": "light_pole",
+   "p": [
+    395.8,
+    -155.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0089",
+   "kind": "light_pole",
+   "p": [
+    413.1,
+    -148.9
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "gateway walk lamp from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0090",
+   "kind": "lamp",
+   "p": [
+    371.3,
+    -150.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "gateway walk lamp from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0091",
+   "kind": "lamp",
+   "p": [
+    371.3,
+    -130.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "road light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0092",
+   "kind": "light_pole",
+   "p": [
+    420.3,
+    -139.2
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0093",
+   "kind": "light_pole",
+   "p": [
+    397.8,
+    -99.3
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0094",
+   "kind": "lamp",
+   "p": [
+    368.2,
+    -56.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0095",
+   "kind": "light_pole",
+   "p": [
+    399.9,
+    -53.4
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0096",
+   "kind": "lamp",
+   "p": [
+    338.2,
+    -77.4
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "leaf-off 2022 aerial; deciduous placed from the shadow pattern or the visible crown",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0097",
+   "kind": "lamp",
+   "p": [
+    357.6,
+    -90.1
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "white patio tables and chairs seen from above",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0098",
+   "kind": "table",
+   "p": [
+    312.0,
+    -63.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "white patio tables and chairs seen from above",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0099",
+   "kind": "table",
+   "p": [
+    313.0,
+    -57.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0100",
+   "kind": "lamp",
+   "p": [
+    333.0,
+    16.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0101",
+   "kind": "lamp",
+   "p": [
+    300.5,
+    17.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0102",
+   "kind": "light_pole",
+   "p": [
+    329.6,
+    -26.8
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0103",
+   "kind": "light_pole",
+   "p": [
+    332.1,
+    -47.2
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0104",
+   "kind": "light_pole",
+   "p": [
+    400.9,
+    -43.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0105",
+   "kind": "light_pole",
+   "p": [
+    401.9,
+    4.3
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0106",
+   "kind": "light_pole",
+   "p": [
+    308.1,
+    38.1
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0107",
+   "kind": "light_pole",
+   "p": [
+    307.1,
+    78.4
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0108",
+   "kind": "light_pole",
+   "p": [
+    363.1,
+    37.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0109",
+   "kind": "light_pole",
+   "p": [
+    364.1,
+    80.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "pedestrian lamp from pole shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0110",
+   "kind": "lamp",
+   "p": [
+    368.2,
+    16.2
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0111",
+   "kind": "light_pole",
+   "p": [
+    405.5,
+    56.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0112",
+   "kind": "light_pole",
+   "p": [
+    419.2,
+    55.4
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "road light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0113",
+   "kind": "light_pole",
+   "p": [
+    292.3,
+    127.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "road light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0114",
+   "kind": "light_pole",
+   "p": [
+    323.9,
+    116.8
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "road light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0115",
+   "kind": "light_pole",
+   "p": [
+    355.6,
+    108.3
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "parking light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0116",
+   "kind": "light_pole",
+   "p": [
+    321.9,
+    157.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "entrance sign panel beside the east perimeter street",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0117",
+   "kind": "sign_blank",
+   "p": [
+    407.7,
+    220.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "entrance sign panel beside the east perimeter street",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0118",
+   "kind": "sign_blank",
+   "p": [
+    429.0,
+    219.5
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0119",
+   "kind": "light_pole",
+   "p": [
+    404.4,
+    108.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0120",
+   "kind": "light_pole",
+   "p": [
+    401.9,
+    158.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0121",
+   "kind": "light_pole",
+   "p": [
+    400.4,
+    212.8
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0122",
+   "kind": "light_pole",
+   "p": [
+    405.6,
+    328.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "entrance sign wall beside the south east corner",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0123",
+   "kind": "sign_blank",
+   "len": 7.0,
+   "p": [
+    393.5,
+    371.6
+   ],
+   "rot": -38.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "light slab monument beside the entrance sign",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0124",
+   "kind": "sign_blank",
+   "p": [
+    391.2,
+    365.9
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0125",
+   "kind": "light_pole",
+   "p": [
+    407.5,
+    380.3
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0126",
+   "kind": "light_pole",
+   "p": [
+    403.8,
+    385.0
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "road light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0127",
+   "kind": "light_pole",
+   "p": [
+    380.0,
+    389.4
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "road light pole from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0128",
+   "kind": "light_pole",
+   "p": [
+    343.5,
+    391.3
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0129",
+   "kind": "light_pole",
+   "p": [
+    415.7,
+    456.1
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "street light from shadow",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "p_0130",
+   "kind": "light_pole",
+   "p": [
+    413.0,
+    425.6
+   ],
+   "rot": 0.0,
+   "zone": "veg"
+  }
+ ],
+ "version": 1
+}

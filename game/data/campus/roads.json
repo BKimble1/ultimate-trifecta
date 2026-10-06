@@ -1,0 +1,4304 @@
+{
+ "items": [
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "frontage aisle",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "aisle_arena_front",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -310,
+     -2
+    ],
+    [
+     -224,
+     -2
+    ]
+   ],
+   "w": 5.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "north-south aisle and entrance to the road",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "aisle_lot_east_link",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -147.5,
+     -58
+    ],
+    [
+     -147.5,
+     -2.5
+    ]
+   ],
+   "w": 6.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "aisle",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "aisle_lot_east_n1",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -188,
+     -46
+    ],
+    [
+     -44,
+     -46
+    ]
+   ],
+   "w": 6.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "aisle",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "aisle_lot_east_n2",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -188,
+     -29
+    ],
+    [
+     -44,
+     -29
+    ]
+   ],
+   "w": 6.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "aisle",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "aisle_lot_east_n3",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -188,
+     -12.5
+    ],
+    [
+     -44,
+     -12.5
+    ]
+   ],
+   "w": 6.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "west aisle / entrance",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "aisle_lot_east_s1",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -141.5,
+     6.5
+    ],
+    [
+     -141.5,
+     54
+    ]
+   ],
+   "w": 6.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "aisle",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "aisle_lot_east_s2",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -141.5,
+     19.5
+    ],
+    [
+     -44,
+     19.5
+    ]
+   ],
+   "w": 6.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "aisle",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "aisle_lot_east_s3",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -141.5,
+     40
+    ],
+    [
+     -44,
+     40
+    ]
+   ],
+   "w": 6.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "main aisle",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "aisle_rec_north",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -401.5,
+     -173.5
+    ],
+    [
+     -303.5,
+     -173.5
+    ]
+   ],
+   "w": 6.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "one-way U aisle round the angled stalls",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "aisle_stadium_lot_w",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -303.5,
+     -173.5
+    ],
+    [
+     -303.5,
+     -85
+    ],
+    [
+     -302.33,
+     -80.62
+    ],
+    [
+     -299.12,
+     -77.42
+    ],
+    [
+     -294.75,
+     -76.25
+    ],
+    [
+     -290.38,
+     -77.42
+    ],
+    [
+     -287.17,
+     -80.62
+    ],
+    [
+     -286.0,
+     -85.0
+    ],
+    [
+     -286,
+     -176
+    ]
+   ],
+   "w": 5.5,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "Service drive drawn (white) in the 2026 wayfinding from the new lot south to the paved yard north of the arts center; it follows the line of the 2022 curved walk.",
+    "open": "Could be a wide shared walk rather than a drive.",
+    "src": [
+     "wayfinding2026",
+     "aerial2022"
+    ]
+   },
+   "id": "arts_service_drive",
+   "kind": "service",
+   "pts": [
+    [
+     200.0,
+     -309.5
+    ],
+    [
+     203.8,
+     -301.0
+    ],
+    [
+     201.5,
+     -292.0
+    ],
+    [
+     196.0,
+     -286.0
+    ]
+   ],
+   "w": 4.5,
+   "zone": "ncore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "centre line from kerb-to-kerb profiles; ~7 m, widening to ~10 m along the arena frontage",
+    "open": "exact lane marking near the arena",
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ]
+   },
+   "id": "athletics_road_east",
+   "kind": "campus",
+   "pts": [
+    [
+     -398.2,
+     11.5
+    ],
+    [
+     -370,
+     11.2
+    ],
+    [
+     -340,
+     10.2
+    ],
+    [
+     -300,
+     8.6
+    ],
+    [
+     -260,
+     8.0
+    ],
+    [
+     -220,
+     7.3
+    ],
+    [
+     -200,
+     6.5
+    ],
+    [
+     -180,
+     5.6
+    ],
+    [
+     -150,
+     4.0
+    ],
+    [
+     -120,
+     3.2
+    ],
+    [
+     -80,
+     2.2
+    ],
+    [
+     -40,
+     1.6
+    ]
+   ],
+   "w": 7.5,
+   "zone": "west"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "asphalt road west of the west street to the yard and softball entrances",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "athletics_road_west",
+   "kind": "campus",
+   "pts": [
+    [
+     -398.2,
+     11.5
+    ],
+    [
+     -420,
+     12.3
+    ],
+    [
+     -460,
+     12.7
+    ],
+    [
+     -500,
+     12.8
+    ],
+    [
+     -528,
+     12.5
+    ]
+   ],
+   "w": 7.0,
+   "zone": "west"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "Semicircular drop-off lane on the west side of the loop road, passing under the campus-center porte-cochere (x 38..49, z -233..-226); planted island inside.",
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ]
+   },
+   "id": "campus_center_dropoff",
+   "kind": "drive",
+   "pts": [
+    [
+     63.6,
+     -252.5
+    ],
+    [
+     56.0,
+     -251.5
+    ],
+    [
+     49.5,
+     -248.0
+    ],
+    [
+     45.2,
+     -240.5
+    ],
+    [
+     44.2,
+     -231.0
+    ],
+    [
+     44.6,
+     -222.5
+    ],
+    [
+     48.0,
+     -215.8
+    ],
+    [
+     54.0,
+     -212.3
+    ],
+    [
+     60.0,
+     -211.2
+    ],
+    [
+     65.7,
+     -211.5
+    ]
+   ],
+   "w": 5.0,
+   "zone": "ncore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "Road west of the campus center (2022 asphalt 10-11 m wide, profiles every 15 m). The 2026 wayfinding draws it as the through route west of the campus center (the loop's updated alignment) ending at the south-west corner of the assembly-center construction site; ends exactly at z = -150.",
+    "open": "Whether it was rebuilt/realigned a few metres west when the loop was rerouted (wayfinding places it about 10 m further west, within its +-10 m error); northern end/turnaround under the construction site.",
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ]
+   },
+   "id": "campus_center_west_road",
+   "kind": "campus",
+   "pts": [
+    [
+     -35.2,
+     -284.0
+    ],
+    [
+     -35.2,
+     -255.0
+    ],
+    [
+     -35.0,
+     -230.0
+    ],
+    [
+     -34.5,
+     -215.0
+    ],
+    [
+     -33.5,
+     -200.0
+    ],
+    [
+     -31.2,
+     -175.0
+    ],
+    [
+     -29.5,
+     -160.0
+    ],
+    [
+     -29.0,
+     -150.0
+    ]
+   ],
+   "w": 10.5,
+   "zone": "ncore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "Stub of the road branching west at z about -199.5; continues in the west zone from x = -40.",
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ]
+   },
+   "id": "campus_center_west_road_spur_w",
+   "kind": "campus",
+   "pts": [
+    [
+     -33.6,
+     -199.5
+    ],
+    [
+     -40.0,
+     -199.5
+    ]
+   ],
+   "w": 9.0,
+   "zone": "ncore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "East side of the campus loop from the north perimeter street (cut at z = -385) south to the main entrance (cut at z = -150); asphalt about 7 m, widening to about 10 m between z -205 and -180 (lay-by on the east side).",
+    "open": "Purpose of the widened section (bus/drop-off lay-by) unverified.",
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ]
+   },
+   "id": "campus_loop_east_ncore",
+   "kind": "campus",
+   "pts": [
+    [
+     348.8,
+     -385.0
+    ],
+    [
+     349.6,
+     -345.0
+    ],
+    [
+     350.0,
+     -320.0
+    ],
+    [
+     350.6,
+     -285.0
+    ],
+    [
+     352.2,
+     -260.0
+    ],
+    [
+     354.5,
+     -235.0
+    ],
+    [
+     356.8,
+     -215.0
+    ],
+    [
+     358.0,
+     -198.0
+    ],
+    [
+     356.6,
+     -185.0
+    ],
+    [
+     353.0,
+     -172.0
+    ],
+    [
+     349.0,
+     -160.0
+    ],
+    [
+     347.0,
+     -150.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "ncore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "North-west part of the campus loop from the north perimeter street (cut at z = -385) to the campus-center drop-off; centreline drifts east from x 57.5 to 65.8 (brightness profiles every 15 m). In 2026 the wayfinding shows this road ending at the campus-center drop-off: the 2022 curve south-west from here toward the lake side is gone (see changes).",
+    "open": "Exact 2026 termination/turnaround geometry at the south end not visible in any source.",
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "plan2023p4"
+    ]
+   },
+   "id": "campus_loop_northwest",
+   "kind": "campus",
+   "pts": [
+    [
+     57.5,
+     -385.0
+    ],
+    [
+     58.8,
+     -350.0
+    ],
+    [
+     60.0,
+     -330.0
+    ],
+    [
+     61.0,
+     -310.0
+    ],
+    [
+     61.6,
+     -295.0
+    ],
+    [
+     62.5,
+     -280.0
+    ],
+    [
+     63.0,
+     -265.0
+    ],
+    [
+     63.8,
+     -250.0
+    ],
+    [
+     65.0,
+     -235.0
+    ],
+    [
+     65.6,
+     -220.0
+    ],
+    [
+     65.8,
+     -210.0
+    ]
+   ],
+   "w": 6.8,
+   "zone": "ncore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "relocated west leg of the campus loop shown on the 2026 wayfinding map (west of the old leg, through the former track site); placed with a local 10-point affine fit of the map (RMS 4.7 m)",
+    "open": "true alignment, width and junction with the north perimeter street need newer imagery; may be offset 5-10 m",
+    "src": [
+     "wayfinding2026",
+     "S01"
+    ]
+   },
+   "id": "campus_loop_west_new",
+   "kind": "campus",
+   "pts": [
+    [
+     -139.4,
+     -385
+    ],
+    [
+     -138.5,
+     -340
+    ],
+    [
+     -137.6,
+     -290
+    ],
+    [
+     -136.9,
+     -246
+    ],
+    [
+     -134.7,
+     -229.3
+    ],
+    [
+     -126.8,
+     -221.2
+    ],
+    [
+     -115.7,
+     -214.1
+    ],
+    [
+     -99.8,
+     -207.2
+    ],
+    [
+     -82.4,
+     -201.1
+    ],
+    [
+     -65.9,
+     -194.2
+    ],
+    [
+     -48.8,
+     -186.4
+    ],
+    [
+     -40,
+     -178.6
+    ]
+   ],
+   "w": 7.5,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "dirt/gravel maintenance track along the north and west sides of the club field",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "club_field_track",
+   "kind": "service",
+   "pts": [
+    [
+     -590,
+     -121
+    ],
+    [
+     -697,
+     -121
+    ],
+    [
+     -697.5,
+     10
+    ]
+   ],
+   "w": 3.5,
+   "zone": "west"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "drive from the N-S town street along the south side of the complex",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_001",
+   "kind": "drive",
+   "pts": [
+    [
+     -140,
+     -481
+    ],
+    [
+     -100,
+     -481.5
+    ],
+    [
+     -51,
+     -482
+    ]
+   ],
+   "ref": "C01",
+   "w": 6.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "north service drive of the complex",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_002",
+   "kind": "drive",
+   "pts": [
+    [
+     -51,
+     -592
+    ],
+    [
+     -78,
+     -592
+    ]
+   ],
+   "ref": "C01",
+   "w": 5.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "west street north of the north perimeter street; straight, drifting ~0.04 m/m west going north; profiles every 25 m",
+    "src": [
+     "overview2022",
+     "aerial2022"
+    ]
+   },
+   "id": "ctx_road_003",
+   "kind": "street",
+   "pts": [
+    [
+     -419.4,
+     -397
+    ],
+    [
+     -420.6,
+     -500
+    ],
+    [
+     -423.2,
+     -600
+    ],
+    [
+     -426.5,
+     -700
+    ],
+    [
+     -429.5,
+     -800
+    ],
+    [
+     -430.4,
+     -830
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "curving residential street of the north-west subdivision (from the west street, then north)",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_004",
+   "kind": "street",
+   "pts": [
+    [
+     -421.4,
+     -532
+    ],
+    [
+     -392,
+     -532.5
+    ],
+    [
+     -355.5,
+     -533.5
+    ],
+    [
+     -328,
+     -538.5
+    ],
+    [
+     -310,
+     -545.5
+    ],
+    [
+     -294,
+     -552.5
+    ],
+    [
+     -287,
+     -556
+    ],
+    [
+     -283.6,
+     -572.7
+    ],
+    [
+     -279.5,
+     -593
+    ],
+    [
+     -278.3,
+     -609
+    ],
+    [
+     -279,
+     -641
+    ],
+    [
+     -280.5,
+     -686
+    ],
+    [
+     -283,
+     -732
+    ],
+    [
+     -285,
+     -800
+    ],
+    [
+     -285.5,
+     -830
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.5,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "east branch of the subdivision street ending in a cul-de-sac (circle r~10 m around (-210,-545))",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_005",
+   "kind": "street",
+   "pts": [
+    [
+     -287,
+     -556
+    ],
+    [
+     -278,
+     -546
+    ],
+    [
+     -260,
+     -539
+    ],
+    [
+     -240,
+     -537.5
+    ],
+    [
+     -226,
+     -539.5
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.5,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "cul-de-sac turning circle drawn as a ring centre line (outer radius ~10 m)",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_006",
+   "kind": "street",
+   "pts": [
+    [
+     -226,
+     -539.5
+    ],
+    [
+     -217,
+     -536.5
+    ],
+    [
+     -206.5,
+     -537.5
+    ],
+    [
+     -201,
+     -544
+    ],
+    [
+     -203,
+     -552.5
+    ],
+    [
+     -211,
+     -555.5
+    ],
+    [
+     -219,
+     -551.5
+    ],
+    [
+     -221,
+     -545
+    ],
+    [
+     -226,
+     -539.5
+    ]
+   ],
+   "ref": "C01",
+   "w": 8.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); N-S street from the north perimeter street to the first E-W street",
+    "src": [
+     "overview2022",
+     "aerial2022"
+    ]
+   },
+   "id": "ctx_road_007",
+   "kind": "street",
+   "pts": [
+    [
+     -51.5,
+     -404
+    ],
+    [
+     -50.8,
+     -500
+    ],
+    [
+     -50.2,
+     -608.5
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); short N-S street ending in a cul-de-sac",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_008",
+   "kind": "street",
+   "pts": [
+    [
+     -10,
+     -830
+    ],
+    [
+     -10,
+     -775
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "cul-de-sac turning circle (ring centre line, radius ~10 m)",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_009",
+   "kind": "street",
+   "pts": [
+    [
+     -10,
+     -775
+    ],
+    [
+     -2,
+     -768
+    ],
+    [
+     -3,
+     -760
+    ],
+    [
+     -10,
+     -755
+    ],
+    [
+     -18,
+     -760
+    ],
+    [
+     -18,
+     -768
+    ],
+    [
+     -10,
+     -775
+    ]
+   ],
+   "ref": "C01",
+   "w": 8.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); ends at the E-W street on the north edge of the campus strip (continues south in the north zone)",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_010",
+   "kind": "street",
+   "pts": [
+    [
+     41.0,
+     -830
+    ],
+    [
+     41.4,
+     -770
+    ],
+    [
+     43.0,
+     -730
+    ],
+    [
+     44.4,
+     -690
+    ],
+    [
+     45.6,
+     -650
+    ],
+    [
+     47.6,
+     -610
+    ],
+    [
+     49.0,
+     -570
+    ],
+    [
+     51.0,
+     -530
+    ],
+    [
+     51.3,
+     -508
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); ends at the E-W street on the north edge of the campus strip (continues south between campus lots)",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_011",
+   "kind": "street",
+   "pts": [
+    [
+     178.5,
+     -830
+    ],
+    [
+     180.5,
+     -760
+    ],
+    [
+     182.0,
+     -700
+    ],
+    [
+     183.0,
+     -612
+    ],
+    [
+     185.5,
+     -560
+    ],
+    [
+     187.5,
+     -513
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); narrow street/lane between two E-W streets",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_012",
+   "kind": "street",
+   "pts": [
+    [
+     228.0,
+     -717
+    ],
+    [
+     228.5,
+     -665
+    ],
+    [
+     229.0,
+     -614
+    ]
+   ],
+   "ref": "C01",
+   "w": 4.5,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m)",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_013",
+   "kind": "street",
+   "pts": [
+    [
+     273.5,
+     -830
+    ],
+    [
+     274.5,
+     -770
+    ],
+    [
+     277.0,
+     -720
+    ],
+    [
+     279.0,
+     -670
+    ],
+    [
+     281.0,
+     -614
+    ],
+    [
+     283.0,
+     -560
+    ],
+    [
+     284.5,
+     -514
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m)",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_014",
+   "kind": "street",
+   "pts": [
+    [
+     325.0,
+     -830
+    ],
+    [
+     326.5,
+     -770
+    ],
+    [
+     329.0,
+     -720
+    ],
+    [
+     331.5,
+     -660
+    ],
+    [
+     333.0,
+     -616
+    ],
+    [
+     335.5,
+     -515
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "east perimeter street north of the campus strip; profiles every 40 m (two lanes, ~8-9 m)",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_015",
+   "kind": "street",
+   "pts": [
+    [
+     389.8,
+     -486
+    ],
+    [
+     388.2,
+     -530
+    ],
+    [
+     386.2,
+     -570
+    ],
+    [
+     384.2,
+     -610
+    ],
+    [
+     382.5,
+     -650
+    ],
+    [
+     379.6,
+     -730
+    ],
+    [
+     378.0,
+     -770
+    ],
+    [
+     376.6,
+     -810
+    ],
+    [
+     376.0,
+     -830
+    ]
+   ],
+   "ref": "C01",
+   "w": 9.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); E-W street on the northern edge of the band",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_016",
+   "kind": "street",
+   "pts": [
+    [
+     -10,
+     -816
+    ],
+    [
+     100,
+     -815
+    ],
+    [
+     180,
+     -818
+    ],
+    [
+     276,
+     -820.5
+    ],
+    [
+     376.5,
+     -822
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); short E-W street",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_017",
+   "kind": "street",
+   "pts": [
+    [
+     327,
+     -758.5
+    ],
+    [
+     378.5,
+     -760
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m)",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_018",
+   "kind": "street",
+   "pts": [
+    [
+     42.5,
+     -712.5
+    ],
+    [
+     100,
+     -713.1
+    ],
+    [
+     140,
+     -714.4
+    ],
+    [
+     180,
+     -716.5
+    ],
+    [
+     228,
+     -717
+    ],
+    [
+     277,
+     -718.5
+    ],
+    [
+     329,
+     -719.8
+    ],
+    [
+     380.5,
+     -721
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m)",
+    "src": [
+     "overview2022"
+    ]
+   },
+   "id": "ctx_road_019",
+   "kind": "street",
+   "pts": [
+    [
+     -50.2,
+     -608.5
+    ],
+    [
+     0,
+     -609
+    ],
+    [
+     47.5,
+     -610
+    ],
+    [
+     100,
+     -610.5
+    ],
+    [
+     140,
+     -611.2
+    ],
+    [
+     183,
+     -612.9
+    ],
+    [
+     229,
+     -614
+    ],
+    [
+     281,
+     -614.9
+    ],
+    [
+     333,
+     -616.5
+    ],
+    [
+     384.2,
+     -618.5
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.0,
+   "zone": "context"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "town street north of the campus; centre line from axis-averaged brightness profiles and 3 px/m tiles on the overview raster (+-1.5 m); E-W street along the north edge of the campus strip (north zone south of it)",
+    "src": [
+     "overview2022",
+     "aerial2022"
+    ]
+   },
+   "id": "ctx_road_020",
+   "kind": "street",
+   "pts": [
+    [
+     51.3,
+     -507
+    ],
+    [
+     100,
+     -507.6
+    ],
+    [
+     140,
+     -509.5
+    ],
+    [
+     187.5,
+     -511.5
+    ],
+    [
+     230,
+     -512.5
+    ],
+    [
+     284.5,
+     -514
+    ],
+    [
+     335.5,
+     -514.5
+    ],
+    [
+     389.5,
+     -515.5
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.5,
+   "zone": "context"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "dorm lot aisle (2022 aerial stall rows)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "dorm_lot_aisle_1",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     47.0,
+     194.0
+    ],
+    [
+     121.0,
+     194.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "dorm lot aisle (2022 aerial stall rows)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "dorm_lot_aisle_2",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     47.0,
+     228.0
+    ],
+    [
+     121.0,
+     228.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "dorm lot aisle (2022 aerial stall rows)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "dorm_lot_aisle_3",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     48.5,
+     194.0
+    ],
+    [
+     48.5,
+     228.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "dorm lot aisle (2022 aerial stall rows)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "dorm_lot_aisle_4",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     70.0,
+     194.0
+    ],
+    [
+     70.0,
+     228.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "dorm lot aisle (2022 aerial stall rows)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "dorm_lot_aisle_5",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     87.0,
+     194.0
+    ],
+    [
+     87.0,
+     228.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "dorm lot aisle (2022 aerial stall rows)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "dorm_lot_aisle_6",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     103.0,
+     194.0
+    ],
+    [
+     103.0,
+     228.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "link from the turnaround to the campus loop",
+    "open": "where it meets the loop",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "drive_cc_science_link",
+   "kind": "drive",
+   "pts": [
+    [
+     356,
+     -66
+    ],
+    [
+     372,
+     -68
+    ],
+    [
+     388,
+     -70
+    ]
+   ],
+   "w": 6.0,
+   "zone": "ccore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "turnaround drive east of the science centre",
+    "open": "radius +-2 m",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "drive_cc_science_turnaround",
+   "kind": "drive",
+   "pts": [
+    [
+     356.0,
+     -64.0
+    ],
+    [
+     355.01,
+     -59.03
+    ],
+    [
+     352.19,
+     -54.81
+    ],
+    [
+     347.97,
+     -51.99
+    ],
+    [
+     343.0,
+     -51.0
+    ],
+    [
+     338.03,
+     -51.99
+    ],
+    [
+     333.81,
+     -54.81
+    ],
+    [
+     330.99,
+     -59.03
+    ],
+    [
+     330.0,
+     -64.0
+    ],
+    [
+     330.99,
+     -68.97
+    ],
+    [
+     333.81,
+     -73.19
+    ],
+    [
+     338.03,
+     -76.01
+    ],
+    [
+     343.0,
+     -77.0
+    ],
+    [
+     347.97,
+     -76.01
+    ],
+    [
+     352.19,
+     -73.19
+    ],
+    [
+     355.01,
+     -68.97
+    ],
+    [
+     356.0,
+     -64.0
+    ]
+   ],
+   "w": 6.0,
+   "zone": "ccore"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "private drive from the west street",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "drive_house_a",
+   "kind": "drive",
+   "pts": [
+    [
+     -390.4,
+     184
+    ],
+    [
+     -405,
+     184.5
+    ],
+    [
+     -420,
+     182
+    ],
+    [
+     -430,
+     175
+    ],
+    [
+     -443,
+     172
+    ]
+   ],
+   "w": 4.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "curving drive to the house turning circle",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "drive_house_c",
+   "kind": "drive",
+   "pts": [
+    [
+     -573,
+     303
+    ],
+    [
+     -575,
+     290
+    ],
+    [
+     -573.5,
+     275
+    ],
+    [
+     -568,
+     262
+    ],
+    [
+     -559,
+     251
+    ],
+    [
+     -548,
+     246
+    ]
+   ],
+   "w": 4.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "private drive south off the perimeter road, cut at the zone edge z=440",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "drive_south_stub_1",
+   "kind": "drive",
+   "pts": [
+    [
+     -544.5,
+     424.6
+    ],
+    [
+     -544.5,
+     440
+    ]
+   ],
+   "w": 4.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "private drive south off the perimeter road, cut at the zone edge z=440",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "drive_south_stub_2",
+   "kind": "drive",
+   "pts": [
+    [
+     -431.5,
+     425.0
+    ],
+    [
+     -431.5,
+     440
+    ]
+   ],
+   "w": 4.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "North-south aisle between stall rows.",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "east_lot_aisle_c",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     318.5,
+     -238.5
+    ],
+    [
+     318.5,
+     -171.5
+    ]
+   ],
+   "w": 6.5,
+   "zone": "ncore"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "North-south aisle beside the east row.",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "east_lot_aisle_e",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     336.5,
+     -238.5
+    ],
+    [
+     336.5,
+     -171.5
+    ]
+   ],
+   "w": 6.0,
+   "zone": "ncore"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "Northern aisle of the large east lot, entrance from the loop at z about -232.",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "east_lot_aisle_n",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     293.0,
+     -238.5
+    ],
+    [
+     345.6,
+     -238.5
+    ],
+    [
+     350.0,
+     -233.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "ncore"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "Southern aisle of the large east lot, entrance from the loop at z about -177.",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "east_lot_aisle_s",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     293.0,
+     -171.5
+    ],
+    [
+     343.0,
+     -171.5
+    ],
+    [
+     350.5,
+     -176.5
+    ]
+   ],
+   "w": 7.0,
+   "zone": "ncore"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "North-south aisle between stall rows.",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "east_lot_aisle_w",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     300.8,
+     -238.5
+    ],
+    [
+     300.8,
+     -171.5
+    ]
+   ],
+   "w": 6.5,
+   "zone": "ncore"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "east perimeter street (3-lane with hatched centre/turn lane, no kerbs) from the z=200 zone line south past the south road junction; centre from the 2022 aerial (z<=400) and the overview aerial (z>400)",
+    "open": "east edge truncated by the 2022 campus aerial at x 436.7; south of the junction from the coarser overview aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "east_perimeter_street",
+   "kind": "street",
+   "pts": [
+    [
+     416.9,
+     200.0
+    ],
+    [
+     418.0,
+     240.0
+    ],
+    [
+     419.9,
+     280.0
+    ],
+    [
+     420.9,
+     300.0
+    ],
+    [
+     422.3,
+     340.0
+    ],
+    [
+     423.2,
+     360.0
+    ],
+    [
+     423.5,
+     380.0
+    ],
+    [
+     423.8,
+     403.0
+    ],
+    [
+     424.3,
+     420.0
+    ],
+    [
+     424.8,
+     440.0
+    ]
+   ],
+   "ref": "C01",
+   "w": 14.0,
+   "zone": "south"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "east perimeter street (concrete), centre of the 7.5-8 m carriageway; south of z~110 an added lane/shoulder widens the east side",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "east_perimeter_street_cc",
+   "kind": "street",
+   "pts": [
+    [
+     400.3,
+     -150.0
+    ],
+    [
+     400.5,
+     -130.0
+    ],
+    [
+     403.0,
+     -115.0
+    ],
+    [
+     404.5,
+     -100.0
+    ],
+    [
+     405.7,
+     -80.0
+    ],
+    [
+     406.5,
+     -60.0
+    ],
+    [
+     407.5,
+     -40.0
+    ],
+    [
+     408.6,
+     -20.0
+    ],
+    [
+     409.6,
+     0.0
+    ],
+    [
+     410.5,
+     20.0
+    ],
+    [
+     411.1,
+     40.0
+    ],
+    [
+     412.2,
+     60.0
+    ],
+    [
+     413.1,
+     80.0
+    ],
+    [
+     413.8,
+     100.0
+    ],
+    [
+     414.5,
+     130.0
+    ],
+    [
+     415.3,
+     160.0
+    ],
+    [
+     416.4,
+     180.0
+    ],
+    [
+     417.1,
+     200.0
+    ]
+   ],
+   "w": 8.0,
+   "zone": "ccore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "East perimeter street, kerb to kerb about 9.3-9.5 m (two lanes), traced at 14 px/m; runs on from the north zone at z = -385.",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "east_perimeter_street_ncore_n",
+   "kind": "street",
+   "pts": [
+    [
+     394.1,
+     -385.0
+    ],
+    [
+     395.6,
+     -335.0
+    ],
+    [
+     397.0,
+     -285.0
+    ],
+    [
+     398.6,
+     -230.0
+    ],
+    [
+     399.5,
+     -195.0
+    ]
+   ],
+   "w": 9.5,
+   "zone": "ncore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "East perimeter street widening to about 12 m with a turn lane approaching the main campus entrance; ends exactly at z = -150 for the central zone.",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "east_perimeter_street_ncore_s",
+   "kind": "street",
+   "pts": [
+    [
+     399.5,
+     -195.0
+    ],
+    [
+     400.2,
+     -172.0
+    ],
+    [
+     400.9,
+     -150.0
+    ]
+   ],
+   "w": 12.0,
+   "zone": "ncore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "east street north of the perimeter street; ends on the zone line z=-385",
+    "src": [
+     "aerial2022",
+     "overview2022"
+    ]
+   },
+   "id": "east_street_n",
+   "kind": "street",
+   "pts": [
+    [
+     393.5,
+     -385.0
+    ],
+    [
+     393.5,
+     -400
+    ],
+    [
+     392.3,
+     -420
+    ],
+    [
+     391.9,
+     -440
+    ],
+    [
+     391.0,
+     -470
+    ],
+    [
+     389.4,
+     -500
+    ],
+    [
+     387.1,
+     -540
+    ],
+    [
+     385.0,
+     -600
+    ],
+    [
+     383.0,
+     -630
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.5,
+   "zone": "north"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "service drive with a few stalls running north from the south lot to the courtyard west of Elm Hall (2022 aerial)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "english_service_drive",
+   "kind": "service",
+   "pts": [
+    [
+     69.5,
+     323.5
+    ],
+    [
+     69.8,
+     300.0
+    ],
+    [
+     70.0,
+     280.0
+    ],
+    [
+     70.5,
+     268.0
+    ]
+   ],
+   "w": 6.5,
+   "zone": "south"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "concrete access drive from the west street to the ring, lined with parking bays",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "env_center_access",
+   "kind": "drive",
+   "pts": [
+    [
+     -514.5,
+     -199
+    ],
+    [
+     -500,
+     -202
+    ],
+    [
+     -480,
+     -209.5
+    ],
+    [
+     -460,
+     -215.5
+    ],
+    [
+     -440,
+     -221.5
+    ],
+    [
+     -426,
+     -223
+    ],
+    [
+     -407.7,
+     -223.5
+    ]
+   ],
+   "w": 7.0,
+   "zone": "west"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "circular drive round a central lawn (inner r~21 m, outer r~30 m)",
+    "src": [
+     "aerial2022",
+     "R044"
+    ]
+   },
+   "id": "env_center_ring",
+   "kind": "drive",
+   "pts": [
+    [
+     -514.5,
+     -194.5
+    ],
+    [
+     -515.37,
+     -187.9
+    ],
+    [
+     -517.92,
+     -181.75
+    ],
+    [
+     -521.97,
+     -176.47
+    ],
+    [
+     -527.25,
+     -172.42
+    ],
+    [
+     -533.4,
+     -169.87
+    ],
+    [
+     -540.0,
+     -169.0
+    ],
+    [
+     -546.6,
+     -169.87
+    ],
+    [
+     -552.75,
+     -172.42
+    ],
+    [
+     -558.03,
+     -176.47
+    ],
+    [
+     -562.08,
+     -181.75
+    ],
+    [
+     -564.63,
+     -187.9
+    ],
+    [
+     -565.5,
+     -194.5
+    ],
+    [
+     -564.63,
+     -201.1
+    ],
+    [
+     -562.08,
+     -207.25
+    ],
+    [
+     -558.03,
+     -212.53
+    ],
+    [
+     -552.75,
+     -216.58
+    ],
+    [
+     -546.6,
+     -219.13
+    ],
+    [
+     -540.0,
+     -220.0
+    ],
+    [
+     -533.4,
+     -219.13
+    ],
+    [
+     -527.25,
+     -216.58
+    ],
+    [
+     -521.97,
+     -212.53
+    ],
+    [
+     -517.92,
+     -207.25
+    ],
+    [
+     -515.37,
+     -201.1
+    ],
+    [
+     -514.5,
+     -194.5
+    ]
+   ],
+   "w": 8.0,
+   "zone": "west"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "drive from the ring's south side to the service lot",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "env_center_service_drive",
+   "kind": "drive",
+   "pts": [
+    [
+     -523,
+     -175
+    ],
+    [
+     -540,
+     -169
+    ],
+    [
+     -560,
+     -164
+    ],
+    [
+     -585,
+     -165
+    ],
+    [
+     -605,
+     -162
+    ]
+   ],
+   "w": 6.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "gravel/dirt service lane continuing west past the yard between the fields",
+    "open": "surface gravel; extent west of the aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "farm_lane_west",
+   "kind": "service",
+   "pts": [
+    [
+     -560,
+     7
+    ],
+    [
+     -580,
+     7.5
+    ],
+    [
+     -600,
+     9.5
+    ],
+    [
+     -625,
+     12
+    ],
+    [
+     -650,
+     13.5
+    ],
+    [
+     -700,
+     15
+    ],
+    [
+     -740,
+     15.5
+    ],
+    [
+     -775,
+     14.5
+    ]
+   ],
+   "w": 4.0,
+   "zone": "west"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2026",
+    "note": "New semicircular drop-off loop on the east side of the loop road in front of the domed rotunda (2026 wayfinding white arc, local georeference +-4 m; oblique user aerial shows the loop with planted islands).",
+    "src": [
+     "wayfinding2026",
+     "User155234",
+     "R005"
+    ]
+   },
+   "id": "innovation_center_dropoff",
+   "kind": "drive",
+   "pts": [
+    [
+     60.8,
+     -335.5
+    ],
+    [
+     61.73,
+     -333.75
+    ],
+    [
+     65.11,
+     -333.58
+    ],
+    [
+     68.32,
+     -332.49
+    ],
+    [
+     71.11,
+     -330.57
+    ],
+    [
+     73.27,
+     -327.96
+    ],
+    [
+     74.63,
+     -324.86
+    ],
+    [
+     75.1,
+     -321.5
+    ],
+    [
+     74.63,
+     -318.14
+    ],
+    [
+     73.27,
+     -315.04
+    ],
+    [
+     71.11,
+     -312.43
+    ],
+    [
+     68.32,
+     -310.51
+    ],
+    [
+     65.11,
+     -309.42
+    ],
+    [
+     61.73,
+     -309.25
+    ],
+    [
+     61.4,
+     -307.6
+    ]
+   ],
+   "w": 5.0,
+   "zone": "ncore"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "Assumed aisle layout of the new lot (lot outline from the 2026 wayfinding; cars visible in the oblique user aerial).",
+    "open": "Stall/aisle layout unknown.",
+    "src": [
+     "wayfinding2026",
+     "User155234"
+    ]
+   },
+   "id": "innovation_center_lot_aisle",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     172.8,
+     -356.0
+    ],
+    [
+     192.5,
+     -356.0
+    ],
+    [
+     192.5,
+     -312.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "ncore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2026",
+    "note": "Access drive from the north perimeter street (cut at z = -385) to the new lot east of the innovation center (2026 wayfinding grey strip).",
+    "open": "Exact width/position +-4 m.",
+    "src": [
+     "wayfinding2026",
+     "User155234"
+    ]
+   },
+   "id": "innovation_center_lot_drive",
+   "kind": "drive",
+   "pts": [
+    [
+     172.8,
+     -385.0
+    ],
+    [
+     172.8,
+     -356.0
+    ]
+   ],
+   "w": 6.5,
+   "zone": "ncore"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "narrow asphalt/gravel lane west from the west street to the houses in the woods",
+    "open": "partly hidden by tree shadows between x -560 and -435",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "lane_south_houses",
+   "kind": "drive",
+   "pts": [
+    [
+     -385.5,
+     301.5
+    ],
+    [
+     -430,
+     302
+    ],
+    [
+     -500,
+     302
+    ],
+    [
+     -560,
+     302.5
+    ],
+    [
+     -575,
+     303.5
+    ],
+    [
+     -590,
+     306
+    ],
+    [
+     -605,
+     313
+    ],
+    [
+     -620,
+     322
+    ],
+    [
+     -635,
+     327
+    ],
+    [
+     -650,
+     323
+    ],
+    [
+     -662,
+     317
+    ]
+   ],
+   "w": 4.0,
+   "zone": "west"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "campus loop, east side, centre from asphalt edges every 20 m",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "loop_east",
+   "kind": "campus",
+   "pts": [
+    [
+     375.5,
+     80.0
+    ],
+    [
+     376.6,
+     60.0
+    ],
+    [
+     379.0,
+     40.0
+    ],
+    [
+     383.0,
+     20.0
+    ],
+    [
+     385.5,
+     0.0
+    ],
+    [
+     385.0,
+     -20.0
+    ],
+    [
+     382.3,
+     -40.0
+    ],
+    [
+     377.0,
+     -60.0
+    ],
+    [
+     368.5,
+     -80.0
+    ],
+    [
+     358.5,
+     -100.0
+    ],
+    [
+     349.0,
+     -120.0
+    ],
+    [
+     346.5,
+     -130.0
+    ],
+    [
+     345.9,
+     -140.0
+    ],
+    [
+     345.0,
+     -150.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "ccore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "road leaving the loop's north-west corner east-north-eastwards towards the north core (continues in ncore)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "loop_nw_link",
+   "kind": "campus",
+   "pts": [
+    [
+     -31.5,
+     -136.5
+    ],
+    [
+     -22.0,
+     -137.2
+    ],
+    [
+     -14.0,
+     -140.8
+    ],
+    [
+     -6.0,
+     -143.2
+    ],
+    [
+     2.0,
+     -145.4
+    ],
+    [
+     10.0,
+     -148.0
+    ],
+    [
+     18.0,
+     -149.5
+    ],
+    [
+     24.7,
+     -150.0
+    ]
+   ],
+   "w": 6.5,
+   "zone": "ccore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "campus loop, south arc below the two south dorms and around the south-east lot, from asphalt (blue-grey) runs every 10 m",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "loop_south",
+   "kind": "campus",
+   "pts": [
+    [
+     -25.8,
+     130.0
+    ],
+    [
+     -23.5,
+     141.0
+    ],
+    [
+     -18.5,
+     149.0
+    ],
+    [
+     -10.5,
+     156.5
+    ],
+    [
+     0.0,
+     162.3
+    ],
+    [
+     10.0,
+     166.6
+    ],
+    [
+     20.0,
+     169.6
+    ],
+    [
+     30.0,
+     172.0
+    ],
+    [
+     40.0,
+     173.6
+    ],
+    [
+     55.0,
+     175.6
+    ],
+    [
+     80.0,
+     178.4
+    ],
+    [
+     100.0,
+     180.5
+    ],
+    [
+     120.0,
+     182.6
+    ],
+    [
+     140.0,
+     185.2
+    ],
+    [
+     160.0,
+     188.0
+    ],
+    [
+     180.0,
+     188.6
+    ],
+    [
+     200.0,
+     185.2
+    ],
+    [
+     215.0,
+     181.0
+    ],
+    [
+     230.0,
+     176.4
+    ],
+    [
+     245.0,
+     170.4
+    ],
+    [
+     255.0,
+     165.0
+    ],
+    [
+     263.0,
+     158.0
+    ],
+    [
+     270.0,
+     150.0
+    ],
+    [
+     276.0,
+     142.0
+    ],
+    [
+     282.0,
+     134.0
+    ],
+    [
+     287.0,
+     127.0
+    ],
+    [
+     293.0,
+     120.0
+    ],
+    [
+     301.0,
+     115.0
+    ],
+    [
+     312.0,
+     111.6
+    ],
+    [
+     325.0,
+     109.6
+    ],
+    [
+     340.0,
+     107.5
+    ],
+    [
+     355.0,
+     104.4
+    ],
+    [
+     366.0,
+     99.0
+    ],
+    [
+     372.0,
+     90.0
+    ],
+    [
+     375.5,
+     80.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "ccore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "campus loop, west side: centre line from asphalt edges every 10 m; between z~5 and ~55 the loop is divided and this is the east carriageway (the west one lies in the west zone)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "loop_west",
+   "kind": "campus",
+   "pts": [
+    [
+     -25.5,
+     -150.0
+    ],
+    [
+     -28.5,
+     -142.0
+    ],
+    [
+     -31.5,
+     -136.5
+    ],
+    [
+     -34.5,
+     -130.5
+    ],
+    [
+     -37.2,
+     -124.5
+    ],
+    [
+     -38.4,
+     -118.0
+    ],
+    [
+     -38.6,
+     -100.0
+    ],
+    [
+     -38.1,
+     -90.0
+    ],
+    [
+     -37.6,
+     -80.0
+    ],
+    [
+     -36.8,
+     -60.0
+    ],
+    [
+     -35.8,
+     -40.0
+    ],
+    [
+     -35.2,
+     -30.0
+    ],
+    [
+     -34.4,
+     -15.0
+    ],
+    [
+     -33.8,
+     0.0
+    ],
+    [
+     -33.5,
+     10.0
+    ],
+    [
+     -32.7,
+     20.0
+    ],
+    [
+     -32.1,
+     30.0
+    ],
+    [
+     -31.5,
+     40.0
+    ],
+    [
+     -30.9,
+     55.0
+    ],
+    [
+     -30.0,
+     70.0
+    ],
+    [
+     -28.6,
+     90.0
+    ],
+    [
+     -27.8,
+     105.0
+    ],
+    [
+     -26.6,
+     120.0
+    ],
+    [
+     -25.8,
+     130.0
+    ]
+   ],
+   "w": 6.2,
+   "zone": "ccore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "main entrance boulevard, south carriageway (in), between the east perimeter street and the loop; median island z -145..-137",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "main_entrance_in",
+   "kind": "drive",
+   "pts": [
+    [
+     398.0,
+     -134.5
+    ],
+    [
+     349.5,
+     -134.5
+    ]
+   ],
+   "w": 5.0,
+   "zone": "ccore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "main entrance boulevard, north carriageway (out); decorative light paving ovals at the crossing",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "main_entrance_out",
+   "kind": "drive",
+   "pts": [
+    [
+     349.0,
+     -147.2
+    ],
+    [
+     398.0,
+     -147.2
+    ]
+   ],
+   "w": 5.0,
+   "zone": "ccore"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "Aisle of the small lot south-east of the north hall, entered from the loop.",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "north_hall_lot_aisle",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     322.0,
+     -297.0
+    ],
+    [
+     347.0,
+     -297.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "ncore"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "centre line from kerb-to-kerb profiles every 10 m",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "north_perimeter_st_c",
+   "kind": "street",
+   "pts": [
+    [
+     -417,
+     -389.0
+    ],
+    [
+     -380,
+     -388.6
+    ],
+    [
+     -340,
+     -390.0
+    ],
+    [
+     -300,
+     -391.4
+    ],
+    [
+     -260,
+     -392.6
+    ],
+    [
+     -220,
+     -393.5
+    ],
+    [
+     -180,
+     -395.0
+    ],
+    [
+     -140,
+     -396.5
+    ],
+    [
+     -100,
+     -397.9
+    ],
+    [
+     -60,
+     -399.3
+    ],
+    [
+     -20,
+     -400.7
+    ],
+    [
+     20,
+     -402.3
+    ],
+    [
+     40,
+     -403.6
+    ]
+   ],
+   "ref": "C01",
+   "w": 6.3,
+   "zone": "north"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "first pass; angle-parking bays on the north side between x 66 and 136 are a parking area",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "north_perimeter_st_e",
+   "kind": "street",
+   "pts": [
+    [
+     40,
+     -403.6
+    ],
+    [
+     70,
+     -405.3
+    ],
+    [
+     100,
+     -406.0
+    ],
+    [
+     150,
+     -407.0
+    ],
+    [
+     200,
+     -407.5
+    ],
+    [
+     240,
+     -407.6
+    ],
+    [
+     280,
+     -408.6
+    ],
+    [
+     320,
+     -409.6
+    ],
+    [
+     360,
+     -410.8
+    ],
+    [
+     391.5,
+     -411.7
+    ]
+   ],
+   "ref": "C01",
+   "w": 10.0,
+   "zone": "north"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "rural two-lane road west of the west street; measured edge-to-edge 4.5 m",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "north_perimeter_st_w",
+   "kind": "street",
+   "pts": [
+    [
+     -720,
+     -386.5
+    ],
+    [
+     -600,
+     -386.5
+    ],
+    [
+     -480,
+     -386.5
+    ],
+    [
+     -445,
+     -387.2
+    ],
+    [
+     -417,
+     -389.0
+    ]
+   ],
+   "ref": "C01",
+   "w": 4.5,
+   "zone": "north"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "asphalt drive (2022) from the training hall lot east to the old loop leg, between the old track and the baseball warning track",
+    "open": "the 2026 map does not draw it: it may have been removed or rebuilt as part of the relocated loop (the relocated loop may in fact follow this line)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "service_drive_north_of_baseball",
+   "kind": "service",
+   "pts": [
+    [
+     -146.5,
+     -203
+    ],
+    [
+     -130,
+     -202.5
+    ],
+    [
+     -100,
+     -202
+    ],
+    [
+     -75,
+     -201.5
+    ],
+    [
+     -55,
+     -199.5
+    ],
+    [
+     -40,
+     -198.5
+    ]
+   ],
+   "w": 7.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "main circulation aisle (entrance from the road at x~-526)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "softball_lot_aisle",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -526,
+     13
+    ],
+    [
+     -526,
+     38
+    ],
+    [
+     -516,
+     48.5
+    ],
+    [
+     -495,
+     49.5
+    ],
+    [
+     -478,
+     46
+    ],
+    [
+     -462,
+     53
+    ],
+    [
+     -450,
+     63
+    ],
+    [
+     -438,
+     80
+    ],
+    [
+     -432,
+     100
+    ],
+    [
+     -429,
+     128
+    ]
+   ],
+   "w": 7.0,
+   "zone": "west"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "campus drive from the loop (begins on the z=200 zone line) south past the dorm lot, the support building and the south lot to the south perimeter road; asphalt with white edge lines (2022 aerial)",
+    "open": "exact kerb width varies 7-10 m (wider by the dorm lot)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "south_drive",
+   "kind": "campus",
+   "pts": [
+    [
+     129.5,
+     200.0
+    ],
+    [
+     129.6,
+     215.0
+    ],
+    [
+     130.2,
+     232.0
+    ],
+    [
+     132.0,
+     245.0
+    ],
+    [
+     133.3,
+     255.0
+    ],
+    [
+     134.2,
+     280.0
+    ],
+    [
+     134.6,
+     300.0
+    ],
+    [
+     135.2,
+     325.0
+    ],
+    [
+     137.5,
+     345.0
+    ],
+    [
+     141.5,
+     357.0
+    ],
+    [
+     144.5,
+     363.0
+    ],
+    [
+     146.5,
+     370.0
+    ],
+    [
+     147.5,
+     382.0
+    ],
+    [
+     147.8,
+     395.0
+    ],
+    [
+     147.8,
+     410.6
+    ]
+   ],
+   "w": 8.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "north aisle of the south lot, continuing east as its entry from the south drive",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "south_lot_aisle_n",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -48.0,
+     333.0
+    ],
+    [
+     -30.0,
+     328.5
+    ],
+    [
+     0.0,
+     329.5
+    ],
+    [
+     40.0,
+     329.5
+    ],
+    [
+     80.0,
+     327.0
+    ],
+    [
+     107.0,
+     324.0
+    ],
+    [
+     131.0,
+     317.5
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "south aisle of the south lot (ring round the median islands)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "south_lot_aisle_s",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     -48.0,
+     337.0
+    ],
+    [
+     -30.0,
+     344.0
+    ],
+    [
+     0.0,
+     348.5
+    ],
+    [
+     40.0,
+     350.0
+    ],
+    [
+     80.0,
+     345.0
+    ],
+    [
+     107.0,
+     338.0
+    ],
+    [
+     107.0,
+     324.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "south perimeter road, asphalt ~6 m with grass verges, centre measured on the 2022 aerial every 25-75 m (it drifts ~1.4 deg off grid east, i.e. it follows true east); begins on the x=-330 zone line",
+    "open": "west of x=-270 the centre is extrapolated (tree shade); not re-checked against 2026 imagery",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "south_perimeter_road",
+   "kind": "street",
+   "pts": [
+    [
+     -330.0,
+     421.6
+    ],
+    [
+     -270.0,
+     420.8
+    ],
+    [
+     -170.0,
+     419.0
+    ],
+    [
+     -95.0,
+     417.1
+    ],
+    [
+     -20.0,
+     415.1
+    ],
+    [
+     30.0,
+     413.3
+    ],
+    [
+     80.0,
+     411.6
+    ],
+    [
+     155.0,
+     410.6
+    ],
+    [
+     230.0,
+     408.6
+    ],
+    [
+     305.0,
+     406.5
+    ],
+    [
+     380.0,
+     404.4
+    ],
+    [
+     423.5,
+     403.0
+    ]
+   ],
+   "ref": "C01",
+   "w": 6.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "rural asphalt road along the south edge, cut at x=-330 for the south zone",
+    "open": "continues west beyond the aerial window",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "south_perimeter_road_w",
+   "kind": "street",
+   "pts": [
+    [
+     -330,
+     423.5
+    ],
+    [
+     -380,
+     424.4
+    ],
+    [
+     -400,
+     424.7
+    ],
+    [
+     -480,
+     425.2
+    ],
+    [
+     -560,
+     424.6
+    ],
+    [
+     -640,
+     425.4
+    ],
+    [
+     -720,
+     425.8
+    ],
+    [
+     -771,
+     428
+    ]
+   ],
+   "w": 6.0,
+   "zone": "west"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "the south road continues east of the junction with a northward jog (overview aerial); ends on the x=460 zone edge",
+    "open": "from the 0.66 m overview aerial only (outside the 2022 campus aerial)",
+    "src": [
+     "aerial_overview"
+    ]
+   },
+   "id": "south_road_east_stub",
+   "kind": "street",
+   "pts": [
+    [
+     423.8,
+     403.0
+    ],
+    [
+     440.0,
+     397.5
+    ],
+    [
+     460.0,
+     395.0
+    ]
+   ],
+   "ref": "C01",
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "Aisles of the surviving part of the lot around the water tower (2022 aerial; a small paved area east of the tower is still drawn in 2026 and the oblique user aerial shows cars north of the tower).",
+    "open": "2026 extent of this lot is uncertain: the wayfinding draws only the small paved area east of the tower; the northern part may be construction staging.",
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "User155234"
+    ]
+   },
+   "id": "tower_lot_aisle",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     13.5,
+     -391.0
+    ],
+    [
+     47.5,
+     -391.0
+    ],
+    [
+     47.5,
+     -343.0
+    ],
+    [
+     57.5,
+     -343.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "ncore"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "central aisle of the village lot, entered from the south drive at its west end (plan p16 drive stub 278-285; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m))",
+    "open": "the 2026 wayfinding draws this as the village drive; NE end connection unverified",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "village_lot_aisle",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     134.2,
+     281.5
+    ],
+    [
+     157.0,
+     281.5
+    ],
+    [
+     200.0,
+     280.2
+    ],
+    [
+     240.0,
+     276.5
+    ],
+    [
+     260.0,
+     271.5
+    ],
+    [
+     280.0,
+     263.5
+    ],
+    [
+     300.0,
+     255.5
+    ],
+    [
+     318.0,
+     247.0
+    ],
+    [
+     332.0,
+     239.0
+    ],
+    [
+     345.0,
+     230.5
+    ],
+    [
+     357.0,
+     222.5
+    ],
+    [
+     363.5,
+     217.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "west village lot aisle (2022 aerial)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "village_west_lot_aisle_1",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     150.0,
+     207.5
+    ],
+    [
+     230.0,
+     207.5
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "west village lot aisle (2022 aerial)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "village_west_lot_aisle_2",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     150.0,
+     231.5
+    ],
+    [
+     230.0,
+     231.5
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "west village lot aisle (2022 aerial)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "village_west_lot_aisle_3",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     148.5,
+     200.0
+    ],
+    [
+     148.5,
+     243.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": false,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "west village lot aisle (2022 aerial)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "village_west_lot_aisle_4",
+   "kind": "lot_aisle",
+   "pts": [
+    [
+     137.0,
+     247.5
+    ],
+    [
+     150.0,
+     243.0
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "lot entry toward the loop; ends on the z=200 zone line",
+    "open": "exact entry position",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "village_west_lot_entry_n",
+   "kind": "drive",
+   "pts": [
+    [
+     155.0,
+     200.0
+    ],
+    [
+     155.0,
+     194.5
+    ]
+   ],
+   "w": 7.0,
+   "zone": "south"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "straight centre line fitted to kerb profiles (x = -398.3 + 0.0426 z); ~7 m asphalt, kerbed north of the athletics road, open shoulders further south",
+    "open": "south end junction geometry",
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ]
+   },
+   "id": "west_street",
+   "kind": "street",
+   "pts": [
+    [
+     -414.7,
+     -385
+    ],
+    [
+     -406.8,
+     -200
+    ],
+    [
+     -402.6,
+     -100
+    ],
+    [
+     -398.2,
+     11.5
+    ],
+    [
+     -394.0,
+     100
+    ],
+    [
+     -389.8,
+     200
+    ],
+    [
+     -385.6,
+     300
+    ],
+    [
+     -381.3,
+     400
+    ],
+    [
+     -380.4,
+     420
+    ],
+    [
+     -379.6,
+     440
+    ]
+   ],
+   "w": 7.0,
+   "zone": "west"
+  },
+  {
+   "curb": true,
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "west street north of the perimeter street",
+    "src": [
+     "aerial2022",
+     "overview2022"
+    ]
+   },
+   "id": "west_street_n",
+   "kind": "street",
+   "pts": [
+    [
+     -417,
+     -389.0
+    ],
+    [
+     -418.3,
+     -470
+    ],
+    [
+     -419.6,
+     -500
+    ],
+    [
+     -421.0,
+     -540
+    ],
+    [
+     -422.7,
+     -580
+    ],
+    [
+     -424.0,
+     -620
+    ]
+   ],
+   "ref": "C01",
+   "w": 6.3,
+   "zone": "north"
+  }
+ ],
+ "version": 1
+}

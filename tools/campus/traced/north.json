@@ -1,0 +1,1131 @@
+{
+ "zone": "north",
+ "buildings": [
+  {
+   "id": "maple_apartments",
+   "ref": "B01",
+   "label": "Maple Apartments",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     13.2,
+     -460.9
+    ],
+    [
+     41.0,
+     -460.9
+    ],
+    [
+     41.0,
+     -445.0
+    ],
+    [
+     34.0,
+     -445.0
+    ],
+    [
+     34.0,
+     -435.0
+    ],
+    [
+     41.3,
+     -435.0
+    ],
+    [
+     41.3,
+     -418.3
+    ],
+    [
+     31.0,
+     -418.3
+    ],
+    [
+     31.0,
+     -420.5
+    ],
+    [
+     21.0,
+     -420.5
+    ],
+    [
+     21.0,
+     -418.3
+    ],
+    [
+     13.4,
+     -418.3
+    ],
+    [
+     13.4,
+     -435.0
+    ],
+    [
+     19.0,
+     -435.0
+    ],
+    [
+     19.0,
+     -445.0
+    ],
+    [
+     13.2,
+     -445.0
+    ]
+   ],
+   "h": 7.0,
+   "floors": 3,
+   "roof": {
+    "type": "complex",
+    "pitch": 35,
+    "ridge": "short"
+   },
+   "parts": [
+    {
+     "footprint": [
+      [
+       13.2,
+       -460.9
+      ],
+      [
+       41.0,
+       -460.9
+      ],
+      [
+       41.0,
+       -445.0
+      ],
+      [
+       13.2,
+       -445.0
+      ]
+     ],
+     "h": 7.0,
+     "base": 0.0,
+     "roof": {
+      "type": "complex",
+      "pitch": 35,
+      "ridge": "short"
+     }
+    },
+    {
+     "footprint": [
+      [
+       19.0,
+       -445.0
+      ],
+      [
+       34.0,
+       -445.0
+      ],
+      [
+       34.0,
+       -435.0
+      ],
+      [
+       19.0,
+       -435.0
+      ]
+     ],
+     "h": 3.6,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 25,
+      "ridge": "short"
+     }
+    },
+    {
+     "footprint": [
+      [
+       13.4,
+       -435.0
+      ],
+      [
+       41.3,
+       -435.0
+      ],
+      [
+       41.3,
+       -418.3
+      ],
+      [
+       31.0,
+       -418.3
+      ],
+      [
+       31.0,
+       -420.5
+      ],
+      [
+       21.0,
+       -420.5
+      ],
+      [
+       21.0,
+       -418.3
+      ],
+      [
+       13.4,
+       -418.3
+      ]
+     ],
+     "h": 7.0,
+     "base": 0.0,
+     "roof": {
+      "type": "complex",
+      "pitch": 35,
+      "ridge": "short"
+     }
+    }
+   ],
+   "style": {
+    "wall": "brick_red",
+    "trim": "white",
+    "roof_mat": "shingle_grey",
+    "windows": "punched",
+    "notes": "two brick blocks (2 floors + gabled attic floor, white-sided gables) joined by a one-storey white-sided link; courtyard patios either side of the link; recessed white centre with covered porch on the south face"
+   },
+   "entrances": [
+    {
+     "p": [
+      26.0,
+      -418.3
+     ],
+     "face": 180,
+     "w": 3.0,
+     "kind": "portico"
+    },
+    {
+     "p": [
+      19.0,
+      -440.0
+     ],
+     "face": 270,
+     "w": 1.5,
+     "kind": "door"
+    }
+   ],
+   "background": false,
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R110",
+     "R111",
+     "R122",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "ground outline from 2022 aerial (roof edges, NW shadows 6-8 m excluded, ~0.5 m lean corrected); H plan confirmed by 2026 wayfinding; R111 shows the recessed porch entry, R122 the one-storey link and courtyard",
+    "open": "link width (x 19-34) and the porch recess depth are estimated; north face entry not photographed"
+   }
+  },
+  {
+   "id": "scholars_lodge",
+   "ref": "B47",
+   "label": "Scholars Lodge",
+   "kind": "house",
+   "status": "existing",
+   "footprint": [
+    [
+     -11.0,
+     -449.0
+    ],
+    [
+     -6.5,
+     -449.0
+    ],
+    [
+     -6.5,
+     -451.8
+    ],
+    [
+     -2.0,
+     -451.8
+    ],
+    [
+     -2.0,
+     -438.5
+    ],
+    [
+     -11.0,
+     -438.5
+    ]
+   ],
+   "h": 3.0,
+   "floors": 1,
+   "roof": {
+    "type": "gable",
+    "pitch": 30,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_grey",
+    "windows": "punched",
+    "notes": "small one-storey house with short north extension; light step/porch on the SW corner"
+   },
+   "entrances": [
+    {
+     "p": [
+      -9.5,
+      -438.5
+     ],
+     "face": 180,
+     "w": 1.5,
+     "kind": "door"
+    }
+   ],
+   "background": false,
+   "ev": {
+    "src": [
+     "aerial2022",
+     "plan2023p4",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "2022 aerial outline; 2023 plan colours this small building as a misc. campus building beside the honors-lodge label; 2026 wayfinding draws it unnumbered next to pin 1 (legend number shared with B01)",
+    "open": "identity rests on the plan colour + label proximity (the label also overlaps the larger building to the west); wall material and floors not photographed"
+   }
+  },
+  {
+   "id": "lodge_west_building",
+   "kind": "house",
+   "status": "existing",
+   "footprint": [
+    [
+     -35.3,
+     -438.2
+    ],
+    [
+     -12.7,
+     -438.2
+    ],
+    [
+     -12.7,
+     -426.8
+    ],
+    [
+     -35.3,
+     -426.8
+    ]
+   ],
+   "h": 3.2,
+   "floors": 1,
+   "roof": {
+    "type": "gable",
+    "pitch": 25,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "shingle_grey",
+    "windows": "punched",
+    "notes": "single-storey gabled building; S-curved walk to its south"
+   },
+   "background": false,
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "plan2023p4"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "outline from 2022 aerial (short ~2 m NW shadows => one storey); drawn as an unnumbered campus building on the 2026 wayfinding; not colour-coded on the 2023 plan",
+    "open": "use unknown; one candidate for B46 (legend item without a map marker) - unverified"
+   }
+  },
+  {
+   "id": "founders_hall",
+   "ref": "B02",
+   "label": "Founders Hall",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     66.8,
+     -465.6
+    ],
+    [
+     81.8,
+     -465.6
+    ],
+    [
+     81.8,
+     -433.4
+    ],
+    [
+     81.8,
+     -419.4
+    ],
+    [
+     79.0,
+     -419.4
+    ],
+    [
+     79.0,
+     -418.5
+    ],
+    [
+     66.8,
+     -418.5
+    ]
+   ],
+   "h": 14.0,
+   "floors": 4,
+   "roof": {
+    "type": "complex",
+    "pitch": 35,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "brick_red",
+    "trim": "stone",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "per renderings: light precast ground-floor base, three red-brick floors above, gabled end pavilions with oculus pediments, one-storey gabled entrance canopy with brick piers at the corner"
+   },
+   "entrances": [
+    {
+     "p": [
+      72.0,
+      -418.5
+     ],
+     "face": 180,
+     "w": 5.0,
+     "kind": "canopy"
+    }
+   ],
+   "background": false,
+   "ev": {
+    "src": [
+     "wayfinding2026",
+     "R087",
+     "R103",
+     "R282",
+     "S10",
+     "S11",
+     "aerial2022"
+    ],
+    "date": "2026",
+    "conf": "low",
+    "note": "L-shaped plan from the 2026 wayfinding, scaled between the neighbouring buildings (east edge of B01, west edge of B03) and aligned to the old setback; this part = west wing incl. SW corner, modelled as the phase opened fall 2026 (S10/S11: 117 places 2026, full completion 2027); height from renderings (4 floors)",
+    "open": "which wing opened first is not stated in the pack (chosen: west wing, which stands mostly on the former lot and is the larger part); no post-2022 overhead image; outline +-5 m"
+   }
+  },
+  {
+   "id": "founders_hall_phase2",
+   "ref": "B02",
+   "kind": "residence",
+   "status": "construction",
+   "footprint": [
+    [
+     81.8,
+     -433.4
+    ],
+    [
+     133.2,
+     -433.4
+    ],
+    [
+     133.2,
+     -419.4
+    ],
+    [
+     81.8,
+     -419.4
+    ]
+   ],
+   "h": 14.0,
+   "floors": 4,
+   "roof": {
+    "type": "complex",
+    "pitch": 35,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "brick_red",
+    "trim": "stone",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "south wing along the perimeter street; completion targeted 2027"
+   },
+   "background": false,
+   "ev": {
+    "src": [
+     "wayfinding2026",
+     "R282",
+     "S10",
+     "S11"
+    ],
+    "date": "2026",
+    "conf": "low",
+    "note": "south wing of the L from the 2026 wayfinding; status construction because the full project completes 2027 (S10/S11)",
+    "open": "actual progress (shell vs site) in Oct 2026 unknown; outline +-5 m"
+   }
+  },
+  {
+   "id": "campus_market",
+   "ref": "B03",
+   "label": "Campus Market",
+   "kind": "service",
+   "status": "existing",
+   "footprint": [
+    [
+     153.8,
+     -440.8
+    ],
+    [
+     178.4,
+     -440.8
+    ],
+    [
+     178.4,
+     -416.2
+    ],
+    [
+     153.8,
+     -416.2
+    ]
+   ],
+   "h": 6.0,
+   "floors": 1,
+   "roof": {
+    "type": "flat"
+   },
+   "style": {
+    "wall": "brick_red",
+    "trim": "dark",
+    "roof_mat": "membrane",
+    "windows": "sparse",
+    "notes": "single tall storey, white flat roof with three rooftop units"
+   },
+   "background": false,
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "white flat roof traced in 2022 aerial (dark band W/N is its shadow, ~5 m); size matches the 2026 wayfinding square",
+    "open": "facade material and doors not photographed (inventory gap); height from shadow only"
+   }
+  },
+  {
+   "id": "cedar_apartments",
+   "ref": "B04",
+   "label": "Cedar Apartments",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     204.5,
+     -467.5
+    ],
+    [
+     234.5,
+     -467.5
+    ],
+    [
+     234.5,
+     -449.0
+    ],
+    [
+     222.5,
+     -449.0
+    ],
+    [
+     222.5,
+     -440.0
+    ],
+    [
+     234.0,
+     -440.0
+    ],
+    [
+     234.0,
+     -421.0
+    ],
+    [
+     206.0,
+     -421.0
+    ],
+    [
+     206.0,
+     -440.0
+    ],
+    [
+     213.5,
+     -440.0
+    ],
+    [
+     213.5,
+     -449.0
+    ],
+    [
+     204.5,
+     -449.0
+    ]
+   ],
+   "h": 10.0,
+   "floors": 3,
+   "roof": {
+    "type": "complex",
+    "pitch": 35,
+    "ridge": "short"
+   },
+   "style": {
+    "wall": "brick_red",
+    "trim": "white",
+    "roof_mat": "shingle_grey",
+    "windows": "punched",
+    "notes": "two hip/cross-gabled brick blocks joined by a narrow link; tall central glazing and white entry on the south"
+   },
+   "entrances": [
+    {
+     "p": [
+      219.5,
+      -421.0
+     ],
+     "face": 180,
+     "w": 4.0,
+     "kind": "canopy"
+    }
+   ],
+   "background": false,
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "R124"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "roof outline in 2022 aerial with W/N shadows excluded; double-block plan per 2026 wayfinding",
+    "open": "west wall line (x 204-206) uncertain between shadow and west roof slope; link width estimated"
+   }
+  },
+  {
+   "id": "oak_hall",
+   "ref": "B07",
+   "label": "Oak Hall",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     244.0,
+     -438.0
+    ],
+    [
+     283.0,
+     -438.0
+    ],
+    [
+     283.0,
+     -425.5
+    ],
+    [
+     244.0,
+     -425.5
+    ]
+   ],
+   "h": 11.0,
+   "floors": 3,
+   "roof": {
+    "type": "gable",
+    "pitch": 40,
+    "ridge": "long"
+   },
+   "style": {
+    "wall": "brick_red",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "older brick hall, dormers on the roof, central arched upper window, white entry porch"
+   },
+   "entrances": [
+    {
+     "p": [
+      262.0,
+      -425.5
+     ],
+     "face": 180,
+     "w": 3.0,
+     "kind": "portico"
+    }
+   ],
+   "background": false,
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "R283",
+     "R284",
+     "R303"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "first-pass outline",
+    "open": "refine"
+   }
+  },
+  {
+   "id": "meadow_apartments",
+   "ref": "B08",
+   "label": "Meadow Apartments",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     360.0,
+     -493.0
+    ],
+    [
+     377.0,
+     -493.0
+    ],
+    [
+     377.0,
+     -457.0
+    ],
+    [
+     360.0,
+     -457.0
+    ]
+   ],
+   "h": 6.5,
+   "floors": 2,
+   "roof": {
+    "type": "flat"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "membrane",
+    "windows": "ribbon",
+    "notes": "long low-rise light facade with rows of windows"
+   },
+   "background": false,
+   "ev": {
+    "src": [
+     "aerial2022",
+     "overview2022",
+     "wayfinding2026",
+     "R162"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "first-pass outline",
+    "open": "refine"
+   }
+  },
+  {
+   "id": "court_apartments_a",
+   "ref": "B05",
+   "label": "Court Apartments",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     192.6,
+     -601.9
+    ],
+    [
+     207.4,
+     -601.9
+    ],
+    [
+     207.4,
+     -579.4
+    ],
+    [
+     192.6,
+     -579.4
+    ]
+   ],
+   "h": 9.5,
+   "floors": 3,
+   "roof": {
+    "type": "flat"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "membrane",
+    "windows": "punched",
+    "notes": "light low apartment block, repetitive windows"
+   },
+   "background": false,
+   "ev": {
+    "src": [
+     "overview2022",
+     "wayfinding2026",
+     "parcels2025",
+     "R171"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "first-pass outline from overview raster",
+    "open": "refine"
+   }
+  },
+  {
+   "id": "court_apartments_b",
+   "ref": "B05",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     215.4,
+     -602.2
+    ],
+    [
+     229.6,
+     -602.2
+    ],
+    [
+     229.6,
+     -580.4
+    ],
+    [
+     215.4,
+     -580.4
+    ]
+   ],
+   "h": 9.5,
+   "floors": 3,
+   "roof": {
+    "type": "flat"
+   },
+   "style": {
+    "wall": "siding_white",
+    "trim": "white",
+    "roof_mat": "membrane",
+    "windows": "punched",
+    "notes": "twin of block a"
+   },
+   "background": false,
+   "ev": {
+    "src": [
+     "overview2022",
+     "wayfinding2026",
+     "parcels2025",
+     "R171"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "first-pass outline from overview raster",
+    "open": "refine"
+   }
+  }
+ ],
+ "water": [],
+ "roads": [
+  {
+   "id": "north_perimeter_st_w",
+   "ref": "C01",
+   "kind": "street",
+   "w": 4.5,
+   "curb": false,
+   "pts": [
+    [
+     -720,
+     -386.5
+    ],
+    [
+     -600,
+     -386.5
+    ],
+    [
+     -480,
+     -386.5
+    ],
+    [
+     -445,
+     -387.2
+    ],
+    [
+     -417,
+     -389.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "rural two-lane road west of the west street; measured edge-to-edge 4.5 m"
+   }
+  },
+  {
+   "id": "north_perimeter_st_c",
+   "ref": "C01",
+   "kind": "street",
+   "w": 6.3,
+   "curb": true,
+   "pts": [
+    [
+     -417,
+     -389.0
+    ],
+    [
+     -380,
+     -388.6
+    ],
+    [
+     -340,
+     -390.0
+    ],
+    [
+     -300,
+     -391.4
+    ],
+    [
+     -260,
+     -392.6
+    ],
+    [
+     -220,
+     -393.5
+    ],
+    [
+     -180,
+     -395.0
+    ],
+    [
+     -140,
+     -396.5
+    ],
+    [
+     -100,
+     -397.9
+    ],
+    [
+     -60,
+     -399.3
+    ],
+    [
+     -20,
+     -400.7
+    ],
+    [
+     20,
+     -402.3
+    ],
+    [
+     40,
+     -403.6
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "centre line from kerb-to-kerb profiles every 10 m"
+   }
+  },
+  {
+   "id": "north_perimeter_st_e",
+   "ref": "C01",
+   "kind": "street",
+   "w": 10.0,
+   "curb": true,
+   "pts": [
+    [
+     40,
+     -403.6
+    ],
+    [
+     70,
+     -405.3
+    ],
+    [
+     100,
+     -406.0
+    ],
+    [
+     150,
+     -407.0
+    ],
+    [
+     200,
+     -407.5
+    ],
+    [
+     240,
+     -407.6
+    ],
+    [
+     280,
+     -408.6
+    ],
+    [
+     320,
+     -409.6
+    ],
+    [
+     360,
+     -410.8
+    ],
+    [
+     391.5,
+     -411.7
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "first pass; angle-parking bays on the north side between x 66 and 136 are a parking area"
+   }
+  },
+  {
+   "id": "west_street_n",
+   "ref": "C01",
+   "kind": "street",
+   "w": 6.3,
+   "curb": true,
+   "pts": [
+    [
+     -417,
+     -389.0
+    ],
+    [
+     -418.3,
+     -470
+    ],
+    [
+     -419.6,
+     -500
+    ],
+    [
+     -421.0,
+     -540
+    ],
+    [
+     -422.7,
+     -580
+    ],
+    [
+     -424.0,
+     -620
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "west street north of the perimeter street"
+   }
+  },
+  {
+   "id": "east_street_n",
+   "ref": "C01",
+   "kind": "street",
+   "w": 7.5,
+   "curb": true,
+   "pts": [
+    [
+     393.5,
+     -385.0
+    ],
+    [
+     393.5,
+     -400
+    ],
+    [
+     392.3,
+     -420
+    ],
+    [
+     391.9,
+     -440
+    ],
+    [
+     391.0,
+     -470
+    ],
+    [
+     389.4,
+     -500
+    ],
+    [
+     387.1,
+     -540
+    ],
+    [
+     385.0,
+     -600
+    ],
+    [
+     383.0,
+     -630
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "overview2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "east street north of the perimeter street; ends on the zone line z=-385"
+   }
+  }
+ ],
+ "paths": [],
+ "areas": [],
+ "barriers": [],
+ "changes": [
+  {
+   "id": "chg_founders_hall",
+   "ref": "B02",
+   "change": "replaced",
+   "what": "single-storey office building (2022 footprint ~x 66-128, z -442..-422) and the south half of its parking lot replaced by the L-shaped residence hall B02 (west wing open 2026, south wing under construction to 2027)",
+   "since": "2024-2026",
+   "ev": {
+    "src": [
+     "aerial2022",
+     "plan2023p4",
+     "wayfinding2026",
+     "S10",
+     "S11"
+    ],
+    "date": "2026",
+    "conf": "medium",
+    "note": "2023 plan still shows the office (proposal 4 'future building' on it); 2026 wayfinding shows the hall",
+    "open": "demolition date unknown"
+   }
+  },
+  {
+   "id": "chg_studio_house_unresolved",
+   "ref": "B46",
+   "change": "added",
+   "what": "studio house listed as legend item 45 on the 2026 wayfinding but no marker exists on the map (44 markers found); location unresolved, not modelled as its own building",
+   "since": "2026",
+   "ev": {
+    "src": [
+     "wayfinding2026"
+    ],
+    "date": "2026",
+    "conf": "low",
+    "note": "pixel search of all cyan/orange markers: numbers 1-44 only",
+    "open": "location needed from the owner; one candidate is the unnumbered single-storey building lodge_west_building"
+   }
+  }
+ ]
+}

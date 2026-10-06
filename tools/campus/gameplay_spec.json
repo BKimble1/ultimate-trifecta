@@ -1,0 +1,406 @@
+{
+ "patrol_anchor": [
+  146.6,
+  -117.0
+ ],
+ "gadget_count": 16,
+ "start_dorms": [
+  {
+   "dorm": "west_hall",
+   "building": "west_hall",
+   "default": true,
+   "name": "West Hall",
+   "short": "West Hall",
+   "room": [
+    [
+     75.7,
+     132.52
+    ],
+    [
+     92.75,
+     136.47
+    ],
+    [
+     90.39,
+     146.7
+    ],
+    [
+     73.34,
+     142.75
+    ]
+   ],
+   "ceil": 4.4,
+   "interior": {
+    "wall": "brick",
+    "floor": [
+     0.7,
+     0.7,
+     0.68
+    ]
+   },
+   "doors": [
+    {
+     "id": "front",
+     "name": "Front door",
+     "p": [
+      84.5,
+      133.4
+     ],
+     "normal": [
+      0.2254,
+      -0.9743
+     ],
+     "w": 3.2,
+     "wall_t": 0.5,
+     "depth": 1.2
+    },
+    {
+     "id": "west",
+     "name": "West door",
+     "p": [
+      38.27,
+      131.97
+     ],
+     "normal": [
+      -0.9743,
+      -0.2254
+     ],
+     "w": 3.2,
+     "wall_t": 0.5,
+     "depth": 37.0
+    },
+    {
+     "id": "side",
+     "name": "Side door",
+     "p": [
+      86.43,
+      151.61
+     ],
+     "normal": [
+      0.9743,
+      0.2254
+     ],
+     "w": 3.2,
+     "wall_t": 0.5,
+     "depth": 4.6
+    }
+   ],
+   "corridors": [
+    [
+     [
+      80.29,
+      143.74
+     ],
+     [
+      83.6,
+      144.51
+     ],
+     [
+      81.82,
+      152.21
+     ],
+     [
+      78.51,
+      151.44
+     ]
+    ]
+   ],
+   "furniture": [
+    {
+     "kind": "sofa",
+     "p": [
+      77.02,
+      142.37
+     ],
+     "size": [
+      3.2,
+      0.9,
+      1.0
+     ],
+     "yaw": -13.03
+    },
+    {
+     "kind": "sofa",
+     "p": [
+      86.76,
+      144.62
+     ],
+     "size": [
+      3.2,
+      0.9,
+      1.0
+     ],
+     "yaw": -13.03
+    },
+    {
+     "kind": "table",
+     "p": [
+      77.45,
+      140.52
+     ],
+     "size": [
+      1.6,
+      0.45,
+      0.8
+     ],
+     "yaw": -13.03
+    },
+    {
+     "kind": "table",
+     "p": [
+      87.19,
+      142.77
+     ],
+     "size": [
+      1.6,
+      0.45,
+      0.8
+     ],
+     "yaw": -13.03
+    }
+   ]
+  },
+  {
+   "dorm": "north_hall",
+   "building": "north_hall",
+   "default": false,
+   "name": "North Hall",
+   "short": "North Hall",
+   "room": [
+    [
+     293.0,
+     -346.0
+    ],
+    [
+     314.4,
+     -346.0
+    ],
+    [
+     314.4,
+     -332.0
+    ],
+    [
+     293.0,
+     -332.0
+    ]
+   ],
+   "ceil": 4.6,
+   "interior": {
+    "wall": "plaster",
+    "floor": [
+     0.46,
+     0.4,
+     0.36
+    ]
+   },
+   "doors": [
+    {
+     "id": "front",
+     "name": "Front door",
+     "p": [
+      315.0,
+      -339.2
+     ],
+     "normal": [
+      1,
+      0
+     ],
+     "w": 3.2,
+     "wall_t": 0.5,
+     "depth": 1.2
+    },
+    {
+     "id": "west",
+     "name": "West door",
+     "p": [
+      267.0,
+      -339.2
+     ],
+     "normal": [
+      -1,
+      0
+     ],
+     "w": 3.2,
+     "wall_t": 0.5,
+     "depth": 26.6
+    },
+    {
+     "id": "south",
+     "name": "South door",
+     "p": [
+      296.3,
+      -300.2
+     ],
+     "normal": [
+      0,
+      1
+     ],
+     "w": 3.2,
+     "wall_t": 0.5,
+     "depth": 32.4
+    }
+   ],
+   "furniture": [
+    {
+     "kind": "sofa",
+     "p": [
+      301.0,
+      -344.6
+     ],
+     "size": [
+      3.2,
+      0.9,
+      1.0
+     ],
+     "yaw": 0
+    },
+    {
+     "kind": "sofa",
+     "p": [
+      307.5,
+      -344.6
+     ],
+     "size": [
+      3.2,
+      0.9,
+      1.0
+     ],
+     "yaw": 0
+    },
+    {
+     "kind": "table",
+     "p": [
+      304.2,
+      -342.4
+     ],
+     "size": [
+      1.6,
+      0.45,
+      0.8
+     ],
+     "yaw": 0
+    },
+    {
+     "kind": "hearth",
+     "p": [
+      293.9,
+      -337.0
+     ],
+     "size": [
+      1.0,
+      1.4,
+      2.6
+     ],
+     "yaw": 90
+    }
+   ]
+  }
+ ],
+ "objective_pool": [
+  {
+   "id": "garden_fountain",
+   "items": [
+    "garden_fountain"
+   ],
+   "name": "Garden Fountain",
+   "short": "Garden Fountain",
+   "color": [
+    1.0,
+    0.82,
+    0.3
+   ],
+   "icon": "star"
+  },
+  {
+   "id": "bridge_pond",
+   "items": [
+    "bridge_pond"
+   ],
+   "name": "Bridge Pond",
+   "short": "Bridge Pond",
+   "color": [
+    0.45,
+    0.85,
+    0.45
+   ],
+   "icon": "leaf"
+  },
+  {
+   "id": "reflection_court",
+   "items": [
+    "reflection_court_basin_ne",
+    "reflection_court_basin_sw"
+   ],
+   "name": "Reflection Court",
+   "short": "Reflection Court",
+   "color": [
+    0.35,
+    0.85,
+    0.95
+   ],
+   "icon": "drop"
+  },
+  {
+   "id": "north_pond",
+   "items": [
+    "north_pond"
+   ],
+   "name": "North Pond",
+   "short": "North Pond",
+   "color": [
+    0.7,
+    0.5,
+    0.95
+   ],
+   "icon": "diamond"
+  },
+  {
+   "id": "village_pond",
+   "items": [
+    "village_pond"
+   ],
+   "name": "Village Pond",
+   "short": "Village Pond",
+   "color": [
+    0.95,
+    0.55,
+    0.75
+   ],
+   "icon": "flower"
+  },
+  {
+   "id": "campus_lake",
+   "items": [
+    "campus_lake"
+   ],
+   "name": "Campus Lake",
+   "short": "Campus Lake",
+   "color": [
+    1.0,
+    0.6,
+    0.25
+   ],
+   "icon": "anchor"
+  }
+ ],
+ "label_buildings": [
+  "library",
+  "science_center",
+  "prayer_chapel",
+  "bell_tower",
+  "campus_center",
+  "innovation_center",
+  "arts_center",
+  "media_center",
+  "administration_hall",
+  "liberal_arts_hall",
+  "east_hall",
+  "dining_commons",
+  "arena",
+  "recreation_center",
+  "lakeview_hall",
+  "bridge_hall",
+  "waterside_hall",
+  "elm_hall"
+ ]
+}

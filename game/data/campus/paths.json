@@ -1,0 +1,5973 @@
+{
+ "items": [
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "boardwalk/pier from the east bank to the platform",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "boardwalk_woods_pond",
+   "pts": [
+    [
+     -731,
+     -250
+    ],
+    [
+     -722,
+     -248
+    ],
+    [
+     -713,
+     -245.5
+    ]
+   ],
+   "surface": "boardwalk",
+   "w": 1.8,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "zebra crossing over the west street",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "crosswalk_rec_north",
+   "pts": [
+    [
+     -417.5,
+     -183
+    ],
+    [
+     -398,
+     -183
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "paved drive from the forecourt along the house to the south walk",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "drive_lodge_se",
+   "pts": [
+    [
+     -316.5,
+     -285.5
+    ],
+    [
+     -312,
+     -281.5
+    ],
+    [
+     -309,
+     -280.5
+    ],
+    [
+     -303,
+     -282
+    ],
+    [
+     -293.7,
+     -282
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "light mown/gravel track round the west and north sides of the pond",
+    "open": "surface; may be grass",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "path_pond_loop",
+   "pts": [
+    [
+     -403,
+     -330
+    ],
+    [
+     -403.5,
+     -345
+    ],
+    [
+     -403,
+     -360
+    ],
+    [
+     -400,
+     -370
+    ],
+    [
+     -394,
+     -376
+    ],
+    [
+     -384,
+     -379
+    ],
+    [
+     -372,
+     -380.5
+    ],
+    [
+     -360,
+     -381.5
+    ],
+    [
+     -345,
+     -383
+    ],
+    [
+     -330,
+     -383.5
+    ]
+   ],
+   "surface": "gravel",
+   "w": 2.5,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "walk from the dining NE entrance east to the loop; ends on the x=-40 zone line (ccore continues)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "path_s_001",
+   "pts": [
+    [
+     -88.0,
+     83.5
+    ],
+    [
+     -71.0,
+     83.4
+    ],
+    [
+     -62.0,
+     84.8
+    ],
+    [
+     -54.0,
+     86.7
+    ],
+    [
+     -40.0,
+     90.4
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.2,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "diagonal walk from the dining NE entrance SE to the loop walk; ends on x=-40",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "path_s_002",
+   "pts": [
+    [
+     -89.0,
+     85.5
+    ],
+    [
+     -40.0,
+     125.4
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.8,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "walk along the dining hall east facade",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "path_s_003",
+   "pts": [
+    [
+     -99.4,
+     86.5
+    ],
+    [
+     -99.4,
+     112.3
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "sidewalk along the south edge of the north dining lot; ends on x=-40",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "path_s_004",
+   "pts": [
+    [
+     -116.0,
+     58.4
+    ],
+    [
+     -40.0,
+     58.4
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.2,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "curving walk from the NE entrance round to the south terrace (plan p16; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m))",
+    "open": "as-built curve radius unverified",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_s_005",
+   "pts": [
+    [
+     -97.0,
+     85.5
+    ],
+    [
+     -87.0,
+     88.5
+    ],
+    [
+     -79.0,
+     94.0
+    ],
+    [
+     -74.5,
+     101.0
+    ],
+    [
+     -74.0,
+     108.0
+    ],
+    [
+     -77.0,
+     115.0
+    ],
+    [
+     -83.0,
+     121.0
+    ],
+    [
+     -91.0,
+     124.5
+    ],
+    [
+     -100.0,
+     126.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "link terrace walk -> round node, plan p16",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_s_006",
+   "pts": [
+    [
+     -96.5,
+     127.0
+    ],
+    [
+     -97.5,
+     129.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "walk from the terrace past the NE side of the pavilion south to the lake walk (plan p16; R347 shows the curving concrete approach); placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "junction with the 2022 lake walk inferred",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026",
+     "R347"
+    ]
+   },
+   "id": "path_s_007",
+   "pts": [
+    [
+     -94.0,
+     126.0
+    ],
+    [
+     -87.0,
+     131.5
+    ],
+    [
+     -80.0,
+     138.0
+    ],
+    [
+     -73.0,
+     145.5
+    ],
+    [
+     -67.5,
+     153.0
+    ],
+    [
+     -66.3,
+     162.0
+    ],
+    [
+     -65.5,
+     175.0
+    ],
+    [
+     -63.5,
+     186.0
+    ],
+    [
+     -61.0,
+     194.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "walk leaving the terrace SW corner toward the lake (plan p16, figure ends here); placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "where it ends south of z 175 (the figure fades); not visible in photos",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_s_008",
+   "pts": [
+    [
+     -140.0,
+     139.5
+    ],
+    [
+     -137.0,
+     145.0
+    ],
+    [
+     -133.8,
+     150.0
+    ],
+    [
+     -133.0,
+     162.5
+    ],
+    [
+     -135.0,
+     175.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "sidewalk along the south edge of the village lot to the round node; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_001",
+   "pts": [
+    [
+     135.5,
+     291.2
+    ],
+    [
+     200.0,
+     291.2
+    ],
+    [
+     240.0,
+     290.8
+    ],
+    [
+     255.6,
+     290.6
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "sidewalk along the SE edge of the curving village lot; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_002",
+   "pts": [
+    [
+     256.0,
+     289.0
+    ],
+    [
+     268.0,
+     279.5
+    ],
+    [
+     291.2,
+     271.0
+    ],
+    [
+     306.5,
+     265.5
+    ],
+    [
+     318.8,
+     257.8
+    ],
+    [
+     331.2,
+     250.8
+    ],
+    [
+     343.5,
+     242.4
+    ],
+    [
+     355.8,
+     233.0
+    ],
+    [
+     366.0,
+     226.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_003",
+   "pts": [
+    [
+     189.6,
+     291.2
+    ],
+    [
+     189.6,
+     297.8
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_004",
+   "pts": [
+    [
+     214.7,
+     291.2
+    ],
+    [
+     214.7,
+     296.8
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_005",
+   "pts": [
+    [
+     239.5,
+     290.8
+    ],
+    [
+     239.5,
+     296.3
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_006",
+   "pts": [
+    [
+     189.6,
+     316.2
+    ],
+    [
+     189.6,
+     324.2
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_007",
+   "pts": [
+    [
+     214.7,
+     315.2
+    ],
+    [
+     214.7,
+     324.2
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_008",
+   "pts": [
+    [
+     239.5,
+     314.7
+    ],
+    [
+     239.5,
+     324.1
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_009",
+   "pts": [
+    [
+     201.9,
+     291.2
+    ],
+    [
+     201.9,
+     324.2
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "home stub / walk between homes (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_010",
+   "pts": [
+    [
+     226.8,
+     291.0
+    ],
+    [
+     226.8,
+     324.2
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "walk along the south (pond) side of the homes, curving NE to home 07; placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_011",
+   "pts": [
+    [
+     177.5,
+     324.2
+    ],
+    [
+     230.0,
+     324.0
+    ],
+    [
+     269.6,
+     323.0
+    ],
+    [
+     275.8,
+     321.2
+    ],
+    [
+     288.0,
+     313.5
+    ],
+    [
+     298.8,
+     305.8
+    ],
+    [
+     309.6,
+     301.2
+    ],
+    [
+     321.9,
+     296.0
+    ],
+    [
+     331.0,
+     290.5
+    ],
+    [
+     343.5,
+     285.0
+    ],
+    [
+     352.7,
+     279.6
+    ],
+    [
+     358.8,
+     275.0
+    ],
+    [
+     359.5,
+     266.0
+    ],
+    [
+     359.5,
+     261.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "round node south to the south walk (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_012",
+   "pts": [
+    [
+     260.6,
+     295.1
+    ],
+    [
+     262.7,
+     301.2
+    ],
+    [
+     266.5,
+     313.5
+    ],
+    [
+     269.6,
+     323.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_013",
+   "pts": [
+    [
+     284.2,
+     275.8
+    ],
+    [
+     284.2,
+     284.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_014",
+   "pts": [
+    [
+     285.6,
+     302.9
+    ],
+    [
+     286.6,
+     314.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_015",
+   "pts": [
+    [
+     308.0,
+     265.5
+    ],
+    [
+     308.0,
+     274.2
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_016",
+   "pts": [
+    [
+     310.6,
+     292.6
+    ],
+    [
+     310.6,
+     301.4
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_017",
+   "pts": [
+    [
+     294.2,
+     268.5
+    ],
+    [
+     296.5,
+     284.2
+    ],
+    [
+     298.8,
+     301.2
+    ],
+    [
+     298.8,
+     305.8
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_018",
+   "pts": [
+    [
+     332.7,
+     251.5
+    ],
+    [
+     333.5,
+     260.4
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_019",
+   "pts": [
+    [
+     336.0,
+     278.8
+    ],
+    [
+     336.0,
+     288.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_020",
+   "pts": [
+    [
+     358.0,
+     225.5
+    ],
+    [
+     358.8,
+     242.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "village home stubs / links (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_021",
+   "pts": [
+    [
+     279.6,
+     238.0
+    ],
+    [
+     286.0,
+     253.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "loop walk round the village pond (plan p16); placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_022",
+   "pts": [
+    [
+     298.1,
+     314.2
+    ],
+    [
+     305.0,
+     312.0
+    ],
+    [
+     315.8,
+     313.5
+    ],
+    [
+     328.0,
+     309.6
+    ],
+    [
+     343.5,
+     303.5
+    ],
+    [
+     352.7,
+     300.4
+    ],
+    [
+     358.8,
+     296.5
+    ],
+    [
+     368.0,
+     295.0
+    ],
+    [
+     377.3,
+     297.3
+    ],
+    [
+     383.5,
+     303.5
+    ],
+    [
+     385.0,
+     311.2
+    ],
+    [
+     383.5,
+     320.4
+    ],
+    [
+     384.2,
+     331.2
+    ],
+    [
+     385.0,
+     340.4
+    ],
+    [
+     383.5,
+     349.6
+    ],
+    [
+     377.3,
+     360.4
+    ],
+    [
+     368.0,
+     371.2
+    ],
+    [
+     355.8,
+     380.4
+    ],
+    [
+     346.5,
+     384.2
+    ],
+    [
+     335.8,
+     385.0
+    ],
+    [
+     323.5,
+     381.9
+    ],
+    [
+     312.7,
+     375.8
+    ],
+    [
+     305.0,
+     366.5
+    ],
+    [
+     300.4,
+     354.2
+    ],
+    [
+     298.0,
+     338.8
+    ],
+    [
+     297.3,
+     323.5
+    ],
+    [
+     298.1,
+     314.2
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2024",
+    "note": "south walk -> pond loop (plan p16)",
+    "open": "as-built alignment +-3-5 m (design drawing)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_023",
+   "pts": [
+    [
+     288.0,
+     313.5
+    ],
+    [
+     298.1,
+     314.2
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2024",
+    "note": "long curving walk south and east of the pond toward the east street side (plan p16); placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m)",
+    "open": "figure fades north of z 285 and west of x 285; whether it was built is unverified (not on the 2026 wayfinding)",
+    "src": [
+     "plan2023p16",
+     "wayfinding2026"
+    ]
+   },
+   "id": "path_v_024",
+   "pts": [
+    [
+     285.0,
+     396.5
+    ],
+    [
+     315.8,
+     392.7
+    ],
+    [
+     346.5,
+     386.5
+    ],
+    [
+     377.3,
+     371.2
+    ],
+    [
+     392.7,
+     354.2
+    ],
+    [
+     402.0,
+     331.2
+    ],
+    [
+     406.5,
+     300.4
+    ],
+    [
+     407.3,
+     285.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "south"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "pale gravel/grass service track from the north street to the field house",
+    "open": "surface (gravel or grass); vehicle use",
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ]
+   },
+   "id": "track_field_house_north",
+   "pts": [
+    [
+     -238.5,
+     -385
+    ],
+    [
+     -241,
+     -372
+    ],
+    [
+     -247.5,
+     -360
+    ],
+    [
+     -253.5,
+     -345
+    ],
+    [
+     -261.5,
+     -330
+    ],
+    [
+     -263.5,
+     -322
+    ]
+   ],
+   "surface": "gravel",
+   "w": 4.5,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_arena_east",
+   "pts": [
+    [
+     -231,
+     -64
+    ],
+    [
+     -231,
+     -11
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_baseball_south_1",
+   "pts": [
+    [
+     -141.5,
+     -77
+    ],
+    [
+     -141.5,
+     -61
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_baseball_south_2",
+   "pts": [
+    [
+     -126,
+     -77
+    ],
+    [
+     -126,
+     -61
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_001",
+   "kind": "walk",
+   "pts": [
+    [
+     -39.86,
+     124.01
+    ],
+    [
+     -38.38,
+     126.67
+    ],
+    [
+     -31.7,
+     131.49
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_002",
+   "kind": "walk",
+   "pts": [
+    [
+     -39.86,
+     172.98
+    ],
+    [
+     -37.2,
+     168.85
+    ],
+    [
+     -26.87,
+     160.59
+    ],
+    [
+     -24.22,
+     160.0
+    ],
+    [
+     -16.55,
+     161.18
+    ],
+    [
+     3.81,
+     169.44
+    ],
+    [
+     9.71,
+     175.64
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.7,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_003",
+   "kind": "walk",
+   "pts": [
+    [
+     -31.7,
+     131.49
+    ],
+    [
+     -30.71,
+     130.21
+    ],
+    [
+     -30.71,
+     127.85
+    ],
+    [
+     -31.89,
+     111.32
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_004",
+   "kind": "walk",
+   "pts": [
+    [
+     -26.58,
+     147.32
+    ],
+    [
+     -28.64,
+     144.07
+    ],
+    [
+     -30.42,
+     134.04
+    ],
+    [
+     -31.7,
+     131.49
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_005",
+   "kind": "walk",
+   "pts": [
+    [
+     -27.17,
+     3.94
+    ],
+    [
+     49.69,
+     0.25
+    ],
+    [
+     48.36,
+     -3.73
+    ],
+    [
+     32.13,
+     -24.39
+    ],
+    [
+     23.47,
+     -37.07
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_006",
+   "kind": "walk",
+   "pts": [
+    [
+     -23.33,
+     -142.99
+    ],
+    [
+     -18.62,
+     -146.97
+    ],
+    [
+     -15.96,
+     -146.53
+    ],
+    [
+     -4.45,
+     -149.48
+    ],
+    [
+     2.33,
+     -150.07
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_007",
+   "kind": "walk",
+   "pts": [
+    [
+     -22.74,
+     107.49
+    ],
+    [
+     -22.89,
+     94.95
+    ],
+    [
+     -7.11,
+     98.93
+    ],
+    [
+     5.87,
+     103.65
+    ],
+    [
+     10.0,
+     106.01
+    ],
+    [
+     25.34,
+     109.85
+    ],
+    [
+     33.01,
+     113.39
+    ],
+    [
+     38.62,
+     113.98
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_008",
+   "kind": "walk",
+   "pts": [
+    [
+     -14.48,
+     -17.9
+    ],
+    [
+     11.18,
+     -38.25
+    ],
+    [
+     13.1,
+     -38.84
+    ],
+    [
+     16.79,
+     -36.19
+    ],
+    [
+     20.33,
+     -35.89
+    ],
+    [
+     23.47,
+     -37.07
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.7,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_009",
+   "kind": "walk",
+   "pts": [
+    [
+     4.99,
+     158.82
+    ],
+    [
+     -5.93,
+     153.22
+    ],
+    [
+     -7.4,
+     149.97
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_010",
+   "kind": "walk",
+   "pts": [
+    [
+     19.44,
+     199.83
+    ],
+    [
+     23.72,
+     197.47
+    ],
+    [
+     25.05,
+     198.95
+    ],
+    [
+     28.29,
+     200.13
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_011",
+   "kind": "walk",
+   "pts": [
+    [
+     25.64,
+     177.41
+    ],
+    [
+     25.05,
+     190.69
+    ],
+    [
+     23.72,
+     194.23
+    ],
+    [
+     20.33,
+     190.69
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_012",
+   "kind": "walk",
+   "pts": [
+    [
+     28.0,
+     164.03
+    ],
+    [
+     22.69,
+     164.13
+    ],
+    [
+     21.21,
+     162.95
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.9,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_013",
+   "kind": "walk",
+   "pts": [
+    [
+     24.36,
+     -47.5
+    ],
+    [
+     25.64,
+     -45.92
+    ],
+    [
+     25.64,
+     -41.79
+    ],
+    [
+     23.47,
+     -37.07
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_014",
+   "kind": "walk",
+   "pts": [
+    [
+     24.36,
+     -47.5
+    ],
+    [
+     25.93,
+     -50.05
+    ],
+    [
+     50.13,
+     -69.23
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_015",
+   "kind": "walk",
+   "pts": [
+    [
+     33.31,
+     137.78
+    ],
+    [
+     32.42,
+     134.34
+    ],
+    [
+     29.77,
+     131.39
+    ],
+    [
+     27.41,
+     122.54
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_016",
+   "kind": "walk",
+   "pts": [
+    [
+     58.68,
+     170.03
+    ],
+    [
+     44.82,
+     167.97
+    ],
+    [
+     28.0,
+     164.03
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_017",
+   "kind": "walk",
+   "pts": [
+    [
+     28.0,
+     164.03
+    ],
+    [
+     28.59,
+     158.82
+    ],
+    [
+     29.77,
+     156.76
+    ],
+    [
+     29.77,
+     150.27
+    ],
+    [
+     31.54,
+     139.94
+    ],
+    [
+     33.31,
+     137.78
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_018",
+   "kind": "walk",
+   "pts": [
+    [
+     28.29,
+     -148.3
+    ],
+    [
+     30.65,
+     -149.18
+    ],
+    [
+     33.9,
+     -148.59
+    ],
+    [
+     42.9,
+     -138.71
+    ],
+    [
+     45.41,
+     -134.43
+    ]
+   ],
+   "surface": "concrete",
+   "w": 5.0,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_019",
+   "kind": "walk",
+   "pts": [
+    [
+     55.14,
+     36.39
+    ],
+    [
+     41.28,
+     47.3
+    ],
+    [
+     37.44,
+     52.02
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.2,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_020",
+   "kind": "walk",
+   "pts": [
+    [
+     38.62,
+     113.98
+    ],
+    [
+     52.49,
+     117.81
+    ],
+    [
+     57.21,
+     117.81
+    ],
+    [
+     68.71,
+     120.76
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_021",
+   "kind": "walk",
+   "pts": [
+    [
+     38.62,
+     113.98
+    ],
+    [
+     43.34,
+     108.67
+    ],
+    [
+     65.47,
+     92.74
+    ],
+    [
+     82.28,
+     77.1
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_022",
+   "kind": "walk",
+   "pts": [
+    [
+     45.41,
+     93.33
+    ],
+    [
+     39.8,
+     81.53
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.9,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_023",
+   "kind": "walk",
+   "pts": [
+    [
+     52.78,
+     29.9
+    ],
+    [
+     52.05,
+     22.38
+    ],
+    [
+     54.26,
+     18.1
+    ],
+    [
+     53.37,
+     14.85
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_024",
+   "kind": "walk",
+   "pts": [
+    [
+     55.44,
+     -74.54
+    ],
+    [
+     56.62,
+     -74.25
+    ],
+    [
+     66.65,
+     -82.21
+    ],
+    [
+     68.12,
+     -83.69
+    ],
+    [
+     68.12,
+     -85.46
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.7,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_025",
+   "kind": "walk",
+   "pts": [
+    [
+     67.53,
+     44.35
+    ],
+    [
+     66.65,
+     42.58
+    ],
+    [
+     59.86,
+     40.22
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_026",
+   "kind": "walk",
+   "pts": [
+    [
+     60.45,
+     165.31
+    ],
+    [
+     60.16,
+     162.07
+    ],
+    [
+     62.52,
+     151.74
+    ],
+    [
+     64.88,
+     148.79
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_027",
+   "kind": "walk",
+   "pts": [
+    [
+     61.34,
+     9.84
+    ],
+    [
+     55.88,
+     6.45
+    ],
+    [
+     53.67,
+     3.64
+    ],
+    [
+     52.93,
+     0.84
+    ],
+    [
+     59.86,
+     -0.78
+    ],
+    [
+     138.63,
+     -9.34
+    ],
+    [
+     203.93,
+     -30.29
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_028",
+   "kind": "walk",
+   "pts": [
+    [
+     83.76,
+     13.38
+    ],
+    [
+     79.19,
+     9.98
+    ],
+    [
+     72.69,
+     7.18
+    ],
+    [
+     66.65,
+     8.07
+    ],
+    [
+     63.99,
+     4.82
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_029",
+   "kind": "walk",
+   "pts": [
+    [
+     69.01,
+     -138.27
+    ],
+    [
+     69.01,
+     -130.89
+    ],
+    [
+     70.19,
+     -129.12
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_030",
+   "kind": "walk",
+   "pts": [
+    [
+     76.38,
+     -81.03
+    ],
+    [
+     73.73,
+     -76.46
+    ],
+    [
+     74.32,
+     -65.1
+    ],
+    [
+     76.38,
+     -60.38
+    ],
+    [
+     82.58,
+     -54.48
+    ],
+    [
+     87.0,
+     -53.59
+    ]
+   ],
+   "surface": "concrete",
+   "w": 5.0,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_031",
+   "kind": "walk",
+   "pts": [
+    [
+     78.45,
+     161.77
+    ],
+    [
+     79.63,
+     164.43
+    ],
+    [
+     88.18,
+     170.03
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_032",
+   "kind": "walk",
+   "pts": [
+    [
+     82.58,
+     -97.55
+    ],
+    [
+     79.92,
+     -91.95
+    ],
+    [
+     78.74,
+     -91.36
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_033",
+   "kind": "walk",
+   "pts": [
+    [
+     89.36,
+     -108.76
+    ],
+    [
+     87.59,
+     -107.58
+    ],
+    [
+     79.92,
+     -107.58
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_034",
+   "kind": "walk",
+   "pts": [
+    [
+     83.17,
+     43.17
+    ],
+    [
+     96.44,
+     60.58
+    ],
+    [
+     98.51,
+     59.99
+    ],
+    [
+     126.24,
+     25.47
+    ],
+    [
+     125.65,
+     23.7
+    ],
+    [
+     135.98,
+     11.02
+    ],
+    [
+     135.68,
+     9.54
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_035",
+   "kind": "walk",
+   "pts": [
+    [
+     84.64,
+     -138.56
+    ],
+    [
+     91.13,
+     -112.89
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_036",
+   "kind": "walk",
+   "pts": [
+    [
+     90.84,
+     166.49
+    ],
+    [
+     92.61,
+     156.46
+    ],
+    [
+     91.13,
+     153.95
+    ],
+    [
+     86.71,
+     156.46
+    ],
+    [
+     86.41,
+     157.64
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_037",
+   "kind": "walk",
+   "pts": [
+    [
+     118.28,
+     72.97
+    ],
+    [
+     107.66,
+     90.97
+    ],
+    [
+     107.07,
+     93.62
+    ],
+    [
+     105.44,
+     94.36
+    ],
+    [
+     88.77,
+     118.99
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_038",
+   "kind": "walk",
+   "pts": [
+    [
+     123.29,
+     134.93
+    ],
+    [
+     119.16,
+     133.16
+    ],
+    [
+     93.2,
+     127.26
+    ],
+    [
+     91.43,
+     126.08
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_039",
+   "kind": "walk",
+   "pts": [
+    [
+     99.4,
+     -112.6
+    ],
+    [
+     114.15,
+     -129.41
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_040",
+   "kind": "walk",
+   "pts": [
+    [
+     128.01,
+     -122.33
+    ],
+    [
+     126.83,
+     -120.56
+    ],
+    [
+     111.49,
+     -112.01
+    ],
+    [
+     101.76,
+     -108.47
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_041",
+   "kind": "walk",
+   "pts": [
+    [
+     114.15,
+     -129.41
+    ],
+    [
+     103.82,
+     -135.91
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_042",
+   "kind": "walk",
+   "pts": [
+    [
+     128.01,
+     -122.33
+    ],
+    [
+     126.54,
+     -123.81
+    ],
+    [
+     116.21,
+     -127.64
+    ],
+    [
+     114.15,
+     -129.41
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.6,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_043",
+   "kind": "walk",
+   "pts": [
+    [
+     136.57,
+     -143.28
+    ],
+    [
+     130.67,
+     -148.44
+    ],
+    [
+     126.24,
+     -142.99
+    ],
+    [
+     122.41,
+     -140.33
+    ],
+    [
+     121.82,
+     -138.27
+    ],
+    [
+     114.15,
+     -129.41
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_044",
+   "kind": "walk",
+   "pts": [
+    [
+     121.52,
+     69.14
+    ],
+    [
+     121.23,
+     67.96
+    ],
+    [
+     129.49,
+     52.91
+    ],
+    [
+     133.42,
+     48.09
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_045",
+   "kind": "walk",
+   "pts": [
+    [
+     122.41,
+     177.11
+    ],
+    [
+     129.49,
+     146.43
+    ],
+    [
+     130.08,
+     140.53
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_046",
+   "kind": "walk",
+   "pts": [
+    [
+     135.29,
+     -125.38
+    ],
+    [
+     131.26,
+     -122.92
+    ],
+    [
+     128.01,
+     -122.33
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_047",
+   "kind": "walk",
+   "pts": [
+    [
+     147.78,
+     18.69
+    ],
+    [
+     144.53,
+     22.52
+    ],
+    [
+     137.45,
+     36.39
+    ],
+    [
+     134.21,
+     43.47
+    ],
+    [
+     133.42,
+     48.09
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_048",
+   "kind": "walk",
+   "pts": [
+    [
+     133.42,
+     48.09
+    ],
+    [
+     137.16,
+     47.01
+    ],
+    [
+     139.22,
+     44.35
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_049",
+   "kind": "walk",
+   "pts": [
+    [
+     141.58,
+     -129.41
+    ],
+    [
+     136.57,
+     -127.35
+    ],
+    [
+     135.29,
+     -125.38
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_050",
+   "kind": "walk",
+   "pts": [
+    [
+     143.06,
+     -3.14
+    ],
+    [
+     138.93,
+     5.41
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_051",
+   "kind": "walk",
+   "pts": [
+    [
+     142.17,
+     -141.51
+    ],
+    [
+     145.12,
+     -136.79
+    ],
+    [
+     148.51,
+     -136.64
+    ],
+    [
+     150.73,
+     -141.81
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_052",
+   "kind": "walk",
+   "pts": [
+    [
+     146.6,
+     138.47
+    ],
+    [
+     133.32,
+     135.52
+    ],
+    [
+     147.19,
+     87.43
+    ],
+    [
+     149.25,
+     82.71
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_053",
+   "kind": "walk",
+   "pts": [
+    [
+     199.7,
+     -2.85
+    ],
+    [
+     194.69,
+     2.17
+    ],
+    [
+     191.44,
+     3.35
+    ],
+    [
+     189.97,
+     5.71
+    ],
+    [
+     158.69,
+     30.19
+    ],
+    [
+     152.35,
+     33.58
+    ],
+    [
+     151.32,
+     24.88
+    ],
+    [
+     149.55,
+     19.87
+    ],
+    [
+     147.78,
+     18.69
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_054",
+   "kind": "walk",
+   "pts": [
+    [
+     173.84,
+     -43.46
+    ],
+    [
+     171.97,
+     -39.43
+    ],
+    [
+     153.68,
+     -18.78
+    ],
+    [
+     148.37,
+     -2.85
+    ],
+    [
+     147.78,
+     18.69
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.7,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_055",
+   "kind": "walk",
+   "pts": [
+    [
+     148.07,
+     -38.55
+    ],
+    [
+     148.07,
+     -19.96
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_056",
+   "kind": "walk",
+   "pts": [
+    [
+     150.73,
+     -122.33
+    ],
+    [
+     152.5,
+     -122.04
+    ],
+    [
+     156.92,
+     -127.2
+    ],
+    [
+     152.79,
+     -129.71
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.1,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_057",
+   "kind": "walk",
+   "pts": [
+    [
+     151.91,
+     54.38
+    ],
+    [
+     152.5,
+     45.24
+    ],
+    [
+     151.02,
+     36.98
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_058",
+   "kind": "walk",
+   "pts": [
+    [
+     151.32,
+     59.4
+    ],
+    [
+     151.91,
+     73.27
+    ],
+    [
+     153.38,
+     78.58
+    ],
+    [
+     158.1,
+     84.18
+    ],
+    [
+     174.63,
+     96.57
+    ],
+    [
+     184.07,
+     102.18
+    ],
+    [
+     212.09,
+     115.45
+    ],
+    [
+     220.06,
+     117.52
+    ],
+    [
+     221.53,
+     117.81
+    ],
+    [
+     226.55,
+     116.04
+    ],
+    [
+     229.21,
+     113.39
+    ],
+    [
+     233.93,
+     111.62
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_059",
+   "kind": "walk",
+   "pts": [
+    [
+     158.4,
+     -137.97
+    ],
+    [
+     165.48,
+     -142.1
+    ],
+    [
+     167.25,
+     -142.1
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_060",
+   "kind": "walk",
+   "pts": [
+    [
+     164.3,
+     -60.38
+    ],
+    [
+     164.01,
+     -62.74
+    ],
+    [
+     164.89,
+     -63.62
+    ],
+    [
+     171.75,
+     -63.7
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.6,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_061",
+   "kind": "walk",
+   "pts": [
+    [
+     171.75,
+     -63.7
+    ],
+    [
+     171.38,
+     -70.7
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.9,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_062",
+   "kind": "walk",
+   "pts": [
+    [
+     171.75,
+     -63.7
+    ],
+    [
+     173.84,
+     -43.46
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_063",
+   "kind": "walk",
+   "pts": [
+    [
+     190.56,
+     -63.23
+    ],
+    [
+     188.79,
+     -63.92
+    ],
+    [
+     171.75,
+     -63.7
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_064",
+   "kind": "walk",
+   "pts": [
+    [
+     178.17,
+     -148.59
+    ],
+    [
+     171.97,
+     -146.23
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_065",
+   "kind": "walk",
+   "pts": [
+    [
+     202.36,
+     123.13
+    ],
+    [
+     201.77,
+     124.01
+    ],
+    [
+     176.4,
+     132.27
+    ],
+    [
+     173.74,
+     132.27
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_066",
+   "kind": "walk",
+   "pts": [
+    [
+     182.3,
+     173.57
+    ],
+    [
+     178.17,
+     162.07
+    ],
+    [
+     176.99,
+     155.88
+    ],
+    [
+     173.74,
+     149.68
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_067",
+   "kind": "walk",
+   "pts": [
+    [
+     173.74,
+     183.01
+    ],
+    [
+     194.39,
+     180.36
+    ],
+    [
+     230.39,
+     169.44
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_068",
+   "kind": "walk",
+   "pts": [
+    [
+     190.56,
+     -63.23
+    ],
+    [
+     188.49,
+     -58.31
+    ],
+    [
+     177.58,
+     -45.92
+    ],
+    [
+     173.84,
+     -43.46
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_069",
+   "kind": "walk",
+   "pts": [
+    [
+     190.56,
+     -63.23
+    ],
+    [
+     227.44,
+     -66.38
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_070",
+   "kind": "walk",
+   "pts": [
+    [
+     201.77,
+     -69.52
+    ],
+    [
+     200.88,
+     -70.41
+    ],
+    [
+     200.59,
+     -75.72
+    ],
+    [
+     199.7,
+     -149.18
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_071",
+   "kind": "walk",
+   "pts": [
+    [
+     200.88,
+     -58.61
+    ],
+    [
+     201.18,
+     -46.51
+    ],
+    [
+     203.93,
+     -30.29
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_072",
+   "kind": "walk",
+   "pts": [
+    [
+     203.93,
+     -30.29
+    ],
+    [
+     231.12,
+     -38.55
+    ],
+    [
+     232.45,
+     -37.07
+    ],
+    [
+     232.01,
+     -32.64
+    ],
+    [
+     222.42,
+     -21.14
+    ],
+    [
+     221.83,
+     -19.37
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_073",
+   "kind": "walk",
+   "pts": [
+    [
+     204.42,
+     -9.34
+    ],
+    [
+     205.9,
+     -2.55
+    ],
+    [
+     209.44,
+     48.19
+    ],
+    [
+     210.32,
+     51.43
+    ],
+    [
+     210.32,
+     68.55
+    ],
+    [
+     211.8,
+     75.33
+    ],
+    [
+     213.86,
+     99.23
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_074",
+   "kind": "walk",
+   "pts": [
+    [
+     227.44,
+     -66.38
+    ],
+    [
+     227.14,
+     -74.25
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_075",
+   "kind": "walk",
+   "pts": [
+    [
+     227.44,
+     -66.38
+    ],
+    [
+     229.5,
+     -64.51
+    ],
+    [
+     233.63,
+     -64.81
+    ],
+    [
+     231.86,
+     -70.11
+    ]
+   ],
+   "surface": "concrete",
+   "w": 4.2,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_076",
+   "kind": "walk",
+   "pts": [
+    [
+     227.44,
+     170.92
+    ],
+    [
+     231.57,
+     168.26
+    ],
+    [
+     240.71,
+     165.02
+    ],
+    [
+     242.78,
+     162.36
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_077",
+   "kind": "walk",
+   "pts": [
+    [
+     233.63,
+     145.84
+    ],
+    [
+     235.4,
+     152.04
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_078",
+   "kind": "walk",
+   "pts": [
+    [
+     242.78,
+     162.36
+    ],
+    [
+     235.99,
+     140.24
+    ],
+    [
+     234.22,
+     139.65
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_079",
+   "kind": "walk",
+   "pts": [
+    [
+     238.06,
+     110.44
+    ],
+    [
+     245.73,
+     109.85
+    ],
+    [
+     255.76,
+     106.6
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_080",
+   "kind": "walk",
+   "pts": [
+    [
+     242.78,
+     162.36
+    ],
+    [
+     246.61,
+     161.77
+    ],
+    [
+     252.22,
+     157.94
+    ],
+    [
+     261.07,
+     150.27
+    ],
+    [
+     271.1,
+     139.35
+    ],
+    [
+     271.1,
+     136.11
+    ],
+    [
+     269.03,
+     132.57
+    ],
+    [
+     266.67,
+     121.36
+    ],
+    [
+     264.02,
+     114.86
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_081",
+   "kind": "walk",
+   "pts": [
+    [
+     249.27,
+     196.0
+    ],
+    [
+     251.04,
+     198.06
+    ],
+    [
+     256.35,
+     199.83
+    ],
+    [
+     259.15,
+     199.39
+    ],
+    [
+     257.53,
+     194.52
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_082",
+   "kind": "walk",
+   "pts": [
+    [
+     266.38,
+     8.07
+    ],
+    [
+     264.9,
+     -10.82
+    ],
+    [
+     263.43,
+     -17.31
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_083",
+   "kind": "walk",
+   "pts": [
+    [
+     288.21,
+     -150.07
+    ],
+    [
+     286.14,
+     -148.59
+    ],
+    [
+     271.1,
+     -112.3
+    ],
+    [
+     271.69,
+     -110.24
+    ],
+    [
+     273.75,
+     -109.06
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_084",
+   "kind": "walk",
+   "pts": [
+    [
+     290.7,
+     100.0
+    ],
+    [
+     286.14,
+     118.4
+    ],
+    [
+     282.6,
+     124.31
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_085",
+   "kind": "walk",
+   "pts": [
+    [
+     294.7,
+     -150.07
+    ],
+    [
+     296.47,
+     -148.3
+    ],
+    [
+     311.37,
+     -111.86
+    ],
+    [
+     316.83,
+     -108.76
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_086",
+   "kind": "walk",
+   "pts": [
+    [
+     302.37,
+     148.2
+    ],
+    [
+     311.52,
+     147.91
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_087",
+   "kind": "walk",
+   "pts": [
+    [
+     305.62,
+     107.19
+    ],
+    [
+     307.98,
+     107.49
+    ],
+    [
+     343.12,
+     100.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_088",
+   "kind": "walk",
+   "pts": [
+    [
+     308.57,
+     -48.28
+    ],
+    [
+     309.16,
+     -43.56
+    ],
+    [
+     310.34,
+     -42.38
+    ],
+    [
+     312.89,
+     -42.38
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_089",
+   "kind": "walk",
+   "pts": [
+    [
+     311.57,
+     -111.75
+    ],
+    [
+     312.7,
+     -89.29
+    ],
+    [
+     311.52,
+     -87.52
+    ],
+    [
+     311.52,
+     -84.57
+    ],
+    [
+     312.99,
+     -81.03
+    ],
+    [
+     313.29,
+     -67.75
+    ],
+    [
+     311.22,
+     -62.44
+    ],
+    [
+     314.17,
+     -55.66
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_090",
+   "kind": "walk",
+   "pts": [
+    [
+     312.89,
+     -42.38
+    ],
+    [
+     313.88,
+     -40.91
+    ],
+    [
+     314.17,
+     -17.01
+    ],
+    [
+     315.94,
+     -5.21
+    ],
+    [
+     315.06,
+     12.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_091",
+   "kind": "walk",
+   "pts": [
+    [
+     312.89,
+     -42.38
+    ],
+    [
+     313.58,
+     -43.56
+    ],
+    [
+     312.99,
+     -58.61
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_092",
+   "kind": "walk",
+   "pts": [
+    [
+     324.5,
+     116.63
+    ],
+    [
+     326.56,
+     115.45
+    ],
+    [
+     330.99,
+     116.04
+    ]
+   ],
+   "surface": "concrete",
+   "w": 1.8,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_093",
+   "kind": "walk",
+   "pts": [
+    [
+     338.95,
+     -149.18
+    ],
+    [
+     336.3,
+     -143.87
+    ],
+    [
+     336.0,
+     -137.68
+    ],
+    [
+     340.43,
+     -128.23
+    ],
+    [
+     340.58,
+     -120.12
+    ],
+    [
+     342.49,
+     -117.91
+    ],
+    [
+     347.8,
+     -104.93
+    ],
+    [
+     356.95,
+     -90.47
+    ],
+    [
+     357.25,
+     -87.23
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_094",
+   "kind": "walk",
+   "pts": [
+    [
+     354.0,
+     -129.71
+    ],
+    [
+     353.7,
+     -128.23
+    ],
+    [
+     354.59,
+     -127.64
+    ],
+    [
+     379.96,
+     -129.12
+    ],
+    [
+     390.29,
+     -128.53
+    ],
+    [
+     393.83,
+     -127.05
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "centre line and width from a brightness/thinness extraction of the 2022 aerial, cleaned and checked on overlays",
+    "open": "widths +-0.5 m; segments under dense crowns bridged where they line up",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_095",
+   "kind": "walk",
+   "pts": [
+    [
+     360.79,
+     -81.62
+    ],
+    [
+     365.8,
+     -71.59
+    ],
+    [
+     372.59,
+     -52.71
+    ],
+    [
+     376.13,
+     -37.37
+    ],
+    [
+     378.49,
+     -21.44
+    ],
+    [
+     378.49,
+     6.59
+    ],
+    [
+     375.15,
+     12.0
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.4,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "walk along the north side of the science centre (partly shaded)",
+    "open": "traced by hand where the extraction missed it",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_096",
+   "kind": "walk",
+   "pts": [
+    [
+     162,
+     -118
+    ],
+    [
+     240,
+     -117
+    ],
+    [
+     300,
+     -114
+    ],
+    [
+     318,
+     -120
+    ],
+    [
+     335,
+     -128
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "walk along the west edge of the east lot",
+    "open": "traced by hand where the extraction missed it",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_097",
+   "kind": "walk",
+   "pts": [
+    [
+     287,
+     12
+    ],
+    [
+     284,
+     60
+    ],
+    [
+     281,
+     95
+    ],
+    [
+     276,
+     112
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "walk from the library's south-east corner to the quad junction (shaded)",
+    "open": "traced by hand where the extraction missed it",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_cc_098",
+   "kind": "walk",
+   "pts": [
+    [
+     148,
+     -46
+    ],
+    [
+     144,
+     -30
+    ],
+    [
+     141,
+     -21
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_diag_se",
+   "pts": [
+    [
+     -203,
+     11.5
+    ],
+    [
+     -190.6,
+     17.8
+    ],
+    [
+     -179.4,
+     26.7
+    ],
+    [
+     -170.6,
+     35.6
+    ],
+    [
+     -166.6,
+     40
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_diag_sw",
+   "pts": [
+    [
+     -145,
+     8.9
+    ],
+    [
+     -166,
+     12.2
+    ],
+    [
+     -184,
+     16.7
+    ],
+    [
+     -192.8,
+     20
+    ],
+    [
+     -201.7,
+     26.7
+    ],
+    [
+     -207.2,
+     33.3
+    ],
+    [
+     -210.3,
+     40
+    ]
+   ],
+   "surface": "concrete",
+   "w": 4.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_env_center_front",
+   "pts": [
+    [
+     -569.4,
+     -212.6
+    ],
+    [
+     -563,
+     -207.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 4.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_env_center_ne",
+   "pts": [
+    [
+     -548,
+     -247
+    ],
+    [
+     -545,
+     -235
+    ],
+    [
+     -544.5,
+     -224
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_env_center_south",
+   "pts": [
+    [
+     -582.3,
+     -170.5
+    ],
+    [
+     -581,
+     -165
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "short walk off the west side",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_env_center_west",
+   "pts": [
+    [
+     -593,
+     -230
+    ],
+    [
+     -598,
+     -232
+    ],
+    [
+     -606,
+     -236
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "curved walk/drive at the NE side of the house",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_lodge_ne",
+   "pts": [
+    [
+     -305.1,
+     -317.3
+    ],
+    [
+     -303.3,
+     -320.4
+    ],
+    [
+     -299.5,
+     -321.3
+    ],
+    [
+     -293,
+     -319.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_lodge_south",
+   "pts": [
+    [
+     -298.3,
+     -299
+    ],
+    [
+     -297.5,
+     -291
+    ],
+    [
+     -293.7,
+     -280
+    ],
+    [
+     -286.2,
+     -270
+    ],
+    [
+     -281.7,
+     -262
+    ],
+    [
+     -273.2,
+     -250
+    ],
+    [
+     -272.7,
+     -240
+    ],
+    [
+     -272.2,
+     -220
+    ],
+    [
+     -271.7,
+     -205
+    ],
+    [
+     -271.8,
+     -192
+    ],
+    [
+     -274.9,
+     -186
+    ],
+    [
+     -277,
+     -183
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.8,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_lot_west",
+   "pts": [
+    [
+     -188,
+     -62
+    ],
+    [
+     -188,
+     -5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_north_lot_n",
+   "pts": [
+    [
+     -398,
+     -183
+    ],
+    [
+     -330,
+     -183
+    ],
+    [
+     -300,
+     -182.8
+    ],
+    [
+     -277,
+     -183
+    ],
+    [
+     -256,
+     -183
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.5,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_plaza_ew_1",
+   "pts": [
+    [
+     -231,
+     -62.5
+    ],
+    [
+     -210,
+     -62
+    ],
+    [
+     -196,
+     -62
+    ]
+   ],
+   "surface": "concrete",
+   "w": 4.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_plaza_ew_2",
+   "pts": [
+    [
+     -231,
+     -42.5
+    ],
+    [
+     -188,
+     -42.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_plaza_ew_3",
+   "pts": [
+    [
+     -231,
+     -28.5
+    ],
+    [
+     -188,
+     -28.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_plaza_ns_e",
+   "pts": [
+    [
+     -207.5,
+     -29
+    ],
+    [
+     -207.5,
+     -9
+    ],
+    [
+     -204,
+     -3
+    ],
+    [
+     -199.5,
+     2.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_plaza_ns_w",
+   "pts": [
+    [
+     -219.5,
+     -29
+    ],
+    [
+     -219.5,
+     -10
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "concrete apron/walk along the courts' south side (R055) linking towards the yard",
+    "open": "connection layout unknown",
+    "src": [
+     "R055"
+    ]
+   },
+   "id": "walk_racket_courts",
+   "pts": [
+    [
+     -489,
+     -74
+    ],
+    [
+     -489,
+     -62
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "concrete walk along the south fence line seen in R055",
+    "src": [
+     "R055"
+    ]
+   },
+   "id": "walk_racket_courts_apron",
+   "pts": [
+    [
+     -545.0,
+     -71.5
+    ],
+    [
+     -435.0,
+     -71.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_rec_ne_door",
+   "pts": [
+    [
+     -326.5,
+     -160
+    ],
+    [
+     -326.5,
+     -149
+    ]
+   ],
+   "surface": "concrete",
+   "w": 4.5,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_rec_north",
+   "pts": [
+    [
+     -398,
+     -160
+    ],
+    [
+     -330,
+     -160
+    ],
+    [
+     -316,
+     -160
+    ],
+    [
+     -309,
+     -166
+    ],
+    [
+     -307.5,
+     -170
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.5,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_road_north_w",
+   "pts": [
+    [
+     -397,
+     5
+    ],
+    [
+     -370,
+     5.2
+    ],
+    [
+     -345,
+     4
+    ],
+    [
+     -330,
+     1
+    ],
+    [
+     -322,
+     -3.5
+    ],
+    [
+     -313,
+     -6
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.5,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_softball_arc",
+   "pts": [
+    [
+     -531,
+     52
+    ],
+    [
+     -520,
+     56
+    ],
+    [
+     -500,
+     57.5
+    ],
+    [
+     -485,
+     58
+    ],
+    [
+     -470,
+     63
+    ],
+    [
+     -458,
+     72
+    ],
+    [
+     -450,
+     84
+    ],
+    [
+     -445,
+     98
+    ],
+    [
+     -442.5,
+     115
+    ],
+    [
+     -441.5,
+     131
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_softball_east",
+   "pts": [
+    [
+     -425,
+     34
+    ],
+    [
+     -421,
+     45
+    ],
+    [
+     -418.5,
+     62
+    ],
+    [
+     -416,
+     85
+    ],
+    [
+     -413.5,
+     110
+    ],
+    [
+     -411.5,
+     124
+    ],
+    [
+     -409,
+     133
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_softball_ne",
+   "pts": [
+    [
+     -401.5,
+     14
+    ],
+    [
+     -406,
+     18.5
+    ],
+    [
+     -413.3,
+     27.3
+    ],
+    [
+     -425,
+     34
+    ],
+    [
+     -437,
+     35
+    ],
+    [
+     -446,
+     32.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_softball_south",
+   "pts": [
+    [
+     -531,
+     134
+    ],
+    [
+     -445,
+     134
+    ],
+    [
+     -409,
+     133.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.5,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_softball_west",
+   "pts": [
+    [
+     -530.5,
+     56
+    ],
+    [
+     -530.5,
+     135
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_stadium_east",
+   "pts": [
+    [
+     -160.1,
+     -185
+    ],
+    [
+     -160.75,
+     -170
+    ],
+    [
+     -161.9,
+     -160
+    ],
+    [
+     -163.4,
+     -150
+    ],
+    [
+     -164.6,
+     -140
+    ],
+    [
+     -165.2,
+     -130
+    ],
+    [
+     -166.6,
+     -120
+    ],
+    [
+     -169.5,
+     -110
+    ],
+    [
+     -172,
+     -100
+    ],
+    [
+     -172.3,
+     -92
+    ],
+    [
+     -173.3,
+     -80
+    ],
+    [
+     -177.3,
+     -75
+    ],
+    [
+     -182.4,
+     -70
+    ],
+    [
+     -189,
+     -67
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_stadium_lot_w",
+   "pts": [
+    [
+     -307.5,
+     -170
+    ],
+    [
+     -307.5,
+     -86
+    ],
+    [
+     -305,
+     -77
+    ],
+    [
+     -298,
+     -70.5
+    ],
+    [
+     -290,
+     -68
+    ],
+    [
+     -280,
+     -65.5
+    ],
+    [
+     -260,
+     -64
+    ],
+    [
+     -240,
+     -63
+    ],
+    [
+     -231,
+     -62.5
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_stadium_ne",
+   "pts": [
+    [
+     -200,
+     -207
+    ],
+    [
+     -186,
+     -208.2
+    ],
+    [
+     -175,
+     -208.4
+    ],
+    [
+     -165,
+     -211.4
+    ],
+    [
+     -160,
+     -213
+    ]
+   ],
+   "surface": "concrete",
+   "w": 4.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_stadium_nw",
+   "pts": [
+    [
+     -271.7,
+     -201.2
+    ],
+    [
+     -258,
+     -201.2
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_to_baseball",
+   "pts": [
+    [
+     -196,
+     -62
+    ],
+    [
+     -189,
+     -67
+    ],
+    [
+     -182,
+     -73
+    ],
+    [
+     -172,
+     -80
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.5,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_trainhall_lot_s",
+   "pts": [
+    [
+     -158.5,
+     -196
+    ],
+    [
+     -161.3,
+     -190
+    ],
+    [
+     -160.1,
+     -185
+    ]
+   ],
+   "surface": "concrete",
+   "w": 3.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "paved walk traced on the 2022 aerial",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_west_street_w",
+   "pts": [
+    [
+     -421,
+     -385
+    ],
+    [
+     -421,
+     -355
+    ],
+    [
+     -418.6,
+     -350
+    ],
+    [
+     -418.6,
+     -332
+    ],
+    [
+     -422,
+     -326
+    ],
+    [
+     -427.5,
+     -318
+    ],
+    [
+     -428,
+     -311
+    ],
+    [
+     -424,
+     -302
+    ],
+    [
+     -421.5,
+     -296
+    ],
+    [
+     -420.5,
+     -260
+    ],
+    [
+     -419.8,
+     -232
+    ],
+    [
+     -418,
+     -215
+    ],
+    [
+     -416.5,
+     -200
+    ],
+    [
+     -414.9,
+     -160
+    ],
+    [
+     -412.9,
+     -120
+    ],
+    [
+     -411.5,
+     -80
+    ],
+    [
+     -409.8,
+     -40
+    ],
+    [
+     -409,
+     -20
+    ],
+    [
+     -407.5,
+     0
+    ],
+    [
+     -407,
+     8
+    ]
+   ],
+   "surface": "concrete",
+   "w": 2.0,
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "concrete ramp/drive from the yard's west parking to the lane",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "id": "walk_yard_drive_sw",
+   "pts": [
+    [
+     -584,
+     -6
+    ],
+    [
+     -590,
+     2
+    ],
+    [
+     -597,
+     8
+    ]
+   ],
+   "surface": "concrete",
+   "w": 4.0,
+   "zone": "west"
+  }
+ ],
+ "version": 1
+}

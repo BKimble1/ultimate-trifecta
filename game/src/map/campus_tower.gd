@@ -29,6 +29,20 @@ const MIN_GAP := 2.0       # clear width of the walk-through between the columns
 ## The frame of the tower: centre, unit axis toward the back, unit axis to
 ## the right, length (front to back), width, gap and height.
 static func frame(bd: Dictionary) -> Dictionary:
+	var ps_list: Array = bd.get("passages", [])
+	if not ps_list.is_empty() and not (bd.get("parts", []) as Array).is_empty():
+		# traced: the walk-through gap between the piers sets the axis
+		var gobb := CampusArchitecture.obb_of(ps_list[0]["poly"])
+		var gs: Vector2 = gobb["size"]
+		var gax: Vector2 = gobb["axis"]
+		var along := gax if gs.x >= gs.y else Vector2(-gax.y, gax.x)
+		var face2 := Vector2(0, 1)
+		var bk := -along if along.dot(face2) > 0.0 else along
+		var top := 0.0
+		for pt in bd["parts"]:
+			top = maxf(top, float(pt["h"]))
+		return {"c": gobb["center"], "back": bk, "right": Vector2(-bk.y, bk.x), "len": maxf(gs.x, gs.y),
+			"w": minf(gs.x, gs.y) + 4.0, "gap": minf(gs.x, gs.y), "h": top, "traced": true}
 	var obb := CampusArchitecture.obb_of(bd["poly"])
 	var size: Vector2 = obb["size"]
 	var ax: Vector2 = obb["axis"]
@@ -55,6 +69,13 @@ static func frame(bd: Dictionary) -> Dictionary:
 static func solids(bd: Dictionary) -> Array:
 	var f := frame(bd)
 	var out: Array = []
+	if bool(f.get("traced", false)):
+		for pt in bd["parts"]:
+			out.append({"poly": pt["poly"], "base": float(pt.get("base", 0.0)), "h": float(pt["h"]), "kind": "pier" if float(pt.get("base", 0.0)) < 1.0 else "bells"})
+		var pc: Vector2 = (f["c"] as Vector2) - (f["back"] as Vector2) * (float(f["len"]) * 0.5 + 1.5)
+		var ff := {"c": pc, "back": f["back"], "right": f["right"]}
+		out.append({"poly": _rect(ff, 0.0, 0.0, 0.7, 1.1), "base": 0.0, "h": 1.05, "kind": "plinth"})
+		return out
 	for p in PIERS:
 		var q := _pier_rect(f, int(p[0]), int(p[1]))
 		out.append({"poly": _rect(f, q[0], q[1], q[2] + 0.1, q[3] + 0.1), "base": 0.0, "h": float(f["h"]) * float(p[2]), "kind": "pier"})
@@ -96,6 +117,9 @@ static func _rect(f: Dictionary, u: float, v: float, du: float, dv: float) -> Pa
 
 static func build(B: CampusBuilder, bd: Dictionary) -> void:
 	var f := frame(bd)
+	if bool(f.get("traced", false)):
+		_build_traced(B, bd, f)
+		return
 	var c: Vector2 = f["c"]
 	var k := B.kit_at(c.x, c.y)
 	var kd := B.kit_at(c.x, c.y, false, true)
@@ -127,6 +151,70 @@ static func build(B: CampusBuilder, bd: Dictionary) -> void:
 		kd.box(Vector3(lp.x, 0.21, lp.y), Vector3(0.18, 0.03, 0.18), Color(1.0, 0.86, 0.62), yaw, 1.0)
 		kd.mat = 0.0
 		B.glow_disc(Vector3(lp.x, 0.05, lp.y), 1.4)
+
+
+## The traced tower: each pier part a brick shaft (base course, slots, a
+## stone cap), the raised part the bell frame with its bells, the plaque
+## plinth in front of the gap, up-lights at the piers' feet.
+static func _build_traced(B: CampusBuilder, bd: Dictionary, f: Dictionary) -> void:
+	var c: Vector2 = f["c"]
+	var k := B.kit_at(c.x, c.y)
+	var kd := B.kit_at(c.x, c.y, false, true)
+	var back: Vector2 = f["back"]
+	var yaw := atan2(-back.y, back.x)
+	for pt in bd["parts"]:
+		var obb := CampusArchitecture.obb_of(pt["poly"])
+		var oc: Vector2 = obb["center"]
+		var sz: Vector2 = obb["size"]
+		var ax: Vector2 = obb["axis"]
+		# the part's size along the tower's own axes
+		var du := absf(ax.dot(back)) * sz.x + absf(Vector2(-ax.y, ax.x).dot(back)) * sz.y
+		var dv := absf(ax.dot(f["right"])) * sz.x + absf(Vector2(-ax.y, ax.x).dot(f["right"])) * sz.y
+		var base := float(pt.get("base", 0.0))
+		var h := float(pt["h"])
+		if base < 1.0:
+			var side := 1 if (oc - c).dot(f["right"]) >= 0.0 else -1
+			var q := [(oc - c).dot(back), (oc - c).dot(f["right"]), du, dv]
+			_pier(k, kd, f, q, h, yaw, side)
+		else:
+			_bells_at(k, oc, back, f["right"], du, dv, base, h, yaw)
+	_plinth(k, kd, {"c": c, "back": back, "len": f["len"]}, yaw)
+	for pt2 in bd["parts"]:
+		if float(pt2.get("base", 0.0)) >= 1.0:
+			continue
+		var o2 := CampusData.centroid(pt2["poly"])
+		var outward := (o2 - c).normalized()
+		var lp := o2 + outward * 1.6
+		kd.mat = MeshKit.M_METAL
+		kd.chamfer_box(Vector3(lp.x, 0.1, lp.y), Vector3(0.28, 0.2, 0.28), IRON, 0.03, yaw)
+		kd.mat = MeshKit.M_GLASS
+		kd.box(Vector3(lp.x, 0.21, lp.y), Vector3(0.18, 0.03, 0.18), Color(1.0, 0.86, 0.62), yaw, 1.0)
+		kd.mat = 0.0
+		B.glow_disc(Vector3(lp.x, 0.05, lp.y), 1.4)
+
+
+## An open iron bell frame filling the box (centre o, axes back/right,
+## sizes du x dv) from y0 to y1, with graded bells hung inside.
+static func _bells_at(k: MeshKit, o: Vector2, back: Vector2, right: Vector2, du: float, dv: float, y0: float, y1: float, yaw: float) -> void:
+	k.mat = MeshKit.M_METAL
+	for su: float in [-0.5, 0.5]:
+		for sv: float in [-0.5, 0.5]:
+			var p := o + back * (du * su * 0.9) + right * (dv * sv * 0.9)
+			k.chamfer_box(Vector3(p.x, (y0 + y1) * 0.5, p.y), Vector3(0.14, y1 - y0, 0.14), IRON, 0.02, yaw)
+	for t: float in [0.0, 0.5, 1.0]:
+		var y := lerpf(y0, y1, t)
+		k.chamfer_box(Vector3(o.x, y, o.y), Vector3(du * 0.92, 0.12, dv * 0.92), IRON, 0.02, yaw)
+	var sizes := [0.5, 0.4, 0.32]
+	for i in sizes.size():
+		var r := float(sizes[i])
+		var p3 := o + back * (du * ((float(i) + 0.5) / float(sizes.size()) - 0.5) * 0.6)
+		var top := lerpf(y0, y1, 0.5) - 0.1
+		var hb := r * 1.5
+		k.revolve(Vector3(p3.x, top - hb, p3.y), PackedVector2Array([Vector2(r, 0.0), Vector2(r * 0.86, hb * 0.18), Vector2(r * 0.62, hb * 0.55), Vector2(r * 0.5, hb * 0.9), Vector2(0.1, hb)]),
+			PackedColorArray([BRONZE.lightened(0.1), BRONZE, BRONZE.darkened(0.1), BRONZE.darkened(0.15), BRONZE.darkened(0.2)]), 12)
+	# a louvred cap over the frame
+	k.chamfer_box(Vector3(o.x, y1 + 0.15, o.y), Vector3(du + 0.2, 0.3, dv + 0.2), IRON.lightened(0.1), 0.04, yaw)
+	k.mat = 0.0
 
 
 ## One pier: a base course, the brick shaft (warm up-lit at its foot), a

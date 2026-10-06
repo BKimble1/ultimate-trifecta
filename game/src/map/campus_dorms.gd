@@ -181,7 +181,7 @@ static func _build(d: Dictionary) -> Dictionary:
 		var fy := deg_to_rad(float(f.get("yaw", 0.0)))
 		boxes.append([Vector3(fp.x, float(fs[1]) * 0.5, fp.y), Vector3(float(fs[0]), float(fs[1]), float(fs[2])), String(f.get("kind", "furniture")), fy])
 		foot.append(_obox(fp, Vector2(float(fs[0]), float(fs[2])), fy))
-	var pads := _pads(room, doors, d.get("pads", []))
+	var pads := _pads(room, doors, d.get("pads", []), foot.slice(solid.size()))
 	var respawn: Array = []
 	for dr in doors:
 		respawn.append((dr["line_p"] as Vector2) + (dr["n_in"] as Vector2) * 2.6)
@@ -207,7 +207,7 @@ static func _obox(c: Vector2, size: Vector2, yaw: float) -> PackedVector2Array:
 ## Runner pads: explicit ones from the data ([x, z, door]), else up to
 ## PAD_COUNT points on a 1.7 m grid inside the room (1.3 m from its walls),
 ## nearest the room's centre first, each facing its nearest door.
-static func _pads(room: PackedVector2Array, doors: Array, explicit: Array) -> Array:
+static func _pads(room: PackedVector2Array, doors: Array, explicit: Array, furniture: Array = []) -> Array:
 	var out: Array = []
 	var pts: Array = []
 	if not explicit.is_empty():
@@ -224,7 +224,14 @@ static func _pads(room: PackedVector2Array, doors: Array, explicit: Array) -> Ar
 			var z := r.position.y + 0.5
 			while z <= r.end.y:
 				var p := Vector2(x, z)
-				if inner.size() >= 3 and Geometry2D.is_point_in_polygon(p, inner):
+				var clear := true
+				for fp in furniture:
+					if Geometry2D.is_point_in_polygon(p, fp) or CampusData.dist_to_edge(p, fp) < 0.8:
+						clear = false
+				for dr in doors:
+					if p.distance_to(dr["line_p"]) < 2.6:
+						clear = false
+				if clear and inner.size() >= 3 and Geometry2D.is_point_in_polygon(p, inner):
 					cand.append(p)
 				z += step
 			x += step

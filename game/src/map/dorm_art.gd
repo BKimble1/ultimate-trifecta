@@ -234,8 +234,10 @@ func _interior(g: Dictionary, d: Dictionary) -> void:
 	var c := CampusData.centroid(room)
 	var k := _k(c.x, c.y)
 	var kd := _k(c.x, c.y, true)
-	var inner := _col(d, "inner", INNER)
-	var floor_c := _col(d, "floor", FLOOR)
+	var style: Dictionary = d.get("interior", {}) if d.get("interior") is Dictionary else {}
+	var brick := String(style.get("wall", "plaster")) == "brick"
+	var inner := _col(style, "inner", _col(d, "inner", INNER))
+	var floor_c := _col(style, "floor", _col(d, "floor", FLOOR))
 	var fabric := _col(d, "fabric", FABRIC)
 	var accent := _col(d, "accent", ACCENT)
 	var doors: Array = g["doors"]
@@ -265,13 +267,28 @@ func _interior(g: Dictionary, d: Dictionary) -> void:
 			var dir := (b - a) / len
 			var nin := Vector3(-dir.y, 0, dir.x)      # into the space (ccw)
 			var kw := _k((a.x + b.x) * 0.5, (a.y + b.y) * 0.5)
-			kw.mat = MeshKit.M_PLASTER
-			_wall_quad(kw, a, b, 1.12, C, nin, inner, 0.22)
-			kw.mat = MeshKit.M_WOOD
-			_wall_quad(kw, a, b, 0.0, 1.12, nin, WOOD_DARK.lightened(0.1), 0.1)
-			var off := Vector2(nin.x, nin.z) * 0.02
-			_wall_quad(kw, a + off, b + off, 1.02, 1.12, nin, WOOD_DARK.lightened(0.25), 0.12)
-			kw.mat = 0.0
+			if brick:
+				# an exposed-brick lounge (the reference's commons): brick to the
+				# ceiling, a string of warm bulbs along the top of the wall
+				kw.mat = MeshKit.M_BRICK
+				_wall_quad(kw, a, b, 0.0, C, nin, Color(0.56, 0.31, 0.24), 0.16)
+				kw.mat = 0.0
+				var kb := _k((a.x + b.x) * 0.5, (a.y + b.y) * 0.5, true)
+				kb.mat = MeshKit.M_GLASS
+				var nbulb := int(len / 0.9)
+				for bi in nbulb:
+					var q := a.lerp(b, (float(bi) + 0.5) / float(nbulb)) + Vector2(nin.x, nin.z) * 0.12
+					var sag := 0.12 * sin(PI * fmod(float(bi) / 3.0, 1.0))
+					kb.box(Vector3(q.x, C - 0.35 - sag, q.y), Vector3(0.07, 0.09, 0.07), Color(1.0, 0.8, 0.45), 0.0, 1.6)
+				kb.mat = 0.0
+			else:
+				kw.mat = MeshKit.M_PLASTER
+				_wall_quad(kw, a, b, 1.12, C, nin, inner, 0.22)
+				kw.mat = MeshKit.M_WOOD
+				_wall_quad(kw, a, b, 0.0, 1.12, nin, WOOD_DARK.lightened(0.1), 0.1)
+				var off := Vector2(nin.x, nin.z) * 0.02
+				_wall_quad(kw, a + off, b + off, 1.02, 1.12, nin, WOOD_DARK.lightened(0.25), 0.12)
+				kw.mat = 0.0
 			# the longest wall of the commons (for pictures and plants)
 			var mid := (a + b) * 0.5
 			if len > longest_len and CampusData.dist_to_edge(mid, room) < 0.3:

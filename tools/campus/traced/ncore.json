@@ -1,0 +1,5736 @@
+{
+ "zone": "ncore",
+ "buildings": [
+  {
+   "id": "campus_center",
+   "ref": "B19,B20",
+   "label": "Campus Center",
+   "kind": "dining",
+   "status": "existing",
+   "footprint": [
+    [
+     6.7,
+     -296.5
+    ],
+    [
+     6.7,
+     -293.9
+    ],
+    [
+     4.1,
+     -293.65
+    ],
+    [
+     4.1,
+     -285.25
+    ],
+    [
+     -2.4,
+     -285.2
+    ],
+    [
+     -2.4,
+     -278.25
+    ],
+    [
+     -15.8,
+     -278.2
+    ],
+    [
+     -15.8,
+     -267.55
+    ],
+    [
+     -18.5,
+     -267.5
+    ],
+    [
+     -18.5,
+     -263.25
+    ],
+    [
+     -22.5,
+     -263.2
+    ],
+    [
+     -22.55,
+     -260.5
+    ],
+    [
+     -29.0,
+     -260.5
+    ],
+    [
+     -28.9,
+     -225.35
+    ],
+    [
+     -21.8,
+     -219.7
+    ],
+    [
+     -21.15,
+     -217.4
+    ],
+    [
+     -11.2,
+     -217.55
+    ],
+    [
+     -11.1,
+     -205.85
+    ],
+    [
+     -2.2,
+     -205.85
+    ],
+    [
+     -2.15,
+     -212.0
+    ],
+    [
+     -0.15,
+     -211.6
+    ],
+    [
+     11.5,
+     -213.2
+    ],
+    [
+     17.9,
+     -213.2
+    ],
+    [
+     29.15,
+     -212.1
+    ],
+    [
+     29.5,
+     -212.75
+    ],
+    [
+     29.6,
+     -212.0
+    ],
+    [
+     32.2,
+     -211.95
+    ],
+    [
+     32.2,
+     -206.9
+    ],
+    [
+     41.2,
+     -206.9
+    ],
+    [
+     41.2,
+     -213.7
+    ],
+    [
+     36.9,
+     -213.75
+    ],
+    [
+     36.9,
+     -216.3
+    ],
+    [
+     34.35,
+     -225.5
+    ],
+    [
+     38.0,
+     -225.6
+    ],
+    [
+     38.0,
+     -233.2
+    ],
+    [
+     34.4,
+     -233.2
+    ],
+    [
+     34.3,
+     -225.7
+    ],
+    [
+     34.2,
+     -233.3
+    ],
+    [
+     37.0,
+     -242.2
+    ],
+    [
+     30.6,
+     -243.05
+    ],
+    [
+     39.8,
+     -243.1
+    ],
+    [
+     39.9,
+     -248.6
+    ],
+    [
+     38.5,
+     -248.65
+    ],
+    [
+     38.4,
+     -279.6
+    ],
+    [
+     40.1,
+     -279.9
+    ],
+    [
+     39.4,
+     -290.85
+    ],
+    [
+     34.5,
+     -296.4
+    ]
+   ],
+   "h": 10.5,
+   "floors": 2,
+   "roof": {
+    "type": "flat"
+   },
+   "parts": [
+    {
+     "name": "main_block",
+     "footprint": [
+      [
+       -18.25,
+       -251.8
+      ],
+      [
+       -18.25,
+       -242.25
+      ],
+      [
+       -21.4,
+       -242.2
+      ],
+      [
+       -21.15,
+       -217.4
+      ],
+      [
+       -11.2,
+       -217.6
+      ],
+      [
+       -11.15,
+       -215.0
+      ],
+      [
+       -2.25,
+       -215.0
+      ],
+      [
+       -2.2,
+       -212.0
+      ],
+      [
+       -0.3,
+       -211.6
+      ],
+      [
+       11.65,
+       -213.2
+      ],
+      [
+       17.65,
+       -213.2
+      ],
+      [
+       29.4,
+       -212.1
+      ],
+      [
+       29.55,
+       -213.3
+      ],
+      [
+       29.6,
+       -212.0
+      ],
+      [
+       36.9,
+       -212.0
+      ],
+      [
+       36.9,
+       -216.25
+      ],
+      [
+       34.3,
+       -225.75
+      ],
+      [
+       34.2,
+       -233.25
+      ],
+      [
+       37.0,
+       -242.2
+      ],
+      [
+       30.05,
+       -243.1
+      ],
+      [
+       -8.05,
+       -242.2
+      ],
+      [
+       -8.1,
+       -251.8
+      ]
+     ],
+     "h": 10.5,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "east_wing",
+     "footprint": [
+      [
+       29.7,
+       -270.4
+      ],
+      [
+       30.0,
+       -286.4
+      ],
+      [
+       39.8,
+       -286.6
+      ],
+      [
+       40.1,
+       -279.9
+      ],
+      [
+       38.4,
+       -279.6
+      ],
+      [
+       38.5,
+       -248.6
+      ],
+      [
+       39.9,
+       -248.6
+      ],
+      [
+       39.8,
+       -243.1
+      ],
+      [
+       29.9,
+       -243.1
+      ]
+     ],
+     "h": 10.5,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "north_mid_block",
+     "footprint": [
+      [
+       11.8,
+       -285.6
+      ],
+      [
+       30.0,
+       -285.6
+      ],
+      [
+       30.0,
+       -270.6
+      ],
+      [
+       11.8,
+       -270.6
+      ]
+     ],
+     "h": 10.5,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "auditorium",
+     "ref": "B20",
+     "footprint": [
+      [
+       -6.7,
+       -268.9
+      ],
+      [
+       28.8,
+       -269.6
+      ],
+      [
+       29.6,
+       -243.3
+      ],
+      [
+       -6.4,
+       -242.6
+      ]
+     ],
+     "h": 15.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "B20 auditorium: the large dark single-span roof in the middle of the complex (rooftop duct); interior R199 fan-shaped seating with balcony"
+    },
+    {
+     "name": "north_annex",
+     "footprint": [
+      [
+       4.1,
+       -285.2
+      ],
+      [
+       4.1,
+       -293.6
+      ],
+      [
+       6.7,
+       -293.8
+      ],
+      [
+       6.7,
+       -296.5
+      ],
+      [
+       34.5,
+       -296.4
+      ],
+      [
+       39.4,
+       -290.8
+      ],
+      [
+       39.8,
+       -286.6
+      ],
+      [
+       11.8,
+       -285.6
+      ]
+     ],
+     "h": 8.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "northwest_wing",
+     "footprint": [
+      [
+       -29.0,
+       -260.5
+      ],
+      [
+       -22.5,
+       -260.5
+      ],
+      [
+       -22.5,
+       -263.2
+      ],
+      [
+       -18.5,
+       -263.2
+      ],
+      [
+       -18.5,
+       -267.5
+      ],
+      [
+       -15.8,
+       -267.5
+      ],
+      [
+       -15.8,
+       -278.2
+      ],
+      [
+       -2.4,
+       -278.2
+      ],
+      [
+       -2.4,
+       -285.2
+      ],
+      [
+       4.1,
+       -285.2
+      ],
+      [
+       11.8,
+       -285.6
+      ],
+      [
+       11.8,
+       -270.6
+      ],
+      [
+       -6.7,
+       -268.9
+      ],
+      [
+       -6.6,
+       -242.2
+      ],
+      [
+       -21.4,
+       -242.2
+      ],
+      [
+       -21.1,
+       -217.4
+      ],
+      [
+       -21.8,
+       -219.7
+      ],
+      [
+       -28.9,
+       -225.3
+      ]
+     ],
+     "h": 6.5,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "sw_entry_tower",
+     "footprint": [
+      [
+       -11.1,
+       -215.0
+      ],
+      [
+       -2.2,
+       -215.0
+      ],
+      [
+       -2.2,
+       -205.8
+      ],
+      [
+       -11.1,
+       -205.8
+      ]
+     ],
+     "h": 11.5,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "se_entry_tower",
+     "footprint": [
+      [
+       32.2,
+       -213.7
+      ],
+      [
+       41.2,
+       -213.7
+      ],
+      [
+       41.2,
+       -206.9
+      ],
+      [
+       32.2,
+       -206.9
+      ]
+     ],
+     "h": 11.5,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "east_dropoff_canopy",
+     "footprint": [
+      [
+       34.4,
+       -233.2
+      ],
+      [
+       48.6,
+       -233.2
+      ],
+      [
+       48.6,
+       -225.6
+      ],
+      [
+       34.4,
+       -225.6
+      ]
+     ],
+     "h": 5.6,
+     "base": 4.4,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "porte-cochere over the east drop-off lane; open below"
+    }
+   ],
+   "style": {
+    "wall": "brick_red",
+    "trim": "stone",
+    "roof_mat": "membrane",
+    "windows": "curtain",
+    "notes": "brick and glass public frontage; two-storey glazed atrium/balcony inside (R065); food court inside (R067); paved seating terrace along the south face; auditorium (B20) is the central dark-roofed hall, attached, not a separate building"
+   },
+   "entrances": [
+    {
+     "p": [
+      41.0,
+      -229.4
+     ],
+     "face": 90,
+     "w": 4.0,
+     "kind": "canopy",
+     "note": "east drop-off entrance under the porte-cochere"
+    },
+    {
+     "p": [
+      14.0,
+      -212.3
+     ],
+     "face": 180,
+     "w": 6.0,
+     "kind": "double",
+     "note": "south terrace entrance (glazed curved frontage)"
+    },
+    {
+     "p": [
+      -6.6,
+      -205.8
+     ],
+     "face": 180,
+     "w": 3.0,
+     "kind": "door",
+     "note": "south-west entry tower"
+    },
+    {
+     "p": [
+      36.7,
+      -206.9
+     ],
+     "face": 180,
+     "w": 3.0,
+     "kind": "door",
+     "note": "south-east entry tower"
+    },
+    {
+     "p": [
+      -29.0,
+      -249.5
+     ],
+     "face": 270,
+     "w": 3.0,
+     "kind": "door",
+     "note": "west side door at the small projection (aerial)"
+    },
+    {
+     "p": [
+      -9.0,
+      -278.2
+     ],
+     "face": 0,
+     "w": 3.0,
+     "kind": "door",
+     "note": "north-west patio door (inferred from the paved patio)"
+    }
+   ],
+   "passages": [
+    {
+     "polygon": [
+      [
+       38.0,
+       -233.2
+      ],
+      [
+       48.6,
+       -233.2
+      ],
+      [
+       48.6,
+       -225.6
+      ],
+      [
+       38.0,
+       -225.6
+      ]
+     ],
+     "floor": 0.0,
+     "clear": 4.4,
+     "note": "drop-off lane under the porte-cochere"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "plan2023p4",
+     "R064",
+     "R199",
+     "R065",
+     "R067",
+     "V05",
+     "User155234"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Outline traced from 2022 roof edges (white membrane and dark roofs); north-west patio notch and west wing confirmed by the 2026 wayfinding outline; heights estimated (no measured elevation photos).",
+    "open": "Heights of each mass not measured; the 2026 wayfinding draws the large assembly project directly against this north side, so the north annex (z < -285) may be altered or absorbed by that project; west strip (x -29..-21) read as a low wing, not shadow."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "media_center",
+   "ref": "B18",
+   "label": "Media Center",
+   "kind": "academic",
+   "status": "existing",
+   "footprint": [
+    [
+     99.9,
+     -290.3
+    ],
+    [
+     94.0,
+     -286.05
+    ],
+    [
+     85.85,
+     -277.85
+    ],
+    [
+     79.7,
+     -269.5
+    ],
+    [
+     82.45,
+     -267.45
+    ],
+    [
+     76.9,
+     -253.9
+    ],
+    [
+     102.0,
+     -244.8
+    ],
+    [
+     105.25,
+     -246.7
+    ],
+    [
+     115.5,
+     -233.35
+    ],
+    [
+     103.45,
+     -233.5
+    ],
+    [
+     103.4,
+     -225.6
+    ],
+    [
+     104.55,
+     -225.55
+    ],
+    [
+     104.75,
+     -209.1
+    ],
+    [
+     123.55,
+     -209.2
+    ],
+    [
+     123.95,
+     -210.8
+    ],
+    [
+     127.7,
+     -210.8
+    ],
+    [
+     127.55,
+     -221.4
+    ],
+    [
+     126.25,
+     -221.85
+    ],
+    [
+     126.2,
+     -225.6
+    ],
+    [
+     108.0,
+     -225.65
+    ],
+    [
+     140.3,
+     -226.2
+    ],
+    [
+     140.4,
+     -230.8
+    ],
+    [
+     142.65,
+     -233.2
+    ],
+    [
+     145.1,
+     -234.3
+    ],
+    [
+     148.15,
+     -246.15
+    ],
+    [
+     147.4,
+     -252.2
+    ],
+    [
+     145.0,
+     -252.85
+    ],
+    [
+     133.4,
+     -268.7
+    ],
+    [
+     138.05,
+     -271.3
+    ],
+    [
+     135.15,
+     -288.7
+    ],
+    [
+     121.35,
+     -284.75
+    ],
+    [
+     112.45,
+     -279.0
+    ],
+    [
+     102.95,
+     -285.35
+    ]
+   ],
+   "h": 10.0,
+   "floors": 2,
+   "roof": {
+    "type": "flat"
+   },
+   "parts": [
+    {
+     "name": "theatre_wing",
+     "footprint": [
+      [
+       99.9,
+       -290.3
+      ],
+      [
+       94.0,
+       -286.0
+      ],
+      [
+       85.9,
+       -277.9
+      ],
+      [
+       79.7,
+       -269.4
+      ],
+      [
+       82.5,
+       -267.5
+      ],
+      [
+       79.1,
+       -259.7
+      ],
+      [
+       76.9,
+       -253.9
+      ],
+      [
+       102.1,
+       -244.8
+      ],
+      [
+       105.3,
+       -246.7
+      ],
+      [
+       115.6,
+       -233.3
+      ],
+      [
+       118.6,
+       -236.3
+      ],
+      [
+       95.6,
+       -268.4
+      ],
+      [
+       90.8,
+       -276.3
+      ],
+      [
+       94.2,
+       -279.1
+      ],
+      [
+       102.9,
+       -285.4
+      ]
+     ],
+     "h": 11.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "fan-shaped hall with curved north-west wall"
+    },
+    {
+     "name": "stage_fly_tower",
+     "footprint": [
+      [
+       93.7,
+       -273.9
+      ],
+      [
+       104.4,
+       -281.8
+      ],
+      [
+       109.9,
+       -275.4
+      ],
+      [
+       98.7,
+       -266.9
+      ]
+     ],
+     "h": 17.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "tall box rising above the dark link roof (stage house)"
+    },
+    {
+     "name": "link_low",
+     "footprint": [
+      [
+       94.2,
+       -279.1
+      ],
+      [
+       102.9,
+       -285.4
+      ],
+      [
+       106.5,
+       -283.0
+      ],
+      [
+       112.5,
+       -279.0
+      ],
+      [
+       121.3,
+       -284.7
+      ],
+      [
+       124.4,
+       -280.4
+      ],
+      [
+       101.2,
+       -263.2
+      ],
+      [
+       95.6,
+       -268.4
+      ],
+      [
+       90.8,
+       -276.3
+      ]
+     ],
+     "h": 7.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "central_wing",
+     "footprint": [
+      [
+       124.4,
+       -280.4
+      ],
+      [
+       133.4,
+       -268.7
+      ],
+      [
+       145.1,
+       -252.8
+      ],
+      [
+       147.4,
+       -252.2
+      ],
+      [
+       148.2,
+       -246.2
+      ],
+      [
+       145.1,
+       -234.2
+      ],
+      [
+       119.5,
+       -234.5
+      ],
+      [
+       101.2,
+       -263.2
+      ]
+     ],
+     "h": 10.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "northeast_wing",
+     "footprint": [
+      [
+       121.3,
+       -284.7
+      ],
+      [
+       135.2,
+       -288.7
+      ],
+      [
+       138.1,
+       -271.3
+      ],
+      [
+       133.4,
+       -268.7
+      ],
+      [
+       124.4,
+       -280.4
+      ]
+     ],
+     "h": 9.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "south_link",
+     "footprint": [
+      [
+       103.5,
+       -233.5
+      ],
+      [
+       115.6,
+       -233.3
+      ],
+      [
+       119.5,
+       -234.5
+      ],
+      [
+       145.1,
+       -234.2
+      ],
+      [
+       142.7,
+       -233.2
+      ],
+      [
+       140.4,
+       -230.8
+      ],
+      [
+       140.3,
+       -226.2
+      ],
+      [
+       103.4,
+       -225.6
+      ]
+     ],
+     "h": 8.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "white-roofed link running east-west to the arts center corner"
+    },
+    {
+     "name": "south_wing",
+     "footprint": [
+      [
+       104.6,
+       -225.6
+      ],
+      [
+       126.2,
+       -225.6
+      ],
+      [
+       126.3,
+       -221.8
+      ],
+      [
+       127.6,
+       -221.4
+      ],
+      [
+       127.7,
+       -210.8
+      ],
+      [
+       123.9,
+       -210.8
+      ],
+      [
+       123.6,
+       -209.2
+      ],
+      [
+       104.8,
+       -209.1
+      ]
+     ],
+     "h": 9.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "white-roofed block abutting the music center's north side"
+    }
+   ],
+   "style": {
+    "wall": "brick_red",
+    "trim": "stone",
+    "roof_mat": "membrane",
+    "windows": "punched",
+    "notes": "connected irregular brick volumes with white membrane roofs; joins the arts center (east) at its south-west corner and the music center (south) through the south wing"
+   },
+   "entrances": [
+    {
+     "p": [
+      86.0,
+      -251.0
+     ],
+     "face": 200,
+     "w": 4.0,
+     "kind": "double",
+     "note": "west plaza entrance where the round paved court meets the theatre wing (inferred from walks)"
+    },
+    {
+     "p": [
+      119.5,
+      -236.0
+     ],
+     "face": 200,
+     "w": 3.0,
+     "kind": "door",
+     "note": "inner corner by the music center (inferred)"
+    },
+    {
+     "p": [
+      146.5,
+      -240.0
+     ],
+     "face": 90,
+     "w": 3.0,
+     "kind": "door",
+     "note": "east side toward the arts center court (inferred)"
+    },
+    {
+     "p": [
+      108.0,
+      -287.5
+     ],
+     "face": 330,
+     "w": 4.0,
+     "kind": "garage",
+     "note": "service yard / loading dock on the north side (vehicles in 2022 aerial)"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "plan2023p4",
+     "User155234",
+     "V05"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Roof outlines segmented from the 2022 aerial (white membrane), dark link roof inferred between wings; parts split by roof breaks; matches the 2026 wayfinding outline.",
+    "open": "No close exterior photos of this building; heights and the stage-house interpretation of the tall box are estimates; south wing could belong to the music center instead."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "arts_center",
+   "ref": "B16",
+   "label": "Arts Center",
+   "kind": "academic",
+   "status": "existing",
+   "footprint": [
+    [
+     198.6,
+     -267.2
+    ],
+    [
+     191.55,
+     -267.2
+    ],
+    [
+     191.5,
+     -270.6
+    ],
+    [
+     171.5,
+     -270.4
+    ],
+    [
+     171.45,
+     -269.8
+    ],
+    [
+     162.3,
+     -269.8
+    ],
+    [
+     161.85,
+     -257.6
+    ],
+    [
+     161.8,
+     -262.6
+    ],
+    [
+     145.0,
+     -262.6
+    ],
+    [
+     145.0,
+     -255.5
+    ],
+    [
+     148.5,
+     -255.45
+    ],
+    [
+     148.15,
+     -246.15
+    ],
+    [
+     145.05,
+     -234.2
+    ],
+    [
+     148.45,
+     -232.8
+    ],
+    [
+     198.9,
+     -233.1
+    ]
+   ],
+   "h": 10.0,
+   "floors": 2,
+   "roof": {
+    "type": "flat"
+   },
+   "parts": [
+    {
+     "name": "studio_block",
+     "footprint": [
+      [
+       157.5,
+       -232.8
+      ],
+      [
+       198.9,
+       -233.1
+      ],
+      [
+       198.9,
+       -255.5
+      ],
+      [
+       148.5,
+       -255.5
+      ],
+      [
+       148.2,
+       -247.0
+      ],
+      [
+       157.5,
+       -247.0
+      ]
+     ],
+     "h": 10.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "flat roof with a row of four large pyramidal skylights and smaller rooflights"
+    },
+    {
+     "name": "curved_glass_entry",
+     "footprint": [
+      [
+       145.1,
+       -234.2
+      ],
+      [
+       148.5,
+       -232.8
+      ],
+      [
+       157.5,
+       -232.8
+      ],
+      [
+       157.5,
+       -247.0
+      ],
+      [
+       148.2,
+       -247.0
+      ],
+      [
+       148.2,
+       -246.2
+      ]
+     ],
+     "h": 9.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "two-storey curved glass entrance between brick piers facing the reflection court (User155151)"
+    },
+    {
+     "name": "north_wing",
+     "footprint": [
+      [
+       161.8,
+       -255.5
+      ],
+      [
+       198.6,
+       -255.5
+      ],
+      [
+       198.6,
+       -267.2
+      ],
+      [
+       191.5,
+       -267.2
+      ],
+      [
+       191.5,
+       -270.6
+      ],
+      [
+       171.5,
+       -270.4
+      ],
+      [
+       171.5,
+       -269.8
+      ],
+      [
+       162.3,
+       -269.8
+      ]
+     ],
+     "h": 11.5,
+     "base": 0.0,
+     "roof": {
+      "type": "complex"
+     },
+     "note": "raised pitched roof sections (gabled volume seen behind the glass entry)"
+    },
+    {
+     "name": "northwest_link",
+     "footprint": [
+      [
+       145.0,
+       -262.6
+      ],
+      [
+       161.8,
+       -262.6
+      ],
+      [
+       161.8,
+       -255.5
+      ],
+      [
+       145.0,
+       -255.5
+      ]
+     ],
+     "h": 7.5,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    }
+   ],
+   "style": {
+    "wall": "brick_red",
+    "trim": "dark",
+    "roof_mat": "membrane",
+    "windows": "ribbon",
+    "notes": "tall brick piers with recessed vertical glazing; curved two-storey glass entrance with an overhanging curved roof edge; attached to the media center at its south-west corner"
+   },
+   "entrances": [
+    {
+     "p": [
+      152.5,
+      -232.8
+     ],
+     "face": 180,
+     "w": 5.0,
+     "kind": "double",
+     "note": "curved glass entrance facing the reflection court basins"
+    },
+    {
+     "p": [
+      198.9,
+      -242.5
+     ],
+     "face": 90,
+     "w": 3.0,
+     "kind": "door",
+     "note": "east door to the round paved court (aerial walk meets wall)"
+    },
+    {
+     "p": [
+      180.0,
+      -270.5
+     ],
+     "face": 0,
+     "w": 3.5,
+     "kind": "door",
+     "note": "north service/studio door to the paved yard (inferred)"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "User155151",
+     "R308",
+     "R310",
+     "R312",
+     "wayfinding2026",
+     "V05",
+     "User155234"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Dark roof outline traced from the 2022 aerial; entrance facade from User155151 (curved glass between brick piers behind the basins).",
+    "open": "Heights estimated from the facade photo (no scale bar); the dark strip along the east face is planting (colour), not building."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "music_center",
+   "ref": "B21",
+   "label": "Music Center",
+   "kind": "academic",
+   "status": "existing",
+   "footprint": [
+    [
+     82.3,
+     -213.9
+    ],
+    [
+     82.3,
+     -163.2
+    ],
+    [
+     102.35,
+     -163.6
+    ],
+    [
+     103.0,
+     -138.8
+    ],
+    [
+     118.4,
+     -139.0
+    ],
+    [
+     119.0,
+     -163.35
+    ],
+    [
+     124.0,
+     -163.4
+    ],
+    [
+     123.7,
+     -209.0
+    ],
+    [
+     94.45,
+     -208.9
+    ],
+    [
+     94.4,
+     -213.9
+    ]
+   ],
+   "h": 9.5,
+   "floors": 2,
+   "roof": {
+    "type": "flat"
+   },
+   "parts": [
+    {
+     "name": "main_block",
+     "footprint": [
+      [
+       82.3,
+       -213.9
+      ],
+      [
+       94.4,
+       -213.9
+      ],
+      [
+       94.4,
+       -208.9
+      ],
+      [
+       104.6,
+       -208.9
+      ],
+      [
+       123.7,
+       -209.0
+      ],
+      [
+       124.0,
+       -163.4
+      ],
+      [
+       119.0,
+       -163.4
+      ],
+      [
+       102.4,
+       -163.6
+      ],
+      [
+       82.3,
+       -163.2
+      ]
+     ],
+     "h": 9.5,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "inner_low_roof",
+     "footprint": [
+      [
+       95.6,
+       -193.9
+      ],
+      [
+       110.7,
+       -193.9
+      ],
+      [
+       110.7,
+       -172.2
+      ],
+      [
+       95.6,
+       -172.2
+      ]
+     ],
+     "h": 6.5,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "lighter inner roof about one storey below the surrounding roof (could be an internal court)"
+    },
+    {
+     "name": "south_hall",
+     "footprint": [
+      [
+       102.4,
+       -163.6
+      ],
+      [
+       119.0,
+       -163.4
+      ],
+      [
+       118.8,
+       -155.8
+      ],
+      [
+       118.4,
+       -139.0
+      ],
+      [
+       103.0,
+       -138.8
+      ]
+     ],
+     "h": 11.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "southern wing with a different roof finish; likely the recital hall (R069)"
+    }
+   ],
+   "style": {
+    "wall": "brick_red",
+    "trim": "stone",
+    "roof_mat": "membrane",
+    "windows": "punched",
+    "notes": "connected arts wing; its north side joins the media center's white-roofed south wing"
+   },
+   "entrances": [
+    {
+     "p": [
+      82.3,
+      -183.0
+     ],
+     "face": 270,
+     "w": 3.0,
+     "kind": "double",
+     "note": "west door where the west walk meets the wall (aerial)"
+    },
+    {
+     "p": [
+      124.0,
+      -186.0
+     ],
+     "face": 90,
+     "w": 3.0,
+     "kind": "door",
+     "note": "east door toward the lawn walk (aerial)"
+    },
+    {
+     "p": [
+      110.0,
+      -138.9
+     ],
+     "face": 180,
+     "w": 3.0,
+     "kind": "door",
+     "note": "south end of the hall wing toward the bell tower lawn (inferred)"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "R069",
+     "V05"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Dark roof traced from the 2022 aerial; wing split by roof finish; the south hall wing extends south across z = -150 but the building's centroid is in this zone.",
+    "open": "No close exterior photo; heights estimated; nature of the lighter inner roof (low roof versus open court) unverified."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "innovation_center",
+   "ref": "B09",
+   "label": "Innovation Center",
+   "kind": "academic",
+   "status": "existing",
+   "footprint": [
+    [
+     166.65,
+     -360.8
+    ],
+    [
+     132.65,
+     -360.8
+    ],
+    [
+     132.6,
+     -345.3
+    ],
+    [
+     86.4,
+     -345.3
+    ],
+    [
+     86.4,
+     -334.35
+    ],
+    [
+     84.3,
+     -332.5
+    ],
+    [
+     82.0,
+     -332.5
+    ],
+    [
+     82.0,
+     -324.2
+    ],
+    [
+     84.35,
+     -324.2
+    ],
+    [
+     86.4,
+     -322.4
+    ],
+    [
+     86.4,
+     -311.4
+    ],
+    [
+     143.6,
+     -311.4
+    ],
+    [
+     143.65,
+     -308.3
+    ],
+    [
+     161.5,
+     -308.3
+    ],
+    [
+     161.5,
+     -344.45
+    ],
+    [
+     166.65,
+     -344.5
+    ]
+   ],
+   "h": 9.8,
+   "floors": 2,
+   "roof": {
+    "type": "flat"
+   },
+   "parts": [
+    {
+     "name": "west_block",
+     "footprint": [
+      [
+       90.0,
+       -345.3
+      ],
+      [
+       132.7,
+       -345.3
+      ],
+      [
+       132.7,
+       -311.4
+      ],
+      [
+       90.0,
+       -311.4
+      ]
+     ],
+     "h": 9.8,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "east_block",
+     "footprint": [
+      [
+       132.7,
+       -345.3
+      ],
+      [
+       132.7,
+       -360.8
+      ],
+      [
+       166.7,
+       -360.8
+      ],
+      [
+       166.7,
+       -344.5
+      ],
+      [
+       161.5,
+       -344.5
+      ],
+      [
+       161.5,
+       -308.3
+      ],
+      [
+       143.7,
+       -308.3
+      ],
+      [
+       143.7,
+       -311.4
+      ],
+      [
+       132.7,
+       -311.4
+      ]
+     ],
+     "h": 9.8,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "rotunda",
+     "footprint": [
+      [
+       97.0,
+       -328.35
+      ],
+      [
+       96.66,
+       -326.19
+      ],
+      [
+       95.66,
+       -324.24
+      ],
+      [
+       94.11,
+       -322.69
+      ],
+      [
+       92.16,
+       -321.69
+      ],
+      [
+       90.0,
+       -321.35
+      ],
+      [
+       87.84,
+       -321.69
+      ],
+      [
+       85.89,
+       -322.69
+      ],
+      [
+       84.34,
+       -324.24
+      ],
+      [
+       83.34,
+       -326.19
+      ],
+      [
+       83.0,
+       -328.35
+      ],
+      [
+       83.34,
+       -330.51
+      ],
+      [
+       84.34,
+       -332.46
+      ],
+      [
+       85.89,
+       -334.01
+      ],
+      [
+       87.84,
+       -335.01
+      ],
+      [
+       90.0,
+       -335.35
+      ],
+      [
+       92.16,
+       -335.01
+      ],
+      [
+       94.11,
+       -334.01
+      ],
+      [
+       95.66,
+       -332.46
+      ],
+      [
+       96.66,
+       -330.51
+      ]
+     ],
+     "h": 11.6,
+     "base": 0.0,
+     "roof": {
+      "type": "dome",
+      "rise": 4.2
+     },
+     "note": "brick drum with stone cornice and white dome (top about 15.5 m); two-storey galleried atrium inside (R330 R337)"
+    },
+    {
+     "name": "front_arcade",
+     "footprint": [
+      [
+       86.4,
+       -345.3
+      ],
+      [
+       90.0,
+       -345.3
+      ],
+      [
+       90.0,
+       -311.4
+      ],
+      [
+       86.4,
+       -311.4
+      ]
+     ],
+     "h": 5.4,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "one-storey colonnade along the west front"
+    },
+    {
+     "name": "entrance_portal",
+     "footprint": [
+      [
+       82.0,
+       -332.5
+      ],
+      [
+       86.4,
+       -332.5
+      ],
+      [
+       86.4,
+       -324.2
+      ],
+      [
+       82.0,
+       -324.2
+      ]
+     ],
+     "h": 5.8,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "stone portal with the name band (lettering omitted)"
+    }
+   ],
+   "landmark": "domed_rotunda",
+   "style": {
+    "wall": "brick_red",
+    "trim": "stone",
+    "roof_mat": "membrane",
+    "windows": "punched",
+    "notes": "red brick with pale stone bands, quoins and cornices; two-storey wings either side of a domed rotunda on the west front; ground-floor colonnade across the front; secondary north entrance with a square-pier canopy and two curved brick seat walls (R336)"
+   },
+   "entrances": [
+    {
+     "p": [
+      82.0,
+      -328.35
+     ],
+     "face": 270,
+     "w": 6.0,
+     "kind": "portico",
+     "note": "main entrance under the rotunda facing the drop-off plaza (R006 R328)"
+    },
+    {
+     "p": [
+      149.7,
+      -360.8
+     ],
+     "face": 0,
+     "w": 4.0,
+     "kind": "canopy",
+     "note": "secondary entrance on the north face of the east block (R336, User155234)"
+    },
+    {
+     "p": [
+      115.0,
+      -311.4
+     ],
+     "face": 180,
+     "w": 3.0,
+     "kind": "door",
+     "note": "south door toward the arts complex (inferred, unverified)"
+    },
+    {
+     "p": [
+      166.7,
+      -352.5
+     ],
+     "face": 90,
+     "w": 3.0,
+     "kind": "door",
+     "note": "east door toward the new east lot (inferred, unverified)"
+    }
+   ],
+   "passages": [
+    {
+     "polygon": [
+      [
+       86.4,
+       -345.3
+      ],
+      [
+       90.0,
+       -345.3
+      ],
+      [
+       90.0,
+       -335.5
+      ],
+      [
+       86.4,
+       -335.5
+      ]
+     ],
+     "floor": 0.0,
+     "clear": 4.2,
+     "note": "front colonnade (north half)"
+    },
+    {
+     "polygon": [
+      [
+       86.4,
+       -321.2
+      ],
+      [
+       90.0,
+       -321.2
+      ],
+      [
+       90.0,
+       -311.4
+      ],
+      [
+       86.4,
+       -311.4
+      ]
+     ],
+     "floor": 0.0,
+     "clear": 4.2,
+     "note": "front colonnade (south half)"
+    }
+   ],
+   "ev": {
+    "src": [
+     "wayfinding2026",
+     "plan2023p4",
+     "R006",
+     "R328",
+     "R336",
+     "R330",
+     "R337",
+     "R331",
+     "User155234"
+    ],
+    "date": "2026",
+    "conf": "medium",
+    "note": "Not in the 2022 aerial. Footprint from the 2026 wayfinding outline georeferenced with a local fit (7 control points, 3.0 m RMS) and squared to the campus grid; rotunda on the west face and northward-projecting east block confirmed by the user oblique aerial (User155234); facade heights from R006 (two storeys about 9.8 m, drum about 11.6 m, dome top about 15.5 m).",
+    "open": "Exact footprint (+-4 m) and whether the 2022 rectangular block (x 135..160, z -368..-332) was incorporated or rebuilt; rear (south/east) door positions; arcade depth."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "administration_hall",
+   "ref": "B14,B15",
+   "label": "Administration Hall",
+   "kind": "academic",
+   "status": "existing",
+   "footprint": [
+    [
+     221.0,
+     -232.5
+    ],
+    [
+     221.0,
+     -219.0
+    ],
+    [
+     236.95,
+     -219.0
+    ],
+    [
+     237.0,
+     -212.5
+    ],
+    [
+     252.0,
+     -212.5
+    ],
+    [
+     252.05,
+     -219.0
+    ],
+    [
+     268.0,
+     -219.0
+    ],
+    [
+     268.0,
+     -232.5
+    ],
+    [
+     252.05,
+     -232.5
+    ],
+    [
+     252.0,
+     -238.0
+    ],
+    [
+     236.5,
+     -238.0
+    ],
+    [
+     236.45,
+     -232.5
+    ]
+   ],
+   "h": 9.5,
+   "floors": 2,
+   "roof": {
+    "type": "hip",
+    "pitch": 30
+   },
+   "parts": [
+    {
+     "name": "main_block",
+     "footprint": [
+      [
+       221.0,
+       -232.5
+      ],
+      [
+       268.0,
+       -232.5
+      ],
+      [
+       268.0,
+       -219.0
+      ],
+      [
+       221.0,
+       -219.0
+      ]
+     ],
+     "h": 9.5,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 30
+     },
+     "note": "white cupola with clock-less lantern at the roof centre (about 245, -224.5)"
+    },
+    {
+     "name": "north_portico",
+     "footprint": [
+      [
+       236.5,
+       -238.0
+      ],
+      [
+       252.0,
+       -238.0
+      ],
+      [
+       252.0,
+       -232.5
+      ],
+      [
+       236.5,
+       -232.5
+      ]
+     ],
+     "h": 10.0,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 28,
+      "ridge": "short"
+     },
+     "note": "classical white portico: four two-storey columns, pediment with round clock face (omit lettering)"
+    },
+    {
+     "name": "rear_wing",
+     "footprint": [
+      [
+       237.0,
+       -219.0
+      ],
+      [
+       252.0,
+       -219.0
+      ],
+      [
+       252.0,
+       -212.5
+      ],
+      [
+       237.0,
+       -212.5
+      ]
+     ],
+     "h": 9.5,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 30
+     }
+    }
+   ],
+   "style": {
+    "wall": "brick_red",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "symmetrical two-storey brick facade on a raised basement, white multi-pane windows, white portico and pediment, cupola; row of columnar evergreens along the front; B15 welcome office is a function inside this building (wayfinding marker on it), not a separate structure"
+   },
+   "entrances": [
+    {
+     "p": [
+      244.25,
+      -238.0
+     ],
+     "face": 0,
+     "w": 3.5,
+     "kind": "portico",
+     "note": "main entrance up a few steps under the portico; straight front walk to the north (R053, User155128)"
+    },
+    {
+     "p": [
+      236.0,
+      -232.5
+     ],
+     "face": 0,
+     "w": 2.5,
+     "kind": "door",
+     "ref": "B15",
+     "note": "welcome office (B15) marker sits at this north-west part of the building in the 2026 wayfinding; exact door unverified"
+    },
+    {
+     "p": [
+      244.5,
+      -212.5
+     ],
+     "face": 180,
+     "w": 3.0,
+     "kind": "door",
+     "note": "rear door toward the liberal arts hall (inferred)"
+    }
+   ],
+   "passages": [
+    {
+     "polygon": [
+      [
+       238.5,
+       -238.0
+      ],
+      [
+       250.0,
+       -238.0
+      ],
+      [
+       250.0,
+       -234.2
+      ],
+      [
+       238.5,
+       -234.2
+      ]
+     ],
+     "floor": 0.6,
+     "clear": 7.5,
+     "note": "open portico floor between the columns"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "User155128",
+     "R053",
+     "R354",
+     "V01",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Hip-roof outline from the 2022 aerial; front facade, portico and storey count from User155128/R053.",
+    "open": "Rear wing use and rear door unverified; B15 welcome office door location inside the building not established."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "liberal_arts_hall",
+   "ref": "B23",
+   "label": "Liberal Arts Hall",
+   "kind": "academic",
+   "status": "existing",
+   "footprint": [
+    [
+     208.3,
+     -166.7
+    ],
+    [
+     214.9,
+     -166.7
+    ],
+    [
+     214.95,
+     -162.6
+    ],
+    [
+     219.35,
+     -162.6
+    ],
+    [
+     219.4,
+     -166.7
+    ],
+    [
+     233.9,
+     -166.7
+    ],
+    [
+     233.95,
+     -162.6
+    ],
+    [
+     239.35,
+     -162.6
+    ],
+    [
+     239.4,
+     -166.7
+    ],
+    [
+     240.15,
+     -166.65
+    ],
+    [
+     240.15,
+     -162.6
+    ],
+    [
+     244.95,
+     -162.6
+    ],
+    [
+     245.0,
+     -166.7
+    ],
+    [
+     281.65,
+     -166.7
+    ],
+    [
+     281.65,
+     -182.15
+    ],
+    [
+     288.95,
+     -182.2
+    ],
+    [
+     288.95,
+     -189.4
+    ],
+    [
+     281.7,
+     -189.4
+    ],
+    [
+     281.65,
+     -194.4
+    ],
+    [
+     208.3,
+     -194.4
+    ]
+   ],
+   "h": 10.5,
+   "floors": 2,
+   "roof": {
+    "type": "flat"
+   },
+   "parts": [
+    {
+     "name": "main_block",
+     "footprint": [
+      [
+       208.3,
+       -194.4
+      ],
+      [
+       281.7,
+       -194.4
+      ],
+      [
+       281.7,
+       -166.7
+      ],
+      [
+       208.3,
+       -166.7
+      ]
+     ],
+     "h": 10.5,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "low-slope ribbed metal roof"
+    },
+    {
+     "name": "south_vestibule_w",
+     "footprint": [
+      [
+       215.0,
+       -166.7
+      ],
+      [
+       219.4,
+       -166.7
+      ],
+      [
+       219.4,
+       -162.6
+      ],
+      [
+       215.0,
+       -162.6
+      ]
+     ],
+     "h": 4.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "south_vestibule_c",
+     "footprint": [
+      [
+       234.0,
+       -166.7
+      ],
+      [
+       239.4,
+       -166.7
+      ],
+      [
+       239.4,
+       -162.6
+      ],
+      [
+       234.0,
+       -162.6
+      ]
+     ],
+     "h": 4.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "south_vestibule_e",
+     "footprint": [
+      [
+       240.2,
+       -166.7
+      ],
+      [
+       245.0,
+       -166.7
+      ],
+      [
+       245.0,
+       -162.6
+      ],
+      [
+       240.2,
+       -162.6
+      ]
+     ],
+     "h": 4.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    },
+    {
+     "name": "east_entry",
+     "footprint": [
+      [
+       281.7,
+       -189.4
+      ],
+      [
+       289.0,
+       -189.4
+      ],
+      [
+       289.0,
+       -182.2
+      ],
+      [
+       281.7,
+       -182.2
+      ]
+     ],
+     "h": 4.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     }
+    }
+   ],
+   "style": {
+    "wall": "brick_red",
+    "trim": "stone",
+    "roof_mat": "metal_dark",
+    "windows": "punched",
+    "notes": "rectangular academic mass south of the administration hall"
+   },
+   "entrances": [
+    {
+     "p": [
+      217.2,
+      -162.6
+     ],
+     "face": 180,
+     "w": 3.0,
+     "kind": "door"
+    },
+    {
+     "p": [
+      236.7,
+      -162.6
+     ],
+     "face": 180,
+     "w": 3.0,
+     "kind": "door"
+    },
+    {
+     "p": [
+      242.6,
+      -162.6
+     ],
+     "face": 180,
+     "w": 3.0,
+     "kind": "door"
+    },
+    {
+     "p": [
+      289.0,
+      -185.8
+     ],
+     "face": 90,
+     "w": 3.0,
+     "kind": "door",
+     "note": "east entry toward the east lot"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Traced from the 2022 aerial (roof edge; south vestibules where the south walk meets the wall). Listed for the central zone in the inventory, but its centroid (245, -180) is north of z = -150, so it is traced here.",
+    "open": "Not in this tracer's assigned inventory list: check for a duplicate in the central-zone file; no photos, storey count and height estimated from shadows."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "heritage_gallery",
+   "ref": "B13",
+   "label": "Heritage Gallery",
+   "kind": "academic",
+   "status": "existing",
+   "footprint": [
+    [
+     307.8,
+     -270.1
+    ],
+    [
+     332.0,
+     -270.1
+    ],
+    [
+     332.0,
+     -252.6
+    ],
+    [
+     307.8,
+     -252.6
+    ]
+   ],
+   "h": 10.0,
+   "floors": 2,
+   "roof": {
+    "type": "hip",
+    "pitch": 32
+   },
+   "style": {
+    "wall": "brick_red",
+    "trim": "stone",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "small historic hip-roofed hall housing a gallery"
+   },
+   "entrances": [
+    {
+     "p": [
+      318.5,
+      -252.6
+     ],
+     "face": 180,
+     "w": 3.0,
+     "kind": "door",
+     "note": "south walk meets the building (aerial)"
+    },
+    {
+     "p": [
+      307.8,
+      -262.0
+     ],
+     "face": 270,
+     "w": 2.5,
+     "kind": "door",
+     "note": "west walk meets the building (aerial)"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "plan2023p5"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Hip roof traced from the 2022 aerial; identity from the 2026 wayfinding marker and the 2023 plan label position.",
+    "open": "No current facade photo; dark band north/west of the roof read as shadow and trees, not building; height estimated."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "heritage_house",
+   "ref": "B10,B11",
+   "label": "Heritage House",
+   "kind": "house",
+   "status": "existing",
+   "footprint": [
+    [
+     250.8,
+     -398.7
+    ],
+    [
+     237.1,
+     -398.7
+    ],
+    [
+     237.1,
+     -374.2
+    ],
+    [
+     239.0,
+     -374.15
+    ],
+    [
+     239.0,
+     -370.65
+    ],
+    [
+     242.6,
+     -370.65
+    ],
+    [
+     242.65,
+     -374.2
+    ],
+    [
+     247.1,
+     -374.2
+    ],
+    [
+     247.1,
+     -384.15
+    ],
+    [
+     250.8,
+     -384.2
+    ]
+   ],
+   "h": 6.8,
+   "floors": 2,
+   "roof": {
+    "type": "hip",
+    "pitch": 30
+   },
+   "parts": [
+    {
+     "name": "main_house",
+     "footprint": [
+      [
+       237.1,
+       -398.7
+      ],
+      [
+       250.8,
+       -398.7
+      ],
+      [
+       250.8,
+       -384.2
+      ],
+      [
+       237.1,
+       -384.2
+      ]
+     ],
+     "h": 6.8,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 30
+     },
+     "note": "small flat white roof deck/skylight near the north side"
+    },
+    {
+     "name": "rear_wing",
+     "footprint": [
+      [
+       237.1,
+       -384.2
+      ],
+      [
+       247.1,
+       -384.2
+      ],
+      [
+       247.1,
+       -374.2
+      ],
+      [
+       237.1,
+       -374.2
+      ]
+     ],
+     "h": 6.0,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 30
+     }
+    },
+    {
+     "name": "south_porch",
+     "footprint": [
+      [
+       239.0,
+       -374.2
+      ],
+      [
+       242.6,
+       -374.2
+      ],
+      [
+       242.6,
+       -370.6
+      ],
+      [
+       239.0,
+       -370.6
+      ]
+     ],
+     "h": 3.0,
+     "base": 0.0,
+     "roof": {
+      "type": "shed",
+      "pitch": 15
+     }
+    }
+   ],
+   "style": {
+    "wall": "brick_red",
+    "trim": "white",
+    "roof_mat": "shingle_dark",
+    "windows": "punched",
+    "notes": "small historic house-scale mass with lawn; B11 campus services office shares this site in the 2026 wayfinding (both markers point at this one building); no separate structure invented"
+   },
+   "entrances": [
+    {
+     "p": [
+      240.8,
+      -370.6
+     ],
+     "face": 180,
+     "w": 2.0,
+     "kind": "door",
+     "note": "south porch where the diagonal walk arrives"
+    },
+    {
+     "p": [
+      250.8,
+      -390.0
+     ],
+     "face": 90,
+     "w": 2.0,
+     "kind": "door",
+     "note": "east side toward the walk (inferred)"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "plan2023p5"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Traced from the 2022 aerial; identity from the 2026 wayfinding (markers 10 and 11 both point here) and the 2023 plan label.",
+    "open": "Centroid (243.5, -388) lies 3 m north of z = -385 (north-zone side) but the building is assigned to this zone's inventory; facade/height not photographed; whether campus services occupy this house or a room elsewhere."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "north_hall",
+   "ref": "B12",
+   "label": "North Hall",
+   "kind": "residence",
+   "status": "existing",
+   "footprint": [
+    [
+     286.15,
+     -389.0
+    ],
+    [
+     286.15,
+     -346.55
+    ],
+    [
+     267.0,
+     -346.5
+    ],
+    [
+     267.0,
+     -332.0
+    ],
+    [
+     286.1,
+     -332.0
+    ],
+    [
+     286.15,
+     -331.0
+    ],
+    [
+     287.3,
+     -330.95
+    ],
+    [
+     287.3,
+     -300.2
+    ],
+    [
+     306.0,
+     -300.2
+    ],
+    [
+     306.0,
+     -331.15
+    ],
+    [
+     319.0,
+     -331.2
+    ],
+    [
+     319.0,
+     -347.0
+    ],
+    [
+     306.0,
+     -347.05
+    ],
+    [
+     306.0,
+     -351.95
+    ],
+    [
+     309.15,
+     -352.0
+    ],
+    [
+     309.15,
+     -389.0
+    ]
+   ],
+   "h": 13.3,
+   "floors": 4,
+   "roof": {
+    "type": "hip",
+    "pitch": 28
+   },
+   "parts": [
+    {
+     "name": "north_wing",
+     "footprint": [
+      [
+       286.2,
+       -389.0
+      ],
+      [
+       309.2,
+       -389.0
+      ],
+      [
+       309.2,
+       -352.0
+      ],
+      [
+       286.2,
+       -352.0
+      ]
+     ],
+     "h": 13.3,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 28,
+      "ridge": "long"
+     }
+    },
+    {
+     "name": "crossing",
+     "footprint": [
+      [
+       286.2,
+       -352.0
+      ],
+      [
+       306.0,
+       -352.0
+      ],
+      [
+       306.0,
+       -331.0
+      ],
+      [
+       286.2,
+       -331.0
+      ]
+     ],
+     "h": 13.3,
+     "base": 0.0,
+     "roof": {
+      "type": "complex"
+     },
+     "note": "ridges meet here"
+    },
+    {
+     "name": "south_wing",
+     "footprint": [
+      [
+       287.3,
+       -331.0
+      ],
+      [
+       306.0,
+       -331.0
+      ],
+      [
+       306.0,
+       -300.2
+      ],
+      [
+       287.3,
+       -300.2
+      ]
+     ],
+     "h": 13.3,
+     "base": 0.0,
+     "roof": {
+      "type": "hip",
+      "pitch": 28,
+      "ridge": "long"
+     }
+    },
+    {
+     "name": "west_wing",
+     "footprint": [
+      [
+       267.0,
+       -346.5
+      ],
+      [
+       286.2,
+       -346.5
+      ],
+      [
+       286.2,
+       -332.0
+      ],
+      [
+       267.0,
+       -332.0
+      ]
+     ],
+     "h": 13.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 28,
+      "ridge": "long"
+     },
+     "note": "west gable end with round oculus (R203)"
+    },
+    {
+     "name": "front_portico_block",
+     "footprint": [
+      [
+       306.0,
+       -347.0
+      ],
+      [
+       319.0,
+       -347.0
+      ],
+      [
+       319.0,
+       -331.2
+      ],
+      [
+       306.0,
+       -331.2
+      ]
+     ],
+     "h": 13.3,
+     "base": 0.0,
+     "roof": {
+      "type": "gable",
+      "pitch": 30,
+      "ridge": "short"
+     },
+     "note": "full-height white portico: four giant columns plus end columns, pediment with oculus, white cupola on the ridge (about 305.5, -337), brick chimney north of the portico"
+    }
+   ],
+   "style": {
+    "wall": "brick_red",
+    "trim": "white",
+    "roof_mat": "shingle_grey",
+    "windows": "punched",
+    "notes": "four-storey brick residence hall with white-framed windows, stone sills and a pale band above the ground floor; cross plan: long north-south front range facing east with a central giant-order white portico and pediment, rear west wing with gable and oculus; raised site: wide front stair with white railings and a concrete ramp/terrace to its north; photographed interiors: main lobby lounge behind the front doors (R207), basement game room (R208), floor lounge corridor (R209)"
+   },
+   "entrances": [
+    {
+     "p": [
+      319.0,
+      -339.2
+     ],
+     "face": 90,
+     "w": 3.6,
+     "kind": "portico",
+     "note": "front double doors under the portico at the head of the front stair (R200 R306); main lobby lounge inside (R207)"
+    },
+    {
+     "p": [
+      267.0,
+      -339.0
+     ],
+     "face": 270,
+     "w": 2.4,
+     "kind": "canopy",
+     "note": "west gable-end door with small gabled canopy, where the west walk arrives (R203, aerial)"
+    },
+    {
+     "p": [
+      283.0,
+      -332.0
+     ],
+     "face": 180,
+     "w": 2.4,
+     "kind": "canopy",
+     "note": "south-facing side door at the inner corner of the west wing (R203)"
+    },
+    {
+     "p": [
+      286.2,
+      -356.5
+     ],
+     "face": 270,
+     "w": 2.4,
+     "kind": "door",
+     "note": "north-west door at the end of the north service walk (aerial)"
+    },
+    {
+     "p": [
+      296.3,
+      -300.2
+     ],
+     "face": 180,
+     "w": 2.4,
+     "kind": "door",
+     "note": "south end door, walk meets the building (aerial)"
+    },
+    {
+     "p": [
+      297.7,
+      -389.0
+     ],
+     "face": 0,
+     "w": 2.4,
+     "kind": "door",
+     "note": "north end door toward the north walk (aerial, inferred)"
+    },
+    {
+     "p": [
+      309.2,
+      -360.5
+     ],
+     "face": 90,
+     "w": 2.0,
+     "kind": "door",
+     "note": "east side door on the north range (white canopy mark in aerial)"
+    },
+    {
+     "p": [
+      306.0,
+      -321.0
+     ],
+     "face": 90,
+     "w": 2.0,
+     "kind": "door",
+     "note": "east side door on the south range (white canopy mark in aerial)"
+    }
+   ],
+   "passages": [
+    {
+     "polygon": [
+      [
+       315.0,
+       -345.5
+      ],
+      [
+       319.0,
+       -345.5
+      ],
+      [
+       319.0,
+       -333.0
+      ],
+      [
+       315.0,
+       -333.0
+      ]
+     ],
+     "floor": 1.8,
+     "clear": 10.0,
+     "note": "open portico floor in front of the front doors, raised about 1.8 m above the front lawn (stair below)"
+    }
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R089",
+     "R200",
+     "R203",
+     "R205",
+     "R206",
+     "R207",
+     "R208",
+     "R209",
+     "R306",
+     "wayfinding2026",
+     "plan2023p5"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Outline from 2022 roof edges; four storeys counted in R200/R203/R306 (3.2 m/floor + base, eave about 13.3 m); portico on the east front centred about z -339 matches the front stair paving at z -344..-338.",
+    "open": "Roof shading/lean makes wing widths uncertain by about +-1.5 m (north range reads 23 m wide with a flat-topped hip, south range 19 m, west wing 14.5 m; the dark band north of the west wing is cast shadow by colour); exact rear door positions from R203 are estimated; front stair rise (about 1.8 m) estimated from R200/R306."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "water_tower",
+   "label": "Water Tower",
+   "kind": "service",
+   "status": "existing",
+   "footprint": [
+    [
+     26.59,
+     -363.13
+    ],
+    [
+     23.67,
+     -360.21
+    ],
+    [
+     19.53,
+     -360.21
+    ],
+    [
+     16.61,
+     -363.13
+    ],
+    [
+     16.61,
+     -367.27
+    ],
+    [
+     19.53,
+     -370.19
+    ],
+    [
+     23.67,
+     -370.19
+    ],
+    [
+     26.59,
+     -367.27
+    ]
+   ],
+   "h": 40.0,
+   "roof": {
+    "type": "dome"
+   },
+   "parts": [
+    {
+     "name": "riser_and_legs",
+     "footprint": [
+      [
+       22.89,
+       -364.66
+      ],
+      [
+       22.14,
+       -363.91
+      ],
+      [
+       21.06,
+       -363.91
+      ],
+      [
+       20.31,
+       -364.66
+      ],
+      [
+       20.31,
+       -365.74
+      ],
+      [
+       21.06,
+       -366.49
+      ],
+      [
+       22.14,
+       -366.49
+      ],
+      [
+       22.89,
+       -365.74
+      ]
+     ],
+     "h": 30.0,
+     "base": 0.0,
+     "roof": {
+      "type": "flat"
+     },
+     "note": "multi-leg tower: legs on a ring of about 5.4 m radius with cross bracing, central riser"
+    },
+    {
+     "name": "tank",
+     "footprint": [
+      [
+       28.1,
+       -365.2
+      ],
+      [
+       27.61,
+       -362.71
+      ],
+      [
+       26.2,
+       -360.6
+      ],
+      [
+       24.09,
+       -359.19
+      ],
+      [
+       21.6,
+       -358.7
+      ],
+      [
+       19.11,
+       -359.19
+      ],
+      [
+       17.0,
+       -360.6
+      ],
+      [
+       15.59,
+       -362.71
+      ],
+      [
+       15.1,
+       -365.2
+      ],
+      [
+       15.59,
+       -367.69
+      ],
+      [
+       17.0,
+       -369.8
+      ],
+      [
+       19.11,
+       -371.21
+      ],
+      [
+       21.6,
+       -371.7
+      ],
+      [
+       24.09,
+       -371.21
+      ],
+      [
+       26.2,
+       -369.8
+      ],
+      [
+       27.61,
+       -367.69
+      ]
+     ],
+     "h": 40.0,
+     "base": 30.0,
+     "roof": {
+      "type": "dome"
+     },
+     "note": "white ellipsoidal tank, diameter about 13 m"
+    }
+   ],
+   "landmark": "water_tower",
+   "style": {
+    "wall": "metal_light",
+    "trim": "none",
+    "roof_mat": "metal_grey",
+    "windows": "none",
+    "notes": "white multi-leg water tower on a square paved pad (x 7..32, z -373..-357)"
+   },
+   "ev": {
+    "src": [
+     "aerial2022",
+     "User155234",
+     "V05",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Leg ring located from the visible north legs (x 16.4 and 27.0 at z about -370.5) and the paved pad; the tank image is displaced about 8 m SSE by view angle.",
+    "open": "Height not measured (tank top assumed 40 m); number of legs not counted."
+   },
+   "zone": "ncore"
+  }
+ ],
+ "water": [
+  {
+   "id": "reflection_court_basin_ne",
+   "ref": "W04",
+   "label": "Reflection Court",
+   "kind": "fountain",
+   "polygon": [
+    [
+     156.03,
+     -223.8
+    ],
+    [
+     155.93,
+     -223.2
+    ],
+    [
+     155.66,
+     -222.65
+    ],
+    [
+     155.23,
+     -222.22
+    ],
+    [
+     154.68,
+     -221.95
+    ],
+    [
+     154.08,
+     -221.85
+    ],
+    [
+     153.48,
+     -221.95
+    ],
+    [
+     152.93,
+     -222.22
+    ],
+    [
+     152.5,
+     -222.65
+    ],
+    [
+     152.23,
+     -223.2
+    ],
+    [
+     152.13,
+     -223.8
+    ],
+    [
+     152.23,
+     -224.4
+    ],
+    [
+     152.5,
+     -224.95
+    ],
+    [
+     152.93,
+     -225.38
+    ],
+    [
+     153.48,
+     -225.65
+    ],
+    [
+     154.08,
+     -225.75
+    ],
+    [
+     154.68,
+     -225.65
+    ],
+    [
+     155.23,
+     -225.38
+    ],
+    [
+     155.66,
+     -224.95
+    ],
+    [
+     155.93,
+     -224.4
+    ]
+   ],
+   "surface": 0.42,
+   "floor": -0.1,
+   "edge": "rim",
+   "rim_h": 0.55,
+   "features": [
+    {
+     "kind": "statue_base",
+     "p": [
+      154.6,
+      -223.6
+     ],
+     "note": "running figure with a child (sculpture; rights treated separately)"
+    }
+   ],
+   "objective": false,
+   "ev": {
+    "src": [
+     "aerial2022",
+     "User155151",
+     "R308",
+     "R310",
+     "R312",
+     "V05"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Water edge traced at 30 px/m from the 2022 aerial: NE basin centre (154.08, -223.80), outer rim radius 2.20 m, white concrete rim about 0.25 m thick and 0.55 m high that also forms the divider with the SW basin; paired with the SW basin; brick-paved court with a stamped round pad holding a standing statue in front (south-west) and the curved glass entrance of the arts center behind.",
+    "open": "Water depth and rim height estimated from User155151; whether the two basins share water through a gap in the dividing rim."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "reflection_court_basin_sw",
+   "ref": "W04",
+   "label": "Reflection Court",
+   "kind": "fountain",
+   "polygon": [
+    [
+     151.28,
+     -223.26
+    ],
+    [
+     150.93,
+     -223.11
+    ],
+    [
+     150.38,
+     -222.71
+    ],
+    [
+     150.1,
+     -222.33
+    ],
+    [
+     149.9,
+     -221.88
+    ],
+    [
+     149.83,
+     -221.28
+    ],
+    [
+     149.9,
+     -220.8
+    ],
+    [
+     150.06,
+     -220.4
+    ],
+    [
+     150.45,
+     -219.9
+    ],
+    [
+     150.83,
+     -219.61
+    ],
+    [
+     151.28,
+     -219.41
+    ],
+    [
+     151.88,
+     -219.33
+    ],
+    [
+     152.36,
+     -219.41
+    ],
+    [
+     152.76,
+     -219.58
+    ],
+    [
+     153.26,
+     -219.96
+    ],
+    [
+     153.55,
+     -220.33
+    ],
+    [
+     153.71,
+     -220.71
+    ],
+    [
+     153.83,
+     -221.38
+    ],
+    [
+     153.78,
+     -221.63
+    ],
+    [
+     153.13,
+     -221.81
+    ],
+    [
+     152.65,
+     -222.13
+    ],
+    [
+     152.18,
+     -222.68
+    ],
+    [
+     151.93,
+     -223.31
+    ]
+   ],
+   "surface": 0.42,
+   "floor": -0.1,
+   "edge": "rim",
+   "rim_h": 0.55,
+   "features": [
+    {
+     "kind": "statue_base",
+     "p": [
+      151.2,
+      -221.0
+     ],
+     "note": "reclining figure with a dog (sculpture; rights treated separately)"
+    }
+   ],
+   "objective": false,
+   "ev": {
+    "src": [
+     "aerial2022",
+     "User155151",
+     "R308",
+     "R310",
+     "R312"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "SW basin centre (151.83, -221.33), outer rim radius 2.25 m; its outline is a crescent where it meets the NE basin's rim, so the pair reads as a curved figure-eight, not a circle.",
+    "open": "Exact statue positions within the basins are estimated from the photo."
+   },
+   "zone": "ncore"
+  }
+ ],
+ "roads": [
+  {
+   "id": "east_perimeter_street_ncore_n",
+   "kind": "street",
+   "w": 9.5,
+   "curb": true,
+   "pts": [
+    [
+     394.1,
+     -385.0
+    ],
+    [
+     395.6,
+     -335.0
+    ],
+    [
+     397.0,
+     -285.0
+    ],
+    [
+     398.6,
+     -230.0
+    ],
+    [
+     399.5,
+     -195.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "East perimeter street, kerb to kerb about 9.3-9.5 m (two lanes), traced at 14 px/m; runs on from the north zone at z = -385."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "east_perimeter_street_ncore_s",
+   "kind": "street",
+   "w": 12.0,
+   "curb": true,
+   "pts": [
+    [
+     399.5,
+     -195.0
+    ],
+    [
+     400.2,
+     -172.0
+    ],
+    [
+     400.9,
+     -150.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "East perimeter street widening to about 12 m with a turn lane approaching the main campus entrance; ends exactly at z = -150 for the central zone."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "campus_loop_east_ncore",
+   "kind": "campus",
+   "w": 7.0,
+   "curb": true,
+   "pts": [
+    [
+     348.8,
+     -385.0
+    ],
+    [
+     349.6,
+     -345.0
+    ],
+    [
+     350.0,
+     -320.0
+    ],
+    [
+     350.6,
+     -285.0
+    ],
+    [
+     352.2,
+     -260.0
+    ],
+    [
+     354.5,
+     -235.0
+    ],
+    [
+     356.8,
+     -215.0
+    ],
+    [
+     358.0,
+     -198.0
+    ],
+    [
+     356.6,
+     -185.0
+    ],
+    [
+     353.0,
+     -172.0
+    ],
+    [
+     349.0,
+     -160.0
+    ],
+    [
+     347.0,
+     -150.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "East side of the campus loop from the north perimeter street (cut at z = -385) south to the main entrance (cut at z = -150); asphalt about 7 m, widening to about 10 m between z -205 and -180 (lay-by on the east side).",
+    "open": "Purpose of the widened section (bus/drop-off lay-by) unverified."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "campus_loop_northwest",
+   "kind": "campus",
+   "w": 6.8,
+   "curb": true,
+   "pts": [
+    [
+     57.5,
+     -385.0
+    ],
+    [
+     58.8,
+     -350.0
+    ],
+    [
+     60.0,
+     -330.0
+    ],
+    [
+     61.0,
+     -310.0
+    ],
+    [
+     61.6,
+     -295.0
+    ],
+    [
+     62.5,
+     -280.0
+    ],
+    [
+     63.0,
+     -265.0
+    ],
+    [
+     63.8,
+     -250.0
+    ],
+    [
+     65.0,
+     -235.0
+    ],
+    [
+     65.6,
+     -220.0
+    ],
+    [
+     65.8,
+     -210.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "plan2023p4"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "North-west part of the campus loop from the north perimeter street (cut at z = -385) to the campus-center drop-off; centreline drifts east from x 57.5 to 65.8 (brightness profiles every 15 m). In 2026 the wayfinding shows this road ending at the campus-center drop-off: the 2022 curve south-west from here toward the lake side is gone (see changes).",
+    "open": "Exact 2026 termination/turnaround geometry at the south end not visible in any source."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "innovation_center_dropoff",
+   "kind": "drive",
+   "w": 5.0,
+   "curb": true,
+   "pts": [
+    [
+     60.8,
+     -335.5
+    ],
+    [
+     61.73,
+     -333.75
+    ],
+    [
+     65.11,
+     -333.58
+    ],
+    [
+     68.32,
+     -332.49
+    ],
+    [
+     71.11,
+     -330.57
+    ],
+    [
+     73.27,
+     -327.96
+    ],
+    [
+     74.63,
+     -324.86
+    ],
+    [
+     75.1,
+     -321.5
+    ],
+    [
+     74.63,
+     -318.14
+    ],
+    [
+     73.27,
+     -315.04
+    ],
+    [
+     71.11,
+     -312.43
+    ],
+    [
+     68.32,
+     -310.51
+    ],
+    [
+     65.11,
+     -309.42
+    ],
+    [
+     61.73,
+     -309.25
+    ],
+    [
+     61.4,
+     -307.6
+    ]
+   ],
+   "ev": {
+    "src": [
+     "wayfinding2026",
+     "User155234",
+     "R005"
+    ],
+    "date": "2026",
+    "conf": "medium",
+    "note": "New semicircular drop-off loop on the east side of the loop road in front of the domed rotunda (2026 wayfinding white arc, local georeference +-4 m; oblique user aerial shows the loop with planted islands)."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "campus_center_dropoff",
+   "kind": "drive",
+   "w": 5.0,
+   "curb": true,
+   "pts": [
+    [
+     63.6,
+     -252.5
+    ],
+    [
+     56.0,
+     -251.5
+    ],
+    [
+     49.5,
+     -248.0
+    ],
+    [
+     45.2,
+     -240.5
+    ],
+    [
+     44.2,
+     -231.0
+    ],
+    [
+     44.6,
+     -222.5
+    ],
+    [
+     48.0,
+     -215.8
+    ],
+    [
+     54.0,
+     -212.3
+    ],
+    [
+     60.0,
+     -211.2
+    ],
+    [
+     65.7,
+     -211.5
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Semicircular drop-off lane on the west side of the loop road, passing under the campus-center porte-cochere (x 38..49, z -233..-226); planted island inside."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "campus_center_west_road",
+   "kind": "campus",
+   "w": 10.5,
+   "curb": true,
+   "pts": [
+    [
+     -35.2,
+     -284.0
+    ],
+    [
+     -35.2,
+     -255.0
+    ],
+    [
+     -35.0,
+     -230.0
+    ],
+    [
+     -34.5,
+     -215.0
+    ],
+    [
+     -33.5,
+     -200.0
+    ],
+    [
+     -31.2,
+     -175.0
+    ],
+    [
+     -29.5,
+     -160.0
+    ],
+    [
+     -29.0,
+     -150.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Road west of the campus center (2022 asphalt 10-11 m wide, profiles every 15 m). The 2026 wayfinding draws it as the through route west of the campus center (the loop's updated alignment) ending at the south-west corner of the assembly-center construction site; ends exactly at z = -150.",
+    "open": "Whether it was rebuilt/realigned a few metres west when the loop was rerouted (wayfinding places it about 10 m further west, within its +-10 m error); northern end/turnaround under the construction site."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "campus_center_west_road_spur_w",
+   "kind": "campus",
+   "w": 9.0,
+   "curb": true,
+   "pts": [
+    [
+     -33.6,
+     -199.5
+    ],
+    [
+     -40.0,
+     -199.5
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Stub of the road branching west at z about -199.5; continues in the west zone from x = -40."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "east_lot_aisle_n",
+   "kind": "lot_aisle",
+   "w": 7.0,
+   "curb": false,
+   "pts": [
+    [
+     293.0,
+     -238.5
+    ],
+    [
+     345.6,
+     -238.5
+    ],
+    [
+     350.0,
+     -233.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Northern aisle of the large east lot, entrance from the loop at z about -232."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "east_lot_aisle_s",
+   "kind": "lot_aisle",
+   "w": 7.0,
+   "curb": false,
+   "pts": [
+    [
+     293.0,
+     -171.5
+    ],
+    [
+     343.0,
+     -171.5
+    ],
+    [
+     350.5,
+     -176.5
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Southern aisle of the large east lot, entrance from the loop at z about -177."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "east_lot_aisle_w",
+   "kind": "lot_aisle",
+   "w": 6.5,
+   "curb": false,
+   "pts": [
+    [
+     300.8,
+     -238.5
+    ],
+    [
+     300.8,
+     -171.5
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "North-south aisle between stall rows."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "east_lot_aisle_c",
+   "kind": "lot_aisle",
+   "w": 6.5,
+   "curb": false,
+   "pts": [
+    [
+     318.5,
+     -238.5
+    ],
+    [
+     318.5,
+     -171.5
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "North-south aisle between stall rows."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "east_lot_aisle_e",
+   "kind": "lot_aisle",
+   "w": 6.0,
+   "curb": false,
+   "pts": [
+    [
+     336.5,
+     -238.5
+    ],
+    [
+     336.5,
+     -171.5
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "North-south aisle beside the east row."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "north_hall_lot_aisle",
+   "kind": "lot_aisle",
+   "w": 7.0,
+   "curb": false,
+   "pts": [
+    [
+     322.0,
+     -297.0
+    ],
+    [
+     347.0,
+     -297.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Aisle of the small lot south-east of the north hall, entered from the loop."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "tower_lot_aisle",
+   "kind": "lot_aisle",
+   "w": 7.0,
+   "curb": false,
+   "pts": [
+    [
+     13.5,
+     -391.0
+    ],
+    [
+     47.5,
+     -391.0
+    ],
+    [
+     47.5,
+     -343.0
+    ],
+    [
+     57.5,
+     -343.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "User155234"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "Aisles of the surviving part of the lot around the water tower (2022 aerial; a small paved area east of the tower is still drawn in 2026 and the oblique user aerial shows cars north of the tower).",
+    "open": "2026 extent of this lot is uncertain: the wayfinding draws only the small paved area east of the tower; the northern part may be construction staging."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "innovation_center_lot_drive",
+   "kind": "drive",
+   "w": 6.5,
+   "curb": true,
+   "pts": [
+    [
+     172.8,
+     -385.0
+    ],
+    [
+     172.8,
+     -356.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "wayfinding2026",
+     "User155234"
+    ],
+    "date": "2026",
+    "conf": "medium",
+    "note": "Access drive from the north perimeter street (cut at z = -385) to the new lot east of the innovation center (2026 wayfinding grey strip).",
+    "open": "Exact width/position +-4 m."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "innovation_center_lot_aisle",
+   "kind": "lot_aisle",
+   "w": 7.0,
+   "curb": false,
+   "pts": [
+    [
+     172.8,
+     -356.0
+    ],
+    [
+     192.5,
+     -356.0
+    ],
+    [
+     192.5,
+     -312.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "wayfinding2026",
+     "User155234"
+    ],
+    "date": "2026",
+    "conf": "low",
+    "note": "Assumed aisle layout of the new lot (lot outline from the 2026 wayfinding; cars visible in the oblique user aerial).",
+    "open": "Stall/aisle layout unknown."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "arts_service_drive",
+   "kind": "service",
+   "w": 4.5,
+   "curb": false,
+   "pts": [
+    [
+     200.0,
+     -309.5
+    ],
+    [
+     203.8,
+     -301.0
+    ],
+    [
+     201.5,
+     -292.0
+    ],
+    [
+     196.0,
+     -286.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "wayfinding2026",
+     "aerial2022"
+    ],
+    "date": "2026",
+    "conf": "low",
+    "note": "Service drive drawn (white) in the 2026 wayfinding from the new lot south to the paved yard north of the arts center; it follows the line of the 2022 curved walk.",
+    "open": "Could be a wide shared walk rather than a drive."
+   },
+   "zone": "ncore"
+  }
+ ],
+ "paths": [],
+ "areas": [
+  {
+   "id": "assembly_center_site",
+   "ref": "B17",
+   "label": "Assembly Center Site",
+   "kind": "construction",
+   "polygon": [
+    [
+     -40.0,
+     -347.5
+    ],
+    [
+     -3.0,
+     -347.5
+    ],
+    [
+     -3.0,
+     -340.0
+    ],
+    [
+     46.0,
+     -340.0
+    ],
+    [
+     46.0,
+     -297.6
+    ],
+    [
+     6.0,
+     -297.6
+    ],
+    [
+     6.0,
+     -294.2
+    ],
+    [
+     3.5,
+     -294.2
+    ],
+    [
+     3.5,
+     -286.0
+    ],
+    [
+     -40.0,
+     -286.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "wayfinding2026",
+     "plan2023p4",
+     "aerial2022",
+     "User155234"
+    ],
+    "date": "2026",
+    "conf": "medium",
+    "note": "Construction site of the large assembly/welcome building labelled 'opening fall 2027' in the 2026 wayfinding (October 2026: under construction, not a building). Extent from the wayfinding outline anchored to the water tower and the campus-center patio notch, abutting the campus center's north side; covers the former tennis courts and the south half of the 2022 lot west of the loop road. Modelled as a fenced site; the proposed building is deliberately not built.",
+    "open": "Actual fence line and site state (earthwork/steel frame) in October 2026 unverified; the wayfinding outline reaches about x -50 to -57, i.e. up to 10-17 m into the west zone, cut here at x = -40 (+-10 m); may also absorb the campus center's north annex."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "tower_lot",
+   "kind": "parking",
+   "polygon": [
+    [
+     10.5,
+     -395.5
+    ],
+    [
+     50.5,
+     -395.5
+    ],
+    [
+     50.5,
+     -341.0
+    ],
+    [
+     31.8,
+     -341.0
+    ],
+    [
+     31.8,
+     -373.0
+    ],
+    [
+     10.5,
+     -373.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026",
+     "User155234"
+    ],
+    "date": "2022",
+    "conf": "low",
+    "note": "Surviving part of the 2022 lot around the water tower: north part (cars visible in the oblique user aerial) and the strip east of the tower (small paved area still drawn in the 2026 wayfinding).",
+    "open": "May be partly fenced as construction staging in October 2026; the 2026 wayfinding does not draw the northern part."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "water_tower_pad",
+   "kind": "plaza",
+   "polygon": [
+    [
+     7.3,
+     -373.0
+    ],
+    [
+     31.8,
+     -373.0
+    ],
+    [
+     31.8,
+     -357.0
+    ],
+    [
+     7.3,
+     -357.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Square paved pad around the water tower legs (curbed)."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "east_lot",
+   "kind": "parking",
+   "polygon": [
+    [
+     290.0,
+     -242.5
+    ],
+    [
+     345.6,
+     -242.5
+    ],
+    [
+     345.6,
+     -180.0
+    ],
+    [
+     348.0,
+     -176.5
+    ],
+    [
+     345.5,
+     -170.5
+    ],
+    [
+     341.0,
+     -167.0
+    ],
+    [
+     290.0,
+     -167.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Large lot east of the administration hall (asphalt edge), still drawn as parking in 2026."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "north_hall_lot",
+   "kind": "parking",
+   "polygon": [
+    [
+     320.6,
+     -309.4
+    ],
+    [
+     341.3,
+     -309.4
+    ],
+    [
+     345.5,
+     -305.0
+    ],
+    [
+     345.5,
+     -287.0
+    ],
+    [
+     341.3,
+     -285.0
+    ],
+    [
+     320.6,
+     -285.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Small lot south-east of the north hall with a hatched access strip to the loop."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "innovation_center_lot",
+   "kind": "parking",
+   "polygon": [
+    [
+     176.5,
+     -358.0
+    ],
+    [
+     205.0,
+     -358.0
+    ],
+    [
+     208.5,
+     -354.0
+    ],
+    [
+     208.5,
+     -309.5
+    ],
+    [
+     176.5,
+     -309.5
+    ]
+   ],
+   "ev": {
+    "src": [
+     "wayfinding2026",
+     "User155234"
+    ],
+    "date": "2026",
+    "conf": "medium",
+    "note": "New lot east of the innovation center (2026 wayfinding grey area, local georeference +-4 m; cars in the oblique user aerial); replaced lawn and walks of 2022."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "innovation_center_front_plaza",
+   "kind": "plaza",
+   "polygon": [
+    [
+     66.0,
+     -352.0
+    ],
+    [
+     66.0,
+     -336.2
+    ],
+    [
+     70.7,
+     -334.3
+    ],
+    [
+     74.45,
+     -331.0
+    ],
+    [
+     76.9,
+     -326.75
+    ],
+    [
+     77.85,
+     -321.5
+    ],
+    [
+     77.25,
+     -317.3
+    ],
+    [
+     75.6,
+     -313.6
+    ],
+    [
+     73.8,
+     -311.25
+    ],
+    [
+     71.45,
+     -309.2
+    ],
+    [
+     68.9,
+     -307.75
+    ],
+    [
+     66.0,
+     -306.8
+    ],
+    [
+     66.0,
+     -303.0
+    ],
+    [
+     86.4,
+     -303.0
+    ],
+    [
+     86.4,
+     -321.5
+    ],
+    [
+     82.0,
+     -321.5
+    ],
+    [
+     82.0,
+     -335.0
+    ],
+    [
+     86.4,
+     -335.0
+    ],
+    [
+     86.4,
+     -352.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "wayfinding2026",
+     "R006",
+     "R328",
+     "User155234"
+    ],
+    "date": "2026",
+    "conf": "medium",
+    "note": "Paved forecourt with large planters between the drop-off loop and the rotunda front (R006/R328).",
+    "open": "Exact paving edge unknown."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "innovation_center_north_court",
+   "kind": "plaza",
+   "polygon": [
+    [
+     157.7,
+     -369.5
+    ],
+    [
+     157.09,
+     -366.44
+    ],
+    [
+     155.36,
+     -363.84
+    ],
+    [
+     152.76,
+     -362.11
+    ],
+    [
+     149.7,
+     -361.5
+    ],
+    [
+     146.64,
+     -362.11
+    ],
+    [
+     144.04,
+     -363.84
+    ],
+    [
+     142.31,
+     -366.44
+    ],
+    [
+     141.7,
+     -369.5
+    ],
+    [
+     142.31,
+     -372.56
+    ],
+    [
+     144.04,
+     -375.16
+    ],
+    [
+     146.64,
+     -376.89
+    ],
+    [
+     149.7,
+     -377.5
+    ],
+    [
+     152.76,
+     -376.89
+    ],
+    [
+     155.36,
+     -375.16
+    ],
+    [
+     157.09,
+     -372.56
+    ]
+   ],
+   "ev": {
+    "src": [
+     "R336",
+     "User155234"
+    ],
+    "date": "2026",
+    "conf": "low",
+    "note": "Round court with two curved brick seat walls in front of the north (secondary) entrance.",
+    "open": "Diameter and exact position estimated (+-4 m)."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "innovation_center_south_promenade",
+   "kind": "plaza",
+   "polygon": [
+    [
+     79.0,
+     -303.0
+    ],
+    [
+     151.0,
+     -303.0
+    ],
+    [
+     151.0,
+     -291.5
+    ],
+    [
+     79.0,
+     -291.5
+    ]
+   ],
+   "ev": {
+    "src": [
+     "wayfinding2026",
+     "User155234"
+    ],
+    "date": "2026",
+    "conf": "low",
+    "note": "Paved strip between the innovation center and the media center drawn in the 2026 wayfinding (pale grey).",
+    "open": "Could be a parking row or service lane rather than a pedestrian promenade."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "arts_north_yard",
+   "kind": "plaza",
+   "polygon": [
+    [
+     165.0,
+     -291.0
+    ],
+    [
+     220.0,
+     -291.0
+    ],
+    [
+     220.0,
+     -283.0
+    ],
+    [
+     217.0,
+     -275.5
+    ],
+    [
+     165.0,
+     -275.5
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Paved yard north of the arts center (service access; 2026 wayfinding draws a service drive into it)."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "reflection_court_plaza",
+   "kind": "plaza",
+   "polygon": [
+    [
+     140.5,
+     -234.2
+    ],
+    [
+     145.1,
+     -234.2
+    ],
+    [
+     148.5,
+     -232.8
+    ],
+    [
+     169.0,
+     -233.0
+    ],
+    [
+     169.0,
+     -230.0
+    ],
+    [
+     160.0,
+     -228.5
+    ],
+    [
+     157.5,
+     -219.0
+    ],
+    [
+     151.5,
+     -216.5
+    ],
+    [
+     146.5,
+     -218.5
+    ],
+    [
+     142.5,
+     -224.0
+    ],
+    [
+     140.2,
+     -229.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "User155151"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Brick-paved court around the paired basins in front of the arts center's curved glass entrance (stamped round pad with a standing statue south-west of the basins)."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "media_center_west_circle",
+   "kind": "plaza",
+   "polygon": [
+    [
+     100.9,
+     -230.3
+    ],
+    [
+     100.41,
+     -227.81
+    ],
+    [
+     99.0,
+     -225.7
+    ],
+    [
+     96.89,
+     -224.29
+    ],
+    [
+     94.4,
+     -223.8
+    ],
+    [
+     91.91,
+     -224.29
+    ],
+    [
+     89.8,
+     -225.7
+    ],
+    [
+     88.39,
+     -227.81
+    ],
+    [
+     87.9,
+     -230.3
+    ],
+    [
+     88.39,
+     -232.79
+    ],
+    [
+     89.8,
+     -234.9
+    ],
+    [
+     91.91,
+     -236.31
+    ],
+    [
+     94.4,
+     -236.8
+    ],
+    [
+     96.89,
+     -236.31
+    ],
+    [
+     99.0,
+     -234.9
+    ],
+    [
+     100.41,
+     -232.79
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Round paved node with an inlaid cross pattern where walks meet west of the media/music junction."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "campus_center_south_terrace",
+   "kind": "plaza",
+   "polygon": [
+    [
+     -2.2,
+     -211.8
+    ],
+    [
+     11.8,
+     -213.2
+    ],
+    [
+     29.4,
+     -212.1
+    ],
+    [
+     32.2,
+     -213.0
+    ],
+    [
+     32.2,
+     -207.0
+    ],
+    [
+     24.0,
+     -205.0
+    ],
+    [
+     10.0,
+     -204.5
+    ],
+    [
+     3.0,
+     -205.5
+    ],
+    [
+     -2.2,
+     -205.8
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Seating terrace along the campus center's south face (tables and chairs visible)."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "campus_center_round_patio",
+   "kind": "plaza",
+   "polygon": [
+    [
+     4.0,
+     -201.4
+    ],
+    [
+     3.53,
+     -199.03
+    ],
+    [
+     2.18,
+     -197.02
+    ],
+    [
+     0.17,
+     -195.67
+    ],
+    [
+     -2.2,
+     -195.2
+    ],
+    [
+     -4.57,
+     -195.67
+    ],
+    [
+     -6.58,
+     -197.02
+    ],
+    [
+     -7.93,
+     -199.03
+    ],
+    [
+     -8.4,
+     -201.4
+    ],
+    [
+     -7.93,
+     -203.77
+    ],
+    [
+     -6.58,
+     -205.78
+    ],
+    [
+     -4.57,
+     -207.13
+    ],
+    [
+     -2.2,
+     -207.6
+    ],
+    [
+     0.17,
+     -207.13
+    ],
+    [
+     2.18,
+     -205.78
+    ],
+    [
+     3.53,
+     -203.77
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Round seating patio below the south terrace."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "campus_center_nw_patio",
+   "kind": "plaza",
+   "polygon": [
+    [
+     -31.5,
+     -273.5
+    ],
+    [
+     -26.0,
+     -277.4
+    ],
+    [
+     -20.0,
+     -279.9
+    ],
+    [
+     -13.0,
+     -281.5
+    ],
+    [
+     -6.0,
+     -282.0
+    ],
+    [
+     -2.4,
+     -281.5
+    ],
+    [
+     -2.4,
+     -278.2
+    ],
+    [
+     -15.8,
+     -278.2
+    ],
+    [
+     -15.8,
+     -267.5
+    ],
+    [
+     -18.5,
+     -267.5
+    ],
+    [
+     -18.5,
+     -263.2
+    ],
+    [
+     -22.5,
+     -263.2
+    ],
+    [
+     -22.5,
+     -260.5
+    ],
+    [
+     -29.0,
+     -260.5
+    ],
+    [
+     -30.5,
+     -266.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Paved patio in the campus center's stepped north-west notch, enclosed on the north by a curved wall (matches the notch in the 2026 wayfinding outline).",
+    "open": "Whether the curved band is a seat wall or a canopy edge."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "north_hall_front_stair",
+   "kind": "plaza",
+   "polygon": [
+    [
+     319.0,
+     -345.6
+    ],
+    [
+     336.5,
+     -345.6
+    ],
+    [
+     336.5,
+     -338.6
+    ],
+    [
+     319.0,
+     -338.6
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R200",
+     "R306"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Wide front stair (two flights with a centre handrail, white side railings) climbing about 1.8 m from the front walk to the portico.",
+    "open": "Number of steps not counted."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "north_hall_front_ramp_terrace",
+   "kind": "plaza",
+   "polygon": [
+    [
+     319.0,
+     -350.6
+    ],
+    [
+     337.0,
+     -350.6
+    ],
+    [
+     337.0,
+     -345.6
+    ],
+    [
+     319.0,
+     -345.6
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R200"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Concrete ramp/terrace with white railings north of the front stair, enclosed by a concrete side wall (R200 right side)."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "north_hall_front_landing",
+   "kind": "plaza",
+   "polygon": [
+    [
+     336.5,
+     -350.0
+    ],
+    [
+     343.0,
+     -350.0
+    ],
+    [
+     343.0,
+     -339.0
+    ],
+    [
+     336.5,
+     -339.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Paved landing at the foot of the front stair joining the loop-side walk."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "administration_hall_front_steps",
+   "kind": "plaza",
+   "polygon": [
+    [
+     240.0,
+     -241.0
+    ],
+    [
+     248.5,
+     -241.0
+    ],
+    [
+     248.5,
+     -238.0
+    ],
+    [
+     240.0,
+     -238.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "User155128",
+     "R053"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Short flight of steps from the front walk up to the portico."
+   },
+   "zone": "ncore"
+  }
+ ],
+ "barriers": [
+  {
+   "id": "assembly_site_fence",
+   "ref": "B17",
+   "kind": "fence_construction",
+   "h": 2.0,
+   "pts": [
+    [
+     3.5,
+     -286.0
+    ],
+    [
+     -40.0,
+     -286.0
+    ],
+    [
+     -40.0,
+     -347.5
+    ],
+    [
+     -3.0,
+     -347.5
+    ],
+    [
+     -3.0,
+     -340.0
+    ],
+    [
+     46.0,
+     -340.0
+    ],
+    [
+     46.0,
+     -297.6
+    ],
+    [
+     40.0,
+     -297.6
+    ]
+   ],
+   "ev": {
+    "src": [
+     "wayfinding2026",
+     "plan2023p4"
+    ],
+    "date": "2026",
+    "conf": "low",
+    "note": "Temporary construction fence around the assembly-center site (October 2026), closed against the campus center's north face; the west side is held on the zone line x = -40.",
+    "open": "Real fence line unknown; the site may extend into the west zone."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "innovation_center_seat_wall_w",
+   "kind": "wall_low",
+   "h": 0.55,
+   "pts": [
+    [
+     146.53,
+     -362.7
+    ],
+    [
+     144.75,
+     -363.86
+    ],
+    [
+     143.37,
+     -365.47
+    ],
+    [
+     142.5,
+     -367.4
+    ],
+    [
+     142.2,
+     -369.5
+    ],
+    [
+     142.5,
+     -371.6
+    ],
+    [
+     143.37,
+     -373.53
+    ],
+    [
+     144.75,
+     -375.14
+    ],
+    [
+     146.53,
+     -376.3
+    ]
+   ],
+   "ev": {
+    "src": [
+     "R336",
+     "User155234"
+    ],
+    "date": "2026",
+    "conf": "low",
+    "note": "Curved brick seat wall (west half) framing the round court at the north entrance.",
+    "open": "Radius/position estimated."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "innovation_center_seat_wall_e",
+   "kind": "wall_low",
+   "h": 0.55,
+   "pts": [
+    [
+     152.87,
+     -376.3
+    ],
+    [
+     154.65,
+     -375.14
+    ],
+    [
+     156.03,
+     -373.53
+    ],
+    [
+     156.9,
+     -371.6
+    ],
+    [
+     157.2,
+     -369.5
+    ],
+    [
+     156.9,
+     -367.4
+    ],
+    [
+     156.03,
+     -365.47
+    ],
+    [
+     154.65,
+     -363.86
+    ],
+    [
+     152.87,
+     -362.7
+    ]
+   ],
+   "ev": {
+    "src": [
+     "R336",
+     "User155234"
+    ],
+    "date": "2026",
+    "conf": "low",
+    "note": "Curved brick seat wall (east half) framing the round court at the north entrance.",
+    "open": "Radius/position estimated."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "campus_center_nw_patio_wall",
+   "kind": "wall_low",
+   "h": 0.6,
+   "pts": [
+    [
+     -31.3,
+     -273.4
+    ],
+    [
+     -26.0,
+     -277.2
+    ],
+    [
+     -20.0,
+     -279.8
+    ],
+    [
+     -13.0,
+     -281.4
+    ],
+    [
+     -6.0,
+     -281.9
+    ],
+    [
+     -2.9,
+     -281.3
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Curved light-coloured wall closing the campus center's north-west patio.",
+    "open": "Could be a canopy edge rather than a seat wall."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "north_hall_mech_yard_screen",
+   "kind": "fence_iron",
+   "h": 2.4,
+   "pts": [
+    [
+     286.2,
+     -368.5
+    ],
+    [
+     277.5,
+     -368.5
+    ],
+    [
+     277.5,
+     -358.0
+    ],
+    [
+     286.2,
+     -358.0
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "White screen fence around the mechanical (condenser) yard against the north hall's west wall."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "north_hall_ramp_wall",
+   "kind": "wall_retaining",
+   "h": 1.2,
+   "pts": [
+    [
+     319.0,
+     -350.6
+    ],
+    [
+     337.0,
+     -350.6
+    ],
+    [
+     337.0,
+     -345.8
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R200"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Concrete wall (with white railing on top) enclosing the front ramp/terrace north of the front stair."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "north_hall_stair_rail_n",
+   "kind": "rail",
+   "h": 1.0,
+   "pts": [
+    [
+     319.0,
+     -345.6
+    ],
+    [
+     336.5,
+     -345.6
+    ]
+   ],
+   "ev": {
+    "src": [
+     "R200",
+     "R306"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "White pipe railing along the north side of the front stair."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "north_hall_stair_rail_s",
+   "kind": "rail",
+   "h": 1.0,
+   "pts": [
+    [
+     319.0,
+     -338.6
+    ],
+    [
+     336.5,
+     -338.6
+    ]
+   ],
+   "ev": {
+    "src": [
+     "R200",
+     "R306"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "White pipe railing along the south side of the front stair."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "north_hall_stair_rail_c",
+   "kind": "rail",
+   "h": 1.0,
+   "pts": [
+    [
+     321.0,
+     -342.1
+    ],
+    [
+     336.0,
+     -342.1
+    ]
+   ],
+   "ev": {
+    "src": [
+     "R306"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "Centre handrail splitting the front stair into two flights."
+   },
+   "zone": "ncore"
+  },
+  {
+   "id": "music_center_mech_yard_fence",
+   "kind": "fence_iron",
+   "h": 2.0,
+   "pts": [
+    [
+     82.3,
+     -196.7
+    ],
+    [
+     75.2,
+     -196.7
+    ],
+    [
+     75.2,
+     -187.8
+    ],
+    [
+     82.3,
+     -187.8
+    ]
+   ],
+   "ev": {
+    "src": [
+     "aerial2022"
+    ],
+    "date": "2022",
+    "conf": "medium",
+    "note": "Enclosure with equipment against the music center's west wall.",
+    "open": "Fence type not seen."
+   },
+   "zone": "ncore"
+  }
+ ],
+ "changes": []
+}

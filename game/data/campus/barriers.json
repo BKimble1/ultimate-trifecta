@@ -1,0 +1,1436 @@
+{
+ "items": [
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "Temporary construction fence around the assembly-center site (October 2026), closed against the campus center's north face; the west side is held on the zone line x = -40.",
+    "open": "Real fence line unknown; the site may extend into the west zone.",
+    "src": [
+     "wayfinding2026",
+     "plan2023p4"
+    ]
+   },
+   "h": 2.0,
+   "id": "assembly_site_fence",
+   "kind": "fence_construction",
+   "pts": [
+    [
+     3.5,
+     -286.0
+    ],
+    [
+     -40.0,
+     -286.0
+    ],
+    [
+     -40.0,
+     -347.5
+    ],
+    [
+     -3.0,
+     -347.5
+    ],
+    [
+     -3.0,
+     -340.0
+    ],
+    [
+     46.0,
+     -340.0
+    ],
+    [
+     46.0,
+     -297.6
+    ],
+    [
+     40.0,
+     -297.6
+    ]
+   ],
+   "ref": "B17",
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "backstop net/fence behind home inferred from shadow line",
+    "open": "height",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 6.0,
+   "id": "baseball_backstop",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -163,
+     -112
+    ],
+    [
+     -163,
+     -96
+    ],
+    [
+     -157,
+     -86
+    ],
+    [
+     -150,
+     -81
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "first-base side fence",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 1.8,
+   "id": "baseball_fence_1b",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -49,
+     -90
+    ],
+    [
+     -80,
+     -86
+    ],
+    [
+     -110,
+     -82
+    ],
+    [
+     -125,
+     -80
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "outfield fence on the outer edge of the warning track",
+    "src": [
+     "aerial2022",
+     "R059"
+    ]
+   },
+   "h": 2.4,
+   "id": "baseball_outfield_fence",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -163,
+     -137
+    ],
+    [
+     -163,
+     -193
+    ],
+    [
+     -150,
+     -194.5
+    ],
+    [
+     -130,
+     -196
+    ],
+    [
+     -110,
+     -196
+    ],
+    [
+     -92,
+     -193
+    ],
+    [
+     -76,
+     -187.5
+    ],
+    [
+     -63,
+     -178
+    ],
+    [
+     -55,
+     -166
+    ],
+    [
+     -51,
+     -150
+    ],
+    [
+     -49.5,
+     -130
+    ],
+    [
+     -49,
+     -110
+    ],
+    [
+     -49,
+     -90
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "Curved light-coloured wall closing the campus center's north-west patio.",
+    "open": "Could be a canopy edge rather than a seat wall.",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 0.6,
+   "id": "campus_center_nw_patio_wall",
+   "kind": "wall_low",
+   "pts": [
+    [
+     -31.3,
+     -273.4
+    ],
+    [
+     -26.0,
+     -277.2
+    ],
+    [
+     -20.0,
+     -279.8
+    ],
+    [
+     -13.0,
+     -281.4
+    ],
+    [
+     -6.0,
+     -281.9
+    ],
+    [
+     -2.9,
+     -281.3
+    ]
+   ],
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "fence outline of the garden enclosure",
+    "open": "fence type",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 1.8,
+   "id": "env_center_garden_fence",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -503,
+     -249
+    ],
+    [
+     -459,
+     -249
+    ],
+    [
+     -459,
+     -230
+    ],
+    [
+     -503,
+     -230
+    ],
+    [
+     -503,
+     -249
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "fence outline",
+    "open": "fence type",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 1.8,
+   "id": "env_center_plot_fence",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -634,
+     -236
+    ],
+    [
+     -613.5,
+     -236
+    ],
+    [
+     -613.5,
+     -212
+    ],
+    [
+     -634,
+     -212
+    ],
+    [
+     -634,
+     -236
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "Curved brick seat wall (east half) framing the round court at the north entrance.",
+    "open": "Radius/position estimated.",
+    "src": [
+     "R336",
+     "User155234"
+    ]
+   },
+   "h": 0.55,
+   "id": "innovation_center_seat_wall_e",
+   "kind": "wall_low",
+   "pts": [
+    [
+     152.87,
+     -376.3
+    ],
+    [
+     154.65,
+     -375.14
+    ],
+    [
+     156.03,
+     -373.53
+    ],
+    [
+     156.9,
+     -371.6
+    ],
+    [
+     157.2,
+     -369.5
+    ],
+    [
+     156.9,
+     -367.4
+    ],
+    [
+     156.03,
+     -365.47
+    ],
+    [
+     154.65,
+     -363.86
+    ],
+    [
+     152.87,
+     -362.7
+    ]
+   ],
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "Curved brick seat wall (west half) framing the round court at the north entrance.",
+    "open": "Radius/position estimated.",
+    "src": [
+     "R336",
+     "User155234"
+    ]
+   },
+   "h": 0.55,
+   "id": "innovation_center_seat_wall_w",
+   "kind": "wall_low",
+   "pts": [
+    [
+     146.53,
+     -362.7
+    ],
+    [
+     144.75,
+     -363.86
+    ],
+    [
+     143.37,
+     -365.47
+    ],
+    [
+     142.5,
+     -367.4
+    ],
+    [
+     142.2,
+     -369.5
+    ],
+    [
+     142.5,
+     -371.6
+    ],
+    [
+     143.37,
+     -373.53
+    ],
+    [
+     144.75,
+     -375.14
+    ],
+    [
+     146.53,
+     -376.3
+    ]
+   ],
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "concrete bunker walls",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 1.5,
+   "id": "maintenance_bin_walls",
+   "kind": "wall_retaining",
+   "pts": [
+    [
+     -557.5,
+     6.4
+    ],
+    [
+     -557.5,
+     -5.3
+    ],
+    [
+     -550,
+     -5.3
+    ],
+    [
+     -550,
+     6.4
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "Enclosure with equipment against the music center's west wall.",
+    "open": "Fence type not seen.",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 2.0,
+   "id": "music_center_mech_yard_fence",
+   "kind": "fence_iron",
+   "pts": [
+    [
+     82.3,
+     -196.7
+    ],
+    [
+     75.2,
+     -196.7
+    ],
+    [
+     75.2,
+     -187.8
+    ],
+    [
+     82.3,
+     -187.8
+    ]
+   ],
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "White screen fence around the mechanical (condenser) yard against the north hall's west wall.",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 2.4,
+   "id": "north_hall_mech_yard_screen",
+   "kind": "fence_iron",
+   "pts": [
+    [
+     286.2,
+     -368.5
+    ],
+    [
+     277.5,
+     -368.5
+    ],
+    [
+     277.5,
+     -358.0
+    ],
+    [
+     286.2,
+     -358.0
+    ]
+   ],
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "Concrete wall (with white railing on top) enclosing the front ramp/terrace north of the front stair.",
+    "src": [
+     "aerial2022",
+     "R200"
+    ]
+   },
+   "h": 1.2,
+   "id": "north_hall_ramp_wall",
+   "kind": "wall_retaining",
+   "pts": [
+    [
+     319.0,
+     -350.6
+    ],
+    [
+     337.0,
+     -350.6
+    ],
+    [
+     337.0,
+     -345.8
+    ]
+   ],
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "Centre handrail splitting the front stair into two flights.",
+    "src": [
+     "R306"
+    ]
+   },
+   "h": 1.0,
+   "id": "north_hall_stair_rail_c",
+   "kind": "rail",
+   "pts": [
+    [
+     321.0,
+     -342.1
+    ],
+    [
+     336.0,
+     -342.1
+    ]
+   ],
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "White pipe railing along the north side of the front stair.",
+    "src": [
+     "R200",
+     "R306"
+    ]
+   },
+   "h": 1.0,
+   "id": "north_hall_stair_rail_n",
+   "kind": "rail",
+   "pts": [
+    [
+     319.0,
+     -345.6
+    ],
+    [
+     336.5,
+     -345.6
+    ]
+   ],
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "high",
+    "date": "2022",
+    "note": "White pipe railing along the south side of the front stair.",
+    "src": [
+     "R200",
+     "R306"
+    ]
+   },
+   "h": 1.0,
+   "id": "north_hall_stair_rail_s",
+   "kind": "rail",
+   "pts": [
+    [
+     319.0,
+     -338.6
+    ],
+    [
+     336.5,
+     -338.6
+    ]
+   ],
+   "zone": "ncore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "fence line with shadow on W, N and E sides; light poles at the corners",
+    "open": "south side open to the walk (assumed)",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 2.4,
+   "id": "practice_field_fence",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -283,
+     -188
+    ],
+    [
+     -283,
+     -254.5
+    ],
+    [
+     -395,
+     -254.5
+    ],
+    [
+     -395,
+     -188
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "layout from the top-down photo R055 (rotated 180 deg to match the 2026 map: 3+3+3 tennis courts, 8 pickleball courts in the SE quadrant, central walks with benches and a pyramid-roof kiosk); scale from tennis court lines (0.142 m/px -> complex ~110 x 80 m); placed from the 2026 map (+-10 m)",
+    "open": "exact position and orientation need newer imagery; not in the 2022 aerial",
+    "src": [
+     "wayfinding2026",
+     "R055",
+     "plan2023p4"
+    ]
+   },
+   "h": 3.0,
+   "id": "racket_courts_fence_ne",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -482.7,
+     -153.5
+    ],
+    [
+     -435.0,
+     -153.5
+    ],
+    [
+     -435.0,
+     -117.4
+    ],
+    [
+     -482.7,
+     -117.4
+    ],
+    [
+     -482.7,
+     -153.5
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "layout from the top-down photo R055 (rotated 180 deg to match the 2026 map: 3+3+3 tennis courts, 8 pickleball courts in the SE quadrant, central walks with benches and a pyramid-roof kiosk); scale from tennis court lines (0.142 m/px -> complex ~110 x 80 m); placed from the 2026 map (+-10 m)",
+    "open": "exact position and orientation need newer imagery; not in the 2022 aerial",
+    "src": [
+     "wayfinding2026",
+     "R055",
+     "plan2023p4"
+    ]
+   },
+   "h": 3.0,
+   "id": "racket_courts_fence_nw",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -545.0,
+     -153.5
+    ],
+    [
+     -495.2,
+     -153.5
+    ],
+    [
+     -495.2,
+     -117.4
+    ],
+    [
+     -545.0,
+     -117.4
+    ],
+    [
+     -545.0,
+     -153.5
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "layout from the top-down photo R055 (rotated 180 deg to match the 2026 map: 3+3+3 tennis courts, 8 pickleball courts in the SE quadrant, central walks with benches and a pyramid-roof kiosk); scale from tennis court lines (0.142 m/px -> complex ~110 x 80 m); placed from the 2026 map (+-10 m)",
+    "open": "exact position and orientation need newer imagery; not in the 2022 aerial",
+    "src": [
+     "wayfinding2026",
+     "R055",
+     "plan2023p4"
+    ]
+   },
+   "h": 3.0,
+   "id": "racket_courts_fence_se",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -482.7,
+     -113.8
+    ],
+    [
+     -435.0,
+     -113.8
+    ],
+    [
+     -435.0,
+     -74.0
+    ],
+    [
+     -482.7,
+     -74.0
+    ],
+    [
+     -482.7,
+     -113.8
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "layout from the top-down photo R055 (rotated 180 deg to match the 2026 map: 3+3+3 tennis courts, 8 pickleball courts in the SE quadrant, central walks with benches and a pyramid-roof kiosk); scale from tennis court lines (0.142 m/px -> complex ~110 x 80 m); placed from the 2026 map (+-10 m)",
+    "open": "exact position and orientation need newer imagery; not in the 2022 aerial",
+    "src": [
+     "wayfinding2026",
+     "R055",
+     "plan2023p4"
+    ]
+   },
+   "h": 3.0,
+   "id": "racket_courts_fence_sw",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -545.0,
+     -113.8
+    ],
+    [
+     -495.2,
+     -113.8
+    ],
+    [
+     -495.2,
+     -74.0
+    ],
+    [
+     -545.0,
+     -74.0
+    ],
+    [
+     -545.0,
+     -113.8
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "outfield/perimeter fence (dark line and shadow)",
+    "open": "openings",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 2.4,
+   "id": "softball_fence",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -527,
+     131
+    ],
+    [
+     -527,
+     58.5
+    ],
+    [
+     -520.4,
+     58.5
+    ],
+    [
+     -520.4,
+     61.5
+    ],
+    [
+     -504.2,
+     60.8
+    ],
+    [
+     -488.8,
+     63.1
+    ],
+    [
+     -476.5,
+     67.7
+    ],
+    [
+     -467.3,
+     73.1
+    ],
+    [
+     -459.6,
+     80.8
+    ],
+    [
+     -455,
+     88.5
+    ],
+    [
+     -451.2,
+     99.2
+    ],
+    [
+     -449.6,
+     111.5
+    ],
+    [
+     -448.8,
+     127.5
+    ],
+    [
+     -448.8,
+     131
+    ],
+    [
+     -527,
+     131
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "fence line east of the turf (dark line + shadow in aerial)",
+    "src": [
+     "aerial2022",
+     "R181"
+    ]
+   },
+   "h": 1.8,
+   "id": "stadium_fence_e",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -190,
+     -207.5
+    ],
+    [
+     -190,
+     -76
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "north end fence inferred from the line at the apron edge",
+    "open": "gates/openings",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 1.8,
+   "id": "stadium_fence_n",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -262,
+     -207.5
+    ],
+    [
+     -190,
+     -207.5
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "south fence with gates south of the apron",
+    "open": "gate positions",
+    "src": [
+     "aerial2022",
+     "R181"
+    ]
+   },
+   "h": 1.8,
+   "id": "stadium_fence_s",
+   "kind": "fence_iron",
+   "pts": [
+    [
+     -262,
+     -75.5
+    ],
+    [
+     -190,
+     -75.5
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2022",
+    "note": "low rail between promenade and turf assumed (typical)",
+    "open": "verify",
+    "src": [
+     "aerial2022"
+    ]
+   },
+   "h": 1.1,
+   "id": "stadium_rail_w",
+   "kind": "rail",
+   "pts": [
+    [
+     -253.5,
+     -202.5
+    ],
+    [
+     -253.5,
+     -82.5
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2026",
+    "note": "assumed perimeter fence round the venue",
+    "open": "existence and line unverified",
+    "src": [
+     "wayfinding2026"
+    ]
+   },
+   "h": 1.8,
+   "id": "track_complex_fence",
+   "kind": "fence_chain",
+   "pts": [
+    [
+     -752,
+     32
+    ],
+    [
+     -608,
+     32
+    ],
+    [
+     -608,
+     138
+    ],
+    [
+     -752,
+     138
+    ],
+    [
+     -752,
+     32
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "low",
+    "date": "2025",
+    "note": "low wall edging the planting bed along the south facade",
+    "open": "position estimated",
+    "src": [
+     "R058"
+    ]
+   },
+   "h": 0.5,
+   "id": "trainhall_bed_wall",
+   "kind": "wall_low",
+   "pts": [
+    [
+     -166,
+     -218
+    ],
+    [
+     -148,
+     -218
+    ]
+   ],
+   "zone": "west"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "low brick garden walls with stone coping ringing the chapel garden, stepped into alcoves with benches",
+    "open": "alcove count and depth approximate (12 alcoves modelled)",
+    "src": [
+     "aerial2022",
+     "R009",
+     "R012"
+    ]
+   },
+   "h": 0.6,
+   "id": "wall_cc_chapel_00",
+   "kind": "wall_low",
+   "pts": [
+    [
+     88.8,
+     25.0
+    ],
+    [
+     88.76,
+     26.22
+    ],
+    [
+     88.64,
+     27.43
+    ],
+    [
+     88.44,
+     28.63
+    ],
+    [
+     90.68,
+     30.49
+    ],
+    [
+     90.27,
+     31.81
+    ],
+    [
+     89.79,
+     33.11
+    ],
+    [
+     89.21,
+     34.38
+    ],
+    [
+     86.31,
+     34.3
+    ],
+    [
+     85.67,
+     35.33
+    ],
+    [
+     84.96,
+     36.32
+    ],
+    [
+     84.18,
+     37.26
+    ],
+    [
+     85.19,
+     39.99
+    ],
+    [
+     84.18,
+     40.94
+    ],
+    [
+     83.11,
+     41.82
+    ],
+    [
+     81.98,
+     42.63
+    ],
+    [
+     79.5,
+     41.11
+    ],
+    [
+     78.43,
+     41.68
+    ],
+    [
+     77.32,
+     42.18
+    ],
+    [
+     76.18,
+     42.61
+    ],
+    [
+     75.69,
+     45.48
+    ],
+    [
+     74.34,
+     45.79
+    ],
+    [
+     72.97,
+     46.02
+    ],
+    [
+     71.59,
+     46.15
+    ],
+    [
+     70.2,
+     43.6
+    ]
+   ],
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "low brick garden walls with stone coping ringing the chapel garden, stepped into alcoves with benches",
+    "open": "alcove count and depth approximate (12 alcoves modelled)",
+    "src": [
+     "aerial2022",
+     "R009",
+     "R012"
+    ]
+   },
+   "h": 0.6,
+   "id": "wall_cc_chapel_01",
+   "kind": "wall_low",
+   "pts": [
+    [
+     63.39,
+     45.07
+    ],
+    [
+     62.09,
+     44.59
+    ],
+    [
+     60.82,
+     44.01
+    ],
+    [
+     60.9,
+     41.11
+    ],
+    [
+     59.87,
+     40.47
+    ]
+   ],
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "low brick garden walls with stone coping ringing the chapel garden, stepped into alcoves with benches",
+    "open": "alcove count and depth approximate (12 alcoves modelled)",
+    "src": [
+     "aerial2022",
+     "R009",
+     "R012"
+    ]
+   },
+   "h": 0.6,
+   "id": "wall_cc_chapel_02",
+   "kind": "wall_low",
+   "pts": [
+    [
+     52.57,
+     36.78
+    ],
+    [
+     54.09,
+     34.3
+    ],
+    [
+     53.52,
+     33.23
+    ],
+    [
+     53.02,
+     32.12
+    ],
+    [
+     52.59,
+     30.98
+    ],
+    [
+     49.72,
+     30.49
+    ],
+    [
+     49.41,
+     29.14
+    ],
+    [
+     49.18,
+     27.77
+    ],
+    [
+     49.05,
+     26.39
+    ],
+    [
+     51.6,
+     25.0
+    ],
+    [
+     51.64,
+     23.78
+    ],
+    [
+     51.76,
+     22.57
+    ],
+    [
+     51.96,
+     21.37
+    ],
+    [
+     49.72,
+     19.51
+    ],
+    [
+     50.13,
+     18.19
+    ]
+   ],
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "low brick garden walls with stone coping ringing the chapel garden, stepped into alcoves with benches",
+    "open": "alcove count and depth approximate (12 alcoves modelled)",
+    "src": [
+     "aerial2022",
+     "R009",
+     "R012"
+    ]
+   },
+   "h": 0.6,
+   "id": "wall_cc_chapel_03",
+   "kind": "wall_low",
+   "pts": [
+    [
+     55.44,
+     13.68
+    ],
+    [
+     56.22,
+     12.74
+    ],
+    [
+     55.21,
+     10.01
+    ],
+    [
+     56.22,
+     9.06
+    ]
+   ],
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "low brick garden walls with stone coping ringing the chapel garden, stepped into alcoves with benches",
+    "open": "alcove count and depth approximate (12 alcoves modelled)",
+    "src": [
+     "aerial2022",
+     "R009",
+     "R012"
+    ]
+   },
+   "h": 0.6,
+   "id": "wall_cc_chapel_04",
+   "kind": "wall_low",
+   "pts": [
+    [
+     68.81,
+     3.85
+    ],
+    [
+     70.2,
+     6.4
+    ],
+    [
+     71.42,
+     6.44
+    ],
+    [
+     72.63,
+     6.56
+    ],
+    [
+     73.83,
+     6.76
+    ],
+    [
+     75.69,
+     4.52
+    ],
+    [
+     77.01,
+     4.93
+    ],
+    [
+     78.31,
+     5.41
+    ],
+    [
+     79.58,
+     5.99
+    ],
+    [
+     79.5,
+     8.89
+    ],
+    [
+     80.53,
+     9.53
+    ]
+   ],
+   "zone": "ccore"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "low brick garden walls with stone coping ringing the chapel garden, stepped into alcoves with benches",
+    "open": "alcove count and depth approximate (12 alcoves modelled)",
+    "src": [
+     "aerial2022",
+     "R009",
+     "R012"
+    ]
+   },
+   "h": 0.6,
+   "id": "wall_cc_chapel_05",
+   "kind": "wall_low",
+   "pts": [
+    [
+     87.83,
+     13.22
+    ],
+    [
+     86.31,
+     15.7
+    ],
+    [
+     86.88,
+     16.77
+    ],
+    [
+     87.38,
+     17.88
+    ],
+    [
+     87.81,
+     19.02
+    ],
+    [
+     90.68,
+     19.51
+    ],
+    [
+     90.99,
+     20.86
+    ],
+    [
+     91.22,
+     22.23
+    ],
+    [
+     91.35,
+     23.61
+    ],
+    [
+     88.8,
+     25.0
+    ]
+   ],
+   "zone": "ccore"
+  }
+ ],
+ "version": 1
+}
