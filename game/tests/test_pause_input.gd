@@ -180,6 +180,9 @@ func test_twenty_cycles_then_leave() -> void:
 	var mc := await _begin()
 	var hud: MatchHUD = mc.hud
 	var sens0 := Controls.sensitivity
+	# start from the default: the last drag ends on 1.2, which an earlier,
+	# interrupted run may have left saved, and then nothing would move
+	Controls.sensitivity = 1.0
 	var quits := [0]
 	mc.quit_requested.connect(func() -> void: quits[0] += 1)
 	for i in 20:
@@ -196,7 +199,7 @@ func test_twenty_cycles_then_leave() -> void:
 	t.eq(hud.pause_closes, 40, "40 closes, each once")
 	t.eq(quits[0], 0, "Stay never leaves")
 	t.check(not t.get_tree().paused and hud.overlays().is_empty() and mc.touch.visible, "back in the round: unpaused, no overlay, touch controls back")
-	t.check(absf(Controls.sensitivity - sens0) > 0.01, "the camera slider took the finger")
+	t.check(absf(Controls.sensitivity - 1.0) > 0.01, "the camera slider took the finger")
 	Controls.sensitivity = sens0
 	Save.set_setting("sensitivity", sens0)
 	# leave for real: once, even if tapped twice

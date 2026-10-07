@@ -117,8 +117,9 @@ owner's options, none of them taken:
 
 These are this desktop container's numbers, never a phone's. No iPhone was available to this work, so
 device frame rate, GPU time, heat and memory pressure are unverified. They were measured before the
-last art fixes (porticos, the chapel's roof and wings, facade bands and panels). Those add a few
-hundred triangles per building and no colliders.
+last fixes: porticos, the chapel's roof and wings, facade bands and panels, and the water features.
+Those add a few hundred triangles per building and seven colliders (the footbridge and its two
+railings, and the docks).
 
 **Gameplay bench.** `tools/match_bench.sh`: three Practice rounds of 75 s, every slot bot-driven, 60 fps
 cap, seed 7, headless (CPU side). Two runs each, median (range):
