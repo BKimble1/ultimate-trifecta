@@ -423,13 +423,26 @@ func _r_slopes(part: int, parts: int) -> void:
 ## furniture are solid on foot, then each doorway is carved open along its
 ## axis from the approach to the inside point.
 func _r_dorms(_part: int, _parts: int) -> void:
+	var passages_of := {}
+	for bd in layout.buildings:
+		passages_of[String(bd["id"])] = bd["passages"]
 	for id in CampusDorms.ids(layout.map_id):
 		var g := CampusDorms.geometry(id)
+		var pas: Array = passages_of.get(String(g.get("building", "")), [])
 		for poly in g["foot"]:
 			_solid_poly(foot, poly, FOOT_INF)
 		for dr in g["doors"]:
 			var a: Vector2 = dr["approach"]
 			var b: Vector2 = dr["inside"]
+			# a door under a portico: the hall's walls take in the portico
+			# floor, so the lane runs on out through it to its step, between
+			# the columns (the capsule passes them; a 2 m cell does not)
+			var out: Vector2 = dr["normal"]
+			var reach := 0.0
+			while reach < 8.0 and pas.any(func(ps: Dictionary) -> bool: return Geometry2D.is_point_in_polygon(a + out * (reach + 0.5), ps["poly"])):
+				reach += 0.5
+			if reach > 0.0:
+				a += out * (reach + cell * 0.5)
 			var n := maxi(2, int(a.distance_to(b) / (cell * 0.5)))
 			for k in n + 1:
 				var c := to_cell(a.lerp(b, float(k) / float(n)))

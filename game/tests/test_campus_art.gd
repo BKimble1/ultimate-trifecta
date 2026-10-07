@@ -13,7 +13,7 @@ var t
 ## change here is a gameplay change: re-record deliberately.
 const CAMPUS_HASH := "3ddb4140b8bfd5bf"
 const CAMPUS_COLLISION := "dd6baf7396139c426b8ee863122fc7166aa83044b5067940d2f91bfe704b705c"
-const CAMPUS_NAV := "24524ea6c4b573b2443a4904142a3a8feabd4e00d7fa51830eb719d481abc9a4"
+const CAMPUS_NAV := "ef972e6b2d0a87174e9310f905457142f8ddf9cadf4a41a704ec244318d1c562"
 const CAMPUS_LAYOUT := "beeb3c985c7fe0c72c636b9d1ac1cce405e5c607e0a44da2c61c9f6dd8a88099"
 
 

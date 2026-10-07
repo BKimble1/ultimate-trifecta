@@ -49,23 +49,28 @@ func test_bots_complete_every_curated_route() -> void:
 		var med: float = all_times[all_times.size() / 2]
 		print("ROUTE_SUMMARY n=%d min=%.1f median=%.1f max=%.1f" % [all_times.size(), all_times[0], med, all_times[-1]])
 		t.check(med > 90.0 and med < 200.0, "typical no-pursuit trip is in a sensible range (median %.0f s)" % med)
-	# feed measured times back into route curation (tools/route_analysis.gd);
-	# merge so combinations outside the curated set keep their earlier measurement
+	# feed measured times back into route curation (tools/route_analysis.gd
+	# reads them per start hall, "dorms" -> hall -> combination); merge so
+	# combinations outside the curated set keep their earlier measurement
 	var path := "res://config/route_bot_times.json"
 	var merged: Dictionary = {}
 	if FileAccess.file_exists(path):
 		var old: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 		if old is Dictionary:
 			merged = old
-	merged.merge(per_combo, true)
-	var keys := merged.keys()
+	var dorms: Dictionary = merged.get("dorms", {})
+	var mine: Dictionary = dorms.get(CampusDorms.default_id(), {})
+	mine.merge(per_combo, true)
+	var keys := mine.keys()
 	keys.sort()
 	var ordered := {}
 	for k in keys:
-		ordered[k] = merged[k]
+		ordered[k] = mine[k]
+	dorms[CampusDorms.default_id()] = ordered
+	merged["dorms"] = dorms
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify(ordered, "  "))
+		f.store_string(JSON.stringify(merged, "  "))
 
 
 ## V6: every race-start hall that is not its map's default, three of its
