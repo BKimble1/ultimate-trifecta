@@ -37,6 +37,12 @@ func test_bots_complete_every_curated_route() -> void:
 		var finished := times.filter(func(x): return x > 0.0)
 		var names := targets.map(func(i): return h.sim.layout.waters[i]["short"])
 		print("ROUTE %s finished %d/6 times %s" % [str(names), finished.size(), str(times.map(func(x): return snappedf(x, 0.1)))])
+		# where a runner that did not finish ended up (stuck at a door, short of a water)
+		for p in h.sim.players:
+			if p.is_runner() and p.finished_tick < 0:
+				var b = h.sim.bots.get(p.id)
+				print("ROUTE   unfinished runner %d at %s, stamps %d, state %d, goal %s (%s)" % [p.id, str(p.pos().snapped(Vector3(0.1, 0.1, 0.1))), p.stamps, p.state,
+					str(b.goal) if b != null else "-", String(b.goal_kind) if b != null else "-"])
 		t.check(finished.size() >= 5, "combo %s: runner bots complete the route without pursuit (%d/6)" % [str(names), finished.size()])
 		all_times.append_array(finished)
 		if not finished.is_empty():

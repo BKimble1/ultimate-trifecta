@@ -1,4 +1,12 @@
 {
-  "dorms": {},
+  "dorms": {
+    "west_hall": {
+      "[0, 1, 2]": 166.616666666667,
+      "[0, 1, 4]": 215.35,
+      "[0, 1, 5]": 176.516666666667,
+      "[1, 2, 5]": 216.983333333333,
+      "[1, 4, 5]": 172.783333333333
+    }
+  },
   "dorms_note": "Lakeside Campus: runner-bot trip times (median of six, no Night Watch, seconds of game time at a fixed 60 Hz) per start hall and target combination; written by tests/test_routes_bots.gd for the default hall, read by tools/route_analysis.gd (a combination is curated only if its bot time also fits 95% of the round). Moonbrook College's are in route_bot_times_classic.json."
 }
