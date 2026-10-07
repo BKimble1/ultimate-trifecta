@@ -1,10 +1,10 @@
-2.0 release candidate, provisional: the game service isn't connected in this build yet, so Friends status, invites, purchases, Coins and Season rewards say they're unavailable. That's expected; please don't try to buy anything. Tell us your iPhone or iPad model:
+2.1 internal beta: two maps. The game service still isn't connected in this build, so Friends status, purchases, Coins and Season rewards say they're unavailable. That's expected; please don't try to buy anything. Tell us your iPhone or iPad model:
 
-- Home and the party room: the dorm behind the menus is a little lighter. Check that it still feels like night, that your runner stands out, and that the small lines beside Start are easy to read.
-- Season Pass: tap Tier 50 or Tier 100 (or any outfit in the track). It stands large on the left. Drag sideways on it to turn it, or use Turn and Reset; the track still scrolls by finger. Leave the pass: your runner should wear your own look. Tell us if anything is hard to read or tap.
-- Friends: on Home (top right) and in a party. It asks for Game Center friends access, then lists your friends. In this build their status says it's unavailable. Party codes and Invite with Game Center still work. Tell us if the list, the permission prompt or the buttons feel wrong.
-- Outfits up close: the hooded onesies (Night Owl, Bedtime Bandit and others), Dr. Doom's jacket and the Glow Jogger headlamp should now sit on the body in the Season Pass, Shop and Locker previews. Tell us about anything that floats or pokes through.
-- Shop: try Hide owned on All skins and Accessories. The six Coin packs and the two App Store outfits are always listed; buying says it's unavailable in this build.
-- Online parties: create a party and join from a second device with the code, then play a full round. If joining fails, the game should now say why instead of waiting.
-- Running, diving, tagging and the music are unchanged from 1.9. Tell us if anything got worse.
+- Two maps: Lakeside Campus (new, the default) and Moonbrook College (the 2.0 map). In a party the host taps the Map row and picks one; guests see it but can't change it. In Practice, pick it before you start. Check that both cards are easy to read and that the choice sticks.
+- Lakeside Campus is much bigger and stands on real ground: slopes, stairs up to raised doors, ponds and a lake, a footbridge, parked cars, bikes and woods. Play a few full rounds. Tell us where you fall through anything, get stuck, see something floating or sunk, or can't get up a slope or stair (a screenshot helps).
+- Stairs: run up and down the big front stair on the north side of the campus and a few others. They should feel smooth at running pace.
+- Rounds: runners should reach every target and get home inside the timer, and the bots should too. Tell us if a round feels impossible or far too easy.
+- Speed and heat: the first load of Lakeside Campus takes longer than Moonbrook's; a rematch should be quick. Tell us if a map stutters, loads for too long, or the device gets hot.
+- Online: every device needs 2.1, because 2.0 can't join a 2.1 party. Tell us what an older build shows when it tries. Play a party on each map, and try leaving and rejoining mid-round.
+- Moonbrook College should play exactly as it did in 2.0. Running, diving, tagging, the timer, the Shop, outfits and the music are unchanged. Tell us if anything got worse.
 - Look for any text cut off, overlapping or hidden behind the notch or home bar, on iPhone and iPad.

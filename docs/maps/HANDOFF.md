@@ -200,5 +200,14 @@ counts), never a phone's. Device frame rate, GPU, memory pressure and heat are u
 
 ## Release
 
-Nothing was uploaded and no version or build number changed: this pass doesn't authorise a release.
-The code is ready for the repository's normal iOS build lane.
+- **Version:** the marketing version is now **2.1** (`ios.yml`, `project.godot`, the export
+  preset; `test_release_config` checks they agree).
+- **App Store Connect:** before the bump, the read-only status run #176 showed builds 1–10, the
+  latest 2.0 (10), and no 2.1. The lane picks the build number at upload time: the highest
+  existing build + 1.
+- **What to Test:** `docs/testflight/what_to_test.txt` covers the two maps, stairs, rounds,
+  loading, heat, and online play. Every device needs 2.1, because protocol 10 can't join 2.0.
+- **Upload:** a 2.1 upload is an internal TestFlight build through the repository's own lane
+  (`ios.yml`, `upload=true`, `distribution=internal_only`). Nothing is submitted for review, and
+  no testers or groups are added. `TESTFLIGHT_RELEASE.md` records an upload only once Apple's API
+  has confirmed it.
