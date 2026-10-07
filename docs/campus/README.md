@@ -122,7 +122,7 @@ different objective pool for North Hall; North Hall as an occasional "long route
 | 4 Physics before/after | `test_campus_invariants.gd` pins every rule and body value; `git diff b3e5d74` of the motor and rules is empty | passing |
 | 5 Routes | `test_routes_bots.gd` (bots complete every feasible route from the default hall; the other race-start halls, which are Moonbrook College's, three routes each) and the route tables | passing; North Hall is no race start (above) |
 | 6 Online | protocol 10; the lobby and the round carry the map id, its data hash and the hall geometry version; a guest without that map or with other data refuses with "update the game" | passing (`test_maps`, `test_dorms`, `test_coins`, network tests) |
-| 7 Polish / frame time | `tools/match_bench.sh` against the 2.0 baseline; loading steps; draw counts per view | p50 unchanged, p99 +0.6 ms, a few rare long frames (see Performance); not device-verified |
+| 7 Polish / frame time | `tools/match_bench.sh` against the flat-ground build and 2.0, interleaved; loading steps; draw counts | Median frame unchanged and p99 within session noise on both maps. The first campus round prepares about 1.7× as long, under the loading screen, in shorter steps; rematches take about 0.1 s (`docs/maps/PERFORMANCE.md`). Not device-verified |
 | 8 Shipping content | `tools/campus/scan_shipping.py` | 0 findings |
 
 ## Performance

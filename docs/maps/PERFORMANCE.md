@@ -59,7 +59,37 @@ shared VM pausing the process rather than a code path. That is not proven.
 
 ## Lakeside Campus (flat ground vs this pass)
 
-LAKESIDE_TABLE
+Both builds were run twice, interleaved in one session (13:24–13:44 on the day of `b39ccca`).
+
+| | Flat ground (`f4ae758`) | This pass (`b39ccca`) |
+|---|---|---|
+| Frame interval p50 / p95 / p99 | 16.66 / 18.15 / 20.41 ms | 16.66 / 18.09 / 20.03 ms |
+| Longest frame | 222 ms (59–386) | 63 ms (60–66) |
+| Frames over 33 / 50 / 100 ms (in 13,500) | 7 / 2 / 1 | 3 / 2 / 0 |
+| Simulation tick mean / p99 | 2.60 / 5.22 ms | 2.60 / 5.17 ms |
+| Bots mean / p99 | 0.89 / 2.03 ms | 0.93 / 2.27 ms |
+| Nodes in a round | 6,167 | 8,473 |
+| Static memory | 398 MB (383–449) | 457 MB (443–604) |
+| Host collision shapes | not recorded | 5,658 |
+| First round, cold: `test_loading` (same test, both commits, 2 runs) | 4.9–5.0 s over 431 frames; longest frame of work 42–44 ms | 8.1–8.8 s over 736–787 frames; longest 29–31 ms |
+| First round, cold: bench | not recorded | 9.1 s (8.2–10.0) over 542 frames; longest job 35 ms (30–40) |
+| Later rounds (map and bodies kept): prepared in | not recorded | 0.09 s |
+| Longest frame while loading | 78–80 ms | 83–87 ms |
+| Longest menu frame (leaving the results) | 341–382 ms | 268–272 ms |
+
+- **Playing.** The median frame is unchanged. The tail is no worse:
+  - p99 is within noise;
+  - fewer frames go over 33 ms.
+  - The flat-ground build's 386 ms frame was one bot decision. It is the same kind of pause the
+    Moonbrook section describes, and it hit the old build this time.
+- **Session drift.** Three sessions of this pass's campus gave a p99 of 19.6, 20.4 and 20.0 ms.
+  That spread is larger than the before/after difference.
+- **Loading.**
+  - The first round on the campus takes about 1.7× as long to prepare (terrain, stairs, the parked
+    fleet and about 2,100 more collision shapes).
+  - It runs under the animated loading screen in shorter steps than before.
+  - Rematches reuse the map and its bodies, and prepare in about 0.1 s.
+- **Memory.** About 60 MB more static memory: the larger scene and the kept bodies.
 
 ## Draw cost (llvmpipe, counts only)
 
