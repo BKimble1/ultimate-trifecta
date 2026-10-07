@@ -97,6 +97,11 @@ How it is built (`CampusStairs`):
   porch floor sloping down over its last metre), and a 0.6 m run-out past the last tread at the
   bottom step, where the ground is graded exactly to the bottom step (a ditch there left a lip steeper
   than the floor angle, and runners stopped at it). A 3 m walk beyond is graded to the bottom step.
+  The lead-in is normally the porch floor inside the building. Where the building does not cover it
+  (a door traced in front of its wall; six stairs, from slivers to a whole landing), it is drawn as a
+  stone landing solid to the ground, never left as an invisible collider (`lead_open` in the layout).
+  Waterside Hall's south-west door was traced a metre past the hall's corner; it is moved onto the
+  south face (inferred) so its landing no longer stands beside the hall.
 - **Furniture:** a bench, lamp, prop or trunk the data placed where a stair now stands is left out
   (`CampusLayout.off_stairs`; none in the current data). A barrier that crosses a stair
   stands on its walking line (North Hall's centre handrail).

@@ -91,20 +91,30 @@ each hall on the runners' navigation grid, on the terrain with its stairs, and w
 
 | | Fastest ideal run | Median | Slowest |
 |---|---|---|---|
-| All 40 hall × combination routes | 148 s | 279 s | 429 s |
+| All 40 hall × combination routes | 149 s | 276 s | 429 s |
 
-**The rule.** A round uses only combinations whose ideal run fits 85% of the round (204 s), which
-leaves time to dodge the Night Watch. Where measured bot times exist, the bots' own time must also fit
-95% of it. Nothing else is ever admitted to make up a count. The old fallback, "if fewer than three
-fit, use the three shortest anyway", is gone. A hall with no combination that fits is no race's home
-(`RulesLogic.dorm_feasible`, `CampusDorms.ids(map, true)`).
+**The rule.** A round uses only combinations whose ideal run fits 85% of the round (204 s), and whose
+measured bot run also fits 85%. The bot run is six runner bots with no Night Watch, the median, from
+`test_routes_bots`, kept per hall in `config/route_bot_times.json`. That leaves at least 36 s of the
+round for a chase. The ideal run alone underestimates real running by about 7–10% (corners, the
+approach to each splash). Nothing else is ever admitted to make up a count. The old fallback, "if
+fewer than three fit, use the three shortest anyway", is gone. A hall with no combination that fits is
+no race's home (`RulesLogic.dorm_feasible`, `CampusDorms.ids(map, true)`).
 
 - **West Hall:** three combinations fit. It is the default and the only race-start hall:
-  - Garden Fountain + Bridge Pond + Reflection Court (934 m, 160 s ideal)
-  - Garden Fountain + Bridge Pond + Campus Lake (932 m, 160 s)
-  - Bridge Pond + Village Pond + Campus Lake (862 m, 148 s)
+  - Garden Fountain + Bridge Pond + Reflection Court (916 m, 157 s ideal; bots 159–169 s);
+  - Garden Fountain + Bridge Pond + Campus Lake (914 m, 157 s; bots 170–177 s);
+  - Bridge Pond + Village Pond + Campus Lake (865 m, 149 s; bots 166–175 s).
+- **West Hall's two near misses:**
+  - Garden Fountain + Bridge Pond + Village Pond: 203 s ideal;
+  - Bridge Pond + Reflection Court + Campus Lake: 202 s ideal.
+  - Both fit the ideal-run share. Bots ran them in 209–222 s, which leaves under 25 s for a chase,
+    so both are excluded on the bot time.
+  - They appeared when the bots' grid opened West Hall's front door through its portico. Before that,
+    runners left by a side door about 70 m round.
 - **North Hall:** no combination fits. Its shortest ideal run is 212 s, and the next are 246 s and
-  252 s. It stays modelled (its rooms, stair and doors) but starts no race and shows no start option.
+  252 s. It stays modelled (its rooms, front stair and doors; the bots' grid now reaches the front
+  door through the portico) but starts no race and shows no start option.
 - **North Pond** is in no combination that fits. It is 300+ m from everything else. It stays in the
   world, on the map and in the objective pool's slot, and is never moved.
 

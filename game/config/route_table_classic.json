@@ -1,6 +1,6 @@
 {
   "band": 0.16,
-  "bot_share": 0.95,
+  "bot_share": 0.85,
   "bot_time_median_s": 120.2,
   "campus": "7f83534961286022",
   "combos": [
@@ -2238,7 +2238,7 @@
     ]
   ],
   "round_s": 240.0,
-  "rule": "keep combinations whose ideal run fits 85% of the round and (when measured) whose bot time fits 95%; nothing else",
+  "rule": "keep combinations whose ideal run fits 85% of the round and (when measured) whose bot time fits 85%; nothing else",
   "runner_estimate_s": {
     "max": 125.0,
     "median": 108.0,

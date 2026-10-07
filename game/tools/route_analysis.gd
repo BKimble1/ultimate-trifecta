@@ -25,11 +25,14 @@ const TIME_BAND := 0.12  # measured bot-time band around the median
 ## map's, and the round stays 240 s.  A combination is kept only when its
 ## ideal run (full speed on the measured route, three splashes) fits in
 ## this share of the round, leaving time to dodge the Night Watch, and (when
-## measured) the bots' own time fits in 95 % of it.  Nothing else is ever
+## measured) the bots' own time fits in the same share (BOT_SHARE).  Nothing else is ever
 ## admitted to make up a count: a dorm with no feasible combination keeps
 ## an empty set and is no race's home (CampusDorms.ids(map, true)).
 const FEASIBLE_SHARE := 0.85
-const BOT_SHARE := 0.95
+## the bots' own measured run (no Night Watch) must fit the same share: an
+## ideal run under 85% that bots finish at 91% leaves too little of the
+## round for a chase (two West Hall sets ran 218 s of 240 s)
+const BOT_SHARE := 0.85
 
 var grid_cell := 2.0
 

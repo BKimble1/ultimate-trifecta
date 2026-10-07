@@ -1,7 +1,7 @@
 {
   "band": 0.16,
-  "bot_share": 0.95,
-  "bot_time_median_s": 176.516666666667,
+  "bot_share": 0.85,
+  "bot_time_median_s": 176.0,
   "campus": "5dea79ef56ff26d3",
   "combos": [
     {
@@ -11,7 +11,7 @@
         1
       ],
       "bot_fits": true,
-      "bot_time_s": 166.616666666667,
+      "bot_time_s": 166.55,
       "first_m": 248.7,
       "fits_round": true,
       "ideal_s": 157.2,
@@ -21,7 +21,7 @@
         1,
         2
       ],
-      "time_vs_median": 0.94,
+      "time_vs_median": 0.95,
       "vs_median": 0.56
     },
     {
@@ -47,8 +47,8 @@
         4,
         1
       ],
-      "bot_fits": true,
-      "bot_time_s": 215.35,
+      "bot_fits": false,
+      "bot_time_s": 217.833333333333,
       "first_m": 248.7,
       "fits_round": true,
       "ideal_s": 203.4,
@@ -58,7 +58,7 @@
         1,
         4
       ],
-      "time_vs_median": 1.22,
+      "time_vs_median": 1.24,
       "vs_median": 0.73
     },
     {
@@ -68,7 +68,7 @@
         1
       ],
       "bot_fits": true,
-      "bot_time_s": 176.516666666667,
+      "bot_time_s": 176.0,
       "first_m": 248.7,
       "fits_round": true,
       "ideal_s": 156.8,
@@ -223,8 +223,8 @@
         5,
         2
       ],
-      "bot_fits": true,
-      "bot_time_s": 216.983333333333,
+      "bot_fits": false,
+      "bot_time_s": 218.233333333333,
       "first_m": 75.1,
       "fits_round": true,
       "ideal_s": 201.7,
@@ -234,7 +234,7 @@
         2,
         5
       ],
-      "time_vs_median": 1.23,
+      "time_vs_median": 1.24,
       "vs_median": 0.73
     },
     {
@@ -278,7 +278,7 @@
         4
       ],
       "bot_fits": true,
-      "bot_time_s": 172.783333333333,
+      "bot_time_s": 173.966666666667,
       "first_m": 75.1,
       "fits_round": true,
       "ideal_s": 148.7,
@@ -288,7 +288,7 @@
         4,
         5
       ],
-      "time_vs_median": 0.98,
+      "time_vs_median": 0.99,
       "vs_median": 0.53
     },
     {
@@ -369,16 +369,6 @@
     [
       0,
       1,
-      4
-    ],
-    [
-      0,
-      1,
-      5
-    ],
-    [
-      1,
-      2,
       5
     ],
     [
@@ -390,7 +380,7 @@
   "dorm_version": 4,
   "dorms": {
     "north_hall": {
-      "bot_time_median_s": 176.516666666667,
+      "bot_time_median_s": 176.0,
       "combos": [
         {
           "best_order": [
@@ -807,7 +797,7 @@
       "unreachable": []
     },
     "west_hall": {
-      "bot_time_median_s": 176.516666666667,
+      "bot_time_median_s": 176.0,
       "combos": [
         {
           "best_order": [
@@ -816,7 +806,7 @@
             1
           ],
           "bot_fits": true,
-          "bot_time_s": 166.616666666667,
+          "bot_time_s": 166.55,
           "first_m": 248.7,
           "fits_round": true,
           "ideal_s": 157.2,
@@ -826,7 +816,7 @@
             1,
             2
           ],
-          "time_vs_median": 0.94,
+          "time_vs_median": 0.95,
           "vs_median": 0.56
         },
         {
@@ -852,8 +842,8 @@
             4,
             1
           ],
-          "bot_fits": true,
-          "bot_time_s": 215.35,
+          "bot_fits": false,
+          "bot_time_s": 217.833333333333,
           "first_m": 248.7,
           "fits_round": true,
           "ideal_s": 203.4,
@@ -863,7 +853,7 @@
             1,
             4
           ],
-          "time_vs_median": 1.22,
+          "time_vs_median": 1.24,
           "vs_median": 0.73
         },
         {
@@ -873,7 +863,7 @@
             1
           ],
           "bot_fits": true,
-          "bot_time_s": 176.516666666667,
+          "bot_time_s": 176.0,
           "first_m": 248.7,
           "fits_round": true,
           "ideal_s": 156.8,
@@ -1028,8 +1018,8 @@
             5,
             2
           ],
-          "bot_fits": true,
-          "bot_time_s": 216.983333333333,
+          "bot_fits": false,
+          "bot_time_s": 218.233333333333,
           "first_m": 75.1,
           "fits_round": true,
           "ideal_s": 201.7,
@@ -1039,7 +1029,7 @@
             2,
             5
           ],
-          "time_vs_median": 1.23,
+          "time_vs_median": 1.24,
           "vs_median": 0.73
         },
         {
@@ -1083,7 +1073,7 @@
             4
           ],
           "bot_fits": true,
-          "bot_time_s": 172.783333333333,
+          "bot_time_s": 173.966666666667,
           "first_m": 75.1,
           "fits_round": true,
           "ideal_s": 148.7,
@@ -1093,7 +1083,7 @@
             4,
             5
           ],
-          "time_vs_median": 0.98,
+          "time_vs_median": 0.99,
           "vs_median": 0.53
         },
         {
@@ -1174,16 +1164,6 @@
         [
           0,
           1,
-          4
-        ],
-        [
-          0,
-          1,
-          5
-        ],
-        [
-          1,
-          2,
           5
         ],
         [
@@ -1344,7 +1324,7 @@
     ]
   ],
   "round_s": 240.0,
-  "rule": "keep combinations whose ideal run fits 85% of the round and (when measured) whose bot time fits 95%; nothing else",
+  "rule": "keep combinations whose ideal run fits 85% of the round and (when measured) whose bot time fits 85%; nothing else",
   "runner_estimate_s": {
     "max": 429.0,
     "median": 276.0,

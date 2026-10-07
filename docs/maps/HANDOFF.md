@@ -39,6 +39,22 @@ floors, stairs), `docs/campus/COVERAGE_MATRIX.md` (every inventory code) and
   kit geometry now honours the lift.
 - The ground mesh was flat away from water. It now follows the terrain, and paving, lots and
   markings are draped on the ground mesh's own cells.
+- **Portico front doors (West Hall, North Hall):** the bots' grid had no way through either one. The
+  hall's walls take in the portico floor, and the door lane stopped one 2 m cell short of the step.
+  The lane now runs out through the portico (two cells change).
+  - West Hall's runners used to leave by a side door, about 70 m round.
+  - North Hall's front stair led nowhere for bots.
+- **Bots on building corners:** a bot slid back and forth on a building corner its smoothed path
+  grazed, and sat out the round there. That spot was Waterside Hall's south-west corner.
+  - A straight walk is now checked as wide as a runner: the centre line and two lines 0.6 m either
+    side clear of solid cells.
+  - No gain on the current waypoint for 1.5 s now counts as stuck.
+- **Waterside Hall's south-west door** was traced a metre past the hall's corner, so its stair's
+  level landing stood beside the hall as a bare 1.7 m collider. The door now sits on the south face
+  (inferred), and the terrain is re-baked.
+- **Stair landings in front of their walls:** wherever a stair's level lead-in is not covered by its
+  building (a door traced in front of its wall; six stairs), it is drawn as a stone landing, never
+  left as an invisible collider.
 
 **Buildings.**
 - The village homes are rebuilt from the photos: central bay with front gable and round vent,
@@ -71,7 +87,9 @@ its lower bank 0.17 m under the deck: more than a runner steps up).
 **Routes.**
 - The "three shortest anyway" fallback is gone. A hall starts a race only with a target set whose
   ideal run fits 85% of the 240 s round.
-- West Hall: 3 sets (148–160 s). North Hall: none, so it starts no race and shows no start option.
+- West Hall: 3 sets, 149–157 s ideal; bots 159–177 s. A set must fit 85% of the round both as an ideal run
+  and as the bots' measured run. Two sets near 203 s ideal ran 218 s with bots and are left out.
+  North Hall: none, so it starts no race and shows no start option.
   Its modelled stair and rooms stay.
 - Recomputed on the final terrain, stairs and cars.
 
