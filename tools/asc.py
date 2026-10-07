@@ -14,6 +14,8 @@ Commands:
                     and its What to Test text
   whats-new BUILD_ID FILE [LOCALE] -> set the build's TestFlight "What to
                     Test" text (en-US by default) from FILE (max 4000 chars)
+  certs          -> read only: the team's signing certificates (type, name,
+                    expiry, serial; never their content or keys)
   ensure-bundle  -> register BUNDLE_ID with Game Center if missing (Xcode
                     automatic signing can also do this)
   iap-plan       -> (no credentials needed) the in-app purchases the game
@@ -166,6 +168,22 @@ def main():
         rows, missing, unexpected = iap_diff(iap_plan(), have)
         print_diff(rows, missing, unexpected)
         print("iap-create would create: %s" % (", ".join(p["productId"] for p in missing) or "nothing"))
+        return 0
+    if cmd == "certs":
+        r = call("GET", "/certificates", params={"limit": 200, "fields[certificates]":
+                 "certificateType,displayName,name,platform,serialNumber,expirationDate"})
+        if not r.ok:
+            return 1
+        rows = sorted(r.json().get("data", []), key=lambda c: (c["attributes"].get("certificateType") or "", c["attributes"].get("expirationDate") or ""))
+        for c in rows:
+            at = c["attributes"]
+            print("%-24s %-22s %-10s %-26s %s | %s" % (at.get("certificateType"), (at.get("expirationDate") or "")[:19], at.get("platform") or "-",
+                  at.get("serialNumber"), at.get("displayName"), at.get("name")))
+        kinds = {}
+        for c in rows:
+            k = c["attributes"].get("certificateType")
+            kinds[k] = kinds.get(k, 0) + 1
+        print("%d certificates: %s" % (len(rows), ", ".join("%s %d" % kv for kv in sorted(kinds.items()))))
         return 0
     if cmd == "ensure-bundle":
         r = call("GET", "/bundleIds", params={"filter[identifier]": BUNDLE_ID})

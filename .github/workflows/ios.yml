@@ -71,6 +71,7 @@ jobs:
             echo "build $BID:"; "$PY" tools/asc.py beta "$BID"
           done
           echo "in-app purchases (V6):"; "$PY" tools/asc.py iap-list || true
+          echo "signing certificates (read only):"; "$PY" tools/asc.py certs || true
 
   asc-iap:
     name: App Store Connect in-app purchases (${{ github.event.inputs.iap }})
