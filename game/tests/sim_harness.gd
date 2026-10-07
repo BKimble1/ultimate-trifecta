@@ -114,9 +114,10 @@ func door_point(i: int = 0) -> Vector3:
 	return on_ground(p)
 
 
-## The ground height at p (the map's grades; a building's floor inside it).
+## The ground height at p (the map's grades; a building's floor inside it;
+## on a stair, its walking line).
 func gy(p: Vector2) -> float:
-	return CampusBuilder.grid_y(sim.layout, p.x, p.y)
+	return maxf(CampusBuilder.grid_y(sim.layout, p.x, p.y), sim.layout.stair_y(p))
 
 
 ## A point dy above the ground at p (default: standing, 5 cm up).

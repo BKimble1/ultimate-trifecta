@@ -8,6 +8,9 @@ extends Node3D
 ##     [--map=<id>] [--view=name:x,y,z:tx,ty,tz[:hfov] ...] [--only-views] [--preview]
 ## --preview: only the map chooser's preview (PREVIEW framing per map, a
 ## soft fill light so buildings, paths, trees and water read at card size).
+## --tour: a walker's-eye camera tour (no character) along the bots' foot
+## paths between TOUR's waypoints, on the ground and up and down stairs;
+## record it with --write-movie and --fixed-fps (tools/capture_campus_tour.sh).
 ## Desktop llvmpipe rendering: composition and lighting evidence, not
 ## frame-rate or device evidence.
 
@@ -21,6 +24,30 @@ var extra: Array = []      # --view=name:x,y,z:tx,ty,tz (repeatable)
 var only_extra := false
 var map_id := CampusMaps.DEFAULT_ID
 var preview := false
+var tour := false
+var tour_speed := 7.5
+## The tour's waypoints per map: [name, x, z] (neutral names; the route
+## between them is the bots' foot path, so it uses the real doors, stairs
+## and passages).
+const TOUR := {
+	"reference_campus": [
+		["west hall common room", 82.0, 139.0], ["west hall front door", 84.5, 131.0], ["chapel walk", 92.0, 28.0],
+		["chapel atrium", 75.0, 21.0], ["chapel garden", 60.0, 30.0], ["library", 120.0, -96.0],
+		["bell tower gap", 146.8, -126.0], ["bell tower gap (through)", 146.8, -138.0], ["north hall walk", 336.0, -339.0],
+		["north hall portico (up the stair)", 317.0, -339.2], ["north hall walk again (down)", 337.0, -330.0],
+		["bridge pond shore exit", -14.4, 216.4], ["bridge pond footbridge (east end)", -18.0, 226.0],
+		["bridge pond footbridge (west end)", -34.0, 217.0], ["lake shore", -86.0, 300.0],
+		["lake fishing dock", -91.5, 318.0], ["lake shore exit", -246.5, 258.7],
+		["woods path (south strip)", -300.0, 30.0], ["woods path (out)", -250.0, 26.0],
+		["west hall front door (home)", 84.5, 131.0], ["west hall common room (home)", 82.0, 139.0]],
+	"classic": [["puddlesworth hall", 0.0, 104.0], ["quad", 0.0, 40.0], ["fountain", 0.0, 0.0], ["clock tower", 0.0, -66.0], ["pond", -100.0, -80.0], ["back home", 0.0, 104.0]],
+}
+var _tour_pts := PackedVector2Array()
+var _tour_names: Array = []
+var _tour_d := 0.0
+var _tour_len := 0.0
+var _tour_yaw := 0.0
+var _tour_layout: CampusLayout
 ## The chooser's preview per map: an oblique aerial from the south that
 ## shows the whole of the map's distinct layout.  [camera, target, vfov]
 const PREVIEW := {
@@ -34,7 +61,30 @@ func _views() -> Array:
 		var pv: Array = PREVIEW[map_id]
 		return [["preview_" + map_id, pv[0], pv[1], -float(pv[2])]]
 	if only_extra:
-		return extra
+		return _grounded(extra) if relative else extra
+	return _grounded(_default_views()) if not CampusMaps.layout(map_id).terrain.is_empty() else _default_views()
+
+
+## Heights above the ground (or a stair) where the camera and its target
+## stand: on a map with terrain the same view keeps its height over the
+## ground (the flat map's absolute heights are heights over its y = 0).
+var relative := false
+
+
+func _grounded(views: Array) -> Array:
+	var L := CampusMaps.layout(map_id)
+	var out: Array = []
+	for v in views:
+		var w: Array = (v as Array).duplicate()
+		var c: Vector3 = w[1]
+		var t: Vector3 = w[2]
+		w[1] = Vector3(c.x, c.y + maxf(CampusBuilder.grid_y(L, c.x, c.z), L.stair_y(Vector2(c.x, c.z))), c.z)
+		w[2] = Vector3(t.x, t.y + maxf(CampusBuilder.grid_y(L, t.x, t.z), L.stair_y(Vector2(t.x, t.z))), t.z)
+		out.append(w)
+	return out
+
+
+func _default_views() -> Array:
 	var L := CampusMaps.layout(map_id)
 	var out: Array = []
 	# each start dorm's doors, from outside
@@ -89,10 +139,16 @@ func _ready() -> void:
 			extra.append(v)
 		elif a == "--only-views":
 			only_extra = true
+		elif a == "--relative":
+			relative = true
 		elif a.begins_with("--map="):
 			map_id = CampusMaps.sanitize(a.get_slice("=", 1))
 		elif a == "--preview":
 			preview = true
+		elif a == "--tour":
+			tour = true
+		elif a.begins_with("--tour-speed="):
+			tour_speed = float(a.get_slice("=", 1))
 	if out_dir == "":
 		out_dir = OS.get_user_data_dir().path_join("campus_views")
 	DirAccess.make_dir_recursive_absolute(out_dir)
@@ -122,7 +178,92 @@ func _ready() -> void:
 	cam.far = 1400.0
 	add_child(cam)
 	cam.current = true
+	if tour:
+		_tour_setup()
+		return
 	_run.call_deferred()
+
+
+## The tour's route: the bots' foot path between each pair of waypoints.
+func _tour_setup() -> void:
+	_tour_layout = CampusMaps.layout(map_id)
+	var nav := NavGrid.shared(_tour_layout)
+	var wps: Array = TOUR.get(map_id, [])
+	for i in wps.size():
+		var b := Vector2(float(wps[i][1]), float(wps[i][2]))
+		if i == 0:
+			_tour_pts.append(b)
+			_tour_names.append([0.0, String(wps[i][0])])
+			continue
+		var a := _tour_pts[_tour_pts.size() - 1]
+		var seg := nav.find_path(a, b, false, true)
+		if seg.size() < 2:
+			seg = PackedVector2Array([a, b])
+		for j in range(1, seg.size()):
+			_tour_pts.append(seg[j])
+		if seg[seg.size() - 1].distance_to(b) > 0.5:
+			_tour_pts.append(b)
+		var length := 0.0
+		for j in _tour_pts.size() - 1:
+			length += _tour_pts[j].distance_to(_tour_pts[j + 1])
+		_tour_names.append([length, String(wps[i][0])])
+	for j in _tour_pts.size() - 1:
+		_tour_len += _tour_pts[j].distance_to(_tour_pts[j + 1])
+	printerr("TOUR %s: %d points, %.0f m, %.0f s at %.1f m/s" % [map_id, _tour_pts.size(), _tour_len, _tour_len / tour_speed, tour_speed])
+	var env: Environment = world_env.get("environment") if world_env != null else null
+	if env != null:
+		env.fog_enabled = true
+	_tour_yaw = _tour_heading(0.0)
+
+
+func _tour_at(d: float) -> Vector2:
+	var left := clampf(d, 0.0, _tour_len)
+	for j in _tour_pts.size() - 1:
+		var l := _tour_pts[j].distance_to(_tour_pts[j + 1])
+		if left <= l:
+			return _tour_pts[j].lerp(_tour_pts[j + 1], left / maxf(l, 0.001))
+		left -= l
+	return _tour_pts[_tour_pts.size() - 1]
+
+
+func _tour_heading(d: float) -> float:
+	var a := _tour_at(d)
+	var b := _tour_at(d + 7.0)
+	if b.distance_to(a) < 0.1:
+		return _tour_yaw
+	return atan2(-(b - a).x, -(b - a).y)
+
+
+## Where a walker stands at p: the ground, or a stair's walking line.
+func _tour_floor(p: Vector2) -> float:
+	return maxf(CampusBuilder.grid_y(_tour_layout, p.x, p.y), _tour_layout.stair_y(p))
+
+
+var _tour_named := 0
+var _tour_eye := INF
+
+
+func _process(delta: float) -> void:
+	if not tour or _tour_pts.size() < 2:
+		return
+	_tour_d += tour_speed * delta
+	if _tour_d >= _tour_len + 2.0:
+		printerr("TOUR done")
+		get_tree().quit()
+		return
+	var p := _tour_at(_tour_d)
+	# the heading turns smoothly (a walker looks where they're going)
+	var want := _tour_heading(_tour_d)
+	_tour_yaw = lerp_angle(_tour_yaw, want, clampf(delta * 2.2, 0.0, 1.0))
+	var eye := _tour_floor(p) + 1.65
+	_tour_eye = eye if _tour_eye == INF else lerpf(_tour_eye, eye, clampf(delta * 6.0, 0.0, 1.0))
+	cam.keep_aspect = Camera3D.KEEP_HEIGHT
+	cam.fov = 64.0
+	cam.global_position = Vector3(p.x, _tour_eye, p.y)
+	cam.rotation = Vector3(-0.06, _tour_yaw, 0.0)
+	while _tour_named < _tour_names.size() and _tour_d >= float(_tour_names[_tour_named][0]):
+		printerr("TOUR %.1f s: %s" % [_tour_d / tour_speed, String(_tour_names[_tour_named][1])])
+		_tour_named += 1
 
 
 func _run() -> void:
@@ -158,6 +299,9 @@ func _run() -> void:
 			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
 			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
 			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)])
+		# the camera, for matched captures (metres, the map's frame)
+		printerr("CAMERA %s pos %s target %s fov %.1f %s" % [v[0], str((v[1] as Vector3).snapped(Vector3(0.01, 0.01, 0.01))),
+			str((v[2] as Vector3).snapped(Vector3(0.01, 0.01, 0.01))), cam.fov, "vertical" if cam.keep_aspect == Camera3D.KEEP_HEIGHT else "horizontal"])
 	get_tree().quit()
 
 

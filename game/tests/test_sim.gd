@@ -75,8 +75,8 @@ func test_water_resurfaces_automatically() -> void:
 
 func _tag_setup(h: SimHarness, gap: float) -> void:
 	# runner on open lawn, patrol `gap` metres south of it facing north
-	h.place(0, Vector3(-20, 0.05, 60), 0.0)
-	h.place(1, Vector3(-20, 0.05, 60 + gap), 0.0)
+	h.place(0, h.on_ground(Vector2(-20, 60)), 0.0)
+	h.place(1, h.on_ground(Vector2(-20, 60 + gap)), 0.0)
 
 
 func test_capture_timing_progress_and_respawn() -> void:
@@ -200,9 +200,9 @@ func test_tag_reach_cooldown_and_walls() -> void:
 	var n := (b - a).normalized().orthogonal()
 	var rp := mid + n * 0.95
 	var pp := mid - n * 0.95
-	h.place(0, Vector3(rp.x, 0.05, rp.y))
+	h.place(0, h.on_ground(Vector2(rp.x, rp.y)))
 	var face := atan2(-(rp - pp).x, -(rp - pp).y)
-	h.place(1, Vector3(pp.x, 0.05, pp.y), face)
+	h.place(1, h.on_ground(Vector2(pp.x, pp.y)), face)
 	await h.step()
 	h.press(1, TC.BTN_TAG)
 	await h.step(30)
@@ -215,15 +215,15 @@ func test_tag_validation_roles_and_states() -> void:
 	h.make([R, R, P], [0, 1, 2])
 	await h.release_patrol()
 	# a runner pressing TAG next to another runner does nothing
-	h.place(0, Vector3(-20, 0.05, 60))
-	h.place(1, Vector3(-20, 0.05, 61.2))
+	h.place(0, h.on_ground(Vector2(-20, 60)))
+	h.place(1, h.on_ground(Vector2(-20, 61.2)))
 	await h.step()
 	h.press(1, TC.BTN_TAG)
 	await h.step(30)
 	t.eq(h.sim.player(0).state, TC.PState.ACTIVE, "runners cannot tag")
 	# protected runner can't be tagged
 	h.sim.player(0).protect = 2.0
-	h.place(2, Vector3(-20, 0.05, 61.2))
+	h.place(2, h.on_ground(Vector2(-20, 61.2)))
 	await h.step()
 	h.press(2, TC.BTN_TAG)
 	await h.step(30)
@@ -398,14 +398,14 @@ func test_bump_stumbles_without_chain_or_capture() -> void:
 	await h.release_patrol()
 	var c: SimCart = h.sim.carts[0]
 	# put the cart on the loop road heading east, runner ahead in its path
-	c.body.global_position = Vector3(-40, 0.05, -58)
+	c.body.global_position = h.on_ground(Vector2(-40, -58), 0.3)
 	c.yaw = -PI * 0.5
 	c.body.rotation.y = c.yaw
 	c.occupant = 1
 	h.sim.player(1).cart_id = 0
 	h.sim.player(1).state = TC.PState.IN_CART
 	Motor.set_body_enabled(h.sim.player(1).body, false)
-	h.place(0, Vector3(-28, 0.05, -58))
+	h.place(0, h.on_ground(Vector2(-28, -58)))
 	h.cmd(1).drive = 1.0
 	var bumps := 0
 	for i in 160:
@@ -546,7 +546,7 @@ func test_movement_feel_numbers() -> void:
 	h.make([R, P], [0, 1, 2])
 	await h.release_patrol()
 	var r := h.sim.player(0)
-	h.place(0, Vector3(-20, 0.05, 40))
+	h.place(0, h.on_ground(Vector2(-20, 40)))
 	h.cmd(0).move = Vector2(1, 0)
 	await h.step(30)
 	t.near(Vector2(r.vel.x, r.vel.z).length(), Rules.cfg.runner_speed, 0.05, "full input: the steady run speed (6 m/s)")
@@ -559,11 +559,12 @@ func test_movement_feel_numbers() -> void:
 	# jump + coyote + dive
 	h.cmd(0).move = Vector2.ZERO
 	await h.step(20)
+	# measured from where it stands (the campus has its real grades)
+	var base_y := r.pos().y
 	h.press(0, TC.BTN_JUMP)
 	await h.step(2)
 	t.check(r.vel.y > 4.0, "jump launches")
 	var peak := 0.0
-	var base_y := 0.05
 	for i in 40:
 		await h.step()
 		peak = maxf(peak, r.pos().y - base_y)
@@ -592,7 +593,7 @@ func test_movement_feel_numbers() -> void:
 	t.check(r.vel.y > 3.0 or not r.on_floor, "buffered jump fires on landing")
 	# patrol foot speed
 	var p := h.sim.player(1)
-	h.place(1, Vector3(-20, 0.05, 50))
+	h.place(1, h.on_ground(Vector2(-20, 50)))
 	h.cmd(1).move = Vector2(1, 0)
 	await h.step(40)
 	t.near(Vector2(p.vel.x, p.vel.z).length(), Rules.cfg.patrol_speed, 0.3, "patrol foot speed (a little faster than a runner)")
@@ -603,14 +604,14 @@ func test_spotted_cue_requires_line_of_sight() -> void:
 	var h := _h()
 	h.make([R, P], [0, 1, 2])
 	await h.release_patrol()
-	h.place(0, Vector3(-20, 0.05, 50))
-	h.place(1, Vector3(-20, 0.05, 62), 0.0)
+	h.place(0, h.on_ground(Vector2(-20, 50)))
+	h.place(1, h.on_ground(Vector2(-20, 62)), 0.0)
 	h.cmd(1).cam_yaw = 0.0
 	await h.step(10)
 	t.check(h.sim.player(0).spotted > 0.0, "visible runner is spotted")
 	# behind the library (x -61..-39, z 1..35): patrol east of it, runner west of it
-	h.place(0, Vector3(-66, 0.05, 18))
-	h.place(1, Vector3(-30, 0.05, 18), PI * 0.5)
+	h.place(0, h.on_ground(Vector2(-66, 18)))
+	h.place(1, h.on_ground(Vector2(-30, 18)), PI * 0.5)
 	h.cmd(1).cam_yaw = PI * 0.5
 	await h.step(Rules.cfg.ticks(Rules.cfg.spotted_hold_s) + 10)
 	t.eq(h.sim.player(0).spotted, 0.0, "breaking line of sight behind a building loses the pursuer")

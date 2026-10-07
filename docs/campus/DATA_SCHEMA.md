@@ -54,18 +54,37 @@ or measured in a dated photo; **medium** = georeferenced plan/diagram
                                       colour with a closing cornice, a round glazed window, louvre
                                       or plain clock face (no lettering), and a band `entablature` m
                                       deep under the eave down to a giant portico's column tops
- "parts": [{"footprint": [...], "h": 8.0, "base": 0.0, "roof": {...}, "wall": "siding_white"}],
+ "parts": [{"footprint": [...], "h": 8.0, "base": 0.0, "roof": {...}, "wall": "siding_white", "arched_floor": 1}],
                                       optional sub-masses; `wall` (optional) gives one part its own
-                                      finish (a white cupola on a brick hall)
+                                      finish (a white cupola on a brick hall); `arched_floor`
+                                      (optional, 0 = ground floor) gives that floor's windows on the
+                                      part arched heads; `roof.vent` ({"face": deg}) puts a round
+                                      louvred attic vent in that plain gable end
  "style": {"wall": "brick_red|brick_brown|brick_tan|stone_light|siding_white|siding_grey|glass|metal_light|metal_dark|concrete",
            "trim": "white|stone|dark|none", "roof_mat": "shingle_dark|shingle_grey|metal_grey|metal_dark|membrane|copper",
            "windows": "punched|ribbon|curtain|sparse|none", "notes": "...",
            "band": "white|stone",          optional: a string course at the first floor line
-           "spandrel": "grey|beige"},      optional: panels between each bay's stacked windows
- "entrances": [{"p": [x, z], "face": <deg, 0 = facing north (-Z), 90 = east>, "w": 3.0, "kind": "door|double|portico|canopy|garage"}],
- "passages": [{"polygon": [...], "floor": 0.0, "clear": 3.0, "note": "..."}],   genuinely open walk-throughs;
-                                      at a giant portico (clear 6 m or more) the facade behind the
-                                      columns carries its windows floor by floor
+           "spandrel": "grey|beige",       optional: panels between each bay's stacked windows
+           "shutters": "dark|black|green|white",   optional: a shutter either side of each punched window
+           "corner_boards": true},         optional: trim boards up the outer corners (sided buildings)
+ "entrances": [{"p": [x, z], "face": <deg, 0 = facing north (-Z), 90 = east>, "w": 3.0, "kind": "door|double|portico|canopy|garage",
+                "stair": {...} | false}],
+                                      `stair` (optional): fixes the entrance's stair (TERRAIN.md):
+                                      {"risers": n, "rise": 0.165, "going": 0.30, "landing_after": n,
+                                      "landing": 1.5, "deck": 0.0, "w": m, "rails": "both|none",
+                                      "how": "evidence"}; false: never a stair. Without it the
+                                      terrain bake resolves one where the step down is 0.25 m or more
+ "floor_navd88": 281.2,               optional: the building's floor level (NAVD88 m); otherwise
+                                      the bake takes the grade round it (TERRAIN.md)
+ "passages": [{"polygon": [...], "floor": 0.0, "clear": 3.0, "note": "...",
+                "steps": [{"p": [x, z], "face": deg, "w": m, "note": "evidence"}]}],
+                                      genuinely open walk-throughs; the walking floor is the
+                                      building's floor level (keep `floor` 0 on terrain: a raised
+                                      portico raises the building with `floor_navd88`). At a giant
+                                      portico (clear 6 m or more) the facade behind the columns
+                                      carries its windows floor by floor. `steps` (optional): a stair
+                                      with no door down from the passage's mouth at p (a raised
+                                      arcade's open end), resolved by the terrain bake
  "landmark": null | "bell_tower" | "prayer_chapel" | ...,   custom builder key
  "background": false,                 true = outside the play boundary (cheap LOD, no interior)
  "ev": {...}}
@@ -102,6 +121,9 @@ or measured in a dated photo; **medium** = georeferenced plan/diagram
 
 ### barriers
 `{"id", "kind": "wall_low|wall_retaining|fence_iron|fence_chain|fence_construction|hedge|rail|bollards", "pts": [...], "h": 0.6, "ev"}`
+
+A `rail` may carry `"color": "white"` (a white pipe railing; otherwise dark metal). A barrier that
+crosses a stair stands on its walking line.
 
 ### trees
 `{"id", "pos": [x, z], "r": 5.0, "h": 12.0, "kind": "deciduous|conifer|ornamental|shrub", "obs": "observed|inferred", "ev"}`

@@ -19,10 +19,12 @@ func test_night_watch_runs_down_a_fleeing_runner_in_the_open() -> void:
 		var h := SimHarness.new(t)
 		h.make([R, P], [0, 1, 2], [0, 1], 500 + si)
 		await h.release_patrol()
-		var a: Vector3 = STARTS[si][0]
+		var a0: Vector3 = STARTS[si][0]
 		var d: Vector2 = STARTS[si][1]
+		# on the ground there (the campus has its real grades)
+		var a := h.on_ground(Vector2(a0.x, a0.z))
 		h.place(0, a, atan2(-d.x, -d.y))
-		h.place(1, a - Vector3(d.x, 0, d.y) * 8.0, atan2(-d.x, -d.y))
+		h.place(1, h.on_ground(Vector2(a0.x, a0.z) - d * 8.0), atan2(-d.x, -d.y))
 		var t0 := h.sim.tick
 		var secs := -1.0
 		for i in 60 * 25:
@@ -42,8 +44,8 @@ func test_steady_closure_and_turbo_opens_the_gap_for_its_duration() -> void:
 	var h := SimHarness.new(t)
 	h.make([R, P], [0, 1, 2])
 	await h.release_patrol()
-	h.place(0, Vector3(-20, 0.05, 60), atan2(-1.0, 0.0))
-	h.place(1, Vector3(-26, 0.05, 60), atan2(-1.0, 0.0))
+	h.place(0, h.on_ground(Vector2(-20, 60)), atan2(-1.0, 0.0))
+	h.place(1, h.on_ground(Vector2(-26, 60)), atan2(-1.0, 0.0))
 	h.cmd(0).move = Vector2(1, 0)
 	h.cmd(1).move = Vector2(1, 0)
 	h.cmd(0).held = TC.BTN_SPRINT   # the retired Sprint bit: adds nothing

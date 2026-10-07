@@ -8,12 +8,13 @@ extends RefCounted
 ## the art kit's meshes, LODs and textures load.
 var t
 
-## Recorded on the CAMPUS pass data (game/data/campus, CampusData.campus_hash
-## below).  A change here is a gameplay change: re-record deliberately.
-const CAMPUS_HASH := "63760eea719e3747"
-const CAMPUS_COLLISION := "bc24807f62c713dc7234cbae4851f7a7a58cc14bfd312ac5026b834712bff7d2"
-const CAMPUS_NAV := "4101aa9d6e4555ddd4d7eb3d2a754d056d9616a851a22a2d8e82ae139fc8bd99"
-const CAMPUS_LAYOUT := "de1a16ee0354565421ceabf4aa2c5f7600f2a67c758568fa28fff360759f2a60"
+## Recorded on the two-maps pass data (game/data/campus on its measured
+## ground: terrain, stairs, parked cars; CampusData.campus_hash below).  A
+## change here is a gameplay change: re-record deliberately.
+const CAMPUS_HASH := "3ddb4140b8bfd5bf"
+const CAMPUS_COLLISION := "dd6baf7396139c426b8ee863122fc7166aa83044b5067940d2f91bfe704b705c"
+const CAMPUS_NAV := "24524ea6c4b573b2443a4904142a3a8feabd4e00d7fa51830eb719d481abc9a4"
+const CAMPUS_LAYOUT := "beeb3c985c7fe0c72c636b9d1ac1cce405e5c607e0a44da2c61c9f6dd8a88099"
 
 
 func test_fingerprints_are_deterministic() -> void:

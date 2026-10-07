@@ -16,6 +16,10 @@ extends RefCounted
 ## records the approximation.
 
 const RAIL_H := 0.95        # handrail height above the nosing line
+const LEAD_IN := 1.0        # a level slab behind the top edge, at the floor (the
+                            # ground's 1 m samples leave a porch floor sloping
+                            # down over the last metre before its mouth)
+const RUN_OUT := 0.6        # a level slab past the last tread, at the bottom step
 const RAIL_T := 0.12        # rail collision thickness
 const CHEEK_T := 0.28       # the side walls' thickness (drawn)
 
@@ -89,6 +93,14 @@ static func collision(st: Dictionary, add: Callable, body_world: int, body_block
 				var rs := BoxShape3D.new()
 				rs.size = Vector3.ONE
 				add.call(body_world, rs, xf)
+	# level slabs flush with the floor behind the top edge (a porch's floor
+	# runs onto the stair without a seam) and with the walk past the last
+	# tread (the terrain bake grades the ground there to the bottom step,
+	# so the walk meets the stair without a lip)
+	for ends: Array in [[-LEAD_IN, 0.0, float(st["top"])], [float(prof[-1][0]), float(prof[-1][0]) + RUN_OUT, float(st["bottom"])]]:
+		var es := BoxShape3D.new()
+		es.size = Vector3.ONE
+		add.call(body_world, es, slab(at(st, float(ends[0]), float(ends[2])), at(st, float(ends[1]), float(ends[2])), w, deep, 0.03))
 	# carts: never on a stair
 	var length := float(prof[-1][0])
 	var c := at(st, length * 0.5, (float(st["top"]) + float(st["bottom"])) * 0.5 + 0.6)

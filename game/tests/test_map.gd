@@ -56,7 +56,9 @@ func test_map_shows_only_permitted_opponents() -> void:
 	mc.setup(s, info, {"quality": 0, "staged": true})
 	t.add_child(mc)
 	var frames := 0
-	while not (mc.prepared and mc.hud != null) and frames < 600:
+	# (the reference campus's draped terrain prepares in ~600-850 frames of
+	# the 9 ms loading budget here; this waits for it, it doesn't time it)
+	while not (mc.prepared and mc.hud != null) and frames < 1500:
 		await t.get_tree().process_frame
 		frames += 1
 	for i in 30:

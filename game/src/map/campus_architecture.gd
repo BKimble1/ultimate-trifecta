@@ -86,6 +86,8 @@ func building(bd: Dictionary, doors: Array = []) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(String(bd["id"]))
 	var warm := 0.55 if String(bd["kind"]) != "residence" else 0.62
+	if String(bd.get("status", "existing")) == "construction":
+		warm = 0.0      # not yet occupied: no lit rooms
 	var passages: Array = bd["passages"]
 	for pi in parts.size():
 		var part: Dictionary = parts[pi]
@@ -100,6 +102,8 @@ func building(bd: Dictionary, doors: Array = []) -> void:
 		if TRIMS.has(String(style.get("band", ""))) and nfl >= 2:
 			band_y = base + 0.6 + (h - base - 0.6) / float(nfl)
 		_mass(bd, part, parts, pw, trim, base, h, doors, passages, band_y, TRIMS.get(String(style.get("band", "")), TRIM))
+		if bool(style.get("corner_boards", false)):
+			_corner_boards(part, parts, base, h, trim if trim.a > 0.0 else TRIM)
 		if win != "none" and String(style.get("wall", "")) != "glass":
 			_windows(bd, part, parts, win, nfl, base, h, trim, warm, rng, doors, passages)
 		elif String(style.get("wall", "")) == "glass":
@@ -311,8 +315,12 @@ func _passage_art(bd: Dictionary, wall_spec: Array, trim: Color, doors: Array) -
 		var h := float(cl[2])
 		var k2 := _k(q.x, q.y)
 		if r <= POST_R + 0.001:
-			# a square timber post with a small cap, stained like the frame
+			# a square timber post with a small cap, stained like the frame;
+			# painted the trim colour on a white-trimmed house (a porch's
+			# white columns)
 			var wood := WOOD.darkened(0.45) if col.get_luminance() < 0.3 else WOOD
+			if String((bd["style"] as Dictionary).get("trim", "")) == "white" and String(bd["kind"]) in ["residence", "house"]:
+				wood = tc
 			k2.mat = MeshKit.M_WOOD
 			k2.chamfer_box(Vector3(q.x, h * 0.5, q.y), Vector3(r * 2.0, h, r * 2.0), wood, 0.02, 0.0)
 			k2.chamfer_box(Vector3(q.x, h - 0.08, q.y), Vector3(r * 2.0 + 0.1, 0.16, r * 2.0 + 0.1), wood.darkened(0.1), 0.02, 0.0)
@@ -530,7 +538,10 @@ func _windows(bd: Dictionary, part: Dictionary, parts: Array, style: String, flo
 				var ctr := Vector3(p.x, y, p.y)
 				var w := 1.15 if style != "ribbon" else step * 0.82
 				var hh := 0.8 if style != "ribbon" else 0.62
-				_window(k, ctr, Vector3(dir.x, 0, dir.y), out, w, hh, rng.randf() < warm, rng, trim, style != "ribbon")
+				var lit := rng.randf() < warm
+				_window(k, ctr, Vector3(dir.x, 0, dir.y), out, w, hh, lit, rng, trim, style != "ribbon")
+				if style != "ribbon":
+					_window_dress(k, bd, part, r, ctr, Vector3(dir.x, 0, dir.y), out, w, hh, lit, trim)
 				if not stacked.has(c):
 					stacked[c] = []
 				(stacked[c] as Array).append(r)
@@ -553,6 +564,56 @@ func _windows(bd: Dictionary, part: Dictionary, parts: Array, style: String, flo
 					var e1 := p2 + dir * (WIN_W * 0.5 + 0.04)
 					_quad_facing(k, Vector3(e0.x, y0, e0.y) + out * 0.03, Vector3(e1.x, y0, e1.y) + out * 0.03, Vector3(e1.x, y1, e1.y) + out * 0.03, Vector3(e0.x, y1, e0.y) + out * 0.03, sp_col, out)
 			k.mat = 0.0
+
+
+## Trim boards up a sided building's outer corners (`style.corner_boards`):
+## one at every convex corner of the part that no other part covers.
+func _corner_boards(part: Dictionary, parts: Array, base: float, h: float, col: Color) -> void:
+	var poly: PackedVector2Array = CampusData.ccw(part["poly"])
+	var n := poly.size()
+	for i in n:
+		var p := poly[i]
+		var a := poly[(i - 1 + n) % n]
+		var b := poly[(i + 1) % n]
+		# convex (outward) corners only: just outside along the bisector
+		var bis := (a - p).normalized() + (b - p).normalized()
+		if bis.length() < 0.05:
+			continue          # a straight run, no corner
+		var out := -bis.normalized()
+		if Geometry2D.is_point_in_polygon(p + out * 0.3, poly) or _covered(p + out * 0.5, base + 1.5, part, parts):
+			continue
+		var k := _k(p.x, p.y)
+		k.mat = MeshKit.M_WOOD
+		var c := p + out * 0.04
+		k.chamfer_box(Vector3(c.x, (base + h) * 0.5, c.y), Vector3(0.24, h - base, 0.24), col, 0.02, atan2(-(b - p).y, (b - p).x))
+		k.mat = 0.0
+
+
+## A punched window's dressing from the data: an arched head on the part's
+## `arched_floor` (glass and a trim arch over the window), and shutters
+## either side (`style.shutters`).
+func _window_dress(k: MeshKit, bd: Dictionary, part: Dictionary, row: int, ctr: Vector3, right: Vector3, out: Vector3, w: float, hh: float, lit: bool, trim: Color) -> void:
+	var tc := trim if trim.a > 0.0 else TRIM
+	if int(part.get("arched_floor", -1)) == row:
+		var c := ctr + Vector3.UP * hh + out * 0.04
+		k.mat = MeshKit.M_GLASS
+		_varc(k, c, out, right, 0.0, w * 0.5, Color(1.0, 0.78, 0.48) if lit else Color(0.12, 0.15, 0.24))
+		if lit:
+			k.cu_emission_last(30, 0.6)
+		k.mat = MeshKit.M_WOOD
+		_varc(k, c + out * 0.02, out, right, w * 0.5, w * 0.5 + 0.12, tc)
+		k.mat = 0.0
+	var sh: Color = SHUTTERS.get(String((bd["style"] as Dictionary).get("shutters", "")), Color(0, 0, 0, 0))
+	if sh.a > 0.0:
+		k.mat = MeshKit.M_WOOD
+		var top := hh + (w * 0.5 if int(part.get("arched_floor", -1)) == row else 0.0)
+		for s: float in [-1.0, 1.0]:
+			var c2 := ctr + right * (s * (w * 0.5 + 0.3)) + out * 0.05 + Vector3.UP * ((top - hh) * 0.5)
+			k.box_xf(Transform3D(Basis(right * 0.46, Vector3.UP * (hh + top), -out * 0.05), c2), sh)
+		k.mat = 0.0
+
+
+const SHUTTERS := {"dark": Color(0.10, 0.11, 0.13), "black": Color(0.06, 0.06, 0.07), "green": Color(0.12, 0.22, 0.16), "white": Color(0.92, 0.91, 0.88)}
 
 
 ## How high the other parts of the building stand against the outer face of
@@ -712,7 +773,7 @@ func _roof(part: Dictionary, poly: PackedVector2Array, h: float, roof_spec: Arra
 	var pitch := deg_to_rad(clampf(float(roof.get("pitch", 30.0)), 5.0, 60.0))
 	match kind:
 		"gable", "hip", "pyramid", "shed":
-			_pitched(k, obb, h, pitch, kind, String(roof.get("ridge", "long")), col, mat, wall_spec, trim, roof.get("pediment", {}))
+			_pitched(k, obb, h, pitch, kind, String(roof.get("ridge", "long")), col, mat, wall_spec, trim, roof.get("pediment", {}), roof.get("vent", {}))
 		"dome":
 			_flat(k, poly, h, Color(0.52, 0.52, 0.53), trim, false)
 			var r := minf((obb["size"] as Vector2).x, (obb["size"] as Vector2).y) * 0.5 * float(roof.get("scale", 0.8))
@@ -763,7 +824,7 @@ func _flat(k: MeshKit, poly: PackedVector2Array, h: float, col: Color, trim: Col
 ## pyramid or shed, with eaves, soffits, fascia and gable-end walls.  A
 ## gable end the data marks as a pediment (`roof.pediment`) is a classical
 ## one instead (`pediment`).
-func _pitched(k: MeshKit, obb: Dictionary, h: float, pitch: float, kind: String, ridge: String, col: Color, mat: float, wall_spec: Array, trim: Color, ped: Variant = {}) -> void:
+func _pitched(k: MeshKit, obb: Dictionary, h: float, pitch: float, kind: String, ridge: String, col: Color, mat: float, wall_spec: Array, trim: Color, ped: Variant = {}, vent: Variant = {}) -> void:
 	var c: Vector2 = obb["center"]
 	var size: Vector2 = obb["size"]
 	var ax2: Vector2 = obb["axis"]          # unit vector along size.x
@@ -804,6 +865,8 @@ func _pitched(k: MeshKit, obb: Dictionary, h: float, pitch: float, kind: String,
 			for se: float in [-1.0, 1.0]:
 				if is_pediment(ped, ax * se):
 					pediment(k, base + ax * (half_l * se), ax * se, aw, half_w, ov, rise, ped as Dictionary, trim if trim.a > 0.0 else TRIM)
+				elif is_pediment(vent, ax * se):
+					gable_vent(k, base + ax * (half_l * se), ax * se, aw, rise, trim if trim.a > 0.0 else TRIM)
 			k.mat = MeshKit.M_WOOD
 			var fas := trim if trim.a > 0.0 else TRIM.darkened(0.12)
 			for se: float in [-1.0, 1.0]:
@@ -914,6 +977,37 @@ func pediment(k: MeshKit, g: Vector3, nr: Vector3, aw: Vector3, half_w: float, o
 			_quad_facing(k, m - aw * (r * 0.8) - Vector3.UP * 0.035, m + aw * (r * 0.8) - Vector3.UP * 0.035, m + aw * (r * 0.8) + Vector3.UP * 0.035, m - aw * (r * 0.8) + Vector3.UP * 0.035, col, nr)
 			_quad_facing(k, m - aw * 0.035 - Vector3.UP * (r * 0.8), m + aw * 0.035 - Vector3.UP * (r * 0.8), m + aw * 0.035 + Vector3.UP * (r * 0.8), m - aw * 0.035 + Vector3.UP * (r * 0.8), col, nr)
 	k.mat = 0.0
+
+
+## A round louvred attic vent in a plain gable end (`roof.vent`): a trim
+## ring round dark slats, in the gable's upper middle.
+func gable_vent(k: MeshKit, g: Vector3, nr: Vector3, aw: Vector3, rise: float, col: Color) -> void:
+	var c := g + nr * 0.05 + Vector3.UP * (rise * 0.5)
+	var r := clampf(rise * 0.13, 0.3, 0.6)
+	k.mat = MeshKit.M_PLASTER
+	_vdisc(k, c, nr, aw, r * 0.78, r, col)
+	_vdisc(k, c - nr * 0.03, nr, aw, 0.0, r * 0.78, Color(0.24, 0.25, 0.28))
+	k.mat = MeshKit.M_WOOD
+	for i in 4:
+		var y := (float(i) - 1.5) * r * 0.36
+		var hw := sqrt(maxf(0.0, r * r * 0.6 - y * y))
+		var q := c + Vector3.UP * y
+		_quad_facing(k, q - aw * hw, q + aw * hw, q + aw * hw + Vector3.UP * 0.06, q - aw * hw + Vector3.UP * 0.06, col.darkened(0.08), nr)
+	k.mat = 0.0
+
+
+## The upper half of a flat ring standing upright at `c`, facing `nr` (an
+## arched window head).
+func _varc(k: MeshKit, c: Vector3, nr: Vector3, aw: Vector3, r_in: float, r_out: float, col: Color, seg: int = 10) -> void:
+	for i in seg:
+		var a0 := PI * float(i) / float(seg)
+		var a1 := PI * float(i + 1) / float(seg)
+		var d0 := aw * cos(a0) + Vector3.UP * sin(a0)
+		var d1 := aw * cos(a1) + Vector3.UP * sin(a1)
+		if r_in <= 0.0:
+			_tri_facing(k, c, c + d0 * r_out, c + d1 * r_out, col, nr)
+		else:
+			_quad_facing(k, c + d0 * r_in, c + d0 * r_out, c + d1 * r_out, c + d1 * r_in, col, nr)
 
 
 ## A flat ring (a disc when `r_in` is 0) standing upright at `c`, facing `nr`.
@@ -1244,7 +1338,8 @@ func _fence_span(_s: Dictionary, kind: String, h: float, whole: Array, sp: int, 
 	var b := a0 + dir * (len0 * float(sp + 1) / posts0)
 	var len := a.distance_to(b)
 	var c := (a + b) * 0.5
-	B.lift = minf(B.gy(a.x, a.y), B.gy(b.x, b.y))
+	# on the ground, or on a stair's walking line where it crosses one
+	B.lift = minf(maxf(B.gy(a.x, a.y), L.stair_y(a)), maxf(B.gy(b.x, b.y), L.stair_y(b)))
 	var kd := _k(c.x, c.y, true)
 	var k := _k(c.x, c.y)
 	var posts := 1
@@ -1267,11 +1362,13 @@ func _fence_span(_s: Dictionary, kind: String, h: float, whole: Array, sp: int, 
 				k.chamfer_box(Vector3(p.x, 0.15, p.y), Vector3(0.5, 0.3, 0.6), Color(0.55, 0.22, 0.12), 0.05, yaw)
 		_:
 			k.mat = MeshKit.M_METAL
+			# (a white pipe railing where the data says so)
+			var metal := Color(0.88, 0.88, 0.86) if bool(_s.get("white", false)) else IRON
 			for i in posts + (1 if sp == posts0 - 1 else 0):
 				var p := a + dir * (len * float(i) / posts)
-				k.chamfer_box(Vector3(p.x, h * 0.5, p.y), Vector3(0.1, h, 0.1), IRON, 0.02)
+				k.chamfer_box(Vector3(p.x, h * 0.5, p.y), Vector3(0.1, h, 0.1), metal, 0.02)
 			for y: float in ([h - 0.12, 0.3] if kind != "rail" else [h - 0.05, h * 0.5]):
-				k.chamfer_box(Vector3(c.x, y, c.y), Vector3(len, 0.05, 0.05), IRON, 0.01, yaw)
+				k.chamfer_box(Vector3(c.x, y, c.y), Vector3(len, 0.05, 0.05), metal, 0.01, yaw)
 			if kind == "fence_iron":
 				var pick := maxi(1, int(len / 0.16))
 				for i in pick:
@@ -1406,7 +1503,8 @@ func _prop(pr: Dictionary) -> void:
 			k.mat = MeshKit.M_STONE
 			k.chamfer_box(Vector3(p.x, 0.4, p.y), Vector3(1.2, 0.8, 1.2), STONE_TRIM.darkened(0.1), 0.06, rot)
 			k.mat = 0.0
-			B.mm_add("decor", Vector3(p.x, 0.8, p.y), "shrub_bloom", Transform3D(Basis(Vector3.UP, rot).scaled(Vector3(0.9, 0.7, 0.9)), Vector3(p.x, 0.8, p.y)), Color(1, 1, 1), Color(0.22, 0.42, 0.24))
+			# (instances are placed absolutely: on the ground under the planter)
+			B.mm_add("decor", Vector3(p.x, 0.8, p.y), "shrub_bloom", Transform3D(Basis(Vector3.UP, rot).scaled(Vector3(0.9, 0.7, 0.9)), Vector3(p.x, B.lift + 0.8, p.y)), Color(1, 1, 1), Color(0.22, 0.42, 0.24))
 		"table":
 			k.mat = MeshKit.M_WOOD
 			k.chamfer_box(Vector3(p.x, 0.75, p.y), Vector3(1.8, 0.06, 0.8), WOOD, 0.02, rot)
@@ -1450,6 +1548,17 @@ func _prop(pr: Dictionary) -> void:
 # Surface markings
 # ---------------------------------------------------------------------------
 ## Parking stalls: lines square to each long edge of the lot, 2.7 m apart.
+## A painted line on the ground: draped on a map with terrain, a flat
+## ribbon otherwise.
+func _mark(pts: PackedVector2Array, w: float, y: float, col: Color) -> void:
+	var c := CampusData.centroid(pts) if pts.size() > 2 else (pts[0] + pts[pts.size() - 1]) * 0.5
+	var k := _k(c.x, c.y, true)
+	if B.L.terrain.is_empty():
+		k.ribbon(pts, w, y, col, 0.0, false)
+	else:
+		B.drape_line(k, pts, w, y, col)
+
+
 func lot_markings(a: Dictionary) -> void:
 	var poly: PackedVector2Array = CampusData.ccw(a["poly"])
 	var n := poly.size()
@@ -1468,7 +1577,7 @@ func lot_markings(a: Dictionary) -> void:
 			var q2 := q + inw * 4.8
 			if not Geometry2D.is_point_in_polygon(q2, poly):
 				continue
-			_k(q.x, q.y, true).ribbon(PackedVector2Array([q, q2]), 0.1, 0.034, col, 0.0, false)
+			_mark(PackedVector2Array([q, q2]), 0.1, 0.034, col)
 
 
 ## Field lines: the outline and a centre line on fields and courts; the
@@ -1486,12 +1595,12 @@ func field_markings(a: Dictionary) -> void:
 			var closed := off.duplicate()
 			closed.append(off[0])
 			var c := CampusData.centroid(off)
-			_k(c.x, c.y, true).ribbon(closed, 0.06, y, col, 0.0, false)
+			_mark(closed, 0.06, y, col)
 		return
 	var closed2 := poly.duplicate()
 	closed2.append(poly[0])
 	var c2 := CampusData.centroid(poly)
-	_k(c2.x, c2.y, true).ribbon(closed2, 0.12 if kind != "court" else 0.06, y, col, 0.0, false)
+	_mark(closed2, 0.12 if kind != "court" else 0.06, y, col)
 	var obb := obb_of(poly)
 	var ax: Vector2 = obb["axis"]
 	var aw := Vector2(-ax.y, ax.x)
@@ -1502,14 +1611,14 @@ func field_markings(a: Dictionary) -> void:
 	var half_s := (size.y if along_x else size.x) * 0.5
 	var half_l := (size.x if along_x else size.y) * 0.5
 	var cen: Vector2 = obb["center"]
-	_k(cen.x, cen.y, true).ribbon(PackedVector2Array([cen - short_v * half_s, cen + short_v * half_s]), 0.12, y, col, 0.0, false)
+	_mark(PackedVector2Array([cen - short_v * half_s, cen + short_v * half_s]), 0.12, y, col)
 	if kind == "field_turf" and half_l > 40.0:
 		# yard lines every ~9 m
 		var step := 9.14
 		var t := -half_l + step
 		while t < half_l - 1.0:
 			var m := cen + long_v * t
-			_k(m.x, m.y, true).ribbon(PackedVector2Array([m - short_v * half_s, m + short_v * half_s]), 0.1, y, col, 0.0, false)
+			_mark(PackedVector2Array([m - short_v * half_s, m + short_v * half_s]), 0.1, y, col)
 			t += step
 
 

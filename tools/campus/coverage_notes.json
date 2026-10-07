@@ -1,0 +1,147 @@
+{
+ "B02": {
+  "state": "West half occupied for fall 2026; east half still being fitted out (dated news, private research), exterior shell complete.",
+  "work": "Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level. The east wing (status construction) shows no lit rooms.",
+  "limits": "Construction staging on the east side is not modelled; the shell is drawn complete (as reported)."
+ },
+ "B05": {
+  "limits": "Storey count and facade groups still from one photo; see open questions."
+ },
+ "B06": {
+  "limits": "Identity and site still unresolved (no current source found); footprints, height and cladding are placeholders, not refined."
+ },
+ "B07": {
+  "limits": "Its entry porch stair is resolved from the grade like any entrance; the arched upper window and dormers are not modelled individually."
+ },
+ "B08": {
+  "state": "Expanded in 2024 (dated news): the 2022 aerial footprint may show only the first half.",
+  "limits": "The 2024 expansion is not traced (no overhead image after 2022 in the pack)."
+ },
+ "B09": {
+  "work": "Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level; its raised entrances got stairs from the bake. The front arcade's south half stood 1.1 m over the walk with no way up: inferred steps now come down from its open south end (passage steps).",
+  "limits": "Rotunda bands, quoins, curved seat walls and canopy supports are not yet modelled. The arcade's end steps are inferred (unverified)."
+ },
+ "B10": {
+  "limits": "Close current imagery still missing; generic two-storey treatment."
+ },
+ "B11": {
+  "work": "A function inside B10's building; no separate mass (as the brief asks)."
+ },
+ "B12": {
+  "work": "Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level (5.19 m, on its rise). The front stair is built centred on the doors as photographed: 16 risers in four flights with three landings stepping down the bank to the walk (about 2.7 m), 7 m wide, white rails on both sides and the centre handrail between two flights; it collides as a ramp under its nosings and is closed to carts. The traced rails sat 2.9 m north of the doors and were moved onto the stair's line. The portico floor is the hall's floor (it was raised 1.8 m on flat ground before). A white cupola now stands over the crossing of the ranges, on a low pyramid roof there (it was drawn flat). Exposed-basement windows are drawn wherever more than 1.9 m of foundation shows; on the DEM's grades none of North Hall's faces shows that much.",
+  "limits": "Riser count, going and the landings are inferred from photos and the DEM, not measured. The photographed fifth window row (basement) does not appear: the DEM puts the front lawn's bank 12 m out from the wings. The cupola's size and height are inferred. It starts no race (no target set fits the 240 s round).",
+  "views": "before/after north_hall front and wide"
+ },
+ "B14": {
+  "limits": "The 0.6 m rise and the step counts are inferred from the photos and the DEM, not measured; the columnar evergreens are not individually planted.",
+  "work": "Grounded on the measured terrain. Stands on its raised basement: the floor is set 0.6 m over the grade in front (floor_navd88, from the photographed few steps up under the portico), so the bake builds steps up into the portico and at its other doors; the portico floor is the hall floor (it was a separate 0.6 m on flat ground before). The welcome office's west door (unverified) is placed 2 m off the portico wing's corner so its steps clear the wing."
+ },
+ "B15": {
+  "work": "A function inside B14's building; no separate mass."
+ },
+ "B17": {
+  "state": "Steel frame erected through mid-2026, completion 2027 (dated news): a fenced construction site in October 2026.",
+  "limits": "Drawn from the traced site and fence; the erected steel frame itself is not modelled."
+ },
+ "B20": {
+  "work": "Part of the Campus Center's traced massing (B19); no separate building."
+ },
+ "B22": {
+  "work": "Height corrected to the published 21.9 m (was a 28 m photo estimate); the pier heights keep their measured proportions. The upper assembly is now a dark louvred speaker housing (the tower plays an electronic carillon through speakers), not hanging bells.",
+  "limits": "Pier offsets and the pier pair's orientation are still from photos (a few tens of degrees uncertain).",
+  "views": "before/after tower from the north-east"
+ },
+ "B26": {
+  "work": "Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level; three raised entrances got stairs (5-8 risers) from the bake."
+ },
+ "B27": {
+  "limits": "The atrium's axis (NE-SW as traced vs a possible NW-SE) is still unresolved; the walk-through is left as traced. Faceted roof proportions unchanged this pass; the alcoves' count and depth are approximate, as traced, and so are the benches in them.",
+  "work": "Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level. Benches stand in the garden ring's eight alcoves (the traced walls are stepped into alcoves with benches), at each alcove's back facing the garden; positions inferred from the traced alcoves."
+ },
+ "B28": {
+  "work": "Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level (the default start hall stands at the origin, y about 0); its front entrance has a short stair from the bake.",
+  "limits": "Door widths stay 3.2 m for the game's door rules."
+ },
+ "B29": {
+  "work": "Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level; its entrances got short stairs from the bake."
+ },
+ "B30": {
+  "work": "Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level. Each of the five homes rebuilt from the photos: a central bay 0.3 m proud of the facade with a full-height front gable and a round louvred vent, arched windows on the bay's middle floor, dark shutters at every window, white corner boards and first-floor band, and open one-storey porches (white posts) with twin end gables on both sides; bikes at the porch ends where the photos show them.",
+  "limits": "The homes are drawn alike; their real differences (siding colour aside) are not individually recorded. Large arched ground-floor windows beside the porches are not modelled.",
+  "views": "before/after village homes (lot side, lawn side)"
+ },
+ "B31": {
+  "work": "Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level; one entrance on its low side is a lower-level door at grade under the exposed basement (the floor is 3.3 m above it)."
+ },
+ "B33": {
+  "work": "Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level; two entrances got stairs from the bake.",
+  "limits": "The stone retaining terraces and planting pockets toward the pond are not modelled as breaklines."
+ },
+ "B35": {
+  "state": "Renovated with an event-space addition overlooking the lake (2024, dated sources): the 2022 footprint predates it.",
+  "work": "Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level; its lake side shows the exposed foundation, one entrance there is a lower-level door at grade, and its west door has a 14-riser stair from the bake.",
+  "limits": "The 2024 addition's outline is not traced."
+ },
+ "B37": {
+  "work": "Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level.",
+  "limits": "Its door facing the dining hall across the narrow link gets no stair: an automatic one would run into the dining hall. What joins them (a bridge or link) needs evidence."
+ },
+ "B45": {
+  "limits": "Still placed from the inset map (+-3 m); no overhead image in the pack shows the site."
+ },
+ "B46": {
+  "work": "Not built: no source establishes its site or footprint (search 2026-10-07).",
+  "limits": "An unresolved change record; nothing is invented from the legend."
+ },
+ "B47": {
+  "state": "Standing in October 2026, now an office (dated news).",
+  "limits": "The marker's identity against B01's numbering is still to reconcile on site."
+ },
+ "W01": {
+  "work": "Surface at the survey's flattened level (-10.20 m); the docks sit a lip under their bank, never under the water.",
+  "limits": "Embankment profile and shore texture are not modelled beyond the DEM."
+ },
+ "W02": {
+  "work": "Split into its two lobes: the DEM shows the north lobe about 2.4 m above the south one, so they are two waters, one objective (a splash in either counts). The footbridge spans level from its higher bank (-4.57 m, 2.6 m over the lower lobe). Both ends of the footbridge are graded to its deck: the DEM predates the bridge and left its lower bank 0.17 m under the deck, more than a runner steps up.",
+  "limits": "The south lobe's level is inferred (dug after the survey). Stone edges and stepped planting terraces on the plaza side are not modelled as breaklines."
+ },
+ "W03": {
+  "work": "Level inferred just below its lowest bank (-7.84 m): the survey predates the pond.",
+  "limits": "Outline is still the design plan's; a 2025 photo suggests the built pond is smaller or further north."
+ },
+ "W04": {
+  "work": "Basins on their plaza's grade (4.33 m)."
+ },
+ "W05": {
+  "work": "Basin on its plaza's grade (3.73 m)."
+ },
+ "W06": {
+  "work": "The run follows its slope 0.3 m below the ground; its head pool sits on the plaza grade.",
+  "limits": "Seasonal flow unknown; modelled as wadeable."
+ },
+ "W07": {
+  "work": "Surface at the survey's flattened level (-3.43 m).",
+  "limits": "Never in a target set that fits the round (300+ m from the others); it stays in the world and on the map."
+ },
+ "A06": {
+  "state": "Construction began spring 2026 with completion targeted for fall 2026 (dated news): no as-built evidence found.",
+  "limits": "Whether surfacing was complete by October 2026 is unconfirmed (planned dates only); the layout is placed from the 2026 map (+-10-15 m).",
+  "work": "Drawn in its October 2026 state as an active construction site: the oval and its sprint extension as graded base course, the infield as graded earth, behind the chain fence; the finished surfacing and markings are not drawn."
+ },
+ "C02": {
+  "work": "Parked cars fill a share of every lot's stalls (fuller at the residences at night), deterministic from the lot outlines: 733 cars, the 616 inside the play area solid; clear of road entries, walks, exits, spawns, entrances and stairs.",
+  "limits": "Stall layout follows the lot markings, not a traced stall survey; accessible bays are not marked."
+ },
+ "C03": {
+  "work": "Village homes 06-07 rebuilt like B30 (see B30).",
+  "limits": "As B30."
+ },
+ "C05": {
+  "limits": "Woodland interiors are still representative fills (inferred): trunk positions inside the woods and the understory's mix are not surveyed; there are no ferns or fallen wood.",
+  "work": "A layered understory under the woods: about 1,230 low and tall shrubs, grass tufts and the odd rock, jittered on a 5 m grid, dense inside the play area and sparse beyond it, never on a walk, a road, a building or in a water. Drawn only (no collider, no nav cell), so play is unchanged."
+ },
+ "C06": {
+  "work": "Bikes at the two traced racks and at the village porches (observed in the photos); three hammocks, each between two trunks near a hall (requested scenery placed plausibly, not surveyed).",
+  "limits": "Bench, table and planter clusters are still the traced few; furniture clusters at the dining plaza and pond terraces are not modelled."
+ }
+}

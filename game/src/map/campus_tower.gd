@@ -1,8 +1,9 @@
 class_name CampusTower
 extends RefCounted
 ## The bell tower: six slender brick piers in two staggered columns that
-## step down from the back to the front, a bell assembly hung in the open
-## gap between the two tallest piers, tie beams across the gap high up, and
+## step down from the back to the front, a dark speaker housing in the open
+## gap between the two tallest piers (the real tower plays an electronic
+## carillon through speakers: no hanging bells), tie beams across the gap high up, and
 ## an open walk-through between the columns at ground level.  Each pier has
 ## a stone base course, a deep vertical slot and a projecting stone cap.
 ##
@@ -161,7 +162,7 @@ static func build(B: CampusBuilder, bd: Dictionary) -> void:
 
 
 ## The traced tower: each pier part a brick shaft (base course, slots, a
-## stone cap), the raised part the bell frame with its bells, the plaque
+## stone cap), the raised part the speaker housing, the plaque
 ## plinth beside the gap, up-lights at the piers' feet.
 static func _build_traced(B: CampusBuilder, bd: Dictionary, f: Dictionary) -> void:
 	var c: Vector2 = f["c"]
@@ -184,7 +185,7 @@ static func _build_traced(B: CampusBuilder, bd: Dictionary, f: Dictionary) -> vo
 			var q := [(oc - c).dot(back), (oc - c).dot(f["right"]), du, dv]
 			_pier(k, kd, f, q, h, yaw, side)
 		else:
-			_bells_at(k, oc, back, f["right"], du, dv, base, h, yaw)
+			_housing_at(k, oc, back, f["right"], du, dv, base, h, yaw)
 	_plinth(k, kd, f, yaw)
 	for pt2 in bd["parts"]:
 		if float(pt2.get("base", 0.0)) >= 1.0:
@@ -198,6 +199,42 @@ static func _build_traced(B: CampusBuilder, bd: Dictionary, f: Dictionary) -> vo
 		kd.box(Vector3(lp.x, 0.21, lp.y), Vector3(0.18, 0.03, 0.18), Color(1.0, 0.86, 0.62), yaw, 1.0)
 		kd.mat = 0.0
 		B.glow_disc(Vector3(lp.x, 0.05, lp.y), 1.4)
+
+
+## The upper assembly of the traced tower: a dark equipment housing that
+## fills the box (centre o, axes back/right, sizes du x dv) from y0 to y1,
+## its four faces louvred (the speakers sound through them), on a thin
+## steel frame with a projecting cap.
+static func _housing_at(k: MeshKit, o: Vector2, back: Vector2, right: Vector2, du: float, dv: float, y0: float, y1: float, yaw: float) -> void:
+	var body := Color(0.13, 0.14, 0.16)
+	var slat := Color(0.22, 0.23, 0.26)
+	k.mat = MeshKit.M_METAL
+	# the box itself, a little inside the frame
+	k.chamfer_box(Vector3(o.x, (y0 + y1) * 0.5, o.y), Vector3(du * 0.9, y1 - y0, dv * 0.9), body, 0.03, yaw)
+	# corner posts
+	for su: float in [-0.5, 0.5]:
+		for sv: float in [-0.5, 0.5]:
+			var p := o + back * (du * su * 0.94) + right * (dv * sv * 0.94)
+			k.chamfer_box(Vector3(p.x, (y0 + y1) * 0.5, p.y), Vector3(0.12, y1 - y0 + 0.1, 0.12), IRON, 0.02, yaw)
+	# louvres: angled slats across each face
+	var n := maxi(4, int((y1 - y0) / 0.32))
+	for i in n:
+		var y := lerpf(y0 + 0.25, y1 - 0.25, (float(i) + 0.5) / float(n))
+		for face in [[back, du, right, dv], [right, dv, back, du]]:
+			var nrm: Vector2 = face[0]
+			var depth := float(face[1])
+			var along: Vector2 = face[2]
+			var span := float(face[3])
+			for sgn: float in [-1.0, 1.0]:
+				var c := o + nrm * (sgn * (depth * 0.45 + 0.03))
+				var xa := Vector3(along.x, 0, along.y)
+				var za := xa.cross(Vector3.UP).normalized()
+				var xf := Transform3D(Basis(xa * (span * 0.82), Vector3.UP * 0.05, za * 0.1), Vector3(c.x, y, c.y))
+				k.box_xf(xf, slat)
+	# the cap
+	k.mat = MeshKit.M_STONE
+	k.chamfer_box(Vector3(o.x, y1 + 0.12, o.y), Vector3(du + 0.3, 0.24, dv + 0.3), CAP, 0.04, yaw)
+	k.mat = 0.0
 
 
 ## An open iron bell frame filling the box (centre o, axes back/right,

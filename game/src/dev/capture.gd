@@ -102,6 +102,11 @@ func _ready() -> void:
 		var v7: Node = (load("res://src/dev/capture_v7_screens.gd") as GDScript).new()
 		v7.set("cap", self)
 		add_child(v7)
+	elif scenario == "maps_ui":
+		# the map chooser: Practice, host and guest, controller focus
+		var mu: Node = (load("res://src/dev/capture_maps_ui.gd") as GDScript).new()
+		mu.set("cap", self)
+		add_child(mu)
 	elif scenario == "shop_final":
 		# FINAL_RELEASE_SWEEP Shop: filters, App Store outfits, Coin packs with
 		# simulated / unavailable prices, owned states, the offer cycle (DEV

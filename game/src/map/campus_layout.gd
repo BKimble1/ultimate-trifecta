@@ -64,6 +64,9 @@ var lamps: Array[Vector2] = []
 var benches: Array[Dictionary] = []
 var props: Array[Dictionary] = []
 var solids: Array[Dictionary] = []
+## Parked cars in the lots' stalls (CampusVehicles.parked): {"kind", "pos",
+## "yaw", "tint", "size"}.  Those inside the play area are also solids.
+var parked: Array[Dictionary] = []
 var dorm_doors: Array[Dictionary] = []
 var dorm_pads: Array[Vector2] = []
 var runner_spawns: Array[Vector2] = []
@@ -113,6 +116,7 @@ func _init(p_data: CampusData = null) -> void:
 	_build_dorms()
 	_build_water_points()
 	_index()
+	_build_parked()
 
 
 # ---------------------------------------------------------------------------
@@ -214,7 +218,8 @@ func _build_buildings() -> void:
 			var pp: PackedVector2Array = CampusData.ccw(p.get("footprint", PackedVector2Array()))
 			if pp.size() >= 3:
 				parts.append({"poly": pp, "h": float(p.get("h", it.get("h", 8.0))), "base": float(p.get("base", 0.0)),
-					"roof": p.get("roof", it.get("roof", {})), "rect": CampusData.bounds(pp), "wall": String(p.get("wall", ""))})
+					"roof": p.get("roof", it.get("roof", {})), "rect": CampusData.bounds(pp), "wall": String(p.get("wall", "")),
+					"arched_floor": int(p.get("arched_floor", -1))})
 		var h := float(it.get("h", 0.0))
 		if h <= 0.0:
 			for p in parts:
@@ -289,6 +294,22 @@ static func stair_surface(st: Dictionary, d: float) -> float:
 		if d <= d1:
 			return float(st["top"]) - rise * float(k) - rise * clampf((d - float(nos[k])) / going, 0.0, 1.0)
 	return float(st["bottom"])
+
+
+## The walking surface of a stair at p (its collision ramp, deck and
+## landings; -INF where no stair is).
+func stair_y(p: Vector2) -> float:
+	var best := -INF
+	for st in stairs:
+		var d: Vector2 = p - (st["p"] as Vector2)
+		var dn := d.dot(st["dir"])
+		# from its lead-in slab behind the top edge to its run-out past the
+		# last tread (CampusStairs.LEAD_IN, RUN_OUT: level, at the floor and
+		# at the bottom step)
+		if dn >= -CampusStairs.LEAD_IN and dn <= float(st["length"]) + float(st["going"]) + CampusStairs.RUN_OUT \
+				and absf(d.dot(st["tg"])) <= float(st["w"]) * 0.5:
+			best = maxf(best, stair_surface(st, maxf(dn, 0.0)))
+	return best
 
 
 ## A passage traced a hair inside the footprint (an open pavilion's posts
@@ -513,7 +534,7 @@ func _build_water_features() -> void:
 			if String(f.get("kind", "")) == "beach" and f.has("polygon"):
 				var bp := CampusData.ccw(CampusData.to_poly(f["polygon"]))
 				areas.append({"id": "%s_beach" % w["id"], "kind": "sand", "poly": bp, "rect": CampusData.bounds(bp)})
-			for pf in feature_decks(w, f):
+			for pf in feature_decks(w, f, terrain_y):
 				if pf.has("rails"):
 					for r in pf["rails"]:
 						solids.append(r)
@@ -525,7 +546,7 @@ func _build_water_features() -> void:
 ## [{kind, center (top middle), size, yaw, carve (bridge: a nav lane from
 ## bank to bank), rails (bridge: two railing boxes, as `solids`)}].  The
 ## layout makes them solid; CampusLandmarks draws the same boxes.
-static func feature_decks(w: Dictionary, f: Dictionary) -> Array:
+static func feature_decks(w: Dictionary, f: Dictionary, ground: Callable = Callable()) -> Array:
 	var out: Array = []
 	var kind := String(f.get("kind", ""))
 	if kind != "bridge" and kind != "dock":
@@ -534,6 +555,17 @@ static func feature_decks(w: Dictionary, f: Dictionary) -> Array:
 	var bridge := kind == "bridge"
 	var wd := float(f.get("w", 3.0 if bridge else 2.0))
 	var top := DECK_LIP if bridge else -DECK_LIP
+	if ground.is_valid() and pts.size() >= 2:
+		# on real ground: a footbridge spans level from its higher bank, a
+		# dock sits a lip under the bank at its root, never under the water
+		if bridge:
+			var d0 := (pts[1] - pts[0]).normalized()
+			var d1 := (pts[pts.size() - 1] - pts[pts.size() - 2]).normalized()
+			top = maxf(float(ground.call(pts[0] - d0 * 0.5)), float(ground.call(pts[pts.size() - 1] + d1 * 0.5))) + DECK_LIP
+		else:
+			top = float(ground.call(pts[0])) - DECK_LIP
+			if w.get("surface_y") != null:
+				top = maxf(top, float(w["surface_y"]) + 0.3)
 	for i in pts.size() - 1:
 		var a := pts[i]
 		var b := pts[i + 1]
@@ -551,7 +583,7 @@ static func feature_decks(w: Dictionary, f: Dictionary) -> Array:
 			var nrm := Vector2(-dir.y, dir.x)
 			var rails: Array = []
 			for sd: float in [-1.0, 1.0]:
-				rails.append({"pos": mid + nrm * (sd * (wd * 0.5 - 0.05)), "size": Vector3(a2.distance_to(b2), top + 1.05, 0.1), "rot": yaw})
+				rails.append({"pos": mid + nrm * (sd * (wd * 0.5 - 0.05)), "size": Vector3(a2.distance_to(b2), 1.35, 0.1), "rot": yaw, "base_y": top - 0.3})
 			pf["rails"] = rails
 			pf["carve"] = [a2 - dir * 1.5, b2 + dir * 1.5]
 		out.append(pf)
@@ -770,6 +802,65 @@ func is_on_road(p: Vector2, margin: float = 0.0) -> bool:
 	return false
 
 
+## On a road's carriageway (the road lines only, not the lots).
+func is_on_road_line(p: Vector2, margin: float = 0.0) -> bool:
+	for s in _road_cells.get(_cell(p), []):
+		if CampusData.dist_to_segment(p, s[0], s[1]) <= float(s[2]) + margin:
+			return true
+	return false
+
+
+## Cars in a share of every lot's stalls, clear of road entries, walks,
+## buildings, waters' exits and pads, spawns, gadget spots, entrances and
+## stairs (CampusVehicles.parked).  Deterministic: every client has the
+## same.  Runs after _index (it asks the road, path, water and building
+## indexes).
+func _build_parked() -> void:
+	if map_id == CampusMaps.CLASSIC:
+		return
+	var keep: Array[Vector2] = []
+	for w in waters:
+		for e in w["exits"]:
+			keep.append(Vector2((e as Vector3).x, (e as Vector3).z))
+		for pd in w["pads"]:
+			keep.append(pd)
+	for q in patrol_spawns:
+		keep.append(q)
+	for cs in cart_spawns:
+		keep.append(cs["pos"])
+	var ents: Array[Vector2] = []
+	for bd in buildings:
+		for e in bd["entrances"]:
+			ents.append(_v2((e as Dictionary).get("p", [0, 0])))
+	for dd in dorm_doors:
+		ents.append(dd["pos"])
+	var free := func(p: Vector2) -> bool:
+		if is_on_road_line(p, 1.2) or is_on_path(p, 1.0) or building_at(p, 1.2) >= 0 or water_index_at(p, 3.0) >= 0:
+			return false
+		for q in keep:
+			if q.distance_to(p) < 7.0:
+				return false
+		for q in gadget_spots:
+			if q.distance_to(p) < 4.0:
+				return false
+		for q in ents:
+			if q.distance_to(p) < 5.0:
+				return false
+		for st in stairs:
+			var d: Vector2 = p - (st["p"] as Vector2)
+			var dn := d.dot(st["dir"])
+			if dn > -2.0 and dn < float(st["length"]) + 4.0 and absf(d.dot(st["tg"])) < float(st["w"]) * 0.5 + 3.0:
+				return false
+		return true
+	for a in areas:
+		if String(a["kind"]) != "parking":
+			continue
+		for car in CampusVehicles.parked(String(a["id"]), a["poly"], free):
+			parked.append(car)
+			if in_play(car["pos"]):
+				solids.append({"pos": car["pos"], "size": car["size"], "rot": float(car["yaw"]), "kind": "parked_car"})
+
+
 func is_on_path(p: Vector2, margin: float = 0.0) -> bool:
 	for s in _path_cells.get(_cell(p), []):
 		if CampusData.dist_to_segment(p, s[0], s[1]) <= float(s[2]) + margin:
@@ -800,7 +891,7 @@ func _build_barriers() -> void:
 				"hedge":
 					hedges.append({"a": a, "b": b, "h": h if h > 0.0 else 1.5, "t": float(it.get("t", 1.0)), "kind": kind})
 				"rail":
-					fences.append({"a": a, "b": b, "h": h if h > 0.0 else 1.0, "kind": kind, "t": 0.25})
+					fences.append({"a": a, "b": b, "h": h if h > 0.0 else 1.0, "kind": kind, "t": 0.25, "white": String(it.get("color", "")) == "white"})
 				"bollards":
 					cart_blockers.append({"a": a, "b": b})
 				_:
@@ -811,10 +902,29 @@ func _build_barriers() -> void:
 # ---------------------------------------------------------------------------
 # Trees, lamps, benches, props (placed from evidence by the data)
 # ---------------------------------------------------------------------------
+## Furniture and trunks the data placed where the terrain bake has since
+## resolved a stair (the data predates the stairs): left out, counted here.
+var off_stairs := 0
+
+
+## Whether p is on a stair's run (from its top edge to one going past its
+## last nosing, across its width), or within `margin` of it.
+func on_stair(p: Vector2, margin: float = 0.0) -> bool:
+	for st in stairs:
+		var q: Vector2 = p - (st["p"] as Vector2)
+		var d := q.dot(st["dir"])
+		if d >= -margin and d <= float(st["length"]) + float(st["going"]) + margin and absf(q.dot(st["tg"])) <= float(st["w"]) * 0.5 + margin:
+			return true
+	return false
+
+
 func _build_vegetation_and_props() -> void:
 	for it in data.items("trees"):
 		var p: Vector2 = it.get("pos", Vector2.ZERO)
 		var r := float(it.get("r", 4.0))
+		if on_stair(p, 0.6):
+			off_stairs += 1
+			continue
 		trees.append({"id": String(it.get("id", "")), "pos": p, "r": r, "h": float(it.get("h", 9.0)),
 			"kind": String(it.get("kind", "deciduous")), "species": String(it.get("species", "")),
 			"tint": fposmod(p.x * 0.131 + p.y * 0.071, 1.0), "obs": String(it.get("obs", "inferred")),
@@ -823,6 +933,9 @@ func _build_vegetation_and_props() -> void:
 		var kind := String(it.get("kind", ""))
 		var p: Vector2 = it.get("p", Vector2.ZERO)
 		var rot := deg_to_rad(float(it.get("rot", 0.0)))
+		if kind != "platform" and kind != "ramp" and on_stair(p, 1.0 if kind == "bench" else 0.5):
+			off_stairs += 1
+			continue
 		match kind:
 			"lamp", "light_pole":
 				lamps.append(p)

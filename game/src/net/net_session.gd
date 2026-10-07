@@ -1378,6 +1378,8 @@ func _fix_start(d: Dictionary) -> Dictionary:
 	if not (dm is Dictionary):
 		return {}
 	var did := String((dm as Dictionary).get("id", ""))
+	if CampusMaps.map_of_dorm(did) == "":
+		return {"_incompatible": true}     # a hall this build doesn't have: a newer host's
 	if not CampusDorms.has_dorm(did, map_id):
 		return {}       # a dorm of another map: never resolved to one of this map's
 	if int((dm as Dictionary).get("ver", -1)) != CampusDorms.VERSION or String((dm as Dictionary).get("geo", "")) != CampusDorms.geometry_hash(did):

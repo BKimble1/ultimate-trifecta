@@ -147,7 +147,7 @@ func test_routes_are_playable_and_orders_are_optimal() -> void:
 	t.eq(door, best_door, "and the suggested door is the nearest by route, never through the building (door %d)" % door)
 	# the pace's route = the best of every order, checked by hand
 	var p0 := sim.player(0)
-	h.place(0, Vector3(-30, 0.05, 40))
+	h.place(0, h.on_ground(Vector2(-30, 40)))
 	p0.stamps = 0
 	var r := pc.route_of(p0)
 	var cell := PaceFields.cell_of(p0.pos2())
@@ -182,18 +182,18 @@ func test_pace_in_a_round_with_bots() -> void:
 	var lay := sim.layout
 	var fw: Vector2 = lay.waters[0]["center"]
 	# 0: next to the fountain, nothing stamped; 1: far away, nothing stamped
-	h.place(0, Vector3(fw.x, 0.05, fw.y - 9.0))
-	h.place(1, Vector3(-80, 0.05, -74))
+	h.place(0, h.on_ground(Vector2(fw.x, fw.y - 9.0)))
+	h.place(1, h.on_ground(Vector2(-80, -74)))
 	# 2: far away but one stamp; 3: home already; 4: two stamps; 5 (a bot)
-	h.place(2, Vector3(-80, 0.05, -70))
+	h.place(2, h.on_ground(Vector2(-80, -70)))
 	sim.player(2).stamps = 1
 	sim.player(3).finished_tick = 800
 	sim.player(3).stamps = 7
 	sim.player(3).state = TC.PState.FINISHED
 	sim.player(4).stamps = 3
-	h.place(4, Vector3(fw.x + 9.0, 0.05, fw.y))
+	h.place(4, h.on_ground(Vector2(fw.x + 9.0, fw.y)))
 	sim.player(5).stamps = 0
-	h.place(5, Vector3(fw.x, 0.05, fw.y + 40.0))
+	h.place(5, h.on_ground(Vector2(fw.x, fw.y + 40.0)))
 	pc.update(sim)
 	var pl := pc.places
 	t.eq(pc.runners, 6, "every runner counts, the bot included (denominator 6)")
@@ -220,8 +220,8 @@ func test_pace_in_a_round_with_bots() -> void:
 	var a0 := int(pc.places[0]["place"])
 	var a5 := int(pc.places[5]["place"])
 	# swap who is near and who is far (same stamps): needs to hold for 1 s
-	h.place(0, Vector3(fw.x, 0.05, fw.y + 40.0))
-	h.place(5, Vector3(fw.x, 0.05, fw.y - 9.0))
+	h.place(0, h.on_ground(Vector2(fw.x, fw.y + 40.0)))
+	h.place(5, h.on_ground(Vector2(fw.x, fw.y - 9.0)))
 	pc.update(sim)
 	t.eq(pc.revision, rev, "a route-only change isn't published on its first update")
 	t.eq(int(pc.places[0]["place"]), a0, "(no flicker)")
@@ -247,7 +247,7 @@ func test_budget_and_no_path_search() -> void:
 		for s in 6:
 			var p := sim.player(s)
 			p.stamps = rng.randi() % 8
-			h.place(s, Vector3(rng.randf_range(-120, 120), 0.05, rng.randf_range(-120, 120)))
+			h.place(s, h.on_ground(Vector2(rng.randf_range(-120, 120), rng.randf_range(-120, 120))))
 		var tu := Time.get_ticks_usec()
 		pc.update(sim)
 		each.append(float(Time.get_ticks_usec() - tu))
@@ -299,7 +299,7 @@ func test_snapshot_block_is_runners_only_and_positionless() -> void:
 	t.eq((ws["me"]["pace"] as Dictionary).size(), 0, "the Night Watch gets no pace")
 	t.eq(int(ws["me"]["next_goal"]), RunnerPace.NO_GOAL, "and no runner's goal")
 	t.check(data.size() < 1000, "the snapshot still fits one packet (%d bytes)" % data.size())
-	t.eq(Protocol.VERSION, 9, "protocol 9 (Pass 9 steady movement; the Pass 8 pace block kept; 24-bit positions for the rebuilt campus)")
+	t.eq(Protocol.VERSION, 10, "protocol 10 (Pass 9 steady movement; the Pass 8 pace block kept; 24-bit positions; the map in the lobby and START)")
 	h.free_sim()
 
 

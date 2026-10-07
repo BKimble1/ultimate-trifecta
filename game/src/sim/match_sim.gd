@@ -89,7 +89,12 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 	for c in opts.get("coins", []):
 		coins.append({"id": String(c["id"]), "pos": Vector3(float(c["x"]), CampusBuilder.grid_y(layout, float(c["x"]), float(c["z"])), float(c["z"])), "by": -1})
 	var builder := CampusBuilder.new(layout)
-	builder.build_collision(self)
+	# built during loading in slices (MatchController's "bodies" job), or now
+	var bodies: Array = opts.get("collision_bodies", [])
+	if bodies.is_empty():
+		builder.build_collision(self)
+	else:
+		builder.adopt(self, bodies)
 	_cap_shape = CapsuleShape3D.new()
 	_cap_shape.radius = Motor.CHAR_RADIUS
 	_cap_shape.height = Motor.CHAR_HEIGHT

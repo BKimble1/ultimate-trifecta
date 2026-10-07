@@ -172,9 +172,11 @@ func _edges(w: Dictionary) -> void:
 				var out := Vector2(dir.y, -dir.x)
 				var mid := (a + b) * 0.5 + out * (th * 0.5)
 				var k := B.kit_at(mid.x, mid.y)
+				# on the paving round the basin (its collider is ground-relative too)
+				var g0 := B.gy(mid.x, mid.y)
 				k.mat = MeshKit.M_STONE
-				k.chamfer_box(Vector3(mid.x, rim * 0.5, mid.y), Vector3(len + th * 0.9, rim, th), COPING.darkened(0.08), 0.05, atan2(-dir.y, dir.x))
-				k.chamfer_box(Vector3(mid.x, rim + 0.04, mid.y), Vector3(len + th, 0.08, th + 0.1), COPING, 0.03, atan2(-dir.y, dir.x))
+				k.chamfer_box(Vector3(mid.x, g0 + rim * 0.5 - 0.1, mid.y), Vector3(len + th * 0.9, rim + 0.2, th), COPING.darkened(0.08), 0.05, atan2(-dir.y, dir.x))
+				k.chamfer_box(Vector3(mid.x, g0 + rim + 0.04, mid.y), Vector3(len + th, 0.08, th + 0.1), COPING, 0.03, atan2(-dir.y, dir.x))
 				k.mat = 0.0
 			continue
 		var stony := edge == "stone"
@@ -188,7 +190,7 @@ func _edges(w: Dictionary) -> void:
 			if stony:
 				var q := p + nrm * 0.2
 				var sc := rng.randf_range(0.5, 1.0)
-				var xf := Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc * 1.3, sc * 0.7, sc)), Vector3(q.x, -0.15, q.y))
+				var xf := Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc * 1.3, sc * 0.7, sc)), Vector3(q.x, B.gy(q.x, q.y) - 0.15, q.y))
 				B.mm_add("decor", Vector3(q.x, 0, q.y), "rock_round", xf, Color(1, 1, 1) * rng.randf_range(0.85, 1.05), Color(1, 1, 1))
 			elif String(w["kind"]) in ["pond", "lake", "channel"] and rng.randf() < 0.45:
 				var q2 := p - nrm * 0.4
@@ -220,17 +222,19 @@ func _feature(w: Dictionary, f: Dictionary, k: MeshKit, mat: ShaderMaterial) -> 
 			var hp := float(f.get("h", 2.4))
 			var r0 := float(f.get("r", 0.3))
 			var fl := float(w["floor_y"])
+			# its heights are above the plaza's grade (the ground it stands in)
+			var g := B.L.terrain_y(p)
 			kk2.mat = MeshKit.M_STONE
 			var steps := 4
 			for si in steps:
 				var t0 := float(si) / steps
 				var t1 := float(si + 1) / steps
 				var wdt := r0 * 2.0 * lerpf(1.0, 0.72, (t0 + t1) * 0.5)
-				var yb := lerpf(fl, hp - 0.25, t0)
-				var yt := lerpf(fl, hp - 0.25, t1)
+				var yb := lerpf(fl, g + hp - 0.25, t0)
+				var yt := lerpf(fl, g + hp - 0.25, t1)
 				kk2.box(Vector3(p.x, (yb + yt) * 0.5, p.y), Vector3(wdt, yt - yb + 0.02, wdt), Color(0.24, 0.24, 0.26).lightened(0.04 * si), 0.0)
 			kk2.mat = MeshKit.M_METAL
-			kk2.revolve(Vector3(p.x, hp - 0.27, p.y), PackedVector2Array([Vector2(0.12, 0.0), Vector2(0.3, 0.12), Vector2(0.5, 0.26), Vector2(0.56, 0.3), Vector2(0.5, 0.32)]),
+			kk2.revolve(Vector3(p.x, g + hp - 0.27, p.y), PackedVector2Array([Vector2(0.12, 0.0), Vector2(0.3, 0.12), Vector2(0.5, 0.26), Vector2(0.56, 0.3), Vector2(0.5, 0.32)]),
 				PackedColorArray([Color(0.30, 0.22, 0.14), Color(0.34, 0.25, 0.16), Color(0.40, 0.30, 0.18), Color(0.46, 0.35, 0.22), Color(0.36, 0.27, 0.17)]), 14)
 			kk2.mat = 0.0
 			# four thin falls from the lip to the surface (the flowing-water material)
@@ -238,7 +242,7 @@ func _feature(w: Dictionary, f: Dictionary, k: MeshKit, mat: ShaderMaterial) -> 
 			for fi in 4:
 				var ang := TAU * (float(fi) + 0.5) / 4.0
 				var d2 := Vector3(cos(ang), 0, sin(ang))
-				var top := Vector3(p.x - c.x, hp + 0.03 - y, p.y - c.y) + d2 * 0.55
+				var top := Vector3(p.x - c.x, g + hp + 0.03 - y, p.y - c.y) + d2 * 0.55
 				var bot := Vector3(p.x - c.x, 0.02, p.y - c.y) + d2 * 0.75
 				var side := Vector3(-d2.z, 0, d2.x) * 0.025
 				k.quad(top - side, top + side, bot + side, bot - side, Color(0.86, 0.93, 0.98))
@@ -248,11 +252,12 @@ func _feature(w: Dictionary, f: Dictionary, k: MeshKit, mat: ShaderMaterial) -> 
 		"statue_base", "centerpiece":
 			# an abstract upright form on a plinth (bronze-toned), not a replica
 			var kk := B.kit_at(p.x, p.y)
+			var g2 := B.L.terrain_y(p)
 			kk.mat = MeshKit.M_STONE
-			kk.chamfer_box(Vector3(p.x, y + 0.35, p.y), Vector3(1.1, 0.7 - y, 1.1), STONE.darkened(0.1), 0.06)
+			kk.chamfer_box(Vector3(p.x, (y + g2 + 0.7) * 0.5, p.y), Vector3(1.1, g2 + 0.7 - y, 1.1), STONE.darkened(0.1), 0.06)
 			kk.mat = MeshKit.M_METAL
 			var hh := float(f.get("h", 2.6))
-			kk.revolve(Vector3(p.x, 0.7, p.y), PackedVector2Array([Vector2(0.32, 0), Vector2(0.24, hh * 0.6), Vector2(0.36, hh * 0.85), Vector2(0.62, hh), Vector2(0.5, hh + 0.12)]),
+			kk.revolve(Vector3(p.x, g2 + 0.7, p.y), PackedVector2Array([Vector2(0.32, 0), Vector2(0.24, hh * 0.6), Vector2(0.36, hh * 0.85), Vector2(0.62, hh), Vector2(0.5, hh + 0.12)]),
 				PackedColorArray([Color(0.30, 0.24, 0.18), Color(0.34, 0.27, 0.2), Color(0.38, 0.30, 0.22), Color(0.36, 0.28, 0.2), Color(0.3, 0.24, 0.18)]), 12)
 			kk.mat = 0.0
 		"bridge", "dock":
@@ -261,7 +266,7 @@ func _feature(w: Dictionary, f: Dictionary, k: MeshKit, mat: ShaderMaterial) -> 
 			# posts down into the water
 			var bridge := kind == "bridge"
 			var deck := Color(0.70, 0.69, 0.66) if bridge else Color(0.62, 0.60, 0.56)
-			for pf in CampusLayout.feature_decks(w, f):
+			for pf in CampusLayout.feature_decks(w, f, B.L.terrain_y):
 				var pc: Vector3 = pf["center"]
 				var sz: Vector3 = pf["size"]
 				var yaw := float(pf["yaw"])
@@ -426,7 +431,7 @@ func background() -> void:
 					continue    # woods inside the play area get their own traced trees
 				var s := rng.randf_range(1.4, 2.2)
 				var sp := "oak" if rng.randf() < 0.6 else ("linden" if rng.randf() < 0.5 else "fir")
-				var xf := Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s, s)), Vector3(p.x, 0.0, p.y))
+				var xf := Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s, s)), Vector3(p.x, B.gy(p.x, p.y), p.y))
 				B.mm_add("far", Vector3(p.x, 0, p.y), sp, xf, Color(0.62, 0.66, 0.78), Color(1, 1, 1))
 			x += spacing
 

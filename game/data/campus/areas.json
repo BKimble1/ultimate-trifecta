@@ -4740,15 +4740,15 @@
    "ev": {
     "conf": "low",
     "date": "2026",
-    "note": "standard 400 m oval (straights 84.4 m, 8 lanes, outer r 46.5 m) oriented E-W with a sprint extension of the north straight, placed from the 2026 map (oval ~190 x 94 m incl. margins, +-10-15 m); the map labels it 'opening fall 2026': modelled as a finished track (target date Oct 2026)",
-    "open": "completion, as-built layout, field-event areas, stands and buildings are unverified; the 2023 plan showed a different (N-S) layout; no imagery newer than 2022 covers it",
+    "note": "standard 400 m oval (straights 84.4 m, 8 lanes, outer r 46.5 m) oriented E-W with a sprint extension of the north straight, placed from the 2026 map (oval ~190 x 94 m incl. margins, +-10-15 m); the map labels it 'opening fall 2026': modelled as a finished track (target date Oct 2026); October 2026 state: an active construction site (graded oval and infield, base course, fenced) - construction began spring 2026 with completion targeted for fall 2026 and no as-built evidence was found, so the finished track is not drawn",
+    "open": "completion, as-built layout, field-event areas, stands and buildings are unverified; the 2023 plan showed a different (N-S) layout; no imagery newer than 2022 covers it; whether surfacing was complete by October 2026",
     "src": [
      "wayfinding2026",
      "plan2023p4"
     ]
    },
    "id": "track_complex_infield",
-   "kind": "field_turf",
+   "kind": "construction",
    "polygon": [
     [
      -657.8,
@@ -4846,15 +4846,15 @@
    "ev": {
     "conf": "low",
     "date": "2026",
-    "note": "standard 400 m oval (straights 84.4 m, 8 lanes, outer r 46.5 m) oriented E-W with a sprint extension of the north straight, placed from the 2026 map (oval ~190 x 94 m incl. margins, +-10-15 m); the map labels it 'opening fall 2026': modelled as a finished track (target date Oct 2026)",
-    "open": "completion, as-built layout, field-event areas, stands and buildings are unverified; the 2023 plan showed a different (N-S) layout; no imagery newer than 2022 covers it",
+    "note": "standard 400 m oval (straights 84.4 m, 8 lanes, outer r 46.5 m) oriented E-W with a sprint extension of the north straight, placed from the 2026 map (oval ~190 x 94 m incl. margins, +-10-15 m); the map labels it 'opening fall 2026': modelled as a finished track (target date Oct 2026); October 2026 state: an active construction site (graded oval and infield, base course, fenced) - construction began spring 2026 with completion targeted for fall 2026 and no as-built evidence was found, so the finished track is not drawn",
+    "open": "completion, as-built layout, field-event areas, stands and buildings are unverified; the 2023 plan showed a different (N-S) layout; no imagery newer than 2022 covers it; whether surfacing was complete by October 2026",
     "src": [
      "wayfinding2026",
      "plan2023p4"
     ]
    },
    "id": "track_complex_sprint_ext",
-   "kind": "track",
+   "kind": "gravel",
    "polygon": [
     [
      -657.8,
@@ -4880,15 +4880,15 @@
    "ev": {
     "conf": "low",
     "date": "2026",
-    "note": "standard 400 m oval (straights 84.4 m, 8 lanes, outer r 46.5 m) oriented E-W with a sprint extension of the north straight, placed from the 2026 map (oval ~190 x 94 m incl. margins, +-10-15 m); the map labels it 'opening fall 2026': modelled as a finished track (target date Oct 2026)",
-    "open": "completion, as-built layout, field-event areas, stands and buildings are unverified; the 2023 plan showed a different (N-S) layout; no imagery newer than 2022 covers it",
+    "note": "standard 400 m oval (straights 84.4 m, 8 lanes, outer r 46.5 m) oriented E-W with a sprint extension of the north straight, placed from the 2026 map (oval ~190 x 94 m incl. margins, +-10-15 m); the map labels it 'opening fall 2026': modelled as a finished track (target date Oct 2026); October 2026 state: an active construction site (graded oval and infield, base course, fenced) - construction began spring 2026 with completion targeted for fall 2026 and no as-built evidence was found, so the finished track is not drawn",
+    "open": "completion, as-built layout, field-event areas, stands and buildings are unverified; the 2023 plan showed a different (N-S) layout; no imagery newer than 2022 covers it; whether surfacing was complete by October 2026",
     "src": [
      "wayfinding2026",
      "plan2023p4"
     ]
    },
    "id": "track_complex_track",
-   "kind": "track",
+   "kind": "gravel",
    "polygon": [
     [
      -657.8,

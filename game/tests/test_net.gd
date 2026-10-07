@@ -251,8 +251,8 @@ func test_client_patrol_lag_compensated_tags() -> void:
 	var hmc := rig.host_mc()
 	await rig.wait_until(func() -> bool: return hmc.sim.patrol_release_left() <= 0.0 and hmc.sim.phase == TC.Phase.PLAYING, 900)
 	var pat := hmc.sim.player(client.local_slot)
-	hmc.sim.player(0).body.global_position = Vector3(-30, 0.05, 50)
-	pat.body.global_position = Vector3(-30, 0.05, 56)
+	hmc.sim.player(0).body.global_position = Vector3(-30, CampusBuilder.grid_y(hmc.sim.layout, -30, 50) + 0.05, 50)
+	pat.body.global_position = Vector3(-30, CampusBuilder.grid_y(hmc.sim.layout, -30, 56) + 0.05, 56)
 	leg["f0"] = Engine.get_physics_frames()
 	var captured := await rig.wait_until(func() -> bool:
 		for e in rig.host_events:

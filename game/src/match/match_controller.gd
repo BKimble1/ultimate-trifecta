@@ -213,7 +213,7 @@ static var _campus_cache: Dictionary = {}
 func _ready() -> void:
 	Diag.mark("load_begin")
 	_prep_t0 = Time.get_ticks_usec()
-	_prep = [_prep_campus, _prep_world, _prep_ground, _prep_nav, _prep_sim, _prep_views, _prep_rest, _prep_hud, _prep_touch, _prep_home_and_coins]
+	_prep = [_prep_campus, _prep_world, _prep_ground, _prep_nav, _prep_bodies, _prep_sim, _prep_views, _prep_rest, _prep_hud, _prep_touch, _prep_home_and_coins]
 	_prep_i = 0
 	if not staged:
 		while _prep_i < _prep.size():
@@ -265,7 +265,7 @@ func _process_prepare() -> void:
 func prep_progress() -> float:
 	if prepared:
 		return 1.0
-	const W := [0.54, 0.08, 0.07, 0.06, 0.05, 0.16, 0.01, 0.01, 0.01, 0.01]   # campus, world, ground, nav, sim, views, carts+camera, hud, touch, home doors + coins
+	const W := [0.54, 0.08, 0.07, 0.06, 0.03, 0.02, 0.16, 0.01, 0.01, 0.01, 0.01]   # campus, world, ground, nav, bodies, sim, views, carts+camera, hud, touch, home doors + coins
 	var done := 0.0
 	for k in mini(_prep_i, W.size()):
 		done += W[k]
@@ -273,7 +273,7 @@ func prep_progress() -> float:
 		var part := 0.0
 		if _prep_i == 0 and _builder != null:
 			part = _builder.progress()
-		elif _prep_i == 5 and not roster.is_empty():
+		elif _prep_i == 6 and not roster.is_empty():
 			part = 1.0 - float(_view_queue.size()) / float(roster.size())
 		elif _prep_i == 3 and NavGrid._building != null:
 			part = float(NavGrid._building._phase) / float(NavGrid.PHASES.size())
@@ -286,7 +286,7 @@ func prep_progress() -> float:
 ## over PREP_SLOW_MS marks the diagnostics timeline with its name, so a
 ## stall on a phone is attributed to the job that caused it.
 const PREP_SLOW_MS := 25.0
-const PREP_NAMES := ["campus", "world", "ground", "nav", "sim", "views", "carts_camera", "hud", "touch", "home_coins"]
+const PREP_NAMES := ["campus", "world", "ground", "nav", "bodies", "sim", "views", "carts_camera", "hud", "touch", "home_coins"]
 var prep_jobs: Array = []          # [[name, ms]] in order
 var prep_longest := ["", 0.0]      # [name, ms]
 
@@ -350,6 +350,10 @@ func _exit_tree() -> void:
 	_set_view_held(false)     # menus draw 3D again
 	NavGrid.settle_shared()   # V8: no bot path search left running on a worker
 	PaceFields.hand_off()     # Pass 8: route fields still building are released later, never waited for here
+	# bodies built for a round that never took them
+	for b in _take_bodies():
+		if is_instance_valid(b) and (b as Node).get_parent() == null:
+			(b as Node).free()
 	if prepared:
 		return
 	Diag.mark("prep_cancelled")
@@ -440,6 +444,31 @@ func _prep_nav() -> bool:
 	return NavGrid.build_step(layout)
 
 
+## (NP) the round's collision bodies, BODIES_SLICE shapes a call, before
+## the sim (or a guest's world) takes them: the campus's ~5,000 shapes put
+## on in one go held a loading frame ~40 ms.
+const BODIES_SLICE := 1200
+var _bodies: Array = []
+var _bodies_at := 0
+var _bodies_kit: CampusBuilder = null
+
+
+func _prep_bodies() -> bool:
+	if _bodies_kit == null:
+		_bodies_kit = CampusBuilder.new(layout)
+		_bodies = _bodies_kit.collision_bodies()
+		_bodies_at = 0
+	_bodies_at = _bodies_kit.attach_recipe(_bodies, _bodies_at, _bodies_at + BODIES_SLICE)
+	return _bodies_at < CampusBuilder.collision_recipe(layout).size()
+
+
+## The bodies _prep_bodies built, handed over once (empty: build them now).
+func _take_bodies() -> Array:
+	var b := _bodies
+	_bodies = []
+	return b
+
+
 func _prep_sim() -> void:
 	_stage("Placing players…")
 	if is_client:
@@ -452,7 +481,7 @@ func _prep_sim() -> void:
 			{"practice": bool(start.get("practice", false)), "tutorial": bool(start.get("tutorial", false)),
 			"gentle_bots": String(start.get("training", "")) == "watch",
 			"patrol_release_extra_s": 24.0 if bool(start.get("tutorial", false)) else 0.0,
-			"dorm": home_dorm, "spawns": _spawn_map(), "coins": start.get("coins", []),
+			"dorm": home_dorm, "spawns": _spawn_map(), "coins": start.get("coins", []), "collision_bodies": _take_bodies(),
 			"bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p)})
 		session.attach_sim(sim)
 		sim.event_emitted.connect(func(ev: Dictionary) -> void: _local_events.append(ev))
@@ -641,7 +670,11 @@ func _setup_client_world() -> void:
 	client_world = Node3D.new()
 	client_world.name = "ClientWorld"
 	add_child(client_world)
-	CampusBuilder.new(layout).build_collision(client_world)
+	var bodies := _take_bodies()
+	if bodies.is_empty():
+		CampusBuilder.new(layout).build_collision(client_world)
+	else:
+		_bodies_kit.adopt(client_world, bodies)
 	if not spectator:
 		pred = SimPlayer.new()
 		pred.id = local_slot

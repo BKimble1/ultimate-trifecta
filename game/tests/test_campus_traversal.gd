@@ -24,7 +24,7 @@ func _run(h: SimHarness, a: Vector2, b: Vector2, max_s: float) -> Array:
 	r.state = TC.PState.ACTIVE
 	Motor.set_body_enabled(r.body, true)
 	var dir := (b - a).normalized()
-	h.place(0, Vector3(a.x, CampusBuilder.grid_y(h.sim.layout, a.x, a.y) + 0.05, a.y), atan2(-dir.x, -dir.y))
+	h.place(0, Vector3(a.x, maxf(CampusBuilder.grid_y(h.sim.layout, a.x, a.y), h.sim.layout.stair_y(a)) + 0.05, a.y), atan2(-dir.x, -dir.y))
 	var ticks := 0
 	var low := INF
 	while ticks < int(max_s * 60.0):
@@ -94,7 +94,8 @@ func test_colliders_are_built() -> void:
 		var q2 := PhysicsRayQueryParameters3D.create(Vector3(c.x, 80.0, c.y), Vector3(c.x, -30.0, c.y))
 		q2.collision_mask = TC.L_WORLD
 		var hit := space.intersect_ray(q2)
-		if not hit.is_empty() and float(hit["position"].y) > 2.0:
+		# (above its own floor: the campus stands on its real grades)
+		if not hit.is_empty() and float(hit["position"].y) > float(bd.get("floor_y", 0.0)) + 2.0:
 			tops += 1
 		else:
 			t.check(false, "%s: a ray down over its middle hits the building (got %s)" % [bd["id"], "nothing" if hit.is_empty() else "y %.2f" % float(hit["position"].y)])
@@ -147,7 +148,16 @@ func test_open_passages_are_walkable() -> void:
 			if float(ps["clear"]) < 2.2:
 				continue    # too low to run under: not a walk-through
 			var ms: Array = []
+			var pfloor := float(bd.get("floor_y", 0.0)) + float(ps.get("floor", 0.0))
 			for mo in _mouths(bd, poly):
+				# a raised porch's side (its floor more than a step over the
+				# ground there, no stair) is not a way in: its stair is
+				var q0: Vector2 = (mo[0] as Vector2) + (mo[1] as Vector2) * 0.9
+				if Geometry2D.is_point_in_polygon(q0, poly):
+					q0 = (mo[0] as Vector2) - (mo[1] as Vector2) * 0.9
+				var on_stair := lay.stair_y(q0) > -INF
+				if not on_stair and pfloor - CampusBuilder.grid_y(lay, q0.x, q0.y) > 0.45:
+					continue
 				var ln := _lane(h, mo)
 				if ln != Vector2.INF:
 					ms.append([mo[0], mo[1], ln])
@@ -197,9 +207,11 @@ func test_footbridges_are_crossed() -> void:
 		var wi := lay.water_index_at((a + b) * 0.5)
 		var surf := float(lay.waters[wi]["surface_y"]) if wi >= 0 else -INF
 		for dirn in [[a, b], [b, a]]:
-			var res: Array = await _run(h, dirn[0], dirn[1], a.distance_to(b) / 6.0 * 2.0 + 1.5)
+			var res: Array = await _run(h, dirn[0], dirn[1], a.distance_to(b) / 6.0 * 2.0 + 3.0)
 			var r := h.sim.player(0)
-			t.check(bool(res[0]) and float(res[2]) > surf + 0.25 and r.state == TC.PState.ACTIVE,
+			# never below the water line and never in it (the upper lobe's
+			# banks stand only about 0.13 m over its surface)
+			t.check(bool(res[0]) and float(res[2]) > surf + 0.05 and r.state == TC.PState.ACTIVE,
 				"footbridge %s: crossed bank to bank above the water (%.2f s, lowest y %.2f)" % [n, float(res[1]), float(res[2])])
 		var path := nav.foot.get_id_path(nav.to_cell(a), nav.to_cell(b))
 		var direct := a.distance_to(b)
@@ -217,7 +229,13 @@ func _capsule_query(h: SimHarness, p: Vector2) -> bool:
 	var q := PhysicsShapeQueryParameters3D.new()
 	q.shape = cap
 	q.collision_mask = TC.L_WORLD
-	var y := CampusBuilder.grid_y(h.sim.layout, p.x, p.y)
+	# standing on what is there: the ground, a stair, a porch floor (a ray
+	# down from a metre over the ground's estimate)
+	var y := maxf(CampusBuilder.grid_y(h.sim.layout, p.x, p.y), h.sim.layout.stair_y(p))
+	var ray := PhysicsRayQueryParameters3D.create(Vector3(p.x, y + 1.0, p.y), Vector3(p.x, y - 2.0, p.y), TC.L_WORLD)
+	var down := h.sim.space_state().intersect_ray(ray)
+	if not down.is_empty():
+		y = float((down["position"] as Vector3).y)
 	q.transform = Transform3D(Basis.IDENTITY, Vector3(p.x, y + Motor.CHAR_HEIGHT * 0.5 + 0.12, p.y))
 	for hit in h.sim.space_state().intersect_shape(q, 4):
 		var co: Object = hit.get("collider")

@@ -616,10 +616,11 @@
    "zone": "ncore"
   },
   {
+   "color": "white",
    "ev": {
     "conf": "high",
     "date": "2022",
-    "note": "Centre handrail splitting the front stair into two flights.",
+    "note": "Centre handrail splitting the front stair into two flights, on the doors' centre line (R200, R306; the 2022 trace sat 2.9 m north).",
     "src": [
      "R306"
     ]
@@ -630,20 +631,21 @@
    "pts": [
     [
      321.0,
-     -342.1
+     -339.2
     ],
     [
      336.0,
-     -342.1
+     -339.2
     ]
    ],
    "zone": "ncore"
   },
   {
+   "color": "white",
    "ev": {
     "conf": "high",
     "date": "2022",
-    "note": "White pipe railing along the north side of the front stair.",
+    "note": "White pipe railing along the north side of the front stair, continuing down the walk past its foot (the stair draws its own rails above that); centred on the front doors like the stair (R200, R306; the 2022 trace sat 2.9 m north).",
     "src": [
      "R200",
      "R306"
@@ -654,21 +656,22 @@
    "kind": "rail",
    "pts": [
     [
-     319.0,
-     -345.6
+     335.0,
+     -342.7
     ],
     [
      336.5,
-     -345.6
+     -342.7
     ]
    ],
    "zone": "ncore"
   },
   {
+   "color": "white",
    "ev": {
     "conf": "high",
     "date": "2022",
-    "note": "White pipe railing along the south side of the front stair.",
+    "note": "White pipe railing along the south side of the front stair, continuing down the walk past its foot (the stair draws its own rails above that); centred on the front doors like the stair (R200, R306; the 2022 trace sat 2.9 m north).",
     "src": [
      "R200",
      "R306"
@@ -679,12 +682,12 @@
    "kind": "rail",
    "pts": [
     [
-     319.0,
-     -338.6
+     335.0,
+     -335.7
     ],
     [
      336.5,
-     -338.6
+     -335.7
     ]
    ],
    "zone": "ncore"

@@ -2106,7 +2106,8 @@
      ],
      "floor": 0.0,
      "clear": 4.2,
-     "note": "front colonnade (south half)"
+     "note": "front colonnade (south half)",
+     "steps": [{"p": [88.2, -311.4], "face": 180, "w": 3.2, "note": "steps down from the arcade's south end to the walk (inferred: the walk is about 1.1 m below the arcade floor in the DEM; unverified)"}]
     }
    ],
    "ev": {
@@ -2186,6 +2187,7 @@
    ],
    "h": 9.5,
    "floors": 2,
+   "floor_navd88": 286.995,
    "roof": {
     "type": "hip",
     "pitch": 30
@@ -2301,14 +2303,14 @@
     },
     {
      "p": [
-      236.0,
+      234.0,
       -232.5
      ],
      "face": 0,
      "w": 2.5,
      "kind": "door",
      "ref": "B15",
-     "note": "welcome office (B15) marker sits at this north-west part of the building in the 2026 wayfinding; exact door unverified"
+     "note": "welcome office (B15) marker sits at this north-west part of the building in the 2026 wayfinding; exact door unverified (placed 2 m west of the portico wing's corner, so its steps clear the wing)"
     },
     {
      "p": [
@@ -2341,9 +2343,9 @@
        -234.2
       ]
      ],
-     "floor": 0.6,
+     "floor": 0.0,
      "clear": 8.3,
-     "note": "open portico floor between the columns; the columns carry the entablature along the main block's eave line (R053), about 8.3 m above grade"
+     "note": "open portico floor between the columns, at the hall floor (a raised basement: the floor is set 0.6 m over the grade in front, up a few steps, R053); the columns carry the entablature along the main block's eave line (R053), about 8.3 m above grade"
     }
    ],
    "ev": {
@@ -3028,9 +3030,10 @@
      "h": 13.3,
      "base": 0.0,
      "roof": {
-      "type": "complex"
+      "type": "pyramid",
+      "pitch": 28
      },
-     "note": "ridges meet here"
+     "note": "ridges meet here; a low pyramid where the ranges cross, under the cupola"
     },
     {
      "name": "south_wing",
@@ -3126,6 +3129,35 @@
       }
      },
      "note": "full-height white portico: four giant columns plus end columns, pediment with oculus, white cupola on the ridge (about 305.5, -337), brick chimney north of the portico"
+    },
+    {
+     "name": "cupola",
+     "base": 18.2,
+     "footprint": [
+      [
+       294.4,
+       -343.2
+      ],
+      [
+       297.8,
+       -343.2
+      ],
+      [
+       297.8,
+       -339.8
+      ],
+      [
+       294.4,
+       -339.8
+      ]
+     ],
+     "h": 21.0,
+     "roof": {
+      "type": "pyramid",
+      "pitch": 38
+     },
+     "wall": "siding_white",
+     "note": "white cupola over the crossing of the ranges (R200, R306; inferred size and height)"
     }
    ],
    "style": {
@@ -3147,14 +3179,15 @@
      "kind": "portico",
      "note": "front double doors under the portico at the head of the front stair (R200 R306); main lobby lounge inside (R207)",
      "stair": {
-      "risers": 11,
+      "risers": 16,
+      "rise": 0.167,
       "going": 0.32,
-      "landing_after": 6,
-      "landing": 1.8,
+      "landing_after": 4,
+      "landing": 3.6,
       "deck": 0.6,
-      "w": 11.0,
+      "w": 7.0,
       "rails": "both",
-      "how": "broad front stair with rails up to the portico (R200, R306); about 1.8 m from the bank in the DEM and the packet's estimate; riser count, going and the one intermediate landing inferred"
+      "how": "front stair centred on the doors, white pipe rails on both sides and a centre handrail between two flights (R200, R306); its flights and landings step down the bank to the walk, about 2.7 m from the portico floor to where the rails end (DEM); riser count, going and the three landings inferred"
      }
     },
     {
@@ -3248,9 +3281,9 @@
        -333.0
       ]
      ],
-     "floor": 1.8,
+     "floor": 0.0,
      "clear": 12.3,
-     "note": "open portico floor in front of the front doors, raised about 1.8 m above the front lawn (stair below); the giant columns rise from it to the entablature under the pediment (R200, R306), so it is open to about 12.3 m above grade while the porch is drawn at grade"
+     "note": "open portico floor in front of the front doors, at the hall floor, about 1.8 m above the front lawn at the head of the front stair; the giant columns rise from it to the entablature under the pediment (R200, R306)"
     }
    ],
    "ev": {
@@ -3270,7 +3303,7 @@
     ],
     "date": "2022",
     "conf": "high",
-    "note": "Outline from 2022 roof edges; four storeys counted in R200/R203/R306 (3.2 m/floor + base, eave about 13.3 m); portico on the east front centred about z -339 matches the front stair paving at z -344..-338.",
+    "note": "Outline from 2022 roof edges; four storeys counted in R200/R203/R306 (3.2 m/floor + base, eave about 13.3 m); portico on the east front centred about z -339 matches the front stair paving at z -344..-338.; a white cupola stands over the crossing (photos; size and height inferred)",
     "open": "Roof shading/lean makes wing widths uncertain by about +-1.5 m (north range reads 23 m wide with a flat-topped hip, south range 19 m, west wing 14.5 m; the dark band north of the west wing is cast shadow by colour); exact rear door positions from R203 are estimated; front stair rise (about 1.8 m) estimated from R200/R306."
    },
    "zone": "ncore"
@@ -5654,15 +5687,16 @@
   {
    "id": "north_hall_stair_rail_n",
    "kind": "rail",
+   "color": "white",
    "h": 1.0,
    "pts": [
     [
-     319.0,
-     -345.6
+     335.0,
+     -342.7
     ],
     [
      336.5,
-     -345.6
+     -342.7
     ]
    ],
    "ev": {
@@ -5672,22 +5706,23 @@
     ],
     "date": "2022",
     "conf": "high",
-    "note": "White pipe railing along the north side of the front stair."
+    "note": "White pipe railing along the north side of the front stair, continuing down the walk past its foot (the stair draws its own rails above that); centred on the front doors like the stair (R200, R306; the 2022 trace sat 2.9 m north)."
    },
    "zone": "ncore"
   },
   {
    "id": "north_hall_stair_rail_s",
    "kind": "rail",
+   "color": "white",
    "h": 1.0,
    "pts": [
     [
-     319.0,
-     -338.6
+     335.0,
+     -335.7
     ],
     [
      336.5,
-     -338.6
+     -335.7
     ]
    ],
    "ev": {
@@ -5697,22 +5732,23 @@
     ],
     "date": "2022",
     "conf": "high",
-    "note": "White pipe railing along the south side of the front stair."
+    "note": "White pipe railing along the south side of the front stair, continuing down the walk past its foot (the stair draws its own rails above that); centred on the front doors like the stair (R200, R306; the 2022 trace sat 2.9 m north)."
    },
    "zone": "ncore"
   },
   {
    "id": "north_hall_stair_rail_c",
    "kind": "rail",
+   "color": "white",
    "h": 1.0,
    "pts": [
     [
      321.0,
-     -342.1
+     -339.2
     ],
     [
      336.0,
-     -342.1
+     -339.2
     ]
    ],
    "ev": {
@@ -5721,7 +5757,7 @@
     ],
     "date": "2022",
     "conf": "high",
-    "note": "Centre handrail splitting the front stair into two flights."
+    "note": "Centre handrail splitting the front stair into two flights, on the doors' centre line (R200, R306; the 2022 trace sat 2.9 m north)."
    },
    "zone": "ncore"
   },

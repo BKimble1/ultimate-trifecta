@@ -53,7 +53,7 @@ func test_every_job_is_timed_and_named() -> void:
 	mc.setup(s, info, {"quality": 1, "staged": true})
 	t.add_child(mc)
 	var f := 0
-	while not mc.prepared and f < 800:
+	while not mc.prepared and f < 1500:
 		await t.get_tree().process_frame
 		f += 1
 	t.check(mc.prepared, "prepared")

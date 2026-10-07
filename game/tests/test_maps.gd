@@ -349,6 +349,19 @@ func test_map_over_the_network() -> void:
 	var info: Dictionary = rig.started[rig.clients[0]]
 	t.eq(String(info["map"]["id"]), CampusMaps.CLASSIC, "the guest's START is on the classic map")
 	t.check(CampusDorms.has_dorm(String(info["home_dorm"]), CampusMaps.CLASSIC), "with a classic home hall")
+	# a guest who drops and comes back mid-round gets the same map again
+	await rig.wait_until(func() -> bool: return rig.host.phase >= TC.Phase.REVEAL, 600)
+	var c0: NetSession = rig.clients[0]
+	var slot := c0.local_slot
+	var key := c0.rejoin_key
+	rig.client_ts[0].close()
+	await rig.frames(30)
+	var c1 := rig.add_client(String(c0.local_uid), "Client0", "runner")
+	c1.rejoin_key = key
+	await rig.wait_until(func() -> bool: return c1.local_slot == slot and rig.started.has(c1), 400)
+	var rs: Dictionary = rig.started.get(c1, {})
+	t.eq(String((rs.get("map", {}) as Dictionary).get("id", "")), CampusMaps.CLASSIC, "a reconnecting guest's START names the classic map")
+	t.eq(String(rs.get("home_dorm", "")), String(info["home_dorm"]), "and the same home hall")
 	rig.teardown()
 
 
@@ -372,3 +385,34 @@ func test_caches_follow_the_map() -> void:
 	CampusMap.use(a)
 	t.eq(CampusMap.centre(), a.bounds.get_center(), "and back")
 	CampusBuilder.drop_caches()
+
+
+## The chooser itself: both cards for whoever may pick (the chosen one
+## marked by a check and the word, focus on it); for a guest only the
+## host's map, read-only, with Close.
+func test_map_sheet_editable_and_read_only() -> void:
+	App.goto(PracticeScreen)
+	await t.get_tree().process_frame
+	var picked := [""]
+	var root := MapSheet.open(App.screen, CampusMaps.CAMPUS, true, func(id: String) -> void: picked[0] = id)
+	await t.get_tree().process_frame
+	var cards := root.find_children("*", "Button", true, false).filter(func(b: Node) -> bool: return String((b as Button).accessibility_name).contains(" map. "))
+	t.eq(cards.size(), 2, "two map cards")
+	var sel := cards.filter(func(b: Node) -> bool: return String((b as Button).accessibility_name).ends_with("Selected."))
+	t.eq(sel.size(), 1, "one marked selected (in words, not only colour)")
+	t.check(String((sel[0] as Button).accessibility_name).begins_with("Lakeside Campus"), "the current map")
+	var classic: Button = cards.filter(func(b: Node) -> bool: return String((b as Button).accessibility_name).begins_with("Moonbrook College"))[0]
+	classic.pressed.emit()
+	await t.get_tree().process_frame
+	t.eq(picked[0], CampusMaps.CLASSIC, "a card picks its map")
+	t.check(not is_instance_valid(root) or root.is_queued_for_deletion(), "and the sheet closes")
+	var ro := MapSheet.open(App.screen, CampusMaps.CLASSIC, false, func(_id: String) -> void: picked[0] = "guest picked")
+	await t.get_tree().process_frame
+	var cards2 := ro.find_children("*", "Button", true, false).filter(func(b: Node) -> bool: return String((b as Button).accessibility_name).contains(" map. "))
+	t.eq(cards2.size(), 1, "a guest sees the host's map only")
+	t.eq((cards2[0] as Button).focus_mode, Control.FOCUS_NONE, "read-only: not focusable")
+	t.check(String((cards2[0] as Button).accessibility_name).begins_with("Moonbrook College"), "the host's choice")
+	var close := ro.find_children("*", "Button", true, false).filter(func(b: Node) -> bool: return (b as Button).text == "Close")
+	t.eq(close.size(), 1, "with Close")
+	ro.queue_free()
+	App.goto_title()

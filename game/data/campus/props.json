@@ -3640,6 +3640,167 @@
    "ref": "C06",
    "rot": 0.0,
    "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "bench in one of the chapel garden ring's alcoves (the garden walls are 'stepped into alcoves with benches'); placed at the alcove's back, facing the garden; position inferred from the traced alcove",
+    "src": [
+     "R013",
+     "R073"
+    ]
+   },
+   "id": "p_chapel_alcove_01",
+   "kind": "bench",
+   "p": [
+    90.09,
+    32.7
+   ],
+   "ref": "B27",
+   "rot": 68.8,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "bench in one of the chapel garden ring's alcoves (the garden walls are 'stepped into alcoves with benches'); placed at the alcove's back, facing the garden; position inferred from the traced alcove",
+    "open": "nudged 0.4 m off a traced walk (merge rule)",
+    "src": [
+     "R013",
+     "R073"
+    ]
+   },
+   "id": "p_chapel_alcove_02",
+   "kind": "bench",
+   "p": [
+    83.73,
+    41.36
+   ],
+   "ref": "B27",
+   "rot": 38.6,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "bench in one of the chapel garden ring's alcoves (the garden walls are 'stepped into alcoves with benches'); placed at the alcove's back, facing the garden; position inferred from the traced alcove",
+    "src": [
+     "R013",
+     "R073"
+    ]
+   },
+   "id": "p_chapel_alcove_03",
+   "kind": "bench",
+   "p": [
+    73.48,
+    46.34
+   ],
+   "ref": "B27",
+   "rot": 8.6,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "bench in one of the chapel garden ring's alcoves (the garden walls are 'stepped into alcoves with benches'); placed at the alcove's back, facing the garden; position inferred from the traced alcove",
+    "src": [
+     "R013",
+     "R073"
+    ]
+   },
+   "id": "p_chapel_alcove_04",
+   "kind": "bench",
+   "p": [
+    62.41,
+    45.26
+   ],
+   "ref": "B27",
+   "rot": -21.2,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "bench in one of the chapel garden ring's alcoves (the garden walls are 'stepped into alcoves with benches'); placed at the alcove's back, facing the garden; position inferred from the traced alcove",
+    "src": [
+     "R013",
+     "R073"
+    ]
+   },
+   "id": "p_chapel_alcove_05",
+   "kind": "bench",
+   "p": [
+    48.77,
+    28.64
+   ],
+   "ref": "B27",
+   "rot": -80.4,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "bench in one of the chapel garden ring's alcoves (the garden walls are 'stepped into alcoves with benches'); placed at the alcove's back, facing the garden; position inferred from the traced alcove",
+    "src": [
+     "R013",
+     "R073"
+    ]
+   },
+   "id": "p_chapel_alcove_06",
+   "kind": "bench",
+   "p": [
+    49.86,
+    17.56
+   ],
+   "ref": "B27",
+   "rot": -110.0,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "bench in one of the chapel garden ring's alcoves (the garden walls are 'stepped into alcoves with benches'); placed at the alcove's back, facing the garden; position inferred from the traced alcove",
+    "src": [
+     "R013",
+     "R073"
+    ]
+   },
+   "id": "p_chapel_alcove_07",
+   "kind": "bench",
+   "p": [
+    77.55,
+    5.03
+   ],
+   "ref": "B27",
+   "rot": 159.9,
+   "zone": "veg"
+  },
+  {
+   "ev": {
+    "conf": "medium",
+    "date": "2022",
+    "note": "bench in one of the chapel garden ring's alcoves (the garden walls are 'stepped into alcoves with benches'); placed at the alcove's back, facing the garden; position inferred from the traced alcove",
+    "src": [
+     "R013",
+     "R073"
+    ]
+   },
+   "id": "p_chapel_alcove_08",
+   "kind": "bench",
+   "p": [
+    91.17,
+    21.64
+   ],
+   "ref": "B27",
+   "rot": 99.1,
+   "zone": "veg"
   }
  ],
  "version": 1

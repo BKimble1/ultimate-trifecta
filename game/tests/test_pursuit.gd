@@ -24,6 +24,9 @@ func _free(sim: MatchSim, a: Vector3, d: Vector2, length: float) -> bool:
 	while s < length:
 		var p0 := a + dir * s
 		var p1 := a + dir * minf(s + 6.0, length)
+		# on the ground along the lane (the campus has its real grades)
+		p0.y = CampusBuilder.grid_y(sim.layout, p0.x, p0.z) + 0.05
+		p1.y = CampusBuilder.grid_y(sim.layout, p1.x, p1.z) + 0.05
 		for h in [0.4, 1.2]:
 			if not sim.has_los(p0 + Vector3(0, h, 0), p1 + Vector3(0, h, 0)):
 				return false
@@ -31,7 +34,8 @@ func _free(sim: MatchSim, a: Vector3, d: Vector2, length: float) -> bool:
 			var off: Vector3 = Vector3(-d.y, 0, d.x) * float(side)
 			if not sim.has_los(p0 + off + Vector3(0, 0.6, 0), p1 + off + Vector3(0, 0.6, 0)):
 				return false
-		if CampusBuilder.water_at(sim.layout, Vector2(p1.x, p1.z)) >= 0 or absf(CampusBuilder.grid_y(sim.layout, p1.x, p1.z)) > 0.05:
+		# near level: within half a metre of the lane's start all the way
+		if CampusBuilder.water_at(sim.layout, Vector2(p1.x, p1.z)) >= 0 or absf(p1.y - a.y) > 0.5:
 			return false
 		# inside the play area, clear of its edge (the rebuilt campus has open
 		# ground beyond the boundary that a lane must not use)
@@ -51,7 +55,7 @@ func _open_lane(sim: MatchSim) -> Array:
 	for x in range(int(b.position.x) + 20, int(b.end.x) - 20, 10):
 		for z in range(int(b.position.y) + 20, int(b.end.y) - 20, 10):
 			for d in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
-				var a := Vector3(x, 0.05, z)
+				var a := Vector3(x, CampusBuilder.grid_y(sim.layout, x, z) + 0.05, z)
 				if _free(sim, a - Vector3(d.x, 0, d.y) * 14.0, d, 125.0):
 					best = [a, d]
 					break
@@ -100,7 +104,7 @@ func _pursue(label: String, gap: float, runner_fn: Callable, chaser: Chaser, max
 	var d: Vector2 = lane[1]
 	var yaw := atan2(-d.x, -d.y)
 	h.place(0, a, yaw)
-	h.place(1, a - Vector3(d.x, 0, d.y) * gap, yaw)
+	h.place(1, h.on_ground(Vector2(a.x, a.z) - d * gap), yaw)
 	chaser.cam_yaw = yaw
 	var sim := h.sim
 	var runner := sim.player(0)
@@ -236,14 +240,14 @@ func test_cart_interception() -> void:
 	var c: SimCart = sim.carts[0]
 	c.yaw = yaw
 	# the lane is checked free from 14 m behind its start
-	c.body.global_position = a - Vector3(d.x, 0, d.y) * 13.0 + Vector3(0, 0.25, 0)
+	c.body.global_position = h.on_ground(Vector2(a.x, a.z) - d * 13.0, 0.25)
 	c.speed = 0.0
 	h.place(1, c.pos() - c.right() * 1.5)
 	await h.step()
 	h.press(1, TC.BTN_INTERACT)
 	await h.step(30)
 	t.eq(sim.player(1).state, TC.PState.IN_CART, "seated")
-	h.place(0, a + Vector3(d.x, 0, d.y) * 8.0, yaw)    # 21 m ahead of the cart
+	h.place(0, h.on_ground(Vector2(a.x, a.z) + d * 8.0), yaw)    # 21 m ahead of the cart
 	var runner := sim.player(0)
 	var cop := sim.player(1)
 	var chaser := Chaser.new()
@@ -295,7 +299,7 @@ func test_turbo_is_still_an_escape_burst() -> void:
 	var a: Vector3 = lane[0]
 	var d: Vector2 = lane[1]
 	h.place(0, a, atan2(-d.x, -d.y))
-	h.place(1, a - Vector3(d.x, 0, d.y) * 5.0, atan2(-d.x, -d.y))
+	h.place(1, h.on_ground(Vector2(a.x, a.z) - d * 5.0), atan2(-d.x, -d.y))
 	h.cmd(0).move = d
 	h.cmd(1).move = d
 	await h.step(45)

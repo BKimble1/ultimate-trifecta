@@ -49,6 +49,7 @@ var _prev_prof := {}
 var _render_samples: Array = []
 var _render_t := 0.0
 var _nav: NavGrid
+var map_id := CampusMaps.DEFAULT_ID
 ## --lifecycle: keep only a compact interval per frame (no per-frame
 ## records), so memory read at each round start is the game's own: the full
 ## records are ~2.5 KB a frame and grow the process by ~11 MB per 75 s round
@@ -76,7 +77,10 @@ func _ready() -> void:
 			out_path = v
 		elif a == "--lifecycle":
 			lifecycle = true
+		elif a.begins_with("--map="):
+			map_id = CampusMaps.sanitize(v)
 	Save.set_setting("quality", quality)
+	Save.set_setting("practice_map", map_id)
 	Save.data["onboarded"] = true
 	QualityPreset.apply(quality)
 	Engine.max_fps = fps
@@ -84,7 +88,7 @@ func _ready() -> void:
 	Prof.on = true
 	MatchSim.prof_on = true
 	MatchSim.prof = {}
-	_nav = NavGrid.shared(CampusLayout.shared())
+	_nav = NavGrid.shared(CampusMaps.layout(map_id))
 	_nav.debug_slow_searches = []
 	printerr("BENCH start fps=%d rounds=%d round_secs=%.0f seed=%d quality=%d renderer=%s" % [fps, rounds, round_secs, seed_v, quality, DisplayServer.get_name()])
 
@@ -191,10 +195,19 @@ func _drive(delta: float) -> void:
 				if lp:
 					lp.bot_takeover = true
 					mc.sim.bots[lp.id] = BotBrain.new(mc.sim, lp)
+				# (and the round's loading: time, frames, the longest job; the
+				# host sim's collision shapes)
+				var shapes := 0
+				for body_name in ["WorldCollision", "CartBlockers", "GroundCollision"]:
+					var body := mc.sim.get_node_or_null(body_name)
+					if body != null:
+						shapes += body.get_child_count()
 				_round_starts.append({"round": _round, "objects": Performance.get_monitor(Performance.OBJECT_COUNT),
 					"nodes": Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
 					"orphans": Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT),
-					"static_mb": Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0})
+					"static_mb": Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0,
+					"prepare_ms": mc.prepare_ms, "prep_frames": mc.prep_frames, "prep_longest": mc.prep_longest,
+					"collision_shapes": shapes, "map": map_id})
 			if mc.sim and mc.sim.phase == TC.Phase.PLAYING:
 				_round_t += delta
 				if _round_t > round_secs and mc.sim.end_tick > mc.sim.tick + 2:
@@ -245,7 +258,7 @@ func _finish() -> void:
 		for r in _frames:
 			arr.append(float(r.get(k, 0.0)))
 	var summary := {"fps": fps, "rounds": rounds, "round_secs": round_secs, "seed": seed_v, "quality": quality,
-		"renderer": DisplayServer.get_name(), "engine": Engine.get_version_info()["string"],
+		"map": map_id, "renderer": DisplayServer.get_name(), "engine": Engine.get_version_info()["string"],
 		"frames": _frames.size(), "interval": {}, "sections": {}, "contexts": {}, "first_events": {}, "round_starts": _round_starts}
 	summary["interval"] = {"p50": _pct(iv, 0.5), "p95": _pct(iv, 0.95), "p99": _pct(iv, 0.99), "max": _pct(iv, 1.0),
 		"over33": _count_over(iv, 33.3),

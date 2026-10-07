@@ -6,7 +6,7 @@
 # only, dummy renderer); RENDER=1 runs windowed on llvmpipe under Xvfb to
 # read draw calls and primitives (software rendering: not timing evidence).
 # This machine's numbers, never a phone's.
-# Usage: tools/match_bench.sh OUT.json [--fps=60] [--rounds=3] [--round-secs=75] [--seed=7] [--quality=1]
+# Usage: tools/match_bench.sh OUT.json [--fps=60] [--rounds=3] [--round-secs=75] [--seed=7] [--quality=1] [--map=reference_campus|classic]
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT=${1:?out.json}; shift

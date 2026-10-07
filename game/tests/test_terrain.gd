@@ -54,7 +54,8 @@ func test_stair_collision_follows_the_nosings() -> void:
 		for f in [0.1, 0.3, 0.5, 0.7, 0.9]:
 			var d := length * float(f)
 			var want := CampusLayout.stair_surface(st, d)
-			for side in [-0.3, 0.0, 0.3]:
+			# (off the centre line: a stair may have a centre handrail)
+			for side in [-0.3, -0.15, 0.15, 0.3]:
 				var p := CampusStairs.at(st, d, want + 3.0, float(side) * float(st["w"]))
 				var hit := ss.intersect_ray(PhysicsRayQueryParameters3D.create(p, p - Vector3(0, 6.0, 0), TC.L_WORLD))
 				var y := float((hit["position"] as Vector3).y) if not hit.is_empty() else -99.0
@@ -90,7 +91,10 @@ func test_walk_up_down_and_jump_from_the_landing() -> void:
 	var prof := CampusStairs.profile(st)
 	var length := float(prof[-1][0])
 	var n: Vector2 = st["dir"]
-	var foot: Vector2 = st["p"] + n * (length + 2.5)
+	# a quarter of the width off the centre line (its centre handrail
+	# divides the stair into two flights)
+	var lane: Vector2 = (st["tg"] as Vector2) * (float(st["w"]) * 0.25)
+	var foot: Vector2 = st["p"] + lane + n * (length + 2.5)
 	# up: from the walk below to the portico
 	h.place(0, h.on_ground(foot), atan2(n.x, n.y))
 	h.cmd(0).move = -n
@@ -125,7 +129,7 @@ func test_walk_up_down_and_jump_from_the_landing() -> void:
 	t.check(not ld.is_empty(), "the stair has an intermediate landing")
 	if not ld.is_empty():
 		var mid := (float(ld[0]) + float(ld[1])) * 0.5
-		var lp := CampusStairs.at(st, mid, float(ld[2]) + 0.05)
+		var lp := CampusStairs.at(st, mid, float(ld[2]) + 0.05, float(st["w"]) * 0.25)
 		h.place(0, lp, atan2(n.x, n.y))
 		await h.step(5)
 		h.cmd(0).move = n
@@ -141,6 +145,46 @@ func test_walk_up_down_and_jump_from_the_landing() -> void:
 		t.check(peak > float(ld[2]) + 0.5, "a real jump off the landing (peak %.2f)" % peak)
 		t.check(r.pos().y >= surf - 0.1, "landed on the stair or the walk, not inside it (%.2f vs %.2f)" % [r.pos().y, surf])
 		t.check(r.body.is_on_floor(), "and standing")
+	h.free_sim()
+
+
+## Every stair is climbed from the walk at its foot up to its top edge at
+## running pace: the walk meets it flush (no lip a runner stops at) and
+## nothing stands on it.
+func test_every_stair_is_climbed_from_its_walk() -> void:
+	var L := CampusLayout.shared()
+	var h := SimHarness.new(t)
+	h.make([R, P], [0, 1, 2], [], 5)
+	await h.release_patrol()
+	var r := h.sim.player(0)
+	var n := 0
+	for st in L.stairs:
+		var dir: Vector2 = st["dir"]
+		var length := float(st["length"]) + float(st["going"])
+		# a quarter of the width off the centre line (a centre handrail)
+		var lane: Vector2 = (st["tg"] as Vector2) * (float(st["w"]) * 0.25)
+		var a: Vector2 = (st["p"] as Vector2) + lane + dir * (length + 2.5)
+		var b: Vector2 = (st["p"] as Vector2) + lane + dir * 0.3
+		r.state = TC.PState.ACTIVE
+		Motor.set_body_enabled(r.body, true)
+		h.place(0, h.on_ground(a), atan2(dir.x, dir.y))
+		var ok := false
+		var ticks := 0
+		var budget := int(((length + 2.2) / Rules.cfg.runner_speed * 1.6 + 0.6) * 60.0)
+		while ticks < budget:
+			h.cmd(0).move = (b - r.pos2()).normalized()
+			await h.step()
+			ticks += 1
+			if r.pos2().distance_to(b) < 0.5:
+				ok = true
+				break
+		h.cmd(0).move = Vector2.ZERO
+		# up at its top edge (on the stair, not under it)
+		var want := CampusLayout.stair_surface(st, 0.3)
+		t.check(ok and r.pos().y > want - 0.4, "%s stair %d (%d risers): climbed from its walk (%.2f s, at %.2f, surface %.2f)" % [
+			st["building"], n, int(st["risers"]), float(ticks) / 60.0, r.pos().y, want])
+		n += 1
+	t.check(n >= 20, "stairs climbed (%d)" % n)
 	h.free_sim()
 
 

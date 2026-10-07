@@ -25,7 +25,7 @@
      -129.5
     ]
    ],
-   "h": 28.0,
+   "h": 21.9,
    "floors": 0,
    "roof": {
     "type": "flat"
@@ -50,7 +50,7 @@
        -131.4
       ]
      ],
-     "h": 28.0,
+     "h": 21.9,
      "base": 0.0,
      "roof": {
       "type": "flat"
@@ -75,7 +75,7 @@
        -129.5
       ]
      ],
-     "h": 17.0,
+     "h": 13.3,
      "base": 0.0,
      "roof": {
       "type": "flat"
@@ -100,7 +100,7 @@
        -130.0
       ]
      ],
-     "h": 28.0,
+     "h": 21.9,
      "base": 0.0,
      "roof": {
       "type": "flat"
@@ -125,7 +125,7 @@
        -131.8
       ]
      ],
-     "h": 12.5,
+     "h": 9.8,
      "base": 0.0,
      "roof": {
       "type": "flat"
@@ -150,8 +150,8 @@
        -130.8
       ]
      ],
-     "h": 26.8,
-     "base": 21.0,
+     "h": 21.0,
+     "base": 16.4,
      "roof": {
       "type": "pyramid",
       "pitch": 20
@@ -186,8 +186,8 @@
       ]
      ],
      "floor": 0.0,
-     "clear": 20.0,
-     "note": "open gap between the two piers (no roof until the bell frame at ~21 m); a low plaque plinth stands in it (R353, 155120)"
+     "clear": 15.6,
+     "note": "open gap between the two piers (no roof until the equipment housing at ~16 m); a low plaque plinth stands in it (R353, 155120)"
     }
    ],
    "landmark": "bell_tower",
@@ -202,12 +202,15 @@
      "R353",
      "V04",
      "V07",
-     "V08"
+     "V08",
+     "tower_page",
+     "news2015",
+     "news2017"
     ],
     "date": "2022",
     "conf": "medium",
-    "note": "tower centred on the inner octagon of its base; ground footprint ~5.7 x 4.1 m from the dark mass at the base in the aerial (the top appears displaced ~(+2,+7.5) m by lean); pier arrangement and stepped heights from the oblique photos/video; total height ~28 m estimated from the base octagon (23.4 m across) in the oblique user image 155113",
-    "open": "exact pier sizes/offsets, setback heights and the width of the ground gap need a site measurement; height +-3 m"
+    "note": "tower centred on the inner octagon of its base; ground footprint ~5.7 x 4.1 m from the dark mass at the base in the aerial (the top appears displaced ~(+2,+7.5) m by lean); pier arrangement and stepped heights from the oblique photos/video; total height 21.9 m (71 ft 10 in) as published for the tower, which replaces the earlier ~28 m photo estimate; the stepped pier heights keep their measured proportions; the upper dark assembly is a speaker/equipment housing (the tower plays an electronic carillon through speakers), not hanging bells",
+    "open": "exact pier sizes/offsets, setback heights and the width of the ground gap need a site measurement"
    }
   },
   {

@@ -410,7 +410,8 @@ func test_nothing_is_drawn_behind_the_loading_screen() -> void:
 	t.add_child(mc)
 	var drawn_before_ready := 0
 	var frames := 0
-	while not mc.prepared and frames < 600:
+	# (waits for the round, as the other loading tests do; it doesn't time it)
+	while not mc.prepared and frames < 1500:
 		await t.get_tree().process_frame
 		frames += 1
 		if mc.camera != null and not vp.disable_3d:

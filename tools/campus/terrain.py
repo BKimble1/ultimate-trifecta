@@ -22,7 +22,8 @@ What the bake does, in order, all deterministic:
     sits just below its lowest bank; a built basin (fountain, pool) sits on
     its plaza's grade; a sloping channel keeps its slope.  The ground inside
     a water is set to its surface (the game carves the bed below it) and a
-    bank lower than the surface is raised to just above it;
+    bank lower than the surface is raised to just above it; a footbridge's
+    two ends are graded to its higher bank (the DEM predates it);
  3. gives every building a floor level: the 80th percentile of the grade in
     a 1-3 m ring round its footprint (a building on a slope sits at its high
     side; its low side shows its foundation or basement), unless the data
@@ -116,6 +117,8 @@ def water_poly(it):
 
 # ---- stairs
 STAIR_MIN = 0.25    # a step below this is a graded (accessible) apron
+RUN_OUT = 0.6       # the level slab past a stair's last tread (CampusStairs.RUN_OUT)
+LEAD_IN = 1.0       # the level slab behind its top edge (CampusStairs.LEAD_IN)
 WALKOUT = 2.6       # a drop beyond this (no stair in the data) is a lower-level door
 STAIR_R = 0.165     # target riser height
 STAIR_G = 0.30      # going (tread depth)
@@ -143,7 +146,9 @@ def stair_plan(bid, ei, e, fl, measured, x0, z0, spec):
     a = np.radians(float(e.get("face", 0)))
     n = np.array([np.sin(a), -np.cos(a)])
     tg = np.array([np.cos(a), np.sin(a)])
-    top = np.array(e["p"], dtype=float)
+    # the top edge's centre: the entrance, or where the data puts the stair
+    # (a stair offset from its door)
+    top = np.array(spec.get("p", e["p"]), dtype=float)
     going = float(spec.get("going", STAIR_G))
     deck = float(spec.get("deck", 0.0))
     land = float(spec.get("landing", 1.5))
@@ -198,7 +203,7 @@ def stair_mask(st, X, Z, margin=0.3):
     dx, dz = X - p[0], Z - p[1]
     dn = dx * n[0] + dz * n[1]
     dt = dx * tg[0] + dz * tg[1]
-    return (dn >= 0.4) & (dn <= st["length"] + st["going"] + margin) & (np.abs(dt) <= st["w"] * 0.5 + margin)
+    return (dn >= 0.4) & (dn <= st["length"] + st["going"] + RUN_OUT + margin) & (np.abs(dt) <= st["w"] * 0.5 + margin)
 
 
 def cut_stair(g, st, X, Z, cells):
@@ -211,8 +216,12 @@ def cut_stair(g, st, X, Z, cells):
     dn = dx * n[0] + dz * n[1]
     dt = dx * tg[0] + dz * tg[1]
     half = st["w"] * 0.5
-    L = st["length"]
-    under = (dn >= -0.5) & (dn <= L + st["going"] + 0.3) & (np.abs(dt) <= half + 0.5)
+    end = st["length"] + st["going"]
+    side = np.abs(dt) <= half + 0.5
+    # the flight: the ground kept 0.3 m under the walking line (and a metre
+    # behind the top edge, under the stair's lead-in slab at the floor:
+    # inside the building, or under a porch's own floor level)
+    flight = (dn >= -LEAD_IN) & (dn < end) & side
     # the walking surface over each sample: the line through the nosings,
     # level on the deck and landings (CampusLayout.stair_surface)
     px, py = [0.0], [st["top"]]
@@ -220,12 +229,18 @@ def cut_stair(g, st, X, Z, cells):
         px += [dk, dk + st["going"]]
         py += [st["top"] - k * st["rise"], st["top"] - (k + 1) * st["rise"]]
     surf = np.interp(dn, px, py)
-    g[under] = np.minimum(g[under], surf[under] - 0.3)
-    cells |= under
+    g[flight] = np.minimum(g[flight], surf[flight] - 0.3)
+    # the run-out past the last tread (CampusStairs.RUN_OUT, a level slab
+    # at the bottom step): the ground exactly at the bottom step, so the
+    # walk meets the stair flush (a ditch there leaves a lip steeper than
+    # the floor angle, and a runner stops at it)
+    run = (dn >= end) & (dn <= end + RUN_OUT + 0.5) & side
+    g[run] = st["bottom"]
+    cells |= flight | run
     # the foot: 3 m of walk graded to the bottom step
-    L = L + st["going"]
-    foot = (dn > L + 0.3) & (dn < L + 3.5) & (np.abs(dt) <= half + 1.0)
-    t = np.clip((L + 3.5 - dn) / 3.2, 0.0, 1.0)
+    L = end + RUN_OUT + 0.5
+    foot = (dn > L) & (dn < L + 3.0) & (np.abs(dt) <= half + 1.0)
+    t = np.clip((L + 3.0 - dn) / 3.0, 0.0, 1.0)
     t = t * t * (3 - 2 * t)
     g[foot] = g[foot] * (1 - t[foot]) + st["bottom"] * t[foot]
 
@@ -279,11 +294,47 @@ def bake(dem_path, data, out_dir):
         levels[it["id"]] = {"kind": kind, "surface": None if surf is None else round(surf, 3),
                             "floor": None if flo is None else round(flo, 3), "how": how,
                             "bed_measured": round(float(np.median(vi)), 2), "bank_low": round(float(np.percentile(vr, 10)), 2)}
+    # ---- footbridge abutments: the DEM predates the footbridge (its lower
+    # lobe was dug after the survey), so its banks need not meet the deck;
+    # the ground at each end is graded to the higher bank (the deck spans
+    # level from it, CampusLayout.feature_decks), full within 1 m of the
+    # end and blending out over the next 2.5 m, on land only
+    wet = np.zeros_like(g, dtype=bool)
+    for it in items(data, "water"):
+        poly = water_poly(it)
+        if poly:
+            wet |= mask(poly, W, D, x0, z0)
+    xs0 = np.arange(W) + x0
+    zs0 = np.arange(D) + z0
+    BX, BZ = np.meshgrid(xs0, zs0)
+    for it in items(data, "water"):
+        for f in it.get("features", []):
+            if f.get("kind") != "bridge" or len(f.get("pts", [])) < 2:
+                continue
+            pts = np.array(f["pts"], dtype=float)
+            half = float(f.get("w", 3.0)) * 0.5 + 0.8
+            ends = []
+            for p, q in ((pts[0], pts[1]), (pts[-1], pts[-2])):
+                out = (p - q) / np.linalg.norm(p - q)
+                ends.append((p, out, sample(g, x0, z0, *(p + out * 0.5))))
+            level = max(e[2] for e in ends)
+            for p, out, _ in ends:
+                tg = np.array([-out[1], out[0]])
+                dn = (BX - p[0]) * out[0] + (BZ - p[1]) * out[1]
+                dt = (BX - p[0]) * tg[0] + (BZ - p[1]) * tg[1]
+                zone = (dn > -3.0) & (dn < 3.5) & (np.abs(dt) <= half) & ~wet
+                t = np.clip((3.5 - dn) / 2.5, 0.0, 1.0)
+                t = t * t * (3 - 2 * t)
+                g[zone] = g[zone] * (1 - t[zone]) + level * t[zone]
+            report.append("%s footbridge: banks graded to %.2f m at both ends (the DEM predates it; measured %s)" % (
+                it["id"], level, " / ".join("%.2f" % e[2] for e in ends)))
     # ---- buildings
     pads = {}
     blds = [b for b in items(data, "buildings") if not b.get("background") and len(b.get("footprint", [])) >= 3]
+    # background buildings (beyond the play area) stand on the ground too
+    back = [b for b in items(data, "buildings") if b.get("background") and len(b.get("footprint", [])) >= 3]
     masks = {}
-    for b in blds:
+    for b in blds + back:
         ins = mask(b["footprint"], W, D, x0, z0)
         if not ins.any():
             continue
@@ -312,6 +363,13 @@ def bake(dem_path, data, out_dir):
             p = e.get("p") if isinstance(e, dict) else None
             if p:
                 doors.append((b["id"], p, e.get("id", "entrance %d" % ei), (b, ei, e)))
+        # steps at an open passage's mouth (a raised arcade's end): a stair
+        # with no door (entrance -1)
+        for ps in b.get("passages", []):
+            for sp in ps.get("steps", []):
+                e = {"p": sp["p"], "face": sp.get("face", 0), "w": float(sp.get("w", 2.4)) - 1.2,
+                     "stair": {"w": float(sp.get("w", 2.4)), "how": sp.get("note", "steps at the open passage's mouth")}}
+                doors.append((b["id"], sp["p"], "passage steps", (b, -1, e)))
     xs = np.arange(W) + x0
     zs = np.arange(D) + z0
     X, Z = np.meshgrid(xs, zs)
@@ -342,7 +400,7 @@ def bake(dem_path, data, out_dir):
             st = stair_plan(bid, src[1], src[2], fl, measured, x0, z0, spec or {})
             if st is not None:
                 stairs.append(st)
-                if src is not None:
+                if src is not None and src[1] >= 0:
                     ent_levels.setdefault(bid, {})[str(src[1])] = {"y": round(fl, 3), "how": "stair of %d risers" % st["risers"]}
                 continue
         if level == fl and abs(step) > 0.9:
@@ -370,6 +428,11 @@ def bake(dem_path, data, out_dir):
             ent_levels.setdefault(st["building"], {})[str(st["entrance"])] = {"y": st["top"], "how": "no stair: conflicts with a neighbour"}
             continue
         taken |= foot
+        # (its own footprint eroded by a sample, the stair without margin:
+        # the rasterised outline)
+        if (stair_mask(st, X, Z, 0.0) & ndimage.binary_erosion(masks.get(st["building"], np.zeros_like(foot)))).any():
+            report.append("%s entrance %d: its stair runs into its own building beside the door (move the door in the data)" % (
+                st["building"], st["entrance"]))
         kept.append(st)
     stairs = kept
     # the stairs last: no apron of a neighbouring door raises the ground
@@ -419,7 +482,7 @@ def bake(dem_path, data, out_dir):
         "entrances": ent_levels,
     }
     json.dump(meta, open(os.path.join(out_dir, "terrain.json"), "w"), indent=1, sort_keys=True)
-    print("terrain %dx%d, %.2f..%.2f m; %d waters, %d floors; %d stairs; %d entrances still need a stair or ramp; steep cells: %d on foot, %d for carts" % (
+    print("terrain %dx%d, %.2f..%.2f m; %d waters, %d floors; %d stairs; %d report lines; steep cells: %d on foot, %d for carts" % (
         W, D, g.min(), g.max(), len(levels), len(pads), len(stairs), len(report), len(steep["foot"]) // 2, len(steep["cart"]) // 2))
     for r in report:
         print("  " + r)

@@ -125,20 +125,20 @@ func test_first_valid_collector_and_no_double_credit() -> void:
 		if int(ev["type"]) == TC.Ev.COIN_PICKUP:
 			got.append([int(ev["a"]), int(ev["v"])]))
 	# the same tick, the same distance: the lower slot gets it
-	h.place(0, Vector3(a.x - 0.5, 0.05, a.y))
-	h.place(1, Vector3(a.x + 0.5, 0.05, a.y))
+	h.place(0, h.on_ground(Vector2(a.x - 0.5, a.y)))
+	h.place(1, h.on_ground(Vector2(a.x + 0.5, a.y)))
 	await h.step()
 	t.eq(got, [[0, 0]], "a tie goes to the lower slot, once")
 	# the Night Watch nearer the second coin than a runner: the watcher
-	h.place(2, Vector3(b.x - 0.9, 0.05, b.y))
-	h.place(1, Vector3(b.x + 0.3, 0.05, b.y))
+	h.place(2, h.on_ground(Vector2(b.x - 0.9, b.y)))
+	h.place(1, h.on_ground(Vector2(b.x + 0.3, b.y)))
 	await h.step()
 	t.eq(got, [[0, 0], [1, 1]], "the nearer player (here the Night Watch) gets it")
 	# standing on a taken coin, walking off and back: nothing more
 	for k in 3:
-		h.place(0, Vector3(a.x, 0.05, a.y))
+		h.place(0, h.on_ground(Vector2(a.x, a.y)))
 		await h.step(2)
-		h.place(0, Vector3(a.x + 5.0, 0.05, a.y))
+		h.place(0, h.on_ground(Vector2(a.x + 5.0, a.y)))
 		await h.step(2)
 	t.eq(got.size(), 2, "a taken coin never pays again")
 	t.eq(h.sim.player(0).coins_picked, 1, "runner: exactly one")
@@ -169,7 +169,7 @@ func test_who_cannot_collect() -> void:
 		spots.append(_coin_at(-30.0 + 5.0 * i, 45.0, "s%02d" % i))
 	h.make([R, R, R, P, P], [0, 1, 2], [], 8, {"coins": spots})
 	# before GO nothing is collected (the Night Watch waits in the shed)
-	h.place(0, Vector3(-30, 0.05, 45))
+	h.place(0, h.on_ground(Vector2(-30, 45)))
 	await h.step(3)
 	t.eq(h.sim.player(0).coins_picked, 0, "nothing during the reveal / countdown")
 	await h.release_patrol()
@@ -178,19 +178,19 @@ func test_who_cannot_collect() -> void:
 	var r1 := h.sim.player(1)
 	r1.state = TC.PState.CAPTURED
 	r1.penalty = 5.0
-	h.place(1, Vector3(-25, 0.05, 45))
+	h.place(1, h.on_ground(Vector2(-25, 45)))
 	await h.step(2)
 	t.eq(r1.coins_picked, 0, "a caught runner can't collect")
 	# home
 	var r2 := h.sim.player(2)
 	r2.state = TC.PState.FINISHED
-	h.place(2, Vector3(-20, 0.05, 45))
+	h.place(2, h.on_ground(Vector2(-20, 45)))
 	await h.step(2)
 	t.eq(r2.coins_picked, 0, "a runner who is home can't collect")
 	# in a cart
 	var w := h.sim.player(3)
 	w.state = TC.PState.IN_CART
-	h.place(3, Vector3(-15, 0.05, 45))
+	h.place(3, h.on_ground(Vector2(-15, 45)))
 	await h.step(2)
 	t.eq(w.coins_picked, 0, "a Night Watch in a cart can't collect")
 	t.eq(h.sim.coin_mask(), 0b111110, "those coins are still out")
@@ -226,7 +226,7 @@ func test_cancelled_round_still_reports() -> void:
 	var h := _h()
 	h.make([R, P], [0, 1, 2], [], 10, {"coins": [_coin_at(-20, 60, "s00")]})
 	await h.release_patrol()
-	h.place(0, Vector3(-20, 0.05, 60))
+	h.place(0, h.on_ground(Vector2(-20, 60)))
 	await h.step()
 	h.sim.cancel_match()
 	var res: Dictionary = h.sim.results

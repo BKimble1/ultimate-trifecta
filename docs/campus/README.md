@@ -13,7 +13,8 @@ survey.
 | `game/data/campus/<layer>.json` | The campus as data: buildings, water, roads, paths, areas, barriers, trees, props, changes, and the gameplay layer. Every item carries its evidence (`ev`). Schema: `DATA_SCHEMA.md`. |
 | `tools/campus/` | The pipeline: frame, tracing helpers, merge and validation, gameplay generator, registers, shipping scan (`tools/campus/README.md`). |
 | `tools/campus/traced/<zone>.json` | The traced zones before the merge. |
-| `game/src/map/` | Runtime: `CampusData` loads the layers; `CampusLayout` derives what the game reads; `CampusBuilder`, `CampusArchitecture`, `CampusChapel`, `CampusTower` and `DormArt` build the look and the colliders; `NavGrid` builds the bots' grid. |
+| `game/src/map/` | Runtime: `CampusMaps` is the registry of the two maps (`docs/maps/README.md`); `CampusData` loads a map's layers and terrain; `CampusLayout` derives what the game reads; `CampusBuilder`, `CampusArchitecture`, `CampusChapel`, `CampusTower`, `CampusStairs` and `DormArt` build the look and the colliders; `NavGrid` builds the bots' grid. |
+| `game/data/campus/terrain.bin`, `terrain.json` | The ground (1 m samples), water levels, floor levels, stairs and steep cells, baked by `tools/campus/terrain.py` from the public bare-earth DEM (`TERRAIN.md`). |
 | `EVIDENCE_REGISTER.md`, `evidence_register.csv` | Every traced item's sources, date, confidence and open questions. |
 | `CHANGE_REGISTER.md` | What differs from the 2022 aerial (the October 2026 state). |
 | `NEUTRAL_NAMES.md` | Inventory code → neutral id → in-game label. |
@@ -22,14 +23,26 @@ survey.
 
 One metric frame from EPSG:26916 (UTM 16N): x = E − 627300, z = 4479400 − N (+x east, +z south),
 in metres. The 2022 public-domain orthophoto (0.295 m/px) is the base for tracing. The newer plans
-and the wayfinding diagram are georeferenced onto it. `CampusLayout.BOUNDS` is
-`Rect2(-720, -560, 1190, 1000)`.
+and the wayfinding diagram are georeferenced onto it. The map's bounds (`CampusMaps`, per map; a
+layout's `bounds`) are `Rect2(-720, -560, 1190, 1000)`.
+
+Heights are real too: y = NAVD88 − 280.40 m (the grade at West Hall's front door), from the USGS
+3DEP 1 m bare-earth DEM, with water levels, building floors and entrance stairs resolved by the bake.
+One metre is one metre in every direction. See `TERRAIN.md`.
 
 ## Start halls
 
-Every race starts inside a men's residence hall: the **West Hall** (default) or the **North Hall**.
-The host picks the hall in the round configuration. Guests get it with the hall's geometry hash
-and refuse a round whose hall geometry differs (`CampusDorms.VERSION` 3).
+Both men's residence halls are modelled as start halls: the **West Hall** (default) and the **North
+Hall**. A race starts only in a hall that has at least one target set that fits the round (Measured
+routes, below). On this map that is **West Hall only**: North Hall fails the route rule, so it is
+scenery with an enterable common room, and no race starts there.
+
+The host does not choose the hall by hand. When a round starts, the host's session picks it from the
+round's seed among the map's race-start halls (`CampusDorms.pick`): the default hall first, then never
+the same hall twice running where there is another. It publishes the choice in the round
+configuration. (Earlier notes said the host picks the hall. The runtime never did; this is what it
+does.) Guests get the hall with its geometry hash and refuse a round whose hall geometry differs
+(`CampusDorms.VERSION` 4: door thresholds at each hall's own floor level).
 
 - Each hall is the real building, with doors at its real entrances. Its interior is an open common
   room joined to the doors by the real entrance halls.
@@ -44,7 +57,7 @@ Six real waters stand in for the game's six objective slots. The bindings are da
 | Slot | In-game name | Real water (neutral id) | Colour | Icon |
 |---|---|---|---|---|
 | 0 | Garden Fountain | `garden_fountain` (small round basin with a pillar and bowl) | gold | star |
-| 1 | Bridge Pond | `bridge_pond` (pond under the footbridge, stone edge on the plaza side) | green | leaf |
+| 1 | Bridge Pond | `bridge_pond_upper` + `_lower` (the two lobes either side of the footbridge, one objective) | green | leaf |
 | 2 | Reflection Court | `reflection_court_basin_ne` + `_sw` (the paired basins, one objective) | cyan | drop |
 | 3 | North Pond | `north_pond` | violet | diamond |
 | 4 | Village Pond | `village_pond` | pink | flower |
@@ -60,6 +73,9 @@ The other waters are built and drawn but are never round targets:
 **Ambiguities flagged:**
 
 - The reflection court is two touching basins, scored as one objective (a splash in either counts).
+- Bridge Pond is two lobes at different levels (the DEM shows the north lobe about 2.4 m above the
+  south one), joined under the footbridge. They were one traced outline. They are now two waters, one
+  objective, and a splash in either counts.
 - Whether the garden run carries water except after rain is unknown, so it is modelled as wadeable.
 - The garden fountain's basin depth and rim height are estimates.
 
@@ -67,8 +83,8 @@ The other waters are built and drawn but are never round targets:
 
 At the real scale the routes are long. The round stays 240 s; speeds, the timer and the waters'
 positions are unchanged. `game/tools/route_analysis.gd` measures every three-water combination from
-both halls on the runners' navigation grid and writes `game/config/route_table.json`. For each
-combination it reports:
+each hall on the runners' navigation grid, on the terrain with its stairs, and writes
+`game/config/route_table.json`. For each combination it reports:
 
 - **Route length:** out of the hall, through the three waters in the best order, and back.
 - **Ideal run:** the length at full speed, plus three 1.5 s splashes.
@@ -77,28 +93,24 @@ combination it reports:
 |---|---|---|---|
 | All 40 hall × combination routes | 148 s | 279 s | 429 s |
 
-A round only uses combinations whose ideal run fits 85% of the round (204 s). If fewer than three
-fit, the three shortest are used. This is a curation rule, not a rule change.
+**The rule.** A round uses only combinations whose ideal run fits 85% of the round (204 s), which
+leaves time to dodge the Night Watch. Where measured bot times exist, the bots' own time must also fit
+95% of it. Nothing else is ever admitted to make up a count. The old fallback, "if fewer than three
+fit, use the three shortest anyway", is gone. A hall with no combination that fits is no race's home
+(`RulesLogic.dorm_feasible`, `CampusDorms.ids(map, true)`).
 
-- **West Hall:** three combinations fit:
+- **West Hall:** three combinations fit. It is the default and the only race-start hall:
   - Garden Fountain + Bridge Pond + Reflection Court (934 m, 160 s ideal)
-  - Garden Fountain + Bridge Pond + Campus Lake (929 m, 159 s)
-  - Bridge Pond + Village Pond + Campus Lake (860 m, 148 s)
-- **North Hall:** no combination fits. The three shortest are used:
-  - Garden Fountain + Bridge Pond + Reflection Court (1,244 m, 212 s ideal; bots measured 218 s)
-  - Garden Fountain + Reflection Court + Village Pond (1,449 m, 246 s)
-  - Garden Fountain + Bridge Pond + Campus Lake (1,485 m, 252 s)
+  - Garden Fountain + Bridge Pond + Campus Lake (932 m, 160 s)
+  - Bridge Pond + Village Pond + Campus Lake (862 m, 148 s)
+- **North Hall:** no combination fits. Its shortest ideal run is 212 s, and the next are 246 s and
+  252 s. It stays modelled (its rooms, stair and doors) but starts no race and shows no start option.
+- **North Pond** is in no combination that fits. It is 300+ m from everything else. It stays in the
+  world, on the map and in the objective pool's slot, and is never moved.
 
-  The last two cannot be finished inside the round even with a perfect run.
-- **North Pond** is in no curated combination from either hall. It is 300+ m from everything else.
-
-**This is a conflict between the real scale and the timer, and it is reported, not hidden.** The
-owner's options, none of them taken:
-
-- a longer round for North Hall starts;
-- a different objective pool for North Hall;
-- North Hall as an occasional "long route" variant;
-- or only West Hall starts.
+**This is a conflict between the real scale and the timer, and it is reported, not hidden.** Owner
+options (none taken; this pass does not authorise any): a longer round for North Hall starts; a
+different objective pool for North Hall; North Hall as an occasional "long route" variant.
 
 ## Acceptance gates
 
@@ -108,8 +120,8 @@ owner's options, none of them taken:
 | 2 Paired views | `game/src/dev/campus_views.gd` + the same viewpoints in the reference photos | delivered privately |
 | 3 Traversal | `test_campus_traversal.gd`: colliders exist; every open passage (the chapel's atrium, the bell tower's gap, porches, breezeways) is run through; the footbridge is crossed both ways above the water and the nav grid routes across it; open nav cells fit the runner; walks are clear; the play area is closed | passing |
 | 4 Physics before/after | `test_campus_invariants.gd` pins every rule and body value; `git diff b3e5d74` of the motor and rules is empty | passing |
-| 5 Routes from both halls | `test_routes_bots.gd` (bots complete curated routes from both halls; measured times) and `route_table.json` | passing, with the timer conflict above |
-| 6 Online | protocol 9; the round carries the campus data hash and the hall geometry hash; a guest with other data refuses | passing (`test_dorms`, `test_coins`, network tests) |
+| 5 Routes | `test_routes_bots.gd` (bots complete every feasible route from the default hall; the other race-start halls, which are Moonbrook College's, three routes each) and the route tables | passing; North Hall is no race start (above) |
+| 6 Online | protocol 10; the lobby and the round carry the map id, its data hash and the hall geometry version; a guest without that map or with other data refuses with "update the game" | passing (`test_maps`, `test_dorms`, `test_coins`, network tests) |
 | 7 Polish / frame time | `tools/match_bench.sh` against the 2.0 baseline; loading steps; draw counts per view | p50 unchanged, p99 +0.6 ms, a few rare long frames (see Performance); not device-verified |
 | 8 Shipping content | `tools/campus/scan_shipping.py` | 0 findings |
 
@@ -219,9 +231,13 @@ They are re-rendered with a field of view that matches after the crop.) What the
 
 ## Gaps
 
-- North Hall's raised front porch is simplified to grade (the porch floor is 1.8 m up a stair in
-  reality). Its cupola is not drawn: the roof where the ranges cross is modelled flat.
+- North Hall's front stair is built centred on its doors (16 risers, about 2.7 m, three landings down
+  the bank, rails and a centre handrail), but its riser count, going and landings are inferred from the
+  photos and the DEM, not measured. Its cupola over the crossing is drawn now, at an inferred size and
+  height.
 - The halls' side-door canopies are drawn as flat slabs; the photos show small white gabled ones.
+- The village homes are drawn alike (central bay and gable, arched windows, shutters, open porches
+  from the photos); their individual differences beyond siding colour are not recorded.
 - Hall doors are 3.2 m wide (wider than the real doors) so the game's door rules work. The thresholds
   and the finish line are unchanged.
 - The garden run is modelled as a wadeable channel.
@@ -229,7 +245,9 @@ They are re-rendered with a field of view that matches after the crop.) What the
   or further north (Paired views, above). It is an objective water, so a correction would move its
   exits and change the route table.
 - The chapel atrium's route is assumed straight. A plaque wall may make the real route jog.
-- North Hall rounds don't fit the timer, and North Pond is in no curated combination (above).
+- North Hall can't start a race inside the timer, and North Pond is in no feasible combination (above).
+- One entrance (Lakeview Hall's, facing the dining hall across a narrow link) gets no stair: an
+  automatic one would run into the dining hall. What joins them needs evidence (`TERRAIN.md`).
 - Every inventory code is traced (`NEUTRAL_NAMES.md`), but these are low-confidence:
   - **Terrace apartments (B06):** placed from the 2026 wayfinding diagram fitted to the streets. There is
     no photo, so their height and finish are placeholders, and whether the rear block replaced a house is

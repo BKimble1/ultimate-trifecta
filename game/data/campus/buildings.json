@@ -15,9 +15,9 @@
     {
      "face": 0,
      "kind": "door",
-     "note": "welcome office (B15) marker sits at this north-west part of the building in the 2026 wayfinding; exact door unverified",
+     "note": "welcome office (B15) marker sits at this north-west part of the building in the 2026 wayfinding; exact door unverified (placed 2 m west of the portico wing's corner, so its steps clear the wing)",
      "p": [
-      236.0,
+      234.0,
       -232.5
      ],
      "ref": "B15",
@@ -48,6 +48,7 @@
      "wayfinding2026"
     ]
    },
+   "floor_navd88": 286.995,
    "floors": 2,
    "footprint": [
     [
@@ -197,8 +198,8 @@
    "passages": [
     {
      "clear": 8.3,
-     "floor": 0.6,
-     "note": "open portico floor between the columns; the columns carry the entablature along the main block's eave line (R053), about 8.3 m above grade",
+     "floor": 0.0,
+     "note": "open portico floor between the columns, at the hall floor (a raised basement: the floor is set 0.6 m over the grade in front, up a few steps, R053); the columns carry the entablature along the main block's eave line (R053), about 8.3 m above grade",
      "polygon": [
       [
        238.5,
@@ -1026,8 +1027,8 @@
    "ev": {
     "conf": "medium",
     "date": "2022",
-    "note": "tower centred on the inner octagon of its base; ground footprint ~5.7 x 4.1 m from the dark mass at the base in the aerial (the top appears displaced ~(+2,+7.5) m by lean); pier arrangement and stepped heights from the oblique photos/video; total height ~28 m estimated from the base octagon (23.4 m across) in the oblique user image 155113",
-    "open": "exact pier sizes/offsets, setback heights and the width of the ground gap need a site measurement; height +-3 m",
+    "note": "tower centred on the inner octagon of its base; ground footprint ~5.7 x 4.1 m from the dark mass at the base in the aerial (the top appears displaced ~(+2,+7.5) m by lean); pier arrangement and stepped heights from the oblique photos/video; total height 21.9 m (71 ft 10 in) as published for the tower, which replaces the earlier ~28 m photo estimate; the stepped pier heights keep their measured proportions; the upper dark assembly is a speaker/equipment housing (the tower plays an electronic carillon through speakers), not hanging bells",
+    "open": "exact pier sizes/offsets, setback heights and the width of the ground gap need a site measurement",
     "src": [
      "aerial2022",
      "user155113",
@@ -1038,7 +1039,10 @@
      "R353",
      "V04",
      "V07",
-     "V08"
+     "V08",
+     "tower_page",
+     "news2015",
+     "news2017"
     ]
    },
    "floors": 0,
@@ -1060,7 +1064,7 @@
      -129.5
     ]
    ],
-   "h": 28.0,
+   "h": 21.9,
    "id": "bell_tower",
    "kind": "service",
    "label": "Bell Tower",
@@ -1086,7 +1090,7 @@
        -131.4
       ]
      ],
-     "h": 28.0,
+     "h": 21.9,
      "roof": {
       "type": "flat"
      }
@@ -1111,7 +1115,7 @@
        -129.5
       ]
      ],
-     "h": 17.0,
+     "h": 13.3,
      "roof": {
       "type": "flat"
      }
@@ -1136,7 +1140,7 @@
        -130.0
       ]
      ],
-     "h": 28.0,
+     "h": 21.9,
      "roof": {
       "type": "flat"
      }
@@ -1161,13 +1165,13 @@
        -131.8
       ]
      ],
-     "h": 12.5,
+     "h": 9.8,
      "roof": {
       "type": "flat"
      }
     },
     {
-     "base": 21.0,
+     "base": 16.4,
      "footprint": [
       [
        145.9,
@@ -1186,7 +1190,7 @@
        -130.8
       ]
      ],
-     "h": 26.8,
+     "h": 21.0,
      "roof": {
       "pitch": 20,
       "type": "pyramid"
@@ -1195,9 +1199,9 @@
    ],
    "passages": [
     {
-     "clear": 20.0,
+     "clear": 15.6,
      "floor": 0.0,
-     "note": "open gap between the two piers (no roof until the bell frame at ~21 m); a low plaque plinth stands in it (R353, 155120)",
+     "note": "open gap between the two piers (no roof until the equipment housing at ~16 m); a low plaque plinth stands in it (R353, 155120)",
      "polygon": [
       [
        145.9,
@@ -7260,6 +7264,17 @@
        86.4,
        -311.4
       ]
+     ],
+     "steps": [
+      {
+       "face": 180,
+       "note": "steps down from the arcade's south end to the walk (inferred: the walk is about 1.1 m below the arcade floor in the DEM; unverified)",
+       "p": [
+        88.2,
+        -311.4
+       ],
+       "w": 3.2
+      }
      ]
     }
    ],
@@ -11939,12 +11954,13 @@
      "stair": {
       "deck": 0.6,
       "going": 0.32,
-      "how": "broad front stair with rails up to the portico (R200, R306); about 1.8 m from the bank in the DEM and the packet's estimate; riser count, going and the one intermediate landing inferred",
-      "landing": 1.8,
-      "landing_after": 6,
+      "how": "front stair centred on the doors, white pipe rails on both sides and a centre handrail between two flights (R200, R306); its flights and landings step down the bank to the walk, about 2.7 m from the portico floor to where the rails end (DEM); riser count, going and the three landings inferred",
+      "landing": 3.6,
+      "landing_after": 4,
       "rails": "both",
-      "risers": 11,
-      "w": 11.0
+      "rise": 0.167,
+      "risers": 16,
+      "w": 7.0
      },
      "w": 3.6
     },
@@ -12022,7 +12038,7 @@
    "ev": {
     "conf": "high",
     "date": "2022",
-    "note": "Outline from 2022 roof edges; four storeys counted in R200/R203/R306 (3.2 m/floor + base, eave about 13.3 m); portico on the east front centred about z -339 matches the front stair paving at z -344..-338.",
+    "note": "Outline from 2022 roof edges; four storeys counted in R200/R203/R306 (3.2 m/floor + base, eave about 13.3 m); portico on the east front centred about z -339 matches the front stair paving at z -344..-338.; a white cupola stands over the crossing (photos; size and height inferred)",
     "open": "Roof shading/lean makes wing widths uncertain by about +-1.5 m (north range reads 23 m wide with a flat-topped hip, south range 19 m, west wing 14.5 m; the dark band north of the west wing is cast shadow by colour); exact rear door positions from R203 are estimated; front stair rise (about 1.8 m) estimated from R200/R306.",
     "src": [
      "aerial2022",
@@ -12161,9 +12177,10 @@
      ],
      "h": 13.3,
      "name": "crossing",
-     "note": "ridges meet here",
+     "note": "ridges meet here; a low pyramid where the ranges cross, under the cupola",
      "roof": {
-      "type": "complex"
+      "pitch": 28,
+      "type": "pyramid"
      }
     },
     {
@@ -12260,13 +12277,42 @@
       "ridge": "short",
       "type": "gable"
      }
+    },
+    {
+     "base": 18.2,
+     "footprint": [
+      [
+       294.4,
+       -343.2
+      ],
+      [
+       297.8,
+       -343.2
+      ],
+      [
+       297.8,
+       -339.8
+      ],
+      [
+       294.4,
+       -339.8
+      ]
+     ],
+     "h": 21.0,
+     "name": "cupola",
+     "note": "white cupola over the crossing of the ranges (R200, R306; inferred size and height)",
+     "roof": {
+      "pitch": 38,
+      "type": "pyramid"
+     },
+     "wall": "siding_white"
     }
    ],
    "passages": [
     {
      "clear": 12.3,
-     "floor": 1.8,
-     "note": "open portico floor in front of the front doors, raised about 1.8 m above the front lawn (stair below); the giant columns rise from it to the entablature under the pediment (R200, R306), so it is open to about 12.3 m above grade while the porch is drawn at grade",
+     "floor": 0.0,
+     "note": "open portico floor in front of the front doors, at the hall floor, about 1.8 m above the front lawn at the head of the front stair; the giant columns rise from it to the entablature under the pediment (R200, R306)",
      "polygon": [
       [
        315.0,
@@ -14201,7 +14247,7 @@
    "ev": {
     "conf": "medium",
     "date": "2024",
-    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos; central bay (about 6.4 m, 0.3 m proud) with its full-height front gable and round vent, arched middle-floor windows, open porches with twin end gables, shutters, corner boards and the first-floor band from R004/R134/R149",
     "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; colour from R004 (row seen from the east: white home at the west end next to the brick support building, two grey ones); small side stoops on the plan outline omitted",
     "src": [
      "plan2023p16",
@@ -14299,30 +14345,35 @@
      }
     },
     {
+     "arched_floor": 1,
      "base": 0.0,
      "footprint": [
       [
-       185.6,
-       297.8
+       186.4,
+       299.4
       ],
       [
-       193.6,
-       297.8
+       192.8,
+       299.4
       ],
       [
-       193.6,
-       299.7
+       192.8,
+       307.0
       ],
       [
-       185.6,
-       299.7
+       186.4,
+       307.0
       ]
      ],
-     "h": 3.3,
+     "h": 9.0,
+     "name": "front_bay_north",
      "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 0
+      }
      }
     },
     {
@@ -14330,11 +14381,236 @@
      "footprint": [
       [
        185.6,
-       314.3
+       297.8
+      ],
+      [
+       187.8,
+       297.8
+      ],
+      [
+       187.8,
+       299.4
+      ],
+      [
+       185.6,
+       299.4
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       187.8,
+       297.8
+      ],
+      [
+       191.4,
+       297.8
+      ],
+      [
+       191.4,
+       299.4
+      ],
+      [
+       187.8,
+       299.4
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       191.4,
+       297.8
       ],
       [
        193.6,
-       314.3
+       297.8
+      ],
+      [
+       193.6,
+       299.4
+      ],
+      [
+       191.4,
+       299.4
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "arched_floor": 1,
+     "base": 0.0,
+     "footprint": [
+      [
+       186.4,
+       307.0
+      ],
+      [
+       192.8,
+       307.0
+      ],
+      [
+       192.8,
+       314.6
+      ],
+      [
+       186.4,
+       314.6
+      ]
+     ],
+     "h": 9.0,
+     "name": "front_bay_south",
+     "roof": {
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 180
+      }
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       185.6,
+       314.6
+      ],
+      [
+       187.8,
+       314.6
+      ],
+      [
+       187.8,
+       316.2
+      ],
+      [
+       185.6,
+       316.2
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       187.8,
+       314.6
+      ],
+      [
+       191.4,
+       314.6
+      ],
+      [
+       191.4,
+       316.2
+      ],
+      [
+       187.8,
+       316.2
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       191.4,
+       314.6
+      ],
+      [
+       193.6,
+       314.6
+      ],
+      [
+       193.6,
+       316.2
+      ],
+      [
+       191.4,
+       316.2
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    }
+   ],
+   "passages": [
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       185.6,
+       297.8
+      ],
+      [
+       193.6,
+       297.8
+      ],
+      [
+       193.6,
+       299.4
+      ],
+      [
+       185.6,
+       299.4
+      ]
+     ]
+    },
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       185.6,
+       314.6
+      ],
+      [
+       193.6,
+       314.6
       ],
       [
        193.6,
@@ -14344,13 +14620,7 @@
        185.6,
        316.2
       ]
-     ],
-     "h": 3.3,
-     "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
-     }
+     ]
     }
    ],
    "ref": "B30",
@@ -14361,8 +14631,11 @@
    },
    "status": "existing",
    "style": {
+    "band": "white",
+    "corner_boards": true,
     "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)",
     "roof_mat": "shingle_dark",
+    "shutters": "dark",
     "trim": "white",
     "wall": "siding_white",
     "windows": "punched"
@@ -14393,7 +14666,7 @@
    "ev": {
     "conf": "medium",
     "date": "2024",
-    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos; central bay (about 6.4 m, 0.3 m proud) with its full-height front gable and round vent, arched middle-floor windows, open porches with twin end gables, shutters, corner boards and the first-floor band from R004/R134/R149",
     "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; colour from R004 (row seen from the east: white home at the west end next to the brick support building, two grey ones); small side stoops on the plan outline omitted",
     "src": [
      "plan2023p16",
@@ -14491,30 +14764,35 @@
      }
     },
     {
+     "arched_floor": 1,
      "base": 0.0,
      "footprint": [
       [
-       210.7,
-       296.8
+       211.5,
+       298.4
       ],
       [
-       218.7,
-       296.8
+       217.9,
+       298.4
       ],
       [
-       218.7,
-       298.7
+       217.9,
+       306.0
       ],
       [
-       210.7,
-       298.7
+       211.5,
+       306.0
       ]
      ],
-     "h": 3.3,
+     "h": 9.0,
+     "name": "front_bay_north",
      "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 0
+      }
      }
     },
     {
@@ -14522,11 +14800,236 @@
      "footprint": [
       [
        210.7,
-       313.3
+       296.8
+      ],
+      [
+       212.9,
+       296.8
+      ],
+      [
+       212.9,
+       298.4
+      ],
+      [
+       210.7,
+       298.4
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       212.9,
+       296.8
+      ],
+      [
+       216.5,
+       296.8
+      ],
+      [
+       216.5,
+       298.4
+      ],
+      [
+       212.9,
+       298.4
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       216.5,
+       296.8
       ],
       [
        218.7,
-       313.3
+       296.8
+      ],
+      [
+       218.7,
+       298.4
+      ],
+      [
+       216.5,
+       298.4
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "arched_floor": 1,
+     "base": 0.0,
+     "footprint": [
+      [
+       211.5,
+       306.0
+      ],
+      [
+       217.9,
+       306.0
+      ],
+      [
+       217.9,
+       313.6
+      ],
+      [
+       211.5,
+       313.6
+      ]
+     ],
+     "h": 9.0,
+     "name": "front_bay_south",
+     "roof": {
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 180
+      }
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       210.7,
+       313.6
+      ],
+      [
+       212.9,
+       313.6
+      ],
+      [
+       212.9,
+       315.2
+      ],
+      [
+       210.7,
+       315.2
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       212.9,
+       313.6
+      ],
+      [
+       216.5,
+       313.6
+      ],
+      [
+       216.5,
+       315.2
+      ],
+      [
+       212.9,
+       315.2
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       216.5,
+       313.6
+      ],
+      [
+       218.7,
+       313.6
+      ],
+      [
+       218.7,
+       315.2
+      ],
+      [
+       216.5,
+       315.2
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    }
+   ],
+   "passages": [
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       210.7,
+       296.8
+      ],
+      [
+       218.7,
+       296.8
+      ],
+      [
+       218.7,
+       298.4
+      ],
+      [
+       210.7,
+       298.4
+      ]
+     ]
+    },
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       210.7,
+       313.6
+      ],
+      [
+       218.7,
+       313.6
       ],
       [
        218.7,
@@ -14536,13 +15039,7 @@
        210.7,
        315.2
       ]
-     ],
-     "h": 3.3,
-     "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
-     }
+     ]
     }
    ],
    "ref": "B30",
@@ -14553,8 +15050,11 @@
    },
    "status": "existing",
    "style": {
+    "band": "white",
+    "corner_boards": true,
     "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)",
     "roof_mat": "shingle_dark",
+    "shutters": "dark",
     "trim": "white",
     "wall": "siding_grey",
     "windows": "punched"
@@ -14585,7 +15085,7 @@
    "ev": {
     "conf": "medium",
     "date": "2024",
-    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos; central bay (about 6.4 m, 0.3 m proud) with its full-height front gable and round vent, arched middle-floor windows, open porches with twin end gables, shutters, corner boards and the first-floor band from R004/R134/R149",
     "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; colour from R004 (row seen from the east: white home at the west end next to the brick support building, two grey ones); small side stoops on the plan outline omitted",
     "src": [
      "plan2023p16",
@@ -14683,30 +15183,35 @@
      }
     },
     {
+     "arched_floor": 1,
      "base": 0.0,
      "footprint": [
       [
-       235.5,
-       296.3
+       236.3,
+       297.9
       ],
       [
-       243.5,
-       296.3
+       242.7,
+       297.9
       ],
       [
-       243.5,
-       298.2
+       242.7,
+       305.5
       ],
       [
-       235.5,
-       298.2
+       236.3,
+       305.5
       ]
      ],
-     "h": 3.3,
+     "h": 9.0,
+     "name": "front_bay_north",
      "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 0
+      }
      }
     },
     {
@@ -14714,11 +15219,236 @@
      "footprint": [
       [
        235.5,
-       312.8
+       296.3
+      ],
+      [
+       237.7,
+       296.3
+      ],
+      [
+       237.7,
+       297.9
+      ],
+      [
+       235.5,
+       297.9
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       237.7,
+       296.3
+      ],
+      [
+       241.3,
+       296.3
+      ],
+      [
+       241.3,
+       297.9
+      ],
+      [
+       237.7,
+       297.9
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       241.3,
+       296.3
       ],
       [
        243.5,
-       312.8
+       296.3
+      ],
+      [
+       243.5,
+       297.9
+      ],
+      [
+       241.3,
+       297.9
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "arched_floor": 1,
+     "base": 0.0,
+     "footprint": [
+      [
+       236.3,
+       305.5
+      ],
+      [
+       242.7,
+       305.5
+      ],
+      [
+       242.7,
+       313.1
+      ],
+      [
+       236.3,
+       313.1
+      ]
+     ],
+     "h": 9.0,
+     "name": "front_bay_south",
+     "roof": {
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 180
+      }
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       235.5,
+       313.1
+      ],
+      [
+       237.7,
+       313.1
+      ],
+      [
+       237.7,
+       314.7
+      ],
+      [
+       235.5,
+       314.7
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       237.7,
+       313.1
+      ],
+      [
+       241.3,
+       313.1
+      ],
+      [
+       241.3,
+       314.7
+      ],
+      [
+       237.7,
+       314.7
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       241.3,
+       313.1
+      ],
+      [
+       243.5,
+       313.1
+      ],
+      [
+       243.5,
+       314.7
+      ],
+      [
+       241.3,
+       314.7
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    }
+   ],
+   "passages": [
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       235.5,
+       296.3
+      ],
+      [
+       243.5,
+       296.3
+      ],
+      [
+       243.5,
+       297.9
+      ],
+      [
+       235.5,
+       297.9
+      ]
+     ]
+    },
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       235.5,
+       313.1
+      ],
+      [
+       243.5,
+       313.1
       ],
       [
        243.5,
@@ -14728,13 +15458,7 @@
        235.5,
        314.7
       ]
-     ],
-     "h": 3.3,
-     "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
-     }
+     ]
     }
    ],
    "ref": "B30",
@@ -14745,8 +15469,11 @@
    },
    "status": "existing",
    "style": {
+    "band": "white",
+    "corner_boards": true,
     "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)",
     "roof_mat": "shingle_dark",
+    "shutters": "dark",
     "trim": "white",
     "wall": "siding_grey",
     "windows": "punched"
@@ -14777,7 +15504,7 @@
    "ev": {
     "conf": "medium",
     "date": "2024",
-    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos; central bay (about 6.4 m, 0.3 m proud) with its full-height front gable and round vent, arched middle-floor windows, open porches with twin end gables, shutters, corner boards and the first-floor band from R004/R134/R149",
     "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; wall colour per building not matched to photos (R101/R135 show white and grey variants); small side stoops on the plan outline omitted",
     "src": [
      "plan2023p16",
@@ -14875,30 +15602,35 @@
      }
     },
     {
+     "arched_floor": 1,
      "base": 0.0,
      "footprint": [
       [
-       281.2,
-       284.5
+       282.0,
+       286.1
       ],
       [
-       289.2,
-       284.5
+       288.4,
+       286.1
       ],
       [
-       289.2,
-       286.4
+       288.4,
+       293.7
       ],
       [
-       281.2,
-       286.4
+       282.0,
+       293.7
       ]
      ],
-     "h": 3.3,
+     "h": 9.0,
+     "name": "front_bay_north",
      "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 0
+      }
      }
     },
     {
@@ -14906,11 +15638,236 @@
      "footprint": [
       [
        281.2,
-       301.0
+       284.5
+      ],
+      [
+       283.4,
+       284.5
+      ],
+      [
+       283.4,
+       286.1
+      ],
+      [
+       281.2,
+       286.1
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       283.4,
+       284.5
+      ],
+      [
+       287.0,
+       284.5
+      ],
+      [
+       287.0,
+       286.1
+      ],
+      [
+       283.4,
+       286.1
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       287.0,
+       284.5
       ],
       [
        289.2,
-       301.0
+       284.5
+      ],
+      [
+       289.2,
+       286.1
+      ],
+      [
+       287.0,
+       286.1
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "arched_floor": 1,
+     "base": 0.0,
+     "footprint": [
+      [
+       282.0,
+       293.7
+      ],
+      [
+       288.4,
+       293.7
+      ],
+      [
+       288.4,
+       301.3
+      ],
+      [
+       282.0,
+       301.3
+      ]
+     ],
+     "h": 9.0,
+     "name": "front_bay_south",
+     "roof": {
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 180
+      }
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       281.2,
+       301.3
+      ],
+      [
+       283.4,
+       301.3
+      ],
+      [
+       283.4,
+       302.9
+      ],
+      [
+       281.2,
+       302.9
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       283.4,
+       301.3
+      ],
+      [
+       287.0,
+       301.3
+      ],
+      [
+       287.0,
+       302.9
+      ],
+      [
+       283.4,
+       302.9
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       287.0,
+       301.3
+      ],
+      [
+       289.2,
+       301.3
+      ],
+      [
+       289.2,
+       302.9
+      ],
+      [
+       287.0,
+       302.9
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    }
+   ],
+   "passages": [
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       281.2,
+       284.5
+      ],
+      [
+       289.2,
+       284.5
+      ],
+      [
+       289.2,
+       286.1
+      ],
+      [
+       281.2,
+       286.1
+      ]
+     ]
+    },
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       281.2,
+       301.3
+      ],
+      [
+       289.2,
+       301.3
       ],
       [
        289.2,
@@ -14920,13 +15877,7 @@
        281.2,
        302.9
       ]
-     ],
-     "h": 3.3,
-     "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
-     }
+     ]
     }
    ],
    "ref": "B30",
@@ -14937,8 +15888,11 @@
    },
    "status": "existing",
    "style": {
+    "band": "white",
+    "corner_boards": true,
     "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)",
     "roof_mat": "shingle_dark",
+    "shutters": "dark",
     "trim": "white",
     "wall": "siding_grey",
     "windows": "punched"
@@ -14969,7 +15923,7 @@
    "ev": {
     "conf": "medium",
     "date": "2024",
-    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "note": "built 2023-24 (gold block on plan p16); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos; central bay (about 6.4 m, 0.3 m proud) with its full-height front gable and round vent, arched middle-floor windows, open porches with twin end gables, shutters, corner boards and the first-floor band from R004/R134/R149",
     "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; wall colour per building not matched to photos (R101/R135 show white and grey variants); small side stoops on the plan outline omitted",
     "src": [
      "plan2023p16",
@@ -15067,30 +16021,35 @@
      }
     },
     {
+     "arched_floor": 1,
      "base": 0.0,
      "footprint": [
       [
-       306.0,
-       274.2
+       306.8,
+       275.8
       ],
       [
-       314.0,
-       274.2
+       313.2,
+       275.8
       ],
       [
-       314.0,
-       276.1
+       313.2,
+       283.4
       ],
       [
-       306.0,
-       276.1
+       306.8,
+       283.4
       ]
      ],
-     "h": 3.3,
+     "h": 9.0,
+     "name": "front_bay_north",
      "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 0
+      }
      }
     },
     {
@@ -15098,11 +16057,236 @@
      "footprint": [
       [
        306.0,
-       290.7
+       274.2
+      ],
+      [
+       308.2,
+       274.2
+      ],
+      [
+       308.2,
+       275.8
+      ],
+      [
+       306.0,
+       275.8
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       308.2,
+       274.2
+      ],
+      [
+       311.8,
+       274.2
+      ],
+      [
+       311.8,
+       275.8
+      ],
+      [
+       308.2,
+       275.8
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       311.8,
+       274.2
       ],
       [
        314.0,
-       290.7
+       274.2
+      ],
+      [
+       314.0,
+       275.8
+      ],
+      [
+       311.8,
+       275.8
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "arched_floor": 1,
+     "base": 0.0,
+     "footprint": [
+      [
+       306.8,
+       283.4
+      ],
+      [
+       313.2,
+       283.4
+      ],
+      [
+       313.2,
+       291.0
+      ],
+      [
+       306.8,
+       291.0
+      ]
+     ],
+     "h": 9.0,
+     "name": "front_bay_south",
+     "roof": {
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 180
+      }
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       306.0,
+       291.0
+      ],
+      [
+       308.2,
+       291.0
+      ],
+      [
+       308.2,
+       292.6
+      ],
+      [
+       306.0,
+       292.6
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       308.2,
+       291.0
+      ],
+      [
+       311.8,
+       291.0
+      ],
+      [
+       311.8,
+       292.6
+      ],
+      [
+       308.2,
+       292.6
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       311.8,
+       291.0
+      ],
+      [
+       314.0,
+       291.0
+      ],
+      [
+       314.0,
+       292.6
+      ],
+      [
+       311.8,
+       292.6
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    }
+   ],
+   "passages": [
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       306.0,
+       274.2
+      ],
+      [
+       314.0,
+       274.2
+      ],
+      [
+       314.0,
+       275.8
+      ],
+      [
+       306.0,
+       275.8
+      ]
+     ]
+    },
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       306.0,
+       291.0
+      ],
+      [
+       314.0,
+       291.0
       ],
       [
        314.0,
@@ -15112,13 +16296,7 @@
        306.0,
        292.6
       ]
-     ],
-     "h": 3.3,
-     "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
-     }
+     ]
     }
    ],
    "ref": "B30",
@@ -15129,8 +16307,11 @@
    },
    "status": "existing",
    "style": {
+    "band": "white",
+    "corner_boards": true,
     "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)",
     "roof_mat": "shingle_dark",
+    "shutters": "dark",
     "trim": "white",
     "wall": "siding_grey",
     "windows": "punched"
@@ -15161,7 +16342,7 @@
    "ev": {
     "conf": "medium",
     "date": "2025",
-    "note": "built 2025 (one of the two additions; drawn as a proposed light-grey block on plan p16 and present on the 2026 wayfinding); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "note": "built 2025 (one of the two additions; drawn as a proposed light-grey block on plan p16 and present on the 2026 wayfinding); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos; central bay (about 6.4 m, 0.3 m proud) with its full-height front gable and round vent, arched middle-floor windows, open porches with twin end gables, shutters, corner boards and the first-floor band from R004/R134/R149",
     "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; wall colour per building not matched to photos (R101/R135 show white and grey variants); small side stoops on the plan outline omitted",
     "src": [
      "plan2023p16",
@@ -15256,30 +16437,35 @@
      }
     },
     {
+     "arched_floor": 1,
      "base": 0.0,
      "footprint": [
       [
-       330.7,
-       260.4
+       331.5,
+       262.0
       ],
       [
-       338.7,
-       260.4
+       337.9,
+       262.0
       ],
       [
-       338.7,
-       262.3
+       337.9,
+       269.6
       ],
       [
-       330.7,
-       262.3
+       331.5,
+       269.6
       ]
      ],
-     "h": 3.3,
+     "h": 9.0,
+     "name": "front_bay_north",
      "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 0
+      }
      }
     },
     {
@@ -15287,11 +16473,236 @@
      "footprint": [
       [
        330.7,
-       276.9
+       260.4
+      ],
+      [
+       332.9,
+       260.4
+      ],
+      [
+       332.9,
+       262.0
+      ],
+      [
+       330.7,
+       262.0
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       332.9,
+       260.4
+      ],
+      [
+       336.5,
+       260.4
+      ],
+      [
+       336.5,
+       262.0
+      ],
+      [
+       332.9,
+       262.0
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       336.5,
+       260.4
       ],
       [
        338.7,
-       276.9
+       260.4
+      ],
+      [
+       338.7,
+       262.0
+      ],
+      [
+       336.5,
+       262.0
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "arched_floor": 1,
+     "base": 0.0,
+     "footprint": [
+      [
+       331.5,
+       269.6
+      ],
+      [
+       337.9,
+       269.6
+      ],
+      [
+       337.9,
+       277.2
+      ],
+      [
+       331.5,
+       277.2
+      ]
+     ],
+     "h": 9.0,
+     "name": "front_bay_south",
+     "roof": {
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 180
+      }
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       330.7,
+       277.2
+      ],
+      [
+       332.9,
+       277.2
+      ],
+      [
+       332.9,
+       278.8
+      ],
+      [
+       330.7,
+       278.8
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       332.9,
+       277.2
+      ],
+      [
+       336.5,
+       277.2
+      ],
+      [
+       336.5,
+       278.8
+      ],
+      [
+       332.9,
+       278.8
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       336.5,
+       277.2
+      ],
+      [
+       338.7,
+       277.2
+      ],
+      [
+       338.7,
+       278.8
+      ],
+      [
+       336.5,
+       278.8
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    }
+   ],
+   "passages": [
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       330.7,
+       260.4
+      ],
+      [
+       338.7,
+       260.4
+      ],
+      [
+       338.7,
+       262.0
+      ],
+      [
+       330.7,
+       262.0
+      ]
+     ]
+    },
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       330.7,
+       277.2
+      ],
+      [
+       338.7,
+       277.2
       ],
       [
        338.7,
@@ -15301,13 +16712,7 @@
        330.7,
        278.8
       ]
-     ],
-     "h": 3.3,
-     "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
-     }
+     ]
     }
    ],
    "ref": "B30 C03",
@@ -15318,8 +16723,11 @@
    },
    "status": "existing",
    "style": {
+    "band": "white",
+    "corner_boards": true,
     "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)",
     "roof_mat": "shingle_dark",
+    "shutters": "dark",
     "trim": "white",
     "wall": "siding_grey",
     "windows": "punched"
@@ -15350,7 +16758,7 @@
    "ev": {
     "conf": "medium",
     "date": "2025",
-    "note": "built 2025 (one of the two additions; drawn as a proposed light-grey block on plan p16 and present on the 2026 wayfinding); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos",
+    "note": "built 2025 (one of the two additions; drawn as a proposed light-grey block on plan p16 and present on the 2026 wayfinding); not in the 2022 aerial. Centre and 15.4 x 14.6 m body from the plan p16 outline, placed from the 2023 planning figure p16 georeferenced by the south tracer (11 control points, fit RMS 2.5 m); the 2026 wayfinding has all 7 with the same spacing (within ~3 m, its absolute offset ~3 m W / 6 m N is inside its 10 m fit); 3 levels counted in photos; central bay (about 6.4 m, 0.3 m proud) with its full-height front gable and round vent, arched middle-floor windows, open porches with twin end gables, shutters, corner boards and the first-floor band from R004/R134/R149",
     "open": "as-built position +-3-5 m; porch depth (1.9 m) and widths estimated from photos; wall colour per building not matched to photos (R101/R135 show white and grey variants); small side stoops on the plan outline omitted",
     "src": [
      "plan2023p16",
@@ -15445,30 +16853,35 @@
      }
     },
     {
+     "arched_floor": 1,
      "base": 0.0,
      "footprint": [
       [
-       355.3,
-       242.5
+       356.1,
+       244.1
       ],
       [
-       363.3,
-       242.5
+       362.5,
+       244.1
       ],
       [
-       363.3,
-       244.4
+       362.5,
+       251.7
       ],
       [
-       355.3,
-       244.4
+       356.1,
+       251.7
       ]
      ],
-     "h": 3.3,
+     "h": 9.0,
+     "name": "front_bay_north",
      "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 0
+      }
      }
     },
     {
@@ -15476,11 +16889,236 @@
      "footprint": [
       [
        355.3,
-       259.0
+       242.5
+      ],
+      [
+       357.5,
+       242.5
+      ],
+      [
+       357.5,
+       244.1
+      ],
+      [
+       355.3,
+       244.1
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       357.5,
+       242.5
+      ],
+      [
+       361.1,
+       242.5
+      ],
+      [
+       361.1,
+       244.1
+      ],
+      [
+       357.5,
+       244.1
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       361.1,
+       242.5
       ],
       [
        363.3,
-       259.0
+       242.5
+      ],
+      [
+       363.3,
+       244.1
+      ],
+      [
+       361.1,
+       244.1
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_north",
+     "roof": {
+      "pitch": 35,
+      "ridge": "0",
+      "type": "gable"
+     }
+    },
+    {
+     "arched_floor": 1,
+     "base": 0.0,
+     "footprint": [
+      [
+       356.1,
+       251.7
+      ],
+      [
+       362.5,
+       251.7
+      ],
+      [
+       362.5,
+       259.3
+      ],
+      [
+       356.1,
+       259.3
+      ]
+     ],
+     "h": 9.0,
+     "name": "front_bay_south",
+     "roof": {
+      "pitch": 50,
+      "ridge": "long",
+      "type": "gable",
+      "vent": {
+       "face": 180
+      }
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       355.3,
+       259.3
+      ],
+      [
+       357.5,
+       259.3
+      ],
+      [
+       357.5,
+       260.9
+      ],
+      [
+       355.3,
+       260.9
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       357.5,
+       259.3
+      ],
+      [
+       361.1,
+       259.3
+      ],
+      [
+       361.1,
+       260.9
+      ],
+      [
+       357.5,
+       260.9
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 25,
+      "type": "hip"
+     }
+    },
+    {
+     "base": 0.0,
+     "footprint": [
+      [
+       361.1,
+       259.3
+      ],
+      [
+       363.3,
+       259.3
+      ],
+      [
+       363.3,
+       260.9
+      ],
+      [
+       361.1,
+       260.9
+      ]
+     ],
+     "h": 3.3,
+     "name": "porch_south",
+     "roof": {
+      "pitch": 35,
+      "ridge": "180",
+      "type": "gable"
+     }
+    }
+   ],
+   "passages": [
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       355.3,
+       242.5
+      ],
+      [
+       363.3,
+       242.5
+      ],
+      [
+       363.3,
+       244.1
+      ],
+      [
+       355.3,
+       244.1
+      ]
+     ]
+    },
+    {
+     "clear": 2.9,
+     "floor": 0.0,
+     "note": "one-storey open porch on white columns (R004, R134, R149)",
+     "polygon": [
+      [
+       355.3,
+       259.3
+      ],
+      [
+       363.3,
+       259.3
       ],
       [
        363.3,
@@ -15490,13 +17128,7 @@
        355.3,
        260.9
       ]
-     ],
-     "h": 3.3,
-     "roof": {
-      "pitch": 30,
-      "ridge": "short",
-      "type": "gable"
-     }
+     ]
     }
    ],
    "ref": "B30 C03",
@@ -15507,8 +17139,11 @@
    },
    "status": "existing",
    "style": {
+    "band": "white",
+    "corner_boards": true,
     "notes": "three-level townhome: lap siding, white trim and corner boards, dark shutters, arched upper windows, a full-height central front gable with a round vent, dark-shingle hip roof; one-storey white-column porch with twin small gables on the north (lot) side and another on the south side (R004, R017, R101, R134, R149)",
     "roof_mat": "shingle_dark",
+    "shutters": "dark",
     "trim": "white",
     "wall": "siding_white",
     "windows": "punched"

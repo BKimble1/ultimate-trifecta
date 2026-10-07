@@ -41,9 +41,9 @@ func run_scenario(label: String, secs: float, fn: Callable, settle_s: float = 0.
 	var d: Vector2 = lane[1]
 	var dir := Vector3(d.x, 0, d.y)
 	var yaw := atan2(-d.x, -d.y)
-	h.place(0, a - dir * 10.0, yaw)
+	h.place(0, h.on_ground(Vector2(a.x, a.z) - d * 10.0), yaw)
 	# the Night Watch waits far away
-	h.place(1, a - dir * 13.0 + Vector3(-d.y, 0, d.x) * 6.0, yaw)
+	h.place(1, h.on_ground(Vector2(a.x, a.z) - d * 13.0 + Vector2(-d.y, d.x) * 6.0), yaw)
 	var sim := h.sim
 	var r := sim.player(0)
 	var full := sim.cfg.runner_speed
@@ -65,7 +65,12 @@ func run_scenario(label: String, secs: float, fn: Callable, settle_s: float = 0.
 		var s := (r.pos() - a).dot(dir)
 		travelled += s - last_s
 		if s > 95.0:
-			r.body.global_position -= dir * 80.0
+			# back along the lane, at the same height over the ground there
+			# (the campus has its real grades)
+			var gp := r.body.global_position
+			var back := gp - dir * 80.0
+			back.y = CampusBuilder.grid_y(sim.layout, back.x, back.z) + gp.y - CampusBuilder.grid_y(sim.layout, gp.x, gp.z)
+			r.body.global_position = back
 			s -= 80.0
 		last_s = s
 		var sp := Vector2(r.vel.x, r.vel.z).length()
@@ -501,14 +506,14 @@ func test_guest_prediction_of_full_speed_and_dives() -> void:
 ## game. Update the game to join.") and it never gets a slot; a newer
 ## protocol is refused the same way; the current build stays in the room.
 func test_old_protocol_is_refused_with_update_needed() -> void:
-	t.eq(Protocol.VERSION, 9, "protocol 9 (Pass 9 movement semantics; 24-bit positions for the rebuilt campus)")
+	t.eq(Protocol.VERSION, 10, "protocol 10 (Pass 9 movement semantics; 24-bit positions; the map, its data and hall versions in the lobby and START)")
 	var rig := NetRig.new()
 	t.add_child(rig)
 	rig.setup(20.0, 0.0, 0.0, 1)
 	var c: NetSession = rig.clients[0]
 	await rig.wait_until(func() -> bool: return c.local_slot >= 0, 300)
 	var before := rig.host.roster.filter(func(e): return e != null).size()
-	for ver in [8, 10]:
+	for ver in [9, 11]:
 		var other := LoopbackTransport.new(rig.hub, false)
 		rig.hub.link(other.id, rig.host_t.id)
 		var got: Array = []
@@ -548,18 +553,21 @@ static func _open_circle(sim: MatchSim, rad: float) -> Array:
 		for z in range(int(b.position.y) + 25, int(b.end.y) - 25, 6):
 			var ok := true
 			var prev := Vector3.INF
+			# near level (the campus has its real grades): within 0.25 m of
+			# the ground at its centre all round
+			var g0 := CampusBuilder.grid_y(sim.layout, x, z)
 			for k in n + 1:
 				var a := TAU * float(k) / float(n)
 				for r2 in [rad - 1.5, rad, rad + 1.5]:
 					var q := Vector2(x, z) + Vector2(cos(a), sin(a)) * float(r2)
 					var c := ng.to_cell(q)
 					if not ng.foot.is_in_boundsv(c) or ng.foot.is_point_solid(c) or ng.low_wall_cells.has(c) \
-							or CampusBuilder.water_at(sim.layout, q) >= 0 or absf(CampusBuilder.grid_y(sim.layout, q.x, q.y)) > 0.05:
+							or CampusBuilder.water_at(sim.layout, q) >= 0 or absf(CampusBuilder.grid_y(sim.layout, q.x, q.y) - g0) > 0.25:
 						ok = false
 						break
 				if not ok:
 					break
-				var p := Vector3(x + cos(a) * rad, 0.0, z + sin(a) * rad)
+				var p := Vector3(x + cos(a) * rad, CampusBuilder.grid_y(sim.layout, x + cos(a) * rad, z + sin(a) * rad), z + sin(a) * rad)
 				if prev != Vector3.INF:
 					# a body-sized sweep (posts, kerbs and props the grid doesn't hold)
 					for hh in [0.3, 1.0]:
@@ -623,7 +631,8 @@ func test_guest_holds_full_speed_for_a_minute_online() -> void:
 		if q.is_patrol():
 			q.body.collision_layer = 0
 	hmc.sim.bots.clear()
-	hp.body.global_position = Vector3((found[0] as Vector2).x + 14.0, 0.05, (found[0] as Vector2).y)
+	var c0: Vector2 = found[0]
+	hp.body.global_position = Vector3(c0.x + 14.0, CampusBuilder.grid_y(hmc.sim.layout, c0.x + 14.0, c0.y) + 0.05, c0.y)
 	hp.vel = Vector3.ZERO
 	await rig.frames(30)
 	circle["on"] = true

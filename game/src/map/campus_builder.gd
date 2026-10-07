@@ -261,6 +261,16 @@ static func water_at(layout: CampusLayout, p: Vector2) -> int:
 # Collision
 # ---------------------------------------------------------------------------
 func build_collision(root: Node3D) -> void:
+	var bodies := collision_bodies()
+	attach_recipe(bodies, 0, collision_recipe(L).size())
+	adopt(root, bodies)
+
+
+## The round's three collision bodies [world, cart blockers, ground], the
+## ground tiles on, not yet in the tree: attach_recipe puts the recipe's
+## shapes on them (during loading in slices: MatchController's "bodies"
+## job, ~6,000 shapes being ~40 ms in one go) and adopt puts them in.
+func collision_bodies() -> Array:
 	var world := StaticBody3D.new()
 	world.name = "WorldCollision"
 	world.collision_layer = TC.L_WORLD
@@ -282,11 +292,24 @@ func build_collision(root: Node3D) -> void:
 	# compound shape
 	for tile in ground_tiles(L):
 		_attach(ground, tile[0], Transform3D(Basis.IDENTITY, tile[1]))
-	for r in collision_recipe(L):
-		_attach(world if int(r[0]) == RB_WORLD else blockers, r[1], r[2])
-	root.add_child(ground)
-	root.add_child(world)
-	root.add_child(blockers)
+	return [world, blockers, ground]
+
+
+## Puts the recipe's shapes [from, to) on collision_bodies' bodies; returns
+## the index after the last one put on.
+func attach_recipe(bodies: Array, from: int, to: int) -> int:
+	var rec := collision_recipe(L)
+	var end := mini(to, rec.size())
+	for i in range(from, end):
+		var r: Array = rec[i]
+		_attach(bodies[0] if int(r[0]) == RB_WORLD else bodies[1], r[1], r[2])
+	return end
+
+
+func adopt(root: Node3D, bodies: Array) -> void:
+	root.add_child(bodies[2])
+	root.add_child(bodies[0])
+	root.add_child(bodies[1])
 
 
 # ---- the collision recipe: every shape but the ground, computed once per
@@ -295,6 +318,7 @@ func build_collision(root: Node3D) -> void:
 # and client world alike: Shape3D resources are shared, not copied)
 const RB_WORLD := 0
 const RB_BLOCK := 1
+const FAR_TRUNK_M := 30.0       # trunks this far outside the play area get no collider
 const RECIPE_SLICE := 12        # buildings per preparation step
 
 var _rec: Array = []            # [[body, Shape3D, Transform3D]] being recorded
@@ -303,6 +327,7 @@ static var _recipe: Array = []
 static var _recipe_layout: CampusLayout = null
 static var _recipe_maker: CampusBuilder = null
 static var _recipe_bi := 0
+static var _recipe_phase := 0
 
 
 ## One slice of the recipe; true while more remains (MatchController runs
@@ -315,6 +340,7 @@ static func collision_step(layout: CampusLayout) -> bool:
 		_recipe = []
 		_recipe_maker = CampusBuilder.new(layout)
 		_recipe_bi = 0
+		_recipe_phase = 0
 	var m := _recipe_maker
 	var n := layout.buildings.size()
 	if _recipe_bi < n:
@@ -322,7 +348,10 @@ static func collision_step(layout: CampusLayout) -> bool:
 		m._buildings_recipe(_recipe_bi, to2)
 		_recipe_bi = to2
 		return true
-	m._rest_recipe()
+	m._rest_recipe(_recipe_phase)
+	_recipe_phase += 1
+	if _recipe_phase < 3:
+		return true
 	_recipe = m._rec
 	_recipe_maker = null
 	return false
@@ -368,24 +397,41 @@ func _buildings_recipe(from: int, to: int) -> void:
 		_building_collision(RB_WORLD, bd, String(dorm_of.get(bd["id"], "")))
 
 
-func _rest_recipe() -> void:
+func _rest_recipe(phase: int = -1) -> void:
 	var world := RB_WORLD
-	for s in L.walls:
-		_gseg(world, s["a"], s["b"], s["h"], s["t"], String(s.get("kind", "")) == "wall_retaining")
-	for s in L.hedges:
-		_gseg(world, s["a"], s["b"], s["h"], s["t"])
-	for s in L.fences:
-		_gseg(world, s["a"], s["b"], s["h"], 0.25)
-	for s in L.cart_blockers:
-		_gseg(RB_BLOCK, s["a"], s["b"], 1.6, 0.5)
-	for t in L.trees:
-		if not bool(t.get("collide", true)):
-			continue
-		var tp: Vector2 = t["pos"]
-		var cyl := CylinderShape3D.new()
-		cyl.radius = 0.42
-		cyl.height = 4.0
-		_add_shape(world, cyl, Transform3D(Basis.IDENTITY, Vector3(tp.x, grid_y(L, tp.x, tp.y) + 2.0, tp.y)))
+	# in three slices a loading frame can afford (walls, trunks, the rest);
+	# phase -1: all at once
+	if phase <= 0:
+		for s in L.walls:
+			_gseg(world, s["a"], s["b"], s["h"], s["t"], String(s.get("kind", "")) == "wall_retaining")
+		for s in L.hedges:
+			_gseg(world, s["a"], s["b"], s["h"], s["t"])
+		for s in L.fences:
+			_gseg(world, s["a"], s["b"], s["h"], 0.25)
+		for s in L.cart_blockers:
+			_gseg(RB_BLOCK, s["a"], s["b"], 1.6, 0.5)
+	if phase == 0:
+		return
+	if phase <= 1:
+		# a trunk far beyond the play area (the background woods) is never
+		# reached in a round: drawn only, no collider
+		var reach := PackedVector2Array()
+		if not L.terrain.is_empty() and L.play_boundary.size() >= 3:
+			for pg in Geometry2D.offset_polygon(L.play_boundary, FAR_TRUNK_M):
+				if pg.size() > reach.size():
+					reach = pg
+		for t in L.trees:
+			if not bool(t.get("collide", true)):
+				continue
+			var tp: Vector2 = t["pos"]
+			if not reach.is_empty() and not Geometry2D.is_point_in_polygon(tp, reach):
+				continue
+			var cyl := CylinderShape3D.new()
+			cyl.radius = 0.42
+			cyl.height = 4.0
+			_add_shape(world, cyl, Transform3D(Basis.IDENTITY, Vector3(tp.x, grid_y(L, tp.x, tp.y) + 2.0, tp.y)))
+	if phase == 1:
+		return
 	for r in L.rocks:
 		_box(world, r["pos"] + Vector3(0, float(r["size"].y) * 0.5, 0), r["size"], float(r["rot"]))
 	for p in L.platforms:
@@ -659,7 +705,9 @@ func _gseg(body: int, a: Vector2, b: Vector2, h: float, t: float, retaining: boo
 		var hi := -INF
 		for q in [p0, p1, (p0 + p1) * 0.5]:
 			for o in ([Vector2.ZERO, side, -side] if retaining else [Vector2.ZERO]):
-				var gy := grid_y(L, (q as Vector2).x + (o as Vector2).x, (q as Vector2).y + (o as Vector2).y)
+				var qo: Vector2 = (q as Vector2) + (o as Vector2)
+				# on the ground, or on a stair where a railing crosses one
+				var gy := maxf(grid_y(L, qo.x, qo.y), L.stair_y(qo))
 				lo = minf(lo, gy)
 				hi = maxf(hi, gy)
 		# pieces overlap a little so a sloping line leaves no gap at a joint
@@ -779,6 +827,7 @@ var _decor: Dictionary = {}       # coarse key -> {kind: [[Transform3D, tint, cu
 var _far: Dictionary = {}         # 3x coarse key -> {species: [...]} (woods beyond the bounds)
 var _proxy: Dictionary = {}       # coarse key -> {family: [...]} (tree shadow casters)
 var _win: Dictionary = {}         # coarse key -> {glass0|glass1|glass2|frame: [...]} (instanced windows)
+var _cars: Dictionary = {}        # coarse key -> {car kind|bike: [...]} (parked cars, bikes)
 var _field_tex: ImageTexture
 var _mm_queue: Array = []
 var _mm_started := false
@@ -801,6 +850,7 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_far.clear()
 	_proxy.clear()
 	_win.clear()
+	_cars.clear()
 	_commit_keys.clear()
 	_commit_started = false
 	_mm_queue.clear()
@@ -820,7 +870,8 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_add_sliced("light_paths", L.paths.size(), func(i: int) -> void: kit.stamp_paths(i, i + 1))
 	_add("ground_prep", _ground_prep)
 	_add("ground", _ground_next)
-	_add_sliced("areas", L.areas.size(), func(i: int) -> void: _area(L.areas[i]))
+	var bands := _area_bands()
+	_add_sliced("areas", bands.size(), func(i: int) -> void: _area(L.areas[int(bands[i][0])], int(bands[i][1]), int(bands[i][2])))
 	_add_sliced("roads", L.roads.size(), func(i: int) -> void: _road(L.roads[i]))
 	_add_sliced("paths", L.paths.size(), func(i: int) -> void: _path(L.paths[i]))
 	var dorm_buildings: Dictionary = {}
@@ -858,6 +909,10 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_add("trees_merge", _merge_species)
 	_add_sliced("lamps", L.lamps.size(), func(i: int) -> void: arch.lamps(i, i + 1))
 	_add("small", arch.small_things)
+	_add_sliced("parked", L.parked.size(), _park_car)
+	_add("bikes", _draw_parked)
+	var under := _understory_rows()
+	_add_sliced("understory", under.size(), func(i: int) -> void: _understory(under[i]))
 	var field_rows := int(LOOK_BOUNDS.size.y / CampusKit.CELL) + 1
 	for j0 in range(0, field_rows, 120):
 		_add("light_texture", func() -> void: kit.field_rows(j0, j0 + 120))
@@ -872,6 +927,115 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_add("commit", _commit_next)
 	_add("multimesh", _mm_next)
 	_add("glow", _glow_mesh)
+
+
+## Lived-in detail: each parked car (CampusLayout.parked) on the lot's
+## surface (`_park_car`); bikes at the racks and at the village homes'
+## porches (where the photos show them), and a few hammocks between trees
+## near the halls (requested scenery placed plausibly; COVERAGE_MATRIX C06).
+func _park_car(i: int) -> void:
+	var car: Dictionary = L.parked[i]
+	var p: Vector2 = car["pos"]
+	var xf := Transform3D(Basis(Vector3.UP, float(car["yaw"])), Vector3(p.x, ground_mesh_y(p.x, p.y) + 0.035, p.y))
+	_mm_add(_cars, coarse_key(p.x, p.y), String(car["kind"]), xf, car["tint"], Color())
+
+
+func _draw_parked() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	var bike_cols := [Color(0.12, 0.30, 0.52), Color(0.55, 0.12, 0.10), Color(0.14, 0.14, 0.15), Color(0.80, 0.80, 0.78), Color(0.20, 0.42, 0.30), Color(0.62, 0.52, 0.20)]
+	var place_bikes := func(c: Vector2, along: Vector2, n: int) -> void:
+		for i in n:
+			var q := c + along * ((float(i) - float(n - 1) * 0.5) * 0.75)
+			var yaw := atan2(-along.y, along.x) + PI * 0.5 + rng.randf_range(-0.12, 0.12)
+			var xf := Transform3D(Basis(Vector3.UP, yaw), Vector3(q.x, ground_mesh_y(q.x, q.y) + 0.02, q.y))
+			_mm_add(_cars, coarse_key(q.x, q.y), "bike", xf, bike_cols[rng.randi_range(0, bike_cols.size() - 1)], Color())
+	for pr in L.props:
+		if String(pr["kind"]) == "bike_rack":
+			var rot := float(pr["rot"])
+			place_bikes.call(pr["pos"], Vector2(cos(rot), -sin(rot)), 3 + rng.randi_range(0, 2))
+	for bd in L.buildings:
+		if not String(bd["id"]).begins_with("village_home_"):
+			continue
+		# R149: bikes stand at the ends of the porches
+		for ps in bd["passages"]:
+			var r := CampusData.bounds(ps["poly"])
+			var c := r.get_center()
+			var along := Vector2(1, 0) if r.size.x >= r.size.y else Vector2(0, 1)
+			var half := maxf(r.size.x, r.size.y) * 0.5
+			var outward := (c - (bd["pos"] as Vector2)).normalized()
+			for s: float in [-1.0, 1.0]:
+				if rng.randf() < 0.6:
+					place_bikes.call(c + along * (s * (half + 1.6)) + outward * 0.8, outward.rotated(PI * 0.5), 1 + rng.randi_range(0, 1))
+	var cols := [Color(0.16, 0.42, 0.44), Color(0.58, 0.28, 0.16), Color(0.18, 0.22, 0.36), Color(0.40, 0.42, 0.22)]
+	var hs := CampusVehicles.hammock_spots(L, 4)
+	for i in hs.size():
+		var a: Vector2 = hs[i][0]
+		var b: Vector2 = hs[i][1]
+		var k := kit_at((a.x + b.x) * 0.5, (a.y + b.y) * 0.5, false, true)
+		CampusVehicles.draw_hammock(k, a, b, gy(a.x, a.y), gy(b.x, b.y), cols[i % cols.size()])
+
+
+## Woodland understory (C05): low and tall shrubs, grass tufts and the odd
+## rock under the trees of each woods area, drawn only (no collider and no
+## nav cell, so play is unchanged).  Jittered on a UNDER_STEP grid: dense
+## where you can walk (the play area), sparse beyond it; never on a walk,
+## a road, a building or in a water.  One step per grid row of an area.
+const UNDER_STEP := 5.0
+
+
+func _understory_rows() -> Array:
+	var out: Array = []
+	if L.terrain.is_empty():
+		return out
+	for ai in L.areas.size():
+		var a: Dictionary = L.areas[ai]
+		if String(a["kind"]) != "woods":
+			continue
+		var r := (a["rect"] as Rect2).intersection(LOOK_BOUNDS)
+		if r.size.x <= 0.0 or r.size.y <= 0.0:
+			continue
+		var z := r.position.y + UNDER_STEP * 0.5
+		while z < r.end.y:
+			out.append([ai, z, r.position.x, r.end.x])
+			z += UNDER_STEP
+	return out
+
+
+func _understory(row: Array) -> void:
+	var poly: PackedVector2Array = L.areas[int(row[0])]["poly"]
+	var z0 := float(row[1])
+	var x := float(row[2]) + UNDER_STEP * 0.5
+	while x < float(row[3]):
+		var p := Vector2(x, z0) + Vector2(CampusKit._hash01(x, z0, 21) - 0.5, CampusKit._hash01(x, z0, 22) - 0.5) * (UNDER_STEP * 0.8)
+		x += UNDER_STEP
+		if CampusKit._hash01(p.x, p.y, 23) > (0.75 if L.in_play(p) else 0.2):
+			continue
+		if not Geometry2D.is_point_in_polygon(p, poly) or L.is_on_path(p, 1.2) or L.is_on_road_line(p, 2.0) \
+				or L.building_at(p, 1.5) >= 0 or L.water_index_at(p, 1.0) >= 0:
+			continue
+		var h := CampusKit._hash01(p.x, p.y, 24)
+		var s := 0.0
+		var kind := ""
+		if h < 0.5:
+			kind = "shrub_round"
+			s = 0.45 + 0.35 * CampusKit._hash01(p.x, p.y, 25)
+		elif h < 0.68:
+			kind = "shrub_tall"
+			s = 0.6 + 0.4 * CampusKit._hash01(p.x, p.y, 25)
+		elif h < 0.93:
+			kind = "grass"
+			s = 1.0 + 0.6 * CampusKit._hash01(p.x, p.y, 25)
+		else:
+			kind = "rock_round"
+			s = 0.5 + 0.4 * CampusKit._hash01(p.x, p.y, 25)
+		var xf := Transform3D(Basis(Vector3.UP, h * 37.0).scaled(Vector3(s, s * (0.8 if kind.begins_with("shrub") else 1.0), s)), Vector3(p.x, ground_mesh_y(p.x, p.y), p.y))
+		if kind == "rock_round":
+			_mm_add(_decor, coarse_key(p.x, p.y), kind, xf, Color(1, 1, 1) * (0.8 + 0.2 * h), Color(1, 1, 1))
+		else:
+			# a shade under the canopy, a little darker than the lawn's shrubs
+			var tint := Color(0.80, 0.86, 0.74).darkened(0.12 * CampusKit._hash01(p.x, p.y, 26))
+			_mm_add(_decor, coarse_key(p.x, p.y), kind, xf, tint, Color(0.18, 0.36, 0.20) * tint.v)
 
 
 ## A building on sloping ground: its foundation wall from its floor down to
@@ -901,6 +1065,53 @@ func _plinth(bd: Dictionary) -> void:
 		k.tri_n(Vector3(a.x, ga, a.y), Vector3(b.x, gb, b.y), Vector3(b.x, fl, b.y), nrm, nrm, nrm, col, col, col.lightened(0.05))
 		k.tri_n(Vector3(a.x, ga, a.y), Vector3(b.x, fl, b.y), Vector3(a.x, fl, a.y), nrm, nrm, nrm, col, col.lightened(0.05), col.lightened(0.05))
 	k.mat = 0.0
+	_basement_windows(bd, poly, fl)
+
+
+## An exposed basement's windows: on a hall or academic building whose low
+## side shows more than BASEMENT_SHOW of foundation, a row of windows in it
+## (the photographed "fifth row" of a four-storey hall on a slope), never
+## where the ground is higher, behind a stair or under a passage.
+const BASEMENT_SHOW := 1.9
+
+
+func _basement_windows(bd: Dictionary, poly: PackedVector2Array, fl: float) -> void:
+	if not String(bd["kind"]) in ["residence", "academic", "dining", "admin"]:
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(String(bd["id"]) + ":basement")
+	var n := poly.size()
+	for i in n:
+		var a := poly[i]
+		var b := poly[(i + 1) % n]
+		var len := a.distance_to(b)
+		if len < 3.0:
+			continue
+		var dir := (b - a) / len
+		var out2 := Vector2(dir.y, -dir.x)
+		var bays := int(floor((len - 1.0) / 2.9))
+		for c in bays:
+			var p := a + dir * (0.5 + (len - 1.0) / float(bays) * (float(c) + 0.5))
+			var g := gy(p.x + out2.x * 0.6, p.y + out2.y * 0.6)
+			var show := fl - g
+			if show < BASEMENT_SHOW:
+				continue
+			var blocked := false
+			for st in L.stairs:
+				var d: Vector2 = p - (st["p"] as Vector2)
+				var dn := d.dot(st["dir"])
+				if dn > -1.0 and dn < float(st["length"]) + 1.5 and absf(d.dot(st["tg"])) < float(st["w"]) * 0.5 + 1.5:
+					blocked = true
+			for ps in bd["passages"]:
+				if CampusData.dist_to_edge(p, ps["poly"]) < 1.5:
+					blocked = true
+			if blocked:
+				continue
+			var hh := minf(0.6, show * 0.5 - 0.45)
+			var lit := rng.randf() < 0.45
+			var room := Color(1.0, 0.76, 0.42) if lit else Color(0.10, 0.14, 0.24)
+			window_add(Vector3(p.x, fl - show * 0.5 + 0.15 - lift, p.y), Vector3(dir.x, 0, dir.y), Vector3(out2.x, 0, out2.y), 1.0, hh, room,
+				rng.randf_range(0.5, 0.85) if lit else 0.04, 0, CampusArchitecture.TRIM, false)
 
 
 func _add(step_name: String, f: Callable) -> void:
@@ -971,7 +1182,7 @@ func _release() -> void:
 	_glow_st = null
 	_world_mat = null
 	_field_tex = null
-	for d: Dictionary in [_chunks, _foliage, _detail, _trees, _decor, _far, _proxy, _win]:
+	for d: Dictionary in [_chunks, _foliage, _detail, _trees, _decor, _far, _proxy, _win, _cars]:
 		d.clear()
 	_mm_queue.clear()
 	_commit_keys.clear()
@@ -1150,6 +1361,8 @@ func _mm_next() -> bool:
 			_mm_queue.append([_proxy, key, 2.0])
 		for key in _win:
 			_mm_queue.append([_win, key, 2.0])
+		for key in _cars:
+			_mm_queue.append([_cars, key, 2.0])
 	if _mm_queue.is_empty():
 		return false
 	var item: Array = _mm_queue.pop_front()
@@ -1171,6 +1384,11 @@ func _mm_next() -> bool:
 			wm.name = "Windows_%s_%d_%d" % [kind, key.x, key.y]
 			wm.visibility_range_end = (DETAIL_M if kind == "frame" else CHUNK_END_M) * (1.0 if _quality >= 1 else 0.8)
 			container.add_child(wm)
+		elif store == _cars:
+			var cm := _mmi(CampusVehicles.mesh(kind), list, center, _world_mat, false)
+			cm.name = "Parked_%s_%d_%d" % [kind, key.x, key.y]
+			cm.visibility_range_end = (110.0 if kind == "bike" else 320.0) * (1.0 if _quality >= 1 else 0.7)
+			container.add_child(cm)
 		elif store == _proxy:
 			if _quality < 1:
 				continue
@@ -1451,7 +1669,7 @@ const AREA_STYLE := {
 
 ## One surface polygon (fields, lots, plazas, courts, beds): triangulated
 ## flat, its triangles shared out to the chunks they sit in.
-func _area(a: Dictionary) -> void:
+func _area(a: Dictionary, j_from: int = -1, j_to: int = -1) -> void:
 	var kind := String(a["kind"])
 	if not AREA_STYLE.has(kind) or kind == "lawn":
 		return
@@ -1460,15 +1678,189 @@ func _area(a: Dictionary) -> void:
 	var col: Color = st[1]
 	var mat: float = st[2]
 	var poly: PackedVector2Array = a["poly"]
-	var idx := CampusData.triangulate(poly)
-	if idx.is_empty():
-		idx = _fan(poly)
-	for t in range(0, idx.size(), 3):
-		_area_tri(poly[idx[t]], poly[idx[t + 1]], poly[idx[t + 2]], y, col, mat, 0)
+	if not L.terrain.is_empty():
+		_drape_poly(poly, y, col, mat, j_from, j_to)
+		if j_from >= 0 and j_from != _first_row(poly):
+			return      # markings once, with the area's first band
+	else:
+		var idx := CampusData.triangulate(poly)
+		if idx.is_empty():
+			idx = _fan(poly)
+		for t in range(0, idx.size(), 3):
+			_area_tri(poly[idx[t]], poly[idx[t + 1]], poly[idx[t + 2]], y, col, mat, 0)
 	if kind == "parking":
 		arch.lot_markings(a)
 	elif kind in ["field_turf", "field_grass", "court", "track"]:
 		arch.field_markings(a)
+
+
+## The ground mesh's own height at (x, z): _ground_chunk's 2 m cells on
+## the LOOK_BOUNDS lattice, each split a-b-c / a-c-d.  A surface draped by
+## this runs exactly parallel to the lawn under it.
+func ground_mesh_y(x: float, z: float) -> float:
+	if _hgrid.is_empty():
+		_hgrid = height_grid(L)
+	var o := LOOK_BOUNDS.position
+	var S := GROUND_STEP
+	var fi := floorf((x - o.x) / S)
+	var fj := floorf((z - o.y) / S)
+	var u := (x - o.x) / S - fi
+	var v := (z - o.y) / S - fj
+	# the cell's corners are whole-metre samples of the height grid: read
+	# them directly (the hot path of every draped walk, road and marking)
+	var b := L.bounds
+	var w1 := int(b.size.x) + 1
+	var zmax := int(b.size.y)
+	var xi := clampi(int(roundf(o.x + fi * S - b.position.x)), 0, w1 - 1)
+	var zi := clampi(int(roundf(o.y + fj * S - b.position.y)), 0, zmax)
+	var xs := mini(xi + int(S), w1 - 1)
+	var zs := mini(zi + int(S), zmax)
+	var ha := _hgrid[zi * w1 + xi]
+	var hc := _hgrid[zs * w1 + xs]
+	if u >= v:
+		var hb := _hgrid[zi * w1 + xs]
+		return ha + (hb - ha) * u + (hc - hb) * v
+	var hd := _hgrid[zs * w1 + xi]
+	return ha + (hc - hd) * u + (hd - ha) * v
+
+
+## A surface polygon laid on the terrain: cut by the ground mesh's cells and
+## their two triangles (cells the outline crosses are clipped; the others
+## are whole or empty), `y_off` above the lawn.
+const AREA_BAND := 10      # ground-cell rows per areas build step (on terrain)
+
+
+## The areas step's work: [area index, first row, last row] bands of
+## AREA_BAND ground-cell rows (a big lot is several short steps), or the
+## whole area on a flat map.
+func _area_bands() -> Array:
+	var out: Array = []
+	for i in L.areas.size():
+		var a: Dictionary = L.areas[i]
+		if L.terrain.is_empty():
+			out.append([i, -1, -1])
+			continue
+		var r: Rect2 = a["rect"]
+		var j0 := _first_row(a["poly"])
+		var j1 := int(floor((r.end.y - LOOK_BOUNDS.position.y) / GROUND_STEP))
+		var j := j0
+		while j <= j1:
+			out.append([i, j, mini(j + AREA_BAND - 1, j1)])
+			j += AREA_BAND
+	return out
+
+
+func _first_row(poly: PackedVector2Array) -> int:
+	return int(floor((CampusData.bounds(poly).position.y - LOOK_BOUNDS.position.y) / GROUND_STEP))
+
+
+## The height grid's sample at a lattice point (x, z on whole metres): what
+## the ground mesh's vertex there is.
+func _lattice_y(x: float, z: float) -> float:
+	var b := L.bounds
+	var w := int(b.size.x)
+	var xi := clampi(int(roundf(x - b.position.x)), 0, w)
+	var zi := clampi(int(roundf(z - b.position.y)), 0, int(b.size.y))
+	return _hgrid[zi * (w + 1) + xi]
+
+
+var _hgrid := PackedFloat32Array()
+
+
+func _drape_poly(poly: PackedVector2Array, y_off: float, col: Color, mat: float, j_from: int = -1, j_to: int = -1) -> void:
+	_hgrid = height_grid(L)
+	var o := LOOK_BOUNDS.position
+	var S := GROUND_STEP
+	var r := CampusData.bounds(poly)
+	var i0 := int(floor((r.position.x - o.x) / S))
+	var i1 := int(floor((r.end.x - o.x) / S))
+	var j0 := int(floor((r.position.y - o.y) / S))
+	var j1 := int(floor((r.end.y - o.y) / S))
+	if j_from >= 0:
+		j0 = maxi(j0, j_from)
+		j1 = mini(j1, j_to)
+	# the cells the outline passes through
+	var edge := {}
+	var n := poly.size()
+	for e in n:
+		var a := poly[e]
+		var b := poly[(e + 1) % n]
+		var steps := maxi(1, int(ceil(a.distance_to(b) / (S * 0.25))))
+		for k in steps + 1:
+			var q := a.lerp(b, float(k) / float(steps))
+			edge[Vector2i(int(floor((q.x - o.x) / S)), int(floor((q.y - o.y) / S)))] = true
+	var lb := L.bounds
+	var w1 := int(lb.size.x) + 1
+	var zmax := int(lb.size.y)
+	var istep := int(S)
+	for j in range(j0, j1 + 1):
+		# whole cells: their corners are the ground mesh's own vertices (read
+		# straight from the height grid, a row at a time); the row's are
+		# batched per kit (the ground's split, A B C and A C D, facing up)
+		var batch := {}
+		var z0 := o.y + float(j) * S
+		var zi := clampi(int(roundf(z0 - lb.position.y)), 0, zmax)
+		var row0 := zi * w1
+		var row1 := mini(zi + istep, zmax) * w1
+		for i in range(i0, i1 + 1):
+			var x0 := o.x + float(i) * S
+			if not edge.has(Vector2i(i, j)):
+				if not Geometry2D.is_point_in_polygon(Vector2(x0 + S * 0.5, z0 + S * 0.5), poly):
+					continue
+				var xi := clampi(int(roundf(x0 - lb.position.x)), 0, w1 - 1)
+				var xs := mini(xi + istep, w1 - 1)
+				var a3 := Vector3(x0, _hgrid[row0 + xi] + y_off, z0)
+				var c3 := Vector3(x0 + S, _hgrid[row1 + xs] + y_off, z0 + S)
+				var key := chunk_key(x0 + S * 0.5, z0 + S * 0.5)
+				if not batch.has(key):
+					batch[key] = [x0 + S * 0.5, z0 + S * 0.5, []]
+				(batch[key][2] as Array).append_array([a3, Vector3(x0 + S, _hgrid[row0 + xs] + y_off, z0), c3,
+					a3, c3, Vector3(x0, _hgrid[row1 + xi] + y_off, z0 + S)])
+				continue
+			var A := Vector2(x0, z0)
+			var B := Vector2(x0 + S, z0)
+			var C := Vector2(x0 + S, z0 + S)
+			var D := Vector2(x0, z0 + S)
+			for tri in [PackedVector2Array([A, B, C]), PackedVector2Array([A, C, D])]:
+				for piece in Geometry2D.intersect_polygons(poly, tri):
+					var idx := Geometry2D.triangulate_polygon(piece)
+					for t in range(0, idx.size(), 3):
+						_drape_tri(piece[idx[t]], piece[idx[t + 1]], piece[idx[t + 2]], y_off, col, mat)
+		for key in batch:
+			var e: Array = batch[key]
+			var k := _kit_at(float(e[0]), float(e[1]))
+			k.mat = mat
+			k.up_tris(PackedVector3Array(e[2]), col)
+			k.mat = 0.0
+
+
+## A thin line (markings: stalls, field lines) laid on the ground mesh, in
+## pieces of a metre or less, `dy` above the lawn.
+func drape_line(k: MeshKit, pts: PackedVector2Array, w: float, dy: float, col: Color) -> void:
+	for i in pts.size() - 1:
+		var a := pts[i]
+		var b := pts[i + 1]
+		var len := a.distance_to(b)
+		if len < 0.01:
+			continue
+		var side := (b - a).normalized().orthogonal() * (w * 0.5)
+		var n := maxi(1, int(ceil(len / 1.0)))
+		for j in n:
+			var p0 := a.lerp(b, float(j) / float(n))
+			var p1 := a.lerp(b, float(j + 1) / float(n))
+			var y0 := ground_mesh_y(p0.x, p0.y) + dy
+			var y1 := ground_mesh_y(p1.x, p1.y) + dy
+			_tri_up(k, Vector3(p0.x - side.x, y0, p0.y - side.y), Vector3(p1.x - side.x, y1, p1.y - side.y), Vector3(p1.x + side.x, y1, p1.y + side.y), col)
+			_tri_up(k, Vector3(p0.x - side.x, y0, p0.y - side.y), Vector3(p1.x + side.x, y1, p1.y + side.y), Vector3(p0.x + side.x, y0, p0.y + side.y), col)
+
+
+func _drape_tri(p0: Vector2, p1: Vector2, p2: Vector2, y_off: float, col: Color, mat: float) -> void:
+	var c := (p0 + p1 + p2) / 3.0
+	var k := _kit_at(c.x, c.y)
+	k.mat = mat
+	_tri_up(k, Vector3(p0.x, ground_mesh_y(p0.x, p0.y) + y_off, p0.y), Vector3(p1.x, ground_mesh_y(p1.x, p1.y) + y_off, p1.y),
+		Vector3(p2.x, ground_mesh_y(p2.x, p2.y) + y_off, p2.y), col)
+	k.mat = 0.0
 
 
 ## One area triangle on the ground: split until no edge is over 6 m when
@@ -1523,7 +1915,7 @@ func _road(r: Dictionary) -> void:
 			continue
 		var dir := (bb - a) / seg
 		var nrm := Vector2(-dir.y, dir.x)
-		var pieces := maxi(1, int(ceil(seg / (4.0 if L.terrain.is_empty() else 2.0))))
+		var pieces := maxi(1, int(ceil(seg / (4.0 if L.terrain.is_empty() or _plane_along(a, bb, nrm * hw) else 2.0))))
 		for s in pieces:
 			var p0 := a + dir * (seg * float(s) / float(pieces))
 			var p1 := a + dir * (seg * float(s + 1) / float(pieces))
@@ -1548,15 +1940,39 @@ func _road(r: Dictionary) -> void:
 			while sd < seg - 2.0:
 				var q0 := a + dir * sd
 				var q1 := a + dir * (sd + 1.6)
-				lift = gy(q0.x, q0.y)
-				_kit_at(q0.x, q0.y).ribbon(PackedVector2Array([q0, q1]), 0.18, 0.06, Color(0.95, 0.82, 0.35), 0.25, false)
-				lift = 0.0
+				if L.terrain.is_empty():
+					lift = gy(q0.x, q0.y)
+					_kit_at(q0.x, q0.y).ribbon(PackedVector2Array([q0, q1]), 0.18, 0.06, Color(0.95, 0.82, 0.35), 0.25, false)
+					lift = 0.0
+				else:
+					# on the draped asphalt (0.05 over the ground mesh), not under it
+					var kd := _kit_at(q0.x, q0.y)
+					var v0 := kd.vert_count()
+					drape_line(kd, PackedVector2Array([q0, q1]), 0.18, 0.062, Color(0.95, 0.82, 0.35))
+					kd.cu_emission_last(kd.vert_count() - v0, 0.25)
 				sd += 5.0
 	for i in range(1, pts.size() - 1):
 		var k3 := _kit_at(pts[i].x, pts[i].y)
 		k3.mat = MeshKit.M_ASPHALT
 		k3.disc(Vector3(pts[i].x, gy(pts[i].x, pts[i].y) + 0.051, pts[i].y), hw, asphalt, 16)
 		k3.mat = 0.0
+
+
+## Whether the ground mesh under a strip from a to b (half width `side`) is
+## near enough a plane along it that 4 m pieces lie on it (within 2.5 cm
+## at every 4 m piece's middle, centre and both edges); otherwise 2 m.
+func _plane_along(a: Vector2, b: Vector2, side: Vector2) -> bool:
+	var n := maxi(1, int(ceil(a.distance_to(b) / 4.0)))
+	for s in n:
+		var p0 := a.lerp(b, float(s) / float(n))
+		var p1 := a.lerp(b, float(s + 1) / float(n))
+		for o: Vector2 in [Vector2.ZERO, side, -side]:
+			var q0 := p0 + o
+			var q1 := p1 + o
+			var qm := (q0 + q1) * 0.5
+			if absf(ground_mesh_y(qm.x, qm.y) - (ground_mesh_y(q0.x, q0.y) + ground_mesh_y(q1.x, q1.y)) * 0.5) > 0.025:
+				return false
+	return true
 
 
 const PATH_COLORS := {
@@ -1668,7 +2084,8 @@ static func _v3(p: Vector2, y: float) -> Vector3:
 
 ## A point `y` above the ground at p (draped surfaces: roads, paths, areas).
 func _gv(p: Vector2, y: float) -> Vector3:
-	return Vector3(p.x, grid_y(L, p.x, p.y) + y, p.y)
+	# on the ground mesh itself (roads, walks and verges follow the lawn)
+	return Vector3(p.x, (ground_mesh_y(p.x, p.y) if not L.terrain.is_empty() else grid_y(L, p.x, p.y)) + y, p.y)
 
 
 ## A horizontal quad facing up whatever the corner order.

@@ -141,9 +141,10 @@ func with(m: float, p: float = 0.0) -> MeshKit:
 
 ## Raw smooth triangle with a colour (incl. alpha) and uv per corner.
 func tri_full(a: Vector3, b: Vector3, c: Vector3, na: Vector3, nb: Vector3, nc: Vector3, ca: Color, cb: Color, cc: Color, ua: Vector2, ub: Vector2, uc: Vector2) -> void:
-	_v.append(a)
-	_v.append(b)
-	_v.append(c)
+	var up := Vector3(0.0, lift, 0.0)
+	_v.append(a + up)
+	_v.append(b + up)
+	_v.append(c + up)
 	_n.append(na)
 	_n.append(nb)
 	_n.append(nc)
@@ -167,9 +168,10 @@ func tri(a: Vector3, b: Vector3, c: Vector3, col: Color, emis: float = 0.0, sway
 		nn = -nn.normalized()
 	# inlined _push (hot path)
 	var uvv := Vector2(mat, param)
-	_v.append(a)
-	_v.append(b)
-	_v.append(c)
+	var up := Vector3(0.0, lift, 0.0)
+	_v.append(a + up)
+	_v.append(b + up)
+	_v.append(c + up)
 	_n.append(nn)
 	_n.append(nn)
 	_n.append(nn)
@@ -183,14 +185,47 @@ func tri(a: Vector3, b: Vector3, c: Vector3, col: Color, emis: float = 0.0, sway
 	_count += 1
 
 
+## Flat, up-facing triangles in one batch (pts: three corners each, already
+## wound to face up), one colour: what a draped area's whole ground cells
+## are, appended in bulk.
+func up_tris(pts: PackedVector3Array, col: Color) -> void:
+	var n := pts.size() - pts.size() % 3
+	if n == 0:
+		return
+	var at := _v.size()
+	_v.append_array(pts.slice(0, n))
+	if lift != 0.0:
+		var up := Vector3(0.0, lift, 0.0)
+		for i in range(at, at + n):
+			_v[i] += up
+	var nn := PackedVector3Array()
+	nn.resize(n)
+	nn.fill(Vector3.UP)
+	_n.append_array(nn)
+	var cc := PackedColorArray()
+	cc.resize(n)
+	cc.fill(col)
+	_c.append_array(cc)
+	var cu := PackedFloat32Array()
+	cu.resize(n * 2)
+	cu.fill(0.0)
+	_cu.append_array(cu)
+	var uu := PackedVector2Array()
+	uu.resize(n)
+	uu.fill(Vector2(mat, param))
+	_uv.append_array(uu)
+	_count += n / 3
+
+
 ## Smooth-shaded triangle: a normal and a colour per corner.
 func tri_n(a: Vector3, b: Vector3, c: Vector3, na: Vector3, nb: Vector3, nc: Vector3, ca: Color, cb: Color, cc: Color, emis: float = 0.0, sway_a: float = 0.0, sway_b: float = 0.0, sway_c: float = 0.0) -> void:
 	if (b - a).cross(c - a).length_squared() < 1e-12:
 		return
 	var uvv := Vector2(mat, param)
-	_v.append(a)
-	_v.append(b)
-	_v.append(c)
+	var up := Vector3(0.0, lift, 0.0)
+	_v.append(a + up)
+	_v.append(b + up)
+	_v.append(c + up)
 	_n.append(na)
 	_n.append(nb)
 	_n.append(nc)

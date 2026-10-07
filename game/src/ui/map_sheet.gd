@@ -38,7 +38,10 @@ static func open(screen: Screen, current: String, editable: bool, on_pick: Calla
 	var vis := screen.get_viewport().get_visible_rect().size
 	var sm := UIKit.safe_margins(screen.get_viewport())
 	var avail := vis.x - sm.position.x - sm.size.x - 64.0
-	var ids: Array[String] = CampusMaps.ids() if editable else [CampusMaps.sanitize(current)]
+	# the host's choice alone for a guest (read-only)
+	var ids: Array[String] = CampusMaps.ids()
+	if not editable:
+		ids = [CampusMaps.sanitize(current)] as Array[String]
 	# two cards side by side where they fit at a readable size; otherwise
 	# one above the other in a scroll (never two tiny cards)
 	var side_by_side := ids.size() == 1 or avail >= 2.0 * 420.0 + 24.0
