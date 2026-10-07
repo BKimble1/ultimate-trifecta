@@ -90,14 +90,27 @@ def main():
         row.append(("%s waits, %s ms" % (fmt(vals), fmt(ms))) if vals else "(searched on the main thread)")
     print("| main thread waited for a worker search | %s |" % " | ".join(row))
     print("| worst-15 frames not explained by any section | %s |" % " | ".join(fmt([unexplained(r) for r in data[s]]) for s in sets))
-    # each round's start: the scene's size and its loading (every round of every run)
-    for key, label in (("nodes", "nodes in a round"), ("static_mb", "static memory MB"),
-                       ("collision_shapes", "host collision shapes"), ("prepare_ms", "round prepares in ms"),
-                       ("prep_frames", "loading frames"), ("prep_longest", "longest loading job ms")):
-        row = []
-        for s in sets:
-            vals = [float(rs[key]) for r in data[s] for rs in r.get("round_starts", []) if rs.get(key) is not None]
-            row.append(fmt(vals))
+    # each round's start: the scene's size (every round of every run), and
+    # its loading: the first round builds the map cold, later rounds (the
+    # rematches) reuse it, so they are shown apart
+    def starts(s, key, which):
+        out = []
+        for r in data[s]:
+            for rs in r.get("round_starts", []):
+                v = rs.get(key)
+                if v is None or not which(int(rs.get("round", 1))):
+                    continue
+                out.append(round(float(v[1] if isinstance(v, list) else v), 1))
+        return [int(v) for v in out] if out and all(v == int(v) for v in out) else out
+    rows = [("nodes", "nodes in a round", lambda n: True), ("static_mb", "static memory MB", lambda n: True),
+            ("collision_shapes", "host collision shapes", lambda n: True),
+            ("prepare_ms", "first round prepares in ms (cold)", lambda n: n == 1),
+            ("prep_frames", "first round loading frames", lambda n: n == 1),
+            ("prep_longest", "first round longest loading job ms", lambda n: n == 1),
+            ("prepare_ms", "later rounds prepare in ms (kept map)", lambda n: n > 1),
+            ("prep_longest", "later rounds longest loading job ms", lambda n: n > 1)]
+    for key, label, which in rows:
+        row = [fmt(starts(s, key, which)) for s in sets]
         if any(x != "-" for x in row):
             print("| %s | %s |" % (label, " | ".join(row)))
     # RENDER=1 runs: one sample a second while playing (software rendered: counts, not timing)
