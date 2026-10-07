@@ -90,6 +90,24 @@ def main():
         row.append(("%s waits, %s ms" % (fmt(vals), fmt(ms))) if vals else "(searched on the main thread)")
     print("| main thread waited for a worker search | %s |" % " | ".join(row))
     print("| worst-15 frames not explained by any section | %s |" % " | ".join(fmt([unexplained(r) for r in data[s]]) for s in sets))
+    # each round's start: the scene's size and its loading (every round of every run)
+    for key, label in (("nodes", "nodes in a round"), ("static_mb", "static memory MB"),
+                       ("collision_shapes", "host collision shapes"), ("prepare_ms", "round prepares in ms"),
+                       ("prep_frames", "loading frames"), ("prep_longest", "longest loading job ms")):
+        row = []
+        for s in sets:
+            vals = [float(rs[key]) for r in data[s] for rs in r.get("round_starts", []) if rs.get(key) is not None]
+            row.append(fmt(vals))
+        if any(x != "-" for x in row):
+            print("| %s | %s |" % (label, " | ".join(row)))
+    # RENDER=1 runs: one sample a second while playing (software rendered: counts, not timing)
+    for key, label in (("draw", "draw calls a frame (llvmpipe)"), ("prims", "primitives a frame (llvmpipe)")):
+        row = []
+        for s in sets:
+            vals = [float(x[key]) for r in data[s] for x in r.get("render", [])]
+            row.append(("%.0f (p95 %.0f)" % (statistics.median(vals), sorted(vals)[int(0.95 * (len(vals) - 1))])) if vals else "-")
+        if any(x != "-" for x in row):
+            print("| %s | %s |" % (label, " | ".join(row)))
 
 
 if __name__ == "__main__":
