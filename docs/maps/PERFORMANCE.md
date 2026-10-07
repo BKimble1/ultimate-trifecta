@@ -63,7 +63,27 @@ LAKESIDE_TABLE
 
 ## Draw cost (llvmpipe, counts only)
 
-DRAW_TABLE
+One round per build, sampled once a second while playing. The camera is the game's, so it follows
+whatever the local bot does, and the frames are not matched views: compare the medians loosely.
+The scenery alone, from fixed cameras, is in the before/after camera table, under "Evidence" in
+`HANDOFF.md`.
+
+| | Draw calls: median (p95) | Primitives: median (p95) | Objects drawn: median |
+|---|---|---|---|
+| Moonbrook, 2.0 (`66e7575`) | 257 (284) | 375k (424k) | 364 |
+| Moonbrook, this pass | 229 (279) | 241k (348k) | 354 |
+| Lakeside, flat ground (`f4ae758`) | 301 (331) | 327k (492k) | 396 |
+| Lakeside, this pass | 318 (348) | 412k (528k) | 417 |
+
+- **Lakeside:** about 6% more draw calls and 26% more primitives than the flat-ground build. The
+  extra primitives come from:
+  - terrain-following ground and paving;
+  - stairs and foundations;
+  - the parked fleet (multimeshes);
+  - the understory.
+- **Moonbrook:** the restored map draws less than 2.0 did.
+- **Sample windows:** the 2.0 run was a 30 s round (28 samples). A full 75 s round under llvmpipe
+  ran past this machine's 45-minute limit. The other runs were 75 s rounds (70–71 samples).
 
 ## What this pass changed for performance
 
