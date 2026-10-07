@@ -6,10 +6,11 @@ extends RefCounted
 ##
 ## Collision (build_collision, the height field) is authoritative and comes
 ## from the map's data alone, so host and guests build identical worlds:
-##   * a 1 m height field over the map's bounds, in square tiles (flat
-##     ground at y = 0, every water a basin at its floor with a bank: soft
-##     for ponds and the lake, hard behind a rim for fountains and pools, as
-##     the water's data says);
+##   * a 1 m height field over the map's bounds, in square tiles (the map's
+##     terrain, or flat ground at y = 0, with every water a basin cut down
+##     from the ground at its edge to its floor: a soft bank for ponds and
+##     the lake, a hard one behind a rim for fountains and pools, as the
+##     water's data says);
 ##   * buildings as convex prisms (the footprint minus genuine open passages
 ##     and the start dorms' interiors, which get a slab overhead);
 ##   * walls, hedges, fences, bollards (cart-only), tree trunks, lamp posts,
@@ -110,10 +111,10 @@ static func _compute_height_grid(layout: CampusLayout) -> PackedFloat32Array:
 	var b := layout.bounds
 	var w := int(b.size.x) + 1
 	var d := int(b.size.y) + 1
-	var data := PackedFloat32Array()
-	data.resize(w * d)
-	data.fill(0.0)
+	var data := _base_grid(layout, w, d)
 	for wt in layout.waters:
+		if bool(wt.get("flow", false)):
+			continue      # a sloping channel: the terrain bake cut its bed
 		var rect: Rect2 = (wt["rect"] as Rect2).grow(1.0)
 		var i0 := clampi(int(floor(rect.position.x - b.position.x)), 0, w - 1)
 		var j0 := clampi(int(floor(rect.position.y - b.position.y)), 0, d - 1)
@@ -145,10 +146,31 @@ static func _compute_height_grid(layout: CampusLayout) -> PackedFloat32Array:
 				var dd := dist[jj * rw + ii]
 				if dd <= 0.0:
 					continue
-				var y := fl * smoothstep(0.0, bank, dd)
+				# from the ground at the edge down to the floor
 				var idx := (j0 + jj) * w + (i0 + ii)
-				data[idx] = minf(data[idx], y)
+				var g0 := data[idx]
+				data[idx] = minf(g0, lerpf(g0, fl, smoothstep(0.0, bank, dd)))
 	return data
+
+
+## The ground before the water beds: the map's terrain on the bounds' 1 m
+## grid (the reference campus's terrain grid is exactly that grid), or flat.
+static func _base_grid(layout: CampusLayout, w: int, d: int) -> PackedFloat32Array:
+	var tr := layout.terrain
+	if tr.is_empty():
+		var flat := PackedFloat32Array()
+		flat.resize(w * d)
+		flat.fill(0.0)
+		return flat
+	var b := layout.bounds
+	if int(tr["w"]) == w and int(tr["d"]) == d and is_equal_approx(float(tr["x0"]), b.position.x) and is_equal_approx(float(tr["z0"]), b.position.y):
+		return (tr["h"] as PackedFloat32Array).duplicate()
+	var out := PackedFloat32Array()
+	out.resize(w * d)
+	for j in d:
+		for i in w:
+			out[j * w + i] = layout.terrain_y(b.position + Vector2(i, j))
+	return out
 
 
 ## x positions where a polygon's boundary crosses the horizontal line z,
@@ -339,13 +361,13 @@ func _buildings_recipe(from: int, to: int) -> void:
 func _rest_recipe() -> void:
 	var world := RB_WORLD
 	for s in L.walls:
-		_seg(world, s["a"], s["b"], 0.0, s["h"], s["t"])
+		_gseg(world, s["a"], s["b"], s["h"], s["t"], String(s.get("kind", "")) == "wall_retaining")
 	for s in L.hedges:
-		_seg(world, s["a"], s["b"], 0.0, s["h"], s["t"])
+		_gseg(world, s["a"], s["b"], s["h"], s["t"])
 	for s in L.fences:
-		_seg(world, s["a"], s["b"], 0.0, s["h"], 0.25)
+		_gseg(world, s["a"], s["b"], s["h"], 0.25)
 	for s in L.cart_blockers:
-		_seg(RB_BLOCK, s["a"], s["b"], 0.0, 1.6, 0.5)
+		_gseg(RB_BLOCK, s["a"], s["b"], 1.6, 0.5)
 	for t in L.trees:
 		if not bool(t.get("collide", true)):
 			continue
@@ -364,27 +386,28 @@ func _rest_recipe() -> void:
 		var c2 := CylinderShape3D.new()
 		c2.radius = 0.14
 		c2.height = 3.4
-		_add_shape(world, c2, Transform3D(Basis.IDENTITY, Vector3(lp.x, 1.7, lp.y)))
+		_add_shape(world, c2, Transform3D(Basis.IDENTITY, Vector3(lp.x, grid_y(L, lp.x, lp.y) + 1.7, lp.y)))
 	for bn in L.benches:
 		var bp: Vector2 = bn["pos"]
-		_box(world, Vector3(bp.x, 0.25, bp.y), Vector3(1.9, 0.5, 0.7), float(bn["rot"]))
+		_box(world, Vector3(bp.x, grid_y(L, bp.x, bp.y) + 0.25, bp.y), Vector3(1.9, 0.5, 0.7), float(bn["rot"]))
 	for so in L.solids:
 		var sp: Vector2 = so["pos"]
 		var ss: Vector3 = so["size"]
+		var gy := float(so.get("base_y", grid_y(L, sp.x, sp.y)))
 		if String(so.get("shape", "")) == "cyl":
 			var cy := CylinderShape3D.new()
 			cy.radius = ss.x * 0.5
 			cy.height = ss.y
-			_add_shape(world, cy, Transform3D(Basis.IDENTITY, Vector3(sp.x, float(so.get("y", ss.y * 0.5)), sp.y)))
+			_add_shape(world, cy, Transform3D(Basis.IDENTITY, Vector3(sp.x, gy + float(so.get("y", ss.y * 0.5)), sp.y)))
 			continue
-		_box(world, Vector3(sp.x, ss.y * 0.5, sp.y), ss, float(so["rot"]))
+		_box(world, Vector3(sp.x, gy + ss.y * 0.5, sp.y), ss, float(so["rot"]))
 	for pr in L.props:
 		if not bool(pr.get("collide", true)):
 			continue
 		var ps := CampusArchitecture.prop_collider(pr)
 		if ps != Vector3.ZERO:
 			var pp: Vector2 = pr["pos"]
-			_box(world, Vector3(pp.x, ps.y * 0.5, pp.y), ps, float(pr["rot"]))
+			_box(world, Vector3(pp.x, grid_y(L, pp.x, pp.y) + ps.y * 0.5, pp.y), ps, float(pr["rot"]))
 	# water rims (fountains, pools): a low wall around every hard edge
 	for wt in L.waters:
 		var rim := float(wt.get("rim_h", 0.0))
@@ -399,30 +422,35 @@ func _rest_recipe() -> void:
 				var c := cp[(i + 1) % n]
 				var dd := (c - a).normalized()
 				var out := Vector2(dd.y, -dd.x) * (th * 0.5)
-				_seg(world, a + out, c + out, 0.0, rim, th)
-	# the play boundary: invisible walls, tall
+				_gseg(world, a + out, c + out, rim, th)
+	# the play boundary: invisible walls, tall (from 2 m under the ground)
 	var bp2 := L.play_boundary
 	for i in bp2.size():
-		_seg(world, bp2[i], bp2[(i + 1) % bp2.size()], -2.0, 14.0, 1.0)
+		_gseg(world, bp2[i], bp2[(i + 1) % bp2.size()], 12.0, 1.0, false, 2.0)
 
 
 ## One building: convex prisms of what is solid at ground level (the
 ## footprint or its parts, minus open passages and a start dorm's interior),
 ## raised parts from their base, and slabs over the open spaces.
 func _building_collision(world: int, bd: Dictionary, dorm_id: String) -> void:
+	# heights are above the building's floor level; what stands on the ground
+	# reaches down past the lowest grade round it (a building on a slope has
+	# no gap under its low side)
+	var fl := float(bd.get("floor_y", 0.0))
+	var foot := minf(fl, float(bd.get("ground_min", fl))) - (0.2 if not L.terrain.is_empty() else 0.0)
 	for e in CampusArchitecture.portico_entrances(bd):
 		for cp in CampusArchitecture.portico_columns(e):
-			_box(world, Vector3(cp.x, 3.0, cp.y), Vector3(0.62, 6.0, 0.62))
+			_box(world, Vector3(cp.x, fl + 3.0, cp.y), Vector3(0.62, 6.0, 0.62))
 	for cl in CampusArchitecture.passage_columns(bd):
 		var cq: Vector2 = cl[0]
 		var cyl := CylinderShape3D.new()
 		cyl.radius = float(cl[1])
 		cyl.height = float(cl[2])
-		_add_shape(world, cyl, Transform3D(Basis.IDENTITY, Vector3(cq.x, float(cl[2]) * 0.5, cq.y)))
+		_add_shape(world, cyl, Transform3D(Basis.IDENTITY, Vector3(cq.x, fl + float(cl[2]) * 0.5, cq.y)))
 	if bd.get("landmark") != null and String(bd["landmark"]) == "bell_tower":
 		for so in CampusTower.solids(bd):
 			for cv in CampusData.convex_pieces(so["poly"]):
-				_prism(world, cv, float(so["base"]), float(so["h"]))
+				_prism(world, cv, foot if float(so["base"]) < 0.05 else fl + float(so["base"]), fl + float(so["h"]))
 		return
 	var holes: Array = []
 	for ps in bd["passages"]:
@@ -441,21 +469,22 @@ func _building_collision(world: int, bd: Dictionary, dorm_id: String) -> void:
 		if base < 1.0:
 			for piece in CampusData.subtract(part["poly"], holes):
 				for cv in CampusData.convex_pieces(piece):
-					_prism(world, cv, 0.0, h)
+					_prism(world, cv, foot, fl + h)
 		else:
 			for cv in CampusData.convex_pieces(part["poly"]):
-				_prism(world, cv, base, h)
+				_prism(world, cv, fl + base, fl + h)
 	var top := float(bd["h"])
 	for ps in bd["passages"]:
 		var clear := float(ps["clear"])
 		if top > clear + 0.05:
 			for cv in CampusData.convex_pieces(ps["poly"]):
-				_prism(world, cv, clear, top)
+				_prism(world, cv, fl + clear, fl + top)
 	if not g.is_empty():
 		var ceil_y := float(g["ceil"])
 		for ip in g["interior"]:
 			for cv in CampusData.convex_pieces(ip):
-				_prism(world, cv, ceil_y, maxf(top, ceil_y + 0.5))
+				_prism(world, cv, fl + ceil_y, fl + maxf(top, ceil_y + 0.5))
+		# lintels and furniture: CampusDorms places them on the floor already
 		for bx in g["boxes"]:
 			_box(world, bx[0], bx[1], float(bx[3]))
 
@@ -481,7 +510,7 @@ func _prism(body: int, poly: PackedVector2Array, y0: float, y1: float) -> void:
 ## build while some body owns it, so loading builds the tiles one per step
 ## on bodies of a private space that stay (ground_tile_step).  A tile
 ## shares its edge samples with its neighbours; samples beyond the map's
-## bounds lie at ground level.
+## bounds repeat its edge.
 const TILE_MAX := 298             # metres per tile at most (299 samples a side)
 
 
@@ -524,20 +553,16 @@ static func ground_tile_step(layout: CampusLayout, warm: bool = true) -> bool:
 	var d := int(b.size.y) + 1
 	var s := cells + 1
 	var data := PackedFloat32Array()
-	var zero := PackedFloat32Array()
-	zero.resize(s)
-	zero.fill(0.0)
 	var x0 := ti * cells
 	for zi in s:
-		var gz := tj * cells + zi
-		if gz >= d or x0 >= w:
-			data.append_array(zero)
-			continue
+		# samples beyond the bounds repeat the edge (out of play either way)
+		var gz := mini(tj * cells + zi, d - 1)
 		var x1 := mini(x0 + s, w)
-		var row := grid.slice(gz * w + x0, gz * w + x1)
+		var row := grid.slice(gz * w + mini(x0, w - 1), gz * w + x1) if x0 < w else PackedFloat32Array([grid[gz * w + w - 1]])
+		var last := row[row.size() - 1]
+		while row.size() < s:
+			row.append(last)
 		data.append_array(row)
-		if row.size() < s:
-			data.append_array(zero.slice(0, s - row.size()))
 	var hm := HeightMapShape3D.new()
 	hm.map_width = s
 	hm.map_depth = s
@@ -602,6 +627,34 @@ func _seg(body: int, a: Vector2, b: Vector2, y0: float, h: float, t: float) -> v
 	_box(body, Vector3(c.x, y0 + h * 0.5, c.y), Vector3(L2 + t, h, t), yaw)
 
 
+## A wall-like segment standing on the ground: on a slope it is split so
+## each piece's top stays `h` above the ground under it (within 0.25 m) and
+## its foot reaches below the lowest ground (`sink`).  A retaining wall
+## (`retaining`) tops out `h` above its higher side.
+func _gseg(body: int, a: Vector2, b: Vector2, h: float, t: float, retaining: bool = false, sink: float = 0.15) -> void:
+	if L.terrain.is_empty():
+		_seg(body, a, b, -sink if sink > 0.15 else 0.0, h + (sink if sink > 0.15 else 0.0), t)
+		return
+	var len := a.distance_to(b)
+	if len < 0.01:
+		return
+	var n := maxi(1, int(ceil(len / 4.0)))
+	var side := Vector2(-(b - a).y, (b - a).x).normalized() * (t * 0.5 + 0.6)
+	for k in n:
+		var p0 := a.lerp(b, float(k) / float(n))
+		var p1 := a.lerp(b, float(k + 1) / float(n))
+		var lo := INF
+		var hi := -INF
+		for q in [p0, p1, (p0 + p1) * 0.5]:
+			for o in ([Vector2.ZERO, side, -side] if retaining else [Vector2.ZERO]):
+				var gy := grid_y(L, (q as Vector2).x + (o as Vector2).x, (q as Vector2).y + (o as Vector2).y)
+				lo = minf(lo, gy)
+				hi = maxf(hi, gy)
+		# pieces overlap a little so a sloping line leaves no gap at a joint
+		var d := (p1 - p0).normalized() * (0.02 if n > 1 else 0.0)
+		_seg(body, p0 - d, p1 + d, lo - sink, (hi - lo) + h + sink, t)
+
+
 func _ramp(body: int, from: Vector3, to: Vector3, w: float) -> void:
 	var d := to - from
 	var len := d.length()
@@ -625,7 +678,20 @@ func _kit_at(x: float, z: float, foliage: bool = false, detail: bool = false) ->
 	var store := _foliage if foliage else (_detail if detail else _chunks)
 	if not store.has(key):
 		store[key] = MeshKit.new()
-	return store[key]
+	var k: MeshKit = store[key]
+	k.lift = lift
+	return k
+
+
+## The level the thing being drawn stands on (its floor or the ground under
+## it): every kit handed out (kit_at) lifts what is drawn by this, and
+## instanced windows too.  Set by whoever draws, back to 0 afterwards.
+var lift := 0.0
+
+
+## The ground (finished: water beds cut) at a point of this map.
+func gy(x: float, z: float) -> float:
+	return grid_y(L, x, z)
 
 
 ## One window instance (CampusArchitecture._window): the glass, scaled to the
@@ -638,6 +704,7 @@ func window_add(ctr: Vector3, right: Vector3, normal: Vector3, width: float, hei
 	if across.dot(right) < 0.0 and variant > 0:
 		variant = 3 - variant      # the curtain stays on the same side
 	right = across
+	ctr.y += lift
 	var xf := Transform3D(Basis(right * width, Vector3.UP * height * 2.0, normal), ctr + normal * 0.04)
 	_mm_add(_win, key, "glass%d" % variant, xf, room, Color(0, 0, 0, em))
 	if frames:
@@ -750,10 +817,23 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	for bd in L.buildings:
 		if dorm_buildings.has(String(bd["id"])):
 			continue      # DormArt builds it, with its open doorways
-		_add("building_" + String(bd["id"]), func() -> void: arch.building(bd))
+		# drawn at its floor level (its foundation reaches the ground: _plinth)
+		_add("building_" + String(bd["id"]), func() -> void:
+			lift = float(bd.get("floor_y", 0.0))
+			arch.building(bd)
+			lift = 0.0
+			_plinth(bd))
 	for id in CampusDorms.ids(L.map_id):
-		_add("dorm_" + id, func() -> void: dorm_art.exterior(id))
-		_add("dorm_inside_" + id, func() -> void: dorm_art.inside(id))
+		var dbd := L.building_by_id(String(CampusDorms.geometry(id).get("building", "")))
+		_add("dorm_" + id, func() -> void:
+			lift = float(dbd.get("floor_y", 0.0))
+			dorm_art.exterior(id)
+			lift = 0.0
+			_plinth(dbd))
+		_add("dorm_inside_" + id, func() -> void:
+			lift = float(dbd.get("floor_y", 0.0))
+			dorm_art.inside(id)
+			lift = 0.0)
 	_add("walls", arch.walls)
 	_add_sliced("hedges", L.hedges.size(), func(i: int) -> void: arch.hedges(i, i + 1))
 	_add_sliced("fences", L.fences.size(), func(i: int) -> void: arch.fences(i, i + 1))
@@ -776,6 +856,35 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_add("commit", _commit_next)
 	_add("multimesh", _mm_next)
 	_add("glow", _glow_mesh)
+
+
+## A building on sloping ground: its foundation wall from its floor down to
+## the lowest grade round it, in a stone tone, so its low side stands on the
+## ground (a basement storey's windows are the building's own; this is the
+## plain wall below them).  Nothing on flat ground.
+func _plinth(bd: Dictionary) -> void:
+	if bd.is_empty():
+		return
+	var fl := float(bd.get("floor_y", 0.0))
+	var lo := float(bd.get("ground_min", fl))
+	if fl - lo < 0.12:
+		return
+	var poly: PackedVector2Array = CampusData.ccw(bd["poly"])
+	var c := CampusData.centroid(poly)
+	var k := kit_at(c.x, c.y)
+	var col := Color(0.52, 0.49, 0.46)
+	k.mat = MeshKit.M_STONE
+	var n := poly.size()
+	for i in n:
+		var a := poly[i]
+		var b := poly[(i + 1) % n]
+		# the wall face, from just under the ground to the floor
+		var ga := minf(gy(a.x, a.y), fl) - 0.3
+		var gb := minf(gy(b.x, b.y), fl) - 0.3
+		var nrm := Vector3(b.y - a.y, 0, -(b.x - a.x)).normalized()
+		k.tri_n(Vector3(a.x, ga, a.y), Vector3(b.x, gb, b.y), Vector3(b.x, fl, b.y), nrm, nrm, nrm, col, col, col.lightened(0.05))
+		k.tri_n(Vector3(a.x, ga, a.y), Vector3(b.x, fl, b.y), Vector3(a.x, fl, a.y), nrm, nrm, nrm, col, col.lightened(0.05), col.lightened(0.05))
+	k.mat = 0.0
 
 
 func _add(step_name: String, f: Callable) -> void:
@@ -1335,18 +1444,40 @@ func _area(a: Dictionary) -> void:
 	if idx.is_empty():
 		idx = _fan(poly)
 	for t in range(0, idx.size(), 3):
-		var p0 := poly[idx[t]]
-		var p1 := poly[idx[t + 1]]
-		var p2 := poly[idx[t + 2]]
-		var c := (p0 + p1 + p2) / 3.0
-		var k := _kit_at(c.x, c.y)
-		k.mat = mat
-		_tri_up(k, _v3(p0, y), _v3(p1, y), _v3(p2, y), col)
-		k.mat = 0.0
+		_area_tri(poly[idx[t]], poly[idx[t + 1]], poly[idx[t + 2]], y, col, mat, 0)
 	if kind == "parking":
 		arch.lot_markings(a)
 	elif kind in ["field_turf", "field_grass", "court", "track"]:
 		arch.field_markings(a)
+
+
+## One area triangle on the ground: split until no edge is over 6 m when
+## the map has terrain (a lot or a field follows its grade), then draped.
+func _area_tri(p0: Vector2, p1: Vector2, p2: Vector2, y: float, col: Color, mat: float, depth: int) -> void:
+	if not L.terrain.is_empty() and depth < 8:
+		var l01 := p0.distance_to(p1)
+		var l12 := p1.distance_to(p2)
+		var l20 := p2.distance_to(p0)
+		var lm := maxf(l01, maxf(l12, l20))
+		if lm > 6.0:
+			if lm == l01:
+				var m := (p0 + p1) * 0.5
+				_area_tri(p0, m, p2, y, col, mat, depth + 1)
+				_area_tri(m, p1, p2, y, col, mat, depth + 1)
+			elif lm == l12:
+				var m := (p1 + p2) * 0.5
+				_area_tri(p0, p1, m, y, col, mat, depth + 1)
+				_area_tri(p0, m, p2, y, col, mat, depth + 1)
+			else:
+				var m := (p2 + p0) * 0.5
+				_area_tri(p0, p1, m, y, col, mat, depth + 1)
+				_area_tri(m, p1, p2, y, col, mat, depth + 1)
+			return
+	var c := (p0 + p1 + p2) / 3.0
+	var k := _kit_at(c.x, c.y)
+	k.mat = mat
+	_tri_up(k, _gv(p0, y), _gv(p1, y), _gv(p2, y), col)
+	k.mat = 0.0
 
 
 static func _fan(poly: PackedVector2Array) -> PackedInt32Array:
@@ -1372,14 +1503,14 @@ func _road(r: Dictionary) -> void:
 			continue
 		var dir := (bb - a) / seg
 		var nrm := Vector2(-dir.y, dir.x)
-		var pieces := maxi(1, int(ceil(seg / 4.0)))
+		var pieces := maxi(1, int(ceil(seg / (4.0 if L.terrain.is_empty() else 2.0))))
 		for s in pieces:
 			var p0 := a + dir * (seg * float(s) / float(pieces))
 			var p1 := a + dir * (seg * float(s + 1) / float(pieces))
 			var mid := (p0 + p1) * 0.5
 			var k := _kit_at(mid.x, mid.y)
 			k.mat = MeshKit.M_ASPHALT
-			_quad_up(k, _v3(p0 - nrm * hw, 0.05), _v3(p1 - nrm * hw, 0.05), _v3(p1 + nrm * hw, 0.05), _v3(p0 + nrm * hw, 0.05), asphalt)
+			_quad_up(k, _gv(p0 - nrm * hw, 0.05), _gv(p1 - nrm * hw, 0.05), _gv(p1 + nrm * hw, 0.05), _gv(p0 + nrm * hw, 0.05), asphalt)
 			if curb:
 				k.mat = MeshKit.M_STONE
 				for sg: float in [-1.0, 1.0]:
@@ -1389,20 +1520,22 @@ func _road(r: Dictionary) -> void:
 					var o1 := p1 + nrm * sg * (hw + 0.35)
 					if L.is_on_road(mid + nrm * sg * (hw + 1.0)) or _paved_area(mid + nrm * sg * (hw + 1.0)):
 						continue
-					_quad_up(k, _v3(e0, 0.12), _v3(e1, 0.12), _v3(o1, 0.12), _v3(o0, 0.12), kerb)
-					_quad_side(k, _v3(e0, 0.12), _v3(e1, 0.12), _v3(e1, 0.05), _v3(e0, 0.05), kerb.darkened(0.25), Vector3(-nrm.x * sg, 0, -nrm.y * sg))
+					_quad_up(k, _gv(e0, 0.12), _gv(e1, 0.12), _gv(o1, 0.12), _gv(o0, 0.12), kerb)
+					_quad_side(k, _gv(e0, 0.12), _gv(e1, 0.12), _gv(e1, 0.05), _gv(e0, 0.05), kerb.darkened(0.25), Vector3(-nrm.x * sg, 0, -nrm.y * sg))
 			k.mat = 0.0
 		if String(r.get("kind", "")) in ["street", "campus"] and hw >= 3.0:
 			var sd := 2.0
 			while sd < seg - 2.0:
 				var q0 := a + dir * sd
 				var q1 := a + dir * (sd + 1.6)
+				lift = gy(q0.x, q0.y)
 				_kit_at(q0.x, q0.y).ribbon(PackedVector2Array([q0, q1]), 0.18, 0.06, Color(0.95, 0.82, 0.35), 0.25, false)
+				lift = 0.0
 				sd += 5.0
 	for i in range(1, pts.size() - 1):
 		var k3 := _kit_at(pts[i].x, pts[i].y)
 		k3.mat = MeshKit.M_ASPHALT
-		k3.disc(Vector3(pts[i].x, 0.051, pts[i].y), hw, asphalt, 16)
+		k3.disc(Vector3(pts[i].x, gy(pts[i].x, pts[i].y) + 0.051, pts[i].y), hw, asphalt, 16)
 		k3.mat = 0.0
 
 
@@ -1451,13 +1584,13 @@ func _path(pth: Dictionary) -> void:
 			var mid := (p0 + p1) * 0.5
 			var k := _kit_at(mid.x, mid.y)
 			k.mat = mat
-			_quad_up(k, _v3(p0 - nrm * hin, PATH_Y), _v3(p1 - nrm * hin, PATH_Y), _v3(p1 + nrm * hin, PATH_Y), _v3(p0 + nrm * hin, PATH_Y), pc)
+			_quad_up(k, _gv(p0 - nrm * hin, PATH_Y), _gv(p1 - nrm * hin, PATH_Y), _gv(p1 + nrm * hin, PATH_Y), _gv(p0 + nrm * hin, PATH_Y), pc)
 			k.mat = 0.0
 			for sg: float in [-1.0, 1.0]:
 				var outer := mid + nrm * sg * (hw + 0.25)
 				if _paved(outer):
 					k.mat = mat
-					_quad_up(k, _v3(p0 + nrm * sg * hin, PATH_Y - 0.004), _v3(p1 + nrm * sg * hin, PATH_Y - 0.004), _v3(p1 + nrm * sg * hw, PATH_Y - 0.004), _v3(p0 + nrm * sg * hw, PATH_Y - 0.004), pc)
+					_quad_up(k, _gv(p0 + nrm * sg * hin, PATH_Y - 0.004), _gv(p1 + nrm * sg * hin, PATH_Y - 0.004), _gv(p1 + nrm * sg * hw, PATH_Y - 0.004), _gv(p0 + nrm * sg * hw, PATH_Y - 0.004), pc)
 					k.mat = 0.0
 					continue
 				var lp := lawn_packed(mid.x + nrm.x * sg * (hw + 0.6), mid.y + nrm.y * sg * (hw + 0.6))
@@ -1466,7 +1599,7 @@ func _path(pth: Dictionary) -> void:
 		var c := pts[i]
 		var k2 := _kit_at(c.x, c.y)
 		k2.mat = mat
-		k2.disc(Vector3(c.x, PATH_Y + 0.0015, c.y), hin, pc, 14)
+		k2.disc(Vector3(c.x, gy(c.x, c.y) + PATH_Y + 0.0015, c.y), hin, pc, 14)
 		k2.mat = 0.0
 		if not _paved_area(c) and not L.is_on_road(c, hw):
 			_verge_ring(k2, c, hin, hout, pc, lawn_packed(c.x + hw, c.y), vmat, VERGE_Y - 0.004, 14)
@@ -1513,6 +1646,11 @@ static func _v3(p: Vector2, y: float) -> Vector3:
 	return Vector3(p.x, y, p.y)
 
 
+## A point `y` above the ground at p (draped surfaces: roads, paths, areas).
+func _gv(p: Vector2, y: float) -> Vector3:
+	return Vector3(p.x, grid_y(L, p.x, p.y) + y, p.y)
+
+
 ## A horizontal quad facing up whatever the corner order.
 static func _quad_up(k: MeshKit, A: Vector3, B: Vector3, C: Vector3, D: Vector3, col: Color) -> void:
 	if ((B - A).cross(C - A)).y < 0.0:
@@ -1541,10 +1679,10 @@ func _verge_quad(k: MeshKit, a0: Vector2, b0: Vector2, b1: Vector2, a1: Vector2,
 	var ci := Color(pc.r, pc.g, pc.b, 0.0)
 	var co := Color(pc.r, pc.g, pc.b, 1.0)
 	var uv := Vector2(vmat, packed)
-	var A := _v3(a0, VERGE_Y)
-	var B := _v3(b0, VERGE_Y)
-	var C := _v3(b1, VERGE_Y)
-	var D := _v3(a1, VERGE_Y)
+	var A := _gv(a0, VERGE_Y)
+	var B := _gv(b0, VERGE_Y)
+	var C := _gv(b1, VERGE_Y)
+	var D := _gv(a1, VERGE_Y)
 	var up := Vector3.UP
 	if ((B - A).cross(C - A)).y < 0.0:
 		k.tri_full(A, B, C, up, up, up, ci, ci, co, uv, uv, uv)
@@ -1562,10 +1700,10 @@ func _verge_ring(k: MeshKit, c: Vector2, r_in: float, r_out: float, pc: Color, p
 	for i in seg:
 		var a0 := TAU * float(i) / float(seg)
 		var a1 := TAU * float(i + 1) / float(seg)
-		var i0 := Vector3(c.x + cos(a0) * r_in, y, c.y + sin(a0) * r_in)
-		var i1 := Vector3(c.x + cos(a1) * r_in, y, c.y + sin(a1) * r_in)
-		var o0 := Vector3(c.x + cos(a0) * r_out, y, c.y + sin(a0) * r_out)
-		var o1 := Vector3(c.x + cos(a1) * r_out, y, c.y + sin(a1) * r_out)
+		var i0 := _gv(Vector2(c.x + cos(a0) * r_in, c.y + sin(a0) * r_in), y)
+		var i1 := _gv(Vector2(c.x + cos(a1) * r_in, c.y + sin(a1) * r_in), y)
+		var o0 := _gv(Vector2(c.x + cos(a0) * r_out, c.y + sin(a0) * r_out), y)
+		var o1 := _gv(Vector2(c.x + cos(a1) * r_out, c.y + sin(a1) * r_out), y)
 		k.tri_full(i0, o1, o0, up, up, up, ci, co, co, uv, uv, uv)
 		k.tri_full(i0, i1, o1, up, up, up, ci, ci, co, uv, uv, uv)
 

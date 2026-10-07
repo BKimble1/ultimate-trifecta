@@ -87,7 +87,7 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 	home_doors = CampusDorms.geometry(home_dorm)["doors"]
 	spawn_map = opts.get("spawns", {}) if not (opts.get("spawns", {}) as Dictionary).is_empty() else default_spawns(roster)
 	for c in opts.get("coins", []):
-		coins.append({"id": String(c["id"]), "pos": Vector3(float(c["x"]), 0.0, float(c["z"])), "by": -1})
+		coins.append({"id": String(c["id"]), "pos": Vector3(float(c["x"]), CampusBuilder.grid_y(layout, float(c["x"]), float(c["z"])), float(c["z"])), "by": -1})
 	var builder := CampusBuilder.new(layout)
 	builder.build_collision(self)
 	_cap_shape = CapsuleShape3D.new()
@@ -101,7 +101,7 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 		add_child(c.body)
 		var cs: Dictionary = layout.cart_spawns[i % layout.cart_spawns.size()]
 		var cp: Vector2 = cs["pos"]
-		c.home = Vector3(cp.x, 0.05, cp.y)
+		c.home = Vector3(cp.x, CampusBuilder.grid_y(layout, cp.x, cp.y) + 0.05, cp.y)
 		c.home_yaw = PI
 		c.body.global_position = c.home
 		c.yaw = c.home_yaw
@@ -138,7 +138,7 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 			enabled.append(TC.GADGET_KEYS[key])
 	if not enabled.is_empty():
 		for spot in layout.gadget_spots:
-			pickups.append({"pos": Vector3(spot.x, 0.0, spot.y), "type": enabled[rng.randi() % enabled.size()], "respawn": 0.0})
+			pickups.append({"pos": Vector3(spot.x, CampusBuilder.grid_y(layout, spot.x, spot.y), spot.y), "type": enabled[rng.randi() % enabled.size()], "respawn": 0.0})
 	if bool(opts.get("pace", true)):
 		pace = RunnerPace.new()
 		pace.setup(self)       # starts the route fields on a worker (PaceFields)
@@ -153,9 +153,10 @@ static func spawn_point(lay: CampusLayout, dorm_id: String, role: int, index: in
 		var pads: Array = CampusDorms.geometry(dorm_id)["pads"]
 		var pd: Dictionary = pads[posmod(index, pads.size())]
 		var pp: Vector2 = pd["pos"]
-		return [Vector3(pp.x, 0.05, pp.y), float(pd["yaw"])]
+		# on the commons floor (the hall's floor level)
+		return [Vector3(pp.x, float(CampusDorms.geometry(dorm_id).get("floor", 0.0)) + 0.05, pp.y), float(pd["yaw"])]
 	var ps: Vector2 = lay.patrol_spawns[posmod(index, lay.patrol_spawns.size())]
-	return [Vector3(ps.x, 0.05, ps.y), PI]
+	return [Vector3(ps.x, CampusBuilder.grid_y(lay, ps.x, ps.y) + 0.05, ps.y), PI]
 
 
 ## slot -> pad / spawn index in roster order (the host publishes it in the
@@ -534,7 +535,8 @@ func _validate_exit_point(ep: Vector3, seat: Vector3 = Vector3.INF) -> Vector3:
 	if hit.is_empty():
 		return Vector3.INF
 	var ground: Vector3 = hit["position"]
-	if CampusBuilder.water_at(layout, Vector2(ground.x, ground.z)) >= 0 or ground.y < -0.3:
+	# never in a water, nor down in a basin's bank below the ground round it
+	if CampusBuilder.water_at(layout, Vector2(ground.x, ground.z)) >= 0 or ground.y < layout.terrain_y(Vector2(ground.x, ground.z)) - 0.3:
 		return Vector3.INF
 	if absf(ground.y - ep.y) > 1.2:
 		return Vector3.INF
@@ -705,7 +707,7 @@ func _respawn(p: SimPlayer) -> void:
 		if q.is_patrol():
 			patrol_pos.append(q.pos2())
 	var pad := RulesLogic.choose_pad(pads, patrol_pos)
-	p.body.global_position = Vector3(pad.x, 0.1, pad.y)
+	p.body.global_position = Vector3(pad.x, CampusBuilder.grid_y(layout, pad.x, pad.y) + 0.1, pad.y)
 	p.body.velocity = Vector3.ZERO
 	p.vel = Vector3.ZERO
 	Motor.set_body_enabled(p.body, true)
@@ -814,7 +816,7 @@ func _check_recover(p: SimPlayer) -> void:
 	if p.state != TC.PState.ACTIVE and p.state != TC.PState.STUMBLE and p.state != TC.PState.EXITING:
 		return
 	var pp := p.pos()
-	if pp.y > -6.0 and layout.bounds.grow(-0.5).has_point(Vector2(pp.x, pp.z)):
+	if pp.y > CampusBuilder.grid_y(layout, pp.x, pp.z) - 6.0 and layout.bounds.grow(-0.5).has_point(Vector2(pp.x, pp.z)):
 		return
 	# Out of bounds / fell through: return to a safe pad with no new progress.
 	var pads: Array = CampusDorms.geometry(home_dorm)["respawn"]
@@ -829,7 +831,7 @@ func _check_recover(p: SimPlayer) -> void:
 		if d < bd:
 			bd = d
 			pad = c
-	p.body.global_position = Vector3(pad.x, 0.2, pad.y)
+	p.body.global_position = Vector3(pad.x, CampusBuilder.grid_y(layout, pad.x, pad.y) + 0.2, pad.y)
 	p.vel = Vector3.ZERO
 	p.body.velocity = Vector3.ZERO
 	p.clear_history()
@@ -906,7 +908,7 @@ func _toss_landing(from: Vector3, dir: Vector3, dist: float) -> Vector3:
 	var down := space_state().intersect_ray(PhysicsRayQueryParameters3D.create(end + Vector3(0, 2, 0), end - Vector3(0, 6, 0), TC.L_WORLD))
 	if not down.is_empty():
 		return down["position"]
-	return Vector3(end.x, 0.0, end.z)
+	return Vector3(end.x, CampusBuilder.grid_y(layout, end.x, end.z), end.z)
 
 
 func _bomb_assist(from: Vector3, aim: Vector3) -> Vector3:

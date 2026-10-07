@@ -34,7 +34,7 @@ extends RefCounted
 ## Geometry version: part of every round's configuration.  Bump it with ANY
 ## change to a dorm's interior, doors, pads or thresholds (a client with
 ## other geometry is refused rather than simulating a different building).
-const VERSION := 3
+const VERSION := 4
 
 const WALL_T := 0.5      # default outer wall thickness at a door
 const CART_KEEP_M := 7.0  # carts are held this far from a start hall's doors
@@ -44,7 +44,10 @@ const DOOR_H := 3.0      # opening height (lintel above)
 const CEIL := 4.6        # default commons ceiling
 ## Threshold: the line across the door at the wall's inner face.  A runner's
 ## centre must cross it inward within this half-width at a feet height
-## inside FINISH_Y.
+## inside FINISH_Y above the door's floor ("floor_y": the hall's floor
+## level on a map with terrain; 0 on a flat one).  The rule is the same at
+## any floor height: walking under a raised porch or below a raised room
+## never counts.
 const THRESH_HALF_W := 1.5
 const FINISH_Y := Vector2(-0.5, 1.6)
 ## A crossing longer than this in one tick is a teleport, never a finish.
@@ -153,7 +156,8 @@ static func pick(map_id: String, seed_v: int, previous: String) -> String:
 ##   pads       [{pos, yaw, door}] runner spawn pads inside, facing an exit
 ##   respawn    [Vector2] pre-first-stamp return pads, one inside each door
 ##   cart_lines [[a, b]] cart-only blockers across every door opening
-##   ceil, h    ceiling of the commons, building height
+##   ceil, h    ceiling of the commons, building height (above the floor)
+##   floor      the floor level (y) of the commons and every door
 static func geometry(id: String) -> Dictionary:
 	if _geo.has(id):
 		return _geo[id]
@@ -168,6 +172,10 @@ static func geometry(id: String) -> Dictionary:
 static func _build(d: Dictionary) -> Dictionary:
 	var data := CampusMaps.data(String(d["map"]))
 	var bld := data.item(String(d.get("building", "")))
+	# the hall's floor level (the terrain bake's, like the building's own)
+	var fy := 0.0
+	if not data.terrain.is_empty():
+		fy = float((((data.terrain["meta"] as Dictionary).get("floors", {}) as Dictionary).get(String(d.get("building", "")), {}) as Dictionary).get("floor", 0.0))
 	var footprint: PackedVector2Array = CampusData.ccw(bld.get("footprint", PackedVector2Array()))
 	var h := float(d.get("h", bld.get("h", 10.0)))
 	var ceil_y := float(d.get("ceil", CEIL))
@@ -197,10 +205,10 @@ static func _build(d: Dictionary) -> Dictionary:
 			inside.append(CampusData.ccw(PackedVector2Array([line_p - tg * hw, line_p + tg * hw, o1 + tg * hw, o1 - tg * hw])))
 		doors.append({"id": String(sp.get("id", "door%d" % i)), "name": String(sp.get("name", "Door")), "dorm": String(d["id"]),
 			"pos": p, "normal": n, "line_p": line_p, "n_in": n_in, "tangent": tg, "half_w": THRESH_HALF_W,
-			"approach": p + n * 2.5, "inside": line_p + n_in * 2.0, "w": w, "wall_t": t})
+			"approach": p + n * 2.5, "inside": line_p + n_in * 2.0, "w": w, "wall_t": t, "floor_y": fy})
 		# lintel over the opening, between the door height and the ceiling
 		var lc := p + n_in * (t * 0.5)
-		boxes.append([Vector3(lc.x, (DOOR_H + ceil_y) * 0.5, lc.y), Vector3(w + 0.2, ceil_y - DOOR_H, t + 0.02), "lintel", atan2(n.x, n.y)])
+		boxes.append([Vector3(lc.x, fy + (DOOR_H + ceil_y) * 0.5, lc.y), Vector3(w + 0.2, ceil_y - DOOR_H, t + 0.02), "lintel", atan2(n.x, n.y)])
 	for cpoly in d.get("corridors", []):
 		var cp := CampusData.ccw(CampusData.to_poly(cpoly) if cpoly is Array else cpoly)
 		if cp.size() >= 3:
@@ -213,9 +221,9 @@ static func _build(d: Dictionary) -> Dictionary:
 	for f in d.get("furniture", []):
 		var fp := CampusLayout._v2(f.get("p", [0, 0]))
 		var fs: Array = f.get("size", [1, 0.8, 1])
-		var fy := deg_to_rad(float(f.get("yaw", 0.0)))
-		boxes.append([Vector3(fp.x, float(fs[1]) * 0.5, fp.y), Vector3(float(fs[0]), float(fs[1]), float(fs[2])), String(f.get("kind", "furniture")), fy])
-		foot.append(_obox(fp, Vector2(float(fs[0]), float(fs[2])), fy))
+		var fyaw := deg_to_rad(float(f.get("yaw", 0.0)))
+		boxes.append([Vector3(fp.x, fy + float(fs[1]) * 0.5, fp.y), Vector3(float(fs[0]), float(fs[1]), float(fs[2])), String(f.get("kind", "furniture")), fyaw])
+		foot.append(_obox(fp, Vector2(float(fs[0]), float(fs[2])), fyaw))
 	var pads := _pads(room, doors, d.get("pads", []), foot.slice(solid.size()))
 	var respawn: Array = []
 	for dr in doors:
@@ -240,7 +248,7 @@ static func _build(d: Dictionary) -> Dictionary:
 			prev = q
 	return {"id": String(d["id"]), "map": String(d["map"]), "building": String(d.get("building", "")), "room": room, "interior": interior,
 		"footprint": footprint, "solid": solid, "boxes": boxes, "foot": foot, "doors": doors, "pads": pads,
-		"respawn": respawn, "cart_lines": cart_lines, "ceil": ceil_y, "h": h, "inside": _merge(inside),
+		"respawn": respawn, "cart_lines": cart_lines, "ceil": ceil_y, "h": h, "floor": fy, "inside": _merge(inside),
 		"room_rect": CampusData.bounds(room)}
 
 
@@ -309,7 +317,8 @@ static func in_room(id: String, p: Vector3, margin: float = 0.0) -> bool:
 	var g := geometry(id)
 	if g.is_empty():
 		return false
-	if p.y >= float(g["ceil"]) - 1.0 or p.y <= -1.0:
+	var y := p.y - float(g.get("floor", 0.0))
+	if y >= float(g["ceil"]) - 1.0 or y <= -1.0:
 		return false
 	# the room and every hallway past a door's threshold (a long entrance
 	# hall is as much "home" as the lounge it leads to)
@@ -363,7 +372,7 @@ static func crosses(door: Dictionary, a: Vector3, b: Vector3) -> bool:
 	var at := a2.lerp(b2, t)
 	if absf(at.dot(tg)) > float(door["half_w"]):
 		return false
-	var y := lerpf(a.y, b.y, t)
+	var y := lerpf(a.y, b.y, t) - float(door.get("floor_y", 0.0))
 	return y >= FINISH_Y.x and y <= FINISH_Y.y
 
 
@@ -373,7 +382,7 @@ static func geometry_hash(id: String) -> String:
 	var g := geometry(id)
 	if g.is_empty():
 		return ""
-	var parts := PackedStringArray([str(VERSION), id, "%.3f" % float(g["ceil"])])
+	var parts := PackedStringArray([str(VERSION), id, "%.3f" % float(g["ceil"]), "%.3f" % float(g.get("floor", 0.0))])
 	for poly in g["interior"]:
 		var s := PackedStringArray()
 		for p in poly:

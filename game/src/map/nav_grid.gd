@@ -40,6 +40,7 @@ const PHASES := [["_r_setup", 0, 2], ["_r_setup", 1, 2],
 	["_r_lines", 0, 3], ["_r_lines", 1, 3], ["_r_lines", 2, 3],
 	["_r_points", 0, 2], ["_r_points", 1, 2],
 	["_r_waters", 0, 2], ["_r_waters", 1, 2],
+	["_r_slopes", 0, 2], ["_r_slopes", 1, 2],
 	["_r_dorms", 0, 1],
 	["_r_edges", 0, 1]]
 var _phase := 0
@@ -395,6 +396,27 @@ func _r_waters(part: int, parts: int) -> void:
 		for poly in w["polys"]:
 			_solid_poly(foot, poly, FOOT_INF + rim + 0.1)
 			_solid_poly(cart, poly, CART_INF + 0.5)
+
+
+## Ground too steep to walk (or drive) on a map with terrain: cells whose
+## steepest 1 m step is beyond the capsule's 50 degree floor limit (with a
+## margin: tan 42) are solid on foot, beyond the cart's 35 degrees (tan 29)
+## for carts.  The terrain bake lists them (terrain.json "steep", on this
+## grid's 2 m cells), so loading reads a short list instead of scanning the
+## whole ground.  Stairs and ramps have their own colliders above the ground.
+func _r_slopes(part: int, parts: int) -> void:
+	if layout.terrain.is_empty():
+		return
+	var st: Dictionary = (layout.terrain["meta"] as Dictionary).get("steep", {})
+	if st.is_empty() or not is_equal_approx(float(st.get("cell", 0.0)), cell):
+		return
+	var key := "foot" if part == 0 else "cart"
+	var g: AStarGrid2D = foot if part == 0 else cart
+	var cells: Array = st.get(key, [])
+	for k in range(0, cells.size() - 1, 2):
+		var c := Vector2i(int(cells[k]), int(cells[k + 1]))
+		if c.x >= 0 and c.y >= 0 and c.x < dims.x and c.y < dims.y:
+			g.set_point_solid(c, true)
 
 
 ## Start dorms: their walls (footprint minus the open interior) and the

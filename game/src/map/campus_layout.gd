@@ -7,7 +7,12 @@ extends RefCounted
 ## navigation, route analysis, spawns and the maps are all generated from
 ## this one description so they cannot drift.  One layout per map
 ## (CampusMaps.layout); nothing here is shared between maps.
-## Coordinates: metres, +X east, +Z south (north is -Z). Ground is y = 0.
+## Coordinates: metres, +X east, +Z south (north is -Z), +Y up.  The ground
+## is the map's terrain (CampusData.terrain: the reference campus's
+## surveyed grade, y = 0 at the default start hall's front door) or flat at
+## y = 0 (Moonbrook College); terrain_y samples it.  Waters carry absolute
+## surface and floor levels, buildings a floor level ("floor_y") and the
+## grade round them ("ground_min"/"ground_max").
 ##
 ## Waters: the round's objective pool comes first (indices 0..5, in the order
 ## of the gameplay layer's "objective_pool"; the rules mark three of them per
@@ -33,6 +38,8 @@ var bounds := Rect2()
 ## the bots' navigation cell (m): NavGrid
 var nav_cell := 2.0
 var play_boundary := PackedVector2Array()
+## the map's ground before the water beds are cut (CampusData.terrain), {} flat
+var terrain: Dictionary = {}
 
 var buildings: Array[Dictionary] = []
 var waters: Array[Dictionary] = []
@@ -88,6 +95,7 @@ func _init(p_data: CampusData = null) -> void:
 	var md := CampusMaps.def(map_id)
 	bounds = md.get("bounds", Rect2(-720.0, -560.0, 1190.0, 1000.0))
 	nav_cell = float(md.get("nav_cell", 2.0))
+	terrain = data.terrain
 	_build_gameplay_frame()
 	_build_buildings()
 	_build_waters()
@@ -132,6 +140,38 @@ func _build_gameplay_frame() -> void:
 			coin_spots.append(_v2(p))
 	for it in _gp("landmark_label"):
 		landmarks.append({"name": String(it.get("label", "")), "pos": _v2(it.get("p", [0, 0]))})
+
+
+## The ground's height at p before any water bed is cut (bilinear between
+## the 1 m samples; 0 on a flat map or outside the terrain).  Placement in
+## the layout uses this; CampusBuilder.grid_y is the finished ground.
+func terrain_y(p: Vector2) -> float:
+	if terrain.is_empty():
+		return 0.0
+	var fx := p.x - float(terrain["x0"])
+	var fz := p.y - float(terrain["z0"])
+	var w := int(terrain["w"])
+	var d := int(terrain["d"])
+	if fx < 0.0 or fz < 0.0 or fx > float(w - 1) or fz > float(d - 1):
+		return 0.0
+	var i := mini(int(fx), w - 2)
+	var j := mini(int(fz), d - 2)
+	var u := fx - float(i)
+	var v := fz - float(j)
+	var h: PackedFloat32Array = terrain["h"]
+	var a := h[j * w + i]
+	var b := h[j * w + i + 1]
+	var c := h[(j + 1) * w + i]
+	var e := h[(j + 1) * w + i + 1]
+	return lerpf(lerpf(a, b, u), lerpf(c, e, u), v)
+
+
+## A level the terrain bake measured for this map (its "waters"/"floors"
+## tables), or {}.
+func _baked(table: String, id: String) -> Dictionary:
+	if terrain.is_empty():
+		return {}
+	return ((terrain["meta"] as Dictionary).get(table, {}) as Dictionary).get(id, {})
 
 
 static func _v3(p: Variant) -> Vector3:
@@ -180,7 +220,9 @@ func _build_buildings() -> void:
 				var pp2 := CampusData.ccw(pg) if bool(ps.get("exact", false)) else snap_to_outline(CampusData.ccw(pg), poly)
 				passages.append({"poly": pp2, "floor": float(ps.get("floor", 0.0)), "clear": float(ps.get("clear", 3.0))})
 		var rect := CampusData.bounds(poly)
+		var fl := _baked("floors", String(it.get("id", "")))
 		buildings.append({
+			"floor_y": float(fl.get("floor", 0.0)), "ground_min": float(fl.get("ground_min", 0.0)), "ground_max": float(fl.get("ground_max", 0.0)),
 			"id": String(it.get("id", "")), "name": String(it.get("label", "")), "kind": String(it.get("kind", "")),
 			"status": String(it.get("status", "existing")), "poly": poly, "rect": rect,
 			"pos": rect.get_center(), "size": rect.size, "rot": 0.0, "h": h, "floors": int(it.get("floors", 0)),
@@ -266,6 +308,7 @@ func _water_from_items(ids: Array, pres: Dictionary) -> Dictionary:
 	var bank := -1.0
 	var given: Dictionary = {}
 	var pedestal: Array = []
+	var flow := false
 	for id in ids:
 		var it := data.item(String(id))
 		if it.is_empty():
@@ -274,8 +317,19 @@ func _water_from_items(ids: Array, pres: Dictionary) -> Dictionary:
 		wade = wade or bool(it.get("wade", false))
 		kind = String(it.get("kind", "pond"))
 		var dep: Array = KIND_DEPTH.get(kind, KIND_DEPTH["pond"])
-		surface = minf(surface, float(it.get("surface", dep[0])))
-		floor_y = minf(floor_y, float(it.get("floor", dep[1])))
+		var lvl := _baked("waters", String(id))
+		if not lvl.is_empty() and lvl.get("surface") == null:
+			# a sloping channel: its bed follows the ground (the bake cut it)
+			flow = true
+			surface = minf(surface, float(it.get("surface", dep[0])))
+			floor_y = minf(floor_y, float(it.get("floor", dep[1])))
+		elif not lvl.is_empty():
+			# the measured level (absolute, like the ground)
+			surface = minf(surface, float(lvl["surface"]))
+			floor_y = minf(floor_y, float(lvl["floor"]))
+		else:
+			surface = minf(surface, float(it.get("surface", dep[0])))
+			floor_y = minf(floor_y, float(it.get("floor", dep[1])))
 		rim_h = maxf(rim_h, float(it.get("rim_h", dep[2])))
 		rim_t = maxf(rim_t, float(it.get("rim_t", 0.5)))
 		edge = String(it.get("edge", edge))
@@ -322,7 +376,7 @@ func _water_from_items(ids: Array, pres: Dictionary) -> Dictionary:
 		"center": center if (radius > 0.0 and polys.size() == 1) else c, "radius": radius, "rect": rect,
 		"surface_y": surface, "floor_y": floor_y, "rim_h": maxf(0.0, rim_h), "rim_t": rim_t, "edge": edge,
 		"features": features, "objective": bool(pres.get("objective", false)), "bank": bank, "given": given,
-		"pedestal": pedestal,
+		"pedestal": pedestal, "flow": flow,
 		# a shallow decorative runnel: drawn, walked through, never a splash
 		"wade": wade and not bool(pres.get("objective", false)),
 		"color": _color(pres.get("color", [0.6, 0.8, 1.0])), "icon": String(pres.get("icon", "drop")),
@@ -525,7 +579,7 @@ func _build_water_points() -> void:
 		if given.has("exits"):
 			var ex: Array = []
 			for q in given["exits"]:
-				ex.append(Vector3(q.x, 0.0, q.y))
+				ex.append(Vector3(q.x, terrain_y(q), q.y))
 			w["exits"] = ex
 			w["jump_points"] = given.get("jump_points", [])
 			w["pads"] = given.get("pads", [])
@@ -552,14 +606,14 @@ func _build_water_points() -> void:
 				var pad: Vector2 = at + n * (out_d + 5.0)
 				if not _open_ground(e, 0.6) or near_deck(at, 1.5):
 					continue
-				exits.append(Vector3(e.x, 0.0, e.y))
+				exits.append(Vector3(e.x, terrain_y(e), e.y))
 				jumps.append(at - n * 0.8)
 				if _open_ground(pad, 1.0) and pads.size() < 10:
 					pads.append(pad)
 		if exits.is_empty():
 			# fall back to the label point's surroundings (never empty)
 			var c: Vector2 = w["center"]
-			exits.append(Vector3(c.x, 0.0, c.y + 4.0))
+			exits.append(Vector3(c.x, terrain_y(c + Vector2(0, 4)), c.y + 4.0))
 			jumps.append(c)
 		var reach := 0.0
 		for poly in w["polys"]:
@@ -718,7 +772,7 @@ func _build_vegetation_and_props() -> void:
 			# solid structures laid out by hand (the classic map's quarry
 			# boulders, ledge, ramp and dock)
 			"boulder":
-				rocks.append({"pos": Vector3(p.x, 0.0, p.y), "size": _v3(it.get("size", [1, 1, 1])), "rot": rot})
+				rocks.append({"pos": Vector3(p.x, terrain_y(p), p.y), "size": _v3(it.get("size", [1, 1, 1])), "rot": rot})
 			"platform":
 				platforms.append({"kind": "platform", "center": _v3(it.get("center", [0, 0, 0])), "size": _v3(it.get("size", [1, 0.3, 1])),
 					"yaw": rot, "dock": bool(it.get("dock", false))})

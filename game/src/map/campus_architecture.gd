@@ -1155,21 +1155,40 @@ func _background_building(bd: Dictionary) -> void:
 # ---------------------------------------------------------------------------
 # Walls, hedges, fences, bollards
 # ---------------------------------------------------------------------------
+## Low and retaining walls, in pieces of at most 4 m each standing on the
+## ground under it (a retaining wall tops out above its higher side, its
+## foot below its lower one, like its collider).
 func walls() -> void:
 	for s in L.walls:
 		var a: Vector2 = s["a"]
 		var b: Vector2 = s["b"]
 		var h := float(s["h"])
 		var t := float(s["t"])
-		var c := (a + b) * 0.5
-		var k := _k(c.x, c.y)
-		var d := b - a
-		var yaw := atan2(-d.y, d.x)
-		var col := Color(0.66, 0.60, 0.54) if String(s.get("kind", "")) != "wall_retaining" else Color(0.58, 0.56, 0.52)
-		k.mat = MeshKit.M_STONE
-		k.chamfer_box(Vector3(c.x, h * 0.5, c.y), Vector3(d.length() + t, h, t), col, 0.06, yaw)
-		k.chamfer_box(Vector3(c.x, h + 0.05, c.y), Vector3(d.length() + t + 0.08, 0.1, t + 0.12), col.lightened(0.12), 0.03, yaw)
-		k.mat = 0.0
+		var retaining := String(s.get("kind", "")) == "wall_retaining"
+		var col := Color(0.66, 0.60, 0.54) if not retaining else Color(0.58, 0.56, 0.52)
+		var len := a.distance_to(b)
+		var pieces := maxi(1, int(ceil(len / 4.0)))
+		var side := Vector2(-(b - a).y, (b - a).x).normalized() * (t * 0.5 + 0.6)
+		for i in pieces:
+			var p0 := a.lerp(b, float(i) / pieces)
+			var p1 := a.lerp(b, float(i + 1) / pieces)
+			var c := (p0 + p1) * 0.5
+			var lo := minf(B.gy(p0.x, p0.y), B.gy(p1.x, p1.y))
+			var hi := maxf(B.gy(p0.x, p0.y), B.gy(p1.x, p1.y))
+			if retaining:
+				for q in [c + side, c - side]:
+					lo = minf(lo, B.gy(q.x, q.y))
+					hi = maxf(hi, B.gy(q.x, q.y))
+			var hh := h + (hi - lo) + 0.15
+			B.lift = lo - 0.15
+			var k := _k(c.x, c.y)
+			var d := p1 - p0
+			var yaw := atan2(-d.y, d.x)
+			k.mat = MeshKit.M_STONE
+			k.chamfer_box(Vector3(c.x, hh * 0.5, c.y), Vector3(d.length() + (t if i == pieces - 1 else 0.02), hh, t), col, 0.06, yaw)
+			k.chamfer_box(Vector3(c.x, hh + 0.05, c.y), Vector3(d.length() + (t + 0.08 if i == pieces - 1 else 0.02), 0.1, t + 0.12), col.lightened(0.12), 0.03, yaw)
+			k.mat = 0.0
+	B.lift = 0.0
 
 
 func hedges(from: int, to: int) -> void:
@@ -1184,12 +1203,14 @@ func hedges(from: int, to: int) -> void:
 			var p0 := a.lerp(b, float(i) / pieces)
 			var p1 := a.lerp(b, float(i + 1) / pieces)
 			var c := (p0 + p1) * 0.5
+			B.lift = minf(B.gy(p0.x, p0.y), B.gy(p1.x, p1.y)) - 0.1
 			var kf := B.kit_at(c.x, c.y, true)
 			var d := p1 - p0
 			var tone := 0.92 + 0.12 * fposmod(c.x * 0.37 + c.y * 0.21, 1.0)
 			kf.mat = MeshKit.M_LEAF
-			kf.chamfer_box(Vector3(c.x, h * 0.5, c.y), Vector3(d.length() + 0.15, h, t), Color(0.15, 0.32, 0.18) * tone, 0.3, atan2(-d.y, d.x))
+			kf.chamfer_box(Vector3(c.x, (h + 0.1) * 0.5, c.y), Vector3(d.length() + 0.15, h + 0.1, t), Color(0.15, 0.32, 0.18) * tone, 0.3, atan2(-d.y, d.x))
 			kf.mat = 0.0
+	B.lift = 0.0
 
 
 func fences(from: int, to: int) -> void:
@@ -1202,44 +1223,60 @@ func fences(from: int, to: int) -> void:
 		if len < 0.1:
 			continue
 		var dir := (b - a) / len
-		var c := (a + b) * 0.5
-		var kd := _k(c.x, c.y, true)
-		var k := _k(c.x, c.y)
 		var yaw := atan2(-dir.y, dir.x)
 		var post_step := 2.4 if kind != "fence_construction" else 3.0
 		var posts := maxi(1, int(ceil(len / post_step)))
-		match kind:
-			"fence_chain":
-				k.mat = MeshKit.M_METAL
-				for i in posts + 1:
-					var p := a + dir * (len * float(i) / posts)
-					k.chamfer_box(Vector3(p.x, h * 0.5, p.y), Vector3(0.08, h, 0.08), Color(0.62, 0.64, 0.66), 0.02)
-				k.chamfer_box(Vector3(c.x, h - 0.03, c.y), Vector3(len, 0.06, 0.06), Color(0.62, 0.64, 0.66), 0.02, yaw)
-				# the mesh: a faint, see-through-looking panel
-				var n3 := Vector3(-dir.y, 0, dir.x)
-				_quad_facing(kd, Vector3(a.x, 0.05, a.y), Vector3(b.x, 0.05, b.y), Vector3(b.x, h, b.y), Vector3(a.x, h, a.y), Color(0.42, 0.45, 0.47, 0.35), n3)
-				_quad_facing(kd, Vector3(a.x, 0.05, a.y), Vector3(b.x, 0.05, b.y), Vector3(b.x, h, b.y), Vector3(a.x, h, a.y), Color(0.42, 0.45, 0.47, 0.35), -n3)
-			"fence_construction":
-				k.mat = MeshKit.M_PLAIN
-				for i in posts:
-					var p := a + dir * (len * (float(i) + 0.5) / posts)
-					k.chamfer_box(Vector3(p.x, h * 0.5, p.y), Vector3(len / posts - 0.1, h, 0.05), Color(0.78, 0.80, 0.80), 0.01, yaw)
-					k.chamfer_box(Vector3(p.x, 0.15, p.y), Vector3(0.5, 0.3, 0.6), Color(0.55, 0.22, 0.12), 0.05, yaw)
-			_:
-				k.mat = MeshKit.M_METAL
-				for i in posts + 1:
-					var p := a + dir * (len * float(i) / posts)
-					k.chamfer_box(Vector3(p.x, h * 0.5, p.y), Vector3(0.1, h, 0.1), IRON, 0.02)
-				for y: float in ([h - 0.12, 0.3] if kind != "rail" else [h - 0.05, h * 0.5]):
-					k.chamfer_box(Vector3(c.x, y, c.y), Vector3(len, 0.05, 0.05), IRON, 0.01, yaw)
-				if kind == "fence_iron":
-					var pick := maxi(1, int(len / 0.16))
-					for i in pick:
-						var p := a + dir * (len * (float(i) + 0.5) / pick)
-						kd.mat = MeshKit.M_METAL
-						kd.box(Vector3(p.x, h * 0.5, p.y), Vector3(0.025, h - 0.1, 0.025), IRON)
-		k.mat = 0.0
-		kd.mat = 0.0
+		# span by span between posts, each on the ground under it
+		var whole := [a, b, len, posts]
+		for sp in posts:
+			_fence_span(s, kind, h, whole, sp, dir, yaw)
+	B.lift = 0.0
+
+
+func _fence_span(_s: Dictionary, kind: String, h: float, whole: Array, sp: int, dir: Vector2, yaw: float) -> void:
+	var a0: Vector2 = whole[0]
+	var len0: float = whole[2]
+	var posts0: int = whole[3]
+	var a := a0 + dir * (len0 * float(sp) / posts0)
+	var b := a0 + dir * (len0 * float(sp + 1) / posts0)
+	var len := a.distance_to(b)
+	var c := (a + b) * 0.5
+	B.lift = minf(B.gy(a.x, a.y), B.gy(b.x, b.y))
+	var kd := _k(c.x, c.y, true)
+	var k := _k(c.x, c.y)
+	var posts := 1
+	match kind:
+		"fence_chain":
+			k.mat = MeshKit.M_METAL
+			for i in posts + (1 if sp == posts0 - 1 else 0):
+				var p := a + dir * (len * float(i) / posts)
+				k.chamfer_box(Vector3(p.x, h * 0.5, p.y), Vector3(0.08, h, 0.08), Color(0.62, 0.64, 0.66), 0.02)
+			k.chamfer_box(Vector3(c.x, h - 0.03, c.y), Vector3(len, 0.06, 0.06), Color(0.62, 0.64, 0.66), 0.02, yaw)
+			# the mesh: a faint, see-through-looking panel
+			var n3 := Vector3(-dir.y, 0, dir.x)
+			_quad_facing(kd, Vector3(a.x, 0.05, a.y), Vector3(b.x, 0.05, b.y), Vector3(b.x, h, b.y), Vector3(a.x, h, a.y), Color(0.42, 0.45, 0.47, 0.35), n3)
+			_quad_facing(kd, Vector3(a.x, 0.05, a.y), Vector3(b.x, 0.05, b.y), Vector3(b.x, h, b.y), Vector3(a.x, h, a.y), Color(0.42, 0.45, 0.47, 0.35), -n3)
+		"fence_construction":
+			k.mat = MeshKit.M_PLAIN
+			for i in posts:
+				var p := a + dir * (len * (float(i) + 0.5) / posts)
+				k.chamfer_box(Vector3(p.x, h * 0.5, p.y), Vector3(len / posts - 0.1, h, 0.05), Color(0.78, 0.80, 0.80), 0.01, yaw)
+				k.chamfer_box(Vector3(p.x, 0.15, p.y), Vector3(0.5, 0.3, 0.6), Color(0.55, 0.22, 0.12), 0.05, yaw)
+		_:
+			k.mat = MeshKit.M_METAL
+			for i in posts + (1 if sp == posts0 - 1 else 0):
+				var p := a + dir * (len * float(i) / posts)
+				k.chamfer_box(Vector3(p.x, h * 0.5, p.y), Vector3(0.1, h, 0.1), IRON, 0.02)
+			for y: float in ([h - 0.12, 0.3] if kind != "rail" else [h - 0.05, h * 0.5]):
+				k.chamfer_box(Vector3(c.x, y, c.y), Vector3(len, 0.05, 0.05), IRON, 0.01, yaw)
+			if kind == "fence_iron":
+				var pick := maxi(1, int(len / 0.16))
+				for i in pick:
+					var p := a + dir * (len * (float(i) + 0.5) / pick)
+					kd.mat = MeshKit.M_METAL
+					kd.box(Vector3(p.x, h * 0.5, p.y), Vector3(0.025, h - 0.1, 0.025), IRON)
+	k.mat = 0.0
+	kd.mat = 0.0
 
 
 func bollards(from: int, to: int) -> void:
@@ -1252,10 +1289,12 @@ func bollards(from: int, to: int) -> void:
 		var n := maxi(1, int(round(len / 1.5)))
 		for i in n + 1:
 			var p := a.lerp(b, float(i) / n)
+			B.lift = B.gy(p.x, p.y)
 			var kd := _k(p.x, p.y, true)
 			kd.mat = MeshKit.M_METAL
 			kd.revolve(Vector3(p.x, 0, p.y), PackedVector2Array([Vector2(0.11, 0), Vector2(0.11, 0.85), Vector2(0.09, 0.95), Vector2(0.02, 1.0)]), PackedColorArray([IRON, IRON, IRON.lightened(0.2), IRON]), 8)
 			kd.mat = 0.0
+	B.lift = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -1266,6 +1305,7 @@ func bollards(from: int, to: int) -> void:
 func lamps(from: int, to: int) -> void:
 	for lp in L.lamps.slice(from, mini(to, L.lamps.size())):
 		var tall := L.is_on_road(lp, 2.0)
+		B.lift = B.gy(lp.x, lp.y)
 		var kd := _k(lp.x, lp.y, true)
 		var k := _k(lp.x, lp.y)
 		k.mat = MeshKit.M_METAL
@@ -1283,15 +1323,19 @@ func lamps(from: int, to: int) -> void:
 		kd.chamfer_box(Vector3(lp.x, h + 0.28, lp.y), Vector3(0.46, 0.12, 0.46), IRON, 0.03)
 		kd.mat = 0.0
 		k.mat = 0.0
-		B.glow_disc(Vector3(lp.x, 0.08, lp.y), 5.5 if tall else 4.2)
+		B.glow_disc(Vector3(lp.x, B.lift + 0.08, lp.y), 5.5 if tall else 4.2)
+	B.lift = 0.0
 
 
 ## Benches, props, rocks: one step for all of them.
 func small_things() -> void:
 	for bn in L.benches:
+		B.lift = B.gy((bn["pos"] as Vector2).x, (bn["pos"] as Vector2).y)
 		_bench(bn["pos"], float(bn["rot"]))
 	for pr in L.props:
+		B.lift = B.gy((pr["pos"] as Vector2).x, (pr["pos"] as Vector2).y)
 		_prop(pr)
+	B.lift = 0.0
 	for r in L.rocks:
 		var rp: Vector3 = r["pos"]
 		var k := _k(rp.x, rp.z)

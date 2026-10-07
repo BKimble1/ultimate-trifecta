@@ -674,7 +674,8 @@ func _hop_obstacles(sim: MatchSim, p: SimPlayer, cmd: InputCmd) -> void:
 	var dir := Vector3(cmd.move.x, 0, cmd.move.y).normalized()
 	var base := p.pos()
 	var low := sim.space_state().intersect_ray(PhysicsRayQueryParameters3D.create(base + Vector3(0, 0.35, 0), base + Vector3(0, 0.35, 0) + dir * 1.3, TC.L_WORLD))
-	if low.is_empty():
+	# rising ground (a slope the capsule walks up) is no obstacle
+	if low.is_empty() or (low["normal"] as Vector3).y > 0.64:
 		return
 	var high := sim.space_state().intersect_ray(PhysicsRayQueryParameters3D.create(base + Vector3(0, 1.25, 0), base + Vector3(0, 1.25, 0) + dir * 1.6, TC.L_WORLD))
 	if high.is_empty():

@@ -24,6 +24,11 @@ var layers: Dictionary = {}
 var campus_hash := ""
 ## the map these layers are (CampusMaps id; set by CampusMaps.data)
 var map_id := ""
+## The map's ground (terrain.json + terrain.bin, baked by
+## tools/campus/terrain.py from a public bare-earth DEM), or {} for a flat
+## map: {"meta": Dictionary, "x0", "z0", "w", "d" (samples), "h":
+## PackedFloat32Array (metres, rows z then x)}.  Part of campus_hash.
+var terrain: Dictionary = {}
 ## convenience lookups
 var by_id: Dictionary = {}
 
@@ -60,7 +65,31 @@ func _init(dir: String = DIR) -> void:
 				if d.has("id"):
 					by_id[String(d["id"])] = d
 		layers[name] = out
+	_load_terrain(dir, ctx)
 	campus_hash = ctx.finish().hex_encode().substr(0, 16)
+
+
+func _load_terrain(dir: String, ctx: HashingContext) -> void:
+	var mp := dir + "terrain.json"
+	var bp := dir + "terrain.bin"
+	if not FileAccess.file_exists(mp) or not FileAccess.file_exists(bp):
+		return
+	var mraw := FileAccess.get_file_as_bytes(mp)
+	var braw := FileAccess.get_file_as_bytes(bp)
+	ctx.update("terrain".to_utf8_buffer())
+	ctx.update(mraw)
+	ctx.update(braw)
+	var meta: Variant = JSON.parse_string(mraw.get_string_from_utf8())
+	if not (meta is Dictionary):
+		return
+	var g: Dictionary = (meta as Dictionary).get("grid", {})
+	var w := int(g.get("w", 0))
+	var d := int(g.get("d", 0))
+	if w <= 0 or d <= 0 or braw.size() != w * d * 4:
+		push_error("terrain.bin doesn't match its grid")
+		return
+	var h := braw.to_float32_array()     # float32 LE metres (native: no script loop)
+	terrain = {"meta": meta, "x0": float(g.get("x0", 0.0)), "z0": float(g.get("z0", 0.0)), "w": w, "d": d, "h": h}
 
 
 func items(layer: String) -> Array:

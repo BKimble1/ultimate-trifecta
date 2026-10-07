@@ -28,8 +28,9 @@ func setup(dorm_id: String) -> void:
 		# the floor (0) to the lintel (1), so the glow is strongest low down
 		var mid: Vector2 = ((dr["pos"] as Vector2) + (dr["line_p"] as Vector2)) * 0.5
 		var tg: Vector2 = dr["tangent"]
-		var a := Vector3(mid.x - tg.x * hw, 0.02, mid.y - tg.y * hw)
-		var b := Vector3(mid.x + tg.x * hw, 0.02, mid.y + tg.y * hw)
+		var fy := float(dr.get("floor_y", 0.0)) + 0.02     # the door's floor
+		var a := Vector3(mid.x - tg.x * hw, fy, mid.y - tg.y * hw)
+		var b := Vector3(mid.x + tg.x * hw, fy, mid.y + tg.y * hw)
 		var n_out: Vector2 = dr["normal"]
 		var nrm := Vector3(n_out.x, 0, n_out.y)
 		for v in [[a, 0.0], [b, 0.0], [b + Vector3.UP * h, 1.0], [a, 0.0], [b + Vector3.UP * h, 1.0], [a + Vector3.UP * h, 1.0]]:
@@ -68,7 +69,7 @@ func setup(dorm_id: String) -> void:
 	_beacon.mesh = cm
 	_beacon.material_override = _beacon_mat
 	_beacon.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_beacon.position = Vector3(fp.x, 15.5, fp.y)
+	_beacon.position = Vector3(fp.x, float(front.get("floor_y", 0.0)) + 15.5, fp.y)
 	_beacon.visible = false
 	add_child(_beacon)
 

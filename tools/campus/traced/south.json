@@ -3079,7 +3079,7 @@
  ],
  "water": [
   {
-   "id": "bridge_pond",
+   "id": "bridge_pond_upper",
    "ref": "W02",
    "label": "Bridge Pond",
    "kind": "pond",
@@ -3120,6 +3120,61 @@
      -15,
      215
     ],
+    [
+     -17,
+     214.5
+    ],
+    [
+     -19.5,
+     212.5
+    ],
+    [
+     -19.5,
+     206
+    ],
+    [
+     -20.5,
+     203
+    ],
+    [
+     -20.5,
+     193
+    ],
+    [
+     -20,
+     185
+    ]
+   ],
+   "surface": -0.6,
+   "floor": -2.0,
+   "edge": "stone",
+   "rim_h": 0.0,
+   "features": [
+    {
+     "kind": "beach",
+     "note": "edge: large limestone boulders and stacked stone-block retaining walls with stepped seating along the plaza side (R240); natural grass banks elsewhere"
+    }
+   ],
+   "objective": false,
+   "ev": {
+    "src": [
+     "aerial2022",
+     "R240",
+     "R076",
+     "wayfinding2026"
+    ],
+    "date": "2022",
+    "conf": "high",
+    "note": "north lobe (~20 x 33 m) of the two-lobed pond, water edge traced on the 2022 aerial (dark smooth water mask, 8 px/m); the 2026 wayfinding draws the same two lobes. Split from the south lobe at the neck (2026-10): the USGS 2017-2020 DEM shows this lobe hydro-flattened about 4.9 m below the default hall's door and the south lobe on the slope below it, so the two cannot share one water level",
+    "open": "the neck between the lobes may be a culvert or a weir rather than open water"
+   }
+  },
+  {
+   "id": "bridge_pond_lower",
+   "ref": "W02",
+   "label": "Bridge Pond",
+   "kind": "pond",
+   "polygon": [
     [
      -17,
      214.5
@@ -3187,22 +3242,6 @@
     [
      -19.5,
      212.5
-    ],
-    [
-     -19.5,
-     206
-    ],
-    [
-     -20.5,
-     203
-    ],
-    [
-     -20.5,
-     193
-    ],
-    [
-     -20,
-     185
     ]
    ],
    "surface": -0.6,
@@ -3241,8 +3280,8 @@
     ],
     "date": "2022",
     "conf": "high",
-    "note": "two lobes (north ~20 x 33 m, south ~21 x 37 m) joined by a narrow neck under the bridge, water edge traced on the 2022 aerial (dark smooth water mask, 8 px/m); the 2026 wayfinding draws the same two lobes; a stream leaves the south lobe SW toward the lake (water/lake_creek)",
-    "open": "water level vs bank height unknown; the neck between the lobes may be a culvert rather than open water"
+    "note": "south lobe (~21 x 37 m) below the neck and the footbridge, water edge traced on the 2022 aerial; the stream (water/lake_creek) leaves it SW toward the lake. Its level is set just below its lowest bank (the 2017-2020 DEM predates its present form or shows its bed sloping): an inference, not a survey",
+    "open": "true water level; the weir or step between the lobes; whether the south lobe was regraded after 2020"
    }
   },
   {
@@ -4005,9 +4044,10 @@
     ],
     "date": "2022",
     "conf": "medium",
-    "note": "narrow stream in a wooded ravine from the bridge pond's south lobe SW to the lake's east arm (2022 aerial: a dark line between bare-tree crowns); width ~2 m assumed",
+    "note": "narrow stream in a wooded ravine from the bridge pond's south lobe SW to the lake's east arm (2022 aerial: a dark line between bare-tree crowns); width ~2 m assumed; it falls about 1.7 m to the lake (USGS DEM), so it is a shallow stream that follows its bed, waded, never a splash",
     "open": "true channel width and whether it carries water year-round unknown; crossings (culverts/footbridges) under the south-lot walk not verified"
-   }
+   },
+   "wade": true
   }
  ],
  "roads": [

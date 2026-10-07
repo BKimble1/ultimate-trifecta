@@ -1987,7 +1987,7 @@ func _update_beacons(_delta: float) -> void:
 func _build_pickups() -> void:
 	for spot in layout.gadget_spots:
 		var n := Node3D.new()
-		n.position = Vector3(spot.x, 0.9, spot.y)
+		n.position = Vector3(spot.x, CampusBuilder.grid_y(layout, spot.x, spot.y) + 0.9, spot.y)
 		add_child(n)
 		PropKit.init_meshes()
 		var box := MeshInstance3D.new()

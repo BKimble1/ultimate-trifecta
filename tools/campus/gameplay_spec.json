@@ -314,7 +314,8 @@
   {
    "id": "bridge_pond",
    "items": [
-    "bridge_pond"
+    "bridge_pond_upper",
+    "bridge_pond_lower"
    ],
    "name": "Bridge Pond",
    "short": "Bridge",

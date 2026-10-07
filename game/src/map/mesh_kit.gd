@@ -27,6 +27,11 @@ var _grid_end := 0
 ## material id / parameter for what is added next (world_common's table)
 var mat := 0.0
 var param := 0.0
+## Raises every vertex added through the shape helpers by this much (a
+## building drawn at its floor level, a prop on the ground under it; the
+## helpers stay in the thing's own frame).  Grid (ground) vertices are
+## absolute and never lifted.
+var lift := 0.0
 
 const M_PLAIN := 0.0
 const M_LAWN := 1.0
@@ -111,7 +116,7 @@ func bake_range(from: int, fn: Callable, max_y: float = INF) -> void:
 
 
 func _push(p: Vector3, n: Vector3, col: Color, emis: float, sway: float) -> void:
-	_v.append(p)
+	_v.append(Vector3(p.x, p.y + lift, p.z))
 	_n.append(n)
 	_c.append(col)
 	_cu.append(emis)
