@@ -127,44 +127,15 @@ different objective pool for North Hall; North Hall as an occasional "long route
 
 ## Performance
 
-These are this desktop container's numbers, never a phone's. No iPhone was available to this work, so
-device frame rate, GPU time, heat and memory pressure are unverified. They were measured before the
-last fixes: porticos, the chapel's roof and wings, facade bands and panels, and the water features.
-Those add a few hundred triangles per building and seven colliders (the footbridge and its two
-railings, and the docks).
+`docs/maps/PERFORMANCE.md` has the before/after measurements for both maps on one machine:
+- loading;
+- the frame-time tail;
+- scene size and memory;
+- draw counts.
 
-**Gameplay bench.** `tools/match_bench.sh`: three Practice rounds of 75 s, every slot bot-driven, 60 fps
-cap, seed 7, headless (CPU side). Two runs each, median (range):
-
-| | 2.0 release candidate (old map) | Rebuilt campus |
-|---|---|---|
-| Frame interval p50 | 16.66 ms | 16.66 ms |
-| Frame interval p95 | 17.21 ms | 17.51 ms |
-| Frame interval p99 | 18.07 ms | 18.68 ms (18.57–18.80) |
-| Frames over 33 ms (in 13,500) | 0 (0–1) | 6 (5–7) |
-| Simulation tick p99 | 2.73 ms | 3.47 ms |
-| Bots p99 | 1.09 ms | 1.44 ms |
-| Nodes in a round | 1,654 | 6,161 |
-| Static memory | 245–265 MB | 380–440 MB |
-
-The median frame is unchanged and the tail is about 0.5 ms higher. The long frames are rare (about one
-every 35 s of play, 34–91 ms) and no instrumented section explains them. The engine's own process and
-physics times for those frames are small. A likely cause is CPU contention from the much longer
-background work (path searches and pace fields on a grid 4 times the size) on a 4-core shared machine,
-but that is not proven. **Profile on a device before release.** Memory and node counts are up, mostly
-the 3,565 collision shapes (one node each) and the larger campus meshes.
-
-**Draw cost.** `campus_views.gd` prints what each view drew, campus only and software rendered. At
-player height, 43–144 draw calls and 52k–284k primitives per view. The old map's gameplay frames
-measured about 316 draws and 456k primitives (with characters and HUD), so this is not like for like.
-
-**Loading** (`test_loading`, this machine). A round prepares in about 3.6 s over about 350 frames. The
-longest single job is about 40 ms; it was 125 ms before this pass's fixes:
-- the ground height field is split into 16 tiles, built one per step and kept warm;
-- the height grid is computed on a worker;
-- the collision recipe is shared between rounds;
-- build steps are time-sliced;
-- the paved-area and shore-distance queries are indexed.
+It also gives each run's commit, seed, quality and camera. These are desktop numbers, never a
+phone's. Device frame rate, GPU time, heat and memory pressure are unverified. The figures that
+used to be in this section were for the flat-ground campus and are superseded.
 
 ## Walkthrough
 

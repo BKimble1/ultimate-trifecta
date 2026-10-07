@@ -33,7 +33,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 TEXT_EXT = {".gd", ".tscn", ".tres", ".json", ".cfg", ".md", ".txt", ".gdshader", ".gdshaderinc", ".csv", ".import", ".godot", ".plist", ".html"}
 IMG_EXT = {".png", ".jpg", ".jpeg", ".webp"}
-SCAN_DIRS = ["game", "docs/store", "docs/final", "docs/campus", "store"]
+SCAN_DIRS = ["game", "docs/store", "docs/final", "docs/campus", "docs/maps", "store"]
 SKIP_PARTS = {".godot", ".import", "tests", "tools"}
 
 

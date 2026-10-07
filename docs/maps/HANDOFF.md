@@ -75,6 +75,15 @@ its lower bank 0.17 m under the deck: more than a runner steps up).
   Its modelled stair and rooms stay.
 - Recomputed on the final terrain, stairs and cars.
 
+**Loading and between rounds** (`docs/maps/PERFORMANCE.md`).
+- **Leaving the results:** the round's collision bodies are now kept for the next round on the same
+  map. The frame leaving the results was 0.8 s on the campus; it is now about 0.26 s.
+- **Moonbrook's first load:** its art layout builds on a worker. It held one loading frame
+  90–167 ms.
+- **Stair height lookups:** stair heights come from a coarse index (same answers, about 9× faster),
+  and the collision recipe and nav grid are finer slices. The longest loading step is now about
+  36 ms on the campus.
+
 **Docs.**
 - Maps (`docs/maps/README.md`), terrain (`docs/campus/TERRAIN.md`), the coverage matrix and this
   handoff are new.
@@ -106,20 +115,37 @@ its lower bank 0.17 m under the deck: more than a runner steps up).
 - **New:**
   - `test_maps`: registry; classic restoration against 2.0; settings; Practice; mismatch refused;
     map over the network, including reconnect; caches; the chooser editable and read-only;
-  - `test_terrain`: terrain; stairs follow their nosings; walking a stair up, down and jumping from
-    its landing; tile seams; the raised threshold.
+  - `test_terrain`: terrain; stairs follow their nosings; walking every stair up from its walk, down
+    and jumping from its landing; tile seams; the raised threshold.
 - **Updated for real grades:** `test_dorms`, `test_coins`, `test_map`, `test_camping`,
   `test_campus_traversal`, `test_sim`, `test_pursuit`, `test_chase_balance`, `test_runner_pace`,
-  `test_net`, `test_rules`, `test_routes_bots`. They now place and probe on the ground or floor,
-  where they used to assume y = 0.
-- Results and the commit they ran on: the final report in the session, and `TEST_REPORT.md` if
-  updated.
+  `test_net`, `test_rules`, `test_routes_bots`, `test_p9_movement`, `test_stick_round`,
+  `test_v8_timing`. They now place and probe on the ground or floor, where they used to assume
+  y = 0.
+- **Updated for two maps:** `test_series`, whose summary now names the map first.
+
+RESULTS_PLACEHOLDER
+
+## Evidence (delivered with the session, not in the repository)
+
+- **Before/after views:** 45 matched pairs with full-size frames, a contact sheet, and a camera table
+  (position, target, FOV and draw counts per view). Neutral labels only.
+- **Selector, lobby and Practice:** captures at three device sizes (`tools/capture_map_selector.sh`).
+  They show each map selected, the guest's read-only view, and controller focus and cancel.
+- **Geometry and grounding:**
+  - geometry overlays: `tools/campus/terrain_overlay.py`;
+  - grounding diagnostics: exposed foundations, stairs with their lead-in and run-out, waters, the
+    play boundary.
+- **A walker's-eye tour** (`tools/capture_campus_tour.sh`): out of West Hall's door, the chapel
+  atrium, the bell tower's gap, North Hall's front stair up and down, the bridge pond's shore exit
+  and footbridge, the lake shore, its dock and a shore exit, a path through the woods, and home.
+- **Map previews** (`tools/capture_map_previews.sh`) and the coverage matrix.
 
 ## Performance
 
-`docs/campus/README.md` (Performance). These are desktop container numbers (headless CPU and
-llvmpipe draw counts), never a phone's. Device frame rate, GPU, memory pressure and heat are
-unverified.
+`docs/maps/PERFORMANCE.md` compares both maps before and after, on the same machine, with commit,
+seed, quality and camera. These are desktop container numbers (headless CPU, and llvmpipe draw
+counts), never a phone's. Device frame rate, GPU, memory pressure and heat are unverified.
 
 ## Device testing needed
 
