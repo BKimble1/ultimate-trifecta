@@ -300,7 +300,7 @@ func _prep_run_one() -> void:
 	var again: Variant = _prep[_prep_i].call()
 	var ms := float(Time.get_ticks_usec() - t0) / 1000.0
 	# (a job polling a worker is called hundreds of thousands of times on a
-	# cold load: one entry per call held ~100 MB for the whole round)
+	# cold load: one entry per call held ~200 MB for the whole round)
 	var last: Array = prep_jobs.back() if not prep_jobs.is_empty() else []
 	if not last.is_empty() and String(last[0]) == nm:
 		last[1] = maxf(float(last[1]), ms)

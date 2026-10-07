@@ -466,3 +466,17 @@ func test_map_sheet_editable_and_read_only() -> void:
 	t.eq(close.size(), 1, "with Close")
 	ro.queue_free()
 	App.goto_title()
+
+
+## (2.1 release review) the first round of a session takes its hall from the
+## round's seed, as in 2.0: Moonbrook's three halls all come up; Lakeside's
+## only race-start hall is West Hall
+func test_first_round_hall_comes_from_the_seed() -> void:
+	var seen := {}
+	for sd in range(1, 40):
+		seen[CampusDorms.pick(CampusMaps.CLASSIC, sd, "")] = true
+	t.eq(seen.size(), 3, "Moonbrook's first round: every hall comes up (%s)" % str(seen.keys()))
+	var all := CampusDorms.ids(CampusMaps.CLASSIC, true)
+	for sd in range(1, 12):
+		t.eq(CampusDorms.pick(CampusMaps.CLASSIC, sd, ""), all[posmod(int(hash([sd, "home-dorm"])), all.size())], "2.0's rule (seed %d)" % sd)
+		t.eq(CampusDorms.pick(CampusMaps.CAMPUS, sd, ""), "west_hall", "Lakeside starts at West Hall (seed %d)" % sd)
