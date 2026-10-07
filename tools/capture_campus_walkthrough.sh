@@ -8,6 +8,9 @@
 # Composition evidence: not frame-rate, GPU or device footage.  The capture
 # scenario (src/dev/capture.gd, "dorm") also writes stills and ends the run
 # after the results.
+# On a virtual CPU that advertises AVX-512 but traps it, llvmpipe's JIT dies
+# with an illegal instruction: run with GALLIUM_OVERRIDE_CPU_CAPS=sse4.1
+# (slower, same picture).
 # Usage: tools/capture_campus_walkthrough.sh OUT_DIR [--seed=N] [--fps=15] [--size=960x540]
 set -euo pipefail
 cd "$(dirname "$0")/.."
