@@ -35,10 +35,10 @@ const CART_INF := 1.25
 ## finished grid is identical however it is stepped; test_prep_jobs).
 const PHASES := [["_r_setup", 0, 2], ["_r_setup", 1, 2],
 	["_r_outside", 0, 2], ["_r_outside", 1, 2],
-	["_r_roads", 0, 2], ["_r_roads", 1, 2],
+	["_r_roads", 0, 4], ["_r_roads", 1, 4], ["_r_roads", 2, 4], ["_r_roads", 3, 4],
 	["_r_buildings", 0, 4], ["_r_buildings", 1, 4], ["_r_buildings", 2, 4], ["_r_buildings", 3, 4],
 	["_r_lines", 0, 3], ["_r_lines", 1, 3], ["_r_lines", 2, 3],
-	["_r_points", 0, 2], ["_r_points", 1, 2],
+	["_r_points", 0, 4], ["_r_points", 1, 4], ["_r_points", 2, 4], ["_r_points", 3, 4],
 	["_r_waters", 0, 2], ["_r_waters", 1, 2],
 	["_r_slopes", 0, 2], ["_r_slopes", 1, 2],
 	["_r_dorms", 0, 1],

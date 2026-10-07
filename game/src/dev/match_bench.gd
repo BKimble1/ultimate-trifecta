@@ -33,7 +33,8 @@ var out_path := ""
 
 var _frames: Array = []          # per-frame records during PLAYING
 var _ctx_counts := {}            # context -> frames
-var _ctx_long := {}              # context -> [ >33, >50, >100 ]
+var _ctx_long := {}              # context -> [ >33, >50, >100, worst ms, worst's round, context before it ]
+var _prev_ctx := ""
 var _last_us := 0
 var _round := 0
 var _round_t := 0.0
@@ -117,15 +118,21 @@ func _process(delta: float) -> void:
 	_prev_prof = sim_prof
 	if iv > 0.0:
 		_ctx_counts[ctx] = int(_ctx_counts.get(ctx, 0)) + 1
-		var lg: Array = _ctx_long.get(ctx, [0, 0, 0, 0.0])
+		var lg: Array = _ctx_long.get(ctx, [0, 0, 0, 0.0, 0, ""])
 		if iv > 33.3:
 			lg[0] += 1
 		if iv > 50.0:
 			lg[1] += 1
 		if iv > 100.0:
 			lg[2] += 1
-		lg[3] = maxf(lg[3], iv)
+		if iv > float(lg[3]):
+			# where it fell: the round, and the context the frame came from
+			# (a menu frame after "match_other" is a round being torn down)
+			lg[3] = iv
+			lg[4] = _round
+			lg[5] = _prev_ctx
 		_ctx_long[ctx] = lg
+	_prev_ctx = ctx
 	if ctx == "playing" and iv > 0.0:
 		var rec := {"iv": iv, "ticks": int(p["n"].get("ticks", 0)), "round": _round,
 			"views_n": int(p["n"].get("views_processed", 0)), "adv_n": int(p["n"].get("anim_advances", 0))}
@@ -270,7 +277,8 @@ func _finish() -> void:
 			tot += x
 		summary["sections"][k] = {"mean": tot / maxf(1.0, a.size()), "p95": _pct(a, 0.95), "p99": _pct(a, 0.99), "max": _pct(a, 1.0)}
 	for c in _ctx_counts:
-		summary["contexts"][c] = {"frames": _ctx_counts[c], "over33": _ctx_long[c][0], "over50": _ctx_long[c][1], "over100": _ctx_long[c][2], "worst": _ctx_long[c][3]}
+		summary["contexts"][c] = {"frames": _ctx_counts[c], "over33": _ctx_long[c][0], "over50": _ctx_long[c][1], "over100": _ctx_long[c][2], "worst": _ctx_long[c][3],
+			"worst_round": _ctx_long[c][4], "worst_after": _ctx_long[c][5]}
 	for key in _first_events:
 		var i: int = _first_events[key]
 		var worst := 0.0

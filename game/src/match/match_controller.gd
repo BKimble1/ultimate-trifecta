@@ -321,6 +321,9 @@ func _prep_campus() -> bool:
 		if _take_cached_campus():
 			Diag.mark("campus_cached")
 			return false
+		# (NP) Moonbrook College's art layout is built on a worker first
+		if _look() == "classic" and ClassicLayout.build_shared_step():
+			return true
 		_builder = _new_look()
 		_builder.begin_visuals(self, quality)
 	if _builder.step():
@@ -338,9 +341,13 @@ func _prep_campus() -> bool:
 ## native description; the collision and everything gameplay comes from
 ## `layout` either way).
 func _new_look() -> RefCounted:
-	if String(CampusMaps.def(map_id).get("look", "campus")) == "classic":
+	if _look() == "classic":
 		return ClassicBuilder.new(ClassicLayout.shared())
 	return CampusBuilder.new(layout)
+
+
+func _look() -> String:
+	return String(CampusMaps.def(map_id).get("look", "campus"))
 
 
 ## V6: freed before it was prepared (Cancel / Leave on the loading screen,
@@ -350,10 +357,16 @@ func _exit_tree() -> void:
 	_set_view_held(false)     # menus draw 3D again
 	NavGrid.settle_shared()   # V8: no bot path search left running on a worker
 	PaceFields.hand_off()     # Pass 8: route fields still building are released later, never waited for here
-	# bodies built for a round that never took them
-	for b in _take_bodies():
-		if is_instance_valid(b) and (b as Node).get_parent() == null:
-			(b as Node).free()
+	# bodies built for a round that never took them: kept when complete,
+	# freed when only partly built
+	var untaken := _take_bodies()
+	if untaken.size() == 3 and _bodies_kit != null and _bodies_at >= CampusBuilder.collision_recipe(layout).size():
+		_drop_kept_bodies_later()
+		_kept_bodies = {"layout": layout, "bodies": untaken}
+	else:
+		for b in untaken:
+			if is_instance_valid(b) and (b as Node).get_parent() == null:
+				(b as Node).free()
 	if prepared:
 		return
 	Diag.mark("prep_cancelled")
@@ -368,7 +381,7 @@ func _take_cached_campus() -> bool:
 	if c.is_empty() or not is_instance_valid(c.get("node")) or c.get("layout") != layout or String(c.get("map", "")) != map_id or int(c.get("quality", -1)) != quality:
 		# another map (or quality): the kept world is freed, never kept
 		# alongside this one
-		drop_campus_cache()
+		_drop_campus_look()
 		return false
 	_campus = c["node"]
 	_campus_cache = {}
@@ -393,6 +406,7 @@ func _take_cached_campus() -> bool:
 
 ## App, when the round ends: keep the campus look for the next round.
 func release_campus() -> void:
+	release_bodies()
 	if _campus == null or not is_instance_valid(_campus) or _campus.get_parent() != self:
 		return
 	remove_child(_campus)
@@ -400,8 +414,15 @@ func release_campus() -> void:
 	_campus = null
 
 
-## Frees the kept campus (tests, quality change, low memory).
+## Frees the kept campus and its kept collision bodies (tests, low memory).
 static func drop_campus_cache() -> void:
+	_drop_campus_look()
+	drop_kept_bodies()
+
+
+## Frees the kept campus look only (another map or quality: the kept bodies
+## are the bodies job's to free, in slices).
+static func _drop_campus_look() -> void:
 	var n: Variant = _campus_cache.get("node")
 	if n is Node and is_instance_valid(n) and (n as Node).get_parent() == null:
 		(n as Node).free()
@@ -455,7 +476,14 @@ var _bodies_kit: CampusBuilder = null
 
 func _prep_bodies() -> bool:
 	if _bodies_kit == null:
+		# another map's kept bodies are freed first, a slice a step
+		if not _kept_bodies.is_empty() and _kept_bodies.get("layout") != layout:
+			_drop_kept_bodies_later()
+		if _free_bodies_slice():
+			return true
 		_bodies_kit = CampusBuilder.new(layout)
+		if _take_kept_bodies():
+			return false
 		_bodies = _bodies_kit.collision_bodies()
 		_bodies_at = 0
 	_bodies_at = _bodies_kit.attach_recipe(_bodies, _bodies_at, _bodies_at + BODIES_SLICE)
@@ -467,6 +495,90 @@ func _take_bodies() -> Array:
 	var b := _bodies
 	_bodies = []
 	return b
+
+
+## (NP) The round's collision bodies are kept between rounds on the same
+## map, like the campus look: freeing their ~5,700 shapes as a round ended
+## held one frame ~0.5 s (leaving the results froze), and the next round
+## built them all again.  Taking them out of the tree and putting them back
+## costs ~3 and ~10 ms.  Another map's kept bodies are freed during the
+## next round's loading, FREE_SLICE shapes a step.
+static var _kept_bodies: Dictionary = {}   # {"layout", "bodies": [world, blockers, ground]}
+static var _bodies_to_free: Array = []     # detached bodies being freed in slices
+const FREE_SLICE := 400
+
+
+## As a round ends (release_campus): its bodies leave the round's tree for
+## the next round on this map.
+func release_bodies() -> void:
+	var holder: Node = client_world if is_client else sim
+	if holder == null or not is_instance_valid(holder):
+		return
+	var bodies: Array = []
+	for nm in ["WorldCollision", "CartBlockers", "GroundCollision"]:
+		var b := holder.get_node_or_null(nm)
+		if b == null:
+			return
+		bodies.append(b)
+	for b in bodies:
+		holder.remove_child(b)
+	_drop_kept_bodies_later()
+	_kept_bodies = {"layout": layout, "bodies": bodies}
+
+
+func _take_kept_bodies() -> bool:
+	var bodies: Array = _kept_bodies.get("bodies", [])
+	if _kept_bodies.get("layout") != layout or bodies.size() != 3:
+		return false
+	for b in bodies:
+		if not is_instance_valid(b) or (b as Node).get_parent() != null:
+			_drop_kept_bodies_later()
+			return false
+	_kept_bodies = {}
+	_bodies = bodies
+	return true
+
+
+static func _drop_kept_bodies_later() -> void:
+	for b in _kept_bodies.get("bodies", []):
+		if is_instance_valid(b) and (b as Node).get_parent() == null:
+			_bodies_to_free.append(b)
+	_kept_bodies = {}
+
+
+## Frees up to FREE_SLICE shapes of the bodies waiting to go (the last
+## child first); true while more remain.
+static func _free_bodies_slice() -> bool:
+	var left := FREE_SLICE
+	while left > 0 and not _bodies_to_free.is_empty():
+		var b: Variant = _bodies_to_free.back()
+		if not is_instance_valid(b):
+			_bodies_to_free.pop_back()
+			continue
+		var body := b as Node
+		var n := body.get_child_count()
+		if n == 0:
+			body.free()
+			_bodies_to_free.pop_back()
+			continue
+		var k := mini(n, left)
+		for i in k:
+			body.get_child(n - 1 - i).free()
+		left -= k
+	return not _bodies_to_free.is_empty()
+
+
+## Frees the kept bodies now (tests; drop_campus_cache).
+static func drop_kept_bodies() -> void:
+	_drop_kept_bodies_later()
+	for b in _bodies_to_free:
+		if is_instance_valid(b):
+			(b as Node).free()
+	_bodies_to_free.clear()
+
+
+static func bodies_kept() -> bool:
+	return not _kept_bodies.is_empty()
 
 
 func _prep_sim() -> void:

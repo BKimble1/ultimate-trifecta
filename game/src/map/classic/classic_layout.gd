@@ -54,12 +54,42 @@ var legacy := false
 
 static var _shared: ClassicLayout
 static var _legacy_shared: ClassicLayout
+static var _shared_task := -1
+static var _shared_built: ClassicLayout
 
 
 static func shared() -> ClassicLayout:
+	if _shared == null and _shared_task >= 0:
+		_finish_shared()
 	if _shared == null:
 		_shared = ClassicLayout.new()
 	return _shared
+
+
+## (NP) Builds the shared layout on a worker (its tree scatter holds a
+## frame ~70-150 ms): true while it is not ready.  A round's loading calls
+## it until false; shared() waits for a build already under way.
+static func build_shared_step() -> bool:
+	if _shared != null:
+		return false
+	if _shared_task < 0:
+		_shared_task = WorkerThreadPool.add_task(_build_shared, false, "classic layout")
+		return true
+	if not WorkerThreadPool.is_task_completed(_shared_task):
+		return true
+	_finish_shared()
+	return false
+
+
+static func _build_shared() -> void:
+	_shared_built = ClassicLayout.new()
+
+
+static func _finish_shared() -> void:
+	WorkerThreadPool.wait_for_task_completion(_shared_task)
+	_shared_task = -1
+	_shared = _shared_built
+	_shared_built = null
 
 
 ## The V5 campus (no V6 dorm districts), shared: the V6 dressing keeps the
