@@ -1,6 +1,8 @@
 # TestFlight release: Ultimate Trifecta
 
-Current version: **2.0 (final release sweep), a provisional App Store-eligible candidate**. It uses the same app, bundle ID, Game Center capability, internal group and lane as 1.0–1.9. 2.0 makes the lobby lighter, gives the Season Pass a large rotatable preview and a simpler layout, adds Friends (Game Center friends' in-game status and real invitations to your party), adds Shop filters and offers that never run out, routes purchases to separate sandbox and production services from one build, and is the first build uploaded as **App Store-eligible** (`testFlightInternalTestingOnly=false`) instead of internal-only. Gameplay, movement and the network protocol (8) are unchanged, so 1.9 and 2.0 can play in the same party. **It is provisional:** the game service isn't deployed and `game/config/service.cfg` is empty, so Coins, purchases, Season rewards, challenges, rotating offers, verified names, typed chat, reports and Friends status show as unavailable; the eight App Store products don't exist yet. It is not the launch build: the launch build is the next `distribution=app_store` upload after the owner setup in [docs/OWNER_SETUP_GUIDE.md](docs/OWNER_SETUP_GUIDE.md).
+Current version: **2.1 (two maps), an internal TestFlight build**. Same app, bundle ID, Game Center capability, internal group and lane as 1.0–2.0. 2.1 adds a second map: Lakeside Campus (the new default, a large hilly campus with stairs, waters, parked cars and woods) beside Moonbrook College (the 2.0 map). The party host picks the map for the series; Practice remembers its own choice. The network protocol is 10, so 2.0 and 2.1 can't play together. It is **internal only** (`testFlightInternalTestingOnly=true`), so it can't be submitted; 2.0 (10) stays the App Store-eligible build. Like 2.0 it is provisional: the game service isn't deployed, so Coins, purchases, Season rewards and Friends status show as unavailable. See [docs/maps/HANDOFF.md](docs/maps/HANDOFF.md).
+
+The previous version, **2.0 (final release sweep)**, is a provisional App Store-eligible candidate. It uses the same app, bundle ID, Game Center capability, internal group and lane as 1.0–1.9. 2.0 makes the lobby lighter, gives the Season Pass a large rotatable preview and a simpler layout, adds Friends (Game Center friends' in-game status and real invitations to your party), adds Shop filters and offers that never run out, routes purchases to separate sandbox and production services from one build, and is the first build uploaded as **App Store-eligible** (`testFlightInternalTestingOnly=false`) instead of internal-only. Gameplay, movement and the network protocol (8) are unchanged, so 1.9 and 2.0 can play in the same party. **It is provisional:** the game service isn't deployed and `game/config/service.cfg` is empty, so Coins, purchases, Season rewards, challenges, rotating offers, verified names, typed chat, reports and Friends status show as unavailable; the eight App Store products don't exist yet. It is not the launch build: the launch build is the next `distribution=app_store` upload after the owner setup in [docs/OWNER_SETUP_GUIDE.md](docs/OWNER_SETUP_GUIDE.md).
 
 ## App identity
 
@@ -18,6 +20,37 @@ Current version: **2.0 (final release sweep), a provisional App Store-eligible c
 | Toolchain | Godot 4.7.2-stable export; Xcode 26.6 (17F113) with the iOS 26 SDK on the `macos-26` GitHub runner (verified in CI run 3). Apple requires the iOS 26 SDK for uploads from April 28, 2026. |
 
 ## Current release state
+
+**State (2.1): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **2.1 (11)**, **internal only**, provisional (service off, no products).
+
+It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, nothing was submitted for App Store review, nothing was released, and no purchase of any kind was made.
+
+| | |
+|---|---|
+| Build | `com.idlery.ultimatetrifecta` **2.1 (11)**. App Store Connect build ID `a3c30bba-f607-4afd-af13-83d692b4a774`. |
+| Build number | **11**: the lane read the highest existing build (2.0 (10)) and added one. Status run #176 had shown builds 1–10 and no 2.1 beforehand. |
+| Source | Commit `8abfaca`: the two-maps pass and the 2.1 release-review fixes (`docs/maps/HANDOFF.md`). The affected test files were run locally on it: 12 files, 0 failures. `4ad9c94` after it only adds a test and corrects a code comment. |
+| Uploaded | 2026-10-07 22:25:10 UTC (Apple's upload time), by GitHub Actions run #182 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37693219798) with `upload=true`, `distribution=internal_only` and `prune_ci_certs=true`. The headless tests gate the build: **584 tests, 359,515 checks, 0 failures**. |
+| Apple's processing | `VALID`. Audience **`INTERNAL_ONLY`** (checked by the run with `asc.py audience`). Declares no non-exempt encryption. |
+| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. What to Test is set from `docs/testflight/what_to_test.txt` (1,853 characters, en-US). TestFlight's automatic notification is on. |
+| Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which receives every build. The lane added no one and created no group. |
+| Confirmed by | Apple's API, read by run #182 at 22:41 UTC. |
+| Can it be submitted? | No: an internal-only build can't be submitted. 2.0 (10) stays the App Store-eligible build. |
+| Network | Protocol 10: 2.0 and 2.1 devices refuse each other at join ("Update the game to join."). |
+
+The first 2.1 attempt, run #178 on `51af064`, passed its tests and stopped at signing. The team had reached Apple's limit on certificates: 28 Apple Development certificates left by earlier CI runs. Nothing was uploaded. With the owner's approval, run #182 first revoked those 28 (`prune_ci_certs`), then revoked its own at the end (serial `29AED01F…`). A read-only status run afterwards (#184) lists 4 certificates on the team, the owner's 3 Apple Distribution and 1 iOS Distribution, and no development certificate.
+
+What run #182 checked besides the upload:
+- **Launch and branding audit: PASS**, with the same figures as 2.0:
+  - 1656² opaque launch images on black;
+  - the logo's box off by 0.0000;
+  - 0 detached glow or inner dip pixels;
+  - 0 "powered by" strings.
+- **Simulator (x86_64, about 1 fps):** 0 script errors and 23 screenshots. As with 1.6–2.0, the bot round was still preparing (phase 1) when the window closed. Not a phone.
+  - The run found one crash report on the runner, `Godot-2026-10-07-222044.ips`. By its name it comes from the Godot editor that exported the project (written just after the export step), not from the app.
+- **Build number:** 11, from App Store Connect's highest build (10) + 1.
+
+The previous build, **2.0 (10)**, as recorded when it shipped (App Store-eligible; still the build to submit once the owner setup is done):
 
 **State (2.0): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **2.0 (10)**, App Store-eligible, **provisional** (service off, no products).
 

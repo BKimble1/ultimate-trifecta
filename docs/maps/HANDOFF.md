@@ -226,10 +226,11 @@ counts), never a phone's. Device frame rate, GPU, memory pressure and heat are u
   existing build + 1.
 - **What to Test:** `docs/testflight/what_to_test.txt` covers the two maps, stairs, rounds,
   loading, heat, and online play. Every device needs 2.1, because protocol 10 can't join 2.0.
-- **Upload:** a 2.1 upload is an internal TestFlight build through the repository's own lane
-  (`ios.yml`, `upload=true`, `distribution=internal_only`). Nothing is submitted for review, and
-  no testers or groups are added. `TESTFLIGHT_RELEASE.md` records an upload only once Apple's API
-  has confirmed it.
+- **Uploaded: 2.1 (11), internal only, `VALID`.** GitHub Actions run #182 uploaded commit
+  `8abfaca` at 22:25 UTC on 2026-10-07, behind its test gate (584 tests, 0 failures). Apple's API
+  confirmed the build `VALID` and `INTERNAL_ONLY`, and the What to Test text is set. The existing
+  internal group gets it automatically. Nothing was submitted for review, and no testers or groups
+  were added. It is **not device-tested** (`TESTFLIGHT_RELEASE.md`).
 - **Signing certificates:** the first 2.1 upload (run #178) passed its tests, then stopped at
   signing. The team had reached Apple's certificate limit: 28 Apple Development certificates that
   earlier CI runs created, each with its key thrown away with its runner. With the owner's approval
