@@ -7,7 +7,7 @@ var t
 
 
 func test_bake_and_overlay_share_the_transform() -> void:
-	var b := CampusLayout.BOUNDS
+	var b := CampusLayout.shared().bounds
 	var c := Vector2(300, 260)
 	var half := 240.0
 	t.eq(CampusMap.to_map(b.get_center(), c, half), c, "the campus centre is the map centre")

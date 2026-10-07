@@ -78,9 +78,12 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 	patrol_release_extra_s = float(opts.get("patrol_release_extra_s", 0.0))
 	_bot_factory = opts.get("bot_factory", Callable())
 	activity.setup(cfg.sim_hz)
-	home_dorm = String(opts.get("dorm", CampusDorms.default_id()))
-	if not CampusDorms.has_dorm(home_dorm):
-		home_dorm = CampusDorms.default_id()
+	# tonight's home dorm: one of this map's (a dorm of another map, or an
+	# unknown id, falls back to the map's default; NetSession refuses such a
+	# round before it gets here)
+	home_dorm = String(opts.get("dorm", CampusDorms.default_id(layout.map_id)))
+	if not CampusDorms.has_dorm(home_dorm, layout.map_id):
+		home_dorm = CampusDorms.default_id(layout.map_id)
 	home_doors = CampusDorms.geometry(home_dorm)["doors"]
 	spawn_map = opts.get("spawns", {}) if not (opts.get("spawns", {}) as Dictionary).is_empty() else default_spawns(roster)
 	for c in opts.get("coins", []):
@@ -811,7 +814,7 @@ func _check_recover(p: SimPlayer) -> void:
 	if p.state != TC.PState.ACTIVE and p.state != TC.PState.STUMBLE and p.state != TC.PState.EXITING:
 		return
 	var pp := p.pos()
-	if pp.y > -6.0 and CampusLayout.BOUNDS.grow(-0.5).has_point(Vector2(pp.x, pp.z)):
+	if pp.y > -6.0 and layout.bounds.grow(-0.5).has_point(Vector2(pp.x, pp.z)):
 		return
 	# Out of bounds / fell through: return to a safe pad with no new progress.
 	var pads: Array = CampusDorms.geometry(home_dorm)["respawn"]

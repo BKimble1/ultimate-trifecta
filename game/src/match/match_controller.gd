@@ -144,7 +144,11 @@ func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> 
 	start = p_start
 	# this round's immutable rules (party settings) - never the global default
 	cfg = PartySeries.rules_for(Rules.cfg, int((start.get("settings", {}) as Dictionary).get("watch", PartySeries.DEFAULT_WATCH)))
-	layout = CampusLayout.shared()
+	# the round's map, from its configuration (NetSession checked it is one
+	# this build has, with the same data, before the round got here)
+	var mrev: Variant = start.get("map", {})
+	map_id = CampusMaps.sanitize((mrev as Dictionary).get("id", "") if mrev is Dictionary else "")
+	layout = CampusMaps.layout(map_id)
 	is_client = session.mode == NetSession.Mode.CLIENT
 	local_slot = session.local_slot
 	quality = int(settings.get("quality", 1))
@@ -158,13 +162,15 @@ func setup(p_session: NetSession, p_start: Dictionary, settings: Dictionary) -> 
 		# the simulation keeps start["roster"] untouched
 		roster[int(e["slot"])] = SocialSafety.display_entry(e)
 	spectator = not roster.has(local_slot)
-	home_dorm = String(start.get("home_dorm", CampusDorms.default_id()))
-	if not CampusDorms.has_dorm(home_dorm):
-		home_dorm = CampusDorms.default_id()
+	home_dorm = String(start.get("home_dorm", CampusDorms.default_id(map_id)))
+	if not CampusDorms.has_dorm(home_dorm, map_id):
+		home_dorm = CampusDorms.default_id(map_id)
 
 
 ## V6: tonight's home dorm (from the round configuration).
 var home_dorm := ""
+## the round's map (CampusMaps id)
+var map_id := ""
 
 
 ## slot -> spawn index from the round configuration (keys arrive as strings).
@@ -189,7 +195,7 @@ var prepared := false
 var stage_report: Callable
 var _prep: Array[Callable] = []
 var _prep_i := 0
-var _builder: CampusBuilder
+var _builder = null               # CampusBuilder or ClassicBuilder (CampusMaps "look")
 var _campus: Node3D
 var _view_queue: Array = []
 var _prep_t0 := 0
@@ -315,7 +321,7 @@ func _prep_campus() -> bool:
 		if _take_cached_campus():
 			Diag.mark("campus_cached")
 			return false
-		_builder = CampusBuilder.new(layout)
+		_builder = _new_look()
 		_builder.begin_visuals(self, quality)
 	if _builder.step():
 		return true
@@ -325,6 +331,16 @@ func _prep_campus() -> bool:
 	_builder = null
 	Diag.mark("campus_built")
 	return false
+
+
+## The builder that draws this map: the reference campus's CampusBuilder,
+## or Moonbrook College's restored 2.0 art (ClassicBuilder, drawn from its
+## native description; the collision and everything gameplay comes from
+## `layout` either way).
+func _new_look() -> RefCounted:
+	if String(CampusMaps.def(map_id).get("look", "campus")) == "classic":
+		return ClassicBuilder.new(ClassicLayout.shared())
+	return CampusBuilder.new(layout)
 
 
 ## V6: freed before it was prepared (Cancel / Leave on the loading screen,
@@ -345,8 +361,10 @@ func _exit_tree() -> void:
 
 func _take_cached_campus() -> bool:
 	var c := _campus_cache
-	if c.is_empty() or not is_instance_valid(c.get("node")) or c.get("layout") != layout or int(c.get("quality", -1)) != quality:
-		_campus_cache = {}
+	if c.is_empty() or not is_instance_valid(c.get("node")) or c.get("layout") != layout or String(c.get("map", "")) != map_id or int(c.get("quality", -1)) != quality:
+		# another map (or quality): the kept world is freed, never kept
+		# alongside this one
+		drop_campus_cache()
 		return false
 	_campus = c["node"]
 	_campus_cache = {}
@@ -374,7 +392,7 @@ func release_campus() -> void:
 	if _campus == null or not is_instance_valid(_campus) or _campus.get_parent() != self:
 		return
 	remove_child(_campus)
-	_campus_cache = {"node": _campus, "water": water_nodes, "foliage": _foliage_mat, "quality": quality, "layout": layout}
+	_campus_cache = {"node": _campus, "water": water_nodes, "foliage": _foliage_mat, "quality": quality, "layout": layout, "map": map_id}
 	_campus = null
 
 

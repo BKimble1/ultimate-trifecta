@@ -1928,7 +1928,7 @@ class Minimap:
 		var focus := MapPainter.focus(hud)
 		_ring.resize(48)
 		_uv.resize(48)
-		var span := CampusMap.MINI_SPAN_M
+		var span := CampusMap.mini_span()
 		for i in 48:
 			var a := TAU * float(i) / 48.0
 			var d := Vector2(cos(a), sin(a))
@@ -1958,7 +1958,7 @@ class MapPainter:
 		if me.has("pos"):
 			var p: Vector3 = me["pos"]
 			return Vector2(p.x, p.z)
-		return CampusLayout.BOUNDS.get_center()
+		return CampusMap.centre()
 
 	static func items(hud: MatchHUD, c: Vector2, half: float, full: bool) -> Array:
 		var out := _items(hud, c, half, full)
@@ -1985,7 +1985,7 @@ class MapPainter:
 		var me: Dictionary = info.get("rs", {})
 		var L := hud.mc.layout
 		var fc := focus(hud)
-		var to_map := func(p: Vector2) -> Vector2: return CampusMap.to_map(p, c, half) if full else CampusMap.to_view(p, c, half, fc, CampusMap.MINI_SPAN_M)
+		var to_map := func(p: Vector2) -> Vector2: return CampusMap.to_map(p, c, half) if full else CampusMap.to_view(p, c, half, fc, CampusMap.mini_span())
 		var tg: Array = info.get("targets", [])
 		var stamps: int = info.get("stamps", 0)
 		var role: int = info.get("role", 0)

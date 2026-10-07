@@ -118,7 +118,7 @@ func _find_corridor() -> Dictionary:
 	var ng := NavGrid.shared(CampusLayout.shared())
 	var g := ng.foot
 	var best := {"len": 0.0}
-	var b := CampusLayout.BOUNDS
+	var b := CampusLayout.shared().bounds
 	var y := b.position.y + 6.0
 	while y < b.end.y - 6.0:
 		var x := b.position.x + 6.0

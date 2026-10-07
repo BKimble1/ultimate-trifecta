@@ -1,10 +1,12 @@
 class_name CampusLayout
 extends RefCounted
-## The campus, described as data: the reference campus's measured layer data
-## (CampusData, game/data/campus/*.json; docs/campus/DATA_SCHEMA.md) turned
-## into the gameplay description every system reads.  Visual meshes,
-## collision, bot navigation, route analysis, spawns and the maps are all
-## generated from this one description so they cannot drift.
+## A map, described as data: one map's layer data (CampusData: the
+## reference campus's measured layers in game/data/campus, or Moonbrook
+## College's in game/data/maps/classic; docs/campus/DATA_SCHEMA.md) turned
+## into the gameplay description every system reads.  Collision, bot
+## navigation, route analysis, spawns and the maps are all generated from
+## this one description so they cannot drift.  One layout per map
+## (CampusMaps.layout); nothing here is shared between maps.
 ## Coordinates: metres, +X east, +Z south (north is -Z). Ground is y = 0.
 ##
 ## Waters: the round's objective pool comes first (indices 0..5, in the order
@@ -17,16 +19,19 @@ extends RefCounted
 ##
 ## Start dorms come from CampusDorms (gameplay layer "start_dorm" items).
 
-## The play area's bounding box (the play boundary polygon lies inside it;
-## outside it everything is background).  Fixed: the network, the maps and
-## the out-of-bounds rule rely on it, and test_campus_layout checks the
-## gameplay data against it.
-const BOUNDS := Rect2(-720.0, -560.0, 1190.0, 1000.0)
-const CAMPUS_NAME := "Campus"
 ## Spatial hash cell for the per-tick queries (roads, water).
 const CELL := 16.0
 
 var data: CampusData
+## the map this layout is (CampusMaps id)
+var map_id := ""
+## The play area's bounding box (the play boundary polygon lies inside it;
+## outside it everything is background); per map (CampusMaps).  The
+## network, the maps and the out-of-bounds rule rely on it, and the layout
+## tests check the gameplay data against it.
+var bounds := Rect2()
+## the bots' navigation cell (m): NavGrid
+var nav_cell := 2.0
 var play_boundary := PackedVector2Array()
 
 var buildings: Array[Dictionary] = []
@@ -56,8 +61,6 @@ var gadget_spots: Array[Vector2] = []
 var coin_spots: Array[Vector2] = []
 var landmarks: Array[Dictionary] = []
 var dorms: Array[Dictionary] = []
-## kept for API compatibility (the fictional campus's V5 build); always false
-var legacy := false
 
 var _road_cells: Dictionary = {}       # Vector2i -> [[a, b, half_w], ...] (roads + lot aisles)
 var _lot_cells: Dictionary = {}        # Vector2i -> [poly index]
@@ -66,37 +69,25 @@ var _path_cells: Dictionary = {}
 var _water_cells: Dictionary = {}      # Vector2i -> [water index]
 var _bld_cells: Dictionary = {}        # Vector2i -> [building index]
 
-static var _shared: CampusLayout
-static var _round_data: CampusLayout
-
-
+## The default map's layout (tools and tests that are about the reference
+## campus; a round always asks CampusMaps.layout for its own map).
 static func shared() -> CampusLayout:
-	if _shared == null:
-		_shared = CampusLayout.new()
-	return _shared
+	return CampusMaps.layout(CampusMaps.DEFAULT_ID)
 
 
-## Kept for API compatibility: there is one campus.
-static func legacy_shared() -> CampusLayout:
-	return shared()
-
-
-## The round-configuration data (waters, spawns, coins).  The full layout is
-## cheap to describe (meshes come later), so this is the shared layout.
-static func round_data() -> CampusLayout:
-	if _round_data == null:
-		_round_data = shared()
-	return _round_data
-
-
+## Drops every cached layout and its data (tests that swap data).
 static func reset_shared() -> void:
-	_shared = null
-	_round_data = null
+	CampusMaps.drop()
 	CampusData.reset_shared()
+	CampusDorms.reset()
 
 
-func _init(p_data: CampusData = null, _unused: bool = false) -> void:
+func _init(p_data: CampusData = null) -> void:
 	data = p_data if p_data != null else CampusData.shared()
+	map_id = data.map_id if data.map_id != "" else CampusMaps.DEFAULT_ID
+	var md := CampusMaps.def(map_id)
+	bounds = md.get("bounds", Rect2(-720.0, -560.0, 1190.0, 1000.0))
+	nav_cell = float(md.get("nav_cell", 2.0))
 	_build_gameplay_frame()
 	_build_buildings()
 	_build_waters()
@@ -125,7 +116,7 @@ func _build_gameplay_frame() -> void:
 	for it in _gp("boundary"):
 		play_boundary = it.get("polygon", PackedVector2Array())
 	if play_boundary.is_empty():
-		var b := BOUNDS.grow(-4.0)
+		var b := bounds.grow(-4.0)
 		play_boundary = PackedVector2Array([b.position, Vector2(b.end.x, b.position.y), b.end, Vector2(b.position.x, b.end.y)])
 	for it in _gp("patrol_spawns"):
 		for p in it.get("pts", []):
@@ -141,6 +132,14 @@ func _build_gameplay_frame() -> void:
 			coin_spots.append(_v2(p))
 	for it in _gp("landmark_label"):
 		landmarks.append({"name": String(it.get("label", "")), "pos": _v2(it.get("p", [0, 0]))})
+
+
+static func _v3(p: Variant) -> Vector3:
+	if p is Vector3:
+		return p
+	if p is Array and (p as Array).size() >= 3:
+		return Vector3(float(p[0]), float(p[1]), float(p[2]))
+	return Vector3.ZERO
 
 
 static func _v2(p: Variant) -> Vector2:
@@ -177,7 +176,9 @@ func _build_buildings() -> void:
 		for ps in it.get("passages", []):
 			var pg: PackedVector2Array = ps.get("polygon", PackedVector2Array())
 			if pg.size() >= 3:
-				passages.append({"poly": snap_to_outline(CampusData.ccw(pg), poly), "floor": float(ps.get("floor", 0.0)), "clear": float(ps.get("clear", 3.0))})
+				# (an "exact" passage was laid out to the wall, not traced: no snap)
+				var pp2 := CampusData.ccw(pg) if bool(ps.get("exact", false)) else snap_to_outline(CampusData.ccw(pg), poly)
+				passages.append({"poly": pp2, "floor": float(ps.get("floor", 0.0)), "clear": float(ps.get("clear", 3.0))})
 		var rect := CampusData.bounds(poly)
 		buildings.append({
 			"id": String(it.get("id", "")), "name": String(it.get("label", "")), "kind": String(it.get("kind", "")),
@@ -262,6 +263,9 @@ func _water_from_items(ids: Array, pres: Dictionary) -> Dictionary:
 	var radius := 0.0
 	var any := false
 	var wade := false
+	var bank := -1.0
+	var given: Dictionary = {}
+	var pedestal: Array = []
 	for id in ids:
 		var it := data.item(String(id))
 		if it.is_empty():
@@ -276,6 +280,17 @@ func _water_from_items(ids: Array, pres: Dictionary) -> Dictionary:
 		rim_t = maxf(rim_t, float(it.get("rim_t", 0.5)))
 		edge = String(it.get("edge", edge))
 		features.append_array(it.get("features", []))
+		bank = float(it.get("bank", bank))
+		if it.has("pedestal"):
+			pedestal = it["pedestal"]
+		# hand-placed shore exits, jump points and pads (the classic map's):
+		# used as given instead of derived from the outline
+		for k in ["exits", "jump_points", "pads"]:
+			if it.has(k):
+				var pts: Array = given.get(k, [])
+				for q in it[k]:
+					pts.append(_v2(q))
+				given[k] = pts
 		if it.has("circle"):
 			center = it["center"]
 			radius = float(it["radius"])
@@ -306,7 +321,8 @@ func _water_from_items(ids: Array, pres: Dictionary) -> Dictionary:
 		"shape": "circle" if (radius > 0.0 and polys.size() == 1) else "poly", "polys": polys,
 		"center": center if (radius > 0.0 and polys.size() == 1) else c, "radius": radius, "rect": rect,
 		"surface_y": surface, "floor_y": floor_y, "rim_h": maxf(0.0, rim_h), "rim_t": rim_t, "edge": edge,
-		"features": features, "objective": bool(pres.get("objective", false)),
+		"features": features, "objective": bool(pres.get("objective", false)), "bank": bank, "given": given,
+		"pedestal": pedestal,
 		# a shallow decorative runnel: drawn, walked through, never a splash
 		"wade": wade and not bool(pres.get("objective", false)),
 		"color": _color(pres.get("color", [0.6, 0.8, 1.0])), "icon": String(pres.get("icon", "drop")),
@@ -374,6 +390,12 @@ const DECK_LIP := 0.06
 ## traced beach tints the ground as sand.
 func _build_water_features() -> void:
 	for w in waters:
+		var ped: Array = w["pedestal"]
+		if ped.size() >= 2:
+			# a fountain's central column: a solid cylinder (radius, height),
+			# centred at ground level
+			solids.append({"pos": w["center"], "size": Vector3(float(ped[0]) * 2.0, float(ped[1]), float(ped[0]) * 2.0),
+				"rot": 0.0, "kind": "pedestal", "shape": "cyl", "y": 0.0})
 		for f in w["features"]:
 			if String(f.get("kind", "")) == "beach" and f.has("polygon"):
 				var bp := CampusData.ccw(CampusData.to_poly(f["polygon"]))
@@ -498,6 +520,15 @@ func water_index_at(p: Vector2, margin: float = 0.0) -> int:
 func _build_water_points() -> void:
 	for w in waters:
 		if bool(w.get("wade", false)):
+			continue
+		var given: Dictionary = w["given"]
+		if given.has("exits"):
+			var ex: Array = []
+			for q in given["exits"]:
+				ex.append(Vector3(q.x, 0.0, q.y))
+			w["exits"] = ex
+			w["jump_points"] = given.get("jump_points", [])
+			w["pads"] = given.get("pads", [])
 			continue
 		var step := 6.0
 		var kind := String(w["kind"])
@@ -655,10 +686,13 @@ func _build_barriers() -> void:
 					walls.append({"a": a, "b": b, "h": h if h > 0.0 else 0.6, "t": float(it.get("t", 0.45)), "kind": kind})
 				"hedge":
 					hedges.append({"a": a, "b": b, "h": h if h > 0.0 else 1.5, "t": float(it.get("t", 1.0)), "kind": kind})
-				"fence_iron", "fence_chain", "fence_construction", "rail":
-					fences.append({"a": a, "b": b, "h": h if h > 0.0 else (1.0 if kind == "rail" else 1.8), "kind": kind, "t": 0.25})
+				"rail":
+					fences.append({"a": a, "b": b, "h": h if h > 0.0 else 1.0, "kind": kind, "t": 0.25})
 				"bollards":
 					cart_blockers.append({"a": a, "b": b})
+				_:
+					if kind.begins_with("fence_"):
+						fences.append({"a": a, "b": b, "h": h if h > 0.0 else 1.8, "kind": kind, "t": 0.25})
 
 
 # ---------------------------------------------------------------------------
@@ -681,15 +715,28 @@ func _build_vegetation_and_props() -> void:
 				lamps.append(p)
 			"bench":
 				benches.append({"pos": p, "rot": rot})
+			# solid structures laid out by hand (the classic map's quarry
+			# boulders, ledge, ramp and dock)
+			"boulder":
+				rocks.append({"pos": Vector3(p.x, 0.0, p.y), "size": _v3(it.get("size", [1, 1, 1])), "rot": rot})
+			"platform":
+				platforms.append({"kind": "platform", "center": _v3(it.get("center", [0, 0, 0])), "size": _v3(it.get("size", [1, 0.3, 1])),
+					"yaw": rot, "dock": bool(it.get("dock", false))})
+			"ramp":
+				ramps.append({"from": _v3(it.get("from", [0, 0, 0])), "to": _v3(it.get("to", [0, 0, 0])), "w": float(it.get("w", 2.0))})
 			_:
-				props.append({"kind": kind, "pos": p, "rot": rot, "len": float(it.get("len", 0.0)), "id": String(it.get("id", ""))})
+				if bool(it.get("solid", false)):
+					solids.append({"pos": p, "size": _v3(it.get("size", [1, 1, 1])), "rot": rot, "kind": kind})
+				else:
+					props.append({"kind": kind, "pos": p, "rot": rot, "len": float(it.get("len", 0.0)), "id": String(it.get("id", "")),
+						"collide": bool(it.get("collide", true))})
 
 
 # ---------------------------------------------------------------------------
 # Start dorms (CampusDorms)
 # ---------------------------------------------------------------------------
 func _build_dorms() -> void:
-	for id in CampusDorms.ids():
+	for id in CampusDorms.ids(map_id):
 		var g := CampusDorms.geometry(id)
 		if g.is_empty():
 			continue

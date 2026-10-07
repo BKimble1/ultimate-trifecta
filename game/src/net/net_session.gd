@@ -50,6 +50,9 @@ var round_no := 0
 var prev_targets: Array = []
 ## V6: last round's home dorm (the next one differs when it can)
 var prev_dorm := ""
+## the map the previous round was on (a different map starts fresh: no
+## previous dorm or targets carried across)
+var prev_map := ""
 var current_start: Dictionary = {}
 var last_results: Dictionary = {}
 var sim: MatchSim = null
@@ -149,11 +152,11 @@ func _ready() -> void:
 # ---------------------------------------------------------------------------
 # Setup
 # ---------------------------------------------------------------------------
-func start_offline(uid: String, name: String, cosmetic: Dictionary, pref: String, is_tutorial: bool = false) -> void:
+func start_offline(uid: String, name: String, cosmetic: Dictionary, pref: String, is_tutorial: bool = false, map_id: String = "") -> void:
 	mode = Mode.OFFLINE
 	tutorial = is_tutorial
 	practice_role = pref if pref in ["runner", "patrol", "random"] else "runner"
-	settings = {"watch": PartySeries.DEFAULT_WATCH, "rounds": 1, "rev": 0}
+	settings = {"watch": PartySeries.DEFAULT_WATCH, "rounds": 1, "rev": 0, "map": CampusMaps.sanitize(map_id)}
 	_set_identity(uid, name, cosmetic, pref)
 	roster.fill(null)
 	roster[0] = _entry(0, uid, name, false, -1, cosmetic, pref)
@@ -580,6 +583,7 @@ func _lobby_bytes() -> PackedByteArray:
 	b.put_u8(int(settings["watch"]))
 	b.put_u8(int(settings["rounds"]))
 	b.put_u16(int(settings["rev"]))
+	Protocol.put_str(b, String(settings.get("map", CampusMaps.DEFAULT_ID)), 32)   # protocol 10
 	var sstate := 0 if series == null else (2 if series.finished else 1)
 	b.put_u8(sstate)
 	b.put_u8(series.next_round() if series != null else 1)
@@ -644,7 +648,15 @@ func host_start_match(seed_override: int = -1) -> void:
 		series_view = series.to_dict()
 	var locked: Dictionary = series.settings if series != null else settings
 	if mode == Mode.OFFLINE and tutorial and practice_role == "patrol":
-		locked = {"watch": 1, "rounds": 1, "rev": 0}   # Night Watch training: you are the only watcher
+		locked = {"watch": 1, "rounds": 1, "rev": 0, "map": settings.get("map", CampusMaps.DEFAULT_ID)}   # Night Watch training: you are the only watcher
+	# the map: locked with the series (practice: the one chosen); the host
+	# only ever offers maps this build has
+	var map_id := CampusMaps.sanitize(locked.get("map", CampusMaps.DEFAULT_ID))
+	var lay := CampusMaps.layout(map_id)
+	if map_id != prev_map:
+		prev_dorm = ""
+		prev_targets = []
+	prev_map = map_id
 	round_cfg = PartySeries.rules_for(Rules.cfg, int(locked["watch"]))
 	var roles := {}
 	if mode == Mode.OFFLINE:
@@ -672,9 +684,9 @@ func host_start_match(seed_override: int = -1) -> void:
 	# V6: tonight's home dorm (seeded, never last round's), then targets
 	# from that dorm's fair set, spawn pads and the round's coins: one
 	# immutable round configuration that reconnects and replays keep
-	var dorm_id := CampusDorms.default_id() if tutorial else CampusDorms.pick(seed_v, prev_dorm)
+	var dorm_id := CampusDorms.default_id(map_id) if tutorial else CampusDorms.pick(map_id, seed_v, prev_dorm)
 	prev_dorm = dorm_id
-	var targets := RulesLogic.pick_targets(seed_v, prev_targets, RulesLogic.curated_combos(dorm_id, CampusLayout.round_data().pool_size()))
+	var targets := RulesLogic.pick_targets(seed_v, prev_targets, RulesLogic.curated_combos(dorm_id, lay.pool_size()))
 	prev_targets = targets
 	var start_roster: Array = []
 	for e in roster:
@@ -688,13 +700,13 @@ func host_start_match(seed_override: int = -1) -> void:
 	current_start = {
 		"home_dorm": dorm_id,
 		"dorm": {"id": dorm_id, "ver": CampusDorms.VERSION, "geo": CampusDorms.geometry_hash(dorm_id), "spawns": spawns},
-		"campus": CampusData.shared().campus_hash,
-		"coins": RulesLogic.pick_coins(seed_v, CampusLayout.round_data(), dorm_id, targets, round_cfg),
+		"map": CampusMaps.revision(map_id),
+		"coins": RulesLogic.pick_coins(seed_v, lay, dorm_id, targets, round_cfg),
 		"timing": {"reveal_s": round_cfg.role_reveal_s, "countdown_s": round_cfg.start_countdown_s, "head_start_s": round_cfg.runner_head_start_s},
 		"match_id": "%s-%d-%08x" % [room_code, round_no, seed_v], "seed": seed_v, "targets": targets,
 		"roster": start_roster, "practice": mode == Mode.OFFLINE, "tutorial": tutorial, "round": round_no,
 		"training": ("watch" if practice_role == "patrol" else "runner") if tutorial else "",
-		"settings": {"watch": int(locked["watch"]), "rounds": int(locked["rounds"]), "rev": int(locked["rev"])},
+		"settings": {"watch": int(locked["watch"]), "rounds": int(locked["rounds"]), "rev": int(locked["rev"]), "map": map_id},
 		"series": {"id": series.id if series != null else "", "round": series.next_round() if series != null else 1,
 			"total": series.rounds_total() if series != null else 1},
 	}
@@ -1019,15 +1031,19 @@ func host_return_to_lobby() -> void:
 	series_changed.emit()
 
 
-## Host: change the party settings (pre-series lobby only).  A real change
-## clears everyone's ready and tells the guests.  Returns true if applied.
-func host_set_settings(watch: int, rounds: int) -> bool:
+## Host: change the party settings (pre-series lobby only), the map among
+## them.  A real change bumps the settings revision, clears everyone's ready
+## and tells the guests.  Returns true if applied.
+func host_set_settings(watch: int, rounds: int, map_id: String = "") -> bool:
 	if not is_host() or mode == Mode.OFFLINE or phase != TC.Phase.LOBBY:
 		return false
 	if series != null and series.in_progress():
 		return false   # locked mid-series; End series first
-	var s := PartySeries.sanitize_settings({"watch": watch, "rounds": rounds, "rev": int(settings["rev"]) + 1})
-	if s.is_empty() or (int(s["watch"]) == int(settings["watch"]) and int(s["rounds"]) == int(settings["rounds"])):
+	var m := String(settings.get("map", CampusMaps.DEFAULT_ID)) if map_id == "" else map_id
+	if not CampusMaps.has(m):
+		return false   # the host offers only maps this build has
+	var s := PartySeries.sanitize_settings({"watch": watch, "rounds": rounds, "rev": int(settings["rev"]) + 1, "map": m})
+	if s.is_empty() or (int(s["watch"]) == int(settings["watch"]) and int(s["rounds"]) == int(settings["rounds"]) and String(s["map"]) == String(settings.get("map", ""))):
 		return false
 	settings = s
 	for e in roster:
@@ -1165,7 +1181,9 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			var parsed := Protocol.get_json(b)
 			var fixed := _fix_start(parsed) if not parsed.is_empty() else {}
 			if fixed.has("_incompatible"):
-				_end("version")   # another dorm geometry: this build can't play the round
+				# another map revision or dorm geometry: this build can't play the
+				# round (never silently load another map)
+				_end("map_update" if String(fixed.get("_why", "")) == "map" else "version")
 				return
 			if not fixed.is_empty():
 				current_start = fixed
@@ -1265,7 +1283,7 @@ func _read_lobby(b: StreamPeerBuffer) -> void:
 	var ph := b.get_u8()
 	round_no = b.get_u16()
 	var nspec := b.get_u8()
-	var s_in := PartySeries.sanitize_settings({"watch": b.get_u8(), "rounds": b.get_u8(), "rev": b.get_u16()})
+	var s_in := PartySeries.sanitize_settings({"watch": b.get_u8(), "rounds": b.get_u8(), "rev": b.get_u16(), "map": Protocol.get_str(b, 32)})
 	var sstate := b.get_u8()
 	var nxt := b.get_u8()
 	var tot := b.get_u8()
@@ -1316,11 +1334,18 @@ func _fix_start(d: Dictionary) -> Dictionary:
 	var sd: Dictionary = se if se is Dictionary else {}
 	out["series"] = {"id": String(sd.get("id", "")).substr(0, 16), "round": clampi(int(sd.get("round", 1)), 1, 5),
 		"total": clampi(int(sd.get("total", 1)), 1, 5)}
-	# the campus itself: the same layer data (so the same colliders, waters,
-	# pads and doors) or the round is refused as incompatible
-	if String(d.get("campus", "")) != CampusData.shared().campus_hash:
-		return {"_incompatible": true}
-	var pool := CampusLayout.round_data().pool_size()
+	# the map itself: one this build has, with the same layer data (so the
+	# same colliders, waters, pads and doors) and dorm geometry version, or
+	# the round is refused as incompatible (never another map instead)
+	var mrev: Variant = d.get("map", {})
+	if not CampusMaps.compatible(mrev):
+		return {"_incompatible": true, "_why": "map"}
+	var map_id := String((mrev as Dictionary)["id"])
+	if String(st.get("map", "")) != map_id:
+		return {}
+	var lay := CampusMaps.layout(map_id)
+	out["map"] = CampusMaps.revision(map_id)
+	var pool := lay.pool_size()
 	var t: Array = []
 	for x in d["targets"]:
 		if not (x is float or x is int) or int(x) < 0 or int(x) >= pool or t.has(int(x)):
@@ -1353,7 +1378,9 @@ func _fix_start(d: Dictionary) -> Dictionary:
 	if not (dm is Dictionary):
 		return {}
 	var did := String((dm as Dictionary).get("id", ""))
-	if not CampusDorms.has_dorm(did) or int((dm as Dictionary).get("ver", -1)) != CampusDorms.VERSION or String((dm as Dictionary).get("geo", "")) != CampusDorms.geometry_hash(did):
+	if not CampusDorms.has_dorm(did, map_id):
+		return {}       # a dorm of another map: never resolved to one of this map's
+	if int((dm as Dictionary).get("ver", -1)) != CampusDorms.VERSION or String((dm as Dictionary).get("geo", "")) != CampusDorms.geometry_hash(did):
 		return {"_incompatible": true}
 	var pads_n: int = (CampusDorms.geometry(did)["pads"] as Array).size()
 	var sp_in: Variant = (dm as Dictionary).get("spawns", {})
@@ -1362,7 +1389,7 @@ func _fix_start(d: Dictionary) -> Dictionary:
 	for e2 in ro:
 		var sl := int(e2["slot"])
 		var v: Variant = (sp_in as Dictionary).get(str(sl), null) if sp_in is Dictionary else null
-		var lim := pads_n if int(e2["role"]) == TC.Role.RUNNER else CampusLayout.round_data().patrol_spawns.size()
+		var lim := pads_n if int(e2["role"]) == TC.Role.RUNNER else lay.patrol_spawns.size()
 		spawns[str(sl)] = int(v) if (v is float or v is int) and int(v) >= 0 and int(v) < lim else int(defaults[sl])
 	out["home_dorm"] = did
 	out["dorm"] = {"id": did, "ver": CampusDorms.VERSION, "geo": CampusDorms.geometry_hash(did), "spawns": spawns}
@@ -1376,7 +1403,7 @@ func _fix_start(d: Dictionary) -> Dictionary:
 			var cid := String((c as Dictionary).get("id", "")).substr(0, 8)
 			var x := float((c as Dictionary).get("x", NAN))
 			var z := float((c as Dictionary).get("z", NAN))
-			if cid == "" or seen.has(cid) or not is_finite(x) or not is_finite(z) or not CampusLayout.BOUNDS.has_point(Vector2(x, z)):
+			if cid == "" or seen.has(cid) or not is_finite(x) or not is_finite(z) or not lay.bounds.has_point(Vector2(x, z)):
 				continue
 			seen[cid] = true
 			coins.append({"id": cid, "x": x, "z": z})
@@ -1397,7 +1424,8 @@ func _fix_results(d: Dictionary) -> Dictionary:
 	# the away/eligibility share on guests is measured against it
 	out["round_time"] = clampf(float(d.get("round_time", 0.0)), 0.0, 3600.0)
 	var hd := String(d.get("home_dorm", ""))
-	out["home_dorm"] = hd if CampusDorms.has_dorm(hd) else ""
+	var rmap: Variant = current_start.get("map", {})
+	out["home_dorm"] = hd if CampusDorms.has_dorm(hd, String((rmap as Dictionary).get("id", "")) if rmap is Dictionary else "") else ""
 	out["coins_total"] = clampi(int(d.get("coins_total", 0)), 0, 16)
 	# the economy clamps each row's pickups to the round's spawns
 	out["coin_spawns"] = clampi(int(d.get("coin_spawns", out["coins_total"])), 0, 16)

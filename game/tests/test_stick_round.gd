@@ -104,7 +104,7 @@ static func _find_corridor(world: World3D, want: float) -> Dictionary:
 	var ss := world.direct_space_state
 	var sph := SphereShape3D.new()
 	sph.radius = 0.55
-	var b := CampusLayout.BOUNDS
+	var b := CampusLayout.shared().bounds
 	var y := b.position.y + 6.0
 	while y < b.end.y - 6.0:
 		var x := b.position.x + 6.0

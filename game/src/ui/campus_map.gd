@@ -8,10 +8,13 @@ extends Node
 ## per-frame drawing, no readback) and reused for the session; the layout is
 ## the only input, so the picture can't drift from the campus.
 ##
-## The full map shows the whole campus.  The real campus is about a
-## kilometre across, so the minimap is a window centred on you
-## (MINI_SPAN_M metres to its rim) cut from a sharper bake; markers beyond
-## its rim sit on the rim, pointing the way.
+## The full map shows the whole map.  The minimap is a window centred on
+## you (mini_span() metres to its rim: the reference campus is about a
+## kilometre across, Moonbrook College about 300 m) cut from a sharper
+## bake; markers beyond its rim sit on the rim, pointing the way.
+##
+## One map at a time: use(layout) points the transforms at a map's bounds;
+## changing map frees the other map's pictures (nothing of two maps is kept).
 ##
 ## Live things (you, your team, tonight's waters, the dorm, last-seen
 ## opponents, carts, splash cues) are drawn on top by MatchHUD.MapPainter
@@ -21,12 +24,44 @@ extends Node
 const PAD := 0.02
 const FULL_PX := 1024
 const MINI_PX := 2048
-## The minimap: metres from its centre (you) to its rim.
-const MINI_SPAN_M := 130.0
-
 static var _inst: CampusMap
-var _vps: Dictionary = {}     # px -> SubViewport
+var _vps: Dictionary = {}     # px -> SubViewport (the current map's)
 var bakes := 0                # tests: how many pictures were rendered
+## the map the transforms and pictures are for
+static var _map := ""
+static var _bounds := Rect2(-720.0, -560.0, 1190.0, 1000.0)
+static var _span := 130.0
+
+
+## Points the transforms at a layout's map (every bake and overlay of a
+## round goes through this first).
+static func use(layout: CampusLayout) -> void:
+	if layout == null:
+		return
+	_bounds = layout.bounds
+	_span = float(CampusMaps.def(layout.map_id).get("mini_span", 130.0))
+	if layout.map_id != _map:
+		_map = layout.map_id
+		if _inst != null and is_instance_valid(_inst):
+			_inst._drop()
+
+
+## The minimap: metres from its centre (you) to its rim, on this map.
+static func mini_span() -> float:
+	return _span
+
+
+## The current map's centre (the minimap's focus before you have a place).
+static func centre() -> Vector2:
+	return _bounds.get_center()
+
+
+func _drop() -> void:
+	for px in _vps:
+		var vp: SubViewport = _vps[px]
+		if is_instance_valid(vp):
+			vp.queue_free()
+	_vps.clear()
 
 
 static func shared() -> CampusMap:
@@ -41,14 +76,14 @@ static func shared() -> CampusMap:
 ## `c` showing the whole campus (canvas units or texture pixels; the bake
 ## and the overlays share it).
 static func to_map(p: Vector2, c: Vector2, half: float) -> Vector2:
-	var b := CampusLayout.BOUNDS
+	var b := _bounds
 	var s := (half * 2.0 * (1.0 - PAD)) / maxf(b.size.x, b.size.y)
 	return c + (p - b.get_center()) * s
 
 
 ## Metres -> map units at that size (whole-campus view).
 static func m_to_map(m: float, half: float) -> float:
-	var b := CampusLayout.BOUNDS
+	var b := _bounds
 	return m * (half * 2.0 * (1.0 - PAD)) / maxf(b.size.x, b.size.y)
 
 
@@ -65,6 +100,7 @@ static func uv_of(p: Vector2) -> Vector2:
 
 ## The baked picture at `px` pixels square (rendered on first use, then kept).
 func texture(layout: CampusLayout, px: int) -> Texture2D:
+	use(layout)
 	if _vps.has(px):
 		return (_vps[px] as SubViewport).get_texture()
 	var vp := SubViewport.new()
@@ -112,7 +148,7 @@ class Bake:
 			return out
 		# ground: the world beyond the play area darker, the play area calm
 		draw_rect(Rect2(Vector2.ZERO, size), Color("0f1b2e"))
-		var b := CampusLayout.BOUNDS
+		var b := L.bounds
 		var g0: Vector2 = m.call(b.position)
 		var g1: Vector2 = m.call(b.end)
 		draw_rect(Rect2(g0, g1 - g0), Color("142a2c"))
@@ -163,7 +199,7 @@ class Bake:
 					_poly(mp.call(inner), Color("3a80c0"))
 		# buildings: footprints with a drop shadow; start dorms warm
 		var dorm_b: Dictionary = {}
-		for id in CampusDorms.ids():
+		for id in CampusDorms.ids(L.map_id):
 			dorm_b[String(CampusDorms.geometry(id).get("building", ""))] = true
 		var sh := Vector2(1.0, 1.4) * maxf(k, 0.6)
 		for bd in L.buildings:

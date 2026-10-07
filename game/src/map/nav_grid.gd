@@ -1,6 +1,8 @@
 class_name NavGrid
 extends RefCounted
-## 2 m navigation grids rasterised from CampusLayout: one for runners/patrol
+## Navigation grids rasterised from a map's CampusLayout (cells of the map's
+## nav_cell: 2 m on the reference campus, 1 m on Moonbrook College, as 2.0
+## had them): one for runners/patrol
 ## on foot (low walls and rails cost extra and are hopped), one for carts
 ## (roads and parking preferred, bollards/walls/hedges solid, inflated by
 ## the cart's half-width).  Uses Godot's native AStarGrid2D so path queries
@@ -15,9 +17,9 @@ extends RefCounted
 ## doorways are carved open along their axis afterwards so a door is always
 ## reachable whatever its angle to the grid.
 
-const CELL := 2.0
-
 var layout: CampusLayout
+## cell size (m): the layout's nav_cell
+var cell := 2.0
 var origin := Vector2.ZERO
 var dims := Vector2i.ZERO
 var foot := AStarGrid2D.new()
@@ -80,8 +82,9 @@ func step() -> bool:
 
 func _init(lay: CampusLayout, staged: bool = false) -> void:
 	layout = lay
-	origin = CampusLayout.BOUNDS.position
-	dims = Vector2i(int(ceil(CampusLayout.BOUNDS.size.x / CELL)), int(ceil(CampusLayout.BOUNDS.size.y / CELL)))
+	cell = lay.nav_cell
+	origin = lay.bounds.position
+	dims = Vector2i(int(ceil(lay.bounds.size.x / cell)), int(ceil(lay.bounds.size.y / cell)))
 	if not staged:
 		_rasterize()
 
@@ -92,7 +95,7 @@ func _init(lay: CampusLayout, staged: bool = false) -> void:
 func _r_setup(part: int, _parts: int) -> void:
 	var g: AStarGrid2D = foot if part == 0 else cart
 	g.region = Rect2i(Vector2i.ZERO, dims)
-	g.cell_size = Vector2(CELL, CELL)
+	g.cell_size = Vector2(cell, cell)
 	g.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
 	g.default_compute_heuristic = AStarGrid2D.HEURISTIC_OCTILE
 	g.default_estimate_heuristic = AStarGrid2D.HEURISTIC_OCTILE
@@ -107,11 +110,11 @@ static func _slice(n: int, part: int, parts: int) -> Vector2i:
 
 
 func to_cell(p: Vector2) -> Vector2i:
-	return Vector2i(clampi(int(floor((p.x - origin.x) / CELL)), 0, dims.x - 1), clampi(int(floor((p.y - origin.y) / CELL)), 0, dims.y - 1))
+	return Vector2i(clampi(int(floor((p.x - origin.x) / cell)), 0, dims.x - 1), clampi(int(floor((p.y - origin.y) / cell)), 0, dims.y - 1))
 
 
 func to_world(c: Vector2i) -> Vector2:
-	return Vector2(origin.x + (float(c.x) + 0.5) * CELL, origin.y + (float(c.y) + 0.5) * CELL)
+	return Vector2(origin.x + (float(c.x) + 0.5) * cell, origin.y + (float(c.y) + 0.5) * cell)
 
 
 func _cells_in_rect(r: Rect2) -> Array[Vector2i]:
@@ -130,14 +133,14 @@ func _spans(poly: PackedVector2Array, fn: Callable) -> void:
 	if poly.size() < 3:
 		return
 	var r := CampusData.bounds(poly)
-	var j0 := clampi(int(floor((r.position.y - origin.y) / CELL - 0.5)), 0, dims.y - 1)
-	var j1 := clampi(int(ceil((r.end.y - origin.y) / CELL - 0.5)), 0, dims.y - 1)
+	var j0 := clampi(int(floor((r.position.y - origin.y) / cell - 0.5)), 0, dims.y - 1)
+	var j1 := clampi(int(ceil((r.end.y - origin.y) / cell - 0.5)), 0, dims.y - 1)
 	for j in range(j0, j1 + 1):
-		var z := origin.y + (float(j) + 0.5) * CELL
+		var z := origin.y + (float(j) + 0.5) * cell
 		var xs := CampusBuilder.scan_row(poly, z)
 		for k in range(0, xs.size() - 1, 2):
-			var i0 := maxi(int(ceil((xs[k] - origin.x) / CELL - 0.5)), 0)
-			var i1 := mini(int(floor((xs[k + 1] - origin.x) / CELL - 0.5)), dims.x - 1)
+			var i0 := maxi(int(ceil((xs[k] - origin.x) / cell - 0.5)), 0)
+			var i1 := mini(int(floor((xs[k + 1] - origin.x) / cell - 0.5)), dims.x - 1)
 			if i1 >= i0:
 				fn.call(Rect2i(i0, j, i1 - i0 + 1, 1))
 
@@ -174,14 +177,14 @@ func _weight_poly(g: AStarGrid2D, poly: PackedVector2Array, inflate: float, w: f
 
 
 func _solid_segment(g: AStarGrid2D, a: Vector2, b: Vector2, half_t: float, inflate: float) -> void:
-	var r := Rect2(a, Vector2.ZERO).expand(b).grow(half_t + inflate + CELL)
+	var r := Rect2(a, Vector2.ZERO).expand(b).grow(half_t + inflate + cell)
 	for c in _cells_in_rect(r):
 		if CampusData.dist_to_segment(to_world(c), a, b) <= half_t + inflate:
 			g.set_point_solid(c, true)
 
 
 func _weight_segment(g: AStarGrid2D, a: Vector2, b: Vector2, reach: float, w: float, mark_low: bool) -> void:
-	var r := Rect2(a, Vector2.ZERO).expand(b).grow(reach + CELL)
+	var r := Rect2(a, Vector2.ZERO).expand(b).grow(reach + cell)
 	for c in _cells_in_rect(r):
 		if CampusData.dist_to_segment(to_world(c), a, b) <= reach:
 			g.set_point_weight_scale(c, maxf(g.get_point_weight_scale(c), w))
@@ -190,7 +193,7 @@ func _weight_segment(g: AStarGrid2D, a: Vector2, b: Vector2, reach: float, w: fl
 
 
 func _solid_circle(g: AStarGrid2D, center: Vector2, radius: float) -> void:
-	var r := Rect2(center - Vector2(radius, radius), Vector2(radius, radius) * 2.0).grow(CELL)
+	var r := Rect2(center - Vector2(radius, radius), Vector2(radius, radius) * 2.0).grow(cell)
 	for c in _cells_in_rect(r):
 		if to_world(c).distance_to(center) <= radius:
 			g.set_point_solid(c, true)
@@ -207,12 +210,12 @@ func _r_outside(part: int, parts: int) -> void:
 	var bnd := _inner_boundary()
 	var sl := _slice(dims.y, part, parts)
 	for j in range(sl.x, sl.y):
-		var z := origin.y + (float(j) + 0.5) * CELL
+		var z := origin.y + (float(j) + 0.5) * cell
 		var xs := CampusBuilder.scan_row(bnd, z) if bnd.size() >= 3 else PackedFloat32Array()
 		var x := 0
 		for k in range(0, xs.size() - 1, 2):
-			var i0 := clampi(int(ceil((xs[k] - origin.x) / CELL - 0.5)), 0, dims.x)
-			var i1 := clampi(int(floor((xs[k + 1] - origin.x) / CELL - 0.5)), -1, dims.x - 1)
+			var i0 := clampi(int(ceil((xs[k] - origin.x) / cell - 0.5)), 0, dims.x)
+			var i1 := clampi(int(floor((xs[k + 1] - origin.x) / cell - 0.5)), -1, dims.x - 1)
 			if i0 > x:
 				foot.fill_solid_region(Rect2i(x, j, i0 - x, 1), true)
 				cart.fill_solid_region(Rect2i(x, j, i0 - x, 1), true)
@@ -251,7 +254,7 @@ func _r_roads(part: int, parts: int) -> void:
 		var pts: PackedVector2Array = r["pts"]
 		var hw := float(r["w"]) * 0.5
 		for i in pts.size() - 1:
-			var rect := Rect2(pts[i], Vector2.ZERO).expand(pts[i + 1]).grow(hw + CELL)
+			var rect := Rect2(pts[i], Vector2.ZERO).expand(pts[i + 1]).grow(hw + cell)
 			for c in _cells_in_rect(rect):
 				if CampusData.dist_to_segment(to_world(c), pts[i], pts[i + 1]) <= hw:
 					cart.set_point_weight_scale(c, 1.0)
@@ -264,7 +267,7 @@ func _r_roads(part: int, parts: int) -> void:
 ## _r_dorms.  Background buildings lie outside the play area anyway.
 func _r_buildings(part: int, parts: int) -> void:
 	var dorm_b: Dictionary = {}
-	for id in CampusDorms.ids():
+	for id in CampusDorms.ids(layout.map_id):
 		dorm_b[String(CampusDorms.geometry(id).get("building", ""))] = id
 	var sl := _slice(layout.buildings.size(), part, parts)
 	for bi in range(sl.x, sl.y):
@@ -333,12 +336,14 @@ func _r_lines(part: int, parts: int) -> void:
 
 
 ## Tree trunks block both; lamps and benches cost a runner a little (a
-## 2 m cell is wider than a bench is deep) and stop carts.
+## 2 m cell is wider than a bench is deep) and stop carts; boulders and
+## solid pieces (railings, signs, a fountain's column) block both.
 func _r_points(part: int, parts: int) -> void:
 	var nt := layout.trees.size()
 	var nl := layout.lamps.size()
 	var nb := layout.benches.size()
-	var sl := _slice(nt + nl + nb + layout.props.size(), part, parts)
+	var np := layout.props.size()
+	var sl := _slice(nt + nl + nb + np + layout.rocks.size() + layout.solids.size(), part, parts)
 	for i in range(sl.x, sl.y):
 		if i < nt:
 			var t: Dictionary = layout.trees[i]
@@ -354,8 +359,23 @@ func _r_points(part: int, parts: int) -> void:
 			var bp: Vector2 = bn["pos"]
 			foot.set_point_weight_scale(to_cell(bp), maxf(foot.get_point_weight_scale(to_cell(bp)), 3.0))
 			_solid_circle(cart, bp, 1.0 + CART_INF)
+		elif i >= nt + nl + nb + np:
+			var k := i - nt - nl - nb - np
+			var so: Dictionary = layout.rocks[k] if k < layout.rocks.size() else layout.solids[k - layout.rocks.size()]
+			var c3: Variant = so["pos"]
+			var c2 := Vector2((c3 as Vector3).x, (c3 as Vector3).z) if c3 is Vector3 else (c3 as Vector2)
+			var sz: Vector3 = so["size"]
+			if String(so.get("shape", "")) == "cyl":
+				_solid_circle(foot, c2, sz.x * 0.5 + FOOT_INF * 0.5)
+				_solid_circle(cart, c2, sz.x * 0.5 + CART_INF)
+				continue
+			var box := CampusDorms._obox(c2, Vector2(sz.x, sz.z), float(so["rot"]))
+			_solid_poly(foot, box, FOOT_INF * 0.5)
+			_solid_poly(cart, box, CART_INF)
 		else:
 			var pr: Dictionary = layout.props[i - nt - nl - nb]
+			if not bool(pr.get("collide", true)):
+				continue
 			var ps := CampusArchitecture.prop_collider(pr)
 			if ps == Vector3.ZERO:
 				continue
@@ -381,14 +401,14 @@ func _r_waters(part: int, parts: int) -> void:
 ## furniture are solid on foot, then each doorway is carved open along its
 ## axis from the approach to the inside point.
 func _r_dorms(_part: int, _parts: int) -> void:
-	for id in CampusDorms.ids():
+	for id in CampusDorms.ids(layout.map_id):
 		var g := CampusDorms.geometry(id)
 		for poly in g["foot"]:
 			_solid_poly(foot, poly, FOOT_INF)
 		for dr in g["doors"]:
 			var a: Vector2 = dr["approach"]
 			var b: Vector2 = dr["inside"]
-			var n := maxi(2, int(a.distance_to(b) / (CELL * 0.5)))
+			var n := maxi(2, int(a.distance_to(b) / (cell * 0.5)))
 			for k in n + 1:
 				var c := to_cell(a.lerp(b, float(k) / float(n)))
 				foot.set_point_solid(c, false)
@@ -403,7 +423,7 @@ func _r_edges(_part: int, _parts: int) -> void:
 			continue
 		var a: Vector2 = p["carve"][0]
 		var b: Vector2 = p["carve"][1]
-		var n := maxi(2, int(a.distance_to(b) / (CELL * 0.25)))
+		var n := maxi(2, int(a.distance_to(b) / (cell * 0.25)))
 		var prev := to_cell(a)
 		for k in n + 1:
 			var c := to_cell(a.lerp(b, float(k) / float(n)))
@@ -416,8 +436,8 @@ func _r_edges(_part: int, _parts: int) -> void:
 		var pc: Vector3 = p["center"]
 		var ps: Vector3 = p["size"]
 		if p.get("dock", false):
-			for cell in _cells_in_rect(Rect2(Vector2(pc.x, pc.z) - Vector2(ps.x, ps.z) * 0.5 + Vector2(0.6, 0.6), Vector2(ps.x, ps.z) - Vector2(1.2, 1.2))):
-				foot.set_point_solid(cell, false)
+			for cc in _cells_in_rect(Rect2(Vector2(pc.x, pc.z) - Vector2(ps.x, ps.z) * 0.5 + Vector2(0.6, 0.6), Vector2(ps.x, ps.z) - Vector2(1.2, 1.2))):
+				foot.set_point_solid(cc, false)
 	# map edge (one cell deep)
 	for g in [foot, cart]:
 		g.fill_solid_region(Rect2i(0, 0, dims.x, 1))

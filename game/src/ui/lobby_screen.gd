@@ -222,7 +222,7 @@ func build() -> void:
 	_frame_stage.call_deferred(roster_col)
 
 
-## The settings as three short chips in one tappable group.
+## The settings as short chips in one tappable group (the map first).
 func _settings_summary() -> Button:
 	var b := UIKit.card_button(Vector2(0, UIKit.touch_min()), Color(UIKit.SLATE, 0.94))
 	b.tooltip_text = "Party settings"
@@ -235,7 +235,7 @@ func _settings_summary() -> Button:
 	settings_lock = Icons.IconRect.new("sliders", UIKit.TEAL, 26)
 	settings_lock.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(settings_lock)
-	for i in 3:
+	for i in PartySeries.summary_parts(session.settings).size():
 		var chip := PanelContainer.new()
 		chip.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.NAVY, 0.55), 999, 0, Color.WHITE, 12))
 		chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -750,6 +750,17 @@ func _settings_sheet() -> void:
 	var cur := session.settings.duplicate()
 	var rows := []
 	var notes := {}
+	# the map: a compact row; its sheet shows both maps (the host picks,
+	# guests see the host's choice)
+	v.add_child(UIKit.styled("Map", "overline", UIKit.IVORY_MUTED))
+	var map_row := MapRow.make(String(cur.get("map", CampusMaps.DEFAULT_ID)), host and not locked)
+	map_row.pressed.connect(func() -> void:
+		MapSheet.open(self, String(session.settings.get("map", CampusMaps.DEFAULT_ID)), host and not locked, func(id: String) -> void:
+			if session.host_set_settings(int(session.settings["watch"]), int(session.settings["rounds"]), id):
+				Save.set_setting("party_map", id)
+			_refresh()
+			_settings_sheet()))
+	v.add_child(map_row)
 	for spec in [["Night Watch", "watch", [[1, "1"], [2, "2"], [3, "3"]], "More Night Watch is tougher for runners."],
 			["Rounds", "rounds", [[1, "1"], [3, "3"], [5, "5"]], "Most Round Wins takes the series."]]:
 		v.add_child(UIKit.styled(String(spec[0]), "overline", UIKit.IVORY_MUTED))
@@ -763,7 +774,7 @@ func _settings_sheet() -> void:
 			var val: int = o[0]
 			b.pressed.connect(func() -> void:
 				cur[key] = val
-				session.host_set_settings(int(cur["watch"]), int(cur["rounds"]))
+				session.host_set_settings(int(cur["watch"]), int(cur["rounds"]), String(cur.get("map", "")))
 				cur = session.settings.duplicate()
 				_paint_choices(rows, cur, notes)
 				_refresh())

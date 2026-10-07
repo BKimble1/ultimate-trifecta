@@ -16,6 +16,8 @@ var dev_local_bot := false
 var dev_shots_dir := ""
 var dev_quit_after := 0.0
 var dev_seed := -1
+## dev/automation: --map=<id> plays practice on that map (else the saved choice)
+var dev_map := ""
 var dev_report := ""
 var dev_rounds := 1
 var dev_expect := 8
@@ -61,6 +63,8 @@ func _ready() -> void:
 			dev_quit_after = float(a.split("=")[1])
 		elif a.begins_with("--seed="):
 			dev_seed = int(a.split("=")[1])
+		elif a.begins_with("--map="):
+			dev_map = a.split("=")[1]
 		elif a.begins_with("--report="):
 			dev_report = a.split("=")[1]
 		elif a.begins_with("--rounds="):
@@ -483,10 +487,18 @@ func start_practice(role: String, tutorial: bool) -> void:
 	session = NetSession.new()
 	session.name = "Session"
 	add_child(session)
-	session.start_offline(Save.player_uid(), Save.player_name(), Save.data["cosmetic"], role if role in ["runner", "patrol", "random"] else "runner", tutorial)
+	session.start_offline(Save.player_uid(), Save.player_name(), Save.data["cosmetic"], role if role in ["runner", "patrol", "random"] else "runner", tutorial, practice_map())
 	session.match_starting.connect(_on_match_starting)
 	session.results_received.connect(_on_results)
 	session.host_start_match(dev_seed)
+
+
+## The map practice plays: the player's own choice (kept on this device),
+## else the default map.  An explicit choice always wins.
+func practice_map() -> String:
+	if dev_map != "":
+		return CampusMaps.sanitize(dev_map)
+	return CampusMaps.sanitize(Save.get_setting("practice_map", CampusMaps.DEFAULT_ID))
 
 
 # ---------------------------------------------------------------------------
@@ -699,6 +711,8 @@ func _begin_session(mode: int, t: NetTransport, code: String) -> void:
 	# (V6) the name other players see: service-approved, else curated
 	if mode == NetSession.Mode.HOST:
 		session.start_host(t, code, Save.player_uid(), Save.party_name(), Save.data["cosmetic"], pref)
+		# the host's last party map, until they change it between series
+		session.settings["map"] = CampusMaps.sanitize(Save.get_setting("party_map", CampusMaps.DEFAULT_ID))
 	else:
 		session.start_client(t, code, Save.player_uid(), Save.party_name(), Save.data["cosmetic"], pref)
 		session.rejoin_key = Save.rejoin_key_for(code)
@@ -729,6 +743,8 @@ func _on_session_ended(reason: String) -> void:
 			msg = "Couldn't find that room. Check the code and that the host's room is open."
 		"version":
 			msg = "That party is on a different version of the game. Update the game to join."
+		"map_update":
+			msg = "That party is playing a map this version of the game doesn't have yet. Update the game to play it."
 		"admission":
 			msg = "Couldn't confirm your place in that party. Try joining with the code again."
 		"not_allowed":

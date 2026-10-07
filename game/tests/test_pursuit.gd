@@ -46,7 +46,7 @@ func _free(sim: MatchSim, a: Vector3, d: Vector2, length: float) -> bool:
 func _open_lane(sim: MatchSim) -> Array:
 	if not _lane.is_empty():
 		return _lane
-	var b := CampusLayout.BOUNDS
+	var b := CampusLayout.shared().bounds
 	var best: Array = []
 	for x in range(int(b.position.x) + 20, int(b.end.x) - 20, 10):
 		for z in range(int(b.position.y) + 20, int(b.end.y) - 20, 10):

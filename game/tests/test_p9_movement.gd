@@ -539,7 +539,7 @@ func test_old_protocol_is_refused_with_update_needed() -> void:
 ## props on it or 1.5 m either side): [center] or [] when none.
 static func _open_circle(sim: MatchSim, rad: float) -> Array:
 	var ng := NavGrid.shared(sim.layout)
-	var b := CampusLayout.BOUNDS
+	var b := CampusLayout.shared().bounds
 	var n := 64
 	var ss := sim.space_state()
 	var sph := SphereShape3D.new()

@@ -1,12 +1,21 @@
 class_name CampusDorms
 extends RefCounted
-## The start dorms (the reference campus's two men's halls): runners spawn in
-## tonight's home dorm and finish by running back in through one of its
-## doors.  The host picks the dorm per round and publishes it; nothing here
-## is derived independently by a client.
+## The start dorms of every map (the reference campus's two men's halls,
+## Moonbrook College's three fictional halls): runners spawn in tonight's
+## home dorm and finish by running back in through one of its doors.  The
+## host's game picks the dorm per round (CampusDorms.pick, from the round
+## seed) and publishes it in the round configuration; nothing here is
+## derived independently by a client.
 ##
-## Defined by the gameplay layer (game/data/campus/gameplay.json, items of
-## kind "start_dorm"): the building it belongs to, the open interior at
+## Dorm ids are unique across maps and each belongs to one map
+## (CampusMaps.map_of_dorm): an id from one map never resolves to a hall of
+## the other.  A dorm with no feasible target set in its map's route table
+## (route analysis: no combination of waters fits the round from it), or
+## whose data says "race_start": false, stays in the world and the map but
+## is never a race's home.
+##
+## Defined by each map's gameplay layer (items of kind "start_dorm"): the
+## building it belongs to, the open interior at
 ## ground level (a commons `room` polygon plus short door `corridors`, all
 ## inside the traced footprint), the ceiling height, and the doors at the
 ## building's real entrances.  Everything a dorm is made of is computed here
@@ -42,19 +51,25 @@ const FINISH_Y := Vector2(-0.5, 1.6)
 const MAX_STEP_M := 3.0
 const PAD_COUNT := 8
 
-static var _defs: Array = []
+static var _defs: Dictionary = {}     # map id -> [start_dorm item], the default first
 static var _geo: Dictionary = {}
 
 
-static func _load() -> void:
-	if not _defs.is_empty():
-		return
-	for it in CampusData.shared().items("gameplay"):
-		if String(it.get("kind", "")) == "start_dorm":
-			_defs.append(it)
-	# the default dorm first
-	_defs.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return bool(a.get("default", false)) and not bool(b.get("default", false)))
+static func _load(map_id: String) -> Array:
+	if not _defs.has(map_id):
+		var out: Array = []
+		var cd := CampusMaps.data(map_id)
+		if cd != null:
+			for it in cd.items("gameplay"):
+				if String(it.get("kind", "")) == "start_dorm":
+					var d := (it as Dictionary).duplicate()
+					d["map"] = map_id
+					out.append(d)
+		# the default dorm first
+		out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return bool(a.get("default", false)) and not bool(b.get("default", false)))
+		_defs[map_id] = out
+	return _defs[map_id]
 
 
 ## Drops cached definitions and geometry (tests that swap data).
@@ -63,21 +78,33 @@ static func reset() -> void:
 	_geo.clear()
 
 
-static func ids() -> Array[String]:
-	_load()
+## The map's start dorms (the default map's without one), default first.
+## `races_only`: just those a race may start in.
+static func ids(map_id: String = "", races_only: bool = false) -> Array[String]:
 	var out: Array[String] = []
-	for d in _defs:
+	for d in _load(map_id if map_id != "" else CampusMaps.DEFAULT_ID):
+		if races_only and (not bool(d.get("race_start", true)) or not RulesLogic.dorm_feasible(String(d["dorm"]))):
+			continue
 		out.append(String(d["dorm"]))
 	return out
 
 
-static func has_dorm(id: String) -> bool:
-	return ids().has(id)
+## A start dorm of that map (of any map without one).
+static func has_dorm(id: String, map_id: String = "") -> bool:
+	var m := CampusMaps.map_of_dorm(id)
+	return m != "" and (map_id == "" or m == map_id) and ids(m).has(id)
+
+
+## Whether a race may start in this dorm (of that map).
+static func can_start(id: String, map_id: String) -> bool:
+	return has_dorm(id, map_id) and ids(map_id, true).has(id)
 
 
 static func def(id: String) -> Dictionary:
-	_load()
-	for d in _defs:
+	var m := CampusMaps.map_of_dorm(id)
+	if m == "":
+		return {}
+	for d in _load(m):
 		if String(d["dorm"]) == id:
 			var out := (d as Dictionary).duplicate()
 			out["id"] = id
@@ -89,16 +116,18 @@ static func display_name(id: String) -> String:
 	return String(def(id).get("name", "the dorm"))
 
 
-static func default_id() -> String:
-	_load()
-	return String(_defs[0]["dorm"]) if not _defs.is_empty() else ""
+## The map's default home (the default map's without one).
+static func default_id(map_id: String = "") -> String:
+	var all := ids(map_id, true)
+	return all[0] if not all.is_empty() else ""
 
 
-## Tonight's home dorm: the default dorm when there is no previous round,
-## otherwise never the same as last round's when another is available.
-## Every client derives nothing itself: the host publishes the choice.
-static func pick(seed_v: int, previous: String) -> String:
-	var all := ids()
+## Tonight's home dorm on a map: its default dorm when there is no previous
+## round, otherwise never the same as last round's when another is
+## available.  Only dorms a race may start in.  Every client derives nothing
+## itself: the host publishes the choice.
+static func pick(map_id: String, seed_v: int, previous: String) -> String:
+	var all := ids(map_id, true)
 	if all.is_empty():
 		return ""
 	if previous == "" or not all.has(previous):
@@ -137,7 +166,7 @@ static func geometry(id: String) -> Dictionary:
 
 
 static func _build(d: Dictionary) -> Dictionary:
-	var data := CampusData.shared()
+	var data := CampusMaps.data(String(d["map"]))
 	var bld := data.item(String(d.get("building", "")))
 	var footprint: PackedVector2Array = CampusData.ccw(bld.get("footprint", PackedVector2Array()))
 	var h := float(d.get("h", bld.get("h", 10.0)))
@@ -209,7 +238,7 @@ static func _build(d: Dictionary) -> Dictionary:
 			if prev != Vector2.INF:
 				cart_lines.append([prev, q])
 			prev = q
-	return {"id": String(d["id"]), "building": String(d.get("building", "")), "room": room, "interior": interior,
+	return {"id": String(d["id"]), "map": String(d["map"]), "building": String(d.get("building", "")), "room": room, "interior": interior,
 		"footprint": footprint, "solid": solid, "boxes": boxes, "foot": foot, "doors": doors, "pads": pads,
 		"respawn": respawn, "cart_lines": cart_lines, "ceil": ceil_y, "h": h, "inside": _merge(inside),
 		"room_rect": CampusData.bounds(room)}

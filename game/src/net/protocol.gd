@@ -36,7 +36,11 @@ extends RefCounted
 ## 24-bit signed values (same 1/64 m precision, +-131 km); y stays int16.
 ## START names the campus data's hash (`campus`) so two builds with different
 ## maps can never share a round.  An 8 and a 9 game refuse each other at join.
-const VERSION := 9
+## Protocol 10 (two maps): the party settings carry the map id (LOBBY) and
+## the round configuration the map's revision ({"map": {id, data, dorms}},
+## replacing "campus"); a guest without that map data refuses the round
+## before loading.  A 9 and a 10 game refuse each other at join.
+const VERSION := 10
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}

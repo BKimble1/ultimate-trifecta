@@ -1,11 +1,13 @@
 extends SceneTree
-## Route analysis (campus rebuild): route lengths on the runners' nav grid
-## between each start dorm and every water of the objective pool, the best
-## order for every three-target combination per dorm, and the curated fair
-## set per dorm.  Measured, not assumed: nothing here changes the campus,
-## the speeds or the timer; the report says how long the real routes are.
-## Usage: godot --headless --path game -s res://tools/route_analysis.gd
-## Writes res://config/route_table.json (and prints a report).
+## Route analysis, per map: route lengths on the runners' nav grid between
+## each start dorm and every water of the objective pool, the best order for
+## every three-target combination per dorm, and the curated feasible set per
+## dorm.  Measured, not assumed: nothing here changes the map, the speeds or
+## the timer; the report says how long the real routes are.
+## Usage: godot --headless --path game -s res://tools/route_analysis.gd -- [--map=<id>]
+## (default: the reference campus).  Writes the map's route table
+## (CampusMaps "routes": config/route_table.json, config/route_table_classic.json)
+## and prints a report.
 ##
 ## A trip starts on the dorm's middle pad, leaves through its nearest door,
 ## visits the three waters (in at a jump point, out at a shore exit) and
@@ -22,16 +24,29 @@ const TIME_BAND := 0.12  # measured bot-time band around the median
 ## Real scale: the reference campus's routes are far longer than the old
 ## map's, and the round stays 240 s.  A combination is kept only when its
 ## ideal run (full speed on the measured route, three splashes) fits in
-## this share of the round, leaving time to dodge the Night Watch; if fewer
-## than MIN_CURATED fit, the shortest ones are kept (and reported).
+## this share of the round, leaving time to dodge the Night Watch, and (when
+## measured) the bots' own time fits in 95 % of it.  Nothing else is ever
+## admitted to make up a count: a dorm with no feasible combination keeps
+## an empty set and is no race's home (CampusDorms.ids(map, true)).
 const FEASIBLE_SHARE := 0.85
-const MIN_CURATED := 3
+const BOT_SHARE := 0.95
+
+var grid_cell := 2.0
 
 
 func _initialize() -> void:
 	var cfg: RulesConfig = load("res://config/rules_default.tres")
-	var lay := CampusLayout.new()
+	var map_id := CampusMaps.DEFAULT_ID
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--map="):
+			map_id = a.split("=")[1]
+	if not CampusMaps.has(map_id):
+		push_error("unknown map " + map_id)
+		quit(1)
+		return
+	var lay := CampusMaps.layout(map_id)
 	var nav := NavGrid.new(lay)
+	grid_cell = nav.cell
 	var grid := _grid(nav)
 	var pool := lay.pool_size()
 	var wf: Array = []
@@ -44,13 +59,14 @@ func _initialize() -> void:
 			src.append(Vector2((e as Vector3).x, (e as Vector3).z))
 		wf.append(_field(grid, src))
 	var measured_all := {}
-	if FileAccess.file_exists("res://config/route_bot_times.json"):
-		var mv: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://config/route_bot_times.json"))
+	var times_path := "res://config/route_bot_times.json" if map_id == CampusMaps.DEFAULT_ID else "res://config/route_bot_times_%s.json" % map_id
+	if FileAccess.file_exists(times_path):
+		var mv: Variant = JSON.parse_string(FileAccess.get_file_as_string(times_path))
 		if mv is Dictionary:
 			measured_all = mv
 	var per_dorm := {}
 	var all_lens: Array = []
-	for id in CampusDorms.ids():
+	for id in CampusDorms.ids(map_id):
 		var r := _dorm_routes(lay, nav, grid, wf, id)
 		per_dorm[id] = r
 		for cb in r["combos"]:
@@ -64,6 +80,7 @@ func _initialize() -> void:
 	tall.sort()
 	var tmed := float(tall[tall.size() / 2]) if not tall.is_empty() else 0.0
 	var dorms_out := {}
+	var band := float(CampusMaps.def(map_id).get("route_band", 0.0))
 	var speed := float(cfg.runner_speed)
 	var splash := float(cfg.splash_sequence_s)
 	for id in per_dorm:
@@ -84,42 +101,42 @@ func _initialize() -> void:
 				cb["time_vs_median"] = snappedf(float(measured[key]) / tmed, 0.01) if tmed > 0.0 else 0.0
 			var ok := bool(cb["fits_round"])
 			if measured.has(key):
-				ok = ok and float(measured[key]) <= float(cfg.match_duration_s) * 0.95
+				cb["bot_fits"] = float(measured[key]) <= float(cfg.match_duration_s) * BOT_SHARE
+				ok = ok and bool(cb["bot_fits"])
+			if band > 0.0:
+				# a map with a fairness band (Moonbrook College, as 2.0 had it):
+				# also within the band around the median of every dorm's trips,
+				# and of the measured bot times
+				ok = ok and absf(L2 / median - 1.0) <= band
+				if measured.has(key) and tmed > 0.0:
+					ok = ok and absf(float(measured[key]) / tmed - 1.0) <= TIME_BAND
 			if ok:
 				curated.append(cb["targets"])
-		if curated.size() < MIN_CURATED:
-			var by_len: Array = (r["combos"] as Array).duplicate()
-			by_len.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return float(x["length_m"]) < float(y["length_m"]))
-			for cb2 in by_len:
-				if curated.size() >= MIN_CURATED:
-					break
-				if not curated.has(cb2["targets"]):
-					curated.append(cb2["targets"])
 		dorms_out[id] = {"curated": curated, "combos": r["combos"], "pair_m": r["pair_m"], "bot_time_median_s": tmed,
-			"door_m": r["door_m"], "unreachable": r["unreachable"]}
-		print("%s: curated %d/%d" % [id, curated.size(), (r["combos"] as Array).size()])
+			"door_m": r["door_m"], "unreachable": r["unreachable"], "race_viable": not curated.is_empty()}
+		print("%s: feasible %d/%d%s" % [id, curated.size(), (r["combos"] as Array).size(), "" if not curated.is_empty() else "   NOT A RACE START: no combination fits the round"])
 		for cb in r["combos"]:
 			print("  %-36s best %-36s %7.1f m  ideal %5.1f s  (%.2f)%s" % [str(cb["targets"].map(func(i): return lay.waters[i]["short"])), str(cb["best_order"].map(func(i): return lay.waters[i]["short"])),
 				cb["length_m"], cb["ideal_s"], cb["vs_median"], ("" if curated.has(cb["targets"]) else "   EXCLUDED") + ("" if bool(cb["fits_round"]) else " (does not fit the round)")])
 		if not (r["unreachable"] as Array).is_empty():
 			print("  UNREACHABLE: %s" % str(r["unreachable"]))
-	var home: Dictionary = dorms_out[CampusDorms.default_id()]
+	var home: Dictionary = dorms_out[CampusDorms.ids(map_id)[0]]
 	var names: Array = ["dorm"]
 	for i in pool:
 		names.append(lay.waters[i]["id"])
 	var round_s := float(cfg.match_duration_s)
 	var out := {
 		"generated_by": "tools/route_analysis.gd", "band": BAND, "time_band": TIME_BAND, "median_m": snappedf(median, 0.1),
-		"rule": "keep combinations whose ideal run fits %.0f%% of the round (fewer than %d: the shortest)" % [FEASIBLE_SHARE * 100.0, MIN_CURATED],
-		"feasible_share": FEASIBLE_SHARE,
+		"rule": "keep combinations whose ideal run fits %.0f%% of the round and (when measured) whose bot time fits %.0f%%; nothing else" % [FEASIBLE_SHARE * 100.0, BOT_SHARE * 100.0],
+		"feasible_share": FEASIBLE_SHARE, "bot_share": BOT_SHARE, "map": map_id,
 		"nodes": names, "pair_m": home["pair_m"], "combos": home["combos"], "curated": home["curated"],
 		"unreachable": home["unreachable"], "bot_time_median_s": home["bot_time_median_s"],
-		"dorms": dorms_out, "dorm_version": CampusDorms.VERSION, "campus": CampusData.shared().campus_hash,
+		"dorms": dorms_out, "dorm_version": CampusDorms.VERSION, "campus": lay.data.campus_hash,
 		"runner_speed": speed, "round_s": round_s,
 		"runner_estimate_s": {"min": snappedf(float(all_lens[0]) / speed + 3.0 * splash, 1), "median": snappedf(median / speed + 3.0 * splash, 1),
 			"max": snappedf(float(all_lens[-1]) / speed + 3.0 * splash, 1)},
 	}
-	var f := FileAccess.open("res://config/route_table.json", FileAccess.WRITE)
+	var f := FileAccess.open(String(CampusMaps.def(map_id)["routes"]), FileAccess.WRITE)
 	f.store_string(JSON.stringify(out, "  "))
 	print("median over all dorms %.1f m; ideal runs %.0f..%.0f s (median %.0f s) against a %.0f s round" % [median,
 		float(out["runner_estimate_s"]["min"]), float(out["runner_estimate_s"]["max"]), float(out["runner_estimate_s"]["median"]), round_s])
@@ -166,7 +183,7 @@ func _to(grid: Dictionary, field: PackedInt32Array, pts: Array) -> float:
 		var c := _cell(grid, q)
 		if c < 0 or field[c] >= PaceFields.UNREACH:
 			continue
-		best = minf(best, float(field[c]) / PaceFields.UNIT * NavGrid.CELL)
+		best = minf(best, float(field[c]) / PaceFields.UNIT * grid_cell)
 	return best
 
 

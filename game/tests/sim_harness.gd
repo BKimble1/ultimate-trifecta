@@ -13,7 +13,8 @@ func _init(runner) -> void:
 
 
 ## roles: Array of TC.Role, one per slot. bots: slots driven by BotBrain.
-## opts (V6): "dorm" (home dorm id, default Puddlesworth Hall), "coins".
+## opts (V6): "dorm" (home dorm id, default: the map's default), "coins",
+## "map" (a CampusMaps id, default the reference campus).
 func make(roles: Array, targets: Array = [0, 1, 2], bots: Array = [], seed_v: int = 11, opts: Dictionary = {}) -> MatchSim:
 	sim = MatchSim.new()
 	t.add_child(sim)
@@ -22,7 +23,7 @@ func make(roles: Array, targets: Array = [0, 1, 2], bots: Array = [], seed_v: in
 		roster.append({"slot": i, "uid": "u%d" % i, "name": "P%d" % i, "is_bot": bots.has(i), "role": roles[i], "cosmetic": {}})
 	var o := {"bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p)}
 	o.merge(opts, true)
-	sim.setup(Rules.cfg, CampusLayout.shared(), roster, seed_v, targets, "test-%d" % seed_v, o)
+	sim.setup(Rules.cfg, CampusMaps.layout(String(opts.get("map", CampusMaps.DEFAULT_ID))), roster, seed_v, targets, "test-%d" % seed_v, o)
 	return sim
 
 

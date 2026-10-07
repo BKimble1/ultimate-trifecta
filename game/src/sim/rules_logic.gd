@@ -2,19 +2,23 @@ class_name RulesLogic
 extends RefCounted
 ## Pure rule functions (no scene tree). Unit-tested directly.
 
-const ROUTE_TABLE_PATH := "res://config/route_table.json"
-
-static var _route_table: Dictionary = {}
+static var _route_tables: Dictionary = {}   # map id -> the map's route table
 
 
-static func route_table() -> Dictionary:
-	if _route_table.is_empty():
-		var f := FileAccess.open(ROUTE_TABLE_PATH, FileAccess.READ)
+## A map's route table (tools/route_analysis.gd writes one per map; its path
+## is in CampusMaps): curated feasible target sets per home dorm.  The
+## default map's without one.
+static func route_table(map_id: String = "") -> Dictionary:
+	var m := map_id if map_id != "" else CampusMaps.DEFAULT_ID
+	if not _route_tables.has(m):
+		var rt: Dictionary = {}
+		var f := FileAccess.open(String(CampusMaps.def(m).get("routes", "")), FileAccess.READ)
 		if f:
 			var parsed: Variant = JSON.parse_string(f.get_as_text())
 			if parsed is Dictionary:
-				_route_table = parsed
-	return _route_table
+				rt = parsed
+		_route_tables[m] = rt
+	return _route_tables[m]
 
 
 ## All 20 three-target combinations of the six waters (sorted index triples).
@@ -27,24 +31,31 @@ static func all_combos(n: int = 6) -> Array:
 	return out
 
 
-## Curated fair combinations (from route analysis, per home dorm in
-## route_table.json "dorms"; without a dorm, the default dorm's set).  Only
-## combinations of waters in the pool (`pool` objective waters) count; with
-## none left, every combination of the pool.
+## The feasible target sets of a home dorm (from route analysis: its map's
+## route table "dorms"): only combinations whose real routes fit the round
+## with room to spare, and only waters in the pool (`pool` objective
+## waters).  Never padded out with infeasible ones: a dorm without a
+## feasible set has none (and is no race's home: dorm_feasible).  Without a
+## dorm, the default map's default dorm's set.
 static func curated_combos(dorm_id: String = "", pool: int = 6) -> Array:
-	var rt := route_table()
-	var src: Variant = rt.get("curated", [])
-	if dorm_id != "" and rt.get("dorms", {}) is Dictionary and (rt.get("dorms", {}) as Dictionary).has(dorm_id):
-		src = (rt["dorms"][dorm_id] as Dictionary).get("curated", src)
-	if src is Array and (src as Array).size() > 0:
-		var out: Array = []
-		for c in src:
-			var cb := [int(c[0]), int(c[1]), int(c[2])]
-			if cb.max() < pool:
-				out.append(cb)
-		if not out.is_empty():
-			return out
-	return all_combos(pool)
+	var map_id := CampusMaps.map_of_dorm(dorm_id) if dorm_id != "" else CampusMaps.DEFAULT_ID
+	var rt := route_table(map_id)
+	var d := dorm_id if dorm_id != "" else CampusDorms.default_id(map_id)
+	var dorms: Variant = rt.get("dorms", {})
+	if not (dorms is Dictionary) or not (dorms as Dictionary).has(d):
+		return []
+	var out: Array = []
+	for c in (dorms[d] as Dictionary).get("curated", []):
+		var cb := [int(c[0]), int(c[1]), int(c[2])]
+		if cb.max() < pool:
+			out.append(cb)
+	return out
+
+
+## Whether a race may start in this dorm: route analysis found at least one
+## feasible target set from it.
+static func dorm_feasible(dorm_id: String) -> bool:
+	return not curated_combos(dorm_id).is_empty()
 
 
 ## Choose the shared targets from the match seed, avoiding an immediate repeat.

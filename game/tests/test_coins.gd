@@ -37,13 +37,13 @@ func test_candidate_spots_are_on_routes_and_reachable() -> void:
 		for dm in lay.dorms:
 			var path := nav.find_path(dm["geo"]["pads"][0]["pos"], p)
 			# the path ends on the goal's cell centre (a 2 m grid)
-			t.check(path.size() >= 2 and path[-1].distance_to(p) < NavGrid.CELL * 0.75, "spot %d reachable on foot from %s" % [i, dm["id"]])
+			t.check(path.size() >= 2 and path[-1].distance_to(p) < CampusLayout.shared().nav_cell * 0.75, "spot %d reachable on foot from %s" % [i, dm["id"]])
 
 
 func test_round_coins_seeded_spread_and_clear() -> void:
 	var lay := CampusLayout.shared()
 	# the host picks from the light round data (no campus build on Start)
-	var rd := CampusLayout.round_data()
+	var rd := CampusLayout.shared()
 	t.eq(rd.coin_spots, lay.coin_spots, "round data: the same coin spots")
 	t.eq(rd.patrol_spawns, lay.patrol_spawns, "round data: the same Night Watch spawns")
 	t.eq(str(rd.waters), str(lay.waters), "round data: the same waters")

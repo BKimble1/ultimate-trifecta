@@ -4,7 +4,8 @@ extends Screen
 ## clearly labelled bots.  Pick Runner, Night Watch or Random (stored only
 ## for practice - friend parties draw roles fairly).  The runner tutorial and
 ## the Night Watch training add coach tips.  One recommended option is the
-## primary action.
+## primary action.  The Map row picks the map practice plays (remembered on
+## this device; an explicit choice always wins).
 
 
 func build() -> void:
@@ -29,6 +30,9 @@ func build() -> void:
 	var note := UIKit.label("Same rules and controls. Everyone else is a bot (labelled BOT). Half rewards; stats kept separately.", 18, UIKit.IVORY_MUTED)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(note)
+	_map_box = UIKit.vbox(0)
+	v.add_child(_map_box)
+	_paint_map()
 	var tut_done: bool = Save.data.get("tutorial_done", false)
 	var watch_done: bool = Save.data.get("watch_training_done", false)
 	var cfg := PartySeries.rules_for(Rules.cfg, PartySeries.DEFAULT_WATCH)
@@ -74,3 +78,20 @@ func build() -> void:
 	v.add_child(desc)
 	focus_first(first)
 	UIKit.appear(sheet, Vector2.ZERO, UIKit.T_SHEET)
+
+
+var _map_box: VBoxContainer
+
+
+## The Map row (rebuilt in place after a choice; focus stays on it).
+func _paint_map(focus: bool = false) -> void:
+	for c in _map_box.get_children():
+		c.queue_free()
+	var row := MapRow.make(App.practice_map(), true)
+	row.pressed.connect(func() -> void:
+		MapSheet.open(self, App.practice_map(), true, func(id: String) -> void:
+			Save.set_setting("practice_map", id)
+			_paint_map(true)))
+	_map_box.add_child(row)
+	if focus:
+		UIKit.soft_focus.call_deferred(row)

@@ -70,7 +70,7 @@ func test_colliders_are_built() -> void:
 	var tried := 0
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
-	var b := CampusLayout.BOUNDS
+	var b := CampusLayout.shared().bounds
 	while tried < 200:
 		var p := Vector2(rng.randf_range(b.position.x, b.end.x), rng.randf_range(b.position.y, b.end.y))
 		if not Geometry2D.is_point_in_polygon(p, lay.play_boundary):
@@ -203,7 +203,7 @@ func test_footbridges_are_crossed() -> void:
 				"footbridge %s: crossed bank to bank above the water (%.2f s, lowest y %.2f)" % [n, float(res[1]), float(res[2])])
 		var path := nav.foot.get_id_path(nav.to_cell(a), nav.to_cell(b))
 		var direct := a.distance_to(b)
-		t.check(path.size() > 0 and float(path.size()) * NavGrid.CELL < direct * 1.6 + 2.0,
+		t.check(path.size() > 0 and float(path.size()) * CampusLayout.shared().nav_cell < direct * 1.6 + 2.0,
 			"footbridge %s: the nav grid routes across it (%d cells for %.1f m)" % [n, path.size(), direct])
 		n += 1
 	t.check(n >= 1, "footbridges found (%d)" % n)

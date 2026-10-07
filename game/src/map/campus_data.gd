@@ -1,17 +1,20 @@
 class_name CampusData
 extends RefCounted
-## The reference campus's layer data (game/data/campus/*.json, written by
-## tools/campus/build_data.py from the traced zones; schema in
-## docs/campus/DATA_SCHEMA.md), loaded once per session, plus the geometry
-## helpers every campus system shares.
+## One map's layer data (the reference campus: game/data/campus/*.json,
+## written by tools/campus/build_data.py from the traced zones; Moonbrook
+## College: game/data/maps/classic/*.json, written by
+## tools/classic_export.gd; schema in docs/campus/DATA_SCHEMA.md), loaded
+## once per session per map (CampusMaps.data), plus the geometry helpers
+## every map system shares.
 ##
 ## Frame: metres, +X east, +Z south (north is -Z), ground y = 0.  Polygons are
 ## PackedVector2Array in (x, z).  Nothing here names a real place: items carry
 ## neutral ids and evidence codes only.
 ##
-## `campus_hash` identifies the exact data a build carries: the host publishes
-## it in every round's configuration and a guest with other data refuses the
-## round (two builds with different campuses never share a match).
+## `campus_hash` identifies the exact data a build carries for the map: the
+## host publishes it in every round's configuration (CampusMaps.revision)
+## and a guest with other data refuses the round (two builds with different
+## maps never share a match).
 
 const DIR := "res://data/campus/"
 const LAYERS := ["buildings", "water", "roads", "paths", "areas", "barriers", "trees", "props", "gameplay"]
@@ -19,21 +22,19 @@ const LAYERS := ["buildings", "water", "roads", "paths", "areas", "barriers", "t
 ## name -> Array of item Dictionaries (polygons/polylines already converted)
 var layers: Dictionary = {}
 var campus_hash := ""
+## the map these layers are (CampusMaps id; set by CampusMaps.data)
+var map_id := ""
 ## convenience lookups
 var by_id: Dictionary = {}
 
-static var _shared: CampusData
-
-
+## The default map's data (tools and tests about the reference campus).
 static func shared() -> CampusData:
-	if _shared == null:
-		_shared = CampusData.new()
-	return _shared
+	return CampusMaps.data(CampusMaps.DEFAULT_ID)
 
 
 ## Drops the cached data (tests that swap data sets).
 static func reset_shared() -> void:
-	_shared = null
+	CampusMaps.drop()
 
 
 func _init(dir: String = DIR) -> void:

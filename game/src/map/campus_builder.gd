@@ -1,12 +1,15 @@
 class_name CampusBuilder
 extends RefCounted
-## Generates collision and visuals for the reference campus from CampusLayout.
+## Generates collision for every map, and the visuals of the reference
+## campus, from CampusLayout.  (Moonbrook College is drawn by ClassicBuilder;
+## its collision comes from here like the campus's.)
 ##
 ## Collision (build_collision, the height field) is authoritative and comes
-## from the data alone, so host and guests build identical worlds:
-##   * one square 1 m height field over BOUNDS (flat ground at y = 0, every
-##     water a basin at its floor with a bank: soft for ponds and the lake,
-##     hard behind a rim for fountains and pools);
+## from the map's data alone, so host and guests build identical worlds:
+##   * a 1 m height field over the map's bounds, in square tiles (flat
+##     ground at y = 0, every water a basin at its floor with a bank: soft
+##     for ponds and the lake, hard behind a rim for fountains and pools, as
+##     the water's data says);
 ##   * buildings as convex prisms (the footprint minus genuine open passages
 ##     and the start dorms' interiors, which get a slab overhead);
 ##   * walls, hedges, fences, bollards (cart-only), tree trunks, lamp posts,
@@ -63,8 +66,8 @@ static func ground_y(layout: CampusLayout, x: float, z: float) -> float:
 	return grid_y(layout, x, z)
 
 
-## 1 m height grid over BOUNDS (row-major z, x; sample (i, j) sits at
-## BOUNDS.position + (i, j)), cached per layout.  Each water is scanline-
+## 1 m height grid over the map's bounds (row-major z, x; sample (i, j)
+## sits at bounds.position + (i, j)), cached per layout.  Each water is scanline-
 ## filled, then a chamfer distance inward from its edge shapes the bank.
 static func height_grid(layout: CampusLayout) -> PackedFloat32Array:
 	if _grid_layout == layout and not _grid_cache.is_empty():
@@ -104,7 +107,7 @@ static func height_grid_step(layout: CampusLayout) -> bool:
 
 
 static func _compute_height_grid(layout: CampusLayout) -> PackedFloat32Array:
-	var b := CampusLayout.BOUNDS
+	var b := layout.bounds
 	var w := int(b.size.x) + 1
 	var d := int(b.size.y) + 1
 	var data := PackedFloat32Array()
@@ -134,6 +137,8 @@ static func _compute_height_grid(layout: CampusLayout) -> PackedFloat32Array:
 						inside[jj * rw + ii] = 1
 		var dist := chamfer_inside(inside, rw, rd)
 		var bank := BANK_HARD if float(wt["rim_h"]) > 0.0 or String(wt["kind"]) in ["fountain", "pool"] else BANK_SOFT
+		if float(wt.get("bank", -1.0)) >= 0.0:
+			bank = float(wt["bank"])
 		var fl := float(wt["floor_y"])
 		for jj in rd:
 			for ii in rw:
@@ -210,7 +215,7 @@ static func chamfer_inside(inside: PackedByteArray, w: int, d: int) -> PackedFlo
 
 
 static func grid_y(layout: CampusLayout, x: float, z: float) -> float:
-	var b := CampusLayout.BOUNDS
+	var b := layout.bounds
 	var xi := clampi(int(round(x - b.position.x)), 0, int(b.size.x))
 	var zi := clampi(int(round(z - b.position.y)), 0, int(b.size.y))
 	return height_grid(layout)[zi * (int(b.size.x) + 1) + xi]
@@ -322,7 +327,7 @@ static func collision_recipe(layout: CampusLayout) -> Array:
 
 func _buildings_recipe(from: int, to: int) -> void:
 	var dorm_of: Dictionary = {}
-	for id in CampusDorms.ids():
+	for id in CampusDorms.ids(L.map_id):
 		dorm_of[String(CampusDorms.geometry(id).get("building", ""))] = id
 	for bi in range(from, to):
 		var bd: Dictionary = L.buildings[bi]
@@ -366,8 +371,16 @@ func _rest_recipe() -> void:
 	for so in L.solids:
 		var sp: Vector2 = so["pos"]
 		var ss: Vector3 = so["size"]
+		if String(so.get("shape", "")) == "cyl":
+			var cy := CylinderShape3D.new()
+			cy.radius = ss.x * 0.5
+			cy.height = ss.y
+			_add_shape(world, cy, Transform3D(Basis.IDENTITY, Vector3(sp.x, float(so.get("y", ss.y * 0.5)), sp.y)))
+			continue
 		_box(world, Vector3(sp.x, ss.y * 0.5, sp.y), ss, float(so["rot"]))
 	for pr in L.props:
+		if not bool(pr.get("collide", true)):
+			continue
 		var ps := CampusArchitecture.prop_collider(pr)
 		if ps != Vector3.ZERO:
 			var pp: Vector2 = pr["pos"]
@@ -457,18 +470,27 @@ func _prism(body: int, poly: PackedVector2Array, y0: float, y1: float) -> void:
 	_add_shape(body, cs, Transform3D.IDENTITY)
 
 
-## The ground height field, in GROUND_TILES x GROUND_TILES square tiles
-## shared by every round's collision (host sim and client world alike).
+## The ground height field, in tiles x tiles square tiles of tile_cells
+## metres (tile_grid: 4 x 298 m on the reference campus, 2 x 160 m on
+## Moonbrook College) shared by every round's collision (host sim and client
+## world alike).
 ## Square on purpose: Jolt only makes a real height field from a square map
 ## (and falls back to a huge triangle mesh otherwise).  Tiles, not one
 ## field: Jolt builds a shape when a body using it enters a space (~100 ms
 ## for one 1191-sample field, ~7 ms for a 299-sample tile) and keeps the
 ## build while some body owns it, so loading builds the tiles one per step
 ## on bodies of a private space that stay (ground_tile_step).  A tile
-## shares its edge samples with its neighbours; samples beyond BOUNDS lie at
-## ground level.
-const GROUND_TILES := 4
-const TILE_CELLS := 298           # metres per tile (299 samples a side)
+## shares its edge samples with its neighbours; samples beyond the map's
+## bounds lie at ground level.
+const TILE_MAX := 298             # metres per tile at most (299 samples a side)
+
+
+## [tiles a side, metres a tile] covering a layout's bounds.
+static func tile_grid(layout: CampusLayout) -> Vector2i:
+	var span := int(ceil(maxf(layout.bounds.size.x, layout.bounds.size.y)))
+	var n := int(ceil(float(span) / float(TILE_MAX)))
+	return Vector2i(n, int(ceil(float(span) / float(n))))
+
 
 static var _tiles: Array = []     # [[HeightMapShape3D, Vector3 origin]]
 static var _tiles_layout: CampusLayout
@@ -487,24 +509,27 @@ static func ground_tile_step(layout: CampusLayout, warm: bool = true) -> bool:
 	if _tiles_layout != layout:
 		_tiles = []
 		_tiles_layout = layout
-	var n := GROUND_TILES * GROUND_TILES
+	var tg := tile_grid(layout)
+	var tiles := tg.x
+	var cells := tg.y
+	var n := tiles * tiles
 	if _tiles.size() >= n:
 		return false
 	var k := _tiles.size()
-	var ti := k % GROUND_TILES
-	var tj := k / GROUND_TILES
+	var ti := k % tiles
+	var tj := k / tiles
 	var grid := height_grid(layout)
-	var b := CampusLayout.BOUNDS
+	var b := layout.bounds
 	var w := int(b.size.x) + 1
 	var d := int(b.size.y) + 1
-	var s := TILE_CELLS + 1
+	var s := cells + 1
 	var data := PackedFloat32Array()
 	var zero := PackedFloat32Array()
 	zero.resize(s)
 	zero.fill(0.0)
-	var x0 := ti * TILE_CELLS
+	var x0 := ti * cells
 	for zi in s:
-		var gz := tj * TILE_CELLS + zi
+		var gz := tj * cells + zi
 		if gz >= d or x0 >= w:
 			data.append_array(zero)
 			continue
@@ -517,7 +542,7 @@ static func ground_tile_step(layout: CampusLayout, warm: bool = true) -> bool:
 	hm.map_width = s
 	hm.map_depth = s
 	hm.map_data = data
-	var origin := Vector3(b.position.x + x0 + TILE_CELLS * 0.5, 0.0, b.position.y + tj * TILE_CELLS + TILE_CELLS * 0.5)
+	var origin := Vector3(b.position.x + x0 + cells * 0.5, 0.0, b.position.y + tj * cells + cells * 0.5)
 	_tiles.append([hm, origin])
 	if warm:
 		# built in the engine now (and kept), not when the round's world body
@@ -624,19 +649,24 @@ func kit_at(x: float, z: float, foliage: bool = false, detail: bool = false) -> 
 	return _kit_at(x, z, foliage, detail)
 
 
+## The reference campus's bounds: the look's chunk grid (this builder draws
+## only that map).
+const LOOK_BOUNDS := Rect2(-720.0, -560.0, 1190.0, 1000.0)
+
+
 static func chunk_key(x: float, z: float) -> Vector2i:
-	return Vector2i(int(floor((x - CampusLayout.BOUNDS.position.x) / CHUNK.x)), int(floor((z - CampusLayout.BOUNDS.position.y) / CHUNK.y)))
+	return Vector2i(int(floor((x - LOOK_BOUNDS.position.x) / CHUNK.x)), int(floor((z - LOOK_BOUNDS.position.y) / CHUNK.y)))
 
 
 static func chunk_center(key: Vector2i, scale: float = 1.0) -> Vector3:
-	var b := CampusLayout.BOUNDS.position
+	var b := LOOK_BOUNDS.position
 	return Vector3(b.x + (float(key.x) + 0.5) * CHUNK.x * scale, 0.0, b.y + (float(key.y) + 0.5) * CHUNK.y * scale)
 
 
 ## Coarser batches (2 x 2 chunks): tree shadow proxies; the woods beyond the
 ## boundary use 3 x 3.
 static func coarse_key(x: float, z: float, scale: float = 2.0) -> Vector2i:
-	return Vector2i(int(floor((x - CampusLayout.BOUNDS.position.x) / (CHUNK.x * scale))), int(floor((z - CampusLayout.BOUNDS.position.y) / (CHUNK.y * scale))))
+	return Vector2i(int(floor((x - LOOK_BOUNDS.position.x) / (CHUNK.x * scale))), int(floor((z - LOOK_BOUNDS.position.y) / (CHUNK.y * scale))))
 
 
 ## Builds the whole campus look at once (dev shots, tests).
@@ -715,13 +745,13 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_add_sliced("roads", L.roads.size(), func(i: int) -> void: _road(L.roads[i]))
 	_add_sliced("paths", L.paths.size(), func(i: int) -> void: _path(L.paths[i]))
 	var dorm_buildings: Dictionary = {}
-	for id in CampusDorms.ids():
+	for id in CampusDorms.ids(L.map_id):
 		dorm_buildings[String(CampusDorms.geometry(id).get("building", ""))] = true
 	for bd in L.buildings:
 		if dorm_buildings.has(String(bd["id"])):
 			continue      # DormArt builds it, with its open doorways
 		_add("building_" + String(bd["id"]), func() -> void: arch.building(bd))
-	for id in CampusDorms.ids():
+	for id in CampusDorms.ids(L.map_id):
 		_add("dorm_" + id, func() -> void: dorm_art.exterior(id))
 		_add("dorm_inside_" + id, func() -> void: dorm_art.inside(id))
 	_add("walls", arch.walls)
@@ -732,7 +762,7 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	_add("trees_merge", _merge_species)
 	_add_sliced("lamps", L.lamps.size(), func(i: int) -> void: arch.lamps(i, i + 1))
 	_add("small", arch.small_things)
-	var field_rows := int(CampusLayout.BOUNDS.size.y / CampusKit.CELL) + 1
+	var field_rows := int(LOOK_BOUNDS.size.y / CampusKit.CELL) + 1
 	for j0 in range(0, field_rows, 120):
 		_add("light_texture", func() -> void: kit.field_rows(j0, j0 + 120))
 	_add("light_texture", func() -> void: _field_tex = kit.field_finish())
@@ -1097,8 +1127,8 @@ var _ground_started := false
 
 func _ground_keys() -> Array:
 	var out: Array = []
-	var nx := int(ceil(CampusLayout.BOUNDS.size.x / CHUNK.x))
-	var nz := int(ceil(CampusLayout.BOUNDS.size.y / CHUNK.y))
+	var nx := int(ceil(LOOK_BOUNDS.size.x / CHUNK.x))
+	var nz := int(ceil(LOOK_BOUNDS.size.y / CHUNK.y))
 	for gz in nz:
 		for gx in nx:
 			out.append(Vector2i(gx, gz))
@@ -1135,7 +1165,7 @@ func _ground_next() -> bool:
 ## One ground chunk (on a worker): a 2 m grid, flat and cheap where no water
 ## is near, 4 m where the chunk lies wholly beyond the play area.
 func _ground_chunk(key: Vector2i, k: MeshKit) -> void:
-	var b := CampusLayout.BOUNDS
+	var b := LOOK_BOUNDS
 	var rect := Rect2(b.position + Vector2(key) * CHUNK, CHUNK).intersection(b)
 	if rect.size.x <= 0.01 or rect.size.y <= 0.01:
 		return

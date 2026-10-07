@@ -42,10 +42,14 @@ var _recorded: Dictionary = {}    # match_id -> true
 # Settings
 # ---------------------------------------------------------------------------
 static func default_settings() -> Dictionary:
-	return {"watch": DEFAULT_WATCH, "rounds": DEFAULT_ROUNDS, "rev": 0}
+	return {"watch": DEFAULT_WATCH, "rounds": DEFAULT_ROUNDS, "rev": 0, "map": CampusMaps.DEFAULT_ID}
 
 
-## A checked copy, or {} when anything is outside the allowed choices.
+## A checked copy, or {} when anything is outside the allowed choices.  The
+## map is a stable map id (CampusMaps): a missing one (settings from before
+## there were two maps) is the default map; an id this build doesn't know is
+## kept as given (a guest shows it needs an update; the host never offers
+## one), and only a host's own choices are checked against CampusMaps.
 static func sanitize_settings(d: Variant) -> Dictionary:
 	if not (d is Dictionary):
 		return {}
@@ -55,7 +59,11 @@ static func sanitize_settings(d: Variant) -> Dictionary:
 		return {}
 	if not WATCH_CHOICES.has(int(w)) or not ROUND_CHOICES.has(int(r)):
 		return {}
-	return {"watch": int(w), "rounds": int(r), "rev": clampi(int(d.get("rev", 0)), 0, 65535)}
+	var m: Variant = d.get("map", CampusMaps.DEFAULT_ID)
+	var ms := String(m).substr(0, 32) if (m is String or m is StringName) else CampusMaps.DEFAULT_ID
+	if ms == "" or not ms.is_valid_identifier():
+		ms = CampusMaps.DEFAULT_ID
+	return {"watch": int(w), "rounds": int(r), "rev": clampi(int(d.get("rev", 0)), 0, 65535), "map": ms}
 
 
 static func runners(watch: int) -> int:
@@ -66,19 +74,27 @@ static func required_home(watch: int) -> int:
 	return int(ceil(2.0 * float(runners(watch)) / 3.0))
 
 
-## "3 rounds · 2 Night Watch · 6 runners · 4 home to win"
+## "Lakeside Campus · 3 rounds · 2 Night Watch · 6 runners · 4 home to win"
 static func summary(s: Dictionary) -> String:
 	var w := int(s.get("watch", DEFAULT_WATCH))
 	var r := int(s.get("rounds", DEFAULT_ROUNDS))
-	return "%s · %d Night Watch · %d runners · %d home to win" % ["Single round" if r == 1 else "%d rounds" % r, w, runners(w), required_home(w)]
+	return "%s · %s · %d Night Watch · %d runners · %d home to win" % [map_title(s), "Single round" if r == 1 else "%d rounds" % r, w, runners(w), required_home(w)]
 
 
-## The same settings as short labelled values for the lobby (V5):
-## ["3 rounds", "2 Night Watch", "4 home to win"].
+## The settings' map as players see it ("Unknown map" for an id this build
+## doesn't have: the host's game is newer).
+static func map_title(s: Dictionary) -> String:
+	var id := String(s.get("map", CampusMaps.DEFAULT_ID))
+	return CampusMaps.title(id) if CampusMaps.has(id) else "Unknown map"
+
+
+## The same settings as short labelled values for the lobby (V5; the map
+## first since two maps): ["Lakeside Campus", "3 rounds", "2 Night Watch",
+## "4 home to win"].
 static func summary_parts(s: Dictionary) -> Array[String]:
 	var w := int(s.get("watch", DEFAULT_WATCH))
 	var r := int(s.get("rounds", DEFAULT_ROUNDS))
-	return ["1 round" if r == 1 else "%d rounds" % r, "%d Night Watch" % w, "%d home to win" % required_home(w)]
+	return [map_title(s), "1 round" if r == 1 else "%d rounds" % r, "%d Night Watch" % w, "%d home to win" % required_home(w)]
 
 
 ## The rules for one round: a copy of the base config with the party's slot

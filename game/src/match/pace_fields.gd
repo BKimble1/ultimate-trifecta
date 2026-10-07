@@ -3,7 +3,7 @@ extends RefCounted
 ## Pass 8: route-distance fields for the live runner pace (RunnerPace).
 ##
 ## One field per water and one per home dorm: the cost of walking from any
-## cell (NavGrid.CELL metres square) of the runners' navigation grid (NavGrid.foot: the same solid
+## cell (the map's nav cell, NavGrid.cell metres square) of the runners' navigation grid (NavGrid.foot: the same solid
 ## cells, low-wall and fence costs and corner rule the bots' A* uses) to the
 ## nearest of that place's sources.  A field is a multi-source Dijkstra
 ## (a bucket queue: integer step costs 10 straight / 14 diagonal, times the
@@ -28,9 +28,8 @@ extends RefCounted
 
 const UNREACH := 0x3FFFFFFF
 ## cost units per cell step (10 = one straight step on an ordinary cell,
-## which is NavGrid.CELL metres)
+## which is the grid's cell metres)
 const UNIT := 10.0
-const CELL := NavGrid.CELL
 const BUCKETS := 128            # > the largest step cost (14 x weight 6 = 84)
 ## how far a position may be from an open cell (capsules stand in the
 ## inflation band around walls; the dorm floor next to furniture)
@@ -41,6 +40,7 @@ static var _layout: CampusLayout = null
 static var _w := 0
 static var _h := 0
 static var _origin := Vector2.ZERO
+static var _cell := 2.0                      # the grid's cell (m)
 static var _solid := PackedByteArray()      # 1 = solid (written once by the worker)
 static var _wt := PackedByteArray()         # weight per cell (1, 4, 6)
 static var _fields: Dictionary = {}         # key -> {"d": PackedInt32Array, "lab": PackedByteArray, "ms": float}
@@ -240,8 +240,8 @@ static func clear() -> void:
 static func cell_of(p: Vector2) -> int:
 	if _solid.is_empty():
 		return -1
-	var cx := clampi(int(floor((p.x - _origin.x) / CELL)), 0, _w - 1)
-	var cy := clampi(int(floor((p.y - _origin.y) / CELL)), 0, _h - 1)
+	var cx := clampi(int(floor((p.x - _origin.x) / _cell)), 0, _w - 1)
+	var cy := clampi(int(floor((p.y - _origin.y) / _cell)), 0, _h - 1)
 	var c := cy * _w + cx
 	if _solid[c] == 0:
 		return c
@@ -259,7 +259,7 @@ static func cell_of(p: Vector2) -> int:
 				var q := y * _w + x
 				if _solid[q] != 0:
 					continue
-				var d := Vector2(_origin.x + (float(x) + 0.5) * CELL, _origin.y + (float(y) + 0.5) * CELL).distance_squared_to(p)
+				var d := Vector2(_origin.x + (float(x) + 0.5) * _cell, _origin.y + (float(y) + 0.5) * _cell).distance_squared_to(p)
 				if d < bd:
 					bd = d
 					best = q
@@ -273,7 +273,7 @@ static func metres(f: Dictionary, cell: int) -> float:
 	if cell < 0 or f.is_empty():
 		return INF
 	var d: int = (f["d"] as PackedInt32Array)[cell]
-	return INF if d >= UNREACH else float(d) / UNIT * CELL
+	return INF if d >= UNREACH else float(d) / UNIT * _cell
 
 
 ## The source label (door index for a home field) nearest by route, or -1.
@@ -317,6 +317,7 @@ static func _job(nav: NavGrid, specs: Array) -> void:
 		_w = w
 		_h = h
 		_origin = nav.origin
+		_cell = nav.cell
 		_solid = solid
 		_wt = wt
 		stats["extract_ms"] = float(Time.get_ticks_usec() - t0) / 1000.0

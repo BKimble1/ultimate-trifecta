@@ -609,7 +609,7 @@ func _follow(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float, _cart: bool)
 	while path_i < path.size() - 1 and pp.distance_to(path[path_i]) < 1.1:
 		path_i += 1
 	var wp := path[mini(path_i, path.size() - 1)]
-	if path_i >= path.size() - 1 and pp.distance_to(wp) < 1.1 + NavGrid.CELL:
+	if path_i >= path.size() - 1 and pp.distance_to(wp) < 1.1 + nav.cell:
 		# the path ends on the centre of the goal's nearest open cell, up to
 		# a 2 m cell short of a goal in the water (a jump point) or on a
 		# blocked cell: the last step heads for the goal itself
