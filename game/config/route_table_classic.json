@@ -1,0 +1,2250 @@
+{
+  "band": 0.16,
+  "bot_share": 0.95,
+  "bot_time_median_s": 120.2,
+  "campus": "7f83534961286022",
+  "combos": [
+    {
+      "best_order": [
+        2,
+        0,
+        1
+      ],
+      "bot_fits": true,
+      "bot_time_s": 96.6,
+      "first_m": 124.8,
+      "fits_round": true,
+      "ideal_s": 80.7,
+      "length_m": 457.2,
+      "targets": [
+        0,
+        1,
+        2
+      ],
+      "time_vs_median": 0.8,
+      "vs_median": 0.74
+    },
+    {
+      "best_order": [
+        0,
+        3,
+        1
+      ],
+      "bot_fits": true,
+      "bot_time_s": 91.0,
+      "first_m": 80.0,
+      "fits_round": true,
+      "ideal_s": 80.5,
+      "length_m": 456.2,
+      "targets": [
+        0,
+        1,
+        3
+      ],
+      "time_vs_median": 0.76,
+      "vs_median": 0.74
+    },
+    {
+      "best_order": [
+        4,
+        0,
+        1
+      ],
+      "bot_fits": true,
+      "bot_time_s": 120.5,
+      "first_m": 228.4,
+      "fits_round": true,
+      "ideal_s": 103.4,
+      "length_m": 593.2,
+      "targets": [
+        0,
+        1,
+        4
+      ],
+      "time_vs_median": 1.0,
+      "vs_median": 0.96
+    },
+    {
+      "best_order": [
+        0,
+        5,
+        1
+      ],
+      "bot_fits": true,
+      "bot_time_s": 108.2,
+      "first_m": 80.0,
+      "fits_round": true,
+      "ideal_s": 95.6,
+      "length_m": 546.8,
+      "targets": [
+        0,
+        1,
+        5
+      ],
+      "time_vs_median": 0.9,
+      "vs_median": 0.88
+    },
+    {
+      "best_order": [
+        2,
+        3,
+        0
+      ],
+      "bot_fits": true,
+      "bot_time_s": 111.6,
+      "first_m": 124.8,
+      "fits_round": true,
+      "ideal_s": 101.4,
+      "length_m": 581.4,
+      "targets": [
+        0,
+        2,
+        3
+      ],
+      "time_vs_median": 0.93,
+      "vs_median": 0.94
+    },
+    {
+      "best_order": [
+        2,
+        4,
+        0
+      ],
+      "bot_fits": true,
+      "bot_time_s": 91.4,
+      "first_m": 124.8,
+      "fits_round": true,
+      "ideal_s": 78.9,
+      "length_m": 446.2,
+      "targets": [
+        0,
+        2,
+        4
+      ],
+      "time_vs_median": 0.76,
+      "vs_median": 0.72
+    },
+    {
+      "best_order": [
+        2,
+        5,
+        0
+      ],
+      "bot_fits": true,
+      "bot_time_s": 108.0,
+      "first_m": 124.8,
+      "fits_round": true,
+      "ideal_s": 95.5,
+      "length_m": 546.0,
+      "targets": [
+        0,
+        2,
+        5
+      ],
+      "time_vs_median": 0.9,
+      "vs_median": 0.88
+    },
+    {
+      "best_order": [
+        3,
+        4,
+        0
+      ],
+      "bot_fits": true,
+      "bot_time_s": 118.1,
+      "first_m": 228.4,
+      "fits_round": true,
+      "ideal_s": 107.3,
+      "length_m": 616.6,
+      "targets": [
+        0,
+        3,
+        4
+      ],
+      "time_vs_median": 0.98,
+      "vs_median": 1.0
+    },
+    {
+      "best_order": [
+        3,
+        5,
+        0
+      ],
+      "bot_fits": true,
+      "bot_time_s": 95.6,
+      "first_m": 228.4,
+      "fits_round": true,
+      "ideal_s": 92.6,
+      "length_m": 528.8,
+      "targets": [
+        0,
+        3,
+        5
+      ],
+      "time_vs_median": 0.8,
+      "vs_median": 0.85
+    },
+    {
+      "best_order": [
+        4,
+        5,
+        0
+      ],
+      "bot_fits": true,
+      "bot_time_s": 108.4,
+      "first_m": 228.4,
+      "fits_round": true,
+      "ideal_s": 99.1,
+      "length_m": 567.4,
+      "targets": [
+        0,
+        4,
+        5
+      ],
+      "time_vs_median": 0.9,
+      "vs_median": 0.92
+    },
+    {
+      "best_order": [
+        2,
+        3,
+        1
+      ],
+      "bot_fits": true,
+      "bot_time_s": 121.4,
+      "first_m": 124.8,
+      "fits_round": true,
+      "ideal_s": 105.7,
+      "length_m": 607.0,
+      "targets": [
+        1,
+        2,
+        3
+      ],
+      "time_vs_median": 1.01,
+      "vs_median": 0.98
+    },
+    {
+      "best_order": [
+        2,
+        4,
+        1
+      ],
+      "bot_fits": true,
+      "bot_time_s": 121.1,
+      "first_m": 124.8,
+      "fits_round": true,
+      "ideal_s": 106.1,
+      "length_m": 609.8,
+      "targets": [
+        1,
+        2,
+        4
+      ],
+      "time_vs_median": 1.01,
+      "vs_median": 0.98
+    },
+    {
+      "best_order": [
+        2,
+        5,
+        1
+      ],
+      "bot_fits": true,
+      "bot_time_s": 124.6,
+      "first_m": 124.8,
+      "fits_round": true,
+      "ideal_s": 111.5,
+      "length_m": 641.8,
+      "targets": [
+        1,
+        2,
+        5
+      ],
+      "time_vs_median": 1.04,
+      "vs_median": 1.04
+    },
+    {
+      "best_order": [
+        4,
+        3,
+        1
+      ],
+      "bot_fits": true,
+      "bot_time_s": 120.8,
+      "first_m": 228.4,
+      "fits_round": true,
+      "ideal_s": 111.5,
+      "length_m": 642.2,
+      "targets": [
+        1,
+        3,
+        4
+      ],
+      "time_vs_median": 1.0,
+      "vs_median": 1.04
+    },
+    {
+      "best_order": [
+        5,
+        3,
+        1
+      ],
+      "bot_fits": true,
+      "bot_time_s": 110.1,
+      "first_m": 244.8,
+      "fits_round": true,
+      "ideal_s": 97.9,
+      "length_m": 560.6,
+      "targets": [
+        1,
+        3,
+        5
+      ],
+      "time_vs_median": 0.92,
+      "vs_median": 0.91
+    },
+    {
+      "best_order": [
+        4,
+        5,
+        1
+      ],
+      "bot_fits": true,
+      "bot_time_s": 125.8,
+      "first_m": 228.4,
+      "fits_round": true,
+      "ideal_s": 115.0,
+      "length_m": 663.2,
+      "targets": [
+        1,
+        4,
+        5
+      ],
+      "time_vs_median": 1.05,
+      "vs_median": 1.07
+    },
+    {
+      "best_order": [
+        2,
+        4,
+        3
+      ],
+      "bot_fits": true,
+      "bot_time_s": 121.7,
+      "first_m": 124.8,
+      "fits_round": true,
+      "ideal_s": 110.0,
+      "length_m": 632.8,
+      "targets": [
+        2,
+        3,
+        4
+      ],
+      "time_vs_median": 1.01,
+      "vs_median": 1.02
+    },
+    {
+      "best_order": [
+        2,
+        5,
+        3
+      ],
+      "bot_fits": true,
+      "bot_time_s": 120.9,
+      "first_m": 124.8,
+      "fits_round": true,
+      "ideal_s": 108.6,
+      "length_m": 624.4,
+      "targets": [
+        2,
+        3,
+        5
+      ],
+      "time_vs_median": 1.01,
+      "vs_median": 1.01
+    },
+    {
+      "best_order": [
+        2,
+        4,
+        5
+      ],
+      "bot_fits": true,
+      "bot_time_s": 116.3,
+      "first_m": 124.8,
+      "fits_round": true,
+      "ideal_s": 102.8,
+      "length_m": 589.8,
+      "targets": [
+        2,
+        4,
+        5
+      ],
+      "time_vs_median": 0.97,
+      "vs_median": 0.95
+    },
+    {
+      "best_order": [
+        4,
+        5,
+        3
+      ],
+      "bot_fits": true,
+      "bot_time_s": 122.4,
+      "first_m": 228.4,
+      "fits_round": true,
+      "ideal_s": 112.1,
+      "length_m": 645.8,
+      "targets": [
+        3,
+        4,
+        5
+      ],
+      "time_vs_median": 1.02,
+      "vs_median": 1.04
+    }
+  ],
+  "curated": [
+    [
+      0,
+      1,
+      4
+    ],
+    [
+      0,
+      1,
+      5
+    ],
+    [
+      0,
+      2,
+      3
+    ],
+    [
+      0,
+      2,
+      5
+    ],
+    [
+      0,
+      3,
+      4
+    ],
+    [
+      0,
+      4,
+      5
+    ],
+    [
+      1,
+      2,
+      3
+    ],
+    [
+      1,
+      2,
+      4
+    ],
+    [
+      1,
+      2,
+      5
+    ],
+    [
+      1,
+      3,
+      4
+    ],
+    [
+      1,
+      3,
+      5
+    ],
+    [
+      1,
+      4,
+      5
+    ],
+    [
+      2,
+      3,
+      4
+    ],
+    [
+      2,
+      3,
+      5
+    ],
+    [
+      2,
+      4,
+      5
+    ],
+    [
+      3,
+      4,
+      5
+    ]
+  ],
+  "dorm_version": 4,
+  "dorms": {
+    "lanternfield": {
+      "bot_time_median_s": 120.2,
+      "combos": [
+        {
+          "best_order": [
+            2,
+            0,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 95.9,
+          "first_m": 226.8,
+          "fits_round": true,
+          "ideal_s": 88.0,
+          "length_m": 500.8,
+          "targets": [
+            0,
+            1,
+            2
+          ],
+          "time_vs_median": 0.8,
+          "vs_median": 0.81
+        },
+        {
+          "best_order": [
+            0,
+            3,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 86.5,
+          "first_m": 130.6,
+          "fits_round": true,
+          "ideal_s": 79.2,
+          "length_m": 448.4,
+          "targets": [
+            0,
+            1,
+            3
+          ],
+          "time_vs_median": 0.72,
+          "vs_median": 0.72
+        },
+        {
+          "best_order": [
+            4,
+            0,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 107.8,
+          "first_m": 279.0,
+          "fits_round": true,
+          "ideal_s": 102.1,
+          "length_m": 585.4,
+          "targets": [
+            0,
+            1,
+            4
+          ],
+          "time_vs_median": 0.9,
+          "vs_median": 0.95
+        },
+        {
+          "best_order": [
+            0,
+            5,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 96.0,
+          "first_m": 130.6,
+          "fits_round": true,
+          "ideal_s": 94.3,
+          "length_m": 539.0,
+          "targets": [
+            0,
+            1,
+            5
+          ],
+          "time_vs_median": 0.8,
+          "vs_median": 0.87
+        },
+        {
+          "best_order": [
+            2,
+            0,
+            3
+          ],
+          "bot_fits": true,
+          "bot_time_s": 127.2,
+          "first_m": 226.8,
+          "fits_round": true,
+          "ideal_s": 113.9,
+          "length_m": 656.6,
+          "targets": [
+            0,
+            2,
+            3
+          ],
+          "time_vs_median": 1.06,
+          "vs_median": 1.06
+        },
+        {
+          "best_order": [
+            2,
+            4,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 114.2,
+          "first_m": 226.8,
+          "fits_round": true,
+          "ideal_s": 104.3,
+          "length_m": 598.8,
+          "targets": [
+            0,
+            2,
+            4
+          ],
+          "time_vs_median": 0.95,
+          "vs_median": 0.97
+        },
+        {
+          "best_order": [
+            5,
+            2,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 128.8,
+          "first_m": 267.4,
+          "fits_round": true,
+          "ideal_s": 120.6,
+          "length_m": 696.6,
+          "targets": [
+            0,
+            2,
+            5
+          ],
+          "time_vs_median": 1.07,
+          "vs_median": 1.12
+        },
+        {
+          "best_order": [
+            3,
+            4,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 118.9,
+          "first_m": 191.0,
+          "fits_round": true,
+          "ideal_s": 109.5,
+          "length_m": 629.8,
+          "targets": [
+            0,
+            3,
+            4
+          ],
+          "time_vs_median": 0.99,
+          "vs_median": 1.02
+        },
+        {
+          "best_order": [
+            3,
+            5,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 100.1,
+          "first_m": 191.0,
+          "fits_round": true,
+          "ideal_s": 94.8,
+          "length_m": 542.0,
+          "targets": [
+            0,
+            3,
+            5
+          ],
+          "time_vs_median": 0.83,
+          "vs_median": 0.88
+        },
+        {
+          "best_order": [
+            5,
+            4,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 120.2,
+          "first_m": 267.4,
+          "fits_round": true,
+          "ideal_s": 112.3,
+          "length_m": 646.8,
+          "targets": [
+            0,
+            4,
+            5
+          ],
+          "time_vs_median": 1.0,
+          "vs_median": 1.04
+        },
+        {
+          "best_order": [
+            2,
+            3,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 122.8,
+          "first_m": 226.8,
+          "fits_round": true,
+          "ideal_s": 112.9,
+          "length_m": 650.6,
+          "targets": [
+            1,
+            2,
+            3
+          ],
+          "time_vs_median": 1.02,
+          "vs_median": 1.05
+        },
+        {
+          "best_order": [
+            2,
+            4,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 120.4,
+          "first_m": 226.8,
+          "fits_round": true,
+          "ideal_s": 113.4,
+          "length_m": 653.4,
+          "targets": [
+            1,
+            2,
+            4
+          ],
+          "time_vs_median": 1.0,
+          "vs_median": 1.05
+        },
+        {
+          "best_order": [
+            2,
+            5,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 123.3,
+          "first_m": 226.8,
+          "fits_round": true,
+          "ideal_s": 118.7,
+          "length_m": 685.4,
+          "targets": [
+            1,
+            2,
+            5
+          ],
+          "time_vs_median": 1.03,
+          "vs_median": 1.11
+        },
+        {
+          "best_order": [
+            4,
+            3,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 118.3,
+          "first_m": 279.0,
+          "fits_round": true,
+          "ideal_s": 110.2,
+          "length_m": 634.4,
+          "targets": [
+            1,
+            3,
+            4
+          ],
+          "time_vs_median": 0.98,
+          "vs_median": 1.02
+        },
+        {
+          "best_order": [
+            5,
+            3,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 100.3,
+          "first_m": 267.4,
+          "fits_round": true,
+          "ideal_s": 92.0,
+          "length_m": 524.8,
+          "targets": [
+            1,
+            3,
+            5
+          ],
+          "time_vs_median": 0.83,
+          "vs_median": 0.85
+        },
+        {
+          "best_order": [
+            4,
+            5,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 123.5,
+          "first_m": 279.0,
+          "fits_round": true,
+          "ideal_s": 113.7,
+          "length_m": 655.4,
+          "targets": [
+            1,
+            4,
+            5
+          ],
+          "time_vs_median": 1.03,
+          "vs_median": 1.06
+        },
+        {
+          "best_order": [
+            2,
+            4,
+            3
+          ],
+          "bot_fits": true,
+          "bot_time_s": 129.7,
+          "first_m": 226.8,
+          "fits_round": true,
+          "ideal_s": 120.7,
+          "length_m": 697.4,
+          "targets": [
+            2,
+            3,
+            4
+          ],
+          "time_vs_median": 1.08,
+          "vs_median": 1.13
+        },
+        {
+          "best_order": [
+            2,
+            5,
+            3
+          ],
+          "bot_fits": true,
+          "bot_time_s": 130.7,
+          "first_m": 226.8,
+          "fits_round": true,
+          "ideal_s": 119.3,
+          "length_m": 689.0,
+          "targets": [
+            2,
+            3,
+            5
+          ],
+          "time_vs_median": 1.09,
+          "vs_median": 1.11
+        },
+        {
+          "best_order": [
+            2,
+            4,
+            5
+          ],
+          "bot_fits": true,
+          "bot_time_s": 132.6,
+          "first_m": 226.8,
+          "fits_round": true,
+          "ideal_s": 123.7,
+          "length_m": 715.2,
+          "targets": [
+            2,
+            4,
+            5
+          ],
+          "time_vs_median": 1.1,
+          "vs_median": 1.15
+        },
+        {
+          "best_order": [
+            4,
+            5,
+            3
+          ],
+          "bot_fits": true,
+          "bot_time_s": 128.4,
+          "first_m": 279.0,
+          "fits_round": true,
+          "ideal_s": 114.3,
+          "length_m": 659.0,
+          "targets": [
+            3,
+            4,
+            5
+          ],
+          "time_vs_median": 1.07,
+          "vs_median": 1.06
+        }
+      ],
+      "curated": [
+        [
+          0,
+          1,
+          4
+        ],
+        [
+          0,
+          2,
+          3
+        ],
+        [
+          0,
+          2,
+          4
+        ],
+        [
+          0,
+          2,
+          5
+        ],
+        [
+          0,
+          3,
+          4
+        ],
+        [
+          0,
+          4,
+          5
+        ],
+        [
+          1,
+          2,
+          3
+        ],
+        [
+          1,
+          2,
+          4
+        ],
+        [
+          1,
+          2,
+          5
+        ],
+        [
+          1,
+          3,
+          4
+        ],
+        [
+          1,
+          4,
+          5
+        ],
+        [
+          2,
+          3,
+          4
+        ],
+        [
+          2,
+          3,
+          5
+        ],
+        [
+          2,
+          4,
+          5
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "door_m": [
+        9.0,
+        5.0
+      ],
+      "pair_m": [
+        [
+          0.0,
+          130.6,
+          65.0,
+          226.8,
+          191.0,
+          279.0,
+          267.4
+        ],
+        [
+          130.6,
+          0.0,
+          108.6,
+          105.4,
+          137.8,
+          137.8,
+          148.0
+        ],
+        [
+          65.0,
+          108.6,
+          0.0,
+          219.6,
+          120.0,
+          258.0,
+          200.4
+        ],
+        [
+          226.8,
+          105.4,
+          219.6,
+          0.0,
+          243.8,
+          108.6,
+          198.2
+        ],
+        [
+          191.0,
+          137.8,
+          120.0,
+          243.8,
+          0.0,
+          175.4,
+          77.4
+        ],
+        [
+          279.0,
+          137.8,
+          258.0,
+          108.6,
+          175.4,
+          0.0,
+          116.0
+        ],
+        [
+          267.4,
+          148.0,
+          200.4,
+          198.2,
+          77.4,
+          116.0,
+          0.0
+        ]
+      ],
+      "race_viable": true,
+      "unreachable": []
+    },
+    "moonpenny": {
+      "bot_time_median_s": 120.2,
+      "combos": [
+        {
+          "best_order": [
+            2,
+            0,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 100.3,
+          "first_m": 67.0,
+          "fits_round": true,
+          "ideal_s": 87.4,
+          "length_m": 497.6,
+          "targets": [
+            0,
+            1,
+            2
+          ],
+          "time_vs_median": 0.83,
+          "vs_median": 0.8
+        },
+        {
+          "best_order": [
+            0,
+            3,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 112.0,
+          "first_m": 128.0,
+          "fits_round": true,
+          "ideal_s": 104.9,
+          "length_m": 602.4,
+          "targets": [
+            0,
+            1,
+            3
+          ],
+          "time_vs_median": 0.93,
+          "vs_median": 0.97
+        },
+        {
+          "best_order": [
+            4,
+            0,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 122.7,
+          "first_m": 191.0,
+          "fits_round": true,
+          "ideal_s": 113.5,
+          "length_m": 654.0,
+          "targets": [
+            0,
+            1,
+            4
+          ],
+          "time_vs_median": 1.02,
+          "vs_median": 1.06
+        },
+        {
+          "best_order": [
+            0,
+            5,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 123.9,
+          "first_m": 128.0,
+          "fits_round": true,
+          "ideal_s": 120.0,
+          "length_m": 693.0,
+          "targets": [
+            0,
+            1,
+            5
+          ],
+          "time_vs_median": 1.03,
+          "vs_median": 1.12
+        },
+        {
+          "best_order": [
+            2,
+            3,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 110.6,
+          "first_m": 67.0,
+          "fits_round": true,
+          "ideal_s": 99.8,
+          "length_m": 571.6,
+          "targets": [
+            0,
+            2,
+            3
+          ],
+          "time_vs_median": 0.92,
+          "vs_median": 0.92
+        },
+        {
+          "best_order": [
+            2,
+            4,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 87.8,
+          "first_m": 67.0,
+          "fits_round": true,
+          "ideal_s": 77.2,
+          "length_m": 436.4,
+          "targets": [
+            0,
+            2,
+            4
+          ],
+          "time_vs_median": 0.73,
+          "vs_median": 0.7
+        },
+        {
+          "best_order": [
+            2,
+            5,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 105.5,
+          "first_m": 67.0,
+          "fits_round": true,
+          "ideal_s": 93.9,
+          "length_m": 536.2,
+          "targets": [
+            0,
+            2,
+            5
+          ],
+          "time_vs_median": 0.88,
+          "vs_median": 0.87
+        },
+        {
+          "best_order": [
+            4,
+            3,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 114.3,
+          "first_m": 191.0,
+          "fits_round": true,
+          "ideal_s": 109.0,
+          "length_m": 627.2,
+          "targets": [
+            0,
+            3,
+            4
+          ],
+          "time_vs_median": 0.95,
+          "vs_median": 1.01
+        },
+        {
+          "best_order": [
+            5,
+            3,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 111.9,
+          "first_m": 279.4,
+          "fits_round": true,
+          "ideal_s": 107.4,
+          "length_m": 617.6,
+          "targets": [
+            0,
+            3,
+            5
+          ],
+          "time_vs_median": 0.93,
+          "vs_median": 1.0
+        },
+        {
+          "best_order": [
+            4,
+            5,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 110.5,
+          "first_m": 191.0,
+          "fits_round": true,
+          "ideal_s": 100.8,
+          "length_m": 578.0,
+          "targets": [
+            0,
+            4,
+            5
+          ],
+          "time_vs_median": 0.92,
+          "vs_median": 0.93
+        },
+        {
+          "best_order": [
+            2,
+            3,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 121.4,
+          "first_m": 67.0,
+          "fits_round": true,
+          "ideal_s": 112.4,
+          "length_m": 647.4,
+          "targets": [
+            1,
+            2,
+            3
+          ],
+          "time_vs_median": 1.01,
+          "vs_median": 1.05
+        },
+        {
+          "best_order": [
+            2,
+            4,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 124.1,
+          "first_m": 67.0,
+          "fits_round": true,
+          "ideal_s": 112.9,
+          "length_m": 650.2,
+          "targets": [
+            1,
+            2,
+            4
+          ],
+          "time_vs_median": 1.03,
+          "vs_median": 1.05
+        },
+        {
+          "best_order": [
+            2,
+            5,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 126.0,
+          "first_m": 67.0,
+          "fits_round": true,
+          "ideal_s": 118.2,
+          "length_m": 682.2,
+          "targets": [
+            1,
+            2,
+            5
+          ],
+          "time_vs_median": 1.05,
+          "vs_median": 1.1
+        },
+        {
+          "best_order": [
+            4,
+            3,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 128.8,
+          "first_m": 191.0,
+          "fits_round": true,
+          "ideal_s": 121.7,
+          "length_m": 703.0,
+          "targets": [
+            1,
+            3,
+            4
+          ],
+          "time_vs_median": 1.07,
+          "vs_median": 1.13
+        },
+        {
+          "best_order": [
+            5,
+            3,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 127.5,
+          "first_m": 279.4,
+          "fits_round": true,
+          "ideal_s": 120.1,
+          "length_m": 693.4,
+          "targets": [
+            1,
+            3,
+            5
+          ],
+          "time_vs_median": 1.06,
+          "vs_median": 1.12
+        },
+        {
+          "best_order": [
+            4,
+            5,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 137.2,
+          "first_m": 191.0,
+          "fits_round": true,
+          "ideal_s": 125.2,
+          "length_m": 724.0,
+          "targets": [
+            1,
+            4,
+            5
+          ],
+          "time_vs_median": 1.14,
+          "vs_median": 1.17
+        },
+        {
+          "best_order": [
+            2,
+            4,
+            3
+          ],
+          "bot_fits": true,
+          "bot_time_s": 117.7,
+          "first_m": 67.0,
+          "fits_round": true,
+          "ideal_s": 107.7,
+          "length_m": 619.4,
+          "targets": [
+            2,
+            3,
+            4
+          ],
+          "time_vs_median": 0.98,
+          "vs_median": 1.0
+        },
+        {
+          "best_order": [
+            2,
+            5,
+            3
+          ],
+          "bot_fits": true,
+          "bot_time_s": 120.3,
+          "first_m": 67.0,
+          "fits_round": true,
+          "ideal_s": 106.3,
+          "length_m": 611.0,
+          "targets": [
+            2,
+            3,
+            5
+          ],
+          "time_vs_median": 1.0,
+          "vs_median": 0.99
+        },
+        {
+          "best_order": [
+            2,
+            4,
+            5
+          ],
+          "bot_fits": true,
+          "bot_time_s": 112.0,
+          "first_m": 67.0,
+          "fits_round": true,
+          "ideal_s": 98.9,
+          "length_m": 566.6,
+          "targets": [
+            2,
+            4,
+            5
+          ],
+          "time_vs_median": 0.93,
+          "vs_median": 0.91
+        },
+        {
+          "best_order": [
+            4,
+            5,
+            3
+          ],
+          "bot_fits": true,
+          "bot_time_s": 126.4,
+          "first_m": 191.0,
+          "fits_round": true,
+          "ideal_s": 113.3,
+          "length_m": 652.8,
+          "targets": [
+            3,
+            4,
+            5
+          ],
+          "time_vs_median": 1.05,
+          "vs_median": 1.05
+        }
+      ],
+      "curated": [
+        [
+          0,
+          1,
+          3
+        ],
+        [
+          0,
+          1,
+          4
+        ],
+        [
+          0,
+          1,
+          5
+        ],
+        [
+          0,
+          2,
+          3
+        ],
+        [
+          0,
+          3,
+          4
+        ],
+        [
+          0,
+          3,
+          5
+        ],
+        [
+          0,
+          4,
+          5
+        ],
+        [
+          1,
+          2,
+          3
+        ],
+        [
+          1,
+          2,
+          4
+        ],
+        [
+          1,
+          2,
+          5
+        ],
+        [
+          1,
+          3,
+          4
+        ],
+        [
+          1,
+          3,
+          5
+        ],
+        [
+          2,
+          3,
+          4
+        ],
+        [
+          2,
+          3,
+          5
+        ],
+        [
+          2,
+          4,
+          5
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "door_m": [
+        9.0,
+        5.0
+      ],
+      "pair_m": [
+        [
+          0.0,
+          128.0,
+          221.6,
+          67.0,
+          272.8,
+          191.0,
+          279.4
+        ],
+        [
+          128.0,
+          0.0,
+          108.6,
+          105.4,
+          137.8,
+          137.8,
+          148.0
+        ],
+        [
+          221.6,
+          108.6,
+          0.0,
+          219.6,
+          120.0,
+          258.0,
+          200.4
+        ],
+        [
+          67.0,
+          105.4,
+          219.6,
+          0.0,
+          243.8,
+          108.6,
+          198.2
+        ],
+        [
+          272.8,
+          137.8,
+          120.0,
+          243.8,
+          0.0,
+          175.4,
+          77.4
+        ],
+        [
+          191.0,
+          137.8,
+          258.0,
+          108.6,
+          175.4,
+          0.0,
+          116.0
+        ],
+        [
+          279.4,
+          148.0,
+          200.4,
+          198.2,
+          77.4,
+          116.0,
+          0.0
+        ]
+      ],
+      "race_viable": true,
+      "unreachable": []
+    },
+    "puddlesworth": {
+      "bot_time_median_s": 120.2,
+      "combos": [
+        {
+          "best_order": [
+            2,
+            0,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 96.6,
+          "first_m": 124.8,
+          "fits_round": true,
+          "ideal_s": 80.7,
+          "length_m": 457.2,
+          "targets": [
+            0,
+            1,
+            2
+          ],
+          "time_vs_median": 0.8,
+          "vs_median": 0.74
+        },
+        {
+          "best_order": [
+            0,
+            3,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 91.0,
+          "first_m": 80.0,
+          "fits_round": true,
+          "ideal_s": 80.5,
+          "length_m": 456.2,
+          "targets": [
+            0,
+            1,
+            3
+          ],
+          "time_vs_median": 0.76,
+          "vs_median": 0.74
+        },
+        {
+          "best_order": [
+            4,
+            0,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 120.5,
+          "first_m": 228.4,
+          "fits_round": true,
+          "ideal_s": 103.4,
+          "length_m": 593.2,
+          "targets": [
+            0,
+            1,
+            4
+          ],
+          "time_vs_median": 1.0,
+          "vs_median": 0.96
+        },
+        {
+          "best_order": [
+            0,
+            5,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 108.2,
+          "first_m": 80.0,
+          "fits_round": true,
+          "ideal_s": 95.6,
+          "length_m": 546.8,
+          "targets": [
+            0,
+            1,
+            5
+          ],
+          "time_vs_median": 0.9,
+          "vs_median": 0.88
+        },
+        {
+          "best_order": [
+            2,
+            3,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 111.6,
+          "first_m": 124.8,
+          "fits_round": true,
+          "ideal_s": 101.4,
+          "length_m": 581.4,
+          "targets": [
+            0,
+            2,
+            3
+          ],
+          "time_vs_median": 0.93,
+          "vs_median": 0.94
+        },
+        {
+          "best_order": [
+            2,
+            4,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 91.4,
+          "first_m": 124.8,
+          "fits_round": true,
+          "ideal_s": 78.9,
+          "length_m": 446.2,
+          "targets": [
+            0,
+            2,
+            4
+          ],
+          "time_vs_median": 0.76,
+          "vs_median": 0.72
+        },
+        {
+          "best_order": [
+            2,
+            5,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 108.0,
+          "first_m": 124.8,
+          "fits_round": true,
+          "ideal_s": 95.5,
+          "length_m": 546.0,
+          "targets": [
+            0,
+            2,
+            5
+          ],
+          "time_vs_median": 0.9,
+          "vs_median": 0.88
+        },
+        {
+          "best_order": [
+            3,
+            4,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 118.1,
+          "first_m": 228.4,
+          "fits_round": true,
+          "ideal_s": 107.3,
+          "length_m": 616.6,
+          "targets": [
+            0,
+            3,
+            4
+          ],
+          "time_vs_median": 0.98,
+          "vs_median": 1.0
+        },
+        {
+          "best_order": [
+            3,
+            5,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 95.6,
+          "first_m": 228.4,
+          "fits_round": true,
+          "ideal_s": 92.6,
+          "length_m": 528.8,
+          "targets": [
+            0,
+            3,
+            5
+          ],
+          "time_vs_median": 0.8,
+          "vs_median": 0.85
+        },
+        {
+          "best_order": [
+            4,
+            5,
+            0
+          ],
+          "bot_fits": true,
+          "bot_time_s": 108.4,
+          "first_m": 228.4,
+          "fits_round": true,
+          "ideal_s": 99.1,
+          "length_m": 567.4,
+          "targets": [
+            0,
+            4,
+            5
+          ],
+          "time_vs_median": 0.9,
+          "vs_median": 0.92
+        },
+        {
+          "best_order": [
+            2,
+            3,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 121.4,
+          "first_m": 124.8,
+          "fits_round": true,
+          "ideal_s": 105.7,
+          "length_m": 607.0,
+          "targets": [
+            1,
+            2,
+            3
+          ],
+          "time_vs_median": 1.01,
+          "vs_median": 0.98
+        },
+        {
+          "best_order": [
+            2,
+            4,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 121.1,
+          "first_m": 124.8,
+          "fits_round": true,
+          "ideal_s": 106.1,
+          "length_m": 609.8,
+          "targets": [
+            1,
+            2,
+            4
+          ],
+          "time_vs_median": 1.01,
+          "vs_median": 0.98
+        },
+        {
+          "best_order": [
+            2,
+            5,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 124.6,
+          "first_m": 124.8,
+          "fits_round": true,
+          "ideal_s": 111.5,
+          "length_m": 641.8,
+          "targets": [
+            1,
+            2,
+            5
+          ],
+          "time_vs_median": 1.04,
+          "vs_median": 1.04
+        },
+        {
+          "best_order": [
+            4,
+            3,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 120.8,
+          "first_m": 228.4,
+          "fits_round": true,
+          "ideal_s": 111.5,
+          "length_m": 642.2,
+          "targets": [
+            1,
+            3,
+            4
+          ],
+          "time_vs_median": 1.0,
+          "vs_median": 1.04
+        },
+        {
+          "best_order": [
+            5,
+            3,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 110.1,
+          "first_m": 244.8,
+          "fits_round": true,
+          "ideal_s": 97.9,
+          "length_m": 560.6,
+          "targets": [
+            1,
+            3,
+            5
+          ],
+          "time_vs_median": 0.92,
+          "vs_median": 0.91
+        },
+        {
+          "best_order": [
+            4,
+            5,
+            1
+          ],
+          "bot_fits": true,
+          "bot_time_s": 125.8,
+          "first_m": 228.4,
+          "fits_round": true,
+          "ideal_s": 115.0,
+          "length_m": 663.2,
+          "targets": [
+            1,
+            4,
+            5
+          ],
+          "time_vs_median": 1.05,
+          "vs_median": 1.07
+        },
+        {
+          "best_order": [
+            2,
+            4,
+            3
+          ],
+          "bot_fits": true,
+          "bot_time_s": 121.7,
+          "first_m": 124.8,
+          "fits_round": true,
+          "ideal_s": 110.0,
+          "length_m": 632.8,
+          "targets": [
+            2,
+            3,
+            4
+          ],
+          "time_vs_median": 1.01,
+          "vs_median": 1.02
+        },
+        {
+          "best_order": [
+            2,
+            5,
+            3
+          ],
+          "bot_fits": true,
+          "bot_time_s": 120.9,
+          "first_m": 124.8,
+          "fits_round": true,
+          "ideal_s": 108.6,
+          "length_m": 624.4,
+          "targets": [
+            2,
+            3,
+            5
+          ],
+          "time_vs_median": 1.01,
+          "vs_median": 1.01
+        },
+        {
+          "best_order": [
+            2,
+            4,
+            5
+          ],
+          "bot_fits": true,
+          "bot_time_s": 116.3,
+          "first_m": 124.8,
+          "fits_round": true,
+          "ideal_s": 102.8,
+          "length_m": 589.8,
+          "targets": [
+            2,
+            4,
+            5
+          ],
+          "time_vs_median": 0.97,
+          "vs_median": 0.95
+        },
+        {
+          "best_order": [
+            4,
+            5,
+            3
+          ],
+          "bot_fits": true,
+          "bot_time_s": 122.4,
+          "first_m": 228.4,
+          "fits_round": true,
+          "ideal_s": 112.1,
+          "length_m": 645.8,
+          "targets": [
+            3,
+            4,
+            5
+          ],
+          "time_vs_median": 1.02,
+          "vs_median": 1.04
+        }
+      ],
+      "curated": [
+        [
+          0,
+          1,
+          4
+        ],
+        [
+          0,
+          1,
+          5
+        ],
+        [
+          0,
+          2,
+          3
+        ],
+        [
+          0,
+          2,
+          5
+        ],
+        [
+          0,
+          3,
+          4
+        ],
+        [
+          0,
+          4,
+          5
+        ],
+        [
+          1,
+          2,
+          3
+        ],
+        [
+          1,
+          2,
+          4
+        ],
+        [
+          1,
+          2,
+          5
+        ],
+        [
+          1,
+          3,
+          4
+        ],
+        [
+          1,
+          3,
+          5
+        ],
+        [
+          1,
+          4,
+          5
+        ],
+        [
+          2,
+          3,
+          4
+        ],
+        [
+          2,
+          3,
+          5
+        ],
+        [
+          2,
+          4,
+          5
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "door_m": [
+        9.0,
+        5.0
+      ],
+      "pair_m": [
+        [
+          0.0,
+          80.0,
+          123.4,
+          124.8,
+          228.4,
+          228.4,
+          244.8
+        ],
+        [
+          80.0,
+          0.0,
+          108.6,
+          105.4,
+          137.8,
+          137.8,
+          148.0
+        ],
+        [
+          123.4,
+          108.6,
+          0.0,
+          219.6,
+          120.0,
+          258.0,
+          200.4
+        ],
+        [
+          124.8,
+          105.4,
+          219.6,
+          0.0,
+          243.8,
+          108.6,
+          198.2
+        ],
+        [
+          228.4,
+          137.8,
+          120.0,
+          243.8,
+          0.0,
+          175.4,
+          77.4
+        ],
+        [
+          228.4,
+          137.8,
+          258.0,
+          108.6,
+          175.4,
+          0.0,
+          116.0
+        ],
+        [
+          244.8,
+          148.0,
+          200.4,
+          198.2,
+          77.4,
+          116.0,
+          0.0
+        ]
+      ],
+      "race_viable": true,
+      "unreachable": []
+    }
+  },
+  "feasible_share": 0.85,
+  "generated_by": "tools/route_analysis.gd",
+  "map": "classic",
+  "median_m": 619.4,
+  "nodes": [
+    "dorm",
+    "fountain",
+    "pond",
+    "pool",
+    "quarry",
+    "garden",
+    "inlet"
+  ],
+  "pair_m": [
+    [
+      0.0,
+      80.0,
+      123.4,
+      124.8,
+      228.4,
+      228.4,
+      244.8
+    ],
+    [
+      80.0,
+      0.0,
+      108.6,
+      105.4,
+      137.8,
+      137.8,
+      148.0
+    ],
+    [
+      123.4,
+      108.6,
+      0.0,
+      219.6,
+      120.0,
+      258.0,
+      200.4
+    ],
+    [
+      124.8,
+      105.4,
+      219.6,
+      0.0,
+      243.8,
+      108.6,
+      198.2
+    ],
+    [
+      228.4,
+      137.8,
+      120.0,
+      243.8,
+      0.0,
+      175.4,
+      77.4
+    ],
+    [
+      228.4,
+      137.8,
+      258.0,
+      108.6,
+      175.4,
+      0.0,
+      116.0
+    ],
+    [
+      244.8,
+      148.0,
+      200.4,
+      198.2,
+      77.4,
+      116.0,
+      0.0
+    ]
+  ],
+  "round_s": 240.0,
+  "rule": "keep combinations whose ideal run fits 85% of the round and (when measured) whose bot time fits 95%; nothing else",
+  "runner_estimate_s": {
+    "max": 125.0,
+    "median": 108.0,
+    "min": 77.0
+  },
+  "runner_speed": 6.0,
+  "time_band": 0.12,
+  "unreachable": []
+}

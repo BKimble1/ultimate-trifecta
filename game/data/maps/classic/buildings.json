@@ -1,0 +1,529 @@
+{
+ "items": [
+  {
+   "footprint": [
+    [
+     -61.0,
+     1.0
+    ],
+    [
+     -39.0,
+     1.0
+    ],
+    [
+     -39.0,
+     35.0
+    ],
+    [
+     -61.0,
+     35.0
+    ]
+   ],
+   "h": 13.0,
+   "id": "library",
+   "kind": "classic",
+   "label": "Inkwell Library",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     39.0,
+     1.0
+    ],
+    [
+     61.0,
+     1.0
+    ],
+    [
+     61.0,
+     35.0
+    ],
+    [
+     39.0,
+     35.0
+    ]
+   ],
+   "h": 12.0,
+   "id": "science",
+   "kind": "classic",
+   "label": "Beaker Hall",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     -11.0,
+     -37.0
+    ],
+    [
+     -3.0,
+     -37.0
+    ],
+    [
+     -3.0,
+     -23.0
+    ],
+    [
+     -11.0,
+     -23.0
+    ]
+   ],
+   "h": 10.0,
+   "id": "chapel_w",
+   "kind": "classic",
+   "label": "Bellweather Tower",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     3.0,
+     -37.0
+    ],
+    [
+     11.0,
+     -37.0
+    ],
+    [
+     11.0,
+     -23.0
+    ],
+    [
+     3.0,
+     -23.0
+    ]
+   ],
+   "h": 10.0,
+   "id": "chapel_e",
+   "kind": "classic",
+   "label": "Bellweather Tower",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     -3.0,
+     -33.0
+    ],
+    [
+     3.0,
+     -33.0
+    ],
+    [
+     3.0,
+     -27.0
+    ],
+    [
+     -3.0,
+     -27.0
+    ]
+   ],
+   "h": 26.0,
+   "id": "tower",
+   "kind": "classic",
+   "label": "Bellweather Tower",
+   "parts": [
+    {
+     "base": 4.2,
+     "footprint": [
+      [
+       -3.0,
+       -33.0
+      ],
+      [
+       3.0,
+       -33.0
+      ],
+      [
+       3.0,
+       -27.0
+      ],
+      [
+       -3.0,
+       -27.0
+      ]
+     ],
+     "h": 26.0
+    }
+   ],
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     -55.0,
+     58.0
+    ],
+    [
+     -29.0,
+     58.0
+    ],
+    [
+     -29.0,
+     74.0
+    ],
+    [
+     -55.0,
+     74.0
+    ]
+   ],
+   "h": 8.0,
+   "id": "dining",
+   "kind": "classic",
+   "label": "Noodle Commons",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     29.0,
+     58.0
+    ],
+    [
+     55.0,
+     58.0
+    ],
+    [
+     55.0,
+     74.0
+    ],
+    [
+     29.0,
+     74.0
+    ]
+   ],
+   "h": 8.0,
+   "id": "union",
+   "kind": "classic",
+   "label": "Student Union",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     132.0,
+     12.0
+    ],
+    [
+     150.0,
+     12.0
+    ],
+    [
+     150.0,
+     52.0
+    ],
+    [
+     132.0,
+     52.0
+    ]
+   ],
+   "h": 9.0,
+   "id": "rec",
+   "kind": "classic",
+   "label": "Splashdown Rec Center",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     123.0,
+     -99.0
+    ],
+    [
+     137.0,
+     -99.0
+    ],
+    [
+     137.0,
+     -77.0
+    ],
+    [
+     123.0,
+     -77.0
+    ]
+   ],
+   "h": 6.0,
+   "id": "greenhouse",
+   "kind": "classic",
+   "label": "Greenhouse",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     -55.0,
+     -132.0
+    ],
+    [
+     -37.0,
+     -132.0
+    ],
+    [
+     -37.0,
+     -120.0
+    ],
+    [
+     -55.0,
+     -120.0
+    ]
+   ],
+   "h": 7.0,
+   "id": "boathouse",
+   "kind": "classic",
+   "label": "Boathouse",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     47.0,
+     -136.5
+    ],
+    [
+     73.0,
+     -136.5
+    ],
+    [
+     73.0,
+     -127.5
+    ],
+    [
+     47.0,
+     -127.5
+    ]
+   ],
+   "h": 6.0,
+   "id": "shed",
+   "kind": "classic",
+   "label": "Grounds Shed",
+   "passages": [
+    {
+     "clear": 5.4,
+     "exact": true,
+     "floor": 0.0,
+     "polygon": [
+      [
+       47.6,
+       -135.9
+      ],
+      [
+       72.4,
+       -135.9
+      ],
+      [
+       72.4,
+       -127.5
+      ],
+      [
+       47.6,
+       -127.5
+      ]
+     ]
+    }
+   ],
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     -128.0,
+     -36.0
+    ],
+    [
+     -108.0,
+     -36.0
+    ],
+    [
+     -108.0,
+     -12.0
+    ],
+    [
+     -128.0,
+     -12.0
+    ]
+   ],
+   "h": 10.0,
+   "id": "mapleton",
+   "kind": "classic",
+   "label": "Mapleton Hall",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     108.0,
+     -38.0
+    ],
+    [
+     128.0,
+     -38.0
+    ],
+    [
+     128.0,
+     -18.0
+    ],
+    [
+     108.0,
+     -18.0
+    ]
+   ],
+   "h": 8.0,
+   "id": "paintbox",
+   "kind": "classic",
+   "label": "Paintbox Studios",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     -144.0,
+     -124.0
+    ],
+    [
+     -132.0,
+     -124.0
+    ],
+    [
+     -132.0,
+     -112.0
+    ],
+    [
+     -144.0,
+     -112.0
+    ]
+   ],
+   "h": 6.0,
+   "id": "observatory",
+   "kind": "classic",
+   "label": "Stargazer Observatory",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     -148.0,
+     106.0
+    ],
+    [
+     -132.0,
+     106.0
+    ],
+    [
+     -132.0,
+     118.0
+    ],
+    [
+     -148.0,
+     118.0
+    ]
+   ],
+   "h": 6.0,
+   "id": "cafe",
+   "kind": "classic",
+   "label": "Night Owl Cafe",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     131.0,
+     105.0
+    ],
+    [
+     149.0,
+     105.0
+    ],
+    [
+     149.0,
+     119.0
+    ],
+    [
+     131.0,
+     119.0
+    ]
+   ],
+   "h": 8.0,
+   "id": "music",
+   "kind": "classic",
+   "label": "Tuba Hall",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     -22.0,
+     103.0
+    ],
+    [
+     22.0,
+     103.0
+    ],
+    [
+     22.0,
+     121.0
+    ],
+    [
+     -22.0,
+     121.0
+    ]
+   ],
+   "h": 11.0,
+   "id": "dorm_puddlesworth",
+   "kind": "classic",
+   "label": "Puddlesworth Hall",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     -110.0,
+     104.0
+    ],
+    [
+     -82.0,
+     104.0
+    ],
+    [
+     -82.0,
+     124.0
+    ],
+    [
+     -110.0,
+     124.0
+    ]
+   ],
+   "h": 9.5,
+   "id": "dorm_lanternfield",
+   "kind": "classic",
+   "label": "Lanternfield House",
+   "status": "existing"
+  },
+  {
+   "footprint": [
+    [
+     84.0,
+     100.0
+    ],
+    [
+     108.0,
+     100.0
+    ],
+    [
+     108.0,
+     126.0
+    ],
+    [
+     84.0,
+     126.0
+    ]
+   ],
+   "h": 8.5,
+   "id": "dorm_moonpenny",
+   "kind": "classic",
+   "label": "Moonpenny Lodge",
+   "status": "existing"
+  }
+ ],
+ "map": "classic"
+}

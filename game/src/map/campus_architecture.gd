@@ -989,7 +989,10 @@ func _entrance(bd: Dictionary, e: Dictionary, trim: Color, wall_spec: Array) -> 
 	var kind := String(e.get("kind", "door"))
 	var nr := Vector3(n.x, 0, n.y)
 	var rt := Vector3(right.x, 0, right.y)
-	var base := Vector3(p.x, 0, p.y) + nr * 0.06
+	# its level: the floor, or a lower-level door at grade (kits are lifted
+	# to the floor)
+	var dy := float(e.get("y", bd.get("floor_y", 0.0))) - float(bd.get("floor_y", 0.0))
+	var base := Vector3(p.x, dy, p.y) + nr * 0.06
 	var k := _k(p.x, p.y)
 	var dw := clampf(w * 0.8, 1.2, 3.4)
 	k.mat = MeshKit.M_GLASS
@@ -1015,7 +1018,7 @@ func _entrance(bd: Dictionary, e: Dictionary, trim: Color, wall_spec: Array) -> 
 			k.chamfer_box(base + nr * 0.9 + Vector3(0, 3.5, 0), Vector3(dw + 1.0, 0.22, 1.8), fr.darkened(0.05) if kind != "canopy" else Color(0.32, 0.34, 0.38), 0.05, atan2(-rt.z, rt.x))
 			k.mat = 0.0
 	for s: float in [-1.0, 1.0]:
-		wall_lantern(Vector3(p.x, 0, p.y) + rt * (s * (dw * 0.5 + 0.7)) + nr * 0.1, nr)
+		wall_lantern(Vector3(p.x, dy, p.y) + rt * (s * (dw * 0.5 + 0.7)) + nr * 0.1, nr)
 
 
 const PORTICO_DEPTH := 2.6

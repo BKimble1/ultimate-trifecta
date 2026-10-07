@@ -1,5 +1,535 @@
 {
  "about": "The reference campus's ground: game frame metres, 1 m samples, y = NAVD88 - origin. Baked by tools/campus/terrain.py.",
+ "entrances": {
+  "administration_hall": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 5.995
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 5.995
+   },
+   "2": {
+    "how": "at the floor (graded apron)",
+    "y": 5.995
+   }
+  },
+  "aquatics_wing": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 0.79
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 0.79
+   },
+   "2": {
+    "how": "at the floor (graded apron)",
+    "y": 0.79
+   }
+  },
+  "arena": {
+   "0": {
+    "how": "stair of 2 risers",
+    "y": 0.829
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 0.829
+   },
+   "2": {
+    "how": "at the floor (graded apron)",
+    "y": 0.829
+   }
+  },
+  "arts_center": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 3.957
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 3.957
+   },
+   "2": {
+    "how": "at the floor (graded apron)",
+    "y": 3.957
+   }
+  },
+  "bridge_hall": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -3.152
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": -3.152
+   }
+  },
+  "campus_center": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 3.81
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 3.81
+   },
+   "2": {
+    "how": "at the floor (graded apron)",
+    "y": 3.81
+   },
+   "3": {
+    "how": "at the floor (graded apron)",
+    "y": 3.81
+   },
+   "4": {
+    "how": "stair of 5 risers",
+    "y": 3.81
+   },
+   "5": {
+    "how": "at the floor (graded apron)",
+    "y": 3.81
+   }
+  },
+  "cedar_apartments": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 4.146
+   }
+  },
+  "dining_commons": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -0.419
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": -0.419
+   },
+   "2": {
+    "how": "lower-level door at grade (the floor is 3.1 m above it)",
+    "y": -3.539
+   },
+   "3": {
+    "how": "stair of 14 risers",
+    "y": -0.419
+   }
+  },
+  "east_hall": {
+   "1": {
+    "how": "stair of 2 risers",
+    "y": -0.021
+   },
+   "2": {
+    "how": "at the floor (graded apron)",
+    "y": -0.021
+   },
+   "3": {
+    "how": "at the floor (graded apron)",
+    "y": -0.021
+   }
+  },
+  "elm_hall": {
+   "2": {
+    "how": "lower-level door at grade (the floor is 3.3 m above it)",
+    "y": -5.302
+   }
+  },
+  "environmental_center": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -2.82
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": -2.82
+   }
+  },
+  "field_house": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -0.487
+   }
+  },
+  "founders_hall": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 4.164
+   }
+  },
+  "health_house": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -6.07
+   }
+  },
+  "heritage_gallery": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 5.183
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 5.183
+   }
+  },
+  "heritage_house": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 5.372
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 5.372
+   }
+  },
+  "innovation_center": {
+   "0": {
+    "how": "stair of 6 risers",
+    "y": 5.648
+   },
+   "1": {
+    "how": "stair of 3 risers",
+    "y": 5.648
+   },
+   "2": {
+    "how": "stair of 11 risers",
+    "y": 5.648
+   },
+   "3": {
+    "how": "at the floor (graded apron)",
+    "y": 5.648
+   }
+  },
+  "lakeview_hall": {
+   "1": {
+    "how": "no stair: conflicts with a neighbour",
+    "y": -0.275
+   }
+  },
+  "liberal_arts_hall": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 5.51
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 5.51
+   },
+   "2": {
+    "how": "at the floor (graded apron)",
+    "y": 5.51
+   },
+   "3": {
+    "how": "at the floor (graded apron)",
+    "y": 5.51
+   }
+  },
+  "library": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 5.093
+   },
+   "1": {
+    "how": "stair of 8 risers",
+    "y": 5.093
+   },
+   "2": {
+    "how": "stair of 6 risers",
+    "y": 5.093
+   },
+   "3": {
+    "how": "stair of 5 risers",
+    "y": 5.093
+   }
+  },
+  "maintenance_main": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 0.773
+   },
+   "1": {
+    "how": "stair of 3 risers",
+    "y": 0.773
+   }
+  },
+  "maintenance_shed_b": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 0.388
+   }
+  },
+  "maintenance_shed_c": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 0.499
+   }
+  },
+  "maintenance_shed_d": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 0.552
+   }
+  },
+  "maple_apartments": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 3.498
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 3.498
+   }
+  },
+  "media_center": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 3.967
+   },
+   "2": {
+    "how": "at the floor (graded apron)",
+    "y": 3.967
+   },
+   "3": {
+    "how": "at the floor (graded apron)",
+    "y": 3.967
+   }
+  },
+  "music_center": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 4.015
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 4.015
+   },
+   "2": {
+    "how": "stair of 2 risers",
+    "y": 4.015
+   }
+  },
+  "north_hall": {
+   "0": {
+    "how": "stair of 11 risers",
+    "y": 5.189
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 5.189
+   },
+   "2": {
+    "how": "at the floor (graded apron)",
+    "y": 5.189
+   },
+   "3": {
+    "how": "at the floor (graded apron)",
+    "y": 5.189
+   },
+   "4": {
+    "how": "at the floor (graded apron)",
+    "y": 5.189
+   },
+   "5": {
+    "how": "stair of 5 risers",
+    "y": 5.189
+   },
+   "6": {
+    "how": "at the floor (graded apron)",
+    "y": 5.189
+   },
+   "7": {
+    "how": "at the floor (graded apron)",
+    "y": 5.189
+   }
+  },
+  "north_lodge": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -0.85
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": -0.85
+   }
+  },
+  "oak_hall": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 4.164
+   }
+  },
+  "prayer_chapel": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 1.03
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 1.03
+   }
+  },
+  "recreation_center": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 0.803
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 0.803
+   },
+   "2": {
+    "how": "at the floor (graded apron)",
+    "y": 0.803
+   }
+  },
+  "scholars_lodge": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 2.946
+   }
+  },
+  "science_annex": {
+   "0": {
+    "how": "stair of 7 risers",
+    "y": 4.897
+   }
+  },
+  "science_center": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 4.995
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 4.995
+   },
+   "2": {
+    "how": "at the floor (graded apron)",
+    "y": 4.995
+   }
+  },
+  "training_hall": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": 1.966
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": 1.966
+   }
+  },
+  "village_home_01": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -6.13
+   },
+   "1": {
+    "how": "stair of 4 risers",
+    "y": -6.13
+   }
+  },
+  "village_home_02": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -6.072
+   },
+   "1": {
+    "how": "stair of 3 risers",
+    "y": -6.072
+   }
+  },
+  "village_home_03": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -6.145
+   },
+   "1": {
+    "how": "stair of 3 risers",
+    "y": -6.145
+   }
+  },
+  "village_home_04": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -5.373
+   },
+   "1": {
+    "how": "stair of 7 risers",
+    "y": -5.373
+   }
+  },
+  "village_home_05": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -5.001
+   },
+   "1": {
+    "how": "stair of 7 risers",
+    "y": -5.001
+   }
+  },
+  "village_home_06": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -5.289
+   },
+   "1": {
+    "how": "stair of 4 risers",
+    "y": -5.289
+   }
+  },
+  "village_home_07": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -5.187
+   },
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": -5.187
+   }
+  },
+  "waterside_hall": {
+   "0": {
+    "how": "stair of 5 risers",
+    "y": -6.625
+   },
+   "1": {
+    "how": "stair of 10 risers",
+    "y": -6.625
+   },
+   "2": {
+    "how": "stair of 10 risers",
+    "y": -6.625
+   }
+  },
+  "waterside_link": {
+   "0": {
+    "how": "at the floor (graded apron)",
+    "y": -3.155
+   }
+  },
+  "west_hall": {
+   "1": {
+    "how": "at the floor (graded apron)",
+    "y": -0.084
+   },
+   "2": {
+    "how": "at the floor (graded apron)",
+    "y": -0.084
+   },
+   "3": {
+    "how": "at the floor (graded apron)",
+    "y": -0.084
+   },
+   "4": {
+    "how": "at the floor (graded apron)",
+    "y": -0.084
+   }
+  }
+ },
  "floors": {
   "administration_hall": {
    "floor": 5.995,
@@ -462,24 +992,780 @@
   6.09
  ],
  "report": [
-  "campus_center entrance: the grade outside is -0.91 m from the floor: needs a stair or ramp",
-  "dining_commons entrance: the grade outside is -2.98 m from the floor: needs a stair or ramp",
-  "dining_commons entrance: the grade outside is -2.36 m from the floor: needs a stair or ramp",
-  "elm_hall entrance: the grade outside is -3.32 m from the floor: needs a stair or ramp",
-  "innovation_center entrance: the grade outside is -1.06 m from the floor: needs a stair or ramp",
-  "innovation_center entrance: the grade outside is -1.78 m from the floor: needs a stair or ramp",
-  "lakeview_hall entrance: the grade outside is -2.48 m from the floor: needs a stair or ramp",
-  "library entrance: the grade outside is -1.31 m from the floor: needs a stair or ramp",
-  "library entrance: the grade outside is -0.98 m from the floor: needs a stair or ramp",
-  "science_annex entrance: the grade outside is -1.17 m from the floor: needs a stair or ramp",
-  "village_home_04 entrance: the grade outside is -1.12 m from the floor: needs a stair or ramp",
-  "village_home_05 entrance: the grade outside is -1.13 m from the floor: needs a stair or ramp",
-  "waterside_hall entrance: the grade outside is -1.53 m from the floor: needs a stair or ramp",
-  "waterside_hall entrance: the grade outside is -1.65 m from the floor: needs a stair or ramp"
+  "lakeview_hall entrance 1: its stair would run into another building; no stair built (the link needs evidence)"
  ],
- "sha256": "52fbc2dab2e3e2259c007d19b7d6908fe544dacf00adcb2bba74bfa94e35c797",
+ "sha256": "37d95ea14b90622c4598221a8da4c7367f61dde0532e23c535e154ab386ae337",
  "smoothing_sigma_m": 0.8,
  "source": "USGS 3DEP 1 m DEM USGS_1M_16_x62y448_IN_Indiana_Statewide_LiDAR_2017_B17 (acquired 2017-03-03..2020-04-11, published 2021-07-04; NAD83 / UTM 16N; NAVD88 m; public domain)",
+ "stairs": [
+  {
+   "bottom": 0.541,
+   "building": "arena",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 0,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 0.3,
+   "nosings": [
+    0.0,
+    0.3
+   ],
+   "p": [
+    -268.0,
+    -10.5
+   ],
+   "rails": "none",
+   "rise": 0.1442,
+   "risers": 2,
+   "top": 0.829,
+   "w": 4.2
+  },
+  {
+   "bottom": 2.946,
+   "building": "campus_center",
+   "deck": 0.0,
+   "dir": [
+    -1.0,
+    0.0
+   ],
+   "entrance": 4,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 1.2,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2
+   ],
+   "p": [
+    -29.0,
+    -249.5
+   ],
+   "rails": "both",
+   "rise": 0.1728,
+   "risers": 5,
+   "top": 3.81,
+   "w": 4.2
+  },
+  {
+   "bottom": -2.747,
+   "building": "dining_commons",
+   "deck": 0.0,
+   "dir": [
+    -1.0,
+    0.0
+   ],
+   "entrance": 3,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 5.1,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2,
+    1.5,
+    1.8,
+    2.1,
+    2.4,
+    2.7,
+    4.2,
+    4.5,
+    4.8,
+    5.1
+   ],
+   "p": [
+    -182.0,
+    92.0
+   ],
+   "rails": "both",
+   "rise": 0.1663,
+   "risers": 14,
+   "top": -0.419,
+   "w": 3.7
+  },
+  {
+   "bottom": -0.403,
+   "building": "east_hall",
+   "deck": 0.0,
+   "dir": [
+    0.95106,
+    -0.30902
+   ],
+   "entrance": 1,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 0.3,
+   "nosings": [
+    0.0,
+    0.3
+   ],
+   "p": [
+    230.3,
+    145.2
+   ],
+   "rails": "none",
+   "rise": 0.1911,
+   "risers": 2,
+   "top": -0.021,
+   "w": 3.2
+  },
+  {
+   "bottom": 4.609,
+   "building": "innovation_center",
+   "deck": 0.0,
+   "dir": [
+    -1.0,
+    0.0
+   ],
+   "entrance": 0,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 1.5,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2,
+    1.5
+   ],
+   "p": [
+    82.0,
+    -328.35
+   ],
+   "rails": "both",
+   "rise": 0.1731,
+   "risers": 6,
+   "top": 5.648,
+   "w": 7.2
+  },
+  {
+   "bottom": 5.175,
+   "building": "innovation_center",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    -1.0
+   ],
+   "entrance": 1,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 0.6,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6
+   ],
+   "p": [
+    149.7,
+    -360.8
+   ],
+   "rails": "none",
+   "rise": 0.1576,
+   "risers": 3,
+   "top": 5.648,
+   "w": 5.2
+  },
+  {
+   "bottom": 3.813,
+   "building": "innovation_center",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 2,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 4.2,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2,
+    1.5,
+    1.8,
+    2.1,
+    2.4,
+    2.7,
+    4.2
+   ],
+   "p": [
+    115.0,
+    -311.4
+   ],
+   "rails": "both",
+   "rise": 0.1668,
+   "risers": 11,
+   "top": 5.648,
+   "w": 4.2
+  },
+  {
+   "bottom": 3.736,
+   "building": "library",
+   "deck": 0.0,
+   "dir": [
+    -1.0,
+    0.0
+   ],
+   "entrance": 1,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 2.1,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2,
+    1.5,
+    1.8,
+    2.1
+   ],
+   "p": [
+    104.0,
+    -76.0
+   ],
+   "rails": "both",
+   "rise": 0.1696,
+   "risers": 8,
+   "top": 5.093,
+   "w": 3.2
+  },
+  {
+   "bottom": 4.096,
+   "building": "library",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 2,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 1.5,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2,
+    1.5
+   ],
+   "p": [
+    145.5,
+    -51.0
+   ],
+   "rails": "both",
+   "rise": 0.1662,
+   "risers": 6,
+   "top": 5.093,
+   "w": 4.2
+  },
+  {
+   "bottom": 4.254,
+   "building": "library",
+   "deck": 0.0,
+   "dir": [
+    1.0,
+    -0.0
+   ],
+   "entrance": 3,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 1.2,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2
+   ],
+   "p": [
+    169.4,
+    -73.0
+   ],
+   "rails": "both",
+   "rise": 0.1678,
+   "risers": 5,
+   "top": 5.093,
+   "w": 3.2
+  },
+  {
+   "bottom": 0.271,
+   "building": "maintenance_main",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 1,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 0.6,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6
+   ],
+   "p": [
+    -490.0,
+    -18.3
+   ],
+   "rails": "none",
+   "rise": 0.1675,
+   "risers": 3,
+   "top": 0.773,
+   "w": 3.2
+  },
+  {
+   "bottom": 3.757,
+   "building": "music_center",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 2,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 0.3,
+   "nosings": [
+    0.0,
+    0.3
+   ],
+   "p": [
+    110.0,
+    -138.9
+   ],
+   "rails": "none",
+   "rise": 0.1288,
+   "risers": 2,
+   "top": 4.015,
+   "w": 4.2
+  },
+  {
+   "bottom": 3.374,
+   "building": "north_hall",
+   "deck": 0.6,
+   "dir": [
+    1.0,
+    -0.0
+   ],
+   "entrance": 0,
+   "going": 0.32,
+   "how": "broad front stair with rails up to the portico (R200, R306); about 1.8 m from the bank in the DEM and the packet's estimate; riser count, going and the one intermediate landing inferred",
+   "landing": 1.8,
+   "landing_after": 6,
+   "length": 5.28,
+   "nosings": [
+    0.6,
+    0.92,
+    1.24,
+    1.56,
+    1.88,
+    2.2,
+    4.0,
+    4.32,
+    4.64,
+    4.96,
+    5.28
+   ],
+   "p": [
+    319.0,
+    -339.2
+   ],
+   "rails": "both",
+   "rise": 0.165,
+   "risers": 11,
+   "top": 5.189,
+   "w": 11.0
+  },
+  {
+   "bottom": 4.337,
+   "building": "north_hall",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    -1.0
+   ],
+   "entrance": 5,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 1.2,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2
+   ],
+   "p": [
+    297.7,
+    -389.0
+   ],
+   "rails": "both",
+   "rise": 0.1704,
+   "risers": 5,
+   "top": 5.189,
+   "w": 3.6
+  },
+  {
+   "bottom": 3.692,
+   "building": "science_annex",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 0,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 1.8,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2,
+    1.5,
+    1.8
+   ],
+   "p": [
+    247.2,
+    -19.7
+   ],
+   "rails": "both",
+   "rise": 0.1721,
+   "risers": 7,
+   "top": 4.897,
+   "w": 3.7
+  },
+  {
+   "bottom": -6.713,
+   "building": "village_home_01",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 1,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 0.9,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9
+   ],
+   "p": [
+    189.6,
+    316.2
+   ],
+   "rails": "none",
+   "rise": 0.1458,
+   "risers": 4,
+   "top": -6.13,
+   "w": 3.2
+  },
+  {
+   "bottom": -6.566,
+   "building": "village_home_02",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 1,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 0.6,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6
+   ],
+   "p": [
+    214.7,
+    315.2
+   ],
+   "rails": "none",
+   "rise": 0.1646,
+   "risers": 3,
+   "top": -6.072,
+   "w": 3.2
+  },
+  {
+   "bottom": -6.696,
+   "building": "village_home_03",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 1,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 0.6,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6
+   ],
+   "p": [
+    239.5,
+    314.7
+   ],
+   "rails": "none",
+   "rise": 0.1836,
+   "risers": 3,
+   "top": -6.145,
+   "w": 3.2
+  },
+  {
+   "bottom": -6.511,
+   "building": "village_home_04",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 1,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 1.8,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2,
+    1.5,
+    1.8
+   ],
+   "p": [
+    285.2,
+    302.9
+   ],
+   "rails": "both",
+   "rise": 0.1626,
+   "risers": 7,
+   "top": -5.373,
+   "w": 3.2
+  },
+  {
+   "bottom": -6.166,
+   "building": "village_home_05",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 1,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 1.8,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2,
+    1.5,
+    1.8
+   ],
+   "p": [
+    310.0,
+    292.6
+   ],
+   "rails": "both",
+   "rise": 0.1664,
+   "risers": 7,
+   "top": -5.001,
+   "w": 3.2
+  },
+  {
+   "bottom": -5.882,
+   "building": "village_home_06",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 1,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 0.9,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9
+   ],
+   "p": [
+    334.7,
+    278.8
+   ],
+   "rails": "none",
+   "rise": 0.1482,
+   "risers": 4,
+   "top": -5.289,
+   "w": 3.2
+  },
+  {
+   "bottom": -7.474,
+   "building": "waterside_hall",
+   "deck": 0.0,
+   "dir": [
+    -0.70711,
+    0.70711
+   ],
+   "entrance": 0,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 1.2,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2
+   ],
+   "p": [
+    -38.0,
+    290.5
+   ],
+   "rails": "both",
+   "rise": 0.1698,
+   "risers": 5,
+   "top": -6.625,
+   "w": 3.7
+  },
+  {
+   "bottom": -8.227,
+   "building": "waterside_hall",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 1,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 2.7,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2,
+    1.5,
+    1.8,
+    2.1,
+    2.4,
+    2.7
+   ],
+   "p": [
+    -6.5,
+    322.0
+   ],
+   "rails": "both",
+   "rise": 0.1602,
+   "risers": 10,
+   "top": -6.625,
+   "w": 3.7
+  },
+  {
+   "bottom": -8.349,
+   "building": "waterside_hall",
+   "deck": 0.0,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "entrance": 2,
+   "going": 0.3,
+   "how": "inferred from the floor and the measured grade in front of the entrance",
+   "landing": 1.5,
+   "landing_after": 10,
+   "length": 2.7,
+   "nosings": [
+    0.0,
+    0.3,
+    0.6,
+    0.9,
+    1.2,
+    1.5,
+    1.8,
+    2.1,
+    2.4,
+    2.7
+   ],
+   "p": [
+    -25.0,
+    316.5
+   ],
+   "rails": "both",
+   "rise": 0.1724,
+   "risers": 10,
+   "top": -6.625,
+   "w": 3.7
+  }
+ ],
  "steep": {
   "cart": [
    540,
@@ -834,6 +2120,10 @@
    84,
    507,
    84,
+   508,
+   84,
+   509,
+   84,
    510,
    84,
    511,
@@ -848,6 +2138,10 @@
    85,
    507,
    85,
+   508,
+   85,
+   509,
+   85,
    510,
    85,
    511,
@@ -960,6 +2254,14 @@
    98,
    428,
    98,
+   433,
+   98,
+   434,
+   98,
+   435,
+   98,
+   436,
+   98,
    159,
    99,
    160,
@@ -971,6 +2273,14 @@
    427,
    99,
    428,
+   99,
+   433,
+   99,
+   434,
+   99,
+   435,
+   99,
+   436,
    99,
    158,
    100,
@@ -1142,6 +2452,14 @@
    107,
    424,
    107,
+   519,
+   107,
+   520,
+   107,
+   521,
+   107,
+   522,
+   107,
    181,
    108,
    182,
@@ -1152,6 +2470,14 @@
    108,
    403,
    108,
+   519,
+   108,
+   520,
+   108,
+   521,
+   108,
+   522,
+   108,
    179,
    109,
    180,
@@ -1164,6 +2490,14 @@
    109,
    403,
    109,
+   519,
+   109,
+   520,
+   109,
+   521,
+   109,
+   522,
+   109,
    177,
    110,
    178,
@@ -1178,6 +2512,14 @@
    110,
    403,
    110,
+   519,
+   110,
+   520,
+   110,
+   521,
+   110,
+   522,
+   110,
    176,
    111,
    177,
@@ -1190,6 +2532,14 @@
    111,
    403,
    111,
+   519,
+   111,
+   520,
+   111,
+   521,
+   111,
+   522,
+   111,
    174,
    112,
    175,
@@ -1202,6 +2552,14 @@
    112,
    403,
    112,
+   519,
+   112,
+   520,
+   112,
+   521,
+   112,
+   522,
+   112,
    172,
    113,
    173,
@@ -1212,11 +2570,21 @@
    113,
    176,
    113,
+   399,
+   113,
    400,
    113,
    401,
    113,
    402,
+   113,
+   519,
+   113,
+   520,
+   113,
+   521,
+   113,
+   522,
    113,
    169,
    114,
@@ -1234,9 +2602,13 @@
    114,
    196,
    114,
+   399,
+   114,
    400,
    114,
    401,
+   114,
+   522,
    114,
    169,
    115,
@@ -1256,6 +2628,8 @@
    115,
    198,
    115,
+   399,
+   115,
    400,
    115,
    401,
@@ -1272,6 +2646,8 @@
    116,
    198,
    116,
+   399,
+   116,
    400,
    116,
    401,
@@ -1281,6 +2657,8 @@
    193,
    117,
    194,
+   117,
+   399,
    117,
    400,
    117,
@@ -1446,6 +2824,18 @@
    124,
    428,
    124,
+   416,
+   125,
+   417,
+   125,
+   418,
+   125,
+   416,
+   126,
+   417,
+   126,
+   418,
+   126,
    345,
    148,
    346,
@@ -1650,6 +3040,14 @@
    210,
    270,
    210,
+   413,
+   210,
+   414,
+   210,
+   415,
+   210,
+   416,
+   210,
    269,
    211,
    270,
@@ -1734,10 +3132,14 @@
    239,
    412,
    239,
+   410,
+   240,
    411,
    240,
    412,
    240,
+   410,
+   241,
    411,
    241,
    412,
@@ -1746,13 +3148,25 @@
    241,
    445,
    241,
+   410,
+   242,
    411,
    242,
    412,
    242,
+   444,
+   242,
+   445,
+   242,
+   410,
+   243,
    411,
    243,
    412,
+   243,
+   444,
+   243,
+   445,
    243,
    411,
    244,
@@ -1985,6 +3399,14 @@
    429,
    255,
    430,
+   255,
+   431,
+   255,
+   432,
+   255,
+   433,
+   255,
+   434,
    255,
    414,
    256,
@@ -2168,6 +3590,14 @@
    269,
    494,
    269,
+   113,
+   270,
+   114,
+   270,
+   115,
+   270,
+   116,
+   270,
    479,
    270,
    480,
@@ -2188,6 +3618,20 @@
    270,
    494,
    270,
+   113,
+   271,
+   114,
+   271,
+   115,
+   271,
+   116,
+   271,
+   482,
+   271,
+   483,
+   271,
+   484,
+   271,
    493,
    271,
    494,
@@ -2203,6 +3647,14 @@
    16,
    274,
    17,
+   274,
+   224,
+   274,
+   225,
+   274,
+   226,
+   274,
+   227,
    274,
    493,
    274,
@@ -2217,6 +3669,14 @@
    16,
    275,
    17,
+   275,
+   224,
+   275,
+   225,
+   275,
+   226,
+   275,
+   227,
    275,
    493,
    275,
@@ -2802,9 +4262,13 @@
    324,
    264,
    324,
+   266,
+   324,
    267,
    324,
    268,
+   324,
+   269,
    324,
    309,
    324,
@@ -2814,9 +4278,13 @@
    325,
    201,
    325,
+   266,
+   325,
    267,
    325,
    268,
+   325,
+   269,
    325,
    309,
    325,
@@ -2828,9 +4296,13 @@
    326,
    202,
    326,
+   266,
+   326,
    267,
    326,
    268,
+   326,
+   269,
    326,
    309,
    326,
@@ -2842,9 +4314,13 @@
    327,
    202,
    327,
+   266,
+   327,
    267,
    327,
    268,
+   327,
+   269,
    327,
    309,
    327,
@@ -3280,11 +4756,19 @@
    351,
    313,
    351,
+   474,
+   351,
+   475,
+   351,
    312,
    352,
    313,
    352,
    314,
+   352,
+   474,
+   352,
+   475,
    352,
    313,
    353,
@@ -3293,6 +4777,10 @@
    315,
    353,
    316,
+   353,
+   474,
+   353,
+   475,
    353,
    314,
    354,
@@ -4122,6 +5610,14 @@
    418,
    411,
    418,
+   526,
+   418,
+   527,
+   418,
+   528,
+   418,
+   529,
+   418,
    25,
    419,
    26,
@@ -4146,6 +5642,14 @@
    419,
    411,
    419,
+   526,
+   419,
+   527,
+   419,
+   528,
+   419,
+   529,
+   419,
    25,
    420,
    26,
@@ -4170,6 +5674,12 @@
    420,
    411,
    420,
+   526,
+   420,
+   527,
+   420,
+   528,
+   420,
    339,
    421,
    340,
@@ -4246,6 +5756,8 @@
    424,
    340,
    424,
+   341,
+   424,
    363,
    424,
    364,
@@ -4286,6 +5798,10 @@
    424,
    519,
    424,
+   339,
+   425,
+   340,
+   425,
    341,
    425,
    342,
@@ -4347,6 +5863,8 @@
    25,
    426,
    26,
+   426,
+   340,
    426,
    341,
    426,
@@ -4441,6 +5959,14 @@
    505,
    427,
    506,
+   427,
+   513,
+   427,
+   514,
+   427,
+   515,
+   427,
+   516,
    427,
    25,
    428,
@@ -4619,6 +6145,12 @@
    415,
    432,
    416,
+   432,
+   501,
+   432,
+   502,
+   432,
+   503,
    432,
    346,
    433,
@@ -4751,6 +6283,10 @@
    359,
    436,
    360,
+   436,
+   480,
+   436,
+   481,
    436,
    524,
    436,
@@ -4772,6 +6308,8 @@
    436,
    541,
    436,
+   346,
+   437,
    347,
    437,
    348,
@@ -4790,6 +6328,26 @@
    437,
    360,
    437,
+   453,
+   437,
+   454,
+   437,
+   455,
+   437,
+   466,
+   437,
+   467,
+   437,
+   468,
+   437,
+   478,
+   437,
+   479,
+   437,
+   480,
+   437,
+   481,
+   437,
    523,
    437,
    524,
@@ -4806,6 +6364,8 @@
    437,
    542,
    437,
+   346,
+   438,
    347,
    438,
    348,
@@ -4828,6 +6388,18 @@
    438,
    360,
    438,
+   453,
+   438,
+   454,
+   438,
+   455,
+   438,
+   466,
+   438,
+   467,
+   438,
+   468,
+   438,
    521,
    438,
    522,
@@ -4844,6 +6416,12 @@
    438,
    544,
    438,
+   346,
+   439,
+   347,
+   439,
+   348,
+   439,
    353,
    439,
    354,
@@ -4918,6 +6496,12 @@
    441,
    547,
    441,
+   355,
+   442,
+   356,
+   442,
+   357,
+   442,
    358,
    442,
    517,
@@ -5862,29 +7446,17 @@
    115,
    196,
    115,
-   400,
-   115,
-   401,
-   115,
    193,
    116,
    194,
    116,
    195,
    116,
-   400,
-   116,
-   401,
-   116,
    192,
    117,
    193,
    117,
    194,
-   117,
-   400,
-   117,
-   401,
    117,
    402,
    117,
@@ -5893,8 +7465,6 @@
    192,
    118,
    193,
-   118,
-   400,
    118,
    401,
    118,
@@ -6008,12 +7578,6 @@
    124,
    415,
    124,
-   416,
-   124,
-   417,
-   124,
-   418,
-   124,
    419,
    124,
    420,
@@ -6028,10 +7592,6 @@
    124,
    425,
    124,
-   344,
-   156,
-   345,
-   156,
    344,
    157,
    345,
@@ -6210,22 +7770,6 @@
    239,
    412,
    239,
-   411,
-   240,
-   412,
-   240,
-   411,
-   241,
-   412,
-   241,
-   411,
-   242,
-   412,
-   242,
-   411,
-   243,
-   412,
-   243,
    411,
    244,
    412,
@@ -6390,14 +7934,6 @@
    254,
    430,
    254,
-   431,
-   254,
-   432,
-   254,
-   433,
-   254,
-   434,
-   254,
    435,
    254,
    436,
@@ -6562,12 +8098,6 @@
    269,
    481,
    269,
-   482,
-   269,
-   483,
-   269,
-   484,
-   269,
    485,
    269,
    486,
@@ -6580,12 +8110,6 @@
    270,
    481,
    270,
-   482,
-   270,
-   483,
-   270,
-   484,
-   270,
    485,
    270,
    486,
@@ -6872,34 +8396,18 @@
    324,
    264,
    324,
-   267,
-   324,
-   268,
-   324,
    309,
    324,
    310,
    324,
-   267,
-   325,
-   268,
-   325,
    309,
    325,
    310,
    325,
-   267,
-   326,
-   268,
-   326,
    309,
    326,
    310,
    326,
-   267,
-   327,
-   268,
-   327,
    309,
    327,
    310,
@@ -7838,10 +9346,6 @@
    423,
    416,
    423,
-   339,
-   424,
-   340,
-   424,
    395,
    424,
    396,
@@ -7947,14 +9451,6 @@
    416,
    426,
    512,
-   426,
-   513,
-   426,
-   514,
-   426,
-   515,
-   426,
-   516,
    426,
    517,
    426,
@@ -8099,12 +9595,6 @@
    499,
    431,
    500,
-   431,
-   501,
-   431,
-   502,
-   431,
-   503,
    431,
    504,
    431,
@@ -8296,10 +9786,6 @@
    436,
    541,
    436,
-   347,
-   437,
-   348,
-   437,
    349,
    437,
    350,
@@ -8330,10 +9816,6 @@
    437,
    542,
    437,
-   347,
-   438,
-   348,
-   438,
    349,
    438,
    350,
@@ -8395,12 +9877,6 @@
    353,
    440,
    354,
-   440,
-   355,
-   440,
-   356,
-   440,
-   357,
    440,
    358,
    440,
@@ -8419,12 +9895,6 @@
    546,
    440,
    354,
-   441,
-   355,
-   441,
-   356,
-   441,
-   357,
    441,
    358,
    441,

@@ -68,15 +68,22 @@ func test_bots_complete_every_curated_route() -> void:
 		f.store_string(JSON.stringify(ordered, "  "))
 
 
-## V6: the other two dorms, three of their curated combinations each (the
-## shortest, a middle one and the longest by route length): runner bots
-## leave the dorm, take every water and come back inside through its doors.
-## (All twenty per dorm are measured by tools/dorm_balance.gd.)
+## V6: every race-start hall that is not its map's default, three of its
+## curated combinations each (the shortest, a middle one and the longest by
+## route length): runner bots leave the hall, take every water and come back
+## inside through its doors.  (All twenty per hall are measured by
+## tools/dorm_balance.gd.)  On the reference campus North Hall has no
+## combination that fits the round, so it is no race start and is not here;
+## Moonbrook College's other two halls are.
 func test_bots_complete_routes_from_every_dorm() -> void:
-	var rt := RulesLogic.route_table()
-	for d in CampusDorms.ids():
-		if d == CampusDorms.default_id():
-			continue
+	var halls: Array[String] = []
+	for m in CampusMaps.ids():
+		for d0 in CampusDorms.ids(m, true):
+			if d0 != CampusDorms.default_id(m):
+				halls.append(d0)
+	t.check(not halls.is_empty(), "halls to measure (%s)" % str(halls))
+	for d in halls:
+		var rt := RulesLogic.route_table(CampusMaps.map_of_dorm(d))
 		var cur := RulesLogic.curated_combos(d)
 		var lens := {}
 		var fits := {}

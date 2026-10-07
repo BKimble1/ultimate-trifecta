@@ -1,7 +1,8 @@
 {
   "band": 0.16,
+  "bot_share": 0.95,
   "bot_time_median_s": 120.2,
-  "campus": "63760eea719e3747",
+  "campus": "ac76088d0be47312",
   "combos": [
     {
       "best_order": [
@@ -45,8 +46,8 @@
       ],
       "first_m": 75.0,
       "fits_round": false,
-      "ideal_s": 206.3,
-      "length_m": 1210.7,
+      "ideal_s": 206.4,
+      "length_m": 1211.5,
       "targets": [
         0,
         1,
@@ -62,14 +63,14 @@
       ],
       "first_m": 268.6,
       "fits_round": true,
-      "ideal_s": 159.3,
-      "length_m": 929.1,
+      "ideal_s": 159.8,
+      "length_m": 931.9,
       "targets": [
         0,
         1,
         5
       ],
-      "vs_median": 0.56
+      "vs_median": 0.57
     },
     {
       "best_order": [
@@ -96,8 +97,8 @@
       ],
       "first_m": 268.6,
       "fits_round": false,
-      "ideal_s": 221.6,
-      "length_m": 1302.3,
+      "ideal_s": 221.2,
+      "length_m": 1299.9,
       "targets": [
         0,
         2,
@@ -130,8 +131,8 @@
       ],
       "first_m": 633.8,
       "fits_round": false,
-      "ideal_s": 330.3,
-      "length_m": 1954.7,
+      "ideal_s": 330.4,
+      "length_m": 1955.5,
       "targets": [
         0,
         3,
@@ -164,8 +165,8 @@
       ],
       "first_m": 268.6,
       "fits_round": false,
-      "ideal_s": 240.3,
-      "length_m": 1414.7,
+      "ideal_s": 240.4,
+      "length_m": 1415.5,
       "targets": [
         0,
         4,
@@ -198,8 +199,8 @@
       ],
       "first_m": 75.0,
       "fits_round": false,
-      "ideal_s": 244.2,
-      "length_m": 1438.3,
+      "ideal_s": 243.8,
+      "length_m": 1435.9,
       "targets": [
         1,
         2,
@@ -215,8 +216,8 @@
       ],
       "first_m": 75.0,
       "fits_round": false,
-      "ideal_s": 204.3,
-      "length_m": 1198.7,
+      "ideal_s": 204.8,
+      "length_m": 1201.5,
       "targets": [
         1,
         2,
@@ -243,20 +244,20 @@
     },
     {
       "best_order": [
-        1,
+        3,
         5,
-        3
+        1
       ],
-      "first_m": 75.0,
+      "first_m": 633.8,
       "fits_round": false,
-      "ideal_s": 269.6,
-      "length_m": 1590.7,
+      "ideal_s": 270.1,
+      "length_m": 1593.5,
       "targets": [
         1,
         3,
         5
       ],
-      "vs_median": 0.96
+      "vs_median": 0.97
     },
     {
       "best_order": [
@@ -266,8 +267,8 @@
       ],
       "first_m": 75.0,
       "fits_round": true,
-      "ideal_s": 147.8,
-      "length_m": 859.5,
+      "ideal_s": 148.2,
+      "length_m": 862.3,
       "targets": [
         1,
         4,
@@ -283,14 +284,14 @@
       ],
       "first_m": 633.8,
       "fits_round": false,
-      "ideal_s": 363.3,
-      "length_m": 2153.1,
+      "ideal_s": 363.0,
+      "length_m": 2150.7,
       "targets": [
         2,
         3,
         4
       ],
-      "vs_median": 1.31
+      "vs_median": 1.3
     },
     {
       "best_order": [
@@ -317,14 +318,14 @@
       ],
       "first_m": 248.2,
       "fits_round": false,
-      "ideal_s": 278.2,
-      "length_m": 1642.3,
+      "ideal_s": 277.8,
+      "length_m": 1639.9,
       "targets": [
         2,
         4,
         5
       ],
-      "vs_median": 1.0
+      "vs_median": 0.99
     },
     {
       "best_order": [
@@ -361,7 +362,7 @@
       5
     ]
   ],
-  "dorm_version": 3,
+  "dorm_version": 4,
   "dorms": {
     "north_hall": {
       "bot_time_median_s": 120.2,
@@ -408,14 +409,14 @@
           ],
           "first_m": 292.4,
           "fits_round": false,
-          "ideal_s": 272.7,
-          "length_m": 1609.2,
+          "ideal_s": 272.4,
+          "length_m": 1607.6,
           "targets": [
             0,
             1,
             4
           ],
-          "vs_median": 0.98
+          "vs_median": 0.97
         },
         {
           "best_order": [
@@ -425,8 +426,8 @@
           ],
           "first_m": 292.4,
           "fits_round": false,
-          "ideal_s": 252.0,
-          "length_m": 1485.2,
+          "ideal_s": 252.5,
+          "length_m": 1488.0,
           "targets": [
             0,
             1,
@@ -457,10 +458,10 @@
             0,
             2
           ],
-          "first_m": 637.6,
+          "first_m": 635.2,
           "fits_round": false,
-          "ideal_s": 246.0,
-          "length_m": 1449.2,
+          "ideal_s": 245.8,
+          "length_m": 1447.6,
           "targets": [
             0,
             2,
@@ -493,8 +494,8 @@
           ],
           "first_m": 292.4,
           "fits_round": false,
-          "ideal_s": 398.2,
-          "length_m": 2362.0,
+          "ideal_s": 397.8,
+          "length_m": 2359.6,
           "targets": [
             0,
             3,
@@ -527,8 +528,8 @@
           ],
           "first_m": 292.4,
           "fits_round": false,
-          "ideal_s": 306.2,
-          "length_m": 1810.4,
+          "ideal_s": 306.0,
+          "length_m": 1808.8,
           "targets": [
             0,
             4,
@@ -559,10 +560,10 @@
             1,
             2
           ],
-          "first_m": 637.6,
+          "first_m": 635.2,
           "fits_round": false,
-          "ideal_s": 276.7,
-          "length_m": 1633.2,
+          "ideal_s": 276.3,
+          "length_m": 1630.8,
           "targets": [
             1,
             2,
@@ -578,14 +579,14 @@
           ],
           "first_m": 613.6,
           "fits_round": false,
-          "ideal_s": 255.9,
-          "length_m": 1508.4,
+          "ideal_s": 256.4,
+          "length_m": 1511.2,
           "targets": [
             1,
             2,
             5
           ],
-          "vs_median": 0.91
+          "vs_median": 0.92
         },
         {
           "best_order": [
@@ -595,8 +596,8 @@
           ],
           "first_m": 731.2,
           "fits_round": false,
-          "ideal_s": 400.4,
-          "length_m": 2375.6,
+          "ideal_s": 400.2,
+          "length_m": 2374.0,
           "targets": [
             1,
             3,
@@ -612,8 +613,8 @@
           ],
           "first_m": 613.6,
           "fits_round": false,
-          "ideal_s": 374.6,
-          "length_m": 2220.4,
+          "ideal_s": 375.0,
+          "length_m": 2223.2,
           "targets": [
             1,
             3,
@@ -629,8 +630,8 @@
           ],
           "first_m": 613.6,
           "fits_round": false,
-          "ideal_s": 292.0,
-          "length_m": 1724.8,
+          "ideal_s": 292.2,
+          "length_m": 1726.0,
           "targets": [
             1,
             4,
@@ -644,10 +645,10 @@
             3,
             2
           ],
-          "first_m": 637.6,
+          "first_m": 635.2,
           "fits_round": false,
-          "ideal_s": 397.3,
-          "length_m": 2356.8,
+          "ideal_s": 396.8,
+          "length_m": 2353.6,
           "targets": [
             2,
             3,
@@ -678,10 +679,10 @@
             5,
             2
           ],
-          "first_m": 637.6,
+          "first_m": 635.2,
           "fits_round": false,
-          "ideal_s": 310.2,
-          "length_m": 1834.4,
+          "ideal_s": 309.8,
+          "length_m": 1832.0,
           "targets": [
             2,
             4,
@@ -697,8 +698,8 @@
           ],
           "first_m": 731.2,
           "fits_round": false,
-          "ideal_s": 428.8,
-          "length_m": 2545.6,
+          "ideal_s": 428.5,
+          "length_m": 2544.0,
           "targets": [
             3,
             4,
@@ -707,23 +708,7 @@
           "vs_median": 1.54
         }
       ],
-      "curated": [
-        [
-          0,
-          1,
-          2
-        ],
-        [
-          0,
-          2,
-          4
-        ],
-        [
-          0,
-          1,
-          5
-        ]
-      ],
+      "curated": [],
       "door_m": [
         14.0,
         4.0
@@ -735,7 +720,7 @@
           613.6,
           183.6,
           731.2,
-          637.6,
+          635.2,
           784.4
         ],
         [
@@ -744,7 +729,7 @@
           327.2,
           132.4,
           512.4,
-          508.4,
+          509.2,
           498.0
         ],
         [
@@ -754,7 +739,7 @@
           462.0,
           654.8,
           362.8,
-          91.2
+          94.0
         ],
         [
           183.6,
@@ -762,7 +747,7 @@
           462.0,
           0.0,
           618.0,
-          601.2,
+          598.8,
           632.8
         ],
         [
@@ -771,28 +756,29 @@
           654.8,
           618.0,
           0.0,
-          930.4,
+          929.6,
           794.4
         ],
         [
-          637.6,
-          508.4,
+          635.2,
+          509.2,
           362.8,
-          601.2,
-          930.4,
+          598.8,
+          929.6,
           0.0,
           393.2
         ],
         [
           784.4,
           498.0,
-          91.2,
+          94.0,
           632.8,
           794.4,
           393.2,
           0.0
         ]
       ],
+      "race_viable": false,
       "unreachable": []
     },
     "west_hall": {
@@ -840,8 +826,8 @@
           ],
           "first_m": 75.0,
           "fits_round": false,
-          "ideal_s": 206.3,
-          "length_m": 1210.7,
+          "ideal_s": 206.4,
+          "length_m": 1211.5,
           "targets": [
             0,
             1,
@@ -857,14 +843,14 @@
           ],
           "first_m": 268.6,
           "fits_round": true,
-          "ideal_s": 159.3,
-          "length_m": 929.1,
+          "ideal_s": 159.8,
+          "length_m": 931.9,
           "targets": [
             0,
             1,
             5
           ],
-          "vs_median": 0.56
+          "vs_median": 0.57
         },
         {
           "best_order": [
@@ -891,8 +877,8 @@
           ],
           "first_m": 268.6,
           "fits_round": false,
-          "ideal_s": 221.6,
-          "length_m": 1302.3,
+          "ideal_s": 221.2,
+          "length_m": 1299.9,
           "targets": [
             0,
             2,
@@ -925,8 +911,8 @@
           ],
           "first_m": 633.8,
           "fits_round": false,
-          "ideal_s": 330.3,
-          "length_m": 1954.7,
+          "ideal_s": 330.4,
+          "length_m": 1955.5,
           "targets": [
             0,
             3,
@@ -959,8 +945,8 @@
           ],
           "first_m": 268.6,
           "fits_round": false,
-          "ideal_s": 240.3,
-          "length_m": 1414.7,
+          "ideal_s": 240.4,
+          "length_m": 1415.5,
           "targets": [
             0,
             4,
@@ -993,8 +979,8 @@
           ],
           "first_m": 75.0,
           "fits_round": false,
-          "ideal_s": 244.2,
-          "length_m": 1438.3,
+          "ideal_s": 243.8,
+          "length_m": 1435.9,
           "targets": [
             1,
             2,
@@ -1010,8 +996,8 @@
           ],
           "first_m": 75.0,
           "fits_round": false,
-          "ideal_s": 204.3,
-          "length_m": 1198.7,
+          "ideal_s": 204.8,
+          "length_m": 1201.5,
           "targets": [
             1,
             2,
@@ -1038,20 +1024,20 @@
         },
         {
           "best_order": [
-            1,
+            3,
             5,
-            3
+            1
           ],
-          "first_m": 75.0,
+          "first_m": 633.8,
           "fits_round": false,
-          "ideal_s": 269.6,
-          "length_m": 1590.7,
+          "ideal_s": 270.1,
+          "length_m": 1593.5,
           "targets": [
             1,
             3,
             5
           ],
-          "vs_median": 0.96
+          "vs_median": 0.97
         },
         {
           "best_order": [
@@ -1061,8 +1047,8 @@
           ],
           "first_m": 75.0,
           "fits_round": true,
-          "ideal_s": 147.8,
-          "length_m": 859.5,
+          "ideal_s": 148.2,
+          "length_m": 862.3,
           "targets": [
             1,
             4,
@@ -1078,14 +1064,14 @@
           ],
           "first_m": 633.8,
           "fits_round": false,
-          "ideal_s": 363.3,
-          "length_m": 2153.1,
+          "ideal_s": 363.0,
+          "length_m": 2150.7,
           "targets": [
             2,
             3,
             4
           ],
-          "vs_median": 1.31
+          "vs_median": 1.3
         },
         {
           "best_order": [
@@ -1112,14 +1098,14 @@
           ],
           "first_m": 248.2,
           "fits_round": false,
-          "ideal_s": 278.2,
-          "length_m": 1642.3,
+          "ideal_s": 277.8,
+          "length_m": 1639.9,
           "targets": [
             2,
             4,
             5
           ],
-          "vs_median": 1.0
+          "vs_median": 0.99
         },
         {
           "best_order": [
@@ -1176,7 +1162,7 @@
           327.2,
           132.4,
           512.4,
-          508.4,
+          509.2,
           498.0
         ],
         [
@@ -1186,7 +1172,7 @@
           462.0,
           654.8,
           362.8,
-          91.2
+          94.0
         ],
         [
           403.8,
@@ -1194,7 +1180,7 @@
           462.0,
           0.0,
           618.0,
-          601.2,
+          598.8,
           632.8
         ],
         [
@@ -1203,33 +1189,35 @@
           654.8,
           618.0,
           0.0,
-          930.4,
+          929.6,
           794.4
         ],
         [
           304.6,
-          508.4,
+          509.2,
           362.8,
-          601.2,
-          930.4,
+          598.8,
+          929.6,
           0.0,
           393.2
         ],
         [
           248.2,
           498.0,
-          91.2,
+          94.0,
           632.8,
           794.4,
           393.2,
           0.0
         ]
       ],
+      "race_viable": true,
       "unreachable": []
     }
   },
   "feasible_share": 0.85,
   "generated_by": "tools/route_analysis.gd",
+  "map": "reference_campus",
   "median_m": 1649.1,
   "nodes": [
     "dorm",
@@ -1256,7 +1244,7 @@
       327.2,
       132.4,
       512.4,
-      508.4,
+      509.2,
       498.0
     ],
     [
@@ -1266,7 +1254,7 @@
       462.0,
       654.8,
       362.8,
-      91.2
+      94.0
     ],
     [
       403.8,
@@ -1274,7 +1262,7 @@
       462.0,
       0.0,
       618.0,
-      601.2,
+      598.8,
       632.8
     ],
     [
@@ -1283,22 +1271,22 @@
       654.8,
       618.0,
       0.0,
-      930.4,
+      929.6,
       794.4
     ],
     [
       304.6,
-      508.4,
+      509.2,
       362.8,
-      601.2,
-      930.4,
+      598.8,
+      929.6,
       0.0,
       393.2
     ],
     [
       248.2,
       498.0,
-      91.2,
+      94.0,
       632.8,
       794.4,
       393.2,
@@ -1306,7 +1294,7 @@
     ]
   ],
   "round_s": 240.0,
-  "rule": "keep combinations whose ideal run fits 85% of the round (fewer than 3: the shortest)",
+  "rule": "keep combinations whose ideal run fits 85% of the round and (when measured) whose bot time fits 95%; nothing else",
   "runner_estimate_s": {
     "max": 429.0,
     "median": 279.0,

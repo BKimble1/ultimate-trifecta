@@ -108,33 +108,35 @@ func test_collision_openings_ceiling_and_cart_blockers() -> void:
 	for d in h.sim.layout.dorms:
 		var id := String(d["id"])
 		var g: Dictionary = d["geo"]
+		# heights from the hall's floor (the campus has its real grades)
+		var fl := float(g.get("floor", 0.0))
 		for dr in g["doors"]:
 			var mid: Vector2 = ((dr["pos"] as Vector2) + (dr["line_p"] as Vector2)) * 0.5
 			var q := PhysicsShapeQueryParameters3D.new()
 			q.shape = cap
 			q.collision_mask = TC.L_WORLD
-			q.transform = Transform3D(Basis.IDENTITY, Vector3(mid.x, 0.8, mid.y))
+			q.transform = Transform3D(Basis.IDENTITY, Vector3(mid.x, fl + 0.8, mid.y))
 			t.check(ss.intersect_shape(q, 1).is_empty(), "%s %s: a runner fits in the doorway" % [id, dr["id"]])
 			var tg: Vector2 = dr["tangent"]
 			var beside: Vector2 = mid + tg * (CampusDorms.DOOR_W * 0.5 + 0.6)
-			q.transform = Transform3D(Basis.IDENTITY, Vector3(beside.x, 0.8, beside.y))
+			q.transform = Transform3D(Basis.IDENTITY, Vector3(beside.x, fl + 0.8, beside.y))
 			t.check(not ss.intersect_shape(q, 1).is_empty(), "%s %s: the wall beside it is solid" % [id, dr["id"]])
 			var outside: Vector2 = dr["approach"]
 			var inside: Vector2 = dr["inside"]
-			var low := PhysicsRayQueryParameters3D.create(Vector3(outside.x, 1.0, outside.y), Vector3(inside.x, 1.0, inside.y), TC.L_WORLD)
+			var low := PhysicsRayQueryParameters3D.create(Vector3(outside.x, fl + 1.0, outside.y), Vector3(inside.x, fl + 1.0, inside.y), TC.L_WORLD)
 			t.check(ss.intersect_ray(low).is_empty(), "%s %s: clear line through the opening" % [id, dr["id"]])
-			var high := PhysicsRayQueryParameters3D.create(Vector3(outside.x, 3.6, outside.y), Vector3(inside.x, 3.6, inside.y), TC.L_WORLD)
+			var high := PhysicsRayQueryParameters3D.create(Vector3(outside.x, fl + 3.6, outside.y), Vector3(inside.x, fl + 3.6, inside.y), TC.L_WORLD)
 			t.check(not ss.intersect_ray(high).is_empty(), "%s %s: lintel above the opening" % [id, dr["id"]])
-			var cart := PhysicsRayQueryParameters3D.create(Vector3(outside.x, 0.6, outside.y), Vector3(inside.x, 0.6, inside.y), TC.L_CART_BLOCK)
+			var cart := PhysicsRayQueryParameters3D.create(Vector3(outside.x, fl + 0.6, outside.y), Vector3(inside.x, fl + 0.6, inside.y), TC.L_CART_BLOCK)
 			t.check(not ss.intersect_ray(cart).is_empty(), "%s %s: carts can't drive in" % [id, dr["id"]])
 		var c := CampusData.centroid(g["room"])
-		var up := ss.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(c.x, 1.0, c.y), Vector3(c.x, 20.0, c.y), TC.L_WORLD))
-		t.check(not up.is_empty() and absf(float((up["position"] as Vector3).y) - float(g["ceil"])) < 0.05, "%s: ceiling at %.1f m" % [id, float(g["ceil"])])
+		var up := ss.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(c.x, fl + 1.0, c.y), Vector3(c.x, fl + 20.0, c.y), TC.L_WORLD))
+		t.check(not up.is_empty() and absf(float((up["position"] as Vector3).y) - fl - float(g["ceil"])) < 0.05, "%s: ceiling at %.1f m" % [id, float(g["ceil"])])
 		for pd in g["pads"]:
 			var pp: Vector2 = pd["pos"]
 			var dr2: Dictionary = g["doors"][int(pd["door"])]
 			var lp: Vector2 = dr2["line_p"]
-			var los := PhysicsRayQueryParameters3D.create(Vector3(pp.x, 1.2, pp.y), Vector3(lp.x, 1.2, lp.y), TC.L_WORLD)
+			var los := PhysicsRayQueryParameters3D.create(Vector3(pp.x, fl + 1.2, pp.y), Vector3(lp.x, fl + 1.2, lp.y), TC.L_WORLD)
 			t.check(ss.intersect_ray(los).is_empty(), "%s: pad %s sees its exit" % [id, str(pp)])
 	h.free_sim()
 
@@ -210,7 +212,7 @@ func test_threshold_finish_contract_every_door() -> void:
 		var h := _h()
 		h.make([R, R, R, P], [0, 1, 2], [], 31, {"dorm": d})
 		await h.release_patrol()
-		h.place(3, Vector3(60, 0.05, -125))
+		h.place(3, h.on_ground(Vector2(60, -125)))
 		var doors: Array = h.sim.home_doors
 		var r := h.sim.player(0)
 		# starting inside with every stamp and standing still: nothing
@@ -222,7 +224,7 @@ func test_threshold_finish_contract_every_door() -> void:
 			var n_in: Vector2 = dr["n_in"]
 			# walking OUT through the door with every stamp: nothing
 			var ins: Vector2 = dr["inside"]
-			h.place(0, Vector3(ins.x, 0.05, ins.y))
+			h.place(0, h.on_ground(ins))
 			h.cmd(0).move = -n_in
 			await h.step(70)
 			h.cmd(0).move = Vector2.ZERO
@@ -230,7 +232,7 @@ func test_threshold_finish_contract_every_door() -> void:
 			t.check(not CampusDorms.in_room(d, r.pos()), "%s %s: out through the door" % [d, dr["id"]])
 			# standing against the wall beside the door, pushing in: nothing
 			var beside: Vector2 = (dr["pos"] as Vector2) + (dr["normal"] as Vector2) * 0.5 + (dr["tangent"] as Vector2) * (CampusDorms.DOOR_W * 0.5 + 1.2)
-			h.place(0, Vector3(beside.x, 0.05, beside.y))
+			h.place(0, h.on_ground(beside))
 			h.cmd(0).move = n_in
 			await h.step(60)
 			h.cmd(0).move = Vector2.ZERO
@@ -268,7 +270,7 @@ func test_other_dorms_never_finish() -> void:
 			for dr in CampusDorms.geometry(other)["doors"]:
 				var n_in: Vector2 = dr["n_in"]
 				var ap: Vector2 = (dr["pos"] as Vector2) + (dr["normal"] as Vector2) * 0.9
-				h.place(0, Vector3(ap.x, 0.05, ap.y), atan2(-n_in.x, -n_in.y))
+				h.place(0, h.on_ground(ap), atan2(-n_in.x, -n_in.y))
 				h.cmd(0).move = n_in
 				await h.step(50)
 				h.cmd(0).move = Vector2.ZERO
@@ -284,7 +286,8 @@ func test_threshold_geometry() -> void:
 	var lp: Vector2 = dr["line_p"]
 	var n: Vector2 = dr["n_in"]
 	var tg: Vector2 = dr["tangent"]
-	var v := func(p: Vector2, y: float = 0.05) -> Vector3: return Vector3(p.x, y, p.y)
+	var fl := float(dr["floor_y"])
+	var v := func(p: Vector2, y: float = 0.05) -> Vector3: return Vector3(p.x, fl + y, p.y)
 	t.check(CampusDorms.crosses(dr, v.call(lp - n * 0.2), v.call(lp + n * 0.2)), "inward across the line: yes")
 	t.check(not CampusDorms.crosses(dr, v.call(lp + n * 0.2), v.call(lp - n * 0.2)), "outward: no")
 	t.check(not CampusDorms.crosses(dr, v.call(lp - n * 0.4), v.call(lp - n * 0.1)), "short of the line: no")
@@ -312,9 +315,9 @@ func test_high_speed_crossing_and_never_through_a_wall() -> void:
 		var n := Vector3(n2.x, 0, n2.y)
 		var r := h.sim.player(0)
 		r.stamps = 7
-		h.place(0, Vector3(lp.x, 0.05, lp.y) - n * 0.45, atan2(-n.x, -n.z))
+		h.place(0, h.on_ground(lp) - n * 0.45, atan2(-n.x, -n.z))
 		await h.step()
-		h.place(0, Vector3(lp.x, 0.05, lp.y) - n * 0.45, atan2(-n.x, -n.z))
+		h.place(0, h.on_ground(lp) - n * 0.45, atan2(-n.x, -n.z))
 		r.vel = n * 40.0   # 0.67 m in one tick
 		r.body.velocity = r.vel
 		r.diving = true    # a committed dive keeps its speed for the tick
@@ -327,7 +330,7 @@ func test_high_speed_crossing_and_never_through_a_wall() -> void:
 		var r1 := h.sim.player(1)
 		r1.stamps = 7
 		var tg: Vector2 = dr["tangent"]
-		var wall_out := Vector3(lp.x, 0.05, lp.y) - n * 1.0 + Vector3(tg.x, 0, tg.y) * 3.0
+		var wall_out := h.on_ground(lp) - n * 1.0 + Vector3(tg.x, 0, tg.y) * 3.0
 		h.place(1, wall_out, atan2(-n.x, -n.z))
 		await h.step()
 		h.place(1, wall_out, atan2(-n.x, -n.z))
@@ -337,7 +340,7 @@ func test_high_speed_crossing_and_never_through_a_wall() -> void:
 		await h.step(3)
 		t.eq(r1.state, TC.PState.ACTIVE, "%s: a dive into the wall is not a finish" % d)
 		t.check(not CampusDorms.in_room(d, r1.pos()), "%s: and does not go through" % d)
-		t.check(h.sim.home_crossing(wall_out, Vector3(lp.x, 0.05, lp.y) + n * 0.6 + Vector3(tg.x, 0, tg.y) * 1.2).is_empty(),
+		t.check(h.sim.home_crossing(wall_out, h.on_ground(lp) + n * 0.6 + Vector3(tg.x, 0, tg.y) * 1.2).is_empty(),
 			"%s: a crossing whose line is blocked by the wall never counts" % d)
 		h.free_sim()
 
@@ -355,8 +358,8 @@ func test_home_dorm_is_safe_and_finish_beats_tag() -> void:
 		var n := Vector3(n2.x, 0, n2.y)
 		var face := atan2(-n.x, -n.z)
 		# inside: a lunge from right behind never captures
-		h.place(0, Vector3(ins.x, 0.05, ins.y), face)
-		h.place(1, Vector3(ins.x, 0.05, ins.y) - n * 1.0, face)
+		h.place(0, h.on_ground(ins), face)
+		h.place(1, h.on_ground(ins) - n * 1.0, face)
 		await h.step()
 		h.press(1, TC.BTN_TAG)
 		await h.step(30)
@@ -364,8 +367,8 @@ func test_home_dorm_is_safe_and_finish_beats_tag() -> void:
 		await h.step(60)
 		# outside the door: captured
 		var ap: Vector2 = dr["approach"]
-		h.place(0, Vector3(ap.x, 0.05, ap.y) - n * 1.5, face)
-		h.place(1, Vector3(ap.x, 0.05, ap.y) - n * 2.5, face)
+		h.place(0, h.on_ground(ap) - n * 1.5, face)
+		h.place(1, h.on_ground(ap) - n * 2.5, face)
 		await h.step()
 		h.press(1, TC.BTN_TAG)
 		var ev := await h.wait_event(TC.Ev.CAPTURE, 40)
@@ -380,14 +383,14 @@ func test_pre_first_stamp_returns_inside_home_dorm() -> void:
 		var h := _h()
 		h.make([R, P], [0, 1, 2], [], 71, {"dorm": d})
 		await h.release_patrol()
-		h.place(0, Vector3(-20, 0.05, 60), 0.0)
-		h.place(1, Vector3(-20, 0.05, 61.2), 0.0)
+		h.place(0, h.on_ground(Vector2(-20, 60)), 0.0)
+		h.place(1, h.on_ground(Vector2(-20, 61.2)), 0.0)
 		await h.step()
 		h.press(1, TC.BTN_TAG)
 		await h.wait_event(TC.Ev.CAPTURE, 60)
 		# the watcher heads for the home dorm's front door meanwhile
 		var front: Vector2 = h.sim.home_doors[0]["approach"]
-		h.place(1, Vector3(front.x, 0.05, front.y))
+		h.place(1, h.on_ground(front))
 		while h.sim.player(0).state == TC.PState.CAPTURED:
 			await h.step()
 		var r := h.sim.player(0)
@@ -431,10 +434,10 @@ func test_doors_dont_snag() -> void:
 					var bi := h.sim.layout.building_at(start, 0.4)
 					var in_wall := bi >= 0 and CampusArchitecture._in_passages(start, h.sim.layout.buildings[bi]["passages"]).is_empty()
 					var mouth: Vector2 = (dr["pos"] as Vector2) + (dr["normal"] as Vector2) * 0.3 + tg * float(off) * 0.5
-					if in_wall or not h.sim.has_los(Vector3(start.x, 1.0, start.y), Vector3(mouth.x, 1.0, mouth.y)):
+					if in_wall or not h.sim.has_los(h.on_ground(start, 1.0), h.on_ground(mouth, 1.0)):
 						continue
 					approaches += 1
-					h.place(0, Vector3(start.x, 0.05, start.y), atan2(-dir.x, -dir.y))
+					h.place(0, h.on_ground(start), atan2(-dir.x, -dir.y))
 					h.cmd(0).move = dir
 					var ticks := 0
 					while r.state != TC.PState.FINISHED and ticks < 240:
@@ -454,7 +457,7 @@ func test_doors_dont_snag() -> void:
 				r.state = TC.PState.ACTIVE
 				Motor.set_body_enabled(r.body, true)
 				var wall_pt: Vector2 = (dr["pos"] as Vector2) + (dr["normal"] as Vector2) * 0.45 + tg * side * 4.0
-				h.place(0, Vector3(wall_pt.x, 0.05, wall_pt.y))
+				h.place(0, h.on_ground(wall_pt))
 				var push: Vector2 = (n_in * 0.6 - tg * float(side)).normalized()
 				h.cmd(0).move = push
 				var k := 0
@@ -489,7 +492,7 @@ func test_bots_leave_and_come_home_through_the_doors() -> void:
 		r.stamps = 7
 		var front: Vector2 = h.sim.home_doors[0]["approach"]
 		var far := front + (h.sim.home_doors[0]["normal"] as Vector2) * 38.0
-		h.place(0, Vector3(far.x, 0.05, far.y))
+		h.place(0, h.on_ground(far))
 		(h.sim.bots[0] as BotBrain).replan_t = 0.0
 		var ticks := 0
 		while r.state != TC.PState.FINISHED and ticks < 60 * 30:
@@ -500,35 +503,45 @@ func test_bots_leave_and_come_home_through_the_doors() -> void:
 		h.free_sim()
 
 
-## The host picks tonight's dorm from the seed, never the same twice in a
-## row, and publishes it with its geometry version and fingerprint, the
-## spawn pads, the coins and the start timing in the round configuration.
+## The host picks tonight's dorm from the seed among the map's race-start
+## halls, never the same twice in a row when the map has another, and
+## publishes it with its geometry version and fingerprint, the spawn pads,
+## the coins and the start timing in the round configuration.  A hall with
+## no target set that fits the round (the reference campus's North Hall) is
+## never home.
 func test_round_configuration_rotates_the_home_dorm() -> void:
-	var s := NetSession.new()
-	t.add_child(s)
-	s.start_offline("u-dorm", "Tester", {}, "runner")
-	var starts: Array = []
-	s.match_starting.connect(func(i: Dictionary) -> void: starts.append(i))
-	var seen := {}
-	var prev := ""
-	for k in 30:
-		s.host_start_match(1000 + k * 37)
-		var st: Dictionary = starts[-1]
-		var d := String(st["home_dorm"])
-		t.check(CampusDorms.has_dorm(d), "round %d: a real dorm (%s)" % [k, d])
-		t.check(d != prev, "round %d: not last round's dorm" % k)
-		var dm: Dictionary = st["dorm"]
-		t.eq(String(dm["id"]), d, "configuration names it")
-		t.eq(int(dm["ver"]), CampusDorms.VERSION, "with the geometry version")
-		t.eq(String(dm["geo"]), CampusDorms.geometry_hash(d), "and its fingerprint")
-		t.eq((dm["spawns"] as Dictionary).size(), (st["roster"] as Array).size(), "a spawn for every seat")
-		t.check(RulesLogic.curated_combos(d).has(st["targets"]), "targets from %s's fair set" % d)
-		t.eq((st["coins"] as Array).size(), Rules.cfg.coin_spawns_per_round, "the round's coins")
-		t.check((st["timing"] as Dictionary).has("countdown_s"), "start timing")
-		seen[d] = true
-		prev = d
-	t.eq(seen.size(), CampusDorms.ids().size(), "every dorm comes round")
-	s.queue_free()
+	for m in CampusMaps.ids():
+		var races := CampusDorms.ids(m, true)
+		t.check(not races.is_empty(), "%s: a hall a race can start in" % m)
+		var s := NetSession.new()
+		t.add_child(s)
+		s.start_offline("u-dorm", "Tester", {}, "runner", false, m)
+		var starts: Array = []
+		s.match_starting.connect(func(i: Dictionary) -> void: starts.append(i))
+		var seen := {}
+		var prev := ""
+		for k in 30:
+			s.host_start_match(1000 + k * 37)
+			var st: Dictionary = starts[-1]
+			var d := String(st["home_dorm"])
+			t.check(CampusDorms.has_dorm(d, m) and races.has(d), "%s round %d: a race-start hall of the map (%s)" % [m, k, d])
+			if races.size() > 1:
+				t.check(d != prev, "%s round %d: not last round's dorm" % [m, k])
+			var dm: Dictionary = st["dorm"]
+			t.eq(String(dm["id"]), d, "configuration names it")
+			t.eq(int(dm["ver"]), CampusDorms.VERSION, "with the geometry version")
+			t.eq(String(dm["geo"]), CampusDorms.geometry_hash(d), "and its fingerprint")
+			t.eq((dm["spawns"] as Dictionary).size(), (st["roster"] as Array).size(), "a spawn for every seat")
+			t.check(RulesLogic.curated_combos(d).has(st["targets"]), "targets from %s's fair set" % d)
+			t.eq((st["coins"] as Array).size(), Rules.cfg.coin_spawns_per_round, "the round's coins")
+			t.check((st["timing"] as Dictionary).has("countdown_s"), "start timing")
+			seen[d] = true
+			prev = d
+		t.eq(seen.size(), races.size(), "%s: every race-start hall comes round" % m)
+		for d2 in CampusDorms.ids(m):
+			if not races.has(d2):
+				t.check(not seen.has(d2), "%s: %s (no target set fits the round) is never home" % [m, d2])
+		s.queue_free()
 
 
 ## A guest checks the configuration field by field; another build's dorm
@@ -629,7 +642,7 @@ func test_camera_never_clips_into_the_dorm() -> void:
 	for d in CampusDorms.ids():
 		var g := CampusDorms.geometry(d)
 		var room: PackedVector2Array = g["room"]
-		var ceil_y := float(g["ceil"])
+		var ceil_y := float(g.get("floor", 0.0)) + float(g["ceil"])
 		var pts: Array = []
 		for pd in g["pads"]:
 			pts.append(pd["pos"])
@@ -638,7 +651,7 @@ func test_camera_never_clips_into_the_dorm() -> void:
 		for pp in pts:
 			for yi in 8:
 				for pitch in [-0.1, 0.32, 0.9]:
-					var p := Vector3((pp as Vector2).x, 0.05, (pp as Vector2).y)
+					var p := h.on_ground(pp)
 					cam.snap_to(p, TAU * float(yi) / 8.0)
 					cam.pitch = pitch
 					cam.target_pos = p
@@ -669,15 +682,15 @@ func test_two_door_campers_cant_block_the_way_out() -> void:
 		var h := _h()
 		h.make([R, P, P], [0, 1, 2], [], 77, {"dorm": d})
 		await h.release_patrol()
-		h.place(0, Vector3(-20, 0.05, 60), 0.0)
-		h.place(1, Vector3(-20, 0.05, 61.2), 0.0)
+		h.place(0, h.on_ground(Vector2(-20, 60)), 0.0)
+		h.place(1, h.on_ground(Vector2(-20, 61.2)), 0.0)
 		await h.step()
 		h.press(1, TC.BTN_TAG)
 		await h.wait_event(TC.Ev.CAPTURE, 60)
 		var doors: Array = h.sim.home_doors
 		for k in 2:
 			var ap: Vector2 = doors[k]["approach"]
-			h.place(1 + k, Vector3(ap.x, 0.05, ap.y))
+			h.place(1 + k, h.on_ground(ap))
 		while h.sim.player(0).state == TC.PState.CAPTURED:
 			await h.step()
 		var r := h.sim.player(0)

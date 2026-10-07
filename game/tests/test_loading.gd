@@ -274,7 +274,7 @@ func test_practice_can_be_cancelled_mid_preparation_and_the_next_round_works() -
 		while frames < 2000 and not mc.prepared and not (mc._builder != null and mc._builder._commit_started):
 			await t.get_tree().process_frame
 			frames += 1
-		var on_pool := mc._builder != null and mc._builder._commit_started
+		var on_pool: bool = mc._builder != null and mc._builder._commit_started
 		t.check(not mc.prepared, "still preparing (%d frames, %.0f%%)" % [frames, mc.prep_progress() * 100.0])
 		if cycle == 0:
 			t.check(on_pool, "with campus work on the worker pool")

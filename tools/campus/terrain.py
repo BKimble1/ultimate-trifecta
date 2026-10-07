@@ -114,6 +114,122 @@ def water_poly(it):
     return None
 
 
+# ---- stairs
+STAIR_MIN = 0.25    # a step below this is a graded (accessible) apron
+WALKOUT = 2.6       # a drop beyond this (no stair in the data) is a lower-level door
+STAIR_R = 0.165     # target riser height
+STAIR_G = 0.30      # going (tread depth)
+FLIGHT_MAX = 10     # risers in one flight before a landing
+
+
+def sample(a, x0, z0, x, z):
+    """Bilinear height of grid a at game (x, z)."""
+    fx, fz = x - x0, z - z0
+    i, j = int(np.floor(fx)), int(np.floor(fz))
+    i = min(max(i, 0), a.shape[1] - 2)
+    j = min(max(j, 0), a.shape[0] - 2)
+    tx, tz = fx - i, fz - j
+    return float((a[j, i] * (1 - tx) + a[j, i + 1] * tx) * (1 - tz) + (a[j + 1, i] * (1 - tx) + a[j + 1, i + 1] * tx) * tz)
+
+
+def stair_plan(bid, ei, e, fl, measured, x0, z0, spec):
+    """An entrance's stair from its floor down to the grade in front of it.
+
+    Top edge centre = the entrance point; it runs out along the entrance's
+    facing.  Risers of about STAIR_R; a landing after FLIGHT_MAX risers (or
+    where the data says); the foot is where the stair meets the measured
+    grade (iterated: a longer stair reaches lower ground).  The data may fix
+    the count, going, width, landings, a top deck and rails (`stair`)."""
+    a = np.radians(float(e.get("face", 0)))
+    n = np.array([np.sin(a), -np.cos(a)])
+    tg = np.array([np.cos(a), np.sin(a)])
+    top = np.array(e["p"], dtype=float)
+    going = float(spec.get("going", STAIR_G))
+    deck = float(spec.get("deck", 0.0))
+    land = float(spec.get("landing", 1.5))
+    every = int(spec.get("landing_after", FLIGHT_MAX))
+    w = float(spec.get("w", float(e.get("w", 2.4)) + 1.2))
+
+    def layout(nr):
+        # distance from the top edge to the top of each riser (riser 1 = the
+        # top one): landings after every `every` risers
+        ds = []
+        d = deck
+        for k in range(nr):
+            if k > 0:
+                d += going
+                if k % every == 0:
+                    d += land - going
+            ds.append(d)
+        return ds, ds[-1] if ds else deck
+
+    if "risers" in spec:
+        nr = int(spec["risers"])
+        ds, length = layout(nr)
+        bottom = fl - nr * float(spec.get("rise", STAIR_R))
+    else:
+        bottom = sample(measured, x0, z0, *(top + n * 1.5))
+        for _ in range(6):
+            nr = max(1, int(round((fl - bottom) / STAIR_R)))
+            ds, length = layout(nr)
+            foot = top + n * (length + 0.4)
+            bottom = sample(measured, x0, z0, *foot)
+        if fl - bottom < STAIR_MIN:
+            return None
+        if fl - bottom > 6.0:
+            return None
+        nr = max(1, int(round((fl - bottom) / STAIR_R)))
+        ds, length = layout(nr)
+    rise = (fl - bottom) / nr
+    return {"building": bid, "entrance": ei, "p": [round(float(top[0]), 3), round(float(top[1]), 3)],
+            "dir": [round(float(n[0]), 5), round(float(n[1]), 5)], "w": round(w, 2),
+            "top": round(fl, 3), "bottom": round(fl - nr * rise, 3), "risers": nr, "rise": round(rise, 4),
+            "going": going, "deck": deck, "landing": land, "landing_after": every,
+            "nosings": [round(d, 3) for d in ds], "length": round(length, 3),
+            "rails": spec.get("rails", "both" if fl - bottom > 0.6 else "none"),
+            "how": spec.get("how", "inferred from the floor and the measured grade in front of the entrance")}
+
+
+def stair_mask(st, X, Z, margin=0.3):
+    """The samples a stair stands over (its run and width, plus a margin)."""
+    p = np.array(st["p"])
+    n = np.array(st["dir"])
+    tg = np.array([-n[1], n[0]])
+    dx, dz = X - p[0], Z - p[1]
+    dn = dx * n[0] + dz * n[1]
+    dt = dx * tg[0] + dz * tg[1]
+    return (dn >= 0.4) & (dn <= st["length"] + st["going"] + margin) & (np.abs(dt) <= st["w"] * 0.5 + margin)
+
+
+def cut_stair(g, st, X, Z, cells):
+    """Keeps the ground under a stair below its treads and grades a short
+    apron at its foot to the bottom step."""
+    p = np.array(st["p"])
+    n = np.array(st["dir"])
+    tg = np.array([-n[1], n[0]])
+    dx, dz = X - p[0], Z - p[1]
+    dn = dx * n[0] + dz * n[1]
+    dt = dx * tg[0] + dz * tg[1]
+    half = st["w"] * 0.5
+    L = st["length"]
+    under = (dn >= -0.5) & (dn <= L + st["going"] + 0.3) & (np.abs(dt) <= half + 0.5)
+    # the walking surface over each sample: the line through the nosings,
+    # level on the deck and landings (CampusLayout.stair_surface)
+    px, py = [0.0], [st["top"]]
+    for k, dk in enumerate(st["nosings"]):
+        px += [dk, dk + st["going"]]
+        py += [st["top"] - k * st["rise"], st["top"] - (k + 1) * st["rise"]]
+    surf = np.interp(dn, px, py)
+    g[under] = np.minimum(g[under], surf[under] - 0.3)
+    cells |= under
+    # the foot: 3 m of walk graded to the bottom step
+    L = L + st["going"]
+    foot = (dn > L + 0.3) & (dn < L + 3.5) & (np.abs(dt) <= half + 1.0)
+    t = np.clip((L + 3.5 - dn) / 3.2, 0.0, 1.0)
+    t = t * t * (3 - 2 * t)
+    g[foot] = g[foot] * (1 - t[foot]) + st["bottom"] * t[foot]
+
+
 def bake(dem_path, data, out_dir):
     raw = np.load(dem_path).astype(np.float64)
     x0, z0, w, d = BOUNDS
@@ -184,22 +300,25 @@ def bake(dem_path, data, out_dir):
                          "ground_max": round(float(np.percentile(vr, 98)), 3), "how": how}
     for bid, ins in masks.items():
         g[ins] = pads[bid]["floor"]
-    # ---- entrance aprons
+    # ---- entrances: a graded apron where the step is small, a stair where it is not
     gp = items(data, "gameplay")
     doors = []
     for it in gp:
         if it.get("kind") == "start_dorm":
             for dr in it.get("doors", []):
-                doors.append((it["building"], dr["p"], dr.get("id", "")))
+                doors.append((it["building"], dr["p"], dr.get("id", ""), None))
     for b in blds:
-        for e in b.get("entrances", []):
+        for ei, e in enumerate(b.get("entrances", [])):
             p = e.get("p") if isinstance(e, dict) else None
             if p:
-                doors.append((b["id"], p, e.get("id", "entrance")))
+                doors.append((b["id"], p, e.get("id", "entrance %d" % ei), (b, ei, e)))
     xs = np.arange(W) + x0
     zs = np.arange(D) + z0
     X, Z = np.meshgrid(xs, zs)
-    for bid, p, did in doors:
+    stairs = []
+    ent_levels = {}
+    stair_cells = np.zeros_like(g, dtype=bool)
+    for bid, p, did, src in doors:
         if bid not in pads:
             continue
         fl = pads[bid]["floor"]
@@ -207,13 +326,56 @@ def bake(dem_path, data, out_dir):
         near = (r < 4.0) & ~masks[bid]
         if not near.any():
             continue
-        step = float(np.median(g[near]) - fl)
-        if abs(step) > 0.9:
+        step = float(np.median(measured[near]) - fl)
+        spec = (src[2].get("stair") if src else None)
+        kind = src[2].get("kind", "door") if src else "door"
+        if spec is False or kind == "garage":
+            spec = False
+        level = fl
+        how = "at the floor (graded apron)"
+        if src is not None and not spec and step < -WALKOUT:
+            # far below the floor on a building's low side: a lower-level
+            # (walk-out) door at grade, under the exposed basement
+            level = fl + step
+            how = "lower-level door at grade (the floor is %.1f m above it)" % -step
+        elif spec is not False and src is not None and (spec or step < -STAIR_MIN):
+            st = stair_plan(bid, src[1], src[2], fl, measured, x0, z0, spec or {})
+            if st is not None:
+                stairs.append(st)
+                if src is not None:
+                    ent_levels.setdefault(bid, {})[str(src[1])] = {"y": round(fl, 3), "how": "stair of %d risers" % st["risers"]}
+                continue
+        if level == fl and abs(step) > 0.9:
             report.append("%s %s: the grade outside is %+.2f m from the floor: needs a stair or ramp" % (bid, did, step))
             continue
+        if src is not None:
+            ent_levels.setdefault(bid, {})[str(src[1])] = {"y": round(level, 3), "how": how}
         t = np.clip((4.0 - r) / 3.0, 0.0, 1.0)
         t = t * t * (3 - 2 * t)
-        g[near] = g[near] * (1 - t[near]) + fl * t[near]
+        g[near] = g[near] * (1 - t[near]) + level * t[near]
+    # a stair that would run into another building or another stair is not
+    # built (two doors facing across a narrow link: what joins them needs
+    # evidence); the first planned keeps its place
+    kept = []
+    taken = np.zeros_like(g, dtype=bool)
+    for st in stairs:
+        foot = stair_mask(st, X, Z)
+        others = np.zeros_like(g, dtype=bool)
+        for bid2, m2 in masks.items():
+            if bid2 != st["building"]:
+                others |= m2
+        if (foot & others).any() or (foot & taken).any():
+            report.append("%s entrance %d: its stair would run into %s; no stair built (the link needs evidence)" % (
+                st["building"], st["entrance"], "another building" if (foot & others).any() else "another entrance's stair"))
+            ent_levels.setdefault(st["building"], {})[str(st["entrance"])] = {"y": st["top"], "how": "no stair: conflicts with a neighbour"}
+            continue
+        taken |= foot
+        kept.append(st)
+    stairs = kept
+    # the stairs last: no apron of a neighbouring door raises the ground
+    # over one
+    for st in stairs:
+        cut_stair(g, st, X, Z, stair_cells)
     # ---- steep ground, on the bots' 2 m navigation cells (NavGrid._r_slopes)
     dx = np.abs(np.diff(g, axis=1))
     dz = np.abs(np.diff(g, axis=0))
@@ -227,8 +389,13 @@ def bake(dem_path, data, out_dir):
     big = np.pad(step, ((0, 2 * nz + 1 - D), (0, 2 * nx + 1 - W)), mode="edge")
     cellmax = ndimage.maximum_filter(big, size=3, mode="nearest")[1::2, 1::2][:nz, :nx]
     steep = {"cell": 2.0, "foot_tan": 0.9, "cart_tan": 0.55}
+    sc = np.pad(stair_cells, ((0, 2 * nz + 1 - D), (0, 2 * nx + 1 - W)), mode="edge")
+    on_stair = ndimage.maximum_filter(sc.astype(np.uint8), size=3, mode="nearest")[1::2, 1::2][:nz, :nx] > 0
     for key, lim in (("foot", 0.9), ("cart", 0.55)):
-        jj, ii = np.nonzero(cellmax > lim)
+        # a stair is walked on its collision ramp (not the ground under it):
+        # its cells are open on foot and closed to carts
+        bad = (cellmax > lim) & ~on_stair if key == "foot" else (cellmax > lim) | on_stair
+        jj, ii = np.nonzero(bad)
         steep[key] = [int(v) for pair in zip(ii, jj) for v in pair]
     # ---- write
     blob = (np.round(g * 100.0) / 100.0).astype("<f4").tobytes()
@@ -248,10 +415,12 @@ def bake(dem_path, data, out_dir):
         "floors": pads,
         "report": report,
         "steep": steep,
+        "stairs": stairs,
+        "entrances": ent_levels,
     }
     json.dump(meta, open(os.path.join(out_dir, "terrain.json"), "w"), indent=1, sort_keys=True)
-    print("terrain %dx%d, %.2f..%.2f m; %d waters, %d floors; %d entrances need a stair or ramp; steep cells: %d on foot, %d for carts" % (
-        W, D, g.min(), g.max(), len(levels), len(pads), len(report), len(steep["foot"]) // 2, len(steep["cart"]) // 2))
+    print("terrain %dx%d, %.2f..%.2f m; %d waters, %d floors; %d stairs; %d entrances still need a stair or ramp; steep cells: %d on foot, %d for carts" % (
+        W, D, g.min(), g.max(), len(levels), len(pads), len(stairs), len(report), len(steep["foot"]) // 2, len(steep["cart"]) // 2))
     for r in report:
         print("  " + r)
 

@@ -50,10 +50,13 @@ func test_round_coins_seeded_spread_and_clear() -> void:
 	t.eq(RulesLogic.pick_coins(77, rd, CampusDorms.ids()[-1], [0, 2, 4], Rules.cfg), RulesLogic.pick_coins(77, lay, CampusDorms.ids()[-1], [0, 2, 4], Rules.cfg), "and the same choice")
 	var cfg: RulesConfig = Rules.cfg
 	var used := {}
-	for d in CampusDorms.ids():
+	# (the halls a race starts in: only those have target sets; 240 rounds
+	# in all)
+	var halls := CampusDorms.ids("", true)
+	for d in halls:
 		var doors: Array = CampusDorms.geometry(d)["doors"]
 		var combos := RulesLogic.curated_combos(d)
-		for s in 120:
+		for s in 240 / halls.size():
 			var targets: Array = combos[s % combos.size()]
 			var coins := RulesLogic.pick_coins(s * 7919 + 3, lay, d, targets, cfg)
 			t.eq(coins, RulesLogic.pick_coins(s * 7919 + 3, lay, d, targets, cfg), "same seed, same coins")
@@ -77,7 +80,34 @@ func test_round_coins_seeded_spread_and_clear() -> void:
 						min_gap = minf(min_gap, p.distance_to(Vector2(float(o["x"]), float(o["z"]))))
 			t.eq(ids.size(), coins.size(), "round-scoped ids are unique")
 			t.check(min_gap >= cfg.coin_min_spacing_m * 0.6, "coins are spread out (closest %.0f m)" % min_gap)
-	t.check(used.size() >= lay.coin_spots.size() - 4, "the coins move around between rounds (%d of %d spots used)" % [used.size(), lay.coin_spots.size()])
+	# every spot some round may use (clear of its hall's doors and its
+	# waters): a spot by a water every target set includes never is
+	var usable := {}
+	for d in CampusDorms.ids("", true):
+		for targets in RulesLogic.curated_combos(d):
+			for i in lay.coin_spots.size():
+				if _usable(lay, lay.coin_spots[i], d, targets, cfg):
+					usable[i] = true
+	t.check(used.size() >= usable.size() - 4, "the coins move around between rounds (%d of the %d usable spots used; %d spots in all)" % [used.size(), usable.size(), lay.coin_spots.size()])
+
+
+## pick_coins' candidate rule, for one spot.
+func _usable(lay: CampusLayout, p: Vector2, dorm: String, targets: Array, cfg: RulesConfig) -> bool:
+	for dr in CampusDorms.geometry(dorm)["doors"]:
+		if p.distance_to(dr["pos"]) < cfg.coin_door_clearance_m:
+			return false
+	for wi in targets:
+		var w: Dictionary = lay.waters[int(wi)]
+		for e in w["exits"]:
+			if p.distance_to(Vector2((e as Vector3).x, (e as Vector3).z)) < cfg.coin_water_clearance_m:
+				return false
+		for j in w["jump_points"]:
+			if p.distance_to(j) < cfg.coin_water_clearance_m:
+				return false
+		for pad in w["pads"]:
+			if p.distance_to(pad) < cfg.coin_water_clearance_m:
+				return false
+	return true
 
 
 func _coin_at(x: float, z: float, id: String = "s00") -> Dictionary:

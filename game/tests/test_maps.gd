@@ -123,12 +123,16 @@ func test_classic_collision_as_2_0() -> void:
 	PhysicsServer3D.space_set_active(new_space, true)
 	var rids: Array[RID] = []
 	var old_body := _body(old_space, rids)
-	for s in _v2_colliders(N):
+	# (the shapes are held until the end: a body keeps only their RIDs)
+	var old_shapes := _v2_colliders(N)
+	for s in old_shapes:
 		PhysicsServer3D.body_add_shape(old_body, (s[0] as Shape3D).get_rid(), s[1])
 	var new_body := _body(new_space, rids)
-	for tile in CampusBuilder.ground_tiles(L):
+	var tiles := CampusBuilder.ground_tiles(L)
+	for tile in tiles:
 		PhysicsServer3D.body_add_shape(new_body, (tile[0] as HeightMapShape3D).get_rid(), Transform3D(Basis.IDENTITY, tile[1]))
-	for r in CampusBuilder.collision_recipe(L):
+	var recipe := CampusBuilder.collision_recipe(L)
+	for r in recipe:
 		if int(r[0]) == CampusBuilder.RB_WORLD:
 			PhysicsServer3D.body_add_shape(new_body, (r[1] as Shape3D).get_rid(), r[2])
 	await t.get_tree().physics_frame

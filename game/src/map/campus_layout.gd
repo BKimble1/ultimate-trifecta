@@ -55,6 +55,11 @@ var trees: Array[Dictionary] = []
 var rocks: Array[Dictionary] = []
 var platforms: Array[Dictionary] = []  # raised walkable boxes (decks, bridges)
 var ramps: Array[Dictionary] = []      # walkable inclines (character colliders)
+## Entrance stairs (the terrain bake's "stairs", resolved): {"building",
+## "p" (top edge centre), "dir" (outward), "tg", "w", "top", "bottom",
+## "risers", "rise", "going", "nosings" (distance of each riser's top edge
+## from p, top riser first), "length", "landings" ([[d0, d1, y]]), "rails"}
+var stairs: Array[Dictionary] = []
 var lamps: Array[Vector2] = []
 var benches: Array[Dictionary] = []
 var props: Array[Dictionary] = []
@@ -98,6 +103,7 @@ func _init(p_data: CampusData = null) -> void:
 	terrain = data.terrain
 	_build_gameplay_frame()
 	_build_buildings()
+	_build_stairs()
 	_build_waters()
 	_build_water_features()
 	_build_roads_and_paths()
@@ -143,7 +149,7 @@ func _build_gameplay_frame() -> void:
 
 
 ## The ground's height at p before any water bed is cut (bilinear between
-## the 1 m samples; 0 on a flat map or outside the terrain).  Placement in
+## the 1 m samples; 0 on a flat map; the edge's beyond the samples).  Placement in
 ## the layout uses this; CampusBuilder.grid_y is the finished ground.
 func terrain_y(p: Vector2) -> float:
 	if terrain.is_empty():
@@ -152,8 +158,9 @@ func terrain_y(p: Vector2) -> float:
 	var fz := p.y - float(terrain["z0"])
 	var w := int(terrain["w"])
 	var d := int(terrain["d"])
-	if fx < 0.0 or fz < 0.0 or fx > float(w - 1) or fz > float(d - 1):
-		return 0.0
+	# beyond the samples: the edge's (the ground runs on flat past the map)
+	fx = clampf(fx, 0.0, float(w - 1))
+	fz = clampf(fz, 0.0, float(d - 1))
 	var i := mini(int(fx), w - 2)
 	var j := mini(int(fz), d - 2)
 	var u := fx - float(i)
@@ -221,15 +228,67 @@ func _build_buildings() -> void:
 				passages.append({"poly": pp2, "floor": float(ps.get("floor", 0.0)), "clear": float(ps.get("clear", 3.0))})
 		var rect := CampusData.bounds(poly)
 		var fl := _baked("floors", String(it.get("id", "")))
+		# each entrance at its level: the floor, or a lower-level door at
+		# grade under an exposed basement (the terrain bake's "entrances")
+		var levels := _baked("entrances", String(it.get("id", "")))
+		var ents: Array = []
+		for ei in (it.get("entrances", []) as Array).size():
+			var e: Dictionary = (it["entrances"][ei] as Dictionary).duplicate()
+			e["y"] = float((levels.get(str(ei), {}) as Dictionary).get("y", fl.get("floor", 0.0)))
+			ents.append(e)
 		buildings.append({
 			"floor_y": float(fl.get("floor", 0.0)), "ground_min": float(fl.get("ground_min", 0.0)), "ground_max": float(fl.get("ground_max", 0.0)),
 			"id": String(it.get("id", "")), "name": String(it.get("label", "")), "kind": String(it.get("kind", "")),
 			"status": String(it.get("status", "existing")), "poly": poly, "rect": rect,
 			"pos": rect.get_center(), "size": rect.size, "rot": 0.0, "h": h, "floors": int(it.get("floors", 0)),
-			"roof": it.get("roof", {}), "parts": parts, "style": it.get("style", {}), "entrances": it.get("entrances", []),
+			"roof": it.get("roof", {}), "parts": parts, "style": it.get("style", {}), "entrances": ents,
 			"passages": passages, "landmark": it.get("landmark", null), "background": bool(it.get("background", false)),
 			"ref": it.get("ref", ""),
 		})
+
+
+func _build_stairs() -> void:
+	if terrain.is_empty():
+		return
+	for st in (terrain["meta"] as Dictionary).get("stairs", []):
+		var p := _v2(st["p"])
+		var n := _v2(st["dir"]).normalized()
+		var nos: Array = st["nosings"]
+		var landings: Array = []
+		var every := int(st.get("landing_after", 1000))
+		var rise := float(st["rise"])
+		for k in range(1, nos.size()):
+			if k % every == 0:
+				# a landing: past the slope from riser k's nosing, level up to
+				# riser k + 1's
+				landings.append([float(nos[k - 1]) + float(st["going"]), float(nos[k]), float(st["top"]) - rise * float(k)])
+		if float(st.get("deck", 0.0)) > 0.0:
+			landings.append([0.0, float(st["deck"]), float(st["top"])])
+		var kind := "door"
+		for bd in buildings:
+			if String(bd["id"]) == String(st["building"]):
+				var ents: Array = bd["entrances"]
+				var ei := int(st.get("entrance", -1))
+				if ei >= 0 and ei < ents.size():
+					kind = String((ents[ei] as Dictionary).get("kind", "door"))
+		stairs.append({"building": String(st["building"]), "kind": kind, "p": p, "dir": n, "tg": Vector2(-n.y, n.x),
+			"w": float(st["w"]), "top": float(st["top"]), "bottom": float(st["bottom"]), "risers": int(st["risers"]),
+			"rise": rise, "going": float(st["going"]), "nosings": nos, "length": float(st["length"]),
+			"landings": landings, "rails": String(st.get("rails", "none"))})
+
+
+## A stair's walking surface at distance d out from its top edge: the
+## line through its nosings (what its collision ramp follows), level on
+## its deck and landings, one going past the last nosing at the bottom.
+static func stair_surface(st: Dictionary, d: float) -> float:
+	var nos: Array = st["nosings"]
+	var rise := float(st["rise"])
+	var going := float(st["going"])
+	for k in nos.size():
+		var d1 := float(nos[k + 1]) if k + 1 < nos.size() else INF
+		if d <= d1:
+			return float(st["top"]) - rise * float(k) - rise * clampf((d - float(nos[k])) / going, 0.0, 1.0)
+	return float(st["bottom"])
 
 
 ## A passage traced a hair inside the footprint (an open pavilion's posts

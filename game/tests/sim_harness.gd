@@ -14,7 +14,8 @@ func _init(runner) -> void:
 
 ## roles: Array of TC.Role, one per slot. bots: slots driven by BotBrain.
 ## opts (V6): "dorm" (home dorm id, default: the map's default), "coins",
-## "map" (a CampusMaps id, default the reference campus).
+## "map" (a CampusMaps id; default: the home dorm's map, else the
+## reference campus).
 func make(roles: Array, targets: Array = [0, 1, 2], bots: Array = [], seed_v: int = 11, opts: Dictionary = {}) -> MatchSim:
 	sim = MatchSim.new()
 	t.add_child(sim)
@@ -23,7 +24,9 @@ func make(roles: Array, targets: Array = [0, 1, 2], bots: Array = [], seed_v: in
 		roster.append({"slot": i, "uid": "u%d" % i, "name": "P%d" % i, "is_bot": bots.has(i), "role": roles[i], "cosmetic": {}})
 	var o := {"bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p)}
 	o.merge(opts, true)
-	sim.setup(Rules.cfg, CampusMaps.layout(String(opts.get("map", CampusMaps.DEFAULT_ID))), roster, seed_v, targets, "test-%d" % seed_v, o)
+	var dorm_map := CampusMaps.map_of_dorm(String(opts.get("dorm", "")))
+	var map_id := String(opts.get("map", dorm_map if dorm_map != "" else CampusMaps.DEFAULT_ID))
+	sim.setup(Rules.cfg, CampusMaps.layout(map_id), roster, seed_v, targets, "test-%d" % seed_v, o)
 	return sim
 
 
@@ -108,7 +111,17 @@ static func drop_offset(w: Dictionary) -> float:
 func door_point(i: int = 0) -> Vector3:
 	var d: Dictionary = sim.home_doors[i % sim.home_doors.size()]
 	var p: Vector2 = (d["pos"] as Vector2) + (d["normal"] as Vector2) * 0.9
-	return Vector3(p.x, 0.05, p.y)
+	return on_ground(p)
+
+
+## The ground height at p (the map's grades; a building's floor inside it).
+func gy(p: Vector2) -> float:
+	return CampusBuilder.grid_y(sim.layout, p.x, p.y)
+
+
+## A point dy above the ground at p (default: standing, 5 cm up).
+func on_ground(p: Vector2, dy: float = 0.05) -> Vector3:
+	return Vector3(p.x, gy(p) + dy, p.y)
 
 
 ## Puts a runner in home door i's opening, 6 cm short of the threshold and
@@ -118,7 +131,7 @@ func cross_next_tick(slot: int, i: int = 0) -> void:
 	var lp: Vector2 = d["line_p"]
 	var n_in: Vector2 = d["n_in"]
 	var n := Vector3(n_in.x, 0, n_in.y)
-	place(slot, Vector3(lp.x, 0.05, lp.y) - n * 0.06, atan2(-n.x, -n.z))
+	place(slot, on_ground(lp) - n * 0.06, atan2(-n.x, -n.z))
 	var p := sim.player(slot)
 	p.vel = n * 5.0
 	p.body.velocity = p.vel

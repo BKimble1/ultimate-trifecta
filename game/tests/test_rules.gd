@@ -7,9 +7,13 @@ func test_combos_and_permutations() -> void:
 	var all := RulesLogic.all_combos(6)
 	t.eq(all.size(), 20, "20 three-target combinations of six waters")
 	var cur := RulesLogic.curated_combos()
-	# real scale (route_analysis.gd): the combinations whose ideal run fits
-	# 85% of the round, and never fewer than the three shortest
-	t.check(cur.size() >= 3 and cur.size() <= 20, "curated set exists (%d)" % cur.size())
+	# real scale (route_analysis.gd): only the combinations whose ideal run
+	# fits 85% of the round (nothing admitted to make up a count)
+	t.check(cur.size() >= 1 and cur.size() <= 20, "curated set exists (%d)" % cur.size())
+	var rt := RulesLogic.route_table()
+	for cb in rt["dorms"][CampusDorms.default_id()]["combos"]:
+		if cur.has((cb["targets"] as Array).map(func(x): return int(x))):
+			t.check(bool(cb.get("fits_round", false)), "every curated set fits the round (%s)" % str(cb["targets"]))
 	for c in cur:
 		t.eq(c.size(), 3, "three targets")
 		t.check(c[0] != c[1] and c[1] != c[2] and c[0] != c[2], "distinct targets")

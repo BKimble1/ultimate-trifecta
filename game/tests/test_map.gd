@@ -139,6 +139,11 @@ func _clear(mc: MatchController, a: Vector3, b: Vector3) -> bool:
 	return mc.get_world_3d().direct_space_state.intersect_ray(q).is_empty()
 
 
+## A point on the ground under/over p (+5 cm).
+func _on_ground(lay: CampusLayout, p: Vector3) -> Vector3:
+	return Vector3(p.x, CampusBuilder.grid_y(lay, p.x, p.z) + 0.05, p.z)
+
+
 func _seen_items(mc: MatchController) -> Array:
 	mc.hud.refresh(0.016)
 	return MatchHUD.MapPainter.items(mc.hud, Vector2(300, 300), 280.0, true).filter(func(it: Dictionary) -> bool: return String(it["kind"]) == "seen")
@@ -178,8 +183,9 @@ func test_sight_walls_lost_sight_and_expiry() -> void:
 			half = r.size.x * 0.5
 			break
 	t.check(lib != Vector2.INF, "a building to hide behind")
-	var a := Vector3(lib.x - half - 4.0, 0.05, lib.y)
-	var behind := Vector3(lib.x + half + 4.0, 0.05, lib.y)
+	# on the ground (the campus has its real grades)
+	var a := _on_ground(lay, Vector3(lib.x - half - 4.0, 0.0, lib.y))
+	var behind := _on_ground(lay, Vector3(lib.x + half + 4.0, 0.0, lib.y))
 	me.body.global_position = a
 	watch.body.global_position = behind
 	await t.get_tree().physics_frame
@@ -191,7 +197,8 @@ func test_sight_walls_lost_sight_and_expiry() -> void:
 	t.eq(_seen_items(mc).size(), 0, "no marker")
 	# out in the open on your side: seen live, with its facing and role badge
 	var open := Vector3.INF
-	for c in [a + Vector3(0, 0, 12.0), a + Vector3(0, 0, -12.0), a + Vector3(-10.0, 0, 0)]:
+	for c0 in [a + Vector3(0, 0, 12.0), a + Vector3(0, 0, -12.0), a + Vector3(-10.0, 0, 0)]:
+		var c := _on_ground(lay, c0)
 		if _clear(mc, a, c):
 			open = c
 			break
@@ -235,10 +242,11 @@ func test_sight_walls_lost_sight_and_expiry() -> void:
 	me.state = TC.PState.FINISHED
 	mc.spectate_slot = mate.id
 	t.eq(mc.sight_slot(), mate.id, "home: sightings come from the followed teammate")
-	mate.body.global_position = open + Vector3(3, 0, 0)
+	var beside := _on_ground(lay, open + Vector3(3, 0, 0))
+	mate.body.global_position = beside
 	watch.body.global_position = open
 	await t.get_tree().physics_frame
-	mate.body.global_position = open + Vector3(3, 0, 0)
+	mate.body.global_position = beside
 	watch.body.global_position = open
 	mc.scan_seen_now()
 	t.check(mc.last_seen.has(watch.id), "what the followed teammate sees")

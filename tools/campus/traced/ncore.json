@@ -3145,7 +3145,17 @@
      "face": 90,
      "w": 3.6,
      "kind": "portico",
-     "note": "front double doors under the portico at the head of the front stair (R200 R306); main lobby lounge inside (R207)"
+     "note": "front double doors under the portico at the head of the front stair (R200 R306); main lobby lounge inside (R207)",
+     "stair": {
+      "risers": 11,
+      "going": 0.32,
+      "landing_after": 6,
+      "landing": 1.8,
+      "deck": 0.6,
+      "w": 11.0,
+      "rails": "both",
+      "how": "broad front stair with rails up to the portico (R200, R306); about 1.8 m from the bank in the DEM and the packet's estimate; riser count, going and the one intermediate landing inferred"
+     }
     },
     {
      "p": [

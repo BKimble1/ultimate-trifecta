@@ -237,10 +237,20 @@ static func chamfer_inside(inside: PackedByteArray, w: int, d: int) -> PackedFlo
 
 
 static func grid_y(layout: CampusLayout, x: float, z: float) -> float:
+	# bilinear between the 1 m samples (the edge's beyond them)
 	var b := layout.bounds
-	var xi := clampi(int(round(x - b.position.x)), 0, int(b.size.x))
-	var zi := clampi(int(round(z - b.position.y)), 0, int(b.size.y))
-	return height_grid(layout)[zi * (int(b.size.x) + 1) + xi]
+	var w := int(b.size.x)
+	var d := int(b.size.y)
+	var fx := clampf(x - b.position.x, 0.0, float(w))
+	var fz := clampf(z - b.position.y, 0.0, float(d))
+	var xi := mini(int(fx), w - 1)
+	var zi := mini(int(fz), d - 1)
+	var u := fx - float(xi)
+	var v := fz - float(zi)
+	var g := height_grid(layout)
+	var r0 := zi * (w + 1) + xi
+	var r1 := r0 + w + 1
+	return lerpf(lerpf(g[r0], g[r0 + 1], u), lerpf(g[r1], g[r1 + 1], u), v)
 
 
 static func water_at(layout: CampusLayout, p: Vector2) -> int:
@@ -382,6 +392,8 @@ func _rest_recipe() -> void:
 		_box(world, p["center"] - Vector3(0, float(p["size"].y) * 0.5, 0), p["size"], float(p.get("yaw", 0.0)))
 	for rp in L.ramps:
 		_ramp(world, rp["from"], rp["to"], rp["w"])
+	for st in L.stairs:
+		CampusStairs.collision(st, _add_shape, world, RB_BLOCK)
 	for lp in L.lamps:
 		var c2 := CylinderShape3D.new()
 		c2.radius = 0.14
@@ -834,6 +846,10 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 			lift = float(dbd.get("floor_y", 0.0))
 			dorm_art.inside(id)
 			lift = 0.0)
+	_add("stairs", func() -> void:
+		for st in L.stairs:
+			var light := String(st["kind"]) == "portico"
+			CampusStairs.draw(st, kit_at, gy, light, Color(0.92, 0.92, 0.90) if light else Color(0.16, 0.17, 0.19)))
 	_add("walls", arch.walls)
 	_add_sliced("hedges", L.hedges.size(), func(i: int) -> void: arch.hedges(i, i + 1))
 	_add_sliced("fences", L.fences.size(), func(i: int) -> void: arch.fences(i, i + 1))
@@ -1359,9 +1375,12 @@ func _ground_vertex(x: float, z: float, tinting: Array, near_water: Array) -> Ar
 	var hd := 0.0
 	var hu := 0.0
 	var n := Vector3.UP
-	if not near_water.is_empty():
-		# only around the waters is the ground anything but flat
+	var base := 0.0
+	if not near_water.is_empty() or not L.terrain.is_empty():
+		# the map's grades (a flat map: only round its waters is the ground
+		# anything but flat)
 		y = grid_y(L, x, z)
+		base = L.terrain_y(Vector2(x, z))
 		hl = grid_y(L, x - GROUND_STEP, z)
 		hr = grid_y(L, x + GROUND_STEP, z)
 		hd = grid_y(L, x, z - GROUND_STEP)
@@ -1385,9 +1404,10 @@ func _ground_vertex(x: float, z: float, tinting: Array, near_water: Array) -> Ar
 					mat = MeshKit.M_GRAVEL
 				"yard":
 					col = col.darkened(0.04)
-	var low := minf(minf(y, hl), minf(minf(hr, hd), hu))
+	# a water's bed (cut below the ground it lies in): mud
+	var low := minf(minf(y, hl), minf(minf(hr, hd), hu)) - base
 	if low < -0.1:
-		col = col.lerp(MUD, 1.0 if y < -0.1 else 0.7)
+		col = col.lerp(MUD, 1.0 if y - base < -0.1 else 0.7)
 		mat = MeshKit.M_GRAVEL
 	else:
 		for w in near_water:
