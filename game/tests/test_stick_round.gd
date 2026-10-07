@@ -97,9 +97,10 @@ func _end() -> void:
 
 
 ## The first straight of at least `want` metres whose 6 m wide strip is open
-## on the nav grid and clear of physics (posts and props included).
+## on the nav grid, level, and clear of physics (posts and props included).
 static func _find_corridor(world: World3D, want: float) -> Dictionary:
-	var ng := NavGrid.shared(CampusLayout.shared())
+	var lay := CampusLayout.shared()
+	var ng := NavGrid.shared(lay)
 	var g := ng.foot
 	var ss := world.direct_space_state
 	var sph := SphereShape3D.new()
@@ -124,18 +125,32 @@ static func _find_corridor(world: World3D, want: float) -> Dictionary:
 					L += 1.0
 				if not ok:
 					continue
+				# level ground (the campus stands on real terrain): the strip
+				# stays within 0.3 m of its start, so the sweeps above it and
+				# the runner on it measure the same straight
+				var g0 := CampusBuilder.grid_y(lay, x, y)
+				var lg := 0.0
+				while ok and lg <= want:
+					for w in [-3.0, 0.0, 3.0]:
+						var gq: Vector2 = Vector2(x, y) + d * lg + n * w
+						if absf(CampusBuilder.grid_y(lay, gq.x, gq.y) - g0) > 0.3:
+							ok = false
+							break
+					lg += 2.0
+				if not ok:
+					continue
 				for w in [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]:
-					for h in [0.6, 1.2]:
+					for h in [0.95, 1.5]:
 						var q := PhysicsShapeQueryParameters3D.new()
 						q.shape = sph
-						q.transform = Transform3D(Basis.IDENTITY, Vector3(x + n.x * w, h, y + n.y * w))
+						q.transform = Transform3D(Basis.IDENTITY, Vector3(x + n.x * w, g0 + h, y + n.y * w))
 						q.motion = Vector3(d.x, 0.0, d.y) * want
 						q.collision_mask = TC.L_WORLD
 						var r := ss.cast_motion(q)
 						if r.size() == 2 and r[0] < 1.0:
 							ok = false
 				if ok:
-					return {"start": Vector2(x, y), "yaw": yaw, "len": want}
+					return {"start": Vector2(x, y), "yaw": yaw, "len": want, "ground": g0}
 			x += 7.0
 		y += 7.0
 	return {}
@@ -266,7 +281,7 @@ func test_online_straight_commands_stay_straight() -> void:
 	var n := Vector2(-d.y, d.x)
 	var hp := hm.sim.player(slot)
 	var s: Vector2 = cor["start"]
-	hp.body.global_position = Vector3(s.x, 0.1, s.y)
+	hp.body.global_position = Vector3(s.x, float(cor["ground"]) + 0.1, s.y)
 	hp.vel = Vector3.ZERO
 	hp.body.velocity = Vector3.ZERO
 	hp.yaw = yaw

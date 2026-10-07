@@ -15,6 +15,10 @@ them on foot and in golf carts, over a series of one, three or five rounds.
 | [TEST_REPORT.md](TEST_REPORT.md) | What was tested, how, and what is still unverified |
 | [TESTFLIGHT_RELEASE.md](TESTFLIGHT_RELEASE.md) | Release status, signing lane, owner handoff and beta notes |
 | [ASSET_LICENSES.md](ASSET_LICENSES.md) | Where every asset and dependency comes from |
+| [docs/maps/README.md](docs/maps/README.md) | The two maps: registry, Moonbrook College restored, selection, protocol 10, start halls and routes |
+| [docs/maps/HANDOFF.md](docs/maps/HANDOFF.md) | Handoff for the two-map and campus detail pass: what changed, what is open, tests, device checks |
+| [docs/maps/PERFORMANCE.md](docs/maps/PERFORMANCE.md) | Before/after desktop measurements for both maps (loading, frame tail, scene size, draw counts) |
+| [docs/campus/README.md](docs/campus/README.md) | Lakeside Campus: layout, start halls, objective pool, routes and timer, gates, gaps; with TERRAIN.md and COVERAGE_MATRIX.md |
 | [docs/V5_NOTES.md](docs/V5_NOTES.md) | V5 implementation notes: the issue register, branding, type/theme/motion, home/party/wardrobe, match loading, map/HUD/results, character motion, campus art, preparation performance |
 | [docs/V4_NOTES.md](docs/V4_NOTES.md) | V4 implementation notes: the owner's playtest issue register, diagnostics, performance table, touch layout, campus and character art, Night Watch tuning, series, map, migration, What to Test |
 | [docs/V3_NOTES.md](docs/V3_NOTES.md) | V3 implementation notes: character art and animation, splash sequence, lobby/creator/type, profiles, parties and protocol 4, controls |
@@ -149,7 +153,8 @@ V4 answers the owner's first iPhone playtest. Details and evidence are in [docs/
 
 ## Core game (since V1)
 
-- **Main mode, Trifecta Chase:** a 6-runner vs 2-Night-Watch round on one campus with six waters. Every round picks three shared targets, and four runners home wins. Both roles are playable.
+- **Main mode, Trifecta Chase:** a 6-runner vs 2-Night-Watch round. Every round picks three shared target waters, and four runners home wins. Both roles are playable.
+- **Two maps:** Lakeside Campus (the default, at real scale on measured ground) and Moonbrook College (the 2.0 campus, restored). The party host picks one for the series; Practice remembers its own choice ([docs/maps/README.md](docs/maps/README.md)).
 - **Online private rooms:** up to eight humans.
   - Create a room and get a 5-character code; others join with the code over the internet through Game Center matchmaking.
   - You can also invite Game Center friends.

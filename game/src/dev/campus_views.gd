@@ -234,9 +234,19 @@ func _tour_heading(d: float) -> float:
 	return atan2(-(b - a).x, -(b - a).y)
 
 
-## Where a walker stands at p: the ground, or a stair's walking line.
+## Where a walker stands at p: the ground, a stair's walking line, or a
+## footbridge's or dock's deck (its box centre is the deck's top).
 func _tour_floor(p: Vector2) -> float:
-	return maxf(CampusBuilder.grid_y(_tour_layout, p.x, p.y), _tour_layout.stair_y(p))
+	var y := maxf(CampusBuilder.grid_y(_tour_layout, p.x, p.y), _tour_layout.stair_y(p))
+	for pf in _tour_layout.platforms:
+		if String(pf["kind"]) != "bridge" and String(pf["kind"]) != "dock":
+			continue
+		var c: Vector3 = pf["center"]
+		var sz: Vector3 = pf["size"]
+		var local := (p - Vector2(c.x, c.z)).rotated(float(pf["yaw"]))
+		if absf(local.x) <= sz.x * 0.5 and absf(local.y) <= sz.z * 0.5:
+			y = maxf(y, c.y)
+	return y
 
 
 var _tour_named := 0

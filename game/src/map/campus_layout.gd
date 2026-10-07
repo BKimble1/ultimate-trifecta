@@ -280,6 +280,36 @@ func _build_stairs() -> void:
 			"w": float(st["w"]), "top": float(st["top"]), "bottom": float(st["bottom"]), "risers": int(st["risers"]),
 			"rise": rise, "going": float(st["going"]), "nosings": nos, "length": float(st["length"]),
 			"landings": landings, "rails": String(st.get("rails", "none"))})
+	_index_stairs()
+
+
+## stair_y's coarse index: STAIR_CELL m cells -> the stairs reaching into
+## them (lead-in to run-out, full width), so a query looks at one or two
+## stairs, not all of them (the play boundary's colliders alone ask ~4,000
+## times while a round loads).
+const STAIR_CELL := 16.0
+var _stair_cells: Dictionary = {}   # Vector2i -> Array[int] (indices into stairs)
+
+
+func _index_stairs() -> void:
+	_stair_cells.clear()
+	for i in stairs.size():
+		var st := stairs[i]
+		var p: Vector2 = st["p"]
+		var dir: Vector2 = st["dir"]
+		var tg: Vector2 = st["tg"]
+		var l0 := -CampusStairs.LEAD_IN
+		var l1 := float(st["length"]) + float(st["going"]) + CampusStairs.RUN_OUT
+		var hw := float(st["w"]) * 0.5
+		var r := Rect2(p + dir * l0 - tg * hw, Vector2.ZERO)
+		for c: Vector2 in [p + dir * l0 + tg * hw, p + dir * l1 - tg * hw, p + dir * l1 + tg * hw]:
+			r = r.expand(c)
+		for cx in range(floori(r.position.x / STAIR_CELL), floori(r.end.x / STAIR_CELL) + 1):
+			for cz in range(floori(r.position.y / STAIR_CELL), floori(r.end.y / STAIR_CELL) + 1):
+				var key := Vector2i(cx, cz)
+				if not _stair_cells.has(key):
+					_stair_cells[key] = []
+				(_stair_cells[key] as Array).append(i)
 
 
 ## A stair's walking surface at distance d out from its top edge: the
@@ -300,7 +330,8 @@ static func stair_surface(st: Dictionary, d: float) -> float:
 ## landings; -INF where no stair is).
 func stair_y(p: Vector2) -> float:
 	var best := -INF
-	for st in stairs:
+	for i: int in _stair_cells.get(Vector2i(floori(p.x / STAIR_CELL), floori(p.y / STAIR_CELL)), []):
+		var st := stairs[i]
 		var d: Vector2 = p - (st["p"] as Vector2)
 		var dn := d.dot(st["dir"])
 		# from its lead-in slab behind the top edge to its run-out past the

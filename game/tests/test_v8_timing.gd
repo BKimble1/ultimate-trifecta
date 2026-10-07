@@ -151,7 +151,7 @@ func test_startup_and_underrun_policies() -> void:
 	var mid2 := (wa + wb) * 0.5
 	var nrm := (wb - wa).normalized().orthogonal()
 	var from2 := mid2 + nrm * (float(w["t"]) * 0.5 + 1.0)
-	var y := 0.0
+	var y := CampusBuilder.grid_y(lay, from2.x, from2.y)   # on the ground there (real terrain)
 	var from := Vector3(from2.x, y, from2.y)
 	var toward := Vector3(-nrm.x, 0, -nrm.y) * 7.0
 	var slot := -1

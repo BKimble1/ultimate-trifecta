@@ -320,6 +320,7 @@ const RB_WORLD := 0
 const RB_BLOCK := 1
 const FAR_TRUNK_M := 30.0       # trunks this far outside the play area get no collider
 const RECIPE_SLICE := 12        # buildings per preparation step
+const REST_PHASES := 5          # slices of the recipe's rest (_rest_recipe)
 
 var _rec: Array = []            # [[body, Shape3D, Transform3D]] being recorded
 
@@ -350,7 +351,7 @@ static func collision_step(layout: CampusLayout) -> bool:
 		return true
 	m._rest_recipe(_recipe_phase)
 	_recipe_phase += 1
-	if _recipe_phase < 3:
+	if _recipe_phase < REST_PHASES:
 		return true
 	_recipe = m._rec
 	_recipe_maker = null
@@ -397,11 +398,13 @@ func _buildings_recipe(from: int, to: int) -> void:
 		_building_collision(RB_WORLD, bd, String(dorm_of.get(bd["id"], "")))
 
 
+## The recipe's rest in REST_PHASES slices a loading frame can afford
+## (lines, trunks, small solids, the solids and the parked fleet, props and
+## edges); phase -1: all at once.
 func _rest_recipe(phase: int = -1) -> void:
 	var world := RB_WORLD
-	# in three slices a loading frame can afford (walls, trunks, the rest);
-	# phase -1: all at once
-	if phase <= 0:
+	var all := phase < 0
+	if all or phase == 0:
 		for s in L.walls:
 			_gseg(world, s["a"], s["b"], s["h"], s["t"], String(s.get("kind", "")) == "wall_retaining")
 		for s in L.hedges:
@@ -410,9 +413,7 @@ func _rest_recipe(phase: int = -1) -> void:
 			_gseg(world, s["a"], s["b"], s["h"], 0.25)
 		for s in L.cart_blockers:
 			_gseg(RB_BLOCK, s["a"], s["b"], 1.6, 0.5)
-	if phase == 0:
-		return
-	if phase <= 1:
+	if all or phase == 1:
 		# a trunk far beyond the play area (the background woods) is never
 		# reached in a round: drawn only, no collider
 		var reach := PackedVector2Array()
@@ -430,8 +431,16 @@ func _rest_recipe(phase: int = -1) -> void:
 			cyl.radius = 0.42
 			cyl.height = 4.0
 			_add_shape(world, cyl, Transform3D(Basis.IDENTITY, Vector3(tp.x, grid_y(L, tp.x, tp.y) + 2.0, tp.y)))
-	if phase == 1:
-		return
+	if all or phase == 2:
+		_small_recipe(world)
+	if all or phase == 3:
+		_solids_recipe(world)
+	if all or phase == 4:
+		_edges_recipe(world)
+
+
+## Rocks, decks, ramps, stairs, lamps and benches.
+func _small_recipe(world: int) -> void:
 	for r in L.rocks:
 		_box(world, r["pos"] + Vector3(0, float(r["size"].y) * 0.5, 0), r["size"], float(r["rot"]))
 	for p in L.platforms:
@@ -448,6 +457,10 @@ func _rest_recipe(phase: int = -1) -> void:
 	for bn in L.benches:
 		var bp: Vector2 = bn["pos"]
 		_box(world, Vector3(bp.x, grid_y(L, bp.x, bp.y) + 0.25, bp.y), Vector3(1.9, 0.5, 0.7), float(bn["rot"]))
+
+
+## The layout's solids (the parked fleet among them).
+func _solids_recipe(world: int) -> void:
 	for so in L.solids:
 		var sp: Vector2 = so["pos"]
 		var ss: Vector3 = so["size"]
@@ -459,6 +472,10 @@ func _rest_recipe(phase: int = -1) -> void:
 			_add_shape(world, cy, Transform3D(Basis.IDENTITY, Vector3(sp.x, gy + float(so.get("y", ss.y * 0.5)), sp.y)))
 			continue
 		_box(world, Vector3(sp.x, gy + ss.y * 0.5, sp.y), ss, float(so["rot"]))
+
+
+## Props, water rims and the play boundary.
+func _edges_recipe(world: int) -> void:
 	for pr in L.props:
 		if not bool(pr.get("collide", true)):
 			continue
