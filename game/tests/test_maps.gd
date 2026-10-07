@@ -387,6 +387,56 @@ func test_caches_follow_the_map() -> void:
 	CampusBuilder.drop_caches()
 
 
+## (NP) A round's collision bodies are kept for the next round on the same
+## map, and another map's kept bodies are freed while the new one loads:
+## Moonbrook -> Moonbrook -> campus -> Moonbrook never plays in the other
+## map's world, and nothing is left behind.
+func test_kept_bodies_follow_the_map() -> void:
+	MatchController.drop_campus_cache()
+	var prev: Array = [null]
+	for step in [[CampusMaps.CLASSIC, false], [CampusMaps.CLASSIC, true], [CampusMaps.CAMPUS, false], [CampusMaps.CLASSIC, false]]:
+		var id: String = step[0]
+		var lay := CampusMaps.layout(id)
+		var s := NetSession.new()
+		t.add_child(s)
+		s.start_offline("u-maps", "Mapper", {}, "runner", false, id)
+		var info := {}
+		s.match_starting.connect(func(i: Dictionary) -> void: info.merge(i, true), CONNECT_ONE_SHOT)
+		s.host_start_match(43)
+		var mc := MatchController.new()
+		mc.setup(s, info, {"quality": 0, "staged": true, "visuals": false})
+		t.add_child(mc)
+		var f := 0
+		while not mc.prepared and f < 1500:
+			await t.get_tree().process_frame
+			f += 1
+		t.check(mc.prepared, "%s: prepared" % id)
+		var world := mc.sim.get_node_or_null("WorldCollision")
+		var ground := mc.sim.get_node_or_null("GroundCollision")
+		t.check(world != null and ground != null, "%s: the sim has its bodies" % id)
+		if world == null or ground == null:
+			mc.queue_free()
+			s.queue_free()
+			return
+		var want := CampusBuilder.collision_recipe(lay).filter(func(r: Array) -> bool: return int(r[0]) == CampusBuilder.RB_WORLD).size()
+		t.eq(world.get_child_count(), want, "%s: its own world shapes" % id)
+		t.eq(ground.get_child_count(), CampusBuilder.ground_tiles(lay).size(), "%s: its own ground tiles" % id)
+		if bool(step[1]):
+			t.check(world == prev[0], "%s again: the kept bodies, not built again" % id)
+		elif prev[0] != null:
+			t.check(not is_instance_valid(prev[0]), "%s: the other map's kept bodies were freed while it loaded" % id)
+		mc.release_campus()
+		t.check(MatchController.bodies_kept(), "%s: kept as the round ends" % id)
+		t.check(world.get_parent() == null, "%s: out of the tree between rounds" % id)
+		prev[0] = world
+		mc.queue_free()
+		s.queue_free()
+		await t.get_tree().process_frame
+	MatchController.drop_campus_cache()
+	t.check(not MatchController.bodies_kept(), "dropped with the cache")
+	t.check(not is_instance_valid(prev[0]), "and freed")
+
+
 ## The chooser itself: both cards for whoever may pick (the chosen one
 ## marked by a check and the word, focus on it); for a guest only the
 ## host's map, read-only, with Close.

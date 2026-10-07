@@ -114,7 +114,8 @@ its lower bank 0.17 m under the deck: more than a runner steps up).
 
 - **New:**
   - `test_maps`: registry; classic restoration against 2.0; settings; Practice; mismatch refused;
-    map over the network, including reconnect; caches; the chooser editable and read-only;
+    map over the network, including reconnect; caches; the chooser editable and read-only; kept
+    collision bodies following the map (Moonbrook → Moonbrook → campus → Moonbrook);
   - `test_terrain`: terrain; stairs follow their nosings; walking every stair up from its walk, down
     and jumping from its landing; tile seams; the raised threshold.
 - **Updated for real grades:** `test_dorms`, `test_coins`, `test_map`, `test_camping`,
@@ -124,7 +125,30 @@ its lower bank 0.17 m under the deck: more than a runner steps up).
   y = 0.
 - **Updated for two maps:** `test_series`, whose summary now names the map first.
 
-RESULTS_PLACEHOLDER
+**Results.** The full suite ran file by file on `b39ccca`, the code at this handoff, while the tour
+rendered beside it. Each failure was re-run alone and on the base commit `f4ae758`.
+- **Overall:** 89 files, 79 passing, 583 tests, 359,475 checks.
+- **`test_routes_bots` passes:**
+  - all 18 runs from the default hall finish in 166–180 s;
+  - every Moonbrook hall's three routes finish 6/6.
+- **`test_prep_jobs`:** a 40 ms loading-step limit, met when run alone. It is noisy beside a
+  software render.
+- **Nine files fail identically on the base commit**, outside this pass, and were left alone:
+  - `test_boot_branding` (1): the curtain frees itself on a timer;
+  - `test_friends` (26);
+  - `test_motion_layer` (2);
+  - `test_motion_v6` (1);
+  - `test_season100` (4);
+  - `test_season_stage` (3–4);
+  - `test_touch_scroll` (1);
+  - `test_purchases` (2);
+  - `test_outfits_p8`: flaky on both commits; 1–6 outfits per run differ from the default look by a
+    timing-noisy 0.5 cm.
+- **Fixed in this pass, after the full run found them:**
+  - `test_series`: the summary names the map;
+  - `test_stick_round` and `test_v8_timing`: they placed runners at y = 0 on terrain;
+  - `test_prep_jobs`: a 57–62 ms loading step, fixed by the stair index and finer slices.
+- **Shipping-name scan:** `tools/campus/scan_shipping.py`, now also over `docs/maps`, finds 0.
 
 ## Evidence (delivered with the session, not in the repository)
 
