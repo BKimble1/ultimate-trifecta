@@ -270,16 +270,26 @@ func _build_stairs() -> void:
 		if float(st.get("deck", 0.0)) > 0.0:
 			landings.append([0.0, float(st["deck"]), float(st["top"])])
 		var kind := "door"
+		# the level lead-in behind the top edge (CampusStairs.LEAD_IN) is
+		# the porch floor where the building covers it; where it does not
+		# (a door traced in front of its wall), it is a landing of its own,
+		# drawn as one rather than a bare collider
+		var lead_open := false
 		for bd in buildings:
 			if String(bd["id"]) == String(st["building"]):
 				var ents: Array = bd["entrances"]
 				var ei := int(st.get("entrance", -1))
 				if ei >= 0 and ei < ents.size():
 					kind = String((ents[ei] as Dictionary).get("kind", "door"))
+				var tg := Vector2(-n.y, n.x)
+				for d: float in [-0.95, -0.5, -0.1]:
+					for f: float in [-0.5, -0.25, 0.0, 0.25, 0.5]:
+						if not Geometry2D.is_point_in_polygon(p + n * d + tg * (f * float(st["w"])), bd["poly"]):
+							lead_open = true
 		stairs.append({"building": String(st["building"]), "kind": kind, "p": p, "dir": n, "tg": Vector2(-n.y, n.x),
 			"w": float(st["w"]), "top": float(st["top"]), "bottom": float(st["bottom"]), "risers": int(st["risers"]),
 			"rise": rise, "going": float(st["going"]), "nosings": nos, "length": float(st["length"]),
-			"landings": landings, "rails": String(st.get("rails", "none"))})
+			"landings": landings, "rails": String(st.get("rails", "none")), "lead_open": lead_open})
 	_index_stairs()
 
 

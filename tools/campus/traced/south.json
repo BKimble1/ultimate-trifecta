@@ -257,12 +257,13 @@
     },
     {
      "p": [
-      -25.0,
-      316.5
+      -21.9,
+      316.2
      ],
      "face": 180,
      "w": 2.5,
-     "kind": "door"
+     "kind": "door",
+     "note": "on the south face 3 m in from its west corner (inferred): traced at -25.0, 316.5, a metre past the corner, its stair's landing stood out beside the hall"
     }
    ],
    "ev": {

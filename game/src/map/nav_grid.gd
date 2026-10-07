@@ -768,6 +768,27 @@ func _clear_line(g: AStarGrid2D, a: Vector2i, b: Vector2i) -> bool:
 			return false
 		if g.get_point_weight_scale(c) > wa + 0.5:
 			return false
+	return g != foot or _clear_sides(g, a, b)
+
+
+## (NP) On foot a straight walk is as wide as a runner: two lines
+## CLEAR_HALF m either side of the centre line, sampled every half cell,
+## cross no solid cell either.  The centre line alone, on 2 m cells, passed
+## a building corner its cells' centres missed, and a bot slid on it
+## for the rest of the round; stricter only keeps more of the raw path.
+const CLEAR_HALF := 0.6
+
+
+func _clear_sides(g: AStarGrid2D, a: Vector2i, b: Vector2i) -> bool:
+	var wa := to_world(a)
+	var wb := to_world(b)
+	var len := wa.distance_to(wb)
+	var n := (wb - wa).orthogonal() / len * CLEAR_HALF
+	var steps := int(ceil(len / (cell * 0.5)))
+	for s in range(1, steps):
+		var p := wa.lerp(wb, float(s) / float(steps))
+		if g.is_point_solid(to_cell(p + n)) or g.is_point_solid(to_cell(p - n)):
+			return false
 	return true
 
 

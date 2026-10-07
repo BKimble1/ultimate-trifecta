@@ -141,7 +141,9 @@ static func draw(st: Dictionary, kit_at: Callable, ground: Callable, light: bool
 			return
 		var ctr := at(st, (d0 + d1) * 0.5, (y + lo) * 0.5)
 		k.box_xf(Transform3D(Basis(n3 * (d1 - d0), Vector3.UP * (y - lo), t3 * w), ctr), stone.darkened(0.05), 0.0, 0.0, true, stone)
-	tread.call(-0.05, float(nos[0]), top)
+	# (a lead-in its building does not cover is a landing: drawn, solid to
+	# the ground like the deck, never a bare collider)
+	tread.call(-LEAD_IN if bool(st.get("lead_open", false)) else -0.05, float(nos[0]), top)
 	for kk in range(1, nos.size()):
 		# tread kk: from riser kk's nosing to riser kk + 1's (a landing is a
 		# long tread)

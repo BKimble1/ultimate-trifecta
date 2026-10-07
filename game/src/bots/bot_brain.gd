@@ -38,6 +38,14 @@ var unstick_t := 0.0
 var unstick_dir := Vector2.ZERO
 var reverse_t := 0.0
 var last_pos := Vector3.ZERO
+## (NP) progress toward the current waypoint: a bot sliding back and forth
+## on a building corner its smoothed path cuts moves every tick, so the
+## per-tick stuck test never fires; no gain on the waypoint for
+## WP_STALL_S counts as stuck too
+var _wp_at := Vector2.INF
+var _wp_best := INF
+var _wp_t := 0.0
+const WP_STALL_S := 1.5
 var pref_cart := -1
 var prev_pressed := 0
 ## Measurement switch for game/tools/p9_balance.gd only (false = the 1.8
@@ -617,6 +625,23 @@ func _follow(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float, _cart: bool)
 	var dir := wp - pp
 	if dir.length() > 0.05:
 		cmd.move = _along_walls(sim, p, dir.normalized())
+	var dw := pp.distance_to(wp)
+	if wp != _wp_at or dw < _wp_best - 0.3:
+		_wp_at = wp
+		_wp_best = dw
+		_wp_t = 0.0
+	elif cmd.move.length() > 0.5:
+		_wp_t += dt
+		if _wp_t > WP_STALL_S:
+			# step back and to one side, then re-path from there
+			_wp_t = 0.0
+			_wp_at = Vector2.INF
+			var side := 1.0 if rng.randf() < 0.5 else -1.0
+			unstick_dir = (Vector2(-cmd.move.y, cmd.move.x) * side - cmd.move * 0.7).normalized()
+			unstick_t = 0.6
+			stuck_count = 0
+			last_pos = p.pos()
+			return
 	# stuck detection (horizontal progress only: hopping in place is still stuck)
 	var moved := Vector2(p.pos().x - last_pos.x, p.pos().z - last_pos.z).length()
 	if moved < 0.02 and cmd.move.length() > 0.5:

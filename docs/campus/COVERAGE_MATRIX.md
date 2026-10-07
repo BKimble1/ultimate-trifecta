@@ -124,7 +124,7 @@ Order of work (the brief's): big forms, then facade rhythm and materials, then e
 ### B12 North Hall
 
 - **Traced:** 1 buildings.
-- **Pass:** Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level (5.19 m, on its rise). The front stair is built centred on the doors as photographed: 16 risers in four flights with three landings stepping down the bank to the walk (about 2.7 m), 7 m wide, white rails on both sides and the centre handrail between two flights; it collides as a ramp under its nosings and is closed to carts. The traced rails sat 2.9 m north of the doors and were moved onto the stair's line. The portico floor is the hall's floor (it was raised 1.8 m on flat ground before). A white cupola now stands over the crossing of the ranges, on a low pyramid roof there (it was drawn flat). Exposed-basement windows are drawn wherever more than 1.9 m of foundation shows; on the DEM's grades none of North Hall's faces shows that much.
+- **Pass:** Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level (5.19 m, on its rise). The front stair is built centred on the doors as photographed: 16 risers in four flights with three landings stepping down the bank to the walk (about 2.7 m), 7 m wide, white rails on both sides and the centre handrail between two flights; it collides as a ramp under its nosings and is closed to carts. The traced rails sat 2.9 m north of the doors and were moved onto the stair's line. The portico floor is the hall's floor (it was raised 1.8 m on flat ground before). A white cupola now stands over the crossing of the ranges, on a low pyramid roof there (it was drawn flat). Exposed-basement windows are drawn wherever more than 1.9 m of foundation shows; on the DEM's grades none of North Hall's faces shows that much. The bots' grid now reaches the front door through the portico (its lane stopped short of the step), so they climb the front stair like a player.
 - **Remaining:** Riser count, going and the landings are inferred from photos and the DEM, not measured. The photographed fifth window row (basement) does not appear: the DEM puts the front lawn's bank 12 m out from the wings. The cupola's size and height are inferred. It starts no race (no target set fits the 240 s round).
 - **Views:** before/after north_hall front and wide
 
@@ -283,7 +283,7 @@ Order of work (the brief's): big forms, then facade rhythm and materials, then e
 ### B28 West Hall
 
 - **Traced:** 1 buildings.
-- **Pass:** Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level (the default start hall stands at the origin, y about 0); its front entrance has a short stair from the bake.
+- **Pass:** Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level (the default start hall stands at the origin, y about 0); its front entrance has a short stair from the bake. The bots' grid now reaches the front door between the portico's columns (its lane stopped a cell short); runners leave and come home through the front door instead of a side door about 70 m round.
 - **Remaining:** Door widths stay 3.2 m for the game's door rules.
 
 | Structure | Status | Footprint conf. | Sources | Storeys / height | Floor level | Entrances / stairs | Roof | Wall / trim / roof | Open questions |
@@ -340,8 +340,8 @@ Order of work (the brief's): big forms, then facade rhythm and materials, then e
 ### B33 Waterside Hall
 
 - **Traced:** 2 buildings.
-- **Pass:** Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level; two entrances got stairs from the bake.
-- **Remaining:** The stone retaining terraces and planting pockets toward the pond are not modelled as breaklines.
+- **Pass:** Grounded on the measured terrain: floor level from the grade round it, its foundation drawn down to the ground where it shows, every entrance at its own level; two entrances got stairs from the bake. Its south-west door was traced a metre past the hall's corner, so its stair's level landing stood out beside the hall as a bare 1.7 m block a bot could wedge against; the door now sits on the south face 3 m in from the corner (inferred) and the stair was re-baked there.
+- **Remaining:** The stone retaining terraces and planting pockets toward the pond are not modelled as breaklines. The south-west door's position along the face is inferred, not photographed.
 
 | Structure | Status | Footprint conf. | Sources | Storeys / height | Floor level | Entrances / stairs | Roof | Wall / trim / roof | Open questions |
 |---|---|---|---|---|---|---|---|---|---|

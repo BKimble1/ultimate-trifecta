@@ -1,8 +1,8 @@
 {
   "band": 0.16,
   "bot_share": 0.95,
-  "bot_time_median_s": 120.2,
-  "campus": "3ddb4140b8bfd5bf",
+  "bot_time_median_s": 176.516666666667,
+  "campus": "5dea79ef56ff26d3",
   "combos": [
     {
       "best_order": [
@@ -10,15 +10,18 @@
         2,
         1
       ],
-      "first_m": 248.6,
+      "bot_fits": true,
+      "bot_time_s": 166.616666666667,
+      "first_m": 248.7,
       "fits_round": true,
-      "ideal_s": 156.9,
-      "length_m": 914.3,
+      "ideal_s": 157.2,
+      "length_m": 915.9,
       "targets": [
         0,
         1,
         2
       ],
+      "time_vs_median": 0.94,
       "vs_median": 0.56
     },
     {
@@ -27,10 +30,10 @@
         3,
         1
       ],
-      "first_m": 248.6,
+      "first_m": 248.7,
       "fits_round": false,
-      "ideal_s": 252.4,
-      "length_m": 1487.1,
+      "ideal_s": 252.6,
+      "length_m": 1488.7,
       "targets": [
         0,
         1,
@@ -44,15 +47,18 @@
         4,
         1
       ],
-      "first_m": 248.6,
+      "bot_fits": true,
+      "bot_time_s": 215.35,
+      "first_m": 248.7,
       "fits_round": true,
-      "ideal_s": 203.2,
-      "length_m": 1191.9,
+      "ideal_s": 203.4,
+      "length_m": 1193.5,
       "targets": [
         0,
         1,
         4
       ],
+      "time_vs_median": 1.22,
       "vs_median": 0.73
     },
     {
@@ -61,15 +67,18 @@
         5,
         1
       ],
-      "first_m": 248.6,
+      "bot_fits": true,
+      "bot_time_s": 176.516666666667,
+      "first_m": 248.7,
       "fits_round": true,
-      "ideal_s": 156.5,
-      "length_m": 911.9,
+      "ideal_s": 156.8,
+      "length_m": 913.5,
       "targets": [
         0,
         1,
         5
       ],
+      "time_vs_median": 1.0,
       "vs_median": 0.56
     },
     {
@@ -78,10 +87,10 @@
         2,
         3
       ],
-      "first_m": 248.6,
+      "first_m": 248.7,
       "fits_round": false,
-      "ideal_s": 276.0,
-      "length_m": 1629.1,
+      "ideal_s": 276.3,
+      "length_m": 1630.7,
       "targets": [
         0,
         2,
@@ -95,10 +104,10 @@
         2,
         4
       ],
-      "first_m": 248.6,
+      "first_m": 248.7,
       "fits_round": false,
-      "ideal_s": 218.0,
-      "length_m": 1281.1,
+      "ideal_s": 218.3,
+      "length_m": 1282.7,
       "targets": [
         0,
         2,
@@ -112,10 +121,10 @@
         2,
         5
       ],
-      "first_m": 248.6,
+      "first_m": 248.7,
       "fits_round": false,
-      "ideal_s": 214.2,
-      "length_m": 1258.3,
+      "ideal_s": 214.5,
+      "length_m": 1259.9,
       "targets": [
         0,
         2,
@@ -129,10 +138,10 @@
         0,
         4
       ],
-      "first_m": 633.8,
+      "first_m": 633.9,
       "fits_round": false,
-      "ideal_s": 330.6,
-      "length_m": 1956.7,
+      "ideal_s": 330.9,
+      "length_m": 1958.3,
       "targets": [
         0,
         3,
@@ -146,10 +155,10 @@
         3,
         5
       ],
-      "first_m": 248.6,
+      "first_m": 248.7,
       "fits_round": false,
-      "ideal_s": 304.5,
-      "length_m": 1799.9,
+      "ideal_s": 304.8,
+      "length_m": 1801.5,
       "targets": [
         0,
         3,
@@ -163,10 +172,10 @@
         4,
         5
       ],
-      "first_m": 248.6,
+      "first_m": 248.7,
       "fits_round": false,
-      "ideal_s": 237.1,
-      "length_m": 1395.5,
+      "ideal_s": 237.4,
+      "length_m": 1397.1,
       "targets": [
         0,
         4,
@@ -180,10 +189,10 @@
         3,
         2
       ],
-      "first_m": 75.0,
+      "first_m": 75.1,
       "fits_round": false,
-      "ideal_s": 292.4,
-      "length_m": 1727.5,
+      "ideal_s": 292.7,
+      "length_m": 1729.1,
       "targets": [
         1,
         2,
@@ -197,10 +206,10 @@
         4,
         2
       ],
-      "first_m": 75.0,
+      "first_m": 75.1,
       "fits_round": false,
-      "ideal_s": 240.6,
-      "length_m": 1416.3,
+      "ideal_s": 240.8,
+      "length_m": 1417.9,
       "targets": [
         1,
         2,
@@ -214,16 +223,19 @@
         5,
         2
       ],
-      "first_m": 75.0,
+      "bot_fits": true,
+      "bot_time_s": 216.983333333333,
+      "first_m": 75.1,
       "fits_round": true,
-      "ideal_s": 201.4,
-      "length_m": 1181.5,
+      "ideal_s": 201.7,
+      "length_m": 1183.1,
       "targets": [
         1,
         2,
         5
       ],
-      "vs_median": 0.72
+      "time_vs_median": 1.23,
+      "vs_median": 0.73
     },
     {
       "best_order": [
@@ -231,10 +243,10 @@
         1,
         4
       ],
-      "first_m": 633.8,
+      "first_m": 633.9,
       "fits_round": false,
-      "ideal_s": 329.9,
-      "length_m": 1952.7,
+      "ideal_s": 330.2,
+      "length_m": 1954.3,
       "targets": [
         1,
         3,
@@ -248,10 +260,10 @@
         5,
         1
       ],
-      "first_m": 633.8,
+      "first_m": 633.9,
       "fits_round": false,
-      "ideal_s": 270.1,
-      "length_m": 1593.5,
+      "ideal_s": 270.4,
+      "length_m": 1595.1,
       "targets": [
         1,
         3,
@@ -265,15 +277,18 @@
         5,
         4
       ],
-      "first_m": 75.0,
+      "bot_fits": true,
+      "bot_time_s": 172.783333333333,
+      "first_m": 75.1,
       "fits_round": true,
-      "ideal_s": 148.4,
-      "length_m": 863.5,
+      "ideal_s": 148.7,
+      "length_m": 865.1,
       "targets": [
         1,
         4,
         5
       ],
+      "time_vs_median": 0.98,
       "vs_median": 0.53
     },
     {
@@ -282,10 +297,10 @@
         2,
         4
       ],
-      "first_m": 633.8,
+      "first_m": 633.9,
       "fits_round": false,
-      "ideal_s": 363.2,
-      "length_m": 2151.9,
+      "ideal_s": 363.4,
+      "length_m": 2153.5,
       "targets": [
         2,
         3,
@@ -299,10 +314,10 @@
         3,
         2
       ],
-      "first_m": 248.2,
+      "first_m": 248.3,
       "fits_round": false,
-      "ideal_s": 344.6,
-      "length_m": 2040.3,
+      "ideal_s": 344.8,
+      "length_m": 2041.9,
       "targets": [
         2,
         3,
@@ -316,10 +331,10 @@
         4,
         2
       ],
-      "first_m": 248.2,
+      "first_m": 248.3,
       "fits_round": false,
-      "ideal_s": 274.5,
-      "length_m": 1619.9,
+      "ideal_s": 274.8,
+      "length_m": 1621.5,
       "targets": [
         2,
         4,
@@ -333,10 +348,10 @@
         5,
         4
       ],
-      "first_m": 633.8,
+      "first_m": 633.9,
       "fits_round": false,
-      "ideal_s": 358.3,
-      "length_m": 2122.7,
+      "ideal_s": 358.6,
+      "length_m": 2124.3,
       "targets": [
         3,
         4,
@@ -375,7 +390,7 @@
   "dorm_version": 4,
   "dorms": {
     "north_hall": {
-      "bot_time_median_s": 120.2,
+      "bot_time_median_s": 176.516666666667,
       "combos": [
         {
           "best_order": [
@@ -792,7 +807,7 @@
       "unreachable": []
     },
     "west_hall": {
-      "bot_time_median_s": 120.2,
+      "bot_time_median_s": 176.516666666667,
       "combos": [
         {
           "best_order": [
@@ -800,15 +815,18 @@
             2,
             1
           ],
-          "first_m": 248.6,
+          "bot_fits": true,
+          "bot_time_s": 166.616666666667,
+          "first_m": 248.7,
           "fits_round": true,
-          "ideal_s": 156.9,
-          "length_m": 914.3,
+          "ideal_s": 157.2,
+          "length_m": 915.9,
           "targets": [
             0,
             1,
             2
           ],
+          "time_vs_median": 0.94,
           "vs_median": 0.56
         },
         {
@@ -817,10 +835,10 @@
             3,
             1
           ],
-          "first_m": 248.6,
+          "first_m": 248.7,
           "fits_round": false,
-          "ideal_s": 252.4,
-          "length_m": 1487.1,
+          "ideal_s": 252.6,
+          "length_m": 1488.7,
           "targets": [
             0,
             1,
@@ -834,15 +852,18 @@
             4,
             1
           ],
-          "first_m": 248.6,
+          "bot_fits": true,
+          "bot_time_s": 215.35,
+          "first_m": 248.7,
           "fits_round": true,
-          "ideal_s": 203.2,
-          "length_m": 1191.9,
+          "ideal_s": 203.4,
+          "length_m": 1193.5,
           "targets": [
             0,
             1,
             4
           ],
+          "time_vs_median": 1.22,
           "vs_median": 0.73
         },
         {
@@ -851,15 +872,18 @@
             5,
             1
           ],
-          "first_m": 248.6,
+          "bot_fits": true,
+          "bot_time_s": 176.516666666667,
+          "first_m": 248.7,
           "fits_round": true,
-          "ideal_s": 156.5,
-          "length_m": 911.9,
+          "ideal_s": 156.8,
+          "length_m": 913.5,
           "targets": [
             0,
             1,
             5
           ],
+          "time_vs_median": 1.0,
           "vs_median": 0.56
         },
         {
@@ -868,10 +892,10 @@
             2,
             3
           ],
-          "first_m": 248.6,
+          "first_m": 248.7,
           "fits_round": false,
-          "ideal_s": 276.0,
-          "length_m": 1629.1,
+          "ideal_s": 276.3,
+          "length_m": 1630.7,
           "targets": [
             0,
             2,
@@ -885,10 +909,10 @@
             2,
             4
           ],
-          "first_m": 248.6,
+          "first_m": 248.7,
           "fits_round": false,
-          "ideal_s": 218.0,
-          "length_m": 1281.1,
+          "ideal_s": 218.3,
+          "length_m": 1282.7,
           "targets": [
             0,
             2,
@@ -902,10 +926,10 @@
             2,
             5
           ],
-          "first_m": 248.6,
+          "first_m": 248.7,
           "fits_round": false,
-          "ideal_s": 214.2,
-          "length_m": 1258.3,
+          "ideal_s": 214.5,
+          "length_m": 1259.9,
           "targets": [
             0,
             2,
@@ -919,10 +943,10 @@
             0,
             4
           ],
-          "first_m": 633.8,
+          "first_m": 633.9,
           "fits_round": false,
-          "ideal_s": 330.6,
-          "length_m": 1956.7,
+          "ideal_s": 330.9,
+          "length_m": 1958.3,
           "targets": [
             0,
             3,
@@ -936,10 +960,10 @@
             3,
             5
           ],
-          "first_m": 248.6,
+          "first_m": 248.7,
           "fits_round": false,
-          "ideal_s": 304.5,
-          "length_m": 1799.9,
+          "ideal_s": 304.8,
+          "length_m": 1801.5,
           "targets": [
             0,
             3,
@@ -953,10 +977,10 @@
             4,
             5
           ],
-          "first_m": 248.6,
+          "first_m": 248.7,
           "fits_round": false,
-          "ideal_s": 237.1,
-          "length_m": 1395.5,
+          "ideal_s": 237.4,
+          "length_m": 1397.1,
           "targets": [
             0,
             4,
@@ -970,10 +994,10 @@
             3,
             2
           ],
-          "first_m": 75.0,
+          "first_m": 75.1,
           "fits_round": false,
-          "ideal_s": 292.4,
-          "length_m": 1727.5,
+          "ideal_s": 292.7,
+          "length_m": 1729.1,
           "targets": [
             1,
             2,
@@ -987,10 +1011,10 @@
             4,
             2
           ],
-          "first_m": 75.0,
+          "first_m": 75.1,
           "fits_round": false,
-          "ideal_s": 240.6,
-          "length_m": 1416.3,
+          "ideal_s": 240.8,
+          "length_m": 1417.9,
           "targets": [
             1,
             2,
@@ -1004,16 +1028,19 @@
             5,
             2
           ],
-          "first_m": 75.0,
+          "bot_fits": true,
+          "bot_time_s": 216.983333333333,
+          "first_m": 75.1,
           "fits_round": true,
-          "ideal_s": 201.4,
-          "length_m": 1181.5,
+          "ideal_s": 201.7,
+          "length_m": 1183.1,
           "targets": [
             1,
             2,
             5
           ],
-          "vs_median": 0.72
+          "time_vs_median": 1.23,
+          "vs_median": 0.73
         },
         {
           "best_order": [
@@ -1021,10 +1048,10 @@
             1,
             4
           ],
-          "first_m": 633.8,
+          "first_m": 633.9,
           "fits_round": false,
-          "ideal_s": 329.9,
-          "length_m": 1952.7,
+          "ideal_s": 330.2,
+          "length_m": 1954.3,
           "targets": [
             1,
             3,
@@ -1038,10 +1065,10 @@
             5,
             1
           ],
-          "first_m": 633.8,
+          "first_m": 633.9,
           "fits_round": false,
-          "ideal_s": 270.1,
-          "length_m": 1593.5,
+          "ideal_s": 270.4,
+          "length_m": 1595.1,
           "targets": [
             1,
             3,
@@ -1055,15 +1082,18 @@
             5,
             4
           ],
-          "first_m": 75.0,
+          "bot_fits": true,
+          "bot_time_s": 172.783333333333,
+          "first_m": 75.1,
           "fits_round": true,
-          "ideal_s": 148.4,
-          "length_m": 863.5,
+          "ideal_s": 148.7,
+          "length_m": 865.1,
           "targets": [
             1,
             4,
             5
           ],
+          "time_vs_median": 0.98,
           "vs_median": 0.53
         },
         {
@@ -1072,10 +1102,10 @@
             2,
             4
           ],
-          "first_m": 633.8,
+          "first_m": 633.9,
           "fits_round": false,
-          "ideal_s": 363.2,
-          "length_m": 2151.9,
+          "ideal_s": 363.4,
+          "length_m": 2153.5,
           "targets": [
             2,
             3,
@@ -1089,10 +1119,10 @@
             3,
             2
           ],
-          "first_m": 248.2,
+          "first_m": 248.3,
           "fits_round": false,
-          "ideal_s": 344.6,
-          "length_m": 2040.3,
+          "ideal_s": 344.8,
+          "length_m": 2041.9,
           "targets": [
             2,
             3,
@@ -1106,10 +1136,10 @@
             4,
             2
           ],
-          "first_m": 248.2,
+          "first_m": 248.3,
           "fits_round": false,
-          "ideal_s": 274.5,
-          "length_m": 1619.9,
+          "ideal_s": 274.8,
+          "length_m": 1621.5,
           "targets": [
             2,
             4,
@@ -1123,10 +1153,10 @@
             5,
             4
           ],
-          "first_m": 633.8,
+          "first_m": 633.9,
           "fits_round": false,
-          "ideal_s": 358.3,
-          "length_m": 2122.7,
+          "ideal_s": 358.6,
+          "length_m": 2124.3,
           "targets": [
             3,
             4,
@@ -1163,21 +1193,21 @@
         ]
       ],
       "door_m": [
-        8.2,
-        4.5
+        8.3,
+        6.0
       ],
       "pair_m": [
         [
           0.0,
-          248.6,
-          75.0,
-          383.8,
-          633.8,
-          305.8,
-          248.2
+          248.7,
+          75.1,
+          383.9,
+          633.9,
+          305.9,
+          248.3
         ],
         [
-          248.6,
+          248.7,
           0.0,
           327.2,
           132.4,
@@ -1186,7 +1216,7 @@
           498.0
         ],
         [
-          75.0,
+          75.1,
           327.2,
           0.0,
           462.0,
@@ -1195,7 +1225,7 @@
           94.0
         ],
         [
-          383.8,
+          383.9,
           132.4,
           462.0,
           0.0,
@@ -1204,7 +1234,7 @@
           632.8
         ],
         [
-          633.8,
+          633.9,
           512.4,
           654.8,
           618.0,
@@ -1213,7 +1243,7 @@
           794.4
         ],
         [
-          305.8,
+          305.9,
           509.2,
           362.8,
           598.8,
@@ -1222,7 +1252,7 @@
           393.2
         ],
         [
-          248.2,
+          248.3,
           498.0,
           94.0,
           632.8,
@@ -1251,15 +1281,15 @@
   "pair_m": [
     [
       0.0,
-      248.6,
-      75.0,
-      383.8,
-      633.8,
-      305.8,
-      248.2
+      248.7,
+      75.1,
+      383.9,
+      633.9,
+      305.9,
+      248.3
     ],
     [
-      248.6,
+      248.7,
       0.0,
       327.2,
       132.4,
@@ -1268,7 +1298,7 @@
       498.0
     ],
     [
-      75.0,
+      75.1,
       327.2,
       0.0,
       462.0,
@@ -1277,7 +1307,7 @@
       94.0
     ],
     [
-      383.8,
+      383.9,
       132.4,
       462.0,
       0.0,
@@ -1286,7 +1316,7 @@
       632.8
     ],
     [
-      633.8,
+      633.9,
       512.4,
       654.8,
       618.0,
@@ -1295,7 +1325,7 @@
       794.4
     ],
     [
-      305.8,
+      305.9,
       509.2,
       362.8,
       598.8,
@@ -1304,7 +1334,7 @@
       393.2
     ],
     [
-      248.2,
+      248.3,
       498.0,
       94.0,
       632.8,
@@ -1318,7 +1348,7 @@
   "runner_estimate_s": {
     "max": 429.0,
     "median": 276.0,
-    "min": 148.0
+    "min": 149.0
   },
   "runner_speed": 6.0,
   "time_band": 0.12,
