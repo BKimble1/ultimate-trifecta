@@ -119,16 +119,17 @@ For later uploads, run "Build, test and ship (iOS)" with **upload** ticked and c
 | Launch and branding audit (V5; black since V6) | Right after the Xcode export, before any signing or upload, `tools/launch_audit.py` fails the run on: no launch storyboard or more than one; a storyboard background that isn't pure black `#000000` (V5: the startup navy); a launch image that is missing, not opaque, not on black or without the Idlery teal mark; any "powered by" text in the game data or project text. It lists the text files naming Idlery (expected: the bundle ID). The Simulator step then captures six launch frames, and the build facts print the audit and a sheet of those frames. |
 | Shader baking (V6) | With `SHADER_BAKE=1` (set in CI) on macOS, `tools/export_ios.sh` first exports with Godot's shader baker running the Mobile renderer on Metal. The result is judged by its output: the project and game data must exist and carry `shader_cache` entries. Otherwise the ordinary export is used. `shader_bake.txt` in the build facts records which, with the count. Runs #66 and #67 baked 40 entries (exit code 0). A bake reduces shader compilation on the phone; it does not replace the driver's own pipeline preparation. |
 | In-app purchases (V6, opt-in) | The workflow input **iap** = `list` (read only) or `create` (creates only the missing catalogue products: no prices, screenshots or submission). Default `none`: an ordinary run never touches them. |
-| Read-only status check | Run the workflow with **asc_status** ticked: it prints the app record, recent builds with their processing state, and each build's internal/external TestFlight state and What to Test text. It builds and uploads nothing. |
+| Read-only status check | Run the workflow with **asc_status** ticked: it prints the app record, recent builds with their processing state, and each build's internal/external TestFlight state and What to Test text, and (2.1) the team's signing certificates (type, name, expiry, serial; never their content). It builds and uploads nothing. |
+| Signing certificates (2.1) | Xcode's automatic signing creates an Apple Development certificate ("Created via API") on every fresh runner, and its key leaves with the runner. Uploads 1.2–2.0 left 28 of them, and the 2.1 upload (run #178) stopped at Apple's limit ("Your account has reached the maximum number of certificates"). Since 2.1 every signed run revokes the one it created, in its last step (`tools/asc.py certs-prune --pem`, matched by serial from the runner's keychain). The **prune_ci_certs** input, with the owner's approval, first revokes those earlier runs left (`certs-prune --older-than-hours 3`). Both touch only "Created via API" development certificates: never a distribution certificate, and never one named for a person or a Mac. Builds already uploaded are signed with distribution certificates and are unaffected. |
 
 The same steps run locally on a Mac with Xcode 26:
 
 ```sh
 export APPLE_TEAM_ID=… ASC_KEY_ID=… ASC_ISSUER_ID=… ASC_KEY_PATH=~/keys/AuthKey_….p8
-export BUILD_NUMBER=$(python3 tools/asc.py next-build) MARKETING_VERSION=2.0
+export BUILD_NUMBER=$(python3 tools/asc.py next-build) MARKETING_VERSION=2.1
 tools/fetch_godot.sh --templates && tools/fetch_deps.sh && tools/export_ios.sh
 EXPORT_DESTINATION=upload INTERNAL_ONLY=false tools/build_ios.sh signed   # true = internal testing only
-python3 tools/asc.py wait 2.0 "$BUILD_NUMBER" 2400
+python3 tools/asc.py wait 2.1 "$BUILD_NUMBER" 2400
 ```
 
 ## In-app purchases (V6, Pass 8, 2.0): prepared, not set up

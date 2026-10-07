@@ -1,5 +1,5 @@
 {
- "about": "The reference campus's ground: game frame metres, 1 m samples, y = NAVD88 - origin. Baked by tools/campus/terrain.py.",
+ "about": "The campus ground: game frame metres, 1 m samples, y in metres from the origin. Baked by tools/campus/terrain.py.",
  "entrances": {
   "administration_hall": {
    "0": {
@@ -1180,7 +1180,6 @@
    "how": "80th percentile of the grade round it"
   }
  },
- "frame": "x = E - 627300.0, z = 4479400.0 - N (EPSG:26916)",
  "grid": {
   "d": 1001,
   "format": "float32 LE metres (centimetre steps), rows z then x",
@@ -1190,7 +1189,6 @@
   "z0": -560
  },
  "origin_is": "the grade at the default start hall's front door",
- "origin_navd88": 280.4,
  "range_m": [
   -17.65,
   6.59
@@ -1201,7 +1199,7 @@
  ],
  "sha256": "59e5796ae628d45d1acbfd5f106b4a48c73a4781161a797d5a38d8d12d09accf",
  "smoothing_sigma_m": 0.8,
- "source": "USGS 3DEP 1 m DEM USGS_1M_16_x62y448_IN_Indiana_Statewide_LiDAR_2017_B17 (acquired 2017-03-03..2020-04-11, published 2021-07-04; NAD83 / UTM 16N; NAVD88 m; public domain)",
+ "source": "USGS 3DEP 1 m bare-earth DEM, public domain (tile, frame and datum: docs/campus/TERRAIN.md)",
  "stairs": [
   {
    "bottom": 5.972,

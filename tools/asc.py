@@ -16,6 +16,13 @@ Commands:
                     Test" text (en-US by default) from FILE (max 4000 chars)
   certs          -> read only: the team's signing certificates (type, name,
                     expiry, serial; never their content or keys)
+  certs-prune [--yes] [--older-than-hours H] [--pem FILE] -> revoke Apple
+                    Development certificates that CI runs created ("Created
+                    via API"; their keys left with the runner).  Only those:
+                    never a distribution certificate, never one named for a
+                    person or a Mac.  --older-than-hours keeps any a run in
+                    progress may hold; --pem limits it to the certificates in
+                    FILE (this runner's own).  Without --yes it only lists.
   ensure-bundle  -> register BUNDLE_ID with Game Center if missing (Xcode
                     automatic signing can also do this)
   iap-plan       -> (no credentials needed) the in-app purchases the game
@@ -157,6 +164,65 @@ def iap_existing(app_id):
     return out
 
 
+CI_CERT_TYPES = ("DEVELOPMENT", "IOS_DEVELOPMENT")
+CI_CERT_NAME = "Created via API"
+
+
+def _serial(s):
+    return str(s or "").upper().lstrip("0")
+
+
+def certs_prune(args):
+    """Revokes CI-made Apple Development certificates (see the command list)."""
+    from datetime import datetime, timedelta, timezone
+    yes = "--yes" in args
+    older = None
+    pem_serials = None
+    for i, a in enumerate(args):
+        if a == "--older-than-hours":
+            older = float(args[i + 1])
+        if a == "--pem":
+            from cryptography import x509
+            blob = open(args[i + 1], "rb").read()
+            pem_serials = set()
+            for part in blob.split(b"-----END CERTIFICATE-----"):
+                if b"-----BEGIN CERTIFICATE-----" in part:
+                    c = x509.load_pem_x509_certificate(part + b"-----END CERTIFICATE-----\n")
+                    pem_serials.add(_serial("%X" % c.serial_number))
+    r = call("GET", "/certificates", params={"limit": 200, "fields[certificates]":
+             "certificateType,displayName,name,serialNumber,expirationDate"})
+    if not r.ok:
+        return 1
+    now = datetime.now(timezone.utc)
+    picked = []
+    for c in r.json().get("data", []):
+        at = c["attributes"]
+        if at.get("certificateType") not in CI_CERT_TYPES:
+            continue
+        if CI_CERT_NAME not in "%s %s" % (at.get("displayName") or "", at.get("name") or ""):
+            continue
+        if pem_serials is not None and _serial(at.get("serialNumber")) not in pem_serials:
+            continue
+        if older is not None:
+            # an Apple Development certificate is valid for one year from its creation
+            exp = datetime.fromisoformat(str(at.get("expirationDate")).replace("Z", "+00:00"))
+            if exp - timedelta(days=365) > now - timedelta(hours=older):
+                continue
+        picked.append(c)
+    if pem_serials is not None:
+        print("this runner holds %d certificate(s) of that kind; %d on the team" % (len(pem_serials), len(picked)))
+    for c in picked:
+        at = c["attributes"]
+        if not yes:
+            print("would revoke %s %s (expires %s)" % (at.get("certificateType"), at.get("serialNumber"), str(at.get("expirationDate"))[:10]))
+            continue
+        d = call("DELETE", "/certificates/" + c["id"])
+        print("%s %s %s (expires %s)" % ("revoked" if d.status_code in (200, 204) else "NOT revoked (%d)" % d.status_code,
+              at.get("certificateType"), at.get("serialNumber"), str(at.get("expirationDate"))[:10]))
+    print("%d CI development certificate(s) %s" % (len(picked), "revoked" if yes else "would be revoked (dry run: add --yes)"))
+    return 0
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "app"
     if cmd == "iap-plan":
@@ -185,6 +251,8 @@ def main():
             kinds[k] = kinds.get(k, 0) + 1
         print("%d certificates: %s" % (len(rows), ", ".join("%s %d" % kv for kv in sorted(kinds.items()))))
         return 0
+    if cmd == "certs-prune":
+        return certs_prune(sys.argv[2:])
     if cmd == "ensure-bundle":
         r = call("GET", "/bundleIds", params={"filter[identifier]": BUNDLE_ID})
         if r.ok and r.json().get("data"):

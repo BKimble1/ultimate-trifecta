@@ -15,6 +15,9 @@ research:
    within a small distance).
 3. Data: game/data/campus/*.json ids and labels are neutral (the same
    screen), and nothing in it points at the pack.
+4. Location: nothing under game/ (what ships) carries a georeference: a
+   projection code, a survey tile name or a real-world frame offset.  The
+   docs keep the terrain's provenance; the game data never does.
 
 Exits non-zero on any finding.  The deny list, its reviewed allowlist of
 generic word uses (e.g. an ordinary English word that is also a name) and
@@ -157,6 +160,18 @@ def main():
                 blob = json.dumps(d).lower()
                 if "campus_ref" in blob or "ultimate_trifecta_campus_pack" in blob:
                     findings.append(f"data: {f} points at the reference pack")
+    # 4. location (shipped files only: the docs keep the provenance)
+    geo = [re.compile(r) for r in (r"EPSG:\s*\d{4,5}", r"\bUTM\b", r"\bNAD\s?83\b", r"USGS_1M_", r"Statewide",
+                                    r"\bE\s*-\s*\d{6}(\.\d+)?\b", r"\b\d{7}(\.\d+)?\s*-\s*N\b")]
+    game_dir = os.path.join(ROOT, "game") + os.sep
+    for f in shipped:
+        if not f.startswith(game_dir) or os.path.splitext(f)[1].lower() not in TEXT_EXT:
+            continue
+        txt = open(f, encoding="utf-8", errors="ignore").read()
+        for p in geo:
+            for m in p.finditer(txt):
+                line = txt.count("\n", 0, m.start()) + 1
+                findings.append(f"location: {os.path.relpath(f, ROOT)}:{line} ({m.group(0)[:12]})")
     for x in findings:
         print("FINDING", x)
     print(f"scanned {len(shipped)} shipped files ({n_text} text, {n_img} images), {n_items} data items "

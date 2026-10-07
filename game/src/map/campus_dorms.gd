@@ -125,16 +125,15 @@ static func default_id(map_id: String = "") -> String:
 	return all[0] if not all.is_empty() else ""
 
 
-## Tonight's home dorm on a map: its default dorm when there is no previous
-## round, otherwise never the same as last round's when another is
-## available.  Only dorms a race may start in.  Every client derives nothing
-## itself: the host publishes the choice.
+## Tonight's home dorm on a map, from the round seed (2.0's rule, the
+## first round included), never the same as last round's when another is
+## available.  Only dorms a race may start in: on Lakeside Campus that is
+## West Hall alone.  Every client derives nothing itself: the host publishes
+## the choice.
 static func pick(map_id: String, seed_v: int, previous: String) -> String:
 	var all := ids(map_id, true)
 	if all.is_empty():
 		return ""
-	if previous == "" or not all.has(previous):
-		return all[0]
 	var h := posmod(int(hash([seed_v, "home-dorm"])), all.size())
 	var choice := all[h]
 	if all.size() > 1 and choice == previous:

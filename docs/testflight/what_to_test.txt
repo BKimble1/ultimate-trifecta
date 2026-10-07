@@ -1,10 +1,10 @@
 2.1 internal beta: two maps. The game service still isn't connected in this build, so Friends status, purchases, Coins and Season rewards say they're unavailable. That's expected; please don't try to buy anything. Tell us your iPhone or iPad model:
 
 - Two maps: Lakeside Campus (new, the default) and Moonbrook College (the 2.0 map). In a party the host taps the Map row and picks one; guests see it but can't change it. In Practice, pick it before you start. Check that both cards are easy to read and that the choice sticks.
-- Lakeside Campus is much bigger and stands on real ground: slopes, stairs up to raised doors, ponds and a lake, a footbridge, parked cars, bikes and woods. Play a few full rounds. Tell us where you fall through anything, get stuck, see something floating or sunk, or can't get up a slope or stair (a screenshot helps).
+- Lakeside Campus is much bigger and hilly: slopes, stairs up to raised doors, ponds and a lake, a footbridge, parked cars, bikes and woods. Play a few full rounds. Tell us where you fall through anything, get stuck, see something floating or sunk, or can't get up a slope or stair (a screenshot helps).
 - Stairs: run up and down the big front stair on the north side of the campus and a few others. They should feel smooth at running pace.
 - Rounds: runners should reach every target and get home inside the timer, and the bots should too. Tell us if a round feels impossible or far too easy.
 - Speed and heat: the first load of Lakeside Campus takes longer than Moonbrook's; a rematch should be quick. Tell us if a map stutters, loads for too long, or the device gets hot.
 - Online: every device needs 2.1, because 2.0 can't join a 2.1 party. Tell us what an older build shows when it tries. Play a party on each map, and try leaving and rejoining mid-round.
-- Moonbrook College should play exactly as it did in 2.0. Running, diving, tagging, the timer, the Shop, outfits and the music are unchanged. Tell us if anything got worse.
+- Moonbrook College is the 2.0 map, with the same halls and waters. The minimap now follows you on both maps, and the bots move a little differently. Running, diving, tagging, the timer, the Shop, outfits and the music are unchanged. Tell us if anything got worse.
 - Look for any text cut off, overlapping or hidden behind the notch or home bar, on iPhone and iPad.

@@ -24,6 +24,10 @@ on:
         type: choice
         options: [internal_only, app_store]
         default: internal_only
+      prune_ci_certs:
+        description: "With upload: before signing, revoke the Apple Development certificates earlier CI runs created ('Created via API', over 3 hours old; their keys left with their runners). Distribution certificates are never touched."
+        type: boolean
+        default: false
       iap:
         description: "V6 in-app purchases in App Store Connect: list (read only) or create the missing ones (no prices, no submission). No build."
         type: choice
@@ -208,6 +212,20 @@ jobs:
           /usr/libexec/PlistBuddy -c Print "$APP/Info.plist" | head -80
           codesign -d --entitlements :- "$APP" 2>/dev/null || true
           ls "$APP" | head -40
+      # Xcode's automatic signing creates an Apple Development certificate on
+      # every fresh runner, and a team holds only so many: run #178 stopped at
+      # the limit.  On request, the stale ones earlier runs left are revoked
+      # first (only 'Created via API' development certificates), and every
+      # signed run revokes its own at the end (below).
+      - name: Revoke stale CI development certificates (prune_ci_certs)
+        if: steps.sign.outputs.available == 'true' && github.event.inputs.upload == 'true' && github.event.inputs.prune_ci_certs == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          "$ASC_PY" tools/asc.py certs-prune --yes --older-than-hours 3
+          "$ASC_PY" tools/asc.py certs
       # signed upload first, so Apple processes the build while the Simulator runs
       - name: Signed archive + upload to TestFlight
         if: steps.sign.outputs.available == 'true' && github.event.inputs.upload == 'true'
@@ -401,3 +419,17 @@ jobs:
           "$ASC_PY" tools/asc.py internal "$BID"
           [ -f docs/testflight/what_to_test.txt ] && "$ASC_PY" tools/asc.py whats-new "$BID" docs/testflight/what_to_test.txt
           "$ASC_PY" tools/asc.py beta "$BID"
+      # the development certificate this runner's signing created (its key is
+      # discarded with the runner): revoked whatever happened above, so the
+      # team never reaches its certificate limit again
+      - name: Revoke this run's development certificate
+        if: always() && steps.sign.outputs.available == 'true' && github.event.inputs.upload == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          PEM="$RUNNER_TEMP/runner_dev_certs.pem"
+          security find-certificate -a -c "Created via API" -p > "$PEM" 2>/dev/null || true
+          if [ ! -s "$PEM" ]; then echo "this runner holds no CI development certificate"; exit 0; fi
+          "$ASC_PY" tools/asc.py certs-prune --yes --pem "$PEM" || echo "::warning::could not revoke this run's development certificate"

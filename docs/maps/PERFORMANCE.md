@@ -90,6 +90,11 @@ Both builds were run twice, interleaved in one session (13:24–13:44 on the day
   - It runs under the animated loading screen in shorter steps than before.
   - Rematches reuse the map and its bodies, and prepare in about 0.1 s.
 - **Memory.** About 60 MB more static memory: the larger scene and the kept bodies.
+  - The cold first round's high readings (559–604 MB) were mostly a loading log. Every check of a
+    worker the loading screen waited on added one entry to a per-round list: 859,111 entries on a
+    cold Lakeside load, held for the whole round. The release review found it, and repeated checks
+    now share one entry (177 entries). The static memory a cold load leaves behind fell from 432 MB
+    to 217 MB on this machine (`MatchController.prep_jobs`). The tables above predate the fix.
 
 ## Draw cost (llvmpipe, counts only)
 
@@ -144,7 +149,8 @@ The scenery alone, from fixed cameras, is in the before/after camera table, unde
 - **Any device.** iPhone and iPad frame pacing, GPU time, thermal throttling, memory warnings. The
   campus has about 4.5× the nodes of Moonbrook.
 - **Static memory.** It is up by 60 MB on the campus (the kept collision bodies, terrain and the
-  parked fleet). Watch memory warnings on a 4 GB device.
+  parked fleet). Watch memory warnings on a 4 GB device. (The first round's extra ~215 MB of loading
+  log is fixed; the bench has not been re-run since.)
 - **The first campus round's cold load (about 9 s on this machine).** It runs under the animated
   loading screen, with the longest step about 36 ms. On a phone it will be longer; the step budget
   follows a slow device (`test_loading`).

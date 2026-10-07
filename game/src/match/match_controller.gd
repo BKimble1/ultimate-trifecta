@@ -287,7 +287,7 @@ func prep_progress() -> float:
 ## stall on a phone is attributed to the job that caused it.
 const PREP_SLOW_MS := 25.0
 const PREP_NAMES := ["campus", "world", "ground", "nav", "bodies", "sim", "views", "carts_camera", "hud", "touch", "home_coins"]
-var prep_jobs: Array = []          # [[name, ms]] in order
+var prep_jobs: Array = []          # [[name, ms]] in order; a job called again and again (waiting on a worker) is one entry, its longest call
 var prep_longest := ["", 0.0]      # [name, ms]
 
 
@@ -299,7 +299,13 @@ func _prep_run_one() -> void:
 	var t0 := Time.get_ticks_usec()
 	var again: Variant = _prep[_prep_i].call()
 	var ms := float(Time.get_ticks_usec() - t0) / 1000.0
-	prep_jobs.append([nm, ms])
+	# (a job polling a worker is called hundreds of thousands of times on a
+	# cold load: one entry per call held ~100 MB for the whole round)
+	var last: Array = prep_jobs.back() if not prep_jobs.is_empty() else []
+	if not last.is_empty() and String(last[0]) == nm:
+		last[1] = maxf(float(last[1]), ms)
+	else:
+		prep_jobs.append([nm, ms])
 	if ms > float(prep_longest[1]):
 		prep_longest = [nm, ms]
 	if ms > PREP_SLOW_MS:
@@ -483,6 +489,8 @@ func _prep_bodies() -> bool:
 			return true
 		_bodies_kit = CampusBuilder.new(layout)
 		if _take_kept_bodies():
+			# complete: kept again (not freed in one go) if the round is cancelled before it takes them
+			_bodies_at = CampusBuilder.collision_recipe(layout).size()
 			return false
 		_bodies = _bodies_kit.collision_bodies()
 		_bodies_at = 0

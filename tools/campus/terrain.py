@@ -33,8 +33,8 @@ What the bake does, in order, all deterministic:
     under 0.9 m; a larger step needs a stair or ramp in the data and is
     reported.
 Writes game/data/campus/terrain.bin (float32 little-endian metres rounded to
-the centimetre, rows z then x: the game reads it natively) and terrain.json (the grid, the source, ORIGIN, the water
-levels, the floor levels and the report).
+the centimetre, rows z then x: the game reads it natively) and terrain.json (the grid, the water levels, the floor
+levels and the report; it ships in the game, so it carries no georeference: the tile, the frame and ORIGIN stay here).
 
 Usage:
   tools/campus/terrain.py --crop TILE.tif CROP.npy      (once)
@@ -61,6 +61,8 @@ CROP = (-760, -600, 1271, 1081)        # the DEM crop: 40 m beyond the bounds
 TILE_TIE = (619993.9996661129, 4480006.000312358)   # upper-left of pixel (0, 0)
 SOURCE = ("USGS 3DEP 1 m DEM USGS_1M_16_x62y448_IN_Indiana_Statewide_LiDAR_2017_B17 "
           "(acquired 2017-03-03..2020-04-11, published 2021-07-04; NAD83 / UTM 16N; NAVD88 m; public domain)")
+# what the shipped terrain.json says of its source: nothing that locates it
+SHIPPED_SOURCE = "USGS 3DEP 1 m bare-earth DEM, public domain (tile, frame and datum: docs/campus/TERRAIN.md)"
 NATURAL = ("pond", "lake")
 BUILT = ("fountain", "pool")
 
@@ -465,10 +467,10 @@ def bake(dem_path, data, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     open(os.path.join(out_dir, "terrain.bin"), "wb").write(blob)
     meta = {
-        "about": "The reference campus's ground: game frame metres, 1 m samples, y = NAVD88 - origin. Baked by tools/campus/terrain.py.",
-        "source": SOURCE,
-        "frame": "x = E - %.1f, z = %.1f - N (EPSG:26916)" % (geo.E0, geo.N0),
-        "origin_navd88": ORIGIN,
+        # (shipped in the game: no georeference.  The tile, the frame and the
+        # datum offset stay in this tool and docs/campus/TERRAIN.md)
+        "about": "The campus ground: game frame metres, 1 m samples, y in metres from the origin. Baked by tools/campus/terrain.py.",
+        "source": SHIPPED_SOURCE,
         "origin_is": "the grade at the default start hall's front door",
         "grid": {"x0": x0, "z0": z0, "w": W, "d": D, "step": 1.0, "format": "float32 LE metres (centimetre steps), rows z then x"},
         "smoothing_sigma_m": 0.8,

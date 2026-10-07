@@ -11,7 +11,7 @@ var t
 ## Recorded on the two-maps pass data (game/data/campus on its measured
 ## ground: terrain, stairs, parked cars; CampusData.campus_hash below).  A
 ## change here is a gameplay change: re-record deliberately.
-const CAMPUS_HASH := "5dea79ef56ff26d3"
+const CAMPUS_HASH := "6db38dbfe469a830"
 const CAMPUS_COLLISION := "8496f719389f54d444d2d7381ba68f5cab0dade6461e960d489d59a130da438b"
 const CAMPUS_NAV := "70afc59ca460206f45c9b023fe0b173472fcf2eb4051110de8355a614b43faf3"
 const CAMPUS_LAYOUT := "374d5c9e708a77074eb5db2979a88b7a3632dc2648240c775d362851ffc24be7"

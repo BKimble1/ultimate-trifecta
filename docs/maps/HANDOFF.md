@@ -56,6 +56,25 @@ floors, stairs), `docs/campus/COVERAGE_MATRIX.md` (every inventory code) and
   building (a door traced in front of its wall; six stairs), it is drawn as a stone landing, never
   left as an invisible collider.
 
+**Release review (before the 2.1 upload).** A review of everything since 2.0 (10) checked packaging,
+device runtime, the pass's rules and compatibility. A second reviewer checked each finding.
+Fixed:
+- **No real location in the game data.** The shipped `terrain.json` carried the survey tile's name,
+  the projection and its frame offsets, which locate the reference campus. They are gone from the
+  shipped file; the ground itself is byte-identical. The provenance stays in the bake tool and
+  `docs/campus/TERRAIN.md`, and the shipping scan now fails on any georeference under `game/`.
+- **Loading memory.** Every check of a worker that loading waited on added an entry to a per-round
+  log. A cold Lakeside load left 859,111 entries, held for the whole round. Repeated checks now share
+  one entry: static memory after a cold load fell from 432 MB to 217 MB on this machine.
+- **Moonbrook's first hall.** The first round of a session always started in the map's default
+  hall, a rule from the campus rebuild that 2.0 never had. The hall comes from the round's seed
+  again, as in 2.0, the first round included. Lakeside is unaffected: West Hall is its only
+  race-start hall.
+- **Kept collision bodies** taken for a rematch were freed in one frame (a hitch of about 0.8 s) if
+  the round was cancelled at one exact moment of loading. They are now kept again, as when complete.
+- **What to Test** said Moonbrook plays exactly as in 2.0. It now says the minimap follows you and
+  the bots move a little differently.
+
 **Buildings.**
 - The village homes are rebuilt from the photos: central bay with front gable and round vent,
   arched windows, shutters, corner boards, white-posted open porches with twin end gables.
@@ -211,3 +230,8 @@ counts), never a phone's. Device frame rate, GPU, memory pressure and heat are u
   (`ios.yml`, `upload=true`, `distribution=internal_only`). Nothing is submitted for review, and
   no testers or groups are added. `TESTFLIGHT_RELEASE.md` records an upload only once Apple's API
   has confirmed it.
+- **Signing certificates:** the first 2.1 upload (run #178) passed its tests, then stopped at
+  signing. The team had reached Apple's certificate limit: 28 Apple Development certificates that
+  earlier CI runs created, each with its key thrown away with its runner. With the owner's approval
+  the lane now revokes those (`prune_ci_certs`), and every signed run revokes the one it created.
+  Only "Created via API" development certificates are touched (`TESTFLIGHT_RELEASE.md`).

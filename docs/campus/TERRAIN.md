@@ -18,8 +18,11 @@ Moonbrook College (the classic map) stays flat at y = 0, as in 2.0.
 The DEM tile and its crop stay in the private research area, outside this repository.
 `tools/campus/terrain.py --crop` reproduces the crop from the tile, and `--dem` reproduces the bake.
 The bake's output is `game/data/campus/terrain.bin` (float32 metres, 1191 × 1001 samples) and
-`terrain.json` (its metadata, the levels below, a report and a sha256). Both feed the campus data
-hash, so two builds with different ground refuse to play together.
+`terrain.json` (the grid, the levels below, a report and a sha256). Both feed the campus data
+hash, so two builds with different ground refuse to play together. `terrain.json` ships in the game,
+so it carries **no georeference**: the tile name, the frame offsets and the datum offset above stay in
+`tools/campus/terrain.py` and on this page, and `tools/campus/scan_shipping.py` fails on any
+projection code, survey tile name or frame offset under `game/`.
 
 ## What the bake does (deterministic)
 

@@ -38,8 +38,9 @@ routes, below). On this map that is **West Hall only**: North Hall fails the rou
 scenery with an enterable common room, and no race starts there.
 
 The host does not choose the hall by hand. When a round starts, the host's session picks it from the
-round's seed among the map's race-start halls (`CampusDorms.pick`): the default hall first, then never
-the same hall twice running where there is another. It publishes the choice in the round
+round's seed among the map's race-start halls (`CampusDorms.pick`, 2.0's rule, the first round
+included), never the same hall twice running where there is another. On this map that is always West
+Hall. It publishes the choice in the round
 configuration. (Earlier notes said the host picks the hall. The runtime never did; this is what it
 does.) Guests get the hall with its geometry hash and refuse a round whose hall geometry differs
 (`CampusDorms.VERSION` 4: door thresholds at each hall's own floor level).
