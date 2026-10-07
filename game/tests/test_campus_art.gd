@@ -11,9 +11,9 @@ var t
 ## Recorded on the CAMPUS pass data (game/data/campus, CampusData.campus_hash
 ## below).  A change here is a gameplay change: re-record deliberately.
 const CAMPUS_HASH := "63760eea719e3747"
-const CAMPUS_COLLISION := "555371db83ab0e519985552a1474dfdc83a2803324b824c676c80e7c74211f97"
-const CAMPUS_NAV := "d1c055bb2e1554a5d9000e5ad58bc544d36bb225b1d982c4943051525e6aa28b"
-const CAMPUS_LAYOUT := "0a6e6e647b46f15188b0512dbe30175c67e8bbaa667b644c8824a381e9465e7d"
+const CAMPUS_COLLISION := "bc24807f62c713dc7234cbae4851f7a7a58cc14bfd312ac5026b834712bff7d2"
+const CAMPUS_NAV := "4101aa9d6e4555ddd4d7eb3d2a754d056d9616a851a22a2d8e82ae139fc8bd99"
+const CAMPUS_LAYOUT := "de1a16ee0354565421ceabf4aa2c5f7600f2a67c758568fa28fff360759f2a60"
 
 
 func test_fingerprints_are_deterministic() -> void:

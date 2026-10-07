@@ -411,7 +411,9 @@ func box_xf(xf: Transform3D, col: Color, emis: float = 0.0, sway: float = 0.0, s
 
 
 func box(center: Vector3, size: Vector3, col: Color, yaw: float = 0.0, emis: float = 0.0, top_col: Variant = null) -> void:
-	var b := Basis(Vector3.UP, yaw).scaled(size)
+	# scaled along the box's own axes (`scaled` scales along the world's,
+	# which shears a turned box that isn't square)
+	var b := Basis(Vector3.UP, yaw).scaled_local(size)
 	box_xf(Transform3D(b, center), col, emis, 0.0, true, top_col)
 
 

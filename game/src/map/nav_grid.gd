@@ -396,6 +396,21 @@ func _r_dorms(_part: int, _parts: int) -> void:
 
 
 func _r_edges(_part: int, _parts: int) -> void:
+	# a footbridge's lane is walkable over the water: carved along its axis
+	# like a doorway, four-connected (diagonal steps need both side cells)
+	for p in layout.platforms:
+		if not p.has("carve"):
+			continue
+		var a: Vector2 = p["carve"][0]
+		var b: Vector2 = p["carve"][1]
+		var n := maxi(2, int(a.distance_to(b) / (CELL * 0.25)))
+		var prev := to_cell(a)
+		for k in n + 1:
+			var c := to_cell(a.lerp(b, float(k) / float(n)))
+			for q in [c, Vector2i(c.x, prev.y)]:
+				foot.set_point_solid(q, false)
+				foot.set_point_weight_scale(q, 1.0)
+			prev = c
 	# docks / ledge platforms are walkable over the pit
 	for p in layout.platforms:
 		var pc: Vector3 = p["center"]

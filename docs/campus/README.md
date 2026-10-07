@@ -106,7 +106,7 @@ owner's options, none of them taken:
 |---|---|---|
 | 1 Geometry overlay | `tools/campus/overlay.py` draws every layer over the aerial | overlays delivered privately (they show the reference imagery) |
 | 2 Paired views | `game/src/dev/campus_views.gd` + the same viewpoints in the reference photos | delivered privately |
-| 3 Traversal | `test_campus_traversal.gd`: colliders exist; every open passage (the chapel's atrium, the bell tower's gap, porches, breezeways) is run through; open nav cells fit the runner; walks are clear; the play area is closed | passing |
+| 3 Traversal | `test_campus_traversal.gd`: colliders exist; every open passage (the chapel's atrium, the bell tower's gap, porches, breezeways) is run through; the footbridge is crossed both ways above the water and the nav grid routes across it; open nav cells fit the runner; walks are clear; the play area is closed | passing |
 | 4 Physics before/after | `test_campus_invariants.gd` pins every rule and body value; `git diff b3e5d74` of the motor and rules is empty | passing |
 | 5 Routes from both halls | `test_routes_bots.gd` (bots complete curated routes from both halls; measured times) and `route_table.json` | passing, with the timer conflict above |
 | 6 Online | protocol 9; the round carries the campus data hash and the hall geometry hash; a guest with other data refuses | passing (`test_dorms`, `test_coins`, network tests) |
@@ -116,7 +116,9 @@ owner's options, none of them taken:
 ## Performance
 
 These are this desktop container's numbers, never a phone's. No iPhone was available to this work, so
-device frame rate, GPU time, heat and memory pressure are unverified.
+device frame rate, GPU time, heat and memory pressure are unverified. They were measured before the
+last art fixes (porticos, the chapel's roof and wings, facade bands and panels). Those add a few
+hundred triangles per building and no colliders.
 
 **Gameplay bench.** `tools/match_bench.sh`: three Practice rounds of 75 s, every slot bot-driven, 60 fps
 cap, seed 7, headless (CPU side). Two runs each, median (range):
@@ -201,6 +203,14 @@ They are re-rendered with a field of view that matches after the crop.) What the
 - **Garden fountain.** It was drawn as a generic upright form. It is now a slender pillar with a bronze
   bowl and four falls, as the evidence describes. In the photo the water leaves from spouts at the top
   of the pillar under the bowl; the game's falls drop from the bowl's lip.
+- **Water features.** Several features were traced but never built: the footbridge over Bridge Pond,
+  the lake's L-shaped swim dock, fishing dock, three swim rafts and sand beach. The dock art read keys
+  the data does not use, and drew a plank in the middle of the lake. Now:
+  - The footbridge (concrete deck, black picket railings) and the docks are walkable decks, and the
+    bots' grid has a lane across the bridge.
+  - The rafts are drawn only. A splash takes a runner straight to an exit, so nobody swims to them.
+  - The beach tints the shore as sand.
+  Every measured route is unchanged, since each one ends with a splash.
 - **Village Pond.** The pose fitted on the four homes beyond it puts the camera inside the traced
   outline. The photo shows only about 15 m of water to the jet and 20 m to the far bank, so the built
   pond is probably smaller, or further north, than the design-plan circle the data uses (no overhead

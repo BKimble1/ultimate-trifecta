@@ -179,6 +179,37 @@ func test_open_passages_are_walkable() -> void:
 	h.free_sim()
 
 
+## A footbridge (the data's water `bridge` feature) is crossed on foot from
+## bank to bank above the water (never a splash), and the runners' nav grid
+## routes across it rather than round the water.
+func test_footbridges_are_crossed() -> void:
+	var h := _h()
+	h.make([R, P], [0, 1, 2], [], 43)
+	await h.release_patrol()
+	var lay := h.sim.layout
+	var nav := NavGrid.shared(lay)
+	var n := 0
+	for pf in lay.platforms:
+		if not pf.has("carve"):
+			continue
+		var a: Vector2 = pf["carve"][0]
+		var b: Vector2 = pf["carve"][1]
+		var wi := lay.water_index_at((a + b) * 0.5)
+		var surf := float(lay.waters[wi]["surface_y"]) if wi >= 0 else -INF
+		for dirn in [[a, b], [b, a]]:
+			var res: Array = await _run(h, dirn[0], dirn[1], a.distance_to(b) / 6.0 * 2.0 + 1.5)
+			var r := h.sim.player(0)
+			t.check(bool(res[0]) and float(res[2]) > surf + 0.25 and r.state == TC.PState.ACTIVE,
+				"footbridge %s: crossed bank to bank above the water (%.2f s, lowest y %.2f)" % [n, float(res[1]), float(res[2])])
+		var path := nav.foot.get_id_path(nav.to_cell(a), nav.to_cell(b))
+		var direct := a.distance_to(b)
+		t.check(path.size() > 0 and float(path.size()) * NavGrid.CELL < direct * 1.6 + 2.0,
+			"footbridge %s: the nav grid routes across it (%d cells for %.1f m)" % [n, path.size(), direct])
+		n += 1
+	t.check(n >= 1, "footbridges found (%d)" % n)
+	h.free_sim()
+
+
 func _capsule_query(h: SimHarness, p: Vector2) -> bool:
 	var cap := CapsuleShape3D.new()
 	cap.radius = Motor.CHAR_RADIUS - 0.03

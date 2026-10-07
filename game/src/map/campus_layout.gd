@@ -100,6 +100,7 @@ func _init(p_data: CampusData = null, _unused: bool = false) -> void:
 	_build_gameplay_frame()
 	_build_buildings()
 	_build_waters()
+	_build_water_features()
 	_build_roads_and_paths()
 	_build_areas()
 	_build_barriers()
@@ -361,6 +362,90 @@ func _build_waters() -> void:
 			waters.append(w)
 
 
+## A footbridge deck stands this far above its banks and a dock this far
+## below them (m): within the step a runner walks up (a capsule of radius
+## 0.35 on a 50 degree floor limit climbs about 0.12 m).
+const DECK_LIP := 0.06
+
+
+## The waters' built features as solid ground: a footbridge (deck,
+## railings, and a nav lane carved along it like a doorway) and docks
+## become platforms; floating rafts are drawn only (CampusLandmarks); a
+## traced beach tints the ground as sand.
+func _build_water_features() -> void:
+	for w in waters:
+		for f in w["features"]:
+			if String(f.get("kind", "")) == "beach" and f.has("polygon"):
+				var bp := CampusData.ccw(CampusData.to_poly(f["polygon"]))
+				areas.append({"id": "%s_beach" % w["id"], "kind": "sand", "poly": bp, "rect": CampusData.bounds(bp)})
+			for pf in feature_decks(w, f):
+				if pf.has("rails"):
+					for r in pf["rails"]:
+						solids.append(r)
+					pf.erase("rails")
+				platforms.append(pf)
+
+
+## The deck boxes of one bridge or dock feature (none for anything else):
+## [{kind, center (top middle), size, yaw, carve (bridge: a nav lane from
+## bank to bank), rails (bridge: two railing boxes, as `solids`)}].  The
+## layout makes them solid; CampusLandmarks draws the same boxes.
+static func feature_decks(w: Dictionary, f: Dictionary) -> Array:
+	var out: Array = []
+	var kind := String(f.get("kind", ""))
+	if kind != "bridge" and kind != "dock":
+		return out
+	var pts := feature_line(w, f)
+	var bridge := kind == "bridge"
+	var wd := float(f.get("w", 3.0 if bridge else 2.0))
+	var top := DECK_LIP if bridge else -DECK_LIP
+	for i in pts.size() - 1:
+		var a := pts[i]
+		var b := pts[i + 1]
+		var len := a.distance_to(b)
+		if len < 0.5:
+			continue
+		var dir := (b - a) / len
+		# overlap the bank (and an L-dock's corner) by half a width
+		var a2 := a - dir * (0.5 if i == 0 else wd * 0.5)
+		var b2 := b + dir * (0.5 if bridge and i == pts.size() - 2 else 0.0)
+		var mid := (a2 + b2) * 0.5
+		var yaw := atan2(-dir.y, dir.x)
+		var pf := {"kind": kind, "center": Vector3(mid.x, top, mid.y), "size": Vector3(a2.distance_to(b2), 0.3, wd), "yaw": yaw}
+		if bridge:
+			var nrm := Vector2(-dir.y, dir.x)
+			var rails: Array = []
+			for sd: float in [-1.0, 1.0]:
+				rails.append({"pos": mid + nrm * (sd * (wd * 0.5 - 0.05)), "size": Vector3(a2.distance_to(b2), top + 1.05, 0.1), "rot": yaw})
+			pf["rails"] = rails
+			pf["carve"] = [a2 - dir * 1.5, b2 + dir * 1.5]
+		out.append(pf)
+	return out
+
+
+## A water feature's line (bridge or dock): its traced `pts`, or `p` and
+## `len` reaching into the water toward its middle.
+static func feature_line(w: Dictionary, f: Dictionary) -> PackedVector2Array:
+	if f.has("pts"):
+		return CampusData.to_poly(f["pts"])
+	var p := _v2(f.get("p", [0, 0]))
+	var c: Vector2 = w["center"]
+	var dir := (c - p).normalized() if c.distance_to(p) > 0.1 else Vector2(0, -1)
+	return PackedVector2Array([p, p + dir * float(f.get("len", 6.0))])
+
+
+## Whether `p` lies at a deck (a footbridge or a dock) within `margin`:
+## no shore exit, jump point or pad goes there.
+func near_deck(p: Vector2, margin: float) -> bool:
+	for pf in platforms:
+		var c: Vector3 = pf["center"]
+		var sz: Vector3 = pf["size"]
+		var local := (p - Vector2(c.x, c.z)).rotated(float(pf["yaw"]))
+		if absf(local.x) <= sz.x * 0.5 + margin and absf(local.y) <= sz.z * 0.5 + margin:
+			return true
+	return false
+
+
 func water_by_id(id: String) -> Dictionary:
 	for w in waters:
 		if w["id"] == id:
@@ -434,7 +519,7 @@ func _build_water_points() -> void:
 				var n: Vector2 = s[1]
 				var e: Vector2 = at + n * out_d
 				var pad: Vector2 = at + n * (out_d + 5.0)
-				if not _open_ground(e, 0.6):
+				if not _open_ground(e, 0.6) or near_deck(at, 1.5):
 					continue
 				exits.append(Vector3(e.x, 0.0, e.y))
 				jumps.append(at - n * 0.8)

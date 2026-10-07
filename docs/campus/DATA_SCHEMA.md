@@ -80,6 +80,10 @@ or measured in a dated photo; **medium** = georeferenced plan/diagram
  "rim_t": 0.5,                       width of the rim or coping (m, optional): drawn,
                                      collides, and the exits stand just beyond it
  "features": [{"kind": "jet|statue_base|pillar_bowl|bridge|dock|beach|island", ...}],
+                                     bridge {pts, w}: a walkable deck 0.06 m above the banks with
+                                     railings, and a nav lane along it; dock {pts, w} or {p, len}:
+                                     a walkable deck 0.06 m below the bank; island {p, size, rot}:
+                                     a floating raft, drawn only
  "objective": true|false,            in the round's water pool (see gameplay)
  "wade": false,                      true: a shallow decorative runnel (a dry-creek
                                      garden channel): drawn and walked through, never

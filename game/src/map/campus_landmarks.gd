@@ -183,6 +183,8 @@ func _edges(w: Dictionary) -> void:
 		for s in CampusData.boundary_samples(cp, 2.2 if stony else 7.0):
 			var p: Vector2 = s[0]
 			var nrm: Vector2 = s[1]
+			if B.L.near_deck(p, 1.2):
+				continue      # a footbridge or a dock lands here
 			if stony:
 				var q := p + nrm * 0.2
 				var sc := rng.randf_range(0.5, 1.0)
@@ -253,23 +255,64 @@ func _feature(w: Dictionary, f: Dictionary, k: MeshKit, mat: ShaderMaterial) -> 
 			kk.revolve(Vector3(p.x, 0.7, p.y), PackedVector2Array([Vector2(0.32, 0), Vector2(0.24, hh * 0.6), Vector2(0.36, hh * 0.85), Vector2(0.62, hh), Vector2(0.5, hh + 0.12)]),
 				PackedColorArray([Color(0.30, 0.24, 0.18), Color(0.34, 0.27, 0.2), Color(0.38, 0.30, 0.22), Color(0.36, 0.28, 0.2), Color(0.3, 0.24, 0.18)]), 12)
 			kk.mat = 0.0
-		"dock":
-			var a2 := CampusLayout._v2(f.get("a", [p.x, p.y]))
-			var b2 := CampusLayout._v2(f.get("b", [p.x, p.y + 10.0]))
-			var wd := float(f.get("w", 2.4))
-			var dd := b2 - a2
-			var yaw := atan2(-dd.y, dd.x)
-			var mid := (a2 + b2) * 0.5
-			var kd := B.kit_at(mid.x, mid.y)
-			kd.mat = MeshKit.M_WOOD
-			kd.chamfer_box(Vector3(mid.x, 0.25, mid.y), Vector3(dd.length(), 0.18, wd), Color(0.55, 0.40, 0.28), 0.03, yaw)
-			var n := maxi(2, int(dd.length() / 3.0))
-			for j in n + 1:
-				var q := a2.lerp(b2, float(j) / n)
-				for s: float in [-1.0, 1.0]:
-					var side := Vector2(-dd.normalized().y, dd.normalized().x) * (wd * 0.5 - 0.1) * s
-					kd.revolve(Vector3(q.x + side.x, y - 0.6, q.y + side.y), PackedVector2Array([Vector2(0.12, 0), Vector2(0.12, 1.1)]), PackedColorArray([Color(0.35, 0.27, 0.2)]), 8)
-			kd.mat = 0.0
+		"bridge", "dock":
+			# the deck CampusLayout made solid (platforms), drawn: a concrete
+			# footbridge with black steel railings, or a grey plank dock on
+			# posts down into the water
+			var bridge := kind == "bridge"
+			var deck := Color(0.70, 0.69, 0.66) if bridge else Color(0.62, 0.60, 0.56)
+			for pf in CampusLayout.feature_decks(w, f):
+				var pc: Vector3 = pf["center"]
+				var sz: Vector3 = pf["size"]
+				var yaw := float(pf["yaw"])
+				var ax := Vector3(cos(yaw), 0, -sin(yaw))
+				var nr := Vector3(sin(yaw), 0, cos(yaw))
+				var kd := B.kit_at(pc.x, pc.z)
+				kd.mat = MeshKit.M_STONE if bridge else MeshKit.M_WOOD
+				kd.chamfer_box(pc - Vector3(0, sz.y * 0.5, 0), sz, deck, 0.03, yaw)
+				kd.mat = MeshKit.M_WOOD
+				var np := maxi(2, int(sz.x / 2.4))
+				for j in np + 1:
+					var q := pc + ax * (sz.x * (float(j) / float(np) - 0.5))
+					for sd: float in [-1.0, 1.0]:
+						var post := q + nr * (sd * (sz.z * 0.5 - 0.12))
+						if bridge:
+							kd.mat = MeshKit.M_METAL
+							kd.box(post + Vector3(0, 0.52, 0), Vector3(0.07, 1.0, 0.07), CampusArchitecture.IRON, yaw)
+						else:
+							kd.revolve(Vector3(post.x, y - 0.6, post.z), PackedVector2Array([Vector2(0.11, 0.0), Vector2(0.11, pc.y - y + 0.55)]), PackedColorArray([Color(0.35, 0.27, 0.2)]), 8)
+				if bridge:
+					# railings: black steel pickets between a bottom and a top rail
+					var kp := B.kit_at(pc.x, pc.z, false, true)
+					kd.mat = MeshKit.M_METAL
+					kp.mat = MeshKit.M_METAL
+					var npk := int(sz.x / 0.16)
+					for sd2: float in [-1.0, 1.0]:
+						var rc := pc + nr * (sd2 * (sz.z * 0.5 - 0.05))
+						kd.box(rc + Vector3(0, 0.16, 0), Vector3(sz.x, 0.05, 0.05), CampusArchitecture.IRON, yaw)
+						kd.box(rc + Vector3(0, 1.02, 0), Vector3(sz.x, 0.06, 0.08), CampusArchitecture.IRON, yaw)
+						for pk in npk:
+							var q2 := rc + ax * (sz.x * ((float(pk) + 0.5) / float(npk) - 0.5))
+							kp.box(q2 + Vector3(0, 0.59, 0), Vector3(0.025, 0.86, 0.025), CampusArchitecture.IRON.darkened(0.1), yaw)
+					kp.mat = 0.0
+				kd.mat = 0.0
+		"island":
+			# a floating swim raft: white floats with a deck, a ladder frame on
+			# the large diving platform
+			var sz2: Vector2 = CampusLayout._v2(f.get("size", [3.0, 3.0]))
+			var yaw2 := -deg_to_rad(float(f.get("rot", 0.0)))
+			var kr := B.kit_at(p.x, p.y)
+			kr.mat = MeshKit.M_PLASTER
+			kr.chamfer_box(Vector3(p.x, y + 0.1, p.y), Vector3(sz2.x, 0.3, sz2.y), Color(0.86, 0.86, 0.83), 0.06, yaw2)
+			if sz2.y >= 6.0:
+				kr.mat = MeshKit.M_METAL
+				var fax := Vector3(sin(yaw2), 0, cos(yaw2))
+				var fside := Vector3(cos(yaw2), 0, -sin(yaw2))
+				var fc := Vector3(p.x, y + 0.25, p.y) + fax * (sz2.y * 0.5 - 0.6)
+				for sd3: float in [-1.0, 1.0]:
+					kr.box(fc + fside * (sd3 * 0.8) + Vector3(0, 0.7, 0), Vector3(0.08, 1.4, 0.08), CampusArchitecture.IRON.lightened(0.5), yaw2)
+				kr.box(fc + Vector3(0, 1.4, 0), Vector3(1.7, 0.08, 0.08), CampusArchitecture.IRON.lightened(0.5), yaw2)
+			kr.mat = 0.0
 
 
 # ---------------------------------------------------------------------------
