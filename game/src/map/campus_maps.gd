@@ -31,7 +31,7 @@ const PLAY_DEFAULT := CLASSIC
 
 const DEFS := {
 	CLASSIC: {
-		"title": "Moonbrook College", "tag": "Classic",
+		"title": "Moonbrook College", "short": "Moonbrook", "tag": "Classic",
 		"blurb": "The original campus: a compact quad, six waters close together and three halls to run home to.",
 		"data": "res://data/maps/classic/", "bounds": Rect2(-160.0, -150.0, 320.0, 300.0), "nav_cell": 1.0, "mini_span": 110.0,
 		"look": "classic", "routes": "res://config/route_table_classic.json", "route_band": 0.16,
@@ -39,7 +39,7 @@ const DEFS := {
 		"preview": "res://assets/maps/preview_classic.png",
 	},
 	CAMPUS: {
-		"title": "Lakeside Campus", "tag": "New", "soon": true,
+		"title": "Lakeside Campus", "short": "Lakeside", "tag": "New", "soon": true,
 		"blurb": "A big lakeside campus with woods, ponds, hills and long runs between the waters.",
 		"data": "res://data/campus/", "bounds": Rect2(-720.0, -560.0, 1190.0, 1000.0), "nav_cell": 2.0, "mini_span": 130.0,
 		"look": "campus", "routes": "res://config/route_table.json",
@@ -99,6 +99,11 @@ static func def(id: String) -> Dictionary:
 
 static func title(id: String) -> String:
 	return String(def(id).get("title", ""))
+
+
+## The map's short name for tight spaces (the lobby's settings chip, 2.2).
+static func short_title(id: String) -> String:
+	return String(def(id).get("short", title(id)))
 
 
 ## The map a start dorm id belongs to ("" if none).

@@ -89,12 +89,15 @@ static func map_title(s: Dictionary) -> String:
 
 
 ## The same settings as short labelled values for the lobby (V5; the map
-## first since two maps): ["Lakeside Campus", "3 rounds", "2 Night Watch",
-## "4 home to win"].
+## first since two maps): ["Moonbrook", "3 rounds", "2 Night Watch",
+## "4 home to win"].  2.2: the map's short name, so the row fits beside the
+## roster on an iPhone SE and an iPad ("Moonbrook College" overflowed it);
+## the sheet and the summary line keep the full title.
 static func summary_parts(s: Dictionary) -> Array[String]:
 	var w := int(s.get("watch", DEFAULT_WATCH))
 	var r := int(s.get("rounds", DEFAULT_ROUNDS))
-	return [map_title(s), "1 round" if r == 1 else "%d rounds" % r, "%d Night Watch" % w, "%d home to win" % required_home(w)]
+	var id := String(s.get("map", CampusMaps.PLAY_DEFAULT))
+	return [CampusMaps.short_title(id) if CampusMaps.has(id) else "Unknown map", "1 round" if r == 1 else "%d rounds" % r, "%d Night Watch" % w, "%d home to win" % required_home(w)]
 
 
 ## The rules for one round: a copy of the base config with the party's slot

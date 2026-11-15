@@ -200,7 +200,10 @@ func test_spawn_inside_and_no_tags_before_go() -> void:
 			while h.sim.phase != TC.Phase.PLAYING:
 				h.press(8 - watch, TC.BTN_TAG)
 				await h.step()
-				tagged = tagged or not h.events_of(TC.Ev.CAPTURE).is_empty() or w0.tag_phase != SimPlayer.TagPhase.NONE
+				# (2.2: the Night Watch may act from the GO tick itself: no head
+				# start, so only presses before GO must do nothing)
+				if h.sim.phase != TC.Phase.PLAYING:
+					tagged = tagged or not h.events_of(TC.Ev.CAPTURE).is_empty() or w0.tag_phase != SimPlayer.TagPhase.NONE
 			t.check(not tagged, "%s/%dW: no tag during the reveal or countdown" % [d, watch])
 			t.check(CampusDorms.in_room(d, r0.pos()), "%s/%dW: runners wait inside until GO" % [d, watch])
 			h.free_sim()

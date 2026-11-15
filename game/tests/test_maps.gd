@@ -291,7 +291,7 @@ func test_settings_carry_the_map() -> void:
 	s = PartySeries.sanitize_settings({"watch": 2, "rounds": 3, "map": "classic"})
 	t.eq(String(s["map"]), "classic", "the map is kept")
 	t.check(PartySeries.summary(s).begins_with("Moonbrook College"), "the summary names the map")
-	t.eq(PartySeries.summary_parts(s)[0], "Moonbrook College", "the lobby chip names the map")
+	t.eq(PartySeries.summary_parts(s)[0], "Moonbrook", "the lobby chip names the map (short, 2.2)")
 	s = PartySeries.sanitize_settings({"watch": 2, "rounds": 3, "map": "future_map"})
 	t.eq(PartySeries.map_title(s), "Unknown map", "a newer host's map shows as unknown here")
 

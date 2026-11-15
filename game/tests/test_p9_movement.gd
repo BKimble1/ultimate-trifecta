@@ -513,7 +513,7 @@ func test_old_protocol_is_refused_with_update_needed() -> void:
 	var c: NetSession = rig.clients[0]
 	await rig.wait_until(func() -> bool: return c.local_slot >= 0, 300)
 	var before := rig.host.roster.filter(func(e): return e != null).size()
-	for ver in [9, 11]:
+	for ver in [Protocol.VERSION - 1, Protocol.VERSION + 1]:
 		var other := LoopbackTransport.new(rig.hub, false)
 		rig.hub.link(other.id, rig.host_t.id)
 		var got: Array = []

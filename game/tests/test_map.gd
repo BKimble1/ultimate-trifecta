@@ -277,7 +277,12 @@ func test_a_dead_link_adds_no_sightings() -> void:
 	await rig.wait_until(func() -> bool: return c0.local_slot >= 0 and rig.host.human_count() == 2, 300)
 	c0.set_local_ready(true)
 	await rig.wait_until(func() -> bool: return rig.host.can_start(), 200)
+	# (2.2 has no head start) a held Night Watch keeps the bot still for the
+	# sighting checks: this round alone gets a 60 s hold
+	var hold_was: float = Rules.cfg.runner_head_start_s
+	Rules.cfg.runner_head_start_s = 60.0
 	rig.host.host_start_match(31)
+	Rules.cfg.runner_head_start_s = hold_was
 	var ok := await rig.wait_until(func() -> bool: return rig.host.sim != null and rig.host.sim.phase == TC.Phase.PLAYING \
 		and rig.mc_of(c0) != null and rig.mc_of(c0).prepared, 1500)
 	t.check(ok, "party round playing")

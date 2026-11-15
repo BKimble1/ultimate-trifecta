@@ -143,7 +143,9 @@ func test_startup_and_underrun_policies() -> void:
 	var client: NetSession = rig.clients[0]
 	var cmc := rig.mc_of(client)
 	await rig.frames(30)
-	var lay := CampusLayout.shared()
+	# the round's own map (2.2: Moonbrook College), whose walls the guest's
+	# extrapolation is clamped against
+	var lay: CampusLayout = cmc.layout
 	# a wall segment and a point 1.0 m in front of it, running at it
 	var w: Dictionary = lay.walls[0]
 	var wa: Vector2 = w["a"]
@@ -332,11 +334,14 @@ func test_remote_beats_follow_the_presentation_time() -> void:
 	var ev := {"id": 900001, "t": int(now) + 12, "type": TC.Ev.BUMP, "a": other, "b": 0, "v": 0, "pos": Vector3(0, -50, 0)}
 	cmc._local_events.append(ev)
 	await _presented()
-	t.eq(cmc._beats.size(), 1, "a remote bump 12 ticks ahead of the drawn time waits")
+	# (2.2: the Night Watch plays from GO, so the round's own events can be
+	# queued beside this one: look for this bump, not the queue's length)
+	var waiting := func(id: int) -> bool: return cmc._beats.any(func(b: Dictionary) -> bool: return int((b.get("ev", {}) as Dictionary).get("id", -1)) == id)
+	t.check(waiting.call(900001), "a remote bump 12 ticks ahead of the drawn time waits")
 	t.check(not cmc._beat_ids.has(900001), "not shown yet")
 	await rig.frames(20)
 	await _presented()
-	t.eq(cmc._beats.size(), 0, "shown once the drawn time reaches its tick")
+	t.check(not waiting.call(900001), "shown once the drawn time reaches its tick")
 	t.check(cmc._beat_ids.has(900001), "and recorded by id")
 	# a repeat of the same event id shows no second beat
 	var shown := cmc.stat_beats_shown
@@ -346,5 +351,5 @@ func test_remote_beats_follow_the_presentation_time() -> void:
 	var mine := {"id": 900002, "t": int(cmc.remote_time()) + 30, "type": TC.Ev.BUMP, "a": client.local_slot, "b": 0, "v": 0, "pos": Vector3(0, -50, 0)}
 	cmc._local_events.append(mine)
 	await _presented()
-	t.check(cmc._beat_ids.has(900002) and cmc._beats.is_empty(), "the local player's own event is immediate")
+	t.check(cmc._beat_ids.has(900002) and not waiting.call(900002), "the local player's own event is immediate")
 	rig.teardown()
