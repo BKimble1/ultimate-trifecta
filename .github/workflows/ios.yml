@@ -132,7 +132,7 @@ jobs:
     name: iOS export, simulator run, device archive${{ github.event.inputs.upload == 'true' && ', TestFlight upload' || '' }}
     needs: tests
     runs-on: macos-26
-    timeout-minutes: 90
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
       - name: Xcode version
@@ -147,8 +147,22 @@ jobs:
           key: godot-macos-${{ env.GODOT_VERSION }}-templates
       - name: Fetch Godot + export templates
         run: tools/fetch_godot.sh --templates
+      # 2.2: upstream removed the pinned release asset; fetch_deps.sh then
+      # builds the same pinned commit from source (slow), cached here by commit
+      - uses: actions/cache/restore@v4
+        id: gapcache
+        with:
+          path: tools/.cache/GodotApplePlugins-addons-*-src.zip
+          key: gap-src-bfade13ff8b6027ede438bac637b5bf93057d404-xcode26
       - name: Fetch pinned plugins
         run: tools/fetch_deps.sh
+      # saved right away, so a later failure (signing, upload) never throws
+      # the long source build away
+      - uses: actions/cache/save@v4
+        if: steps.gapcache.outputs.cache-hit != 'true' && hashFiles('tools/.cache/GodotApplePlugins-addons-*-src.zip') != ''
+        with:
+          path: tools/.cache/GodotApplePlugins-addons-*-src.zip
+          key: gap-src-bfade13ff8b6027ede438bac637b5bf93057d404-xcode26
       - name: Build native extension (UTShare share sheet, iOS xcframework)
         run: GODOT_BIN=$(cat tools/.cache/godot/BIN) tools/build_native.sh
       - name: Signing configuration present?
