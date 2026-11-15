@@ -197,7 +197,9 @@ jobs:
             "$ASC_PY" tools/asc.py app || true
             N=$("$ASC_PY" tools/asc.py next-build 2>/dev/null || echo "")
           fi
-          [ -z "$N" ] && N=${{ github.run_number }}
+          # only a number counts: when App Store Connect refuses the API (an
+          # expired agreement: 403), next-build prints its error, not a build
+          case "$N" in ''|*[!0-9]*) echo "No build number from App Store Connect (${N:-none}); using the run number"; N=${{ github.run_number }};; esac
           echo "build=$N" >> "$GITHUB_OUTPUT"
           echo "CFBundleVersion: $N"
       - name: Export Xcode project
