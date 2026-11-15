@@ -1,6 +1,18 @@
 # Two maps
 
-The game ships two playable maps. A party's host picks one for the series; Practice remembers its own
+**2.2: Lakeside Campus is "Coming soon".** The chooser still shows its card,
+preview and outline, with a lock, a COMING SOON ribbon and a "Coming soon"
+tag; tapping it says "Lakeside Campus is coming soon. Stay tuned!" and keeps
+the current choice. Players play Moonbrook College (`CampusMaps.PLAY_DEFAULT`):
+`CampusMaps.playable()` is false for a map marked `soon`, the host can't pick
+one (`NetSession.host_set_settings`), and saved choices of it
+(`practice_map`, `party_map`) resolve to Moonbrook College
+(`CampusMaps.sanitize_play`). `CampusMaps.DEFAULT_ID` (the data tools' and
+tests' "campus") is unchanged, and a development run can still play Lakeside
+Campus with `--map=reference_campus`. To open it, remove `"soon": true` from
+its entry in `CampusMaps.DEFS`.
+
+The game ships two maps. A party's host picks one for the series; Practice remembers its own
 choice. The rules, the motor, the round and everything else are shared.
 
 | Stable id | Title (player-facing) | Tag | What it is |

@@ -26,6 +26,16 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 			ci.draw_line(c + Vector2(-r * 0.65, 0), c + Vector2(r * 0.65, 0), col, r * 0.24, true)
 			ci.draw_line(c + Vector2(0, -r * 0.65), c + Vector2(0, r * 0.65), col, r * 0.24, true)
 			return
+		"snowflake":
+			# Season 1 (Winter Break): six spokes, each with a pair of twigs
+			for i in 6:
+				var d := Vector2.from_angle(-PI * 0.5 + TAU * float(i) / 6.0)
+				ci.draw_line(c, c + d * r * 0.95, col, r * 0.15, true)
+				var m := c + d * r * 0.58
+				ci.draw_line(m, m + d.rotated(0.75) * r * 0.32, col, r * 0.12, true)
+				ci.draw_line(m, m + d.rotated(-0.75) * r * 0.32, col, r * 0.12, true)
+			ci.draw_circle(c, r * 0.16, col)
+			return
 		"check":
 			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.7, 0), c + Vector2(-r * 0.15, r * 0.55), c + Vector2(r * 0.75, -r * 0.6)]), col, r * 0.28, true)
 			return

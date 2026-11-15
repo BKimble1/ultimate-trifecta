@@ -550,6 +550,11 @@ func _header() -> Control:
 	UIKit.fit_text(premium_chip, [UIKit.T_OVERLINE, 15, 14])
 	v.add_child(premium_chip)
 	var tr := UIKit.hbox(UIKit.SP_M)
+	# (2.2) Season 1 · Winter Break: its snowflake beside the name
+	var flake := Icons.IconRect.new("snowflake", SeasonCard.ICE, 26)
+	flake.name = "SeasonMark"
+	flake.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	tr.add_child(flake)
 	title_l = UIKit.styled(String(s.get("name", "")), "headline")
 	title_l.name = "SeasonName"
 	title_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1485,10 +1490,13 @@ class RewardCell:
 			var qs := UIKit.box(Color(UIKit.SLATE_LO, 0.4), UIKit.R_CARD, 2, UIKit.TEAL, 0)
 			f.styles = {"normal": q, "hover": q, "pressed": q, "disabled": q, "selected": qs}
 		elif tr == "premium":
-			var bg := UIKit.SLATE_HI.lerp(Color("6a5226"), 0.2)
+			# (2.2) a clearly gold Premium lane: warmer card, a gold rim on top
+			# and a fainter one round the sides
+			var bg := UIKit.SLATE_HI.lerp(Color("6a5226"), 0.36)
 			var n := UIKit.card_box(Color(bg, 0.97), UIKit.R_CARD, 1.0)
-			n.border_width_top = 2
-			n.border_color = Color(UIKit.AMBER, 0.55)
+			n.set_border_width_all(1)
+			n.border_width_top = 3
+			n.border_color = Color(UIKit.AMBER, 0.7)
 			var sel := UIKit.card_box(Color(bg.lightened(0.04), 0.97), UIKit.R_CARD, 1.0)
 			sel.set_border_width_all(3)
 			sel.border_color = UIKit.TEAL

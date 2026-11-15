@@ -43,7 +43,7 @@ concurrency:
 
 env:
   GODOT_VERSION: "4.7.2"
-  MARKETING_VERSION: "2.1"
+  MARKETING_VERSION: "2.2"
   BUNDLE_ID: com.idlery.ultimatetrifecta
 
 jobs:

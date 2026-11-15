@@ -63,7 +63,13 @@ static func open(screen: Screen, current: String, editable: bool, on_pick: Calla
 	for id in ids:
 		var c := _card(id, card_w, id == CampusMaps.sanitize(current), editable)
 		var pick_id := id
-		if editable:
+		if editable and CampusMaps.coming_soon(id):
+			# (2.2) shown with its preview and outline, but not playable yet:
+			# a tap says so and keeps the sheet open
+			c.pressed.connect(func() -> void:
+				Motion.confirm(c)
+				UIKit.toast(root, "%s is coming soon. Stay tuned!" % CampusMaps.title(pick_id), 2.2))
+		elif editable:
 			c.pressed.connect(func() -> void:
 				close.call()
 				if on_pick.is_valid():
@@ -114,19 +120,39 @@ static func _card(id: String, w: float, selected: bool, editable: bool) -> Butto
 	v.offset_right = -12
 	v.offset_bottom = -12
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var soon := CampusMaps.coming_soon(id)
 	var img := TextureRect.new()
 	img.texture = preview(id)
 	img.custom_minimum_size = Vector2(w - 24.0, ph - 24.0)
 	img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	img.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if soon:
+		# the outline stays readable under a soft veil and a centred ribbon
+		img.modulate = Color(0.62, 0.66, 0.78, 1.0)
+		var veil := ColorRect.new()
+		veil.color = Color(UIKit.NAVY, 0.34)
+		veil.set_anchors_preset(Control.PRESET_FULL_RECT)
+		veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		img.add_child(veil)
+		var ribbon := UIKit.chip("COMING SOON", Color(UIKit.AMBER, 0.96), UIKit.NAVY, UIKit.T_LABEL)
+		ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var cc := CenterContainer.new()
+		cc.set_anchors_preset(Control.PRESET_FULL_RECT)
+		cc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cc.add_child(ribbon)
+		img.add_child(cc)
+		var lock := Icons.IconRect.new("lock", UIKit.IVORY, 28)
+		lock.position = Vector2(14, 12)
+		lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		img.add_child(lock)
 	v.add_child(img)
 	var t := UIKit.hbox(10)
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var title := UIKit.styled(String(d["title"]), "headline")
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	t.add_child(title)
-	var tag := UIKit.chip(String(d["tag"]), Color(UIKit.NAVY, 0.6), UIKit.IVORY_MUTED)
+	var tag := UIKit.chip("Coming soon" if soon else String(d["tag"]), Color(UIKit.AMBER, 0.22) if soon else Color(UIKit.NAVY, 0.6), UIKit.AMBER_HI if soon else UIKit.IVORY_MUTED)
 	tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	t.add_child(tag)
@@ -149,6 +175,6 @@ static func _card(id: String, w: float, selected: bool, editable: bool) -> Butto
 	v.add_child(blurb)
 	b.add_child(v)
 	UIKit.set_selected(b, selected)
-	b.accessibility_name = "%s, %s map. %s%s" % [d["title"], String(d["tag"]).to_lower(), d["blurb"], " Selected." if selected else ""]
+	b.accessibility_name = "%s, %s map. %s%s" % [d["title"], "coming soon" if soon else String(d["tag"]).to_lower(), d["blurb"], " Selected." if selected else (" Not available yet." if soon else "")]
 	b.tooltip_text = String(d["title"])
 	return b

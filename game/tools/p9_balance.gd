@@ -25,6 +25,8 @@ extends SceneTree
 
 var _out_path := "user://p9_balance.json"
 var _over := {}
+## (2.2) BAL_MAP=classic plays Moonbrook College (default: the data default)
+var _map := OS.get_environment("BAL_MAP") if OS.get_environment("BAL_MAP") != "" else CampusMaps.DEFAULT_ID
 
 
 func _initialize() -> void:
@@ -50,7 +52,8 @@ func _run() -> void:
 		print("[p9bal] Pass 9 bot path fixes: ", (BotBrain as Script).get("pass9_nav"))
 	var rows: Array = []
 	var t0 := Time.get_ticks_msec()
-	var dorms: Array = CampusDorms.ids()
+	var dorms: Array = CampusDorms.ids(_map, true)
+	print("[p9bal] map ", _map, " halls ", dorms)
 	for w in watches:
 		for s in seeds:
 			var dorm: String = dorms[s % dorms.size()]
@@ -82,7 +85,7 @@ func _make(dorm: String, combo: Array, seed_v: int, watch: int) -> MatchSim:
 	for i in 8:
 		var is_r := i < cfg.runner_slots
 		roster.append({"slot": i, "uid": "b%d" % i, "name": "B%d" % i, "is_bot": true, "role": TC.Role.RUNNER if is_r else TC.Role.PATROL, "cosmetic": {}})
-	sim.setup(cfg, CampusLayout.shared(), roster, seed_v, combo, "p9bal-%s-%d" % [dorm, seed_v],
+	sim.setup(cfg, CampusMaps.layout(_map), roster, seed_v, combo, "p9bal-%s-%d" % [dorm, seed_v],
 		{"dorm": dorm, "bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p)})
 	return sim
 

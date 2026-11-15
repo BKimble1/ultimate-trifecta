@@ -583,7 +583,7 @@ func _lobby_bytes() -> PackedByteArray:
 	b.put_u8(int(settings["watch"]))
 	b.put_u8(int(settings["rounds"]))
 	b.put_u16(int(settings["rev"]))
-	Protocol.put_str(b, String(settings.get("map", CampusMaps.DEFAULT_ID)), 32)   # protocol 10
+	Protocol.put_str(b, String(settings.get("map", CampusMaps.PLAY_DEFAULT)), 32)   # protocol 10
 	var sstate := 0 if series == null else (2 if series.finished else 1)
 	b.put_u8(sstate)
 	b.put_u8(series.next_round() if series != null else 1)
@@ -648,10 +648,10 @@ func host_start_match(seed_override: int = -1) -> void:
 		series_view = series.to_dict()
 	var locked: Dictionary = series.settings if series != null else settings
 	if mode == Mode.OFFLINE and tutorial and practice_role == "patrol":
-		locked = {"watch": 1, "rounds": 1, "rev": 0, "map": settings.get("map", CampusMaps.DEFAULT_ID)}   # Night Watch training: you are the only watcher
+		locked = {"watch": 1, "rounds": 1, "rev": 0, "map": settings.get("map", CampusMaps.PLAY_DEFAULT)}   # Night Watch training: you are the only watcher
 	# the map: locked with the series (practice: the one chosen); the host
 	# only ever offers maps this build has
-	var map_id := CampusMaps.sanitize(locked.get("map", CampusMaps.DEFAULT_ID))
+	var map_id := CampusMaps.sanitize(locked.get("map", CampusMaps.PLAY_DEFAULT))
 	var lay := CampusMaps.layout(map_id)
 	if map_id != prev_map:
 		prev_dorm = ""
@@ -1039,9 +1039,9 @@ func host_set_settings(watch: int, rounds: int, map_id: String = "") -> bool:
 		return false
 	if series != null and series.in_progress():
 		return false   # locked mid-series; End series first
-	var m := String(settings.get("map", CampusMaps.DEFAULT_ID)) if map_id == "" else map_id
-	if not CampusMaps.has(m):
-		return false   # the host offers only maps this build has
+	var m := String(settings.get("map", CampusMaps.PLAY_DEFAULT)) if map_id == "" else map_id
+	if not CampusMaps.playable(m):
+		return false   # the host offers only maps this build has and that aren't "Coming soon"
 	var s := PartySeries.sanitize_settings({"watch": watch, "rounds": rounds, "rev": int(settings["rev"]) + 1, "map": m})
 	if s.is_empty() or (int(s["watch"]) == int(settings["watch"]) and int(s["rounds"]) == int(settings["rounds"]) and String(s["map"]) == String(settings.get("map", ""))):
 		return false

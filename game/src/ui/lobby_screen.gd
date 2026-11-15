@@ -753,9 +753,9 @@ func _settings_sheet() -> void:
 	# the map: a compact row; its sheet shows both maps (the host picks,
 	# guests see the host's choice)
 	v.add_child(UIKit.styled("Map", "overline", UIKit.IVORY_MUTED))
-	var map_row := MapRow.make(String(cur.get("map", CampusMaps.DEFAULT_ID)), host and not locked)
+	var map_row := MapRow.make(String(cur.get("map", CampusMaps.PLAY_DEFAULT)), host and not locked)
 	map_row.pressed.connect(func() -> void:
-		MapSheet.open(self, String(session.settings.get("map", CampusMaps.DEFAULT_ID)), host and not locked, func(id: String) -> void:
+		MapSheet.open(self, String(session.settings.get("map", CampusMaps.PLAY_DEFAULT)), host and not locked, func(id: String) -> void:
 			if session.host_set_settings(int(session.settings["watch"]), int(session.settings["rounds"]), id):
 				Save.set_setting("party_map", id)
 			_refresh()

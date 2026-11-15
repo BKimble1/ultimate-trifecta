@@ -31,7 +31,7 @@ func test_settings_combinations_and_rules_copy() -> void:
 			t.check(line.contains("%d Night Watch" % w) and line.contains("%d runners" % (8 - w)) and line.contains("%d home to win" % expect_home[w]), "summary: " + line)
 			# the map first (two maps), then the rounds
 			var rounds_txt := "Single round" if r == 1 else "%d rounds" % r
-			t.check(line.begins_with("%s · %s" % [CampusMaps.title(CampusMaps.DEFAULT_ID), rounds_txt]), "map, then rounds in the summary: " + line)
+			t.check(line.begins_with("%s · %s" % [CampusMaps.title(CampusMaps.PLAY_DEFAULT), rounds_txt]), "map, then rounds in the summary: " + line)
 	t.eq([base.patrol_slots, base.runner_slots, base.runners_needed], before, "the global default is never modified")
 	for bad in [{"watch": 0, "rounds": 3}, {"watch": 4, "rounds": 3}, {"watch": 2, "rounds": 2}, {"watch": "2", "rounds": 3}, {}, "x"]:
 		t.check(PartySeries.sanitize_settings(bad).is_empty(), "rejected: %s" % str(bad))

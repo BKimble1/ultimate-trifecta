@@ -7,7 +7,7 @@ extends RefCounted
 var t
 
 const RULES := {
-	"match_duration_s": 240.0, "start_countdown_s": 3.0, "role_reveal_s": 4.0, "runner_head_start_s": 6.0,
+	"match_duration_s": 240.0, "start_countdown_s": 3.0, "role_reveal_s": 4.0, "runner_head_start_s": 0.0,
 	"runner_slots": 6, "patrol_slots": 2, "targets_per_match": 3,
 	"capture_penalty_s": 6.0, "respawn_protect_s": 2.0, "bump_protect_s": 1.0, "stumble_s": 0.55,
 	"splash_marker_s": 3.0, "splash_sequence_s": 1.5,

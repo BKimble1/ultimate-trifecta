@@ -60,7 +60,7 @@ Two things decide which text applies:
 >
 > MAKE IT YOURS
 > • Create your runner: outfits, colours, faces, hair, hats, shoes and a ready move.
-> • Season 1 · After Hours: a 100-tier Season Pass earned by playing online rounds, with a Premium track and two signature outfits at tiers 50 and 100.
+> • Season 1 · Winter Break: a 100-tier Season Pass earned by playing online rounds, with a Premium track and two signature outfits at tiers 50 and 100.
 > • Daily and weekly challenges that add Season XP.
 > • A Shop with rotating outfits, permanent favourites and Coin packs.
 >

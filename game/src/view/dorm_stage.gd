@@ -249,6 +249,8 @@ func _process(delta: float) -> void:
 			if sv != null and is_instance_valid(sv):
 				var right := cam.global_transform.basis.x if cam else Vector3.RIGHT
 				(sl as Label3D).global_position = (sv as Node3D).global_position + Vector3(0, 1.3, 0) + right * 0.78
+	if HolidayDecor.ENABLED and not reduced_motion:
+		HolidayDecor.animate(self, _t)
 	if mode == "walk" and _cam_t >= 1.0:
 		_follow(delta)
 	if not _preview.is_empty():
@@ -584,6 +586,9 @@ const WOOD := 0.9
 const FABRIC := 0.8
 const PAPER := 0.7
 const GLOSS := 0.6
+## the armchair by the lamp (HubRoom keeps the same spot as an obstacle)
+## (Season 1: a step right of its 2.1 spot, 2.85/-2.35, to make room for the tree)
+const ARMCHAIR := Vector3(3.05, 0.0, -2.2)
 
 
 func _build_room() -> void:
@@ -744,20 +749,27 @@ func _build_room() -> void:
 	k.chamfer_box(Vector3(-1.9, 0.33, -2.1), Vector3(0.45, 0.06, 0.45), Color("f4f2ec"), 0.01, 0.3)
 	k.cylinder(Vector3(-2.1, 0.3, -2.2), 0.08, 0.28, Color("e9e2d2", GLOSS), 18)
 	k.cylinder(Vector3(-2.1, 0.56, -2.2), 0.16, 0.2, Color("ffd9a0"), 20, 1.3, true, 0.1)
-	k.box(Vector3(2.4, 2.45, -3.45), Vector3(0.9, 1.2, 0.03), Color("ffc668", GLOSS), 0.0, 0.0)
-	k.blob(Vector3(2.4, 2.62, -3.43), Vector3(0.24, 0.24, 0.01), Color("6fd8cc"), 6, 20)
-	k.box(Vector3(2.4, 2.1, -3.43), Vector3(0.62, 0.08, 0.01), Color("11192b"))
-	k.box(Vector3(2.4, 1.98, -3.43), Vector3(0.44, 0.05, 0.01), Color("11192b"))
+	if not HolidayDecor.ENABLED:
+		# (the year-round poster; Season 1 hangs a wreath there instead)
+		k.box(Vector3(2.4, 2.45, -3.45), Vector3(0.9, 1.2, 0.03), Color("ffc668", GLOSS), 0.0, 0.0)
+		k.blob(Vector3(2.4, 2.62, -3.43), Vector3(0.24, 0.24, 0.01), Color("6fd8cc"), 6, 20)
+		k.box(Vector3(2.4, 2.1, -3.43), Vector3(0.62, 0.08, 0.01), Color("11192b"))
+		k.box(Vector3(2.4, 1.98, -3.43), Vector3(0.44, 0.05, 0.01), Color("11192b"))
 	k.box(Vector3(-5.96, 2.45, 0.2), Vector3(0.03, 1.05, 0.8), Color("6fd8cc"))
 	k.box(Vector3(-5.94, 2.45, 0.2), Vector3(0.01, 0.65, 0.5), Color("f4f2ec"))
-	for i in 22:
-		var x := -5.6 + 0.52 * float(i)
-		k.blob(Vector3(x, 3.95 - 0.16 * absf(sin(float(i) * 0.8)), -3.38), Vector3(0.05, 0.06, 0.05),
-			[Color("ffc668"), Color("ff8f8f"), Color("6fd8cc")][i % 3], 2, 5, 2.4)
-	_armchair(k, Vector3(2.85, 0.0, -2.35), -0.55, Color("c46a52", FABRIC), wood_d)
+	if not HolidayDecor.ENABLED:
+		# (year-round string lights; Season 1 has twinkling ones: HolidayDecor)
+		for i in 22:
+			var x := -5.6 + 0.52 * float(i)
+			k.blob(Vector3(x, 3.95 - 0.16 * absf(sin(float(i) * 0.8)), -3.38), Vector3(0.05, 0.06, 0.05),
+				[Color("ffc668"), Color("ff8f8f"), Color("6fd8cc")][i % 3], 2, 5, 2.4)
+	# (Season 1: a step right, to make room for the tree)
+	_armchair(k, ARMCHAIR, -0.55, Color("c46a52", FABRIC), wood_d)
 	# floor cushions by the couch
 	k.soft_blob(Vector3(-2.1, 0.13, -1.55), Vector3(0.42, 0.14, 0.42), Color("f1c75b", FABRIC), 5, 14)
 	k.soft_blob(Vector3(-1.55, 0.12, -1.85), Vector3(0.36, 0.12, 0.36), Color("9a7bd8", FABRIC), 5, 14)
+	if HolidayDecor.ENABLED:
+		HolidayDecor.build_solid(k, wx)
 	var mi := MeshInstance3D.new()
 	mi.mesh = k.commit()
 	var m := ShaderMaterial.new()
@@ -765,6 +777,8 @@ func _build_room() -> void:
 	mi.material_override = m
 	add_child(mi)
 	_build_view(wx)
+	if HolidayDecor.ENABLED:
+		HolidayDecor.build_lights(self, wx, reduced_motion)
 	# warm lamp light on the floor and the wall behind it, the table lamp's
 	# glow, and the window's cool moonlight across the floor
 	_light_pool(Vector3(3.6, 0.03, -1.6), Vector2(4.4, 4.0), Color(1.0, 0.72, 0.42), 0.16, 0.0)
@@ -836,7 +850,10 @@ func _build_view(wx: float) -> void:
 		var shade := roof.lerp(Color("18264a"), rng.randf())
 		v.box(Vector3(x + w * 0.5, h * 0.5 - 0.5, z), Vector3(w, h + 1.0, 0.4), shade)
 		# a pitched roof
-		v.tri_n(Vector3(x, h, z + 0.21), Vector3(x + w, h, z + 0.21), Vector3(x + w * 0.5, h + w * 0.28, z + 0.21), up, up, up, shade, shade, shade)
+		var roof_c := shade
+		if HolidayDecor.ENABLED:
+			roof_c = Color("6f81ab").lerp(Color("8d9dc4"), rng.randf())   # snow on the roofs, by moonlight
+		v.tri_n(Vector3(x, h, z + 0.21), Vector3(x + w, h, z + 0.21), Vector3(x + w * 0.5, h + w * 0.28, z + 0.21), up, up, up, roof_c, roof_c, shade.lerp(roof_c, 0.5))
 		for row in 3:
 			for wi in int(w / 0.45):
 				if rng.randf() < 0.22:
@@ -852,9 +869,12 @@ func _build_view(wx: float) -> void:
 	for i in 9:
 		var tx2 := -6.5 + 1.6 * float(i) + rng.randf_range(-0.4, 0.4)
 		var r := rng.randf_range(0.8, 1.3)
-		v.blob(Vector3(tx2, 0.6 + r * 0.5, z_sky + 6.5 + rng.randf_range(0.0, 2.0)), Vector3(r, r * 1.1, r * 0.6), Color("0d1d2c").lerp(Color("132a35"), rng.randf()), 5, 10)
-	# lawn below the window line
-	v.box(Vector3(0, -0.6, -8.5), Vector3(28, 0.2, 15), Color("0e1a26"))
+		var tz2 := z_sky + 6.5 + rng.randf_range(0.0, 2.0)
+		v.blob(Vector3(tx2, 0.6 + r * 0.5, tz2), Vector3(r, r * 1.1, r * 0.6), Color("0d1d2c").lerp(Color("132a35"), rng.randf()), 5, 10)
+		if HolidayDecor.ENABLED:
+			v.blob(Vector3(tx2, 0.6 + r * 1.2, tz2 + 0.1), Vector3(r * 0.7, r * 0.32, r * 0.5), Color("5d6f99"), 4, 9)
+	# lawn below the window line (Season 1: under snow)
+	v.box(Vector3(0, -0.6, -8.5), Vector3(28, 0.2, 15), Color("4a5a82") if HolidayDecor.ENABLED else Color("0e1a26"))
 	var mi := MeshInstance3D.new()
 	mi.mesh = v.commit()
 	var mat := StandardMaterial3D.new()

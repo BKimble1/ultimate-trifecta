@@ -600,7 +600,7 @@ func _prep_sim() -> void:
 		sim.setup(cfg, layout, start["roster"], int(start["seed"]), targets, String(start["match_id"]),
 			{"practice": bool(start.get("practice", false)), "tutorial": bool(start.get("tutorial", false)),
 			"gentle_bots": String(start.get("training", "")) == "watch",
-			"patrol_release_extra_s": 24.0 if bool(start.get("tutorial", false)) else 0.0,
+			"patrol_release_extra_s": 30.0 if bool(start.get("tutorial", false)) else 0.0,
 			"dorm": home_dorm, "spawns": _spawn_map(), "coins": start.get("coins", []), "collision_bodies": _take_bodies(),
 			"bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p)})
 		session.attach_sim(sim)

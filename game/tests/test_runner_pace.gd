@@ -299,7 +299,7 @@ func test_snapshot_block_is_runners_only_and_positionless() -> void:
 	t.eq((ws["me"]["pace"] as Dictionary).size(), 0, "the Night Watch gets no pace")
 	t.eq(int(ws["me"]["next_goal"]), RunnerPace.NO_GOAL, "and no runner's goal")
 	t.check(data.size() < 1000, "the snapshot still fits one packet (%d bytes)" % data.size())
-	t.eq(Protocol.VERSION, 10, "protocol 10 (Pass 9 steady movement; the Pass 8 pace block kept; 24-bit positions; the map in the lobby and START)")
+	t.eq(Protocol.VERSION, 11, "protocol 11 (2.2: Night Watch at GO; Pass 9 steady movement; the Pass 8 pace block kept; 24-bit positions; the map in the lobby and START)")
 	h.free_sim()
 
 

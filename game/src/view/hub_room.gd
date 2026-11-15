@@ -21,7 +21,8 @@ const BOXES := [
 ## circles: [x, z, r]
 const CIRCLES := [
 	[3.9, -1.9, 0.3],             # floor lamp
-	[2.85, -2.35, 0.68],          # armchair
+	[DormStage.ARMCHAIR.x, DormStage.ARMCHAIR.z, 0.68],   # armchair
+	[1.5, -2.4, 0.95],            # Season 1: the tree and its presents
 	[-5.3, 1.6, 0.42],            # plant
 	[4.0, 1.1, 0.72],             # beanbag
 ]

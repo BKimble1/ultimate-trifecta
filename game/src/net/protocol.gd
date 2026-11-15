@@ -40,7 +40,12 @@ extends RefCounted
 ## the round configuration the map's revision ({"map": {id, data, dorms}},
 ## replacing "campus"); a guest without that map data refuses the round
 ## before loading.  A 9 and a 10 game refuse each other at join.
-const VERSION := 10
+## Protocol 11 (2.2): no message changes; the round's rules differ (the
+## Night Watch leaves the shed at GO: runner_head_start_s 0, which guests
+## predict with their own rules), only Moonbrook College is playable, and
+## the party room's walk-around obstacles moved (the Season 1 tree), so a 10
+## and an 11 game refuse each other at join ("Update the game to join.").
+const VERSION := 11
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}

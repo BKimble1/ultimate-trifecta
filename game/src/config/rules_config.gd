@@ -8,7 +8,10 @@ extends Resource
 @export var match_duration_s: float = 240.0
 @export var start_countdown_s: float = 3.0
 @export var role_reveal_s: float = 4.0
-@export var runner_head_start_s: float = 6.0
+## 2.2: 0 — the Night Watch leaves the Grounds Shed at GO, together with the
+## runners (1.0–2.1 held it 6 s).  The guided tutorial adds its own wait
+## (MatchController: patrol_release_extra_s).
+@export var runner_head_start_s: float = 0.0
 @export var runner_slots: int = 6
 @export var patrol_slots: int = 2
 @export var runners_needed: int = 4

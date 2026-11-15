@@ -42,7 +42,7 @@ var _recorded: Dictionary = {}    # match_id -> true
 # Settings
 # ---------------------------------------------------------------------------
 static func default_settings() -> Dictionary:
-	return {"watch": DEFAULT_WATCH, "rounds": DEFAULT_ROUNDS, "rev": 0, "map": CampusMaps.DEFAULT_ID}
+	return {"watch": DEFAULT_WATCH, "rounds": DEFAULT_ROUNDS, "rev": 0, "map": CampusMaps.PLAY_DEFAULT}
 
 
 ## A checked copy, or {} when anything is outside the allowed choices.  The
@@ -59,10 +59,10 @@ static func sanitize_settings(d: Variant) -> Dictionary:
 		return {}
 	if not WATCH_CHOICES.has(int(w)) or not ROUND_CHOICES.has(int(r)):
 		return {}
-	var m: Variant = d.get("map", CampusMaps.DEFAULT_ID)
-	var ms := String(m).substr(0, 32) if (m is String or m is StringName) else CampusMaps.DEFAULT_ID
+	var m: Variant = d.get("map", CampusMaps.PLAY_DEFAULT)
+	var ms := String(m).substr(0, 32) if (m is String or m is StringName) else CampusMaps.PLAY_DEFAULT
 	if ms == "" or not ms.is_valid_identifier():
-		ms = CampusMaps.DEFAULT_ID
+		ms = CampusMaps.PLAY_DEFAULT
 	return {"watch": int(w), "rounds": int(r), "rev": clampi(int(d.get("rev", 0)), 0, 65535), "map": ms}
 
 
@@ -84,7 +84,7 @@ static func summary(s: Dictionary) -> String:
 ## The settings' map as players see it ("Unknown map" for an id this build
 ## doesn't have: the host's game is newer).
 static func map_title(s: Dictionary) -> String:
-	var id := String(s.get("map", CampusMaps.DEFAULT_ID))
+	var id := String(s.get("map", CampusMaps.PLAY_DEFAULT))
 	return CampusMaps.title(id) if CampusMaps.has(id) else "Unknown map"
 
 

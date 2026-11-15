@@ -1,4 +1,8 @@
-# Trifecta Chase: implemented rules (V4, V6 dorms and coins)
+# Trifecta Chase: implemented rules (V4, V6 dorms and coins, 2.2)
+
+**2.2:** the Night Watch starts at GO with the runners (no head start), and
+Moonbrook College is the playable map (Lakeside Campus is shown as Coming
+soon). Protocol 11.
 
 All values come from one resource, `game/config/rules_default.tres` (`RulesConfig`, `game/src/config/rules_config.gd`). The party's settings derive each round's own copy (`PartySeries.rules_for`), which the simulation, bots, HUD, tutorial, How to Play and results all read; the global default is never changed while a round uses it. The authority is `MatchSim` (`game/src/sim/match_sim.gd`), which runs on the room host, or locally in practice.
 
@@ -45,7 +49,7 @@ All values come from one resource, `game/config/rules_default.tres` (`RulesConfi
 | Roles | Shown before play, inside the home dorm: a 4 s role-reveal card naming tonight's dorm (with "Round x of y"), then a 3 s shared countdown. Nobody can tag or be tagged during the reveal or the countdown (the simulation runs no intents before GO). |
 | Start | Runners stand on their own pads inside the home dorm's common room, facing one of its three doors, and run out at GO. The Night Watch starts outdoors at the Grounds Shed. |
 | Clock | 240 s round clock starts after the countdown. Server ticks (60 Hz) drive the countdown, penalties and deadline. |
-| Head start | The Night Watch waits 6 s at the Grounds Shed inside the round clock (30 s in the tutorial). |
+| Head start | None since 2.2: the Night Watch leaves the Grounds Shed at GO, together with the runners (1.0–2.1 held it 6 s). The guided tutorial still holds it 30 s. Measured outcome-neutral on Moonbrook College in seeded bot rounds (docs/release22/README.md). |
 | Targets | 3 distinct waters out of 6, the same for every runner, from a curated fair set, avoiding an immediate repeat. Targets never move or reroll. |
 | Order | Any order, chosen by each runner. |
 | Stamp | Entering an active target's water volume (jump, dive or walk in) awards that target's stamp once. |

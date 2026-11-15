@@ -27,6 +27,25 @@ them on foot and in golf carts, over a series of one, three or five rounds.
 | [docs/V2_NOTES.md](docs/V2_NOTES.md) | V2 implementation notes: render path, motion pipeline, touch rules, theme |
 | [tools/character/README.md](tools/character/README.md) | How the character asset is built |
 
+## What's new in 2.2 (Season 1 · Winter Break, final pass)
+
+Details, measurements and screenshots: [docs/release22/README.md](docs/release22/README.md).
+
+- **A holiday dorm:** a decorated tree with ornaments, twinkling fairy lights
+  and a star, wrapped presents under it, a wreath, a garland and string
+  lights along the walls, and snow falling past the window (`HolidayDecor`;
+  steady lights with Reduced Motion; one switch turns it off after the
+  season).
+- **Season 1 is "Winter Break"** (same 100 tiers, rewards and ids). Home has
+  a Season card above Play with Friends (tier, Season XP to the next tier,
+  rewards to claim; tap for the Season Pass), the pass shows the season's
+  snowflake, and Premium rewards sit on a clearly gold row.
+- **The Night Watch starts at GO**, together with the runners (no 6 s head
+  start). Seeded bot rounds show the outcome unchanged.
+- **Lakeside Campus is Coming soon:** shown in the map chooser with its
+  preview, not playable yet. Moonbrook College is the map.
+- **Protocol 11:** 2.1 and 2.2 refuse each other at join.
+
 ## What's new in V5 (version 1.4)
 
 V5 answers the owner's feedback on 1.3 (unfinished-looking loading,
@@ -154,7 +173,7 @@ V4 answers the owner's first iPhone playtest. Details and evidence are in [docs/
 ## Core game (since V1)
 
 - **Main mode, Trifecta Chase:** a 6-runner vs 2-Night-Watch round. Every round picks three shared target waters, and four runners home wins. Both roles are playable.
-- **Two maps:** Lakeside Campus (the default, at real scale on measured ground) and Moonbrook College (the 2.0 campus, restored). The party host picks one for the series; Practice remembers its own choice ([docs/maps/README.md](docs/maps/README.md)).
+- **Maps:** Moonbrook College (the 2.0 campus) is the playable map; Lakeside Campus (at real scale on measured ground) is shown as Coming soon (2.2). The party host picks the map for the series; Practice remembers its own choice ([docs/maps/README.md](docs/maps/README.md)).
 - **Online private rooms:** up to eight humans.
   - Create a room and get a 5-character code; others join with the code over the internet through Game Center matchmaking.
   - You can also invite Game Center friends.

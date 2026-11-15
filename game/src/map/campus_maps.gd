@@ -21,8 +21,13 @@ extends RefCounted
 
 const CLASSIC := "classic"
 const CAMPUS := "reference_campus"
-## a new player, or a tester coming from the campus rebuild, starts here
+## the map the data tools and tests treat as "the campus" (CampusData.shared,
+## CampusLayout.shared); not what players are offered
 const DEFAULT_ID := CAMPUS
+## (2.2) what players play: Lakeside Campus is shown as "Coming soon" in the
+## chooser (its preview and outline stay visible) but can't be picked, so a
+## party, practice and every saved choice resolve to Moonbrook College
+const PLAY_DEFAULT := CLASSIC
 
 const DEFS := {
 	CLASSIC: {
@@ -34,7 +39,7 @@ const DEFS := {
 		"preview": "res://assets/maps/preview_classic.png",
 	},
 	CAMPUS: {
-		"title": "Lakeside Campus", "tag": "New",
+		"title": "Lakeside Campus", "tag": "New", "soon": true,
 		"blurb": "A big lakeside campus with woods, ponds, hills and long runs between the waters.",
 		"data": "res://data/campus/", "bounds": Rect2(-720.0, -560.0, 1190.0, 1000.0), "nav_cell": 2.0, "mini_span": 130.0,
 		"look": "campus", "routes": "res://config/route_table.json",
@@ -68,6 +73,24 @@ static func has(id: String) -> bool:
 static func sanitize(id: Variant) -> String:
 	var s := String(id) if id is String or id is StringName else ""
 	return s if DEFS.has(s) else DEFAULT_ID
+
+
+## Whether players may pick and play this map (a known map that isn't marked
+## "Coming soon").
+static func playable(id: Variant) -> bool:
+	var s := String(id) if id is String or id is StringName else ""
+	return DEFS.has(s) and not bool(DEFS[s].get("soon", false))
+
+
+## Whether the chooser shows this map as "Coming soon".
+static func coming_soon(id: String) -> bool:
+	return DEFS.has(id) and bool(DEFS[id].get("soon", false))
+
+
+## A map players may play, or the playable default (old saves that chose a
+## map that is now "Coming soon", a missing value).
+static func sanitize_play(id: Variant) -> String:
+	return String(id) if playable(id) else PLAY_DEFAULT
 
 
 static func def(id: String) -> Dictionary:

@@ -92,6 +92,8 @@ func build() -> void:
 		pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		pill.add_child(hint)
 		col.add_child(pill)
+	# (2.2) Season 1 · Winter Break: tier and progress, one tap to the pass
+	col.add_child(SeasonCard.make(400.0))
 	play_btn = UIKit.primary("Play with Friends", Vector2(400, 100), 31)
 	play_btn.pressed.connect(func() -> void: App.goto(OnlineScreen))
 	col.add_child(play_btn)

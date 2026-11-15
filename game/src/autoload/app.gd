@@ -498,7 +498,7 @@ func start_practice(role: String, tutorial: bool) -> void:
 func practice_map() -> String:
 	if dev_map != "":
 		return CampusMaps.sanitize(dev_map)
-	return CampusMaps.sanitize(Save.get_setting("practice_map", CampusMaps.DEFAULT_ID))
+	return CampusMaps.sanitize_play(Save.get_setting("practice_map", CampusMaps.PLAY_DEFAULT))
 
 
 # ---------------------------------------------------------------------------
@@ -712,7 +712,7 @@ func _begin_session(mode: int, t: NetTransport, code: String) -> void:
 	if mode == NetSession.Mode.HOST:
 		session.start_host(t, code, Save.player_uid(), Save.party_name(), Save.data["cosmetic"], pref)
 		# the host's last party map, until they change it between series
-		session.settings["map"] = CampusMaps.sanitize(Save.get_setting("party_map", CampusMaps.DEFAULT_ID))
+		session.settings["map"] = CampusMaps.sanitize_play(Save.get_setting("party_map", CampusMaps.PLAY_DEFAULT))
 	else:
 		session.start_client(t, code, Save.player_uid(), Save.party_name(), Save.data["cosmetic"], pref)
 		session.rejoin_key = Save.rejoin_key_for(code)

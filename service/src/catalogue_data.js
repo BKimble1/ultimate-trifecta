@@ -312,8 +312,8 @@ export default {
    "kind": "season_premium",
    "season": "s1",
    "price": 1500,
-   "name": "Season 1 · After Hours Premium",
-   "blurb": "Unlocks the Premium track of Season 1 · After Hours for this season, permanently. Every Premium reward you have already earned becomes claimable at once. It never changes speed, reach, stealth or score, it isn't a subscription, and it doesn't skip tiers."
+   "name": "Season 1 · Winter Break Premium",
+   "blurb": "Unlocks the Premium track of Season 1 · Winter Break for this season, permanently. Every Premium reward you have already earned becomes claimable at once. It never changes speed, reach, stealth or score, it isn't a subscription, and it doesn't skip tiers."
   },
   {
    "id": "outfit:after_hours_hoodie",
@@ -721,7 +721,7 @@ export default {
  "seasons": {
   "s1": {
    "number": 1,
-   "name": "After Hours",
+   "name": "Winter Break",
    "premium_item": "season:s1:premium",
    "starts_at": null,
    "ends_at": null,
