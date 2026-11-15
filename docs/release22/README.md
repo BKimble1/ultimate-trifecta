@@ -93,6 +93,13 @@ UDP soak (host + 3 clients, 60 ms ± 10 ms, 3 % loss, two rounds) is in
 
 ## 6. Sweep notes
 
+- CI's full suite caught one real layout bug: with Moonbrook College as
+  the map, the party room's settings row ("Moonbrook College · 3 rounds ·
+  …") was a point wider than the safe area on iPhone SE and iPad, pushing
+  the roster and Start past it. The chip now uses the short name
+  ("Moonbrook"). Full suite after the fixes: 585 tests, 359,610 checks,
+  0 failures (local and CI).
+
 - Rendered desktop runs log "Too many instances using shader instance
   variables… Maximum items supported by this hardware is: 4096". That cap
   is llvmpipe's 64 KB uniform buffer; Godot 4.7's Metal driver reports the
@@ -101,7 +108,18 @@ UDP soak (host + 3 clients, 60 ms ± 10 ms, 3 % loss, two rounds) is in
 - A route test can rewrite `config/route_bot_times.json` (Lakeside timings)
   when its measured times drift; the file was restored, not changed.
 
-## 7. What 2.2 still needs from the owner
+## 7. Build lane: the Game Center/StoreKit plugin
+
+The first 2.2 CI run stopped at "Fetch pinned plugins": upstream
+GodotApplePlugins deleted its `build-<sha>` releases and tags after 2.1, so
+the pinned asset answers 404 and no iOS build could be exported. The pinned
+commit (`bfade13`, 2026-09-02) still exists, so `tools/fetch_deps.sh` now
+builds exactly that commit from source on macOS with upstream's own release
+recipe (two `make split-build` passes, `make split-dist`, unsigned),
+verified by commit hash. CI caches the result by commit. Same plugin
+version as 1.6–2.1; nothing in the game's use of it changed.
+
+## 8. What 2.2 still needs from the owner
 
 Purchases, Coins, Season XP and rewards, challenges and Friends status run
 through the game service, which still isn't deployed, and the eight App
