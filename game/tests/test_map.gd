@@ -7,6 +7,9 @@ var t
 
 
 func test_bake_and_overlay_share_the_transform() -> void:
+	# the map under test (an earlier suite's round may have left the minimap
+	# on Moonbrook College, the 2.2 playable map)
+	CampusMap.use(CampusLayout.shared())
 	var b := CampusLayout.shared().bounds
 	var c := Vector2(300, 260)
 	var half := 240.0
