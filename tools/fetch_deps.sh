@@ -33,7 +33,14 @@ build_from_source() {
   echo "Building GodotApplePlugins $GAP_BUILD from source (upstream release recipe, unsigned)"
   (
     cd "$src"
-    export XCODEBUILD_SETTINGS="CODE_SIGNING_ALLOWED=NO OTHER_LDFLAGS=-Wl,-headerpad_max_install_names"
+    # SwiftGodot ships a Swift macro: Xcode refuses an un-trusted macro or
+    # package plugin unless told to skip the check (upstream's own Mac had
+    # them trusted).  The defaults are written only on a throwaway CI runner.
+    if [ -n "${CI:-}" ]; then
+      defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
+      defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES
+    fi
+    export XCODEBUILD_SETTINGS="-skipMacroValidation -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO OTHER_LDFLAGS=-Wl,-headerpad_max_install_names"
     export XCODEBUILD_LOG_ON_ERROR=1
     make split-build DESTINATIONS="generic/platform=iOS generic/platform=iOS\ Simulator platform=macOS,arch=arm64"
     make split-build DESTINATIONS="platform=macOS,arch=x86_64"
