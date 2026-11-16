@@ -2116,6 +2116,12 @@ class MapPainter:
 			if not joined:
 				groups.append({"kind": "team", "pos": mp, "names": [String(hud.mc.roster[slot]["name"])], "slots": [int(slot)], "role": role})
 		out.append_array(groups)
+		# (2.2 build 16) open rifts, for everyone
+		var rifts_now: Array = hud.mc.sim.rifts if hud.mc.sim else hud.mc._me.get("rifts", [])
+		for rf in rifts_now:
+			if bool(rf["open"]):
+				var rw := Rifts.world(L, int(rf["at"]))
+				out.append({"kind": "rift", "pos": to_map.call(Vector2(rw.x, rw.z))})
 		if role == TC.Role.PATROL:
 			for i in hud.mc.cart_views.size():
 				var crs := hud.mc._cart_rs(i)
@@ -2260,6 +2266,11 @@ class MapPainter:
 						labels.append({"at": p, "text": String(names[0]) + ("  +%d" % (n - 1) if n > 1 else ""), "size": 15, "prio": 1, "col": Color(UIKit.IVORY, 0.9), "r": rr})
 				"cart":
 					Icons.draw_shape(ci, "cart", p, 11 if full else 6, UIKit.PATROL)
+				"rift":
+					# (2.2 build 16) an open rift: a violet swirl dot
+					var rr2 := 9.0 if full else 5.0
+					ci.draw_circle(p, rr2, Color(0.55, 0.35, 1.0, 0.9))
+					ci.draw_arc(p, rr2 + 2.0, 0, TAU, 20, Color(0.75, 0.95, 1.0, 0.9), 1.5, true)
 				"splash":
 					# a splash just happened there: a still ring that fades (no pulsing)
 					ci.draw_arc(p, (22.0 if full else 11.0), 0, TAU, 32, Color(1, 1, 1, 0.3 + 0.6 * float(it["left"])), 2.5 if full else 1.5, true)

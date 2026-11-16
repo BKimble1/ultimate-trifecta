@@ -374,6 +374,13 @@ static func encode_snapshot(sim: MatchSim, recipient: SimPlayer, relevant: Array
 		b.put_u8(mini(sim.pickups.size(), 16))
 		for i in mini(sim.pickups.size(), 16):
 			b.put_u8(int(sim.pickups[i].get("spot", i)))
+		# (2.2 build 16) the rifts: spot, far end, open
+		b.put_u8(mini(sim.rifts.size(), 8))
+		for i in mini(sim.rifts.size(), 8):
+			var rf: Dictionary = sim.rifts[i]
+			b.put_u8(int(rf["at"]))
+			b.put_u8(int(rf["to"]))
+			b.put_u8(1 if bool(rf["open"]) else 0)
 		# decoys + bombs visible near the recipient (presentation)
 		var fx: Array = []
 		for d in sim.decoys:
@@ -522,6 +529,10 @@ static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
 		for i in b.get_u8():
 			pspots.append(b.get_u8())
 		me["pickup_spots"] = pspots
+		var rfs: Array = []
+		for i in b.get_u8():
+			rfs.append({"at": b.get_u8(), "to": b.get_u8(), "open": b.get_u8() == 1})
+		me["rifts"] = rfs
 		var fx: Array = []
 		var nf := b.get_u8()
 		for i in nf:

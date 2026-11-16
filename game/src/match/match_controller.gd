@@ -1683,6 +1683,7 @@ func _process(delta: float) -> void:
 	_update_aim_ring()
 	_scan_seen(delta)
 	_update_pickups()
+	_update_rifts()
 	_update_home_and_coins()
 	Prof.add("mc_world", tp)
 	tp = Prof.t()
@@ -1923,6 +1924,21 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 			if ui and mine and _shake_cd <= 0.0:
 				_haptic(15)
 				_shake_cd = 0.6
+		TC.Ev.RIFT:
+			# (2.2 build 16) through a rift: out at its far end
+			var dest := Rifts.world(layout, int(ev["v"]))
+			if world:
+				Sfx.play("whoosh", pos, 2.0, 0.8)
+				Sfx.play("whoosh", dest, 0.0, 1.2)
+				fx.bump(dest)
+			if not ui:
+				return
+			if mine:
+				hud.toast("Through the rift!", Color(0.75, 0.6, 1.0))
+				_haptic(25)
+			else:
+				var rr: Dictionary = roster.get(a, {})
+				hud.feed("%s slipped through a rift" % rr.get("name", "Someone"), int(rr.get("role", TC.Role.RUNNER)))
 		TC.Ev.DAZE:
 			# (2.2 build 16) a Squeaky Duck tripped a Night Watch (or slowed a cart)
 			if world:
@@ -2194,6 +2210,37 @@ func _build_bushes() -> void:
 
 
 var _pickup_pool: Array = []
+## (2.2 build 16) rift portal views, one per rift slot
+var rift_views: Array = []
+
+
+func _update_rifts() -> void:
+	if not with_visuals:
+		return
+	var rs: Array = []
+	if sim:
+		rs = sim.rifts
+	else:
+		rs = _me.get("rifts", [])
+	while rift_views.size() < rs.size():
+		var v := RiftView.new()
+		v.reduced = reduced_motion
+		add_child(v)
+		rift_views.append(v)
+	for i in rift_views.size():
+		var v: RiftView = rift_views[i]
+		if i >= rs.size():
+			v.set_open(false)
+			continue
+		var rf: Dictionary = rs[i]
+		var want := Rifts.world(layout, int(rf["at"]))
+		if v.position.distance_to(want) > 0.5:
+			if v.is_shown() and bool(rf["open"]):
+				v.set_open(false)   # (collapses first; reopens here next frames)
+			if not v.is_shown():
+				v.position = want
+		else:
+			v.set_open(bool(rf["open"]))
 
 
 func _update_pickups() -> void:

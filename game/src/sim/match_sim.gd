@@ -40,6 +40,9 @@ var events: Array = []
 var event_seq: int = 0
 var pickups: Array = []
 var decoys: Array = []
+## (2.2 build 16) rift portals: [{at, to, open, wait}] (Rifts spot indices)
+var rifts: Array = []
+var _rift_rng := RandomNumberGenerator.new()
 var bombs: Array = []
 var splash_markers: Array = []
 var results: Dictionary = {}
@@ -140,6 +143,14 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 	for i in types.size():
 		var spot: Vector2 = layout.gadget_spots[i]
 		pickups.append({"pos": Vector3(spot.x, CampusBuilder.grid_y(layout, spot.x, spot.y), spot.y), "type": types[i], "respawn": 0.0, "spot": i})
+	# (2.2 build 16) the round's first rifts, from the seed
+	_rift_rng.seed = seed_v ^ 0x21f7
+	rifts.clear()
+	if bool(opts.get("rifts", true)):
+		for k in Rifts.COUNT:
+			var rf := Rifts.pick(layout, _rift_rng, _rift_used())
+			if not rf.is_empty():
+				rifts.append(rf)
 	if bool(opts.get("pace", true)):
 		pace = RunnerPace.new()
 		pace.setup(self)       # starts the route fields on a worker (PaceFields)
@@ -382,6 +393,7 @@ func step(inputs: Dictionary) -> void:
 			_resolve_tag(p)
 		_check_bumps()
 		_update_gadgets(dt)
+		_check_rifts(dt)
 		_check_coins()
 		for p in players:
 			_check_recover(p)
@@ -1022,6 +1034,52 @@ func _bomb_assist(from: Vector3, aim: Vector3) -> Vector3:
 			bd = d
 			best = c.pos() + c.forward() * c.speed * cfg.toss_flight_s
 	return best
+
+
+func _rift_used() -> Dictionary:
+	var used := {}
+	for rf in rifts:
+		used[int(rf["at"])] = true
+		used[int(rf["to"])] = true
+	return used
+
+
+## (2.2 build 16) Rifts: a player on foot who steps into an open one comes
+## out at its far end (facing the same way) and the rift closes; a closed
+## one is replaced by a new rift elsewhere after Rifts.REOPEN_S.
+func _check_rifts(dt: float) -> void:
+	for i in rifts.size():
+		var rf: Dictionary = rifts[i]
+		if not bool(rf["open"]):
+			rf["wait"] = float(rf["wait"]) - dt
+			if float(rf["wait"]) <= 0.0:
+				var used := _rift_used()
+				used.erase(int(rf["at"]))
+				used.erase(int(rf["to"]))
+				var nr := Rifts.pick(layout, _rift_rng, used)
+				if not nr.is_empty():
+					rifts[i] = nr
+			continue
+		var at := Rifts.world(layout, int(rf["at"]))
+		for p in players:
+			if p.state != TC.PState.ACTIVE and p.state != TC.PState.STUMBLE:
+				continue
+			var pp := p.pos()
+			if Vector2(pp.x - at.x, pp.z - at.z).length() > Rifts.RADIUS or absf(pp.y - at.y) > 1.6:
+				continue
+			var to := Rifts.world(layout, int(rf["to"]))
+			var out := to + Vector3(-sin(p.yaw), 0.0, -cos(p.yaw)) * 1.4 + Vector3(0, 0.1, 0)
+			p.body.global_position = out
+			p.body.velocity = Vector3.ZERO
+			p.vel = Vector3.ZERO
+			p.end_air_actions()
+			p.tag_phase = SimPlayer.TagPhase.NONE
+			p.clear_history()
+			p.prev_pos = Vector3.INF
+			rf["open"] = false
+			rf["wait"] = Rifts.REOPEN_S
+			_emit(TC.Ev.RIFT, p.id, -1, int(rf["to"]), at, i)
+			break
 
 
 ## (2.2 build 16) The Squeaky Duck lands: the Night Watch close to it trip
