@@ -223,7 +223,7 @@ func test_nav_tabs_fit_small_phone_and_ipad() -> void:
 	t.check(App.screen is ShopScreen, "Shop tab opens the Shop")
 	(App.screen.find_children("*", "NavShell", true, false)[0] as NavShell).buttons["play"].pressed.emit()
 	await _frames(3)
-	t.check(App.screen is TitleScreen, "Play returns to the hub")
+	t.check(App.screen is LobbyScreen, "Play returns to the hub (the home lobby)")
 	await _end()
 
 

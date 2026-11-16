@@ -621,6 +621,13 @@ func invite(tid: String) -> Dictionary:
 
 func _start_party() -> Dictionary:
 	var s: Variant = App.session
+	if App.is_solo_party():
+		# (2.2) your home party goes online, settings kept
+		if not await App.open_party():
+			return {"ok": false, "message": "Sign in to Game Center to invite friends."}
+		if App.screen is Screen:
+			FriendsPanel.open(App.screen as Screen)
+		return {"ok": true}
 	if s != null and is_instance_valid(s) and (s as NetSession).mode != NetSession.Mode.OFFLINE:
 		return {"ok": false, "message": "Your party is still starting. Try again in a moment."}
 	var err := {"m": ""}

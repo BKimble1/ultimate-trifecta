@@ -40,6 +40,10 @@ Commands:
                     ([{"productId", "inAppPurchaseType", "state"}], e.g. saved
                     from iap-list --json); `iap-diff -` reads it from stdin
   iap-list --json -> iap-list's existing products as that JSON (read only)
+  gc-leaderboards [--yes] -> (2.2) the Game Center leaderboards the game
+                    uses (game/src/core/rankings.gd): list them, and with --yes
+                    create the missing ones (recurring every 30 days from
+                    2026-11-01, en-US names).  Never deletes or changes one.
 Never prints the key. Requires: pip install pyjwt cryptography requests
 (only for the commands that call App Store Connect).
 """
@@ -223,6 +227,66 @@ def certs_prune(args):
     return 0
 
 
+# 2.2: Game Center leaderboards (game/src/core/rankings.gd keeps the same ids,
+# start date and 30-day period)
+LEADERBOARDS = [
+    {"vendorIdentifier": "ut.season_points", "referenceName": "Season Points", "defaultFormatter": "INTEGER",
+     "scoreSortType": "DESC", "scoreRangeStart": "0", "scoreRangeEnd": "100000", "name": "Season Points",
+     "suffix": " pts", "suffixSingular": " pt"},
+    {"vendorIdentifier": "ut.fastest_run", "referenceName": "Fastest Run", "defaultFormatter": "ELAPSED_TIME_CENTISECOND",
+     "scoreSortType": "ASC", "scoreRangeStart": "5000", "scoreRangeEnd": "100000", "name": "Fastest Run",
+     "suffix": "", "suffixSingular": ""},
+]
+LB_START = "2026-11-01T00:00:00Z"
+
+
+def gc_leaderboards(app_id, create):
+    r = call("GET", f"/apps/{app_id}/gameCenterDetail")
+    detail = r.json().get("data") if r.ok else None
+    if not detail:
+        if not create:
+            print("no Game Center record for the app yet (gc-leaderboards --yes creates it)")
+            return 0
+        body = {"data": {"type": "gameCenterDetails", "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}}
+        r = call("POST", "/gameCenterDetails", data=json.dumps(body))
+        if not r.ok:
+            print("could not create the app's Game Center record (HTTP %d)" % r.status_code)
+            return 1
+        detail = r.json()["data"]
+    did = detail["id"]
+    r = call("GET", f"/gameCenterDetails/{did}/gameCenterLeaderboards", params={"limit": 200})
+    have = {l["attributes"].get("vendorIdentifier"): l for l in (r.json().get("data", []) if r.ok else [])}
+    for lb in LEADERBOARDS:
+        v = lb["vendorIdentifier"]
+        if v in have:
+            at = have[v]["attributes"]
+            print("%-20s present  (%s, %s, recurrence %s from %s)" % (v, at.get("defaultFormatter"), at.get("scoreSortType"),
+                  at.get("recurrenceDuration"), (at.get("recurrenceStartDate") or "")[:10]))
+            continue
+        if not create:
+            print("%-20s MISSING" % v)
+            continue
+        attrs = {k: lb[k] for k in ("vendorIdentifier", "referenceName", "defaultFormatter", "scoreSortType", "scoreRangeStart", "scoreRangeEnd")}
+        attrs.update({"submissionType": "BEST_SCORE", "recurrenceStartDate": LB_START, "recurrenceDuration": "P30D",
+                      "recurrenceRule": "FREQ=DAILY;INTERVAL=30"})
+        body = {"data": {"type": "gameCenterLeaderboards", "attributes": attrs,
+                         "relationships": {"gameCenterDetail": {"data": {"type": "gameCenterDetails", "id": did}}}}}
+        r = call("POST", "/gameCenterLeaderboards", data=json.dumps(body))
+        if not r.ok:
+            print("could not create %s (HTTP %d)" % (v, r.status_code))
+            return 1
+        lid = r.json()["data"]["id"]
+        loc = {"locale": "en-US", "name": lb["name"]}
+        if lb["suffix"]:
+            loc["formatterSuffix"] = lb["suffix"]
+            loc["formatterSuffixSingular"] = lb["suffixSingular"]
+        body = {"data": {"type": "gameCenterLeaderboardLocalizations", "attributes": loc,
+                         "relationships": {"gameCenterLeaderboard": {"data": {"type": "gameCenterLeaderboards", "id": lid}}}}}
+        rl = call("POST", "/gameCenterLeaderboardLocalizations", data=json.dumps(body))
+        print("created %s (%s)%s" % (v, lid, "" if rl.ok else ", localization FAILED (HTTP %d)" % rl.status_code))
+    return 0
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "app"
     if cmd == "iap-plan":
@@ -342,6 +406,8 @@ def main():
                                  for l in rl.json().get("data", [])}
         print(json.dumps(out))
         return 0
+    if cmd == "gc-leaderboards":
+        return gc_leaderboards(a["id"], "--yes" in sys.argv)
     if cmd in ("iap-list", "iap-create"):
         have = iap_existing(a["id"])
         if have is None:

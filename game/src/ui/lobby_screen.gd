@@ -52,6 +52,24 @@ var bottom_bar: Control
 var _chat_dot: PanelContainer
 var _drawer: ChatDrawer
 var _known: Dictionary = {}      # uid -> shown name (join / leave notes)
+# 2.2: home is the party lobby
+var back_btn: Button
+var copy_btn: Button
+var share_btn: Button
+var code_title: Label
+var mode_btn: Button
+var mode_title: Label
+var mode_sub: Label
+var rank_btn: Button
+var season_card: Button
+
+## Playlists (2.2).  Alone in your party you pick one; with friends in it
+## the party plays together (the host's settings).
+const MODES := {
+	"quick": ["Quick Match", "Random players + bots", "bolt"],
+	"bots": ["Party vs Bots", "Your map and rounds", "bot"],
+	"practice": ["Practice", "Offline · pick your role", "flag"],
+}
 var _bubbled := 0                # newest chat sequence shown as a bubble
 
 
@@ -60,7 +78,22 @@ func build() -> void:
 		if hub != null and hub.walking:
 			_set_walk(false)   # Back first returns to the menu
 			return
+		if _solo():
+			return   # (2.2) home: there is nothing to leave
 		UIKit.v7_back_chooses(self, dialog("Leave this party?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]]))
+	App.quick_changed.connect(_refresh)
+	# (2.2) home is the party: a look changed in the Locker or Season Pass
+	# since the party began shows on your runner (and to friends) here
+	if session.local_slot >= 0 and session.roster[session.local_slot] != null \
+			and Cosmetics.sanitize(session.roster[session.local_slot]["cosmetic"]) != Cosmetics.sanitize(Save.data["cosmetic"]):
+		session.set_local_cosmetic(Save.data["cosmetic"])
+	var qt := Timer.new()
+	qt.wait_time = 1.0
+	qt.timeout.connect(func() -> void:
+		if App.quick_searching:
+			_refresh())
+	add_child(qt)
+	qt.start()
 	Diag.context("lobby")
 	if App.stage:
 		App.stage.set_mode("lobby")
@@ -76,10 +109,12 @@ func build() -> void:
 	back.accessibility_name = "Leave party"
 	back.pressed.connect(_go_back)
 	top.add_child(back)
+	back_btn = back
 	var code_card := UIKit.panel(Color(UIKit.SLATE, 0.94), UIKit.R_CARD, 18)
 	code_card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var cv := UIKit.vbox(0)
-	cv.add_child(UIKit.styled("Party code", "overline", UIKit.IVORY_MUTED))
+	code_title = UIKit.styled("Party code", "overline", UIKit.IVORY_MUTED)
+	cv.add_child(code_title)
 	code_lbl = UIKit.styled("", "num", UIKit.AMBER)
 	code_lbl.add_theme_font_override("font", UIKit.font_num(800))
 	code_lbl.add_theme_font_size_override("font_size", 30)
@@ -94,14 +129,20 @@ func build() -> void:
 		DisplayServer.clipboard_set(session.room_code)
 		UIKit.toast(self, "Code %s copied" % session.room_code))
 	top.add_child(copy)
+	copy_btn = copy
 	var share := UIKit.icon_button("share")
 	share.tooltip_text = "Share party code"
 	share.accessibility_name = "Share party code"
 	share.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	share.pressed.connect(func() -> void:
-		if not Share.share_text(Share.party_message(session.room_code)):
-			UIKit.toast(self, "Invite message copied — paste it to a friend"))
+		# (2.2) sharing from home opens the party online first
+		if App.is_solo_party() and not await App.open_party():
+			return
+		var s2: NetSession = App.session
+		if not Share.share_text(Share.party_message(s2.room_code)):
+			UIKit.toast(App.screen as Control, "Invite message copied — paste it to a friend"))
 	top.add_child(share)
+	share_btn = share
 	# Final: Friends (who's playing, invites into this party; Apple's invite
 	# sheet and the code are inside it as well)
 	invite_btn = FriendsPanel.entry_button(self)
@@ -109,9 +150,22 @@ func build() -> void:
 	invite_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(invite_btn)
 	top.add_child(UIKit.spacer_h())
+	# 2.2: Rankings, where everyone can see it, and Settings
+	rank_btn = UIKit.icon_button("trophy", "Rankings")
+	rank_btn.tooltip_text = "Rankings"
+	rank_btn.accessibility_name = "Rankings: this season's leaderboard"
+	rank_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	rank_btn.pressed.connect(func() -> void: App.goto(RankingsScreen))
+	UIKit._apply(rank_btn, UIKit.AMBER, UIKit.NAVY)
+	top.add_child(rank_btn)
+	var gear := UIKit.icon_button("gear")
+	gear.tooltip_text = "Settings"
+	gear.accessibility_name = "Settings"
+	gear.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	gear.pressed.connect(func() -> void: App.goto(SettingsScreen))
+	top.add_child(gear)
 	settings_btn = _settings_summary()
 	settings_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	top.add_child(settings_btn)
 
 	# --- series line (only during a series)
 	var srow := UIKit.hbox(10)
@@ -149,6 +203,9 @@ func build() -> void:
 		c.pressed.connect(_on_cell.bind(c))
 		_grid.add_child(c)
 		cells.append(c)
+	# (2.2) the season, while it's just you
+	season_card = SeasonCard.make(360.0)
+	roster_col.add_child(season_card)
 
 	# --- bottom: secondary actions (left) + primary action (right)
 	var bottom := UIKit.hbox(12)
@@ -175,7 +232,7 @@ func build() -> void:
 	chat_btn.accessibility_name = "Party chat"
 	chat_btn.pressed.connect(_open_chat)
 	chat_btn.size_flags_vertical = Control.SIZE_SHRINK_END
-	chat_btn.visible = session.mode != NetSession.Mode.OFFLINE
+	chat_btn.visible = session.mode != NetSession.Mode.OFFLINE and not _solo()
 	bottom.add_child(chat_btn)
 	bottom.add_child(UIKit.spacer_h())
 	var pcol := UIKit.vbox(6)
@@ -183,13 +240,18 @@ func build() -> void:
 	bottom.add_child(pcol)
 	status_lbl = UIKit.outlined(UIKit.styled("", "caption", Color(UIKit.IVORY, 0.88), HORIZONTAL_ALIGNMENT_RIGHT))
 	pcol.add_child(status_lbl)
+	# 2.2: the playlist (like a mode card on any mobile shooter's front page)
+	mode_btn = _mode_card()
+	pcol.add_child(mode_btn)
+	settings_btn.size_flags_horizontal = Control.SIZE_SHRINK_END
+	pcol.add_child(settings_btn)
 	var prow := UIKit.hbox(12)
 	prow.alignment = BoxContainer.ALIGNMENT_END
 	pcol.add_child(prow)
 	sub_lbl = UIKit.outlined(UIKit.styled("", "caption", Color(UIKit.IVORY, 0.88), HORIZONTAL_ALIGNMENT_RIGHT))
 	sub_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	prow.add_child(sub_lbl)
-	primary_btn = UIKit.primary("Start", Vector2(340, 96))
+	primary_btn = UIKit.primary("PLAY", Vector2(340, 96), 34)
 	primary_btn.pressed.connect(_on_primary)
 	prow.add_child(primary_btn)
 	focus_first(primary_btn)
@@ -220,6 +282,9 @@ func build() -> void:
 	roster_col.item_rect_changed.connect(_frame_stage.bind(roster_col))
 	get_viewport().size_changed.connect(_frame_stage.bind(roster_col))
 	_frame_stage.call_deferred(roster_col)
+	# 2.2: the season champion poster, now and then, on arriving home
+	if _solo():
+		(func() -> void: ChampionPromo.maybe_show(self)).call_deferred()
 
 
 ## The settings as short chips in one tappable group (the map first).
@@ -459,6 +524,20 @@ func _open_wardrobe() -> void:
 
 
 func _on_primary() -> void:
+	# 2.2: PLAY follows the playlist while it's just you
+	if App.quick_searching:
+		App.cancel_quick_match()
+		return
+	if _solo() and session.is_host() and not session.series_active():
+		match play_mode():
+			"quick":
+				if App.stage:
+					App.stage.stop_previews()
+				App.quick_match()
+				return
+			"practice":
+				App.goto(PracticeScreen)
+				return
 	if session.is_host():
 		if session.can_start():
 			if App.stage:
@@ -477,6 +556,154 @@ func _on_primary() -> void:
 			f.call("flash")
 
 
+# ---------------------------------------------------------------------------
+# 2.2: home = party lobby, playlists
+# ---------------------------------------------------------------------------
+## Just you in a local party (no one can have joined).
+func _solo() -> bool:
+	return App.is_solo_party() and session == App.session
+
+
+## The playlist PLAY uses: yours while you're alone, "party" with friends.
+func play_mode() -> String:
+	if session.human_count() > 1 or not _solo():
+		return "party"
+	var m := String(Save.get_setting("play_mode", "quick"))
+	return m if MODES.has(m) else "quick"
+
+
+func _mode_card() -> Button:
+	var b := UIKit.card_button(Vector2(340, 0), Color(UIKit.SLATE, 0.95))
+	b.name = "ModeCard"
+	b.size_flags_horizontal = Control.SIZE_SHRINK_END
+	var h := UIKit.hbox(12)
+	h.set_anchors_preset(Control.PRESET_FULL_RECT)
+	h.offset_left = 14
+	h.offset_right = -14
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var v := UIKit.vbox(0)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ov := UIKit.styled("PLAYLIST", "overline", UIKit.AMBER)
+	ov.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(ov)
+	mode_title = UIKit.styled("", "label")
+	mode_title.add_theme_font_override("font", UIKit.font_w(800))
+	mode_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(mode_title)
+	mode_sub = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
+	mode_sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mode_sub.custom_minimum_size.x = 0
+	v.add_child(mode_sub)
+	h.add_child(v)
+	var ch := UIKit.styled("Change", "label", UIKit.TEAL)
+	ch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	ch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(ch)
+	b.add_child(h)
+	b.custom_minimum_size.y = maxf(UIKit.touch_min(), 78.0)
+	b.pressed.connect(_mode_sheet)
+	return b
+
+
+func _paint_mode() -> void:
+	if not is_instance_valid(mode_btn):
+		return
+	var m := play_mode()
+	if m == "party":
+		mode_title.text = "Party" if session.human_count() > 1 else "Party vs Bots"
+		mode_sub.text = "%d players + bots" % session.human_count() if session.human_count() > 1 else String(MODES["bots"][1])
+	else:
+		mode_title.text = String(MODES[m][0])
+		mode_sub.text = String(MODES[m][1])
+	mode_btn.accessibility_name = "Playlist: %s. %s. Change" % [mode_title.text, mode_sub.text]
+	# settings only where they apply: a party's series (host changes them)
+	settings_btn.visible = m == "party" or m == "bots"
+
+
+## The playlist picker: three big cards.  With friends in the party it
+## explains that the party plays together and opens the party settings.
+func _mode_sheet() -> void:
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_STOP
+	var dim := ColorRect.new()
+	dim.color = Color(UIKit.NAVY, 0.78)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(dim)
+	var p := UIKit.panel(Color(UIKit.SLATE, 0.99), UIKit.R_PANEL, 24)
+	var v := UIKit.vbox(14)
+	p.add_child(v)
+	var close := func() -> void:
+		if is_instance_valid(root):
+			root.queue_free()
+		_refresh()
+	var head := UIKit.hbox(12)
+	head.add_child(UIKit.styled("Choose a playlist", "headline"))
+	head.add_child(UIKit.spacer_h())
+	var x := UIKit.icon_button("close")
+	x.accessibility_name = "Close"
+	x.pressed.connect(close)
+	head.add_child(x)
+	v.add_child(head)
+	if not _solo() or session.human_count() > 1:
+		var note := UIKit.styled("Your party plays together. The host picks the map, rounds and Night Watch." if session.is_host() or not _solo() else "", "body", UIKit.IVORY_MUTED)
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		note.custom_minimum_size.x = 560
+		v.add_child(note)
+		if session.is_host():
+			var st := UIKit.primary("Party settings", Vector2(300, 80))
+			st.pressed.connect(func() -> void:
+				close.call()
+				_settings_sheet())
+			v.add_child(st)
+	else:
+		var row := UIKit.hbox(14)
+		var cur := play_mode()
+		for id in ["quick", "bots", "practice"]:
+			var spec: Array = MODES[id]
+			var c := UIKit.card_button(Vector2(250, 236), UIKit.SLATE_HI if id == cur else UIKit.SLATE)
+			var cv := UIKit.vbox(8)
+			cv.set_anchors_preset(Control.PRESET_FULL_RECT)
+			cv.offset_left = 16
+			cv.offset_top = 16
+			cv.offset_right = -16
+			cv.offset_bottom = -16
+			cv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var ic := Icons.IconRect.new(String(spec[2]), UIKit.AMBER if id == "quick" else UIKit.TEAL, 44)
+			ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			cv.add_child(ic)
+			var tl := UIKit.styled(String(spec[0]), "headline")
+			tl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			cv.add_child(tl)
+			var dl := UIKit.styled(String(spec[1]), "caption", UIKit.IVORY_MUTED)
+			dl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			dl.custom_minimum_size.x = 210
+			dl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			cv.add_child(dl)
+			if id == cur:
+				var sel := UIKit.styled("✓ Selected", "label", UIKit.TEAL)
+				sel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				cv.add_child(sel)
+			c.add_child(cv)
+			UIKit.set_selected(c, id == cur)
+			c.accessibility_name = "%s. %s%s" % [spec[0], spec[1], ". Selected" if id == cur else ""]
+			var pick := String(id)
+			c.pressed.connect(func() -> void:
+				Save.set_setting("play_mode", pick)
+				close.call())
+			row.add_child(c)
+		v.add_child(row)
+	root.add_child(p)
+	add_child(root)
+	var vis := get_viewport().get_visible_rect().size
+	var sz := p.get_combined_minimum_size()
+	p.position = ((vis - sz) * 0.5).max(Vector2(8, 8))
+	Motion.appear(p, 10.0, UIKit.T_FAST)
+	push_modal(root, close)
+
+
 func _on_status(txt: String) -> void:
 	if is_instance_valid(status_lbl) and txt != "":
 		status_lbl.text = txt
@@ -492,8 +719,16 @@ func _refresh() -> void:
 	if not is_instance_valid(primary_btn):
 		return
 	var hosting := session.is_host()
-	code_lbl.text = session.room_code if session.room_code != "" else "…"
-	invite_btn.visible = _can_invite()
+	var solo := _solo()
+	code_title.text = "Your party" if solo else "Party code"
+	code_lbl.text = "Invite friends" if solo else (session.room_code if session.room_code != "" else "…")
+	code_lbl.add_theme_font_size_override("font_size", 22 if solo else 30)
+	back_btn.visible = not solo
+	copy_btn.visible = not solo
+	invite_btn.visible = _can_invite() or solo
+	season_card.visible = solo and session.human_count() == 1
+	chat_btn.visible = not solo and session.mode != NetSession.Mode.OFFLINE
+	_paint_mode()
 	var humans := 0
 	var not_ready := 0
 	var ready_n := 0
@@ -546,13 +781,29 @@ func _refresh() -> void:
 	series_row.visible = series_on and not (hub != null and hub.walking)
 	standings_btn.visible = series_on and not (view.get("standings", {}) as Dictionary).is_empty()
 	var bots := 8 - humans
-	if hosting:
-		primary_btn.text = ("Start round %d" % nxt) if series_on else "Start"
+	if App.quick_searching:
+		# 2.2: Quick Match is looking for players
+		var secs := int((Time.get_ticks_msec() - App.quick_t0) / 1000)
+		primary_btn.text = "Cancel"
+		primary_btn.disabled = false
+		UIKit._apply(primary_btn, UIKit.SLATE_HI, UIKit.IVORY)
+		sub_lbl.text = ""
+		status_lbl.text = "Finding players… %d:%02d · bots fill empty seats" % [secs / 60, secs % 60]
+		return
+	if hosting and solo and not series_on and play_mode() != "party" and play_mode() != "bots":
+		primary_btn.text = "PLAY"
+		primary_btn.disabled = false
+		UIKit._apply(primary_btn, UIKit.AMBER, UIKit.NAVY)
+		sub_lbl.text = ""
+		status_lbl.text = ""
+	elif hosting:
+		primary_btn.text = ("Start round %d" % nxt) if series_on else ("PLAY" if solo else "Start")
 		primary_btn.disabled = not session.can_start()
+		UIKit._apply(primary_btn, UIKit.AMBER, UIKit.NAVY)
 		var bot_txt := "1 bot" if bots == 1 else "%d bots" % bots
 		sub_lbl.text = ("You + " + bot_txt if humans == 1 else "%d players + %s" % [humans, bot_txt]) if bots > 0 else "Full party"
 		if humans == 1:
-			status_lbl.text = "Share the code, or start now." if not series_on else "Start the next round when you're ready."
+			status_lbl.text = ("Invite friends, or play now." if solo else "Share the code, or start now.") if not series_on else "Start the next round when you're ready."
 		elif not_ready > 0:
 			status_lbl.text = "Waiting for %d to tap Ready" % not_ready
 		else:

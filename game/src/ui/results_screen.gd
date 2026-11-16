@@ -29,6 +29,8 @@ extends Screen
 
 var results: Dictionary
 var reward: Dictionary
+## (2.2) this round's run stats and Season Points (Rankings.record)
+var rank: Dictionary = {}
 var session: NetSession
 ## show only the series' final standings (the host ended the series early)
 var final_only := false
@@ -198,6 +200,8 @@ func _round_page() -> void:
 			_series_so_far(true)
 		return
 	_v.add_child(_contribution_card(d))
+	if not rank.is_empty():
+		_v.add_child(_run_card())
 	var party_series := _party() and not series_view().is_empty()
 	if party_series:
 		_series_so_far(false)
@@ -244,6 +248,46 @@ func _contribution_card(d: Dictionary) -> Control:
 	if not me.is_empty() and bool(me.get("away", false)):
 		v.add_child(UIKit.styled("Away for too much of the round: no Round Win.", "caption", UIKit.IVORY_MUTED))
 	p.add_child(v)
+	return p
+
+
+## (2.2) Your run and Season Points: the time from GO to home, your best,
+## and what this round added to the Rankings (or why it doesn't count).
+func _run_card() -> Control:
+	var p := UIKit.panel(Color(UIKit.NAVY, 0.72), UIKit.R_CARD, 14)
+	p.name = "RunCard"
+	var h := UIKit.hbox(18)
+	var run := float(rank.get("run_time", -1.0))
+	var left := UIKit.vbox(0)
+	left.add_child(UIKit.styled("YOUR RUN", "overline", UIKit.TEAL))
+	var big := UIKit.styled(Rankings.fmt_time(run) if run > 0.0 else "Not home", "num", UIKit.IVORY)
+	big.add_theme_font_size_override("font_size", 40)
+	left.add_child(big)
+	if bool(rank.get("new_best", false)):
+		left.add_child(UIKit.chip("NEW PERSONAL BEST!", UIKit.AMBER, UIKit.NAVY, UIKit.T_OVERLINE + 1))
+	elif float(rank.get("best", -1.0)) > 0.0:
+		left.add_child(UIKit.styled("Best %s" % Rankings.fmt_time(float(rank["best"])), "caption", UIKit.IVORY_MUTED))
+	h.add_child(left)
+	var right := UIKit.vbox(2)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_child(UIKit.styled("SEASON POINTS", "overline", UIKit.AMBER))
+	if bool(rank.get("counted", false)):
+		var pts := UIKit.styled("+%d" % int(rank["points"]), "num", UIKit.AMBER)
+		pts.add_theme_font_size_override("font_size", 34)
+		right.add_child(pts)
+		var bits: Array[String] = []
+		for part in rank.get("parts", []):
+			bits.append("%s %d" % [part[0], int(part[1])])
+		var bl := UIKit.styled(" · ".join(bits), "caption", UIKit.IVORY_MUTED)
+		bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		right.add_child(bl)
+		right.add_child(UIKit.styled("%s total: %d" % [Rankings.season_name(), int(rank["season_points"])], "caption", UIKit.IVORY))
+	else:
+		var wl := UIKit.styled(String(rank.get("why", "")), "caption", UIKit.IVORY_MUTED)
+		wl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		right.add_child(wl)
+	h.add_child(right)
+	p.add_child(h)
 	return p
 
 

@@ -171,6 +171,8 @@ class TouchSurface:
 
 	func cancel_all() -> void:
 		_adopted.clear()
+		for i in Controls.touch_starts:
+			_stale[i] = true
 		router.cancel_all()
 		Controls.reset_touch()
 		Controls.set_touch_points(0)
@@ -259,6 +261,10 @@ class TouchSurface:
 	## the thumb was lifted.  Any unowned finger that moves inside the stick
 	## zone is taken over here; its drags and release are read in _input.
 	var _adopted: Dictionary = {}
+	## fingers that were down when the controls were cancelled (a menu
+	## opened, focus lost): never adopted; a held finger never "sticks"
+	## after a menu closes (V6 rule), it has to be lifted first
+	var _stale: Dictionary = {}
 
 	func _input(event: InputEvent) -> void:
 		if not is_visible_in_tree():
@@ -269,7 +275,7 @@ class TouchSurface:
 			var d := event as InputEventScreenDrag
 			if _adopted.has(d.index):
 				router.drag(d.index, d.position, d.screen_relative)
-			elif not router.owners.has(d.index) and router.stick_index < 0 and router.zone().has_point(d.position) \
+			elif not router.owners.has(d.index) and not _stale.has(d.index) and router.stick_index < 0 and router.zone().has_point(d.position) \
 					and not router.in_reserved(d.position) and router.hit_button(d.position) == "":
 				_adopted[d.index] = true
 				# the stick starts where the finger really went down (under
@@ -282,6 +288,8 @@ class TouchSurface:
 				router.drag(d.index, d.position, d.position - start)
 		elif event is InputEventScreenTouch:
 			var e := event as InputEventScreenTouch
+			if not e.pressed or e.canceled:
+				_stale.erase(e.index)
 			if _adopted.has(e.index) and (not e.pressed or e.canceled):
 				_adopted.erase(e.index)
 				router.touch_up(e.index)

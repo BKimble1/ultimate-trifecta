@@ -20,8 +20,8 @@ func test_a_waiting_guest_is_told_and_taken_home() -> void:
 	App._begin_session(NetSession.Mode.CLIENT, GameKitTransport.new(false), "ACDEFG")
 	t.check(App.session != null and App.screen is LobbyScreen, "joining: the party room waits for the match")
 	Social.room_failed.emit("The request timed out.")
-	t.check(App.session == null, "the waiting join is closed")
-	t.check(App.screen is TitleScreen, "and the player is back home")
+	t.check(App.session == null or App.is_solo_party(), "the waiting join is closed (home is your own party again)")
+	t.check(App.screen is LobbyScreen and App.is_solo_party(), "and the player is back home")
 	_cleanup()
 	Save.data["onboarded"] = was
 

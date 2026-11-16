@@ -98,7 +98,7 @@ func test_first_launch_creates_runner_then_name() -> void:
 		await t.get_tree().process_frame
 		t.eq(String(Save.data["name"]), "Moon Pip", "name saved")
 		t.check(bool(Save.data["onboarded"]), "onboarding finished")
-		t.check(App.screen is TitleScreen, "home screen after onboarding")
+		t.check(App.screen is LobbyScreen and App.is_solo_party(), "home (your party lobby) after onboarding")
 	await _end()
 
 

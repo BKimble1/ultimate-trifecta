@@ -369,8 +369,11 @@ static func safe_display(raw: String, seed: String = "") -> String:
 ## same lists, evasions and impersonation checks), so a player's own name
 ## shows when it passes and a stable curated stand-in when it doesn't.
 static func party_display(raw: String, seed: String, verified: bool) -> String:
-	if verified or display_ok(raw):
+	if verified:
 		return safe_display(raw, seed)
+	# the full policy, reserved names included ("Player", "Host", "Admin"...)
+	if normalize(raw) == raw and bool(moderate(raw)["ok"]):
+		return raw
 	return generated(seed if seed != "" else raw)
 
 

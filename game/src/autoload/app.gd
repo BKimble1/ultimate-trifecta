@@ -30,6 +30,8 @@ var _dev_shot_i := 0
 var _dev_next_shot := 2.0
 ## automation / capture runs skip first-launch onboarding
 var dev_automation := false
+## development captures: the Rankings screen shows labelled sample rows
+var dev_rank_sample := false
 
 
 ## Client version code sent to the service (rooms record it for version
@@ -102,6 +104,8 @@ func _ready() -> void:
 			# (labelled simulation: no physical controller is attached)
 			Controls.device = "gamepad"
 			Controls.family = a.get_slice("=", 1)
+		elif a == "--rank-sample":
+			dev_rank_sample = true
 		elif a == "--random-cosmetic":
 			# dev/automation: soak and lobby-capture clients wear varied outfits
 			Save.data["cosmetic"] = Cosmetics.bot_cosmetic(hash(Save.player_uid()))
@@ -437,13 +441,155 @@ func goto_title(message: String = "") -> void:
 	if not bool(Save.data.get("onboarded", false)) and not dev_automation:
 		_onboarding(message)
 		return
-	var t := TitleScreen.new()
-	_show(t)
-	if message != "":
-		t.show_message(message)
-	elif _pending_message != "":
-		t.show_message(_pending_message)
-		_pending_message = ""
+	# 2.2: home IS your party lobby: always in the dorm with your party
+	# (just you until someone joins), walking around, inviting, and one Play
+	# button with a mode (Quick Match, Party with bots, Practice)
+	var msg := message if message != "" else _pending_message
+	_pending_message = ""
+	if session == null or not is_instance_valid(session) or session.mode == NetSession.Mode.OFFLINE:
+		_close_session(false)
+		_begin_solo_party()
+	else:
+		show_lobby()
+	if msg != "" and screen is Screen:
+		(screen as Screen).dialog(msg)
+
+
+## (2.2) A party of one with no network (SoloTransport).
+func _begin_solo_party() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	_begin_session(NetSession.Mode.HOST, SoloTransport.new(), Social.make_code(rng))
+	session.settings["rounds"] = int(Save.get_setting("party_rounds", 1))
+	session.settings["watch"] = int(Save.get_setting("party_watch", PartySeries.DEFAULT_WATCH))
+
+
+func is_solo_party() -> bool:
+	return session != null and is_instance_valid(session) and session.transport is SoloTransport
+
+
+## (2.2) The party goes online (a Game Center room) so friends can join:
+## when you invite someone or share the code.  Keeps the party's settings.
+## Returns false where Game Center isn't available (the party stays local).
+func open_party() -> bool:
+	if not is_solo_party():
+		return true
+	if not Social.online_ready():
+		if screen is Control:
+			UIKit.toast(screen as Control, "Sign in to Game Center (Settings › Game Center) to invite friends.", 3.5)
+		return false
+	var keep: Dictionary = session.settings.duplicate()
+	_close_session(false)
+	await host_room_gamekit()
+	if session != null and is_instance_valid(session) and session.mode == NetSession.Mode.HOST:
+		for k in ["watch", "rounds", "map"]:
+			if keep.has(k):
+				session.settings[k] = keep[k]
+		return true
+	return false
+
+
+# ---------------------------------------------------------------------------
+# 2.2: Quick Match
+# ---------------------------------------------------------------------------
+signal quick_changed
+const QUICK_SEARCH_S := 25.0
+const QUICK_START_S := 8.0
+var quick_searching := false
+var quick_t0 := 0
+var _quick_token := 0
+var quick_round := false
+
+
+## Play in Quick Match: other players searching now through Game Center
+## (random people, same version), bots in every empty seat.  With nobody
+## found within QUICK_SEARCH_S, or without Game Center, it starts with bots.
+func quick_match() -> void:
+	if quick_searching:
+		return
+	if not Social.online_ready() or not Social.quick_match_start():
+		_quick_bots("Game Center isn't signed in, so this match is you and bots.")
+		return
+	quick_searching = true
+	quick_t0 = Time.get_ticks_msec()
+	_quick_token += 1
+	var tok := _quick_token
+	if not Social.quick_found.is_connected(_on_quick_found):
+		Social.quick_found.connect(_on_quick_found)
+		Social.quick_failed.connect(_on_quick_failed)
+	quick_changed.emit()
+	get_tree().create_timer(QUICK_SEARCH_S).timeout.connect(func() -> void:
+		if quick_searching and tok == _quick_token:
+			Social.quick_match_cancel()
+			quick_searching = false
+			quick_changed.emit()
+			_quick_bots("No other players right now, so bots filled in."))
+
+
+func cancel_quick_match() -> void:
+	if not quick_searching:
+		return
+	_quick_token += 1
+	quick_searching = false
+	Social.quick_match_cancel()
+	quick_changed.emit()
+
+
+func _on_quick_failed(message: String) -> void:
+	if not quick_searching:
+		return
+	quick_searching = false
+	quick_changed.emit()
+	_quick_bots("Matchmaking didn't work (%s), so this match is you and bots." % message)
+
+
+## Players found: every device elects the same host (the lowest player id)
+## and the round starts by itself a few seconds later, bots in empty seats.
+func _on_quick_found(m: Object) -> void:
+	if not quick_searching:
+		return
+	quick_searching = false
+	quick_changed.emit()
+	var me := Social.local_match_id()
+	var lowest := me
+	var plist: Variant = m.get("players")
+	if plist is Array:
+		for pl in plist:
+			var pid := String(pl.get("team_player_id")) if String(pl.get("team_player_id")) != "" else String(pl.get("game_player_id"))
+			if pid != "" and (lowest == "" or pid < lowest):
+				lowest = pid
+	var host := lowest == me
+	var t := GameKitTransport.new(host)
+	t.bind(m)
+	_close_session(false)
+	quick_round = true
+	if host:
+		var rng := RandomNumberGenerator.new()
+		rng.randomize()
+		_begin_session(NetSession.Mode.HOST, t, Social.make_code(rng))
+		session.settings["rounds"] = 1
+		var s := session
+		get_tree().create_timer(QUICK_START_S).timeout.connect(func() -> void:
+			if session == s and is_instance_valid(s) and s.phase == TC.Phase.LOBBY:
+				s.host_start_match())
+	else:
+		_begin_session(NetSession.Mode.CLIENT, t, "")
+		session.lobby_changed.connect(func() -> void:
+			if session != null and session.local_slot >= 0 and session.phase == TC.Phase.LOBBY:
+				session.set_local_ready(true))
+
+
+## Quick Match with nobody else: your party (just you) plays one round with
+## bots on the playable map.
+func _quick_bots(note: String) -> void:
+	if not is_solo_party():
+		_close_session(false)
+		_begin_solo_party()
+	session.settings["rounds"] = 1
+	_pending_message = ""
+	if screen is Control:
+		UIKit.toast(screen as Control, note, 3.0)
+	session.host_start_match()
 
 
 ## First launch: Create Your Runner, then a player name (kept on this device
@@ -778,6 +924,7 @@ func leave_room() -> void:
 	if session:
 		session.leave()
 	_close_session()
+	quick_round = false
 	goto_title()
 
 
@@ -837,6 +984,8 @@ func _on_match_finished(results: Dictionary) -> void:
 	last_results = results
 	var practice := session != null and session.mode == NetSession.Mode.OFFLINE
 	var reward := Save.apply_results(results, session.local_slot if session else -1, practice, Save.player_uid())
+	# 2.2: run time, personal best and Season Points (Game Center when it counts)
+	var rank := Rankings.record(results, session.local_slot if session else -1, practice or (session != null and session.tutorial))
 	_dev_record(results, reward)
 	if dev_report != "":
 		_dev_rounds_done += 1
@@ -859,6 +1008,7 @@ func _on_match_finished(results: Dictionary) -> void:
 	var r := ResultsScreen.new()
 	r.results = results
 	r.reward = reward
+	r.rank = rank
 	r.session = session
 	_show(r)
 
@@ -886,6 +1036,12 @@ func back_to_party() -> void:
 	if session == null or not is_instance_valid(session):
 		goto_title()
 		return
+	if quick_round and not is_solo_party():
+		# (2.2) a Quick Match with other players was one round: everyone
+		# goes back to their own lobby
+		leave_room()
+		return
+	quick_round = false
 	if session.is_host():
 		Diag.mark("rematch")
 		session.host_return_to_lobby()

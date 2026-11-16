@@ -31,15 +31,15 @@ on:
       iap:
         description: "V6 in-app purchases in App Store Connect: list (read only) or create the missing ones (no prices, no submission). No build."
         type: choice
-        options: [none, list, create]
+        options: [none, list, create, gc-list, gc-create]
         default: none
 
 # an upload or status run never cancels, or is cancelled by, an ordinary build
 # (an App Store Connect product run - iap list/create - has its own group too:
 # a push must never cancel it half way)
 concurrency:
-  group: ios-${{ github.ref }}-${{ github.event.inputs.upload == 'true' && 'upload' || (github.event.inputs.asc_status == 'true' && 'status' || ((github.event.inputs.iap == 'list' || github.event.inputs.iap == 'create') && 'iap' || 'build')) }}
-  cancel-in-progress: ${{ github.event.inputs.upload != 'true' && github.event.inputs.asc_status != 'true' && github.event.inputs.iap != 'list' && github.event.inputs.iap != 'create' }}
+  group: ios-${{ github.ref }}-${{ github.event.inputs.upload == 'true' && 'upload' || (github.event.inputs.asc_status == 'true' && 'status' || ((github.event.inputs.iap == 'list' || github.event.inputs.iap == 'create' || github.event.inputs.iap == 'gc-list' || github.event.inputs.iap == 'gc-create') && 'iap' || 'build')) }}
+  cancel-in-progress: ${{ github.event.inputs.upload != 'true' && github.event.inputs.asc_status != 'true' && github.event.inputs.iap != 'list' && github.event.inputs.iap != 'create' && github.event.inputs.iap != 'gc-list' && github.event.inputs.iap != 'gc-create' }}
 
 env:
   GODOT_VERSION: "4.7.2"
@@ -79,7 +79,7 @@ jobs:
 
   asc-iap:
     name: App Store Connect in-app purchases (${{ github.event.inputs.iap }})
-    if: github.event.inputs.iap == 'list' || github.event.inputs.iap == 'create'
+    if: github.event.inputs.iap == 'list' || github.event.inputs.iap == 'create' || github.event.inputs.iap == 'gc-list' || github.event.inputs.iap == 'gc-create'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -101,7 +101,12 @@ jobs:
           "$RUNNER_TEMP/ascenv/bin/pip" install --quiet pyjwt cryptography requests
           PY="$RUNNER_TEMP/ascenv/bin/python"
           "$PY" tools/asc.py iap-plan
-          if [ "$MODE" = create ]; then "$PY" tools/asc.py iap-create --yes; else "$PY" tools/asc.py iap-list; fi
+          case "$MODE" in
+            create) "$PY" tools/asc.py iap-create --yes;;
+            gc-create) "$PY" tools/asc.py gc-leaderboards --yes;;
+            gc-list) "$PY" tools/asc.py gc-leaderboards;;
+            *) "$PY" tools/asc.py iap-list;;
+          esac
 
   tests:
     name: Rules, simulation and network tests (headless)

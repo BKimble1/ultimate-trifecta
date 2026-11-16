@@ -293,7 +293,7 @@ func test_practice_can_be_cancelled_mid_preparation_and_the_next_round_works() -
 		await t.get_tree().process_frame
 		await t.get_tree().process_frame
 		t.check(not is_instance_valid(mc), "the half-prepared round is freed")
-		t.check(App.match_ctrl == null and App.session == null, "no round or session left")
+		t.check(App.match_ctrl == null and (App.session == null or App.is_solo_party()), "no round or practice session left (home is your own party)")
 		t.check(not (App.screen is LoadingScreen) and not is_instance_valid(ls), "back to the title")
 		await _frames_until(func() -> bool: return App._orphan_tasks.is_empty() and App._orphan_loads.is_empty())
 		t.check(App._orphan_tasks.is_empty(), "the build's background jobs were collected")

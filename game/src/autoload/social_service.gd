@@ -234,6 +234,128 @@ func _find_or_add() -> void:
 				_find_or_add())
 
 
+# ---------------------------------------------------------------------------
+# 2.2: Quick Match (random players through Game Center automatch)
+# ---------------------------------------------------------------------------
+## Every Quick Match request of this protocol version shares one player
+## group, so only games that can play together are matched.
+const QUICK_GROUP_BASE := 0x51000000
+signal quick_found(m: Object)
+signal quick_failed(message: String)
+var _quick_req: Object = null
+var _quick_live := false
+
+
+func quick_match_start() -> bool:
+	if matchmaker == null or not online_ready():
+		return false
+	var req: Object = ClassDB.instantiate("GKMatchRequest") if ClassDB.can_instantiate("GKMatchRequest") else null
+	if req == null:
+		return false
+	req.set("min_players", 2)
+	req.set("max_players", 8)
+	req.set("player_group", QUICK_GROUP_BASE + Protocol.VERSION)
+	_quick_req = req
+	_quick_live = true
+	matchmaker.call("find_match", req, func(m: Object, err: Variant) -> void:
+		if not _quick_live:
+			if m != null and m.has_method("disconnect"):
+				m.call("disconnect")
+			return
+		_quick_live = false
+		if err != null or m == null:
+			quick_failed.emit(error_text(err))
+			return
+		quick_found.emit(m))
+	return true
+
+
+func quick_match_cancel() -> void:
+	if _quick_live and matchmaker != null:
+		matchmaker.call("cancel")
+	_quick_live = false
+
+
+## (2.2) Apple's Game Center Friends screen: your friends list, and "Add
+## Friends", which sends a friend request by Game Center nickname.  False
+## where Game Center isn't there.
+func show_friends_list() -> bool:
+	if not online_ready() or not ClassDB.class_exists("GKGameCenterViewController"):
+		return false
+	ClassDB.class_call_static("GKGameCenterViewController", "show_type", 5)   # LOCAL_PLAYER_FRIENDS_LIST
+	return true
+
+
+## (2.2) Leaderboards: a score sent to one board (Game Center keeps the best
+## of the current 30-day occurrence).  Fire and forget; a failure is logged.
+func submit_score(board_id: String, value: int) -> void:
+	if not online_ready() or gc == null or not ClassDB.class_exists("GKLeaderboard"):
+		return
+	var lp: Object = gc.get("local_player")
+	if lp == null:
+		return
+	ClassDB.class_call_static("GKLeaderboard", "load_leaderboards", PackedStringArray([board_id]), func(boards: Variant, err: Variant) -> void:
+		if err != null or not (boards is Array) or (boards as Array).is_empty():
+			push_warning("leaderboard %s unavailable: %s" % [board_id, error_text(err)])
+			return
+		var b: Object = (boards as Array)[0]
+		b.call("submit_score", value, 0, lp, func(e: Variant) -> void:
+			if e != null:
+				push_warning("score to %s failed: %s" % [board_id, error_text(e)])))
+
+
+## (2.2) One page of a leaderboard's current occurrence, for the Rankings
+## screen.  done.call({ok, entries: [{rank, name, score, text, me}], me:
+## {...} or {}, total, starts, ends, error}).
+func load_board(board_id: String, friends_only: bool, first: int, count: int, done: Callable) -> void:
+	if not online_ready() or not ClassDB.class_exists("GKLeaderboard"):
+		done.call({"ok": false, "error": "signed_out"})
+		return
+	ClassDB.class_call_static("GKLeaderboard", "load_leaderboards", PackedStringArray([board_id]), func(boards: Variant, err: Variant) -> void:
+		if err != null or not (boards is Array) or (boards as Array).is_empty():
+			done.call({"ok": false, "error": error_text(err) if err != null else "missing"})
+			return
+		var b: Object = (boards as Array)[0]
+		var starts := float(b.get("startDate"))
+		var dur := float(b.get("duration"))
+		b.call("load_local_player_entries", 1 if friends_only else 0, 2, first, count, func(local: Variant, entries: Variant, total: Variant, e: Variant) -> void:
+			if e != null:
+				done.call({"ok": false, "error": error_text(e)})
+				return
+			var out: Array = []
+			var my_id := local_match_id()
+			if entries is Array:
+				for en in entries:
+					if en != null:
+						out.append(_entry_dict(en, my_id))
+			done.call({"ok": true, "entries": out, "me": _entry_dict(local, my_id) if local != null else {},
+				"total": int(total) if total != null else out.size(), "starts": starts, "ends": starts + dur if dur > 0.0 else 0.0})))
+
+
+func _entry_dict(en: Object, my_id: String) -> Dictionary:
+	var pl: Object = en.get("player")
+	var pid := ""
+	var name := "Player"
+	if pl != null:
+		pid = String(pl.get("team_player_id")) if String(pl.get("team_player_id")) != "" else String(pl.get("game_player_id"))
+		name = String(pl.get("display_name"))
+	return {"rank": int(en.get("rank")), "score": int(en.get("score")), "text": String(en.get("formattedScore")),
+		"name": NameRules.safe_display(name, pid), "me": pid != "" and pid == my_id}
+
+
+## (2.2) Apple's Game Center leaderboard screen for one board.
+func show_leaderboard(id: String, friends_only: bool = false) -> bool:
+	if not online_ready() or not ClassDB.class_exists("GKGameCenterViewController"):
+		return false
+	ClassDB.class_call_static("GKGameCenterViewController", "show_leaderboard_time_period", id, 1 if friends_only else 0, 2)
+	return true
+
+
+## The local player's id as GameKitTransport names remote players.
+func local_match_id() -> String:
+	return team_player_id if team_player_id != "" else local_player_id
+
+
 ## Host stops accepting code joins (room full / leaving).
 func stop_matchmaking() -> void:
 	if matchmaker != null:

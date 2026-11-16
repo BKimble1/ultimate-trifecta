@@ -90,7 +90,7 @@ func _end() -> void:
 		f.store_string(String(_saved["file"]))
 	elif FileAccess.file_exists(Save.PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(Save.PATH))
-	App.session = _saved["session"]
+	App.session = _saved["session"] if is_instance_valid(_saved["session"]) else null
 	await _frames(2)
 
 

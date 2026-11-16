@@ -203,8 +203,16 @@ func _ready() -> void:
 	gc_btn = UIKit.quiet("Invite with Game Center", Vector2(0, UIKit.touch_min()), UIKit.T_CAPTION)
 	gc_btn.pressed.connect(func() -> void: _game_center_invite([]))
 	foot.add_child(gc_btn)
-	play_btn = UIKit.quiet("Party codes", Vector2(0, UIKit.touch_min()), UIKit.T_CAPTION)
-	play_btn.tooltip_text = "Create a party or join with a code"
+	# (2.2) Apple's Friends screen: "Add Friends" sends a friend request by
+	# Game Center nickname
+	var add_btn := UIKit.quiet("Add friends", Vector2(0, UIKit.touch_min()), UIKit.T_CAPTION)
+	add_btn.tooltip_text = "Add friends by their Game Center name"
+	add_btn.pressed.connect(func() -> void:
+		if not Social.show_friends_list():
+			_say("Sign in to Game Center (Settings › Game Center) to add friends."))
+	foot.add_child(add_btn)
+	play_btn = UIKit.quiet("Join with a code", Vector2(0, UIKit.touch_min()), UIKit.T_CAPTION)
+	play_btn.tooltip_text = "Join a friend's party with its code"
 	play_btn.pressed.connect(func() -> void:
 		close()
 		App.goto(OnlineScreen))
@@ -331,15 +339,19 @@ func _refresh() -> void:
 ## Apple's invite sheet works for the host of a Game Center party.
 func can_game_center() -> bool:
 	var s: Variant = App.session
+	if Social.online_ready() and App.is_solo_party():
+		return true   # (2.2) the home party opens online first
 	return Social.online_ready() and s != null and is_instance_valid(s) and (s as NetSession).is_host() \
 		and (s as NetSession).transport is GameKitTransport
 
 
 func _game_center_invite(recipients: Array) -> void:
-	var s: Variant = App.session
 	if not can_game_center():
 		return
 	close()
+	if App.is_solo_party() and not await App.open_party():
+		return
+	var s: Variant = App.session
 	Social.invite_friends((s as NetSession).transport, (s as NetSession).room_code, recipients)
 
 

@@ -171,6 +171,8 @@ func _process(delta: float) -> void:
 	match scenario:
 		"home":
 			_home()
+		"v22":
+			_v22()
 		"screens":
 			_screens()
 		"account":
@@ -193,6 +195,37 @@ func _process(delta: float) -> void:
 			_emotes()
 		"layout":
 			_layout_editor()
+
+
+## 2.2 evidence: the home lobby, the playlist sheet, the champion poster,
+## Rankings (labelled sample rows) and the Official Rules.
+func _v22() -> void:
+	var steps := [[6.0, "home"], [7.0, "modes"], [9.0, "close"], [10.0, "promo"], [12.5, "close"], [13.5, "rankings"], [17.0, "rules"], [19.0, "quit"]]
+	for st in steps:
+		var key := "v22_%s" % str(st)
+		if _t < float(st[0]) or _scheduled.has(key):
+			continue
+		_scheduled[key] = true
+		match String(st[1]):
+			"home":
+				snap("v22_home")
+			"modes":
+				(App.screen as LobbyScreen)._mode_sheet()
+				later(1.2, "v22_playlists")
+			"close":
+				if App.screen is Screen:
+					(App.screen as Screen)._go_back()
+			"promo":
+				ChampionPromo.maybe_show(App.screen as Screen, true)
+				later(1.6, "v22_champion_poster")
+			"rankings":
+				App.goto(RankingsScreen)
+				later(2.0, "v22_rankings")
+			"rules":
+				ChampionPromo.open_rules(App.screen as Screen)
+				later(1.0, "v22_rules")
+			"quit":
+				get_tree().quit()
 
 
 func _home() -> void:

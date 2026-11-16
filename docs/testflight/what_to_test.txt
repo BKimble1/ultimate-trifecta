@@ -1,9 +1,12 @@
-2.2: Season 1 · Winter Break. Final pass before the App Store. The game service still isn't connected in this build, so Friends status, purchases, Coins and Season rewards say they're unavailable. That's expected; please don't try to buy anything. Tell us your iPhone or iPad model:
+2.2: the lobby is home, Quick Match, Rankings, chat. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Tell us your iPhone or iPad model:
 
-- The dorm is decorated for the holidays: a tree with lights and a star, presents under it, a wreath, twinkling string lights and snow outside the window. Check the home screen, the Locker, the Shop and a party room. Tell us if anything looks cut off, flickers or hides a player.
-- Home has a new Season 1 · Winter Break card above Play with Friends. Tap it: it opens the Season Pass. Premium rewards now sit on a gold row.
-- The Night Watch now leaves the shed at GO, together with the runners (it used to wait 6 s). Play rounds as both roles and tell us if either side feels too strong.
-- Maps: Moonbrook College is the map for now. Lakeside Campus shows in the map chooser as Coming soon; tapping it should say so and keep Moonbrook selected.
-- Online: every device needs 2.2, because 2.1 can't join a 2.2 party. Make a party with a code on two devices, invite a Game Center friend, play a full series with bots filling the empty seats, and try leaving and rejoining mid-round.
-- Practice and the tutorial: play each once as runner and Night Watch.
-- Look for any text cut off, overlapping or hidden behind the notch or home bar, on iPhone and iPad, and tell us if the device gets hot or stutters.
+- Home is now your party lobby: walk around (Walk), invite friends (Invite friends / Friends / Share), and press PLAY. Tap the playlist card to choose Quick Match (random players online, bots fill in), Party vs Bots or Practice.
+- Quick Match: two testers press PLAY at the same time; you should land in one match. Alone, it searches for up to 25 s, then starts with bots.
+- Friends: invite a Game Center friend from home; they join your lobby and you play together. Try "Add friends" (Game Center's friend request screen).
+- Chat: in a party, open Chat and type. Bad words should come out bleeped (#%&*); links, phone numbers and threats are refused. Tell us anything that slips through.
+- Names: change your name in Settings › Profile; rude names are refused, and your name shows to friends in a party.
+- Round start: keep your thumb on the stick through the countdown; you should move the instant it says GO. The role card is now a small banner so you can see your runner. Tell us if anything stutters when the round begins.
+- Loading tips rotate while a round loads.
+- Rankings (gold button, top right): Season Points and Fastest Run leaderboards (Game Center), your stats, and the Season Champion poster (it also pops up on launch now and then; X to close).
+- After a round: your run time, personal best and Season Points (online rounds with another real player count).
+- Buttons have a new glossy look. Tell us if any text is cut off or hard to read on iPhone or iPad.

@@ -35,9 +35,9 @@ const SLATE := Color("1b2740")
 const SLATE_HI := Color("26355a")
 const SLATE_LO := Color("131c30")
 const IVORY := Color("f6f3ec")
-const AMBER := Color("ffc65c")
+const AMBER := Color("ffc23d")   # (2.2) a punchier gold (V5: ffc65c)
 const AMBER_HI := Color("ffe0a3")
-const TEAL := Color("5fd6c8")
+const TEAL := Color("4fe3d0")    # (2.2) a brighter teal (V5: 5fd6c8)
 const IVORY_MUTED := Color(0.965, 0.953, 0.925, 0.7)
 const IVORY_DIM := Color(0.965, 0.953, 0.925, 0.5)
 const DISABLED_BG := Color("2a3247")
@@ -406,6 +406,7 @@ static func icon_button(icon: String, caption: String = "", size_units: float = 
 	if caption != "":
 		# the caption is drawn by the face; the button's own text only sizes it
 		b.custom_minimum_size.x = maxf(b.custom_minimum_size.x, s * 0.95 + font_w(600).get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, T_LABEL).x + 26.0)
+	f.shine = true
 	return b
 
 
@@ -555,6 +556,7 @@ static func _apply(b: Button, bg: Color, fg: Color) -> void:
 		"selected": card_box(TEAL, R_BUTTON, 1.0),
 	}
 	f.fg = {"normal": fg, "disabled": Color(IVORY, 0.55), "selected": NAVY}
+	f.shine = bg.a > 0.85
 	f.queue_redraw()
 	b.add_theme_stylebox_override("focus", focus_ring(R_BUTTON, TEAL if bg != TEAL else IVORY))
 
@@ -933,6 +935,10 @@ class Face:
 	var fg := {}              # text colour per state (falls back to normal)
 	var draw_text := true
 	var selected := false
+	## (2.2) candy finish: a chunky darker base under the face, a gloss band
+	## across its top and a soft shadow under the label; pressed, the face
+	## sinks onto its base.  Drawing only: layout and hit areas never change.
+	var shine := false
 	var icon := ""
 	var caption := ""
 	var glow := 0.0:
@@ -979,7 +985,30 @@ class Face:
 		var st := state()
 		var sb: StyleBox = styles.get(st, styles.get("normal"))
 		var r := Rect2(Vector2.ZERO, size)
-		if sb:
+		var lift := 0.0
+		if shine and sb is StyleBoxFlat and st != "disabled" and size.y > 30.0:
+			var fb := sb as StyleBoxFlat
+			var depth := clampf(size.y * 0.07, 4.0, 7.0)
+			var base := fb.duplicate() as StyleBoxFlat
+			base.bg_color = fb.bg_color.darkened(0.42)
+			base.border_width_top = 0
+			draw_style_box(base, r)
+			var pressed := st == "pressed"
+			var face := Rect2(Vector2(0, depth if pressed else 0.0), Vector2(size.x, size.y - depth))
+			draw_style_box(sb, face)
+			# gloss: a soft highlight over the top of the face
+			var gl := StyleBoxFlat.new()
+			gl.bg_color = Color(1, 1, 1, 0.24 if fb.bg_color.get_luminance() > 0.5 else 0.11)
+			var rr := maxi(2, fb.corner_radius_top_left - 3)
+			gl.corner_radius_top_left = rr
+			gl.corner_radius_top_right = rr
+			gl.corner_radius_bottom_left = int(rr * 0.6)
+			gl.corner_radius_bottom_right = int(rr * 0.6)
+			gl.anti_aliasing = true
+			draw_style_box(gl, Rect2(face.position + Vector2(5, 4), Vector2(face.size.x - 10, face.size.y * 0.42)))
+			lift = face.position.y - depth * 0.5
+			r = face
+		elif sb:
 			draw_style_box(sb, r)
 		if glow > 0.01:
 			var g := UIKit.box(Color(0, 0, 0, 0), UIKit.R_CARD + 3, 2, Color(UIKit.TEAL, 0.7 * glow), 0)
@@ -991,7 +1020,10 @@ class Face:
 			draw_style_box(g, r)
 		var col := color_for(st)
 		if icon != "":
+			# the glyph rides on the (raised or pressed) face
+			draw_set_transform(Vector2(0.0, r.get_center().y - size.y * 0.5))
 			_draw_icon(col)
+			draw_set_transform(Vector2.ZERO)
 			return
 		if not draw_text or btn == null or not (btn is Button):
 			return
@@ -1010,7 +1042,10 @@ class Face:
 			_line.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 			_line.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		var h := _line.get_size().y
-		_line.draw(get_canvas_item(), Vector2(pad, (size.y - h) * 0.5), col)
+		var tp := Vector2(pad, r.position.y + (r.size.y - h) * 0.5)
+		if shine and state() != "disabled":
+			_line.draw(get_canvas_item(), tp + Vector2(0, 2), Color(0, 0, 0, 0.22 if col.get_luminance() < 0.5 else 0.35))
+		_line.draw(get_canvas_item(), tp, col)
 
 	## Side padding of the text: 14 units, or less when the button itself
 	## was sized with tighter padding (a fitted tab strip), so a word that
