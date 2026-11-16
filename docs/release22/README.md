@@ -329,3 +329,29 @@ design system so every screen moves together:
   reads as a title.
 - **Join a party** (was "Play with Friends"): the wording matches a game
   where home is already your party.
+
+| | |
+|---|---|
+| Home, before (build 12) | `media/v23_home_before.jpg` |
+| Home, this pass (iPhone 14) | `media/v23_home.jpg` |
+| Home on iPhone SE | `media/v23_home_se.jpg` |
+| Playlists | `media/v23_playlists.jpg` |
+| Rankings (sample rows) | `media/v23_rankings.jpg` |
+| Party of 8 (the bottom row stays on screen) | `media/v23_party_8p.jpg` |
+| Friends with invites (test-double friends) | `media/v23_friends.jpg` |
+| Shop, Locker, Season Pass, Settings | `media/v23_shop.jpg`, `media/v23_locker.jpg`, `media/v23_season.jpg`, `media/v23_settings.jpg` |
+| Results, match HUD | `media/v23_results.jpg`, `media/v23_hud.jpg` |
+
+## 18. Checks for the third pass
+
+- Full headless suite: 590 tests, 359,869 checks; the one local failure
+  was a timing check (a campus build step at 256 ms under load) that
+  passes on its own (slowest step 19.5 ms) and passed on CI. CI's run
+  #204 failed one network-prediction sample count (16/20) that passes
+  locally twice; both are load-sensitive, not UI.
+- Found and fixed on the way: the party room's bottom row was pushed off
+  screen by the taller playlist tile (it now hides in a party, where the
+  settings row says what you'll play); home left ~22 orphan nodes per visit
+  (the hidden season card and code labels now live in the tree).
+- Not verified on a device: in-game invites need two signed-in Game Center
+  accounts that are friends (TestFlight).

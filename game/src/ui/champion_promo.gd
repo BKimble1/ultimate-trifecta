@@ -155,7 +155,8 @@ static func _fill(poster: Poster, screen: Screen, close: Callable, big: bool) ->
 			App.goto(RankingsScreen))
 		row.add_child(go)
 		UIKit.soft_focus.call_deferred(go)
-	var rules := UIKit.quiet("Official rules", Vector2(0, UIKit.touch_min()), UIKit.T_LABEL if big else UIKit.T_CAPTION)
+	var rules := UIKit.quiet("Official rules" if big else "Rules", Vector2(0, UIKit.touch_min()), UIKit.T_LABEL if big else UIKit.T_CAPTION)
+	rules.accessibility_name = "Official rules"
 	rules.pressed.connect(func() -> void: open_rules(screen))
 	row.add_child(rules)
 	v.add_child(row)

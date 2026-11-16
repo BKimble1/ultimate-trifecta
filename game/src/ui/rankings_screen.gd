@@ -78,7 +78,7 @@ func build() -> void:
 	list_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sc.add_child(list_box)
 	var foot := UIKit.hbox(10)
-	var how := UIKit.styled("Online rounds with another player count · resets every 30 days", "caption", UIKit.IVORY_MUTED)
+	var how := UIKit.styled("Online rounds count · new board every 30 days", "caption", UIKit.IVORY_MUTED)
 	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	how.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(how)
@@ -188,8 +188,8 @@ func _my_stats() -> Control:
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 14)
 	grid.add_theme_constant_override("v_separation", 14)
-	for pair in [[str(int(ps["points"])), "Season Points"], [str(int(ps["rounds"])), "Rounds counted"],
-			[Rankings.fmt_time(float(ps["best_run"])), "Best run this season"], [Rankings.fmt_time(float(b["practice"])), "Best in practice"]]:
+	for pair in [[str(int(ps["points"])), "Points"], [str(int(ps["rounds"])), "Rounds"],
+			[Rankings.fmt_time(float(ps["best_run"])), "Best run"], [Rankings.fmt_time(float(b["practice"])), "Practice best"]]:
 		var tile := PanelContainer.new()
 		var tb := UIKit.box(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 0, Color.WHITE, 16)
 		tb.content_margin_top = 12
@@ -201,8 +201,6 @@ func _my_stats() -> Control:
 		num.add_theme_font_size_override("font_size", 32)
 		tv.add_child(num)
 		var cap := UIKit.styled(String(pair[1]), "caption", UIKit.IVORY_MUTED)
-		cap.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		cap.custom_minimum_size.x = 140
 		tv.add_child(cap)
 		tile.add_child(tv)
 		grid.add_child(tile)

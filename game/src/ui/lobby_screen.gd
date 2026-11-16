@@ -622,7 +622,7 @@ func _mode_card() -> Button:
 	ch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(ch)
 	b.add_child(h)
-	b.custom_minimum_size.y = maxf(UIKit.touch_min(), 104.0)
+	b.custom_minimum_size.y = maxf(UIKit.touch_min(), 96.0)
 	b.pressed.connect(_mode_sheet)
 	return b
 
@@ -643,6 +643,9 @@ func _paint_mode() -> void:
 	mode_btn.accessibility_name = "Playlist: %s. %s. Change" % [mode_title.text, mode_sub.text]
 	# settings only where they apply: a party's series (host changes them)
 	settings_btn.visible = m == "party" or m == "bots"
+	# (2.3) with friends the playlist is always the party's: the settings row
+	# says what you'll play, and the room keeps its height for the roster
+	mode_btn.visible = m != "party"
 
 
 ## The playlist picker: three big cards.  With friends in the party it
