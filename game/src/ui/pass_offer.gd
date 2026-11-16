@@ -3,7 +3,7 @@ extends RefCounted
 ## The Season Pass offer (2.2 build 15): a poster over the Season Pass when
 ## it opens (a player without Premium; at most once every SHOW_GAP_S), and
 ## again from the pass's "Get Premium" button.  Three Premium outfits stand
-## in 3D on the right (tier 1, 50 and 100); the left says what Premium holds
+## in 3D on the right (tiers 1, 100 and 15); the left says what Premium holds
 ## (all counted from the catalogue) and sells it two ways:
 ##   * from Apple (com.idlery.ultimatetrifecta.pass.s1, a permanent
 ##     non-consumable at StoreKit's own localized price, never a stored one)
@@ -13,7 +13,7 @@ extends RefCounted
 const PRODUCT := "com.idlery.ultimatetrifecta.pass.s1"
 const SHOW_GAP_S := 10 * 60
 ## the outfits on the poster: [item, tier] (left, centre, right)
-const SHOWCASE := [["outfit:night_owl", 1], ["outfit:dr_doom", 100], ["outfit:record_breaker", 50]]
+const SHOWCASE := [["outfit:night_owl", 1], ["outfit:dr_doom", 100], ["outfit:glow_jogger", 15]]
 
 static var _last_shown_ms := -SHOW_GAP_S * 1000
 

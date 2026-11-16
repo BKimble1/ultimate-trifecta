@@ -173,6 +173,8 @@ func _process(delta: float) -> void:
 			_home()
 		"v22":
 			_v22()
+		"v25":
+			_v25()
 		"screens":
 			_screens()
 		"account":
@@ -226,6 +228,55 @@ func _v22() -> void:
 			"rules":
 				ChampionPromo.open_rules(App.screen as Screen)
 				later(1.0, "v22_rules")
+			"quit":
+				get_tree().quit()
+
+
+## 2.2 build 15 evidence: home's coloured tabs, the daily present (idle,
+## pumped, burst, the reveal), the event poster, the Season Pass with its
+## offer poster.  (No game service here: the present is the preview.)
+func _v25() -> void:
+	var steps := [[6.0, "home"], [6.5, "gift"], [8.0, "tap"], [8.6, "tap"], [9.0, "tap"], [10.0, "tap"], [12.4, "close"],
+		[13.5, "promo"], [16.0, "close"], [17.0, "pass"], [21.5, "close"], [22.5, "shot_pass"], [24.0, "quit"]]
+	for st in steps:
+		var key := "v25_%s" % str(st)
+		if _t < float(st[0]) or _scheduled.has(key):
+			continue
+		_scheduled[key] = true
+		match String(st[1]):
+			"home":
+				snap("v25_home_tabs")
+			"gift":
+				Save.set_setting("gift_day", "")
+				DailyGift.open(App.screen as Screen)
+				later(1.0, "v25_gift")
+			"tap":
+				var g := (App.screen as Node).find_child("DailyGift", true, false) as DailyGift
+				if g:
+					g._on_tap()
+					if g._taps == 3:
+						later(0.12, "v25_gift_pumped")
+					elif g._taps == DailyGift.TAPS:
+						later(0.25, "v25_gift_burst")
+						later(1.9, "v25_gift_reveal")
+			"close":
+				var gg := (App.screen as Node).find_child("DailyGift", true, false)
+				if gg:
+					(gg as DailyGift)._on_collect()
+				elif App.screen is Screen and (App.screen as Screen).has_modal():
+					(App.screen as Screen)._go_back()
+			"promo":
+				ChampionPromo.maybe_show(App.screen as Screen, true)
+				later(1.2, "v25_event_poster")
+				later(1.9, "v25_event_poster_b")
+			"pass":
+				NavShell.open("pass")
+				get_tree().create_timer(0.6).timeout.connect(func() -> void:
+					if App.screen is Screen and not (App.screen as Screen).has_modal():
+						PassOffer.popup(App.screen as Screen))
+				later(3.0, "v25_pass_offer")
+			"shot_pass":
+				snap("v25_pass_screen")
 			"quit":
 				get_tree().quit()
 

@@ -89,9 +89,9 @@ func _ready() -> void:
 	add_child(_burst)
 	# the words above and below
 	var top := UIKit.vbox(4)
-	top.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	top.position = Vector2(vis.x * 0.5 - 400, vis.y * 0.04)
 	top.custom_minimum_size = Vector2(800, 0)
+	top.size = Vector2(800, 0)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(top)
 	var ov := UIKit.styled("DAILY GIFT · DAY %d" % int(info["streak"]), "overline", UIKit.AMBER, HORIZONTAL_ALIGNMENT_CENTER)
@@ -215,6 +215,7 @@ func _open() -> void:
 		note_l.text = "Today's gift is already in your Coins. Come back tomorrow!"
 	elif bool(_claim.get("preview", false)):
 		note_l.text = "A preview: daily gifts add Coins once online play opens. This test build isn't connected to the game service yet, so no Coins were added."
+		collect.text = "Got it"
 	else:
 		note_l.text = "Couldn't reach the game service, so no Coins were added. Your gift waits: it opens again later today. (%s)" % String(_claim.get("message", ""))
 		collect.text = "OK"
@@ -372,20 +373,24 @@ class PresentArt:
 		_rect(lp + Vector2(ls.x * 0.62, 0), Vector2(ls.x * 0.38, ls.y), BOX_D, a)
 		_rect(lp + Vector2(ls.x * 0.44, 0), Vector2(ls.x * 0.12, ls.y), RIB, a)
 		_rect(lp + Vector2(0, ls.y * 0.82), Vector2(ls.x, ls.y * 0.18), Color(0, 0, 0, 0.15), a)
-		# the bow: two loops and a knot
+		# the bow: two tilted loops with shaded centres, two tails, a knot
 		var bc := Vector2(0, lp.y)
 		for side in [-1.0, 1.0]:
-			var loop := PackedVector2Array()
-			for j in 20:
-				var an3 := PI * j / 19.0
-				loop.append(bc + Vector2(side * (w * 0.02 + sin(an3) * w * 0.15), -cos(an3) * h * 0.075 - h * 0.075))
-			draw_colored_polygon(loop, Color(RIB, a))
-			var inner := PackedVector2Array()
-			for j in 20:
-				var an4 := PI * j / 19.0
-				inner.append(bc + Vector2(side * (w * 0.04 + sin(an4) * w * 0.08), -cos(an4) * h * 0.04 - h * 0.075))
-			draw_colored_polygon(inner, Color(RIB_D, a))
-		draw_circle(bc + Vector2(0, -h * 0.02), w * 0.045, Color(RIB, a))
+			var tail := PackedVector2Array([bc + Vector2(side * w * 0.01, 0), bc + Vector2(side * w * 0.05, 0),
+				bc + Vector2(side * w * 0.13, h * 0.1), bc + Vector2(side * w * 0.09, h * 0.115)])
+			draw_colored_polygon(tail, Color(RIB_D, a))
+			for layer in 2:
+				var loop := PackedVector2Array()
+				var rx := w * (0.13 if layer == 0 else 0.07)
+				var ry := h * (0.065 if layer == 0 else 0.03)
+				var lc2 := bc + Vector2(side * w * 0.12, -h * 0.055)
+				for j in 28:
+					var an3 := TAU * j / 28.0
+					var q := Vector2(cos(an3) * rx, sin(an3) * ry).rotated(side * -0.45)
+					loop.append(lc2 + q + Vector2(side * (w * 0.01 if layer == 1 else 0.0), 0))
+				draw_colored_polygon(loop, Color(RIB if layer == 0 else RIB_D, a))
+		draw_circle(bc + Vector2(0, -h * 0.03), w * 0.05, Color(RIB, a))
+		draw_circle(bc + Vector2(-w * 0.012, -h * 0.042), w * 0.018, Color(1, 1, 1, 0.35 * a))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 

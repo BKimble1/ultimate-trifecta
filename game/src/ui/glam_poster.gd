@@ -52,7 +52,8 @@ func _ready() -> void:
 	if sparkles_n <= 0:
 		sparkles_n = 9 if big else 5
 	for i in sparkles_n:
-		_sparkles.append({"p": Vector2(rng.randf_range(0.06, 0.94), rng.randf_range(0.08, 0.92)), "ph": rng.randf() * TAU,
+		# (within the confetti's band: never over the poster's words)
+		_sparkles.append({"p": Vector2(rng.randf_range(maxf(0.06, confetti_x.x), minf(0.94, confetti_x.y)), rng.randf_range(0.08, 0.92)), "ph": rng.randf() * TAU,
 			"f": rng.randf_range(0.6, 1.3), "s": rng.randf_range(0.6, 1.2)})
 	# the light sweep: a thin overlay child drawn over everything the poster
 	# holds (labels and buttons included), added blend
