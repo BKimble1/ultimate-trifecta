@@ -17,7 +17,7 @@ const RULES := {
 	"patrol_speed": 6.6, "patrol_jump_velocity": 6.0,
 	"tag_anticipation_s": 0.14, "tag_lunge_s": 0.22, "tag_lunge_speed": 9.0, "tag_reach_m": 1.6,
 	"tag_half_angle_deg": 75.0, "tag_vertical_reach_m": 1.5, "tag_miss_cooldown_s": 0.9,
-	"cart_count": 2, "cart_max_speed_road": 11.0, "cart_max_speed_offroad": 6.5, "cart_accel": 6.8,
+	"cart_count": 2, "cart_max_speed_road": 11.0, "cart_max_speed_offroad": 11.0, "cart_accel": 6.8,
 	"turbo_multiplier": 1.25, "turbo_speed_cap": 8.0, "coin_spawns_per_round": 8,
 	"view_range_m": 34.0, "sim_hz": 60, "snapshot_every_ticks": 3,
 }

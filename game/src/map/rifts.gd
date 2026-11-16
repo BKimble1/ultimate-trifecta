@@ -24,9 +24,22 @@ static func spots(layout: CampusLayout) -> Array:
 		return _cache[key]
 	var out: Array = []
 	var gadget: Array = layout.gadget_spots
-	for sp in layout.coin_spots:
-		var p: Vector2 = sp
-		if not layout._open_ground(p, 1.6):
+	var coins: Array = layout.coin_spots
+	for sp in coins:
+		# (beside a coin spot, never on one: a runner picking up a coin
+		# would otherwise be whisked away)
+		var p := Vector2.INF
+		for off in [Vector2(5, 0), Vector2(0, 5), Vector2(-5, 0), Vector2(0, -5)]:
+			var c: Vector2 = (sp as Vector2) + off
+			var clear := true
+			for q in coins:
+				if (q as Vector2).distance_to(c) < 4.0:
+					clear = false
+					break
+			if clear and layout._open_ground(c, 1.6):
+				p = c
+				break
+		if p == Vector2.INF:
 			continue
 		var bad := false
 		for g in gadget:

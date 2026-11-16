@@ -42,3 +42,12 @@ func test_a_rift_sends_you_far_and_closes() -> void:
 	t.check(bool(h.sim.rifts[0]["open"]), "a new rift opens")
 	t.check(int(h.sim.rifts[0]["at"]) != int(rf["at"]) or int(h.sim.rifts[0]["to"]) != int(rf["to"]), "elsewhere")
 	h.free_sim()
+
+
+func test_rifts_never_sit_on_a_coin_or_a_power_up() -> void:
+	var L := CampusLayout.shared()
+	for v in Rifts.spots(L):
+		for c in L.coin_spots:
+			t.check((c as Vector2).distance_to(v) >= 3.5, "rift %s clear of coin %s" % [str(v), str(c)])
+		for g in L.gadget_spots:
+			t.check((g as Vector2).distance_to(v) >= 6.0, "rift %s clear of power-up %s" % [str(v), str(g)])
