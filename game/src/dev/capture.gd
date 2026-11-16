@@ -286,10 +286,10 @@ func _v25() -> void:
 
 
 ## 2.2 build 16 evidence: Locker Music and Emotes, Settings › Audio, the
-## Season Pass full screen, the Censored outfit on home.
+## Season Pass full screen.
 func _v26() -> void:
 	var steps := [[6.0, "locker_music"], [9.0, "locker_emotes"], [12.0, "settings"], [15.0, "pass"], [19.0, "pass_max"],
-		[22.0, "censored"], [26.0, "quit"]]
+		[22.0, "quit"]]
 	for st in steps:
 		var key := "v26_%s" % str(st)
 		if _t < float(st[0]) or _scheduled.has(key):
@@ -317,13 +317,6 @@ func _v26() -> void:
 				if App.screen is SeasonScreen:
 					(App.screen as SeasonScreen).set_maximized(true)
 				later(1.5, "v26_pass_full")
-			"censored":
-				var c: Dictionary = Save.data["cosmetic"].duplicate()
-				c["outfit"] = "censored"
-				c["hat"] = "none"
-				Save.data["cosmetic"] = Cosmetics.sanitize(c)
-				App.goto(TitleScreen)
-				later(2.5, "v26_home_censored")
 			"quit":
 				get_tree().quit()
 

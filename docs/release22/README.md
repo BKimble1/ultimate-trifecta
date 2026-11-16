@@ -601,12 +601,6 @@ From the owner's list after build 15, in the order it was done:
   that rift collapses and a new one opens elsewhere 40 s later.  A swirling
   portal shader (`rift.gdshader`), a ground ring, orbiting sparks and violet
   marks on the minimap.
-- **Censored outfit:** Season 1 Premium tier 4 (it was the Shush emote): the
-  runner's own skin from head to toe with a pixel-blur box in their skin
-  tones over the shorts area, riding the hips bone.  Shush moved to the
-  Shop (200 Coins).  Tier 4 is the one change to tiers 1-30 since catalogue
-  version 2, made before any public release; the tests that guard that
-  table name it as the exception.
 - Protocol 13: builds 14 and 15 can't join build 16 parties.
 
 ## 32. Before publishing 2.2: what only the owner can do
@@ -634,12 +628,7 @@ order.  After them, submitting needs no further code change.
    and not retroactively).  Confirm they were made on a paid plan, or
    regenerate them on one, before release; the game can ship with Dorm
    Nights alone by removing the three from `Albums.LIST`.
-5. **Age rating:** the Censored outfit is a cartoon nudity joke (fully
-   covered by a pixel blur).  Update the App Store age-rating questionnaire's
-   answers for nudity and suggestive themes to match, and check the rating
-   it gives still suits your audience; if not, take `outfit:censored` back
-   off tier 4.
-6. **Game Center:** add the two leaderboards to the 2.2 version page; have
+5. **Game Center:** add the two leaderboards to the 2.2 version page; have
    the Season Champion rules (docs/release22/CONTEST_RULES.md) reviewed.
-7. **Certificates:** the iOS Distribution certificate expires 2026-11-26;
+6. **Certificates:** the iOS Distribution certificate expires 2026-11-26;
    renew it before then.

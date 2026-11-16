@@ -1,4 +1,4 @@
-2.2 (16): music albums, an emote loadout, rift portals, a useful Squeaky Duck, carts that tag, a Censored outfit, Settings tabs and many fixes. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Every phone in a party needs build 16. Tell us your iPhone or iPad model:
+2.2 (16): music albums, an emote loadout, rift portals, a useful Squeaky Duck, carts that tag, Settings tabs and many fixes. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Every phone in a party needs build 16. Tell us your iPhone or iPad model:
 
 - Locker › Music: tap a disc to change the lobby music (four albums). It should loop without a gap.
 - Locker › Emotes: pick a slot, then an emote. The lobby Emote button and the round's Emote button (under the map) show your five; keys 1-5 on a keyboard.
@@ -6,7 +6,6 @@
 - Night Watch: carts are as fast on grass; ramming a runner tags them and sends them flying.
 - Chat: in a party, chat lines appear on the left (no bubbles over heads); in rounds, Chat is under the map.
 - Season Pass: the button at the top right of the pass shows every tier full screen. Shop › Season 1 is now the pass poster.
-- Season 1 Premium tier 4 is the Censored outfit (Shush is in the Shop).
 - Settings has tabs; Audio has Master, Music and Sound effects.
 - Fixes to check: no word over emotes; your runner stands centred on the results screen and on the rug (feet not in it); after Walk, your runner turns back smoothly; the posters' confetti moves.
 - Still check: one runner on home after Game Center signs in; the daily present (a preview without the service); Quick Match and Friends invites.
