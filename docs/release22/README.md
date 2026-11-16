@@ -538,3 +538,108 @@ little depth and gloss.
 | The event poster | `media/v25_event_poster.jpg` |
 | The Season Pass offer (before the outfits lost the nightcap) | `media/v25_pass_offer.jpg` |
 | The Hide button beside a bush (gold ring: in reach) | `media/v25_hide_button.jpg` |
+
+## 31. Sixth pass (build 16): what changed
+
+From the owner's list after build 15, in the order it was done:
+
+- **No text over emotes; chat stays in chat.**  The emote name bubble over a
+  runner is gone in the room and in rounds.  Lobby chat no longer floats a
+  bubble over the sender: a short line appears on the left of the room
+  (who said it, cut short when long) and the drawer keeps the whole
+  conversation.
+- **Results:** the runner stands in the middle of the space left of the
+  results panel (`DormStage.set_home_x`).
+- **Feet on the rug:** the round rug was 2.4 cm thick and runners stand at
+  floor height, so their feet sank into it; it is now a few millimetres.
+- **Walk, then back:** a runner walking back to its mark now turns round
+  smoothly when it arrives (`HubWalk._turning`, `DormStage.rest_yaw`)
+  instead of snapping to face the room in one frame.
+- **Posters move:** under Reduced Motion they animated not at all, which read
+  as broken; they now run at a third of the speed without the light sweep.
+- **Shop › Season 1 is the Season Pass poster** (`PassOffer.banner`, a
+  stacked layout for the narrow panel): Premium from Apple or for Coins right
+  there.  The poster shows Apple's price once the product exists in App
+  Store Connect (and the Paid Apps agreement is active); until then it says
+  purchases are unavailable.
+- **Season Pass, full screen:** a button at the top right of the pass expands
+  the tier track to the whole screen (the runner and the side panel step
+  aside); a tap on a reward, Back, or the button returns.
+- **Buy now:** a Coin item the player can't afford can be bought outright:
+  the smallest Coin pack that covers it is bought from Apple and the item is
+  bought with those Coins at once; the leftover Coins stay
+  (`Purchases.start_buy_now`).  The Shop's daily rotation and the always
+  visible Outfits list are as before.
+- **Settings tabs:** Account, Controls, Audio, Display, About.  Audio has
+  Master volume (the Master bus), Music, Sound effects, a test sound and the
+  lobby music.
+- **Emote loadout:** five equipped emotes, chosen in the Locker's Emotes tab
+  (pick a slot, then an emote; slot 1 is also the ready move).  The lobby's
+  Emote button and the round's Emote button offer those five; keys 1-5 play
+  them (`EmoteSlots`).
+- **Round buttons under the minimap:** Emote (every round) and Chat (party
+  rounds).  Chat lines join the round's event feed on the left, in their own
+  colour with who said them, cut short when long.
+- **Carts:** as fast on grass as on paths (11 m/s); a driven cart that hits
+  a runner tags them and flings them up and away (the runner flies along an
+  arc while the capture's penalty runs).  A protected runner is not hit.
+- **Albums:** the Locker has a Music tab of discs (sleeve and picture disc,
+  spinning while it plays): Dorm Nights (the game's own track) and the
+  owner's three songs, Lobby Pluck, Cozy Christmas Lobby and Stardust
+  Reverie, taken from the owner's screen recordings and looped seamlessly
+  (`tools/make_loop.py`: the loop end whose lead-in best matches the loop
+  start, crossfaded, levelled to -18 dBFS).  Covers: the owner's three
+  pictures.  The choice plays wherever the menu music plays.
+- **Squeaky Duck:** it now does something you can see: where it lands, every
+  Night Watch within 8 m trips and can't tag for 2.5 s, and a cart there is
+  slowed as long (Ev.DAZE; "Squeak! … is dazed").
+- **Power-ups move:** a picked-up power-up comes back after its respawn time
+  at another spot (the map's power-up and coin spots, never one in use).
+- **Rift portals:** four rifts stand on the campus lawns (open ground, away
+  from water, buildings, dorm doors and power-ups).  Step into one, runner or
+  Night Watch on foot, and you come out at its far end at least 55 m away;
+  that rift collapses and a new one opens elsewhere 40 s later.  A swirling
+  portal shader (`rift.gdshader`), a ground ring, orbiting sparks and violet
+  marks on the minimap.
+- **Censored outfit:** Season 1 Premium tier 4 (it was the Shush emote): the
+  runner's own skin from head to toe with a pixel-blur box in their skin
+  tones over the shorts area, riding the hips bone.  Shush moved to the
+  Shop (200 Coins).  Tier 4 is the one change to tiers 1-30 since catalogue
+  version 2, made before any public release; the tests that guard that
+  table name it as the exception.
+- Protocol 13: builds 14 and 15 can't join build 16 parties.
+
+## 32. Before publishing 2.2: what only the owner can do
+
+The build is App Store-eligible; these are the steps outside the code, in
+order.  After them, submitting needs no further code change.
+
+1. **Paid Apps agreement, tax and banking** (account holder, App Store
+   Connect › Business).  Without it StoreKit returns no products, so no
+   price shows anywhere.
+2. **In-app purchases:** run the workflow with `iap=create` (it creates the
+   nine planned products, never prices), then in App Store Connect give each
+   a price, a review screenshot and the review note: the six Coin packs, the
+   two direct skins, and `com.idlery.ultimatetrifecta.pass.s1` (Season 1
+   Premium Pass, non-consumable, USD 9.99 as asked).  Attach them to the 2.2
+   version.
+3. **The game service** (docs/OWNER_SETUP_GUIDE.md C): deploy sandbox and
+   production, set the App Store Server Notification URLs, fill
+   `game/config/service.cfg` and `links.cfg` (support e-mail, privacy URL).
+   Coins, purchases, Season rewards, the daily present and typed chat need
+   it; then build once more.
+4. **Music rights:** the three albums were made with Suno.  Songs made on
+   Suno's free plan may not be used commercially (Suno's terms give
+   commercial rights only to songs made while subscribed to a paid plan,
+   and not retroactively).  Confirm they were made on a paid plan, or
+   regenerate them on one, before release; the game can ship with Dorm
+   Nights alone by removing the three from `Albums.LIST`.
+5. **Age rating:** the Censored outfit is a cartoon nudity joke (fully
+   covered by a pixel blur).  Update the App Store age-rating questionnaire's
+   answers for nudity and suggestive themes to match, and check the rating
+   it gives still suits your audience; if not, take `outfit:censored` back
+   off tier 4.
+6. **Game Center:** add the two leaderboards to the 2.2 version page; have
+   the Season Champion rules (docs/release22/CONTEST_RULES.md) reviewed.
+7. **Certificates:** the iOS Distribution certificate expires 2026-11-26;
+   renew it before then.

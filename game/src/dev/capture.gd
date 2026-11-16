@@ -175,6 +175,10 @@ func _process(delta: float) -> void:
 			_v22()
 		"v25":
 			_v25()
+		"v26":
+			_v26()
+		"rift26":
+			_rift26()
 		"screens":
 			_screens()
 		"account":
@@ -279,6 +283,72 @@ func _v25() -> void:
 				snap("v25_pass_screen")
 			"quit":
 				get_tree().quit()
+
+
+## 2.2 build 16 evidence: Locker Music and Emotes, Settings › Audio, the
+## Season Pass full screen, the Censored outfit on home.
+func _v26() -> void:
+	var steps := [[6.0, "locker_music"], [9.0, "locker_emotes"], [12.0, "settings"], [15.0, "pass"], [19.0, "pass_max"],
+		[22.0, "censored"], [26.0, "quit"]]
+	for st in steps:
+		var key := "v26_%s" % str(st)
+		if _t < float(st[0]) or _scheduled.has(key):
+			continue
+		_scheduled[key] = true
+		match String(st[1]):
+			"locker_music":
+				CreatorScreen.open_category = "albums"
+				NavShell.open("locker")
+				later(2.4, "v26_locker_music")
+			"locker_emotes":
+				(App.screen as CreatorScreen)._select_tab("move")
+				later(1.6, "v26_locker_emotes")
+			"settings":
+				SettingsScreen.open_tab = 2
+				App.goto(SettingsScreen)
+				later(1.6, "v26_settings_audio")
+			"pass":
+				NavShell.open("pass")
+				get_tree().create_timer(1.0).timeout.connect(func() -> void:
+					if App.screen is Screen and (App.screen as Screen).has_modal():
+						(App.screen as Screen)._go_back())
+				later(3.0, "v26_pass")
+			"pass_max":
+				if App.screen is SeasonScreen:
+					(App.screen as SeasonScreen).set_maximized(true)
+				later(1.5, "v26_pass_full")
+			"censored":
+				var c: Dictionary = Save.data["cosmetic"].duplicate()
+				c["outfit"] = "censored"
+				c["hat"] = "none"
+				Save.data["cosmetic"] = Cosmetics.sanitize(c)
+				App.goto(TitleScreen)
+				later(2.5, "v26_home_censored")
+			"quit":
+				get_tree().quit()
+
+
+## 2.2 build 16 evidence: a rift in a round (--autoplay=runner).
+func _rift26() -> void:
+	var mc: MatchController = App.match_ctrl
+	if mc == null or not is_instance_valid(mc) or mc.sim == null or mc.hud == null:
+		return
+	if int(mc.local_info().get("phase", 0)) != TC.Phase.PLAYING:
+		return
+	var s := mc.sim
+	var me := s.player(mc.local_slot)
+	if not _scheduled.has("r1") and not s.rifts.is_empty():
+		_scheduled["r1"] = _t
+		var at := Rifts.world(s.layout, int(s.rifts[0]["at"]))
+		me.body.global_position = at + Vector3(0, 0.05, 5.0)
+		me.yaw = 0.0
+		later(2.0, "r26_rift")
+	elif _scheduled.has("r1") and not _scheduled.has("r2") and _t > float(_scheduled["r1"]) + 3.0:
+		_scheduled["r2"] = _t
+		mc.hud.open_map()
+		later(1.0, "r26_map")
+	elif _scheduled.has("r2") and _t > float(_scheduled["r2"]) + 2.5:
+		get_tree().quit()
 
 
 func _home() -> void:

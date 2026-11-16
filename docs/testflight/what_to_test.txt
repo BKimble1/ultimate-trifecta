@@ -1,15 +1,12 @@
-2.2 (15): a daily present, a Season Pass offer, livelier posters and tabs, and the doubled-runner fix. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Tell us your iPhone or iPad model:
+2.2 (16): music albums, an emote loadout, rift portals, a useful Squeaky Duck, carts that tag, a Censored outfit, Settings tabs and many fixes. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Every phone in a party needs build 16. Tell us your iPhone or iPad model:
 
-- Faces: after signing in to Game Center, your runner on home, in the Shop and in the Season Pass should be one runner with two eyes (a second copy used to stand in the same spot). Leave and rejoin a party and check again.
-- Daily present: once a day a present appears on home. Tap it a few times: it shakes and grows, then bursts open. In this build it's a preview and adds no Coins (it says so).
-- Season Champion poster: shows on your first launch, then every few launches or after a few hours away. The confetti should move and a light sweeps across it, here and on the Rankings banner.
-- Season Pass: opening it shows the Premium offer with three Premium outfits; "Get Premium" in the pass header reopens it. The price button says unavailable until the purchase is set up.
-- Tabs (Play, Locker, Shop, Season Pass) have their own colours now; tell us if any label is cut off, especially on iPhone SE.
-- Bushes: the Hide button is a leafy bush that glows when you're next to one. Tap Hide; the Night Watch can't see you, but a lunge at the bush still tags you. Tap Jump out to run.
-- Power-ups are holograms: Speed Sneakers (faster for 10 s, a bar at the bottom), Pillow Shield (tags bounce off for 5 s), Squeaky Duck (fake footsteps).
-- Home is your party lobby: Walk, invite friends, PLAY. The playlist card picks Quick Match, Party vs Bots or Practice.
-- Quick Match: two testers press PLAY at the same time and should land in one match; alone, bots fill in after up to 25 s.
-- Friends (top right): Invite sends Game Center's invitation; the row shows Invited, then Joining or Can't come.
-- Chat: bad words come out bleeped; links, phone numbers and threats are refused.
-- Round start: keep your thumb on the stick through the countdown; you should move the instant it says GO.
-- Rankings (gold button): your stats; the Season Points and Fastest Run leaderboards open with Season 1 on 1 December.
+- Locker › Music: tap a disc to change the lobby music (four albums). It should loop without a gap.
+- Locker › Emotes: pick a slot, then an emote. The lobby Emote button and the round's Emote button (under the map) show your five; keys 1-5 on a keyboard.
+- Rounds: rifts (purple swirls, also on the map) send you across campus and close; a new one opens later. Power-ups come back at a new spot. Toss a Squeaky Duck near the Night Watch: they trip and can't tag for a moment.
+- Night Watch: carts are as fast on grass; ramming a runner tags them and sends them flying.
+- Chat: in a party, chat lines appear on the left (no bubbles over heads); in rounds, Chat is under the map.
+- Season Pass: the button at the top right of the pass shows every tier full screen. Shop › Season 1 is now the pass poster.
+- Season 1 Premium tier 4 is the Censored outfit (Shush is in the Shop).
+- Settings has tabs; Audio has Master, Music and Sound effects.
+- Fixes to check: no word over emotes; your runner stands centred on the results screen and on the rug (feet not in it); after Walk, your runner turns back smoothly; the posters' confetti moves.
+- Still check: one runner on home after Game Center signs in; the daily present (a preview without the service); Quick Match and Friends invites.
