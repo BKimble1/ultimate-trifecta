@@ -67,6 +67,28 @@ func test_seasons_are_30_days() -> void:
 	t.eq(Rankings.fmt_time(112.4), "1:52.40", "run times read m:ss.cc")
 
 
+## The preseason has no Game Center boards (App Store Connect can't start a
+## recurring board in the past): the contest and the boards are Season 1's.
+func test_preseason_points_stay_local_and_the_contest_is_season_1s() -> void:
+	var p0 := Rankings.period0()
+	t.check(not Rankings.boards_open(p0 + 86400), "no boards in the preseason")
+	t.check(Rankings.boards_open(p0 + 30 * 86400), "they open with Season 1")
+	t.eq(Rankings.contest_period(p0 + 86400), Rankings.FIRST_SEASON, "the preseason's poster is about Season 1")
+	t.eq(Rankings.contest_period(p0 + 65 * 86400), 2, "later on, the season running")
+	t.eq(Rankings.time_to_start_text(p0 + 15 * 86400 + 3600), "14d 23h", "counts down to Season 1")
+	Rankings.clock_override = func() -> int: return p0 + 86400
+	var r := ChampionPromo.rules_text()
+	t.check(r.contains("Season 1 · Winter Break runs from 2026-12-01"), "the rules name Season 1's window")
+	t.eq(ChampionPromo._when(), "Starts in %s" % Rankings.time_to_start_text(), "the poster says when it starts")
+	Rankings.clock_override = func() -> int: return p0 + 31 * 86400
+	t.check(ChampionPromo._when().begins_with("Ends in"), "and in a season, when it ends")
+	Rankings.clock_override = Callable()
+	var asc := FileAccess.get_file_as_string(ProjectSettings.globalize_path("res://").path_join("../tools/asc.py").simplify_path())
+	if asc != "":
+		var start := Time.get_datetime_string_from_unix_time(Rankings.period_bounds(Rankings.FIRST_SEASON)[0])
+		t.check(asc.contains('LB_START = "%sZ"' % start), "App Store Connect's boards start with the first season (%s)" % start)
+
+
 func test_contest_rules_meet_guideline_5_3() -> void:
 	var r := ChampionPromo.rules_text()
 	t.check(r.contains("Apple is not a sponsor") and r.contains("not involved"), "Apple is not a sponsor or involved")

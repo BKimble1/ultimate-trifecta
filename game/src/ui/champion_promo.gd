@@ -89,7 +89,7 @@ static func _fill(poster: Poster, screen: Screen, close: Callable, big: bool) ->
 	m.add_child(v)
 	var top := UIKit.hbox(10)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var ov := UIKit.chip("%s · CHAMPION PRIZE" % Rankings.season_name().to_upper(), UIKit.AMBER, UIKit.NAVY, UIKit.T_OVERLINE + (3 if big else 0))
+	var ov := UIKit.chip("%s · CHAMPION PRIZE" % Rankings.season_name(Rankings.contest_period()).to_upper(), UIKit.AMBER, UIKit.NAVY, UIKit.T_OVERLINE + (3 if big else 0))
 	ov.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(ov)
 	top.add_child(UIKit.spacer_h())
@@ -115,7 +115,7 @@ static func _fill(poster: Poster, screen: Screen, close: Callable, big: bool) ->
 	v.add_child(body)
 	v.add_child(UIKit.spacer_v())
 	var row := UIKit.hbox(12)
-	var ends := UIKit.chip("Ends in %s" % Rankings.time_left_text(), Color(UIKit.NAVY, 0.75), UIKit.IVORY, UIKit.T_LABEL if big else UIKit.T_CAPTION)
+	var ends := UIKit.chip(_when(), Color(UIKit.NAVY, 0.75), UIKit.IVORY, UIKit.T_LABEL if big else UIKit.T_CAPTION)
 	ends.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	ends.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(ends)
@@ -130,7 +130,14 @@ static func _fill(poster: Poster, screen: Screen, close: Callable, big: bool) ->
 	rules.pressed.connect(func() -> void: open_rules(screen))
 	row.add_child(rules)
 	v.add_child(row)
-	poster.accessibility_name = "%s champion prize. %s %s Ends in %s." % [Rankings.season_name(), HEAD.capitalize(), BODY, Rankings.time_left_text()]
+	poster.accessibility_name = "%s champion prize. %s %s %s." % [Rankings.season_name(Rankings.contest_period()), HEAD.capitalize(), BODY, _when()]
+
+
+## "Ends in 12d 4h", or in the preseason "Starts in 14d 23h".
+static func _when() -> String:
+	if Rankings.boards_open():
+		return "Ends in %s" % Rankings.time_left_text()
+	return "Starts in %s" % Rankings.time_to_start_text()
 
 
 static func open_rules(screen: Screen) -> void:
@@ -175,13 +182,13 @@ static func open_rules(screen: Screen) -> void:
 ## The rules as shown in the game (docs/release22/CONTEST_RULES.md keeps the
 ## same text for the owner's review).
 static func rules_text() -> String:
-	var b := Rankings.period_bounds(Rankings.period_index())
+	var b := Rankings.period_bounds(Rankings.contest_period())
 	var s := Time.get_date_string_from_unix_time(b[0])
 	var e := Time.get_date_string_from_unix_time(b[1] - 1)
 	return "\n\n".join(PackedStringArray([
 		"1. Sponsor. This contest is run by Idlery Games, the developer of Ultimate Trifecta. Apple is not a sponsor of, and is not involved in, this contest in any way.",
 		"2. No purchase necessary. Entry is free: you take part by playing online rounds. Buying anything in the game does not improve your chances.",
-		"3. Season. %s runs from %s 00:00 UTC to %s 23:59 UTC (30 days). Each season is a separate contest." % [Rankings.season_name(), s, e],
+		"3. Season. %s runs from %s 00:00 UTC to %s 23:59 UTC (30 days). Each season is a separate contest." % [Rankings.season_name(Rankings.contest_period()), s, e],
 		"4. How the winner is decided. The player at #1 on the Season Points leaderboard in Game Center when the season ends. Season Points come only from online rounds with at least one other real player (Rankings explains how points are earned). Before announcing a winner, the developer reviews the top scores and removes any it reasonably believes were cheated, made with a modified game, or earned against these rules; the next eligible player then moves up.",
 		"5. Eligibility. Open to players with a Game Center account who are 13 or older (younger players need a parent or guardian's permission). Employees of the developer and their households can't win. Void where prohibited by law.",
 		"6. The prize. The winner may send the developer a concept (a drawing, a description or both) and a name for a cosmetic outfit. The developer will make an outfit inspired by it, as the tier 100 reward of a following season's Season Pass, adapting it to the game's style and content rules (it must be suitable for all ages and must not copy anyone else's work, brand or likeness). The prize has no cash value, can't be transferred and can't be exchanged. The outfit is cosmetic only.",

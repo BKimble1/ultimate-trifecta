@@ -12,9 +12,11 @@ extends RefCounted
 ##
 ## Seasons: 30-day periods counted from PERIOD0 (2026-11-01 00:00 UTC, the
 ## preseason).  Period 1 (from 2026-12-01) is Season 1 · Winter Break, and so
-## on.  The leaderboards in App Store Connect use the same start date and a
-## 30-day recurrence (tools/asc.py gc-leaderboards), so the game's season and
-## Game Center's occurrence are the same window.
+## on.  The leaderboards in App Store Connect recur every 30 days from the
+## start of FIRST_SEASON (tools/asc.py gc-leaderboards; App Store Connect
+## can't start a recurring board in the past), so each season and Game
+## Center's occurrence are the same window.  The preseason has no boards and
+## no champion: its rounds count toward the player's own stats only.
 ##
 ## Trust: the round is the host's simulation; scores are what this device
 ## saw, with sanity limits (a run can't be faster than MIN_RUN_S, a round
@@ -33,6 +35,8 @@ const ROUND_CAP := 70
 const DAILY_ROUNDS := 40
 ## the season names players see, by period (period 0: the preseason)
 const NAMES := {0: "Preseason", 1: "Season 1 · Winter Break"}
+## the first period with Game Center leaderboards and a Season Champion
+const FIRST_SEASON := 1
 
 ## tests: replace the clock (unix seconds)
 static var clock_override: Callable
@@ -62,10 +66,31 @@ static func season_name(idx: int = -1) -> String:
 	return String(NAMES.get(i, "Season %d" % i))
 
 
+## The leaderboards (and the Season Champion contest) are running.
+static func boards_open(t: int = -1) -> bool:
+	return period_index(t) >= FIRST_SEASON
+
+
+## The season the champion contest is about: this one, or in the preseason
+## the first season.
+static func contest_period(t: int = -1) -> int:
+	return maxi(period_index(t), FIRST_SEASON)
+
+
 ## "12d 4h" / "5h 20m" / "9m" until the period ends.
 static func time_left_text(t: int = -1) -> String:
 	var tt := now() if t < 0 else t
-	var left := maxi(0, period_bounds(period_index(tt))[1] - tt)
+	return _span_text(period_bounds(period_index(tt))[1] - tt)
+
+
+## The same, until the first season (and its leaderboards) starts.
+static func time_to_start_text(t: int = -1) -> String:
+	var tt := now() if t < 0 else t
+	return _span_text(period_bounds(FIRST_SEASON)[0] - tt)
+
+
+static func _span_text(secs: int) -> String:
+	var left := maxi(0, secs)
 	var d := left / 86400
 	var h := (left % 86400) / 3600
 	var m := (left % 3600) / 60
@@ -192,7 +217,7 @@ static func record(results: Dictionary, slot: int, practice: bool, submit: bool 
 		days.clear()          # only today's count is kept
 		days[day] = counted_today
 		out["season_points"] = int(per["points"])
-		if submit:
+		if submit and boards_open():
 			Social.submit_score(BOARD_POINTS, int(per["points"]))
 			if run > 0.0:
 				Social.submit_score(BOARD_FASTEST, int(round(run * 100.0)))   # centiseconds

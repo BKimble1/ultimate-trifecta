@@ -277,11 +277,14 @@ func _run_card() -> Control:
 		right.add_child(pts)
 		var bits: Array[String] = []
 		for part in rank.get("parts", []):
-			bits.append("%s %d" % [part[0], int(part[1])])
+			# one part never breaks across lines ("Splashes ×3 15")
+			bits.append(("%s %d" % [part[0], int(part[1])]).replace(" ", "\u00a0"))
 		var bl := UIKit.styled(" · ".join(bits), "caption", UIKit.IVORY_MUTED)
 		bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		right.add_child(bl)
 		right.add_child(UIKit.styled("%s total: %d" % [Rankings.season_name(), int(rank["season_points"])], "caption", UIKit.IVORY))
+		if not Rankings.boards_open():
+			right.add_child(UIKit.styled("Leaderboards open in %s" % Rankings.time_to_start_text(), "caption", UIKit.IVORY_MUTED))
 	else:
 		var wl := UIKit.styled(String(rank.get("why", "")), "caption", UIKit.IVORY_MUTED)
 		wl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

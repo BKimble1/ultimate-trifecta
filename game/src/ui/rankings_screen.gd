@@ -120,6 +120,11 @@ func _load() -> void:
 		if req != _req or not is_inside_tree():
 			return
 		_show(r)
+	if not Rankings.boards_open() and not loader.is_valid() and not App.dev_rank_sample:
+		# the preseason: Game Center's boards start with the first season
+		state_lbl.text = "The leaderboards open with %s in %s. Until then, online rounds count toward Your stats." % [
+			Rankings.season_name(Rankings.FIRST_SEASON), Rankings.time_to_start_text()]
+		return
 	var ld: Callable = loader if loader.is_valid() else (Callable(Social, "load_board") if not App.dev_rank_sample else Callable(self, "_sample"))
 	ld.call(board, friends_only, 1, PAGE, done)
 

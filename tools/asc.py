@@ -237,8 +237,10 @@ LEADERBOARDS = [
      "scoreSortType": "ASC", "scoreRangeStart": "5000", "scoreRangeEnd": "100000", "name": "Fastest Run",
      "suffix": "", "suffixSingular": ""},
 ]
-LB_START = "2026-11-01T00:00:00Z"
-LB_DURATIONS = ["P30DT0H0M0S", "PT720H"]
+# Season 1 (the game's period 1, Rankings.FIRST_SEASON): a recurring board
+# can't start in the past, and the preseason has no boards
+LB_START = "2026-12-01T00:00:00Z"
+LB_DURATIONS = ["PT720H", "P30DT0H0M0S"]
 
 
 def gc_leaderboards(app_id, create):
