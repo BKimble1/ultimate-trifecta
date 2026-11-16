@@ -28,6 +28,13 @@ func test_round_chat_feed_drawer_and_input_ownership() -> void:
 	var reserved: Array = hud.actions.reserved()
 	t.check(hud.actions.chat_btn != null and reserved.has(hud.actions.chat_btn.get_global_rect()), "the chat button is reserved from the stick and camera")
 	t.check(hud.actions.emote_btn.get_global_rect().position.y >= hud.minimap.get_global_rect().end.y, "Emote under the minimap")
+	# (2.2 build 17) Emote opens the wheel in the middle of the screen
+	hud.actions.toggle_row()
+	await rig.frames(4)
+	var wr: Rect2 = hud.actions.row.get_global_rect()
+	t.check(hud.actions.row.is_visible_in_tree(), "the emote wheel is open (visible %s, in tree %s)" % [hud.actions.row.visible, hud.actions.is_visible_in_tree()])
+	t.check(wr.size.x > 300.0 and wr.get_center().distance_to(hud.get_viewport().get_visible_rect().get_center()) < 2.0, "the wheel is centred on screen (%s)" % str(wr))
+	hud.actions._close_row()
 	# a runner teammate's phrase reaches the runner host's feed; the Night Watch's doesn't
 	c0.social.chat.send_quick(24, QuickChat.Channel.TEAM)
 	c1.social.chat.send_quick(26, QuickChat.Channel.TEAM)

@@ -16,7 +16,7 @@ var hud: MatchHUD
 var emote_btn: Button
 var chat_btn: Button
 var row: EmoteWheel
-var _row_until := 0.0
+var _row_left := 0.0   # seconds the wheel stays open untouched (game time)
 
 
 func _init() -> void:
@@ -94,7 +94,7 @@ func toggle_row() -> void:
 		return
 	row.open(EmoteSlots.ids())
 	row.visible = true
-	_row_until = Time.get_ticks_msec() / 1000.0 + ROW_S
+	_row_left = ROW_S
 	_layout.call_deferred()
 
 
@@ -191,6 +191,8 @@ class EmoteWheel:
 		Icons.draw_shape(self, "close", c, 16.0, UIKit.IVORY_MUTED)
 
 
-func _process(_delta: float) -> void:
-	if row.visible and Time.get_ticks_msec() / 1000.0 > _row_until:
-		_close_row()
+func _process(delta: float) -> void:
+	if row.visible:
+		_row_left -= delta
+		if _row_left <= 0.0:
+			_close_row()
