@@ -4,7 +4,8 @@ extends RefCounted
 ## Points designs the next season's tier 100 skin (their concept and name,
 ## made into the game by the developer).
 ##
-##   popup    a poster over Home, at most once every PROMO_EVERY_S (X to
+##   popup    a poster over Home (LoginFlow: every PROMO_EVERY_LAUNCHES
+##            launches, after LoginFlow.AWAY_S away, or once a day; X to
 ##            close), with View Rankings and Official Rules
 ##   banner   the same poster, smaller, at the top of the Rankings screen
 ##   rules    the Official Rules sheet (App Store Review Guideline 5.3:
@@ -14,21 +15,38 @@ extends RefCounted
 ## skin here" card.  Reduced Motion: still.
 
 const PROMO_EVERY_S := 20 * 3600
+const PROMO_EVERY_LAUNCHES := 3
+## never twice within this (a resume right after a launch)
+const PROMO_MIN_GAP_S := 30 * 60
 const HEAD := "DESIGN NEXT SEASON'S SKIN"
 const BODY := "Finish the season #1 in Season Points and your idea becomes the tier 100 skin of next season's Season Pass: your concept, your name, in the game."
 const SHORT := "Finish #1 in Season Points to design next season's tier 100 skin."
 
 
-## Shows the popup when it's due (once per PROMO_EVERY_S, never during
-## automation or before onboarding).  Returns true if shown.
+## Due: never seen; or every few launches since it was last shown; or
+## after time away; or a day since it was last shown.  Never twice within
+## PROMO_MIN_GAP_S.
+static func due() -> bool:
+	var seen := int(Save.get_setting("promo_seen_at", 0))
+	if seen == 0:
+		return true
+	var since := Rankings.now() - seen
+	if since < PROMO_MIN_GAP_S:
+		return false
+	var launches := int(Save.get_setting("launches", 0)) - int(Save.get_setting("promo_seen_launch", 0))
+	return launches >= PROMO_EVERY_LAUNCHES or LoginFlow.away_s >= LoginFlow.AWAY_S or since >= PROMO_EVERY_S
+
+
+## Shows the popup when it's due (never during automation or before
+## onboarding).  Returns true if shown.
 static func maybe_show(screen: Screen, force: bool = false) -> bool:
 	if not force:
 		if App.dev_automation or not bool(Save.data.get("onboarded", false)):
 			return false
-		var seen := int(Save.get_setting("promo_seen_at", 0))
-		if Rankings.now() - seen < PROMO_EVERY_S:
+		if not due():
 			return false
 	Save.set_setting("promo_seen_at", Rankings.now())
+	Save.set_setting("promo_seen_launch", int(Save.get_setting("launches", 0)))
 	popup(screen)
 	return true
 
@@ -228,132 +246,65 @@ static func rules_text() -> String:
 	]))
 
 
-## The poster's painting: gradient, rays, trophy, confetti, the skin card.
+## The poster's painting: GlamPoster's backdrop (gradient, rays, glow,
+## tumbling confetti, sparkles, the light sweep, the frame) with the trophy
+## on a glowing pedestal and the "your skin here" card.
 class Poster:
-	extends Control
-	var big := false
-	var t := 0.0
-	var confetti: Array = []
+	extends GlamPoster
 
 	func _ready() -> void:
-		mouse_filter = Control.MOUSE_FILTER_STOP
-		clip_contents = true
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 7
-		for i in (40 if big else 22):
-			confetti.append({"x": rng.randf_range(0.5, 1.0) if big else rng.randf(), "y": rng.randf(), "s": rng.randf_range(0.04, 0.12), "c": [UIKit.AMBER, UIKit.TEAL, Color("ff7aa2"), Color("8fd3ff"), UIKit.IVORY][i % 5],
-				"r": rng.randf() * TAU, "w": rng.randf_range(-2.0, 2.0)})
+		focus = Vector2(0.79, 0.5) if big else Vector2(0.86, 0.5)
+		if big:
+			confetti_x = Vector2(0.5, 1.0)
+		super._ready()
 
-	func _process(delta: float) -> void:
-		if UIKit.reduced_motion():
-			return
-		t += delta
-		queue_redraw()
-
-	## The poster's rounded outline (everything painted stays inside it:
-	## 2.3 fixes the square gradient and the rays and confetti that spilled
-	## past the rounded frame).
-	var _shape := PackedVector2Array()
-	var _shape_for := Vector2.ZERO
-
-	func shape() -> PackedVector2Array:
-		if _shape_for == size and not _shape.is_empty():
-			return _shape
-		_shape_for = size
-		_shape = PackedVector2Array()
-		var rad := minf(30.0 if big else 20.0, minf(size.x, size.y) * 0.5)
-		var corners := [[Vector2(size.x - rad, rad), -PI * 0.5], [Vector2(size.x - rad, size.y - rad), 0.0],
-			[Vector2(rad, size.y - rad), PI * 0.5], [Vector2(rad, rad), PI]]
-		for cr in corners:
-			for k in 9:
-				_shape.append((cr[0] as Vector2) + Vector2.from_angle(float(cr[1]) + PI * 0.5 * float(k) / 8.0) * rad)
-		return _shape
-
-	## A polygon cut to the poster's outline.
-	func _fill_clipped(poly: PackedVector2Array, col: Color) -> void:
-		for piece in Geometry2D.intersect_polygons(poly, shape()):
-			if piece.size() >= 3:
-				draw_colored_polygon(piece, col)
-
-	func _draw() -> void:
-		var outline := shape()
-		# night gradient, purple at the top to deep blue at the bottom
-		var top := Color("3a1c7a")
-		var bot := Color("0b1a46")
-		var cols := PackedColorArray()
-		for v in outline:
-			cols.append(top.lerp(bot, clampf(v.y / maxf(size.y, 1.0), 0.0, 1.0)))
-		draw_polygon(outline, cols)
-		# light rays from behind the trophy (right side)
-		var c := Vector2(size.x * (0.8 if big else 0.86), size.y * (0.52 if big else 0.5))
-		var n := 14
-		for i in n:
-			var a := TAU * float(i) / float(n) + t * 0.15
-			var a2 := a + TAU / float(n) * 0.45
-			var L := size.length()
-			_fill_clipped(PackedVector2Array([c, c + Vector2.from_angle(a) * L, c + Vector2.from_angle(a2) * L]), Color(1.0, 0.85, 0.45, 0.07))
-		# glow
-		for k in 6:
-			var gr := (size.y * 0.42) * (1.0 - float(k) * 0.14)
-			var disc := PackedVector2Array()
-			for j in 40:
-				disc.append(c + Vector2.from_angle(TAU * float(j) / 40.0) * gr)
-			_fill_clipped(disc, Color(1.0, 0.78, 0.36, 0.05))
-		# the "your skin here" card behind the trophy
+	func _paint_art(c: Vector2) -> void:
 		var cw := size.y * (0.42 if big else 0.24)
-		var card := Rect2(c + Vector2(-cw * 1.05, -cw * 0.7), Vector2(cw * 0.72, cw * 1.08))
+		var bob := sin(t * 1.6) * size.y * 0.012
 		if not big:
-			# small: the trophy alone in its corner
-			Icons.draw_shape(self, "trophy", c + Vector2(0, sin(t * 1.6) * 3.0), cw * 0.6, Color("ffcf4a"))
-			_draw_confetti()
+			# small: the trophy alone in its corner, on a halo
+			fill_clipped(disc(c + Vector2(0, cw * 0.05), cw * 0.62), Color(1.0, 0.86, 0.4, 0.12))
+			Icons.draw_shape(self, "trophy", c + Vector2(0, bob), cw * 0.6, Color("ffcf4a"))
 			return
+		# the "your skin here" card behind the trophy, swaying a little
+		var card := Rect2(c + Vector2(-cw * 1.08, -cw * 0.72), Vector2(cw * 0.74, cw * 1.1))
 		var csb := StyleBoxFlat.new()
-		csb.bg_color = Color(UIKit.NAVY, 0.85)
-		csb.set_corner_radius_all(14)
-		csb.border_color = Color(UIKit.TEAL, 0.9)
+		csb.bg_color = Color(UIKit.NAVY, 0.88)
+		csb.set_corner_radius_all(16)
+		csb.border_color = Color(UIKit.TEAL, 0.95)
 		csb.set_border_width_all(3)
-		draw_set_transform(card.get_center(), -0.12, Vector2.ONE)
+		csb.shadow_color = Color(UIKit.TEAL, 0.35)
+		csb.shadow_size = 14
+		draw_set_transform(card.get_center(), -0.12 + sin(t * 0.9) * 0.025, Vector2.ONE)
 		draw_style_box(csb, Rect2(-card.size * 0.5, card.size))
 		var f := UIKit.font_w(800)
-		var fs := int(cw * 0.42)
-		draw_string(f, Vector2(-card.size.x * 0.5, fs * 0.35), "?", HORIZONTAL_ALIGNMENT_CENTER, card.size.x, fs, Color(UIKit.TEAL, 0.95))
+		var fs := int(cw * 0.44)
+		var q_a := 0.75 + 0.25 * sin(t * 2.2)
+		draw_string(f, Vector2(-card.size.x * 0.5, fs * 0.35), "?", HORIZONTAL_ALIGNMENT_CENTER, card.size.x, fs, Color(UIKit.TEAL, q_a))
 		var f2 := int(clampf(cw * 0.085, 10.0, 22.0))
-		draw_string(f, Vector2(-card.size.x * 0.5, card.size.y * 0.38), "YOUR SKIN", HORIZONTAL_ALIGNMENT_CENTER, card.size.x, f2, UIKit.IVORY)
-		draw_string(f, Vector2(-card.size.x * 0.5, card.size.y * 0.38 + f2 * 1.2), "TIER 100", HORIZONTAL_ALIGNMENT_CENTER, card.size.x, f2, UIKit.AMBER)
+		draw_string(f, Vector2(-card.size.x * 0.5, card.size.y * 0.36), "YOUR SKIN", HORIZONTAL_ALIGNMENT_CENTER, card.size.x, f2, UIKit.IVORY)
+		draw_string(f, Vector2(-card.size.x * 0.5, card.size.y * 0.36 + f2 * 1.25), "TIER 100", HORIZONTAL_ALIGNMENT_CENTER, card.size.x, f2, UIKit.AMBER)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-		# trophy
-		var bob := sin(t * 1.6) * size.y * 0.01
-		Icons.draw_shape(self, "trophy", c + Vector2(cw * 0.15, bob), cw * 0.62, Color("ffcf4a"))
-		# sparkles
-		for i in 5:
-			var sp := c + Vector2.from_angle(float(i) * 1.3 + t * 0.4) * cw * (0.9 + 0.1 * sin(t * 2.0 + i))
-			Icons.draw_shape(self, "star", sp, cw * 0.06 * (1.0 + 0.4 * sin(t * 3.0 + float(i))), Color(1, 1, 0.85, 0.9))
-		_draw_confetti()
-
-	func _draw_confetti() -> void:
-		var m := 0.05
-		for q in confetti:
-			var y := m + fmod(float(q["y"]) + t * float(q["s"]), 1.0) * (1.0 - m * 2.0)
-			var x := m + float(q["x"]) * (1.0 - m * 2.0)
-			var p := Vector2(x * size.x, y * size.y)
-			var rot := float(q["r"]) + t * float(q["w"])
-			var s := size.y * 0.012
-			# fade in at the top and out at the bottom: never cut by the edge
-			var fade := clampf(minf(y - m, 1.0 - m - y) / 0.08, 0.0, 1.0)
-			var col: Color = q["c"]
-			col.a *= fade
-			draw_set_transform(p, rot, Vector2.ONE)
-			draw_rect(Rect2(-s, -s * 0.5, s * 2.0, s), col)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-		_draw_frame()
-
-	## The gold frame, drawn last so nothing paints over it.
-	func _draw_frame() -> void:
-		var sb := StyleBoxFlat.new()
-		sb.draw_center = false
-		sb.set_corner_radius_all(int(minf(30.0 if big else 20.0, minf(size.x, size.y) * 0.5)))
-		sb.border_color = Color(UIKit.AMBER, 0.9)
-		sb.set_border_width_all(3 if big else 2)
-		sb.anti_aliasing = true
-		sb.corner_detail = 12
-		draw_style_box(sb, Rect2(Vector2.ZERO, size))
+		# the pedestal: a lit ellipse under the trophy
+		var ped := c + Vector2(cw * 0.15, cw * 0.62)
+		for k in 4:
+			var e := PackedVector2Array()
+			var rx := cw * (0.62 - 0.1 * k)
+			for j in 32:
+				var a := TAU * float(j) / 32.0
+				e.append(ped + Vector2(cos(a) * rx, sin(a) * rx * 0.22))
+			fill_clipped(e, Color(1.0, 0.85, 0.45, 0.10 + 0.04 * k))
+		# the trophy with a halo ring
+		var tc := c + Vector2(cw * 0.15, bob)
+		for k in 3:
+			var ring := PackedVector2Array()
+			var rr := cw * (0.58 + 0.06 * k + 0.02 * sin(t * 2.0 + k))
+			for j in 48:
+				ring.append(tc + Vector2.from_angle(TAU * float(j) / 48.0) * rr)
+			ring.append(ring[0])
+			draw_polyline(ring, Color(1.0, 0.86, 0.45, 0.16 - 0.04 * k), 2.0, true)
+		Icons.draw_shape(self, "trophy", tc, cw * 0.64, Color("ffcf4a"))
+		# orbiting stars
+		for i in 6:
+			var sp := tc + Vector2.from_angle(float(i) * 1.05 + t * 0.45) * cw * (0.86 + 0.1 * sin(t * 2.0 + i))
+			Icons.draw_shape(self, "star", sp, cw * 0.06 * (1.0 + 0.45 * sin(t * 3.0 + float(i))), Color(1, 1, 0.85, 0.92))

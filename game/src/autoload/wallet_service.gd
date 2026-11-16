@@ -373,6 +373,7 @@ func apply_snapshot(w: Variant) -> void:
 		# (null when the service can't bind purchases: then nothing is bought)
 		"app_account_token": String(wd["app_account_token"]) if wd.get("app_account_token") is String else "", "entitlements": ent, "season": seasons,
 		"synced_at": now(), "catalogue_version": int(wd.get("catalogue_version", Catalogue.version())),
+		"daily": (wd["daily"] as Dictionary).duplicate() if wd.get("daily") is Dictionary else {},
 	}
 	var ch: Variant = wd.get("challenges")
 	if ch is Dictionary:
@@ -423,6 +424,32 @@ func _process(delta: float) -> void:
 ## GET /v1/wallet: the authoritative snapshot (account recovery and device
 ## sync: everything the account owns comes back from here, never as fresh
 ## credit).  Then the one-time legacy import and the outbox.
+# ------------------------------------------------------------------ daily gift
+## 2.2 build 15: today's present as the service last said ({day, claimed,
+## streak, coins, next_coins}); {} without a live snapshot.
+func daily_state() -> Dictionary:
+	return (_account().get("daily", {}) as Dictionary).duplicate()
+
+
+## A present is waiting today (the service said so and can grant it now).
+func daily_due() -> bool:
+	var d := daily_state()
+	return not d.is_empty() and not bool(d.get("claimed", true)) and int(d.get("coins", 0)) > 0 and bool(can_transact()["ok"])
+
+
+## Open today's present: the service grants its Coins once per UTC day.
+## {ok, granted, streak, message}.
+func claim_daily() -> Dictionary:
+	if not bool(can_transact()["ok"]):
+		return {"ok": false, "granted": 0, "message": String(can_transact()["message"])}
+	var r: Dictionary = await Cloud.api(HTTPClient.METHOD_POST, "/v1/wallet/daily", {})
+	if not bool(r.get("ok", false)):
+		return {"ok": false, "granted": 0, "message": Cloud.explain(r)}
+	apply_snapshot(r.get("wallet", {}))
+	var d: Dictionary = r.get("daily", {}) if r.get("daily") is Dictionary else {}
+	return {"ok": true, "granted": int(d.get("granted", 0)), "streak": int(d.get("streak", 1)), "message": ""}
+
+
 func refresh() -> Dictionary:
 	if not Cloud.configured():
 		return {"ok": false, "error": "service_off"}

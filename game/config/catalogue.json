@@ -10,7 +10,8 @@
     "com.idlery.ultimatetrifecta.coins.3500": {"kind": "coin_pack", "item": "coins:3500", "coins": 3500, "apple_type": "CONSUMABLE", "reference_name": "Coins 3500"},
     "com.idlery.ultimatetrifecta.coins.7500": {"kind": "coin_pack", "item": "coins:7500", "coins": 7500, "apple_type": "CONSUMABLE", "reference_name": "Coins 7500"},
     "com.idlery.ultimatetrifecta.skin.moonlight_runner": {"kind": "apple_skin", "item": "outfit:moonlight_runner", "apple_type": "NON_CONSUMABLE", "reference_name": "Skin Moonlight Runner"},
-    "com.idlery.ultimatetrifecta.skin.starry_sleeper": {"kind": "apple_skin", "item": "outfit:starry_sleeper", "apple_type": "NON_CONSUMABLE", "reference_name": "Skin Starry Sleeper"}
+    "com.idlery.ultimatetrifecta.skin.starry_sleeper": {"kind": "apple_skin", "item": "outfit:starry_sleeper", "apple_type": "NON_CONSUMABLE", "reference_name": "Skin Starry Sleeper"},
+    "com.idlery.ultimatetrifecta.pass.s1": {"kind": "apple_pass", "item": "season:s1:premium", "apple_type": "NON_CONSUMABLE", "reference_name": "Season 1 Premium Pass"}
   },
   "items": [
     {"id": "outfit:moonlight_runner", "kind": "apple_skin", "product": "com.idlery.ultimatetrifecta.skin.moonlight_runner", "featured": 1, "blurb": "A night-run outfit for 3 a.m. sprints across the quad. Yours to keep, restorable on any device signed in to your Apple Account."},
@@ -53,7 +54,7 @@
     {"id": "coins:3500", "kind": "coin_pack", "product": "com.idlery.ultimatetrifecta.coins.3500", "coins": 3500},
     {"id": "coins:7500", "kind": "coin_pack", "product": "com.idlery.ultimatetrifecta.coins.7500", "coins": 7500},
 
-    {"id": "season:s1:premium", "kind": "season_premium", "season": "s1", "price": 1500, "name": "Season 1 · Winter Break Premium", "blurb": "Unlocks the Premium track of Season 1 · Winter Break for this season, permanently. Every Premium reward you have already earned becomes claimable at once. It never changes speed, reach, stealth or score, it isn't a subscription, and it doesn't skip tiers."},
+    {"id": "season:s1:premium", "kind": "season_premium", "season": "s1", "price": 1500, "product": "com.idlery.ultimatetrifecta.pass.s1", "name": "Season 1 · Winter Break Premium", "blurb": "Unlocks the Premium track of Season 1 · Winter Break for this season, permanently. Every Premium reward you have already earned becomes claimable at once. It never changes speed, reach, stealth or score, it isn't a subscription, and it doesn't skip tiers."},
 
     {"id": "outfit:after_hours_hoodie", "kind": "season_reward", "season": "s1"},
     {"id": "outfit:night_owl", "kind": "season_reward", "season": "s1"},
@@ -613,6 +614,7 @@
   },
   "economy": {
     "_comment": "Centralised earning values (client projection and service settlement read the same numbers). Coins and Season XP come only from eligible, service-verified online rounds; practice settles nothing into the wallet or the pass. Purchased Coins never become XP.",
+    "daily_gift": {"_comment": "2.2 build 15: a present once per UTC day on opening the game, granted by the service (idempotent per day). Consecutive days climb the list; day 8 starts again at the first amount; a missed day restarts it.", "coins": [20, 25, 30, 35, 40, 50, 75]},
     "round_coins": {"completed": 10, "team_win": 4, "runner_home": 3, "first_home": 2, "watch_distinct_tag": 1, "watch_distinct_tag_cap": 3, "pickup": 1},
     "season_xp": {"completed": 50, "stamp": 10, "stamp_cap": 3, "runner_home": 20, "team_win": 15, "watch_distinct_tag": 15, "watch_distinct_tag_cap": 3},
     "eligibility": {"min_humans": 2, "present_share": 0.6, "min_round_s": 60, "max_round_s": 900, "report_window_s": 1200, "ack_window_s": 604800, "max_coin_spawns": 10, "daily_round_cap": 40},

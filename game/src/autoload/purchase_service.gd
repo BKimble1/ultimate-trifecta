@@ -1,9 +1,9 @@
 extends Node
 ## Purchases (V6, autoload "Purchases"): Apple in-app purchases for the Shop.
 ##
-## Products (config/catalogue.json "products"): six consumable Coin packs
-## and two permanent (non-consumable) skins.  Season 1 Premium is bought with
-## Coins (Wallet.spend), never here.  Prices are StoreKit's localized ones;
+## Products (config/catalogue.json "products"): six consumable Coin packs,
+## two permanent (non-consumable) skins and (2.2 build 15) Season 1 Premium
+## as a permanent non-consumable (also sold for Coins through Wallet.spend).  Prices are StoreKit's localized ones;
 ## a product StoreKit doesn't return is shown as unavailable, never with a
 ## made-up price.
 ##
@@ -149,7 +149,9 @@ func view(pid: String) -> Dictionary:
 		"message": "", "can_buy": false, "button": ""}
 	var st: Dictionary = states.get(pid, {})
 	var cur := String(st.get("state", ""))
-	if Catalogue.kind(item) == "apple_skin" and Wallet.owns_id(item):
+	var owned := Wallet.owns_id(item) if Catalogue.kind(item) == "apple_skin" else \
+		(Catalogue.kind(item) == "season_premium" and Wallet.premium(String(Catalogue.item(item).get("season", "s1"))))
+	if owned:
 		out.merge({"state": "owned", "button": "Owned", "message": ""}, true)
 		return out
 	if delivering(pid) or cur == "delivering":
@@ -280,7 +282,7 @@ func _on_transaction(tx: Dictionary) -> void:
 	if tid == "" or prod.is_empty():
 		return
 	var item := String(prod.get("item", ""))
-	if String(prod.get("kind", "")) == "apple_skin":
+	if String(prod.get("kind", "")) in ["apple_skin", "apple_pass"]:
 		if float(tx.get("revocation_date", 0.0)) > 0.0:
 			_entitled.erase(item)
 		else:

@@ -198,7 +198,43 @@ func snapshot(pid: String) -> Dictionary:
 			season[sid]["tier"] = Economy.tier_for_xp(String(sid), int(season[sid]["xp"]))
 	return {"profile_id": pid, "environment": environment.to_lower(), "balance": w["balance"], "revision": w["revision"], "debt": w["debt"],
 		"app_account_token": w["token"], "entitlements": ents, "season": season,
-		"catalogue_version": legacy_version if legacy_tiers > 0 else Catalogue.version(), "rounds": rs, "challenges": _challenges_view(pid)}
+		"catalogue_version": legacy_version if legacy_tiers > 0 else Catalogue.version(), "rounds": rs, "challenges": _challenges_view(pid),
+		"daily": _daily_state(pid)}
+
+
+## 2.2 build 15: the daily present (service/src/commerce.js dailyState).
+var daily_claims := {}   # "pid:YYYY-MM-DD" -> streak day
+
+
+func _utc_day(ms: float) -> String:
+	return Time.get_date_string_from_unix_time(int(ms / 1000.0))
+
+
+static func daily_coins(streak: int) -> int:
+	var list: Array = Catalogue.data()["economy"].get("daily_gift", {}).get("coins", [])
+	return int(list[(streak - 1) % list.size()]) if not list.is_empty() else 0
+
+
+func _daily_state(pid: String) -> Dictionary:
+	var t := now_ms()
+	var day := _utc_day(t)
+	var prev := int(daily_claims.get("%s:%s" % [pid, _utc_day(t - 86400000.0)], 0))
+	if daily_claims.has("%s:%s" % [pid, day]):
+		var st := int(daily_claims["%s:%s" % [pid, day]])
+		return {"day": day, "claimed": true, "streak": st, "coins": daily_coins(st), "next_coins": daily_coins(st + 1)}
+	return {"day": day, "claimed": false, "streak": prev + 1, "coins": daily_coins(prev + 1), "next_coins": daily_coins(prev + 2)}
+
+
+func _daily(pid: String) -> Dictionary:
+	var st := _daily_state(pid)
+	if bool(st["claimed"]):
+		st["granted"] = 0
+		return _ok(pid, {"daily": st})
+	daily_claims["%s:%s" % [pid, String(st["day"])]] = int(st["streak"])
+	grant(pid, int(st["coins"]))
+	st["claimed"] = true
+	st["granted"] = int(st["coins"])
+	return _ok(pid, {"daily": st})
 
 
 func _bump(pid: String) -> void:
@@ -254,6 +290,8 @@ func _route(method: int, path: String, b: Dictionary, pid: String) -> Dictionary
 		return _ok(pid)
 	if method == HTTPClient.METHOD_POST and path == "/v1/wallet/spend":
 		return _spend(pid, b)
+	if method == HTTPClient.METHOD_POST and path == "/v1/wallet/daily":
+		return _daily(pid)
 	if method == HTTPClient.METHOD_POST and path == "/v1/wallet/apple":
 		return _apple(pid, b)
 	if method == HTTPClient.METHOD_POST and path == "/v1/wallet/legacy-import":

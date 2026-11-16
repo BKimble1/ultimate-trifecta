@@ -21,6 +21,10 @@ const TABS := [
 	["shop", "Shop", "bag"],
 	["pass", "Season Pass", "pass"],
 ]
+## (2.2 build 15) each tab has its own colour: a coloured icon badge on the
+## dark pill, and the whole pill filled with it (navy words) when it is the
+## current tab, with a glossy top light and a soft glow under it
+const ACCENT := {"play": Color("3fd0b8"), "locker": Color("a58bff"), "shop": Color("ffb547"), "pass": Color("ff7ab6")}
 const PAD := 16.0
 const ICON := 30.0
 
@@ -54,14 +58,23 @@ func _ready() -> void:
 		b.tooltip_text = String(t[1])
 		b.accessibility_name = String(t[1])
 		var f := UIKit.face_of(b)
-		var sel := UIKit.card_box(Color(UIKit.TEAL.darkened(0.45), 0.92), 999, 1.0)
+		var acc: Color = ACCENT[key]
+		var sel := UIKit.card_box(acc, 999, 1.0)
 		sel.set_border_width_all(2)
-		sel.border_color = UIKit.TEAL
-		f.styles = {"normal": UIKit.card_box(Color(UIKit.SLATE, 0.9), 999, 1.0, 16, 0.08),
+		sel.border_color = acc.lightened(0.45)
+		sel.shadow_color = Color(acc, 0.45)
+		sel.shadow_size = 12
+		sel.shadow_offset = Vector2(0, 3)
+		var normal := UIKit.card_box(Color(UIKit.SLATE, 0.92), 999, 1.0, 16, 0.08)
+		normal.set_border_width_all(1)
+		normal.border_width_top = 2
+		normal.border_color = Color(acc, 0.28)
+		f.styles = {"normal": normal,
 			"hover": UIKit.card_box(Color(UIKit.SLATE_HI, 0.95), 999, 1.0, 16, 0.1),
-			"pressed": UIKit.card_box(Color(UIKit.SLATE_LO, 0.95), 999, 0.0), "disabled": UIKit.box(Color(UIKit.SLATE_LO, 0.7), 999),
+			"pressed": UIKit.card_box(Color(acc.darkened(0.55), 0.95), 999, 0.0), "disabled": UIKit.box(Color(UIKit.SLATE_LO, 0.7), 999),
 			"selected": sel}
 		var tab := TabFace.new()
+		tab.accent = acc
 		tab.icon = String(t[2])
 		tab.text = String(t[1])
 		tab.btn = b
@@ -96,7 +109,7 @@ func needed_width(level: int) -> float:
 	for t in TABS:
 		var show_label: bool = level == 0 or (level == 1 and String(t[0]) == active)
 		var lw := f.get_string_size(String(t[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_LABEL).x if show_label else 0.0
-		w += maxf(UIKit.touch_min(), PAD * 2.0 + ICON + (lw + 10.0 if show_label else 0.0))
+		w += maxf(UIKit.touch_min(), PAD * 2.0 + ICON + 6.0 + (lw + 10.0 if show_label else 0.0))
 	return w + 6.0 * (TABS.size() - 1)
 
 
@@ -136,12 +149,12 @@ func apply_level(level: int) -> void:
 	var widest := 0.0
 	if vertical:
 		for t in TABS:
-			widest = maxf(widest, PAD * 2.0 + ICON + 10.0 + f.get_string_size(String(t[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_LABEL).x)
+			widest = maxf(widest, PAD * 2.0 + ICON + 16.0 + f.get_string_size(String(t[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_LABEL).x)
 	for t in TABS:
 		var b: Button = buttons[t[0]]
 		var show_label: bool = level == 0 or (level == 1 and String(t[0]) == active)
 		var lw := f.get_string_size(String(t[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_LABEL).x if show_label else 0.0
-		b.custom_minimum_size.x = maxf(UIKit.touch_min(), PAD * 2.0 + ICON + (lw + 10.0 if show_label else 0.0))
+		b.custom_minimum_size.x = maxf(UIKit.touch_min(), PAD * 2.0 + ICON + 6.0 + (lw + 10.0 if show_label else 0.0))
 		if vertical:
 			b.custom_minimum_size.x = maxf(widest, UIKit.touch_min())
 		var tf := UIKit.face_of(b).get_child(0) as TabFace
@@ -204,23 +217,39 @@ class TabFace:
 	var show_label := true
 	var left := false
 	var btn: Button
+	var accent := UIKit.TEAL
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	func _draw() -> void:
 		var f := UIKit.face_of(btn) if btn else null
-		var col := UIKit.IVORY if f == null or f.selected else UIKit.IVORY_MUTED
-		var font := UIKit.font_w(600)
+		var on := f != null and f.selected
+		var font := UIKit.font_w(800 if on else 600)
 		var lw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_LABEL).x if show_label else 0.0
-		var total := NavShell.ICON + (lw + 10.0 if show_label else 0.0)
+		var total := NavShell.ICON + 6.0 + (lw + 10.0 if show_label else 0.0)
 		var x := NavShell.PAD if left else (size.x - total) * 0.5
 		var cy := size.y * 0.5
-		CommerceArt.glyph(self, icon, Vector2(x + NavShell.ICON * 0.5, cy), NavShell.ICON * 0.42, UIKit.TEAL if f != null and f.selected else col)
+		# the glossy top light (a soft pill over the upper half)
+		var gl := StyleBoxFlat.new()
+		gl.bg_color = Color(1, 1, 1, 0.22 if on else 0.05)
+		gl.set_corner_radius_all(int(size.y * 0.3))
+		gl.anti_aliasing = true
+		draw_style_box(gl, Rect2(Vector2(size.y * 0.22, 3.0), Vector2(maxf(0.0, size.x - size.y * 0.44), size.y * 0.36)))
+		# the icon: on its coloured badge (a tab not shown), or plain navy on
+		# the filled pill (the current tab)
+		var ic := Vector2(x + (NavShell.ICON + 6.0) * 0.5, cy)
+		if on:
+			CommerceArt.glyph(self, icon, ic, NavShell.ICON * 0.44, UIKit.NAVY)
+		else:
+			draw_circle(ic, NavShell.ICON * 0.62, Color(accent, 0.22))
+			draw_arc(ic, NavShell.ICON * 0.62, 0, TAU, 24, Color(accent, 0.55), 1.5, true)
+			CommerceArt.glyph(self, icon, ic, NavShell.ICON * 0.38, accent.lightened(0.15))
 		if show_label:
 			var asc := font.get_ascent(UIKit.T_LABEL)
 			var desc := font.get_descent(UIKit.T_LABEL)
-			draw_string(font, Vector2(x + NavShell.ICON + 10.0, cy + (asc - desc) * 0.5), text, HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_LABEL, col)
+			draw_string(font, Vector2(x + NavShell.ICON + 16.0, cy + (asc - desc) * 0.5), text, HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_LABEL,
+				UIKit.NAVY if on else UIKit.IVORY)
 
 
 class Dot:

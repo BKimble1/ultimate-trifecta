@@ -48,6 +48,7 @@ static func build_number() -> int:
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	LoginFlow.note_launch()
 	get_tree().set_auto_accept_quit(true)
 	QualityPreset.apply(int(Save.get_setting("quality", 1)))
 	Social.invite_ready.connect(_on_invite_ready)
@@ -1115,4 +1116,7 @@ func _end_match_scene() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_PAUSED:
 		Controls.reset_touch()
+		LoginFlow.note_pause()
 		Save.save_now()
+	elif what == NOTIFICATION_APPLICATION_RESUMED:
+		LoginFlow.note_resume()

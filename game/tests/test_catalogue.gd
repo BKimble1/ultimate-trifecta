@@ -37,6 +37,7 @@ func test_products_are_honest() -> void:
 	t.eq(prefix, "com.idlery.ultimatetrifecta", "products live under the app's bundle prefix")
 	var packs := 0
 	var skins := 0
+	var passes := 0
 	for pid in Catalogue.product_ids():
 		var p := Catalogue.product(pid)
 		t.check(pid.begins_with(prefix + "."), "%s under the bundle prefix" % pid)
@@ -45,11 +46,15 @@ func test_products_are_honest() -> void:
 		if String(p["kind"]) == "coin_pack":
 			packs += 1
 			t.eq(String(p["apple_type"]), "CONSUMABLE", "%s is consumable" % pid)
+		elif String(p["kind"]) == "apple_pass":
+			passes += 1
+			t.eq(String(p["apple_type"]), "NON_CONSUMABLE", "%s is permanent (not a subscription)" % pid)
 		else:
 			skins += 1
 			t.eq(String(p["apple_type"]), "NON_CONSUMABLE", "%s is a permanent skin" % pid)
 	t.eq(packs, 6, "six Coin packs (Pass 8: 250, 1,000 and 7,500 added)")
 	t.eq(skins, 2, "two direct-purchase skins")
+	t.eq(passes, 1, "one direct-purchase Season Pass")
 	var amounts := Catalogue.items_of_kind("coin_pack").map(func(i: Dictionary) -> int: return int(i["coins"]))
 	amounts.sort()
 	t.eq(amounts, [250, 500, 1000, 1500, 3500, 7500], "250 / 500 / 1,000 / 1,500 / 3,500 / 7,500 Coins")
@@ -62,7 +67,10 @@ func test_products_are_honest() -> void:
 	t.eq(Catalogue.shop_items("coins").map(func(i: Dictionary) -> int: return int(i["coins"])), [250, 500, 1000, 1500, 3500, 7500],
 		"the Shop lists them by quantity")
 	t.eq(Catalogue.price("season:s1:premium"), 1500, "Season 1 Premium costs 1,500 Coins")
-	t.eq(Catalogue.product_of("season:s1:premium"), "", "Premium is never an Apple product (bought with Coins, no subscription)")
+	# 2.2 build 15: Premium also sells directly from Apple (a permanent
+	# non-consumable, never a subscription), beside its Coin price
+	t.eq(Catalogue.product_of("season:s1:premium"), "com.idlery.ultimatetrifecta.pass.s1", "Premium is also a direct Apple purchase")
+	t.eq(Catalogue.kind("season:s1:premium"), "season_premium", "and still sold for Coins")
 
 
 func test_shop_outfits_and_prices() -> void:

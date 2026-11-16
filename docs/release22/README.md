@@ -453,3 +453,80 @@ A map-wide overlap sweep. Fixed views of Moonbrook College
 the dock, a bollard line and the sign crowd the water's edge. The map's
 layout is pinned by tests and the bots' routes, so it needs its own pass
 with the owner's list of spots.
+
+## 25. Two runners on one spot ("three eyes")
+
+The owner's build 14 screenshot showed three eyes, three brows and a
+ragged cheek: two whole heads overlapping, a second runner standing on the
+local runner's mark. Game Center's sign-in changes the local player's id
+(`Save.player_uid()`: the device id gives way to the Game Center id) while
+a party room's roster keeps the id it was made with. Home's stage filed a
+character under each id, both on mark 0. Desktop runs never sign in to
+Game Center, so they never showed it (a Vulkan render of the face close up
+is clean); build 14's mesh-import change did not touch the cause.
+
+`DormStage` now keeps one local character whatever id it is asked for: a
+new id re-files it (`_rekey`), and any id the local player has had finds it
+(`_resolve`, for emotes, chat bubbles and move previews).
+`tests/test_stage_local_key.gd` covers the id change in both orders.
+
+## 26. Season Pass Premium from Apple
+
+Premium could only be bought for 1,500 Coins. It is now also a direct
+Apple purchase, `com.idlery.ultimatetrifecta.pass.s1`: a permanent
+non-consumable (never a subscription) whose delivery is the
+`season:s1:premium` entitlement the service already reads as Premium
+(`commerce.js`, `PERMANENT`). Refunds take it back. The price is whatever
+StoreKit returns for the product; nothing stores a price. `asc.py
+iap-create` now plans nine products; the owner creates this one and picks
+its price (USD 9.99 tier as asked) in App Store Connect.
+
+No "was" price is shown: a struck-through price has to be a real earlier
+price, and this pass has never sold for anything else.
+
+## 27. The Season Pass offer poster
+
+`PassOffer`: a poster over the Season Pass when it opens (without
+Premium, at most once every 10 minutes) and from the pass header's "Get
+Premium" button. Three Premium outfits stand in 3D on a lit stage (Night
+Owl Onesie, tier 1; Dr. Doom, tier 100; Record Breaker, tier 50). The left
+counts what Premium holds from the season table (5 outfits, 44 rewards,
+1,125 Coins back) and sells it two ways: "Get Premium · <Apple price>" and
+the Coin price (the Shop's confirm sheet). Without the game service it
+says purchases are unavailable, as everywhere else.
+
+## 28. The daily present
+
+Once a UTC day a wrapped present greets the player on home (`DailyGift`).
+Each tap shakes it and pumps it bigger and brighter; the fourth bursts it
+(flash, the lid flies off, coins and confetti), and the day's Coins show,
+then fly into the Coins counter. Consecutive days climb a week's list
+(catalogue `economy.daily_gift`: 20, 25, 30, 35, 40, 50, 75); a missed day
+starts again. The service grants it once per profile per day
+(`POST /v1/wallet/daily`, the ledger key is the day; the wallet snapshot
+carries `daily`). In a build without the service it is a once-a-day
+preview that says it adds no Coins. `service/test/daily.test.mjs` and
+`tests/test_login_flow.gd` cover it.
+
+## 29. Arriving home, and the posters
+
+`LoginFlow` runs on arriving home once the launch curtain has gone: the
+present first (when due), then the Season Champion poster when due: the
+first launch, every 3 launches, after 6 hours away (also on coming back
+from the background) or a day since it was last shown, never twice within
+30 minutes. Every poster shares `GlamPoster`: a rounded gradient card,
+turning rays, a pulsing glow, tumbling confetti that sways and flips,
+twinkling sparkles, a light sweep across it every few seconds and a double
+frame. They move wherever they are shown (the Rankings banner too) and
+only while on screen. The champion poster's trophy now stands on a lit
+pedestal with a halo and orbiting stars.
+
+## 30. Tabs and the Hide button
+
+The top tabs each have a colour (Play teal, Locker violet, Shop orange,
+Season Pass pink): a coloured icon badge on the dark pill, and the current
+tab filled with its colour, navy words, a glossy top light and a soft glow.
+The Hide button is drawn as a bush (leafy puffs, shaded greens, leaves and
+a blossom, gloss); it glows when a bush is in reach and turns gold-rimmed
+and rustles while hiding ("Jump out"). The other action buttons gained a
+little depth and gloss.

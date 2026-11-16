@@ -35,6 +35,10 @@ import * as O from './offers.js';
 const HOUR = 3600 * 1000;
 const DAY = 24 * HOUR;
 const IDEM = /^[A-Za-z0-9_-]{8,64}$/;
+// Apple non-consumables that grant a permanent item: a direct skin, or a
+// season's Premium (its entitlement season:<id>:premium is what the snapshot
+// reads as premium)
+const PERMANENT = ['apple_skin', 'apple_pass'];
 
 let H = null;   // helpers from app.js: {requireUser, requireAdmin, db, rateLimit, audit, clock, liveRoom}
 
@@ -138,6 +142,7 @@ export async function snapshot(env, pid) {
       challenge_xp: r.challenge_xp || 0, challenges: r.challenge ? JSON.parse(r.challenge) : null })),
     catalogue_version: E.catalogueVersion(),
     challenges: await CH.snapshot(q, e, pid, H.clock(env)),
+    daily: await dailyState(env, pid, H.clock(env)),
   };
 }
 
@@ -177,6 +182,45 @@ function failure(e) {
 }
 
 // ---------------------------------------------------------------- handlers
+// 2.2 build 15: the daily present.  One grant per profile per UTC day (the
+// ledger's idempotency key is the day), the amount from the catalogue's
+// economy.daily_gift list: consecutive days climb it, the eighth day starts
+// it again, a missed day restarts it.  The streak day is the ledger ref.
+
+function dailyCoins(streak) {
+  const list = (E.CATALOGUE.economy.daily_gift || {}).coins || [];
+  return list.length ? list[(streak - 1) % list.length] : 0;
+}
+
+async function dailyState(env, pid, t) {
+  const today = await ledgerHas(env, `daily:${pid}:${utcDay(t)}`);
+  const prev = await ledgerHas(env, `daily:${pid}:${utcDay(t - DAY)}`);
+  const prevStreak = prev ? Number(String(prev.ref || '').replace('streak:', '')) || 1 : 0;
+  if (today) {
+    const st = Number(String(today.ref || '').replace('streak:', '')) || 1;
+    return { day: utcDay(t), claimed: true, streak: st, coins: dailyCoins(st), next_coins: dailyCoins(st + 1) };
+  }
+  const st = prevStreak + 1;
+  return { day: utcDay(t), claimed: false, streak: st, coins: dailyCoins(st), next_coins: dailyCoins(st + 1) };
+}
+
+async function claimDaily(req, env) {
+  const { profile: p } = await H.requireUser(req, env);
+  await H.rateLimit(env, `daily:${p.id}`, 20, 60 * 1000);
+  await ensureWallet(env, p.id);
+  const t = H.clock(env);
+  const st = await dailyState(env, p.id, t);
+  if (st.claimed || st.coins <= 0) return reply(env, p.id, { daily: { ...st, granted: 0 } });
+  const q = H.db(env);
+  try {
+    await q.batch(grantStmts(env, q, p.id, st.coins, `daily:${p.id}:${st.day}`, 'daily', `streak:${st.streak}`, t));
+  } catch (err) {
+    if (!failure(err).includes('UNIQUE')) throw err;   // a racing duplicate granted it
+    return reply(env, p.id, { daily: { ...(await dailyState(env, p.id, t)), granted: 0 } });
+  }
+  return reply(env, p.id, { daily: { ...st, claimed: true, granted: st.coins } });
+}
+
 async function getWallet(req, env) {
   const { profile: p } = await H.requireUser(req, env, { allowSuspended: true });
   await H.rateLimit(env, `wallet:${p.id}`, 120, 60 * 1000);
@@ -348,7 +392,7 @@ export async function deliverTransaction(env, pid, tx, claimedId) {
     if (row.profile_id && row.profile_id !== pid) {
       throw new ApiError(409, prod.kind === 'coin_pack' ? 'account_mismatch' : 'owned_by_other_profile', 'This purchase belongs to another player profile.');
     }
-    if (!row.profile_id && prod.kind === 'apple_skin' && row.state === 'delivered' && !revoked) {
+    if (!row.profile_id && PERMANENT.includes(prod.kind) && row.state === 'delivered' && !revoked) {
       // the owner deleted their game profile: the skin follows the Apple Account
       await q.batch([
         q.stmt('UPDATE apple_transactions SET profile_id = ?, app_account_token = ? WHERE environment = ? AND transaction_id = ?', pid, token || null, e, tid),
@@ -364,7 +408,7 @@ export async function deliverTransaction(env, pid, tx, claimedId) {
     }
     return reply(env, pid, { replay: true, revoked: row.state === 'revoked' });
   }
-  if (prod.kind === 'apple_skin') {
+  if (PERMANENT.includes(prod.kind)) {
     const other = await q.one(`SELECT profile_id FROM apple_transactions WHERE environment = ? AND original_transaction_id = ? AND state = 'delivered'
       AND profile_id IS NOT NULL AND profile_id != ?`, e, orig, pid);
     if (other) throw new ApiError(409, 'owned_by_other_profile', 'This skin is already linked to another player profile.');
@@ -901,6 +945,7 @@ export async function routeCommerce(req, env, path, m, helpers) {
   let k;
   if (m === 'GET' && path === '/v1/wallet') return getWallet(req, env);
   if (m === 'POST' && path === '/v1/wallet/spend') return spend(req, env);
+  if (m === 'POST' && path === '/v1/wallet/daily') return claimDaily(req, env);
   if (m === 'GET' && path === '/v1/shop/offers') return O.routeOffers(req, env, path, m, H.clock);
   if (m === 'POST' && path === '/v1/wallet/apple') return appleDeliver(req, env);
   if (m === 'POST' && path === '/v1/wallet/legacy-import') return legacyImport(req, env);

@@ -90,6 +90,8 @@ var bar: ProgressBar
 ## "Season 1 · Premium" / "Season 1 · Free track"
 var premium_chip: Label
 var claim_all_btn: Button
+## (2.2 build 15) opens the Premium offer (PassOffer); hidden with Premium
+var premium_btn: Button
 ## the status line when claiming is unavailable: its short headline and why
 var status_row: Control
 var banner: Label
@@ -247,6 +249,10 @@ func build() -> void:
 	turn.resized.connect(_frame_stage)
 	get_viewport().size_changed.connect(_frame_stage)
 	_frame_stage.call_deferred()
+	# (2.2 build 15) the Premium offer on opening the pass (not over and over)
+	get_tree().create_timer(0.35).timeout.connect(func() -> void:
+		if is_inside_tree() and App.screen == self and not has_modal():
+			PassOffer.show_on_open(self))
 
 
 ## Column widths from the allocated content width (never from what a child
@@ -586,6 +592,13 @@ func _header() -> Control:
 	claim_all_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	claim_all_btn.pressed.connect(_claim_all)
 	h.add_child(claim_all_btn)
+	# (one or the other: the header has room for one button)
+	premium_btn = UIKit.primary("Get Premium", Vector2(0, UIKit.row_h()), UIKit.T_LABEL)
+	premium_btn.name = "GetPremium"
+	premium_btn.custom_minimum_size.x = UIKit.row_h() * 2.1
+	premium_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	premium_btn.pressed.connect(func() -> void: PassOffer.popup(self))
+	h.add_child(premium_btn)
 	return h
 
 
@@ -968,7 +981,8 @@ func _refresh() -> void:
 	var n := Wallet.claimable(sid).size()
 	var cs := claim_status()
 	var ok := bool(cs["ok"])
-	claim_all_btn.visible = ok
+	claim_all_btn.visible = ok and (prem or n > 0)
+	premium_btn.visible = not prem and not claim_all_btn.visible
 	status_row.visible = not ok
 	banner.visible = not ok
 	status_l.text = String(cs["reason"])

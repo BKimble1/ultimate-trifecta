@@ -29,6 +29,20 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 			ci.draw_line(c + Vector2(-r * 0.65, 0), c + Vector2(r * 0.65, 0), col, r * 0.24, true)
 			ci.draw_line(c + Vector2(0, -r * 0.65), c + Vector2(0, r * 0.65), col, r * 0.24, true)
 			return
+		"coin":
+			# (2.2 build 15) a gold coin with a rim and a shine
+			ci.draw_circle(c, r * 0.9, col.darkened(0.25) if col != Color.WHITE else Color("d9962a"))
+			ci.draw_circle(c, r * 0.74, col if col != Color.WHITE else Color("ffc94a"))
+			ci.draw_arc(c, r * 0.52, PI * 1.05, PI * 1.6, 10, Color(1, 1, 1, 0.55), r * 0.12, true)
+			return
+		"gift":
+			# (2.2 build 15) a wrapped present with a bow
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.75, -r * 0.2), Vector2(r * 1.5, r * 0.95)), col)
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.85, -r * 0.45), Vector2(r * 1.7, r * 0.3)), col.lightened(0.15))
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.13, -r * 0.45), Vector2(r * 0.26, r * 1.2)), col.darkened(0.35))
+			ci.draw_arc(c + Vector2(-r * 0.28, -r * 0.62), r * 0.24, 0, TAU, 14, col.lightened(0.15), r * 0.12, true)
+			ci.draw_arc(c + Vector2(r * 0.28, -r * 0.62), r * 0.24, 0, TAU, 14, col.lightened(0.15), r * 0.12, true)
+			return
 		"snowflake":
 			# Season 1 (Winter Break): six spokes, each with a pair of twigs
 			for i in 6:

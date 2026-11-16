@@ -101,6 +101,7 @@ IAP_TEXT = {
     "coin_pack": ("{n} Coins", "{n} Coins for the Shop. Cosmetic only."),
     "com.idlery.ultimatetrifecta.skin.moonlight_runner": ("Moonlight Runner", "A permanent outfit. Cosmetic only."),
     "com.idlery.ultimatetrifecta.skin.starry_sleeper": ("Starry Sleeper", "A permanent outfit. Cosmetic only."),
+    "com.idlery.ultimatetrifecta.pass.s1": ("Season 1 Premium Pass", "Season 1's Premium rewards. Cosmetic only."),
 }
 REVIEW_NOTE = ("Ultimate Trifecta is a cosmetic-only party game. {what} Open Shop (top bar) to see it; "
                "it is delivered by the game's service after StoreKit 2 verification. No gameplay advantage.")
@@ -116,7 +117,11 @@ def iap_plan():
             what = "This consumable adds %s Coins to the player's wallet." % n
         else:
             name, desc = IAP_TEXT[pid]
-            what = "This non-consumable unlocks the %s outfit permanently (restorable)." % name
+            if p["kind"] == "apple_pass":
+                what = ("This non-consumable unlocks the Premium reward track of the Season Pass (Season 1) permanently "
+                        "(restorable); Premium rewards are still earned by playing.")
+            else:
+                what = "This non-consumable unlocks the %s outfit permanently (restorable)." % name
         assert len(name) <= 30 and len(desc) <= 45, pid
         out.append({"productId": pid, "inAppPurchaseType": p["apple_type"], "name": p["reference_name"], "displayName": name,
                     "description": desc, "reviewNote": REVIEW_NOTE.format(what=what)})

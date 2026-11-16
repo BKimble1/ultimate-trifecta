@@ -122,7 +122,7 @@ func finish(tx: Dictionary) -> void:
 			var done: Dictionary = unfinished[i]
 			unfinished.remove_at(i)
 			finished.append(done)
-			if String(Catalogue.product(String(done["product_id"])).get("kind", "")) == "apple_skin" and float(done["revocation_date"]) == 0.0:
+			if String(Catalogue.product(String(done["product_id"])).get("kind", "")) in ["apple_skin", "apple_pass"] and float(done["revocation_date"]) == 0.0:
 				entitlements.append(done)
 
 

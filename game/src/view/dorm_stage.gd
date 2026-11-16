@@ -79,6 +79,13 @@ var _names_on := false
 var _says: Dictionary = {}
 ## emotes started per character (tests: one tap is one start)
 var emote_starts: Dictionary = {}
+## the key the local player's character is filed under.  It changes when Game
+## Center signs in (the device id gives way to the Game Center id) while the
+## party roster can still carry the old one: the one local character is
+## re-filed instead of a second one arriving on the same mark (2.2 build 14:
+## two runners on one spot, "three eyes" on iPhone).
+var _local_key := ""
+var _local_ids := {}   # every id the local player has had here
 
 ## How long each lobby emote plays: two passes of its loop, so a glance
 ## catches it (the clips are 1.2-1.4 s loops).
@@ -281,6 +288,11 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 	var marks_before := _mark_of.size()
 	for e in entries:
 		var key := String(e["key"])
+		if bool(e.get("local", false)):
+			if _local_key != "" and _local_key != key and chars.has(_local_key):
+				_rekey(_local_key, key)
+			_local_key = key
+			_local_ids[key] = true
 		seen[key] = true
 		var v: CharacterView = chars.get(key)
 		var role := int(e.get("role", TC.Role.RUNNER))
@@ -334,6 +346,30 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 		_reframe()
 
 
+## Move everything filed under `from` to `to` (the local player's new id).
+## A character already under `to` is dropped (it would stand on the same mark).
+func _rekey(from: String, to: String) -> void:
+	var old: Variant = chars.get(to)
+	if old != null and is_instance_valid(old) and old != chars[from]:
+		(old as Node).queue_free()
+	for d: Dictionary in [chars, _mark_of, _ready_of, _emote_until, _bubbles, _preview, free_roam, _says, emote_starts]:
+		if d.has(from):
+			d[to] = d[from]
+			d.erase(from)
+		else:
+			d.erase(to)
+
+
+## Any id the caller holds for the local player (Save.player_uid() before or
+## after Game Center signs in, or the roster's) finds the local character.
+func _resolve(key: String) -> String:
+	if chars.has(key) or _local_key == "":
+		return key
+	if _local_ids.has(key) or key == Save.player_uid() or key == String(Save.data.get("uid", "")):
+		return _local_key
+	return key
+
+
 func _free_mark(local: bool) -> int:
 	if local:
 		return 0
@@ -384,6 +420,7 @@ func _idle_rs(v: CharacterView) -> Dictionary:
 ## Plays an emote on a character.  Returns false (and does nothing) when that
 ## character isn't on the stage or the id is unknown.
 func emote(key: String, id: int, seconds: float = -1.0) -> bool:
+	key = _resolve(key)
 	var v: CharacterView = chars.get(key)
 	if v == null or not is_instance_valid(v) or not v.visible or id < 0 or id >= TC.EMOTES.size():
 		return false
@@ -409,6 +446,7 @@ func emote(key: String, id: int, seconds: float = -1.0) -> bool:
 
 
 func emoting(key: String) -> bool:
+	key = _resolve(key)
 	return _emote_until.has(key)
 
 
@@ -457,6 +495,7 @@ func _show_bubble(key: String, v: CharacterView, text: String) -> void:
 ## (running and jumping on the spot).  Nothing is sent to the party; an
 ## emote, a new preview or leaving the room ends it.
 func preview_move(key: String, kind: String) -> bool:
+	key = _resolve(key)
 	var v: CharacterView = chars.get(key)
 	if v == null or not is_instance_valid(v) or not PREVIEW_S.has(kind):
 		return false
@@ -516,11 +555,13 @@ func _update_preview(delta: float) -> void:
 # (V6) Walk around helpers (HubWalk)
 # ---------------------------------------------------------------------------
 func place(key: String) -> void:
+	key = _resolve(key)
 	_place(key)
 
 
 ## Where a character's mark is (stage space).
 func mark_position(key: String) -> Vector3:
+	key = _resolve(key)
 	return MARKS[int(_mark_of.get(key, 0))]
 
 
@@ -555,6 +596,7 @@ func show_names(on: bool) -> void:
 ## A chat bubble over a character's head (Quick Chat or approved text, as
 ## plain text; long messages are cut short here and read in the drawer).
 func say(key: String, text: String, seconds: float = 4.0) -> bool:
+	key = _resolve(key)
 	var v: CharacterView = chars.get(key)
 	if v == null or not is_instance_valid(v) or not v.visible or (mode != "lobby" and mode != "walk"):
 		return false

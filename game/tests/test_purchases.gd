@@ -243,3 +243,25 @@ func test_both_direct_outfits_deliver_show_in_locker_and_restore() -> void:
 
 func _st(pid: String) -> String:
 	return String(Purchases.states.get(pid, {}).get("state", ""))
+
+
+## 2.2 build 15: Season 1 Premium straight from Apple (a permanent
+## non-consumable), delivered by the service as the season:s1:premium
+## entitlement: Premium opens, the pass is never offered again, a refund
+## takes it back.
+func test_season_pass_from_apple() -> void:
+	const PASS := "com.idlery.ultimatetrifecta.pass.s1"
+	await _ready_to_buy()
+	t.check(not Wallet.premium("s1"), "no Premium before")
+	t.check(bool(Purchases.view(PASS)["can_buy"]), "the pass is for sale at the store's own price")
+	t.check(bool(Purchases.buy(PASS)["ok"]), "Apple's sheet opens (simulated)")
+	await rig.until(func() -> bool: return String(Purchases.states.get(PASS, {}).get("state", "")) == "delivered")
+	t.check(Wallet.premium("s1"), "Premium unlocked")
+	t.eq(Wallet.balance(), 0, "no Coins involved")
+	t.eq(String(Purchases.view(PASS)["state"]), "owned", "never offered again once owned")
+	t.eq(rig.store.unfinished.size(), 0, "finished after delivery")
+	rig.store.refund(rig.store.entitlements[0])
+	await rig.until(func() -> bool: return rig.store.unfinished.is_empty() and not Purchases.apple_entitled("season:s1:premium"))
+	await Wallet.refresh()
+	t.check(not Wallet.premium("s1"), "a refund takes Premium back")
+	await rig.end()

@@ -93,8 +93,16 @@ static func draw_button(ci: CanvasItem, b: Dictionary, name: String, label: Stri
 		# (Reduced Motion: a steady ring, same meaning)
 		var pulse := 0.6 if UIKit.reduced_motion() else 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) / 1000.0 * TAU * 1.6)
 		ci.draw_arc(center, r + 7.0 + 3.0 * pulse, 0, TAU, 56, Color(UIKit.AMBER, (0.55 + 0.35 * pulse) * opacity), 5.0, true)
-	ci.draw_circle(center, r, col)
-	ci.draw_arc(center, r, 0, TAU, 48, Color(UIKit.IVORY, 0.7 * opacity), 2.5, true)
+	if name == "hide":
+		_draw_bush(ci, center, r, opacity, bool(state.get("hiding", false)), off)
+	else:
+		ci.draw_circle(center, r, col)
+		# (2.2 build 15) a little depth: a darker lower half and a glossy top
+		ci.draw_circle(center + Vector2(0, r * 0.18), r * 0.8, Color(0, 0, 0, 0.08 * opacity))
+		ci.draw_set_transform(center + Vector2(0, -r * 0.5), 0.0, Vector2(1.0, 0.45))
+		ci.draw_circle(Vector2.ZERO, r * 0.6, Color(1, 1, 1, 0.13 * opacity))
+		ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		ci.draw_arc(center, r, 0, TAU, 48, Color(UIKit.IVORY, 0.7 * opacity), 2.5, true)
 	var busy := float(state.get("busy", 0.0))
 	if busy > 0.01:
 		ci.draw_arc(center, r - 5.0, -PI * 0.5, -PI * 0.5 + TAU * busy, 48, Color(UIKit.NAVY, 0.75 * opacity), 7.0, true)
@@ -105,6 +113,45 @@ static func draw_button(ci: CanvasItem, b: Dictionary, name: String, label: Stri
 	var fs := int(clampf(r * 0.3, 16.0, 26.0))
 	var tw := f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	ci.draw_string(f, center + Vector2(-tw * 0.5, r * 0.46 if icon != "" else fs * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, text_col)
+
+
+## (2.2 build 15) the Hide button is a bush: a fluffy leafy outline, shaded
+## greens, leaves sprinkled on top and a glossy light.  While hiding it turns
+## to "Jump out": the bush rustles and a gold rim says press to pop out.
+static func _draw_bush(ci: CanvasItem, c: Vector2, r: float, opacity: float, hiding: bool, off: bool) -> void:
+	var t := 0.0 if UIKit.reduced_motion() else float(Time.get_ticks_msec()) / 1000.0
+	var dark := Color("2f6b3a") if not off else Color(UIKit.SLATE, 1.0)
+	var mid := Color("3f9a4b") if not off else Color(UIKit.SLATE_HI, 1.0)
+	var lite := Color("74cf6a") if not off else Color(UIKit.SLATE_HI, 1.0)
+	var a := 0.86 * opacity
+	var shake := (sin(t * 22.0) * 0.06) if hiding else 0.0
+	# the fluffy edge: puffs round the rim
+	for i in 11:
+		var an := TAU * float(i) / 11.0 + shake
+		ci.draw_circle(c + Vector2.from_angle(an) * r * 0.8, r * 0.3, Color(dark, a))
+	ci.draw_circle(c, r * 0.86, Color(dark, a))
+	ci.draw_circle(c + Vector2(-r * 0.05, -r * 0.08), r * 0.72, Color(mid, a))
+	ci.draw_circle(c + Vector2(-r * 0.16, -r * 0.24), r * 0.42, Color(lite, 0.75 * a))
+	# leaves sprinkled over it
+	for i in 7:
+		var an2 := float(i) * 2.1 + 0.4
+		var lp := c + Vector2.from_angle(an2) * r * (0.35 + 0.08 * float(i % 3)) + Vector2(0, -r * 0.05)
+		ci.draw_set_transform(lp, an2 + shake * 3.0, Vector2(1.0, 0.55))
+		ci.draw_circle(Vector2.ZERO, r * 0.11, Color(lite.lightened(0.15), 0.8 * a))
+	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# a pink blossom or two
+	ci.draw_circle(c + Vector2(r * 0.42, -r * 0.38), r * 0.07, Color(Color("ff9fc6"), a))
+	ci.draw_circle(c + Vector2(-r * 0.5, r * 0.12), r * 0.06, Color(Color("ffe08a"), a))
+	# gloss
+	ci.draw_set_transform(c + Vector2(-r * 0.1, -r * 0.52), -0.2, Vector2(1.0, 0.4))
+	ci.draw_circle(Vector2.ZERO, r * 0.45, Color(1, 1, 1, 0.14 * opacity))
+	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# the rim: gold while hiding (press to pop out), else a leafy light rim
+	ci.draw_arc(c, r * 1.02, 0, TAU, 56, Color(UIKit.AMBER, 0.9 * opacity) if hiding else Color(lite.lightened(0.3), 0.6 * opacity), 3.0, true)
+	# a dark band behind the words so they read on the leaves
+	ci.draw_set_transform(c + Vector2(0, r * 0.46), 0.0, Vector2(1.0, 0.42))
+	ci.draw_circle(Vector2.ZERO, r * 0.52, Color(0.02, 0.1, 0.04, 0.45 * opacity))
+	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 ## The stick: base ring and knob.  Pass 9: no sprint ring or meter (one
@@ -447,6 +494,10 @@ class TouchSurface:
 				st["off"] = c.get("st", TC.PState.ACTIVE) != TC.PState.ACTIVE
 				st["ready"] = bool(c.get("tag_ready", false))
 				st["busy"] = float(c.get("tag_busy", 0.0))
+			elif name == "hide":
+				var hid: bool = int(c.get("st", TC.PState.ACTIVE)) == TC.PState.HIDING
+				st["hiding"] = hid
+				st["ready"] = bool(c.get("near_bush", false)) and not hid
 			elif name == "gadget":
 				st["busy"] = clampf(float(info.get("gadget_cd", 0.0)) / maxf(0.1, mc.cfg.gadget_use_cooldown_s), 0.0, 1.0) if mc != null else 0.0
 			TouchControls.draw_button(self, router.buttons[name], name, label_of(name, c), icon_of(name, c), opacity, st)

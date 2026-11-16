@@ -58,6 +58,12 @@ export default {
    "item": "outfit:starry_sleeper",
    "apple_type": "NON_CONSUMABLE",
    "reference_name": "Skin Starry Sleeper"
+  },
+  "com.idlery.ultimatetrifecta.pass.s1": {
+   "kind": "apple_pass",
+   "item": "season:s1:premium",
+   "apple_type": "NON_CONSUMABLE",
+   "reference_name": "Season 1 Premium Pass"
   }
  },
  "items": [
@@ -312,6 +318,7 @@ export default {
    "kind": "season_premium",
    "season": "s1",
    "price": 1500,
+   "product": "com.idlery.ultimatetrifecta.pass.s1",
    "name": "Season 1 · Winter Break Premium",
    "blurb": "Unlocks the Premium track of Season 1 · Winter Break for this season, permanently. Every Premium reward you have already earned becomes claimable at once. It never changes speed, reach, stealth or score, it isn't a subscription, and it doesn't skip tiers."
   },
@@ -4999,6 +5006,18 @@ export default {
  },
  "economy": {
   "_comment": "Centralised earning values (client projection and service settlement read the same numbers). Coins and Season XP come only from eligible, service-verified online rounds; practice settles nothing into the wallet or the pass. Purchased Coins never become XP.",
+  "daily_gift": {
+   "_comment": "2.2 build 15: a present once per UTC day on opening the game, granted by the service (idempotent per day). Consecutive days climb the list; day 8 starts again at the first amount; a missed day restarts it.",
+   "coins": [
+    20,
+    25,
+    30,
+    35,
+    40,
+    50,
+    75
+   ]
+  },
   "round_coins": {
    "completed": 10,
    "team_win": 4,

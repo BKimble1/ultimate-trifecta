@@ -290,9 +290,9 @@ func build() -> void:
 	roster_col.item_rect_changed.connect(_frame_stage.bind(roster_col))
 	get_viewport().size_changed.connect(_frame_stage.bind(roster_col))
 	_frame_stage.call_deferred(roster_col)
-	# 2.2: the season champion poster, now and then, on arriving home
+	# 2.2 build 15: the daily present, then the event poster when due
 	if _solo():
-		ChampionPromo.show_when_settled(self)
+		LoginFlow.run(self)
 	# (2.3) a round's Coins fly into the counter, top right
 	if App.coin_fly_pending > 0:
 		var amount := App.coin_fly_pending
