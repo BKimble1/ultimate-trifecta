@@ -53,7 +53,7 @@ func build() -> void:
 		"Night Watch: a ring marks the runner you'd tag; Tag lights up when a press would land. Pressing early just misses and needs a moment to recover.",
 		"Carts are fast on roads but can't climb stairs, pass bollards or enter the woods, gardens, pool deck or quad. Hop out to tag. A cart bump only makes runners stumble.",
 		"A splash marks that spot for the Night Watch for %d seconds — not the runner. Break line of sight behind buildings to lose a chaser." % int(cfg.splash_marker_s),
-		"Power-ups (one at a time): Speed Sneakers (faster for 10 s), Squeaky Duck (fake footsteps), Pillow Shield (tags bounce off for 5 s). Big round bushes: Hide to vanish from sight (a lunge at the bush still tags you).",
+		"Power-ups (one at a time): Speed Sneakers (faster for 10 s), Squeaky Duck (toss it: Night Watch near it trip and can't tag for a moment), Pillow Shield (tags bounce off for 5 s). Power-ups come back at a new spot after a pickup. Big round bushes: Hide to vanish from sight (a lunge at the bush still tags you). Rifts: step into one to pop out somewhere else on campus (each works once).",
 		"Friend parties play a series of 1, 3 or 5 rounds; roles are drawn fairly each round. Solo practice lets you pick Runner or Night Watch.",
 	]
 	for r in rules:

@@ -115,6 +115,14 @@ extends Resource
 @export var decoy_range_m: float = 9.0
 @export var decoy_duration_s: float = 5.0
 @export var decoy_step_speed: float = 4.5
+## (2.2 build 16) the duck lands with a squeak: every Night Watch within this
+## distance trips (a stumble) and can't tag for decoy_daze_s; a cart there
+## is slowed as long.  Its fake footsteps still run on after.
+@export var decoy_daze_m: float = 8.0
+@export var decoy_daze_s: float = 2.5
+## (2.2 build 16) a picked-up power-up comes back after gadget_respawn_s at
+## another spot (never where it was, never one in use)
+@export var pickup_moves: bool = true
 @export var bomb_range_m: float = 11.0
 @export var bomb_assist_cone_deg: float = 35.0
 @export var bomb_assist_range_m: float = 15.0

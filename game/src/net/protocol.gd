@@ -50,7 +50,12 @@ extends RefCounted
 ## bush), the power-up set changed (Speed Sneakers 10 s, Pillow Shield; the
 ## Splash Bomb no longer spawns; pickup items are worked out from the seed),
 ## so an 11 and a 12 game refuse each other at join.
-const VERSION := 12
+## Protocol 13 (2.2 build 16): power-ups move after a pickup (each pickup's
+## spot in the snapshot), the Squeaky Duck dazes (Ev.DAZE), rift portals
+## (Ev.RIFT, their state in the snapshot), carts: full speed on grass and a
+## cart hit is a tag (rules every device predicts with), so 12 and 13 refuse
+## each other at join.
+const VERSION := 13
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}
@@ -365,6 +370,10 @@ static func encode_snapshot(sim: MatchSim, recipient: SimPlayer, relevant: Array
 			if float(sim.pickups[i]["respawn"]) <= 0.0:
 				mask |= (1 << i)
 		b.put_u16(mask)
+		# (2.2 build 16) where each power-up stands now (they move after a pickup)
+		b.put_u8(mini(sim.pickups.size(), 16))
+		for i in mini(sim.pickups.size(), 16):
+			b.put_u8(int(sim.pickups[i].get("spot", i)))
 		# decoys + bombs visible near the recipient (presentation)
 		var fx: Array = []
 		for d in sim.decoys:
@@ -509,6 +518,10 @@ static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
 			marks.append({"water": b.get_u8(), "t": float(b.get_u8()) / 20.0})
 		me["markers"] = marks
 		me["pickups"] = b.get_u16()
+		var pspots: Array = []
+		for i in b.get_u8():
+			pspots.append(b.get_u8())
+		me["pickup_spots"] = pspots
 		var fx: Array = []
 		var nf := b.get_u8()
 		for i in nf:

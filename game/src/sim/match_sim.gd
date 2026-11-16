@@ -139,7 +139,7 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 	var types := MatchSim.pickup_types(seed_v, cfg.gadgets_enabled, layout.gadget_spots.size())
 	for i in types.size():
 		var spot: Vector2 = layout.gadget_spots[i]
-		pickups.append({"pos": Vector3(spot.x, CampusBuilder.grid_y(layout, spot.x, spot.y), spot.y), "type": types[i], "respawn": 0.0})
+		pickups.append({"pos": Vector3(spot.x, CampusBuilder.grid_y(layout, spot.x, spot.y), spot.y), "type": types[i], "respawn": 0.0, "spot": i})
 	if bool(opts.get("pace", true)):
 		pace = RunnerPace.new()
 		pace.setup(self)       # starts the route fields on a worker (PaceFields)
@@ -1024,10 +1024,87 @@ func _bomb_assist(from: Vector3, aim: Vector3) -> Vector3:
 	return best
 
 
+## (2.2 build 16) The Squeaky Duck lands: the Night Watch close to it trip
+## and can't tag for a moment; carts there are slowed.
+func _duck_lands(d: Dictionary) -> void:
+	var at: Vector3 = d["pos"]
+	for q in players:
+		if not q.is_patrol():
+			continue
+		if q.state == TC.PState.IN_CART and q.cart_id >= 0:
+			var c: SimCart = carts[q.cart_id]
+			if c.pos().distance_to(at) <= cfg.decoy_daze_m:
+				c.slowed_t = maxf(c.slowed_t, cfg.decoy_daze_s)
+				_emit(TC.Ev.DAZE, q.id, int(d["owner"]), 1, c.pos())
+			continue
+		if q.state != TC.PState.ACTIVE or q.pos().distance_to(at) > cfg.decoy_daze_m:
+			continue
+		q.tag_lockout = maxf(q.tag_lockout, cfg.decoy_daze_s)
+		q.tag_phase = SimPlayer.TagPhase.NONE
+		_set_state(q, TC.PState.STUMBLE)
+		_emit(TC.Ev.DAZE, q.id, int(d["owner"]), 0, q.pos())
+
+
+## (2.2 build 16) Where a power-up comes back: the next spot of the pool
+## (the map's power-up spots, then its coin spots) that isn't this one's,
+## isn't another pickup's, and has no runner standing on it.
+func pickup_pool() -> Array:
+	return MatchSim.pickup_pool_for(layout)
+
+
+static func pickup_pool_for(layout: CampusLayout) -> Array:
+	var out: Array = []
+	for sp in layout.gadget_spots:
+		out.append(sp)
+	for sp in layout.coin_spots:
+		var v: Vector2 = sp
+		var near := false
+		for q in out:
+			if (q as Vector2).distance_to(v) < 12.0:
+				near = true
+				break
+		if not near:
+			out.append(v)
+		if out.size() >= 48:
+			break
+	return out
+
+
+var _pool: Array = []
+
+
+func _move_pickup(pk: Dictionary, i: int) -> void:
+	if _pool.is_empty():
+		_pool = pickup_pool()
+	var n := _pool.size()
+	var used := {}
+	for q in pickups:
+		used[int(q.get("spot", -1))] = true
+	var start := (int(pk.get("spot", i)) + 1 + (i * 7 + tick) % maxi(1, n - 1)) % n
+	for k in n:
+		var si := (start + k) % n
+		if used.has(si):
+			continue
+		var v: Vector2 = _pool[si]
+		var busy := false
+		for q in players:
+			if q.pos2().distance_to(v) < 3.0:
+				busy = true
+				break
+		if busy:
+			continue
+		pk["spot"] = si
+		pk["pos"] = Vector3(v.x, CampusBuilder.grid_y(layout, v.x, v.y), v.y)
+		return
+
+
 func _update_gadgets(dt: float) -> void:
-	for pk in pickups:
+	for i in pickups.size():
+		var pk: Dictionary = pickups[i]
 		if float(pk["respawn"]) > 0.0:
 			pk["respawn"] = float(pk["respawn"]) - dt
+			if float(pk["respawn"]) <= 0.0 and cfg.pickup_moves:
+				_move_pickup(pk, i)
 			continue
 		for p in players:
 			if not p.is_runner() or p.state != TC.PState.ACTIVE or p.gadget != TC.Gadget.NONE:
@@ -1041,6 +1118,8 @@ func _update_gadgets(dt: float) -> void:
 		d["t"] = float(d["t"]) - dt
 		if float(d["flight"]) > 0.0:
 			d["flight"] = float(d["flight"]) - dt
+			if float(d["flight"]) <= 0.0:
+				_duck_lands(d)
 			continue
 		var np: Vector3 = d["pos"] + (d["dir"] as Vector3) * cfg.decoy_step_speed * dt
 		if has_los(d["pos"] + Vector3(0, 0.4, 0), np + Vector3(0, 0.4, 0)) and CampusBuilder.water_at(layout, Vector2(np.x, np.z)) < 0:

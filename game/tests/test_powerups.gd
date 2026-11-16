@@ -47,3 +47,50 @@ func test_the_shield_stops_a_tag() -> void:
 	await h.step(int(Rules.cfg.shield_s * 60.0))
 	t.check(r.protect <= 0.0, "and it wears off")
 	h.free_sim()
+
+
+## (2.2 build 16) The Squeaky Duck lands with a squeak: a Night Watch near it
+## trips and can't tag for a moment.
+func test_the_duck_dazes_the_night_watch() -> void:
+	var h := SimHarness.new(t)
+	h.make([R, P], [0, 1, 2])
+	await h.release_patrol()
+	var r := h.sim.player(0)
+	var w := h.sim.player(1)
+	var at: Vector3 = (h.sim.pickups[0]["pos"] as Vector3) + Vector3(2.5, 0.05, 0)
+	h.place(0, at)
+	h.place(1, at + Vector3(0, 0, -6.0))
+	await h.step(3)
+	r.yaw = 0.0   # facing -z, toward the Night Watch
+	r.gadget = TC.Gadget.DECOY
+	h.press(0, TC.BTN_GADGET)
+	var dazed := false
+	for i in 90:
+		await h.step()
+		if not h.events_of(TC.Ev.DAZE).is_empty():
+			dazed = true
+			break
+	t.check(dazed, "the duck dazes the Night Watch next to where it lands")
+	t.check(w.tag_lockout > 1.5, "who can't tag for a moment (%.2f s)" % w.tag_lockout)
+	h.free_sim()
+
+
+## (2.2 build 16) A picked-up power-up comes back somewhere else.
+func test_a_pickup_comes_back_elsewhere() -> void:
+	var h := SimHarness.new(t)
+	h.make([R, P], [0, 1, 2])
+	await h.release_patrol()
+	var pk: Dictionary = h.sim.pickups[0]
+	var was: Vector3 = pk["pos"]
+	h.place(0, was + Vector3(0, 0.05, 0))
+	await h.step(2)
+	t.check(h.sim.player(0).gadget != TC.Gadget.NONE, "picked up")
+	h.place(0, was + Vector3(30, 0.05, 30))
+	await h.step(int(Rules.cfg.gadget_respawn_s * 60.0) + 5)
+	t.check(float(pk["respawn"]) <= 0.0, "it's back")
+	t.check((pk["pos"] as Vector3).distance_to(was) > 3.0, "at another spot (%s -> %s)" % [str(was), str(pk["pos"])])
+	var spots := {}
+	for q in h.sim.pickups:
+		t.check(not spots.has(int(q["spot"])), "never two on one spot")
+		spots[int(q["spot"])] = true
+	h.free_sim()

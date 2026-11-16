@@ -1923,6 +1923,18 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 			if ui and mine and _shake_cd <= 0.0:
 				_haptic(15)
 				_shake_cd = 0.6
+		TC.Ev.DAZE:
+			# (2.2 build 16) a Squeaky Duck tripped a Night Watch (or slowed a cart)
+			if world:
+				Sfx.play("squeak", pos, 2.0)
+				fx.bump(pos)
+			if not ui:
+				return
+			var dz: Dictionary = roster.get(a, {})
+			hud.feed("Squeak! %s is dazed" % dz.get("name", "The Night Watch"), TC.Role.RUNNER)
+			if mine:
+				hud.toast("Dazed by a Squeaky Duck!", Color(1.0, 0.8, 0.3))
+				_haptic(20)
 		TC.Ev.CART_ENTER:
 			if world:
 				Sfx.play("cart_start", pos)
@@ -2181,6 +2193,9 @@ func _build_bushes() -> void:
 		bush_views.append(b)
 
 
+var _pickup_pool: Array = []
+
+
 func _update_pickups() -> void:
 	var t := Time.get_ticks_msec() / 1000.0
 	var mask := 0
@@ -2191,8 +2206,22 @@ func _update_pickups() -> void:
 	else:
 		mask = int(_me.get("pickups", 0xFFFF))
 	var my_role: int = int(roster[local_slot]["role"]) if roster.has(local_slot) else TC.Role.RUNNER
+	# (2.2 build 16) power-ups move to another spot after a pickup
+	var spots: Array = []
+	if sim:
+		for pk in sim.pickups:
+			spots.append(int(pk.get("spot", -1)))
+	else:
+		spots = _me.get("pickup_spots", [])
+	if _pickup_pool.is_empty():
+		_pickup_pool = MatchSim.pickup_pool_for(layout)
 	for i in pickup_views.size():
 		var n: PickupHologram = pickup_views[i]
+		if i < spots.size() and int(spots[i]) >= 0 and int(spots[i]) < _pickup_pool.size():
+			var v: Vector2 = _pickup_pool[int(spots[i])]
+			var want := Vector3(v.x, CampusBuilder.grid_y(layout, v.x, v.y), v.y)
+			if n.position.distance_to(want) > 0.5:
+				n.position = want
 		n.visible = (mask & (1 << i)) != 0
 		n.animate(t, i, reduced_motion)
 		if my_role == TC.Role.PATROL:

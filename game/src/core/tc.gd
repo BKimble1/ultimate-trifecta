@@ -51,6 +51,8 @@ enum Ev {
 	COIN_PICKUP,      # V6: a = collector, value = coin index in the round's list
 	HIDE,             # (2.3) a = runner, value = bush index
 	UNHIDE,           # (2.3) a = runner, value = bush index
+	DAZE,             # (2.2 build 16) a = Night Watch dazed by a Squeaky Duck, b = owner
+	RIFT,             # (2.2 build 16) a = player, value = rift index (from pos to m["to"])
 }
 
 # Input button bits (held state) and edge bits (pressed this tick).
@@ -77,7 +79,7 @@ const EMOTE_LABELS := {"wave": "Wave", "cheer": "Cheer", "laugh": "Ha!", "shrug"
 
 const GADGET_NAMES := {Gadget.TURBO: "Speed Sneakers", Gadget.DECOY: "Squeaky Duck", Gadget.SPLASH_BOMB: "Splash Bomb", Gadget.SHIELD: "Pillow Shield"}
 ## (2.3) what each does, in a few words (pickup toast, HUD)
-const GADGET_BLURBS := {Gadget.TURBO: "Run faster for 10 s", Gadget.DECOY: "Footsteps that fool the Night Watch", Gadget.SPLASH_BOMB: "Slows a cart", Gadget.SHIELD: "Tags bounce off for 5 s"}
+const GADGET_BLURBS := {Gadget.TURBO: "Run faster for 10 s", Gadget.DECOY: "Toss it: the Night Watch near it trip and can't tag for a moment", Gadget.SPLASH_BOMB: "Slows a cart", Gadget.SHIELD: "Tags bounce off for 5 s"}
 const GADGET_KEYS := {"turbo": Gadget.TURBO, "decoy": Gadget.DECOY, "splash_bomb": Gadget.SPLASH_BOMB, "shield": Gadget.SHIELD}
 
 ## Role cards from the round's actual rules (the counts vary with the party
