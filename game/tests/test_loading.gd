@@ -476,3 +476,27 @@ func test_practice_reveal_waits_for_the_warm_frames() -> void:
 	await t.get_tree().process_frame
 	MatchController.drop_campus_cache()
 	s.queue_free()
+
+
+## 2.2: tips rotate every TIP_S seconds, each one in turn, fully faded in.
+func test_loading_tips_rotate() -> void:
+	var ls := LoadingScreen.new()
+	t.add_child(ls)
+	await t.get_tree().process_frame
+	t.check(ls.tips.size() >= 2, "a round has several tips (%d)" % ls.tips.size())
+	t.check(ls._tip_box.visible and ls.tip_lbl.text == ls.tips[0], "the first tip shows at once")
+	var seen := {ls.tip_lbl.text: true}
+	var frames := int(LoadingScreen.TIP_S * 60.0 * 3.0) + 60
+	for i in frames:
+		await t.get_tree().process_frame
+		seen[ls.tip_lbl.text] = true
+	t.check(seen.size() >= mini(3, ls.tips.size()), "three periods show three tips (%d)" % seen.size())
+	t.eq(ls.tip_lbl.text, ls.tips[ls.tip_i], "the label ends on the current tip")
+	t.check(is_equal_approx(ls.tip_lbl.modulate.a, 1.0), "and fully faded in")
+	ls._tick_tips(LoadingScreen.TIP_S * 3.0)
+	ls._tick_tips(LoadingScreen.TIP_S * 3.0)
+	for i in 40:
+		await t.get_tree().process_frame
+	t.eq(ls.tip_lbl.text, ls.tips[ls.tip_i], "two long frames in a row still land on the current tip")
+	t.check(is_equal_approx(ls.tip_lbl.modulate.a, 1.0), "never left faded out")
+	ls.queue_free()

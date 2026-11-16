@@ -361,7 +361,17 @@ func _lobby() -> void:
 	if s.human_count() >= want_players and not _scheduled.has("lobby_wait"):
 		_scheduled["lobby_wait"] = true
 		later(4.0, "lobby_%dp" % want_players)
-	if _shots.has("lobby_%dp" % want_players) and _t > float(_shots["lobby_%dp" % want_players]) + 1.0:
+	if _shots.has("lobby_%dp" % want_players) and _t > float(_shots["lobby_%dp" % want_players]) + 1.0 and not _scheduled.has("chat"):
+		# (2.2) typed chat, filtered on the devices: one message with a bad
+		# word (it goes out bleeped), the bubble over the head, the drawer
+		_scheduled["chat"] = true
+		s.social.chat.send_text("nice run %s!" % Marshalls.base64_to_utf8("ZnVjaw=="), s.social.chat.my_channel(false))
+		later(1.2, "lobby_chat_bubble")
+	if _shots.has("lobby_chat_bubble") and not _scheduled.has("drawer"):
+		_scheduled["drawer"] = true
+		(App.screen as LobbyScreen)._open_chat()
+		later(1.5, "lobby_chat_drawer")
+	if _shots.has("lobby_chat_drawer") and _t > float(_shots["lobby_chat_drawer"]) + 1.0:
 		get_tree().quit()
 
 
@@ -504,6 +514,8 @@ func _results() -> void:
 		r.results = d["results"]
 		r.reward = d["reward"]
 		r.session = s
+		# (2.2) the run card, as after a real round (nothing sent anywhere)
+		r.rank = Rankings.record(d["results"], int(d["local_slot"]), false, false)
 		App._show(r)
 		later(2.5, "results")
 	elif _shots.has("results") and _t > float(_shots["results"]) + 0.6 and not _scheduled.has("drawer"):

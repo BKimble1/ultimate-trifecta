@@ -269,6 +269,7 @@ const TIP_S := 5.5
 var tips: Array[String] = []
 var tip_i := 0
 var _tip_t := 0.0
+var _tip_tw: Tween
 var _tip_box: PanelContainer
 var tip_lbl: Label
 
@@ -313,13 +314,17 @@ func _tick_tips(delta: float) -> void:
 	_tip_t = 0.0
 	tip_i = (tip_i + 1) % tips.size()
 	var next := tips[tip_i]
+	# a long frame (a busy device) never leaves a fade half done
+	if _tip_tw != null and _tip_tw.is_valid():
+		_tip_tw.kill()
 	if UIKit.reduced_motion():
 		tip_lbl.text = next
+		tip_lbl.modulate.a = 1.0
 		return
-	var tw := tip_lbl.create_tween()
-	tw.tween_property(tip_lbl, "modulate:a", 0.0, 0.18)
-	tw.tween_callback(func() -> void: tip_lbl.text = next)
-	tw.tween_property(tip_lbl, "modulate:a", 1.0, 0.22)
+	_tip_tw = tip_lbl.create_tween()
+	_tip_tw.tween_property(tip_lbl, "modulate:a", 0.0, 0.18)
+	_tip_tw.tween_callback(func() -> void: tip_lbl.text = next)
+	_tip_tw.tween_property(tip_lbl, "modulate:a", 1.0, 0.22)
 
 
 ## A short fade into the round (no fade with Reduced Motion).

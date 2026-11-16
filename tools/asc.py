@@ -238,6 +238,7 @@ LEADERBOARDS = [
      "suffix": "", "suffixSingular": ""},
 ]
 LB_START = "2026-11-01T00:00:00Z"
+LB_DURATIONS = ["P30DT0H0M0S", "PT720H"]
 
 
 def gc_leaderboards(app_id, create):
@@ -267,11 +268,18 @@ def gc_leaderboards(app_id, create):
             print("%-20s MISSING" % v)
             continue
         attrs = {k: lb[k] for k in ("vendorIdentifier", "referenceName", "defaultFormatter", "scoreSortType", "scoreRangeStart", "scoreRangeEnd")}
-        attrs.update({"submissionType": "BEST_SCORE", "recurrenceStartDate": LB_START, "recurrenceDuration": "P30D",
+        attrs.update({"submissionType": "BEST_SCORE", "recurrenceStartDate": LB_START,
                       "recurrenceRule": "FREQ=DAILY;INTERVAL=30"})
-        body = {"data": {"type": "gameCenterLeaderboards", "attributes": attrs,
-                         "relationships": {"gameCenterDetail": {"data": {"type": "gameCenterDetails", "id": did}}}}}
-        r = call("POST", "/gameCenterLeaderboards", data=json.dumps(body))
+        # 30 days; App Store Connect wants the duration with time components
+        # (it refuses "P30D"), so the spellings are tried in turn: a refused
+        # attribute creates nothing
+        for dur in LB_DURATIONS:
+            attrs["recurrenceDuration"] = dur
+            body = {"data": {"type": "gameCenterLeaderboards", "attributes": attrs,
+                             "relationships": {"gameCenterDetail": {"data": {"type": "gameCenterDetails", "id": did}}}}}
+            r = call("POST", "/gameCenterLeaderboards", data=json.dumps(body))
+            if r.ok or "recurrenceDuration" not in r.text:
+                break
         if not r.ok:
             print("could not create %s (HTTP %d)" % (v, r.status_code))
             return 1

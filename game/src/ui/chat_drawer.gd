@@ -134,7 +134,7 @@ func _ready() -> void:
 	if bool(av["ok"]):
 		var row := UIKit.hbox(8)
 		field = LineEdit.new()
-		field.placeholder_text = "Message (%d characters)" % ChatRules.MAX_LEN
+		field.placeholder_text = "Type a message…"
 		field.max_length = ChatRules.MAX_LEN
 		field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		field.custom_minimum_size = Vector2(0, UIKit.touch_min())
