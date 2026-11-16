@@ -47,8 +47,8 @@ func test_every_emote_from_host_and_guest() -> void:
 		host_l._send_emote(id)
 		await rig.frames(4)
 		t.eq(hv._mode, "emote_" + String(TC.EMOTES[id]), "host %s plays at once" % TC.EMOTES[id])
-		t.check(hv.find_children("*", "Label3D", false, false).any(func(n: Node) -> bool: return (n as Label3D).visible and (n as Label3D).text == TC.EMOTE_LABELS[TC.EMOTES[id]]),
-			"name bubble shows %s" % TC.EMOTE_LABELS[TC.EMOTES[id]])
+		t.check(not hv.find_children("*", "Label3D", false, false).any(func(n: Node) -> bool: return (n as Label3D).visible and (n as Label3D).text == TC.EMOTE_LABELS[TC.EMOTES[id]]),
+			"(2.2 build 16) no name bubble over %s" % TC.EMOTE_LABELS[TC.EMOTES[id]])
 	# the host's own emote reaches the guest through the network
 	await rig.wait_until(func() -> bool: return (rig.client_events[guest] as Array).any(func(e: Dictionary) -> bool: return int(e["type"]) == TC.Ev.EMOTE), 300)
 	t.check((rig.client_events[guest] as Array).filter(func(e: Dictionary) -> bool: return int(e["type"]) == TC.Ev.EMOTE).size() == TC.EMOTES.size(),

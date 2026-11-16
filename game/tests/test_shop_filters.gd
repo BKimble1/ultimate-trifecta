@@ -110,7 +110,8 @@ func test_hide_owned_hides_only_owned_and_explains_an_all_owned_grid() -> void:
 	t.check(shop.body.find_child("FilterRow", true, false) == null, "no filter on Coins")
 	shop.select_section("season")
 	await _frames(3)
-	t.check(shop.cards.any(func(c: Variant) -> bool: return (c as ShopScreen.ShopCard).id == "season:s1:premium"), "Season Premium stays")
+	# (2.2 build 16) the Season 1 section is the Season Pass poster
+	t.check(shop.body.find_child("PassBanner", true, false) != null, "Season Premium stays (the pass banner)")
 	t.check(shop.body.find_child("Link_pass", true, false) != null, "and the Season Pass is one tap away (rewards are earned there, never sold)")
 	# the choice is kept while the game runs
 	shop.select_section("outfits")

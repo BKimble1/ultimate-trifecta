@@ -41,6 +41,10 @@ const HOME_MARK := Vector3(0.62, 0, 0.6)
 const BODY_HALF_W := 0.62
 ## fraction of the screen width left of the party panel (set by LobbyScreen)
 var lobby_free_frac := 0.62
+## (2.2 build 16) where home's framing centres the runner, as a fraction of
+## the width (<= 0: FRAMES["home"]); results set it to the middle of the
+## space left of their panel
+var home_x_frac := -1.0
 ## the wardrobe's free region left of its item panel, as fractions of the
 ## screen width: [centre, width] (set by CreatorScreen, V5)
 var wardrobe_region := Vector2(0.27, 0.44)
@@ -116,6 +120,8 @@ func _cam_for(m: String) -> Array:
 	var vs := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(16, 9)
 	var aspect := vs.x / maxf(1.0, vs.y)
 	var cam_h := float(f[3])
+	if m == "home" and home_x_frac > 0.0:
+		x_frac = clampf(home_x_frac, 0.15, 0.6)
 	if m == "walk":
 		# (V6) behind and above the walker, looking a little ahead: the room
 		# reads from front to back and the camera never leaves the room
@@ -188,6 +194,18 @@ func _reframe() -> void:
 		_apply_cam(_cam_for(mode), 1.0)
 	for k in chars:
 		_place(k)
+
+
+## (2.2 build 16) centre home's runner at this fraction of the width (<= 0:
+## the default framing).
+func set_home_x(frac: float) -> void:
+	if absf(frac - home_x_frac) < 0.005:
+		return
+	home_x_frac = frac
+	if mode == "home" and _cam_t >= 1.0:
+		_apply_cam(_cam_for(mode), 1.0)
+		for k in chars:
+			_place(k)
 
 
 func set_wardrobe_region(center_frac: float, width_frac: float, top_frac: float = 0.0, bottom_frac: float = 1.0) -> void:
@@ -413,6 +431,19 @@ func _place(key: String) -> void:
 	v.rs["pos"] = v.global_position
 
 
+## (2.2 build 16) the facing a character settles to on its mark (what
+## _place gives it), so a stroll back can turn into it smoothly.
+func rest_yaw(key: String) -> float:
+	key = _resolve(key)
+	var mi: int = _mark_of.get(key, 0)
+	var p: Vector3 = HOME_MARK if mode == "home" or mode == "wardrobe" else MARKS[mi]
+	var bias: float = (0.42 if mode == "home" else 0.3) if mode == "home" or mode == "wardrobe" else float(YAW_BIAS[mi])
+	var cpos: Vector3 = _cam_for(mode)[0]
+	var gp := to_global(p)
+	var d := Vector3(cpos.x, 0, cpos.z) - gp
+	return atan2(-d.x, -d.z) + bias
+
+
 func _idle_rs(v: CharacterView) -> Dictionary:
 	return {"pos": v.global_position, "yaw": v.rotation.y, "state": TC.PState.ACTIVE, "vel": Vector3.ZERO, "on_floor": true}
 
@@ -437,10 +468,7 @@ func emote(key: String, id: int, seconds: float = -1.0) -> bool:
 	v.apply_state(rs)
 	v.restart_emote(id)
 	_emote_until[key] = _t + dur
-	# the name bubble tells a group who is emoting; alone on the home or
-	# results framing it would sit above the top of the screen (V5)
-	if mode == "lobby":
-		_show_bubble(key, v, String(TC.EMOTE_LABELS[name]))
+	# (2.2 build 16) no name over the emote: the move says it
 	emote_starts[key] = int(emote_starts.get(key, 0)) + 1
 	return true
 
@@ -756,10 +784,11 @@ func _build_room() -> void:
 			var fx: float = wx + side * (1.81 + 0.14 * float(f))
 			var fold := Color("b84d5e", FABRIC).darkened(0.08 * float(f % 2))
 			k.chamfer_box(Vector3(fx, 2.3, -3.31 + 0.02 * float(f % 2)), Vector3(0.17, 2.5, 0.09), fold, 0.04)
-	# rug (round, layered)
-	k.ellipse_disc(Vector3(0.1, 0.012, 0.25), 3.1, 2.1, Color("2f8f88", FABRIC), 40)
-	k.ellipse_disc(Vector3(0.1, 0.018, 0.25), 2.75, 1.8, Color("f1d9a6", FABRIC), 40)
-	k.ellipse_disc(Vector3(0.1, 0.024, 0.25), 2.3, 1.45, Color("3aa39b", FABRIC), 40)
+	# rug (round, layered).  (2.2 build 16) a few millimetres thin: its top
+	# was 2.4 cm up and runners standing at floor height sank into it
+	k.ellipse_disc(Vector3(0.1, 0.003, 0.25), 3.1, 2.1, Color("2f8f88", FABRIC), 40)
+	k.ellipse_disc(Vector3(0.1, 0.005, 0.25), 2.75, 1.8, Color("f1d9a6", FABRIC), 40)
+	k.ellipse_disc(Vector3(0.1, 0.007, 0.25), 2.3, 1.45, Color("3aa39b", FABRIC), 40)
 	# couch along the back-left
 	# (V4: upholstered shapes with rounded edges, two seat cushions, rolled
 	# arms and short wooden feet instead of plain blocks)
@@ -767,10 +796,10 @@ func _build_room() -> void:
 	# (2.3) contact shadows under the furniture: soft dark ovals on the
 	# planks, so nothing reads as floating
 	var ao := Color("1a120c")
-	k.ellipse_disc(Vector3(-3.6, 0.006, -2.72), 1.6, 0.6, ao, 28)
-	k.ellipse_disc(Vector3(ARMCHAIR.x, 0.006, ARMCHAIR.z), 0.7, 0.62, ao, 24)
-	k.ellipse_disc(Vector3(-1.9, 0.006, -2.1), 0.46, 0.32, ao, 20)
-	k.ellipse_disc(Vector3(5.1, 0.006, -2.72), 0.8, 0.3, ao, 20)
+	k.ellipse_disc(Vector3(-3.6, 0.009, -2.72), 1.6, 0.6, ao, 28)
+	k.ellipse_disc(Vector3(ARMCHAIR.x, 0.009, ARMCHAIR.z), 0.7, 0.62, ao, 24)
+	k.ellipse_disc(Vector3(-1.9, 0.009, -2.1), 0.46, 0.32, ao, 20)
+	k.ellipse_disc(Vector3(5.1, 0.009, -2.72), 0.8, 0.3, ao, 20)
 	# (2.3) the upholstered base comes down to just above the floor on short
 	# feet (the feet alone under a high base read as floating legs)
 	k.chamfer_box(Vector3(-3.6, 0.27, -2.75), Vector3(3.0, 0.44, 1.05), cc.darkened(0.1), 0.06)

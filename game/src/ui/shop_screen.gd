@@ -449,8 +449,9 @@ func _build_section() -> void:
 			_intro("Coins buy anything in the Shop and never expire.", gw)
 			body.add_child(_grid("coins", Catalogue.shop_items("coins"), gw, PACK_W, 1, 3))
 		"season":
-			_intro("%d tiers you earn by playing. Premium adds a second track of rewards. Season rewards are earned in the Season Pass, never sold." % Economy.max_tier(Catalogue.current_season_id()), gw)
-			body.add_child(_season_offer(gw))
+			# (2.2 build 16) the section is the Season Pass poster: Premium from
+			# Apple or for Coins, right there
+			body.add_child(PassOffer.banner(self, Vector2(gw, maxf(gw * 1.25, 760.0))))
 			var pass_link := UIKit.link("Open the Season Pass  ›", UIKit.T_LABEL)
 			pass_link.name = "Link_pass"
 			pass_link.custom_minimum_size.y = UIKit.row_h()
@@ -805,6 +806,23 @@ func _season_offer(gw: float) -> Control:
 	card.pressed.connect(_open_detail.bind(id))
 	cards.append(card)
 	return card
+
+
+## (2.2 build 16) Premium for Coins from the Season 1 banner: the usual
+## confirm sheet, or what's missing.
+func _buy_premium_with_coins() -> void:
+	var id := String(Catalogue.season(Catalogue.current_season_id()).get("premium_item", "season:s1:premium"))
+	if Wallet.premium(Catalogue.current_season_id()):
+		NavShell.go("pass")
+		return
+	var can := Wallet.can_transact()
+	if not bool(can["ok"]):
+		dialog(String(can["message"]))
+		return
+	if Wallet.balance() < Catalogue.price(id):
+		dialog("You need %s more Coins. Coin packs are in Coins." % Catalogue.format_coins(Catalogue.price(id) - Wallet.balance()))
+		return
+	_confirm_spend(id)
 
 
 static func premium_summary(sid: String) -> String:

@@ -487,8 +487,8 @@ func _on_chat() -> void:
 	for m in session.social.chat.visible([QuickChat.Channel.PARTY, QuickChat.Channel.ALL]):
 		if int(m["seq"]) > _bubbled:
 			_bubbled = int(m["seq"])
-			if App.stage:
-				App.stage.say(String(m["uid"]), String(m["text"]))
+			# (2.2 build 16) chat stays in the chat drawer: no bubble over
+			# the runner in the room
 			if not bool(m["mine"]):
 				Sfx.play("pop")
 	_paint_chat_badge()

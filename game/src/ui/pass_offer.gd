@@ -85,13 +85,31 @@ static func popup(screen: Screen) -> Control:
 	return root
 
 
+## (2.2 build 16) the same poster as a banner inside a page (the Shop's
+## Season 1 section): no close button, its own size.
+static func banner(screen: Screen, sz: Vector2) -> Control:
+	var poster := Poster.new()
+	poster.name = "PassBanner"
+	poster.big = true
+	poster.custom_minimum_size = sz
+	poster.size = sz
+	_fill(poster, screen, Callable())
+	return poster
+
+
 static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	var sz := poster.custom_minimum_size
-	# the outfits, right side, in their own little 3D stage
-	var stage := Preview3D.new(Vector2i(int(sz.x * 0.5), int(sz.y * 0.8)))
+	# (2.2 build 16) a narrow banner (the Shop's panel) stacks: the outfits
+	# on top, the words and buttons under them
+	var tall := sz.x < 900.0
+	poster.tall = tall
+	var st_pos := Vector2(sz.x * 0.05, sz.y * 0.11) if tall else Vector2(sz.x * 0.47, sz.y * 0.06)
+	var st_size := Vector2(sz.x * 0.9, sz.y * 0.36) if tall else Vector2(sz.x * 0.5, sz.y * 0.8)
+	# the outfits, in their own little 3D stage
+	var stage := Preview3D.new(Vector2i(int(st_size.x), int(st_size.y)))
 	stage.name = "Outfits"
-	stage.position = Vector2(sz.x * 0.47, sz.y * 0.06)
-	stage.size = Vector2(sz.x * 0.5, sz.y * 0.8)
+	stage.position = st_pos
+	stage.size = st_size
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	poster.add_child(stage)
 	stage.aim(Vector3(0, 1.15, 5.6), Vector3(0, 0.95, 0))
@@ -107,8 +125,8 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 		stage.show_character(TC.Role.RUNNER, Cosmetics.sanitize(look), Vector3(xs[i], 0, zs[i]), PI - float(xs[i]) * 0.28)
 	# their names and tiers under them
 	var tags := UIKit.hbox(0)
-	tags.position = Vector2(sz.x * 0.47, sz.y * 0.8)
-	tags.custom_minimum_size = Vector2(sz.x * 0.5, 0)
+	tags.position = Vector2(st_pos.x, st_pos.y + st_size.y - (0.0 if tall else sz.y * 0.06))
+	tags.custom_minimum_size = Vector2(st_size.x, 0)
 	tags.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	poster.add_child(tags)
 	for it in [SHOWCASE[0], SHOWCASE[1], SHOWCASE[2]]:
@@ -139,14 +157,20 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	ov.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(ov)
 	top.add_child(UIKit.spacer_h())
-	var x := UIKit.icon_button("close")
-	x.name = "Close"
-	x.accessibility_name = "Close"
-	x.pressed.connect(close)
-	top.add_child(x)
+	if close.is_valid():
+		var x := UIKit.icon_button("close")
+		x.name = "Close"
+		x.accessibility_name = "Close"
+		x.pressed.connect(close)
+		top.add_child(x)
 	v.add_child(top)
-	var text_w := sz.x * 0.44
-	var title := UIKit.outlined(UIKit.label("PREMIUM PASS", 58, UIKit.AMBER_HI, true), 11)
+	if tall:
+		var gap := Control.new()
+		gap.custom_minimum_size.y = sz.y * 0.4
+		gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(gap)
+	var text_w := (sz.x - 64.0) if tall else sz.x * 0.44
+	var title := UIKit.outlined(UIKit.label("PREMIUM PASS", 46 if tall else 58, UIKit.AMBER_HI, true), 11)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(title)
 	var c := contents()
@@ -217,7 +241,11 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 			screen.dialog(String(pv["message"]))
 		paint.call())
 	coins.pressed.connect(func() -> void:
-		close.call()
+		if close.is_valid():
+			close.call()
+		if screen is ShopScreen:
+			(screen as ShopScreen)._buy_premium_with_coins()
+			return
 		ShopScreen.focus_section = "season"
 		ShopScreen.focus_item = premium_item()
 		NavShell.go("shop"))
@@ -261,23 +289,24 @@ static func _stat(icon: String, n: String, what: String) -> Control:
 ## under the three outfits.
 class Poster:
 	extends GlamPoster
+	var tall := false
 
 	func _ready() -> void:
 		top_col = Color("5a1e78")
 		bot_col = Color("101446")
 		ray_col = Color(1.0, 0.7, 0.95, 0.06)
 		glow_col = Color(1.0, 0.6, 0.85, 0.05)
-		focus = Vector2(0.72, 0.5)
-		confetti_x = Vector2(0.45, 1.0)
+		focus = Vector2(0.5, 0.3) if tall else Vector2(0.72, 0.5)
+		confetti_x = Vector2(0.0, 1.0) if tall else Vector2(0.45, 1.0)
 		confetti_cols = [UIKit.AMBER, Color("ff7aa2"), Color("8fd3ff"), UIKit.IVORY, UIKit.AMBER_HI]
 		super._ready()
 
 	func _paint_art(c: Vector2) -> void:
 		# the stage: a lit ellipse the outfits stand on
-		var ped := Vector2(size.x * 0.72, size.y * 0.78)
+		var ped := Vector2(size.x * 0.5, size.y * 0.44) if tall else Vector2(size.x * 0.72, size.y * 0.78)
 		for k in 5:
 			var e := PackedVector2Array()
-			var rx := size.x * (0.25 - 0.035 * k)
+			var rx := size.x * ((0.4 if tall else 0.25) - 0.035 * k)
 			for j in 40:
 				var a := TAU * float(j) / 40.0
 				e.append(ped + Vector2(cos(a) * rx, sin(a) * rx * 0.16))

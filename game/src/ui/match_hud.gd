@@ -1694,28 +1694,7 @@ class DrawLayer:
 				else:
 					draw_circle(p - dir * 18.0 + side * 0.4, 4.0, ncol)
 					draw_circle(p - dir * 24.0 - side * 0.4, 4.0, ncol)
-		# emote bubbles above characters
-		for slot in hud.emotes:
-			var v: CharacterView = hud.mc.views.get(slot)
-			if v == null or not v.visible:
-				continue
-			# like name labels: fade out with distance, never through walls
-			var head := v.global_position + Vector3(0, 1.6, 0)
-			var cam3 := hud.mc.camera
-			if cam3 == null or cam3.global_position.distance_to(head) > 28.0:
-				continue
-			if int(slot) != hud.mc.local_slot:
-				var q := PhysicsRayQueryParameters3D.create(cam3.global_position, head, TC.L_WORLD)
-				if not hud.mc.get_world_3d().direct_space_state.intersect_ray(q).is_empty():
-					continue
-			var sp := hud.world_to_screen(v.global_position + Vector3(0, 2.6, 0))
-			if sp.x < -1000:
-				continue
-			var label: String = TC.EMOTE_LABELS.get(TC.EMOTES[int(hud.emotes[slot]["id"])], "!")
-			var f := UIKit.font(true)
-			var tw := f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 26).x
-			draw_style_box(UIKit.box(Color(UIKit.IVORY, 0.94), 16), Rect2(sp - Vector2(tw * 0.5 + 12, 22), Vector2(tw + 24, 40)))
-			draw_string(f, sp + Vector2(-tw * 0.5, 8), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, UIKit.NAVY)
+		# (2.2 build 16) no emote name bubbles over characters: the move says it
 		# patrol: splash markers in the world (brief, location only)
 		for m in info.get("markers", []):
 			var w: Dictionary = hud.mc.layout.waters[int(m["water"])]

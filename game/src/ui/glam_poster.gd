@@ -6,7 +6,8 @@ extends Control
 ## point, a soft glow, tumbling confetti, twinkling sparkles, a light sweep
 ## that crosses it now and then, and a double gold frame.  It moves wherever
 ## it is shown (popups, banners), and only while it is on screen.
-## Reduced Motion: one still frame.
+## Reduced Motion: (2.2 build 16) the same picture at a third of the speed
+## and no light sweep (a still poster read as broken).
 ##
 ## Subclasses paint their art over the backdrop in _paint_art() and may
 ## change the palette and focal point before _ready.
@@ -65,9 +66,9 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if UIKit.reduced_motion() or not is_visible_in_tree():
+	if not is_visible_in_tree():
 		return
-	t += delta
+	t += delta * (0.35 if UIKit.reduced_motion() else 1.0)
 	queue_redraw()
 
 

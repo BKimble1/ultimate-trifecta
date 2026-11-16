@@ -68,6 +68,17 @@ func build() -> void:
 	sheet.custom_minimum_size = Vector2(minf(720.0, get_viewport().get_visible_rect().size.x * 0.6), 0)
 	sheet.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(sheet)
+	# (2.2 build 16) the runner stands in the middle of the space left of the
+	# panel (it stood off to its right, half behind it)
+	var centre := func() -> void:
+		if App.stage and is_instance_valid(App.stage) and sheet.is_inside_tree():
+			var vw := get_viewport().get_visible_rect().size.x
+			App.stage.set_home_x(sheet.get_global_rect().position.x * 0.5 / maxf(1.0, vw))
+	sheet.item_rect_changed.connect(centre)
+	centre.call_deferred()
+	tree_exiting.connect(func() -> void:
+		if App.stage and is_instance_valid(App.stage):
+			App.stage.set_home_x(-1.0))
 	# the summary scrolls by finger (UIKit.scroll_area); the actions never do
 	var outer := UIKit.vbox(14)
 	sheet.add_child(outer)

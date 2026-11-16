@@ -20,6 +20,8 @@ extends Node
 ## blocked), and avatars exist only for members of the roster.
 
 const RETURN_SPEED := 2.0
+## (2.2 build 16) at most this long turning round on the mark
+const TURN_S := 0.5
 
 var stage: DormStage
 var session: NetSession
@@ -32,6 +34,7 @@ var _pos := Vector2.ZERO
 var _vel := Vector2.ZERO
 var _yaw := 0.0
 var _returning: Dictionary = {}    # key -> true while walking back to its mark
+var _turning: Dictionary = {}      # key -> seconds spent turning round on the mark
 var _last: Dictionary = {}         # key -> last drawn position (Vector2)
 ## frames in which movement input was read (tests: menu input never moves)
 var moved_frames := 0
@@ -103,6 +106,7 @@ func reset() -> void:
 	stick = Vector2.ZERO
 	_vel = Vector2.ZERO
 	_returning.clear()
+	_turning.clear()
 	_last.clear()
 	if stage != null and is_instance_valid(stage):
 		for k in stage.free_roam.keys():
@@ -186,6 +190,16 @@ func _process(delta: float) -> void:
 		var mark := stage.mark_position(k)
 		var to := Vector2(mark.x, mark.z) - at
 		if to.length() < 0.06:
+			# (2.2 build 16) on the mark: turn to face the room smoothly, then
+			# settle (it used to snap round in one frame)
+			var turned := float(_turning.get(k, 0.0)) + delta
+			_turning[k] = turned
+			var ry := stage.rest_yaw(k)
+			v.apply_state({"pos": stage.to_global(Vector3(mark.x, 0.0, mark.z)), "yaw": ry, "state": TC.PState.ACTIVE,
+				"vel": Vector3.ZERO, "on_floor": true})
+			if turned < TURN_S and absf(angle_difference(v.rotation.y, ry)) > 0.03:
+				continue
+			_turning.erase(k)
 			_returning.erase(k)
 			_last.erase(k)
 			stage.free_roam.erase(k)
