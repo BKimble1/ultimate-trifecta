@@ -198,10 +198,10 @@ func test_season_table_is_complete() -> void:
 	var types := {}
 	for rid in Catalogue.season_reward_ids("s1"):
 		types[Catalogue.type_label(rid)] = int(types.get(Catalogue.type_label(rid), 0)) + 1
-	t.eq(int(types.get("Outfit", 0)), 6, "6 outfits (Pass 9: + Record Breaker, Dr. Doom)")
+	t.eq(int(types.get("Outfit", 0)), 7, "7 outfits (Pass 9: + Record Breaker, Dr. Doom; 2.2 build 16: + Censored)")
 	t.eq(int(types.get("Hat", 0)), 4, "4 hats")
 	t.eq(int(types.get("Shoes", 0)), 2, "2 shoes")
-	t.eq(int(types.get("Emote", 0)), 4, "4 emotes")
+	t.eq(int(types.get("Emote", 0)), 3, "3 emotes (Shush moved to the Shop)")
 	t.eq(int(types.get("Name card", 0)), 8 + 6, "name cards: 8 + 6 new")
 	t.eq(int(types.get("Badge", 0)), 8 + 6, "badges: 8 + 6 new (one the tier-100 completion badge)")
 
@@ -217,6 +217,12 @@ func test_season_extension_keeps_tiers_1_to_30() -> void:
 	t.eq(old.size(), 30, "the version 2 table fixture")
 	var tiers := Catalogue.season_tiers("s1")
 	for i in 30:
+		if i == 3:
+			# (2.2 build 16) the one deliberate change, before any public
+			# release: tier 4 Premium is the Censored outfit (was Shush)
+			t.eq(tiers[i]["premium"], {"item": "outfit:censored"}, "tier 4 Premium: Censored")
+			t.eq([tiers[i]["xp"], tiers[i]["free"]], [old[i]["xp"], old[i]["free"]], "tier 4 otherwise unchanged")
+			continue
 		t.eq(tiers[i], old[i], "tier %d unchanged (threshold, rewards)" % (i + 1))
 	t.eq(String(Catalogue.season("s1")["premium_item"]), String(v2["premium_item"]), "the same Premium entitlement")
 	t.eq(Catalogue.price("season:s1:premium"), int(v2["premium_price"]), "the same 1,500-Coin price")

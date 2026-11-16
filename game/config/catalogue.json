@@ -70,7 +70,8 @@
     {"id": "shoes:moon_boots", "kind": "season_reward", "season": "s1"},
     {"id": "emote:stargaze", "kind": "season_reward", "season": "s1"},
     {"id": "emote:victory_lap", "kind": "season_reward", "season": "s1"},
-    {"id": "emote:shush", "kind": "season_reward", "season": "s1"},
+    {"id": "outfit:censored", "kind": "season_reward", "season": "s1"},
+    {"id": "emote:shush", "kind": "coin_item", "price": 200},
     {"id": "emote:moon_shuffle", "kind": "season_reward", "season": "s1"},
 
     {"id": "card:after_hours", "kind": "season_reward", "season": "s1", "profile": "card", "name": "After Hours", "colors": ["17305a", "1f6f73"], "accent": "ffc65c"},
@@ -117,7 +118,7 @@
         {"tier": 1, "xp": 0, "free": {"item": "card:after_hours"}, "premium": {"item": "outfit:night_owl"}},
         {"tier": 2, "xp": 200, "free": null, "premium": {"coins": 50}},
         {"tier": 3, "xp": 400, "free": {"item": "hat:pompom_beanie"}, "premium": {"item": "badge:lantern"}},
-        {"tier": 4, "xp": 600, "free": null, "premium": {"item": "emote:shush"}},
+        {"tier": 4, "xp": 600, "free": null, "premium": {"item": "outfit:censored"}},
         {"tier": 5, "xp": 800, "free": {"coins": 25}, "premium": {"item": "card:lantern_glow"}},
         {"tier": 6, "xp": 1000, "free": null, "premium": {"coins": 50}},
         {"tier": 7, "xp": 1200, "free": {"item": "badge:first_splash"}, "premium": {"item": "hat:headlamp"}},

@@ -51,7 +51,10 @@ test('the 100-tier table keeps tiers 1-30 exactly and extends them from the paci
   assert.equal(E.catalogueVersion(), 3, 'one catalogue version bump for the extension');
   assert.equal(t.length, 100);
   assert.equal(E.maxTier('s1'), 100);
-  assert.deepEqual(t.slice(0, 30), V2.tiers, 'tiers 1-30: thresholds, rewards and order exactly as version 2 shipped them');
+  // (2.2 build 16) one deliberate change before any public release: tier 4
+  // Premium is the Censored outfit (it was the Shush emote)
+  const want = V2.tiers.map((x, i) => (i === 3 ? { ...x, premium: { item: 'outfit:censored' } } : x));
+  assert.deepEqual(t.slice(0, 30), want, 'tiers 1-30: thresholds, rewards and order as version 2 shipped them (tier 4 Premium excepted)');
   for (let i = 0; i < t.length; i++) {
     assert.equal(t[i].tier, i + 1);
     if (i > 0) assert.ok(t[i].xp > t[i - 1].xp, `tier ${i + 1} needs more XP than tier ${i}`);
@@ -245,7 +248,10 @@ test('another catalogue: an old 30-tier game, a changed reward, unknown tiers, a
   const r = await claim(ctx, a, old);
   const granted = r.body.claimed;
   assert.equal(granted.length, 45, 'every reward of tiers 1-30');
-  for (const c of granted) assert.equal(c.reward, E.rewardKey(V2.tiers[c.tier - 1][c.track]), `tier ${c.tier} ${c.track}: the reward the old game showed`);
+  for (const c of granted) {
+    if (c.tier === 4 && c.track === 'premium') continue;   // (2.2 build 16: changed before release)
+    assert.equal(c.reward, E.rewardKey(V2.tiers[c.tier - 1][c.track]), `tier ${c.tier} ${c.track}: the reward the old game showed`);
+  }
   assert.ok(!granted.some((c) => c.tier > 30), 'nothing past the old game\'s table');
   assert.ok(r.body.wallet.season.s1.claimed.length === 45);
   // a game that showed a different reward for a cell (another catalogue):

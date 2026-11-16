@@ -401,9 +401,14 @@ export default {
    "season": "s1"
   },
   {
-   "id": "emote:shush",
+   "id": "outfit:censored",
    "kind": "season_reward",
    "season": "s1"
+  },
+  {
+   "id": "emote:shush",
+   "kind": "coin_item",
+   "price": 200
   },
   {
    "id": "emote:moon_shuffle",
@@ -777,7 +782,7 @@ export default {
      "xp": 600,
      "free": null,
      "premium": {
-      "item": "emote:shush"
+      "item": "outfit:censored"
      }
     },
     {
