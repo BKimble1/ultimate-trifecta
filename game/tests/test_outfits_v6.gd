@@ -9,11 +9,10 @@ var t
 ## The keys agreed with the commerce workstream (its tables reference them).
 const SHOP_OUTFITS := ["moonlight_runner", "starry_sleeper", "varsity_sprinter", "raincoat_explorer", "campus_courier", "lantern_scout"]
 const SEASON := {
-	"outfit": ["after_hours_hoodie", "night_owl", "glow_jogger", "library_cardigan", "censored"],
+	"outfit": ["after_hours_hoodie", "night_owl", "glow_jogger", "library_cardigan"],
 	"hat": ["headlamp", "pompom_beanie", "glow_headband", "owl_ears"],
 	"shoes": ["glow_sneakers", "moon_boots"],
-	# (2.2 build 16) Shush left the Premium track for the Censored outfit
-	"emote": ["stargaze", "victory_lap", "moon_shuffle"],
+	"emote": ["stargaze", "victory_lap", "shush", "moon_shuffle"],
 }
 ## LOD0 triangle budgets (V5 typical look: base + pajamas + nightcap +
 ## slippers = 23.4k; tools/character/README.md)

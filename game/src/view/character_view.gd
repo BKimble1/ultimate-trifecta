@@ -771,7 +771,6 @@ func _apply_cosmetics() -> void:
 		mi.set_instance_shader_parameter("skin_warm", 0.03 if lighting == "indoor" else 0.15)
 	_face_base = Cosmetics.face_keys(cosmetic) if patrol else Cosmetics.look_face_keys(cosmetic)
 	_bind_face("base" if patrol else Cosmetics.head_part(cosmetic))
-	_apply_censor(not patrol and String(cosmetic.get("outfit", "")) == "censored")
 	# nightcap tip spring only when it is worn
 	var cap := not patrol and "hat_nightcap" in want
 	if cap and hat_spring == null:
@@ -804,42 +803,6 @@ func _apply_cosmetics() -> void:
 		_build_flashlight()
 	if flashlight:
 		flashlight.get_parent().visible = patrol
-
-
-## (2.2 build 16) The Censored outfit: a pixel-blur box in the wearer's skin
-## tones over the shorts area, riding the hips bone.
-var _censor: MeshInstance3D
-
-
-func _apply_censor(on: bool) -> void:
-	if not on:
-		if _censor:
-			_censor.visible = false
-		return
-	if _censor == null:
-		var hi := skeleton.find_bone("hips")
-		if hi < 0:
-			return
-		var att := BoneAttachment3D.new()
-		att.name = "CensorAttach"
-		att.bone_name = "hips"
-		skeleton.add_child(att)
-		var bm := BoxMesh.new()
-		bm.size = Vector3(0.34, 0.2, 0.27)
-		_censor = MeshInstance3D.new()
-		_censor.name = "Censor"
-		_censor.mesh = bm
-		var m := ShaderMaterial.new()
-		m.shader = preload("res://assets/shaders/censor.gdshader")
-		_censor.material_override = m
-		_censor.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		att.add_child(_censor)
-		# the crotch: a little below and in front of the hips bone (its rest
-		# frame is the attachment's), measured on the rest pose
-		var rest := skeleton.get_bone_global_rest(hi)
-		_censor.transform = Transform3D(rest.basis.inverse(), rest.basis.inverse() * Vector3(0.0, -0.07, 0.01))
-	_censor.visible = true
-	(_censor.material_override as ShaderMaterial).set_shader_parameter("skin", Cosmetics.look_skin_color(cosmetic))
 
 
 ## Pass 9: expressions and face presets play on the head that is shown (a

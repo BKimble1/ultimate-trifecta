@@ -305,8 +305,7 @@ func test_an_older_service_and_a_changed_reward_never_mis_grant() -> void:
 	var got: Array = reply["body"]["claimed"]
 	t.eq(got.size(), 45, "every tier 1-30 reward")
 	var v2: Array = _v2()["tiers"]
-	# (2.2 build 16) except tier 4 Premium, changed before any public release
-	t.check(got.all(func(c: Dictionary) -> bool: return (int(c["tier"]) == 4 and String(c["track"]) == "premium") or String(c["reward"]) == Economy.reward_key(v2[int(c["tier"]) - 1][String(c["track"])])),
+	t.check(got.all(func(c: Dictionary) -> bool: return String(c["reward"]) == Economy.reward_key(v2[int(c["tier"]) - 1][String(c["track"])])),
 		"each the reward the old game showed")
 	await _end()
 
@@ -535,7 +534,7 @@ func _move(from: Vector2, to: Vector2, steps: int) -> void:
 func test_the_shop_never_advertises_100_rewards() -> void:
 	var line := ShopScreen.premium_summary("s1")
 	t.check(line.begins_with("44 Premium rewards over 100 tiers"), "the Shop counts the real rewards: %s" % line)
-	t.check(line.contains("6 outfits") and line.contains("1,125 Coins"), "with the real mix: %s" % line)
+	t.check(line.contains("5 outfits") and line.contains("1,125 Coins"), "with the real mix")
 	t.check(not line.contains("100 rewards") and not line.contains("100 Premium"), "never 100 rewards")
 
 

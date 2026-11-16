@@ -57,7 +57,7 @@ func test_skins_are_registered_with_new_ids() -> void:
 		var id := int(Cosmetics.entry("outfit", k)["id"])
 		t.check(not seen.has(id), "outfit id %d is used once (%s)" % [id, k])
 		seen[id] = k
-		if not SKINS.has(k) and k != "censored":   # (2.2 build 16: added after them)
+		if not SKINS.has(k):
 			before_max = maxi(before_max, id)
 	for k in SKINS:
 		var e := Cosmetics.entry("outfit", k)

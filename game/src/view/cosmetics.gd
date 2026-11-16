@@ -118,12 +118,6 @@ const CATALOG := {
 		"dr_doom": {"id": 23, "name": "Dr. Doom", "cost": 1500, "season": 1,
 			"tagline": "Office hours are over. His rounds aren't.",
 			"includes": ["Signature bald crown and side fringe, brown suit, striped shirt, gold striped tie, and formal shoes."]},
-		# (2.2 build 16) Season 1 Premium, tier 4 (in place of the Shush emote):
-		# the trifecta's traditional dress code, kept family-friendly
-		"censored": {"id": 24, "name": "Censored", "cost": 1000, "season": 1,
-			"tagline": "Dress code: optional. Blur: mandatory.",
-			"includes": ["Your own skin from head to toe, with a pixel blur over the shorts area (it follows you, always)",
-				"Keeps your hat, hair and shoes"]},
 	},
 	"pattern": {
 		"plain": {"id": 1, "name": "Plain", "cost": 0, "per_m": 0.0},
@@ -229,8 +223,7 @@ const CATALOG := {
 		# V6 Season 1 · After Hours (wire value = TC.EMOTES index; ids follow it)
 		"stargaze": {"id": 7, "name": "Stargaze", "cost": 250, "season": 1},
 		"victory_lap": {"id": 8, "name": "Victory Lap", "cost": 250, "season": 1},
-		# (2.2 build 16) left the Premium track (the Censored outfit took tier 4): a Shop emote
-		"shush": {"id": 9, "name": "Shush", "cost": 200},
+		"shush": {"id": 9, "name": "Shush", "cost": 200, "season": 1},
 		"moon_shuffle": {"id": 10, "name": "Moon Shuffle", "cost": 300, "season": 1},
 	},
 }
@@ -245,7 +238,7 @@ const DEFAULT := {
 	"hat": "nightcap", "shoes": "slippers", "emote": "wave",
 }
 
-const OUTFIT_PARTS := {"pj": ["pj"], "swim": ["swim", "body_skin"], "censored": ["body_skin"], "robe": ["robe", "body_skin"], "duck": ["duck"], "frog": ["frog"],
+const OUTFIT_PARTS := {"pj": ["pj"], "swim": ["swim", "body_skin"], "robe": ["robe", "body_skin"], "duck": ["duck"], "frog": ["frog"],
 	"moonlight_runner": ["moonlight"], "starry_sleeper": ["starry"], "varsity_sprinter": ["varsity"],
 	"raincoat_explorer": ["raincoat"], "campus_courier": ["courier"], "lantern_scout": ["scout"],
 	"after_hours_hoodie": ["hoodie"], "night_owl": ["owl"], "glow_jogger": ["jogger"], "library_cardigan": ["cardigan"],
