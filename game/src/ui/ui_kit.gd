@@ -664,6 +664,17 @@ static func appear(c: Control, _from: Vector2 = Vector2.ZERO, dur: float = T_SHE
 	Motion.settle_in(c, dur)
 
 
+## (2.2) A control and everything under it stop taking pointer/touch input
+## (a screen fading out over the round).
+static func ignore_input_tree(n: Node) -> void:
+	if n is Control:
+		(n as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if n is BaseButton:
+			(n as BaseButton).disabled = true
+	for c in n.get_children():
+		ignore_input_tree(c)
+
+
 ## Short message that fades out by itself, above the bottom controls.
 static func toast(parent: Control, t: String, seconds: float = 1.8) -> void:
 	for old in parent.get_children():

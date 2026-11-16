@@ -22,6 +22,15 @@ static func get_link(key: String) -> String:
 	return Cloud.link(key)
 
 
+## (2.2) The support e-mail address for reports without the moderation
+## service ("" when not set: no e-mail report is offered).
+static func support_email() -> String:
+	if _cfg == null:
+		get_link("support_url")
+	var v := String(_cfg.get_value("links", "support_email", "")).strip_edges()
+	return v if v.contains("@") and v.contains(".") and not v.contains(" ") else ""
+
+
 ## Tests: replace the bundled values.
 static func override(values: Dictionary) -> void:
 	_cfg = ConfigFile.new()

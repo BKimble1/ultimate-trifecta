@@ -243,9 +243,28 @@ func test_typed_messages_need_the_services_signature() -> void:
 	pc.social.chat.rejected.connect(func(msg: String) -> void: pr.append(msg))
 	_send_raw(pc, QuickChat.Channel.PARTY, SocialProto.Kind.TEXT, _token("p_c0", plain.host.room_code, "hello", 0))
 	await plain.frames(8)
-	t.eq(pr.size(), 1, "a party without the service refuses typed messages")
-	t.check(not bool(pc.social.chat.text_available()["ok"]), "and says typed chat is unavailable")
-	t.check(String(pc.social.chat.text_available()["why"]).contains("Quick Chat"), "while Quick Chat keeps working")
+	t.eq(pr.size(), 1, "a party without the service refuses signed-looking typed messages")
+	# 2.2: it has device-moderated typed chat instead: bad words bleeped by
+	# the sender, the host and every receiver
+	var av: Dictionary = pc.social.chat.text_available()
+	t.check(bool(av["ok"]) and String(av.get("mode", "")) == "device", "typed chat is on, filtered on the devices")
+	var bad := Marshalls.base64_to_utf8("ZnVjaw==")
+	var r: Dictionary = await pc.social.chat.send_text("nice run %s!" % bad, QuickChat.Channel.PARTY)
+	t.check(bool(r["ok"]) and int(r.get("bleeped", 0)) == 1, "a message with a bad word is sent, bleeped")
+	await plain.frames(10)
+	var shown: Array = _texts(plain.host)
+	t.eq(shown.size(), 1, "the party sees it")
+	t.check(shown.size() == 1 and not String(shown[0]).to_lower().contains(bad) and String(shown[0]).contains("#%&*"), "with the word bleeped: " + str(shown))
+	r = await pc.social.chat.send_text("add me on snapchat", QuickChat.Channel.PARTY)
+	t.check(not bool(r["ok"]) and String(r["reason"]) == "contact", "contact details are refused, not bleeped")
+	r = await pc.social.chat.send_text("i will kill you", QuickChat.Channel.PARTY)
+	t.check(not bool(r["ok"]) and String(r["reason"]) == "threat", "threats are refused")
+	# a bad host relaying text nobody filtered: receivers drop it
+	var raw := PackedByteArray([SocialProto.CHAT])
+	raw.append_array(plain.host.social.chat._body(700, 0, QuickChat.Channel.PARTY, SocialProto.Kind.MOD_TEXT, 0, 0, "you %s" % bad))
+	pc._on_packet(pc.host_peer, raw)
+	await plain.frames(4)
+	t.check(not _texts(pc).any(func(x: String) -> bool: return x.to_lower().contains(bad)), "an unfiltered relay is never drawn")
 	plain.teardown()
 	await t.get_tree().process_frame   # (queued frees happen before the next test)
 	await t.get_tree().process_frame
@@ -390,3 +409,25 @@ func test_round_channels_keep_information_on_its_side() -> void:
 	rig.teardown()
 	await t.get_tree().process_frame   # (queued frees happen before the next test)
 	await t.get_tree().process_frame
+
+
+## 2.2: device-side bleeping (ChatRules.bleep): bad words in any disguise
+## become grawlix, the rest of the message is kept; what can't be bleeped
+## safely is refused; the result passes the policy and is stable.
+func test_bleep_filters_words_in_every_disguise() -> void:
+	var bad := Marshalls.base64_to_utf8("ZnVjaw==")
+	var leet := bad.replace("u", "v").replace("c", "(")
+	for m in ["good game everyone", "gg wp", "Nice dive!"]:
+		var r := ChatRules.bleep(m)
+		t.check(bool(r["ok"]) and int(r["bleeped"]) == 0 and String(r["text"]) == m, "clean text is untouched: " + m)
+	for m in ["nice run %s!" % bad, bad.to_upper(), "%s%s" % [bad, bad], " ".join(bad.split("")), "you %s" % bad.replace("u", "*")]:
+		var r := ChatRules.bleep(m)
+		t.check(bool(r["ok"]), "sent, bleeped: case %d" % m.length())
+		if bool(r["ok"]):
+			var out := String(r["text"])
+			t.check(not out.to_lower().replace(" ", "").contains(bad), "the word is gone (case %d)" % m.length())
+			t.check(bool(ChatRules.check(out)["ok"]), "the result passes the policy")
+			t.eq(String(ChatRules.bleep(out)["text"]), out, "bleeping is stable (a receiver's check)")
+	t.check(String(ChatRules.bleep("nice run %s!" % bad)["text"]).begins_with("nice run "), "the rest of the message is kept")
+	for m in ["add me on snapchat", "go to www.example.com", "call 555 123 4567", "i will kill you", "<b>hi</b>"]:
+		t.check(not bool(ChatRules.bleep(m)["ok"]), "refused, not bleeped: " + m)

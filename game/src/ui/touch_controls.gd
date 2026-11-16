@@ -170,6 +170,7 @@ class TouchSurface:
 		queue_redraw()
 
 	func cancel_all() -> void:
+		_adopted.clear()
 		router.cancel_all()
 		Controls.reset_touch()
 		Controls.set_touch_points(0)
@@ -251,7 +252,43 @@ class TouchSurface:
 			Controls.touch_drive = 0.0
 		_was_in_cart = c["in_cart"]
 
+	## 2.2: fingers this surface adopted outside GUI picking (index -> true).
+	## A thumb that went down while the loading screen was fading or the
+	## role card was up is captured by that control for its whole gesture,
+	## so the stick never heard it and the runner couldn't move at GO until
+	## the thumb was lifted.  Any unowned finger that moves inside the stick
+	## zone is taken over here; its drags and release are read in _input.
+	var _adopted: Dictionary = {}
+
+	func _input(event: InputEvent) -> void:
+		if not is_visible_in_tree():
+			return
+		if event is InputEventScreenDrag:
+			# (this surface fills its own CanvasLayer at the origin: _input
+			# positions are already in its space, as _gui_input's are)
+			var d := event as InputEventScreenDrag
+			if _adopted.has(d.index):
+				router.drag(d.index, d.position, d.screen_relative)
+			elif not router.owners.has(d.index) and router.stick_index < 0 and router.zone().has_point(d.position) \
+					and not router.in_reserved(d.position) and router.hit_button(d.position) == "":
+				_adopted[d.index] = true
+				# the stick starts where the finger really went down (under
+				# the loading screen or the role card), so a thumb already
+				# pushing forward moves the runner at once
+				var start: Vector2 = Controls.touch_starts.get(d.index, d.position)
+				if not router.zone().has_point(start):
+					start = d.position
+				router.touch_down(d.index, start)
+				router.drag(d.index, d.position, d.position - start)
+		elif event is InputEventScreenTouch:
+			var e := event as InputEventScreenTouch
+			if _adopted.has(e.index) and (not e.pressed or e.canceled):
+				_adopted.erase(e.index)
+				router.touch_up(e.index)
+
 	func _gui_input(event: InputEvent) -> void:
+		if (event is InputEventScreenTouch or event is InputEventScreenDrag) and _adopted.has(event.get("index")):
+			return
 		if event is InputEventScreenTouch:
 			var e := event as InputEventScreenTouch
 			if e.pressed and not e.canceled:

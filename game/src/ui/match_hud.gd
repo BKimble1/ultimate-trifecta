@@ -240,9 +240,9 @@ func setup(controller: MatchController) -> void:
 	root.add_child(banner)
 
 	# --- role reveal card
-	reveal = UIKit.panel(Color(UIKit.SLATE, 0.96), UIKit.R_PANEL, 30)
+	reveal = UIKit.panel(Color(UIKit.SLATE, 0.9), UIKit.R_PANEL, 20)
 	reveal.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	reveal.custom_minimum_size = Vector2(760, 0)
+	reveal.custom_minimum_size = Vector2(600, 0)
 	root.add_child(reveal)
 
 	# --- feed (bottom-left above the stick zone)
@@ -293,58 +293,61 @@ func _my_role() -> int:
 func _build_reveal() -> void:
 	for c in reveal.get_children():
 		c.queue_free()
-	var v := UIKit.vbox(10)
+	# 2.2: a compact banner under the top bar (it used to cover most of the
+	# screen, so you met the round without seeing your own runner): the role,
+	# one line of goal and tonight's waters.  The full rules stay in How to
+	# Play, the HUD's goal line and the tutorial.
+	var v := UIKit.vbox(6)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var my_role: int = TC.Role.SPECTATOR
 	if mc.roster.has(mc.local_slot):
 		my_role = int(mc.roster[mc.local_slot]["role"])
 	var is_patrol := my_role == TC.Role.PATROL
-	var title := "You're on the Night Watch" if is_patrol else ("You're a Runner" if my_role == TC.Role.RUNNER else "Spectating")
+	var title := "YOU'RE ON THE NIGHT WATCH" if is_patrol else ("YOU'RE A RUNNER" if my_role == TC.Role.RUNNER else "SPECTATING")
 	var sr: Dictionary = mc.start.get("series", {})
 	if int(sr.get("total", 1)) > 1:
 		v.add_child(UIKit.styled("Round %d of %d" % [int(sr.get("round", 1)), int(sr.get("total", 1))], "overline", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	var ttl := UIKit.styled(title, "display", UIKit.PATROL if is_patrol else UIKit.TEAL, HORIZONTAL_ALIGNMENT_CENTER)
+	var ttl := UIKit.outlined(UIKit.label(title, 40, UIKit.PATROL if is_patrol else UIKit.TEAL, true, HORIZONTAL_ALIGNMENT_CENTER), 8)
 	v.add_child(ttl)
-	# V6: tonight's home dorm (the runners are standing in it)
 	var dn := CampusDorms.display_name(mc.home_dorm)
-	var home_row := UIKit.hbox(8)
-	home_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	home_row.add_child(Icons.IconRect.new("house", Color(1.0, 0.86, 0.5), 26))
-	home_row.add_child(UIKit.label(("Home tonight: %s" % dn) if not is_patrol else ("The runners' home tonight: %s" % dn), 22, Color(1.0, 0.9, 0.62), true))
-	v.add_child(home_row)
-	if my_role != TC.Role.SPECTATOR:
-		var lines := TC.role_lines(my_role, mc.cfg, dn)
-		var card := UIKit.styled(lines[0], "body", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
-		card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		card.custom_minimum_size = Vector2(680, 0)
-		v.add_child(card)
-		var note := UIKit.styled(lines[1], "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-		v.add_child(note)
-	var targets_row := UIKit.hbox(18)
+	var goal := ""
+	if is_patrol:
+		goal = "Stop %d runners getting home to %s" % [mc.cfg.runners_needed, dn]
+	elif my_role == TC.Role.RUNNER:
+		goal = "Splash all 3 waters, then run home to %s" % dn
+	if goal != "":
+		v.add_child(UIKit.styled(goal, "label", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER))
+	var targets_row := UIKit.hbox(16)
 	targets_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	for wi in mc.targets:
 		var w: Dictionary = mc.layout.waters[int(wi)]
 		var cell := UIKit.hbox(6)
-		cell.add_child(Icons.IconRect.new(w["icon"], w["color"], 34))
-		cell.add_child(UIKit.label(w["name"], 23, w["color"], true))
+		cell.add_child(Icons.IconRect.new(w["icon"], w["color"], 28))
+		cell.add_child(UIKit.label(w["name"], 21, w["color"], true))
 		targets_row.add_child(cell)
-	v.add_child(UIKit.styled("Tonight's splash spots", "overline", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	v.add_child(targets_row)
-	var teams := UIKit.hbox(30)
-	teams.alignment = BoxContainer.ALIGNMENT_CENTER
-	for role in [TC.Role.RUNNER, TC.Role.PATROL]:
-		var col := UIKit.vbox(2)
-		var n := 0
-		for s2 in mc.roster:
-			if int(mc.roster[s2]["role"]) == role:
-				n += 1
-		col.add_child(UIKit.label(("Runners (%d)" if role == TC.Role.RUNNER else "Night Watch (%d)") % n, 20, UIKit.TEAL if role == TC.Role.RUNNER else UIKit.PATROL, true))
-		for s in mc.roster:
-			var e: Dictionary = mc.roster[s]
-			if int(e["role"]) == role:
-				col.add_child(UIKit.label(String(e["name"]) + ("  · BOT" if bool(e["is_bot"]) else "") + ("  (you)" if int(s) == mc.local_slot else ""), 18, UIKit.IVORY))
-		teams.add_child(col)
-	v.add_child(teams)
+	var n_r := 0
+	var n_w := 0
+	for s2 in mc.roster:
+		if int(mc.roster[s2]["role"]) == TC.Role.RUNNER:
+			n_r += 1
+		elif int(mc.roster[s2]["role"]) == TC.Role.PATROL:
+			n_w += 1
+	v.add_child(UIKit.styled("%d runners · %d Night Watch · %d home to win" % [n_r, n_w, mc.cfg.runners_needed], "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	for c in v.get_children():
+		if c is Control:
+			(c as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 	reveal.add_child(v)
+
+
+## 2.2: the reveal waits until the loading screen has gone completely (it
+## used to fade in underneath it: two layers of text crossed for a moment),
+## then arrives with a short pop.
+var _intro_shown := false
+
+
+func _intro_ready() -> bool:
+	return not (App.screen is LoadingScreen)
 
 
 # --- V7: the pause menu and one owner for every match overlay ---------------
@@ -1037,7 +1040,10 @@ func refresh(delta: float) -> void:
 	personal.queue_redraw()
 	_refresh_danger(role, phase)
 	# countdown / reveal / release
-	reveal.visible = phase == TC.Phase.REVEAL
+	reveal.visible = phase == TC.Phase.REVEAL and _intro_ready()
+	if reveal.visible and not _intro_shown:
+		_intro_shown = true
+		Motion.appear(reveal, 14.0, UIKit.T_SHEET)
 	center_lbl.text = ""
 	sub_lbl.text = ""
 	if phase == TC.Phase.REVEAL or phase == TC.Phase.COUNTDOWN:
@@ -1136,7 +1142,7 @@ func _place(vs: Vector2) -> void:
 	banner.position = Vector2((vs.x - bs.x) * 0.5, _safe.position.y + 132)
 	banner.size = bs
 	var rv := reveal.get_combined_minimum_size()
-	reveal.position = (vs - rv) * 0.5
+	reveal.position = Vector2((vs.x - rv.x) * 0.5, _safe.position.y + 104.0)
 	reveal.size = rv
 	var os := overlay.get_combined_minimum_size()
 	overlay.position = Vector2((vs.x - os.x) * 0.5, vs.y * 0.18)

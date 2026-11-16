@@ -240,7 +240,8 @@ func _send_text() -> void:
 	send_btn.disabled = false
 	if bool(r.get("ok", false)):
 		field.text = ""
-		note_lbl.text = ""
+		note_lbl.text = "Some words were bleeped." if int(r.get("bleeped", 0)) > 0 else ""
+		note_lbl.add_theme_color_override("font_color", UIKit.IVORY_MUTED)
 	else:
 		# the reason only: the refused text is never posted or shown elsewhere
 		note_lbl.text = String(r.get("message", "That message can't be sent."))
@@ -353,10 +354,12 @@ func _actions(m: Dictionary) -> Control:
 		note_lbl.add_theme_color_override("font_color", UIKit.IVORY_MUTED)
 		_refresh())
 	row.add_child(mute)
-	if int(m["kind"]) == SocialProto.Kind.TEXT:
+	if int(m["kind"]) == SocialProto.Kind.TEXT or int(m["kind"]) == SocialProto.Kind.MOD_TEXT:
 		var rm := UIKit.quiet("Report message", Vector2(0, 60), UIKit.T_CAPTION)
 		rm.pressed.connect(func() -> void:
-			ReportSheet.open(self, {"kind": "message", "name": shown, "pid": String(m["pid"]), "token": String(m["token"])}))
+			ReportSheet.open(self, {"kind": "message", "name": shown, "pid": String(m["pid"]),
+				"token": String(m["token"]) if int(m["kind"]) == SocialProto.Kind.TEXT else "",
+				"context": {"text": String(m["text"])}}))
 		row.add_child(rm)
 	var rp := UIKit.quiet("Report player", Vector2(0, 60), UIKit.T_CAPTION)
 	rp.pressed.connect(func() -> void:

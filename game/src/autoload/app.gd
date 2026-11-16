@@ -125,6 +125,18 @@ func _dev_tools(args: PackedStringArray) -> void:
 		Diag.enabled = true
 		Diag._apply_measuring()
 		tree_exiting.connect(func() -> void: print("BETA_DIAG_SUMMARY_BEGIN\n%s\nBETA_DIAG_SUMMARY_END" % Diag.summary()))
+	for a in args:
+		if a.begins_with("--start-probe="):
+			# dev: the start of a practice round, measured (src/dev/start_probe.gd)
+			var pr: Node = (load("res://src/dev/start_probe.gd") as GDScript).new()
+			pr.set("out_path", a.get_slice("=", 1))
+			for a2 in args:
+				if a2 == "--start-probe-touch":
+					pr.set("touch_mode", true)
+				if a2.begins_with("--start-probe-shots="):
+					pr.set("shots_dir", a2.get_slice("=", 1))
+					DirAccess.make_dir_recursive_absolute(a2.get_slice("=", 1))
+			add_child(pr)
 	var diag_report := ""
 	var capture := ""
 	var capture_dir := ""

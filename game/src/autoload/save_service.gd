@@ -261,8 +261,11 @@ func party_name() -> String:
 	if n != null and String(n) != "" and Cloud.configured():
 		return String(n)
 	var mine := String(data["name"])
-	if NameRules.is_curated(mine):
-		return mine
+	# 2.2: a name you typed is shared when it passes the name policy on this
+	# device (bad words, impersonation, contact details: NameRules); every
+	# other device checks it again before showing it
+	if bool(NameRules.moderate(mine)["ok"]):
+		return NameRules.normalize(mine)
 	return NameRules.generated(String(data["uid"]))
 
 

@@ -27,7 +27,10 @@ const HUB_STATE := 64
 const CHAT_HISTORY := 65
 const HOST_ONLY := [CHAT, CHAT_REJECT, HUB_STATE, CHAT_HISTORY]
 
-enum Kind { QUICK, TEXT }
+## TEXT: approved and signed by the game service (ChatToken).  MOD_TEXT
+## (2.2): device-moderated text, filtered with ChatRules.bleep by the
+## sender, again by the host before it relays and again by every receiver.
+enum Kind { QUICK, TEXT, MOD_TEXT }
 enum Reject { RATE, CHANNEL, PHRASE, UNVERIFIED, REPEAT, UNAVAILABLE }
 const REJECT_TEXT := ["You're sending messages too fast. Wait a moment.", "That chat isn't open right now.",
 	"That message isn't available here.", "That message couldn't be confirmed.", "You just sent that.",

@@ -131,10 +131,20 @@ func send_quick(id: int, channel: int) -> bool:
 	return _send(channel, SocialProto.Kind.QUICK, id, "", "")
 
 
-## Typed chat available here?  {ok} or {ok:false, why}.
+## Typed chat available here?  {ok, mode} or {ok:false, why}.  2.2: with
+## the moderation service the text is approved and signed by it ("service");
+## without it the text is filtered on the devices ("device": bad words are
+## bleeped, threats and contact details blocked).
 func text_available() -> Dictionary:
 	if session.mode == NetSession.Mode.OFFLINE:
 		return {"ok": false, "why": "Chat is for parties with friends."}
+	var svc := _service_text()
+	if bool(svc["ok"]):
+		return svc
+	return {"ok": true, "mode": "device"}
+
+
+func _service_text() -> Dictionary:
 	if not Cloud.configured():
 		return {"ok": false, "why": "Typed chat needs the game's online moderation service, which isn't set up in this build. Quick Chat works."}
 	if not Cloud.has_feature("chat"):
@@ -143,7 +153,7 @@ func text_available() -> Dictionary:
 		return {"ok": false, "why": "Typed chat needs you signed in to the game service. Quick Chat works."}
 	if _key() == null or not session.names_verified():
 		return {"ok": false, "why": "This party wasn't set up through the game service, so typed chat is off. Quick Chat works."}
-	return {"ok": true}
+	return {"ok": true, "mode": "service"}
 
 
 ## Typed message: device check, then the service's approval, then the
@@ -153,6 +163,12 @@ func send_text(raw: String, channel: int) -> Dictionary:
 	var av := text_available()
 	if not bool(av["ok"]):
 		return {"ok": false, "message": String(av["why"])}
+	if String(av.get("mode", "")) == "device":
+		var b := ChatRules.bleep(raw)
+		if not bool(b["ok"]):
+			return {"ok": false, "message": String(b["message"]), "reason": String(b["reason"])}
+		_send(channel, SocialProto.Kind.MOD_TEXT, 0, String(b["text"]), String(b["text"]))
+		return {"ok": true, "bleeped": int(b["bleeped"])}
 	var local := ChatRules.check(raw)
 	if not bool(local["ok"]):
 		return {"ok": false, "message": String(local["message"]), "reason": String(local["reason"])}
@@ -204,7 +220,7 @@ func host_packet(peer: int, b: StreamPeerBuffer) -> void:
 		if b.get_available_bytes() < 1:
 			return
 		phrase = b.get_u8()
-	elif kind == SocialProto.Kind.TEXT:
+	elif kind == SocialProto.Kind.TEXT or kind == SocialProto.Kind.MOD_TEXT:
 		token = Protocol.get_long_str(b)
 	else:
 		return
@@ -233,6 +249,13 @@ func _host_accept(slot: int, peer: int, channel: int, kind: int, phrase: int, to
 	if kind == SocialProto.Kind.QUICK:
 		if not QuickChat.allowed(phrase, channel, role_of(slot)):
 			return _reject(peer, nonce, SocialProto.Reject.PHRASE)
+	elif kind == SocialProto.Kind.MOD_TEXT:
+		# the host filters again (the sender's game may not be this one)
+		var hb := ChatRules.bleep(token)
+		if not bool(hb["ok"]):
+			return _reject(peer, nonce, SocialProto.Reject.UNVERIFIED)
+		token = String(hb["text"])
+		text = token
 	else:
 		if not session.names_verified() or _key() == null:
 			return _reject(peer, nonce, SocialProto.Reject.UNAVAILABLE)
@@ -366,7 +389,7 @@ func _read_body(b: StreamPeerBuffer, from_history: bool = false) -> bool:
 		if b.get_available_bytes() < 1:
 			return false
 		phrase = b.get_u8()
-	elif kind == SocialProto.Kind.TEXT:
+	elif kind == SocialProto.Kind.TEXT or kind == SocialProto.Kind.MOD_TEXT:
 		token = Protocol.get_long_str(b)
 	else:
 		return false
@@ -407,6 +430,12 @@ func _receive(seq: int, slot: int, channel: int, kind: int, nonce: int, phrase: 
 		if kind == SocialProto.Kind.QUICK:
 			if not QuickChat.allowed(phrase, channel, role_of(slot)):
 				return
+		elif kind == SocialProto.Kind.MOD_TEXT:
+			# drawn only if it passes this device's filter unchanged
+			var rb := ChatRules.bleep(token)
+			if not bool(rb["ok"]) or String(rb["text"]) != token:
+				return
+			text = token
 		else:
 			var v := ChatToken.verify(token, _key(), {"room": session.room_code, "sub": String(e.get("pid", "")), "seen": _seen_jti})
 			if not bool(v["ok"]):

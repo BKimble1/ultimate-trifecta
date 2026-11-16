@@ -212,7 +212,19 @@ func _notification(what: int) -> void:
 			_mouse_look = false
 
 
+## (2.2) Where each finger now on the screen first touched down (index ->
+## canvas position), whatever control took it: the match stick adopts a
+## finger another control captured from where it really started.
+var touch_starts: Dictionary = {}
+
+
 func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		var st := event as InputEventScreenTouch
+		if st.pressed and not st.canceled:
+			touch_starts[st.index] = st.position
+		else:
+			touch_starts.erase(st.index)
 	if event is InputEventScreenTouch or event is InputEventScreenDrag:
 		_set_device("touch", true)
 	elif event is InputEventJoypadButton:

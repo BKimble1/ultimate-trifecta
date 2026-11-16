@@ -46,6 +46,18 @@ static func open(parent: Control, opts: Dictionary) -> ReportSheet:
 	return s
 
 
+## (2.2) A mailto: link for a report sent by e-mail (no moderation service).
+static func email_url(to: String, p_kind: String, p_name: String, text: String, p_pid: String) -> String:
+	var subject := "Ultimate Trifecta report: %s" % ("a message" if p_kind == "message" else "a player")
+	var body := "Player: %s\n" % p_name
+	if p_pid != "":
+		body += "Player id: %s\n" % p_pid
+	if text != "":
+		body += "Message (as shown): %s\n" % text
+	body += "When: %s UTC\nWhat happened:\n" % Time.get_datetime_string_from_system(true)
+	return "mailto:%s?subject=%s&body=%s" % [to, subject.uri_encode(), body.uri_encode()]
+
+
 static func available(p_pid: String, p_kind: String = "player") -> bool:
 	if p_kind == "message":
 		return Cloud.configured() and Cloud.has_feature("message_reports")
@@ -180,6 +192,15 @@ func _show_unavailable() -> void:
 	var support := AppLinks.get_link("support_url")
 	if support != "":
 		_text("Need help? %s" % support)
+	# (2.2) without the service a report still reaches the developer: a
+	# pre-filled e-mail (the player, the reason, the message as shown)
+	var mail := AppLinks.support_email()
+	if mail != "":
+		var em := UIKit.primary("Report by email", Vector2(320, 72), UIKit.T_LABEL + 2)
+		em.pressed.connect(func() -> void:
+			OS.shell_open(email_url(mail, kind, target_name, context.get("text", ""), pid))
+			close())
+		_body.add_child(em)
 	var ok := UIKit.secondary("OK", Vector2(200, 72))
 	ok.pressed.connect(close)
 	_body.add_child(ok)

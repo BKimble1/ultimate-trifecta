@@ -110,9 +110,11 @@ func build() -> void:
 	top.add_child(leave_btn)
 	_status = UIKit.vbox(8)
 	_status.alignment = BoxContainer.ALIGNMENT_END
+	_build_tips()
 	_status.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(_status)
+	_status.add_child(_tip_box)
 	stage_lbl = UIKit.styled(_stage_text, "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 	_status.add_child(stage_lbl)
 	bar = ProgressLine.new()
@@ -196,6 +198,7 @@ func _leave() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	_poll_atlas()
+	_tick_tips(delta)
 	if _atlas != null:
 		_loop_t += delta
 		var f := int(floor(_loop_t * LOOP_FPS)) % LOOP_FRAMES
@@ -259,6 +262,66 @@ func _poll_atlas() -> void:
 	Diag.mark("loading_loop")
 
 
+# ---------------------------------------------------------------------------
+# 2.2: tips while the round loads
+# ---------------------------------------------------------------------------
+const TIP_S := 5.5
+var tips: Array[String] = []
+var tip_i := 0
+var _tip_t := 0.0
+var _tip_box: PanelContainer
+var tip_lbl: Label
+
+
+func _build_tips() -> void:
+	var role := TC.Role.RUNNER
+	var slot := session.local_slot if session != null else -1
+	for e in info.get("roster", []):
+		if e is Dictionary and int((e as Dictionary).get("slot", -2)) == slot:
+			role = int(e.get("role", TC.Role.RUNNER))
+	var st: Variant = info.get("settings", {})
+	var watch := int((st as Dictionary).get("watch", PartySeries.DEFAULT_WATCH)) if st is Dictionary else PartySeries.DEFAULT_WATCH
+	var cfg: RulesConfig = PartySeries.rules_for(Rules.cfg, watch)
+	tips = LoadingTips.for_round(role, cfg, Controls.device, int(info.get("seed", Time.get_ticks_msec())))
+	_tip_box = PanelContainer.new()
+	_tip_box.name = "Tip"
+	_tip_box.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.NAVY, 0.62), 999, 0, Color.WHITE, 14))
+	_tip_box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_tip_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var h := UIKit.hbox(12)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var chip := UIKit.chip("TIP", UIKit.AMBER, UIKit.NAVY, UIKit.T_OVERLINE + 1)
+	chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(chip)
+	tip_lbl = UIKit.styled(tips[0] if not tips.is_empty() else "", "label", UIKit.IVORY)
+	tip_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tip_lbl.custom_minimum_size = Vector2(620, 0)
+	tip_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(tip_lbl)
+	_tip_box.add_child(h)
+	_tip_box.visible = not tips.is_empty()
+
+
+## A new tip every TIP_S seconds, cross-faded (swapped with Reduced Motion).
+func _tick_tips(delta: float) -> void:
+	if tips.size() < 2 or _closing:
+		return
+	_tip_t += delta
+	if _tip_t < TIP_S:
+		return
+	_tip_t = 0.0
+	tip_i = (tip_i + 1) % tips.size()
+	var next := tips[tip_i]
+	if UIKit.reduced_motion():
+		tip_lbl.text = next
+		return
+	var tw := tip_lbl.create_tween()
+	tw.tween_property(tip_lbl, "modulate:a", 0.0, 0.18)
+	tw.tween_callback(func() -> void: tip_lbl.text = next)
+	tw.tween_property(tip_lbl, "modulate:a", 1.0, 0.22)
+
+
 ## A short fade into the round (no fade with Reduced Motion).
 func _close() -> void:
 	_closing = true
@@ -267,7 +330,10 @@ func _close() -> void:
 	if UIKit.reduced_motion():
 		done.emit()
 		return
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# (2.2) the whole screen, every layout container included: a container
+	# passes a touch up its own branch, so a fading screen used to capture a
+	# thumb put on the stick and the runner couldn't move at GO
+	UIKit.ignore_input_tree(self)
 	var tw := Motion.animate(self, "modulate:a", 0.0, 0.25, Tween.TRANS_QUAD, Tween.EASE_IN)
 	if tw:
 		tw.tween_callback(func() -> void: done.emit())

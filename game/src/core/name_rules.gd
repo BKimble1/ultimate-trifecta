@@ -365,11 +365,12 @@ static func safe_display(raw: String, seed: String = "") -> String:
 ## through the moderation service (`verified`), any name that passes the
 ## policy; without the service, only curated names: anything else is shown
 ## as a stable curated stand-in for that player (`seed`: their id).
+## 2.2: without the service every device runs the full policy itself (the
+## same lists, evasions and impersonation checks), so a player's own name
+## shows when it passes and a stable curated stand-in when it doesn't.
 static func party_display(raw: String, seed: String, verified: bool) -> String:
-	if verified:
+	if verified or display_ok(raw):
 		return safe_display(raw, seed)
-	if is_curated(raw):
-		return raw
 	return generated(seed if seed != "" else raw)
 
 

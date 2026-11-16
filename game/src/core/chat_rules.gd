@@ -266,6 +266,95 @@ static func check(raw: String) -> Dictionary:
 	return {"ok": true, "text": text}
 
 
+# ---------------------------------------------------------------------------
+# 2.2: bleeping (device-moderated typed chat)
+# ---------------------------------------------------------------------------
+## The grawlix a bleeped word becomes (no letters, no leet characters, so it
+## can never spell anything and never trips the spam rule).
+const BLEEP := "#%&*"
+## Categories that are bleeped word by word; anything else that fails the
+## policy (threats, contact details, links, spam, markup, odd characters)
+## blocks the whole message.
+const BLEEPABLE := ["profanity", "sexual", "slur"]
+
+
+## A bad word (in any of the policy's disguises) turned into grawlix of
+## the same length; leading/trailing punctuation kept.
+static func _grawlix(chunk: String) -> String:
+	var a := 0
+	var b := chunk.length()
+	while a < b and not chunk[a].to_lower().is_valid_identifier() and not chunk[a].is_valid_int():
+		a += 1
+	while b > a and not chunk[b - 1].to_lower().is_valid_identifier() and not chunk[b - 1].is_valid_int():
+		b -= 1
+	var core := ""
+	for i in b - a:
+		core += BLEEP[i % BLEEP.length()]
+	return chunk.substr(0, a) + core + chunk.substr(b)
+
+
+## The category a whitespace-separated chunk falls in ("" if fine): the
+## chunk joined, and each of its parts (as check() reads them).
+static func _chunk_category(chunk: String) -> String:
+	var lower := fold(chunk.to_lower())
+	var c2 := (_re["bang_end"] as RegEx).sub(lower, "", true)
+	c2 = (_re["bang_mid"] as RegEx).sub(c2, "", true)
+	var cands: Array = [(_re["nonword1"] as RegEx).sub(c2, "", true)]
+	for p in (_re["nonword"] as RegEx).sub(c2, " ", true).split(" ", false):
+		if not cands.has(p):
+			cands.append(p)
+	for w in cands:
+		var cat := word_category(String(w))
+		if cat != "":
+			return cat
+	return ""
+
+
+## Typed chat without the service (2.2): {ok, text, bleeped} with every bad
+## word replaced by grawlix, or {ok:false, reason, message} when the message
+## can't be sent at all (threats, links, handles, phone numbers, spam,
+## markup, characters outside the allowed set, empty or too long).  The
+## result always passes check() itself, so a receiver can verify it again:
+## bleep(bleep(x).text).text == bleep(x).text.
+static func bleep(raw: String) -> Dictionary:
+	_ensure()
+	var first := check(raw)
+	if bool(first["ok"]):
+		return {"ok": true, "text": String(first["text"]), "bleeped": 0}
+	if not BLEEPABLE.has(String(first["reason"])):
+		return first
+	var text := normalize(raw)
+	var chunks: PackedStringArray = text.split(" ", false)
+	var n := 0
+	for i in chunks.size():
+		var cat := _chunk_category(chunks[i])
+		if cat == "threat":
+			return _no("threat")
+		if BLEEPABLE.has(cat):
+			chunks[i] = _grawlix(chunks[i])
+			n += 1
+	# words spelled out a letter at a time ("f u c k"), or split in two
+	for size in [2, 3, 4, 5, 6]:
+		for i in range(chunks.size() - size + 1):
+			var joined := ""
+			for k in size:
+				joined += chunks[i + k]
+			if BLEEP.contains(joined.substr(0, 1)):
+				continue
+			var cat3 := _chunk_category(joined)
+			if cat3 == "threat":
+				return _no("threat")
+			if BLEEPABLE.has(cat3):
+				for k in size:
+					chunks[i + k] = _grawlix(chunks[i + k])
+				n += 1
+	var out := " ".join(chunks)
+	var again := check(out)
+	if not bool(again["ok"]):
+		return again   # anything still caught is never shown
+	return {"ok": true, "text": String(again["text"]), "bleeped": n}
+
+
 static func _no(reason: String) -> Dictionary:
 	return {"ok": false, "reason": reason, "message": MESSAGES[reason]}
 
