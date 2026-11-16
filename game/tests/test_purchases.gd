@@ -265,3 +265,26 @@ func test_season_pass_from_apple() -> void:
 	await Wallet.refresh()
 	t.check(not Wallet.premium("s1"), "a refund takes Premium back")
 	await rig.end()
+
+
+## (2.2 build 16) Buy now: a Coin item bought outright with the smallest
+## Coin pack that covers it; the leftover Coins stay.
+func test_buy_now_with_a_covering_pack() -> void:
+	await _ready_to_buy()
+	var id := "outfit:robe"
+	var price := Catalogue.price(id)
+	t.check(price > 0 and not Wallet.owns_id(id), "a Coin item not owned (%d Coins)" % price)
+	var plan := Purchases.buy_now_plan(id, price)
+	t.check(not plan.is_empty(), "a pack covers it")
+	t.check(int(plan["coins"]) >= price, "the pack holds enough (%d)" % int(plan["coins"]))
+	for it in Catalogue.items_of_kind("coin_pack"):
+		var n := int(it["coins"])
+		t.check(n < price or n >= int(plan["coins"]), "no smaller pack would do (%d)" % n)
+	var done := {"r": {}}
+	Purchases.buy_now_done.connect(func(_i: String, r: Dictionary) -> void: done["r"] = r, CONNECT_ONE_SHOT)
+	t.check(bool(Purchases.start_buy_now(id, price)["ok"]), "Apple's sheet opens for the pack")
+	await rig.until(func() -> bool: return not (done["r"] as Dictionary).is_empty(), 300)
+	t.check(bool(done["r"].get("ok", false)), "then the item is bought with those Coins")
+	t.check(Wallet.owns_id(id), "it's owned")
+	t.eq(Wallet.balance(), int(plan["coins"]) - price, "the leftover Coins stay")
+	await rig.end()

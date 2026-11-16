@@ -96,3 +96,27 @@ func test_event_poster_cadence() -> void:
 	LoginFlow.away_s = 0
 	for k in keep:
 		Save.set_setting(k, keep[k])
+
+
+## (2.2 build 16) the Season Pass track goes full screen and back.
+func test_pass_track_maximizes() -> void:
+	var stage := DormStage.new()
+	t.add_child(stage)
+	App.stage = stage
+	App.goto(SeasonScreen)
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	var sp := App.screen as SeasonScreen
+	var w0 := sp.track_scroll.size.x
+	sp.max_btn.pressed.emit()
+	for i in 4:
+		await t.get_tree().process_frame
+	t.check(sp.maximized and not sp.fig_zone.visible and not sp._side_host.visible, "maximized: stage column and side panel step aside")
+	t.check(sp.track_scroll.size.x > w0 * 1.4, "the track is much wider (%d -> %d)" % [w0, sp.track_scroll.size.x])
+	sp.back_action.call()
+	await t.get_tree().process_frame
+	t.check(not sp.maximized and sp.fig_zone.visible, "Back restores the reward view")
+	App.goto(TitleScreen)
+	await t.get_tree().process_frame
+	stage.queue_free()
+	App.stage = null

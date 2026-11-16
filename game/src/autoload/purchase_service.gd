@@ -27,6 +27,9 @@ extends Node
 signal products_changed
 signal state_changed(product_id: String)
 signal restore_finished(summary: Dictionary)
+## (2.2 build 16) "Buy now": a Coin pack bought to buy one item at once
+## finished (result: Wallet.spend's)
+signal buy_now_done(item_id: String, result: Dictionary)
 
 const PRODUCTS_TTL_S := 600
 const RESTORE_QUIET_S := 3.0
@@ -228,6 +231,58 @@ static func currency_mark(display_price: String) -> String:
 	return out
 
 
+# ------------------------------------------------------------------ buy now
+## (2.2 build 16) Buy a Coin item outright: the smallest Coin pack that
+## covers what the player is short, bought from Apple, then the item bought
+## with those Coins at once (the leftover Coins stay in the wallet).  The
+## price is the pack's own StoreKit price; nothing new is sold.
+var buy_now := {}   # {pid, item, offer}: waiting for that pack's delivery
+
+
+## The smallest Coin pack holding at least `coins` ("" when none does).
+func pack_for(coins: int) -> String:
+	var best := ""
+	var best_n := 0
+	for it in Catalogue.items_of_kind("coin_pack"):
+		var n := int(it.get("coins", 0))
+		if n >= coins and (best == "" or n < best_n):
+			best = String(it.get("product", ""))
+			best_n = n
+	return best
+
+
+## What "Buy now" would buy for this item: {pid, coins, left, view} or {}.
+func buy_now_plan(item_id: String, price: int) -> Dictionary:
+	var short := price - Wallet.balance()
+	if short <= 0:
+		return {}
+	var pid := pack_for(short)
+	if pid == "":
+		return {}
+	var coins := int(Catalogue.product(pid).get("coins", 0))
+	return {"pid": pid, "coins": coins, "left": Wallet.balance() + coins - price, "view": view(pid)}
+
+
+func start_buy_now(item_id: String, price: int, offer: Dictionary = {}) -> Dictionary:
+	var plan := buy_now_plan(item_id, price)
+	if plan.is_empty():
+		return {"ok": false, "message": "This can't be bought this way right now."}
+	var r := buy(String(plan["pid"]))
+	if bool(r.get("ok", false)):
+		buy_now = {"pid": String(plan["pid"]), "item": item_id, "offer": offer}
+	return r
+
+
+func _finish_buy_now(pid: String) -> void:
+	if buy_now.is_empty() or String(buy_now["pid"]) != pid:
+		return
+	var item := String(buy_now["item"])
+	var offer: Dictionary = buy_now.get("offer", {})
+	buy_now = {}
+	var r: Dictionary = await Wallet.spend(item, offer)
+	buy_now_done.emit(item, r)
+
+
 # ------------------------------------------------------------------ buying
 ## From an explicit tap only.  Opens Apple's purchase sheet, or returns why
 ## it can't ({ok:false, message}).
@@ -321,6 +376,7 @@ func _deliver(tx: Dictionary) -> void:
 		elif String(d.get("item", "")) != "":
 			msg = "%s is in your Locker." % Catalogue.display_name(String(d["item"]))
 		_set_state(pid, "delivered", msg)
+		_finish_buy_now(pid)
 		return
 	var status := int(r.get("http_status", 0))
 	if status == 0 or status >= 500 or String(r.get("error", "")) in ["network", "service_off", "game_center", "rate_limited"]:

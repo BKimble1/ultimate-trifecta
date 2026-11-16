@@ -29,6 +29,18 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 			ci.draw_line(c + Vector2(-r * 0.65, 0), c + Vector2(r * 0.65, 0), col, r * 0.24, true)
 			ci.draw_line(c + Vector2(0, -r * 0.65), c + Vector2(0, r * 0.65), col, r * 0.24, true)
 			return
+		"expand", "collapse":
+			# (2.2 build 16) four corner brackets pointing out (expand) or in
+			var out := kind == "expand"
+			for sx in [-1.0, 1.0]:
+				for sy in [-1.0, 1.0]:
+					var corner := c + Vector2(sx, sy) * r * 0.72
+					var tip := corner if out else c + Vector2(sx, sy) * r * 0.18
+					var base := c + Vector2(sx, sy) * r * 0.18 if out else corner
+					ci.draw_line(base, tip, col, r * 0.14, true)
+					ci.draw_line(tip, tip - Vector2(sx, 0) * r * 0.36 * (1.0 if out else -1.0), col, r * 0.16, true)
+					ci.draw_line(tip, tip - Vector2(0, sy) * r * 0.36 * (1.0 if out else -1.0), col, r * 0.16, true)
+			return
 		"coin":
 			# (2.2 build 15) a gold coin with a rim and a shine
 			ci.draw_circle(c, r * 0.9, col.darkened(0.25) if col != Color.WHITE else Color("d9962a"))

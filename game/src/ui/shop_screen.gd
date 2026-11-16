@@ -188,6 +188,7 @@ func build() -> void:
 	Purchases.products_changed.connect(_refresh_states)
 	Purchases.state_changed.connect(_on_purchase_state)
 	Purchases.restore_finished.connect(_on_restore_finished)
+	Purchases.buy_now_done.connect(_on_buy_now_done)
 	Offers.changed.connect(_on_offers_changed)
 	Purchases.load_products()
 	Offers.refresh_if_needed()
@@ -1200,6 +1201,14 @@ func _refresh_detail() -> void:
 				status.text = "You have %s Coins. Earn more by playing online rounds, or get Coins in the Coins section." % Wallet.balance_label()
 				second.text = "Get Coins"
 				second.visible = true
+				# (2.2 build 16) or buy it outright: the Coin pack that covers it,
+				# then the item, in one go
+				var plan := Purchases.buy_now_plan(id, int(st["coins"]))
+				if not plan.is_empty() and bool((plan["view"] as Dictionary)["can_buy"]):
+					action.text = "Buy now · %s" % String((plan["view"] as Dictionary)["price"])
+					action.disabled = false
+					status.text = "Buy now gets the %s Coins pack and buys %s with it at once; %s Coins stay in your wallet." % [
+						Catalogue.format_coins(int(plan["coins"])), Catalogue.display_name(id), Catalogue.format_coins(int(plan["left"]))]
 			else:
 				action.text = ("Unlock for %s" if Catalogue.kind(id) == "season_premium" else "Buy for %s") % ("%s Coins" % String(st["text"]))
 				action.disabled = false
@@ -1242,6 +1251,16 @@ func _tick_detail() -> void:
 	leave.visible = dep != ""
 
 
+func _on_buy_now_done(item_id: String, r: Dictionary) -> void:
+	if not is_inside_tree():
+		return
+	if bool(r.get("ok", false)):
+		_celebrate(item_id)
+	else:
+		dialog("Your Coins arrived, but %s couldn't be bought yet: %s The Coins are in your wallet." % [Catalogue.display_name(item_id), String(r.get("message", ""))])
+	_refresh_states()
+
+
 func _on_secondary() -> void:
 	var b: Button = _d.get("second")
 	if b == null:
@@ -1265,6 +1284,12 @@ func _on_action() -> void:
 		"coins":
 			if bool(st["afford"]):
 				_confirm_spend(id, st.get("offer", {}))
+			else:
+				# (2.2 build 16) Buy now: the covering Coin pack, then the item
+				var r := Purchases.start_buy_now(id, int(st["coins"]), st.get("offer", {}))
+				if not bool(r.get("ok", false)):
+					dialog(String(r.get("message", "")))
+				_refresh_states()
 		"apple":
 			var r := Purchases.buy(Catalogue.product_of(id))
 			if not bool(r.get("ok", false)):

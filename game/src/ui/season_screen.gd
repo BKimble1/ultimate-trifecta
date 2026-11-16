@@ -92,6 +92,11 @@ var premium_chip: Label
 var claim_all_btn: Button
 ## (2.2 build 15) opens the Premium offer (PassOffer); hidden with Premium
 var premium_btn: Button
+## (2.2 build 16) the track takes the whole screen (the stage column and the
+## side panel step aside) to browse every tier; the header button toggles it
+var maximized := false
+var max_btn: Button
+var _side_host: Control
 ## the status line when claiming is unavailable: its short headline and why
 var status_row: Control
 var banner: Label
@@ -164,6 +169,7 @@ func build() -> void:
 	detail_panel = UIKit.panel(Color(UIKit.SLATE, 0.96), UIKit.R_PANEL, UIKit.PAD_PANEL + 2)
 	detail_panel.name = "DetailPanel"
 	var side_host := UIKit.region(detail_panel)
+	_side_host = side_host
 	side_host.name = "SideRegion"
 	side_host.size_flags_horizontal = Control.SIZE_FILL
 	mid.add_child(side_host)
@@ -599,7 +605,36 @@ func _header() -> Control:
 	premium_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	premium_btn.pressed.connect(func() -> void: PassOffer.popup(self))
 	h.add_child(premium_btn)
+	max_btn = UIKit.icon_button("expand")
+	max_btn.name = "Maximize"
+	max_btn.accessibility_name = "Show the whole pass"
+	max_btn.tooltip_text = "Show the whole pass"
+	max_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	max_btn.pressed.connect(func() -> void: set_maximized(not maximized))
+	h.add_child(max_btn)
 	return h
+
+
+## (2.2 build 16) full-screen track on/off.  The runner on the stage hides
+## behind it while it is maximized; Back (or the button) restores it.
+func set_maximized(on: bool) -> void:
+	if on == maximized:
+		return
+	maximized = on
+	fig_zone.visible = not on
+	_side_host.visible = not on
+	var ch: CharacterView = App.stage.local_character() if App.stage else null
+	if ch:
+		ch.visible = not on
+	var f := UIKit.face_of(max_btn)
+	if f:
+		f.set("icon", "collapse" if on else "expand")
+		f.queue_redraw()
+	max_btn.accessibility_name = "Back to the reward view" if on else "Show the whole pass"
+	max_btn.tooltip_text = max_btn.accessibility_name
+	back_action = (func() -> void: set_maximized(false)) if on else _go_hub
+	_fit_cells.call_deferred()
+	_scroll_to.call_deferred(focus_tier)
 
 
 ## Claiming unavailable: one restrained line under the header, said once
@@ -745,6 +780,9 @@ func run_of(tier: int) -> ProgressRun:
 ## A tap on a cell selects it; a blank Free slot explains that tier's
 ## Premium reward instead.
 func _on_cell(tier: int, track: String) -> void:
+	# (2.2 build 16) from the full-screen track, a tap opens that reward's
+	# page (the side panel comes back)
+	set_maximized(false)
 	if track == "free" and Economy.reward_at(sid, tier, "free").is_empty():
 		focus(tier, "premium", true)
 	else:
@@ -754,6 +792,7 @@ func _on_cell(tier: int, track: String) -> void:
 ## Pass 9: a tap on a progress run explains it (the player's own tier when
 ## it is inside the run).
 func _on_run(first: int) -> void:
+	set_maximized(false)
 	var r := run_of(first)
 	var tier := clampi(current_tier(), r.first, r.last) if r != null else first
 	focus(tier, "progress")
