@@ -632,3 +632,10 @@ order.  After them, submitting needs no further code change.
    the Season Champion rules (docs/release22/CONTEST_RULES.md) reviewed.
 6. **Certificates:** the iOS Distribution certificate expires 2026-11-26;
    renew it before then.
+
+| | |
+|---|---|
+| Locker › Music, Locker › Emotes | `media/v26_locker_music.jpg`, `media/v26_locker_emotes.jpg` |
+| Settings › Audio | `media/v26_settings_audio.jpg` |
+| The Season Pass, full screen | `media/v26_pass_full.jpg` |
+| A rift in a round, and on the map | `media/v26_rift.jpg`, `media/v26_rift_map.jpg` |

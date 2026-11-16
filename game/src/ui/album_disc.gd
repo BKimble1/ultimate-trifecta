@@ -151,4 +151,4 @@ func _draw_house_sleeve(rect: Rect2) -> void:
 		var sp := rect.position + rect.size * Vector2(fmod(0.13 + 0.37 * i, 0.9) + 0.05, fmod(0.21 + 0.29 * i, 0.55) + 0.08)
 		draw_circle(sp, 2.0, Color(1, 1, 1, 0.7))
 	var f := UIKit.font_w(800)
-	draw_string(f, rect.position + Vector2(12, rect.size.y - 18), "DORM NIGHTS", HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 24, int(rect.size.x * 0.11), UIKit.IVORY)
+	draw_string(f, rect.position + Vector2(12, rect.size.x * 0.11 + 10), "DORM NIGHTS", HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 24, int(rect.size.x * 0.11), UIKit.IVORY)

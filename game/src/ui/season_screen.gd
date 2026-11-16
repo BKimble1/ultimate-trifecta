@@ -634,6 +634,7 @@ func set_maximized(on: bool) -> void:
 	max_btn.tooltip_text = max_btn.accessibility_name
 	back_action = (func() -> void: set_maximized(false)) if on else _go_hub
 	_fit_cells.call_deferred()
+	_fit_nav.call_deferred()
 	_scroll_to.call_deferred(focus_tier)
 
 
@@ -866,7 +867,9 @@ func _fit_nav() -> void:
 	if not is_instance_valid(nav_row) or avail < 2.0:
 		return
 	var chips: Array = [now_chip, next_chip] + milestone_chips.values()
-	for level in [0, 1, 2]:
+	# (2.2 build 16) the full-screen track keeps the one-line chips (the
+	# two-line form was cut off in its row)
+	for level in ([1, 2] if maximized else [0, 1, 2]):
 		var need := float(nav_row.get_theme_constant("separation")) * float(nav_row.get_child_count() - 1)
 		for c in chips:
 			need += (c as NavChip).width_at(level)

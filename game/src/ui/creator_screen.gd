@@ -439,6 +439,7 @@ func _build_tab() -> void:
 	_discs.clear()
 	if tab == "albums":
 		_build_albums(gw)
+		_update_footer()
 		return
 	if tab == "move":
 		body.add_child(_emote_slot_row(gw))
