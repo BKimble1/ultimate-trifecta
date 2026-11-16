@@ -340,9 +340,15 @@ func _rift26() -> void:
 		later(2.0, "r26_rift")
 	elif _scheduled.has("r1") and not _scheduled.has("r2") and _t > float(_scheduled["r1"]) + 3.0:
 		_scheduled["r2"] = _t
-		mc.hud.open_map()
-		later(1.0, "r26_map")
-	elif _scheduled.has("r2") and _t > float(_scheduled["r2"]) + 2.5:
+		mc.hud.actions.toggle_row()
+		later(0.6, "r26_emote_wheel")
+	elif _scheduled.has("r2") and not _scheduled.has("r3") and _t > float(_scheduled["r2"]) + 1.5:
+		_scheduled["r3"] = _t
+		mc.hud.actions._close_row()
+		if mc.hud.chat != null:
+			mc.hud.chat.open_drawer()
+			later(1.0, "r26_chat")
+	elif _scheduled.has("r3") and _t > float(_scheduled["r3"]) + 2.5:
 		get_tree().quit()
 
 
