@@ -530,3 +530,11 @@ The Hide button is drawn as a bush (leafy puffs, shaded greens, leaves and
 a blossom, gloss); it glows when a bush is in reach and turns gold-rimmed
 and rustles while hiding ("Jump out"). The other action buttons gained a
 little depth and gloss.
+
+| | |
+|---|---|
+| Home's tabs | `media/v25_home_tabs.jpg` |
+| The present: waiting, pumped, bursting, opened (preview) | `media/v25_gift.jpg`, `media/v25_gift_pumped.jpg`, `media/v25_gift_burst.jpg`, `media/v25_gift_reveal.jpg` |
+| The event poster | `media/v25_event_poster.jpg` |
+| The Season Pass offer (before the outfits lost the nightcap) | `media/v25_pass_offer.jpg` |
+| The Hide button beside a bush (gold ring: in reach) | `media/v25_hide_button.jpg` |

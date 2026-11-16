@@ -95,6 +95,7 @@ static func draw_button(ci: CanvasItem, b: Dictionary, name: String, label: Stri
 		ci.draw_arc(center, r + 7.0 + 3.0 * pulse, 0, TAU, 56, Color(UIKit.AMBER, (0.55 + 0.35 * pulse) * opacity), 5.0, true)
 	if name == "hide":
 		_draw_bush(ci, center, r, opacity, bool(state.get("hiding", false)), off)
+		icon = ""   # the bush is its picture
 	else:
 		ci.draw_circle(center, r, col)
 		# (2.2 build 15) a little depth: a darker lower half and a glossy top
@@ -148,9 +149,9 @@ static func _draw_bush(ci: CanvasItem, c: Vector2, r: float, opacity: float, hid
 	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# the rim: gold while hiding (press to pop out), else a leafy light rim
 	ci.draw_arc(c, r * 1.02, 0, TAU, 56, Color(UIKit.AMBER, 0.9 * opacity) if hiding else Color(lite.lightened(0.3), 0.6 * opacity), 3.0, true)
-	# a dark band behind the words so they read on the leaves
-	ci.draw_set_transform(c + Vector2(0, r * 0.46), 0.0, Vector2(1.0, 0.42))
-	ci.draw_circle(Vector2.ZERO, r * 0.52, Color(0.02, 0.1, 0.04, 0.45 * opacity))
+	# a dark band behind the word so it reads on the leaves
+	ci.draw_set_transform(c, 0.0, Vector2(1.0, 0.38))
+	ci.draw_circle(Vector2.ZERO, r * 0.66, Color(0.02, 0.1, 0.04, 0.5 * opacity))
 	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
