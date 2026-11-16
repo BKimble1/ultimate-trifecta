@@ -1,8 +1,8 @@
 # TestFlight release: Ultimate Trifecta
 
-Current version: **2.2 (Season 1 · Winter Break, final pass), prepared; not uploaded.** The holiday dorm, the Night Watch starting at GO, Lakeside Campus as Coming soon, the Home season card and protocol 11 ([docs/release22/README.md](docs/release22/README.md)). **Upload is blocked by Apple:** on 2026-11-15 the lane's read-only App Store Connect runs (#186 `iap=list`, #187 `asc_status`) were refused with `403 FORBIDDEN.REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED` ("A required agreement is missing or has expired"; Apple points to Business). Every App Store Connect API call, so also signing and upload, fails until the account holder accepts the pending agreement (App Store Connect › Business, or developer.apple.com › Account). Then run "Build, test and ship (iOS)" on `claude/happy-edison-50dynd` with **upload** ticked and **distribution = app_store**.
+Current version: **2.2 (Season 1 · Winter Break), uploaded, processed (VALID), App Store-eligible and available to internal testers.** Build **2.2 (12)**. The first pass: the holiday dorm, the Night Watch starting at GO, Lakeside Campus as Coming soon, protocol 11. The second pass: home is your party lobby (playlists: Quick Match, Party vs Bots, Practice; no separate "Play with Friends"), Quick Match on Game Center with bots in empty seats, typed party chat with bad words bleeped, the round-start fix, loading tips, Rankings with two 30-day Game Center leaderboards (created in App Store Connect, open 2026-12-01), run stats after each round, the Season Champion poster and Official Rules, and glossier buttons ([docs/release22/README.md](docs/release22/README.md)). The 403 agreement block of 2026-11-15 is gone: the account holder accepted the pending agreement.
 
-Unsigned 2.2 on that branch, CI run #193 (commit `7792b86`): headless tests passed (585 tests, 0 failures); Xcode project exported with 40 baked shader entries; launch and branding audit PASS; **unsigned arm64 device archive built and linked** (`CFBundleShortVersionString` 2.2, `CFBundleVersion` 193 from the run number because App Store Connect refused the build-number query, iOS 17.0+, iPhone and iPad, landscape, `ITSAppUsesNonExemptEncryption` false, Game Center entitlement, privacy manifest); embedded frameworks `GodotApplePluginsGameCenter`, `GodotApplePluginsStoreKit`, `SwiftGodotRuntime`, `UTShare` (arm64); iOS Simulator cold launch: 0 script errors, no crash report, 23 screenshots. Two lane repairs were needed first: the pinned GodotApplePlugins release had been deleted upstream (now built from the pinned commit, `tools/fetch_deps.sh`), and App Store Connect's 403 text had become the build number.
+Before it, unsigned 2.2 (first pass) passed CI run #193 (commit `7792b86`); the lane needed two repairs: the pinned GodotApplePlugins release had been deleted upstream (now built from the pinned commit, `tools/fetch_deps.sh`), and App Store Connect's 403 text had become the build number.
 
 The previous version, **2.1 (two maps), an internal TestFlight build**. Same app, bundle ID, Game Center capability, internal group and lane as 1.0–2.0. 2.1 adds a second map: Lakeside Campus (the new default, a large hilly campus with stairs, waters, parked cars and woods) beside Moonbrook College (the 2.0 map). The party host picks the map for the series; Practice remembers its own choice. The network protocol is 10, so 2.0 and 2.1 can't play together. It is **internal only** (`testFlightInternalTestingOnly=true`), so it can't be submitted; 2.0 (10) stays the App Store-eligible build. Like 2.0 it is provisional: the game service isn't deployed, so Coins, purchases, Season rewards and Friends status show as unavailable. See [docs/maps/HANDOFF.md](docs/maps/HANDOFF.md).
 
@@ -15,7 +15,7 @@ The previous version, **2.0 (final release sweep)**, is a provisional App Store-
 | App name | Ultimate Trifecta |
 | App icon | The owner's "Pajama Dash" artwork (`Ultimate Trifecta_ Pajama Dash.png`), as `game/assets/icon/icon.png` at 1024×1024, opaque. Godot's export generates every other icon size from it. |
 | Bundle ID | `com.idlery.ultimatetrifecta`. It is registered on your team: the App Store Connect app record below uses it. |
-| Marketing version | `2.1` for the two-maps pass (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot` and the export preset; `test_release_config` checks they agree). The final release sweep was `2.0`, Pass 9 `1.9`, Pass 8 `1.8`, V8 `1.7`, V7 `1.6`, V6 `1.5`, V5 `1.4`, V4 `1.3`, V3 `1.2`, V2 `1.1`, V1 `1.0`. Before preparing 2.1, the read-only status run #176 showed builds 1–10 in App Store Connect (latest 2.0 (10), `VALID`, `APP_STORE_ELIGIBLE`, `IN_BETA_TESTING`) and no 2.1. Before uploading 2.0, run #132 had shown builds 1–9 and no 2.0. |
+| Marketing version | `2.2` for Season 1 · Winter Break (2.1 was the two-maps pass) (`MARKETING_VERSION` in `.github/workflows/ios.yml`; also `config/version` in `project.godot` and the export preset; `test_release_config` checks they agree). The final release sweep was `2.0`, Pass 9 `1.9`, Pass 8 `1.8`, V8 `1.7`, V7 `1.6`, V6 `1.5`, V5 `1.4`, V4 `1.3`, V3 `1.2`, V2 `1.1`, V1 `1.0`. Before preparing 2.1, the read-only status run #176 showed builds 1–10 in App Store Connect (latest 2.0 (10), `VALID`, `APP_STORE_ELIGIBLE`, `IN_BETA_TESTING`) and no 2.1. Before uploading 2.0, run #132 had shown builds 1–9 and no 2.0. |
 | Build number | Chosen at build time. With App Store Connect access it is the highest existing build for the app + 1 (`tools/asc.py next-build`), so it always increases past anything already uploaded; without it, the GitHub run number (V1's last unsigned build was 10; V2's are 12 and up). It can be overridden with the `build_number` workflow input. |
 | Platforms | iPhone and iPad (`UIDeviceFamily` 1,2), iOS 17.0+, arm64, landscape left/right. Godot also adds `UIRequiredDeviceCapabilities` `iphone-ipad-minimum-performance-a12`, which means A12 (iPhone XS/XR) or newer. All verified in the CI archive's Info.plist. |
 | Capabilities | Game Center (`com.apple.developer.game-center`). In-App Purchase needs no entitlement key; App Store Connect enables it for every app ID. |
@@ -25,22 +25,25 @@ The previous version, **2.0 (final release sweep)**, is a provisional App Store-
 
 ## Current release state
 
-**State (2.1): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **2.1 (11)**, **internal only**, provisional (service off, no products).
+**State (2.2): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **2.2 (12)**, **App Store-eligible**, provisional (game service off, no products yet).
 
 It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, nothing was submitted for App Store review, nothing was released, and no purchase of any kind was made.
 
 | | |
 |---|---|
-| Build | `com.idlery.ultimatetrifecta` **2.1 (11)**. App Store Connect build ID `a3c30bba-f607-4afd-af13-83d692b4a774`. |
-| Build number | **11**: the lane read the highest existing build (2.0 (10)) and added one. Status run #176 had shown builds 1–10 and no 2.1 beforehand. |
-| Source | Commit `8abfaca`: the two-maps pass and the 2.1 release-review fixes (`docs/maps/HANDOFF.md`). The affected test files were run locally on it: 12 files, 0 failures. `4ad9c94` after it only adds a test and corrects a code comment. |
-| Uploaded | 2026-10-07 22:25:10 UTC (Apple's upload time), by GitHub Actions run #182 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/37693219798) with `upload=true`, `distribution=internal_only` and `prune_ci_certs=true`. The headless tests gate the build: **584 tests, 359,515 checks, 0 failures**. |
-| Apple's processing | `VALID`. Audience **`INTERNAL_ONLY`** (checked by the run with `asc.py audience`). Declares no non-exempt encryption. |
-| TestFlight | Internal state `IN_BETA_TESTING`; external state `NOT_APPLICABLE`. What to Test is set from `docs/testflight/what_to_test.txt` (1,853 characters, en-US). TestFlight's automatic notification is on. |
+| Build | `com.idlery.ultimatetrifecta` **2.2 (12)**. App Store Connect build ID `c50a97e1-5be2-4d9c-bdd2-07ec5cd3cba8`. |
+| Build number | **12**: the lane read the highest existing build (2.1 (11)) and added one. |
+| Source | Commit `64df8ac` on `claude/happy-edison-50dynd`. |
+| Uploaded | 2026-11-16 01:20:19 UTC (Apple's upload time), by GitHub Actions run #203 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/43783612722) with `upload=true` and `distribution=app_store`. The headless tests gate the build and passed on CI (the push run #202 on the same commit passed too). Locally the full suite was 587 tests, 359,787 checks; its one failure was a test file picked up mid-run against the previous `rankings.gd` and passes on the final code. |
+| Apple's processing | `VALID`. Audience **`APP_STORE_ELIGIBLE`** (checked by the run with `asc.py audience`). Declares no non-exempt encryption. |
+| TestFlight | Internal state `IN_BETA_TESTING`; external state `READY_FOR_BETA_SUBMISSION` (no external group was requested). What to Test is set from `docs/testflight/what_to_test.txt` (1,734 characters, en-US). TestFlight's automatic notification is on. |
+| Game Center | Leaderboards `ut.season_points` and `ut.fastest_run` created by run #201 (`iap=gc-create`): recurring every 30 days (`PT720H`) from 2026-12-01 00:00 UTC. They must be added to the 2.2 version page when it is submitted (App Store Connect › the version › Game Center). |
 | Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which receives every build. The lane added no one and created no group. |
-| Confirmed by | Apple's API, read by run #182 at 22:41 UTC. |
-| Can it be submitted? | No: an internal-only build can't be submitted. 2.0 (10) stays the App Store-eligible build. |
-| Network | Protocol 10: 2.0 and 2.1 devices refuse each other at join ("Update the game to join."). |
+| Confirmed by | Apple's API, read by run #203 at 01:37 UTC. |
+| Can it be submitted? | Yes (App Store-eligible), once the owner steps below are done. |
+| Network | Protocol 11: 2.1 and 2.2 devices refuse each other at join ("Update the game to join."). |
+
+The previous build, **2.1 (11)**, internal only, as recorded when it shipped: uploaded 2026-10-07 by run #182 (`distribution=internal_only`, `prune_ci_certs=true`), 584 tests, 0 failures, `VALID`, `INTERNAL_ONLY`, protocol 10.
 
 The first 2.1 attempt, run #178 on `51af064`, passed its tests and stopped at signing. The team had reached Apple's limit on certificates: 28 Apple Development certificates left by earlier CI runs. Nothing was uploaded. With the owner's approval, run #182 first revoked those 28 (`prune_ci_certs`), then revoked its own at the end (serial `29AED01F…`). A read-only status run afterwards (#184) lists 4 certificates on the team, the owner's 3 Apple Distribution and 1 iOS Distribution, and no development certificate.
 
@@ -130,13 +133,13 @@ Earlier builds, all still `VALID` and internal-only:
 The one-time lane setup is done: the API key and the four repository secrets, the app record, and an internal group. Nothing there needs to be set up again.
 
 What only you can do, in order (the exact steps are in [docs/OWNER_SETUP_GUIDE.md](docs/OWNER_SETUP_GUIDE.md) A–G):
-1. **Install 2.0 (10)** from TestFlight and check What to Test: the lighter lobby, the Season Pass preview (drag to turn, Turn, Reset), the Friends panel and its permission prompt, Hide owned in the Shop, a two-device party with a code, and text on iPhone and iPad. 1.9 and 2.0 can share a party (protocol 8).
+1. **Install 2.2 (12)** from TestFlight and check What to Test (`docs/testflight/what_to_test.txt`): the home lobby and playlists, Quick Match on two devices at once, inviting a Game Center friend, Add friends, typed chat (bad words bleeped), the round start with your thumb on the stick, loading tips, Rankings and the champion poster.
 2. **Agreements** (A): the Paid Apps Agreement, tax and banking (account holder).
 3. **The eight products** (B): create them (manually or `iap=create`), set prices, review screenshots and notes.
 4. **The service** (C): deploy the sandbox and production deployments, enter the two App Store Server Notification URLs, fill `game/config/service.cfg` and `game/config/links.cfg` with public values only.
 5. **Build the configured candidate** (D): run the workflow with **upload** ticked and **distribution = app_store**.
 6. **Sandbox test** (E) on that build, including Friends and an online round with two devices and two accounts, and Delete Game Profile.
-7. **The 2.0 version page** (F): metadata, App Privacy, age rating, screenshots, review notes; and the content decisions (written permission from the two people Record Breaker and Dr. Doom are based on, the music terms, the "Dr. Doom" label).
+7. **The 2.2 version page** (F): add the two Game Center leaderboards to the version; fill `support_email` (and `privacy_url`, `support_url`) in `game/config/links.cfg` so a chat report can reach you without the service (Guideline 1.2), and review `docs/release22/CONTEST_RULES.md` (Guideline 5.3); metadata, App Privacy, age rating, screenshots, review notes; and the content decisions (written permission from the two people Record Breaker and Dr. Doom are based on, the music terms, the "Dr. Doom" label).
 8. **Submit** (G) the version together with all eight products, with **Manually release this version** selected. Apple decides approval.
 
 For later uploads, run "Build, test and ship (iOS)" with **upload** ticked and choose **distribution**: `internal_only` (the default; TestFlight internal testing only, can't be submitted) or `app_store` (App Store-eligible; internal testers can still install it; nothing is submitted). The build number follows the highest one in App Store Connect. **asc_status** reads the current state without building anything.
