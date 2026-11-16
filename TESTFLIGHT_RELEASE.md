@@ -1,6 +1,6 @@
 # TestFlight release: Ultimate Trifecta
 
-Current version: **2.2 (Season 1 · Winter Break), uploaded, processed (VALID), App Store-eligible and available to internal testers.** Build **2.2 (12)**. The first pass: the holiday dorm, the Night Watch starting at GO, Lakeside Campus as Coming soon, protocol 11. The second pass: home is your party lobby (playlists: Quick Match, Party vs Bots, Practice; no separate "Play with Friends"), Quick Match on Game Center with bots in empty seats, typed party chat with bad words bleeped, the round-start fix, loading tips, Rankings with two 30-day Game Center leaderboards (created in App Store Connect, open 2026-12-01), run stats after each round, the Season Champion poster and Official Rules, and glossier buttons ([docs/release22/README.md](docs/release22/README.md)). The 403 agreement block of 2026-11-15 is gone: the account holder accepted the pending agreement.
+Current version: **2.2 (Season 1 · Winter Break), uploaded, processed (VALID), App Store-eligible and available to internal testers.** Build **2.2 (13)** (build 12 had the second pass). The first pass: the holiday dorm, the Night Watch starting at GO, Lakeside Campus as Coming soon, protocol 11. The second pass: home is your party lobby (playlists: Quick Match, Party vs Bots, Practice; no separate "Play with Friends"), Quick Match on Game Center with bots in empty seats, typed party chat with bad words bleeped, the round-start fix, loading tips, Rankings with two 30-day Game Center leaderboards (created in App Store Connect, open 2026-12-01), run stats after each round, the Season Champion poster and Official Rules, and glossier buttons. The third pass (build 13): a roomier, cleaner UI on every screen, invites from the game's own Friends list through Game Center, and a launch that shows home before the champion poster ([docs/release22/README.md](docs/release22/README.md) sections 15-18). The 403 agreement block of 2026-11-15 is gone: the account holder accepted the pending agreement.
 
 Before it, unsigned 2.2 (first pass) passed CI run #193 (commit `7792b86`); the lane needed two repairs: the pinned GodotApplePlugins release had been deleted upstream (now built from the pinned commit, `tools/fetch_deps.sh`), and App Store Connect's 403 text had become the build number.
 
@@ -25,21 +25,21 @@ The previous version, **2.0 (final release sweep)**, is a provisional App Store-
 
 ## Current release state
 
-**State (2.2): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **2.2 (12)**, **App Store-eligible**, provisional (game service off, no products yet).
+**State (2.2): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **2.2 (13)**, **App Store-eligible**, provisional (game service off, no products yet).
 
 It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, nothing was submitted for App Store review, nothing was released, and no purchase of any kind was made.
 
 | | |
 |---|---|
-| Build | `com.idlery.ultimatetrifecta` **2.2 (12)**. App Store Connect build ID `c50a97e1-5be2-4d9c-bdd2-07ec5cd3cba8`. |
-| Build number | **12**: the lane read the highest existing build (2.1 (11)) and added one. |
-| Source | Commit `64df8ac` on `claude/happy-edison-50dynd`. |
-| Uploaded | 2026-11-16 01:20:19 UTC (Apple's upload time), by GitHub Actions run #203 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/43783612722) with `upload=true` and `distribution=app_store`. The headless tests gate the build and passed on CI (the push run #202 on the same commit passed too). Locally the full suite was 587 tests, 359,787 checks; its one failure was a test file picked up mid-run against the previous `rankings.gd` and passes on the final code. |
+| Build | `com.idlery.ultimatetrifecta` **2.2 (13)**. App Store Connect build ID `54f2dcc4-f483-4f06-a693-92d9de5f2b05`. (2.2 (12), `c50a97e1-…`, is the previous one.) |
+| Build number | **13**: the lane read the highest existing build (2.2 (12)) and added one. |
+| Source | Commit `8c4f641` on `claude/happy-edison-50dynd` (the push run #205 on it passed every job). |
+| Uploaded | 2026-11-16 ~04:11 UTC, by GitHub Actions run #206 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/43800193588) with `upload=true` and `distribution=app_store`. The headless tests gate the build and passed (590 tests). |
 | Apple's processing | `VALID`. Audience **`APP_STORE_ELIGIBLE`** (checked by the run with `asc.py audience`). Declares no non-exempt encryption. |
-| TestFlight | Internal state `IN_BETA_TESTING`; external state `READY_FOR_BETA_SUBMISSION` (no external group was requested). What to Test is set from `docs/testflight/what_to_test.txt` (1,734 characters, en-US). TestFlight's automatic notification is on. |
+| TestFlight | Internal state `IN_BETA_TESTING`; external state `READY_FOR_BETA_SUBMISSION` (no external group was requested). What to Test is set from `docs/testflight/what_to_test.txt` (2,128 characters, en-US). TestFlight's automatic notification is on. |
 | Game Center | Leaderboards `ut.season_points` and `ut.fastest_run` created by run #201 (`iap=gc-create`): recurring every 30 days (`PT720H`) from 2026-12-01 00:00 UTC. They must be added to the 2.2 version page when it is submitted (App Store Connect › the version › Game Center). |
 | Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which receives every build. The lane added no one and created no group. |
-| Confirmed by | Apple's API, read by run #203 at 01:37 UTC. |
+| Confirmed by | Apple's API, read by run #206 at 04:32 UTC. |
 | Can it be submitted? | Yes (App Store-eligible), once the owner steps below are done. |
 | Network | Protocol 11: 2.1 and 2.2 devices refuse each other at join ("Update the game to join."). |
 
@@ -133,7 +133,7 @@ Earlier builds, all still `VALID` and internal-only:
 The one-time lane setup is done: the API key and the four repository secrets, the app record, and an internal group. Nothing there needs to be set up again.
 
 What only you can do, in order (the exact steps are in [docs/OWNER_SETUP_GUIDE.md](docs/OWNER_SETUP_GUIDE.md) A–G):
-1. **Install 2.2 (12)** from TestFlight and check What to Test (`docs/testflight/what_to_test.txt`): the home lobby and playlists, Quick Match on two devices at once, inviting a Game Center friend, Add friends, typed chat (bad words bleeped), the round start with your thumb on the stick, loading tips, Rankings and the champion poster.
+1. **Install 2.2 (13)** from TestFlight and check What to Test (`docs/testflight/what_to_test.txt`): the home lobby and playlists, Quick Match on two devices at once, inviting a Game Center friend, Add friends, typed chat (bad words bleeped), the round start with your thumb on the stick, loading tips, Rankings and the champion poster.
 2. **Agreements** (A): the Paid Apps Agreement, tax and banking (account holder).
 3. **The eight products** (B): create them (manually or `iap=create`), set prices, review screenshots and notes.
 4. **The service** (C): deploy the sandbox and production deployments, enter the two App Store Server Notification URLs, fill `game/config/service.cfg` and `game/config/links.cfg` with public values only.
