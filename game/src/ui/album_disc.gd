@@ -1,10 +1,11 @@
 class_name AlbumDisc
 extends Button
 ## (2.2 build 16) An album in the Locker: its sleeve (the cover) with a
-## picture disc sliding out of it, printed with the same cover, grooves,
+## disc sliding out of it (2.2 build 17: a gradient in the album's colours),
+## grooves,
 ## a label ring and a centre hole.  The album playing has its disc out
 ## further and spinning, and says "Now playing"; a tap puts an album on.
-## Painted (polygon UVs for the round cover, no extra images or shaders).
+## Painted (no extra images or shaders).
 
 var album_id := ""
 var cover: Texture2D
@@ -94,7 +95,7 @@ func _draw() -> void:
 	# the sheen: two light arcs that stay put while the disc turns
 	draw_arc(dc, r * 0.8, -2.4, -1.6, 24, Color(1, 1, 1, 0.22), r * 0.12, true)
 	draw_arc(dc, r * 0.8, 0.75, 1.4, 24, Color(1, 1, 1, 0.12), r * 0.08, true)
-	draw_circle(dc, r * 0.2, Color(col.darkened(0.2), 1.0))
+	draw_circle(dc, r * 0.2, Color(col.lightened(0.15), 1.0))
 	draw_circle(dc, r * 0.2, Color(1, 1, 1, 0.08))
 	draw_arc(dc, r * 0.2, 0, TAU, 32, Color(0, 0, 0, 0.35), 1.5, true)
 	draw_circle(dc, r * 0.045, Color("0a0b10"))
@@ -119,24 +120,26 @@ static func _ease(x: float) -> float:
 	return x * x * (3.0 - 2.0 * x)
 
 
-## The cover printed round on the disc, turned by the spin.
+## (2.2 build 17) The disc: one smooth gradient in the album's own colours
+## (centre to rim), with a soft sheen band that turns with the disc.
 func _draw_picture(c: Vector2, r: float) -> void:
+	var a2: Color = Albums.get_album(album_id).get("col2", col.darkened(0.5))
 	var n := 48
-	var pts := PackedVector2Array()
-	var uvs := PackedVector2Array()
-	var cols := PackedColorArray()
+	# centre fan: col in the middle, col2 at the rim
 	for i in n:
-		var a := TAU * float(i) / float(n)
-		pts.append(c + Vector2.from_angle(a) * r)
-		uvs.append(Vector2(0.5, 0.5) + Vector2.from_angle(a - _spin) * 0.5)
-		cols.append(Color(1, 1, 1, 1) if cover else col.darkened(0.6))
-	if cover:
-		draw_polygon(pts, cols, uvs, cover)
-	else:
-		draw_polygon(pts, cols)
-		# the house disc: concentric colour rings
-		for k in 4:
-			draw_arc(c, r * (0.35 + 0.15 * k), _spin, _spin + PI * 1.4, 32, Color(col, 0.35 - 0.06 * k), r * 0.05, true)
+		var t0 := TAU * float(i) / float(n)
+		var t1 := TAU * float(i + 1) / float(n)
+		draw_polygon(PackedVector2Array([c, c + Vector2.from_angle(t0) * r, c + Vector2.from_angle(t1) * r]),
+			PackedColorArray([col, a2, a2]))
+	# a turning sheen: two lighter wedges opposite each other
+	for k in 2:
+		var base := _spin + PI * float(k)
+		for j in 6:
+			var u0 := base + 0.08 * float(j)
+			var u1 := u0 + 0.08
+			var alpha := 0.16 * (1.0 - absf(float(j) - 2.5) / 3.0)
+			draw_polygon(PackedVector2Array([c, c + Vector2.from_angle(u0) * r, c + Vector2.from_angle(u1) * r]),
+				PackedColorArray([Color(1, 1, 1, 0.0), Color(1, 1, 1, alpha), Color(1, 1, 1, alpha)]))
 
 
 ## The game's own album (no picture): a night-sky sleeve with a moon.

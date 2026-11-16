@@ -27,7 +27,7 @@ func test_round_chat_feed_drawer_and_input_ownership() -> void:
 	# (2.2 build 16) Chat and Emote sit under the minimap (MatchActions)
 	var reserved: Array = hud.actions.reserved()
 	t.check(hud.actions.chat_btn != null and reserved.has(hud.actions.chat_btn.get_global_rect()), "the chat button is reserved from the stick and camera")
-	t.check(hud.actions.chat_btn.get_global_rect().position.y >= hud.minimap.get_global_rect().end.y, "under the minimap")
+	t.check(hud.actions.emote_btn.get_global_rect().position.y >= hud.minimap.get_global_rect().end.y, "Emote under the minimap")
 	# a runner teammate's phrase reaches the runner host's feed; the Night Watch's doesn't
 	c0.social.chat.send_quick(24, QuickChat.Channel.TEAM)
 	c1.social.chat.send_quick(26, QuickChat.Channel.TEAM)

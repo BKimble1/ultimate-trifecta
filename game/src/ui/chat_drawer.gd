@@ -113,7 +113,14 @@ func _ready() -> void:
 	add_child(panel)
 	var v := UIKit.vbox(10)
 	panel.add_child(v)
-	var head := UIKit.hbox(10)
+	var head := UIKit.hbox(12)
+	# (2.2 build 17) a round badge in the channel's colour, like a messaging
+	# app's conversation header
+	var badge := PanelContainer.new()
+	badge.add_theme_stylebox_override("panel", UIKit.box(Color(_accent(), 0.22), 999, 2, _accent(), 10))
+	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	badge.add_child(Icons.IconRect.new("chat", _accent(), 30))
+	head.add_child(badge)
 	var hv := UIKit.vbox(0)
 	hv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_lbl = UIKit.styled(channel_title(), "headline")
@@ -122,7 +129,11 @@ func _ready() -> void:
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hv.add_child(sub)
 	head.add_child(hv)
-	var close_b := UIKit.icon_button("close")
+	var close_b := UIKit.icon_button("close", "", 52)
+	var cf := UIKit.face_of(close_b)
+	cf.styles["normal"] = UIKit.box(Color(UIKit.NAVY, 0.7), 999, 1, Color(UIKit.IVORY, 0.12), 6)
+	cf.styles["hover"] = UIKit.box(Color(UIKit.SLATE_HI, 0.9), 999, 1, Color(UIKit.IVORY, 0.2), 6)
+	cf.queue_redraw()
 	close_b.accessibility_name = "Close chat"
 	close_b.tooltip_text = "Close chat"
 	close_b.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -142,8 +153,14 @@ func _ready() -> void:
 		field.context_menu_enabled = false
 		field.text_submitted.connect(func(_t: String) -> void: _send_text())
 		field.text_changed.connect(func(_t: String) -> void: note_lbl.text = "")
+		var fs := UIKit.box(Color(UIKit.NAVY, 0.75), 999, 1, Color(UIKit.IVORY, 0.14), 20)
+		field.add_theme_stylebox_override("normal", fs)
+		var ff := fs.duplicate() as StyleBoxFlat
+		ff.border_color = _accent()
+		ff.set_border_width_all(2)
+		field.add_theme_stylebox_override("focus", ff)
 		row.add_child(field)
-		send_btn = UIKit.secondary("Send", Vector2(130, UIKit.touch_min()))
+		send_btn = UIKit.primary("Send", Vector2(120, UIKit.touch_min()), UIKit.T_LABEL)
 		send_btn.pressed.connect(_send_text)
 		row.add_child(send_btn)
 		v.add_child(row)
@@ -269,9 +286,19 @@ func _refresh() -> void:
 	_show_row = null
 	var msgs := visible_messages()
 	if msgs.is_empty():
-		var e := UIKit.styled("No messages yet. Say hi with Quick Chat.", "caption", UIKit.IVORY_MUTED)
+		var ev := UIKit.vbox(6)
+		ev.alignment = BoxContainer.ALIGNMENT_CENTER
+		ev.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		var ic := Icons.IconRect.new("chat", Color(UIKit.IVORY, 0.25), 56)
+		ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		ev.add_child(ic)
+		var e := UIKit.styled("No messages yet. Say hi with Quick Chat.", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 		e.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		list_box.add_child(e)
+		ev.add_child(e)
+		var pad := Control.new()
+		pad.custom_minimum_size.y = 40
+		list_box.add_child(pad)
+		list_box.add_child(ev)
 	for m in msgs:
 		list_box.add_child(_row(m))
 	session.social.chat.unread = 0
@@ -298,8 +325,20 @@ func _row(m: Dictionary) -> Control:
 	var chat := session.social.chat
 	var mine := bool(m["mine"])
 	var box := UIKit.vbox(4)
-	var b := UIKit.card_button(Vector2(0, 0), Color(UIKit.SLATE_HI, 0.85) if mine else Color(UIKit.NAVY, 0.55))
-	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# (2.2 build 17) message bubbles: yours on the right in the channel's
+	# colour, everyone else's on the left, at most ~78% of the list wide
+	var b := UIKit.card_button(Vector2(0, 0), Color(_accent().darkened(0.45), 0.95) if mine else Color(UIKit.NAVY, 0.7))
+	var bf := UIKit.face_of(b)
+	for k in bf.styles:
+		var st: Variant = bf.styles[k]
+		if st is StyleBoxFlat:
+			var sb := (st as StyleBoxFlat).duplicate() as StyleBoxFlat
+			sb.corner_radius_top_left = 20
+			sb.corner_radius_top_right = 20
+			sb.corner_radius_bottom_left = 6 if not mine else 20
+			sb.corner_radius_bottom_right = 6 if mine else 20
+			bf.styles[k] = sb
+	b.size_flags_horizontal = Control.SIZE_SHRINK_END if mine else Control.SIZE_SHRINK_BEGIN
 	var inner := UIKit.vbox(0)
 	inner.set_anchors_preset(Control.PRESET_FULL_RECT)
 	inner.offset_left = 14
@@ -317,6 +356,11 @@ func _row(m: Dictionary) -> Control:
 	# always plain text in a Label: no markup is ever interpreted
 	var body := UIKit.styled(String(m["text"]), "body", UIKit.IVORY if state != "failed" else UIKit.IVORY_DIM)
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var maxw := maxf(200.0, (panel.size.x - 60.0) * 0.78)
+	var tw := body.get_theme_font("font").get_string_size(body.text, HORIZONTAL_ALIGNMENT_LEFT, -1, body.get_theme_font_size("font_size")).x
+	var hw := head.get_theme_font("font").get_string_size(head.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
+	body.custom_minimum_size.x = clampf(maxf(tw, hw) + 4.0, 60.0, maxw)
+	b.custom_minimum_size.x = body.custom_minimum_size.x + 28.0
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_child(body)
 	UIKit.face_of(b).add_child(inner)
@@ -336,6 +380,17 @@ func _row(m: Dictionary) -> Control:
 			box.add_child(_actions(m))
 			_show_row = box
 	return box
+
+
+## The channel's colour: teal for runners and the party, gold for the Night
+## Watch, ivory-blue for spectators.
+func _accent() -> Color:
+	match channel():
+		QuickChat.Channel.TEAM:
+			return UIKit.PATROL if my_role() == TC.Role.PATROL else UIKit.TEAL
+		QuickChat.Channel.SPECTATORS:
+			return Color("8fb3ff")
+	return UIKit.TEAL
 
 
 func _actions(m: Dictionary) -> Control:

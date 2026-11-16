@@ -296,12 +296,33 @@ func has_results_bed() -> bool:
 	return _stream("music_" + RESULTS_BED) != null
 
 
-## (2.2 build 16) a new album was chosen: the menu music starts it now.
+## (2.2 build 17) a new album was chosen: a quick crossfade to it (0.6 s
+## out, 0.4 s in).  Any earlier fade still running stops at once, so two
+## albums never play together however fast the taps come.
+const ALBUM_FADE_OUT := 0.6
+const ALBUM_FADE_IN := 0.4
+
+
 func restart_menu_music() -> void:
 	if _music == null or _music.track != "menu":
 		return
-	_music.track = ""
-	music("menu")
+	var s := _stream(Albums.stream_key())
+	if s == null or _music.player.stream == s:
+		return
+	if s is AudioStreamOggVorbis:
+		(s as AudioStreamOggVorbis).loop = true
+	_music_out.clear()                 # an older fade: gone now
+	var next := _music_out
+	_music_out = _music                # the album playing fades out quickly
+	_music = next
+	_music_out.rate = -1.0 / ALBUM_FADE_OUT
+	_music.track = "menu"
+	_music.player.stream = s
+	_music.level = 0.0
+	_music.rate = 1.0 / ALBUM_FADE_IN
+	_apply_music_volume()
+	_music.player.play(0.0)
+	_apply_music_pause()
 
 
 func set_volumes(sfx: float, mus: float) -> void:

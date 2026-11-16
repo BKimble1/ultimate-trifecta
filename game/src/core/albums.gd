@@ -7,15 +7,16 @@ extends RefCounted
 ## everyone.  Each loops seamlessly (tools/make_loop.py: the loop end whose
 ## lead-in matches the loop start, crossfaded).
 ##   id, title, artist line, audio stream (assets/audio/<stream>.ogg),
-##   cover picture ("" draws the game's own disc art), colour
+##   cover picture for the sleeve ("" draws the game's own sleeve), and two
+##   colours for the disc's gradient (from the cover)
 const LIST := [
-	{"id": "dorm_nights", "title": "Dorm Nights", "by": "Ultimate Trifecta", "stream": "music_menu", "cover": "", "col": Color("3fd0b8")},
+	{"id": "dorm_nights", "title": "Dorm Nights", "by": "Ultimate Trifecta", "stream": "music_menu", "cover": "", "col": Color("3fd0b8"), "col2": Color("1d2a6e")},
 	{"id": "lobby_pluck", "title": "Lobby Pluck", "by": "Lobby Records", "stream": "album_pluck",
-		"cover": "res://assets/albums/lobby_pluck.png", "col": Color("e0a25a")},
+		"cover": "res://assets/albums/lobby_pluck.png", "col": Color("f0b36a"), "col2": Color("5a3418")},
 	{"id": "cozy_christmas", "title": "Cozy Christmas Lobby", "by": "Lobby Records", "stream": "album_cozy",
-		"cover": "res://assets/albums/cozy_christmas.png", "col": Color("ff7a8a")},
+		"cover": "res://assets/albums/cozy_christmas.png", "col": Color("ffd34d"), "col2": Color("e8508a")},
 	{"id": "stardust", "title": "Stardust Reverie", "by": "Lobby Records", "stream": "album_stardust",
-		"cover": "res://assets/albums/stardust.png", "col": Color("ffc35a")},
+		"cover": "res://assets/albums/stardust.png", "col": Color("ffb35c"), "col2": Color("6fd6e0")},
 ]
 const DEFAULT := "dorm_nights"
 
