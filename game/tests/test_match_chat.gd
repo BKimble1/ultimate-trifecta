@@ -24,24 +24,26 @@ func test_round_chat_feed_drawer_and_input_ownership() -> void:
 	t.check(hud.chat != null, "party rounds have chat")
 	await rig.frames(4)
 	hud._reserve_touch_regions()
-	var reserved: Array = hud.chat.reserved()
-	t.check(not reserved.is_empty(), "the chat button is reserved from the stick and camera")
+	# (2.2 build 16) Chat and Emote sit under the minimap (MatchActions)
+	var reserved: Array = hud.actions.reserved()
+	t.check(hud.actions.chat_btn != null and reserved.has(hud.actions.chat_btn.get_global_rect()), "the chat button is reserved from the stick and camera")
+	t.check(hud.actions.chat_btn.get_global_rect().position.y >= hud.minimap.get_global_rect().end.y, "under the minimap")
 	# a runner teammate's phrase reaches the runner host's feed; the Night Watch's doesn't
 	c0.social.chat.send_quick(24, QuickChat.Channel.TEAM)
 	c1.social.chat.send_quick(26, QuickChat.Channel.TEAM)
 	await rig.frames(12)
 	var feed_texts: Array = []
-	for n in hud.chat.feed.get_children():
+	for n in hud.feed_box.get_children():
 		for l in n.find_children("*", "Label", true, false):
 			feed_texts.append((l as Label).text)
-	t.check(feed_texts.any(func(x: String) -> bool: return x.ends_with("Night Watch nearby!")), "a teammate's message shows in the feed (%s)" % str(feed_texts))
+	t.check(feed_texts.any(func(x: String) -> bool: return x.ends_with("Night Watch nearby!")), "a teammate's message shows in the event feed (%s)" % str(feed_texts))
 	t.check(not feed_texts.any(func(x: String) -> bool: return x.contains("Runner spotted!")), "the other team's message never reaches you")
-	t.check(hud.chat.feed.get_child_count() <= MatchChat.FEED_MAX, "the feed stays short")
-	# the feed sits top right, clear of the screen centre and the thumbs
-	var vs := hud.root.get_viewport_rect().size
-	var fr := hud.chat.feed.get_global_rect()
-	t.check(fr.end.x <= vs.x and fr.end.x >= vs.x - 40.0, "feed against the right edge (%s in %s)" % [str(fr), str(vs)])
-	t.check(fr.position.y >= hud.pause_btn.get_global_rect().end.y, "below the top-right controls, never over the centre")
+	t.check(hud.feed_box.get_child_count() <= 3, "the feed stays short")
+	# (the feed is the round's own event feed, laid out on the left by the HUD)
+	# a long message is cut short
+	var pill := hud.feed_chat("Someone", "this message is far too long to fit on one line of the feed at all")
+	var words := (pill.find_children("*", "Label", true, false).back() as Label).text
+	t.check(words.length() <= MatchHUD.CHAT_MAX and words.ends_with("…"), "long messages are cut short (%s)" % words)
 	# the drawer owns input: movement, tag and jump are not read
 	mc.input_source = Callable()
 	hud.chat.open_drawer()

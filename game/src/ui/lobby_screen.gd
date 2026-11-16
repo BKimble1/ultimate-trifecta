@@ -479,6 +479,43 @@ func _newest_seq() -> int:
 	return n
 
 
+var _notes_box: VBoxContainer
+
+
+## (2.2 build 16) A chat line on the left of the room: who said it, the
+## words cut short when long, gone after 5 s (at most three).
+func _chat_note(who: String, text: String, mine: bool) -> void:
+	if not is_instance_valid(_notes_box):
+		_notes_box = UIKit.vbox(4)
+		_notes_box.name = "ChatNotes"
+		_notes_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_notes_box)
+	var vs := get_viewport().get_visible_rect().size
+	var sm := UIKit.safe_margins(get_viewport())
+	_notes_box.position = Vector2(sm.position.x + 24.0, vs.y * 0.42)
+	var t := text.strip_edges()
+	if t.length() > MatchHUD.CHAT_MAX:
+		t = t.substr(0, MatchHUD.CHAT_MAX - 1).strip_edges() + "…"
+	var pill := PanelContainer.new()
+	pill.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.NAVY, 0.7), 14, 1, Color(UIKit.AMBER, 0.55), 8))
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var h := UIKit.hbox(6)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(Icons.IconRect.new("chat", UIKit.TEAL if mine else UIKit.AMBER, 18))
+	h.add_child(UIKit.label(who + ":", 18, UIKit.TEAL if mine else UIKit.AMBER, true))
+	h.add_child(UIKit.label(t, 18, UIKit.IVORY, false))
+	pill.add_child(h)
+	_notes_box.add_child(pill)
+	while _notes_box.get_child_count() > 3:
+		var old := _notes_box.get_child(0)
+		_notes_box.remove_child(old)
+		old.queue_free()
+	var tw := pill.create_tween()
+	tw.tween_interval(4.4)
+	tw.tween_property(pill, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(pill.queue_free)
+
+
 ## New messages: a bubble over the sender's head (the drawer has the full
 ## conversation) and the unread badge.
 func _on_chat() -> void:
@@ -487,10 +524,12 @@ func _on_chat() -> void:
 	for m in session.social.chat.visible([QuickChat.Channel.PARTY, QuickChat.Channel.ALL]):
 		if int(m["seq"]) > _bubbled:
 			_bubbled = int(m["seq"])
-			# (2.2 build 16) chat stays in the chat drawer: no bubble over
-			# the runner in the room
+			# (2.2 build 16) no bubble over the runner in the room: a short
+			# line on the left, like the round's feed (the drawer has it all)
 			if not bool(m["mine"]):
 				Sfx.play("pop")
+			if not is_instance_valid(_drawer):
+				_chat_note("You" if bool(m["mine"]) else session.social.chat.sender_name(m), String(m["text"]), bool(m["mine"]))
 	_paint_chat_badge()
 
 

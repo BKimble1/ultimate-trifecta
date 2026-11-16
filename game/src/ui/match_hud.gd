@@ -27,6 +27,7 @@ var overlay_sub: Label
 var spectate_lbl: Label
 var draw_layer: Control
 var minimap: Control
+var actions: MatchActions
 var pause_btn: Button
 var pause_panel: PanelContainer
 var info: Dictionary = {}
@@ -287,6 +288,11 @@ func setup(controller: MatchController) -> void:
 	_build_pause()
 	_build_reveal()
 	chat = MatchChat.attach(self)   # (V6) party rounds: Quick Chat + drawer
+	# (2.2 build 16) Emote (and Chat) under the minimap
+	actions = MatchActions.new()
+	actions.name = "MatchActions"
+	actions.hud = self
+	root.add_child(actions)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 
@@ -839,6 +845,8 @@ func _reserve_touch_regions() -> void:
 	var rects: Array[Rect2] = [pause_btn.get_global_rect(), minimap.get_global_rect()]
 	if chat != null:
 		rects.append_array(chat.reserved())
+	if actions != null and is_instance_valid(actions):
+		rects.append_array(actions.reserved())
 	mc.touch.set_reserved(rects)
 
 
@@ -931,6 +939,39 @@ func feed(text: String, role: int) -> PanelContainer:
 	var l := UIKit.label(text, 18, col, true)
 	pill.add_child(l)
 	pill.set_meta("t", 4.0)
+	feed_box.add_child(pill)
+	while feed_box.get_child_count() > 3:
+		var old_c := feed_box.get_child(0)
+		feed_box.remove_child(old_c)
+		old_c.queue_free()
+	return pill
+
+
+## (2.2 build 16) A chat line in the feed: who said it in gold (you in
+## teal), the words in ivory, cut short when long; the pill has a gold edge
+## so it reads apart from the round's events.
+const CHAT_MAX := 42
+
+
+func feed_chat(who: String, text: String, mine: bool = false) -> PanelContainer:
+	var t := text.strip_edges()
+	if t.length() > CHAT_MAX:
+		t = t.substr(0, CHAT_MAX - 1).strip_edges() + "…"
+	var pill := PanelContainer.new()
+	var sb := UIKit.box(Color(UIKit.NAVY, 0.62), 14, 1, Color(UIKit.AMBER, 0.55), 6)
+	pill.add_theme_stylebox_override("panel", sb)
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var h := UIKit.hbox(6)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(Icons.IconRect.new("chat", UIKit.TEAL if mine else UIKit.AMBER, 18))
+	var n := UIKit.label(who + ":", 18, UIKit.TEAL if mine else UIKit.AMBER, true)
+	n.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(n)
+	var l := UIKit.label(t, 18, UIKit.IVORY, false)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(l)
+	pill.add_child(h)
+	pill.set_meta("t", 5.0)
 	feed_box.add_child(pill)
 	while feed_box.get_child_count() > 3:
 		var old_c := feed_box.get_child(0)
