@@ -392,6 +392,13 @@ func test_friends_keyboard_keeps_field_and_join_reachable() -> void:
 
 
 # ------------------------------------------------------------- Settings
+static func _tab_of(title: String) -> int:
+	for i in SettingsScreen.TABS.size():
+		if title in SettingsScreen.TABS[i][1]:
+			return i
+	return 0
+
+
 func test_settings_sections_reachable_aligned_and_whole() -> void:
 	await _begin()
 	for d in _devices():
@@ -407,13 +414,17 @@ func test_settings_sections_reachable_aligned_and_whole() -> void:
 		t.check(back != null and not sc.is_ancestor_of(back) and _fully_shown(back) and _reaches(back), "%s: Back in a header that doesn't scroll" % tag)
 		t.check(back != null and back.get_global_rect().end.y <= list.position.y + 0.5, "%s: the header sits above the list" % tag)
 		t.eq(sc.scroll_vertical, 0, "%s: opens at the top" % tag)
-		# the first view starts with the profile rows and reaches Controls
+		# (2.2 build 16) tabs: each section is on one; its tab shows it
+		s.show_tab(_tab_of("Controls"))
+		await _frames(2)
 		var ctl_top := (s.sections["Controls"] as Control).get_global_rect().position.y
-		t.check(ctl_top < list.end.y - 40.0, "%s: Controls starts in the first view (%.0f < %.0f)" % [tag, ctl_top, list.end.y])
+		t.check(ctl_top < list.end.y - 40.0, "%s: Controls starts in the first view of its tab (%.0f < %.0f)" % [tag, ctl_top, list.end.y])
 		for title in SECTIONS:
 			t.check(s.sections.has(title), "%s: section %s exists" % [tag, title])
 			if not s.sections.has(title):
 				continue
+			s.show_tab(_tab_of(title))
+			await _frames(2)
 			var card: Control = s.sections[title]
 			sc.scroll_vertical = int(card.get_global_rect().position.y - list.position.y + sc.scroll_vertical)
 			await _frames(2)
@@ -438,6 +449,8 @@ func test_settings_sections_reachable_aligned_and_whole() -> void:
 		var lefts: Array = []
 		var rights: Array = []
 		for k in ["sensitivity", "sfx", "music", "stick_mode", "quality"]:
+			s.show_tab({"sensitivity": 1, "stick_mode": 1, "sfx": 2, "music": 2, "quality": 3}[k])
+			await _frames(2)
 			var c: Control = s._rows[k]
 			var r := c.get_global_rect()
 			var row := c.get_parent() as Control
@@ -450,6 +463,8 @@ func test_settings_sections_reachable_aligned_and_whole() -> void:
 		# the stick choices: both options whole and inside the Controls card;
 		# Pass 9 removed the Sprint choice (no sprint meter)
 		t.check(not s._rows.has("sprint_mode"), "%s: no Sprint setting" % tag)
+		s.show_tab(_tab_of("Controls"))
+		await _frames(2)
 		for b in (s._rows["stick_mode"] as Control).get_children():
 			t.check(UIKit.v7_button_text_fits(b as Button), "%s: stick '%s' whole" % [tag, (b as Button).text])
 			t.check((s.sections["Controls"] as Control).get_global_rect().grow(0.5).encloses((b as Control).get_global_rect()), "%s: stick '%s' inside Controls" % [tag, (b as Button).text])
@@ -462,7 +477,7 @@ func test_settings_sections_reachable_aligned_and_whole() -> void:
 ## choice) and changes no setting; a tap still changes one.
 func test_settings_scroll_by_finger_keeps_values() -> void:
 	await _begin()
-	await _size(Vector2i(2532, 1170))
+	await _size(Vector2i(1334, 750))   # (2.2 build 16) a small phone: one tab overflows
 	Save.set_setting("stick_mode", "dynamic")
 	Save.set_setting("music", 0.6)
 	var keys := ["sensitivity", "invert_y", "reduced_motion", "sfx", "music", "quality", "stick_mode", "haptics"]
@@ -470,11 +485,15 @@ func test_settings_scroll_by_finger_keeps_values() -> void:
 	for k in keys:
 		before[k] = Save.get_setting(k, null)
 	var s: SettingsScreen = await _show(SettingsScreen.new())
+	s.show_tab(1)   # (2.2 build 16) Controls: the longest tab
+	await _frames(2)
 	var sc := s._sc
 	var list := sc.get_global_rect()
 	var from := Vector2(list.position.x + 60.0, list.end.y - 40.0)
 	await _swipe(from, Vector2(0, -360))
-	t.check(sc.scroll_vertical > 150, "a swipe scrolled Settings (%d)" % sc.scroll_vertical)
+	# (2.2 build 16) with tabs a page may fit whole: then nothing scrolls
+	var room := int(sc.get_v_scroll_bar().max_value - sc.size.y)
+	t.check(sc.scroll_vertical > mini(150, room - 2) or room <= 2, "a swipe scrolled Settings (%d of %d)" % [sc.scroll_vertical, room])
 	# swipe again starting on whatever is there now (sliders and choices included)
 	for x in [0.55, 0.8]:
 		var y0 := sc.scroll_vertical

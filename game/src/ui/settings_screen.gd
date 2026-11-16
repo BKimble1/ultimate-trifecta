@@ -8,6 +8,9 @@ extends Screen
 ## column, so sliders, switches and choices line up; a choice whose options
 ## don't fit beside its label moves under it instead of trimming them.
 ## Everything saves immediately, with the same keys and values as before.
+## (2.2 build 16) Tabs over the list: Account, Controls, Audio, Display,
+## About; each shows its own sections.  Audio has Master, Music and Sound
+## effects volumes, a test sound and the lobby music (Albums in the Locker).
 
 const MAX_W := 1500.0
 const ACTION_W := 232.0
@@ -19,6 +22,17 @@ var _body: VBoxContainer
 var _label_w := 300.0
 ## section title -> its card (tests, captures)
 var sections: Dictionary = {}
+const TABS := [
+	["Account", ["Profile", "Delete game profile"]],
+	["Controls", ["Controls", "Camera & comfort"]],
+	["Audio", ["Sound"]],
+	["Display", ["Graphics", "Diagnostics"]],
+	["About", ["Privacy", "How to play", "Credits & licenses"]],
+]
+## the tab Settings opens on (once; then the Account tab again)
+static var open_tab := 0
+var tab := 0
+var tabs_bar: Control
 
 
 func build() -> void:
@@ -32,6 +46,15 @@ func build() -> void:
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
 	move_child(dim, 0)
+	var tab_names: Array = []
+	for tdef in TABS:
+		tab_names.append(String(tdef[0]))
+	tab = clampi(open_tab, 0, TABS.size() - 1)
+	open_tab = 0
+	tabs_bar = UIKit.segmented(tab_names, tab, show_tab, UIKit.TEAL)
+	tabs_bar.name = "Tabs"
+	tabs_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	content.add_child(tabs_bar)
 	_sc = UIKit.scroll_area()
 	_sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_sc.follow_focus = true
@@ -81,8 +104,17 @@ func build() -> void:
 	Controls.controller_connection_changed.connect(_on_controller.bind(ctl))
 
 	var snd := _section("Sound")
-	_slider(snd, "Sound effects", "sfx", 0.0, 1.0, 0.05, "%d%%")
+	_slider(snd, "Master volume", "master", 0.0, 1.0, 0.05, "%d%%")
 	_slider(snd, "Music", "music", 0.0, 1.0, 0.05, "%d%%")
+	_slider(snd, "Sound effects", "sfx", 0.0, 1.0, 0.05, "%d%%")
+	var test_b := _action("Play a test sound")
+	test_b.pressed.connect(func() -> void: Sfx.play("pickup"))
+	_row(snd, "Test", test_b, "Plays a sound at the current volumes.")
+	var albums := _action("Open Albums")
+	albums.pressed.connect(func() -> void:
+		CreatorScreen.open_category = "albums"
+		NavShell.open("locker"))
+	_row(snd, "Lobby music", albums, "Now playing: %s. Pick another album in the Locker." % Albums.title_of(Albums.current()))
 
 	var cam := _section("Camera & comfort")
 	_check(cam, "Invert camera up/down", "invert_y", false)
@@ -123,8 +155,19 @@ func build() -> void:
 	UIKit.face_of(del).queue_redraw()
 	del.pressed.connect(_confirm_delete)
 	_row(del_s, "Your profile", del, "Removes your name, runner, progress, Coins and items. You'll be asked to confirm.")
+	show_tab(tab)
 	focus_first(first)
 	_open_at_top(_sc)
+
+
+## Shows one tab's sections.
+func show_tab(i: int) -> void:
+	tab = clampi(i, 0, TABS.size() - 1)
+	var want: Array = TABS[tab][1]
+	for title in sections:
+		(sections[title] as Control).visible = title in want
+	if is_instance_valid(_sc):
+		_sc.scroll_vertical = 0
 
 
 ## The list is as wide as the screen allows, up to MAX_W (rows stay

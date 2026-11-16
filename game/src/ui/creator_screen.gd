@@ -43,7 +43,11 @@ const TABS := [
 	["shoes", "Shoes", ["shoes"]],
 	["move", "Emotes", ["emote"]],
 	["profile", "Profile", ["card", "badge"]],
+	# (2.2 build 16) lobby music: discs to put on
+	["albums", "Albums", []],
 ]
+## (2.2 build 16) open the Locker on this category once (Settings › Audio)
+static var open_category := ""
 const FIELD_TITLES := {
 	"outfit": "Outfit", "pattern": "Pattern", "color": "Main color", "trim": "Trim", "skin": "Skin tone",
 	"face": "Eyes", "brows": "Brows", "marks": "Cheeks", "hair": "Hairstyle", "hair_color": "Hair color",
@@ -195,6 +199,9 @@ func build() -> void:
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(body)
 	pvb.add_child(_footer())
+	if open_category != "" and tab_btns.has(open_category):
+		tab = open_category
+	open_category = ""
 	focus_first(tab_btns[tab])
 	back_action = _back if not first_run else func() -> void: pass
 	_build_tab()
@@ -429,6 +436,10 @@ func _build_tab() -> void:
 	var fields: Array = _tab_fields(tab)
 	var gw := grid_width()
 	_picked.clear()
+	_discs.clear()
+	if tab == "albums":
+		_build_albums(gw)
+		return
 	for f in fields:
 		# section header: the field and, for colours, the chosen one's name
 		var hdr := UIKit.hbox(10)
@@ -480,6 +491,34 @@ func _build_tab() -> void:
 
 
 var _restore_at := -1
+var _discs: Array = []
+
+
+## (2.2 build 16) Albums: every lobby album as a disc in its sleeve; a tap
+## puts it on (saved at once, it plays now).  Free for everyone.
+func _build_albums(gw: float) -> void:
+	var intro := UIKit.styled("Pick the music for your lobby. It plays on home, in your party and in the menus.", "caption", UIKit.IVORY_MUTED)
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro.custom_minimum_size.x = gw * 0.95
+	body.add_child(intro)
+	var g := UIKit.AutoGrid.new(260.0, 1, 3, CARD_GAP)
+	g.name = "Grid_albums"
+	var cols := UIKit.columns_for(gw, g.min_cell, CARD_GAP, 1, 3)
+	var w := UIKit.cell_width(gw, cols, CARD_GAP)
+	for a in Albums.LIST:
+		var d := AlbumDisc.new()
+		d.setup(String(a["id"]), w)
+		var id := String(a["id"])
+		d.pressed.connect(func() -> void:
+			Albums.choose(id)
+			Sfx.play("click")
+			for x in _discs:
+				(x as AlbumDisc).refresh())
+		g.add_child(d)
+		_discs.append(d)
+	g.columns = cols
+	grids.append(g)
+	body.add_child(g)
 
 
 func _restore_scroll() -> void:

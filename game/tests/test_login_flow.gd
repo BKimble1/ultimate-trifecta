@@ -120,3 +120,20 @@ func test_pass_track_maximizes() -> void:
 	await t.get_tree().process_frame
 	stage.queue_free()
 	App.stage = null
+
+
+## (2.2 build 16) Albums: every album has its music file and cover; choosing
+## one saves it and the menu music plays it.
+func test_albums_play_in_the_menus() -> void:
+	var keep: Variant = Save.get_setting("album", Albums.DEFAULT)
+	for a in Albums.LIST:
+		t.check(ResourceLoader.exists("res://assets/audio/%s.ogg" % String(a["stream"])), "%s has its music" % a["title"])
+		if String(a["cover"]) != "":
+			t.check(Albums.cover(String(a["id"])) != null, "%s has its cover" % a["title"])
+	t.eq(Albums.current(), String(keep), "the saved album")
+	Albums.choose("stardust")
+	t.eq(Albums.current(), "stardust", "chosen")
+	t.eq(Albums.stream_key(), "album_stardust", "the menu music is its file")
+	Albums.choose("not_an_album")
+	t.eq(Albums.current(), "stardust", "an unknown id changes nothing")
+	Save.set_setting("album", keep)

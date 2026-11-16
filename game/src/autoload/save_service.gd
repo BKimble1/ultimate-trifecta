@@ -40,7 +40,7 @@ func default_profile() -> Dictionary:
 		"version": VERSION,
 		"uid": uid,
 		"name": generated_name(rng),
-		"settings": {"sensitivity": 1.0, "invert_y": false, "reduced_motion": false, "sfx": 0.9, "music": 0.6,
+		"settings": {"sensitivity": 1.0, "invert_y": false, "reduced_motion": false, "sfx": 0.9, "music": 0.6, "master": 1.0,
 			"quality": 1, "role_pref": "any",
 			"stick_mode": "dynamic", "button_size": 1.0, "touch_layout": "standard", "haptics": true},
 		"cosmetic": Cosmetics.DEFAULT.duplicate(),
@@ -236,6 +236,11 @@ func _apply_settings() -> void:
 	Controls.sensitivity = float(s["sensitivity"])
 	Controls.invert_y = bool(s["invert_y"])
 	Sfx.set_volumes(float(s["sfx"]), float(s["music"]))
+	# (2.2 build 16) the master volume scales everything (the Master bus)
+	var mi := AudioServer.get_bus_index("Master")
+	var mv := float(s.get("master", 1.0))
+	AudioServer.set_bus_volume_db(mi, linear_to_db(maxf(mv, 0.0001)))
+	AudioServer.set_bus_mute(mi, mv <= 0.001)
 	QualityPreset.apply(int(s.get("quality", 1)))
 
 

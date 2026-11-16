@@ -217,7 +217,8 @@ func music(name: String) -> void:
 		_fade_out_previous()
 		_apply_music_volume()
 		return
-	var s := _stream("music_" + name)
+	# (2.2 build 16) the menu music is the album chosen in the Locker
+	var s := _stream(Albums.stream_key() if name == "menu" else "music_" + name)
 	if s == null:
 		stop_music()
 		return
@@ -226,7 +227,8 @@ func music(name: String) -> void:
 	# a blend between two gridded tracks (lobby -> round): on the beat, the
 	# outgoing one filtered out
 	var blend := MUSIC_GRID.has(name) and MUSIC_GRID.has(_music.track) and _music.sounding() \
-			and not _held() and not _suspended and music_volume > 0.001
+			and not _held() and not _suspended and music_volume > 0.001 \
+			and (Albums.current() == Albums.DEFAULT or (name != "menu" and _music.track != "menu"))
 	var from := 0.0
 	if blend:
 		from = blend_start(_music.player.get_playback_position(), MUSIC_GRID[_music.track], MUSIC_GRID[name])
@@ -292,6 +294,14 @@ func results_screen_shown() -> void:
 
 func has_results_bed() -> bool:
 	return _stream("music_" + RESULTS_BED) != null
+
+
+## (2.2 build 16) a new album was chosen: the menu music starts it now.
+func restart_menu_music() -> void:
+	if _music == null or _music.track != "menu":
+		return
+	_music.track = ""
+	music("menu")
 
 
 func set_volumes(sfx: float, mus: float) -> void:
