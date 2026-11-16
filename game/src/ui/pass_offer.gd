@@ -98,7 +98,10 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	var xs := [-1.15, 0.0, 1.15]
 	var zs := [0.25, -0.2, 0.25]
 	for i in SHOWCASE.size():
-		var look := Cosmetics.sanitize(Cosmetics.DEFAULT.duplicate())
+		# shown as the Shop shows outfits: no hat, high-tops
+		var look := Cosmetics.DEFAULT.duplicate()
+		look["hat"] = "none"
+		look["shoes"] = "sneakers"
 		var s := Catalogue.split(String(SHOWCASE[i][0]))
 		look[String(s[0])] = String(s[1])
 		stage.show_character(TC.Role.RUNNER, Cosmetics.sanitize(look), Vector3(xs[i], 0, zs[i]), PI - float(xs[i]) * 0.28)
