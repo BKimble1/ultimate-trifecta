@@ -1173,6 +1173,18 @@ func _reconcile(s: Dictionary) -> void:
 		_smooth = Vector3.ZERO
 
 
+## (2.2 build 17) On the host's own screen, a cloaked opponent is out of
+## sight (views, minimap, spectating) unless right beside the host's player:
+## the same 2.5 m the network keeps for other devices.
+func _cloak_hidden(p: SimPlayer) -> bool:
+	if p.cloak_t <= 0.0 or spectator or not roster.has(local_slot) or p.id == local_slot:
+		return false
+	if int(roster[local_slot]["role"]) == p.role:
+		return false
+	var me := sim.player(local_slot)
+	return me == null or me.pos().distance_to(p.pos()) > 2.5
+
+
 func _make_pred_cart(cart_id: int) -> void:
 	if pred_cart != null:
 		pred_cart.body.queue_free()
@@ -1196,7 +1208,7 @@ func _player_rs(slot: int) -> Dictionary:
 			"on_floor": p.on_floor, "diving": p.diving, "fast": p.fast, "tag_phase": p.tag_phase,
 			"protect": p.protect, "bump_protect": p.bump_protect, "spotted": p.spotted > 0.0,
 			"cart_id": p.cart_id, "steer": sim.carts[p.cart_id].steer_s if p.cart_id >= 0 else 0.0,
-			"emote": p.emote, "emote_t": p.emote_t, "stamps": p.stamps, "visible": true, "cloak": p.cloak_t > 0.0,
+			"emote": p.emote, "emote_t": p.emote_t, "stamps": p.stamps, "visible": not _cloak_hidden(p), "cloak": p.cloak_t > 0.0,
 			"bot": p.is_bot or p.bot_takeover, "connected": p.connected, "impact": p.splash_impact,
 		}
 	if slot == local_slot and pred != null and _last_snap.has("players") and (_last_snap["players"] as Dictionary).has(slot):

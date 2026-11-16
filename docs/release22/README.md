@@ -639,3 +639,40 @@ order.  After them, submitting needs no further code change.
 | Settings › Audio | `media/v26_settings_audio.jpg` |
 | The Season Pass, full screen | `media/v26_pass_full.jpg` |
 | A rift in a round, and on the map | `media/v26_rift.jpg`, `media/v26_rift_map.jpg` |
+
+## 33. Seventh pass (build 17): what changed
+
+From the owner's notes on build 16:
+
+- **Night Watch leave with the runners** in every round, the tutorial
+  included (it used to hold them 30 s longer).
+- **Albums change in one tap.**  The old song fades out in 0.6 s while the
+  new one fades in over 0.4 s; a second song never plays over the first
+  (`AudioService.restart_menu_music`: the outgoing voice is cleared before
+  the swap).  The discs are a gradient in each album's two colours with a
+  turning sheen, not the cover art (`Albums.LIST` `col`/`col2`).
+- **Locker › Emotes:** the five slots read as a row of numbered sockets; the
+  slot being chosen is marked "Choosing", the emote cards show which one is
+  in it, and the footer says "Slot N · name".
+- **Round buttons apart:** Emote sits under the minimap's right edge and
+  opens a wheel of your five (tap the middle to close); Chat is a round
+  button in the bottom-left corner.
+- **Chat sheet** in the style of messaging apps: a coloured header badge, a
+  round close button, messages as bubbles (yours on the right), a pill text
+  field and a Send button, and an empty state.
+- **Daily present, every player:** the service keeps one claim per player per
+  day (`/v1/wallet/daily`; a service test claims for two players).  On
+  launch the game now waits a few seconds for the wallet after sign-in
+  before deciding, and if the wallet arrives later it greets on home then
+  (`LoginFlow.wallet_changed`), so a slow sign-in no longer skips today's
+  present.
+- **Rifts are rarer and look better:** at most two at once; each appears
+  20–70 s into the round at a random spot, stays 45–75 s and fades if
+  nobody uses it, and the next opens 50–110 s after one closes.  The portal
+  is a deeper swirl: two nebula layers, specks falling in, a bright eye, a
+  crackling rim shifting cyan to pink and a soft glow.
+- **Invisibility Cloak** (new power-up, an eye hologram): for 6 s the Night
+  Watch can't see you and their devices aren't sent where you are unless
+  they are within 2.5 m; bots don't notice you beyond 2 m; your team sees
+  you as a faint ghost.  A tag that lands still counts.
+- Protocol 14: build 16 can't join build 17 parties.

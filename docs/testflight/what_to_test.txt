@@ -1,11 +1,11 @@
-2.2 (16): music albums, an emote loadout, rift portals, a useful Squeaky Duck, carts that tag, Settings tabs and many fixes. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Every phone in a party needs build 16. Tell us your iPhone or iPad model:
+2.2 (17): the Invisibility Cloak, rarer and nicer rift portals, the Emote wheel, a new chat sheet, and fixes. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Every phone in a party needs build 17. Tell us your iPhone or iPad model:
 
-- Locker › Music: tap a disc to change the lobby music (four albums). It should loop without a gap.
-- Locker › Emotes: pick a slot, then an emote. The lobby Emote button and the round's Emote button (under the map) show your five; keys 1-5 on a keyboard.
-- Rounds: rifts (purple swirls, also on the map) send you across campus and close; a new one opens later. Power-ups come back at a new spot. Toss a Squeaky Duck near the Night Watch: they trip and can't tag for a moment.
-- Night Watch: carts are as fast on grass; ramming a runner tags them and sends them flying.
-- Chat: in a party, chat lines appear on the left (no bubbles over heads); in rounds, Chat is under the map.
-- Season Pass: the button at the top right of the pass shows every tier full screen. Shop › Season 1 is now the pass poster.
-- Settings has tabs; Audio has Master, Music and Sound effects.
-- Fixes to check: no word over emotes; your runner stands centred on the results screen and on the rug (feet not in it); after Walk, your runner turns back smoothly; the posters' confetti moves.
-- Still check: one runner on home after Game Center signs in; the daily present (a preview without the service); Quick Match and Friends invites.
+- Rounds: the Night Watch leave at the same moment as the runners.
+- Invisibility Cloak (eye hologram): pick it up and use it. For 6 s the Night Watch shouldn't see you unless they are right next to you.
+- Rifts: at most two, appearing a while into the round, at random spots; they fade if nobody uses them. Step in to cross campus.
+- Emote is under the map and opens a wheel of your five; Chat is the round button at the bottom left. Both should be easy to hit apart.
+- Chat: the sheet shows messages as bubbles; yours on the right.
+- Locker › Music: one tap changes the album; the old song fades out quickly and two songs never play together. Discs are colour gradients.
+- Locker › Emotes: pick a slot, then an emote; the slot and footer show what you chose.
+- Daily present: shows once a day on home, even if Game Center signs in slowly (a preview without the service).
+- Still check: albums loop; power-ups move after pickup; the Squeaky Duck dazes the Night Watch; carts tag; Settings › Audio; one runner on home.
