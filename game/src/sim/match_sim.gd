@@ -434,7 +434,17 @@ func _tick_state(p: SimPlayer, dt: float) -> void:
 				_set_state(p, TC.PState.ACTIVE)
 		TC.PState.CAPTURED:
 			p.penalty -= dt
+			if p.fling != Vector3.ZERO:
+				# the arc after a cart hit (no collision; lands on the ground)
+				var at := p.body.global_position + p.fling * dt
+				p.fling.y -= cfg.gravity * dt
+				var gy := CampusBuilder.grid_y(layout, at.x, at.z)
+				if at.y <= gy and p.fling.y < 0.0:
+					at.y = gy
+					p.fling = Vector3.ZERO
+				p.body.global_position = at
 			if p.penalty <= 0.0:
+				p.fling = Vector3.ZERO
 				_respawn(p)
 		TC.PState.SPLASHING:
 			if p.state_t >= cfg.splash_sequence_s:
@@ -849,7 +859,10 @@ func _check_recover(p: SimPlayer) -> void:
 
 
 # ---------------------------------------------------------------------------
-# Cart bumps: controlled stumble, capped knockback, no stun loops, never a capture
+# Cart bumps.  (2.2 build 16) A driven cart that hits a runner at speed
+# tags them, and they fly up and away (the capture's penalty runs while they
+# fly); a runner who can't be tagged (protected, home-safe) still only
+# stumbles, as before: capped knockback, no stun loops.
 # ---------------------------------------------------------------------------
 func _check_bumps() -> void:
 	for c in carts:
@@ -867,6 +880,16 @@ func _check_bumps() -> void:
 			if away.length() < 0.1:
 				away = c.right()
 			away = away.normalized()
+			var driver := player(c.occupant) if c.occupant >= 0 else null
+			if driver != null and driver.is_patrol() and r.is_taggable():
+				# mostly along the cart's heading, a little to the side it was hit on
+				var dir := (c.forward() * signf(c.speed) * 0.7 + away * 0.5).normalized()
+				_emit(TC.Ev.BUMP, r.id, c.id, 1, r.pos())
+				_capture(r, driver)
+				r.fling = dir * cfg.cart_hit_fling_speed + Vector3(0, cfg.cart_hit_fling_up, 0)
+				c.speed *= cfg.cart_bump_speed_keep
+				c.bump_cd[r.id] = cfg.bump_protect_s + 0.5
+				continue
 			var push := minf(absf(c.speed) * 0.55 + 2.0, cfg.cart_bump_knockback_max)
 			r.vel = away * push + Vector3(0, 3.2, 0)
 			r.body.velocity = r.vel

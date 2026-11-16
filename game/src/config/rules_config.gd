@@ -79,7 +79,12 @@ extends Resource
 @export_group("Carts")
 @export var cart_count: int = 2
 @export var cart_max_speed_road: float = 11.0
-@export var cart_max_speed_offroad: float = 6.5
+## (2.2 build 16) as fast on grass as on the paths (it was 6.5 m/s)
+@export var cart_max_speed_offroad: float = 11.0
+## (2.2 build 16) a cart that hits a runner at speed tags them and flings
+## them through the air (this fast, metres per second, up and away)
+@export var cart_hit_fling_speed: float = 13.0
+@export var cart_hit_fling_up: float = 9.0
 @export var cart_accel: float = 6.8
 @export var cart_brake: float = 16.0
 @export var cart_reverse_max: float = 4.0

@@ -61,6 +61,8 @@ var times_captured: int = 0
 var captures: int = 0
 var captured_ids: Dictionary = {}   # unique runner ids tagged (patrol)
 var penalty: float = 0.0
+## (2.2 build 16) flying after a cart hit (while CAPTURED): velocity, m/s
+var fling := Vector3.ZERO
 var splash_water: int = -1
 var splash_exit := Vector3.ZERO
 var splash_stamped := false

@@ -392,12 +392,13 @@ func test_cart_drive_exit_safely_and_lockout() -> void:
 	h.free_sim()
 
 
-func test_bump_stumbles_without_chain_or_capture() -> void:
-	var h := _h()
+## (2.2 build 16) a driven cart that hits a runner tags them and flings them
+## up and away; a runner who can't be tagged (protected) only stumbles, once.
+func _cart_run(h: Variant, protected: bool) -> Dictionary:
 	h.make([R, P], [0, 1, 2])
 	await h.release_patrol()
 	var c: SimCart = h.sim.carts[0]
-	# put the cart on the loop road heading east, runner ahead in its path
+	# the cart on the loop road heading east, the runner ahead in its path
 	c.body.global_position = h.on_ground(Vector2(-40, -58), 0.3)
 	c.yaw = -PI * 0.5
 	c.body.rotation.y = c.yaw
@@ -406,16 +407,34 @@ func test_bump_stumbles_without_chain_or_capture() -> void:
 	h.sim.player(1).state = TC.PState.IN_CART
 	Motor.set_body_enabled(h.sim.player(1).body, false)
 	h.place(0, h.on_ground(Vector2(-28, -58)))
+	if protected:
+		h.sim.player(0).protect = 30.0
 	h.cmd(1).drive = 1.0
-	var bumps := 0
+	var out := {"bumps": 0, "captures": 0, "peak": -INF, "start": h.sim.player(0).pos()}
 	for i in 160:
 		await h.step()
-		bumps += h.events_of(TC.Ev.BUMP).size()
-		if not h.events_of(TC.Ev.CAPTURE).is_empty():
-			t.check(false, "a bump must never capture")
-	t.check(bumps >= 1, "cart bump happened")
-	t.check(bumps <= 2, "no repeated stun loop (%d bumps)" % bumps)
-	t.check(h.sim.player(0).state != TC.PState.CAPTURED, "bump is not a capture")
+		out["bumps"] = int(out["bumps"]) + h.events_of(TC.Ev.BUMP).size()
+		out["captures"] = int(out["captures"]) + h.events_of(TC.Ev.CAPTURE).size()
+		out["peak"] = maxf(float(out["peak"]), h.sim.player(0).pos().y)
+	out["state"] = h.sim.player(0).state
+	out["end"] = h.sim.player(0).pos()
+	return out
+
+
+func test_cart_hit_tags_and_flings() -> void:
+	var h := _h()
+	var o: Dictionary = await _cart_run(h, false)
+	t.eq(int(o["captures"]), 1, "the hit is a tag (once)")
+	t.check(float(o["peak"]) > (o["start"] as Vector3).y + 2.0, "the runner flies up (peak %.1f m)" % float(o["peak"]))
+	t.check(((o["end"] as Vector3) - (o["start"] as Vector3)).length() > 6.0 or int(o["state"]) != TC.PState.CAPTURED, "and lands well away")
+	h.free_sim()
+
+
+func test_protected_runner_is_never_hit() -> void:
+	var h := _h()
+	var o: Dictionary = await _cart_run(h, true)
+	t.eq(int(o["captures"]), 0, "a protected runner (respawn, Pillow Shield) is never tagged by a cart")
+	t.check(int(o["bumps"]) <= 1, "nor stun-locked (%d bumps)" % int(o["bumps"]))
 	h.free_sim()
 
 
