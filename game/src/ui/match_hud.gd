@@ -406,7 +406,7 @@ func _build_pause() -> void:
 	_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP      # nothing reaches the round
 	_backdrop.visible = false
 	mroot.add_child(_backdrop)
-	pause_panel = UIKit.panel(Color(UIKit.SLATE, 0.98), UIKit.R_PANEL, 24)
+	pause_panel = UIKit.panel(Color(UIKit.SLATE, 0.98), UIKit.R_PANEL, 32)
 	pause_panel.visible = false
 	pause_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	mroot.add_child(pause_panel)
@@ -415,16 +415,16 @@ func _build_pause() -> void:
 	var bw := 440.0
 	var row_h := maxf(52.0, UIKit.touch_min())
 	# main view: title, status, the two useful quick settings, Resume, Leave
-	var v := UIKit.vbox(12)
+	var v := UIKit.vbox(16)
 	_pause_main = v
 	stack.add_child(v)
 	var online := mc != null and mc.session != null and mc.session.mode != NetSession.Mode.OFFLINE
 	v.add_child(UIKit.heading("Menu" if online else "Paused", 32))
-	_status_lbl = UIKit.label("Online match continues." if online else "The round is paused.", 18, UIKit.IVORY_MUTED)
+	_status_lbl = UIKit.label("Online match continues." if online else "The round is paused.", 20, UIKit.IVORY_MUTED)
 	v.add_child(_status_lbl)
 	# Pass 8: where you stand - the team goal, your progress or tags, and
 	# (party rounds after the first results) the series standing
-	_info_lbl = UIKit.label("", 18, UIKit.IVORY, false)
+	_info_lbl = UIKit.label("", 20, UIKit.IVORY, false)
 	_info_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_info_lbl.custom_minimum_size = Vector2(bw, 0)
 	v.add_child(_info_lbl)
@@ -1762,6 +1762,11 @@ class ObjectiveChips:
 
 	func _draw() -> void:
 		var y := 0.0
+		# (2.3) one soft card behind every row (V8 gave each row its own pill:
+		# four shapes stacked in the corner); the next action keeps its pill
+		if not hud.personal_rows.is_empty():
+			var card := UIKit.box(Color(UIKit.NAVY, 0.58), 20, 0, Color.WHITE, 0)
+			draw_style_box(card, Rect2(-8, -6, size.x + 16, wanted_height() + 12))
 		for r in hud.personal_rows:
 			var h := _row_h(r)
 			match String(r["type"]):
@@ -1778,7 +1783,8 @@ class ObjectiveChips:
 			y += h + GAP
 
 	func _bg(y: float, h: float, emph: bool, border: Color = UIKit.AMBER) -> void:
-		draw_style_box(UIKit.box(Color(UIKit.SLATE, 0.92) if emph else Color(UIKit.NAVY, 0.62), 999, 2 if emph else 0, border), Rect2(0, y, size.x, h))
+		if emph:
+			draw_style_box(UIKit.box(Color(UIKit.SLATE, 0.92), 999, 2, border), Rect2(0, y, size.x, h))
 
 	func _waters(y: float, h: float, r: Dictionary) -> void:
 		_bg(y, h, false)

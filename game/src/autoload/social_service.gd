@@ -20,6 +20,7 @@ signal auth_changed(ok: bool)
 signal invite_ready(transport: GameKitTransport)     # an accepted invite produced a match (we are a client)
 signal room_matched(transport: GameKitTransport)     # code/invite matchmaking produced a GKMatch
 signal room_failed(message: String)
+signal invite_joining                              # (2.3) an accepted invite is connecting
 ## friends: [{tid (teamPlayerID), gid (gamePlayerID), name, player (GKPlayer)}];
 ## error: "" or denied | restricted | signed_out | error
 signal friends_loaded(friends: Array, error: String)
@@ -215,10 +216,14 @@ func join_code_room(code: String) -> GameKitTransport:
 
 func _find_or_add() -> void:
 	var t := _pending_transport
-	if t == null or matchmaker == null or _room_request == null:
+	if t == null or matchmaker == null or _room_request == null or _invite_live:
 		return
+	_room_gen += 1
+	var gen := _room_gen
 	if not t.bound():
 		matchmaker.call("find_match", _room_request, func(m: Object, err: Variant) -> void:
+			if gen != _room_gen:
+				return   # (2.3) replaced by an in-game invite: not a failure
 			if err != null:
 				if t == _pending_transport:
 					room_failed.emit(error_text(err))
@@ -230,8 +235,64 @@ func _find_or_add() -> void:
 		_adding = true
 		matchmaker.call("add_players", t.gk_match, _room_request, func(_e: Variant) -> void:
 			_adding = false
-			if t == _pending_transport and t.peers().size() < 7:
+			if gen == _room_gen and t == _pending_transport and t.peers().size() < 7:
 				_find_or_add())
+
+
+# ---------------------------------------------------------------------------
+# 2.3: in-game invites (Game Center delivers them; no Apple sheet)
+# ---------------------------------------------------------------------------
+## GKInviteRecipientResponse as GodotApplePlugins maps it.
+const INVITE_ACCEPTED := 0
+const INVITE_DECLINED := 1
+## (player, response) for each friend invited from the game's own list.
+signal invite_answered(player: Object, response: int)
+## An in-game invite couldn't be sent (message for the player).
+signal invite_send_failed(message: String)
+var _room_gen := 0
+var _invite_live := false
+
+
+## Invites these Game Center friends (GKPlayer objects from load_friends)
+## to the party `t` hosts: Game Center sends each a notification, and their
+## answers arrive on invite_answered.  The code room keeps working: its
+## search pauses while the invite is out and resumes after.  False where
+## Game Center can't send it (signed out, no GameKit).
+func invite_players(t: GameKitTransport, code: String, players: Array) -> bool:
+	if not online_ready() or matchmaker == null or t == null:
+		return false
+	var picked: Array = players.filter(func(p: Variant) -> bool: return p is Object and is_instance_valid(p))
+	if picked.is_empty():
+		return false
+	var req: Object = ClassDB.instantiate("GKMatchRequest") if ClassDB.can_instantiate("GKMatchRequest") else null
+	if req == null:
+		return false
+	# no player group or attributes: those are for automatch, not invites
+	req.set("min_players", 2)
+	req.set("max_players", 8)
+	req.set("recipients", picked)
+	req.set("invite_message", "Join my Ultimate Trifecta party!")
+	req.set("recipient_response", func(p: Object, r: int) -> void:
+		invite_answered.emit.call_deferred(p, r))
+	_room_gen += 1          # the code room's open request ends quietly
+	_invite_live = true
+	matchmaker.call("cancel")
+	_adding = false
+	var done := func(err: Variant) -> void:
+		_invite_live = false
+		if err != null and error_code(err) != GKERR_CANCELLED:
+			invite_send_failed.emit(error_text(err))
+		_find_or_add()       # back to welcoming code joiners
+	if t.bound():
+		matchmaker.call("add_players", t.gk_match, req, func(err: Variant) -> void:
+			done.call_deferred(err))
+	else:
+		matchmaker.call("find_match", req, func(m: Object, err: Variant) -> void:
+			if m != null and err == null:
+				t.bind(m)
+				room_matched.emit.call_deferred(t)
+			done.call_deferred(err))
+	return true
 
 
 # ---------------------------------------------------------------------------
@@ -400,8 +461,23 @@ func invite_friends(t: GameKitTransport, code: String, recipients: Array = []) -
 
 
 func _on_invite_accepted(_player: Object, invite: Object) -> void:
-	# We were invited by a friend: join their room as a client.
+	# We were invited by a friend: join their room as a client.  (2.3)
+	# Straight into the party (no Apple sheet); the sheet only if that fails.
 	var t := GameKitTransport.new(false)
+	if matchmaker != null and matchmaker.has_method("match_for_invite"):
+		invite_joining.emit()
+		matchmaker.call("match_for_invite", invite, func(m: Object, err: Variant) -> void:
+			if m != null and err == null:
+				t.bind(m)
+				invite_ready.emit.call_deferred(t)
+			else:
+				_invite_sheet.call_deferred(invite, t))
+		return
+	_invite_sheet(invite, t)
+
+
+## Apple's invite sheet for an accepted invite (the fallback).
+func _invite_sheet(invite: Object, t: GameKitTransport) -> void:
 	var vc: Object = _static("GKMatchmakerViewController", "create_controller_from_invite", [invite])
 	if vc == null:
 		return
@@ -419,6 +495,7 @@ func _on_invite_accepted(_player: Object, invite: Object) -> void:
 const FRIENDS_ACCESS := ["not_determined", "restricted", "denied", "authorized"]
 ## GodotApplePlugins GKError.Code values for the friend-list errors.
 const GKERR_NOT_AUTHENTICATED := 14
+const GKERR_CANCELLED := 4
 const GKERR_FRIEND_LIST_RESTRICTED := 26
 const GKERR_FRIEND_LIST_DENIED := 27
 

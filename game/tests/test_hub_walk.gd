@@ -193,13 +193,16 @@ func test_bottom_bar_fits_with_navigation() -> void:
 		var l := _setup(rig)
 		await rig.frames(12)
 		var view := l.get_viewport().get_visible_rect()
+		# (2.3) the navigation lives in the top bar; Emote, Walk and Chat in the
+		# bottom bar: every one on screen, whole, and apart from the rest
 		var items: Array = []
-		for c in l.bottom_bar.get_children():
-			if c is NavShell:
-				for k in (c as NavShell).buttons:
-					items.append([String(k), (c as NavShell).buttons[k]])
-			elif c is Button and (c as Button).visible:
-				items.append([UIKit.face_of(c).caption if UIKit.face_of(c) != null else (c as Button).text, c])
+		for bar in [l.top_bar, l.bottom_bar]:
+			for c in (bar as Control).get_children():
+				if c is NavShell:
+					for k in (c as NavShell).buttons:
+						items.append([String(k), (c as NavShell).buttons[k]])
+				elif c is Button and (c as Button).visible:
+					items.append([UIKit.face_of(c).caption if UIKit.face_of(c) != null else (c as Button).text, c])
 		items.append(["primary", l.primary_btn])
 		t.check(items.size() >= 8, "%s: navigation, Emote, Walk, Chat and the primary action (%d)" % [str(sz), items.size()])
 		for i in items.size():

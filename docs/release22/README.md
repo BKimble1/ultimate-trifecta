@@ -250,3 +250,82 @@ screens use it, so every button changed together.
   leaderboards (they open on 1 Dec), the friend-request sheet. These need
   TestFlight testers; see `docs/testflight/what_to_test.txt`.
 
+
+---
+
+# Third pass: a professional UI, in-game invites, a clean launch
+
+Asked for after build 12: the UI still felt crowded and boxed in; the
+champion poster's edges glitched when the app opened; invites shouldn't need
+Apple's sheet ("in the game but tied to Game Center").
+
+## 15. Launch: home first, then the poster
+
+`--launch-probe` (src/dev/launch_probe.gd) saves every frame of the first
+seconds after launch. Build 12 opened the champion poster under the fading
+Idlery logo, before home was ever seen, and the poster painted a square
+gradient over its rounded frame, with rays and confetti spilling past the
+corners. Now:
+- home waits for the launch curtain to go (`BootCurtain.live`) and 0.9 s
+  more before the poster (`ChampionPromo.show_when_settled`);
+- the poster's gradient, rays and glow are cut to its rounded outline
+  (`Poster.shape`, `Geometry2D.intersect_polygons`), confetti stays inside
+  and fades at the ends, the gold frame is drawn last; fewer confetti, on
+  the art side only, so the words stay clean.
+
+| | |
+|---|---|
+| Launch frames, build 12 → this pass | `media/v23_launch_before.jpg`, `media/v23_launch_after.jpg` |
+| The poster | `media/v23_poster.jpg` |
+
+## 16. Invites in the game, through Game Center
+
+Every Game Center friend in the Friends panel has **Invite**; it works
+without the game service. `Social.invite_players` sends Game Center's own
+invitation (a `GKMatchRequest` with `recipients`, through `find_match` for a
+new party or `add_players` for the open one, no Apple sheet; no automatch
+group or attributes). The row then shows the answer (Invited ✓ → Joining… or
+Can't come; an unanswered invite lapses after 90 s) and a toast says who is
+joining. The invited friend taps Game Center's notification and lands in the
+party (`match_for_invite`, no sheet; Apple's sheet only if that fails), with
+no "leave your party?" question when they were alone at home. Apple's invite
+sheet stays in the panel only when the friends list can't be read.
+Tests: `test_gc_invites`.
+
+## 17. The UI pass
+
+The same few problems ran through every screen: top bars of six or seven
+controls, four button shapes on one screen, 9-11 pt captions, panels pressed
+against each other, and explanation text everywhere. The fixes start in the
+design system so every screen moves together:
+- `UIKit`: screen edges 28/16 units (were 20/12), panel padding 26, panel
+  radius 26 and card radius 20; a hairline edge on every card; chips with
+  real padding (18×8); captions 21 and overlines 18 (were 20/17); 5 units of
+  line spacing; titles and headlines at weight 800; **quiet buttons are soft
+  pills with a hairline edge** (they were dark boxes with a bright 2 px
+  outline: Idle/Run/Emote, Official rules, Restore, tabs...);
+  `UIKit.segmented` for one-of-many choices.
+- **Home**: navigation moves to the top left (Play · Locker · Shop · Season
+  Pass, as on the Locker, Shop and Season Pass), the account on the top
+  right (Coins, Rankings, Friends, Settings); the middle is the room and your
+  runner; Emote and Walk bottom left; the playlist tile (its icon on a
+  colour tile, name, one line, chevron) over PLAY, the same width. The party
+  code moved into the party list's header (tap to copy) and Share into
+  Friends; the empty seat is one teal "+ Invite friends"; the season card
+  left home (the Season Pass tab carries its dot).
+- **Playlists**: three tall tiles with a big icon on its own colour, the
+  name and one line; the chosen tile has the accent edge and a check badge.
+- **Rankings**: one season chip; the prize banner is just its headline,
+  countdown and rules (tap it for the poster); your stats as big-number
+  tiles; Season Points | Fastest Run and Everyone | Friends as segmented
+  pills; taller rows with a round rank badge; a one-line footer.
+- **Friends**: roomier panel, the code and Copy, Add friends and Join with a
+  code in the footer; rows say "Game Center friend" instead of "Status
+  unavailable" when the game service is off.
+- **Shop**: Idle | Run | Emote as one segmented pill.
+- **Match HUD**: one soft card behind the objective rows (each row had its
+  own pill); the next action keeps its gold-edged pill.
+- **Results, pause menu, dialogs**: more padding; a short dialog question
+  reads as a title.
+- **Join a party** (was "Play with Friends"): the wording matches a game
+  where home is already your party.

@@ -226,7 +226,7 @@ func test_sorting_and_honest_status() -> void:
 	await _frames(2)
 	t.eq(Friends.service, "unavailable", "the service answered 503")
 	for r in p.rows_in_order():
-		t.check((r as FriendsPanel.Row).status_l.text.begins_with("Status unavailable"), "unavailable: %s" % (r as FriendsPanel.Row).status_l.text)
+		t.check((r as FriendsPanel.Row).status_l.text.begins_with("Game Center friend"), "unavailable: %s" % (r as FriendsPanel.Row).status_l.text)
 		t.eq((r as FriendsPanel.Row).disc.status, "unavailable", "no dot while status is unavailable")
 		t.check(not (r as FriendsPanel.Row).action_btn.visible, "no service Invite without status")
 	t.check(p.service_lbl.is_visible_in_tree() and p.service_lbl.text.contains("unavailable"), "one restrained line says so")

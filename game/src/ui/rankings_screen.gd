@@ -30,48 +30,41 @@ func build() -> void:
 	TitleScreen.add_shades(self, 0.7, 0.6)
 	var h := header("Rankings")
 	h.add_child(UIKit.spacer_h())
-	var sn := UIKit.chip(Rankings.season_name(), Color(UIKit.AMBER, 0.2), UIKit.AMBER_HI, UIKit.T_LABEL)
+	# (2.3) one chip for the season: its name and the time left
+	var sn := UIKit.chip("%s  ·  ends in %s" % [Rankings.season_name(), Rankings.time_left_text()], Color(UIKit.AMBER, 0.18), UIKit.AMBER_HI, UIKit.T_LABEL)
 	sn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(sn)
-	var ends := UIKit.chip("Ends in %s" % Rankings.time_left_text(), Color(UIKit.NAVY, 0.7), UIKit.IVORY, UIKit.T_LABEL)
-	ends.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	h.add_child(ends)
-	var body := UIKit.hbox(18)
+	var body := UIKit.hbox(22)
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(body)
 	# --- left: the prize + your stats
-	var left := UIKit.vbox(14)
-	left.custom_minimum_size.x = 400
+	var left := UIKit.vbox(16)
+	left.custom_minimum_size.x = 380
 	body.add_child(left)
 	var prize := ChampionPromo.banner(self)
 	left.add_child(prize)
 	left.add_child(_my_stats())
 	# --- right: the boards
-	var right := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 18)
+	var right := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 22)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_child(right)
-	var rv := UIKit.vbox(10)
+	var rv := UIKit.vbox(14)
 	right.add_child(rv)
-	var tr := UIKit.hbox(8)
-	for spec in [[Rankings.BOARD_POINTS, "Season Points"], [Rankings.BOARD_FASTEST, "Fastest Run"]]:
-		var b := UIKit.secondary(String(spec[1]), Vector2(0, UIKit.touch_min()))
-		var id := String(spec[0])
-		b.pressed.connect(func() -> void:
-			board = id
-			_paint_tabs()
-			_load())
-		tr.add_child(b)
+	var tr := UIKit.hbox(12)
+	var ids := [Rankings.BOARD_POINTS, Rankings.BOARD_FASTEST]
+	var seg := UIKit.segmented(["Season Points", "Fastest Run"], 0, func(i: int) -> void:
+		board = String(ids[i])
+		_load())
+	tr.add_child(seg)
+	for b in seg.get_meta(&"buttons"):
 		tabs.append(b)
 	tr.add_child(UIKit.spacer_h())
-	for spec in [[false, "Everyone"], [true, "Friends"]]:
-		var b := UIKit.quiet(String(spec[1]), Vector2(0, UIKit.touch_min()), UIKit.T_LABEL)
-		var fo := bool(spec[0])
-		b.pressed.connect(func() -> void:
-			friends_only = fo
-			_paint_tabs()
-			_load())
-		tr.add_child(b)
+	var scope := UIKit.segmented(["Everyone", "Friends"], 0, func(i: int) -> void:
+		friends_only = i == 1
+		_load(), UIKit.TEAL)
+	tr.add_child(scope)
+	for b in scope.get_meta(&"buttons"):
 		scopes.append(b)
 	rv.add_child(tr)
 	state_lbl = UIKit.styled("", "body", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
@@ -81,11 +74,11 @@ func build() -> void:
 	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	rv.add_child(sc)
-	list_box = UIKit.vbox(6)
+	list_box = UIKit.vbox(8)
 	list_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sc.add_child(list_box)
 	var foot := UIKit.hbox(10)
-	var how := UIKit.styled("Counts online rounds with at least one other player. Resets every 30 days.", "caption", UIKit.IVORY_MUTED)
+	var how := UIKit.styled("Online rounds with another player count · resets every 30 days", "caption", UIKit.IVORY_MUTED)
 	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	how.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(how)
@@ -95,18 +88,13 @@ func build() -> void:
 			UIKit.toast(self, "Sign in to Game Center to see the full leaderboard."))
 	foot.add_child(gc)
 	rv.add_child(foot)
-	_paint_tabs()
 	_load()
 	focus_first(tabs[0])
 
 
+## (the segmented controls paint themselves)
 func _paint_tabs() -> void:
-	for i in tabs.size():
-		var on := (i == 0 and board == Rankings.BOARD_POINTS) or (i == 1 and board == Rankings.BOARD_FASTEST)
-		UIKit._apply(tabs[i], UIKit.AMBER if on else UIKit.SLATE_HI, UIKit.NAVY if on else UIKit.IVORY)
-	for i in scopes.size():
-		var on2 := (i == 1) == friends_only
-		scopes[i].add_theme_color_override("font_color", UIKit.TEAL if on2 else UIKit.IVORY_MUTED)
+	pass
 
 
 func _load() -> void:
@@ -159,18 +147,22 @@ func _row(en: Dictionary) -> Control:
 	var me := bool(en.get("me", false))
 	var medal: Color = [UIKit.AMBER, Color("d9dee8"), Color("e09a5c")][rank - 1] if rank >= 1 and rank <= 3 else Color(UIKit.NAVY, 0.6)
 	var p := PanelContainer.new()
-	var bg := Color(UIKit.TEAL, 0.22) if me else Color(UIKit.SLATE_HI, 0.85)
-	var sb := UIKit.box(bg, UIKit.R_SMALL, 2 if me else 0, UIKit.TEAL, 12)
+	var bg := Color(UIKit.TEAL, 0.2) if me else Color(UIKit.SLATE_HI, 0.7)
+	var sb := UIKit.box(bg, UIKit.R_CARD, 2 if me else 0, UIKit.TEAL, 16)
+	sb.content_margin_top = 10
+	sb.content_margin_bottom = 10
 	p.add_theme_stylebox_override("panel", sb)
-	var h := UIKit.hbox(14)
-	var badge := UIKit.chip("#%d" % rank, medal, UIKit.NAVY if rank <= 3 else UIKit.IVORY, UIKit.T_LABEL)
-	badge.custom_minimum_size.x = 76
+	var h := UIKit.hbox(16)
+	var badge := UIKit.chip("%d" % rank, medal, UIKit.NAVY if rank <= 3 else UIKit.IVORY, UIKit.T_LABEL)
+	badge.custom_minimum_size = Vector2(64, 44)
+	(badge.get_child(0) as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	h.add_child(badge)
 	if rank == 1:
 		var cr := Icons.IconRect.new("crown", UIKit.AMBER, 26)
 		cr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		h.add_child(cr)
 	var nm := UIKit.styled(String(en.get("name", "Player")) + ("  (you)" if me else ""), "label", UIKit.IVORY)
+	nm.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	nm.clip_text = true
 	h.add_child(nm)
@@ -184,22 +176,36 @@ func _row(en: Dictionary) -> Control:
 
 
 func _my_stats() -> Control:
-	var p := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 18)
-	var v := UIKit.vbox(8)
+	# (2.3) your numbers as tiles: a big figure over a small label
+	var p := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 22)
+	p.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var v := UIKit.vbox(14)
 	p.add_child(v)
 	v.add_child(UIKit.styled("YOUR STATS", "overline", UIKit.TEAL))
 	var ps := Rankings.period_stats()
 	var b := Rankings.bests()
 	var grid := GridContainer.new()
 	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 24)
-	grid.add_theme_constant_override("v_separation", 6)
-	for pair in [["Season Points", str(int(ps["points"]))], ["Rounds counted", str(int(ps["rounds"]))],
-			["Best run this season", Rankings.fmt_time(float(ps["best_run"]))], ["Best run online", Rankings.fmt_time(float(b["online"]))],
-			["Best run in practice", Rankings.fmt_time(float(b["practice"]))]]:
-		grid.add_child(UIKit.styled(String(pair[0]), "caption", UIKit.IVORY_MUTED))
-		var val := UIKit.styled(String(pair[1]), "num", UIKit.IVORY)
-		grid.add_child(val)
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 14)
+	for pair in [[str(int(ps["points"])), "Season Points"], [str(int(ps["rounds"])), "Rounds counted"],
+			[Rankings.fmt_time(float(ps["best_run"])), "Best run this season"], [Rankings.fmt_time(float(b["practice"])), "Best in practice"]]:
+		var tile := PanelContainer.new()
+		var tb := UIKit.box(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 0, Color.WHITE, 16)
+		tb.content_margin_top = 12
+		tb.content_margin_bottom = 12
+		tile.add_theme_stylebox_override("panel", tb)
+		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var tv := UIKit.vbox(2)
+		var num := UIKit.styled(String(pair[0]), "num", UIKit.IVORY)
+		num.add_theme_font_size_override("font_size", 32)
+		tv.add_child(num)
+		var cap := UIKit.styled(String(pair[1]), "caption", UIKit.IVORY_MUTED)
+		cap.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		cap.custom_minimum_size.x = 140
+		tv.add_child(cap)
+		tile.add_child(tv)
+		grid.add_child(tile)
 	v.add_child(grid)
 	return p
 

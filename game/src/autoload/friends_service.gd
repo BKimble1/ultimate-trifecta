@@ -72,6 +72,12 @@ var loading_friends := false
 var shared := false              # this launch uploaded its friend set
 var instance := ""               # this launch's presence row
 var accepting := ""              # the invite being accepted
+## (2.3) invites sent straight through Game Center (no game service needed):
+## tid -> {"state": "sent" | "accepted" | "declined", "at": msec}
+var gc_sent: Dictionary = {}
+const GC_INVITE_TTL_MS := 90000
+## tests: act as if Game Center could send invites
+var gc_invite_test := false
 ## counters for tests and diagnostics
 var beats := 0
 var polls := 0
@@ -118,6 +124,14 @@ func _ready() -> void:
 	_layer.add_child(toast)
 	Cloud.changed.connect(_on_cloud)
 	Social.auth_changed.connect(func(_ok: bool) -> void: _on_cloud())
+	Social.invite_answered.connect(_on_gc_answer)
+	Social.invite_send_failed.connect(func(message: String) -> void:
+		for k in gc_sent.keys():
+			if String(gc_sent[k].get("state", "")) == "sent":
+				gc_sent.erase(k)
+		changed.emit()
+		if App.screen is Control:
+			UIKit.toast(App.screen as Control, "Invite not sent: %s" % message, 3.0))
 	# (integration: Cloud may move an install between the sandbox and
 	# production deployments once; Friends data is per deployment)
 	if Cloud.has_signal("deployment_changed"):
@@ -617,6 +631,87 @@ func invite(tid: String) -> Dictionary:
 	if _watchers > 0 and bool(r.get("ok", false)):
 		_poll_timer.start(2.0)    # the panel catches up soon
 	return r
+
+
+## (2.3) An in-game invite through Game Center: the friend gets Game
+## Center's invitation and lands in this party.  Works without the game
+## service; a solo home party goes online first.  {ok, message}.
+func invite_gc(tid: String) -> Dictionary:
+	var f := friend(tid)
+	if f.is_empty() or not (f.get("player") is Object):
+		return {"ok": false, "message": "This friend can't be invited right now."}
+	if gc_state(tid) == "sent":
+		return {"ok": true, "duplicate": true}
+	if App.is_solo_party():
+		if not await App.open_party():
+			return {"ok": false, "message": "Sign in to Game Center to invite friends."}
+		# the party room replaced home: its own Friends panel shows the invite
+		if App.screen is Screen:
+			FriendsPanel.open(App.screen as Screen)
+	var s: Variant = App.session
+	if s == null or not is_instance_valid(s) or not ((s as NetSession).transport is GameKitTransport):
+		return {"ok": false, "message": "Invites need a Game Center party."}
+	var ns := s as NetSession
+	if not ns.transport.is_host:
+		return {"ok": false, "message": "Only the party host can invite."}
+	if not Social.invite_players(ns.transport as GameKitTransport, ns.room_code, [f["player"]]):
+		return {"ok": false, "message": "Game Center couldn't send the invite. Check you're signed in."}
+	gc_sent[tid] = {"state": "sent", "at": Time.get_ticks_msec()}
+	changed.emit()
+	return {"ok": true}
+
+
+## (2.3) This player can send in-game Game Center invites now: signed in,
+## and alone at home or hosting a Game Center party.
+func can_gc_invite() -> bool:
+	if gc_invite_test:
+		return true
+	if not Social.online_ready():
+		return false
+	if App.is_solo_party():
+		return true
+	var s: Variant = App.session
+	return s != null and is_instance_valid(s) and (s as NetSession).is_host() and (s as NetSession).transport is GameKitTransport
+
+
+## "" | "sent" | "accepted" | "declined" for an in-game Game Center invite
+## (a "sent" one with no answer lapses after GC_INVITE_TTL_MS).
+func gc_state(tid: String) -> String:
+	if not gc_sent.has(tid):
+		return ""
+	var e: Dictionary = gc_sent[tid]
+	if String(e["state"]) in ["sent", "declined"] and Time.get_ticks_msec() - int(e["at"]) > GC_INVITE_TTL_MS:
+		gc_sent.erase(tid)
+		return ""
+	return String(e["state"])
+
+
+## A friend's entry by team player id ({} when not in the list).
+func friend(tid: String) -> Dictionary:
+	for f in friends:
+		if String(f.get("tid", "")) == tid:
+			return f
+	return {}
+
+
+func _on_gc_answer(player: Object, response: int) -> void:
+	if player == null or not is_instance_valid(player):
+		return
+	var tid := String(player.get("team_player_id"))
+	var gid := String(player.get("game_player_id"))
+	var who := ""
+	for f in friends:
+		if (tid != "" and String(f.get("tid", "")) == tid) or (gid != "" and String(f.get("gid", "")) == gid):
+			tid = String(f["tid"])
+			who = FriendsPanel.gc_display(String(f.get("name", "")))
+			break
+	if tid == "":
+		return
+	var ok := response == Social.INVITE_ACCEPTED
+	gc_sent[tid] = {"state": "accepted" if ok else "declined", "at": Time.get_ticks_msec()}
+	changed.emit()
+	if App.screen is Control and who != "":
+		UIKit.toast(App.screen as Control, ("%s is joining your party" if ok else "%s can't come right now") % who, 2.6)
 
 
 func _start_party() -> Dictionary:

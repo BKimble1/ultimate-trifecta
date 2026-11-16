@@ -60,8 +60,11 @@ var code_title: Label
 var mode_btn: Button
 var mode_title: Label
 var mode_sub: Label
+var mode_icon: Icons.IconRect
 var rank_btn: Button
 var season_card: Button
+var wallet_chip: Control
+var code_row: HBoxContainer
 
 ## Playlists (2.2).  Alone in your party you pick one; with friends in it
 ## the party plays together (the host's settings).
@@ -100,7 +103,8 @@ func build() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	TitleScreen.add_shades(self, 0.55, 0.3)
 
-	# --- top bar
+	# --- top bar (2.3): navigation on the left, the account on the right
+	#   [Leave] Play · Locker · Shop · Season Pass ........ Coins  Rankings  Friends  ⚙
 	var top := UIKit.hbox(12)
 	content.add_child(top)
 	top_bar = top
@@ -110,47 +114,13 @@ func build() -> void:
 	back.pressed.connect(_go_back)
 	top.add_child(back)
 	back_btn = back
-	var code_card := UIKit.panel(Color(UIKit.SLATE, 0.94), UIKit.R_CARD, 18)
-	code_card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var cv := UIKit.vbox(0)
-	code_title = UIKit.styled("Party code", "overline", UIKit.IVORY_MUTED)
-	cv.add_child(code_title)
-	code_lbl = UIKit.styled("", "num", UIKit.AMBER)
-	code_lbl.add_theme_font_override("font", UIKit.font_num(800))
-	code_lbl.add_theme_font_size_override("font_size", 30)
-	cv.add_child(code_lbl)
-	code_card.add_child(cv)
-	top.add_child(code_card)
-	var copy := UIKit.icon_button("copy")
-	copy.tooltip_text = "Copy party code"
-	copy.accessibility_name = "Copy party code"
-	copy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	copy.pressed.connect(func() -> void:
-		DisplayServer.clipboard_set(session.room_code)
-		UIKit.toast(self, "Code %s copied" % session.room_code))
-	top.add_child(copy)
-	copy_btn = copy
-	var share := UIKit.icon_button("share")
-	share.tooltip_text = "Share party code"
-	share.accessibility_name = "Share party code"
-	share.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	share.pressed.connect(func() -> void:
-		# (2.2) sharing from home opens the party online first
-		if App.is_solo_party() and not await App.open_party():
-			return
-		var s2: NetSession = App.session
-		if not Share.share_text(Share.party_message(s2.room_code)):
-			UIKit.toast(App.screen as Control, "Invite message copied — paste it to a friend"))
-	top.add_child(share)
-	share_btn = share
-	# Final: Friends (who's playing, invites into this party; Apple's invite
-	# sheet and the code are inside it as well)
-	invite_btn = FriendsPanel.entry_button(self)
-	invite_btn.tooltip_text = "Friends: invite to this party"
-	invite_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	top.add_child(invite_btn)
-	top.add_child(UIKit.spacer_h())
-	# 2.2: Rankings, where everyone can see it, and Settings
+	var nav := NavShell.make("play")
+	nav.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(nav)
+	wallet_chip = WalletChip.new()
+	wallet_chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	top.add_child(wallet_chip)
+	# 2.2: Rankings, where everyone can see it
 	rank_btn = UIKit.icon_button("trophy", "Rankings")
 	rank_btn.tooltip_text = "Rankings"
 	rank_btn.accessibility_name = "Rankings: this season's leaderboard"
@@ -158,12 +128,43 @@ func build() -> void:
 	rank_btn.pressed.connect(func() -> void: App.goto(RankingsScreen))
 	UIKit._apply(rank_btn, UIKit.AMBER, UIKit.NAVY)
 	top.add_child(rank_btn)
+	# Friends: who's playing, invites into this party (Game Center), the code
+	invite_btn = FriendsPanel.entry_button(self)
+	invite_btn.tooltip_text = "Friends: invite to this party"
+	invite_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	top.add_child(invite_btn)
 	var gear := UIKit.icon_button("gear")
 	gear.tooltip_text = "Settings"
 	gear.accessibility_name = "Settings"
 	gear.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	gear.pressed.connect(func() -> void: App.goto(SettingsScreen))
 	top.add_child(gear)
+	# the party code: in the party list's header (tap to copy); sharing it is
+	# in Friends
+	code_title = UIKit.styled("Party code", "overline", UIKit.IVORY_MUTED)
+	code_lbl = UIKit.styled("", "num", UIKit.AMBER)
+	code_lbl.add_theme_font_override("font", UIKit.font_num(800))
+	# (the labels only hold the text the copy button shows: hidden, in the tree)
+	var holder := Control.new()
+	holder.visible = false
+	add_child(holder)
+	holder.add_child(code_title)
+	holder.add_child(code_lbl)
+	copy_btn = UIKit.quiet("", Vector2(0, UIKit.touch_min()), UIKit.T_LABEL)
+	copy_btn.tooltip_text = "Copy party code"
+	copy_btn.accessibility_name = "Copy party code"
+	copy_btn.pressed.connect(func() -> void:
+		DisplayServer.clipboard_set(session.room_code)
+		UIKit.toast(self, "Code %s copied" % session.room_code))
+	share_btn = UIKit.icon_button("share")
+	share_btn.tooltip_text = "Share party code"
+	share_btn.accessibility_name = "Share party code"
+	share_btn.pressed.connect(func() -> void:
+		if App.is_solo_party() and not await App.open_party():
+			return
+		var s2: NetSession = App.session
+		if not Share.share_text(Share.party_message(s2.room_code)):
+			UIKit.toast(App.screen as Control, "Invite message copied — paste it to a friend"))
 	settings_btn = _settings_summary()
 	settings_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
@@ -190,8 +191,16 @@ func build() -> void:
 	mid.add_child(roster_col)
 	# (Final sweep) lines drawn straight on the room: a stronger ivory and a
 	# soft halo, so they stay readable over the lighter room
+	var head := UIKit.hbox(10)
+	head.alignment = BoxContainer.ALIGNMENT_END
+	roster_col.add_child(head)
 	count_lbl = UIKit.outlined(UIKit.styled("", "overline", Color(UIKit.IVORY, 0.88)))
-	roster_col.add_child(count_lbl)
+	count_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	count_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(count_lbl)
+	code_row = head
+	head.add_child(copy_btn)
+	head.add_child(share_btn)
 	_grid = GridContainer.new()
 	_grid.columns = 2
 	_grid.add_theme_constant_override("h_separation", 10)
@@ -203,8 +212,10 @@ func build() -> void:
 		c.pressed.connect(_on_cell.bind(c))
 		_grid.add_child(c)
 		cells.append(c)
-	# (2.2) the season, while it's just you
+	# (2.3) the season card left home: the Season Pass tab carries its dot
+	# (kept, hidden, in the tree: nothing is left orphaned when home goes)
 	season_card = SeasonCard.make(360.0)
+	season_card.visible = false
 	roster_col.add_child(season_card)
 
 	# --- bottom: secondary actions (left) + primary action (right)
@@ -212,9 +223,6 @@ func build() -> void:
 	content.add_child(bottom)
 	bottom_bar = bottom
 	# V6: Play · Locker · Shop · Season Pass; the party stays intact meanwhile
-	var nav := NavShell.make("play")
-	nav.size_flags_vertical = Control.SIZE_SHRINK_END
-	bottom.add_child(nav)
 	var emote_b := UIKit.icon_button("smile", "Emote")
 	emote_b.pressed.connect(func() -> void: _emote_popover(emote_b))
 	emote_b.size_flags_vertical = Control.SIZE_SHRINK_END
@@ -235,7 +243,7 @@ func build() -> void:
 	chat_btn.visible = session.mode != NetSession.Mode.OFFLINE and not _solo()
 	bottom.add_child(chat_btn)
 	bottom.add_child(UIKit.spacer_h())
-	var pcol := UIKit.vbox(6)
+	var pcol := UIKit.vbox(12)
 	pcol.alignment = BoxContainer.ALIGNMENT_END
 	bottom.add_child(pcol)
 	status_lbl = UIKit.outlined(UIKit.styled("", "caption", Color(UIKit.IVORY, 0.88), HORIZONTAL_ALIGNMENT_RIGHT))
@@ -251,7 +259,7 @@ func build() -> void:
 	sub_lbl = UIKit.outlined(UIKit.styled("", "caption", Color(UIKit.IVORY, 0.88), HORIZONTAL_ALIGNMENT_RIGHT))
 	sub_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	prow.add_child(sub_lbl)
-	primary_btn = UIKit.primary("PLAY", Vector2(340, 96), 34)
+	primary_btn = UIKit.primary("PLAY", Vector2(360, 96), 34)
 	primary_btn.pressed.connect(_on_primary)
 	prow.add_child(primary_btn)
 	focus_first(primary_btn)
@@ -284,7 +292,7 @@ func build() -> void:
 	_frame_stage.call_deferred(roster_col)
 	# 2.2: the season champion poster, now and then, on arriving home
 	if _solo():
-		(func() -> void: ChampionPromo.maybe_show(self)).call_deferred()
+		ChampionPromo.show_when_settled(self)
 
 
 ## The settings as short chips in one tappable group (the map first).
@@ -573,15 +581,27 @@ func play_mode() -> String:
 
 
 func _mode_card() -> Button:
-	var b := UIKit.card_button(Vector2(340, 0), Color(UIKit.SLATE, 0.95))
+	# (2.3) a playlist tile like a mobile game's mode card: the mode's icon
+	# on a coloured tile, the name, one line about it, and a chevron
+	var b := UIKit.card_button(Vector2(360, 0), Color(UIKit.SLATE, 0.95))
 	b.name = "ModeCard"
 	b.size_flags_horizontal = Control.SIZE_SHRINK_END
-	var h := UIKit.hbox(12)
+	var h := UIKit.hbox(16)
 	h.set_anchors_preset(Control.PRESET_FULL_RECT)
 	h.offset_left = 14
-	h.offset_right = -14
+	h.offset_right = -18
+	h.offset_top = 10
+	h.offset_bottom = -10
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var v := UIKit.vbox(0)
+	var tile := PanelContainer.new()
+	tile.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.AMBER, 0.18), 14, 0, Color.WHITE, 0))
+	tile.custom_minimum_size = Vector2(64, 64)
+	tile.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mode_icon = Icons.IconRect.new("bolt", UIKit.AMBER, 64.0)
+	tile.add_child(mode_icon)
+	h.add_child(tile)
+	var v := UIKit.vbox(2)
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -590,6 +610,7 @@ func _mode_card() -> Button:
 	v.add_child(ov)
 	mode_title = UIKit.styled("", "label")
 	mode_title.add_theme_font_override("font", UIKit.font_w(800))
+	mode_title.add_theme_font_size_override("font_size", UIKit.T_LABEL + 4)
 	mode_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(mode_title)
 	mode_sub = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
@@ -597,12 +618,11 @@ func _mode_card() -> Button:
 	mode_sub.custom_minimum_size.x = 0
 	v.add_child(mode_sub)
 	h.add_child(v)
-	var ch := UIKit.styled("Change", "label", UIKit.TEAL)
+	var ch := Icons.IconRect.new("chevron", Color(UIKit.IVORY, 0.7), 28.0)
 	ch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	ch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(ch)
 	b.add_child(h)
-	b.custom_minimum_size.y = maxf(UIKit.touch_min(), 78.0)
+	b.custom_minimum_size.y = maxf(UIKit.touch_min(), 104.0)
 	b.pressed.connect(_mode_sheet)
 	return b
 
@@ -617,6 +637,9 @@ func _paint_mode() -> void:
 	else:
 		mode_title.text = String(MODES[m][0])
 		mode_sub.text = String(MODES[m][1])
+	if is_instance_valid(mode_icon):
+		mode_icon.kind = String(MODES["bots" if m == "party" else m][2])
+		mode_icon.queue_redraw()
 	mode_btn.accessibility_name = "Playlist: %s. %s. Change" % [mode_title.text, mode_sub.text]
 	# settings only where they apply: a party's series (host changes them)
 	settings_btn.visible = m == "party" or m == "bots"
@@ -632,15 +655,15 @@ func _mode_sheet() -> void:
 	dim.color = Color(UIKit.NAVY, 0.78)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.add_child(dim)
-	var p := UIKit.panel(Color(UIKit.SLATE, 0.99), UIKit.R_PANEL, 24)
-	var v := UIKit.vbox(14)
+	var p := UIKit.panel(Color(UIKit.SLATE, 0.99), UIKit.R_PANEL, 30)
+	var v := UIKit.vbox(22)
 	p.add_child(v)
 	var close := func() -> void:
 		if is_instance_valid(root):
 			root.queue_free()
 		_refresh()
 	var head := UIKit.hbox(12)
-	head.add_child(UIKit.styled("Choose a playlist", "headline"))
+	head.add_child(UIKit.styled("Choose a playlist", "title"))
 	head.add_child(UIKit.spacer_h())
 	var x := UIKit.icon_button("close")
 	x.accessibility_name = "Close"
@@ -659,34 +682,49 @@ func _mode_sheet() -> void:
 				_settings_sheet())
 			v.add_child(st)
 	else:
-		var row := UIKit.hbox(14)
+		# (2.3) three tall mode tiles: a big icon on its own colour, the name,
+		# one line; the chosen one has the accent edge and a check badge
+		var row := UIKit.hbox(18)
 		var cur := play_mode()
+		var tint := {"quick": UIKit.AMBER, "bots": UIKit.TEAL, "practice": Color("9fb7ff")}
 		for id in ["quick", "bots", "practice"]:
 			var spec: Array = MODES[id]
-			var c := UIKit.card_button(Vector2(250, 236), UIKit.SLATE_HI if id == cur else UIKit.SLATE)
-			var cv := UIKit.vbox(8)
+			var accent: Color = tint[id]
+			var c := UIKit.card_button(Vector2(300, 270), UIKit.SLATE_HI if id == cur else UIKit.SLATE)
+			var cv := UIKit.vbox(10)
+			cv.alignment = BoxContainer.ALIGNMENT_CENTER
 			cv.set_anchors_preset(Control.PRESET_FULL_RECT)
-			cv.offset_left = 16
-			cv.offset_top = 16
-			cv.offset_right = -16
-			cv.offset_bottom = -16
+			cv.offset_left = 20
+			cv.offset_top = 22
+			cv.offset_right = -20
+			cv.offset_bottom = -22
 			cv.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			var ic := Icons.IconRect.new(String(spec[2]), UIKit.AMBER if id == "quick" else UIKit.TEAL, 44)
-			ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			cv.add_child(ic)
-			var tl := UIKit.styled(String(spec[0]), "headline")
+			var tile := PanelContainer.new()
+			tile.add_theme_stylebox_override("panel", UIKit.box(Color(accent, 0.16), 999, 0, Color.WHITE, 0))
+			tile.custom_minimum_size = Vector2(96, 96)
+			tile.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var ic := Icons.IconRect.new(String(spec[2]), accent, 96)
+			tile.add_child(ic)
+			cv.add_child(tile)
+			var tl := UIKit.styled(String(spec[0]), "headline", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
+			tl.add_theme_font_override("font", UIKit.font_w(800))
 			tl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			cv.add_child(tl)
-			var dl := UIKit.styled(String(spec[1]), "caption", UIKit.IVORY_MUTED)
+			var dl := UIKit.styled(String(spec[1]), "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 			dl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			dl.custom_minimum_size.x = 210
+			dl.custom_minimum_size.x = 250
 			dl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			cv.add_child(dl)
-			if id == cur:
-				var sel := UIKit.styled("✓ Selected", "label", UIKit.TEAL)
-				sel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				cv.add_child(sel)
 			c.add_child(cv)
+			if id == cur:
+				var badge := Icons.IconRect.new("check", UIKit.NAVY, 30)
+				var bp := PanelContainer.new()
+				bp.add_theme_stylebox_override("panel", UIKit.box(UIKit.TEAL, 999, 0, Color.WHITE, 4))
+				bp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				bp.add_child(badge)
+				bp.position = Vector2(300 - 52, 12)
+				c.add_child(bp)
 			UIKit.set_selected(c, id == cur)
 			c.accessibility_name = "%s. %s%s" % [spec[0], spec[1], ". Selected" if id == cur else ""]
 			var pick := String(id)
@@ -722,11 +760,13 @@ func _refresh() -> void:
 	var solo := _solo()
 	code_title.text = "Your party" if solo else "Party code"
 	code_lbl.text = "Invite friends" if solo else (session.room_code if session.room_code != "" else "…")
-	code_lbl.add_theme_font_size_override("font_size", 22 if solo else 30)
+	copy_btn.text = "Code  %s" % code_lbl.text
 	back_btn.visible = not solo
 	copy_btn.visible = not solo
+	share_btn.visible = not solo and _can_invite()
 	invite_btn.visible = _can_invite() or solo
-	season_card.visible = solo and session.human_count() == 1
+	wallet_chip.visible = solo
+	season_card.visible = false
 	chat_btn.visible = not solo and session.mode != NetSession.Mode.OFFLINE
 	_paint_mode()
 	var humans := 0
@@ -1212,6 +1252,7 @@ class Avatar:
 	extends Control
 	var tex: Texture2D
 	var col := Color(0.3, 0.4, 0.6)
+	var plus := false     # (2.3) an open seat: a ring with a plus
 	var _key := ""
 
 	func _init() -> void:
@@ -1234,6 +1275,7 @@ class Avatar:
 	func clear() -> void:
 		_key = ""
 		tex = null
+		plus = false
 		queue_redraw()
 
 	func _on_portrait(k: String, t: Texture2D) -> void:
@@ -1249,6 +1291,11 @@ class Avatar:
 	func _draw() -> void:
 		var c := size * 0.5
 		var r := minf(size.x, size.y) * 0.5
+		if plus:
+			draw_circle(c, r * 0.96, Color(UIKit.TEAL, 0.14))
+			draw_arc(c, r * 0.92, 0, TAU, 40, Color(UIKit.TEAL, 0.7), 2.5, true)
+			Icons.draw_shape(self, "plus", c, r * 0.42, UIKit.TEAL)
+			return
 		draw_circle(c, r, col.darkened(0.45))
 		draw_circle(c, r * 0.93, col.darkened(0.2).lerp(UIKit.SLATE_HI, 0.35))
 		if tex:
@@ -1325,18 +1372,22 @@ class SlotCell:
 		if e == null:
 			_style(false, true)
 			face.clear()
+			face.plus = can_invite
 			face.col = Color(UIKit.IVORY, 0.12)
-			name_l.text = "Invite" if can_invite else "Open seat"
-			name_l.add_theme_color_override("font_color", Color(UIKit.IVORY, 0.6))
-			sub_l.text = ("Invite a friend" if can_invite else "Share the code") if first_open else ""
-			badge.kind = "plus"
-			badge.col = Color(UIKit.IVORY, 0.45)
-			badge.queue_redraw()
+			# (2.3) one clear line: "Invite friends" (a host), else "Open seat"
+			name_l.text = "Invite friends" if can_invite else "Open seat"
+			name_l.add_theme_color_override("font_color", UIKit.TEAL if can_invite else Color(UIKit.IVORY, 0.6))
+			sub_l.text = "" if can_invite else ("Share the code" if first_open else "")
+			badge.visible = false
+			sub_l.get_parent().visible = sub_l.text != ""
 			accessibility_name = name_l.text
 			UIKit.refit(name_l)
 			return
 		var ent: Dictionary = e
 		_style(me, false)
+		face.plus = false
+		badge.visible = true
+		sub_l.get_parent().visible = true
 		face.set_entry(ent["cosmetic"], int(ent.get("role", -1)), "cell%d" % get_instance_id())
 		name_l.text = String(ent["name"])
 		name_l.add_theme_color_override("font_color", UIKit.IVORY)

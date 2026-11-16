@@ -60,13 +60,13 @@ const T_TITLE := 34
 const T_HEADLINE := 27
 const T_BODY := 23
 const T_LABEL := 22
-const T_CAPTION := 20
-const T_OVERLINE := 17
+const T_CAPTION := 21
+const T_OVERLINE := 18
 
 const R_SMALL := 12
 const R_BUTTON := 16
-const R_CARD := 18
-const R_PANEL := 22
+const R_CARD := 20
+const R_PANEL := 26
 const T_FAST := Motion.FAST
 const T_SHEET := Motion.PANEL
 ## V4 buttons had a 6-unit dark lower lip; kept as 0 for old layout maths.
@@ -172,6 +172,9 @@ static func box(col: Color, radius: int = R_BUTTON, border: int = 0, border_col:
 static func card_box(bg: Color, radius: int = R_CARD, lift: float = 1.0, pad: int = 16, rim: float = 0.1) -> StyleBoxFlat:
 	var s := box(bg, radius, 0, Color.WHITE, pad)
 	if rim > 0.0 and bg.a > 0.5:
+		# (2.3) a hairline all round (a crisp glass edge over the 3D room)
+		# and the lit top rim
+		s.set_border_width_all(1)
 		s.border_width_top = 2 if lift > 0.0 else 1
 		s.border_color = Color(bg.lightened(0.35), clampf(rim * 2.2, 0.0, 1.0) * bg.a) if bg.get_luminance() > 0.5 else Color(1, 1, 1, rim * bg.a)
 	if lift > 0.0 and bg.a > 0.5:
@@ -206,7 +209,7 @@ static func theme() -> Theme:
 	t.set_color("font_color", "Label", IVORY)
 	t.set_color("font_outline_color", "Label", NAVY)
 	t.set_constant("outline_size", "Label", 0)
-	t.set_constant("line_spacing", "Label", 2)
+	t.set_constant("line_spacing", "Label", 5)
 	t.set_font("font", "Button", font_w(600))
 	t.set_font_size("font_size", "Button", T_LABEL + 2)
 	for st in ["normal", "hover", "pressed", "disabled", "hover_pressed"]:
@@ -215,7 +218,7 @@ static func theme() -> Theme:
 	for k in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
 		t.set_color(k, "Button", IVORY)
 	t.set_color("font_disabled_color", "Button", IVORY_DIM)
-	t.set_stylebox("panel", "PanelContainer", card_box(PANEL, R_PANEL, 1.0, 22))
+	t.set_stylebox("panel", "PanelContainer", card_box(PANEL, R_PANEL, 1.0, 26))
 	t.set_stylebox("panel", "Panel", card_box(PANEL, R_PANEL))
 	t.set_stylebox("normal", "LineEdit", box(SLATE_LO, R_SMALL, 2, SLATE_HI, 18))
 	t.set_stylebox("focus", "LineEdit", box(SLATE_LO, R_SMALL, 2, TEAL, 18))
@@ -275,7 +278,7 @@ static func styled(t: String, style: String = "body", col: Color = IVORY, align:
 	var l := Label.new()
 	l.horizontal_alignment = align
 	var spec: Array = {
-		"display": [T_DISPLAY, 800], "title": [T_TITLE, 700], "headline": [T_HEADLINE, 700], "body": [T_BODY, 500],
+		"display": [T_DISPLAY, 800], "title": [T_TITLE, 800], "headline": [T_HEADLINE, 800], "body": [T_BODY, 500],
 		"label": [T_LABEL, 600], "caption": [T_CAPTION, 500], "overline": [T_OVERLINE, -1], "num": [T_LABEL, -2],
 	}.get(style, [T_BODY, 500])
 	l.add_theme_font_size_override("font_size", int(spec[0]))
@@ -371,9 +374,11 @@ static func secondary(t: String, min_size: Vector2 = Vector2(260, 80), font_size
 static func quiet(t: String, min_size: Vector2 = Vector2(220, 72), font_size: int = T_LABEL) -> Button:
 	var b := _base_button(t, min_size, font_size)
 	var f := face_of(b)
-	var n := box(Color(NAVY, 0.62), R_BUTTON, 0, Color.WHITE)
-	n.set_border_width_all(2)
-	n.border_color = Color(IVORY, 0.16)
+	# (2.3) a soft pill with a hairline edge (V7's 2 px outline boxed every
+	# small action in)
+	var n := box(Color(NAVY, 0.55), 999, 0, Color.WHITE, 22)
+	n.set_border_width_all(1)
+	n.border_color = Color(IVORY, 0.12)
 	f.styles = {
 		"normal": n,
 		"hover": _with_bg(n, Color(SLATE, 0.85)),
@@ -609,7 +614,7 @@ static func set_selected(b: Control, on: bool) -> void:
 # ---------------------------------------------------------------------------
 # Panels and layout
 # ---------------------------------------------------------------------------
-static func panel(col: Color = PANEL, radius: int = R_PANEL, pad: int = 22) -> PanelContainer:
+static func panel(col: Color = PANEL, radius: int = R_PANEL, pad: int = 26) -> PanelContainer:
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", card_box(col, radius, 1.0 if col.a > 0.5 else 0.0, pad, 0.07))
 	return p
@@ -625,10 +630,53 @@ static func scrim(radius: int = R_PANEL, pad: int = 18, alpha: float = 0.55) -> 
 
 static func chip(t: String, col: Color = SLATE_HI, fg: Color = IVORY, size: int = T_CAPTION) -> PanelContainer:
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", box(col, 999, 0, Color.WHITE, 14))
+	# (2.3) room around the words: never a tight box
+	var sb := box(col, 999, 0, Color.WHITE, 18)
+	sb.content_margin_top = 8
+	sb.content_margin_bottom = 8
+	p.add_theme_stylebox_override("panel", sb)
 	var l := label(t, size, fg, true)
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	p.add_child(l)
+	return p
+
+
+## (2.3) A segmented control: one pill holding the choices, the chosen one
+## filled (accent), the rest quiet text.  `on_pick.call(index)`; the pill
+## repaints itself.  Each option is a full touch target.
+static func segmented(options: Array, selected: int, on_pick: Callable, accent: Color = AMBER, font_size: int = T_LABEL) -> PanelContainer:
+	var p := PanelContainer.new()
+	var sb := box(Color(NAVY, 0.6), 999, 1, Color(IVORY, 0.08), 6)
+	sb.content_margin_top = 5
+	sb.content_margin_bottom = 5
+	p.add_theme_stylebox_override("panel", sb)
+	var h := hbox(4)
+	p.add_child(h)
+	var btns: Array[Button] = []
+	var paint := func(sel: int) -> void:
+		for i in btns.size():
+			var on := i == sel
+			var f := face_of(btns[i])
+			var n := box(accent if on else Color(0, 0, 0, 0), 999, 0, Color.WHITE, 20)
+			f.styles = {"normal": n, "hover": n if on else box(Color(IVORY, 0.06), 999, 0, Color.WHITE, 20),
+				"pressed": box(accent.darkened(0.1) if on else Color(IVORY, 0.1), 999, 0, Color.WHITE, 20),
+				"disabled": n, "selected": n}
+			f.fg = {"normal": NAVY if on else Color(IVORY, 0.78), "disabled": IVORY_DIM, "selected": NAVY}
+			f.shine = false
+			f.queue_redraw()
+			btns[i].accessibility_name = String(options[i]) + (", selected" if on else "")
+	for i in options.size():
+		var b := _base_button(String(options[i]), Vector2(0, maxf(touch_min() - 10.0, 44.0)), font_size)
+		b.add_theme_font_override("font", font_w(700))
+		b.custom_minimum_size.x = font_w(700).get_string_size(String(options[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 44.0
+		var idx := i
+		b.pressed.connect(func() -> void:
+			paint.call(idx)
+			on_pick.call(idx))
+		h.add_child(b)
+		btns.append(b)
+	paint.call(selected)
+	p.set_meta(&"buttons", btns)
 	return p
 
 
@@ -773,8 +821,8 @@ const SP_M := 12
 const SP_L := 16
 const SP_XL := 24
 ## Screen padding inside the safe area: sides, top and bottom.
-const EDGE_X := 20
-const EDGE_Y := 12
+const EDGE_X := 28
+const EDGE_Y := 16
 ## Padding of compact panels (the Locker, Shop and Pass panels).
 const PAD_PANEL := 12
 ## Grid gap between cards.

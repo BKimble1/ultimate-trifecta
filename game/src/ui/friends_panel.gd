@@ -126,20 +126,20 @@ func _ready() -> void:
 		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed:
 			close())
 	add_child(catcher)
-	panel = UIKit.panel(Color(UIKit.SLATE, 0.98), UIKit.R_PANEL, 18)
+	panel = UIKit.panel(Color(UIKit.SLATE, 0.98), UIKit.R_PANEL, 24)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var w := clampf(vs.x * 0.48, 460.0, 680.0)
 	panel.position = Vector2(vs.x - sm.size.x - w - 12.0, sm.position.y + 12.0)
 	panel.size = Vector2(w, vs.y - sm.position.y - sm.size.y - 24.0)
 	panel.custom_minimum_size = panel.size
 	add_child(panel)
-	var v := UIKit.vbox(10)
+	var v := UIKit.vbox(14)
 	panel.add_child(v)
 	# --- header
 	var head := UIKit.hbox(10)
 	var hv := UIKit.vbox(0)
 	hv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_lbl = UIKit.styled("Friends", "headline")
+	title_lbl = UIKit.styled("Friends", "title")
 	hv.add_child(title_lbl)
 	sub_lbl = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
 	sub_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -195,7 +195,7 @@ func _ready() -> void:
 	code_lbl.add_theme_font_override("font", UIKit.font_num(800))
 	code_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	foot.add_child(code_lbl)
-	copy_btn = UIKit.quiet("Copy code", Vector2(0, UIKit.touch_min()), UIKit.T_CAPTION)
+	copy_btn = UIKit.quiet("Copy", Vector2(0, UIKit.touch_min()), UIKit.T_CAPTION)
 	copy_btn.pressed.connect(func() -> void:
 		DisplayServer.clipboard_set(App.party_code)
 		_say("Code %s copied" % App.party_code))
@@ -300,7 +300,8 @@ func service_text() -> String:
 		"loading", "idle":
 			return "Checking who's playing…"
 		"off":
-			return "Status unavailable right now. You can still invite with Game Center or a party code."
+			# (2.3) no game service: invites go through Game Center, rows say so
+			return "" if Friends.can_gc_invite() else "Status unavailable right now. You can still invite with a party code."
 		"network":
 			return "Can't reach the game service, so status is unavailable. Check your connection."
 		"signed_out":
@@ -329,7 +330,8 @@ func _refresh() -> void:
 	code_lbl.visible = in_party
 	copy_btn.visible = in_party
 	code_lbl.text = ("Code " + App.party_code) if in_party else ""
-	gc_btn.visible = can_game_center()
+	# (2.3) Apple's invite sheet only when the game's own list can't invite
+	gc_btn.visible = can_game_center() and (Friends.access != "authorized" or Friends.friends.is_empty())
 	play_btn.visible = not in_party
 	share_btn.visible = Friends.access == "authorized" and Friends.feature_on()
 	share_btn.text = "Show when I'm playing: %s" % ("On" if Friends.share_status() else "Off")
@@ -425,6 +427,11 @@ static func model(f: Dictionary) -> Dictionary:
 			action = "invite"
 		else:
 			action = {"update": "update", "party_full": "full", "party_busy": "busy"}.get(String(pd.get("why", "")), "")
+	# (2.3) no game service needed: invite straight through Game Center
+	if action == "" and f.get("player") is Object and Friends.can_gc_invite():
+		action = {"sent": "gc_sent", "accepted": "gc_joining", "declined": "gc_declined"}.get(Friends.gc_state(tid), "gc_invite")
+	if not (p is Dictionary) and Friends.service != "ok":
+		label = "Game Center friend"
 	return {"tid": tid, "name": name, "gc_name": gc, "status": status, "label": label, "action": action, "p": p, "player": f.get("player")}
 
 
@@ -516,6 +523,16 @@ func _invite(tid: String) -> void:
 		_say(Cloud.explain(r))
 
 
+## (2.3) An in-game invite through Game Center (no service needed).
+func _invite_gc(tid: String) -> void:
+	_say("")
+	var r: Dictionary = await Friends.invite_gc(tid)
+	if not is_inside_tree():
+		return
+	if not bool(r.get("ok", false)):
+		_say(String(r.get("message", "Couldn't send the invite.")))
+
+
 func _report(m: Dictionary) -> void:
 	var p: Dictionary = m["p"]
 	ReportSheet.open(self, {"kind": "player", "name": String(m["name"]), "pid": String(p.get("profile_id", "")),
@@ -585,8 +602,13 @@ class Row:
 		action_btn = UIKit.secondary("Invite", Vector2(130, UIKit.touch_min()), UIKit.T_CAPTION)
 		action_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		action_btn.pressed.connect(func() -> void:
-			if panel != null and String(model.get("action", "")) == "invite":
-				panel._invite(String(model["tid"])))
+			if panel == null:
+				return
+			var a := String(model.get("action", ""))
+			if a == "invite":
+				panel._invite(String(model["tid"]))
+			elif a == "gc_invite":
+				panel._invite_gc(String(model["tid"])))
 		# (the action sits over the card: it takes its own taps)
 		h.add_child(action_btn)
 		card.pressed.connect(func() -> void:
@@ -613,13 +635,14 @@ class Row:
 		disc.seed = String(m["tid"]).hash()
 		disc.queue_redraw()
 		var act := String(m["action"])
-		action_btn.visible = act in ["invite", "sending"]
+		action_btn.visible = act in ["invite", "sending", "gc_invite"]
 		action_btn.disabled = act == "sending"
 		action_btn.text = "Sending…" if act == "sending" else "Invite"
 		# ("In your party" is already the status line: no second label)
-		chip.visible = act in ["invited", "update", "full", "busy"]
-		chip.text = {"invited": "Invited ✓", "update": "Needs update", "full": "Party full", "busy": "After the round"}.get(act, "")
-		chip.add_theme_color_override("font_color", UIKit.TEAL if act == "invited" else UIKit.IVORY_MUTED)
+		chip.visible = act in ["invited", "update", "full", "busy", "gc_sent", "gc_joining", "gc_declined"]
+		chip.text = {"invited": "Invited ✓", "gc_sent": "Invited ✓", "gc_joining": "Joining…", "gc_declined": "Can't come",
+			"update": "Needs update", "full": "Party full", "busy": "After the round"}.get(act, "")
+		chip.add_theme_color_override("font_color", UIKit.TEAL if act in ["invited", "gc_sent", "gc_joining"] else UIKit.IVORY_MUTED)
 		card.accessibility_name = "%s, %s" % [name_l.text, status_l.text]
 		action_btn.accessibility_name = "Invite %s" % name_l.text
 		if changed_actions or open:
@@ -632,11 +655,6 @@ class Row:
 		if not open:
 			return
 		var any := false
-		if panel.can_game_center() and model.get("player") is Object:
-			var gcb := UIKit.quiet("Invite with Game Center", Vector2(0, 60), UIKit.T_CAPTION)
-			gcb.pressed.connect(func() -> void: panel._game_center_invite([model["player"]]))
-			actions.add_child(gcb)
-			any = true
 		var p: Variant = model.get("p")
 		if p is Dictionary and String((p as Dictionary).get("profile_id", "")) != "":
 			var rb := UIKit.quiet("Report…", Vector2(0, 60), UIKit.T_CAPTION)
@@ -647,7 +665,7 @@ class Row:
 			actions.add_child(bb)
 			any = true
 		if not any:
-			var l := UIKit.styled("Invite with Game Center from your party, or share the party code.", "caption", UIKit.IVORY_MUTED)
+			var l := UIKit.styled("Only the party host can invite. You can share the party code instead.", "caption", UIKit.IVORY_MUTED)
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			l.custom_minimum_size = Vector2(260, 0)
 			actions.add_child(l)

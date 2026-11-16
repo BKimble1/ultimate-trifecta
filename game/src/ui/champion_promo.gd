@@ -33,6 +33,25 @@ static func maybe_show(screen: Screen, force: bool = false) -> bool:
 	return true
 
 
+## (2.3) On arriving home: wait until the launch curtain has gone and home
+## has been on screen a moment, then maybe show the poster (it used to
+## appear under the fading Idlery logo, before home was ever seen).
+static func show_when_settled(screen: Screen) -> void:
+	var tree := screen.get_tree()
+	var t0 := Time.get_ticks_msec()
+	while is_instance_valid(screen) and screen.is_inside_tree() and BootCurtain.live > 0 and Time.get_ticks_msec() - t0 < 15000:
+		await tree.process_frame
+	if not is_instance_valid(screen) or not screen.is_inside_tree():
+		return
+	await tree.create_timer(SETTLE_S).timeout
+	if not is_instance_valid(screen) or not screen.is_inside_tree() or App.screen != screen or screen.has_modal():
+		return
+	maybe_show(screen)
+
+
+const SETTLE_S := 0.9
+
+
 static func popup(screen: Screen) -> Control:
 	var root := Control.new()
 	root.name = "ChampionPromo"
@@ -71,8 +90,14 @@ static func popup(screen: Screen) -> Control:
 ## The small poster for the Rankings screen.
 static func banner(screen: Screen) -> Control:
 	var poster := Poster.new()
-	poster.custom_minimum_size = Vector2(400, 290)
+	poster.custom_minimum_size = Vector2(380, 230)
 	_fill(poster, screen, Callable(), false)
+	# (2.3) tap the banner for the full poster
+	poster.gui_input.connect(func(ev: InputEvent) -> void:
+		var tap := (ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT) \
+			or (ev is InputEventScreenTouch and (ev as InputEventScreenTouch).pressed)
+		if tap and is_instance_valid(screen) and not screen.has_modal():
+			popup(screen))
 	return poster
 
 
@@ -102,19 +127,21 @@ static func _fill(poster: Poster, screen: Screen, close: Callable, big: bool) ->
 		top.add_child(x)
 	v.add_child(top)
 	# the words keep to the left; the art has the right
-	var text_w := poster.custom_minimum_size.x * (0.46 if big else 0.62)
+	var text_w := poster.custom_minimum_size.x * (0.46 if big else 0.64)
 	var title := UIKit.outlined(UIKit.label(HEAD, 50 if big else 24, UIKit.AMBER_HI, true), 10 if big else 6)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	title.custom_minimum_size.x = text_w
 	title.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	v.add_child(title)
-	var body := UIKit.label(BODY if big else SHORT, 24 if big else 17, UIKit.IVORY, false)
-	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.custom_minimum_size.x = text_w
-	body.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	v.add_child(body)
+	if big:
+		# (2.3) the small banner keeps just the headline: the poster explains
+		var body := UIKit.label(BODY, 24, UIKit.IVORY, false)
+		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		body.custom_minimum_size.x = text_w
+		body.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		v.add_child(body)
 	v.add_child(UIKit.spacer_v())
 	var row := UIKit.hbox(12)
 	var ends := UIKit.chip(_when(), Color(UIKit.NAVY, 0.75), UIKit.IVORY, UIKit.T_LABEL if big else UIKit.T_CAPTION)
@@ -212,8 +239,8 @@ class Poster:
 		clip_contents = true
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 7
-		for i in (60 if big else 28):
-			confetti.append({"x": rng.randf(), "y": rng.randf(), "s": rng.randf_range(0.04, 0.12), "c": [UIKit.AMBER, UIKit.TEAL, Color("ff7aa2"), Color("8fd3ff"), UIKit.IVORY][i % 5],
+		for i in (40 if big else 22):
+			confetti.append({"x": rng.randf_range(0.5, 1.0) if big else rng.randf(), "y": rng.randf(), "s": rng.randf_range(0.04, 0.12), "c": [UIKit.AMBER, UIKit.TEAL, Color("ff7aa2"), Color("8fd3ff"), UIKit.IVORY][i % 5],
 				"r": rng.randf() * TAU, "w": rng.randf_range(-2.0, 2.0)})
 
 	func _process(delta: float) -> void:
@@ -222,19 +249,40 @@ class Poster:
 		t += delta
 		queue_redraw()
 
+	## The poster's rounded outline (everything painted stays inside it:
+	## 2.3 fixes the square gradient and the rays and confetti that spilled
+	## past the rounded frame).
+	var _shape := PackedVector2Array()
+	var _shape_for := Vector2.ZERO
+
+	func shape() -> PackedVector2Array:
+		if _shape_for == size and not _shape.is_empty():
+			return _shape
+		_shape_for = size
+		_shape = PackedVector2Array()
+		var rad := minf(30.0 if big else 20.0, minf(size.x, size.y) * 0.5)
+		var corners := [[Vector2(size.x - rad, rad), -PI * 0.5], [Vector2(size.x - rad, size.y - rad), 0.0],
+			[Vector2(rad, size.y - rad), PI * 0.5], [Vector2(rad, rad), PI]]
+		for cr in corners:
+			for k in 9:
+				_shape.append((cr[0] as Vector2) + Vector2.from_angle(float(cr[1]) + PI * 0.5 * float(k) / 8.0) * rad)
+		return _shape
+
+	## A polygon cut to the poster's outline.
+	func _fill_clipped(poly: PackedVector2Array, col: Color) -> void:
+		for piece in Geometry2D.intersect_polygons(poly, shape()):
+			if piece.size() >= 3:
+				draw_colored_polygon(piece, col)
+
 	func _draw() -> void:
-		var r := Rect2(Vector2.ZERO, size)
-		var rad := 30.0 if big else 20.0
-		# night gradient, purple to deep blue
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color("2a1458")
-		sb.set_corner_radius_all(int(rad))
-		sb.border_color = Color(UIKit.AMBER, 0.85)
-		sb.set_border_width_all(3 if big else 2)
-		draw_style_box(sb, r)
-		var g := PackedColorArray([Color("3a1c7a"), Color("3a1c7a"), Color("0b1a46"), Color("0b1a46")])
-		var inset := r.grow(-4.0)
-		draw_polygon(PackedVector2Array([inset.position, Vector2(inset.end.x, inset.position.y), inset.end, Vector2(inset.position.x, inset.end.y)]), g)
+		var outline := shape()
+		# night gradient, purple at the top to deep blue at the bottom
+		var top := Color("3a1c7a")
+		var bot := Color("0b1a46")
+		var cols := PackedColorArray()
+		for v in outline:
+			cols.append(top.lerp(bot, clampf(v.y / maxf(size.y, 1.0), 0.0, 1.0)))
+		draw_polygon(outline, cols)
 		# light rays from behind the trophy (right side)
 		var c := Vector2(size.x * (0.8 if big else 0.86), size.y * (0.52 if big else 0.5))
 		var n := 14
@@ -242,10 +290,14 @@ class Poster:
 			var a := TAU * float(i) / float(n) + t * 0.15
 			var a2 := a + TAU / float(n) * 0.45
 			var L := size.length()
-			draw_colored_polygon(PackedVector2Array([c, c + Vector2.from_angle(a) * L, c + Vector2.from_angle(a2) * L]), Color(1.0, 0.85, 0.45, 0.07))
+			_fill_clipped(PackedVector2Array([c, c + Vector2.from_angle(a) * L, c + Vector2.from_angle(a2) * L]), Color(1.0, 0.85, 0.45, 0.07))
 		# glow
 		for k in 6:
-			draw_circle(c, (size.y * 0.42) * (1.0 - float(k) * 0.14), Color(1.0, 0.78, 0.36, 0.05))
+			var gr := (size.y * 0.42) * (1.0 - float(k) * 0.14)
+			var disc := PackedVector2Array()
+			for j in 40:
+				disc.append(c + Vector2.from_angle(TAU * float(j) / 40.0) * gr)
+			_fill_clipped(disc, Color(1.0, 0.78, 0.36, 0.05))
 		# the "your skin here" card behind the trophy
 		var cw := size.y * (0.42 if big else 0.24)
 		var card := Rect2(c + Vector2(-cw * 1.05, -cw * 0.7), Vector2(cw * 0.72, cw * 1.08))
@@ -278,11 +330,29 @@ class Poster:
 		_draw_confetti()
 
 	func _draw_confetti() -> void:
+		var m := 0.05
 		for q in confetti:
-			var y := fmod(float(q["y"]) + t * float(q["s"]), 1.1) - 0.05
-			var p := Vector2(float(q["x"]) * size.x, y * size.y)
+			var y := m + fmod(float(q["y"]) + t * float(q["s"]), 1.0) * (1.0 - m * 2.0)
+			var x := m + float(q["x"]) * (1.0 - m * 2.0)
+			var p := Vector2(x * size.x, y * size.y)
 			var rot := float(q["r"]) + t * float(q["w"])
 			var s := size.y * 0.012
+			# fade in at the top and out at the bottom: never cut by the edge
+			var fade := clampf(minf(y - m, 1.0 - m - y) / 0.08, 0.0, 1.0)
+			var col: Color = q["c"]
+			col.a *= fade
 			draw_set_transform(p, rot, Vector2.ONE)
-			draw_rect(Rect2(-s, -s * 0.5, s * 2.0, s), q["c"])
+			draw_rect(Rect2(-s, -s * 0.5, s * 2.0, s), col)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		_draw_frame()
+
+	## The gold frame, drawn last so nothing paints over it.
+	func _draw_frame() -> void:
+		var sb := StyleBoxFlat.new()
+		sb.draw_center = false
+		sb.set_corner_radius_all(int(minf(30.0 if big else 20.0, minf(size.x, size.y) * 0.5)))
+		sb.border_color = Color(UIKit.AMBER, 0.9)
+		sb.set_border_width_all(3 if big else 2)
+		sb.anti_aliasing = true
+		sb.corner_detail = 12
+		draw_style_box(sb, Rect2(Vector2.ZERO, size))

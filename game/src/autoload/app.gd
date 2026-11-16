@@ -47,6 +47,9 @@ func _ready() -> void:
 	get_tree().set_auto_accept_quit(true)
 	QualityPreset.apply(int(Save.get_setting("quality", 1)))
 	Social.invite_ready.connect(_on_invite_ready)
+	Social.invite_joining.connect(func() -> void:
+		if screen is Control and match_ctrl == null:
+			UIKit.toast(screen as Control, "Joining your friend's party…", 3.0))
 	Social.auth_changed.connect(_on_gc_auth)
 	Social.room_failed.connect(_on_room_failed)
 	# automation runs (simulator evidence) skip the Game Center sign-in sheet
@@ -130,6 +133,11 @@ func _dev_tools(args: PackedStringArray) -> void:
 		Diag._apply_measuring()
 		tree_exiting.connect(func() -> void: print("BETA_DIAG_SUMMARY_BEGIN\n%s\nBETA_DIAG_SUMMARY_END" % Diag.summary()))
 	for a in args:
+		if a.begins_with("--launch-probe="):
+			# dev: every frame of the first seconds after launch (src/dev/launch_probe.gd)
+			var lp: Node = (load("res://src/dev/launch_probe.gd") as GDScript).new()
+			lp.set("out_dir", a.get_slice("=", 1))
+			add_child(lp)
 		if a.begins_with("--start-probe="):
 			# dev: the start of a practice round, measured (src/dev/start_probe.gd)
 			var pr: Node = (load("res://src/dev/start_probe.gd") as GDScript).new()
@@ -796,6 +804,8 @@ var _hb_timer: Timer
 func _confirm_party_switch() -> bool:
 	if session == null or not is_instance_valid(session) or session.mode == NetSession.Mode.OFFLINE:
 		return true
+	if is_solo_party():
+		return true   # (2.3) alone at home: nothing to leave
 	if screen and screen is Screen:
 		var answer := {"v": -1}
 		(screen as Screen).dialog("Leave your current party to join this one?", [["Switch", func() -> void: answer["v"] = 1], ["Stay", func() -> void: answer["v"] = 0]])

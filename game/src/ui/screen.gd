@@ -229,7 +229,8 @@ func dialog(text: String, buttons: Array = [["OK", Callable()]]) -> PanelContain
 	add_child(dim)
 	var p := UIKit.panel(Color(UIKit.SLATE, 0.99), UIKit.R_PANEL, 30)
 	var v := UIKit.vbox(22)
-	var l := UIKit.styled(text, "body", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
+	# (2.3) a short question reads as the dialog's title; longer text as body
+	var l := UIKit.styled(text, "headline" if text.length() <= 60 else "body", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.custom_minimum_size = Vector2(minf(600.0, get_viewport().get_visible_rect().size.x * 0.6), 0)
 	v.add_child(l)

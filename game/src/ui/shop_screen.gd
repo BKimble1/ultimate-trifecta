@@ -233,14 +233,15 @@ func _frame_stage() -> void:
 ## Idle / Run / Emote stacked in the stage's lower-left corner, clear of the
 ## runner (who stands right of centre), with the turn hint under them.
 func _preview_controls() -> Control:
+	# (2.3) one segmented pill (Idle | Run | Emote) instead of three boxes
 	var pv := UIKit.vbox(UIKit.SP_S)
-	for spec in [["idle", "Idle"], ["run", "Run"], ["emote", "Emote"]]:
-		var b := UIKit.quiet(String(spec[1]), Vector2(120, 0), UIKit.T_CAPTION)
-		b.name = "Preview_" + String(spec[0])
-		b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		var kind: String = spec[0]
-		b.pressed.connect(func() -> void: _preview_action(kind))
-		pv.add_child(b)
+	var kinds := ["idle", "run", "emote"]
+	var seg := UIKit.segmented(["Idle", "Run", "Emote"], 0, func(i: int) -> void: _preview_action(String(kinds[i])), UIKit.TEAL, UIKit.T_CAPTION)
+	seg.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	var sbtns: Array = seg.get_meta(&"buttons")
+	for i in sbtns.size():
+		(sbtns[i] as Button).name = "Preview_" + String(kinds[i])
+	pv.add_child(seg)
 	var hint := UIKit.chip("Drag to turn", Color(UIKit.NAVY, 0.6), UIKit.IVORY_MUTED, 18)
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hint.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN

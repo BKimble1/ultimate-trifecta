@@ -57,7 +57,7 @@ func build() -> void:
 	var tm := UIKit.touch_min()
 	var ready := Social.online_ready()
 	# --- header: Back, title, who you are online
-	var head := header("Play with Friends")
+	var head := header("Join a party")
 	back_btn = head.get_child(0) as Button
 	head.add_theme_constant_override("separation", 16)
 	who_lbl = UIKit.styled("", "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
@@ -99,7 +99,7 @@ func build() -> void:
 	create_btn.disabled = not ready
 	create_btn.pressed.connect(_create)
 	cc.add_child(create_btn)
-	var hint := UIKit.styled("You get a 6-character code to share, or invite friends from the party." if ready
+	var hint := UIKit.styled("A new party with its own code. (Your home is already a party: invite friends from there.)" if ready
 		else "Needs Game Center (see above).", "caption", UIKit.IVORY_MUTED)
 	hint.add_theme_font_size_override("font_size", 19)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -160,7 +160,7 @@ func build() -> void:
 	friends_btn.accessibility_name = "Friends: see who's playing and invite them"
 	friends_btn.pressed.connect(func() -> void: FriendsPanel.open(self))
 	frow.add_child(friends_btn)
-	_friends_hint = UIKit.styled("See which friends are playing and invite them to your party.", "caption", UIKit.IVORY_MUTED)
+	_friends_hint = UIKit.styled("Invite your Game Center friends to your party.", "caption", UIKit.IVORY_MUTED)
 	_friends_hint.add_theme_font_size_override("font_size", 19)
 	_friends_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_friends_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL

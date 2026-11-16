@@ -13,6 +13,9 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 		"back":
 			ci.draw_polyline(PackedVector2Array([c + Vector2(r * 0.35, -r * 0.75), c + Vector2(-r * 0.4, 0), c + Vector2(r * 0.35, r * 0.75)]), col, r * 0.26, true)
 			return
+		"chevron":
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.3, -r * 0.7), c + Vector2(r * 0.4, 0), c + Vector2(-r * 0.3, r * 0.7)]), col, r * 0.24, true)
+			return
 		"info":
 			ci.draw_arc(c, r * 0.9, 0, TAU, 28, col, r * 0.16, true)
 			ci.draw_circle(c + Vector2(0, -r * 0.42), r * 0.13, col)

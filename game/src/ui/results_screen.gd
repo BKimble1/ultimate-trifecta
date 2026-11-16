@@ -64,17 +64,17 @@ func build() -> void:
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(row)
 	row.add_child(UIKit.spacer_h())
-	var sheet := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 20)
+	var sheet := UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, 26)
 	sheet.custom_minimum_size = Vector2(minf(720.0, get_viewport().get_visible_rect().size.x * 0.6), 0)
 	sheet.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(sheet)
 	# the summary scrolls by finger (UIKit.scroll_area); the actions never do
-	var outer := UIKit.vbox(10)
+	var outer := UIKit.vbox(14)
 	sheet.add_child(outer)
 	_sc = UIKit.scroll_area()
 	_sc.follow_focus = true
 	outer.add_child(_sc)
-	_v = UIKit.vbox(12)
+	_v = UIKit.vbox(16)
 	_v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_sc.add_child(_v)
 	_status = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
@@ -237,7 +237,7 @@ static func headline(d: Dictionary) -> Array:
 
 ## 2: what you did this round, in one card.
 func _contribution_card(d: Dictionary) -> Control:
-	var p := UIKit.panel(Color(UIKit.SLATE_HI, 0.85), UIKit.R_CARD, 14)
+	var p := UIKit.panel(Color(UIKit.SLATE_HI, 0.85), UIKit.R_CARD, 18)
 	p.name = "Contribution"
 	var v := UIKit.vbox(2)
 	v.add_child(UIKit.styled("You", "overline", UIKit.IVORY_MUTED))
@@ -254,7 +254,7 @@ func _contribution_card(d: Dictionary) -> Control:
 ## (2.2) Your run and Season Points: the time from GO to home, your best,
 ## and what this round added to the Rankings (or why it doesn't count).
 func _run_card() -> Control:
-	var p := UIKit.panel(Color(UIKit.NAVY, 0.72), UIKit.R_CARD, 14)
+	var p := UIKit.panel(Color(UIKit.NAVY, 0.72), UIKit.R_CARD, 18)
 	p.name = "RunCard"
 	var h := UIKit.hbox(18)
 	var run := float(rank.get("run_time", -1.0))
@@ -482,7 +482,7 @@ func _player_row(r: Dictionary, role: int, vals: Array) -> Control:
 
 
 func _rewards_card() -> Control:
-	var p := UIKit.panel(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 14)
+	var p := UIKit.panel(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 18)
 	var mid := String(results.get("match_id", ""))
 	_fill_rewards(p, mid)
 	# the wallet settles the round with the game service: the card follows
@@ -610,7 +610,7 @@ func _big_number(n: String, label_text: String) -> Control:
 ## the friends' table too (a cancelled round shows nothing else).
 func _series_so_far(with_table: bool = true) -> void:
 	var view := series_view()
-	var p := UIKit.panel(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 14)
+	var p := UIKit.panel(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 18)
 	p.name = "Series"
 	var sv := UIKit.vbox(4)
 	var tally := LobbyScreen._tally(view)

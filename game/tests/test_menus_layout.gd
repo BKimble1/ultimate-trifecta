@@ -448,7 +448,9 @@ func test_swipes_from_glyphs_portraits_labels_and_blank_card_areas_never_select(
 		t.check(room > 80.0, "%s: a list long enough to scroll (%d)" % [tab, room])
 		var card: Control = null
 		for cd in c.cards:
-			if String(c.draft[cd.field]) != String(cd.key) and c.scroll.get_global_rect().grow(-4.0).encloses((cd as Control).get_global_rect()):
+			# (2.3: whole cards, 2 units clear of the list's edge; the larger
+			# section labels put the face tab's second row 3 units from it)
+			if String(c.draft[cd.field]) != String(cd.key) and c.scroll.get_global_rect().grow(-2.0).encloses((cd as Control).get_global_rect()):
 				card = cd
 				break
 		t.check(card != null, "%s: an unselected card in view" % tab)

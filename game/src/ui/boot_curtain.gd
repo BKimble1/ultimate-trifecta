@@ -44,6 +44,19 @@ var waited := 0.0
 var reason := ""
 
 
+## (2.3) How many curtains are up (one at launch): home waits for zero
+## before it shows anything over itself (the champion poster).
+static var live := 0
+
+
+func _enter_tree() -> void:
+	live += 1
+
+
+func _exit_tree() -> void:
+	live = maxi(0, live - 1)
+
+
 func _ready() -> void:
 	layer = 100
 	process_mode = Node.PROCESS_MODE_ALWAYS
