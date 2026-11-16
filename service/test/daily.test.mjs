@@ -52,3 +52,17 @@ test('daily present: the streak wraps after the last day', async () => {
   const w = await call(ctx, 'GET', '/v1/wallet', undefined, a.token);
   assert.equal(w.body.wallet.balance, total);
 });
+
+test('daily present: every player has their own, once a day each', async () => {
+  const ctx = makeEnv();
+  const a = await user(ctx, 'T:_ada', 'Ada Otter');
+  const b = await user(ctx, 'T:_bea', 'Bea Otter');
+  const ra = await call(ctx, 'POST', '/v1/wallet/daily', {}, a.token);
+  const rb = await call(ctx, 'POST', '/v1/wallet/daily', {}, b.token);
+  assert.equal(ra.body.daily.granted, LIST[0], 'the first player gets today\'s');
+  assert.equal(rb.body.daily.granted, LIST[0], 'and so does the second, independently');
+  const ra2 = await call(ctx, 'POST', '/v1/wallet/daily', {}, a.token);
+  assert.equal(ra2.body.daily.granted, 0, 'still once a day for the first');
+  const wb = await call(ctx, 'GET', '/v1/wallet', undefined, b.token);
+  assert.equal(wb.body.wallet.daily.claimed, true, 'the second player\'s snapshot says opened');
+});

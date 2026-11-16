@@ -49,6 +49,7 @@ static func build_number() -> int:
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	LoginFlow.note_launch()
+	Wallet.changed.connect(LoginFlow.wallet_changed)
 	get_tree().set_auto_accept_quit(true)
 	QualityPreset.apply(int(Save.get_setting("quality", 1)))
 	Social.invite_ready.connect(_on_invite_ready)

@@ -12,6 +12,7 @@ extends RefCounted
 ## time away that counts as "coming back" (also brings the poster back)
 const AWAY_S := 6 * 3600
 const SETTLE_S := 0.9
+const WALLET_WAIT_MS := 8000
 
 ## seconds between the last use and this launch or resume
 static var away_s := 0
@@ -19,6 +20,16 @@ static var away_s := 0
 static var enabled := true
 static var _running := false
 static var _resume_due := false
+
+
+## (2.2 build 17) the wallet arrived late (sign-in after home settled) and
+## today's present is waiting: greet on home now.
+static func wallet_changed() -> void:
+	if _running or not enabled or not Wallet.daily_due():
+		return
+	var s: Variant = App.screen
+	if s is LobbyScreen and (s as LobbyScreen).is_inside_tree() and not (s as LobbyScreen).has_modal() and (s as LobbyScreen)._solo():
+		run(s as LobbyScreen)
 
 
 ## App start: count the launch and measure the time away.
@@ -62,6 +73,12 @@ static func run(screen: Screen) -> void:
 	_resume_due = false
 	var tree := screen.get_tree()
 	await _settle(screen, tree)
+	# (2.2 build 17) with the game service, today's present is the service's
+	# answer: wait (a few seconds at most) for the wallet to arrive after
+	# sign-in, or a launch would skip the present until the next visit home
+	var t0 := Time.get_ticks_msec()
+	while Cloud.configured() and not Wallet.synced() and _ok(screen) and Time.get_ticks_msec() - t0 < WALLET_WAIT_MS:
+		await tree.process_frame
 	if _ok(screen) and DailyGift.due():
 		var g := DailyGift.open(screen as Screen)
 		while is_instance_valid(g) and g.is_inside_tree():
