@@ -7,6 +7,6 @@
 - Names: change your name in Settings › Profile; rude names are refused, and your name shows to friends in a party.
 - Round start: keep your thumb on the stick through the countdown; you should move the instant it says GO. The role card is now a small banner so you can see your runner. Tell us if anything stutters when the round begins.
 - Loading tips rotate while a round loads.
-- Rankings (gold button, top right): Season Points and Fastest Run leaderboards (Game Center), your stats, and the Season Champion poster (it also pops up on launch now and then; X to close).
+- Rankings (gold button, top right): your stats now; the Season Points and Fastest Run leaderboards (Game Center) open with Season 1 on 1 December. The Season Champion poster also pops up on launch now and then (X to close).
 - After a round: your run time, personal best and Season Points (online rounds with another real player count).
 - Buttons have a new glossy look. Tell us if any text is cut off or hard to read on iPhone or iPad.

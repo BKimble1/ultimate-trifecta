@@ -10,8 +10,9 @@ text in `champion_promo.gd` (the test `test_rankings` checks the required
 statements stay in it).
 
 What the owner has to do each season:
-1. When the season ends (every 30 days from 2026-11-01; Season 1 runs
-   2026-12-01 to 2026-12-30 UTC), open App Store Connect › the app › Game
+1. When the season ends (every 30 days from 2026-12-01: Season 1 runs
+   2026-12-01 to 2026-12-30 UTC; the November preseason has no leaderboards
+   and no champion), open App Store Connect › the app › Game
    Center › Leaderboards › Season Points and look at the top entries of the
    finished occurrence.
 2. Remove any score you believe was cheated (App Store Connect can delete a

@@ -45,7 +45,8 @@ to false: the year-round poster and string lights come back.
   the Premium item's name and blurb; the service copy regenerated with
   `service/tools/sync_catalogue.mjs`). Tiers, XP, rewards, item ids and
   claim keys are unchanged; the service tests pass (93).
-- **Home** has a Season card above Play with Friends (`SeasonCard`): the
+- **Home** has a Season card (`SeasonCard`; since the second pass it sits
+  in the party column of the home lobby, section 9): the
   snowflake, "SEASON 1 · WINTER BREAK", your tier, a bar of Season XP to
   the next tier, and "N to claim" or "Premium"; tap opens the Season Pass.
   With no game service in the build it says "Play online rounds" instead
@@ -127,3 +128,125 @@ Store products and the Paid Apps Agreement don't exist yet. Until then the
 build says so honestly and nothing can be bought. The order is in
 `docs/OWNER_SETUP_GUIDE.md` (A agreements, B products, C service, D the
 configured build, E sandbox test, F version page, G submit).
+
+---
+
+# Second pass: the lobby is home, Quick Match, chat, Rankings
+
+Asked for after the first 2.2 build: typed party chat with bad words
+bleeped, clean names, loading-screen tips, the stuck-at-GO glitch, a
+shinier UI, 30-day leaderboards with run stats and a Season Champion
+poster, and one home where you are always in your lobby with a playlist
+picker instead of a "Play with Friends" button.
+
+## 9. Home is your party lobby
+
+| | |
+|---|---|
+| Home (a party of one, Quick Match selected) | `media/v22_home.jpg` |
+| The playlist picker | `media/v22_playlists.jpg` |
+
+- Opening the app puts you in your own party lobby in the holiday dorm
+  (`App.goto_title` starts a party of one on `SoloTransport`): walk around,
+  emote, change your look, Shop and Season Pass, all without a separate
+  "online lobby". Friends (online friends, invites, **Add friends** =
+  Game Center's friend-request sheet, "Join with a code"), Share and the
+  party list are always there.
+- Inviting a friend or sharing the party opens it on Game Center in place
+  (`App.open_party`): the same room, settings and look; friends land next
+  to you.
+- One **PLAY** button and a **playlist** card (tap Change):
+  **Quick Match** (random players online, bots fill the empty seats),
+  **Party vs Bots** (your map and rounds) and **Practice** (offline, pick
+  your role). With friends in the party, PLAY starts the party's round.
+- **Quick Match** (`Social.quick_match_start`): Game Center automatch in a
+  per-protocol player group; every device elects the lowest player id as
+  host; the round starts by itself 8 s after the match forms, bots in
+  empty seats; nobody in 25 s (or Game Center unavailable) and it starts
+  with bots. After the round everyone goes back to their own lobby.
+- **Rankings** (gold, top right) and Settings sit in the top bar.
+
+## 10. Party chat, bleeped
+
+| | |
+|---|---|
+| A bubble over the speaker's head | `media/v22_chat_bubble.jpg` |
+| The chat drawer | `media/v22_chat_drawer.jpg` |
+
+Typed chat works in any party (`ChatRules.bleep`): profanity, sexual words
+and slurs become `#%&*` whatever the disguise (l33t, s-p-a-c-e-d,
+stretched, doubled, split across words); threats, links, handles, phone
+numbers and spam are refused outright. The sender, the host and every
+receiver run the same filter (`SocialProto.Kind.MOD_TEXT`), so a modified
+client can't push words past it. Report message / Report player / Block
+stay on every message (Guideline 1.2), with "Report by email" when the
+game service isn't reachable (needs `support_email` in `config/links.cfg`).
+Names: typed names go through the full name policy (`NameRules`, reserved
+names included); a rejected name falls back to a generated one.
+
+## 11. Round start: no more frozen thumb
+
+The fading loading screen's layout containers (and the role card) passed
+touches up their own branch, so a thumb already on the stick was captured
+and the runner didn't move at GO. Now the closing screen ignores input
+(`UIKit.ignore_input_tree`), the touch surface adopts a finger that is
+already down in the stick zone (`TouchSurface._input`), and the role card
+is a compact banner under the top bar that waits for the loading screen to
+go. Measured with `src/dev/start_probe.gd` (a held thumb from before GO):
+old build never moved; 2.2 moves 46 ms after GO.
+
+| | |
+|---|---|
+| Loading with a rotating tip | `media/v22_loading_tip.jpg` |
+| The first frames of the round | `media/v22_round_start.jpg` |
+
+Tips (`LoadingTips`) change every 5.5 s: role strategy, controller and
+keyboard controls (for the device in use) and general play.
+
+## 12. Rankings, run stats and the Season Champion
+
+| | |
+|---|---|
+| Rankings (development sample rows) | `media/v22_rankings.jpg` |
+| After a round: your run, best and Season Points | `media/v22_results_run.jpg` |
+| The Season Champion poster (on launch, at most every 20 h) | `media/v22_champion_poster.jpg` |
+| Official Rules (Guideline 5.3) | `media/v22_rules.jpg` |
+
+- Two Game Center leaderboards, **created in App Store Connect** (workflow
+  `iap=gc-create`, run #201): `ut.season_points` (best total, " pts") and
+  `ut.fastest_run` (centiseconds, lowest first), recurring every 30 days
+  (`PT720H`, Game Center's longest) from **2026-12-01**, Season 1 · Winter
+  Break. App Store Connect refuses a recurring board that starts in the
+  past, so the November preseason has no boards: its rounds count toward
+  your own stats only, and Rankings says when the boards open.
+- Season Points (`Rankings.round_points`): 10 played, 15 team win, 5 per
+  splash (max 3), 10 home, 5 first home, 10 per distinct tag (max 3); at
+  most 70 a round and 40 counted rounds a day; only online rounds with at
+  least one other real player count. No divisions, no hidden rating, no
+  gameplay rewards.
+- The results card shows your run time, a NEW PERSONAL BEST chip, Season
+  Points with the breakdown, or why the round didn't count.
+- The Season Champion: #1 in Season Points designs (concept + name) a
+  tier 100 skin of a following Season Pass. The poster pops up on launch
+  at most every 20 h (never during the tutorial), X to close, and sits
+  small on Rankings. Rules in the game and in `CONTEST_RULES.md`.
+  (The results capture uses a practice fixture marked as an online round
+  to show the points; a real practice round says it doesn't count.)
+
+## 13. Candy UI
+
+Solid buttons got a darker 3D base, a gloss band and a label shadow, and
+sink when pressed; gold and teal are punchier (`UIKit.Face.shine`). All
+screens use it, so every button changed together.
+
+## 14. Checks for the second pass
+
+- Full headless suite: see the commit message of the final 2.2 commit.
+- New tests: `test_rankings` (points, caps, 30-day seasons, preseason,
+  Guideline 5.3 statements), `test_chat` (bleeping in every disguise,
+  device chat end to end), `test_loading::test_loading_tips_rotate`,
+  `test_trust` (typed names), `test_pause_input` (stale fingers).
+- Not verified on a device: Quick Match between two phones, Game Center
+  leaderboards (they open on 1 Dec), the friend-request sheet. These need
+  TestFlight testers; see `docs/testflight/what_to_test.txt`.
+

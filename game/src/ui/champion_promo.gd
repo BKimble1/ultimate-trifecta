@@ -89,7 +89,9 @@ static func _fill(poster: Poster, screen: Screen, close: Callable, big: bool) ->
 	m.add_child(v)
 	var top := UIKit.hbox(10)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var ov := UIKit.chip("%s · CHAMPION PRIZE" % Rankings.season_name(Rankings.contest_period()).to_upper(), UIKit.AMBER, UIKit.NAVY, UIKit.T_OVERLINE + (3 if big else 0))
+	# the small banner: "SEASON 1 · CHAMPION PRIZE" (the full name doesn't fit)
+	var sname := Rankings.season_name(Rankings.contest_period())
+	var ov := UIKit.chip("%s · CHAMPION PRIZE" % (sname if big else sname.get_slice(" · ", 0)).to_upper(), UIKit.AMBER, UIKit.NAVY, UIKit.T_OVERLINE + (3 if big else 0))
 	ov.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(ov)
 	top.add_child(UIKit.spacer_h())
