@@ -332,13 +332,13 @@ func emote_picker(anchor: Control, on_pick: Callable, side: String = "above") ->
 	g.columns = 3
 	g.add_theme_constant_override("h_separation", 10)
 	g.add_theme_constant_override("v_separation", 10)
-	for i in TC.EMOTES.size():
-		var idx := i
-		if Cosmetics.entry("emote", String(TC.EMOTES[i])).has("season") and not Save.owns("emote", String(TC.EMOTES[i])):
-			continue
+	# (2.2 build 16) the five equipped in the Locker
+	for i in EmoteSlots.ids():
+		var idx: int = i
 		g.add_child(icon_tile(Icons.emote_icon(i), String(TC.EMOTE_LABELS[TC.EMOTES[i]]), func() -> void:
 			close_popover()
 			on_pick.call(idx)))
+	g.columns = 5
 	v.add_child(g)
 	popover_at(anchor, v, side)
 

@@ -37,21 +37,21 @@ extends Screen
 const TABS := [
 	["outfit", "Outfit", ["outfit", "pattern"]],
 	["colours", "Colors", ["color", "trim"]],
-	["face", "Face", ["skin", "face", "brows", "marks"]],
-	["hair", "Hair", ["hair", "hair_color"]],
+	# (2.2 build 16) hair joins the face tab (room for Music)
+	["face", "Face", ["skin", "face", "brows", "marks", "hair", "hair_color"]],
 	["hat", "Hat", ["hat"]],
 	["shoes", "Shoes", ["shoes"]],
 	["move", "Emotes", ["emote"]],
 	["profile", "Profile", ["card", "badge"]],
 	# (2.2 build 16) lobby music: discs to put on
-	["albums", "Albums", []],
+	["albums", "Music", []],
 ]
 ## (2.2 build 16) open the Locker on this category once (Settings › Audio)
 static var open_category := ""
 const FIELD_TITLES := {
 	"outfit": "Outfit", "pattern": "Pattern", "color": "Main color", "trim": "Trim", "skin": "Skin tone",
 	"face": "Eyes", "brows": "Brows", "marks": "Cheeks", "hair": "Hairstyle", "hair_color": "Hair color",
-	"hat": "Hat", "shoes": "Shoes", "emote": "Your move · plays when you ready up",
+	"hat": "Hat", "shoes": "Shoes", "emote": "Your emotes · tap one to put it in the chosen slot",
 	"card": "Name card · shown with your name", "badge": "Badge",
 }
 const PROFILE_FIELDS := ["card", "badge"]
@@ -298,7 +298,7 @@ func _category_strip() -> Control:
 ## The category strip fits its panel: on a narrow one (iPhone SE) the
 ## padding tightens and the labels step down a size before any category
 ## would sit cut off at the edge.  Scrolling stays as the last resort.
-const TAB_FITS := [[UIKit.T_LABEL, 18], [UIKit.T_LABEL, 12], [UIKit.T_CAPTION, 10], [UIKit.T_CAPTION, 6]]
+const TAB_FITS := [[UIKit.T_LABEL, 18], [UIKit.T_LABEL, 12], [UIKit.T_CAPTION, 10], [UIKit.T_CAPTION, 6], [UIKit.T_CAPTION - 2, 4], [UIKit.T_CAPTION - 3, 2]]
 
 
 func _fit_tabs(strip: ScrollContainer, row: HBoxContainer) -> void:
@@ -440,6 +440,8 @@ func _build_tab() -> void:
 	if tab == "albums":
 		_build_albums(gw)
 		return
+	if tab == "move":
+		body.add_child(_emote_slot_row(gw))
 	for f in fields:
 		# section header: the field and, for colours, the chosen one's name
 		var hdr := UIKit.hbox(10)
@@ -492,6 +494,69 @@ func _build_tab() -> void:
 
 var _restore_at := -1
 var _discs: Array = []
+var _emote_slot := 0
+var _slot_btns: Array = []
+
+
+## (2.2 build 16) The five equipped emotes: pick a slot, then an emote.
+func _emote_slot_row(gw: float) -> Control:
+	var v := UIKit.vbox(6)
+	v.name = "EmoteSlots"
+	var hdr := UIKit.styled("Equipped · these are on your Emote button in the lobby and in rounds (keys 1-5)", "caption", UIKit.IVORY_MUTED)
+	hdr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hdr.custom_minimum_size.x = gw * 0.95
+	v.add_child(hdr)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	v.add_child(row)
+	_slot_btns.clear()
+	var w := floorf((gw - 6.0 * 4.0) / 5.0)
+	for i in EmoteSlots.N:
+		var b := UIKit.card_button(Vector2(w, w * 0.9 + 6.0), UIKit.SLATE)
+		b.name = "Slot_%d" % (i + 1)
+		var idx := i
+		b.pressed.connect(func() -> void:
+			_emote_slot = idx
+			_paint_emote_slots()
+			var id := EmoteSlots.id_at(idx)
+			if id >= 0 and App.stage:
+				App.stage.emote(Save.player_uid(), id))
+		row.add_child(b)
+		_slot_btns.append(b)
+	_paint_emote_slots()
+	return v
+
+
+func _paint_emote_slots() -> void:
+	var ks := EmoteSlots.keys()
+	for i in _slot_btns.size():
+		var b: Button = _slot_btns[i]
+		if not is_instance_valid(b):
+			continue
+		var f := UIKit.face_of(b)
+		for c in f.get_children():
+			c.queue_free()
+		var col := UIKit.vbox(2)
+		col.set_anchors_preset(Control.PRESET_FULL_RECT)
+		col.alignment = BoxContainer.ALIGNMENT_CENTER
+		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var k := String(ks[i]) if i < ks.size() else ""
+		var num := UIKit.styled(("%d · Ready move" % (i + 1)) if i == 0 else str(i + 1), "overline", UIKit.AMBER if i == _emote_slot else UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+		num.add_theme_font_size_override("font_size", 14)
+		col.add_child(num)
+		if k != "":
+			var ic := Icons.IconRect.new(Icons.emote_icon(TC.EMOTES.find(k)), UIKit.IVORY, b.custom_minimum_size.x * 0.34)
+			ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			col.add_child(ic)
+			var nm := UIKit.styled(String(Cosmetics.entry("emote", k)["name"]), "caption", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
+			nm.add_theme_font_size_override("font_size", 16)
+			nm.clip_text = true
+			nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			col.add_child(nm)
+		f.add_child(col)
+		UIKit.set_selected(b, i == _emote_slot)
+		b.accessibility_name = "Emote slot %d, %s%s" % [i + 1, String(Cosmetics.entry("emote", k).get("name", "empty")) if k != "" else "empty", ", selected" if i == _emote_slot else ""]
+
 
 
 ## (2.2 build 16) Albums: every lobby album as a disc in its sleeve; a tap
@@ -748,9 +813,12 @@ func state_of(f: String, k: String) -> Dictionary:
 	else:
 		equipped = String(saved[f]) == k
 		owned = Wallet.owns(f, k)
+	var slot := EmoteSlots.keys().find(k) if f == "emote" else -1
+	if f == "emote":
+		equipped = slot >= 0
 	var out := {"owned": owned, "equipped": equipped, "cost": 0, "locked": false}
 	if equipped:
-		out["text"] = "Equipped"
+		out["text"] = ("Slot %d" % (slot + 1)) if f == "emote" else "Equipped"
 		out["col"] = UIKit.TEAL
 	else:
 		out["text"] = "Owned" if owned else "Not owned"
@@ -765,6 +833,18 @@ func _pick(f: String, k: String) -> void:
 		var id := TC.EMOTES.find(k)
 		if id >= 0 and App.stage:
 			App.stage.emote(Save.player_uid(), id)
+		# (2.2 build 16) it goes into the chosen loadout slot (saved at once);
+		# slot 1 is also the ready-up move
+		EmoteSlots.put(_emote_slot, k)
+		var first := String(EmoteSlots.keys()[0])
+		draft["emote"] = first
+		saved["emote"] = first
+		_paint_emote_slots()
+		Sfx.play("pop")
+		_refresh()
+		if App.session and is_instance_valid(App.session) and App.session.phase == TC.Phase.LOBBY and App.session.mode != NetSession.Mode.OFFLINE:
+			App.session.set_local_cosmetic(Cosmetics.sanitize(Save.data["cosmetic"]))
+		return
 	if String(draft[f]) == k:
 		_update_footer()
 		return

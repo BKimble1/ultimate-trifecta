@@ -20,7 +20,7 @@ const ACTIONS := {
 	"cam_right": [KEY_L],
 	"cam_up": [KEY_I],
 	"cam_down": [KEY_K],
-	"emote_1": [KEY_1], "emote_2": [KEY_2], "emote_3": [KEY_3], "emote_4": [KEY_4],
+	"emote_1": [KEY_1], "emote_2": [KEY_2], "emote_3": [KEY_3], "emote_4": [KEY_4], "emote_5": [KEY_5],
 	"spectate_next": [KEY_TAB],
 	"map": [KEY_M],
 }
@@ -247,8 +247,8 @@ func _input(event: InputEvent) -> void:
 	for pair in [["jump", TC.BTN_JUMP], ["tag", TC.BTN_TAG], ["interact", TC.BTN_INTERACT], ["gadget", TC.BTN_GADGET]]:
 		if event.is_action_pressed(pair[0], false, true):
 			push_edge(int(pair[1]))
-	for i in 4:
-		if event.is_action_pressed("emote_%d" % (i + 1), false, true):
+	for i in 5:
+		if InputMap.has_action("emote_%d" % (i + 1)) and event.is_action_pressed("emote_%d" % (i + 1), false, true):
 			_emote_req = i
 
 

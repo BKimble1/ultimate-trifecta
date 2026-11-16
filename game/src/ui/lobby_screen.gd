@@ -981,15 +981,21 @@ func _emote_popover(anchor: Control) -> void:
 	g.columns = 3
 	g.add_theme_constant_override("h_separation", 10)
 	g.add_theme_constant_override("v_separation", 10)
-	for i in TC.EMOTES.size():
-		var idx := i
-		# (as Screen.emote_picker: Season emotes only once owned)
-		if Cosmetics.entry("emote", String(TC.EMOTES[i])).has("season") and not Save.owns("emote", String(TC.EMOTES[i])):
-			continue
+	# (2.2 build 16) the five equipped in the Locker
+	for i in EmoteSlots.ids():
+		var idx: int = i
 		g.add_child(icon_tile(Icons.emote_icon(i), String(TC.EMOTE_LABELS[TC.EMOTES[i]]), func() -> void:
 			close_popover()
 			_send_emote(idx)))
+	g.columns = 5
 	v.add_child(g)
+	var edit := UIKit.quiet("Change your emotes in the Locker", Vector2(0, 64), UIKit.T_CAPTION)
+	edit.name = "EditEmotes"
+	edit.pressed.connect(func() -> void:
+		close_popover()
+		CreatorScreen.open_category = "move"
+		NavShell.go("locker"))
+	v.add_child(edit)
 	if not (hub != null and hub.walking):
 		var tm := UIKit.quiet("Try moves (just on your screen)", Vector2(0, 64), UIKit.T_CAPTION)
 		tm.pressed.connect(func() -> void:

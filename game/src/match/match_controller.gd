@@ -960,8 +960,9 @@ func _build_local_cmd() -> InputCmd:
 		cmd.drive = Controls.get_drive()
 		cmd.move = Vector2.ZERO
 	var em := Controls.consume_emote()
-	if em >= 0:
-		session.send_emote(em)
+	if em >= 0 and EmoteSlots.id_at(em) >= 0:
+		# (2.2 build 16) keys 1-5 / the emote button: the equipped slots
+		session.send_emote(EmoteSlots.id_at(em))
 	cmd.seq = _next_seq
 	_next_seq += 1
 	cmd.quantize()

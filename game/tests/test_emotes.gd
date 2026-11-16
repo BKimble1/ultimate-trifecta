@@ -120,8 +120,9 @@ func test_reselection_repeat_ready_and_teardown() -> void:
 		host_l._emote_popover(host_l.primary_btn)
 		await rig.frames(2)
 		var tiles := host_l._popover.find_children("*", "Button", true, false).filter(func(b: Node) -> bool: return (b as Button).custom_minimum_size == Vector2(150, 118))
-		t.eq(tiles.size(), 6, "six emote tiles")
-		(tiles[5] as Button).pressed.emit()
+		# (2.2 build 16) the five equipped emotes; the fifth is Point by default
+		t.eq(tiles.size(), EmoteSlots.N, "five emote tiles (the loadout)")
+		(tiles[4] as Button).pressed.emit()
 		await rig.frames(3)
 		t.check(host_l._popover == null and hv._mode == "emote_point", "picking from the sheet plays it and closes the sheet (pass %d)" % pass_i)
 		await rig.frames(160)

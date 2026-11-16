@@ -446,6 +446,11 @@ func test_swipes_from_glyphs_portraits_labels_and_blank_card_areas_never_select(
 		await _frames(2)
 		var room := c.scroll.get_v_scroll_bar().max_value - c.scroll.size.y
 		t.check(room > 80.0, "%s: a list long enough to scroll (%d)" % [tab, room])
+		if tab == "move":
+			# (2.2 build 16) the loadout row comes first: start at the cards
+			c.scroll.scroll_vertical = int(c.body.get_node("EmoteSlots").size.y) if c.body.has_node("EmoteSlots") else 0
+			await _frames(2)
+		var s0 := c.scroll.scroll_vertical
 		var card: Control = null
 		for cd in c.cards:
 			# (2.3: whole cards, 2 units clear of the list's edge; the larger
@@ -468,7 +473,8 @@ func test_swipes_from_glyphs_portraits_labels_and_blank_card_areas_never_select(
 		var draft_before: Dictionary = c.draft.duplicate()
 		var emoting_before := App.stage != null and App.stage.emoting(Save.player_uid())
 		await _swipe(start, start + Vector2(4, -160))
-		t.check(c.scroll.scroll_vertical > 40, "%s: a swipe from the card's %s scrolled (%d)" % [tab, spec[1], c.scroll.scroll_vertical])
+		t.check(c.scroll.scroll_vertical > s0 + 40 or c.scroll.scroll_vertical >= int(c.scroll.get_v_scroll_bar().max_value - c.scroll.size.y) - 2,
+			"%s: a swipe from the card's %s scrolled (%d from %d)" % [tab, spec[1], c.scroll.scroll_vertical, s0])
 		t.eq(c.draft, draft_before, "%s: and selected nothing" % tab)
 		t.check(not c.apply_btn.visible, "%s: nothing to save after a swipe" % tab)
 		if tab == "move" and App.stage:
@@ -478,16 +484,21 @@ func test_swipes_from_glyphs_portraits_labels_and_blank_card_areas_never_select(
 	await _frames(4)
 	c.scroll.scroll_vertical = 0
 	await _frames(2)
+	# (2.2 build 16) a tap puts the emote in the chosen loadout slot (slot 1
+	# by default, the ready move), saved at once
 	var target: Variant = null
 	for cd in c.cards:
-		if String(cd.key) != String(c.draft["emote"]) and c.scroll.get_global_rect().grow(-4.0).encloses((cd as Control).get_global_rect()):
+		if not EmoteSlots.keys().has(String(cd.key)):
 			target = cd
 			break
 	t.check(target != null, "an emote card to tap")
 	if target != null:
+		c.scroll.ensure_control_visible(target)
+		await _frames(3)
 		await _tap((target.glyph as Control).get_global_rect().get_center())
-		t.eq(String(c.draft["emote"]), String(target.key), "a tap on the glyph selects that emote")
-		t.check(c.apply_btn.visible, "and offers Save look")
+		t.eq(String(EmoteSlots.keys()[0]), String(target.key), "a tap on the glyph puts that emote in slot 1")
+		t.eq(String(c.draft["emote"]), String(target.key), "slot 1 is the ready move")
+		t.check(not c.apply_btn.visible, "saved at once (no Save look)")
 		if App.stage:
 			t.check(App.stage.emoting(Save.player_uid()), "and plays it on the runner")
 	c._on_cancel()
