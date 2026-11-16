@@ -104,7 +104,7 @@ extends Resource
 
 @export_group("Gadgets")
 ## (2.3) the Splash Bomb only slowed a cart a little: replaced by the Pillow Shield
-@export var gadgets_enabled: PackedStringArray = PackedStringArray(["turbo", "decoy", "shield"])
+@export var gadgets_enabled: PackedStringArray = PackedStringArray(["turbo", "decoy", "shield", "cloak"])
 @export var gadget_use_cooldown_s: float = 1.0
 @export var gadget_respawn_s: float = 25.0
 @export var gadget_pickup_radius_m: float = 1.4
@@ -119,6 +119,10 @@ extends Resource
 ## distance trips (a stumble) and can't tag for decoy_daze_s; a cart there
 ## is slowed as long.  Its fake footsteps still run on after.
 @export var decoy_daze_m: float = 8.0
+## (2.2 build 17) Invisibility Cloak: the Night Watch can't see the runner
+## (nor their devices, beyond arm's length) for this long; a lunge that
+## finds them still tags
+@export var cloak_s: float = 6.0
 @export var decoy_daze_s: float = 2.5
 ## (2.2 build 16) a picked-up power-up comes back after gadget_respawn_s at
 ## another spot (never where it was, never one in use)

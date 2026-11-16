@@ -7,7 +7,7 @@ extends Node3D
 
 const SHADER := preload("res://assets/shaders/hologram.gdshader")
 const TINTS := {TC.Gadget.TURBO: Color(0.3, 1.0, 0.85), TC.Gadget.DECOY: Color(1.0, 0.85, 0.3),
-	TC.Gadget.SHIELD: Color(0.72, 0.6, 1.0), TC.Gadget.SPLASH_BOMB: Color(0.4, 0.75, 1.0)}
+	TC.Gadget.SHIELD: Color(0.72, 0.6, 1.0), TC.Gadget.SPLASH_BOMB: Color(0.4, 0.75, 1.0), TC.Gadget.CLOAK: Color(0.85, 0.95, 1.0)}
 
 var kind := TC.Gadget.TURBO
 var base_y := 0.0
@@ -94,6 +94,8 @@ func _build() -> void:
 			_sneaker()
 		TC.Gadget.DECOY:
 			_duck()
+		TC.Gadget.CLOAK:
+			_cloak()
 		_:
 			_pillow()
 
@@ -143,6 +145,19 @@ func _duck() -> void:
 	_part(sp, Vector3(0.2, 0.22, 0), Vector3(0.28, 0.28, 0.28))
 	_part(cone, Vector3(0.4, 0.2, 0), Vector3(0.12, 0.16, 0.12), Vector3(0, 0, -PI * 0.5))
 	_part(sp, Vector3(-0.26, 0.04, 0), Vector3(0.14, 0.2, 0.14), Vector3(0, 0, 0.6))
+
+
+## (2.2 build 17) the Invisibility Cloak: a hooded cape, draped
+func _cloak() -> void:
+	var sp := _sphere()
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.18
+	cone.bottom_radius = 0.5
+	cone.height = 1.0
+	cone.radial_segments = 16
+	_part(cone, Vector3(0, -0.06, 0), Vector3(0.62, 0.5, 0.36))   # the cape
+	_part(sp, Vector3(0, 0.26, 0), Vector3(0.3, 0.3, 0.28))       # the hood
+	_part(sp, Vector3(0, 0.24, 0.06), Vector3(0.18, 0.18, 0.12))  # its opening
 
 
 func _pillow() -> void:

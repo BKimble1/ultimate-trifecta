@@ -22,7 +22,7 @@ enum Phase { LOBBY, LOADING, REVEAL, COUNTDOWN, PLAYING, RESULTS, ENDED }
 enum Outcome { NONE, RUNNERS_WIN, PATROL_WIN, CANCELLED }
 
 ## (2.3) SHIELD appended; SPLASH_BOMB stays for old data but no longer spawns
-enum Gadget { NONE, TURBO, DECOY, SPLASH_BOMB, SHIELD }
+enum Gadget { NONE, TURBO, DECOY, SPLASH_BOMB, SHIELD, CLOAK }
 
 ## How a runner met the water (presentation: splash clip + spray shape).
 ## Carried by SPLASH_* events (field m) and snapshots; no rule reads it.
@@ -77,10 +77,10 @@ const EMOTES := ["wave", "cheer", "laugh", "shrug", "dance", "point", "stargaze"
 const EMOTE_LABELS := {"wave": "Wave", "cheer": "Cheer", "laugh": "Ha!", "shrug": "Shrug", "dance": "Dance", "point": "Over here!",
 	"stargaze": "Stargaze", "victory_lap": "Victory lap", "shush": "Shh!", "moon_shuffle": "Moon shuffle"}
 
-const GADGET_NAMES := {Gadget.TURBO: "Speed Sneakers", Gadget.DECOY: "Squeaky Duck", Gadget.SPLASH_BOMB: "Splash Bomb", Gadget.SHIELD: "Pillow Shield"}
+const GADGET_NAMES := {Gadget.TURBO: "Speed Sneakers", Gadget.DECOY: "Squeaky Duck", Gadget.SPLASH_BOMB: "Splash Bomb", Gadget.SHIELD: "Pillow Shield", Gadget.CLOAK: "Invisibility Cloak"}
 ## (2.3) what each does, in a few words (pickup toast, HUD)
-const GADGET_BLURBS := {Gadget.TURBO: "Run faster for 10 s", Gadget.DECOY: "Toss it: the Night Watch near it trip and can't tag for a moment", Gadget.SPLASH_BOMB: "Slows a cart", Gadget.SHIELD: "Tags bounce off for 5 s"}
-const GADGET_KEYS := {"turbo": Gadget.TURBO, "decoy": Gadget.DECOY, "splash_bomb": Gadget.SPLASH_BOMB, "shield": Gadget.SHIELD}
+const GADGET_BLURBS := {Gadget.TURBO: "Run faster for 10 s", Gadget.DECOY: "Toss it: the Night Watch near it trip and can't tag for a moment", Gadget.SPLASH_BOMB: "Slows a cart", Gadget.SHIELD: "Tags bounce off for 5 s", Gadget.CLOAK: "The Night Watch can't see you for 6 s"}
+const GADGET_KEYS := {"turbo": Gadget.TURBO, "decoy": Gadget.DECOY, "splash_bomb": Gadget.SPLASH_BOMB, "shield": Gadget.SHIELD, "cloak": Gadget.CLOAK}
 
 ## Role cards from the round's actual rules (the counts vary with the party
 ## settings; never hard-code them).

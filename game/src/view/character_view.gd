@@ -704,6 +704,9 @@ func _build_flashlight() -> void:
 	holder.add_child(beam)
 
 
+var _cloaked := false
+
+
 func _label_color() -> Color:
 	return Color("ffc668") if role == TC.Role.PATROL else Color("f4f2ec")
 
@@ -939,6 +942,12 @@ func reset_motion() -> void:
 ## teleport).
 func apply_state(state_rs: Dictionary, _delta: float = 0.0, snap: bool = false) -> void:
 	rs = state_rs
+	# (2.2 build 17) the Invisibility Cloak: you and your team see a ghost
+	var cl := bool(rs.get("cloak", false))
+	if cl != _cloaked:
+		_cloaked = cl
+		for mi in visible_parts:
+			(mi as GeometryInstance3D).transparency = 0.72 if cl else 0.0
 	var before := global_position
 	if rs.has("pos"):
 		global_position = rs["pos"]

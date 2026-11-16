@@ -918,6 +918,8 @@ func power_started(g: int) -> void:
 			len_s = mc.cfg.turbo_duration_s
 		TC.Gadget.SHIELD:
 			len_s = mc.cfg.shield_s
+		TC.Gadget.CLOAK:
+			len_s = mc.cfg.cloak_s
 	if len_s <= 0.0:
 		return
 	power_bar.start(g, len_s, _t)

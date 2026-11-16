@@ -147,10 +147,9 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 	_rift_rng.seed = seed_v ^ 0x21f7
 	rifts.clear()
 	if bool(opts.get("rifts", true)):
+		# (2.2 build 17) the slots start closed; each opens after a random wait
 		for k in Rifts.COUNT:
-			var rf := Rifts.pick(layout, _rift_rng, _rift_used())
-			if not rf.is_empty():
-				rifts.append(rf)
+			rifts.append({"at": 0, "to": 0, "open": false, "wait": _rift_rng.randf_range(Rifts.FIRST_WAIT.x, Rifts.FIRST_WAIT.y), "life": 0.0})
 	if bool(opts.get("pace", true)):
 		pace = RunnerPace.new()
 		pace.setup(self)       # starts the route fields on a worker (PaceFields)
@@ -435,6 +434,7 @@ func _idle_bodies() -> void:
 func _tick_state(p: SimPlayer, dt: float) -> void:
 	p.protect = maxf(0.0, p.protect - dt)
 	p.bump_protect = maxf(0.0, p.bump_protect - dt)
+	p.cloak_t = maxf(0.0, p.cloak_t - dt)
 	p.gadget_cd = maxf(0.0, p.gadget_cd - dt)
 	p.spotted = maxf(0.0, p.spotted - dt)
 	p.emote_t = maxf(0.0, p.emote_t - dt)
@@ -1000,6 +1000,9 @@ func _intent_gadget(p: SimPlayer, cmd: InputCmd) -> void:
 		TC.Gadget.SHIELD:
 			# (2.3) tags (and cart bumps) don't land while it lasts
 			p.protect = maxf(p.protect, cfg.shield_s)
+		TC.Gadget.CLOAK:
+			# (2.2 build 17) out of the Night Watch's sight while it lasts
+			p.cloak_t = maxf(p.cloak_t, cfg.cloak_s)
 		TC.Gadget.SPLASH_BOMB:
 			var target := _bomb_assist(p.pos(), aim)
 			var land2 := _toss_landing(p.pos(), (target - p.pos()).normalized() if target != Vector3.INF else aim, minf(cfg.bomb_range_m, p.pos().distance_to(target)) if target != Vector3.INF else cfg.bomb_range_m)
@@ -1039,8 +1042,9 @@ func _bomb_assist(from: Vector3, aim: Vector3) -> Vector3:
 func _rift_used() -> Dictionary:
 	var used := {}
 	for rf in rifts:
-		used[int(rf["at"])] = true
-		used[int(rf["to"])] = true
+		if bool(rf["open"]):
+			used[int(rf["at"])] = true
+			used[int(rf["to"])] = true
 	return used
 
 
@@ -1060,6 +1064,12 @@ func _check_rifts(dt: float) -> void:
 				if not nr.is_empty():
 					rifts[i] = nr
 			continue
+		rf["life"] = float(rf.get("life", 60.0)) - dt
+		if float(rf["life"]) <= 0.0:
+			# nobody came: it fades, another opens somewhere later
+			rf["open"] = false
+			rf["wait"] = _rift_rng.randf_range(Rifts.REOPEN_WAIT.x, Rifts.REOPEN_WAIT.y)
+			continue
 		var at := Rifts.world(layout, int(rf["at"]))
 		for p in players:
 			if p.state != TC.PState.ACTIVE and p.state != TC.PState.STUMBLE:
@@ -1077,7 +1087,7 @@ func _check_rifts(dt: float) -> void:
 			p.clear_history()
 			p.prev_pos = Vector3.INF
 			rf["open"] = false
-			rf["wait"] = Rifts.REOPEN_S
+			rf["wait"] = _rift_rng.randf_range(Rifts.REOPEN_WAIT.x, Rifts.REOPEN_WAIT.y)
 			_emit(TC.Ev.RIFT, p.id, -1, int(rf["to"]), at, i)
 			break
 
@@ -1277,8 +1287,8 @@ func _perception() -> void:
 	for r in players:
 		if not r.is_runner() or not r.is_in_play():
 			continue
-		if r.state == TC.PState.HIDING:
-			continue   # (2.3) out of sight in a bush
+		if r.state == TC.PState.HIDING or r.cloak_t > 0.0:
+			continue   # (2.3) out of sight in a bush; (build 17) cloaked
 		for q in players:
 			if not q.is_patrol() or q.state == TC.PState.WAITING:
 				continue

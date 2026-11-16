@@ -21,7 +21,10 @@ func test_a_rift_sends_you_far_and_closes() -> void:
 	var h := SimHarness.new(t)
 	h.make([R, P], [0, 1, 2])
 	await h.release_patrol()
-	t.eq(h.sim.rifts.size(), Rifts.COUNT, "the round opens %d rifts" % Rifts.COUNT)
+	t.eq(h.sim.rifts.size(), Rifts.COUNT, "%d rift slots" % Rifts.COUNT)
+	t.check(not bool(h.sim.rifts[0]["open"]) and not bool(h.sim.rifts[1]["open"]), "(2.2 build 17) none open at GO: they're rare")
+	await h.step(int(Rifts.FIRST_WAIT.y * 60.0) + 5)
+	t.check(bool(h.sim.rifts[0]["open"]), "the first opens a while into the round")
 	var rf: Dictionary = h.sim.rifts[0]
 	var at := Rifts.world(h.sim.layout, int(rf["at"]))
 	var to := Rifts.world(h.sim.layout, int(rf["to"]))
@@ -38,8 +41,8 @@ func test_a_rift_sends_you_far_and_closes() -> void:
 	t.check(Vector2(p.x - to.x, p.z - to.z).length() < 3.0, "out at the far end (%s near %s)" % [str(p), str(to)])
 	t.check(not bool(h.sim.rifts[0]["open"]), "and the rift closes")
 	# a while later a new one opens somewhere else
-	await h.step(int(Rifts.REOPEN_S * 60.0) + 5)
-	t.check(bool(h.sim.rifts[0]["open"]), "a new rift opens")
+	await h.step(int(Rifts.REOPEN_WAIT.y * 60.0) + 5)
+	t.check(bool(h.sim.rifts[0]["open"]), "a new rift opens later")
 	t.check(int(h.sim.rifts[0]["at"]) != int(rf["at"]) or int(h.sim.rifts[0]["to"]) != int(rf["to"]), "elsewhere")
 	h.free_sim()
 

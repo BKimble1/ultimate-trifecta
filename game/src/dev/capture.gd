@@ -332,6 +332,8 @@ func _rift26() -> void:
 	var me := s.player(mc.local_slot)
 	if not _scheduled.has("r1") and not s.rifts.is_empty():
 		_scheduled["r1"] = _t
+		if not bool(s.rifts[0]["open"]):
+			s.rifts[0] = Rifts.pick(s.layout, s._rift_rng, {})   # (rare now: open one for the picture)
 		var at := Rifts.world(s.layout, int(s.rifts[0]["at"]))
 		me.body.global_position = at + Vector3(0, 0.05, 5.0)
 		me.yaw = 0.0

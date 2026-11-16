@@ -16,9 +16,9 @@ func test_the_set_and_the_seeded_types() -> void:
 	var a := MatchSim.pickup_types(4242, keys, 16)
 	var b := MatchSim.pickup_types(4242, keys, 16)
 	t.eq(a, b, "the same seed gives the same items on every device")
-	t.check(a.all(func(g: int) -> bool: return g in [TC.Gadget.TURBO, TC.Gadget.DECOY, TC.Gadget.SHIELD]), "only enabled items")
+	t.check(a.all(func(g: int) -> bool: return g in [TC.Gadget.TURBO, TC.Gadget.DECOY, TC.Gadget.SHIELD, TC.Gadget.CLOAK]), "only enabled items")
 	t.check(a.has(TC.Gadget.SHIELD) and a.has(TC.Gadget.TURBO), "a round has a mix")
-	for g in [TC.Gadget.TURBO, TC.Gadget.DECOY, TC.Gadget.SHIELD]:
+	for g in [TC.Gadget.TURBO, TC.Gadget.DECOY, TC.Gadget.SHIELD, TC.Gadget.CLOAK]:
 		t.check(TC.GADGET_NAMES.has(g) and TC.GADGET_BLURBS.has(g) and Icons.gadget_icon(g) != "", "%s has a name, a blurb and an icon" % TC.GADGET_NAMES.get(g, g))
 
 
@@ -93,4 +93,33 @@ func test_a_pickup_comes_back_elsewhere() -> void:
 	for q in h.sim.pickups:
 		t.check(not spots.has(int(q["spot"])), "never two on one spot")
 		spots[int(q["spot"])] = true
+	h.free_sim()
+
+
+## (2.2 build 17) The Invisibility Cloak: the Night Watch don't see the
+## runner while it lasts (their perception and their devices), then it fades.
+func test_the_cloak_hides_you() -> void:
+	var h := SimHarness.new(t)
+	h.make([R, P], [0, 1, 2])
+	await h.release_patrol()
+	var r := h.sim.player(0)
+	var w := h.sim.player(1)
+	var at: Vector3 = (h.sim.pickups[0]["pos"] as Vector3) + Vector3(2.5, 0.05, 0)
+	h.place(0, at)
+	h.place(1, at + Vector3(0, 0, 6.0))
+	w.yaw = 0.0   # facing the runner (-z)
+	await h.step(8)
+	r.gadget = TC.Gadget.CLOAK
+	h.press(0, TC.BTN_GADGET)
+	await h.step(8)
+	t.check(r.cloak_t > Rules.cfg.cloak_s - 0.5, "cloaked (%.2f s)" % r.cloak_t)
+	r.spotted = 0.0   # (any sighting from before the cloak)
+	var seen_while := false
+	for i in 60:
+		await h.step()
+		if r.spotted > 0.9:
+			seen_while = true
+	t.check(not seen_while, "not spotted while cloaked")
+	await h.step(int(Rules.cfg.cloak_s * 60.0))
+	t.check(r.cloak_t <= 0.0, "and it wears off")
 	h.free_sim()

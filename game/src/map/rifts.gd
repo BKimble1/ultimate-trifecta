@@ -8,9 +8,14 @@ extends RefCounted
 ## power-ups), so every device works out the same list; which spots are open
 ## and where each leads is the host's and travels in the snapshot.
 
-const COUNT := 4            # rifts open at once
+## (2.2 build 17) rarer: at most two at once, each appearing after a random
+## wait, staying a while, then fading if nobody used it
+const COUNT := 2            # rift slots (at most this many open at once)
 const RADIUS := 1.1         # step this close to the centre to go through
-const REOPEN_S := 40.0      # a closed rift's replacement opens after this
+const FIRST_WAIT := Vector2(20.0, 70.0)   # seconds into the round a slot first opens
+const REOPEN_WAIT := Vector2(50.0, 110.0) # after it closes (used or faded)
+const LIFE := Vector2(45.0, 75.0)         # how long an unused rift stays open
+const REOPEN_S := 50.0      # (the shortest reopen wait; tests)
 const MIN_TRIP := 55.0      # a rift never leads somewhere this close
 const SPAWN_GUARD := 14.0   # nor opens this close to a dorm door
 
@@ -91,7 +96,7 @@ static func pick(layout: CampusLayout, rng: RandomNumberGenerator, used: Diction
 				best = b
 				best_d = d
 		if best >= 0:
-			return {"at": a, "to": best, "open": true, "wait": 0.0}
+			return {"at": a, "to": best, "open": true, "wait": 0.0, "life": rng.randf_range(LIFE.x, LIFE.y)}
 	return {}
 
 

@@ -369,7 +369,9 @@ func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 		if not r.is_runner() or not r.is_in_play() or r.home_safe:
 			continue
 		var seen := false
-		if r.state == TC.PState.HIDING:
+		if r.cloak_t > 0.0:
+			seen = r.pos().distance_to(p.pos()) < 2.0   # (build 17) cloaked: only bumped into
+		elif r.state == TC.PState.HIDING:
 			# (2.3) unseen in a bush, unless it's the bush they were last seen
 			# beside (the bot checks it, as a person would)
 			var ls: Dictionary = last_seen.get(r.id, {})

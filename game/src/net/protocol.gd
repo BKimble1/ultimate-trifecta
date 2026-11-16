@@ -55,7 +55,9 @@ extends RefCounted
 ## (Ev.RIFT, their state in the snapshot), carts: full speed on grass and a
 ## cart hit is a tag (rules every device predicts with), so 12 and 13 refuse
 ## each other at join.
-const VERSION := 13
+## Protocol 14 (2.2 build 17): a second player flags byte (the Invisibility
+## Cloak), the Cloak power-up, rarer timed rifts.
+const VERSION := 14
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}
@@ -314,6 +316,8 @@ static func encode_snapshot(sim: MatchSim, recipient: SimPlayer, relevant: Array
 		if sp.connected: f |= PF_CONNECTED
 		if sp.is_bot or sp.bot_takeover: f |= PF_BOT
 		b.put_u8(f)
+		# (2.2 build 17) a second flags byte: bit 0 cloaked
+		b.put_u8(1 if sp.cloak_t > 0.0 else 0)
 		put_vec3(b, sp.pos())
 		put_vel(b, sp.vel)
 		put_angle(b, sp.yaw)
@@ -474,6 +478,8 @@ static func decode_snapshot(b: StreamPeerBuffer) -> Dictionary:
 		e["spotted"] = (f & PF_SPOTTED) != 0
 		e["connected"] = (f & PF_CONNECTED) != 0
 		e["bot"] = (f & PF_BOT) != 0
+		var f2 := b.get_u8()
+		e["cloak"] = (f2 & 1) != 0
 		e["pos"] = get_vec3(b)
 		e["vel"] = get_vel(b)
 		e["yaw"] = get_angle(b)

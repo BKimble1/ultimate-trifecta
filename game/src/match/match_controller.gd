@@ -1196,7 +1196,7 @@ func _player_rs(slot: int) -> Dictionary:
 			"on_floor": p.on_floor, "diving": p.diving, "fast": p.fast, "tag_phase": p.tag_phase,
 			"protect": p.protect, "bump_protect": p.bump_protect, "spotted": p.spotted > 0.0,
 			"cart_id": p.cart_id, "steer": sim.carts[p.cart_id].steer_s if p.cart_id >= 0 else 0.0,
-			"emote": p.emote, "emote_t": p.emote_t, "stamps": p.stamps, "visible": true,
+			"emote": p.emote, "emote_t": p.emote_t, "stamps": p.stamps, "visible": true, "cloak": p.cloak_t > 0.0,
 			"bot": p.is_bot or p.bot_takeover, "connected": p.connected, "impact": p.splash_impact,
 		}
 	if slot == local_slot and pred != null and _last_snap.has("players") and (_last_snap["players"] as Dictionary).has(slot):

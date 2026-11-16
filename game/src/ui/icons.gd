@@ -583,6 +583,7 @@ static func gadget_icon(g: int) -> String:
 		TC.Gadget.DECOY: return "duck"
 		TC.Gadget.SPLASH_BOMB: return "bomb"
 		TC.Gadget.SHIELD: return "shield"
+		TC.Gadget.CLOAK: return "eye"
 	return ""
 
 

@@ -503,7 +503,7 @@ var _slot_btns: Array = []
 func _emote_slot_row(gw: float) -> Control:
 	var v := UIKit.vbox(6)
 	v.name = "EmoteSlots"
-	var hdr := UIKit.styled("Equipped · these are on your Emote button in the lobby and in rounds (keys 1-5)", "caption", UIKit.IVORY_MUTED)
+	var hdr := UIKit.styled("Your emote wheel · tap a slot, then the emote to put in it. The wheel is on the Emote button in the lobby and in rounds (keys 1-5).", "caption", UIKit.IVORY_MUTED)
 	hdr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hdr.custom_minimum_size.x = gw * 0.95
 	v.add_child(hdr)
@@ -518,7 +518,10 @@ func _emote_slot_row(gw: float) -> Control:
 		var idx := i
 		b.pressed.connect(func() -> void:
 			_emote_slot = idx
+			_last_field = "emote"
 			_paint_emote_slots()
+			_refresh()
+			_update_footer()
 			var id := EmoteSlots.id_at(idx)
 			if id >= 0 and App.stage:
 				App.stage.emote(Save.player_uid(), id))
@@ -542,7 +545,8 @@ func _paint_emote_slots() -> void:
 		col.alignment = BoxContainer.ALIGNMENT_CENTER
 		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var k := String(ks[i]) if i < ks.size() else ""
-		var num := UIKit.styled(("%d · Ready move" % (i + 1)) if i == 0 else str(i + 1), "overline", UIKit.AMBER if i == _emote_slot else UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+		var choosing := i == _emote_slot
+		var num := UIKit.styled(("%d · Ready move" % (i + 1)) if i == 0 else str(i + 1), "overline", UIKit.AMBER if choosing else UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 		num.add_theme_font_size_override("font_size", 14)
 		col.add_child(num)
 		if k != "":
@@ -554,8 +558,20 @@ func _paint_emote_slots() -> void:
 			nm.clip_text = true
 			nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 			col.add_child(nm)
+		if choosing:
+			var ch := UIKit.styled("Choosing", "caption", UIKit.AMBER, HORIZONTAL_ALIGNMENT_CENTER)
+			ch.add_theme_font_size_override("font_size", 14)
+			col.add_child(ch)
 		f.add_child(col)
-		UIKit.set_selected(b, i == _emote_slot)
+		# the slot being chosen: a gold edge (the others plain)
+		var sb := UIKit.card_box(Color(UIKit.AMBER.darkened(0.6), 0.9) if choosing else Color(UIKit.SLATE, 0.92), 16, 1.0, 12, 0.08)
+		if choosing:
+			sb.set_border_width_all(3)
+			sb.border_color = UIKit.AMBER
+		f.styles["normal"] = sb
+		f.styles["selected"] = sb
+		f.queue_redraw()
+		UIKit.set_selected(b, choosing)
 		b.accessibility_name = "Emote slot %d, %s%s" % [i + 1, String(Cosmetics.entry("emote", k).get("name", "empty")) if k != "" else "empty", ", selected" if i == _emote_slot else ""]
 
 
@@ -843,6 +859,7 @@ func _pick(f: String, k: String) -> void:
 		_paint_emote_slots()
 		Sfx.play("pop")
 		_refresh()
+		_update_footer()
 		if App.session and is_instance_valid(App.session) and App.session.phase == TC.Phase.LOBBY and App.session.mode != NetSession.Mode.OFFLINE:
 			App.session.set_local_cosmetic(Cosmetics.sanitize(Save.data["cosmetic"]))
 		return
@@ -887,6 +904,9 @@ func _update_footer() -> void:
 		var id := String(draft_style.get(f, ""))
 		nm = ("No %s" % ("name card" if f == "card" else "badge")) if id == "" else Catalogue.display_name(id)
 		same = id == String(saved_style.get(f, ""))
+	elif f == "emote" and tab == "move":
+		var ks := EmoteSlots.keys()
+		nm = "Slot %d · %s" % [_emote_slot + 1, String(Cosmetics.entry("emote", String(ks[_emote_slot])).get("name", "")) if _emote_slot < ks.size() else "empty"]
 	elif f != "":
 		nm = String(Cosmetics.entry(f, String(draft[f])).get("name", ""))
 		if f in SWATCH_FIELDS:
@@ -1178,6 +1198,11 @@ class ItemCard:
 		var it: Dictionary = Cosmetics.entry(field, key)
 		state_l.text = "Equipped" if bool(st["equipped"]) else ""
 		var sel: bool = String(creator.draft[field]) == key
+		if field == "emote":
+			# (2.2 build 17) which slot it is in; selected = in the slot being chosen
+			state_l.text = String(st["text"]) if bool(st["equipped"]) else ""
+			var ks := EmoteSlots.keys()
+			sel = creator._emote_slot < ks.size() and String(ks[creator._emote_slot]) == key
 		UIKit.set_selected(self, sel)
 		check.visible = sel
 		accessibility_name = "%s, %s%s" % [it["name"], st["text"], ", selected" if sel else ""]

@@ -22,7 +22,7 @@ var _flash := 0.0
 
 func _ready() -> void:
 	var q := QuadMesh.new()
-	q.size = Vector2(2.0, H)
+	q.size = Vector2(2.6, H * 1.18)   # (the shader's oval plus its outer glow)
 	var mi := MeshInstance3D.new()
 	mi.mesh = q
 	mi.position = Vector3(0, H * 0.5 + 0.05, 0)
