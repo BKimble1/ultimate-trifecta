@@ -958,6 +958,13 @@ func _relevant_for(rec: SimPlayer, dt: float) -> Array:
 		var rel := false
 		if p.state == TC.PState.CAPTURED or p.state == TC.PState.FINISHED:
 			rel = false
+		elif p.state == TC.PState.HIDING:
+			# (2.3) a runner in a bush reaches an opponent's device only from
+			# right beside it (a modified game can't see into bushes)
+			if d > 3.0:
+				_relevance[key] = 0.0
+				continue
+			rel = true
 		elif d <= 45.0:
 			rel = true
 		elif d <= 90.0 and sim.has_los(rec.pos() + Vector3(0, 1.5, 0), p.pos() + Vector3(0, 1.0, 0)):

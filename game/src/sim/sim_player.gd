@@ -81,6 +81,8 @@ var stuck_t: float = 0.0
 var prev_pos := Vector3.INF
 ## V6: inside tonight's home dorm common room (runners can't be tagged there)
 var home_safe := false
+## (2.3) the bush this runner is hiding in (-1: none)
+var bush := -1
 ## V6: gold coins this player collected this round (host-decided)
 var coins_picked: int = 0
 ## V6: the home door this runner finished through ("" until home)
@@ -120,7 +122,8 @@ func stamp_count() -> int:
 
 
 func is_taggable() -> bool:
-	return is_runner() and (state == TC.PState.ACTIVE or state == TC.PState.STUMBLE) and protect <= 0.0 and bump_protect <= 0.0 and not home_safe
+	# (2.3) a runner hiding in a bush can still be tagged (a lunge at the bush)
+	return is_runner() and (state == TC.PState.ACTIVE or state == TC.PState.STUMBLE or state == TC.PState.HIDING) and protect <= 0.0 and bump_protect <= 0.0 and not home_safe
 
 
 func is_in_play() -> bool:

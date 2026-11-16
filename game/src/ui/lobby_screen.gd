@@ -259,7 +259,7 @@ func build() -> void:
 	sub_lbl = UIKit.outlined(UIKit.styled("", "caption", Color(UIKit.IVORY, 0.88), HORIZONTAL_ALIGNMENT_RIGHT))
 	sub_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	prow.add_child(sub_lbl)
-	primary_btn = UIKit.primary("PLAY", Vector2(360, 96), 34)
+	primary_btn = UIKit.primary("PLAY", Vector2(400, 96), 34)
 	primary_btn.pressed.connect(_on_primary)
 	prow.add_child(primary_btn)
 	focus_first(primary_btn)
@@ -293,6 +293,15 @@ func build() -> void:
 	# 2.2: the season champion poster, now and then, on arriving home
 	if _solo():
 		ChampionPromo.show_when_settled(self)
+	# (2.3) a round's Coins fly into the counter, top right
+	if App.coin_fly_pending > 0:
+		var amount := App.coin_fly_pending
+		App.coin_fly_pending = 0
+		wallet_chip.visible = true
+		get_tree().create_timer(0.7).timeout.connect(func() -> void:
+			if is_instance_valid(wallet_chip) and wallet_chip.is_inside_tree():
+				var vs := get_viewport().get_visible_rect().size
+				(wallet_chip as WalletChip).fly_in(amount, Vector2(vs.x * 0.4, vs.y * 0.55)))
 
 
 ## The settings as short chips in one tappable group (the map first).
@@ -583,7 +592,7 @@ func play_mode() -> String:
 func _mode_card() -> Button:
 	# (2.3) a playlist tile like a mobile game's mode card: the mode's icon
 	# on a coloured tile, the name, one line about it, and a chevron
-	var b := UIKit.card_button(Vector2(360, 0), Color(UIKit.SLATE, 0.95))
+	var b := UIKit.card_button(Vector2(400, 0), Color(UIKit.SLATE, 0.95))
 	b.name = "ModeCard"
 	b.size_flags_horizontal = Control.SIZE_SHRINK_END
 	var h := UIKit.hbox(16)
@@ -605,9 +614,6 @@ func _mode_card() -> Button:
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var ov := UIKit.styled("PLAYLIST", "overline", UIKit.AMBER)
-	ov.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(ov)
 	mode_title = UIKit.styled("", "label")
 	mode_title.add_theme_font_override("font", UIKit.font_w(800))
 	mode_title.add_theme_font_size_override("font_size", UIKit.T_LABEL + 4)
@@ -622,18 +628,61 @@ func _mode_card() -> Button:
 	ch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(ch)
 	b.add_child(h)
-	b.custom_minimum_size.y = maxf(UIKit.touch_min(), 96.0)
+	# (2.3) the tile is as tall as its words need (never text past its edge)
+	b.custom_minimum_size.y = maxf(UIKit.touch_min(), 88.0)
+	var fit := func() -> void:
+		if is_instance_valid(b) and is_instance_valid(h):
+			b.custom_minimum_size.y = maxf(maxf(UIKit.touch_min(), 88.0), h.get_combined_minimum_size().y + 28.0)
+	h.minimum_size_changed.connect(fit)
+	fit.call_deferred()
+	mode_sub.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	mode_sub.clip_text = true
 	b.pressed.connect(_mode_sheet)
 	return b
+
+
+## (2.3) The party's settings as four labelled values in one quiet card,
+## with Change for whoever may change them (the host).
+func _settings_block(close: Callable, can_change: bool) -> Control:
+	var card := PanelContainer.new()
+	var sb := UIKit.box(Color(UIKit.NAVY, 0.5), UIKit.R_CARD, 0, Color.WHITE, 22)
+	sb.content_margin_top = 16
+	sb.content_margin_bottom = 16
+	card.add_theme_stylebox_override("panel", sb)
+	var h := UIKit.hbox(28)
+	card.add_child(h)
+	var parts := PartySeries.summary_parts(session.settings)
+	var labels := ["MAP", "ROUNDS", "NIGHT WATCH", "TO WIN"]
+	var values := [parts[0], parts[1].get_slice(" ", 0), parts[2].get_slice(" ", 0), "%s home" % parts[3].get_slice(" ", 0)]
+	for i in labels.size():
+		var col := UIKit.vbox(2)
+		col.add_child(UIKit.styled(String(labels[i]), "overline", UIKit.IVORY_MUTED))
+		var val := UIKit.styled(String(values[i]), "label", UIKit.IVORY)
+		val.add_theme_font_override("font", UIKit.font_w(800))
+		col.add_child(val)
+		h.add_child(col)
+	h.add_child(UIKit.spacer_h())
+	if can_change:
+		var ch := UIKit.secondary("Change", Vector2(170, UIKit.touch_min()), UIKit.T_LABEL)
+		ch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		ch.pressed.connect(func() -> void:
+			close.call()
+			_settings_sheet())
+		h.add_child(ch)
+	return card
 
 
 func _paint_mode() -> void:
 	if not is_instance_valid(mode_btn):
 		return
 	var m := play_mode()
+	var summary := " · ".join(PartySeries.summary_parts(session.settings).slice(0, 2))
 	if m == "party":
-		mode_title.text = "Party" if session.human_count() > 1 else "Party vs Bots"
-		mode_sub.text = "%d players + bots" % session.human_count() if session.human_count() > 1 else String(MODES["bots"][1])
+		mode_title.text = ("Party · %d players" % session.human_count()) if session.human_count() > 1 else "Party vs Bots"
+		mode_sub.text = summary
+	elif m == "bots":
+		mode_title.text = String(MODES[m][0])
+		mode_sub.text = summary
 	else:
 		mode_title.text = String(MODES[m][0])
 		mode_sub.text = String(MODES[m][1])
@@ -641,11 +690,10 @@ func _paint_mode() -> void:
 		mode_icon.kind = String(MODES["bots" if m == "party" else m][2])
 		mode_icon.queue_redraw()
 	mode_btn.accessibility_name = "Playlist: %s. %s. Change" % [mode_title.text, mode_sub.text]
-	# settings only where they apply: a party's series (host changes them)
-	settings_btn.visible = m == "party" or m == "bots"
-	# (2.3) with friends the playlist is always the party's: the settings row
-	# says what you'll play, and the room keeps its height for the roster
-	mode_btn.visible = m != "party"
+	# (2.3) the party's settings (map, rounds, Night Watch) live in the
+	# playlist sheet: one tidy tile over PLAY, no row of chips under it
+	settings_btn.visible = false
+	mode_btn.visible = true
 
 
 ## The playlist picker: three big cards.  With friends in the party it
@@ -678,12 +726,7 @@ func _mode_sheet() -> void:
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		note.custom_minimum_size.x = 560
 		v.add_child(note)
-		if session.is_host():
-			var st := UIKit.primary("Party settings", Vector2(300, 80))
-			st.pressed.connect(func() -> void:
-				close.call()
-				_settings_sheet())
-			v.add_child(st)
+		v.add_child(_settings_block(close, session.is_host()))
 	else:
 		# (2.3) three tall mode tiles: a big icon on its own colour, the name,
 		# one line; the chosen one has the accent edge and a check badge
@@ -736,6 +779,9 @@ func _mode_sheet() -> void:
 				close.call())
 			row.add_child(c)
 		v.add_child(row)
+		# (2.3) Party vs Bots: its map and rounds, here (not under the tile)
+		if cur == "bots":
+			v.add_child(_settings_block(close, true))
 	root.add_child(p)
 	add_child(root)
 	var vis := get_viewport().get_visible_rect().size

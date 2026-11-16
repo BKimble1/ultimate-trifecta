@@ -14,13 +14,15 @@ enum PState {
 	ENTERING,    # patrol climbing into cart
 	EXITING,     # patrol hopping out of cart
 	WAITING,     # patrol held in cart shed during runner head start
+	HIDING,      # (2.3) runner crouched inside a bush (HideBushes)
 }
 
 enum Phase { LOBBY, LOADING, REVEAL, COUNTDOWN, PLAYING, RESULTS, ENDED }
 
 enum Outcome { NONE, RUNNERS_WIN, PATROL_WIN, CANCELLED }
 
-enum Gadget { NONE, TURBO, DECOY, SPLASH_BOMB }
+## (2.3) SHIELD appended; SPLASH_BOMB stays for old data but no longer spawns
+enum Gadget { NONE, TURBO, DECOY, SPLASH_BOMB, SHIELD }
 
 ## How a runner met the water (presentation: splash clip + spray shape).
 ## Carried by SPLASH_* events (field m) and snapshots; no rule reads it.
@@ -47,6 +49,8 @@ enum Ev {
 	PLAYER_BOT_TAKEOVER, # a
 	PLAYER_RESUMED,   # a
 	COIN_PICKUP,      # V6: a = collector, value = coin index in the round's list
+	HIDE,             # (2.3) a = runner, value = bush index
+	UNHIDE,           # (2.3) a = runner, value = bush index
 }
 
 # Input button bits (held state) and edge bits (pressed this tick).
@@ -71,8 +75,10 @@ const EMOTES := ["wave", "cheer", "laugh", "shrug", "dance", "point", "stargaze"
 const EMOTE_LABELS := {"wave": "Wave", "cheer": "Cheer", "laugh": "Ha!", "shrug": "Shrug", "dance": "Dance", "point": "Over here!",
 	"stargaze": "Stargaze", "victory_lap": "Victory lap", "shush": "Shh!", "moon_shuffle": "Moon shuffle"}
 
-const GADGET_NAMES := {Gadget.TURBO: "Turbo Sneakers", Gadget.DECOY: "Squeaky Decoy", Gadget.SPLASH_BOMB: "Splash Bomb"}
-const GADGET_KEYS := {"turbo": Gadget.TURBO, "decoy": Gadget.DECOY, "splash_bomb": Gadget.SPLASH_BOMB}
+const GADGET_NAMES := {Gadget.TURBO: "Speed Sneakers", Gadget.DECOY: "Squeaky Duck", Gadget.SPLASH_BOMB: "Splash Bomb", Gadget.SHIELD: "Pillow Shield"}
+## (2.3) what each does, in a few words (pickup toast, HUD)
+const GADGET_BLURBS := {Gadget.TURBO: "Run faster for 10 s", Gadget.DECOY: "Footsteps that fool the Night Watch", Gadget.SPLASH_BOMB: "Slows a cart", Gadget.SHIELD: "Tags bounce off for 5 s"}
+const GADGET_KEYS := {"turbo": Gadget.TURBO, "decoy": Gadget.DECOY, "splash_bomb": Gadget.SPLASH_BOMB, "shield": Gadget.SHIELD}
 
 ## Role cards from the round's actual rules (the counts vary with the party
 ## settings; never hard-code them).

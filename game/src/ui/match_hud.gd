@@ -32,6 +32,7 @@ var pause_panel: PanelContainer
 var info: Dictionary = {}
 var emotes: Dictionary = {}   # slot -> {id, t}
 var _safe := Rect2()
+var power_bar: PowerBar
 var _spectating := -1
 var _t := 0.0
 var _last_penalty_sec := -1
@@ -87,6 +88,12 @@ func setup(controller: MatchController) -> void:
 	draw_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	draw_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(draw_layer)
+	# (2.3) the active power-up: icon, name and a bar that runs down, at the
+	# bottom middle (Speed Sneakers 10 s, Pillow Shield 5 s)
+	power_bar = PowerBar.new()
+	power_bar.hud = self
+	power_bar.visible = false
+	root.add_child(power_bar)
 
 	# --- top centre (Pass 8): the team goal and the one round clock, on one
 	# bar: a segmented tracker of real finishes (never splashes or catches),
@@ -859,6 +866,55 @@ func set_waiting(names: Array) -> void:
 var _waiting_lbl: Label
 
 
+## (2.3) In a bush: a leafy pill at the bottom middle says so.
+var hide_pill: PanelContainer
+
+
+func _paint_hidden() -> void:
+	var st := int((info.get("rs", {}) as Dictionary).get("state", TC.PState.ACTIVE))
+	var on := st == TC.PState.HIDING
+	if hide_pill == null:
+		if not on:
+			return
+		hide_pill = PanelContainer.new()
+		hide_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var sb := UIKit.box(Color(0.08, 0.2, 0.1, 0.82), 999, 2, Color(0.5, 0.95, 0.6, 0.7), 22)
+		sb.content_margin_top = 10
+		sb.content_margin_bottom = 10
+		hide_pill.add_theme_stylebox_override("panel", sb)
+		var h := UIKit.hbox(10)
+		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var ic := Icons.IconRect.new("leaf", Color(0.6, 1.0, 0.7), 26)
+		ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(ic)
+		var l := UIKit.label("Hidden  ·  the Night Watch can still tag the bush", 20, UIKit.IVORY, true)
+		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		h.add_child(l)
+		hide_pill.add_child(h)
+		root.add_child(hide_pill)
+	hide_pill.visible = on
+	if on:
+		var vs := get_viewport().get_visible_rect().size
+		var cs := hide_pill.get_combined_minimum_size()
+		hide_pill.position = Vector2((vs.x - cs.x) * 0.5, vs.y - _safe.size.y - cs.y - 96.0)
+
+
+## (2.3) A power-up just went on: show its bar (the Squeaky Duck is thrown,
+## so it has none).
+func power_started(g: int) -> void:
+	if power_bar == null or not is_instance_valid(power_bar):
+		return
+	var len_s := 0.0
+	match g:
+		TC.Gadget.TURBO:
+			len_s = mc.cfg.turbo_duration_s
+		TC.Gadget.SHIELD:
+			len_s = mc.cfg.shield_s
+	if len_s <= 0.0:
+		return
+	power_bar.start(g, len_s, _t)
+
+
 func toast(text: String, col: Color = UIKit.TEXT) -> void:
 	toast_lbl.text = text
 	toast_lbl.add_theme_color_override("font_color", col)
@@ -1013,6 +1069,9 @@ func emote_bubble(slot: int, emote_id: int) -> void:
 func refresh(delta: float) -> void:
 	_t += delta
 	info = mc.local_info()
+	if power_bar != null and power_bar.visible:
+		power_bar.tick(_t, info)
+	_paint_hidden()
 	var phase: int = info.get("phase", TC.Phase.REVEAL)
 	var role: int = info.get("role", TC.Role.RUNNER)
 	var vs := get_viewport().get_visible_rect().size
@@ -2530,3 +2589,67 @@ class MapCanvas:
 
 	func _draw() -> void:
 		MapPainter.paint(self, hud, size * 0.5, minf(size.x, size.y) * 0.5, true)
+
+
+## (2.3) The active power-up at the bottom middle: a round icon on the
+## item's colour, the name, and a bar that runs down with the time left
+## (Speed Sneakers from the authoritative turbo time; the Pillow Shield from
+## when it went up).  Gone when it runs out, or when caught.
+class PowerBar:
+	extends Control
+	var hud: MatchHUD
+	var kind := TC.Gadget.NONE
+	var length := 1.0
+	var t0 := 0.0
+	var left := 0.0
+	const W := 380.0
+	const H := 64.0
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		custom_minimum_size = Vector2(W, H)
+		size = Vector2(W, H)
+
+	func start(g: int, len_s: float, now: float) -> void:
+		kind = g
+		length = maxf(0.1, len_s)
+		t0 = now
+		left = len_s
+		visible = true
+		_place()
+		queue_redraw()
+
+	func _place() -> void:
+		var vs := get_viewport().get_visible_rect().size
+		var sm := UIKit.safe_margins(get_viewport())
+		position = Vector2((vs.x - W) * 0.5, vs.y - sm.size.y - H - 18.0)
+
+	func tick(now: float, info: Dictionary) -> void:
+		if kind == TC.Gadget.TURBO:
+			left = float(info.get("turbo", 0.0))
+			if now - t0 < 0.3:
+				left = maxf(left, length - (now - t0))   # the first snapshot may lag
+		else:
+			left = length - (now - t0)
+		var st := int((info.get("rs", {}) as Dictionary).get("state", TC.PState.ACTIVE))
+		if left <= 0.0 or st == TC.PState.CAPTURED or st == TC.PState.FINISHED:
+			visible = false
+			return
+		_place()
+		queue_redraw()
+
+	func _draw() -> void:
+		var col: Color = PickupHologram.TINTS.get(kind, UIKit.TEAL)
+		draw_style_box(UIKit.box(Color(UIKit.NAVY, 0.72), 999, 0, Color.WHITE, 0), Rect2(Vector2.ZERO, size))
+		var c := Vector2(H * 0.5, H * 0.5)
+		draw_circle(c, H * 0.4, Color(col, 0.22))
+		Icons.draw_shape(self, Icons.gadget_icon(kind), c, H * 0.24, col)
+		var f := UIKit.font_w(800)
+		draw_string(f, Vector2(H + 4, 26), String(TC.GADGET_NAMES.get(kind, "")), HORIZONTAL_ALIGNMENT_LEFT, W - H - 70, 20, UIKit.IVORY)
+		draw_string(UIKit.font_num(700), Vector2(W - 62, 26), "%.0fs" % ceilf(maxf(0.0, left)), HORIZONTAL_ALIGNMENT_RIGHT, 44, 20, col)
+		var bar := Rect2(H + 4, 38, W - H - 24, 10)
+		draw_style_box(UIKit.box(Color(1, 1, 1, 0.12), 999, 0, Color.WHITE, 0), bar)
+		var u := clampf(left / length, 0.0, 1.0)
+		if u > 0.0:
+			draw_style_box(UIKit.box(col, 999, 0, Color.WHITE, 0), Rect2(bar.position, Vector2(maxf(10.0, bar.size.x * u), bar.size.y)))
+

@@ -184,12 +184,36 @@ func _round_page() -> void:
 	var t := headline(d)
 	var tl := UIKit.styled(String(t[0]), "display", t[1])
 	tl.name = "Outcome"
+	tl.add_theme_font_size_override("font_size", 50)
 	head.add_child(tl)
 	var why := UIKit.styled(String(t[2]), "body", UIKit.IVORY)
 	why.name = "Why"
 	why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	head.add_child(why)
-	_v.add_child(head)
+	# (2.3) the outcome on a coloured banner (gold for a win), the title
+	# popping in, and confetti over the room when your team won
+	var me: Dictionary = d.get("me", {})
+	var won := not bool(d["cancelled"]) and not me.is_empty() and int(me["role"]) == int(d["winners"])
+	var banner := PanelContainer.new()
+	banner.name = "OutcomeBanner"
+	var bsb := UIKit.box(Color(UIKit.AMBER, 0.16) if won else Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 2 if won else 0, Color(UIKit.AMBER, 0.55), 22)
+	bsb.content_margin_top = 14
+	bsb.content_margin_bottom = 16
+	banner.add_theme_stylebox_override("panel", bsb)
+	banner.add_child(head)
+	_v.add_child(banner)
+	if not UIKit.reduced_motion():
+		tl.pivot_offset = Vector2(0, 30)
+		tl.scale = Vector2(0.7, 0.7)
+		tl.modulate.a = 0.0
+		var tw := tl.create_tween().set_parallel(true)
+		tw.tween_property(tl, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(tl, "modulate:a", 1.0, 0.2)
+		if won:
+			var cf := Confetti.new()
+			cf.set_anchors_preset(Control.PRESET_FULL_RECT)
+			add_child(cf)
+			move_child(cf, 1)
 	if bool(d["cancelled"]):
 		var note := UIKit.panel(Color(UIKit.NAVY, 0.5), UIKit.R_CARD, 18)
 		var nl := UIKit.styled("It doesn't count: no Round Win, no loss and no rewards for anyone, and it doesn't use up a round of the series.", "body", UIKit.IVORY)
@@ -511,6 +535,10 @@ func _fill_rewards(p: Control, mid: String) -> void:
 		top.add_child(_big_number("%d" % int(s["coins_collected"]), "picked up"))
 	if bool(s["settled"]):
 		top.add_child(_big_number("+%s" % Catalogue.format_coins(int(s["coins"])), "Coins added"))
+		# (2.3) back in the lobby these coins fly into the coin counter
+		if int(s["coins"]) > 0 and App.coin_fly_match != mid:
+			App.coin_fly_match = mid
+			App.coin_fly_pending = int(s["coins"])
 		if int(s["season_xp"]) > 0:
 			top.add_child(_big_number("+%d" % int(s["season_xp"]), "Season XP"))
 	var msg := String(s["message"])
@@ -948,3 +976,44 @@ func _go_back() -> void:
 		App.goto_title()
 	else:
 		App.show_lobby()
+
+
+## (2.3) Confetti over the room for a win: a few seconds of falling paper
+## in the game's colours, then it fades and frees itself.
+class Confetti:
+	extends Control
+	var pieces: Array = []
+	var t := 0.0
+	const LIFE := 4.5
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var rng := RandomNumberGenerator.new()
+		rng.randomize()
+		var cols := [UIKit.AMBER, UIKit.TEAL, Color("ff7aa2"), Color("8fd3ff"), UIKit.IVORY]
+		for i in 70:
+			pieces.append({"x": rng.randf(), "y": rng.randf_range(-0.6, 0.0), "v": rng.randf_range(0.18, 0.34),
+				"sway": rng.randf_range(0.5, 2.0), "r": rng.randf() * TAU, "w": rng.randf_range(-4.0, 4.0), "c": cols[i % cols.size()],
+				"s": rng.randf_range(7.0, 12.0)})
+
+	func _process(delta: float) -> void:
+		t += delta
+		if t > LIFE:
+			queue_free()
+			return
+		queue_redraw()
+
+	func _draw() -> void:
+		var fade := clampf((LIFE - t) / 1.0, 0.0, 1.0)
+		for q in pieces:
+			var y := float(q["y"]) + t * float(q["v"])
+			if y < -0.05 or y > 1.05:
+				continue
+			var x := float(q["x"]) + sin(t * float(q["sway"]) + float(q["r"])) * 0.02
+			var col: Color = q["c"]
+			col.a *= fade
+			var sz := float(q["s"])
+			draw_set_transform(Vector2(x * size.x, y * size.y), float(q["r"]) + t * float(q["w"]), Vector2.ONE)
+			draw_rect(Rect2(-sz, -sz * 0.4, sz * 2.0, sz * 0.8), col)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+

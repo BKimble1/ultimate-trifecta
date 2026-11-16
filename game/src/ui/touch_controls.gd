@@ -59,9 +59,9 @@ static func saved_layout() -> Dictionary:
 
 ## Labels per button name (the editor shows the same ones).
 const LABELS := {"jump": "Jump", "tag": "Tag", "gadget": "Gadget", "cart": "Drive", "gas": "Gas", "brake": "Brake",
-	"next": "Next", "cheer": "Cheer"}
-const ICONS := {"tag": "whistle", "cart": "cart", "next": "eye", "cheer": "star"}
-const COLORS := {"jump": "teal", "tag": "patrol", "gadget": "amber", "gas": "good", "brake": "bad", "cart": "patrol"}
+	"next": "Next", "cheer": "Cheer", "hide": "Hide"}
+const ICONS := {"tag": "whistle", "cart": "cart", "next": "eye", "cheer": "star", "hide": "leaf"}
+const COLORS := {"jump": "teal", "tag": "patrol", "gadget": "amber", "gas": "good", "brake": "bad", "cart": "patrol", "hide": "good"}
 
 
 static func button_color(name: String) -> Color:
@@ -203,7 +203,12 @@ class TouchSurface:
 				var crs := mc._cart_rs(i)
 				if crs.has("pos") and not bool(crs.get("occupied", false)) and (crs["pos"] as Vector3).distance_to(rs["pos"]) < mc.cfg.cart_enter_range_m + 1.2 and absf(float(crs.get("speed", 0.0))) < mc.cfg.cart_enter_max_speed:
 					near_cart = true
-		return {"st": st, "role": role, "in_cart": in_cart, "near_cart": near_cart, "gadget": int(info.get("gadget", 0)),
+		# (2.3) a runner beside a hiding bush (or in one)
+		var near_bush := false
+		if role == TC.Role.RUNNER and st == TC.PState.ACTIVE and bool(rs.get("on_floor", true)) and rs.has("pos") and mc.layout != null:
+			var rp: Vector3 = rs["pos"]
+			near_bush = HideBushes.near(mc.layout, Vector2(rp.x, rp.z)) >= 0
+		return {"st": st, "role": role, "in_cart": in_cart, "near_cart": near_cart, "near_bush": near_bush, "gadget": int(info.get("gadget", 0)),
 			"phase": int(info.get("phase", 0)), "airborne": not bool(rs.get("on_floor", true)),
 			"watching": mc.spectate_slot >= 0 or st == TC.PState.FINISHED,
 			"tag_ready": bool(info.get("tag_ready", false)), "tag_busy": float(info.get("tag_busy", 0.0))}
@@ -228,9 +233,14 @@ class TouchSurface:
 				return out
 		if not playing:
 			return []
+		# (2.3) hiding: one button, Jump out
+		if c["st"] == TC.PState.HIDING:
+			return ["hide"]
 		var r := ["jump"]
 		if c["gadget"] != TC.Gadget.NONE:
 			r.append("gadget")
+		if bool(c.get("near_bush", false)):
+			r.append("hide")
 		return r
 
 	func _layout_buttons(c: Dictionary) -> void:
@@ -321,7 +331,7 @@ class TouchSurface:
 						_haptic(12)
 				"gadget":
 					Controls.queue_press(TC.BTN_GADGET)
-				"cart":
+				"cart", "hide":
 					Controls.queue_press(TC.BTN_INTERACT)
 				"next":
 					spectate_req = true
@@ -356,7 +366,7 @@ class TouchSurface:
 			Input.vibrate_handheld(ms, 0.4)
 
 	const HINT_ACTIONS := {"jump": "jump", "tag": "tag", "gadget": "gadget", "cart": "interact", "gas": "accelerate",
-		"brake": "brake", "next": "spectate_next", "cheer": "emote_1"}
+		"brake": "brake", "next": "spectate_next", "cheer": "emote_1", "hide": "interact"}
 
 	func label_of(name: String, c: Dictionary) -> String:
 		match name:
@@ -366,6 +376,8 @@ class TouchSurface:
 				return String(TC.GADGET_NAMES.get(c.get("gadget", 0), "Gadget"))
 			"cart":
 				return "Exit" if bool(c.get("in_cart", false)) else "Drive"
+			"hide":
+				return "Jump out" if int(c.get("st", 0)) == TC.PState.HIDING else "Hide"
 		return String(TouchControls.LABELS.get(name, name.capitalize()))
 
 	func icon_of(name: String, c: Dictionary) -> String:

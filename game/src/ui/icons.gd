@@ -230,6 +230,27 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 			ci.draw_circle(c + Vector2(-r * 0.35, -r * 0.35), r * 0.38, col)
 			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.7, -r * 0.4), c + Vector2(-r, -r * 0.25), c + Vector2(-r * 0.68, -r * 0.18)]), Color(1.0, 0.55, 0.15))
 			return
+		"sneaker":
+			# (2.3) a running shoe in profile: sole, upper, a speed swoosh
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.95, r * 0.42), Vector2(r * 1.9, r * 0.26)), col)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.95, r * 0.44), c + Vector2(-r * 0.9, -r * 0.35),
+				c + Vector2(-r * 0.45, -r * 0.55), c + Vector2(-r * 0.2, -r * 0.1), c + Vector2(r * 0.55, r * 0.12),
+				c + Vector2(r * 0.95, r * 0.3), c + Vector2(r * 0.95, r * 0.44)]), col)
+			for k in 3:
+				var ly := -r * 0.05 + float(k) * r * 0.16
+				ci.draw_line(c + Vector2(-r * 0.35 + float(k) * r * 0.18, ly), c + Vector2(-r * 0.15 + float(k) * r * 0.18, ly + r * 0.1), Color(0, 0, 0, 0.35), r * 0.07, true)
+			return
+		"shield":
+			# (2.3) a puffy pillow shield
+			var pillow := PackedVector2Array()
+			for k in 24:
+				var pa := TAU * float(k) / 24.0
+				var rr := r * (0.86 + 0.08 * cos(pa * 4.0))
+				pillow.append(c + Vector2(cos(pa) * rr, sin(pa) * rr * 0.78))
+			ci.draw_colored_polygon(pillow, col)
+			ci.draw_arc(c, r * 0.52, PI * 1.1, PI * 1.6, 10, Color(1, 1, 1, 0.5), r * 0.1, true)
+			ci.draw_circle(c, r * 0.1, Color(0, 0, 0, 0.3))
+			return
 		"lock":
 			ci.draw_arc(c + Vector2(0, -r * 0.2), r * 0.42, PI, TAU, 14, col, r * 0.18, true)
 			ci.draw_rect(Rect2(c + Vector2(-r * 0.62, -r * 0.2), Vector2(r * 1.24, r * 0.98)), col)
@@ -532,9 +553,10 @@ static func _capsule(ci: CanvasItem, a: Vector2, b: Vector2, w: float, col: Colo
 
 static func gadget_icon(g: int) -> String:
 	match g:
-		TC.Gadget.TURBO: return "bolt"
+		TC.Gadget.TURBO: return "sneaker"
 		TC.Gadget.DECOY: return "duck"
 		TC.Gadget.SPLASH_BOMB: return "bomb"
+		TC.Gadget.SHIELD: return "shield"
 	return ""
 
 

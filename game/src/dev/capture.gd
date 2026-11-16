@@ -183,6 +183,8 @@ func _process(delta: float) -> void:
 			_lobby()
 		"runner", "patrol", "dorm":
 			_match()
+		"props23":
+			_props23()
 		"results":
 			_results()
 		"series":
@@ -372,6 +374,48 @@ func _lobby() -> void:
 		(App.screen as LobbyScreen)._open_chat()
 		later(1.5, "lobby_chat_drawer")
 	if _shots.has("lobby_chat_drawer") and _t > float(_shots["lobby_chat_drawer"]) + 1.0:
+		get_tree().quit()
+
+
+## 2.3 evidence (--autoplay=runner --capture=props23): a power-up hologram,
+## a hiding bush, a runner hidden in it, and the Speed Sneakers bar.
+func _props23() -> void:
+	var mc: MatchController = App.match_ctrl
+	if mc == null or not is_instance_valid(mc) or mc.sim == null or mc.hud == null:
+		return
+	if int(mc.local_info().get("phase", 0)) != TC.Phase.PLAYING:
+		return
+	var s := mc.sim
+	var me := s.player(mc.local_slot)
+	if not _scheduled.has("p1"):
+		_scheduled["p1"] = _t
+		var pk: Vector3 = s.pickups[0]["pos"]
+		me.body.global_position = pk + Vector3(0, 0.05, 3.6)
+		me.yaw = 0.0
+		later(2.0, "p23_hologram")
+	elif not _scheduled.has("p2") and _t > float(_scheduled["p1"]) + 3.0:
+		_scheduled["p2"] = _t
+		var bp: Vector2 = s.hide_bushes[0]
+		me.body.global_position = Vector3(bp.x + 2.4, CampusBuilder.grid_y(s.layout, bp.x + 2.4, bp.y) + 0.05, bp.y + 1.2)
+		me.yaw = PI * 0.5 - 0.35
+		later(2.0, "p23_bush")
+	elif not _scheduled.has("p3") and _t > float(_scheduled["p2"]) + 3.0:
+		_scheduled["p3"] = _t
+		var bp2: Vector2 = s.hide_bushes[0]
+		me.body.global_position = Vector3(bp2.x + 1.3, CampusBuilder.grid_y(s.layout, bp2.x + 1.3, bp2.y) + 0.05, bp2.y)
+		var c := InputCmd.new()
+		c.pressed = TC.BTN_INTERACT
+		s._intent_hide(me, c)
+		later(1.2, "p23_hidden")
+	elif not _scheduled.has("p4") and _t > float(_scheduled["p3"]) + 3.0:
+		_scheduled["p4"] = _t
+		s.unhide(me)
+		me.gadget = TC.Gadget.TURBO
+		var c2 := InputCmd.new()
+		c2.pressed = TC.BTN_GADGET
+		s._intent_gadget(me, c2)
+		later(2.5, "p23_powerbar")
+	elif _scheduled.has("p4") and _t > float(_scheduled["p4"]) + 4.0:
 		get_tree().quit()
 
 

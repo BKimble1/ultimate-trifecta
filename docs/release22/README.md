@@ -355,3 +355,101 @@ design system so every screen moves together:
   (the hidden season card and code labels now live in the tree).
 - Not verified on a device: in-game invites need two signed-in Game Center
   accounts that are friends (TestFlight).
+
+---
+
+# Fourth pass: hiding in bushes, real power-ups, a tidier home
+
+Asked for after build 13 (with the owner's iPhone screenshots).
+
+## 19. Bugs from the owner's screenshots
+
+- **Doubled eyes in the Shop and Season Pass** (one iris over another, an
+  eye missing): the runner's face is blend shapes on one head mesh, and
+  the importer also built simplified LODs and compressed the vertices. On
+  the iPhone's GPU path the shapes moved the LOD triangles across the face.
+  `runner.glb` now imports with no generated LODs and no compression (the
+  mesh is ~11.5k triangles; the character tests pass unchanged). Not
+  reproducible on the desktop renderer: check on a device.
+- **Home's runner up under the top bar, and a jump when leaving a party**:
+  the lobby camera framed one runner 2.6 m tall around a low point (the hat
+  reached the navigation), and a different panel width cut straight to a
+  new framing. The frame is taller and centred higher, and a new panel
+  width now eases the camera (`DormStage.set_lobby_free_frac`).
+- **Playlist text past its tile; the chips row under it**: the tile drops
+  the overline and grows to its words; the party's settings (map, rounds,
+  Night Watch, home to win) moved into the playlist sheet as four labelled
+  values with Change; with friends the tile reads "Party · N players" and
+  the map and rounds.
+- **Coins tab cramped**: coin packs are vertical tiles (the pile, the
+  amount, a price pill); the Shop's notice is one tinted strip with an info
+  mark; the rotation line is a quiet sentence.
+- **Practice's "Change" off the card**: the map row stacks the name over
+  "Classic · Change" with a chevron.
+
+## 20. Power-ups
+
+| | |
+|---|---|
+| A hologram pickup, a hiding bush, hidden, the Speed Sneakers bar | `media/v24_hologram.jpg`, `media/v24_bush.jpg`, `media/v24_hidden.jpg`, `media/v24_powerbar.jpg` |
+
+- **Speed Sneakers** (was Turbo, 3 s): 10 s at the same boosted speed.
+- **Squeaky Duck** (was Squeaky Decoy): unchanged.
+- **Pillow Shield** (new): tags and cart bumps don't land for 5 s.
+- **Splash Bomb**: no longer spawns (it only slowed a cart a little).
+- Pickups are **holograms of the item** (a sneaker, a duck, a pillow) over
+  a small projector, in the item's colour (`PickupHologram`,
+  `hologram.gdshader`); every device works out each spot's item from the
+  round's seed (`MatchSim.pickup_types`).
+- The active power-up shows at the bottom middle: icon, name, seconds left
+  and a bar that runs down (`MatchHUD.PowerBar`). Picking one up says what
+  it does. Bots raise the shield when a Night Watch is about to lunge.
+
+## 21. Hiding in bushes
+
+- 16 big round bushes on each map, worked out from its layout beside the
+  footpaths and spread over the whole campus (`HideBushes`): on open lawn,
+  clear of buildings, water, walls, hedges, roads, paths, trees, lamps,
+  doors, power-ups and each other; shown on the minimap as green dots.
+  They block nothing, so the map's tested layout, routes and fingerprints
+  are unchanged.
+- Beside one, a runner gets **Hide** (touch; Interact on keyboard or
+  controller). Inside, the runner is out of every Night Watch's sight (and
+  isn't even sent to their devices unless they're right beside the bush);
+  **Jump out** (or Jump) hops out toward the stick. A Night Watch who
+  lunges at the bush still tags the runner inside; the tag cue only lights
+  from right beside it. One runner to a bush.
+- Runner bots duck into a bush beside them when an unseen Night Watch is
+  closing in and come out once it has gone; Night Watch bots search the
+  bush a runner vanished beside.
+- Protocol 12: an 11 and a 12 game refuse each other at join.
+
+## 22. The end of a round and Coins
+
+- The result sits on a banner (gold for a win), the title pops in, and a
+  win throws confetti over the room.
+- When a round pays Coins, back in the lobby they fly from the room in an
+  arc into the Coins counter, which counts up as they land
+  (`WalletChip.fly_in`; `--coin-fly-demo=N` shows it). With no game
+  service in the build no round pays Coins yet.
+
+| | |
+|---|---|
+| Coins flying home (demo) | `media/v24_coins_fly.jpg` |
+| Home, Playlists | `media/v24_home.jpg`, `media/v24_playlists.jpg` |
+
+## 23. The room
+
+The couch's upholstered base comes down to the floor on short feet, the
+furniture has soft contact shadows, and a fireplace stands on the left wall
+by the back corner: brick surround, mantel with a clock and candles,
+hearth, logs, a flickering fire with its own warm light, and Season 1
+stockings. It is a walk-around obstacle (`HubRoom.BOXES`).
+
+## 24. Not done in this pass
+
+A map-wide overlap sweep. Fixed views of Moonbrook College
+(`src/dev/campus_views.gd`) look clean apart from the Boathouse Inlet, where
+the dock, a bollard line and the sign crowd the water's edge. The map's
+layout is pinned by tests and the bots' routes, so it needs its own pass
+with the owner's list of spots.

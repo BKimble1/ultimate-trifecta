@@ -98,11 +98,13 @@ extends Resource
 @export var cart_wall_speed_keep: float = 0.35
 
 @export_group("Gadgets")
-@export var gadgets_enabled: PackedStringArray = PackedStringArray(["turbo", "decoy", "splash_bomb"])
+## (2.3) the Splash Bomb only slowed a cart a little: replaced by the Pillow Shield
+@export var gadgets_enabled: PackedStringArray = PackedStringArray(["turbo", "decoy", "shield"])
 @export var gadget_use_cooldown_s: float = 1.0
 @export var gadget_respawn_s: float = 25.0
 @export var gadget_pickup_radius_m: float = 1.4
-@export var turbo_duration_s: float = 3.0
+## (2.3) a real burst: 10 s with a bar that runs down (was 3 s)
+@export var turbo_duration_s: float = 10.0
 @export var turbo_multiplier: float = 1.25
 @export var turbo_speed_cap: float = 8.0
 @export var decoy_range_m: float = 9.0
@@ -116,6 +118,12 @@ extends Resource
 @export var bomb_slow_max_speed: float = 4.0
 @export var bomb_immunity_s: float = 2.5
 @export var toss_flight_s: float = 0.6
+## (2.3) Pillow Shield: no tag lands (and no cart bump) for this long
+@export var shield_s: float = 5.0
+## (2.3) Hiding in a bush: the shortest stay (no instant in-and-out), and
+## how close a Night Watch must be to pick a hidden runner as a tag target
+@export var hide_min_s: float = 0.5
+@export var hide_tag_assist_m: float = 2.2
 
 @export_group("Collectible coins (V6)")
 ## Gold coins placed per round on the route (RulesLogic.pick_coins), each worth

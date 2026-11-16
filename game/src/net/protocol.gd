@@ -45,7 +45,12 @@ extends RefCounted
 ## predict with their own rules), only Moonbrook College is playable, and
 ## the party room's walk-around obstacles moved (the Season 1 tree), so a 10
 ## and an 11 game refuse each other at join ("Update the game to join.").
-const VERSION := 11
+## Protocol 12 (2.3): runners can hide in bushes (PState.HIDING, Ev.HIDE /
+## UNHIDE, a hidden runner only reaches an opponent's device from beside its
+## bush), the power-up set changed (Speed Sneakers 10 s, Pillow Shield; the
+## Splash Bomb no longer spawns; pickup items are worked out from the seed),
+## so an 11 and a 12 game refuse each other at join.
+const VERSION := 12
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}

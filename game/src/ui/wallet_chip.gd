@@ -50,3 +50,63 @@ func refresh() -> void:
 	var where := " on this device" if Wallet.balance_is_device() else ""
 	accessibility_name = "%s Coins%s. Opens the Shop." % [Wallet.balance_label(), where]
 	tooltip_text = "%s Coins%s" % [Wallet.balance_label(), where]
+
+
+# ---------------------------------------------------------------------------
+# (2.3) Coins flying home: after a round that paid Coins, a burst of coins
+# from `from` (screen point) arcs into this chip one after another; each
+# landing pops the chip and counts the number up to the new balance.
+# ---------------------------------------------------------------------------
+var _flying := false
+
+
+func fly_in(amount: int, from: Vector2) -> void:
+	if amount <= 0 or _flying or not is_inside_tree():
+		return
+	_flying = true
+	var target := Wallet.balance()
+	var start := maxi(0, target - amount) if target >= 0 else -1
+	if start >= 0:
+		_num.text = Catalogue.format_coins(start)
+	var n := clampi(amount / 10 + 4, 5, 14)
+	var layer := CanvasLayer.new()
+	layer.layer = 20
+	get_tree().root.add_child(layer)
+	var to := get_global_rect().get_center() + Vector2(-get_global_rect().size.x * 0.25, 0)
+	var rm := UIKit.reduced_motion()
+	var landed := [0]
+	for i in n:
+		var c := CommerceArt.Pic.new("coin", "", Color.WHITE, 44)
+		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		c.size = Vector2(44, 44)
+		var jitter := Vector2(randf_range(-90, 90), randf_range(-50, 50))
+		var p0 := from + jitter - c.size * 0.5
+		c.position = p0
+		c.scale = Vector2.ZERO
+		c.pivot_offset = c.size * 0.5
+		layer.add_child(c)
+		var delay := 0.08 * float(i) if not rm else 0.0
+		var dur := 0.75 if not rm else 0.01
+		var tw := c.create_tween()
+		tw.tween_interval(delay)
+		tw.tween_property(c, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		var ctrl := p0 + Vector2((to.x - p0.x) * 0.2, -220.0)
+		tw.tween_method(func(u: float) -> void:
+			if is_instance_valid(c):
+				var a := p0.lerp(ctrl, u)
+				var b := ctrl.lerp(to - c.size * 0.5, u)
+				c.position = a.lerp(b, u)
+				c.scale = Vector2.ONE * lerpf(1.0, 0.55, u), 0.0, 1.0, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		tw.tween_callback(func() -> void:
+			if is_instance_valid(c):
+				c.queue_free()
+			landed[0] += 1
+			Sfx.play("pickup", null, -6.0, 1.0 + 0.05 * float(landed[0]))
+			if start >= 0 and is_instance_valid(_num):
+				_num.text = Catalogue.format_coins(start + int(round(float(amount) * float(landed[0]) / float(n))))
+			UIKit.press_feedback(self)
+			if landed[0] >= n:
+				_flying = false
+				refresh()
+				if is_instance_valid(layer):
+					layer.queue_free())

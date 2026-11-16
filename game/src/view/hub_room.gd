@@ -17,6 +17,7 @@ const BOXES := [
 	[-3.6, -2.8, 1.65, 0.62],     # couch (with arms and back)
 	[-1.9, -2.1, 0.42, 0.3],      # side table
 	[5.1, -2.9, 0.78, 0.3],       # bookshelf
+	[-5.78, DormStage.FIRE_Z, 0.32, 1.0],   # (2.3) the fireplace and hearth
 ]
 ## circles: [x, z, r]
 const CIRCLES := [

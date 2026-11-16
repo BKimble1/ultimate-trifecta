@@ -56,7 +56,7 @@ const SECTIONS := [
 const CARD_W := 144.0
 const CARD_GAP := float(UIKit.GAP_CARD)
 ## the narrowest Coin pack card (two per row on a landscape phone)
-const PACK_W := 250.0
+const PACK_W := 190.0
 const THUMB_FRAMING := {"outfit": "body", "pattern": "body", "hat": "hat", "shoes": "feet"}
 const SWATCH_FIELDS := ["color", "trim", "hair_color"]
 ## picture wells beyond the Locker's (CreatorScreen.WELL)
@@ -95,6 +95,7 @@ var preview_run := false
 ## Featured: the rotating offers' grid, its status line and the refresh line
 var rot_grid: UIKit.AutoGrid
 var rot_status: Label
+var banner_strip: Control
 var refresh_l: Label
 var _clock: Timer
 var _confirm: Dictionary = {}         # the open Coin confirmation {item, offer, close}
@@ -145,7 +146,21 @@ func build() -> void:
 	banner.name = "Unavailable"
 	banner.clip_text = true
 	banner.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	pvb.add_child(banner)
+	# (2.3) the notice as one tinted strip with an info mark, not loose text
+	var bstrip := PanelContainer.new()
+	var bsb := UIKit.box(Color(UIKit.AMBER, 0.12), UIKit.R_SMALL, 0, Color.WHITE, 14)
+	bsb.content_margin_top = 7
+	bsb.content_margin_bottom = 7
+	bstrip.add_theme_stylebox_override("panel", bsb)
+	var bh := UIKit.hbox(10)
+	var bi := Icons.IconRect.new("info", UIKit.AMBER, 22)
+	bi.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bh.add_child(bi)
+	banner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bh.add_child(banner)
+	bstrip.add_child(bh)
+	pvb.add_child(bstrip)
+	banner_strip = bstrip
 	scroll = UIKit.scroll_area()
 	scroll.name = "Items"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -431,7 +446,7 @@ func _build_section() -> void:
 			_intro("Always available.", gw)
 			_filtered_grid("accessories", gw)
 		"coins":
-			_intro("Coins buy anything in the Shop. They never expire and never add XP. Prices come from the App Store.", gw)
+			_intro("Coins buy anything in the Shop and never expire.", gw)
 			body.add_child(_grid("coins", Catalogue.shop_items("coins"), gw, PACK_W, 1, 3))
 		"season":
 			_intro("%d tiers you earn by playing. Premium adds a second track of rewards. Season rewards are earned in the Season Pass, never sold." % Economy.max_tier(Catalogue.current_season_id()), gw)
@@ -603,7 +618,8 @@ func _build_featured(gw: float) -> void:
 	refresh_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(refresh_l)
 	body.add_child(head)
-	rot_status = UIKit.styled("", "caption", UIKit.AMBER)
+	# (2.3) a quiet line (the banner above already says buying is off)
+	rot_status = UIKit.styled("", "caption", UIKit.IVORY_MUTED)
 	rot_status.name = "RotationStatus"
 	rot_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rot_status.custom_minimum_size.x = gw * 0.95
@@ -737,7 +753,7 @@ func _tick_labels() -> void:
 func _rotation_line() -> String:
 	match Offers.shop_status():
 		"off":
-			return "Rotating skins come from the game service, which isn't set up in this build. You can preview every skin in All skins."
+			return "The skin rotation isn't set up in this build. Preview every skin in All skins."
 		"unsupported":
 			return "Rotating skins aren't available from the game service yet. You can preview them in All skins."
 		"loading":
@@ -831,6 +847,8 @@ func _refresh_states() -> void:
 		return
 	banner.text = unavailable_line()
 	banner.visible = banner.text != ""
+	if is_instance_valid(banner_strip):
+		banner_strip.visible = banner.visible
 	if rot_status != null and is_instance_valid(rot_status):
 		rot_status.text = _rotation_line()
 		rot_status.visible = rot_status.text != ""
@@ -1406,8 +1424,9 @@ class ShopCard:
 			return "emote"
 		return String(ShopScreen.THUMB_FRAMING.get(f, "glyph"))
 
+	## (2.3) a tall tile: the coin pile, the amount, the price button
 	static func pack_h() -> float:
-		return maxf(UIKit.row_h() + 22.0, 86.0)
+		return maxf(UIKit.row_h() + 150.0, 206.0)
 
 	func setup(s: ShopScreen, item_id: String, w: float, o: Dictionary = {}) -> void:
 		shop = s
@@ -1529,46 +1548,42 @@ class ShopCard:
 	## computed "Best value" beside it.  One compact row, not a slab; the
 	## quantity and the price each get the card's full text width.
 	func _setup_pack(face: Control, w: float) -> void:
-		var h := UIKit.hbox(UIKit.SP_M)
-		h.set_anchors_preset(Control.PRESET_FULL_RECT)
-		h.offset_left = 8
-		h.offset_right = -10
-		h.offset_top = 6
-		h.offset_bottom = -6
-		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		face.add_child(h)
-		var ah := ShopCard.pack_h() - 12.0
+		# (2.3) a vertical tile like any mobile shop's coin offer: the pile
+		# centred on top, the amount under it, the price in a pill, a note
+		# ("Best value") last; nothing beside anything, so nothing is squeezed
+		var v := UIKit.vbox(8)
+		v.set_anchors_preset(Control.PRESET_FULL_RECT)
+		v.offset_left = 12
+		v.offset_right = -12
+		v.offset_top = 12
+		v.offset_bottom = -12
+		v.alignment = BoxContainer.ALIGNMENT_CENTER
+		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.add_child(v)
 		art = ShopCard.art_for(shop, id, 0.0, "shop:%s" % id)
 		art.name = "Well"
-		art.custom_minimum_size = Vector2(roundf(ah * 1.1), ah)
-		art.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		h.add_child(art)
-		var tv := UIKit.vbox(4)
-		tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tv.alignment = BoxContainer.ALIGNMENT_CENTER
-		tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		h.add_child(tv)
-		name_l = UIKit.styled(Catalogue.display_name(id), "num", UIKit.IVORY)
-		name_l.add_theme_font_size_override("font_size", 23)
+		art.custom_minimum_size = Vector2(0, 76)
+		art.size_flags_horizontal = Control.SIZE_FILL
+		v.add_child(art)
+		name_l = UIKit.styled(Catalogue.display_name(id), "num", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
+		name_l.add_theme_font_size_override("font_size", 24)
 		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tv.add_child(name_l)
-		var pr := UIKit.hbox(8)
+		v.add_child(name_l)
+		var pr := UIKit.vbox(4)
 		pr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tv.add_child(pr)
+		v.add_child(pr)
 		_pill = PanelContainer.new()
 		_pill.name = "PricePill"
 		_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		price_l = UIKit.styled("", "num", UIKit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 		price_l.add_theme_font_size_override("font_size", 19)
 		price_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_pill.add_child(price_l)
 		pr.add_child(_pill)
-		_note = UIKit.styled("", "caption", UIKit.TEAL)
+		_note = UIKit.styled("", "caption", UIKit.TEAL, HORIZONTAL_ALIGNMENT_CENTER)
 		_note.name = "PackNote"
 		_note.add_theme_font_size_override("font_size", 17)
-		_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_note.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		_note.clip_text = true
 		_note.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1623,9 +1638,9 @@ class ShopCard:
 		var can := bool(st.get("can_buy", false))
 		price_l.text = String(st["text"]) if String(st["text"]) != "" else "Not available"
 		price_l.add_theme_color_override("font_color", UIKit.NAVY if can else UIKit.IVORY_MUTED)
-		var pb := UIKit.box(UIKit.AMBER if can else Color(UIKit.NAVY, 0.5), 999, 0, Color.WHITE, 12)
-		pb.content_margin_top = 2
-		pb.content_margin_bottom = 2
+		var pb := UIKit.box(UIKit.AMBER if can else Color(UIKit.NAVY, 0.5), 999, 0, Color.WHITE, 18)
+		pb.content_margin_top = 6
+		pb.content_margin_bottom = 6
 		_pill.add_theme_stylebox_override("panel", pb)
 		var note := ""
 		match String(st.get("state", "")):

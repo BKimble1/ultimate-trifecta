@@ -137,7 +137,12 @@ func _cam_for(m: String) -> Array:
 		subject = Vector3((b.x + b.y) * 0.5, subject.y, (b.z + b.w) * 0.5)
 		var group_w := b.y - b.x + BODY_HALF_W * 2.0
 		x_frac = lobby_free_frac * 0.5
-		height_m = maxf(2.6 + 0.35 * (b.w - b.z), (group_w * 1.3 / lobby_free_frac) / aspect)
+		# (2.3) room for the top bar above the hats and the bottom row below
+		# the shoes: the frame is a little taller and centred higher (a lone
+		# runner's hat used to reach under the navigation)
+		var depth := b.w - b.z
+		height_m = maxf(2.95 + 0.35 * depth, (group_w * 1.3 / lobby_free_frac) / aspect)
+		subject.y = 0.86 - 0.16 * clampf(depth / 1.7, 0.0, 1.0)
 		# the camera rises with the depth of the group so back-row faces clear the front row
 		cam_h = 1.5 + 2.2 * clampf((b.w - b.z) / 1.7, 0.0, 1.0)
 	var dist := height_m * 0.5 / tan(deg_to_rad(fov) * 0.5)
@@ -195,9 +200,16 @@ func set_lobby_free_frac(f: float) -> void:
 	f = clampf(f, 0.3, 1.0)
 	if absf(f - lobby_free_frac) < 0.01:
 		return
+	var jump := absf(f - lobby_free_frac)
 	lobby_free_frac = f
 	if mode == "lobby" and _cam_t >= 1.0:
-		_apply_cam(_cam_for(mode), 1.0)
+		if jump > 0.03 and is_inside_tree() and not reduced_motion:
+			# (2.3) a different panel (party room <-> home): ease, never cut
+			_cam_from = [cam.global_position, cam.global_position - cam.global_transform.basis.z * 3.0, cam.fov]
+			_cam_t = 0.0
+			_cam_dur = Motion.CAMERA
+		else:
+			_apply_cam(_cam_for(mode), 1.0)
 		for k in chars:
 			_place(k)
 
@@ -251,6 +263,7 @@ func _process(delta: float) -> void:
 				(sl as Label3D).global_position = (sv as Node3D).global_position + Vector3(0, 1.3, 0) + right * 0.78
 	if HolidayDecor.ENABLED and not reduced_motion:
 		HolidayDecor.animate(self, _t)
+	_flicker(_t)
 	if mode == "walk" and _cam_t >= 1.0:
 		_follow(delta)
 	if not _preview.is_empty():
@@ -709,7 +722,16 @@ func _build_room() -> void:
 	# (V4: upholstered shapes with rounded edges, two seat cushions, rolled
 	# arms and short wooden feet instead of plain blocks)
 	var cc := Color("5b6fb3", FABRIC)
-	k.chamfer_box(Vector3(-3.6, 0.3, -2.75), Vector3(3.0, 0.38, 1.05), cc.darkened(0.1), 0.06)
+	# (2.3) contact shadows under the furniture: soft dark ovals on the
+	# planks, so nothing reads as floating
+	var ao := Color("1a120c")
+	k.ellipse_disc(Vector3(-3.6, 0.006, -2.72), 1.6, 0.6, ao, 28)
+	k.ellipse_disc(Vector3(ARMCHAIR.x, 0.006, ARMCHAIR.z), 0.7, 0.62, ao, 24)
+	k.ellipse_disc(Vector3(-1.9, 0.006, -2.1), 0.46, 0.32, ao, 20)
+	k.ellipse_disc(Vector3(5.1, 0.006, -2.72), 0.8, 0.3, ao, 20)
+	# (2.3) the upholstered base comes down to just above the floor on short
+	# feet (the feet alone under a high base read as floating legs)
+	k.chamfer_box(Vector3(-3.6, 0.27, -2.75), Vector3(3.0, 0.44, 1.05), cc.darkened(0.1), 0.06)
 	for ci in 2:
 		k.chamfer_box(Vector3(-4.27 + 1.34 * float(ci), 0.58, -2.6), Vector3(1.3, 0.2, 0.85), cc, 0.08)
 	k.chamfer_box(Vector3(-3.6, 0.95, -3.18), Vector3(3.0, 0.75, 0.32), cc.darkened(0.05), 0.12)
@@ -717,7 +739,7 @@ func _build_room() -> void:
 		k.chamfer_box(Vector3(-3.6 + sx * 1.42, 0.66, -2.72), Vector3(0.28, 0.46, 1.05), cc.darkened(0.12), 0.1)
 		k.soft_blob(Vector3(-3.6 + sx * 1.42, 0.89, -2.72), Vector3(0.15, 0.07, 0.52), cc.darkened(0.08), 4, 12)
 		for fz in [-1.0, 1.0]:
-			k.cylinder(Vector3(-3.6 + sx * 1.38, 0.0, -2.75 + fz * 0.42), 0.05, 0.11, wood_d, 10, 0.0, true, 0.035)
+			k.cylinder(Vector3(-3.6 + sx * 1.38, 0.0, -2.75 + fz * 0.42), 0.05, 0.07, wood_d, 10, 0.0, true, 0.035)
 	k.soft_blob(Vector3(-4.2, 0.84, -2.75), Vector3(0.3, 0.19, 0.11), Color("ffc668", FABRIC), 5, 12)
 	k.soft_blob(Vector3(-3.0, 0.84, -2.75), Vector3(0.28, 0.18, 0.1), Color("6fd8cc", FABRIC), 5, 12)
 	# floor lamp + warm shade
@@ -765,6 +787,9 @@ func _build_room() -> void:
 				[Color("ffc668"), Color("ff8f8f"), Color("6fd8cc")][i % 3], 2, 5, 2.4)
 	# (Season 1: a step right, to make room for the tree)
 	_armchair(k, ARMCHAIR, -0.55, Color("c46a52", FABRIC), wood_d)
+	# (2.3) a fireplace on the left wall, by the back corner: a brick
+	# surround, a wooden mantel, a stone hearth, logs and a flickering fire
+	_fireplace(k, wood, wood_d)
 	# floor cushions by the couch
 	k.soft_blob(Vector3(-2.1, 0.13, -1.55), Vector3(0.42, 0.14, 0.42), Color("f1c75b", FABRIC), 5, 14)
 	k.soft_blob(Vector3(-1.55, 0.12, -1.85), Vector3(0.36, 0.12, 0.36), Color("9a7bd8", FABRIC), 5, 14)
@@ -786,6 +811,73 @@ func _build_room() -> void:
 	_light_pool(Vector3(-2.05, 0.9, -3.45), Vector2(1.8, 1.6), Color(1.0, 0.72, 0.42), 0.12, 0.0, true)
 	_light_pool(Vector3(wx + 0.25, 0.03, -2.25), Vector2(3.4, 2.4), Color(0.55, 0.68, 1.0), 0.09, 1.0)
 
+
+
+const FIRE_Z := -1.15
+var _fire: MeshInstance3D
+var _fire_light: OmniLight3D
+
+
+func _fireplace(k: MeshKit, wood: Color, wood_d: Color) -> void:
+	var z := FIRE_Z
+	var brick := Color("8e4b3b", PAPER)
+	var brick_d := Color("74392d", PAPER)
+	# the chimney breast up the wall, the surround and its opening
+	k.box(Vector3(-5.86, 3.4, z), Vector3(0.24, 4.0, 1.5), Color(Color("4a5c83").darkened(0.12), PAPER))
+	k.chamfer_box(Vector3(-5.8, 0.66, z), Vector3(0.4, 1.32, 1.72), brick, 0.03)
+	for row in 5:
+		k.box(Vector3(-5.595, 0.14 + 0.26 * float(row), z), Vector3(0.012, 0.02, 1.7), brick_d)
+	k.box(Vector3(-5.585, 0.43, z), Vector3(0.02, 0.66, 0.92), Color("120c0a"))
+	k.chamfer_box(Vector3(-5.62, 1.37, z), Vector3(0.6, 0.11, 2.0), wood, 0.02)
+	k.chamfer_box(Vector3(-5.5, 0.03, z), Vector3(0.62, 0.06, 2.0), Color("6c6a72", PAPER), 0.02)
+	# logs in the grate
+	k.soft_blob(Vector3(-5.66, 0.16, z - 0.12), Vector3(0.09, 0.08, 0.34), wood_d, 4, 10)
+	k.soft_blob(Vector3(-5.66, 0.16, z + 0.14), Vector3(0.09, 0.08, 0.32), wood_d.darkened(0.1), 4, 10)
+	k.soft_blob(Vector3(-5.66, 0.26, z), Vector3(0.08, 0.08, 0.3), wood_d, 4, 10)
+	# on the mantel: a clock and two candles; Season 1 hangs stockings
+	k.chamfer_box(Vector3(-5.66, 1.55, z + 0.5), Vector3(0.14, 0.26, 0.22), Color("e9e2d2", GLOSS), 0.02)
+	k.cylinder(Vector3(-5.66, 1.43, z - 0.55), 0.04, 0.2, Color("f4f2ec", GLOSS), 10)
+	k.cylinder(Vector3(-5.66, 1.43, z - 0.35), 0.04, 0.15, Color("f4f2ec", GLOSS), 10)
+	if HolidayDecor.ENABLED:
+		for si in 3:
+			var sz := z - 0.55 + 0.55 * float(si)
+			var sc: Color = [Color("c8313b", FABRIC), Color("2e8a54", FABRIC), Color("c8313b", FABRIC)][si]
+			k.chamfer_box(Vector3(-5.48, 1.12, sz), Vector3(0.08, 0.34, 0.18), sc, 0.03)
+			k.soft_blob(Vector3(-5.48, 0.96, sz + 0.07), Vector3(0.06, 0.07, 0.14), sc, 4, 8)
+			k.chamfer_box(Vector3(-5.47, 1.28, sz), Vector3(0.09, 0.07, 0.2), Color("f4f2ec", FABRIC), 0.02)
+	# the fire itself: warm unshaded flames that flicker, and a warm light
+	_fire = MeshInstance3D.new()
+	var fk := MeshKit.new()
+	fk.soft_blob(Vector3(0, 0.12, 0), Vector3(0.07, 0.18, 0.22), Color(1.0, 0.55, 0.15), 4, 10)
+	fk.soft_blob(Vector3(0.01, 0.1, -0.1), Vector3(0.05, 0.12, 0.08), Color(1.0, 0.8, 0.3), 4, 8)
+	fk.soft_blob(Vector3(0.01, 0.1, 0.12), Vector3(0.05, 0.13, 0.08), Color(1.0, 0.75, 0.25), 4, 8)
+	_fire.mesh = fk.commit()
+	var fm := StandardMaterial3D.new()
+	fm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	fm.vertex_color_use_as_albedo = true
+	fm.emission_enabled = true
+	fm.emission = Color(1.0, 0.55, 0.2)
+	fm.emission_energy_multiplier = 1.4
+	_fire.material_override = fm
+	_fire.position = Vector3(-5.68, 0.2, z)
+	add_child(_fire)
+	_fire_light = OmniLight3D.new()
+	_fire_light.position = Vector3(-5.3, 0.5, z)
+	_fire_light.light_color = Color(1.0, 0.58, 0.28)
+	_fire_light.light_energy = 1.3
+	_fire_light.omni_range = 3.6
+	_fire_light.omni_attenuation = 1.5
+	add_child(_fire_light)
+	_light_pool(Vector3(-5.0, 0.03, z), Vector2(2.2, 2.4), Color(1.0, 0.6, 0.3), 0.12, 0.0)
+
+
+## The fire's flicker (still under Reduced Motion).
+func _flicker(t: float) -> void:
+	if _fire == null or reduced_motion:
+		return
+	var f := 0.82 + 0.1 * sin(t * 9.0) + 0.06 * sin(t * 23.0 + 1.3) + 0.04 * sin(t * 37.0)
+	_fire.scale = Vector3(1.0, f, 0.95 + 0.08 * sin(t * 13.0))
+	_fire_light.light_energy = 1.1 + 0.35 * f
 
 
 ## A rounded upholstered armchair: seat, back and arms with soft edges, a

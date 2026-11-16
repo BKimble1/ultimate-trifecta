@@ -69,6 +69,7 @@ var _bot_factory: Callable
 func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: int, target_list: Array, mid: String, opts: Dictionary = {}) -> void:
 	cfg = config
 	layout = lay
+	hide_bushes = HideBushes.spots(lay)
 	seed_v = seed_value
 	targets = target_list.duplicate()
 	match_id = mid
@@ -135,15 +136,10 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 	players.sort_custom(func(a, b): return a.id < b.id)
 
 	# Gadget pickups: types from the shared seed (only enabled gadgets ship).
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_v ^ 0x5eed
-	var enabled: Array = []
-	for key in cfg.gadgets_enabled:
-		if TC.GADGET_KEYS.has(key):
-			enabled.append(TC.GADGET_KEYS[key])
-	if not enabled.is_empty():
-		for spot in layout.gadget_spots:
-			pickups.append({"pos": Vector3(spot.x, CampusBuilder.grid_y(layout, spot.x, spot.y), spot.y), "type": enabled[rng.randi() % enabled.size()], "respawn": 0.0})
+	var types := MatchSim.pickup_types(seed_v, cfg.gadgets_enabled, layout.gadget_spots.size())
+	for i in types.size():
+		var spot: Vector2 = layout.gadget_spots[i]
+		pickups.append({"pos": Vector3(spot.x, CampusBuilder.grid_y(layout, spot.x, spot.y), spot.y), "type": types[i], "respawn": 0.0})
 	if bool(opts.get("pace", true)):
 		pace = RunnerPace.new()
 		pace.setup(self)       # starts the route fields on a worker (PaceFields)
@@ -354,6 +350,7 @@ func step(inputs: Dictionary) -> void:
 		_update_tag_cues(p, (cmds[p.id] as InputCmd).cam_yaw)
 		_intent_tag(p, cmds[p.id])
 		_intent_gadget(p, cmds[p.id])
+		_intent_hide(p, cmds[p.id])
 	if prof_on:
 		_prof_add("tag_cues", t0)
 		t0 = Time.get_ticks_usec()
@@ -462,6 +459,9 @@ func _move_player(p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 		TC.PState.WAITING:
 			var idle := InputCmd.new()
 			Motor.step_foot(p, idle, cfg, dt)
+		TC.PState.HIDING:
+			# (2.3) still, crouched in the bush's middle
+			p.vel = Vector3.ZERO
 		TC.PState.IN_CART, TC.PState.ENTERING:
 			if p.cart_id >= 0:
 				var c := carts[p.cart_id]
@@ -597,6 +597,9 @@ func tag_candidate(p: SimPlayer, cam_yaw: float) -> SimPlayer:
 		if r == p or not r.is_taggable():
 			continue
 		var rel := r.pos() - p.pos()
+		# (2.3) a hidden runner is only a target from right beside the bush
+		if r.state == TC.PState.HIDING and Vector2(rel.x, rel.z).length() > cfg.hide_tag_assist_m:
+			continue
 		if absf(rel.y) > cfg.tag_vertical_reach_m:
 			continue
 		var flat := Vector3(rel.x, 0, rel.z)
@@ -696,6 +699,7 @@ func _capture(r: SimPlayer, by: SimPlayer) -> void:
 	r.fast = false
 	r.turbo_t = 0.0
 	r.vel = Vector3.ZERO
+	r.bush = -1
 	Motor.set_body_enabled(r.body, false)
 	_set_state(r, TC.PState.CAPTURED)
 	_emit(TC.Ev.CAPTURE, r.id, by.id, 0, r.pos())
@@ -876,8 +880,70 @@ func _check_bumps() -> void:
 
 
 # ---------------------------------------------------------------------------
+# (2.3) Hiding in bushes: Interact next to a bush hides a runner in it (out
+# of the Night Watch's sight, still taggable); Interact or Jump hops out.
+# ---------------------------------------------------------------------------
+var hide_bushes: Array = []
+
+
+func _intent_hide(p: SimPlayer, cmd: InputCmd) -> void:
+	if not p.is_runner():
+		return
+	if p.state == TC.PState.HIDING:
+		if (cmd.is_pressed(TC.BTN_INTERACT) or cmd.is_pressed(TC.BTN_JUMP)) and p.state_t >= cfg.hide_min_s:
+			unhide(p, cmd.move)
+		return
+	if not cmd.is_pressed(TC.BTN_INTERACT) or p.state != TC.PState.ACTIVE or not p.on_floor or p.home_safe:
+		return
+	var b := HideBushes.near(layout, p.pos2())
+	if b < 0:
+		return
+	# one runner to a bush
+	for o in players:
+		if o != p and o.state == TC.PState.HIDING and o.bush == b:
+			return
+	p.end_air_actions()
+	var bp: Vector2 = hide_bushes[b]
+	p.body.global_position = Vector3(bp.x, CampusBuilder.grid_y(layout, bp.x, bp.y) + 0.05, bp.y)
+	p.vel = Vector3.ZERO
+	p.bush = b
+	_set_state(p, TC.PState.HIDING)
+	_emit(TC.Ev.HIDE, p.id, -1, b, p.pos())
+
+
+## Out of the bush with a hop, toward the stick (else the way they faced).
+func unhide(p: SimPlayer, move: Vector2 = Vector2.ZERO) -> void:
+	if p.state != TC.PState.HIDING:
+		return
+	var b := p.bush
+	var dir := Vector3(move.x, 0, move.y).normalized() if move.length() > 0.3 else Vector3(-sin(p.yaw), 0, -cos(p.yaw))
+	p.bush = -1
+	_set_state(p, TC.PState.ACTIVE)
+	p.vel = dir * cfg.runner_speed * 0.8 + Vector3(0, cfg.jump_velocity * 0.75, 0)
+	_emit(TC.Ev.UNHIDE, p.id, -1, b, p.pos())
+
+
+# ---------------------------------------------------------------------------
 # Gadgets (authoritative ownership, consumption, cooldown)
 # ---------------------------------------------------------------------------
+## Each pickup spot's gadget for a round: from the round's seed and the
+## enabled list only, so every device draws the same item (2.3: guests show
+## the real item as a hologram; the types are never sent).
+static func pickup_types(seed_v: int, enabled_keys: PackedStringArray, n: int) -> Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_v ^ 0x5eed
+	var enabled: Array = []
+	for key in enabled_keys:
+		if TC.GADGET_KEYS.has(key):
+			enabled.append(TC.GADGET_KEYS[key])
+	var out: Array = []
+	if enabled.is_empty():
+		return out
+	for i in n:
+		out.append(enabled[rng.randi() % enabled.size()])
+	return out
+
+
 func _intent_gadget(p: SimPlayer, cmd: InputCmd) -> void:
 	if not cmd.is_pressed(TC.BTN_GADGET) or not p.is_runner():
 		return
@@ -896,6 +962,9 @@ func _intent_gadget(p: SimPlayer, cmd: InputCmd) -> void:
 			var land := _toss_landing(p.pos(), aim, cfg.decoy_range_m)
 			var side := Vector3(-aim.z, 0, aim.x) * (1.0 if (tick % 2) == 0 else -1.0)
 			decoys.append({"pos": land, "dir": (aim * 0.4 + side).normalized(), "t": cfg.decoy_duration_s + cfg.toss_flight_s, "flight": cfg.toss_flight_s, "owner": p.id, "from": p.pos()})
+		TC.Gadget.SHIELD:
+			# (2.3) tags (and cart bumps) don't land while it lasts
+			p.protect = maxf(p.protect, cfg.shield_s)
 		TC.Gadget.SPLASH_BOMB:
 			var target := _bomb_assist(p.pos(), aim)
 			var land2 := _toss_landing(p.pos(), (target - p.pos()).normalized() if target != Vector3.INF else aim, minf(cfg.bomb_range_m, p.pos().distance_to(target)) if target != Vector3.INF else cfg.bomb_range_m)
@@ -1048,6 +1117,8 @@ func _perception() -> void:
 	for r in players:
 		if not r.is_runner() or not r.is_in_play():
 			continue
+		if r.state == TC.PState.HIDING:
+			continue   # (2.3) out of sight in a bush
 		for q in players:
 			if not q.is_patrol() or q.state == TC.PState.WAITING:
 				continue

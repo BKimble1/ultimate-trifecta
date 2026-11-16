@@ -1,10 +1,13 @@
-2.2 (13): a cleaner, roomier UI everywhere, invites from the game's own Friends list (through Game Center), and a clean launch. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Tell us your iPhone or iPad model:
+2.2 (14): hide in bushes, new power-ups, a tidier home. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Tell us your iPhone or iPad model:
 
 - Home is now your party lobby: walk around (Walk), invite friends (Invite friends / Friends / Share), and press PLAY. Tap the playlist card to choose Quick Match (random players online, bots fill in), Party vs Bots or Practice.
 - Quick Match: two testers press PLAY at the same time; you should land in one match. Alone, it searches for up to 25 s, then starts with bots.
 - Friends (top right): every Game Center friend has Invite. They get Game Center's invitation, tap it and land in your party; the row shows Invited, then Joining or Can't come. Try "Add friends" (Game Center's friend request screen).
 - Launch: the logo should hand over to home, and the Season Champion poster (now and then) should appear a moment later with clean rounded edges. Tell us if anything flashes or overlaps.
 - Look and feel: the menus are roomier with fewer boxes. Tell us if any text is cut off or anything is hard to tap, especially on iPhone SE or iPad.
+- Bushes: big round bushes are on the campus (green dots on the minimap). Walk up to one and tap Hide; the Night Watch can't see you, but a lunge at the bush still tags you. Jump out to run.
+- Power-ups are holograms now: Speed Sneakers (faster for 10 s, a bar at the bottom), Pillow Shield (tags bounce off for 5 s), Squeaky Duck (fake footsteps).
+- Faces: check the runner's eyes in the Shop and Season Pass look right (they doubled up before).
 - Chat: in a party, open Chat and type. Bad words should come out bleeped (#%&*); links, phone numbers and threats are refused. Tell us anything that slips through.
 - Names: change your name in Settings › Profile; rude names are refused, and your name shows to friends in a party.
 - Round start: keep your thumb on the stick through the countdown; you should move the instant it says GO. The role card is now a small banner so you can see your runner. Tell us if anything stutters when the round begins.

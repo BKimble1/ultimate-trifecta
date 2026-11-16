@@ -449,6 +449,7 @@ func _prep_world() -> void:
 		fx.warm()
 	_build_beacons()
 	_build_pickups()
+	_build_bushes()
 
 
 ## Data every round shares, built once per session in steps of their own:
@@ -839,7 +840,7 @@ func _physics_process(delta: float) -> void:
 	Prof.count("ticks")
 
 
-const _TELEPORT_STATES := [TC.PState.CAPTURED, TC.PState.SPLASHING, TC.PState.ENTERING, TC.PState.EXITING]
+const _TELEPORT_STATES := [TC.PState.CAPTURED, TC.PState.SPLASHING, TC.PState.ENTERING, TC.PState.EXITING, TC.PState.HIDING]
 
 
 ## Pipeline: input -> fixed 60 Hz sim/prediction (above) -> capture the tick
@@ -1617,7 +1618,9 @@ func _reveal_end_tick() -> float:
 ## stopped receiving as frozen ghosts): hidden with nothing to show, out of
 ## this client's interest set or not seen lately, or finished.
 static func view_shown(rs: Dictionary) -> bool:
-	return not rs.is_empty() and bool(rs.get("visible", true)) and int(rs.get("state", 0)) != TC.PState.FINISHED
+	# (2.3) a runner in a bush is out of sight (the bush rustles instead)
+	return not rs.is_empty() and bool(rs.get("visible", true)) and int(rs.get("state", 0)) != TC.PState.FINISHED \
+		and int(rs.get("state", 0)) != TC.PState.HIDING
 
 
 func _process(delta: float) -> void:
@@ -1813,7 +1816,7 @@ func _haptic(ms: int) -> void:
 ## shown once (keyed by event id).
 const BEAT_HOLD_MS := 500      # a beat never waits longer than this
 const _WORLD_BEATS := [TC.Ev.SPLASH_STAMP, TC.Ev.SPLASH_NOSTAMP, TC.Ev.CAPTURE, TC.Ev.TAG_MISS, TC.Ev.FINISH,
-	TC.Ev.BUMP, TC.Ev.CART_ENTER, TC.Ev.CART_EXIT, TC.Ev.GADGET_PICKUP, TC.Ev.GADGET_USE, TC.Ev.BOMB_HIT,
+	TC.Ev.BUMP, TC.Ev.CART_ENTER, TC.Ev.CART_EXIT, TC.Ev.GADGET_PICKUP, TC.Ev.GADGET_USE, TC.Ev.BOMB_HIT, TC.Ev.HIDE, TC.Ev.UNHIDE,
 	TC.Ev.RESPAWN, TC.Ev.RECOVER, TC.Ev.EMOTE, TC.Ev.COIN_PICKUP]
 
 
@@ -1929,17 +1932,29 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 			if world:
 				Sfx.play("pickup", pos)
 			if ui and mine:
-				hud.toast("Got %s!" % TC.GADGET_NAMES.get(int(ev["v"]), "a gadget"), Color(1.0, 0.9, 0.4))
+				var gp := int(ev["v"])
+				hud.toast("%s · %s" % [TC.GADGET_NAMES.get(gp, "Power-up"), TC.GADGET_BLURBS.get(gp, "")], Color(1.0, 0.9, 0.4))
 		TC.Ev.GADGET_USE:
+			var g: int = ev["v"]
 			if world:
-				var g: int = ev["v"]
-				Sfx.play("squeak" if g == TC.Gadget.DECOY else ("turbo" if g == TC.Gadget.TURBO else "toss"), pos)
+				Sfx.play("squeak" if g == TC.Gadget.DECOY else ("turbo" if g in [TC.Gadget.TURBO, TC.Gadget.SHIELD] else "toss"), pos)
 				if g == TC.Gadget.TURBO:
 					fx.turbo(pos)
+				elif g == TC.Gadget.SHIELD:
+					fx.poof(pos)
+			if ui and mine:
+				# (2.3) the active power-up bar at the bottom middle
+				hud.power_started(g)
 		TC.Ev.BOMB_HIT:
 			if world:
 				fx.splash(pos, Color(0.4, 0.8, 1.0), int(ev["v"]) == 1)
 				Sfx.play("splash", pos)
+		TC.Ev.HIDE, TC.Ev.UNHIDE:
+			var bi := int(ev["v"])
+			if world and bi >= 0 and bi < bush_views.size():
+				(bush_views[bi] as HideBush).rustle(type == TC.Ev.HIDE)
+				Sfx.play("whoosh", pos, -4.0, 1.3 if type == TC.Ev.HIDE else 1.0)
+			# (the HUD's leafy pill says it while hidden: no toast as well)
 		TC.Ev.RESPAWN:
 			if world:
 				fx.poof(pos)
@@ -2138,34 +2153,31 @@ func _update_beacons(_delta: float) -> void:
 
 
 func _build_pickups() -> void:
-	for spot in layout.gadget_spots:
-		var n := Node3D.new()
-		n.position = Vector3(spot.x, CampusBuilder.grid_y(layout, spot.x, spot.y) + 0.9, spot.y)
+	# (2.3) each spot shows its real item as a hologram (the types come from
+	# the round's seed, the same on every device)
+	var types := MatchSim.pickup_types(int(start.get("seed", 0)), cfg.gadgets_enabled, layout.gadget_spots.size())
+	for i in layout.gadget_spots.size():
+		var spot: Vector2 = layout.gadget_spots[i]
+		var gy := CampusBuilder.grid_y(layout, spot.x, spot.y)
+		var g: int = types[i] if i < types.size() else TC.Gadget.TURBO
+		var n := PickupHologram.make(g, gy)
+		n.position = Vector3(spot.x, gy, spot.y)
 		add_child(n)
-		PropKit.init_meshes()
-		var box := MeshInstance3D.new()
-		box.mesh = PropKit.box
-		box.scale = Vector3(0.6, 0.6, 0.6)
-		box.material_override = PropKit.mat(Color(1.0, 0.85, 0.3), 0.0, Color.WHITE, 0.8)
-		n.add_child(box)
-		var ring := MeshInstance3D.new()
-		var tm := TorusMesh.new()
-		tm.inner_radius = 0.55
-		tm.outer_radius = 0.7
-		ring.mesh = tm
-		ring.material_override = PropKit.mat(Color(1.0, 1.0, 1.0), 0.0, Color.WHITE, 1.2)
-		ring.position = Vector3(0, -0.8, 0)
-		n.add_child(ring)
-		var lbl := Label3D.new()
-		lbl.text = "?"
-		lbl.font_size = 64
-		lbl.pixel_size = 0.008
-		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		lbl.modulate = Color(0.3, 0.2, 0.1)
-		lbl.position = Vector3(0, 0, 0)
-		lbl.no_depth_test = false
-		n.add_child(lbl)
 		pickup_views.append(n)
+
+
+## (2.3) The hiding bushes: round leafy shrubs on the lawn (HideBushes),
+## drawn from the map's layout on every device.  No collider.
+var bush_views: Array = []
+
+
+func _build_bushes() -> void:
+	if not with_visuals:
+		return
+	for bp in HideBushes.spots(layout):
+		var b := HideBush.make(bp, CampusBuilder.grid_y(layout, bp.x, bp.y))
+		add_child(b)
+		bush_views.append(b)
 
 
 func _update_pickups() -> void:
@@ -2176,13 +2188,12 @@ func _update_pickups() -> void:
 			if float(sim.pickups[i]["respawn"]) <= 0.0:
 				mask |= (1 << i)
 	else:
-		mask = int(_me.get("pickups", 0x1FF))
+		mask = int(_me.get("pickups", 0xFFFF))
 	var my_role: int = int(roster[local_slot]["role"]) if roster.has(local_slot) else TC.Role.RUNNER
 	for i in pickup_views.size():
-		var n := pickup_views[i]
+		var n: PickupHologram = pickup_views[i]
 		n.visible = (mask & (1 << i)) != 0
-		n.rotation.y = t * 1.5 + float(i)
-		n.position.y = 0.9 + sin(t * 2.0 + float(i)) * 0.12
+		n.animate(t, i, reduced_motion)
 		if my_role == TC.Role.PATROL:
 			n.scale = Vector3(0.7, 0.7, 0.7)
 

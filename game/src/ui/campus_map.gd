@@ -165,6 +165,9 @@ class Bake:
 			if String(t["kind"]) == "shrub":
 				continue
 			draw_circle(m.call(t["pos"]), maxf(float(t.get("r", 3.0)), 2.0) * k, Color("17332e"))
+		# (2.3) the hiding bushes: small bright-green dots
+		for bp in HideBushes.spots(L):
+			draw_circle(m.call(bp), maxf(HideBushes.RADIUS * 1.6 * k, 2.5), Color(0.36, 0.78, 0.4, 0.9))
 		# roads: a darker kerb under a calm road tone, round joints
 		for pass_i in 2:
 			for r in L.roads:

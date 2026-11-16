@@ -22,6 +22,7 @@ var goal_kind := ""
 var goal_water := -1
 var replan_t := 0.0
 var think_t := 0.0
+var _hidden_t := 0.0
 var jump_cool := 0.0
 var flee_t := 0.0
 var threat := Vector3.INF
@@ -127,6 +128,22 @@ func _runner(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 		if seen and d < nd:
 			nd = d
 			nearest_threat = qp
+	# (2.3) in a bush: stay while a Night Watch is near, then hop out
+	if p.state == TC.PState.HIDING:
+		cmd.move = Vector2.ZERO
+		_hidden_t += dt
+		var still_near := nearest_threat != Vector3.INF and nd < 16.0
+		if _hidden_t > 3.0 and (not still_near or _hidden_t > 14.0):
+			cmd.pressed |= TC.BTN_INTERACT
+			_hidden_t = 0.0
+		return
+	_hidden_t = 0.0
+	# (2.3) a Night Watch closing in that hasn't spotted us: duck into a bush
+	# right beside us
+	if p.state == TC.PState.ACTIVE and p.on_floor and nearest_threat != Vector3.INF and nd < 13.0 and nd > 5.0 \
+			and p.spotted <= 0.0 and HideBushes.near(sim.layout, p.pos2()) >= 0 and p.gadget != TC.Gadget.TURBO:
+		cmd.pressed |= TC.BTN_INTERACT
+		return
 	var danger_r := 12.0 if p.state == TC.PState.ACTIVE else 0.0
 	if nearest_threat != Vector3.INF and nd < danger_r and p.protect <= 0.0:
 		threat = nearest_threat
@@ -317,6 +334,9 @@ func _flee(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 	elif p.gadget == TC.Gadget.DECOY and d < 14.0:
 		cmd.pressed |= TC.BTN_GADGET
 		cmd.cam_yaw = atan2(best.x, best.y)  # toss sideways-back
+	elif p.gadget == TC.Gadget.SHIELD and d < 4.5:
+		# (2.3) the pillow goes up as the Night Watch closes in
+		cmd.pressed |= TC.BTN_GADGET
 	elif p.gadget == TC.Gadget.SPLASH_BOMB:
 		for c in sim.carts:
 			if c.occupant >= 0 and c.pos().distance_to(p.pos()) < 12.0:
@@ -348,9 +368,16 @@ func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 		# (a runner inside the home dorm can't be tagged: not a target)
 		if not r.is_runner() or not r.is_in_play() or r.home_safe:
 			continue
-		var seen := sim.can_see(p, r.pos(), view_yaw, cfg.view_range_m)
-		if not seen and r.pos().distance_to(p.pos()) < 6.0:
-			seen = sim.has_los(p.pos() + Vector3(0, 1.3, 0), r.pos() + Vector3(0, 1.0, 0))
+		var seen := false
+		if r.state == TC.PState.HIDING:
+			# (2.3) unseen in a bush, unless it's the bush they were last seen
+			# beside (the bot checks it, as a person would)
+			var ls: Dictionary = last_seen.get(r.id, {})
+			seen = not ls.is_empty() and (ls["pos"] as Vector3).distance_to(r.pos()) < 4.0 and r.pos().distance_to(p.pos()) < 7.0
+		else:
+			seen = sim.can_see(p, r.pos(), view_yaw, cfg.view_range_m)
+			if not seen and r.pos().distance_to(p.pos()) < 6.0:
+				seen = sim.has_los(p.pos() + Vector3(0, 1.3, 0), r.pos() + Vector3(0, 1.0, 0))
 		if seen:
 			last_seen[r.id] = {"pos": r.pos(), "vel": r.vel, "t": sim.tick}
 			var d := r.pos().distance_to(p.pos())

@@ -30,6 +30,10 @@ var _dev_shot_i := 0
 var _dev_next_shot := 2.0
 ## automation / capture runs skip first-launch onboarding
 var dev_automation := false
+## (2.3) Coins a settled round added, waiting to fly into the lobby's coin
+## counter (once per match)
+var coin_fly_pending := 0
+var coin_fly_match := ""
 ## development captures: the Rankings screen shows labelled sample rows
 var dev_rank_sample := false
 
@@ -109,6 +113,9 @@ func _ready() -> void:
 			Controls.family = a.get_slice("=", 1)
 		elif a == "--rank-sample":
 			dev_rank_sample = true
+		elif a.begins_with("--coin-fly-demo="):
+			# dev/captures: a round's Coins fly into the counter on home
+			coin_fly_pending = int(a.get_slice("=", 1))
 		elif a == "--random-cosmetic":
 			# dev/automation: soak and lobby-capture clients wear varied outfits
 			Save.data["cosmetic"] = Cosmetics.bot_cosmetic(hash(Save.player_uid()))
@@ -137,6 +144,7 @@ func _dev_tools(args: PackedStringArray) -> void:
 			# dev: every frame of the first seconds after launch (src/dev/launch_probe.gd)
 			var lp: Node = (load("res://src/dev/launch_probe.gd") as GDScript).new()
 			lp.set("out_dir", a.get_slice("=", 1))
+			lp.set("leave_test", args.has("--launch-probe-leave"))
 			add_child(lp)
 		if a.begins_with("--start-probe="):
 			# dev: the start of a practice round, measured (src/dev/start_probe.gd)
