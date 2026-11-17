@@ -181,6 +181,8 @@ func _process(delta: float) -> void:
 			_rift26()
 		"b18":
 			_b18()
+		"audit18":
+			_audit18()
 		"ko18":
 			_ko18()
 		"screens":
@@ -362,6 +364,86 @@ func _b18() -> void:
 			"locker":
 				NavShell.open("locker")
 				later(3.0, "b18_locker")
+			"quit":
+				get_tree().quit()
+
+
+## UI audit (after build 18): every menu screen and tab, one shot each.
+func _audit18() -> void:
+	var steps := [
+		[6.0, "home"], [7.0, "modes"], [9.0, "close"], [9.5, "friends"], [12.0, "close"],
+		[12.5, "practice"], [15.0, "online"], [17.5, "howto"], [20.0, "rankings"],
+		[23.0, "settings0"], [25.0, "settings1"], [26.5, "settings2"], [28.0, "settings3"], [29.5, "settings4"],
+		[31.0, "locker_outfit"], [34.0, "locker_colours"], [36.0, "locker_face"], [38.0, "locker_hat"], [40.0, "locker_shoes"],
+		[42.0, "locker_profile"], [44.0, "shop_skins"], [47.0, "shop_detail"], [49.5, "pass"], [53.0, "gift"], [56.0, "quit"]]
+	for st in steps:
+		var key := "a18_%s" % str(st)
+		if _t < float(st[0]) or _scheduled.has(key):
+			continue
+		_scheduled[key] = true
+		var what := String(st[1])
+		match what:
+			"home":
+				snap("a18_home")
+			"modes":
+				(App.screen as LobbyScreen)._mode_sheet()
+				later(1.2, "a18_playlists")
+			"friends":
+				FriendsPanel.open(App.screen as Screen)
+				later(1.6, "a18_friends")
+			"close":
+				if App.screen is Screen and (App.screen as Screen).has_modal():
+					(App.screen as Screen)._go_back()
+			"practice":
+				App.goto(PracticeScreen)
+				later(1.8, "a18_practice")
+			"online":
+				App.goto(OnlineScreen)
+				later(1.8, "a18_online")
+			"howto":
+				App.goto(HowToScreen)
+				later(1.8, "a18_howto")
+			"rankings":
+				App.goto(RankingsScreen)
+				later(2.2, "a18_rankings")
+			"settings0", "settings1", "settings2", "settings3", "settings4":
+				var ti := int(what.substr(8))
+				if ti == 0:
+					SettingsScreen.open_tab = 0
+					App.goto(SettingsScreen)
+				elif App.screen is SettingsScreen:
+					(App.screen as SettingsScreen).show_tab(ti)
+				later(1.2, "a18_settings_%d" % ti)
+			"locker_outfit":
+				NavShell.open("locker")
+				later(2.4, "a18_locker_outfit")
+			"locker_colours", "locker_face", "locker_hat", "locker_shoes", "locker_profile":
+				if App.screen is CreatorScreen:
+					(App.screen as CreatorScreen)._select_tab(what.substr(7))
+				later(1.6, "a18_" + what)
+			"shop_skins":
+				NavShell.open("shop")
+				get_tree().create_timer(0.8).timeout.connect(func() -> void:
+					if App.screen is ShopScreen:
+						(App.screen as ShopScreen).select_section("outfits"))
+				later(2.4, "a18_shop_skins")
+			"shop_detail":
+				if App.screen is ShopScreen:
+					(App.screen as ShopScreen)._open_detail("outfit:frog")
+				later(1.4, "a18_shop_detail")
+			"pass":
+				NavShell.open("pass")
+				get_tree().create_timer(1.0).timeout.connect(func() -> void:
+					if App.screen is Screen and (App.screen as Screen).has_modal():
+						(App.screen as Screen)._go_back())
+				later(3.0, "a18_pass")
+			"gift":
+				NavShell.go_hub()
+				get_tree().create_timer(1.5).timeout.connect(func() -> void:
+					Save.set_setting("gift_day", "")
+					if App.screen is Screen:
+						DailyGift.open(App.screen as Screen))
+				later(2.8, "a18_gift")
 			"quit":
 				get_tree().quit()
 

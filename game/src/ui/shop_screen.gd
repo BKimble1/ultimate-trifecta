@@ -873,7 +873,7 @@ func _tick_labels() -> void:
 func _rotation_line() -> String:
 	match Offers.shop_status():
 		"off":
-			return "The skin rotation isn't set up in this build. Preview every skin in All skins."
+			return "The skin rotation isn't set up in this build yet."
 		"unsupported":
 			return "Rotating skins aren't available yet."
 		"loading":
@@ -1014,13 +1014,13 @@ func unavailable_line() -> String:
 		return ""
 	match Wallet.service_state():
 		"off":
-			return "Buying is unavailable right now: the game service isn't set up in this build."
+			return "Buying isn't set up in this build yet."
 		"signed_out":
-			return "Buying is unavailable right now: sign in with Game Center."
+			return "Sign in with Game Center to buy."
 		"syncing":
 			return "Checking your wallet…"
 		"offline":
-			return "Buying is unavailable right now: you're offline."
+			return "You're offline: buying is paused."
 	return String(can["message"])
 
 
