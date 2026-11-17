@@ -174,7 +174,7 @@ func _heading(mc: MatchController, slot: int, delta: float) -> Vector3:
 	else:
 		want = Basis(Vector3.UP, p.yaw) * Vector3(0, 0, -1)
 	var cur: Vector3 = _fwd.get(slot, want)
-	cur = cur.lerp(want, 1.0 - exp(-delta / 0.45))
+	cur = cur.lerp(want, 1.0 - exp(-delta / 0.9))
 	if cur.length() < 0.01:
 		cur = want
 	cur = cur.normalized()
@@ -193,13 +193,57 @@ func _clear(mc: MatchController, from: Vector3, to: Vector3) -> Vector3:
 	return hp + (from - hp).normalized() * 0.35
 
 
+## Real slow motion (the game clock slowed, every frame still rendered) for
+## the instant a runner hits the water or a tag is about to land.
+var _slow_until := -1.0
+
+
+func _slowmo(mc: MatchController) -> void:
+	var want := 1.0
+	if _subj >= 0 and mc.sim.player(_subj) != null:
+		var p := mc.sim.player(_subj)
+		if _shot == "water" and p.state == TC.PState.SPLASHING and p.state_t < 0.9:
+			want = 0.45
+		elif _shot in ["chase", "cart_chase"] and _aux >= 0 and mc.sim.player(_aux) != null:
+			var r := mc.sim.player(_aux)
+			if r.state == TC.PState.ACTIVE and _ppos(mc, _subj).distance_to(_ppos(mc, _aux)) < 2.4:
+				want = 0.45
+			elif r.state in [TC.PState.CAPTURED, TC.PState.OUT] and r.state_t < 0.8:
+				want = 0.45
+	if want < 1.0:
+		_slow_until = _t + 0.25
+	var ts := 0.45 if _t < _slow_until else 1.0
+	if absf(Engine.time_scale - ts) > 0.01:
+		Engine.time_scale = ts
+		printerr("FILM t=%.2f speed %.2f" % [_t, ts])
+
+
+var _pos_v := Vector3.ZERO
+var _look_v := Vector3.ZERO
+
+
+## Critically damped spring towards a target (smooth starts and stops).
+static func _spring(x: Vector3, v: Vector3, target: Vector3, tau: float, dt: float) -> Array:
+	var w := 2.0 / maxf(0.05, tau)
+	var e := exp(-w * dt)
+	var d := x - target
+	var tmp := (v + d * w) * dt
+	return [target + (d + tmp) * e, (v - tmp * w) * e]
+
+
 func _place(pos: Vector3, look: Vector3, delta: float, tau_p: float, tau_l: float, cut: bool) -> void:
 	if cut:
 		_pos = pos
 		_look = look
+		_pos_v = Vector3.ZERO
+		_look_v = Vector3.ZERO
 	else:
-		_pos = _pos.lerp(pos, 1.0 - exp(-delta / tau_p))
-		_look = _look.lerp(look, 1.0 - exp(-delta / tau_l))
+		var a := _spring(_pos, _pos_v, pos, tau_p * 1.8, delta)
+		_pos = a[0]
+		_pos_v = a[1]
+		var b := _spring(_look, _look_v, look, tau_l * 1.8, delta)
+		_look = b[0]
+		_look_v = b[1]
 	cam.global_position = _pos
 	if _pos.distance_to(_look) > 0.05:
 		cam.look_at(_look, Vector3.UP)
@@ -577,8 +621,8 @@ func _frame(mc: MatchController, delta: float, cut: bool) -> void:
 			var dl := maxf(0.5, dir.length())
 			dir = dir / dl
 			var sd := dir.cross(Vector3.UP).normalized()
-			var back := 6.5 if _shot == "cart_chase" else 4.2
-			pos = p - dir * back + sd * 1.6 + up * (2.4 if _shot == "cart_chase" else 1.7)
+			var back := 8.0 if _shot == "cart_chase" else 4.4
+			pos = p - dir * back + sd * 2.0 + up * (3.3 if _shot == "cart_chase" else 1.8)
 			look = p.lerp(q, 0.62) + up * 0.9
 			cam.fov = clampf(46.0 + dl * 1.4, 48.0, 66.0)
 			tp = 0.22
@@ -594,4 +638,7 @@ func _frame(mc: MatchController, delta: float, cut: bool) -> void:
 			look = p + up * 1.0
 	pos = _clear(mc, look, pos)
 	_place(pos, look, delta, tp, tl, cut)
+	# a slow push-in over the shot
+	cam.fov -= minf(age, 6.0) * 0.7
 	_focus(mc, p)
+	_slowmo(mc)

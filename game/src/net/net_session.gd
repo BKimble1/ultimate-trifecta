@@ -157,6 +157,10 @@ func start_offline(uid: String, name: String, cosmetic: Dictionary, pref: String
 	tutorial = is_tutorial
 	practice_role = pref if pref in ["runner", "patrol", "random"] else "runner"
 	settings = {"watch": PartySeries.DEFAULT_WATCH, "rounds": 1, "rev": 0, "map": CampusMaps.sanitize(map_id)}
+	# development automation (footage): --dev-watch=1..3 Night Watch in practice
+	for a in OS.get_cmdline_user_args():
+		if String(a).begins_with("--dev-watch="):
+			settings["watch"] = clampi(int(String(a).get_slice("=", 1)), 1, 3)
 	_set_identity(uid, name, cosmetic, pref)
 	roster.fill(null)
 	roster[0] = _entry(0, uid, name, false, -1, cosmetic, pref)
