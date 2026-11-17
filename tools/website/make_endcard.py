@@ -57,7 +57,11 @@ f1 = font("website/assets/fonts/archivo-latin-wdth-italic.woff2", 44, {"wdth": 1
 f2 = font("website/assets/fonts/manrope-latin-wght-normal.woff2", 26, {"wght": 600})
 t1 = "SPLASH THREE. RACE HOME."
 w1 = d.textlength(t1, font=f1)
-d.text(((W - w1) / 2, y + logo.height + 54), t1, font=f1, fill=(255, 194, 61))
+tl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+ImageDraw.Draw(tl).text(((W - w1) / 2, y + logo.height + 54), t1, font=f1, fill=(255, 194, 61, 255))
+yc = y + logo.height + 54 + 22
+tl = tl.transform((W, H), Image.AFFINE, (1, 0.2, -0.2 * yc, 0, 1, 0), resample=Image.BICUBIC)
+out.alpha_composite(tl)
 t2 = "On iPhone and iPad  ·  ultimatetrifecta.idlery.com"
 w2 = d.textlength(t2, font=f2)
 d.text(((W - w2) / 2, y + logo.height + 128), t2, font=f2, fill=(246, 243, 236, 200))
