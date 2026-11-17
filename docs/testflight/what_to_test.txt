@@ -1,11 +1,10 @@
-2.2 (17): the Invisibility Cloak, rarer and nicer rift portals, the Emote wheel, a new chat sheet, and fixes. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Every phone in a party needs build 17. Tell us your iPhone or iPad model:
+2.2 (18): knock-out tags, a new Shop, Season Pass progress on home, new sounds and haptics, and more. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Every phone in a party needs build 18. Tell us your iPhone or iPad model:
 
-- Rounds: the Night Watch leave at the same moment as the runners.
-- Invisibility Cloak (eye hologram): pick it up and use it. For 6 s the Night Watch shouldn't see you unless they are right next to you.
-- Rifts: at most two, appearing a while into the round, at random spots; they fade if nobody uses them. Step in to cross campus.
-- Emote is under the map and opens a wheel of your five; Chat is the round button at the bottom left. Both should be easy to hit apart.
-- Chat: the sheet shows messages as bubbles; yours on the right.
-- Locker › Music: one tap changes the album; the old song fades out quickly and two songs never play together. Discs are colour gradients.
-- Locker › Emotes: pick a slot, then an emote; the slot and footer show what you chose.
-- Daily present: shows once a day on home, even if Game Center signs in slowly (a preview without the service).
-- Still check: albums loop; power-ups move after pickup; the Squeaky Duck dazes the Night Watch; carts tag; Settings › Audio; one runner on home.
+- Rounds: a Night Watch tag (or cart hit) knocks you out for the round; you then watch your team. If too few runners are left, the Night Watch win at once. No Cheer button while watching.
+- Shop: a big Spotlight skin in Featured, coloured cards, a short Always available row. Coins are behind the green + on the Coins counter. Season 1 shows the whole pass banner without scrolling. Accessories has Sets.
+- Skins not in the Shop: Remind me, then home tells you when they're back. Owned skins: Equip now.
+- Home: the Season Pass pill under the tabs; cocoa and cookies on the side table.
+- Results: the Season XP bar fills up.
+- Locker: the dice gives a random look; 1-2-3 keep looks (hold to replace).
+- Sounds on tabs, sheets, the countdown, rifts, the cloak and knock-outs; vibration on a phone (Settings › Controls).
+- First-time tips for each power-up, rifts and being knocked out.

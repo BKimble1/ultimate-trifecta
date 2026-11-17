@@ -2063,7 +2063,7 @@ func _build_challenges() -> void:
 		card.pressed.connect(_toggle_pin.bind(String(d["id"])))
 		list.add_child(card)
 		challenge_cards.append(card)
-	var hint := UIKit.styled("Tap a goal to pin it: it shows in your pause menu.", "caption", UIKit.IVORY_MUTED)
+	var hint := UIKit.styled("Tap a goal to pin it.", "caption", UIKit.IVORY_MUTED)
 	hint.name = "PinHint"
 	hint.add_theme_font_size_override("font_size", 18)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

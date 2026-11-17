@@ -179,6 +179,10 @@ func _process(delta: float) -> void:
 			_v26()
 		"rift26":
 			_rift26()
+		"b18":
+			_b18()
+		"ko18":
+			_ko18()
 		"screens":
 			_screens()
 		"account":
@@ -319,6 +323,74 @@ func _v26() -> void:
 				later(1.5, "v26_pass_full")
 			"quit":
 				get_tree().quit()
+
+
+## 2.2 build 18 evidence: home (Season pill, cocoa), the posters, the Shop
+## (Season 1, Accessories with sets, Coins from the +), the Locker's looks.
+func _b18() -> void:
+	var steps := [[6.0, "home"], [7.5, "promo"], [10.0, "close"], [11.0, "pass_offer"], [14.0, "close"],
+		[15.0, "shop"], [18.5, "shop_season"], [22.0, "shop_acc"], [25.0, "shop_coins"], [27.5, "locker"], [31.0, "quit"]]
+	for st in steps:
+		var key := "b18_%s" % str(st)
+		if _t < float(st[0]) or _scheduled.has(key):
+			continue
+		_scheduled[key] = true
+		match String(st[1]):
+			"home":
+				snap("b18_home")
+			"promo":
+				ChampionPromo.maybe_show(App.screen as Screen, true)
+				later(1.8, "b18_event_poster")
+			"pass_offer":
+				PassOffer.popup(App.screen as Screen)
+				later(2.4, "b18_pass_offer")
+			"close":
+				if App.screen is Screen and (App.screen as Screen).has_modal():
+					(App.screen as Screen)._go_back()
+			"shop":
+				NavShell.open("shop")
+				later(3.0, "b18_shop_featured")
+			"shop_season":
+				(App.screen as ShopScreen).select_section("season")
+				later(3.0, "b18_shop_season")
+			"shop_acc":
+				(App.screen as ShopScreen).select_section("accessories")
+				later(2.4, "b18_shop_accessories")
+			"shop_coins":
+				(App.screen as ShopScreen).select_section("coins")
+				later(2.0, "b18_shop_coins")
+			"locker":
+				NavShell.open("locker")
+				later(3.0, "b18_locker")
+			"quit":
+				get_tree().quit()
+
+
+## 2.2 build 18 evidence: knocked out in a round (--autoplay=runner).
+func _ko18() -> void:
+	var mc: MatchController = App.match_ctrl
+	if mc == null or not is_instance_valid(mc) or mc.sim == null or mc.hud == null:
+		return
+	if int(mc.local_info().get("phase", 0)) != TC.Phase.PLAYING:
+		return
+	var s := mc.sim
+	var me := s.player(mc.local_slot)
+	if not _scheduled.has("k1") and s.patrol_release_left() <= 0.0:
+		_scheduled["k1"] = _t
+		var by: SimPlayer = null
+		for p in s.players:
+			if p.is_patrol():
+				by = p
+				break
+		if by != null:
+			s._capture(me, by)
+			mc.caught_by = by.display_name
+		later(1.2, "ko18_caught")
+	elif _scheduled.has("k1") and not _scheduled.has("k2") and _t > float(_scheduled["k1"]) + 4.5:
+		_scheduled["k2"] = _t
+		snap("ko18_out_watching")
+	elif _scheduled.has("k2") and _t > float(_scheduled["k2"]) + 2.0:
+		get_tree().quit()
 
 
 ## 2.2 build 16 evidence: a rift in a round (--autoplay=runner).

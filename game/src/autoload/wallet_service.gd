@@ -655,6 +655,35 @@ func spend(item_id: String, offer: Dictionary = {}) -> Dictionary:
 	return {"ok": false, "state": "failed", "message": Cloud.explain(r)}
 
 
+## (2.2 build 18) A matching set: the pieces not owned yet, at the set's
+## price, in one purchase (the service grants them together).
+func spend_set(set_id: String) -> Dictionary:
+	var can := can_transact()
+	if not bool(can["ok"]):
+		return {"ok": false, "state": "failed", "message": String(can["message"])}
+	var owned: Array = []
+	for c in Catalogue.set_entry(set_id).get("contents", []):
+		if owns_id(String(c)):
+			owned.append(String(c))
+	var q := Catalogue.set_quote(set_id, owned)
+	if (q["left"] as Array).size() < 2:
+		return {"ok": false, "state": "failed", "message": "You already have most of this set."}
+	if pending_for(set_id):
+		return {"ok": false, "state": "pending", "message": "Still finishing your last purchase of this set."}
+	var price := int(q["price"])
+	if balance() < price:
+		return {"ok": false, "state": "failed", "message": "You need %s more Coins." % Catalogue.format_coins(price - balance())}
+	var op := _enqueue("spend", HTTPClient.METHOD_POST, "/v1/wallet/spend", {"item_id": set_id, "price": price, "catalogue_version": Catalogue.version()}, {"item": set_id})
+	op["body"]["idempotency_key"] = op["id"]
+	_save()
+	var r := await _send(op)
+	if bool(r.get("ok", false)):
+		return {"ok": true, "state": "delivered", "message": ""}
+	if int(r.get("http_status", 0)) == 0:
+		return {"ok": false, "state": "pending", "message": "We couldn't reach the game service. Your purchase will finish by itself when you're back online, and you won't be charged twice."}
+	return {"ok": false, "state": "failed", "message": Cloud.explain(r)}
+
+
 # ------------------------------------------------------------------ claims
 ## The most cells one claim request carries (the version 2 service read at
 ## most 60; Pass 9: a whole 100-tier Claim all goes in several requests, so

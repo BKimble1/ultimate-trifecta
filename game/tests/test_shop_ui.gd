@@ -76,8 +76,16 @@ func test_swipe_on_a_shop_card_scrolls_tap_opens_detail() -> void:
 	shop.select_section("accessories")
 	await _frames(6)
 	t.check(shop.cards.size() > 8, "a long list (%d cards)" % shop.cards.size())
+	# (2.2 build 18: the Sets row sits above the grid) a card in view
 	var card: Control = shop.cards[1]
+	var vis0: Rect2 = shop.scroll.get_global_rect().grow(-30.0)
+	for c0 in shop.cards:
+		if vis0.has_point((c0 as Control).get_global_rect().get_center()):
+			card = c0
+			break
 	var start := card.get_global_rect().get_center()
+	if not vis0.has_point(start):
+		start = vis0.get_center()   # on whatever card is in view (a set card)
 	_press(start, true)
 	await _move(start, start + Vector2(3, -200), 12)
 	_press(start + Vector2(3, -200), false)
@@ -246,4 +254,31 @@ func test_service_off_shop_is_honest() -> void:
 	await _frames(2)
 	t.check((shop._d["action"] as Button).disabled, "Coin packs unavailable (no store, no service)")
 	t.check(not String((shop._d["action"] as Button).text).contains("$"), "no made-up price")
+	await _end()
+
+
+func test_a_matching_set_sells_the_missing_pieces_once() -> void:
+	# (2.2 build 18) Accessories › Sets
+	await _begin()
+	rig.svc.grant(Cloud.profile_id(), 500)
+	await Wallet.refresh()
+	var shop := await _shop()
+	shop.select_section("accessories")
+	await _frames(3)
+	t.check(shop.body.find_child("Set_set_party_pack", true, false) != null, "the Party Pack is on sale")
+	var q := Catalogue.set_quote("set:party_pack", [])
+	t.check(int(q["price"]) < int(q["full"]), "for less than its pieces (%d < %d)" % [int(q["price"]), int(q["full"])])
+	var r: Dictionary = await Wallet.spend_set("set:party_pack")
+	t.check(bool(r["ok"]), "bought: %s" % r.get("message", ""))
+	for piece in ["hat:party", "shoes:sneakers", "emote:dance"]:
+		t.check(Wallet.owns_id(piece), "%s owned" % piece)
+	t.eq(Wallet.balance(), 500 - int(q["price"]), "charged the set's price once")
+	var again: Dictionary = await Wallet.spend_set("set:party_pack")
+	t.check(not bool(again["ok"]), "not sold twice")
+	t.eq(Wallet.balance(), 500 - int(q["price"]), "nothing more charged")
+	shop.select_section("featured")
+	await _frames(2)
+	shop.select_section("accessories")
+	await _frames(3)
+	t.check(shop.body.find_child("Set_set_party_pack", true, false) == null, "an owned set leaves the row")
 	await _end()

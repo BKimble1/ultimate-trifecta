@@ -929,6 +929,49 @@ func power_started(g: int) -> void:
 	power_bar.start(g, len_s, _t)
 
 
+## (2.2 build 18) A one-time tip card (first power-up of a kind, first rift,
+## first knock-out): a titled card at the top middle for a few seconds.
+## Each key is shown once per player (kept in the settings).
+var _tip: PanelContainer
+var _tip_t := 0.0
+
+
+func first_tip(key: String, title: String, body: String, icon: String = "info") -> bool:
+	var seen: Dictionary = (Save.get_setting("tips_seen", {}) as Dictionary).duplicate()
+	if seen.has(key) or App.dev_automation:
+		return false
+	seen[key] = true
+	Save.set_setting("tips_seen", seen)
+	if is_instance_valid(_tip):
+		_tip.queue_free()
+	_tip = PanelContainer.new()
+	_tip.name = "TipCard"
+	_tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip.add_theme_stylebox_override("panel", UIKit.card_box(Color(UIKit.SLATE, 0.94), UIKit.R_CARD, 1.0, 14))
+	var h := UIKit.hbox(12)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip.add_child(h)
+	var ic := Icons.IconRect.new(icon, UIKit.AMBER, 34)
+	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(ic)
+	var v := UIKit.vbox(2)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(v)
+	v.add_child(UIKit.styled(title, "label", UIKit.AMBER))
+	var bl := UIKit.styled(body, "caption", UIKit.IVORY)
+	bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bl.custom_minimum_size.x = 380
+	v.add_child(bl)
+	root.add_child(_tip)
+	_tip_t = 5.0
+	(func() -> void:
+		await get_tree().process_frame
+		if is_instance_valid(_tip):
+			var vs := get_viewport().get_visible_rect().size
+			_tip.position = Vector2((vs.x - _tip.size.x) * 0.5, vs.y * 0.17)).call()
+	return true
+
+
 func toast(text: String, col: Color = UIKit.TEXT) -> void:
 	toast_lbl.text = text
 	toast_lbl.add_theme_color_override("font_color", col)
@@ -1171,6 +1214,11 @@ func refresh(delta: float) -> void:
 	# toast + feed fade
 	toast_t = maxf(0.0, toast_t - delta)
 	toast_lbl.modulate.a = clampf(toast_t / 0.4, 0.0, 1.0)
+	if is_instance_valid(_tip):
+		_tip_t -= delta
+		_tip.modulate.a = clampf(_tip_t / 0.5, 0.0, 1.0)
+		if _tip_t <= 0.0:
+			_tip.queue_free()
 	for c in feed_box.get_children():
 		var t: float = float(c.get_meta("t", 0.0)) - delta
 		c.set_meta("t", t)
@@ -2458,7 +2506,7 @@ class FullMap:
 		var p := UIKit.panel(Color(UIKit.SLATE_HI, 0.99), UIKit.R_PANEL, 18)
 		var v := UIKit.vbox(6)
 		var lines := ["The white arrow is you; the light wedge is where your camera looks.",
-			"Tonight's three waters have their own shapes; a check means you've splashed there. A ring marks the one your card suggests - any of them counts.",
+			"A check means you've splashed there. Any order counts.",
 			"Your team is shown in its colour and shape; close teammates share one mark with a count.",
 			"Opponents appear only while you can see them, with a short line for their facing. When you lose sight the mark stays where you last saw them, hollow, with its age, and goes after %d s." % int(MatchController.LAST_SEEN_TTL_S)]
 		if role == TC.Role.PATROL:

@@ -214,7 +214,7 @@ func _open() -> void:
 	elif bool(_claim.get("ok", false)):
 		note_l.text = "Today's gift is already in your Coins. Come back tomorrow!"
 	elif bool(_claim.get("preview", false)):
-		note_l.text = "A preview: daily gifts add Coins once online play opens. This test build isn't connected to the game service yet, so no Coins were added."
+		note_l.text = "Preview only: no Coins added in this test build."
 		collect.text = "Got it"
 	else:
 		note_l.text = "Couldn't reach the game service, so no Coins were added. Your gift waits: it opens again later today. (%s)" % String(_claim.get("message", ""))

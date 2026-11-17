@@ -122,7 +122,7 @@ func build() -> void:
 
 	var gfx := _section("Graphics")
 	_choice(gfx, "Quality", "quality", [[1, "Standard (60 fps)"], [0, "Battery Saver (30 fps)"]],
-		"Battery Saver draws the world at a lower resolution with simpler shadows and effects. Text and buttons stay sharp.")
+		"Lower resolution and simpler shadows. Text stays sharp.")
 
 	_diag_section(_section("Diagnostics"))
 

@@ -160,6 +160,34 @@ static func price(id: String) -> int:
 	return 0
 
 
+# ---------------------------------------------------------------- sets
+## (2.2 build 18) Matching sets (catalogue "sets"; the service prices them
+## the same way, economy.js setPrice).
+static func sets() -> Array:
+	return (data().get("sets", {}) as Dictionary).get("list", [])
+
+
+static func set_entry(id: String) -> Dictionary:
+	for s in sets():
+		if String((s as Dictionary).get("id", "")) == id:
+			return s
+	return {}
+
+
+## {left: pieces not in `owned`, full: their Coin prices, price: less
+## save_pct, rounded down to 5}.
+static func set_quote(id: String, owned: Array) -> Dictionary:
+	var s := set_entry(id)
+	var left: Array = []
+	var full := 0
+	for c in s.get("contents", []):
+		if not owned.has(String(c)):
+			left.append(String(c))
+			full += price(String(c))
+	var pct := int(s.get("save_pct", 0))
+	return {"left": left, "full": full, "price": int(floor(float(full) * float(100 - pct) / 100.0 / 5.0)) * 5}
+
+
 static func blurb(id: String) -> String:
 	return String(item(id).get("blurb", ""))
 

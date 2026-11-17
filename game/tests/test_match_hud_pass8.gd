@@ -158,12 +158,21 @@ func test_runner_card_in_every_state() -> void:
 	p.last_stamp_water = int(mc.targets[1])   # (the simulation's own return point)
 	p.state = TC.PState.CAPTURED
 	p.penalty = 4.2
+	# (2.2 build 18) a tag knocks you out
 	tx = _texts(mc)
-	t.eq(tx[1], "Caught · back in 5", "the card's countdown")
+	t.eq(tx[0], "You're out", "the card says you're out")
 	t.check(mc.hud.overlay.visible, "the capture notice")
 	t.check(mc.hud.overlay_title.text.begins_with("Caught"), "says caught (%s)" % mc.hud.overlay_title.text)
+	t.eq(mc.hud.overlay_sub.text, "You're out this round", "and out for the round")
+	# the respawn rules (tag_eliminates off) keep their countdown wording
+	var cfg_out := mc.cfg
+	mc.cfg = cfg_out.duplicate()
+	mc.cfg.tag_eliminates = false
+	tx = _texts(mc)
+	t.eq(tx[1], "Caught · back in 5", "respawn rules: the card's countdown")
 	t.eq(mc.hud.overlay_sub.text, "2/3 waters kept · back at %s · protected %d s" % [String(mc.layout.waters[int(mc.targets[1])]["short"]), int(mc.cfg.respawn_protect_s)],
-		"stamps retained, return place, protection")
+		"respawn rules: stamps retained, return place, protection")
+	mc.cfg = cfg_out
 	p.state = TC.PState.ACTIVE
 	p.penalty = 0.0
 	p.protect = 1.5

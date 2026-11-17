@@ -27,7 +27,7 @@ func build() -> void:
 	var v := UIKit.vbox(14)
 	sheet.add_child(v)
 	v.add_child(UIKit.heading("Practice", 38))
-	var note := UIKit.label("Same rules and controls. Everyone else is a bot (labelled BOT). Half rewards; stats kept separately.", 18, UIKit.IVORY_MUTED)
+	var note := UIKit.label("Everyone else is a bot.", 18, UIKit.IVORY_MUTED)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(note)
 	_map_box = UIKit.vbox(0)
@@ -39,7 +39,7 @@ func build() -> void:
 	var last := String(Save.get_setting("practice_role", "runner"))
 	var opts := [
 		["Runner tutorial", "Learn to run, jump, dive and splash. The Night Watch waits 30 s.", func() -> void: App.start_practice("runner", true), not tut_done],
-		["Night Watch training", "A short guided chase: find a jogging runner, wait for Tag to light up, tag them, then try cutting one off with a cart.", func() -> void: App.start_practice("patrol", true), tut_done and not watch_done],
+		["Night Watch training", "A short guided chase as the Night Watch.", func() -> void: App.start_practice("patrol", true), tut_done and not watch_done],
 	]
 	var pick := UIKit.hbox(10)
 	var first: Button = null

@@ -1978,7 +1978,10 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 				Sfx.play("pickup", pos)
 			if ui and mine:
 				var gp := int(ev["v"])
-				hud.toast("%s · %s" % [TC.GADGET_NAMES.get(gp, "Power-up"), TC.GADGET_BLURBS.get(gp, "")], Color(1.0, 0.9, 0.4))
+				# (2.2 build 18) the first time: a tip card with how to use it
+				if not hud.first_tip("gadget_%d" % gp, TC.GADGET_NAMES.get(gp, "Power-up"),
+						"%s. Tap the power-up button to use it." % TC.GADGET_BLURBS.get(gp, ""), "star"):
+					hud.toast("%s · %s" % [TC.GADGET_NAMES.get(gp, "Power-up"), TC.GADGET_BLURBS.get(gp, "")], Color(1.0, 0.9, 0.4))
 		TC.Ev.GADGET_USE:
 			var g: int = ev["v"]
 			if world:
@@ -2010,6 +2013,7 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 			if ui and mine:
 				Sfx.play("knocked_out", null, -2.0)
 				_haptic(70)
+				hud.first_tip("knocked_out", "You're out this round", "A Night Watch tag knocks you out. Keep watching: your team can still win.", "eye")
 		TC.Ev.RECOVER:
 			if world:
 				fx.poof(pos)
@@ -2264,6 +2268,8 @@ func _update_rifts() -> void:
 				v.position = want
 		else:
 			v.set_open(bool(rf["open"]))
+		if bool(rf["open"]) and hud != null and not spectator:
+			hud.first_tip("rift", "A rift opened!", "Step into the purple swirl to pop out somewhere else on campus. Each rift works once.", "star")
 
 
 func _update_pickups() -> void:

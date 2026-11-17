@@ -237,3 +237,25 @@ func test_category_positions_survive_rapid_switching() -> void:
 	App.stage = null
 	t.get_tree().root.size = saved_size
 	await _frames(2)
+
+
+func test_random_look_and_saved_looks() -> void:
+	# (2.2 build 18) the dice and three kept looks, owned items only
+	Save.set_setting("saved_looks", [])
+	var c := await _open()
+	t.check(c.find_child("RandomLook", true, false) != null, "a Random look button")
+	t.eq(c.look_btns.size(), CreatorScreen.LOOK_SLOTS, "three look slots")
+	for i in 6:
+		c.random_look()
+		for f in CreatorScreen.LOOK_FIELDS:
+			t.check(Wallet.owns(f, String(c.draft[f])), "random %s is owned (%s)" % [f, c.draft[f]])
+	var before := c.draft.duplicate()
+	c.look_slot(0, false)
+	t.eq(String((CreatorScreen.saved_looks()[0] as Dictionary).get("outfit", "")), String(before["outfit"]), "an empty slot keeps the look on show")
+	c.random_look()
+	c.look_slot(0, false)
+	for f in CreatorScreen.LOOK_FIELDS:
+		t.eq(String(c.draft[f]), String(before[f]), "a kept look comes back (%s)" % f)
+	t.check(c.changed() or c.draft == c.saved, "and waits for Save look")
+	Save.set_setting("saved_looks", [])
+	await _close(c)

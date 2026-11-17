@@ -227,7 +227,7 @@ func _round_page() -> void:
 			move_child(cf, 1)
 	if bool(d["cancelled"]):
 		var note := UIKit.panel(Color(UIKit.NAVY, 0.5), UIKit.R_CARD, 18)
-		var nl := UIKit.styled("It doesn't count: no Round Win, no loss and no rewards for anyone, and it doesn't use up a round of the series.", "body", UIKit.IVORY)
+		var nl := UIKit.styled("This round doesn't count.", "body", UIKit.IVORY)
 		nl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		note.add_child(nl)
 		_v.add_child(note)
@@ -350,7 +350,7 @@ func _final_page() -> void:
 	var head := UIKit.vbox(2)
 	head.add_child(UIKit.styled("Series over" + (" · ended early" if bool(view.get("ended_early", false)) else ""), "overline", UIKit.IVORY_MUTED))
 	head.add_child(UIKit.styled("Final standings", "display", UIKit.AMBER))
-	var sub := UIKit.styled("Each winning team member earns a Round Win. Ties share a place.", "caption", UIKit.IVORY_MUTED)
+	var sub := UIKit.styled("Ties share a place.", "caption", UIKit.IVORY_MUTED)
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	head.add_child(sub)
 	_v.add_child(head)
@@ -361,7 +361,7 @@ func _final_page() -> void:
 	_v.add_child(_podium(rows))
 	_v.add_child(standings_table(view, Save.player_uid()))
 	var tally := LobbyScreen._tally(view)
-	var tl := UIKit.styled("By role: Runners won %d · Night Watch won %d (roles change between rounds)" % [tally[0], tally[1]], "caption", UIKit.IVORY_MUTED)
+	var tl := UIKit.styled("Runners %d · Night Watch %d" % [tally[0], tally[1]], "caption", UIKit.IVORY_MUTED)
 	tl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_v.add_child(tl)
 	_v.add_child(_rounds_list(view))
@@ -577,15 +577,16 @@ func _fill_rewards(p: Control, mid: String) -> void:
 			v.add_child(det)
 	add_challenge_lines(v, s.get("challenges", {}) if s.get("challenges") is Dictionary else {})
 	if bool(s["settled"]) and int(s["season_xp"]) > 0:
-		var tier := int(s["tier_after"])
-		v.add_child(UIKit.styled("Season tier %d%s" % [tier, "  ·  tier up!" if tier > int(s["tier_before"]) else ""], "label", UIKit.TEAL))
-		var bar := ProgressBar.new()
-		bar.show_percentage = false
-		bar.max_value = 1.0
-		bar.step = 0.001
-		bar.value = float(s["frac_after"])
-		bar.custom_minimum_size = Vector2(0, 14)
-		v.add_child(bar)
+		# (2.2 build 18) the bar fills from where you were to where you are
+		# (through each tier gained, with a pop and a chime)
+		var xb := XpBar.new()
+		xb.name = "XpBar"
+		xb.tier_from = int(s["tier_before"])
+		xb.tier_to = int(s["tier_after"])
+		xb.frac_from = float(s["frac_before"])
+		xb.frac_to = float(s["frac_after"])
+		xb.custom_minimum_size = Vector2(0, 46)
+		v.add_child(xb)
 	if bool(s["level_up"]):
 		v.add_child(UIKit.styled("Level up! You're now level %d" % int(s["level"]), "label", UIKit.TEAL))
 
@@ -661,7 +662,7 @@ func _series_so_far(with_table: bool = true) -> void:
 		sl.name = "SeriesLine"
 		sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		sv.add_child(sl)
-	var note := UIKit.styled("Every member of the winning team earns a Round Win; roles change between rounds (by role so far: Runners %d – %d Night Watch)." % [tally[0], tally[1]], "caption", UIKit.IVORY_MUTED)
+	var note := UIKit.styled("So far: Runners %d – %d Night Watch." % [tally[0], tally[1]], "caption", UIKit.IVORY_MUTED)
 	note.add_theme_font_size_override("font_size", 17)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sv.add_child(note)
@@ -1028,3 +1029,80 @@ class Confetti:
 			draw_rect(Rect2(-sz, -sz * 0.4, sz * 2.0, sz * 0.8), col)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
+
+
+## (2.2 build 18) The round's Season XP filling the tier bar: from where the
+## round started to where it ended, through every tier gained (each one
+## pops with a chime).  Reduced Motion: the end state at once.
+class XpBar:
+	extends Control
+	var tier_from := 0
+	var tier_to := 0
+	var frac_from := 0.0
+	var frac_to := 0.0
+	var _t := 0.0
+	var _shown_tier := 0
+	var _pop := 0.0
+	const DELAY := 0.5
+	const PER_TIER := 0.9
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_shown_tier = tier_from
+		if UIKit.reduced_motion():
+			_t = 999.0
+			_shown_tier = tier_to
+
+	## progress 0..(tiers gained + 1): whole numbers are tier boundaries
+	func _span() -> float:
+		return float(maxi(0, tier_to - tier_from)) + 1.0
+
+	func _process(delta: float) -> void:
+		if _t >= DELAY + PER_TIER * _span() + 0.5:
+			if _pop > 0.0:
+				_pop = maxf(0.0, _pop - delta * 2.5)
+				queue_redraw()
+			return
+		_t += delta
+		_pop = maxf(0.0, _pop - delta * 2.5)
+		var k := clampf((_t - DELAY) / PER_TIER, 0.0, _span())
+		var tier_now := tier_from + mini(int(floor(k)), tier_to - tier_from)
+		if tier_now != _shown_tier:
+			_shown_tier = tier_now
+			_pop = 1.0
+			Sfx.play("reward", null, -4.0)
+			Haptics.tap()
+		queue_redraw()
+
+	func _frac_now() -> float:
+		var k := clampf((_t - DELAY) / PER_TIER, 0.0, _span())
+		var gained := tier_to - tier_from
+		if gained <= 0:
+			return lerpf(frac_from, frac_to, _ease(k))
+		var seg := int(floor(k))
+		var u := k - float(seg)
+		if seg == 0:
+			return lerpf(frac_from, 1.0, _ease(u))
+		if seg < gained:
+			return _ease(u)
+		return lerpf(0.0, frac_to, _ease(u)) if seg == gained else frac_to
+
+	func _ease(u: float) -> float:
+		return 1.0 - pow(1.0 - clampf(u, 0.0, 1.0), 3.0)
+
+	func _draw() -> void:
+		var f := UIKit.font_w(700)
+		var tier_txt := "Tier %d" % _shown_tier
+		var fs := int(22.0 + 6.0 * _pop)
+		draw_string(f, Vector2(0, 22), tier_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UIKit.TEAL.lerp(UIKit.AMBER_HI, _pop))
+		if tier_to > tier_from:
+			var up := "Tier up!"
+			var w := f.get_string_size(up, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
+			draw_string(f, Vector2(size.x - w, 20), up, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(UIKit.AMBER, clampf((_t - DELAY) / PER_TIER, 0.0, 1.0)))
+		var r := Rect2(0, 30, size.x, 14)
+		draw_style_box(UIKit.box(Color(UIKit.NAVY, 0.85), 999), r)
+		var fr := clampf(_frac_now(), 0.0, 1.0)
+		if fr > 0.0:
+			var fw := maxf(r.size.y, r.size.x * fr)
+			draw_style_box(UIKit.box(UIKit.TEAL.lerp(UIKit.AMBER, _pop * 0.6), 999), Rect2(r.position, Vector2(fw, r.size.y)))
+			draw_rect(Rect2(r.position + Vector2(4, 2), Vector2(maxf(0.0, fw - 8.0), 3)), Color(1, 1, 1, 0.25))

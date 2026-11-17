@@ -139,8 +139,10 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 		var nm := UIKit.styled(Catalogue.display_name(String(it[0])), "label", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
 		nm.add_theme_font_size_override("font_size", int(maxf(15.0, 19.0 * k)))
 		tv.add_child(nm)
-		var tl := UIKit.styled("TIER %d" % int(it[1]), "overline", UIKit.AMBER, HORIZONTAL_ALIGNMENT_CENTER)
-		tl.add_theme_font_size_override("font_size", int(maxf(13.0, float(UIKit.T_OVERLINE) * k)))
+		# (2.2 build 18) the tier as a small gold pill
+		var tl := UIKit.chip("TIER %d" % int(it[1]), Color(UIKit.AMBER, 0.95), UIKit.NAVY, int(maxf(13.0, float(UIKit.T_OVERLINE) * k)))
+		tl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		tl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tv.add_child(tl)
 		tags.add_child(tv)
 	# the words and buttons, left
@@ -158,7 +160,7 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sname := String(Catalogue.season(Catalogue.current_season_id()).get("name", ""))
 	var ov := UIKit.chip(("SEASON %d · %s" % [int(Catalogue.season(Catalogue.current_season_id()).get("number", 1)), sname]).to_upper(),
-		Color("ff7aa2"), UIKit.NAVY, UIKit.T_OVERLINE + 2)
+		Color("ff7aa2"), UIKit.NAVY, UIKit.T_OVERLINE)
 	ov.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(ov)
 	top.add_child(UIKit.spacer_h())
@@ -205,6 +207,7 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	var coins := UIKit.quiet("%s Coins" % Catalogue.format_coins(Catalogue.price(premium_item())), Vector2(0, bh), int(maxf(17.0, float(UIKit.T_LABEL + 1) * k)))
 	coins.name = "BuyCoins"
 	coins.icon = null
+	UIKit.face_of(coins).icon = "coin"
 	row.add_child(coins)
 	v.add_child(row)
 	var fine := UIKit.styled("", "caption", UIKit.IVORY_MUTED)
@@ -319,7 +322,11 @@ class Poster:
 				var a := TAU * float(j) / 40.0
 				e.append(ped + Vector2(cos(a) * rx, sin(a) * rx * 0.16))
 			fill_clipped(e, Color(1.0, 0.75, 0.95, 0.07 + 0.03 * k))
-		# a soft spotlight cone from the top
-		var sp := PackedVector2Array([Vector2(c.x - size.x * 0.04, 0), Vector2(c.x + size.x * 0.04, 0),
-			Vector2(ped.x + size.x * 0.24, ped.y), Vector2(ped.x - size.x * 0.24, ped.y)])
-		fill_clipped(sp, Color(1, 0.95, 1, 0.045 + 0.015 * sin(t * 1.4)))
+		# (2.2 build 18) a spotlight on each outfit, swaying a little
+		var spread := size.x * (0.27 if tall else 0.155)
+		for i in 3:
+			var sx := ped.x + spread * float(i - 1)
+			var top_x := sx + sin(t * 0.7 + float(i) * 1.7) * size.x * 0.02
+			var cone := PackedVector2Array([Vector2(top_x - size.x * 0.012, 0), Vector2(top_x + size.x * 0.012, 0),
+				Vector2(sx + size.x * 0.075, ped.y), Vector2(sx - size.x * 0.075, ped.y)])
+			fill_clipped(cone, Color(1, 0.95, 1, 0.05 + 0.02 * sin(t * 1.4 + float(i))))

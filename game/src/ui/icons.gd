@@ -65,6 +65,17 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 				ci.draw_line(m, m + d.rotated(-0.75) * r * 0.32, col, r * 0.12, true)
 			ci.draw_circle(c, r * 0.16, col)
 			return
+		"dice":
+			# (2.2 build 18) Random look: a die showing five
+			var box := StyleBoxFlat.new()
+			box.bg_color = Color(0, 0, 0, 0)
+			box.border_color = col
+			box.set_border_width_all(int(maxf(2.0, r * 0.16)))
+			box.set_corner_radius_all(int(r * 0.35))
+			ci.draw_style_box(box, Rect2(c - Vector2(r, r) * 0.82, Vector2(r, r) * 1.64))
+			for o in [Vector2(-0.42, -0.42), Vector2(0.42, -0.42), Vector2(0, 0), Vector2(-0.42, 0.42), Vector2(0.42, 0.42)]:
+				ci.draw_circle(c + (o as Vector2) * r, r * 0.13, col)
+			return
 		"check":
 			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.7, 0), c + Vector2(-r * 0.15, r * 0.55), c + Vector2(r * 0.75, -r * 0.6)]), col, r * 0.28, true)
 			return

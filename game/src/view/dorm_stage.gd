@@ -839,7 +839,11 @@ func _build_room() -> void:
 	for lx in [-1.0, 1.0]:
 		for lz in [-1.0, 1.0]:
 			k.cylinder(Vector3(-1.9 + lx * 0.33, 0.0, -2.1 + lz * 0.21), 0.025, 0.27, wood_d, 8)
-	k.chamfer_box(Vector3(-1.9, 0.33, -2.1), Vector3(0.45, 0.06, 0.45), Color("f4f2ec"), 0.01, 0.3)
+	if HolidayDecor.ENABLED:
+		# (2.2 build 18) Season 1: cocoa and cookies instead of the pizza box
+		HolidayDecor.cocoa_and_cookies(k, Vector3(-1.78, 0.30, -2.06))
+	else:
+		k.chamfer_box(Vector3(-1.9, 0.33, -2.1), Vector3(0.45, 0.06, 0.45), Color("f4f2ec"), 0.01, 0.3)
 	k.cylinder(Vector3(-2.1, 0.3, -2.2), 0.08, 0.28, Color("e9e2d2", GLOSS), 18)
 	k.cylinder(Vector3(-2.1, 0.56, -2.2), 0.16, 0.2, Color("ffd9a0"), 20, 1.3, true, 0.1)
 	if not HolidayDecor.ENABLED:

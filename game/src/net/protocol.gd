@@ -57,7 +57,9 @@ extends RefCounted
 ## each other at join.
 ## Protocol 14 (2.2 build 17): a second player flags byte (the Invisibility
 ## Cloak), the Cloak power-up, rarer timed rifts.
-const VERSION := 14
+## Protocol 15 (2.2 build 18): a tag knocks the runner out (PState.OUT,
+## Ev.KNOCKED_OUT); an older peer would show them respawning.
+const VERSION := 15
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}

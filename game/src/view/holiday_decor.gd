@@ -85,6 +85,7 @@ static func build_lights(stage: DormStage, wx: float, reduced: bool) -> void:
 	stage._light_pool(Vector3(TREE.x, 1.4, -3.45), Vector2(2.6, 2.8), Color(1.0, 0.7, 0.45), 0.1, 0.0, true)
 	if not reduced:
 		stage.add_child(_snowfall(wx))
+		stage.add_child(_steam())
 
 
 ## A gentle pulse of the tree light (DormStage._process; nothing with
@@ -93,6 +94,81 @@ static func animate(stage: DormStage, t: float) -> void:
 	var tl := stage.get_node_or_null("TreeLight") as OmniLight3D
 	if tl:
 		tl.light_energy = 1.5 + 0.14 * sin(t * 1.3) + 0.07 * sin(t * 3.1 + 1.0)
+
+
+# ---------------------------------------------------------------------------
+# (2.2 build 18) The side table: a mug of cocoa with marshmallows and a
+# plate of cookies (solid; the steam is build_lights' little particles).
+
+const COCOA_AT := Vector3(-1.78, 0.30, -2.06)
+
+
+static func cocoa_and_cookies(k: MeshKit, at: Vector3) -> void:
+	var gloss := 0.6
+	# the mug: red with a cream band, cocoa inside, two marshmallows
+	var mug := at + Vector3(0.1, 0.0, 0.05)
+	k.cylinder(mug, 0.055, 0.1, Color("c7353e", gloss), 18)
+	k.cylinder(mug + Vector3(0, 0.055, 0), 0.0565, 0.018, Color("f4ead6", gloss), 18, 0.0, false)
+	k.cylinder(mug + Vector3(0, 0.094, 0), 0.047, 0.006, Color("6b3a1e"), 16)
+	k.blob(mug + Vector3(-0.015, 0.103, 0.008), Vector3(0.016, 0.012, 0.016), Color("fbf6ee"), 3, 8)
+	k.blob(mug + Vector3(0.018, 0.103, -0.01), Vector3(0.014, 0.011, 0.014), Color("fbf6ee"), 3, 8)
+	# handle: a few small blobs in an arc on the mug's right
+	for i in 5:
+		var a := -PI * 0.5 + PI * float(i) / 4.0
+		k.blob(mug + Vector3(0.062 + cos(a) * 0.028, 0.05 + sin(a) * 0.03, 0), Vector3(0.011, 0.011, 0.011), Color("c7353e", gloss), 3, 6)
+	# the plate and three cookies with chocolate chips
+	var plate := at + Vector3(-0.07, 0.0, 0.07)
+	k.cylinder(plate, 0.13, 0.012, Color("f7f3ec", gloss), 24, 0.0, true, 0.15)
+	var cookies := [Vector3(-0.04, 0.014, 0.02), Vector3(0.05, 0.014, -0.03), Vector3(0.0, 0.03, -0.0)]
+	for ci in cookies.size():
+		var cp := plate + (cookies[ci] as Vector3)
+		k.cylinder(cp, 0.048, 0.014, Color("c98a4b"), 16)
+		for d in 4:
+			var da := float(d) * 1.7 + float(ci)
+			k.blob(cp + Vector3(cos(da) * 0.024, 0.015, sin(da) * 0.024), Vector3(0.007, 0.004, 0.007), Color("4a2a16"), 2, 5)
+
+
+## The cocoa's steam: a few soft puffs rising and fading (none with Reduced
+## Motion).
+static func _steam() -> CPUParticles3D:
+	var p := CPUParticles3D.new()
+	p.name = "CocoaSteam"
+	p.position = COCOA_AT + Vector3(0.1, 0.17, 0.05)
+	p.amount = 6
+	p.lifetime = 2.6
+	p.preprocess = 2.0
+	p.direction = Vector3(0, 1, 0)
+	p.spread = 12.0
+	p.gravity = Vector3(0, 0.02, 0)
+	p.initial_velocity_min = 0.05
+	p.initial_velocity_max = 0.08
+	p.scale_amount_min = 0.6
+	p.scale_amount_max = 1.0
+	var sc := Curve.new()
+	sc.add_point(Vector2(0, 0.4))
+	sc.add_point(Vector2(1, 1.4))
+	p.scale_amount_curve = sc
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 0.0))
+	g.set_color(1, Color(1, 1, 1, 0.0))
+	g.add_point(0.25, Color(1, 0.97, 0.92, 0.32))
+	p.color_ramp = g
+	var q := QuadMesh.new()
+	q.size = Vector2(0.07, 0.07)
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.vertex_color_use_as_albedo = true
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	var img := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	for y in 32:
+		for x in 32:
+			var d := Vector2(x - 15.5, y - 15.5).length() / 16.0
+			img.set_pixel(x, y, Color(1, 1, 1, clampf(1.0 - d, 0.0, 1.0) ** 2))
+	m.albedo_texture = ImageTexture.create_from_image(img)
+	q.material = m
+	p.mesh = q
+	return p
 
 
 # ---------------------------------------------------------------------------

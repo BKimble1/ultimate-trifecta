@@ -456,14 +456,12 @@ func _build_section() -> void:
 			_build_featured(gw)
 		"outfits":
 			body.add_child(_filter_row("outfits"))
-			_intro("Rotating skins are bought from Featured while they're in the Shop. " + RETURN_NOTE, gw)
 			_filtered_grid("outfits", gw)
 		"accessories":
+			_sets_row(gw)
 			body.add_child(_filter_row("accessories"))
-			_intro("Always available.", gw)
 			_filtered_grid("accessories", gw)
 		"coins":
-			_intro("Coins buy anything in the Shop and never expire.", gw)
 			body.add_child(_grid("coins", Catalogue.shop_items("coins"), gw, PACK_W, 1, 3))
 		"season":
 			# (2.2 build 16) the section is the Season Pass poster: Premium from
@@ -512,6 +510,77 @@ func _intro(text: String, gw: float) -> Label:
 	il.custom_minimum_size.x = gw * 0.95
 	body.add_child(il)
 	return il
+
+
+## (2.2 build 18) Matching sets you can still buy (two or more pieces
+## missing): one card each, the pieces, what you save, the price.
+func sets_on_sale() -> Array:
+	var out: Array = []
+	for s in Catalogue.sets():
+		var id := String((s as Dictionary).get("id", ""))
+		var q := Catalogue.set_quote(id, _owned_of(id))
+		if (q["left"] as Array).size() >= 2:
+			out.append(id)
+	return out
+
+
+func _owned_of(set_id: String) -> Array:
+	var owned: Array = []
+	for c in Catalogue.set_entry(set_id).get("contents", []):
+		if Wallet.owns_id(String(c)):
+			owned.append(String(c))
+	return owned
+
+
+func _sets_row(gw: float) -> void:
+	var ids := sets_on_sale()
+	if ids.is_empty():
+		return
+	var head := UIKit.styled("Sets", "overline", UIKit.IVORY_MUTED)
+	head.name = "SetsHead"
+	body.add_child(head)
+	var g := UIKit.AutoGrid.new(COMPACT_W + 40.0, 1, 3, CARD_GAP)
+	g.name = "Grid_sets"
+	var cols := clampi(ids.size(), 1, UIKit.columns_for(gw, COMPACT_W + 40.0, CARD_GAP, 1, 3))
+	var w := UIKit.cell_width(gw, cols, CARD_GAP)
+	for id in ids:
+		var c := SetCard.new()
+		c.setup(self, String(id), w)
+		c.pressed.connect(_confirm_set.bind(String(id)))
+		g.add_child(c)
+	g.columns = cols
+	body.add_child(g)
+
+
+func _confirm_set(set_id: String) -> void:
+	var q := Catalogue.set_quote(set_id, _owned_of(set_id))
+	var names: Array = (q["left"] as Array).map(func(i: String) -> String: return Catalogue.display_name(i))
+	var price := int(q["price"])
+	var can := Wallet.can_transact()
+	if not bool(can["ok"]):
+		dialog(String(can["message"]))
+		return
+	if Wallet.balance() < price:
+		dialog("%s costs %s Coins. You need %s more." % [String(Catalogue.set_entry(set_id).get("name", "")), Catalogue.format_coins(price),
+			Catalogue.format_coins(price - Wallet.balance())], [["Get Coins", func() -> void: select_section("coins")], ["Cancel", Callable()]])
+		return
+	dialog("%s: %s" % [String(Catalogue.set_entry(set_id).get("name", "")), ", ".join(names)],
+		[["Buy for %s Coins" % Catalogue.format_coins(price), func() -> void: _buy_set(set_id)], ["Cancel", Callable()]])
+
+
+func _buy_set(set_id: String) -> void:
+	_busy_item = set_id
+	var r: Dictionary = await Wallet.spend_set(set_id)
+	_busy_item = ""
+	if not is_inside_tree():
+		return
+	if bool(r.get("ok", false)):
+		_celebrate(set_id)
+		UIKit.toast(self, "%s is yours" % String(Catalogue.set_entry(set_id).get("name", "")), 2.0)
+		if section == "accessories":
+			_build_section()
+	elif String(r.get("message", "")) != "":
+		dialog(String(r["message"]))
 
 
 ## FINAL_RELEASE_SWEEP: the filter row above All skins / Accessories: how
@@ -597,7 +666,7 @@ func _filtered_grid(key: String, gw: float) -> void:
 	var items := filtered_items(key)
 	if items.is_empty():
 		var words: Array = FILTER_SECTIONS[key]
-		var note := UIKit.styled("You own every %s here. They're in your Locker. Turn off Hide owned to see them." % String(words[0]), "body", UIKit.IVORY)
+		var note := UIKit.styled("You own every %s here. Turn off Hide owned to see them." % String(words[0]), "body", UIKit.IVORY)
 		note.name = "AllOwned"
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		note.custom_minimum_size.x = gw * 0.95
@@ -806,7 +875,7 @@ func _rotation_line() -> String:
 		"off":
 			return "The skin rotation isn't set up in this build. Preview every skin in All skins."
 		"unsupported":
-			return "Rotating skins aren't available from the game service yet. You can preview them in All skins."
+			return "Rotating skins aren't available yet."
 		"loading":
 			return "Loading the Shop…"
 		"stale":
@@ -1489,7 +1558,7 @@ func _confirm_spend(id: String, offer: Dictionary = {}) -> void:
 		n.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		g.add_child(n)
 	v.add_child(g)
-	var note := UIKit.styled("Cosmetic only. It goes straight to your Locker, to keep.", "caption", UIKit.IVORY_MUTED)
+	var note := UIKit.styled("Cosmetic. Yours to keep.", "caption", UIKit.IVORY_MUTED)
 	v.add_child(note)
 	var row2 := UIKit.hbox(14)
 	row2.alignment = BoxContainer.ALIGNMENT_END
@@ -2228,3 +2297,57 @@ class FeaturedRow:
 			return Vector2(0.0, h)
 		var sh := maxf(NARROW_SPOT_H, (cs[0] as Control).custom_minimum_size.y)
 		return Vector2(0.0, sh + (gap + h if cs.size() > 1 else 0.0))
+
+
+## (2.2 build 18) A matching set's card: its pieces side by side, its name,
+## what you save and the price for what you're missing.
+class SetCard:
+	extends Button
+	var id := ""
+
+	func setup(s: ShopScreen, set_id: String, w: float) -> void:
+		id = set_id
+		name = "Set_" + set_id.replace(":", "_")
+		var e := Catalogue.set_entry(set_id)
+		UIKit.make_card(self, Vector2(w, 0), Color(UIKit.SLATE_HI, 0.96))
+		var face := UIKit.face_of(self)
+		var v := UIKit.vbox(6)
+		v.set_anchors_preset(Control.PRESET_FULL_RECT)
+		v.offset_left = 10
+		v.offset_right = -10
+		v.offset_top = 10
+		v.offset_bottom = -10
+		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.add_child(v)
+		var pics := UIKit.hbox(6)
+		pics.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var owned := s._owned_of(set_id)
+		for c in e.get("contents", []):
+			var pic := ShopCard.art_for(s, String(c), 58.0, "shop:set:%s" % String(c))
+			pic.custom_minimum_size = Vector2(58, 58)
+			if owned.has(String(c)):
+				pic.modulate.a = 0.4
+			pics.add_child(pic)
+		v.add_child(pics)
+		var nm := UIKit.styled(String(e.get("name", "")), "label", UIKit.IVORY)
+		nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(nm)
+		var q := Catalogue.set_quote(set_id, owned)
+		var row := UIKit.hbox(8)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var coin := CommerceArt.Pic.new("coin", "", Color.WHITE, 20)
+		coin.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(coin)
+		var pl := UIKit.styled(Catalogue.format_coins(int(q["price"])), "num", UIKit.AMBER if Wallet.balance() >= int(q["price"]) else UIKit.IVORY_MUTED)
+		pl.add_theme_font_size_override("font_size", 20)
+		pl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(pl)
+		var save := int(q["full"]) - int(q["price"])
+		if save > 0:
+			var chip := UIKit.chip("Save %s" % Catalogue.format_coins(save), Color("3ccf7a"), UIKit.NAVY, 15)
+			chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			row.add_child(chip)
+		v.add_child(row)
+		custom_minimum_size = Vector2(w, 20.0 + 58.0 + 6.0 * 2.0 + 30.0 + 30.0)
+		accessibility_name = "%s set, %s Coins" % [String(e.get("name", "")), Catalogue.format_coins(int(q["price"]))]

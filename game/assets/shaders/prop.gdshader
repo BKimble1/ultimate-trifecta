@@ -6,8 +6,10 @@ uniform vec3 albedo : source_color = vec3(1.0);
 uniform vec3 rim_color : source_color = vec3(0.55, 0.7, 1.0);
 uniform float rim_strength = 0.45;
 uniform float emission = 0.0;
-instance uniform vec3 flash_color : source_color = vec3(1.0, 1.0, 1.0);
-instance uniform float flash = 0.0;
+// (2.2 build 18) plain uniforms: no prop sets them per instance, and every
+// instance uniform takes slots in the global buffer for each prop on campus
+uniform vec3 flash_color : source_color = vec3(1.0, 1.0, 1.0);
+uniform float flash = 0.0;
 uniform float stripes = 0.0;
 uniform vec3 stripe_color : source_color = vec3(1.0);
 uniform float use_vertex_color = 0.0;

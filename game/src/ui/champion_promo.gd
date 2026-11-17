@@ -19,7 +19,7 @@ const PROMO_EVERY_LAUNCHES := 3
 ## never twice within this (a resume right after a launch)
 const PROMO_MIN_GAP_S := 30 * 60
 const HEAD := "DESIGN NEXT SEASON'S SKIN"
-const BODY := "Finish the season #1 in Season Points and your idea becomes the tier 100 skin of next season's Season Pass: your concept, your name, in the game."
+const BODY := "Finish #1 in Season Points and your idea becomes next season's tier 100 skin, with your name on it."
 const SHORT := "Finish #1 in Season Points to design next season's tier 100 skin."
 
 
@@ -134,7 +134,7 @@ static func _fill(poster: Poster, screen: Screen, close: Callable, big: bool) ->
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# the small banner: "SEASON 1 · CHAMPION PRIZE" (the full name doesn't fit)
 	var sname := Rankings.season_name(Rankings.contest_period())
-	var ov := UIKit.chip("%s · CHAMPION PRIZE" % (sname if big else sname.get_slice(" · ", 0)).to_upper(), UIKit.AMBER, UIKit.NAVY, UIKit.T_OVERLINE + (3 if big else 0))
+	var ov := UIKit.chip("%s · CHAMPION PRIZE" % (sname if big else sname.get_slice(" · ", 0)).to_upper(), UIKit.AMBER, UIKit.NAVY, UIKit.T_OVERLINE)
 	ov.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(ov)
 	top.add_child(UIKit.spacer_h())
@@ -258,6 +258,85 @@ class Poster:
 			confetti_x = Vector2(0.5, 1.0)
 		super._ready()
 
+	## (2.2 build 18) A shaded gold trophy: a cup lit from the left with a
+	## moving shine, its rim and handles, a star on it, the stem and knot,
+	## and a two-step base with a "#1" plate.  s ~ its half-height.
+	func gold_trophy(c: Vector2, s: float) -> void:
+		var dark := Color("9a5a0c")
+		var mid := Color("f0b42a")
+		var hi := Color("fff2b0")
+		var shine := fposmod(t * 0.3, 2.2) - 1.1
+		var gold := func(u: float) -> Color:
+			var col: Color = dark.lerp(mid, clampf(1.0 - u * u, 0.0, 1.0))
+			col = col.lerp(hi, clampf(exp(-pow((u + 0.42) / 0.16, 2.0)) * 0.85, 0.0, 1.0))
+			col = col.lerp(Color.WHITE, clampf(exp(-pow((u - shine) / 0.08, 2.0)) * 0.55, 0.0, 1.0))
+			return col
+		# base: a dark block with a gold plate, a gold plinth on it
+		var blk := Rect2(c + Vector2(-s * 0.48, s * 0.56), Vector2(s * 0.96, s * 0.32))
+		var bsb := StyleBoxFlat.new()
+		bsb.bg_color = Color("3b2650")
+		bsb.set_corner_radius_all(int(s * 0.06))
+		bsb.border_color = Color("6a4a8a")
+		bsb.set_border_width_all(2)
+		draw_style_box(bsb, blk)
+		var plate := Rect2(blk.position + Vector2(blk.size.x * 0.24, blk.size.y * 0.22), Vector2(blk.size.x * 0.52, blk.size.y * 0.56))
+		var psb := StyleBoxFlat.new()
+		psb.bg_color = mid
+		psb.set_corner_radius_all(int(s * 0.03))
+		draw_style_box(psb, plate)
+		var f := UIKit.font_w(800)
+		var pfs := int(plate.size.y * 0.78)
+		draw_string(f, Vector2(plate.position.x, plate.get_center().y + pfs * 0.36), "#1", HORIZONTAL_ALIGNMENT_CENTER, plate.size.x, pfs, Color("5a3206"))
+		var pl := Rect2(c + Vector2(-s * 0.36, s * 0.43), Vector2(s * 0.72, s * 0.14))
+		_gold_rect(pl, gold)
+		# stem and knot
+		_gold_rect(Rect2(c + Vector2(-s * 0.08, s * 0.06), Vector2(s * 0.16, s * 0.38)), gold)
+		draw_circle(c + Vector2(0, s * 0.16), s * 0.12, mid, true, -1.0, true)
+		draw_circle(c + Vector2(-s * 0.04, s * 0.13), s * 0.04, Color(hi, 0.8), true, -1.0, true)
+		# handles (behind the cup's edges)
+		for side in [-1.0, 1.0]:
+			var hc := c + Vector2(side * s * 0.6, -s * 0.5)
+			var a0 := -PI * 0.5 if side > 0.0 else PI * 0.5
+			draw_arc(hc, s * 0.27, a0, a0 + PI * side, 24, dark, s * 0.12, true)
+			draw_arc(hc, s * 0.27, a0, a0 + PI * side, 24, mid, s * 0.07, true)
+		# the cup in vertical strips: width narrows towards the stem
+		var n := 26
+		var top_y := -0.88 * s
+		var bot_y := 0.08 * s
+		var half := func(y: float) -> float:
+			var k := clampf((y - top_y) / (bot_y - top_y), 0.0, 1.0)
+			return lerpf(0.66, 0.1, pow(k, 1.7)) * s
+		for i in n:
+			var u0 := -1.0 + 2.0 * float(i) / float(n)
+			var u1 := -1.0 + 2.0 * float(i + 1) / float(n)
+			var pts := PackedVector2Array()
+			for j in 9:
+				var y := lerpf(top_y, bot_y, float(j) / 8.0)
+				pts.append(c + Vector2(u0 * float(half.call(y)), y))
+			for j in range(8, -1, -1):
+				var y2 := lerpf(top_y, bot_y, float(j) / 8.0)
+				pts.append(c + Vector2(u1 * float(half.call(y2)) + 0.6, y2))
+			draw_colored_polygon(pts, gold.call((u0 + u1) * 0.5))
+		# the rim: the opening and its lip
+		var rim := PackedVector2Array()
+		for j in 40:
+			var a := TAU * float(j) / 40.0
+			rim.append(c + Vector2(cos(a) * 0.66 * s, top_y + sin(a) * 0.12 * s))
+		draw_colored_polygon(rim, Color("7a4508"))
+		rim.append(rim[0])
+		draw_polyline(rim, hi, maxf(2.0, s * 0.03), true)
+		# a star on the cup
+		Icons.draw_shape(self, "star", c + Vector2(0, -0.42 * s), s * 0.2, Color("fff6c8"))
+		Icons.draw_shape(self, "star", c + Vector2(0, -0.42 * s), s * 0.13, Color("e9a020"))
+
+	func _gold_rect(r: Rect2, gold: Callable) -> void:
+		var n := 12
+		for i in n:
+			var u0 := -1.0 + 2.0 * float(i) / float(n)
+			var x0 := r.position.x + r.size.x * float(i) / float(n)
+			var x1 := r.position.x + r.size.x * float(i + 1) / float(n) + 0.6
+			draw_rect(Rect2(x0, r.position.y, x1 - x0, r.size.y), gold.call(u0 + 1.0 / float(n)))
+
 	func _paint_art(c: Vector2) -> void:
 		var cw := size.y * (0.42 if big else 0.24)
 		var bob := sin(t * 1.6) * size.y * 0.012
@@ -278,9 +357,25 @@ class Poster:
 		draw_set_transform(card.get_center(), -0.12 + sin(t * 0.9) * 0.025, Vector2.ONE)
 		draw_style_box(csb, Rect2(-card.size * 0.5, card.size))
 		var f := UIKit.font_w(800)
-		var fs := int(cw * 0.44)
+		var fs := int(cw * 0.3)
 		var q_a := 0.75 + 0.25 * sin(t * 2.2)
-		draw_string(f, Vector2(-card.size.x * 0.5, fs * 0.35), "?", HORIZONTAL_ALIGNMENT_CENTER, card.size.x, fs, Color(UIKit.TEAL, q_a))
+		# (2.2 build 18) a runner's outline waiting for its look, a ? on it,
+		# and a holographic shimmer crossing the card
+		var sil := Color(UIKit.TEAL, 0.32)
+		var hcy := -card.size.y * 0.24
+		draw_circle(Vector2(0, hcy), card.size.x * 0.17, sil, false, 3.0, true)
+		var body := Rect2(Vector2(-card.size.x * 0.2, hcy + card.size.x * 0.2), Vector2(card.size.x * 0.4, card.size.y * 0.3))
+		var bsb := StyleBoxFlat.new()
+		bsb.bg_color = Color(0, 0, 0, 0)
+		bsb.border_color = sil
+		bsb.set_border_width_all(3)
+		bsb.set_corner_radius_all(int(card.size.x * 0.12))
+		draw_style_box(bsb, body)
+		draw_string(f, Vector2(-card.size.x * 0.5, body.get_center().y + fs * 0.35), "?", HORIZONTAL_ALIGNMENT_CENTER, card.size.x, fs, Color(UIKit.TEAL, q_a))
+		var sh := fposmod(t * 0.35, 1.6) - 0.3
+		var sx := lerpf(-card.size.x * 0.7, card.size.x * 0.7, sh)
+		draw_colored_polygon(PackedVector2Array([Vector2(sx - 10, -card.size.y * 0.5 + 6), Vector2(sx + 14, -card.size.y * 0.5 + 6),
+			Vector2(sx - 6, card.size.y * 0.5 - 6), Vector2(sx - 30, card.size.y * 0.5 - 6)]), Color(0.7, 1.0, 0.95, 0.10))
 		var f2 := int(clampf(cw * 0.085, 10.0, 22.0))
 		draw_string(f, Vector2(-card.size.x * 0.5, card.size.y * 0.36), "YOUR SKIN", HORIZONTAL_ALIGNMENT_CENTER, card.size.x, f2, UIKit.IVORY)
 		draw_string(f, Vector2(-card.size.x * 0.5, card.size.y * 0.36 + f2 * 1.25), "TIER 100", HORIZONTAL_ALIGNMENT_CENTER, card.size.x, f2, UIKit.AMBER)
@@ -303,7 +398,7 @@ class Poster:
 				ring.append(tc + Vector2.from_angle(TAU * float(j) / 48.0) * rr)
 			ring.append(ring[0])
 			draw_polyline(ring, Color(1.0, 0.86, 0.45, 0.16 - 0.04 * k), 2.0, true)
-		Icons.draw_shape(self, "trophy", tc, cw * 0.64, Color("ffcf4a"))
+		gold_trophy(tc, cw * 0.64)
 		# orbiting stars
 		for i in 6:
 			var sp := tc + Vector2.from_angle(float(i) * 1.05 + t * 0.45) * cw * (0.86 + 0.1 * sin(t * 2.0 + i))

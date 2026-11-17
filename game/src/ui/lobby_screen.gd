@@ -64,6 +64,7 @@ var mode_icon: Icons.IconRect
 var rank_btn: Button
 var season_card: Button
 var wallet_chip: Control
+var season_pill: SeasonPill
 var code_row: HBoxContainer
 
 ## Playlists (2.2).  Alone in your party you pick one; with friends in it
@@ -117,6 +118,15 @@ func build() -> void:
 	var nav := NavShell.make("play")
 	nav.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(nav)
+	# (2.2 build 18) the Season Pass progress, under the tabs
+	season_pill = SeasonPill.new()
+	add_child(season_pill)
+	var place_pill := func() -> void:
+		if is_instance_valid(season_pill) and is_instance_valid(nav) and nav.is_inside_tree():
+			var nr := nav.get_global_rect()
+			season_pill.position = Vector2(nr.position.x, nr.end.y + 12.0) - get_global_rect().position
+	nav.item_rect_changed.connect(place_pill)
+	place_pill.call_deferred()
 	wallet_chip = WalletChip.new()
 	wallet_chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(wallet_chip)
@@ -382,6 +392,8 @@ func _set_walk(on: bool) -> void:
 		stick.release()
 	roster_col.visible = not on
 	series_row.visible = not on and session.series_active()
+	if is_instance_valid(season_pill):
+		season_pill.visible = not on
 	UIKit.face_of(walk_btn).caption = "Done" if on else "Walk"
 	UIKit.face_of(walk_btn).icon = "check" if on else "walk"
 	UIKit.face_of(walk_btn).queue_redraw()
@@ -771,7 +783,7 @@ func _mode_sheet() -> void:
 	head.add_child(x)
 	v.add_child(head)
 	if not _solo() or session.human_count() > 1:
-		var note := UIKit.styled("Your party plays together. The host picks the map, rounds and Night Watch." if session.is_host() or not _solo() else "", "body", UIKit.IVORY_MUTED)
+		var note := UIKit.styled("The host picks the map, rounds and Night Watch." if session.is_host() or not _solo() else "", "body", UIKit.IVORY_MUTED)
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		note.custom_minimum_size.x = 560
 		v.add_child(note)
@@ -1275,7 +1287,7 @@ func _player_popover(i: int, anchor: Control) -> void:
 		popover_at(anchor, v, "left")
 		return
 	if bool(e["is_bot"]):
-		v.add_child(UIKit.styled("Bots fill empty seats. A friend who joins takes this seat.", "caption", UIKit.IVORY_MUTED))
+		v.add_child(UIKit.styled("Bots fill empty seats.", "caption", UIKit.IVORY_MUTED))
 		popover_at(anchor, v, "left")
 		return
 	var muted := session.muted.has(uid)

@@ -676,3 +676,54 @@ From the owner's notes on build 16:
   they are within 2.5 m; bots don't notice you beyond 2 m; your team sees
   you as a faint ghost.  A tag that lands still counts.
 - Protocol 14: build 16 can't join build 17 parties.
+
+## 34. Eighth pass (build 18): what changed
+
+From the owner's list after build 17:
+
+- **A tag knocks you out.** A Night Watch tag (or a cart hit) shows the
+  caught moment for 2.5 s, then the runner is out for the round
+  (`PState.OUT`, `Ev.KNOCKED_OUT`) and watches their team.  The Night Watch
+  win at once when too few runners are left to get the needed number home
+  (`MatchSim.runners_alive`).  The respawn rules stay available
+  (`RulesConfig.tag_eliminates`; the sim tests' harness uses them unless a
+  test asks for knock-outs).  Out runners leave the pace race and chat with
+  spectators.  Protocol 15.
+- **No Cheer while watching**: the spectate controls are just Next.
+- **Shop**
+  - Featured: the first rotating skin is a large tinted *Spotlight* card,
+    the other three beside it, each card in its outfit's colour.
+  - Always available is a compact row (picture beside name and price).
+  - Tabs: Featured · Skins · Accessories · Season 1.  Coins moved behind a
+    green **+** on the Coins counter (anywhere in the app).
+  - Season 1: the pass banner is sized to the visible space (no scrolling),
+    side by side when wide.
+  - Prices you can't afford are dimmed; owned items carry a tick.
+  - Buying: confetti, a cheer from your runner, a purchase sound and a
+    haptic; owned skins have **Equip now**.
+  - **Remind me** on a skin that isn't in the Shop: home says when it's back.
+  - **Sets** (Accessories): Party Pack, Royal Look, Pond Pals, Night Out.
+    A set sells the pieces you don't own yet for 15 % less (rounded down
+    to 5 Coins), while at least two are missing.  The game service sells a
+    set atomically (`spendSet`, service test "sets").
+  - Less text: shorter detail lines and descriptions.
+- **Home**: a Season Pass pill under the tabs (tier, a bar, "2 tiers to
+  Night Owl"); a mug of cocoa with steam and a plate of cookies on the side
+  table.
+- **Results**: the Season XP bar fills from where the round started,
+  through every tier gained (each with a chime and a pop).
+- **First-time tips**: a tip card the first time you pick up each
+  power-up, see a rift, or get knocked out.
+- **Locker**: a Random look (owned items only; your face and hair stay)
+  and three kept looks (tap empty to keep, tap to try on, hold to replace).
+- **Sounds** (ElevenLabs sound effects, trimmed and levelled): tab, sheet
+  open/close, countdown and go, purchase, equip, reward, portal, cloak,
+  knocked out.  **Haptics** (Settings › Controls › Vibration): tabs, round
+  start, purchases, rewards, knock-outs.
+- **Posters**: the event poster's trophy is a shaded gold cup with a moving
+  shine, a "#1" plate and a runner outline on the skin card; shorter text.
+  The pass poster: compact season label, tier pills, a spotlight on each
+  outfit, the Coins button with a coin.
+- **Technical**: the prop shader's unused per-instance values became plain
+  uniforms (fewer instance-uniform slots per prop); the release notes are
+  a one-page status with the history in `docs/release_history.md`.

@@ -160,7 +160,7 @@ func build() -> void:
 	friends_btn.accessibility_name = "Friends: see who's playing and invite them"
 	friends_btn.pressed.connect(func() -> void: FriendsPanel.open(self))
 	frow.add_child(friends_btn)
-	_friends_hint = UIKit.styled("Invite your Game Center friends to your party.", "caption", UIKit.IVORY_MUTED)
+	_friends_hint = UIKit.styled("Invite Game Center friends.", "caption", UIKit.IVORY_MUTED)
 	_friends_hint.add_theme_font_size_override("font_size", 19)
 	_friends_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_friends_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -307,6 +307,24 @@ func _route(method: int, path: String, b: Dictionary, pid: String) -> Dictionary
 	return _err(404, "no_route", "Not found.")
 
 
+## (2.2 build 18) as the service's spendSet
+func _spend_set(pid: String, key: String, id: String, shown: int) -> Dictionary:
+	var w := wallet(pid)
+	var q := Catalogue.set_quote(id, (w["entitlements"] as Dictionary).keys())
+	if (q["left"] as Array).size() < 2:
+		return _err(409, "already_owned", "You already own everything in this set.")
+	if shown != int(q["price"]):
+		return _err(409, "price_changed", "The price changed. Check it and try again.")
+	if int(w["balance"]) < int(q["price"]):
+		return _err(409, "insufficient_funds", "You don't have enough Coins.")
+	w["balance"] = int(w["balance"]) - int(q["price"])
+	for piece in q["left"]:
+		w["entitlements"][String(piece)] = {"source": "coin_purchase"}
+	_bump(pid)
+	ledger_keys[key] = true
+	return _ok(pid, {"bought": id, "granted": q["left"]})
+
+
 func _spend(pid: String, b: Dictionary) -> Dictionary:
 	var key := "spend:%s:%s" % [pid, String(b.get("idempotency_key", ""))]
 	if ledger_keys.has(key):
@@ -316,6 +334,8 @@ func _spend(pid: String, b: Dictionary) -> Dictionary:
 			extra["accepted_at"] = offer_sales[key]["accepted_at"]
 		return _ok(pid, extra)
 	var id := String(b.get("item_id", ""))
+	if not Catalogue.set_entry(id).is_empty():
+		return _spend_set(pid, key, id, int(b.get("price", -1)))
 	var price := Catalogue.price(id)
 	if not Catalogue.kind(id) in ["coin_item", "season_premium"]:
 		return _err(400, "not_for_sale", "That item isn't sold for Coins.")

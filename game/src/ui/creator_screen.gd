@@ -173,6 +173,10 @@ func build() -> void:
 		run_btn.text = "Idle" if preview_run else "Run")
 	pv.add_child(run_btn)
 	pv.move_child(run_btn, 0)
+	# (2.2 build 18) Random look and three saved looks, over Run
+	if not first_run:
+		pv.add_child(_looks_row())
+		pv.move_child(pv.get_child(pv.get_child_count() - 1), 0)
 	stage_area.resized.connect(func() -> void: pv.position = Vector2(0, stage_area.size.y - pv.get_combined_minimum_size().y))
 
 	# right: one panel with categories, the grid and the footer.  Its width
@@ -504,7 +508,7 @@ var _slot_btns: Array = []
 func _emote_slot_row(gw: float) -> Control:
 	var v := UIKit.vbox(6)
 	v.name = "EmoteSlots"
-	var hdr := UIKit.styled("Your emote wheel · tap a slot, then the emote to put in it. The wheel is on the Emote button in the lobby and in rounds (keys 1-5).", "caption", UIKit.IVORY_MUTED)
+	var hdr := UIKit.styled("Tap a slot, then an emote.", "caption", UIKit.IVORY_MUTED)
 	hdr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hdr.custom_minimum_size.x = gw * 0.95
 	v.add_child(hdr)
@@ -580,7 +584,7 @@ func _paint_emote_slots() -> void:
 ## (2.2 build 16) Albums: every lobby album as a disc in its sleeve; a tap
 ## puts it on (saved at once, it plays now).  Free for everyone.
 func _build_albums(gw: float) -> void:
-	var intro := UIKit.styled("Pick the music for your lobby. It plays on home, in your party and in the menus.", "caption", UIKit.IVORY_MUTED)
+	var intro := UIKit.styled("Tap a disc to play it.", "caption", UIKit.IVORY_MUTED)
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	intro.custom_minimum_size.x = gw * 0.95
 	body.add_child(intro)
@@ -949,6 +953,101 @@ func _on_apply() -> void:
 		on_done.call()
 		return
 	UIKit.toast(self, "Looking good!")
+
+
+# ------------------------------------------------------------------ looks
+## (2.2 build 18) the dice and three saved looks: tap an empty slot to keep
+## the look on show there, tap a kept one to try it on (then Save look),
+## hold it to replace it with the look on show.
+const LOOK_SLOTS := 3
+const LOOK_FIELDS := ["outfit", "pattern", "color", "trim", "hat", "shoes", "hair_color"]
+var look_btns: Array = []
+
+
+func _looks_row() -> Control:
+	var row := UIKit.hbox(8)
+	row.name = "Looks"
+	var dice := UIKit.icon_button("dice")
+	dice.name = "RandomLook"
+	dice.tooltip_text = "Random look"
+	dice.accessibility_name = "Random look from your items"
+	dice.pressed.connect(random_look)
+	row.add_child(dice)
+	look_btns.clear()
+	for i in LOOK_SLOTS:
+		var b := UIKit.quiet(str(i + 1), Vector2(UIKit.touch_min(), UIKit.touch_min()))
+		b.name = "Look%d" % (i + 1)
+		var idx := i
+		b.button_down.connect(func() -> void: b.set_meta(&"down_ms", Time.get_ticks_msec()))
+		b.pressed.connect(func() -> void:
+			var held := Time.get_ticks_msec() - int(b.get_meta(&"down_ms", Time.get_ticks_msec())) >= 600
+			look_slot(idx, held))
+		row.add_child(b)
+		look_btns.append(b)
+	_paint_looks()
+	return row
+
+
+static func saved_looks() -> Array:
+	var l: Array = (Save.get_setting("saved_looks", []) as Array).duplicate()
+	while l.size() < LOOK_SLOTS:
+		l.append({})
+	return l
+
+
+func _paint_looks() -> void:
+	var l := CreatorScreen.saved_looks()
+	for i in look_btns.size():
+		var b: Button = look_btns[i]
+		var filled := not (l[i] as Dictionary).is_empty()
+		UIKit.face_of(b).fg = {"normal": UIKit.AMBER if filled else UIKit.IVORY_MUTED}
+		UIKit.face_of(b).queue_redraw()
+		b.accessibility_name = ("Look %d: try it on (hold to replace)" if filled else "Look %d: empty, tap to keep this look") % (i + 1)
+
+
+## A random look from the items you own (your face and hair stay).
+func random_look() -> void:
+	var d := draft.duplicate()
+	for f in LOOK_FIELDS:
+		var owned: Array = Cosmetics.keys_of(f).filter(func(k: Variant) -> bool: return Wallet.owns(f, String(k)))
+		if not owned.is_empty():
+			d[f] = String(owned[randi() % owned.size()])
+	_show_draft(Cosmetics.sanitize(d))
+	Sfx.play("equip")
+	Haptics.tick()
+
+
+func look_slot(i: int, replace: bool) -> void:
+	var l := CreatorScreen.saved_looks()
+	var have: Dictionary = l[i]
+	if have.is_empty() or replace:
+		var keep := {}
+		for f in LOOK_FIELDS:
+			keep[f] = String(draft.get(f, Cosmetics.DEFAULT.get(f, "")))
+		l[i] = keep
+		Save.set_setting("saved_looks", l)
+		UIKit.toast(self, "Look %d kept" % (i + 1), 1.4)
+		Sfx.play("pop")
+	else:
+		var d := draft.duplicate()
+		for f in have:
+			if Wallet.owns(String(f), String(have[f])):
+				d[String(f)] = String(have[f])
+		_show_draft(Cosmetics.sanitize(d))
+		UIKit.toast(self, "Look %d" % (i + 1), 1.2)
+		Sfx.play("equip")
+	Haptics.tick()
+	_paint_looks()
+
+
+func _show_draft(d: Dictionary) -> void:
+	draft = d
+	var v := App.stage.local_character() if App.stage else null
+	if v:
+		v.set_appearance(TC.Role.RUNNER, draft)
+		if not UIKit.reduced_motion():
+			v.play_arrive()
+	_refresh()
 
 
 func _on_cancel() -> void:
