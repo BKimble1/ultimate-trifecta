@@ -743,9 +743,27 @@ func _build_water_points() -> void:
 				if _open_ground(pad, 1.0) and pads.size() < 10:
 					pads.append(pad)
 		if exits.is_empty():
-			# fall back to the label point's surroundings (never empty)
+			# no bank in the play area (a scenery water beyond the boundary):
+			# its first bank sample on dry ground all the same, so whoever
+			# ends up in it resurfaces out of it (never empty)
+			for poly in w["polys"]:
+				for s in CampusData.boundary_samples(poly, step):
+					var at: Vector2 = s[0]
+					var n: Vector2 = s[1]
+					var e: Vector2 = at + n * out_d
+					if _dry_ground(e, 0.6) and not near_deck(at, 1.5):
+						exits.append(Vector3(e.x, terrain_y(e), e.y))
+						jumps.append(at - n * 0.8)
+						break
+				if not exits.is_empty():
+					break
+		if exits.is_empty():
+			# last resort: due south of the label point, clear of the water
 			var c: Vector2 = w["center"]
-			exits.append(Vector3(c.x, terrain_y(c + Vector2(0, 4)), c.y + 4.0))
+			var e := c + Vector2(0, 4)
+			while in_water_shape(w, e, 0.6) and e.y < c.y + 400.0:
+				e.y += 1.0
+			exits.append(Vector3(e.x, terrain_y(e), e.y))
 			jumps.append(c)
 		var reach := 0.0
 		for poly in w["polys"]:
@@ -787,8 +805,12 @@ func _ring_pads(c: Vector2, r: float) -> Array:
 ## Walkable, unobstructed ground: inside the play area, not water, not a
 ## building, not on a wall/hedge/fence.
 func _open_ground(p: Vector2, clearance: float) -> bool:
-	if not in_play(p):
-		return false
+	return in_play(p) and _dry_ground(p, clearance)
+
+
+## Not water, not a building, not on a wall/hedge/fence (in the play area
+## or not).
+func _dry_ground(p: Vector2, clearance: float) -> bool:
 	for w in waters:
 		if in_water_shape(w, p, clearance):
 			return false

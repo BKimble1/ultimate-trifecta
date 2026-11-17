@@ -452,20 +452,10 @@ func _r_dorms(_part: int, _parts: int) -> void:
 
 func _r_edges(_part: int, _parts: int) -> void:
 	# a footbridge's lane is walkable over the water: carved along its axis
-	# like a doorway, four-connected (diagonal steps need both side cells)
+	# like a doorway
 	for p in layout.platforms:
-		if not p.has("carve"):
-			continue
-		var a: Vector2 = p["carve"][0]
-		var b: Vector2 = p["carve"][1]
-		var n := maxi(2, int(a.distance_to(b) / (cell * 0.25)))
-		var prev := to_cell(a)
-		for k in n + 1:
-			var c := to_cell(a.lerp(b, float(k) / float(n)))
-			for q in [c, Vector2i(c.x, prev.y)]:
-				foot.set_point_solid(q, false)
-				foot.set_point_weight_scale(q, 1.0)
-			prev = c
+		if p.has("carve"):
+			_carve_lane(p["carve"][0], p["carve"][1])
 	# docks / ledge platforms are walkable over the pit
 	for p in layout.platforms:
 		var pc: Vector3 = p["center"]
@@ -473,12 +463,54 @@ func _r_edges(_part: int, _parts: int) -> void:
 		if p.get("dock", false):
 			for cc in _cells_in_rect(Rect2(Vector2(pc.x, pc.z) - Vector2(ps.x, ps.z) * 0.5 + Vector2(0.6, 0.6), Vector2(ps.x, ps.z) - Vector2(1.2, 1.2))):
 				foot.set_point_solid(cc, false)
+			_carve_dock_root(p)
 	# map edge (one cell deep)
 	for g in [foot, cart]:
 		g.fill_solid_region(Rect2i(0, 0, dims.x, 1))
 		g.fill_solid_region(Rect2i(0, dims.y - 1, dims.x, 1))
 		g.fill_solid_region(Rect2i(0, 0, 1, dims.y))
 		g.fill_solid_region(Rect2i(dims.x - 1, 0, 1, dims.y))
+
+
+## Carves a lane from a to b open on foot, four-connected (diagonal steps
+## need both side cells).
+func _carve_lane(a: Vector2, b: Vector2) -> void:
+	var n := maxi(2, int(a.distance_to(b) / (cell * 0.25)))
+	var prev := to_cell(a)
+	for k in n + 1:
+		var c := to_cell(a.lerp(b, float(k) / float(n)))
+		for q in [c, Vector2i(c.x, prev.y)]:
+			foot.set_point_solid(q, false)
+			foot.set_point_weight_scale(q, 1.0)
+		prev = c
+
+
+## A dock's lane to the bank: the deck above is carved short of its edges,
+## and the water's inflation covers the bank where the dock meets it, so a
+## lane runs along the dock's long axis from just inside each end out over
+## dry ground, through the water's inflated margin (the water's own clearance
+## plus a cell).  The lane stops at the water: an end out over the water
+## (the dock's head) gets no extension.
+func _carve_dock_root(p: Dictionary) -> void:
+	var pc: Vector3 = p["center"]
+	var ps: Vector3 = p["size"]
+	var c := Vector2(pc.x, pc.z)
+	var yaw := float(p.get("yaw", 0.0))
+	var along_x := ps.x >= ps.z
+	var half := (ps.x if along_x else ps.z) * 0.5
+	var d := (Vector2(1, 0) if along_x else Vector2(0, 1)).rotated(-yaw)
+	var reach := FOOT_INF + 0.1 + cell
+	var wi := layout.water_index_at(c)
+	if wi >= 0 and float(layout.waters[wi].get("rim_h", 0.0)) > 0.0:
+		reach += float(layout.waters[wi].get("rim_t", 0.0))
+	for sd: float in [-1.0, 1.0]:
+		var dir := d * sd
+		var s := half
+		var step := cell * 0.25
+		while s < half + reach and layout.water_index_at(c + dir * (s + step)) < 0:
+			s += step
+		if s > half:
+			_carve_lane(c + dir * (half - 0.6), c + dir * s)
 
 
 func nearest_open(g: AStarGrid2D, p: Vector2, max_r: int = 8) -> Vector2i:

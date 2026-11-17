@@ -14,7 +14,9 @@ var t
 const CAMPUS_HASH := "6db38dbfe469a830"
 const CAMPUS_COLLISION := "8496f719389f54d444d2d7381ba68f5cab0dade6461e960d489d59a130da438b"
 const CAMPUS_NAV := "70afc59ca460206f45c9b023fe0b173472fcf2eb4051110de8355a614b43faf3"
-const CAMPUS_LAYOUT := "374d5c9e708a77074eb5db2979a88b7a3632dc2648240c775d362851ffc24be7"
+## (re-recorded when woods_pond_west, a scenery pond beyond the play area,
+## got a shore exit on its bank instead of one inside it: test_dock_nav)
+const CAMPUS_LAYOUT := "8f1e7666987cddcf1c875e4e1f20fd59737fb17e39d1ec3276cf46d8abe88f7f"
 
 
 func test_fingerprints_are_deterministic() -> void:
