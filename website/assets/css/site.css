@@ -389,7 +389,7 @@ section { position: relative; }
 .site-footer .top { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 48px; border-bottom: 1px solid var(--line); }
 .site-footer .studio img { width: 150px; height: auto; margin-bottom: 18px; }
 .site-footer .studio p { max-width: 22em; }
-.site-footer h4 { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ivory); margin-bottom: 14px; font-weight: 800; }
+.site-footer .label { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ivory); margin-bottom: 14px; font-weight: 800; }
 .site-footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .site-footer a { text-decoration: none; color: var(--ivory-2); transition: color .2s; }
 .site-footer a:hover { color: var(--amber); }
@@ -399,7 +399,7 @@ section { position: relative; }
 /* ---------------------------------------------------------------- documents */
 .doc-wrap { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: clamp(32px, 6vw, 96px); align-items: start; padding-bottom: clamp(72px, 10vw, 140px); }
 .toc { position: sticky; top: calc(var(--header-h) + 28px); font-size: 14px; }
-.toc h4 { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ivory-3); margin-bottom: 12px; font-weight: 800; }
+.toc .label { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ivory-3); margin-bottom: 12px; font-weight: 800; }
 .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: toc; }
 .toc a { display: block; padding: 6px 0 6px 14px; text-decoration: none; color: var(--ivory-3); border-left: 2px solid var(--line); transition: color .2s, border-color .2s; }
 .toc a:hover { color: var(--ivory); }

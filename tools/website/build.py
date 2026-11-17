@@ -64,7 +64,7 @@ def header(path: str) -> str:
     </div>
   </div>
 </header>
-<div class="mobile-menu" id="mobile-menu" aria-hidden="true">
+<div class="mobile-menu" id="mobile-menu" aria-hidden="true" inert>
   {big}
   {store_button()}
   <div class="small-links"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/rules/">Official Rules</a><a href="/delete-account/">Delete your profile</a></div>
@@ -79,15 +79,15 @@ FOOTER = f'''<footer class="site-footer">
         <p>Ultimate Trifecta is made by Idlery Games.</p>
       </div>
       <div>
-        <h4>Game</h4>
+        <p class="label">Game</p>
         <ul><li><a href="/">The Game</a></li><li><a href="/season/">Season 1</a></li><li><a href="/rules/">Season Champion</a></li><li><a href="{APP_STORE}" rel="noopener">App Store</a></li></ul>
       </div>
       <div>
-        <h4>Help</h4>
+        <p class="label">Help</p>
         <ul><li><a href="/support/">Support</a></li><li><a href="/delete-account/">Delete your profile</a></li><li><a href="mailto:{SUPPORT_EMAIL}">{SUPPORT_EMAIL}</a></li></ul>
       </div>
       <div>
-        <h4>Legal</h4>
+        <p class="label">Legal</p>
         <ul><li><a href="/privacy/">Privacy Policy</a></li><li><a href="/terms/">Terms of Service</a></li><li><a href="/rules/">Official Rules</a></li></ul>
       </div>
     </div>
@@ -98,7 +98,7 @@ FOOTER = f'''<footer class="site-footer">
   </div>
 </footer>'''
 
-PLAYER = f'''<div class="player" id="player" role="dialog" aria-modal="true" aria-label="Trailer" aria-hidden="true">
+PLAYER = f'''<div class="player" id="player" role="dialog" aria-modal="true" aria-label="Trailer" aria-hidden="true" inert>
   <button class="close" type="button" aria-label="Close trailer">{ICON["close"]}</button>
   <video controls playsinline preload="none" poster="/assets/video/trailer.jpg" data-src="/assets/video/trailer.mp4"></video>
 </div>'''
@@ -121,7 +121,7 @@ def page(meta: dict, body: str) -> str:
               '"operatingSystem":"iOS 17 or later","applicationCategory":"Game","genre":["Party","Action"],'
               '"playMode":["MultiPlayer","SinglePlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":8},'
               '"publisher":{"@type":"Organization","name":"Idlery Games"},"image":"' + image + '"}</script>')
-    return f'''<!doctype html>
+    return f'''<!DOCTYPE html>
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">

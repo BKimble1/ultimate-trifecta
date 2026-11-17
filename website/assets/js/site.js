@@ -31,7 +31,10 @@
       menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
       menuBtn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
     }
-    if (menu) menu.setAttribute("aria-hidden", open ? "false" : "true");
+    if (menu) {
+      menu.setAttribute("aria-hidden", open ? "false" : "true");
+      if (open) menu.removeAttribute("inert"); else menu.setAttribute("inert", "");
+    }
     if (menu) {
       var links = menu.querySelectorAll("a");
       for (var i = 0; i < links.length; i++) links[i].tabIndex = open ? 0 : -1;
@@ -158,6 +161,7 @@
       if (e) e.preventDefault();
       opener = document.activeElement;
       if (!pv.src) pv.src = pv.dataset.src;
+      player.removeAttribute("inert");
       player.classList.add("open");
       player.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
@@ -168,6 +172,7 @@
     function closePlayer() {
       player.classList.remove("open");
       player.setAttribute("aria-hidden", "true");
+      player.setAttribute("inert", "");
       document.body.style.overflow = "";
       pv.pause();
       if (heroVid && motionOK && !heroVid.dataset.userPaused) { var p = heroVid.play(); if (p && p.catch) p.catch(function () {}); }

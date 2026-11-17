@@ -194,6 +194,14 @@ def main():
     # the trailer: the game's own sound effects (music muted at recording)
     if "trailer" in plan:
         tr = [piece(M(x), w=1600, h=900, audio=True, tmp=tmp) for x in plan["trailer"]]
+        card = raw / "endcard.png"
+        if card.exists():
+            end = tmp / "endcard.mkv"
+            run(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-framerate", str(FPS), "-t", "3.4", "-i", str(card),
+                 "-f", "lavfi", "-t", "3.4", "-i", "anullsrc=r=48000:cl=stereo",
+                 "-vf", "fade=t=in:st=0:d=0.5,format=yuv420p", "-c:v", "libx264", "-preset", "veryfast", "-crf", "12", "-g", "1",
+                 "-c:a", "pcm_s16le", "-shortest", str(end)])
+            tr.append(end)
         concat(tr, out / "trailer.mp4", 23, 1600, 900, audio=True)
         poster(raw / plan["hero_poster"][0], float(plan["hero_poster"][1]), out / "trailer.jpg", 1600, 900)
     for name, item in plan["clips"].items():
