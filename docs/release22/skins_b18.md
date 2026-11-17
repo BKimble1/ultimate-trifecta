@@ -15,8 +15,10 @@ performance.
 |---|---|
 | ![front](media/skins_b18_front.png) | ![back](media/skins_b18_back.png) |
 
-Left to right: default pajamas (reference), Turkey Trot, Harvest Flannel,
-Reindeer Onesie, Gingerbread Buddy, Elf Helper, Snow Day.
+Front view, left to right (the lobby's marks): Elf Helper, Turkey Trot,
+Reindeer Onesie (back row), default pajamas (reference, centre),
+Gingerbread Buddy (back row), Harvest Flannel, Snow Day. The back view is
+the same marks turned round.
 
 ## What shipped
 
@@ -109,6 +111,7 @@ reused. Source: `tools/character/outfits_b18.py` (`B18_PARTS`).
 | `tools/run_tests.sh profile` | `12 tests, 117 checks, 0 failures` |
 | `tools/run_tests.sh test_outfits_b18` | `6 tests, 492 checks, 0 failures` |
 | `tools/run_tests.sh offers` | `1 tests, 2 checks, 0 failures` |
+| full Godot suite (`tests/run_tests.gd`, no filter) | `617 tests, 421242 checks, 0 failures in 1074.9s` |
 | `cd service && npm test` | `# tests 96` / `# pass 96` / `# fail 0` |
 | `python3 tools/make_offer_schedule.py --check` | `offer schedule up to date (366 offers)` |
 | `node service/tools/sync_catalogue.mjs --check` | `catalogue copy up to date` |
