@@ -117,6 +117,11 @@ static func look(over: Dictionary) -> Dictionary:
 
 var out_dir := ""
 var modes: Array = []
+## --dolly=S (website footage, recorded with --write-movie): the first mode's
+## set is held for S seconds while the camera drifts across it on an eased
+## path and the characters take turns at an emote, then the run quits.
+var dolly := 0.0
+var _dolly_t := 0.0
 var cam: Camera3D
 var stage: Node3D
 var _t := 0.0
@@ -154,6 +159,8 @@ func _ready() -> void:
 			debug_parts = true
 		elif a.begins_with("--light="):
 			lighting = a.split("=")[1]
+		elif a.begins_with("--dolly="):
+			dolly = float(a.split("=")[1])
 		elif a.begins_with("--shots-file="):
 			shots_file = a.split("=")[1]
 		elif a.begins_with("--reel-look="):
@@ -255,6 +262,7 @@ func _add(role: int, cos: Dictionary, x: float, z: float = 0.0, yaw: float = PI,
 	stage.add_child(v)
 	v.setup(role, cos, -1, label, false, false)
 	v.apply_state({"pos": Vector3(x, 0, z), "yaw": yaw, "state": TC.PState.ACTIVE, "vel": Vector3.ZERO, "on_floor": true}, 0.0, true)
+	v.set_meta(&"base", [x, z, yaw])
 	if v.name_label:
 		v.name_label.visible = label != ""
 		v.name_label.fixed_size = false
@@ -495,6 +503,9 @@ func _reel_camera(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	if dolly > 0.0 and not _views.is_empty():
+		_dolly(delta)
+		return
 	match _mode:
 		"reel":
 			if _reel_rig == null:
@@ -628,6 +639,32 @@ func _process(delta: float) -> void:
 					_save(_mode)
 					_t = -999.0
 					_next_mode()
+
+
+const DOLLY_EMOTES := ["wave", "dance", "cheer", "laugh", "moon_shuffle", "wave", "dance"]
+
+
+func _dolly(delta: float) -> void:
+	_dolly_t += delta
+	var u := clampf(_dolly_t / dolly, 0.0, 1.0)
+	var e := u * u * (3.0 - 2.0 * u)
+	var from := Vector3(-1.9, 2.5, 7.6).lerp(Vector3(1.4, 1.65, 5.5), e)
+	var at := Vector3(-0.4, 0.8, 0.5).lerp(Vector3(0.35, 0.86, 0.5), e)
+	cam.fov = lerpf(37.0, 33.0, e)
+	cam.look_at_from_position(from, at)
+	# each character in turn: a 2.6 s emote, starting 1.2 s apart
+	for i in _views.size():
+		var v := _views[i]
+		var b: Array = v.get_meta(&"base", [0.0, 0.0, PI])
+		var t0 := 1.6 + float(i) * 1.15
+		var left := t0 + 2.6 - _dolly_t
+		var rs := {"pos": Vector3(b[0], 0, b[1]), "yaw": b[2], "state": TC.PState.ACTIVE, "vel": Vector3.ZERO, "on_floor": true}
+		if _dolly_t >= t0 and left > 0.0:
+			rs["emote"] = TC.EMOTES.find(DOLLY_EMOTES[i % DOLLY_EMOTES.size()])
+			rs["emote_t"] = left
+		v.apply_state(rs, delta, false)
+	if _dolly_t >= dolly:
+		get_tree().quit()
 
 
 ## Scripted state changes: idle -> walk -> run -> sprint -> jump/fall -> land

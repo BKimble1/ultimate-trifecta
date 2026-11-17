@@ -126,6 +126,10 @@ func _ready() -> void:
 		var sm: Node = (load("res://src/dev/store_match_capture.gd") as GDScript).new()
 		sm.set("cap", self)
 		add_child(sm)
+	elif scenario == "film":
+		# website footage: a director's camera over a real bot round
+		# (film_director.gd; tools/capture_film.sh)
+		add_child((load("res://src/dev/film_director.gd") as GDScript).new())
 	elif scenario == "pass8_match":
 		# Pass 8 match clarity evidence (HUD states, map, results) with
 		# measured HUD rects: its own driver (--p8-part=runner|patrol|results)

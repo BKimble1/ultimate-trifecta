@@ -1,0 +1,188 @@
+title: Ultimate Trifecta
+description: A late-night campus chase for up to eight players on iPhone and iPad. Splash into three waters and race home before the Night Watch tags you.
+path: /
+player: true
+body: home
+preload: <link rel="preload" href="/assets/video/hero.jpg" as="image">
+---
+<section class="hero" aria-label="Ultimate Trifecta">
+  <div class="hero-media">
+    <img src="/assets/video/hero.jpg" alt="" width="1600" height="900">
+    <video data-src="/assets/video/hero-1600.mp4" data-src-small="/assets/video/hero-960.mp4" poster="/assets/video/hero.jpg" muted loop playsinline preload="none" aria-hidden="true"></video>
+  </div>
+  <div class="wrap">
+    <picture>
+      <source srcset="/assets/img/logo-1400.webp 1400w, /assets/img/logo-700.webp 700w" sizes="(max-width: 780px) 82vw, 640px" type="image/webp">
+      <img class="hero-logo reveal" src="/assets/img/logo-700.png" width="700" height="221" alt="Ultimate Trifecta">
+    </picture>
+    <h1 class="display reveal d1">Splash three. <span class="gold">Race home.</span></h1>
+    <p class="lede reveal d2">A late-night campus chase for up to eight players on iPhone and iPad.</p>
+    <div class="hero-actions reveal d3">
+      {{STORE_BUTTON}}
+      <button class="btn ghost" type="button" data-trailer>{{PLAY}}Watch the trailer</button>
+    </div>
+  </div>
+  <div class="hero-foot">
+    <span>In-game footage</span>
+    <button class="pause-btn" type="button" aria-label="Pause background video">{{PAUSE}}</button>
+  </div>
+</section>
+
+<section class="band statement" aria-labelledby="s-intro">
+  <div class="wrap">
+    <span class="eyebrow reveal">Moonbrook College, 3 a.m.</span>
+    <h2 class="display reveal d1" id="s-intro">Lights out. Shoes on. <span class="gold">Don't get caught.</span></h2>
+    <div class="cols">
+      <p class="lede reveal d1">Slip out of the dorm in your pajamas, splash into tonight's three waters and get back inside before the Night Watch tags you. One tag and you're out for the round.</p>
+      <dl class="facts reveal d2">
+        <div><dt>8</dt><dd>Players</dd></div>
+        <div><dt>4</dt><dd>Minute rounds</dd></div>
+        <div><dt>3</dt><dd>Waters a night</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="band night" aria-labelledby="s-round">
+  {{WATER:#070b16}}
+  <div class="wrap">
+    <span class="eyebrow reveal">How a round plays</span>
+    <h2 class="display reveal d1" id="s-round" style="font-size:clamp(38px,5vw,76px);max-width:12em">Four minutes. <span class="gold">One way home.</span></h2>
+    <div class="round" style="margin-top:clamp(40px,6vw,80px)">
+      <div class="screen">
+        <figure class="clip" style="margin:0">
+          <img src="/assets/video/clips/run-out.jpg" alt="" width="960" height="540" loading="lazy">
+          <video data-src="/assets/video/clips/run-out.mp4" muted loop playsinline preload="none" aria-hidden="true"></video>
+          <video data-src="/assets/video/clips/splash.mp4" muted loop playsinline preload="none" aria-hidden="true"></video>
+          <video data-src="/assets/video/clips/chase.mp4" muted loop playsinline preload="none" aria-hidden="true"></video>
+          <video data-src="/assets/video/clips/home.mp4" muted loop playsinline preload="none" aria-hidden="true"></video>
+          <figcaption>In-game footage</figcaption>
+        </figure>
+        <div class="progress" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <ol class="steps">
+        <li class="step">
+          <span class="num">01</span>
+          <h3>Sneak out</h3>
+          <p>Every round starts inside your dorm. At GO the doors are open and everyone runs for it.</p>
+          <figure class="clip"><img src="/assets/video/clips/run-out.jpg" alt="Runners in pajamas sprint out of the dorm" width="960" height="540" loading="lazy"><video data-src="/assets/video/clips/run-out.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></figure>
+        </li>
+        <li class="step">
+          <span class="num">02</span>
+          <h3>Splash three</h3>
+          <p>Three of the campus waters are lit tonight. Fountains, ponds, a lagoon. Jump into each one, in any order you like.</p>
+          <figure class="clip"><img src="/assets/video/clips/splash.jpg" alt="A runner jumps into one of tonight's waters" width="960" height="540" loading="lazy"><video data-src="/assets/video/clips/splash.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></figure>
+        </li>
+        <li class="step">
+          <span class="num">03</span>
+          <h3>Dodge the Night Watch</h3>
+          <p>They're on foot and in golf carts, and one tag puts you out. Duck into a bush, grab Speed Sneakers or take a rift to the far side of campus.</p>
+          <figure class="clip"><img src="/assets/video/clips/chase.jpg" alt="The Night Watch closes in on a runner" width="960" height="540" loading="lazy"><video data-src="/assets/video/clips/chase.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></figure>
+        </li>
+        <li class="step">
+          <span class="num">04</span>
+          <h3>Race home</h3>
+          <p>With all three splashes, get back through any door of your dorm. Inside is safe. Get enough runners home and your whole side wins.</p>
+          <figure class="clip"><img src="/assets/video/clips/home.jpg" alt="A runner makes it back inside the dorm" width="960" height="540" loading="lazy"><video data-src="/assets/video/clips/home.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></figure>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="sides" aria-label="Runners and the Night Watch">
+  <div class="side runners">
+    <div class="bg"><img src="/assets/video/clips/runner.jpg" alt="" width="960" height="540" loading="lazy"><video data-src="/assets/video/clips/runner.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></div>
+    <div class="reveal">
+      <span class="eyebrow teal">Runners</span>
+      <h2 class="display">Run.</h2>
+      <ul>
+        <li><strong>Splash</strong> into all three of tonight's waters, then get home.</li>
+        <li><strong>Hide</strong> in a bush and let the Night Watch walk right past.</li>
+        <li><strong>Power up</strong> with Speed Sneakers, a Squeaky Duck or an Invisibility Cloak.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="side watch">
+    <div class="bg"><img src="/assets/video/clips/cart.jpg" alt="" width="960" height="540" loading="lazy"><video data-src="/assets/video/clips/cart.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></div>
+    <div class="reveal d1">
+      <span class="eyebrow watch">Night Watch</span>
+      <h2 class="display">Chase.</h2>
+      <ul>
+        <li><strong>Drive</strong> a golf cart across the lawns, hop out and tag.</li>
+        <li><strong>Read</strong> the splash markers. They show where a runner just was.</li>
+        <li><strong>Hold</strong> the line. Stop enough runners getting home and the round is yours.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="band" aria-labelledby="s-together">
+  <div class="wrap">
+    <div class="feature">
+      <figure class="clip reveal" style="margin:0">
+        <img src="/assets/video/clips/crew.jpg" alt="A party of runners in the dorm before a round" width="960" height="540" loading="lazy">
+        <video data-src="/assets/video/clips/crew.mp4" muted loop playsinline preload="none" aria-hidden="true"></video>
+        <figcaption>In-game footage</figcaption>
+      </figure>
+      <div>
+        <span class="eyebrow reveal">Play together</span>
+        <h2 class="display reveal d1" id="s-together">Bring the <span class="gold">whole floor.</span></h2>
+        <p class="lede reveal d1">Start a party and invite your Game Center friends, or share a six-character code. Quick Match finds players online. Empty seats are filled by bots, and they're always labelled.</p>
+        <ul class="inline-list reveal d2">
+          <li><b>Parties</b><span>Up to eight players. One to three Night Watch. Series of one, three or five rounds.</span></li>
+          <li><b>Practice</b><span>Full rounds against bots, offline, with a tutorial for each side.</span></li>
+          <li><b>Chat</b><span>Quick Chat, emotes and typed chat that bleeps anything rude.</span></li>
+          <li><b>Controls</b><span>Two-thumb touch controls, or play with an Xbox, PlayStation or MFi controller.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="season" aria-labelledby="s-season">
+  <div class="bg"><img src="/assets/video/clips/holiday.jpg" alt="" width="1600" height="900" loading="lazy"><video data-src="/assets/video/clips/holiday.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></div>
+  <div class="wrap">
+    <span class="eyebrow reveal">{{SNOW}} Season 1</span>
+    <h2 class="display reveal d1" id="s-season">Winter <span class="gold">Break</span></h2>
+    <p class="lede reveal d2">A 100-tier Season Pass with a free track and a Premium track, and holiday outfits in the Shop all winter.</p>
+    <a class="btn reveal d3" href="/season/">See the season</a>
+  </div>
+</section>
+
+<section class="band" aria-labelledby="s-champ">
+  <div class="wrap">
+    <div class="champion">
+      <div class="rank reveal" aria-hidden="true"><span>#</span>1</div>
+      <div>
+        <span class="eyebrow reveal">Season Champion</span>
+        <h2 class="display reveal d1" id="s-champ">Finish first. <span class="gold">Design the next skin.</span></h2>
+        <p class="lede reveal d1">Top the Season Points leaderboard when the season ends and your idea becomes the tier 100 outfit of a future Season Pass. Your concept and your name, in the game.</p>
+        <div class="when reveal d2"><span><b>Season 1</b> December 1 to 30, 2026 (UTC)</span><span><b>Entry</b> Free. Play online rounds.</span></div>
+        <a class="link-arrow reveal d2" href="/rules/">Official rules</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band tight" aria-label="Fair by design">
+  <div class="wrap">
+    <div class="fair reveal">
+      <div><h3>No ads</h3><p>Not in the menus and not between rounds.</p></div>
+      <div><h3>Cosmetic only</h3><p>Purchases change how you look, never how you play. Everyone runs at the same speed.</p></div>
+      <div><h3>No tracking</h3><p>Your profile is yours. Delete it from Settings whenever you want.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="final" aria-label="Get the game">
+  <div class="bg"><img src="/assets/video/clips/wide.jpg" alt="" width="960" height="540" loading="lazy"><video data-src="/assets/video/clips/wide.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></div>
+  <div class="wrap">
+    <picture><source srcset="/assets/img/logo-700.webp" type="image/webp"><img class="logo reveal" src="/assets/img/logo-700.png" width="700" height="221" alt="Ultimate Trifecta" loading="lazy"></picture>
+    <p class="reveal d1">For iPhone and iPad.</p>
+    <div class="hero-actions reveal d2">
+      {{STORE_BUTTON}}
+      <button class="btn ghost" type="button" data-trailer>{{PLAY}}Watch the trailer</button>
+    </div>
+  </div>
+</section>
