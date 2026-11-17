@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://ultimatetrifecta.idlery.com/sitemap.xml
