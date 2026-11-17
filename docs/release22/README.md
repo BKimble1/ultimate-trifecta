@@ -724,6 +724,12 @@ From the owner's list after build 17:
   shine, a "#1" plate and a runner outline on the skin card; shorter text.
   The pass poster: compact season label, tier pills, a spotlight on each
   outfit, the Coins button with a coin.
+- **Six new rotating skins** (Coins, 800-1,200): Turkey Trot and Harvest
+  Flannel (Thanksgiving), Reindeer Onesie, Gingerbread Buddy and Elf Helper
+  (Christmas), and Snow Day.  They join the rotation from late November
+  (`rotation_from`); the pool is 16 skins, schedule revision 2.  Details,
+  budgets and checks: [skins_b18.md](skins_b18.md);
+  ![front](media/skins_b18_front.png)
 - **Technical**: the prop shader's unused per-instance values became plain
   uniforms (fewer instance-uniform slots per prop); the release notes are
   a one-page status with the history in `docs/release_history.md`.

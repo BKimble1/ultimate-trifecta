@@ -2,6 +2,7 @@
 
 - Rounds: a Night Watch tag (or cart hit) knocks you out for the round; you then watch your team. If too few runners are left, the Night Watch win at once. No Cheer button while watching.
 - Shop: a big Spotlight skin in Featured, coloured cards, a short Always available row. Coins are behind the green + on the Coins counter. Season 1 shows the whole pass banner without scrolling. Accessories has Sets.
+- New skins rotate into the Shop: Turkey Trot, Harvest Flannel, Reindeer Onesie, Gingerbread Buddy, Elf Helper, Snow Day.
 - Skins not in the Shop: Remind me, then home tells you when they're back. Owned skins: Equip now.
 - Home: the Season Pass pill under the tabs; cocoa and cookies on the side table.
 - Results: the Season XP bar fills up.
