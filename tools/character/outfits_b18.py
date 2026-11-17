@@ -743,10 +743,11 @@ def build_snowday():
         r = 0.029 if i % 2 == 0 else 0.025
         K.bumpy(mb, q + out, (r, r, r * 0.7), SD_FUR if i % 3 else SD_FUR_D, hw, segs=7, rings=5, amp=0.14, freq=8, seed=i + 1,
                 rot=rot_align(nq, UP))
-    # a quilted seam over the hood's crown
+    # a quilted seam over the hood's crown, from the nape to well above the
+    # fur rim (it stops short of the rim so no line crosses the forehead)
     pts, nrm = [], []
-    for j in range(17):
-        th = lerp(-1.25, 1.35, j / 16)
+    # (th < 0 is the front: ang = pi faces forward)
+    for th in [lerp(-0.6, 0.0, j / 6) for j in range(7)] + [lerp(0.0, 1.35, j / 10) for j in range(1, 11)]:
         z = HEAD_C.z + (HEAD_R[2] + HOOD_G) * math.cos(th)
         ang = math.pi if th < 0 else 0.0
         q = P._shell_point(ang, z, HOOD_G) if abs(th) > 0.02 else Vector((HEAD_C.x, HEAD_C.y, HEAD_C.z + HEAD_R[2] + HOOD_G))
