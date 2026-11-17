@@ -445,9 +445,6 @@ func _build_tab() -> void:
 		return
 	if tab == "move":
 		body.add_child(_emote_slot_row(gw))
-	if tab == "outfit" and not first_run:
-		# (2.2 build 18) Random look and three kept looks, atop Outfit
-		body.add_child(_looks_row())
 	for f in fields:
 		# section header: the field and, for colours, the chosen one's name
 		var hdr := UIKit.hbox(10)
@@ -468,6 +465,9 @@ func _build_tab() -> void:
 			body.add_child(_profile_cards(f, gw))
 		else:
 			body.add_child(_cards(f, gw))
+		if String(f) == "outfit" and tab == "outfit" and not first_run:
+			# (2.2 build 18) Random look and three kept looks, under the outfits
+			body.add_child(_looks_row())
 		if f == "hair" or f == "pattern":
 			var note := UIKit.styled("", "caption", UIKit.AMBER)
 			note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
