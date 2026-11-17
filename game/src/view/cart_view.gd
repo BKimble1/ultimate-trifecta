@@ -10,6 +10,12 @@ extends Node3D
 
 ## where the driver's character origin sits (cart-local, -Z forward)
 const SEAT := Vector3(-0.35, 0.75, 0.25)
+## The gameplay box (motor.gd) is 0.6 m shorter than SimCart.HALF and centred
+## HALF.y up, so its bottom sits 0.3 m above the body's origin and a cart at
+## rest has its origin 0.3 m under the ground.  Everything drawn on the cart
+## (the cart itself, a seated driver) is lifted by this much, or the wheels
+## sink into the ground.  View only: the simulation is unchanged.
+const RIDE_Y := 0.3
 ## steering wheel centre/axis (= SEAT + the rig's wheel point) and turn ratio
 const WHEEL_POS := Vector3(-0.35, 1.25, -0.02)
 const WHEEL_AXIS := Vector3(0, 0.8, 0.6)
@@ -214,7 +220,7 @@ func setup(index: int) -> void:
 func apply_state(state_rs: Dictionary, _delta: float = 0.0, _snap: bool = false) -> void:
 	rs = state_rs
 	if rs.has("pos"):
-		global_position = rs["pos"]
+		global_position = (rs["pos"] as Vector3) + Vector3(0, RIDE_Y, 0)
 	rotation.y = float(rs.get("yaw", rotation.y))
 
 

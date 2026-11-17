@@ -1677,7 +1677,7 @@ func _process(delta: float) -> void:
 				var crs := _render_cart(cid)
 				if crs.has("pos"):
 					var cy: float = crs["yaw"]
-					var seat: Vector3 = (crs["pos"] as Vector3) + Basis(Vector3.UP, cy) * CartView.SEAT
+					var seat: Vector3 = (crs["pos"] as Vector3) + Basis(Vector3.UP, cy) * CartView.SEAT + Vector3(0, CartView.RIDE_Y, 0)
 					rs["pos"] = seat
 					rs["yaw"] = cy
 					rs["steer"] = crs.get("steer", 0.0)

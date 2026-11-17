@@ -142,7 +142,7 @@ func _process(_delta: float) -> void:
 		cart = cv
 	if cart and st in [TC.PState.ENTERING, TC.PState.IN_CART]:
 		var yaw := v.rotation.y
-		var cpos := p - Basis(Vector3.UP, yaw) * CartView.SEAT
+		var cpos := p - Basis(Vector3.UP, yaw) * CartView.SEAT - Vector3(0, CartView.RIDE_Y, 0)
 		(cart as CartView).apply_state({"pos": cpos, "yaw": yaw, "speed": Vector2(_rig.m.vel.x, _rig.m.vel.z).length(),
 			"steer": float(v.rs.get("steer", 0.0)), "occupied": true})
 	# rises with half of a jump's height, so the runner stays in frame and

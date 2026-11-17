@@ -374,7 +374,8 @@ func _next_mode() -> void:
 				cv.setup(i % 2)
 				var cpos := Vector3(-3.2 + i * 3.2, 0, 0)
 				var cyaw := PI + 0.7
-				cv.apply_state({"pos": cpos, "yaw": cyaw, "speed": 0.0, "steer": steer, "occupied": true})
+				# (the cart view adds RIDE_Y: give it the body origin, under the ground)
+				cv.apply_state({"pos": cpos - Vector3(0, CartView.RIDE_Y, 0), "yaw": cyaw, "speed": 0.0, "steer": steer, "occupied": true})
 				var v := _add(TC.Role.PATROL, look({"color": colors[i], "skin": skins[i * 2]}), 0.0, 0.0, cyaw, "steer %+d" % int(steer))
 				v.global_position = cpos + Basis(Vector3.UP, cyaw) * CartView.SEAT
 				v.rotation.y = cyaw
