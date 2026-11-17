@@ -1268,7 +1268,8 @@ func refresh(delta: float) -> void:
 				overlay.visible = true
 				overlay_title.text = home_line()
 				overlay_sub.text = "Waiting for team · %s" % ("they need %d more" % maxi(0, mc.cfg.runners_needed - fin) if fin < mc.cfg.runners_needed else "that's enough!")
-	if _spectating >= 0 and mc.roster.has(_spectating):
+	if _spectating >= 0 and mc.roster.has(_spectating) and not overlay.visible:
+		# (2.2 build 18) not under the home / out card while it shows
 		spectate_lbl.text = "Watching %s  ·  next: %s" % [mc.roster[_spectating]["name"], "Tab" if Controls.device == "keyboard" else ("RB" if Controls.device == "gamepad" else "⟳")]
 	else:
 		spectate_lbl.text = ""
