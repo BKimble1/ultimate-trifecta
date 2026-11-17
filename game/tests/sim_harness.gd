@@ -22,7 +22,9 @@ func make(roles: Array, targets: Array = [0, 1, 2], bots: Array = [], seed_v: in
 	var roster: Array = []
 	for i in roles.size():
 		roster.append({"slot": i, "uid": "u%d" % i, "name": "P%d" % i, "is_bot": bots.has(i), "role": roles[i], "cosmetic": {}})
-	var o := {"bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p)}
+	# (2.2 build 18) the harness keeps the respawn rules unless a test asks
+	# for knock-out tags ("tag_out": true)
+	var o := {"bot_factory": func(s: MatchSim, p: SimPlayer) -> BotBrain: return BotBrain.new(s, p), "tag_out": false}
 	o.merge(opts, true)
 	var dorm_map := CampusMaps.map_of_dorm(String(opts.get("dorm", "")))
 	var map_id := String(opts.get("map", dorm_map if dorm_map != "" else CampusMaps.DEFAULT_ID))

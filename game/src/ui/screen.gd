@@ -157,6 +157,7 @@ func push_modal(node: Control, on_cancel: Callable) -> void:
 	var vp := get_viewport()
 	var prev: Control = vp.gui_get_focus_owner() if vp else null
 	_modals.append({"node": node, "cancel": on_cancel, "prev": prev})
+	Sfx.play("sheet_open", null, -6.0)   # (2.2 build 18)
 	margin.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_DISABLED
 	# V6: lists behind it let go of the finger and stop gliding
 	TouchScroll.release_all(self, node)
@@ -164,6 +165,8 @@ func push_modal(node: Control, on_cancel: Callable) -> void:
 
 
 func _on_modal_closed(node: Control) -> void:
+	if is_inside_tree() and not is_queued_for_deletion():
+		Sfx.play("sheet_close", null, -8.0)
 	var prev: Variant = null     # untyped: the opener may already be freed
 	for i in range(_modals.size() - 1, -1, -1):
 		if _modals[i]["node"] == node:

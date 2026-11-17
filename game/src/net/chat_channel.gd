@@ -88,7 +88,7 @@ func host_channel_for(slot: int) -> int:
 		var p: SimPlayer = session.sim.player(slot) if session.sim else null
 		if p == null:
 			return -1
-		return QuickChat.Channel.SPECTATORS if p.state == TC.PState.FINISHED else QuickChat.Channel.TEAM
+		return QuickChat.Channel.SPECTATORS if p.state == TC.PState.FINISHED or p.state == TC.PState.OUT else QuickChat.Channel.TEAM
 	if ph == TC.Phase.RESULTS or ph == TC.Phase.ENDED:
 		return QuickChat.Channel.ALL
 	return -1
@@ -305,7 +305,7 @@ func _slot_sees(slot: int, channel: int, from_slot: int) -> bool:
 			if slot < 0:
 				return true   # room spectators
 			var p: SimPlayer = session.sim.player(slot) if session.sim else null
-			return p != null and p.state == TC.PState.FINISHED
+			return p != null and (p.state == TC.PState.FINISHED or p.state == TC.PState.OUT)
 	return false
 
 

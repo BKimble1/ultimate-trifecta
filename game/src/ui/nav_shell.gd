@@ -84,6 +84,7 @@ func _ready() -> void:
 		dot.visible = false
 		f.add_child(dot)
 		_dots[key] = dot
+		b.set_meta(&"sfx", "tab")
 		b.pressed.connect(func() -> void: NavShell.go(key))
 		add_child(b)
 		buttons[key] = b

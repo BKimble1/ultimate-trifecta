@@ -131,7 +131,7 @@ func is_taggable() -> bool:
 
 
 func is_in_play() -> bool:
-	return state != TC.PState.FINISHED and state != TC.PState.CAPTURED and state != TC.PState.SPLASHING
+	return state != TC.PState.FINISHED and state != TC.PState.CAPTURED and state != TC.PState.SPLASHING and state != TC.PState.OUT
 
 
 func push_history() -> void:

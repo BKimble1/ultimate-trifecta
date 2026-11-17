@@ -72,6 +72,8 @@ func update(sim: MatchSim) -> void:
 	for p in sim.players:
 		if not p.is_runner():
 			continue
+		if p.state == TC.PState.OUT or (p.state == TC.PState.CAPTURED and sim.tag_out):
+			continue   # (2.2 build 18) out of the round: not in the race
 		var e := {"slot": p.id, "home": p.finished_tick >= 0, "tick": p.finished_tick, "stamps": p.stamp_count(), "cost": -1.0}
 		if not bool(e["home"]) and ready:
 			var r := route_of(p)

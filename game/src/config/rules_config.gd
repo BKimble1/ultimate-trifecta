@@ -20,6 +20,11 @@ extends Resource
 
 @export_group("Capture")
 @export var capture_penalty_s: float = 6.0
+## (2.2 build 18) a Night Watch tag (or a cart hit) puts the runner out of
+## the round: the caught moment lasts tag_out_s, then they watch the rest.
+## Off: the old penalty and respawn (kept for tests and future modes).
+@export var tag_eliminates: bool = true
+@export var tag_out_s: float = 2.5
 @export var respawn_protect_s: float = 2.0
 @export var bump_protect_s: float = 1.0
 @export var stumble_s: float = 0.55

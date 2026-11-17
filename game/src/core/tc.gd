@@ -15,6 +15,7 @@ enum PState {
 	EXITING,     # patrol hopping out of cart
 	WAITING,     # patrol held in cart shed during runner head start
 	HIDING,      # (2.3) runner crouched inside a bush (HideBushes)
+	OUT,         # (2.2 build 18) tagged out of the round: watches the rest
 }
 
 enum Phase { LOBBY, LOADING, REVEAL, COUNTDOWN, PLAYING, RESULTS, ENDED }
@@ -53,6 +54,7 @@ enum Ev {
 	UNHIDE,           # (2.3) a = runner, value = bush index
 	DAZE,             # (2.2 build 16) a = Night Watch dazed by a Squeaky Duck, b = owner
 	RIFT,             # (2.2 build 16) a = player, value = rift index (from pos to m["to"])
+	KNOCKED_OUT,      # (2.2 build 18) a = runner tagged out of the round
 }
 
 # Input button bits (held state) and edge bits (pressed this tick).
@@ -98,9 +100,9 @@ static func role_lines(r: int, cfg: RulesConfig, dorm_name: String = "") -> Arra
 	var home := dorm_name if dorm_name != "" else "the dorm"
 	if r == Role.PATROL:
 		return ["Stop %d runners getting back inside %s before time runs out: cut them off in a cart, hop out and tag." % [cfg.runners_needed, home],
-			"A tag sends a runner out for %d s; they keep their splashes. Nobody can be tagged inside the dorm." % int(cfg.capture_penalty_s)]
+			"A tag knocks a runner out of the round. Nobody can be tagged inside the dorm."]
 	return ["Run out, splash into the three marked waters, then run back inside %s through one of its doors. %d home wins it for every runner." % [home, cfg.runners_needed],
-		"Caught? You keep your splashes and you're back in %d s." % int(cfg.capture_penalty_s)]
+		"If the Night Watch tags you, you're out for the round."]
 
 
 static func role_name(r: int) -> String:

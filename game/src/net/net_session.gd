@@ -950,13 +950,13 @@ func host_after_step(dt: float) -> void:
 func _relevant_for(rec: SimPlayer, dt: float) -> Array:
 	var out: Array = []
 	for p in sim.players:
-		if rec == null or p == rec or p.role == rec.role or rec.state == TC.PState.FINISHED:
+		if rec == null or p == rec or p.role == rec.role or rec.state == TC.PState.FINISHED or rec.state == TC.PState.OUT:
 			out.append(p)
 			continue
 		var key := "%d:%d" % [rec.id, p.id]
 		var d := rec.pos().distance_to(p.pos())
 		var rel := false
-		if p.state == TC.PState.CAPTURED or p.state == TC.PState.FINISHED:
+		if p.state == TC.PState.CAPTURED or p.state == TC.PState.FINISHED or p.state == TC.PState.OUT:
 			rel = false
 		elif p.cloak_t > 0.0 and rec.role != p.role and d > 2.5:
 			# (2.2 build 17) a cloaked runner never reaches an opponent's

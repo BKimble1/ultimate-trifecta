@@ -493,3 +493,38 @@ test('concurrent spend, claim, Premium and delivery on one account: each exactly
   assert.equal(ledger.filter((l) => l.source === 'season_claim').length, coinCells.length, 'each Coin cell once');
   assert.ok(ledger.every((l) => l.balance_after >= 0), 'never negative');
 });
+
+test('sets: the missing pieces at the set price, granted together, once (2.2 build 18)', async () => {
+  const ctx = setup();
+  const a = await user(ctx, 'T:_sam', 'Sam Heron');
+  await grant(ctx, a, 1000);
+  const full = E.price('hat:party') + E.price('shoes:sneakers') + E.price('emote:dance');
+  const quote = E.setPrice('set:party_pack', new Set());
+  assert.equal(quote.full, full);
+  assert.ok(quote.price < full && quote.price % 5 === 0, 'cheaper than the pieces, in steps of 5');
+  const body = (key, price) => ({ item_id: 'set:party_pack', price, idempotency_key: key });
+  assert.equal((await call(ctx, 'POST', '/v1/wallet/spend', body('set-key-1', quote.price + 5), a.token)).body.error, 'price_changed');
+  // own one piece first: the set then sells the other two, cheaper again
+  assert.equal((await call(ctx, 'POST', '/v1/wallet/spend', { item_id: 'hat:party', price: E.price('hat:party'), idempotency_key: 'hat-key-1' }, a.token)).status, 200);
+  const q2 = E.setPrice('set:party_pack', new Set(['hat:party']));
+  assert.deepEqual(q2.left, ['shoes:sneakers', 'emote:dance']);
+  const ok = await call(ctx, 'POST', '/v1/wallet/spend', body('set-key-2', q2.price), a.token);
+  assert.equal(ok.status, 200, JSON.stringify(ok.body));
+  assert.deepEqual(ok.body.granted, ['shoes:sneakers', 'emote:dance']);
+  assert.equal(ok.body.wallet.balance, 1000 - E.price('hat:party') - q2.price);
+  const has = (w, id) => w.entitlements.some((x) => x.item === id && !x.revoked);
+  assert.ok(has(ok.body.wallet, 'shoes:sneakers') && has(ok.body.wallet, 'emote:dance') && has(ok.body.wallet, 'hat:party'), 'all three owned');
+  const replay = await call(ctx, 'POST', '/v1/wallet/spend', body('set-key-2', q2.price), a.token);
+  assert.equal(replay.body.replay, true, 'same key: no second debit');
+  assert.equal(replay.body.wallet.balance, ok.body.wallet.balance);
+  assert.equal((await call(ctx, 'POST', '/v1/wallet/spend', body('set-key-3', 0), a.token)).body.error, 'already_owned');
+  // not enough Coins: nothing charged, nothing granted
+  const b = await user(ctx, 'T:_bo', 'Bo Wren');
+  await grant(ctx, b, 100);
+  const q3 = E.setPrice('set:royal_look', new Set());
+  const poor = await call(ctx, 'POST', '/v1/wallet/spend', { item_id: 'set:royal_look', price: q3.price, idempotency_key: 'royal-key-1' }, b.token);
+  assert.equal(poor.body.error, 'insufficient_funds');
+  const wb = await wallet(ctx, b);
+  assert.equal(wb.balance, 100);
+  assert.ok(!has(wb, 'hat:crown'), 'no piece granted');
+});

@@ -73,7 +73,7 @@ func reserved() -> Array[Rect2]:
 func _round_state() -> Dictionary:
 	var mc := hud.mc
 	var st := int(mc._player_rs(mc.local_slot).get("state", TC.PState.ACTIVE)) if not mc.spectator else -1
-	return {"finished": st == TC.PState.FINISHED, "spectator": mc.spectator}
+	return {"finished": st == TC.PState.FINISHED or st == TC.PState.OUT, "spectator": mc.spectator}
 
 
 func open_drawer() -> void:

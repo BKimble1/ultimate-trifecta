@@ -286,6 +286,7 @@ func _category_strip() -> Control:
 			"disabled": n, "selected": sel}
 		f.fg = {"normal": UIKit.IVORY_MUTED, "hover": UIKit.IVORY, "selected": UIKit.IVORY}
 		var key: String = t[0]
+		b.set_meta(&"sfx", "tab")
 		b.pressed.connect(func() -> void: _select_tab(key))
 		tabs.add_child(b)
 		tab_btns[key] = b
@@ -873,7 +874,7 @@ func _pick(f: String, k: String) -> void:
 		v.set_appearance(TC.Role.RUNNER, draft)
 		if f in ["outfit", "hat", "shoes", "hair", "pattern"] and not UIKit.reduced_motion():
 			v.play_arrive()   # a little hop to show the new look
-	Sfx.play("pop")
+	Sfx.play("equip" if f in ["outfit", "hat", "shoes"] else "pop")
 	_refresh()
 
 

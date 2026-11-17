@@ -46,14 +46,26 @@ extends Screen
 ## cancelled, failed, offline/unavailable, delivered.  Wallet, purchase and
 ## offer updates refresh labels in place; the menu is never rebuilt.
 
+## (2.2 build 18) Coins left the strip: the Coins counter's + opens the
+## packs (select_section("coins") still shows them).
 const SECTIONS := [
 	["featured", "Featured"],
-	["outfits", "All skins"],
+	["outfits", "Skins"],
 	["accessories", "Accessories"],
-	["coins", "Coins"],
 	["season", "Season 1"],
 ]
+## (2.2 build 18) each rotating skin's card colour (its outfit's main hue)
+const TINT := {
+	"midnight_mechanic": Color("2f5d8a"), "moonwalk_cadet": Color("5868d0"), "pumpkin_pajamas": Color("d0712a"),
+	"arcade_sprinter": Color("c23b9a"), "cloud_nine": Color("4f9fe0"), "bedtime_bandit": Color("646a80"),
+	"lantern_scout": Color("4e8a3c"), "campus_courier": Color("c4513e"), "raincoat_explorer": Color("d9aa28"),
+	"varsity_sprinter": Color("b5762c"), "moonlight_runner": Color("3d4f9e"), "starry_sleeper": Color("6b4fb5"),
+	"turkey_trot": Color("a8622a"), "harvest_flannel": Color("b23a2e"), "reindeer_onesie": Color("8a5a36"),
+	"gingerbread_buddy": Color("b8743a"), "elf_helper": Color("2f8f4a"), "snow_day": Color("6fb3d9"),
+}
 const CARD_W := 144.0
+## (2.2 build 18) the compact row card (Always available)
+const COMPACT_W := 230.0
 const CARD_GAP := float(UIKit.GAP_CARD)
 ## the narrowest Coin pack card (two per row on a landscape phone)
 const PACK_W := 190.0
@@ -63,6 +75,8 @@ const SWATCH_FIELDS := ["color", "trim", "hair_color"]
 const WELL := {"swatch": 0.62, "coins": 0.62, "glyph": 0.62}
 const RETURN_NOTE := "Owned skins stay in your Locker. Shop skins may return."
 const NOT_IN_ROTATION := "Not in current rotation"
+const REMIND := "Remind me"
+const REMIND_ON := "Reminder on ✓"
 const CONNECT := "Connect to refresh Shop"
 ## a card's rotation line on the narrowest phone cards (the status line and
 ## the sheet always carry the full wording)
@@ -93,7 +107,7 @@ var preview_id := ""
 var saved: Dictionary = {}
 var preview_run := false
 ## Featured: the rotating offers' grid, its status line and the refresh line
-var rot_grid: UIKit.AutoGrid
+var rot_grid: FeaturedRow
 var rot_status: Label
 var banner_strip: Control
 var refresh_l: Label
@@ -107,6 +121,7 @@ var _drag_from := -1.0
 var _busy_item := ""
 var _scroll_of: Dictionary = {}
 var _d: Dictionary = {}               # detail widgets
+var _season_h := 0.0
 
 
 func build() -> void:
@@ -179,7 +194,7 @@ func build() -> void:
 		var fi := focus_item
 		focus_item = ""
 		_open_detail.call_deferred(fi)
-	focus_first(strip_btns[section])
+	focus_first(strip_btns.get(section, strip_btns["featured"]))
 	UIKit.fade_in(panel)
 	_stage_area.resized.connect(_frame_stage)
 	get_viewport().size_changed.connect(_frame_stage)
@@ -355,6 +370,7 @@ func _section_strip() -> Control:
 		f.styles = {"normal": n, "hover": UIKit.box(Color(UIKit.IVORY, 0.06), 999), "pressed": UIKit.box(Color(UIKit.IVORY, 0.1), 999),
 			"disabled": n, "selected": sel}
 		f.fg = {"normal": UIKit.IVORY_MUTED, "hover": UIKit.IVORY, "selected": UIKit.IVORY}
+		b.set_meta(&"sfx", "tab")
 		b.pressed.connect(func() -> void: select_section(key))
 		row.add_child(b)
 		strip_btns[key] = b
@@ -452,7 +468,9 @@ func _build_section() -> void:
 		"season":
 			# (2.2 build 16) the section is the Season Pass poster: Premium from
 			# Apple or for Coins, right there
-			body.add_child(PassOffer.banner(self, Vector2(gw, maxf(gw * 1.25, 760.0))))
+			# (2.2 build 18) the whole banner on screen, no scrolling
+			_season_h = season_banner_h()
+			body.add_child(PassOffer.banner(self, Vector2(gw, _season_h)))
 			var pass_link := UIKit.link("Open the Season Pass  ›", UIKit.T_LABEL)
 			pass_link.name = "Link_pass"
 			pass_link.custom_minimum_size.y = UIKit.row_h()
@@ -462,10 +480,29 @@ func _build_section() -> void:
 		body.add_child(_restore_row())
 	_refresh_states()
 	var at := int(_scroll_of.get(section, 0))
+	if section == "season":
+		# laid out now: a banner built from an estimate is rebuilt once to fit
+		(func() -> void:
+			await get_tree().process_frame
+			await get_tree().process_frame
+			if is_instance_valid(scroll) and section == "season" and scroll.size.y > 120.0 and absf(season_banner_h() - _season_h) > 24.0:
+				_build_section()).call()
 	(func() -> void:
 		await get_tree().process_frame
 		if is_instance_valid(scroll) and not TouchScroll.is_dragging(scroll):
 			scroll.scroll_vertical = at).call()
+
+
+## The Season 1 banner's height: the list's visible height less the link
+## under it (estimated from the screen before the list is laid out).
+func season_banner_h() -> float:
+	var vis := scroll.size.y if is_instance_valid(scroll) and scroll.size.y > 120.0 else 0.0
+	if vis <= 0.0:
+		var ch := content_size().y
+		if ch < 2.0:
+			ch = get_viewport().get_visible_rect().size.y * 0.8 if is_inside_tree() else 600.0
+		vis = ch - UIKit.row_h() - UIKit.SP_M - UIKit.PAD_PANEL * 2.0 - UIKit.row_h() - UIKit.SP_S * 2.0
+	return maxf(300.0, vis - UIKit.row_h() - UIKit.SP_M - 2.0)
 
 
 func _intro(text: String, gw: float) -> Label:
@@ -626,23 +663,33 @@ func _build_featured(gw: float) -> void:
 	rot_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rot_status.custom_minimum_size.x = gw * 0.95
 	body.add_child(rot_status)
-	rot_grid = UIKit.AutoGrid.new(CARD_W, 2, 4, CARD_GAP)
+	# (2.2 build 18) a spotlight: the first offer large, the others beside it
+	rot_grid = FeaturedRow.new()
 	rot_grid.name = "Grid_featured"
-	var cols := UIKit.columns_for(gw, CARD_W, CARD_GAP, 2, 4)
-	var w := UIKit.cell_width(gw, cols, CARD_GAP)
-	for o in featured_offers():
-		_add_offer_card(o, w)
-	rot_grid.columns = cols
+	rot_grid.gap = CARD_GAP
+	rot_grid.custom_minimum_size.x = gw
+	var offers := featured_offers()
+	for i in offers.size():
+		_add_offer_card(offers[i], rot_grid.width_for(i, gw, offers.size()))
 	body.add_child(rot_grid)
-	var note := UIKit.styled(RETURN_NOTE, "caption", UIKit.IVORY_MUTED)
-	note.name = "ReturnNote"
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note.custom_minimum_size.x = gw * 0.95
-	body.add_child(note)
 	var always := UIKit.styled("Always available", "overline", UIKit.IVORY_MUTED)
 	always.name = "AlwaysAvailable"
 	body.add_child(always)
-	body.add_child(_grid("always", Catalogue.shop_items("always"), gw, CARD_W, 2, 6))
+	# compact row cards: picture beside the name and price
+	var ag := UIKit.AutoGrid.new(COMPACT_W, 1, 3, CARD_GAP)
+	ag.name = "Grid_always"
+	var acols := clampi(Catalogue.shop_items("always").size(), 1, UIKit.columns_for(gw, COMPACT_W, CARD_GAP, 1, 3))
+	var aw := UIKit.cell_width(gw, acols, CARD_GAP)
+	for it in Catalogue.shop_items("always"):
+		var cid := String(it["id"])
+		var cc := ShopCard.new()
+		cc.compact = true
+		cc.setup(self, cid, aw)
+		cc.pressed.connect(_open_detail.bind(cid))
+		ag.add_child(cc)
+		cards.append(cc)
+	ag.columns = acols
+	body.add_child(ag)
 	body.add_child(_season_offer(gw))
 	var links := UIKit.hbox(UIKit.SP_L)
 	links.name = "AlwaysLinks"
@@ -671,6 +718,8 @@ func featured_offers() -> Array:
 func _add_offer_card(o: Dictionary, w: float, at: int = -1) -> ShopCard:
 	var id := String(o["item_id"])
 	var card := ShopCard.new()
+	var slot := at if at >= 0 else rot_grid.get_child_count()
+	card.spot = slot == 0
 	card.setup(self, id, w, o)
 	card.pressed.connect(_open_detail.bind(id))
 	rot_grid.add_child(card)
@@ -695,20 +744,20 @@ func _sync_featured() -> void:
 		return
 	var want := featured_offers()
 	var have: Array = rot_grid.get_children().filter(func(c: Node) -> bool: return c is ShopCard and not c.is_queued_for_deletion())
-	var w := rot_grid.cell_w if rot_grid.cell_w > 0.0 else UIKit.cell_width(grid_width(), rot_grid.columns, CARD_GAP)
+	var gw := grid_width()
 	if want.size() == have.size():
 		for i in want.size():
 			var old: ShopCard = have[i]
 			if String(old.offer.get("offer_id", "")) == String(want[i]["offer_id"]):
 				old.offer = want[i]
 				continue
-			_swap_card(old, want[i], w, i)
+			_swap_card(old, want[i], rot_grid.width_for(i, gw, want.size()), i)
 		return
 	var had_focus := have.any(func(c: Control) -> bool: return c.has_focus())
 	for c in have:
 		_drop_card(c)
-	for o in want:
-		var nc := _add_offer_card(o, w)
+	for i in want.size():
+		var nc := _add_offer_card(want[i], rot_grid.width_for(i, gw, want.size()))
 		Motion.settle_in(UIKit.face_of(nc))
 	if had_focus and rot_grid.get_child_count() > 0:
 		(rot_grid.get_child(0) as Control).grab_focus()
@@ -824,6 +873,12 @@ func _buy_premium_with_coins() -> void:
 		dialog("You need %s more Coins. Coin packs are in Coins." % Catalogue.format_coins(Catalogue.price(id) - Wallet.balance()))
 		return
 	_confirm_spend(id)
+
+
+## (2.2 build 18) the card's one line: "44 rewards · 5 outfits · 1,125 Coins back"
+static func premium_short(sid: String) -> String:
+	var c := PassOffer.contents()
+	return "%d rewards · %d outfits · %s Coins back" % [int(c["rewards"]), int(c["outfits"]), Catalogue.format_coins(int(c["coins"]))]
 
 
 static func premium_summary(sid: String) -> String:
@@ -1112,9 +1167,9 @@ func _kind_note(id: String) -> String:
 func _includes_text(id: String) -> String:
 	match Catalogue.kind(id):
 		"coin_pack":
-			return "Includes: %s Coins. Consumable: a purchase adds Coins once to the account you're signed in with." % Catalogue.format_coins(int(Catalogue.item(id).get("coins", 0)))
+			return "Adds %s Coins to your account." % Catalogue.format_coins(int(Catalogue.item(id).get("coins", 0)))
 		"season_premium":
-			return "Includes: %s Earned and claimed rewards stay yours permanently. No tier skips; Season XP comes only from playing." % premium_summary(String(Catalogue.item(id).get("season", "s1")))
+			return "Includes: %s Tiers are earned by playing." % premium_summary(String(Catalogue.item(id).get("season", "s1")))
 	var parts: Array = []
 	for g in Catalogue.grants(id):
 		parts.append("%s (%s)" % [Catalogue.display_name(String(g)), Catalogue.type_label(String(g)).to_lower()])
@@ -1130,17 +1185,13 @@ func _includes_text(id: String) -> String:
 				t += " " + String(line)
 			t += " " + Cosmetics.override_note(ok)
 		elif "hair" in rep and "shoes" in rep:
-			t += " Its hood covers your hair and hat, and it's worn with its own footwear instead of your shoes; your colours stay as you set them in the Locker."
+			t += " Hood up, with its own footwear."
 		elif "hair" in rep:
-			t += " Its hood covers your hair and hat; your shoes stay as you set them in the Locker."
+			t += " Hood up."
 		elif "shoes" in rep:
-			t += " It's worn with its own footwear instead of your shoes; your colours, hair and hat stay as you set them in the Locker."
-		else:
-			t += " Your colours, hair, hat and shoes stay as you set them in the Locker."
+			t += " Comes with its own footwear."
 	if Catalogue.kind(id) == "apple_skin":
-		t += " Permanent: restore it with Restore Purchases on any device signed in to the same Apple Account."
-	if Catalogue.is_rotation(id):
-		t += " It's in the Shop while its rotating offer lasts; once bought it's yours to keep. " + RETURN_NOTE
+		t += " Yours to keep; Restore Purchases brings it back on any device."
 	return t
 
 
@@ -1164,10 +1215,19 @@ func _refresh_detail() -> void:
 			if Catalogue.kind(id) == "season_premium":
 				action.text = "Open Season Pass"
 				status.text = "Premium is unlocked for Season 1. Claim your Premium rewards in the Season Pass."
+			elif Catalogue.is_runner_item(id) and _wearing(id):
+				action.text = "Equipped"
+				status.text = ""
+				action.disabled = true
+			elif Catalogue.is_runner_item(id):
+				# (2.2 build 18) wear it right here
+				action.text = "Equip now"
+				status.text = ""
 			else:
-				action.text = "Wear it in the Locker"
-				status.text = "It's in your Locker, to keep." if not Catalogue.is_rotation(id) else "It's in your Locker, to keep. " + RETURN_NOTE
-			action.disabled = false
+				action.text = "Open the Locker"
+				status.text = ""
+			if action.text != "Equipped":
+				action.disabled = false
 		"rotation":
 			price_l.text = "%s Coins" % String(st["text"])
 			price_l.add_theme_color_override("font_color", UIKit.IVORY_MUTED)
@@ -1175,7 +1235,10 @@ func _refresh_detail() -> void:
 			match Offers.shop_status():
 				"live":
 					action.text = NOT_IN_ROTATION
-					status.text = "%s. You can preview it here. %s" % [NOT_IN_ROTATION, RETURN_NOTE]
+					status.text = "Not in the Shop right now."
+					# (2.2 build 18) a reminder when it comes back
+					second.text = REMIND_ON if ShopScreen.reminding(id) else REMIND
+					second.visible = true
 				"stale", "loading":
 					action.text = CONNECT
 					status.text = "%s: the Shop's offers and times come from the game service. Nothing can be bought from an old offer." % CONNECT
@@ -1189,7 +1252,7 @@ func _refresh_detail() -> void:
 			if bool(st.get("pending", false)) or _busy_item == id:
 				action.text = "Finishing…"
 				action.disabled = true
-				status.text = "Your purchase is being confirmed. It finishes by itself, and you won't be charged twice."
+				status.text = "Confirming. You won't be charged twice."
 			elif not bool(can["ok"]):
 				action.text = "Unavailable"
 				action.disabled = true
@@ -1198,7 +1261,7 @@ func _refresh_detail() -> void:
 				var short := int(st["coins"]) - Wallet.balance()
 				action.text = "Need %s more Coins" % Catalogue.format_coins(short)
 				action.disabled = true
-				status.text = "You have %s Coins. Earn more by playing online rounds, or get Coins in the Coins section." % Wallet.balance_label()
+				status.text = "Earn Coins in online rounds, or get more with +."
 				second.text = "Get Coins"
 				second.visible = true
 				# (2.2 build 16) or buy it outright: the Coin pack that covers it,
@@ -1207,12 +1270,12 @@ func _refresh_detail() -> void:
 				if not plan.is_empty() and bool((plan["view"] as Dictionary)["can_buy"]):
 					action.text = "Buy now · %s" % String((plan["view"] as Dictionary)["price"])
 					action.disabled = false
-					status.text = "Buy now gets the %s Coins pack and buys %s with it at once; %s Coins stay in your wallet." % [
-						Catalogue.format_coins(int(plan["coins"])), Catalogue.display_name(id), Catalogue.format_coins(int(plan["left"]))]
+					status.text = "Gets the %s Coins pack and buys it; %s Coins left over." % [
+						Catalogue.format_coins(int(plan["coins"])), Catalogue.format_coins(int(plan["left"]))]
 			else:
 				action.text = ("Unlock for %s" if Catalogue.kind(id) == "season_premium" else "Buy for %s") % ("%s Coins" % String(st["text"]))
 				action.disabled = false
-				status.text = "You have %s Coins." % Wallet.balance_label()
+				status.text = ""
 		"apple":
 			price_l.text = String(st["price"]) if String(st["price"]) != "" else ""
 			price_l.add_theme_color_override("font_color", UIKit.IVORY)
@@ -1267,6 +1330,13 @@ func _on_secondary() -> void:
 		return
 	if b.text == "Get Coins":
 		select_section("coins")
+	elif b.text == REMIND or b.text == REMIND_ON:
+		ShopScreen.set_reminder(detail_id, b.text == REMIND)
+		Sfx.play("pop")
+		Haptics.tick()
+		if b.text == REMIND:
+			UIKit.toast(self, "We'll tell you when it's back", 1.8)
+		_refresh_detail()
 	elif b.text == "Restore":
 		_restore()
 
@@ -1278,6 +1348,8 @@ func _on_action() -> void:
 		"owned":
 			if Catalogue.kind(id) == "season_premium":
 				NavShell.go("pass")
+			elif Catalogue.is_runner_item(id):
+				equip(id)
 			else:
 				_restore_stage()
 				NavShell.open("locker")
@@ -1295,6 +1367,73 @@ func _on_action() -> void:
 			if not bool(r.get("ok", false)):
 				dialog(String(r.get("message", "")))
 			_refresh_states()
+
+
+## (2.2 build 18) "Remind me": rotating skins to announce on home when they
+## come back into the Shop (kept on this device).
+static func reminding(id: String) -> bool:
+	return (Save.get_setting("remind_ids", []) as Array).has(id)
+
+
+static func set_reminder(id: String, on: bool) -> void:
+	var l: Array = (Save.get_setting("remind_ids", []) as Array).duplicate()
+	if on and not l.has(id):
+		l.append(id)
+	elif not on:
+		l.erase(id)
+	Save.set_setting("remind_ids", l)
+
+
+## Reminded skins on sale now that haven't been announced for this offer:
+## their names (each offer said once; bought ones drop off the list).
+static func reminders_due() -> Array:
+	var out: Array = []
+	if Offers.shop_status() != "live":
+		return out
+	var l: Array = (Save.get_setting("remind_ids", []) as Array).duplicate()
+	var told: Array = (Save.get_setting("reminded_offers", []) as Array).duplicate()
+	for id in l.duplicate():
+		if Wallet.owns_id(String(id)):
+			l.erase(id)
+			continue
+		var o := Offers.offer_for(String(id))
+		if o.is_empty() or told.has(String(o.get("offer_id", ""))):
+			continue
+		told.append(String(o.get("offer_id", "")))
+		out.append(Catalogue.display_name(String(id)))
+	Save.set_setting("remind_ids", l)
+	Save.set_setting("reminded_offers", told.slice(maxi(0, told.size() - 40)))
+	return out
+
+
+## (2.2 build 18) Wearing this item now (the saved look).
+func _wearing(id: String) -> bool:
+	var parts := Catalogue.split(id)
+	return String(Cosmetics.sanitize(Save.data["cosmetic"]).get(String(parts[0]), "")) == String(parts[1])
+
+
+## (2.2 build 18) Equip an owned item from the Shop: the Locker's own save
+## path (never spends), the party sees it, the stage keeps showing it.
+func equip(id: String) -> void:
+	if id == "" or not Wallet.owns_id(id) or not Catalogue.is_runner_item(id):
+		return
+	var parts := Catalogue.split(id)
+	var look := Cosmetics.sanitize(Save.data["cosmetic"]).duplicate()
+	look[String(parts[0])] = String(parts[1])
+	var r := Save.apply_appearance(look)
+	if not bool(r["ok"]):
+		dialog("%s isn't in your Locker any more." % Catalogue.display_name(id))
+		return
+	saved = Cosmetics.sanitize(Save.data["cosmetic"])
+	App.sync_stage_local()
+	App.sync_cloud_appearance()
+	if App.session and is_instance_valid(App.session) and App.session.phase == TC.Phase.LOBBY and App.session.mode != NetSession.Mode.OFFLINE:
+		App.session.set_local_cosmetic(saved)
+	Save.save_now()
+	Sfx.play("equip")
+	Haptics.tap()
+	UIKit.toast(self, "Equipped", 1.6)
+	_refresh_detail()
 
 
 ## A Coin pack card: the tap is the purchase (Apple's own sheet confirms
@@ -1409,6 +1548,17 @@ func _spend(id: String, offer: Dictionary = {}) -> void:
 ## Unlock feedback on the visuals of that item's cards and sheet (Motion
 ## layer: hit regions stay put; nothing with Reduced Motion).
 func _celebrate(id: String) -> void:
+	Sfx.play("purchase")
+	Haptics.success()
+	# (2.2 build 18) confetti over the screen and a happy runner
+	var cf := ResultsScreen.Confetti.new()
+	cf.name = "BuyConfetti"
+	cf.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(cf)
+	if App.stage and Catalogue.is_runner_item(id) and not UIKit.reduced_motion():
+		var cheer := TC.EMOTES.find("cheer")
+		if cheer >= 0:
+			App.stage.emote(Save.player_uid(), cheer)
 	for c in cards:
 		if is_instance_valid(c) and (c as ShopCard).id == id:
 			Motion.confirm(UIKit.face_of(c))
@@ -1439,6 +1589,11 @@ class ShopCard:
 	var wide := false
 	var pack := false
 	var rot := false
+	## (2.2 build 18) the Featured spotlight (large, tinted) and the compact
+	## row card (picture beside the name and price)
+	var spot := false
+	var compact := false
+	var tint := Color(0, 0, 0, 0)
 	var _sum: Label
 	var _note: Label
 	var _pill: PanelContainer
@@ -1467,6 +1622,85 @@ class ShopCard:
 			return "emote"
 		return String(ShopScreen.THUMB_FRAMING.get(f, "glyph"))
 
+	## (2.2 build 18) an outfit's card colour (its main hue), or none
+	static func tint_of(item_id: String) -> Color:
+		var parts := Catalogue.split(item_id)
+		if String(parts[0]) != "outfit":
+			return Color(0, 0, 0, 0)
+		var key := String(parts[1])
+		if ShopScreen.TINT.has(key):
+			return ShopScreen.TINT[key]
+		return Color.from_hsv(float(absi(key.hash()) % 360) / 360.0, 0.5, 0.72)
+
+	## The card's background in its tint: deep at the edges, a soft glow
+	## behind the picture (the spotlight brighter).
+	func _paint_tint(face: Control) -> void:
+		var f := face as UIKit.Face
+		if f == null:
+			return
+		var base := tint.darkened(0.42 if spot else 0.58)
+		base.a = 0.97
+		var sel := UIKit.card_box(base.lightened(0.04), UIKit.R_CARD, 1.0)
+		sel.set_border_width_all(3)
+		sel.border_color = UIKit.TEAL
+		f.styles = {"normal": UIKit.card_box(base, UIKit.R_CARD, 1.0), "hover": UIKit.card_box(base.lightened(0.06), UIKit.R_CARD, 1.0),
+			"pressed": UIKit.card_box(base.darkened(0.1), UIKit.R_CARD, 0.0), "disabled": UIKit.box(Color(base, 0.7), UIKit.R_CARD), "selected": sel}
+		var g := TintGlow.new()
+		g.col = tint
+		g.strong = spot
+		g.set_anchors_preset(Control.PRESET_FULL_RECT)
+		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.add_child(g)
+		f.queue_redraw()
+
+	## (2.2 build 18) compact row card: the picture, then the name over the
+	## price (or the App Store tag)
+	static func compact_h() -> float:
+		return maxf(UIKit.touch_min() + 30.0, 86.0)
+
+	func _setup_compact(face: Control, w: float) -> void:
+		var h := UIKit.hbox(UIKit.SP_M)
+		h.set_anchors_preset(Control.PRESET_FULL_RECT)
+		h.offset_left = 8
+		h.offset_right = -10
+		h.offset_top = 8
+		h.offset_bottom = -8
+		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.add_child(h)
+		var pic := ShopCard.compact_h() - 16.0
+		art = ShopCard.art_for(shop, id, pic, "shop:%s" % id)
+		art.name = "Well"
+		(art as ShopPic).clear_bg = tint.a > 0.0
+		art.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(art)
+		var tv := UIKit.vbox(2)
+		tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tv.alignment = BoxContainer.ALIGNMENT_CENTER
+		tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		h.add_child(tv)
+		name_l = UIKit.styled(Catalogue.display_name(id), "label", UIKit.IVORY)
+		name_l.clip_text = true
+		name_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tv.add_child(name_l)
+		var row := UIKit.hbox(6)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		coin = CommerceArt.Pic.new("coin", "", Color.WHITE, 20)
+		coin.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(coin)
+		price_l = UIKit.styled("", "num", UIKit.AMBER)
+		price_l.add_theme_font_size_override("font_size", 19)
+		price_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(price_l)
+		tv.add_child(row)
+		if Catalogue.kind(id) == "apple_skin":
+			src_l = UIKit.styled("App Store", "caption", UIKit.IVORY_MUTED)
+			src_l.name = "SourceTag"
+			src_l.add_theme_font_size_override("font_size", 16)
+			src_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			tv.add_child(src_l)
+		fit_cell(w, 1)
+
 	## (2.3) a tall tile: the coin pile, the amount, the price button
 	static func pack_h() -> float:
 		return maxf(UIKit.row_h() + 150.0, 206.0)
@@ -1482,6 +1716,12 @@ class ShopCard:
 		rot = Catalogue.is_rotation(id)
 		UIKit.make_card(self, Vector2(w, 0), Color(UIKit.SLATE_HI, 0.96))
 		var face := UIKit.face_of(self)
+		if not o.is_empty() or spot or Catalogue.kind(id) == "apple_skin":
+			tint = ShopCard.tint_of(id)
+			_paint_tint(face)
+		if compact:
+			_setup_compact(face, w)
+			return
 		if wide:
 			_setup_wide(face, w)
 			return
@@ -1492,15 +1732,28 @@ class ShopCard:
 		art = ShopCard.art_for(s, id, 0.0, "shop:%s" % id)
 		art.name = "Well"
 		art.size_flags_horizontal = Control.SIZE_FILL
+		if spot:
+			art.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			(art as ShopPic).clear_bg = true
+			(art as ShopPic).contain = true
+			var sc := UIKit.chip("Spotlight", Color(UIKit.AMBER, 0.95), UIKit.NAVY, 16)
+			sc.name = "SpotChip"
+			sc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			sc.position = Vector2(6, 6)
+			art.add_child(sc)
+		elif tint.a > 0.0:
+			(art as ShopPic).clear_bg = true
 		v.add_child(art)
 		if Catalogue.is_new(id):
 			# a real catalogue fact (added in this catalogue version)
 			var chip := UIKit.chip("New", Color(UIKit.TEAL, 0.92), UIKit.NAVY, 16)
 			chip.name = "New"
 			chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			chip.position = Vector2(6, 6)
+			chip.position = Vector2(6, 6) if not spot else Vector2(6, 40)
 			art.add_child(chip)
 		name_l = CreatorScreen.name_label(Catalogue.display_name(id))
+		if spot:
+			name_l.add_theme_font_size_override("font_size", 26)
 		v.add_child(name_l)
 		var row := UIKit.hbox(6)
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -1566,7 +1819,7 @@ class ShopCard:
 		name_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tv.add_child(name_l)
-		_sum = UIKit.styled(ShopScreen.premium_summary(String(Catalogue.item(id).get("season", "s1"))), "caption", UIKit.IVORY_MUTED)
+		_sum = UIKit.styled(ShopScreen.premium_short(String(Catalogue.item(id).get("season", "s1"))), "caption", UIKit.IVORY_MUTED)
 		_sum.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_sum.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tv.add_child(_sum)
@@ -1642,13 +1895,23 @@ class ShopCard:
 		custom_minimum_size = Vector2(w, maxf(UIKit.row_h(), need + 20.0))
 
 	func name_lines(w: float) -> int:
-		if wide or pack:
+		if wide or pack or compact or spot:
 			return 1
 		return mini(2, UIKit.lines_for(name_l.text, UIKit.font_w(600), CreatorScreen.NAME_FS, w - CreatorScreen.PAD * 2.0))
 
 	func fit_cell(w: float, n: int) -> void:
 		if wide:
 			_fit_wide(w)
+			return
+		if compact:
+			custom_minimum_size = Vector2(w, ShopCard.compact_h())
+			return
+		if spot:
+			# the row gives it its height; the picture takes what's left
+			lines = 1
+			name_l.custom_minimum_size = Vector2(w - CreatorScreen.PAD * 2.0, 0)
+			name_l.max_lines_visible = 1
+			custom_minimum_size = Vector2(w, CreatorScreen.PAD * 2.0 + 90.0 + CreatorScreen.ROW_GAP * 3.0 + 34.0 + CreatorScreen.STATE_H * 2.0)
 			return
 		if pack:
 			custom_minimum_size = Vector2(w, ShopCard.pack_h())
@@ -1670,6 +1933,24 @@ class ShopCard:
 		price_l.text = String(st["text"])
 		price_l.add_theme_color_override("font_color", st["col"])
 		coin.visible = String(st["kind"]) in ["coins", "rotation"]
+		# (2.2 build 18) a price you can't reach yet is dimmed, coin too
+		coin.modulate.a = 0.45 if String(st["kind"]) == "coins" and not bool(st.get("afford", true)) else 1.0
+		# an owned item carries a tick on its picture
+		var tick_mark := art.get_node_or_null("OwnedTick") if art != null else null
+		if bool(st.get("owned", false)) and tick_mark == null and art != null:
+			var om := Icons.IconRect.new("check", UIKit.NAVY, 22)
+			om.name = "OwnedTick"
+			om.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var bg := PanelContainer.new()
+			bg.name = "OwnedTick"
+			bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			bg.add_theme_stylebox_override("panel", UIKit.box(UIKit.TEAL, 999, 0, Color.WHITE, 3))
+			om.name = "Mark"
+			bg.add_child(om)
+			art.add_child(bg)
+			bg.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_KEEP_SIZE, 6)
+		elif not bool(st.get("owned", false)) and tick_mark != null:
+			tick_mark.queue_free()
 		tick()
 		var when := ("" if when_l == null else ", " + when_l.text)
 		if Catalogue.kind(id) == "apple_skin":
@@ -1727,13 +2008,13 @@ class ShopCard:
 			_fit_key = key
 			var f := when_l.get_theme_font("font")
 			_fit_size = 0
-			for fs in [17, 16, 15, 14]:
+			for fs in [17, 16, 15, 14, 13]:
 				if f.get_string_size(shape, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= avail:
 					_fit_size = fs
 					break
 			_fit_short = _fit_size == 0
 			if _fit_short:
-				_fit_size = 14
+				_fit_size = 13
 			when_l.add_theme_font_size_override("font_size", _fit_size)
 		# the status line and the sheet always carry the full wording
 		when_l.text = String(ShopScreen.SHORT.get(_when_full, _when_full)) if _fit_short else _when_full
@@ -1768,6 +2049,10 @@ class ShopCard:
 ## well, or drawn art centred in it.
 class ShopPic:
 	extends Control
+	## (2.2 build 18) no dark well: the card's own colour shows through
+	var clear_bg := false
+	## (2.2 build 18) the whole portrait, scaled to the well's height
+	var contain := false
 	var tex: Texture2D
 	var pic_key := ""
 	var coins := 0
@@ -1800,10 +2085,16 @@ class ShopPic:
 
 	func _draw() -> void:
 		var r := Rect2(Vector2.ZERO, size)
-		draw_style_box(UIKit.box(Color(UIKit.NAVY, 0.38), UIKit.R_SMALL), r)
+		if not clear_bg:
+			draw_style_box(UIKit.box(Color(UIKit.NAVY, 0.38), UIKit.R_SMALL), r)
 		var c := size * 0.5
 		var s := minf(size.x, size.y)
-		if tex != null:
+		if tex != null and contain:
+			var src0 := tex.get_size()
+			var k0 := minf(size.x / maxf(1.0, src0.x), size.y / maxf(1.0, src0.y))
+			var d := src0 * k0
+			draw_texture_rect(tex, Rect2((size - d) * 0.5, d), false)
+		elif tex != null:
 			var src := tex.get_size()
 			var k := maxf(size.x / maxf(1.0, src.x), size.y / maxf(1.0, src.y))
 			var vis := size / k
@@ -1824,3 +2115,116 @@ class ShopPic:
 			draw_circle(c + Vector2(0, -s * 0.16), s * 0.13, col)
 			draw_colored_polygon(PackedVector2Array([c + Vector2(-s * 0.2, s * 0.32), c + Vector2(-s * 0.16, s * 0.02),
 				c + Vector2(0, -s * 0.03), c + Vector2(s * 0.16, s * 0.02), c + Vector2(s * 0.2, s * 0.32)]), col)
+
+
+## (2.2 build 18) The tinted card's glow: a soft light behind the picture
+## (brighter on the spotlight), a faint sheen across the top.
+class TintGlow:
+	extends Control
+	var col := Color.WHITE
+	var strong := false
+
+	func _init() -> void:
+		clip_contents = true
+
+	func _draw() -> void:
+		var s := size
+		if s.x < 4.0 or s.y < 4.0:
+			return
+		var c := Vector2(s.x * 0.5, s.y * (0.36 if strong else 0.34))
+		var r := minf(s.x, s.y) * (0.62 if strong else 0.5)
+		var lit := col.lightened(0.25)
+		var steps := 10
+		for i in steps:
+			var k := 1.0 - float(i) / float(steps)
+			draw_circle(c, r * k, Color(lit, (0.05 if strong else 0.035) * (1.0 + float(i) * 0.15)), true, -1.0, true)
+		# a thin sheen line near the top edge
+		draw_line(Vector2(UIKit.R_CARD, 2.5), Vector2(s.x - UIKit.R_CARD, 2.5), Color(1, 1, 1, 0.14), 1.5, true)
+
+
+## (2.2 build 18) Featured: the first offer as a spotlight two cards wide,
+## the others beside it at the same height; on a narrow panel the spotlight
+## spans the row and the others sit in a row under it.  Children are the
+## ShopCards in offer order (the Shop swaps them in place).
+class FeaturedRow:
+	extends Container
+	var gap := 10.0
+	## (compatibility with the grid it replaced)
+	var cell_w := 0.0
+	var columns := 4
+	const WIDE_MIN := 560.0
+	const NARROW_SPOT_H := 230.0
+
+	func _cards() -> Array:
+		return get_children().filter(func(c: Node) -> bool: return c is Control and not c.is_queued_for_deletion())
+
+	func _units(n: int) -> int:
+		return 2 + maxi(0, n - 1)
+
+	## The width the i-th of n cards gets in a row this wide.
+	func width_for(i: int, w: float, n: int) -> float:
+		if n <= 0:
+			return w
+		if w >= WIDE_MIN:
+			var u := (w - gap * float(n - 1) - gap) / float(_units(n))
+			return (u * 2.0 + gap) if i == 0 else u
+		if i == 0:
+			return w
+		var m := maxi(1, n - 1)
+		return (w - gap * float(m - 1)) / float(m)
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_SORT_CHILDREN:
+			_lay()
+
+	func _row_h(cs: Array, w: float) -> float:
+		var h := 0.0
+		for i in cs.size():
+			if i == 0 and w >= WIDE_MIN:
+				continue
+			if i == 0:
+				continue
+			var cw := width_for(i, w, cs.size())
+			var c: ShopScreen.ShopCard = cs[i]
+			c.fit_cell(cw, c.name_lines(cw))
+			h = maxf(h, c.custom_minimum_size.y)
+		if cs.size() > 0:
+			var sp: ShopScreen.ShopCard = cs[0]
+			sp.fit_cell(width_for(0, w, cs.size()), 1)
+			if w >= WIDE_MIN:
+				h = maxf(h, sp.custom_minimum_size.y)
+		return h
+
+	func _lay() -> void:
+		var cs := _cards()
+		if cs.is_empty():
+			return
+		var w := size.x
+		var n := cs.size()
+		var h := _row_h(cs, w)
+		cell_w = width_for(1, w, n)
+		if w >= WIDE_MIN:
+			var x := 0.0
+			for i in n:
+				var cw := width_for(i, w, n)
+				fit_child_in_rect(cs[i], Rect2(x, 0.0, cw, h))
+				x += cw + gap
+			return
+		var sh := maxf(NARROW_SPOT_H, (cs[0] as Control).custom_minimum_size.y)
+		fit_child_in_rect(cs[0], Rect2(0.0, 0.0, w, sh))
+		var x2 := 0.0
+		for i in range(1, n):
+			var cw2 := width_for(i, w, n)
+			fit_child_in_rect(cs[i], Rect2(x2, sh + gap, cw2, h))
+			x2 += cw2 + gap
+
+	func _get_minimum_size() -> Vector2:
+		var cs := _cards()
+		if cs.is_empty():
+			return Vector2(custom_minimum_size.x, 0.0)
+		var w := size.x if size.x > 1.0 else custom_minimum_size.x
+		var h := _row_h(cs, w)
+		if w >= WIDE_MIN:
+			return Vector2(0.0, h)
+		var sh := maxf(NARROW_SPOT_H, (cs[0] as Control).custom_minimum_size.y)
+		return Vector2(0.0, sh + (gap + h if cs.size() > 1 else 0.0))

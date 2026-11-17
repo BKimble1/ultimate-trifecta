@@ -1635,7 +1635,7 @@ func _reveal_end_tick() -> float:
 static func view_shown(rs: Dictionary) -> bool:
 	# (2.3) a runner in a bush is out of sight (the bush rustles instead)
 	return not rs.is_empty() and bool(rs.get("visible", true)) and int(rs.get("state", 0)) != TC.PState.FINISHED \
-		and int(rs.get("state", 0)) != TC.PState.HIDING
+		and int(rs.get("state", 0)) != TC.PState.HIDING and int(rs.get("state", 0)) != TC.PState.OUT
 
 
 func _process(delta: float) -> void:
@@ -1712,7 +1712,8 @@ func _process(delta: float) -> void:
 	if info_phase != _phase_seen:
 		_phase_seen = info_phase
 		if info_phase == TC.Phase.PLAYING:
-			Sfx.play("go")
+			Sfx.play("count_go")
+			_haptic(25)
 	var done_phase := info_phase == TC.Phase.RESULTS or info_phase == TC.Phase.ENDED
 	var res: Dictionary = sim.results if sim else _client_results
 	if done_phase and not res.is_empty() and not _finish_sent:
@@ -1725,7 +1726,7 @@ func _process(delta: float) -> void:
 	if info_phase < TC.Phase.PLAYING:
 		var cd := int(ceil(float(local_info().get("countdown", 0.0))))
 		if cd != _countdown_last and cd <= int(cfg.start_countdown_s) and cd > 0:
-			Sfx.play("beep")
+			Sfx.play("count")
 			if _countdown_last <= 0 or _countdown_last > int(cfg.start_countdown_s):
 				Diag.mark("countdown")
 		_countdown_last = cd
@@ -1735,7 +1736,7 @@ func _update_camera(delta: float) -> void:
 	var follow_slot := local_slot
 	var rs := _render_rs(local_slot) if not spectator else {}
 	var st: int = rs.get("state", TC.PState.ACTIVE)
-	var watching := spectator or st == TC.PState.FINISHED or (st == TC.PState.CAPTURED and float(rs.get("state_t", 0.0)) > 1.6)
+	var watching := spectator or st == TC.PState.FINISHED or st == TC.PState.OUT or (st == TC.PState.CAPTURED and float(rs.get("state_t", 0.0)) > 1.6)
 	if watching:
 		if spectate_slot < 0 or not _spectatable(spectate_slot):
 			spectate_slot = _next_spectate(-1)
@@ -1803,7 +1804,8 @@ func _spectatable(slot: int) -> bool:
 	if int(roster[slot]["role"]) != my_role and not spectator:
 		return false
 	var rs := _player_rs(slot)
-	return not rs.is_empty() and int(rs.get("state", 0)) != TC.PState.FINISHED and bool(rs.get("visible", true))
+	return not rs.is_empty() and int(rs.get("state", 0)) != TC.PState.FINISHED and int(rs.get("state", 0)) != TC.PState.OUT \
+		and bool(rs.get("visible", true))
 
 
 func _next_spectate(after: int) -> int:
@@ -1833,7 +1835,7 @@ func _haptic(ms: int) -> void:
 const BEAT_HOLD_MS := 500      # a beat never waits longer than this
 const _WORLD_BEATS := [TC.Ev.SPLASH_STAMP, TC.Ev.SPLASH_NOSTAMP, TC.Ev.CAPTURE, TC.Ev.TAG_MISS, TC.Ev.FINISH,
 	TC.Ev.BUMP, TC.Ev.CART_ENTER, TC.Ev.CART_EXIT, TC.Ev.GADGET_PICKUP, TC.Ev.GADGET_USE, TC.Ev.BOMB_HIT, TC.Ev.HIDE, TC.Ev.UNHIDE,
-	TC.Ev.RESPAWN, TC.Ev.RECOVER, TC.Ev.EMOTE, TC.Ev.COIN_PICKUP]
+	TC.Ev.RESPAWN, TC.Ev.RECOVER, TC.Ev.EMOTE, TC.Ev.COIN_PICKUP, TC.Ev.KNOCKED_OUT]
 
 
 func _beat_waits(ev: Dictionary) -> bool:
@@ -1901,7 +1903,7 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 			Diag.mark("tag")
 			var r: Dictionary = roster.get(a, {})
 			var by: Dictionary = roster.get(int(ev["b"]), {})
-			hud.feed("%s caught %s!" % [by.get("name", "?"), r.get("name", "?")], TC.Role.PATROL)
+			hud.feed(("%s caught %s! They're out" if cfg.tag_eliminates else "%s caught %s!") % [by.get("name", "?"), r.get("name", "?")], TC.Role.PATROL)
 			if mine:
 				caught_by = String(by.get("name", "the Night Watch"))
 				_haptic(30)
@@ -1942,8 +1944,8 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 			# (2.2 build 16) through a rift: out at its far end
 			var dest := Rifts.world(layout, int(ev["v"]))
 			if world:
-				Sfx.play("whoosh", pos, 2.0, 0.8)
-				Sfx.play("whoosh", dest, 0.0, 1.2)
+				Sfx.play("portal", pos, 2.0)
+				Sfx.play("portal", dest, 0.0, 1.15)
 				fx.bump(dest)
 			if not ui:
 				return
@@ -1980,7 +1982,7 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 		TC.Ev.GADGET_USE:
 			var g: int = ev["v"]
 			if world:
-				Sfx.play("squeak" if g == TC.Gadget.DECOY else ("turbo" if g in [TC.Gadget.TURBO, TC.Gadget.SHIELD] else "toss"), pos)
+				Sfx.play("cloak" if g == TC.Gadget.CLOAK else ("squeak" if g == TC.Gadget.DECOY else ("turbo" if g in [TC.Gadget.TURBO, TC.Gadget.SHIELD] else "toss")), pos)
 				if g == TC.Gadget.TURBO:
 					fx.turbo(pos)
 				elif g == TC.Gadget.SHIELD:
@@ -2001,6 +2003,13 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 		TC.Ev.RESPAWN:
 			if world:
 				fx.poof(pos)
+		TC.Ev.KNOCKED_OUT:
+			if world:
+				fx.poof(pos)
+				Sfx.play("knocked_out", pos)
+			if ui and mine:
+				Sfx.play("knocked_out", null, -2.0)
+				_haptic(70)
 		TC.Ev.RECOVER:
 			if world:
 				fx.poof(pos)
@@ -2085,7 +2094,7 @@ func sight_slot() -> int:
 	if spectator or not roster.has(local_slot):
 		return -1
 	var st := int(_player_rs(local_slot).get("state", TC.PState.ACTIVE))
-	if (st == TC.PState.FINISHED or st == TC.PState.CAPTURED) and spectate_slot >= 0 and roster.has(spectate_slot) \
+	if (st == TC.PState.FINISHED or st == TC.PState.CAPTURED or st == TC.PState.OUT) and spectate_slot >= 0 and roster.has(spectate_slot) \
 			and int(roster[spectate_slot]["role"]) == int(roster[local_slot]["role"]):
 		return spectate_slot
 	return local_slot
@@ -2128,7 +2137,7 @@ func scan_seen_now() -> void:
 		if not rs.has("pos"):
 			continue
 		var st := int(rs.get("state", 0))
-		if st == TC.PState.FINISHED or st == TC.PState.CAPTURED or not bool(rs.get("visible", true)):
+		if st == TC.PState.FINISHED or st == TC.PState.CAPTURED or st == TC.PState.OUT or not bool(rs.get("visible", true)):
 			continue
 		var p: Vector3 = (rs["pos"] as Vector3) + Vector3(0, 1.0, 0)
 		var dist := eye.distance_to(p)

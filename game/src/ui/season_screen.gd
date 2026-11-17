@@ -1448,7 +1448,7 @@ func equip(id: String) -> void:
 	else:
 		return
 	Save.save_now()
-	Sfx.play("pickup")
+	Sfx.play("equip")
 	UIKit.toast(self, "Equipped", 1.6)
 	_refresh_detail()
 
@@ -1469,7 +1469,8 @@ func _claim(which: Array) -> void:
 	if bool(r.get("ok", false)):
 		var got: Array = r.get("claimed", [])
 		if not got.is_empty():
-			Sfx.play("pickup")
+			Sfx.play("reward")
+			Haptics.success()
 			UIKit.toast(self, ("Claimed %d reward%s" % [got.size(), "" if got.size() == 1 else "s"]) if got.size() != 1 else "Claimed!", 2.0)
 		elif String(r.get("message", "")) == "":
 			# another device or a retried request claimed it first, or this

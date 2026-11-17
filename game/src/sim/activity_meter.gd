@@ -30,7 +30,7 @@ const YAW_DELTA := 0.035          # about 2 degrees
 const INTENT_MIN := 0.2
 const SPEED_MIN := 1.0            # m/s of actual horizontal movement
 const TELEPORT_M := 2.0           # a respawn is not movement
-const HOLD := [TC.PState.CAPTURED, TC.PState.SPLASHING, TC.PState.FINISHED]
+const HOLD := [TC.PState.CAPTURED, TC.PState.SPLASHING, TC.PState.FINISHED, TC.PState.OUT]
 
 var window_ticks := 300
 var _last := {}      # slot -> tick of the last evidence

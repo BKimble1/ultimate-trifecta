@@ -236,6 +236,7 @@ async function spend(req, env) {
   const shown = int(b.price, 'price', { min: 0, max: 1e7 });
   const offerId = b.offer_id === undefined || b.offer_id === null || b.offer_id === '' ? '' : str(b.offer_id, 'offer_id', { max: 64 });
   await H.rateLimit(env, `spend:${p.id}`, 30, 60 * 1000);
+  if (E.set(id)) return spendSet(env, p, id, key, shown);
   const it = E.item(id);
   if (!it || !['coin_item', 'season_premium'].includes(it.kind)) throw new ApiError(400, 'not_for_sale', "That item isn't sold for Coins.");
   const idem = `spend:${p.id}:${key}`;
@@ -296,6 +297,51 @@ async function spend(req, env) {
     throw err;
   }
   return reply(env, p.id, { bought: id, ...(offer ? { offer: O.publicOffer(offer), accepted_at: t } : {}) });
+}
+
+// 2.2 build 18: a matching set: the pieces not owned yet, at the set's price
+// for them, debited and granted in one batch (never negative, never twice).
+async function spendSet(env, p, id, key, shown) {
+  const idem = `spend:${p.id}:${key}`;
+  if (await ledgerHas(env, idem)) return spendReplay(env, p.id, idem);
+  await ensureWallet(env, p.id);
+  const q = H.db(env);
+  const e = envName(env);
+  const s = E.set(id);
+  const rows = await q.all(`SELECT item_id, revoked_at FROM entitlements WHERE profile_id = ? AND environment = ? AND item_id IN (${s.contents.map(() => '?').join(',')})`,
+    p.id, e, ...s.contents);
+  const owned = new Set(rows.filter((r) => !r.revoked_at).map((r) => r.item_id));
+  const revoked = new Set(rows.filter((r) => r.revoked_at).map((r) => r.item_id));
+  const sp = E.setPrice(id, owned);
+  if (sp.left.length < 2) {
+    if (await ledgerHas(env, idem)) return spendReplay(env, p.id, idem);
+    throw new ApiError(409, 'already_owned', sp.left.length === 0 ? 'You already own everything in this set.' : 'Buy the last piece on its own.');
+  }
+  if (shown !== sp.price) throw new ApiError(409, 'price_changed', 'The price changed. Check it and try again.', { price: sp.price });
+  const t = H.clock(env);
+  const stmts = [
+    q.stmt('UPDATE wallets SET balance = balance - ?, revision = revision + 1, updated_at = ? WHERE profile_id = ? AND environment = ?', sp.price, t, p.id, e),
+    q.stmt(`INSERT INTO ledger (profile_id, environment, idem_key, kind, source, amount, balance_after, revision, ref, catalogue_version, at)
+      SELECT ?, ?, ?, 'spend', 'coin_purchase', ?, balance, revision, ?, ?, ? FROM wallets WHERE profile_id = ? AND environment = ?`,
+    p.id, e, idem, -sp.price, id, E.catalogueVersion(), t, p.id, e),
+  ];
+  for (const piece of sp.left) {
+    stmts.push(revoked.has(piece)
+      ? q.stmt("UPDATE entitlements SET revoked_at = NULL, source = 'coin_purchase', ref = ?, granted_at = ? WHERE profile_id = ? AND environment = ? AND item_id = ? AND revoked_at IS NOT NULL", idem, t, p.id, e, piece)
+      : q.stmt("INSERT INTO entitlements (profile_id, environment, item_id, source, ref, granted_at) VALUES (?, ?, ?, 'coin_purchase', ?, ?)", p.id, e, piece, idem, t));
+  }
+  try {
+    await q.batch(stmts);
+  } catch (err) {
+    const m = failure(err);
+    if (m.includes('CHECK')) throw new ApiError(409, 'insufficient_funds', "You don't have enough Coins.");
+    if (m.includes('UNIQUE') || m.includes('PRIMARY')) {
+      if (await ledgerHas(env, idem)) return spendReplay(env, p.id, idem);
+      throw new ApiError(409, 'price_changed', 'Something in this set changed. Check it and try again.');
+    }
+    throw err;
+  }
+  return reply(env, p.id, { bought: id, granted: sp.left });
 }
 
 // The first result of an accepted spend (same idempotency key).

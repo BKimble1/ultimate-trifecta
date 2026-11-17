@@ -517,7 +517,12 @@ static func adopt(b: Button, t: String, min_size: Vector2, font_size: int) -> Bu
 	f.btn = b
 	b.add_child(f)
 	b.set_meta(&"face", f)
-	b.pressed.connect(func() -> void: Sfx.play("click"))
+	# (2.2 build 18) a tab-like button sets meta "sfx" = "tab"
+	b.pressed.connect(func() -> void:
+		var k := String(b.get_meta(&"sfx", "click"))
+		Sfx.play(k)
+		if k == "tab":
+			Haptics.tick())
 	press_feedback(b)
 	return b
 
@@ -668,6 +673,7 @@ static func segmented(options: Array, selected: int, on_pick: Callable, accent: 
 	for i in options.size():
 		var b := _base_button(String(options[i]), Vector2(0, maxf(touch_min() - 10.0, 44.0)), font_size)
 		b.add_theme_font_override("font", font_w(700))
+		b.set_meta(&"sfx", "tab")
 		b.custom_minimum_size.x = font_w(700).get_string_size(String(options[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 44.0
 		var idx := i
 		b.pressed.connect(func() -> void:

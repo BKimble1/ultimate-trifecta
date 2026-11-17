@@ -7,7 +7,7 @@ extends RefCounted
 
 const RUNNER := [
 	"Splash the three marked waters in any order: plan the shortest loop back home.",
-	"Caught? You keep every splash you've made and you're back in %d seconds.",
+	"One tag and you're out for the round. Keep your distance from the Night Watch.",
 	"Nobody can be tagged inside your home dorm. Make for a door when the Night Watch closes in.",
 	"Carts can't climb stairs, hedges or low walls. Footpaths are your friend.",
 	"Speed Sneakers make you faster for 10 seconds. Save them for an escape.",
@@ -28,7 +28,7 @@ const WATCH := [
 	"Runners are safe inside their home dorm. Cut them off before the doors.",
 	"Listen for footsteps: the arrows show where a running runner is.",
 	"Stop %d runners getting home before the clock runs out to win.",
-	"A tagged runner is out for %d seconds. Tag a different runner to stretch the team thin.",
+	"Every tag knocks a runner out. Catch enough and the runners can't win.",
 ]
 const GENERAL := [
 	"Pick up gold coins on the paths: each one is yours to keep.",

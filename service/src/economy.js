@@ -21,6 +21,20 @@ export function catalogueVersion() {
 export function season(sid) {
   return CAT.seasons[sid] || null;
 }
+// 2.2 build 18: matching sets (catalogue "sets"), sold for Coins as one
+// purchase of the pieces you don't own yet, less save_pct, rounded down to
+// 5 Coins; offered while at least two pieces are missing.
+const bySet = new Map(((CAT.sets && CAT.sets.list) || []).map((s) => [s.id, s]));
+export function set(id) {
+  return bySet.get(id) || null;
+}
+export function setPrice(id, owned) {
+  const s = set(id);
+  if (!s) return null;
+  const left = s.contents.filter((c) => !owned.has(c));
+  const full = left.reduce((a, c) => a + price(c), 0);
+  return { left, full, price: Math.floor((full * (100 - (s.save_pct || 0))) / 100 / 5) * 5 };
+}
 export function price(id) {
   const it = item(id);
   return it && (it.kind === 'coin_item' || it.kind === 'season_premium') ? it.price : 0;

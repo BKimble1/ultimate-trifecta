@@ -293,6 +293,16 @@ func build() -> void:
 	# 2.2 build 15: the daily present, then the event poster when due
 	if _solo():
 		LoginFlow.run(self)
+	# (2.2 build 18) a skin you asked to be reminded about is back
+	if not App.dev_automation:
+		(func() -> void:
+			await get_tree().create_timer(2.5).timeout
+			if not is_inside_tree() or has_modal():
+				return
+			var back_in := ShopScreen.reminders_due()
+			if not back_in.is_empty():
+				UIKit.toast(self, "Back in the Shop: %s" % ", ".join(back_in), 3.2)
+				Sfx.play("pop")).call()
 	# (2.3) a round's Coins fly into the counter, top right
 	if App.coin_fly_pending > 0:
 		var amount := App.coin_fly_pending

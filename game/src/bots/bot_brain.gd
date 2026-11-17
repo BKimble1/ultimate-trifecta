@@ -93,7 +93,7 @@ func _think(sim: MatchSim, p: SimPlayer) -> InputCmd:
 	if sim.phase != TC.Phase.PLAYING:
 		return cmd
 	match p.state:
-		TC.PState.CAPTURED, TC.PState.FINISHED, TC.PState.SPLASHING, TC.PState.WAITING, TC.PState.ENTERING, TC.PState.EXITING:
+		TC.PState.CAPTURED, TC.PState.FINISHED, TC.PState.OUT, TC.PState.SPLASHING, TC.PState.WAITING, TC.PState.ENTERING, TC.PState.EXITING:
 			path = PackedVector2Array()
 			mode = Mode.PLAN
 			return cmd

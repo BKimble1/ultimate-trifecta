@@ -101,8 +101,11 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	var sz := poster.custom_minimum_size
 	# (2.2 build 16) a narrow banner (the Shop's panel) stacks: the outfits
 	# on top, the words and buttons under them
-	var tall := sz.x < 900.0
+	# (2.2 build 18) stacked only when the space is taller than wide; a wide
+	# space (the Shop's Season 1 tab) keeps outfits right, words left, scaled
+	var tall := sz.y > sz.x * 0.95
 	poster.tall = tall
+	var k := 1.0 if tall else clampf(minf(sz.x / 1250.0, sz.y / 640.0), 0.55, 1.0)
 	var st_pos := Vector2(sz.x * 0.05, sz.y * 0.11) if tall else Vector2(sz.x * 0.47, sz.y * 0.06)
 	var st_size := Vector2(sz.x * 0.9, sz.y * 0.36) if tall else Vector2(sz.x * 0.5, sz.y * 0.8)
 	# the outfits, in their own little 3D stage
@@ -134,19 +137,21 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 		tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var nm := UIKit.styled(Catalogue.display_name(String(it[0])), "label", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
-		nm.add_theme_font_size_override("font_size", 19)
+		nm.add_theme_font_size_override("font_size", int(maxf(15.0, 19.0 * k)))
 		tv.add_child(nm)
-		tv.add_child(UIKit.styled("TIER %d" % int(it[1]), "overline", UIKit.AMBER, HORIZONTAL_ALIGNMENT_CENTER))
+		var tl := UIKit.styled("TIER %d" % int(it[1]), "overline", UIKit.AMBER, HORIZONTAL_ALIGNMENT_CENTER)
+		tl.add_theme_font_size_override("font_size", int(maxf(13.0, float(UIKit.T_OVERLINE) * k)))
+		tv.add_child(tl)
 		tags.add_child(tv)
 	# the words and buttons, left
 	var m := MarginContainer.new()
 	m.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "top", "bottom"]:
-		m.add_theme_constant_override("margin_" + side, 32)
+		m.add_theme_constant_override("margin_" + side, int(32.0 * maxf(k, 0.7)))
 	m.add_theme_constant_override("margin_right", 24)
 	m.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	poster.add_child(m)
-	var v := UIKit.vbox(10)
+	var v := UIKit.vbox(int(maxf(6.0, 10.0 * k)))
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	m.add_child(v)
 	var top := UIKit.hbox(10)
@@ -170,12 +175,12 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 		gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(gap)
 	var text_w := (sz.x - 64.0) if tall else sz.x * 0.44
-	var title := UIKit.outlined(UIKit.label("PREMIUM PASS", 46 if tall else 58, UIKit.AMBER_HI, true), 11)
+	var title := UIKit.outlined(UIKit.label("PREMIUM PASS", 46 if tall else int(maxf(32.0, 58.0 * k)), UIKit.AMBER_HI, true), int(maxf(7.0, 11.0 * k)))
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(title)
 	var c := contents()
-	var sub := UIKit.label("Unlock the Premium track: %d more rewards, and every one you've already reached is yours at once." % int(c["rewards"]),
-		23, UIKit.IVORY, false)
+	var sub := UIKit.label("%d more rewards. Everything you've reached unlocks at once." % int(c["rewards"]),
+		int(maxf(17.0, 23.0 * k)), UIKit.IVORY, false)
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sub.custom_minimum_size.x = text_w
 	sub.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -187,16 +192,17 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	stats.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	for st in [["shirt", str(int(c["outfits"])), "outfits"], ["star", str(int(c["rewards"])), "rewards"],
 			["coin", Catalogue.format_coins(int(c["coins"])), "Coins back"]]:
-		stats.add_child(_stat(String(st[0]), String(st[1]), String(st[2])))
+		stats.add_child(_stat(String(st[0]), String(st[1]), String(st[2]), k))
 	v.add_child(stats)
 	v.add_child(UIKit.spacer_v())
 	# the two ways to buy it
 	var row := UIKit.hbox(12)
 	row.name = "BuyRow"
-	var buy := UIKit.primary("Get Premium", Vector2(text_w * 0.62, 92), 28)
+	var bh := maxf(UIKit.touch_min() + 8.0, 92.0 * k)
+	var buy := UIKit.primary("Get Premium", Vector2(text_w * 0.62, bh), int(maxf(20.0, 28.0 * k)))
 	buy.name = "BuyApple"
 	row.add_child(buy)
-	var coins := UIKit.quiet("%s Coins" % Catalogue.format_coins(Catalogue.price(premium_item())), Vector2(0, 92), UIKit.T_LABEL + 1)
+	var coins := UIKit.quiet("%s Coins" % Catalogue.format_coins(Catalogue.price(premium_item())), Vector2(0, bh), int(maxf(17.0, float(UIKit.T_LABEL + 1) * k)))
 	coins.name = "BuyCoins"
 	coins.icon = null
 	row.add_child(coins)
@@ -216,7 +222,7 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 			buy.text = "Premium unlocked"
 			buy.disabled = true
 			coins.visible = false
-			fine.text = "Every Premium reward you've reached is ready to claim in the Season Pass."
+			fine.text = "Your Premium rewards are ready in the Season Pass."
 			return
 		buy.disabled = false
 		if bool(pv["can_buy"]):
@@ -226,8 +232,7 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 		else:
 			buy.text = "Get Premium"
 		var msg := String(pv["message"])
-		fine.text = "One purchase for Season %d, yours to keep. Not a subscription. Cosmetic only: tiers are earned by playing." % \
-			int(Catalogue.season(Catalogue.current_season_id()).get("number", 1))
+		fine.text = "One-time purchase. Not a subscription."
 		if not bool(pv["can_buy"]) and msg != "" and not st in ["purchasing", "pending_approval"]:
 			fine.text = msg
 	paint.call()
@@ -263,22 +268,25 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	poster.accessibility_name = "Season Pass Premium. %d outfits, %d rewards, %s Coins back." % [int(c["outfits"]), int(c["rewards"]), Catalogue.format_coins(int(c["coins"]))]
 
 
-static func _stat(icon: String, n: String, what: String) -> Control:
+static func _stat(icon: String, n: String, what: String, k: float = 1.0) -> Control:
 	var p := PanelContainer.new()
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.NAVY, 0.6), 16, 1, Color(UIKit.IVORY, 0.12), 12))
+	p.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.NAVY, 0.6), 16, 1, Color(UIKit.IVORY, 0.12), int(maxf(6.0, 12.0 * k))))
 	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var h := UIKit.hbox(8)
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(h)
-	var ic := Icons.IconRect.new(icon, UIKit.AMBER, 30)
+	var ic := Icons.IconRect.new(icon, UIKit.AMBER, int(maxf(20.0, 30.0 * k)))
 	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(ic)
 	var tv := UIKit.vbox(0)
 	tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tv.add_child(UIKit.styled(n, "num", UIKit.IVORY))
+	var nl := UIKit.styled(n, "num", UIKit.IVORY)
+	if k < 1.0:
+		nl.add_theme_font_size_override("font_size", int(maxf(17.0, 24.0 * k)))
+	tv.add_child(nl)
 	var wl := UIKit.styled(what, "caption", UIKit.IVORY_MUTED)
-	wl.add_theme_font_size_override("font_size", 17)
+	wl.add_theme_font_size_override("font_size", int(maxf(14.0, 17.0 * k)))
 	tv.add_child(wl)
 	h.add_child(tv)
 	return p

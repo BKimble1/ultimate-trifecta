@@ -27,12 +27,22 @@ func _init() -> void:
 	_num.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_num.size_flags_vertical = Control.SIZE_FILL
 	h.add_child(_num)
+	# (2.2 build 18) a + : the Coin packs are one tap away
+	var plus := PlusBadge.new()
+	plus.name = "Plus"
+	plus.custom_minimum_size = Vector2(30, 30)
+	plus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	plus.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(plus)
 	f.add_child(h)
 	_dot = NavShell.Dot.new()
 	_dot.visible = false
 	f.add_child(_dot)
 	UIKit.fit_card(self, h, 30.0)
 	pressed.connect(func() -> void:
+		if App.screen is ShopScreen and (App.screen as ShopScreen).is_inside_tree():
+			(App.screen as ShopScreen).select_section("coins")
+			return
 		ShopScreen.focus_section = "coins"
 		NavShell.go("shop"))
 
@@ -48,7 +58,7 @@ func refresh() -> void:
 	_num.text = Wallet.balance_label()
 	_dot.visible = Wallet.pending_ops() > 0
 	var where := " on this device" if Wallet.balance_is_device() else ""
-	accessibility_name = "%s Coins%s. Opens the Shop." % [Wallet.balance_label(), where]
+	accessibility_name = "%s Coins%s. Get more Coins." % [Wallet.balance_label(), where]
 	tooltip_text = "%s Coins%s" % [Wallet.balance_label(), where]
 
 
@@ -110,3 +120,18 @@ func fly_in(amount: int, from: Vector2) -> void:
 				refresh()
 				if is_instance_valid(layer):
 					layer.queue_free())
+
+
+## (2.2 build 18) the green + on the chip
+class PlusBadge:
+	extends Control
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var r := minf(size.x, size.y) * 0.5
+		draw_circle(c + Vector2(0, 1.5), r, Color(0, 0, 0, 0.25), true, -1.0, true)
+		draw_circle(c, r, Color("3ccf7a"), true, -1.0, true)
+		draw_circle(c + Vector2(0, -r * 0.35), r * 0.55, Color(1, 1, 1, 0.16), true, -1.0, true)
+		var a := r * 0.5
+		draw_line(c - Vector2(a, 0), c + Vector2(a, 0), Color.WHITE, 3.5, true)
+		draw_line(c - Vector2(0, a), c + Vector2(0, a), Color.WHITE, 3.5, true)

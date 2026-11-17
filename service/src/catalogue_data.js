@@ -5114,5 +5114,51 @@ export default {
     }
    ]
   }
+ },
+ "sets": {
+  "_comment": "2.2 build 18: matching sets sold for Coins as one purchase. A set's price is the Coin prices of the pieces you don't own yet, less save_pct (rounded down to 5 Coins); it is offered while at least two pieces are missing, and buying it grants exactly those pieces (game service: /v1/wallet/spend with the set's id).",
+  "list": [
+   {
+    "id": "set:party_pack",
+    "name": "Party Pack",
+    "contents": [
+     "hat:party",
+     "shoes:sneakers",
+     "emote:dance"
+    ],
+    "save_pct": 15
+   },
+   {
+    "id": "set:royal_look",
+    "name": "Royal Look",
+    "contents": [
+     "hat:crown",
+     "color:plum",
+     "trim:gold"
+    ],
+    "save_pct": 15
+   },
+   {
+    "id": "set:pond_pals",
+    "name": "Pond Pals",
+    "contents": [
+     "outfit:frog",
+     "outfit:duck",
+     "shoes:flippers"
+    ],
+    "save_pct": 15
+   },
+   {
+    "id": "set:night_out",
+    "name": "Night Out",
+    "contents": [
+     "hat:headphones",
+     "color:navy",
+     "pattern:pinstripes",
+     "hair_color:blue"
+    ],
+    "save_pct": 15
+   }
+  ]
  }
 };

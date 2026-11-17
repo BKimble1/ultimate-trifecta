@@ -14,7 +14,7 @@ extends CanvasLayer
 ##   patrol  Tag primary (lights up when a runner is in reach); Jump beside it;
 ##           Drive appears in its own reserved slot near a cart
 ##   cart    Gas primary, Brake beside it, a small separate Exit
-##   watch   Next / Cheer while spectating or after finishing
+##   watch   Next while spectating, after finishing or once out
 ## The layout is recomputed only when the view, safe area, context, visible
 ## set or settings change.  Every touch is cancelled on focus loss,
 ## backgrounding, pause, scene change and when a controller takes over.
@@ -258,7 +258,7 @@ class TouchSurface:
 			near_bush = HideBushes.near(mc.layout, Vector2(rp.x, rp.z)) >= 0
 		return {"st": st, "role": role, "in_cart": in_cart, "near_cart": near_cart, "near_bush": near_bush, "gadget": int(info.get("gadget", 0)),
 			"phase": int(info.get("phase", 0)), "airborne": not bool(rs.get("on_floor", true)),
-			"watching": mc.spectate_slot >= 0 or st == TC.PState.FINISHED,
+			"watching": mc.spectate_slot >= 0 or st == TC.PState.FINISHED or st == TC.PState.OUT,
 			"tag_ready": bool(info.get("tag_ready", false)), "tag_busy": float(info.get("tag_busy", 0.0))}
 
 	## Which buttons of the context are showing now (slots never move).
@@ -267,7 +267,7 @@ class TouchSurface:
 		var playing: bool = c["phase"] == TC.Phase.PLAYING
 		match ctx:
 			"watch":
-				return ["next", "cheer"]
+				return ["next"]   # (2.2 build 18) no Cheer while watching
 			"cart":
 				return ["gas", "brake", "cart"]
 			"patrol":

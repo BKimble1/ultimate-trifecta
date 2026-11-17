@@ -48,6 +48,9 @@ var splash_markers: Array = []
 var results: Dictionary = {}
 var bots: Dictionary = {}
 var practice := false
+## (2.2 build 18) a tag puts the runner out of the round (RulesConfig
+## tag_eliminates; setup opts "tag_out" overrides it, e.g. for tests)
+var tag_out := true
 var tutorial := false
 ## Night Watch training: runner bots jog slower
 var gentle_bots := false
@@ -80,6 +83,7 @@ func setup(config: RulesConfig, lay: CampusLayout, roster: Array, seed_value: in
 	tutorial = bool(opts.get("tutorial", false))
 	gentle_bots = bool(opts.get("gentle_bots", false))
 	patrol_release_extra_s = float(opts.get("patrol_release_extra_s", 0.0))
+	tag_out = bool(opts.get("tag_out", cfg.tag_eliminates))
 	_bot_factory = opts.get("bot_factory", Callable())
 	activity.setup(cfg.sim_hz)
 	# tonight's home dorm: one of this map's (a dorm of another map, or an
@@ -414,6 +418,9 @@ func step(inputs: Dictionary) -> void:
 	if phase == TC.Phase.PLAYING:
 		if finished_count >= cfg.runners_needed:
 			_end_match(TC.Outcome.RUNNERS_WIN)
+		elif tag_out and any_out() and runners_alive() < cfg.runners_needed:
+			# (2.2 build 18) too few runners left to get the team home
+			_end_match(TC.Outcome.PATROL_WIN)
 		elif tick >= end_tick:
 			_end_match(TC.Outcome.PATROL_WIN)
 		elif pace != null and tick % RunnerPace.UPDATE_TICKS == 0:
@@ -423,7 +430,7 @@ func step(inputs: Dictionary) -> void:
 func _idle_bodies() -> void:
 	# keep bodies settled on the ground during reveal/countdown/results
 	for p in players:
-		if p.body and p.state != TC.PState.FINISHED and p.state != TC.PState.IN_CART and p.state != TC.PState.CAPTURED:
+		if p.body and p.state != TC.PState.FINISHED and p.state != TC.PState.IN_CART and p.state != TC.PState.CAPTURED and p.state != TC.PState.OUT:
 			p.body.velocity = Vector3(0, -2.0, 0)
 			p.body.move_and_slide()
 			p.vel = Vector3.ZERO
@@ -457,7 +464,10 @@ func _tick_state(p: SimPlayer, dt: float) -> void:
 				p.body.global_position = at
 			if p.penalty <= 0.0:
 				p.fling = Vector3.ZERO
-				_respawn(p)
+				if tag_out:
+					_knock_out(p)
+				else:
+					_respawn(p)
 		TC.PState.SPLASHING:
 			if p.state_t >= cfg.splash_sequence_s:
 				_resurface(p)
@@ -492,7 +502,7 @@ func _move_player(p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 				p.vel = c.forward() * c.speed
 				if c.exiting and absf(c.speed) <= cfg.cart_exit_max_speed:
 					_try_exit_cart(p, c)
-		TC.PState.SPLASHING, TC.PState.CAPTURED, TC.PState.FINISHED:
+		TC.PState.SPLASHING, TC.PState.CAPTURED, TC.PState.FINISHED, TC.PState.OUT:
 			pass
 
 
@@ -716,7 +726,7 @@ func _capture(r: SimPlayer, by: SimPlayer) -> void:
 	r.times_captured += 1
 	by.captures += 1
 	by.captured_ids[r.id] = true
-	r.penalty = cfg.capture_penalty_s
+	r.penalty = cfg.tag_out_s if tag_out else cfg.capture_penalty_s
 	r.end_air_actions()
 	r.fast = false
 	r.turbo_t = 0.0
@@ -725,6 +735,35 @@ func _capture(r: SimPlayer, by: SimPlayer) -> void:
 	Motor.set_body_enabled(r.body, false)
 	_set_state(r, TC.PState.CAPTURED)
 	_emit(TC.Ev.CAPTURE, r.id, by.id, 0, r.pos())
+
+
+## (2.2 build 18) Out of the round: no body, no part in play; the player
+## watches their team (the views and the camera treat it like being home).
+func _knock_out(p: SimPlayer) -> void:
+	p.vel = Vector3.ZERO
+	p.end_air_actions()
+	p.bush = -1
+	p.cloak_t = 0.0
+	Motor.set_body_enabled(p.body, false)
+	_set_state(p, TC.PState.OUT)
+	_emit(TC.Ev.KNOCKED_OUT, p.id, -1, 0, p.pos())
+
+
+## Runners who are home or could still get there (a runner caught right now
+## is already out of it).
+func runners_alive() -> int:
+	var n := 0
+	for p in players:
+		if p.is_runner() and p.state != TC.PState.OUT and p.state != TC.PState.CAPTURED:
+			n += 1
+	return n
+
+
+func any_out() -> bool:
+	for p in players:
+		if p.is_runner() and (p.state == TC.PState.OUT or (p.state == TC.PState.CAPTURED and tag_out)):
+			return true
+	return false
 
 
 func _respawn(p: SimPlayer) -> void:

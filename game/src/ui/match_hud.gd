@@ -66,6 +66,8 @@ var _pace_delta := 0
 var _pace_cue_t := 0.0
 var _home_t := 0.0
 var _home_seen := false
+var _out_seen := false
+var _out_t := 0.0
 var _two_row := false
 var _coach_moved := 0.0
 var _coach_last := Vector3.INF
@@ -511,6 +513,8 @@ func pause_info() -> String:
 		var st := int((info.get("rs", {}) as Dictionary).get("state", 0))
 		if st == TC.PState.FINISHED:
 			lines.append(home_line())
+		elif st == TC.PState.OUT or (st == TC.PState.CAPTURED and mc.cfg.tag_eliminates):
+			lines.append("You're out · watching your team")
 		else:
 			lines.append("You: %d/3 waters · %s" % [_bits(int(info.get("stamps", 0))), pace_label()])
 	elif role == TC.Role.PATROL:
@@ -1175,7 +1179,20 @@ func refresh(delta: float) -> void:
 	overlay.visible = false
 	var rs: Dictionary = info.get("rs", {})
 	if role != TC.Role.SPECTATOR and phase == TC.Phase.PLAYING:
-		if st == TC.PState.CAPTURED:
+		if st == TC.PState.CAPTURED and mc.cfg.tag_eliminates:
+			# (2.2 build 18) a tag puts you out of the round
+			overlay.visible = true
+			overlay_title.text = "Caught by %s" % mc.caught_by if mc.caught_by != "" else "Caught"
+			overlay_sub.text = "You're out this round"
+		elif st == TC.PState.OUT:
+			if not _out_seen:
+				_out_seen = true
+				_out_t = _t
+			if _t - _out_t < HOME_OVERLAY_S:
+				overlay.visible = true
+				overlay_title.text = "You're out"
+				overlay_sub.text = "Watch your team: %d still need%s to get home" % [maxi(0, mc.cfg.runners_needed - fin), "s" if mc.cfg.runners_needed - fin == 1 else ""]
+		elif st == TC.PState.CAPTURED:
 			# the capture contract, in the round's real values, short: who
 			# caught you and the countdown; stamps kept; where you come back
 			# and the protection you get there
@@ -1323,7 +1340,7 @@ func _update_coach(delta: float, phase: int, role: int) -> void:
 		["Jump into any glowing water! The card top-left suggests a good next one and points the way.", stamps != 0],
 		["SPLASH! Two more spots to go. Each one has its own shape and colour.", stamps == 7],
 		["All three! Now run back inside %s through any of its glowing doors." % CampusDorms.display_name(mc.home_dorm), st == TC.PState.FINISHED],
-		["You did the Trifecta! The Night Watch is out now — cheer on your team.", false],
+		["You did the Trifecta! Now watch your team.", false],
 	]
 	while coach_step < steps.size() - 1 and bool(steps[coach_step][1]):
 		coach_step += 1
@@ -1345,15 +1362,13 @@ func _update_watch_coach(delta: float) -> void:
 	var rs: Dictionary = info.get("rs", {})
 	var st: int = rs.get("state", 0)
 	var rel: float = info.get("release_left", 0.0)
-	var pen_s := int(mc.cfg.capture_penalty_s)
-	var prot_s := int(mc.cfg.respawn_protect_s)
 	if coach_step == 2:
 		_coach_watch_t += delta
 	var steps := [
 		["Runners have a head start. Get ready: %s to move, %s to look." % [_hint("move"), _hint("look")], rel <= 0.0],
 		["Chase the nearest runner. A ring appears under them when they're close and in sight.", int(info.get("tag_aim", -1)) >= 0],
 		["Wait for Tag to light up, then %s. Pressing early just misses." % _hint("tag"), mc.my_catches >= 1],
-		["Caught! They keep their splashes and come back in %d s near their last splash, protected for %d s — you can't tag them then." % [pen_s, prot_s], _coach_watch_t > 6.0],
+		["Caught! A tagged runner is out for the round. Catch enough and the runners can't win.", _coach_watch_t > 6.0],
 		["Carts are fast on the roads. Walk up to a cart and %s." % _hint("interact"), st == TC.PState.IN_CART],
 		["Drive close to a runner, %s to hop out, then finish on foot." % _hint("interact"), mc.my_catches >= 2],
 		["That's the Night Watch! Stop %d runners getting home before time runs out." % mc.cfg.runners_needed, false],
@@ -1459,6 +1474,8 @@ func pace_label() -> String:
 	var over := phase == TC.Phase.RESULTS or phase == TC.Phase.ENDED
 	var e := my_pace()
 	var st := int((info.get("rs", {}) as Dictionary).get("state", 0))
+	if st == TC.PState.OUT:
+		return "Out"
 	if over and st != TC.PState.FINISHED:
 		return "Runner pace: Not home"
 	return RunnerPace.label(e, mc.runner_count(), over)
@@ -1621,6 +1638,12 @@ func _personal_rows(phase: int, role: int) -> Array:
 		var fin := int(info.get("finished", 0))
 		rows.append({"type": "line", "icon": "eye", "col": UIKit.IVORY_MUTED, "small": true,
 			"text": "Waiting for team · need %d more" % maxi(0, mc.cfg.runners_needed - fin) if fin < mc.cfg.runners_needed else "Your team made it"})
+		return rows
+	if st == TC.PState.OUT or (st == TC.PState.CAPTURED and mc.cfg.tag_eliminates):
+		rows.append({"type": "line", "icon": "eye", "col": UIKit.BAD, "text": "You're out", "check": false})
+		var fin2 := int(info.get("finished", 0))
+		rows.append({"type": "line", "icon": "eye", "col": UIKit.IVORY_MUTED, "small": true,
+			"text": "Team needs %d more" % maxi(0, mc.cfg.runners_needed - fin2) if fin2 < mc.cfg.runners_needed else "Your team made it"})
 		return rows
 	rows.append({"type": "waters", "text": "You: %d/%d waters" % [n, tg.size()], "waters": ws})
 	if over:
@@ -2534,6 +2557,9 @@ class FullMap:
 			var what2 := ""
 			if bool(pe.get("home", false)) or st == TC.PState.FINISHED:
 				what2 = "Home"
+			elif st == TC.PState.OUT or (st == TC.PState.CAPTURED and mc.cfg.tag_eliminates):
+				what2 = "Out"
+				k = 900 + int(slot)
 			elif over:
 				what2 = "Not home · %d/3" % int(pe.get("stamps", FullMap._bits(int(rs.get("stamps", 0)))))
 			else:
