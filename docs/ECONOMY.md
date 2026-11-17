@@ -66,6 +66,12 @@ base options everyone owns. The catalogue is versioned
 | `outfit:campus_courier` | coin_item, rotation | 900 Coins | V6; moved into the rotation in Pass 8 |
 | `outfit:raincoat_explorer` | coin_item, rotation | 800 Coins | V6; moved into the rotation in Pass 8 |
 | `outfit:varsity_sprinter` | coin_item, rotation | 600 Coins | V6; moved into the rotation in Pass 8 |
+| `outfit:turkey_trot` | coin_item, rotation | 900 Coins | Build 18, new (Thanksgiving; joins the rotation 2026-11-25); rotating offers only |
+| `outfit:harvest_flannel` | coin_item, rotation | 800 Coins | Build 18, new (Thanksgiving; joins the rotation 2026-11-21); rotating offers only |
+| `outfit:reindeer_onesie` | coin_item, rotation | 1,000 Coins | Build 18, new (Christmas; joins the rotation 2026-11-30); rotating offers only |
+| `outfit:gingerbread_buddy` | coin_item, rotation | 900 Coins | Build 18, new (Christmas; joins the rotation 2026-12-01); rotating offers only |
+| `outfit:elf_helper` | coin_item, rotation | 1,100 Coins | Build 18, new (Christmas; joins the rotation 2026-11-30); rotating offers only |
+| `outfit:snow_day` | coin_item, rotation | 1,200 Coins | Build 18, new (winter; joins the rotation 2026-12-01); rotating offers only |
 | `outfit:frog`, `outfit:duck`, `outfit:robe` | coin_item | 500 / 450 / 300 | pre-V6 outfits; always available |
 | pre-V6 accessories (patterns, colours, trims, hair colours, hats, shoes, Wiggle Dance) | coin_item | 20-240 | unchanged V5 prices; always available |
 | `coins:250`, `coins:500`, `coins:1000`, `coins:1500`, `coins:3500`, `coins:7500` | coin_pack | App Store (localized) | 250 / 500 / 1,000 / 1,500 / 3,500 / 7,500 Coins (250, 1,000, 7,500 new in Pass 8) |
@@ -101,6 +107,9 @@ list. Anyone who owns one keeps it (nothing was sold from a live service
 yet, and entitlements never expire). **Always available**, never
 expiring: the two direct Apple skins, all six Coin packs, Season 1
 Premium, and the cheap pre-V6 items (three outfits and the accessories).
+Build 18 adds six seasonal outfits to the pool (Turkey Trot, Harvest
+Flannel, Reindeer Onesie, Gingerbread Buddy, Elf Helper, Snow Day; Coins
+only, 800-1,200, see `docs/release22/skins_b18.md`), so it is 16 skins.
 Reasons: Apple non-consumables and Premium are permanent purchases already
 described as such; Coin packs must always be buyable; the pre-V6 items are
 cheap legacy unlocks that existing players already own on their devices.
@@ -116,16 +125,24 @@ cheap legacy unlocks that existing players already own on their devices.
   ago (never shown counts as longest; ties in catalogue order) among those
   not on show and not leaving at that moment: no skin twice at once, no
   back-to-back return. With 10 skins this is a 5-day cycle: each skin is
-  in the Shop 2 days, away 3, and returns under a new offer.
+  in the Shop 2 days, away 3, and returns under a new offer. Build 18
+  (16 skins, `schedule_revision` 2): an 8-day cycle, in 2 days, away 6.
+- Build 18: an item may carry `"rotation_from"` (a 00:00 UTC time); it
+  joins the pool only from that change, so a seasonal skin first appears
+  in its season and adding skins changes no offer before that day (and
+  none already published: those keep their ids and revision). Thanksgiving
+  skins join on 2026-11-21 and 11-25, the December ones on 11-30 and
+  12-01.
 - Written schedule: **26 weeks** (2026-10-04 to 2027-04-06; 366 offers;
   FINAL_RELEASE_SWEEP extended it from 12 weeks with every published offer
   unchanged) in `game/config/catalogue.json` → `offers.schedule`.
 - **After it the rule continues** (FINAL_RELEASE_SWEEP): the rule is
   periodic (10 skins, two changes a day: the slot pattern repeats every
-  10 days), so the tool also writes one period as `offers.cycle` and
-  checks that the rule continued past `days` repeats it exactly. The
-  service computes those offers from its own clock with the ids the rule
-  would have written (`r1-<YYYYMMDD>-s<slot>`) and checks them like
+  10 days; build 18: 16 skins, every 8 days), so the tool also writes one
+  period as `offers.cycle` and checks that the rule continued past `days`
+  repeats it exactly. The service computes those offers from its own clock
+  with the ids the rule would have written (`r<cycle revision>-<YYYYMMDD>-s<slot>`,
+  `r2-` from build 18) and checks them like
   written ones: the Shop never runs empty, and extending the written
   schedule later changes no offer anyone has seen.
 
