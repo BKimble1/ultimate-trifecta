@@ -55,7 +55,8 @@ def parse(log: pathlib.Path):
 
 def duration(avi: pathlib.Path) -> float:
     r = run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(avi)])
-    return float(r.stdout.strip() or 0)
+    v = r.stdout.strip()
+    return float(v) if v and v != "N/A" else 1e9
 
 
 def moments(avi: pathlib.Path, log: pathlib.Path):
@@ -147,7 +148,9 @@ def concat(pieces, out, crf, w, h, audio=False, loop_fade=0.0, extra_vf=""):
     fc += f"[v1]scale={w}:{h}:flags=lanczos{extra_vf},format=yuv420p[v]"
     cmd = ["ffmpeg", "-v", "error", "-y", *inputs, "-filter_complex", fc, "-map", "[v]"]
     if audio:
-        cmd += ["-map", "[a0]", "-c:a", "aac", "-b:a", "128k"]
+        fc_a = ";[a0]loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000[a1]"
+        cmd[cmd.index("-filter_complex") + 1] += fc_a
+        cmd += ["-map", "[a1]", "-c:a", "aac", "-b:a", "160k"]
     else:
         cmd += ["-an"]
     cmd += ["-c:v", "libx264", "-preset", "slow", "-crf", str(crf), "-profile:v", "high", "-pix_fmt", "yuv420p",
@@ -187,10 +190,11 @@ def main():
         return {"src": str(raw / src), "s": float(s), "e": float(e)}
 
     # the homepage montage: hard cuts, the end dissolving into the start
-    hero = [piece(M(x), w=1600, h=900, tmp=tmp) for x in plan["hero"]]
-    concat(hero, out / "hero-1600.mp4", 25, 1600, 900, loop_fade=0.6)
-    concat(hero, out / "hero-960.mp4", 27, 960, 540, loop_fade=0.6)
-    poster(raw / plan["hero_poster"][0], float(plan["hero_poster"][1]), out / "hero.jpg", 1600, 900)
+    if plan.get("hero"):
+        hero = [piece(M(x), w=1600, h=900, tmp=tmp) for x in plan["hero"]]
+        concat(hero, out / "hero-1600.mp4", 25, 1600, 900, loop_fade=0.6)
+        concat(hero, out / "hero-960.mp4", 27, 960, 540, loop_fade=0.6)
+        poster(raw / plan["hero_poster"][0], float(plan["hero_poster"][1]), out / "hero.jpg", 1600, 900)
     # the trailer: the game's own sound effects (music muted at recording)
     if "trailer" in plan:
         tr = [piece(M(x), w=1600, h=900, audio=True, tmp=tmp) for x in plan["trailer"]]
@@ -204,7 +208,7 @@ def main():
             tr.append(end)
         concat(tr, out / "trailer.mp4", 23, 1600, 900, audio=True)
         poster(raw / plan["hero_poster"][0], float(plan["hero_poster"][1]), out / "trailer.jpg", 1600, 900)
-    for name, item in plan["clips"].items():
+    for name, item in plan.get("clips", {}).items():
         p = piece(M(item), w=960, h=540, tmp=tmp)
         concat([p], out / "clips" / f"{name}.mp4", 27, 960, 540, loop_fade=0.5)
         pt = float(item[3]) if len(item) > 3 else (float(item[1]) + float(item[2])) / 2
