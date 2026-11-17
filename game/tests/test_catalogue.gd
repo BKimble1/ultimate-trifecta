@@ -96,13 +96,29 @@ func test_shop_outfits_and_prices() -> void:
 
 ## Pass 8 rotation: the six new outfits and the four V6 Coin outfits are sold
 ## only through scheduled offers; the written schedule (client copy of the
-## catalogue) has the rule's shape; ownership kinds are unchanged.
+## catalogue) has the rule's shape; ownership kinds are unchanged.  Build 18
+## adds six more rotating outfits, each joining the pool on its
+## "rotation_from" day (two for Thanksgiving, four for December).
 func test_rotation_pool_and_schedule() -> void:
 	var pool := Catalogue.rotation_ids()
 	pool.sort()
-	t.eq(pool, ["outfit:arcade_sprinter", "outfit:bedtime_bandit", "outfit:campus_courier", "outfit:cloud_nine", "outfit:lantern_scout",
-		"outfit:midnight_mechanic", "outfit:moonwalk_cadet", "outfit:pumpkin_pajamas", "outfit:raincoat_explorer", "outfit:varsity_sprinter"],
-		"the rotating pool")
+	t.eq(pool, ["outfit:arcade_sprinter", "outfit:bedtime_bandit", "outfit:campus_courier", "outfit:cloud_nine", "outfit:elf_helper",
+		"outfit:gingerbread_buddy", "outfit:harvest_flannel", "outfit:lantern_scout", "outfit:midnight_mechanic", "outfit:moonwalk_cadet",
+		"outfit:pumpkin_pajamas", "outfit:raincoat_explorer", "outfit:reindeer_onesie", "outfit:snow_day", "outfit:turkey_trot",
+		"outfit:varsity_sprinter"], "the rotating pool")
+	# build 18: Coin prices, and no offer for a skin before the day it joins the pool
+	var b18 := {"outfit:turkey_trot": 900, "outfit:harvest_flannel": 800, "outfit:reindeer_onesie": 1000, "outfit:gingerbread_buddy": 900,
+		"outfit:elf_helper": 1100, "outfit:snow_day": 1200}
+	for id in b18:
+		t.eq(Catalogue.kind(id), "coin_item", "%s is a Coin item" % id)
+		t.eq(Catalogue.price(id), int(b18[id]), "%s costs %d Coins" % [id, int(b18[id])])
+		t.check(Catalogue.has_art(id), "%s has its Cosmetics entry" % id)
+		var from := Catalogue.parse_utc_ms(String(Catalogue.item(id).get("rotation_from", "")))
+		t.check(from > 0, "%s has a rotation_from day" % id)
+		var shown: Array = Catalogue.offers_section().get("schedule", []).filter(func(o: Dictionary) -> bool: return String(o["item_id"]) == id)
+		t.check(shown.size() > 0, "%s is scheduled" % id)
+		t.check(shown.all(func(o: Dictionary) -> bool: return Catalogue.parse_utc_ms(String(o["starts_at_utc"])) >= from),
+			"%s is never offered before it joins the pool" % id)
 	var want := {"outfit:midnight_mechanic": 900, "outfit:moonwalk_cadet": 1200, "outfit:pumpkin_pajamas": 800, "outfit:arcade_sprinter": 900,
 		"outfit:cloud_nine": 1000, "outfit:bedtime_bandit": 1000}
 	for id in want:

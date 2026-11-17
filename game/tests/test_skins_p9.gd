@@ -49,6 +49,10 @@ func _shown(v: CharacterView) -> Array:
 	return out
 
 
+## outfits added after the skins (build 18), with ids above theirs
+const LATER_OUTFITS := ["turkey_trot", "harvest_flannel", "reindeer_onesie", "gingerbread_buddy", "elf_helper", "snow_day"]
+
+
 func test_skins_are_registered_with_new_ids() -> void:
 	var meshes: Dictionary = _manifest()["meshes"]
 	var seen := {}
@@ -57,7 +61,7 @@ func test_skins_are_registered_with_new_ids() -> void:
 		var id := int(Cosmetics.entry("outfit", k)["id"])
 		t.check(not seen.has(id), "outfit id %d is used once (%s)" % [id, k])
 		seen[id] = k
-		if not SKINS.has(k):
+		if not SKINS.has(k) and not k in LATER_OUTFITS:
 			before_max = maxi(before_max, id)
 	for k in SKINS:
 		var e := Cosmetics.entry("outfit", k)

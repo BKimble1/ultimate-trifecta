@@ -1442,7 +1442,8 @@ def analyze_head(g, key, parts):
 # reproduce them from the imported scene (imported-vs-runtime comparison)
 REFERENCE_POSES = [('run', 0.3), ('dive', 0.3), ('emote_cheer', 0.3), ('land_hard', 0.15), ('cart_drive', 0.3)]
 REFERENCE_LOOKS = {'pj', 'midnight_mechanic', 'moonwalk_cadet', 'pumpkin_pajamas', 'arcade_sprinter', 'cloud_nine', 'bedtime_bandit',
-                   'after_hours_hoodie', 'night_owl', 'glow_jogger', 'library_cardigan', 'record_breaker', 'dr_doom'}
+                   'after_hours_hoodie', 'night_owl', 'glow_jogger', 'library_cardigan', 'record_breaker', 'dr_doom',
+                   'turkey_trot', 'harvest_flannel', 'reindeer_onesie', 'gingerbread_buddy', 'elf_helper', 'snow_day'}
 
 
 def make_anchors(look, trims, opens, pairs, grow, key):

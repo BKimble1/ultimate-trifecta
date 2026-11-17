@@ -4,5 +4,5 @@ class_name CharacterArt
 ## Portraits.key_of includes it, so thumbnails of an older asset are never
 ## reused (test_portraits checks it matches runner_manifest.json and the GLB).
 
-const VERSION := "v10-49a45748ffed"
-const GLB_SHA256 := "49a45748ffedeac19ab6a51228b1b130dbfb866b1f496b13fae206940986bfb3"
+const VERSION := "v10-3dc57ff8b480"
+const GLB_SHA256 := "3dc57ff8b48002ff0fd39519a03760dc340d441181b6d17b9ccdbedd6f7053fd"

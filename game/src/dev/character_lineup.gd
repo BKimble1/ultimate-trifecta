@@ -15,7 +15,7 @@ extends Node3D
 
 const MODES := ["views", "outfits", "looks", "hairs", "posesheet", "transitions", "closeup", "faces", "cart", "hero", "group", "distance", "parts",
 	"hathair", "menuidle", "steps", "skintones", "shop", "season", "outfitsheet", "newhats", "newshoes", "hatgrid", "emotes", "custom", "reel",
-	"pass8", "pass8back"]
+	"pass8", "pass8back", "b18", "b18back"]
 ## V7 "reel": gameplay scenarios from the motion tests (tests/motion_rig.gd:
 ## the 60 Hz mini-motor -> apply_state path) back to back on one look, the
 ## camera circling the head; frames every 0.25 s go into lineup_reel.png and
@@ -53,6 +53,16 @@ const P8_SHOWCASE := {
 	"arcade_sprinter": {"hair": "buns", "hair_color": "black", "skin": "tone7", "color": "bubblegum"},
 	"cloud_nine": {"hair": "bob", "hair_color": "blonde", "skin": "tone4", "color": "sky"},
 	"bedtime_bandit": {"hair": "tuft", "hair_color": "espresso", "skin": "tone8", "color": "grape"},
+}
+## Build 18 rotating Shop outfits ("b18" / "b18back": the same framing as "pass8")
+const B18_OUTFITS := ["turkey_trot", "harvest_flannel", "reindeer_onesie", "gingerbread_buddy", "elf_helper", "snow_day"]
+const B18_SHOWCASE := {
+	"turkey_trot": {"hair": "tuft", "hair_color": "brown", "skin": "tone3", "color": "tangerine"},
+	"harvest_flannel": {"hair": "curly", "hair_color": "auburn", "skin": "tone2", "color": "sunny"},
+	"reindeer_onesie": {"hair": "bob", "hair_color": "black", "skin": "tone6", "color": "coral"},
+	"gingerbread_buddy": {"hair": "buns", "hair_color": "espresso", "skin": "tone7", "color": "mint"},
+	"elf_helper": {"hair": "bob", "hair_color": "blonde", "skin": "tone1", "color": "lime"},
+	"snow_day": {"hair": "tuft", "hair_color": "dark_brown", "skin": "tone4", "color": "sky"},
 }
 ## the follow camera (follow_camera.gd): 6.2 m from the target, pitched 0.32 rad, fov 66
 const FOLLOW_DIST := 6.2
@@ -415,14 +425,15 @@ func _next_mode() -> void:
 			_aim(Vector3(0, 1.0, 7.5), Vector3(0, 0.8, 0), 34)
 			_strip_frames.clear()
 			_strip_next = 0.45
-		"pass8", "pass8back":
-			var back := _mode == "pass8back"
+		"pass8", "pass8back", "b18", "b18back":
+			var back := _mode.ends_with("back")
+			var b18 := _mode.begins_with("b18")
 			var row: Array = [[TC.Role.RUNNER, d, "Pajamas (default)"]]
-			for k in P8_OUTFITS:
+			for k in (B18_OUTFITS if b18 else P8_OUTFITS):
 				if not _has("outfit", k):
 					continue
 				var o: Dictionary = {"outfit": k, "hat": "none"}
-				o.merge(P8_SHOWCASE.get(k, {}), true)
+				o.merge((B18_SHOWCASE if b18 else P8_SHOWCASE).get(k, {}), true)
 				row.append([TC.Role.RUNNER, look(o), String(Cosmetics.entry("outfit", k)["name"])])
 			if lighting == "dorm":
 				# the lobby's marks and framing (DormStage.MARKS / FRAMES["lobby"])

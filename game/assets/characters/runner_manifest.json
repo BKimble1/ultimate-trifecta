@@ -1,5 +1,5 @@
 {
-  "art_version": "v10-49a45748ffed",
+  "art_version": "v10-3dc57ff8b480",
   "bones": [
     "root",
     "hips",
@@ -240,7 +240,7 @@
     }
   },
   "forward": "Godot -Z (glTF -Z); built facing Blender +Y",
-  "glb_sha256": "49a45748ffedeac19ab6a51228b1b130dbfb866b1f496b13fae206940986bfb3",
+  "glb_sha256": "3dc57ff8b48002ff0fd39519a03760dc340d441181b6d17b9ccdbedd6f7053fd",
   "head": {
     "cap_grow": 0.013,
     "center": [
@@ -269,6 +269,10 @@
     "acc_courier_cap": {
       "tris": 3090,
       "verts": 1702
+    },
+    "acc_elf_cap": {
+      "tris": 3372,
+      "verts": 1732
     },
     "acc_pumpkin_cap": {
       "tris": 2796,
@@ -326,6 +330,14 @@
       "tris": 9584,
       "verts": 5287
     },
+    "elf": {
+      "tris": 11012,
+      "verts": 5809
+    },
+    "flannel": {
+      "tris": 11080,
+      "verts": 5977
+    },
     "flashlight": {
       "tris": 140,
       "verts": 74
@@ -337,6 +349,10 @@
     "frog": {
       "tris": 9504,
       "verts": 5241
+    },
+    "gingerbread": {
+      "tris": 10876,
+      "verts": 5676
     },
     "hair": {
       "tris": 2388,
@@ -454,6 +470,10 @@
       "tris": 9132,
       "verts": 4858
     },
+    "reindeer": {
+      "tris": 11218,
+      "verts": 6211
+    },
     "robe": {
       "tris": 7628,
       "verts": 3932
@@ -482,6 +502,10 @@
       "tris": 3304,
       "verts": 1706
     },
+    "snowday": {
+      "tris": 11324,
+      "verts": 6310
+    },
     "starry": {
       "tris": 7964,
       "verts": 4373
@@ -489,6 +513,10 @@
     "swim": {
       "tris": 2088,
       "verts": 1083
+    },
+    "turkey": {
+      "tris": 10984,
+      "verts": 6165
     },
     "varsity": {
       "tris": 9132,

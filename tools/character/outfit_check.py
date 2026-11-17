@@ -1,5 +1,6 @@
-"""Pass 8: containment checks for the rotating Shop outfits (outfits_p8.py),
-run with Blender's bpy on the real rig, every clip at 60 Hz:
+"""Pass 8: containment checks for the rotating Shop outfits (outfits_p8.py and,
+since build 18, outfits_b18.py), run with Blender's bpy on the real rig,
+every clip at 60 Hz:
 
     tools/.cache/bpyenv/bin/python tools/character/outfit_check.py [--json out.json]
 
@@ -13,7 +14,8 @@ radius of that outfit's sleeves, gloves and trouser legs:
     parts (KD-tree; ears, visor, ear discs, puffs, stem), and against the
     outfit's head shell (the head surface grown to the hood or cap, above its
     edge; a hood's face opening is open) -- the arms entering a hood.
-  * tail: the tail as a chain of capsules (outfits_p8.TAIL and its radii)
+  * tail: the tail as a chain of capsules (outfits_p8.TAIL and its radii;
+    build 18: every feather of the turkey's fan, outfits_b18.fan_capsules)
     against arm and leg capsules; and its lowest point above the ground
     (splash clips are skipped: they sink the body into water).
   * pack: arm spheres against the cadet pack's superellipsoid (rigid on the
@@ -41,6 +43,7 @@ import anims  # noqa: E402
 import build_character  # noqa: E402
 import clip_check  # noqa: E402
 import outfits_p8 as O  # noqa: E402
+import outfits_b18 as B  # noqa: E402
 import outfits_v6  # noqa: E402
 import parts  # noqa: E402
 import rig  # noqa: E402
@@ -66,6 +69,16 @@ OUTFITS = {
     'cloud_nine': {'parts': ['cloud'], 'sleeve': 0.03, 'legs': 0.03, 'glove': None, 'shell': (0.035, 0.95, O.HOOD_OPEN), 'hood': True},
     'bedtime_bandit': {'parts': ['bandit'], 'sleeve': 0.03, 'legs': 0.03, 'glove': None, 'shell': (0.035, 0.95, O.HOOD_OPEN),
                        'tail': True, 'hood': True},
+    # build 18 (outfits_b18.py)
+    'turkey_trot': {'parts': ['turkey'], 'sleeve': 0.03, 'legs': 0.03, 'glove': None, 'shell': (0.035, 0.95, O.HOOD_OPEN),
+                    'tail': B.fan_capsules, 'hood': True},
+    'harvest_flannel': {'parts': ['flannel'], 'sleeve': 0.02, 'legs': 0.022, 'glove': None},
+    'reindeer_onesie': {'parts': ['reindeer'], 'sleeve': 0.03, 'legs': 0.03, 'glove': None, 'shell': (0.035, 0.95, O.HOOD_OPEN),
+                        'hood': True},
+    'gingerbread_buddy': {'parts': ['gingerbread'], 'sleeve': 0.026, 'legs': 0.03, 'glove': None},
+    'elf_helper': {'parts': ['elf', 'acc_elf_cap'], 'sleeve': 0.022, 'legs': 0.012, 'glove': None, 'shell': (0.051, 1.215, None)},
+    'snow_day': {'parts': ['snowday'], 'sleeve': 0.032, 'legs': 0.034, 'glove': 0.006, 'shell': (0.035, 0.95, O.HOOD_OPEN),
+                 'hood': True},
 }
 # the hood outfits that shipped before Pass 8 (same rig, same clips): a
 # baseline reported next to the new ones, never a failure
@@ -74,7 +87,9 @@ REFERENCE = {
     'duck (V2)': {'build': [parts.build_duck], 'sleeve': 0.03, 'legs': 0.03, 'glove': None, 'shell': (0.035, 0.95, (0.228, 0.19, 1.145))},
 }
 BUILDERS = {'mechanic': O.build_mechanic, 'cadet': O.build_cadet, 'acc_cadet_cap': O.build_cadet_cap, 'pumpkin': O.build_pumpkin,
-            'acc_pumpkin_cap': O.build_pumpkin_cap, 'arcade': O.build_arcade, 'cloud': O.build_cloud, 'bandit': O.build_bandit}
+            'acc_pumpkin_cap': O.build_pumpkin_cap, 'arcade': O.build_arcade, 'cloud': O.build_cloud, 'bandit': O.build_bandit,
+            'turkey': B.build_turkey, 'flannel': B.build_flannel, 'reindeer': B.build_reindeer, 'gingerbread': B.build_gingerbread,
+            'elf': B.build_elf, 'acc_elf_cap': B.build_elf_cap, 'snowday': B.build_snowday}
 
 
 def arm_spheres(R, P, side, sleeve, glove):
@@ -129,6 +144,23 @@ def tail_chain():
     return list(zip(path, radii))
 
 
+def tail_segments(cfg):
+    """A hip-rigid piece as capsules (a, b, radius) in the hips' rest space:
+    the raccoon tail's chain, or (build 18) the capsules an outfit gives."""
+    if callable(cfg.get('tail')):
+        return list(cfg['tail']())
+    chain = tail_chain()
+    return [(p0, p1, max(r0, r1)) for (p0, r0), (p1, r1) in zip(chain, chain[1:])]
+
+
+def tail_ground_points(cfg):
+    """(point, radius) whose lowest is the piece's lowest point: the chain's
+    own points and radii, or both ends of every capsule."""
+    if callable(cfg.get('tail')):
+        return [(q, r) for a, b, r in cfg['tail']() for q in (a, b)]
+    return tail_chain()
+
+
 def head_vertices(cfg):
     pts = []
     for build in cfg.get('build') or [BUILDERS[n] for n in cfg['parts']]:
@@ -167,7 +199,7 @@ def glove_check():
     """Mitten vertices of the base mesh (both hands) inside the glove shells."""
     base = parts.build_base()
     out = {}
-    for name, build in (('mechanic', O.build_mechanic), ('cadet', O.build_cadet)):
+    for name, build in (('mechanic', O.build_mechanic), ('cadet', O.build_cadet), ('snowday', B.build_snowday)):
         mb = build()
         # the gloves' faces only (vertices weighted to a hand or forearm near the wrist)
         idx = set()
@@ -227,7 +259,8 @@ def check(fps=60):
     every = dict(OUTFITS)
     every.update(REFERENCE)
     kds = {k: head_vertices(c) for k, c in every.items()}
-    tail = tail_chain()
+    tails = {k: tail_segments(c) for k, c in every.items() if c.get('tail')}
+    grounds = {k: tail_ground_points(c) for k, c in every.items() if c.get('tail')}
     res = {k: {} for k in every}
     for name, (length, loop, fn) in anims.library().items():
         n = max(2, int(round(length * fps)))
@@ -263,12 +296,12 @@ def check(fps=60):
                         caps += limb_capsules(R, P, side, cfg)
                     for bone, a, b, r in caps:
                         a2, b2 = to_hips @ a, to_hips @ b
-                        for (p0, r0), (p1, r1) in zip(tail, tail[1:]):
-                            dd = r + max(r0, r1) - seg_seg(p0, p1, a2, b2)
+                        for p0, p1, rt in tails[k]:
+                            dd = r + rt - seg_seg(p0, p1, a2, b2)
                             if dd > w['tail'][0]:
                                 w['tail'] = (dd, '%s %.2f' % (bone, t))
-                    for p0, r0 in tail:
-                        w['ground'] = min(w['ground'], (hips_world @ p0).z - r0)
+                    for q, rq in grounds[k]:
+                        w['ground'] = min(w['ground'], (hips_world @ q).z - rq)
         for k in every:
             w = worst[k]
             row = {'head_features_cm': round(w['head'][0] * 100, 1), 'head_at': w['head'][1],

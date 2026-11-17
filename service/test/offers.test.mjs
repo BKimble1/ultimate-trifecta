@@ -63,8 +63,10 @@ test('the catalogue schedule follows its written rule', () => {
     'written well past launch (FINAL_RELEASE_SWEEP: it used to end 2026-12-29)');
   assert.equal(rule.slots, 4, 'four Featured slots');
   assert.deepEqual(ROTATION.slice().sort(), ['outfit:arcade_sprinter', 'outfit:bedtime_bandit', 'outfit:campus_courier', 'outfit:cloud_nine',
-    'outfit:lantern_scout', 'outfit:midnight_mechanic', 'outfit:moonwalk_cadet', 'outfit:pumpkin_pajamas', 'outfit:raincoat_explorer',
-    'outfit:varsity_sprinter'], 'the pool: six new outfits and the four V6 Coin outfits');
+    'outfit:elf_helper', 'outfit:gingerbread_buddy', 'outfit:harvest_flannel', 'outfit:lantern_scout', 'outfit:midnight_mechanic',
+    'outfit:moonwalk_cadet', 'outfit:pumpkin_pajamas', 'outfit:raincoat_explorer', 'outfit:reindeer_onesie', 'outfit:snow_day',
+    'outfit:turkey_trot', 'outfit:varsity_sprinter'],
+  'the pool: the six Pass 8 outfits, the four V6 Coin outfits and the six build 18 outfits');
   const ids = new Set();
   for (const o of sched.offers) {
     assert.ok(!ids.has(o.offer_id), `unique offer id ${o.offer_id}`);
@@ -76,7 +78,9 @@ test('the catalogue schedule follows its written rule', () => {
     assert.equal(o.starts_at % DAY, 0, `${o.offer_id} starts at 00:00 UTC`);
     assert.equal(o.ends_at % DAY, 0, `${o.offer_id} ends at 00:00 UTC`);
     assert.ok(o.slot >= 1 && o.slot <= 4);
-    assert.equal(o.revision, sec.schedule_revision);
+    // (an offer keeps the revision that wrote it: published offers are never rewritten)
+    assert.ok(o.revision >= 1 && o.revision <= sec.schedule_revision, `${o.offer_id}: revision ${o.revision}`);
+    assert.ok(o.offer_id.startsWith(`r${o.revision}-`), `${o.offer_id} carries its revision`);
   }
   const start = Date.parse(rule.start_utc);
   const end = start + rule.days * DAY;
@@ -93,9 +97,15 @@ test('the catalogue schedule follows its written rule', () => {
   for (const o of sched.offers) {
     assert.ok(!sched.offers.some((x) => x.item_id === o.item_id && x.starts_at === o.ends_at), `${o.item_id} doesn't come straight back`);
   }
-  // the pool is cycled evenly
+  // the pool is cycled evenly (build 18: counted from the day the last
+  // skin joined the pool, "rotation_from"; none is offered before it joins)
+  const joined = Math.max(...ROTATION.map((id) => (E.item(id).rotation_from ? Date.parse(E.item(id).rotation_from) : start)));
+  for (const id of ROTATION) {
+    const from = E.item(id).rotation_from;
+    if (from) assert.ok(sched.offers.every((o) => o.item_id !== id || o.starts_at >= Date.parse(from)), `${id} is offered from ${from}`);
+  }
   const per = {};
-  for (const o of sched.offers) per[o.item_id] = (per[o.item_id] || 0) + 1;
+  for (const o of sched.offers) if (o.starts_at >= joined) per[o.item_id] = (per[o.item_id] || 0) + 1;
   assert.equal(Object.keys(per).length, ROTATION.length, 'every pool skin is scheduled');
   assert.ok(Math.max(...Object.values(per)) - Math.min(...Object.values(per)) <= 1, `evenly: ${JSON.stringify(per)}`);
   // rotating skins are never always-available, Apple, legacy or a reward
@@ -137,10 +147,11 @@ test('after the written schedule the rule continues from the cycle, from the ser
     assert.deepEqual({ ...O.offerById(sched, o.offer_id) }, { ...o });
   }
   // ids the rule never produced are refused
-  assert.equal(O.offerById(sched, 'r1-20280601-s9'), null, 'no such slot');
+  const rev = sched.cycle.revision;
+  assert.equal(O.offerById(sched, `r${rev}-20280601-s9`), null, 'no such slot');
   assert.equal(O.offerById(sched, 'nonsense'), null);
-  assert.equal(O.offerById(sched, 'r1-20990230-s1'), null, 'an impossible date');
-  assert.equal(O.offerById(sched, 'r2-20280601-s1'), null, 'another revision');
+  assert.equal(O.offerById(sched, `r${rev}-20990230-s1`), null, 'an impossible date');
+  assert.equal(O.offerById(sched, `r${rev + 1}-20280601-s1`), null, 'another revision');
   // a purchase of a computed offer, far past the written schedule, on the service clock
   const ctx = setup();
   ctx.clock.t = Date.parse('2028-06-01T07:00:00Z');
@@ -160,7 +171,7 @@ test('after the written schedule the rule continues from the cycle, from the ser
   assert.equal(late.body.reason, 'expired');
   assert.equal((await wallet(ctx, b)).balance, 5000);
   // a skin that isn't on sale now can't be bought through a cycle id from another day
-  const other = await spend(ctx, b, pick.item_id, 'r1-20280601-s9', pick.price, 'cycle-buy-03');
+  const other = await spend(ctx, b, pick.item_id, `r${rev}-20280601-s9`, pick.price, 'cycle-buy-03');
   assert.equal(other.body.reason, 'unknown_offer');
 });
 
@@ -199,7 +210,9 @@ test('GET /v1/shop/offers: the service clock, the current and the upcoming offer
   const late = (await call(ctx, 'GET', '/v1/shop/offers')).body;
   assert.equal(late.current.length, 4);
   assert.equal(new Set(late.current.map((o) => o.item_id)).size, 4);
-  assert.ok(late.current.every((o) => /^r1-2028(05(30|31)|0601)-s[1-4]$/.test(o.offer_id)), late.current.map((o) => o.offer_id).join());
+  const rev = E.CATALOGUE.offers.cycle.revision;
+  assert.ok(late.current.every((o) => new RegExp(`^r${rev}-2028(05(30|31)|0601)-s[1-4]$`).test(o.offer_id)),
+    late.current.map((o) => o.offer_id).join());
   assert.equal(late.next_change_at, Date.parse('2028-06-02T00:00:00Z'));
   assert.ok(late.upcoming.length >= 4 && late.upcoming.every((o) => o.starts_at > late.server_time && o.starts_at <= late.known_until));
   const cfg = await call(ctx, 'GET', '/v1/config');
