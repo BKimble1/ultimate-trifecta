@@ -10,7 +10,9 @@ import sys
 from fontTools.ttLib import TTFont
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-W, H = 1600, 900
+import os
+K = float(os.environ.get("TITLE_SCALE", "1.2"))   # 1.2: 1920x1080
+W, H = round(1600 * K), round(900 * K)
 FONTS = pathlib.Path(__file__).resolve().parents[2] / "website/assets/fonts"
 IVORY = (246, 243, 236, 255)
 AMBER = (255, 194, 61, 255)
@@ -34,27 +36,28 @@ def font(name, size, axes):
 
 def title(lines, out, size=118, where="center", small=None):
     """lines: [(text, colour)], stacked; small: an optional line under them."""
+    size = round(size * K)
     f = font("archivo-latin-wdth-italic.woff2", size, {"wdth": 125, "wght": 900})
-    fs = font("manrope-latin-wght-normal.woff2", 34, {"wght": 700})
+    fs = font("manrope-latin-wght-normal.woff2", round(34 * K), {"wght": 700})
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     lh = int(size * 0.98)
-    block_h = lh * len(lines) + (56 if small else 0)
-    y0 = (H - block_h) // 2 if where == "center" else H - block_h - 110
+    block_h = lh * len(lines) + (round(56 * K) if small else 0)
+    y0 = (H - block_h) // 2 if where == "center" else H - block_h - round(110 * K)
     shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     sd = ImageDraw.Draw(shadow)
     for i, (text, col) in enumerate(lines):
         w = d.textlength(text, font=f)
-        x = (W - w) / 2 if where == "center" else 110
+        x = (W - w) / 2 if where == "center" else round(110 * K)
         y = y0 + i * lh
-        sd.text((x, y + 8), text, font=f, fill=(4, 7, 14, 200))
+        sd.text((x, y + round(8 * K)), text, font=f, fill=(4, 7, 14, 200))
         d.text((x, y), text, font=f, fill=col)
     if small:
         w = d.textlength(small, font=fs)
-        x = (W - w) / 2 if where == "center" else 114
+        x = (W - w) / 2 if where == "center" else round(114 * K)
         sd.text((x, y0 + lh * len(lines) + 18 + 3), small, font=fs, fill=(4, 7, 14, 200))
         d.text((x, y0 + lh * len(lines) + 18), small, font=fs, fill=IVORY)
-    shadow = shadow.filter(ImageFilter.GaussianBlur(14))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(round(14 * K)))
     shadow.alpha_composite(img)
     # the site's italic: PIL draws this variable font upright, so slant it
     k = 0.2

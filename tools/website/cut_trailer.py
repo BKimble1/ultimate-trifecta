@@ -51,14 +51,19 @@ def main():
     tmp = root / "_trailer"
     tmp.mkdir(exist_ok=True)
     parts = []
+    import hashlib
     for i, it in enumerate(tl["items"]):
-        p = tmp / f"{i:03d}.mkv"
+        key = hashlib.sha1(json.dumps([it, W, H, fps, GRADE]).encode()).hexdigest()[:12]
+        p = tmp / f"{i:03d}_{key}.mkv"
+        parts.append(p)
+        if p.exists():
+            continue
         common = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "12", "-g", "1", "-pix_fmt", "yuv420p",
                   "-c:a", "pcm_s16le", "-ar", "48000", "-ac", "2"]
         if "src" in it:
             s, e = float(it["s"]), float(it["e"])
             sp = float(it.get("speed", 1.0))
-            vf = f"{GRADE},scale={W}:{H}:flags=lanczos,setpts={1 / sp:.4f}*PTS,fps={fps}"
+            vf = f"{GRADE},scale={W}:{H}:flags=lanczos,unsharp=5:5:0.35:5:5:0.0,setpts={1 / sp:.4f}*PTS,fps={fps}"
             n = (e - s) / sp
             af = f"atempo={max(0.5, sp):.3f}," if sp != 1.0 else ""
             af += f"afade=t=in:d=0.04,afade=t=out:st={max(0.0, n - 0.06):.3f}:d=0.06"
@@ -74,7 +79,6 @@ def main():
             d = float(it["black"])
             run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-t", f"{d:.3f}", "-i", f"color=c=0x070b16:s={W}x{H}:r={fps}",
                  "-f", "lavfi", "-t", f"{d:.3f}", "-i", "anullsrc=r=48000:cl=stereo", "-shortest", *common, str(p)])
-        parts.append(p)
     # join
     lst = tmp / "list.txt"
     lst.write_text("".join(f"file '{p.name}'\n" for p in parts))
@@ -96,7 +100,7 @@ def main():
     fc += f"[{cur}]fade=t=out:st={total - fo:.3f}:d={fo},format=yuv420p[v];"
     sfx_db = float(tl.get("sfx_gain_db", -9))
     if tl.get("music"):
-        mi = len(inputs) // 2
+        mi = inputs.count("-i")
         inputs += ["-i", str(root / tl["music"])]
         mdb = float(tl.get("music_gain_db", 0))
         fc += (f"[0:a]volume={sfx_db}dB[sfx];[{mi}:a]atrim=0:{total:.3f},asetpts=PTS-STARTPTS,volume={mdb}dB,"

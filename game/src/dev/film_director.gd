@@ -63,6 +63,12 @@ func _mc() -> MatchController:
 
 func _process(delta: float) -> void:
 	_t += delta
+	if _ended_t >= 0.0 and _t > _ended_t + 2.5:
+		# (the round's controller is gone once its results open)
+		Engine.time_scale = 1.0
+		printerr("FILM t=%.2f quit" % _t)
+		get_tree().quit()
+		return
 	var mc := _mc()
 	if mc == null:
 		return

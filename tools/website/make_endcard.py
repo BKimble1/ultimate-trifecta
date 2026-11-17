@@ -9,7 +9,9 @@ import sys
 from fontTools.ttLib import TTFont
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-W, H = 1600, 900
+import os
+K = float(os.environ.get("TITLE_SCALE", "1.2"))
+W, H = round(1600 * K), round(900 * K)
 NAVY = (12, 19, 36)
 NIGHT = (7, 11, 22)
 
@@ -39,31 +41,31 @@ bg = glow
 
 logo = Image.open("art_src/branding/ultimate-trifecta-lobby-title.png").convert("RGBA")
 logo = logo.crop(logo.getbbox())
-lw = 860
+lw = round(860 * K)
 logo = logo.resize((lw, round(logo.height * lw / logo.width)), Image.LANCZOS)
 x = (W - lw) // 2
-y = 250
+y = round(250 * K)
 shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
 sh = Image.new("RGBA", logo.size, (0, 0, 0, 0))
 sh.putalpha(logo.split()[3].point(lambda v: int(v * 0.6)))
-shadow.alpha_composite(sh, (x, y + 22))
+shadow.alpha_composite(sh, (x, y + round(22 * K)))
 shadow = shadow.filter(ImageFilter.GaussianBlur(26))
 out = bg.convert("RGBA")
 out.alpha_composite(shadow)
 out.alpha_composite(logo, (x, y))
 
 d = ImageDraw.Draw(out)
-f1 = font("website/assets/fonts/archivo-latin-wdth-italic.woff2", 44, {"wdth": 125, "wght": 900})
-f2 = font("website/assets/fonts/manrope-latin-wght-normal.woff2", 26, {"wght": 600})
+f1 = font("website/assets/fonts/archivo-latin-wdth-italic.woff2", round(44 * K), {"wdth": 125, "wght": 900})
+f2 = font("website/assets/fonts/manrope-latin-wght-normal.woff2", round(26 * K), {"wght": 600})
 t1 = "SPLASH THREE. RACE HOME."
 w1 = d.textlength(t1, font=f1)
 tl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-ImageDraw.Draw(tl).text(((W - w1) / 2, y + logo.height + 54), t1, font=f1, fill=(255, 194, 61, 255))
-yc = y + logo.height + 54 + 22
+ImageDraw.Draw(tl).text(((W - w1) / 2, y + logo.height + round(54 * K)), t1, font=f1, fill=(255, 194, 61, 255))
+yc = y + logo.height + round(54 * K) + 22
 tl = tl.transform((W, H), Image.AFFINE, (1, 0.2, -0.2 * yc, 0, 1, 0), resample=Image.BICUBIC)
 out.alpha_composite(tl)
 t2 = "On iPhone and iPad  ·  ultimatetrifecta.idlery.com"
 w2 = d.textlength(t2, font=f2)
-d.text(((W - w2) / 2, y + logo.height + 128), t2, font=f2, fill=(246, 243, 236, 200))
+d.text(((W - w2) / 2, y + logo.height + round(128 * K)), t2, font=f2, fill=(246, 243, 236, 200))
 out.convert("RGB").save(sys.argv[1])
 print("wrote", sys.argv[1])
