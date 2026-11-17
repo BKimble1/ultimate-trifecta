@@ -45,16 +45,16 @@ func build() -> void:
 		var r := PartySeries.runners(w)
 		needs.append("%d Night Watch: %d of %d runners" % [w, PartySeries.required_home(w), r])
 	var rules := [
-		"Every runner gets the same three marked splash spots (glowing beams). Visit them in any order — jump or dive in to earn a stamp.",
-		"Each round starts inside tonight's home dorm (Puddlesworth Hall, Lanternfield House or Moonpenny Lodge — the reveal says which). Run out through any of its doors; after three splashes, run back inside it through one of its glowing doors. Nobody can be tagged inside.",
-		"Gold coins wait along the paths: run through one to collect it (1 Coin each, first come first served, for runners and the Night Watch alike).",
-		"Get enough runners home before the %d:%02d clock runs out and every runner wins; otherwise the Night Watch wins. How many depends on the party: %s." % [mins, secs, "; ".join(needs)],
-		"Tagged by the Night Watch (or hit by their cart)? You're out for the round and watch your team. If too few runners are left to get enough home, the Night Watch wins.",
-		"Night Watch: a ring marks the runner you'd tag; Tag lights up when a press would land. Pressing early just misses and needs a moment to recover.",
-		"Carts are fast on roads but can't climb stairs, pass bollards or enter the woods, gardens, pool deck or quad. Hop out to tag. A cart hit counts as a tag.",
-		"A splash marks that spot for the Night Watch for %d seconds — not the runner. Break line of sight behind buildings to lose a chaser." % int(cfg.splash_marker_s),
-		"Power-ups (one at a time): Speed Sneakers (faster for 10 s), Squeaky Duck (toss it: Night Watch near it trip and can't tag for a moment), Pillow Shield (tags bounce off for 5 s), Invisibility Cloak (the Night Watch can't see you for 6 s). Power-ups come back at a new spot after a pickup. Big round bushes: Hide to vanish from sight (a lunge at the bush still tags you). Rifts (rare): step into one to pop out somewhere else on campus (each works once).",
-		"Friend parties play a series of 1, 3 or 5 rounds; roles are drawn fairly each round. Solo practice lets you pick Runner or Night Watch.",
+		"Splash into the three marked waters (glowing beams) in any order: jump or dive in for a stamp.",
+		"Start inside tonight's home dorm. After three splashes, run back in through a glowing door. Nobody can be tagged inside.",
+		"Gold coins on the paths: run through one for 1 Coin.",
+		"Get enough runners home before the %d:%02d clock ends and every runner wins (%s)." % [mins, secs, "; ".join(needs)],
+		"A Night Watch tag or cart hit knocks you out for the round. Too few runners left, and the Night Watch win.",
+		"Night Watch: a ring marks who you'd tag; press Tag when it lights up.",
+		"Carts are fast on roads but can't climb stairs or enter the woods, gardens, pool deck or quad. Hop out to tag.",
+		"A splash marks that spot for the Night Watch for %d s. Break line of sight to lose a chaser." % int(cfg.splash_marker_s),
+		"Power-ups: Speed Sneakers, Squeaky Duck, Pillow Shield, Invisibility Cloak. Bushes hide you; rare rifts send you across campus.",
+		"Parties play 1, 3 or 5 rounds with fair roles. Practice lets you pick your role.",
 	]
 	for r in rules:
 		var l2 := UIKit.label("•  " + r, 20)

@@ -450,6 +450,12 @@ func test_swipes_from_glyphs_portraits_labels_and_blank_card_areas_never_select(
 			# (2.2 build 16) the loadout row comes first: start at the cards
 			c.scroll.scroll_vertical = int(c.body.get_node("EmoteSlots").size.y) if c.body.has_node("EmoteSlots") else 0
 			await _frames(2)
+		if tab == "face" and not c.cards.is_empty():
+			# (2.2 build 18: the wider Locker panel's bigger swatches) the
+			# face cards start below the skin tones: scroll them into view
+			var first := c.cards[0] as Control
+			c.scroll.scroll_vertical = maxi(0, int(first.global_position.y - c.scroll.global_position.y) - 8)
+			await _frames(2)
 		var s0 := c.scroll.scroll_vertical
 		var card: Control = null
 		for cd in c.cards:

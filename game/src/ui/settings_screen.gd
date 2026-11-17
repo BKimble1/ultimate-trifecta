@@ -162,6 +162,8 @@ func build() -> void:
 
 ## Shows one tab's sections.
 func show_tab(i: int) -> void:
+	if is_instance_valid(tabs_bar) and tabs_bar.has_meta(&"paint"):
+		(tabs_bar.get_meta(&"paint") as Callable).call(clampi(i, 0, TABS.size() - 1))
 	tab = clampi(i, 0, TABS.size() - 1)
 	var want: Array = TABS[tab][1]
 	for title in sections:

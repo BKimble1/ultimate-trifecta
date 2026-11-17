@@ -683,6 +683,7 @@ static func segmented(options: Array, selected: int, on_pick: Callable, accent: 
 		btns.append(b)
 	paint.call(selected)
 	p.set_meta(&"buttons", btns)
+	p.set_meta(&"paint", paint)   # (2.2 build 18) select from code too
 	return p
 
 

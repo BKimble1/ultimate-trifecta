@@ -73,6 +73,9 @@ const WELL := {"body": 1.04, "hat": 0.9, "head": 0.84, "feet": 0.66, "emote": 0.
 const CARD_MIN := {"card": 240.0}
 ## The item panel's share of the width beside the runner (stage 1 : panel 1.6).
 const PANEL_RATIO := 1.6
+## (2.2 build 18) the Locker's panel a little wider than the Shop's: its
+## eight categories keep their 44 pt targets without the last one cut off
+const LOCKER_RATIO := 2.0
 
 ## when true (first launch / profile setup), Apply continues with `on_done`
 var first_run := false
@@ -181,7 +184,7 @@ func build() -> void:
 	panel = UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, UIKit.PAD_PANEL)
 	panel.name = "ItemPanel"
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.size_flags_stretch_ratio = PANEL_RATIO
+	panel.size_flags_stretch_ratio = LOCKER_RATIO
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	mid.add_child(panel)
 	var pvb := UIKit.vbox(UIKit.SP_S)
@@ -271,7 +274,7 @@ func _category_strip() -> Control:
 	var tabs := HBoxContainer.new()
 	# pills sit edge to edge (each keeps its whole 44 pt target): eight fit
 	# an iPhone SE panel without scrolling
-	tabs.add_theme_constant_override("separation", 2)
+	tabs.add_theme_constant_override("separation", 0)
 	tab_scroll.add_child(tabs)
 	tabs.add_child(Glyphs.Hint.new("menu_prev", "", 30.0))
 	for t in TABS:
@@ -419,7 +422,7 @@ func grid_width() -> float:
 		var cw := content_size().x
 		if cw < 2.0:
 			cw = get_viewport().get_visible_rect().size.x * 0.8 if is_inside_tree() else 1000.0
-		w = (cw - UIKit.SP_L) * PANEL_RATIO / (1.0 + PANEL_RATIO) - UIKit.PAD_PANEL * 2.0
+		w = (cw - UIKit.SP_L) * LOCKER_RATIO / (1.0 + LOCKER_RATIO) - UIKit.PAD_PANEL * 2.0
 	var bar := scroll.get_v_scroll_bar().get_combined_minimum_size().x if is_instance_valid(scroll) else 8.0
 	return maxf(CARD_W, w - bar - 2.0)
 

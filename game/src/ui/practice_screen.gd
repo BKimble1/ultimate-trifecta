@@ -38,7 +38,7 @@ func build() -> void:
 	var cfg := PartySeries.rules_for(Rules.cfg, PartySeries.DEFAULT_WATCH)
 	var last := String(Save.get_setting("practice_role", "runner"))
 	var opts := [
-		["Runner tutorial", "Learn to run, jump, dive and splash. The Night Watch waits 30 s.", func() -> void: App.start_practice("runner", true), not tut_done],
+		["Runner tutorial", "Learn to run, jump, dive and splash.", func() -> void: App.start_practice("runner", true), not tut_done],
 		["Night Watch training", "A short guided chase as the Night Watch.", func() -> void: App.start_practice("patrol", true), tut_done and not watch_done],
 	]
 	var pick := UIKit.hbox(10)

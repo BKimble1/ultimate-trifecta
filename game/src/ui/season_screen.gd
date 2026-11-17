@@ -567,14 +567,16 @@ func _header() -> Control:
 	flake.name = "SeasonMark"
 	flake.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	tr.add_child(flake)
+	# (2.2 build 18) the season's name is in the line above; the tier is the
+	# headline (the header shares its row with two buttons)
 	title_l = UIKit.styled(String(s.get("name", "")), "headline")
 	title_l.name = "SeasonName"
-	title_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UIKit.fit_text(title_l, [UIKit.T_HEADLINE, 24, 22])
+	title_l.visible = false
 	tr.add_child(title_l)
-	tier_lbl = UIKit.styled("", "num", UIKit.TEAL, HORIZONTAL_ALIGNMENT_RIGHT)
+	tier_lbl = UIKit.styled("", "num", UIKit.TEAL)
 	tier_lbl.add_theme_font_size_override("font_size", 24)
-	tier_lbl.size_flags_vertical = Control.SIZE_SHRINK_END
+	tier_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tier_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	tr.add_child(tier_lbl)
 	v.add_child(tr)
 	var br := UIKit.hbox(UIKit.SP_S)
@@ -1017,7 +1019,7 @@ func _refresh() -> void:
 	else:
 		xp_lbl.text = "%s / %s XP" % [Catalogue.format_coins(int(prog["into"])), Catalogue.format_coins(int(prog["into"]) + int(prog["need"]))]
 	var prem := bool(st["premium"])
-	premium_chip.text = "Season %d · %s" % [int(s.get("number", 1)), "Premium" if prem else "Free track"]
+	premium_chip.text = "Season %d · %s" % [int(s.get("number", 1)), "Premium" if prem else "Free"]
 	premium_chip.add_theme_color_override("font_color", UIKit.AMBER if prem else UIKit.IVORY_MUTED)
 	title_l.accessibility_name = "Season %d, %s" % [int(s.get("number", 1)), String(s.get("name", ""))]
 	var n := Wallet.claimable(sid).size()

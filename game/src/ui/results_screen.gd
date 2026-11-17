@@ -909,15 +909,16 @@ func _refresh_actions() -> void:
 	if over and page == "round" and not cancelled:
 		_primary.text = "Final standings"
 		UIKit._apply(_primary, UIKit.AMBER, UIKit.NAVY)
-		_status.text = "That was the last round. Final standings next."
+		_status.text = "Last round done."
 		return
 	if session.is_host():
 		if over:
 			_primary.text = "Return to lobby"
-			_status.text = "Everyone returns to the party room. A new series keeps these settings."
+			_status.text = ""
+			_status.visible = false
 		else:
 			_primary.text = "Next: round %d" % session.next_round_number()
-			_status.text = "Back to the party room · round %d starts when everyone's ready." % session.next_round_number()
+			_status.text = "Starts when everyone's ready."
 		UIKit._apply(_primary, UIKit.AMBER, UIKit.NAVY)
 		return
 	if over or cancelled:
