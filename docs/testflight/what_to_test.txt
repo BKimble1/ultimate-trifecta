@@ -1,11 +1,8 @@
-2.2 (18): knock-out tags, a new Shop, Season Pass progress on home, new sounds and haptics, and more. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Every phone in a party needs build 18. Tell us your iPhone or iPad model:
+2.2 (19): a cleaner UI pass on build 18. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Every phone in a party needs build 18 or 19. Tell us your iPhone or iPad model:
 
-- Rounds: a Night Watch tag (or cart hit) knocks you out for the round; you then watch your team. If too few runners are left, the Night Watch win at once. No Cheer button while watching.
-- Shop: a big Spotlight skin in Featured, coloured cards, a short Always available row. Coins are behind the green + on the Coins counter. Season 1 shows the whole pass banner without scrolling. Accessories has Sets.
-- New skins rotate into the Shop: Turkey Trot, Harvest Flannel, Reindeer Onesie, Gingerbread Buddy, Elf Helper, Snow Day.
-- Skins not in the Shop: Remind me, then home tells you when they're back. Owned skins: Equip now.
-- Home: the Season Pass pill under the tabs; cocoa and cookies on the side table.
-- Results: the Season XP bar fills up.
-- Locker: the dice gives a random look; 1-2-3 keep looks (hold to replace).
-- Sounds on tabs, sheets, the countdown, rifts, the cloak and knock-outs; vibration on a phone (Settings › Controls).
-- First-time tips for each power-up, rifts and being knocked out.
+- Season Pass: the Free and Premium rows are both fully visible, in the panel and full screen (the milestone shortcuts step aside when there isn't room).
+- Season Pass header: "Season 1 · Free" and your tier, nothing cut off.
+- Locker: all eight tabs fit, Music included.
+- Settings: the highlighted tab matches the page.
+- Shorter text in the Shop notice, results, How to Play and Practice.
+- Still check from build 18: knock-out tags, the new Shop and Sets, the six new skins, the Season pill, haptics.

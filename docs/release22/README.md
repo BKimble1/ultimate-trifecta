@@ -733,3 +733,19 @@ From the owner's list after build 17:
 - **Technical**: the prop shader's unused per-instance values became plain
   uniforms (fewer instance-uniform slots per prop); the release notes are
   a one-page status with the history in `docs/release_history.md`.
+
+## 35. Build 19: UI audit
+
+Every menu screen and tab captured (`--capture=audit18`) and tidied, nothing
+added:
+- **Season Pass**: the Free and Premium rows are always whole (in the panel
+  and full screen).  When the rows would need to shrink under a 44 pt target
+  (a status notice on a phone), the milestone shortcut row steps aside and
+  comes back when there's room (`SeasonScreen._fit_cells`; test
+  `test_free_and_premium_rows_whole_with_the_status_notice`).  The header
+  shows "Season 1 · Free" over the tier instead of a cut-off season name.
+- **Locker**: a wider panel (`LOCKER_RATIO` 2.0) and no gaps between tabs, so
+  all eight categories fit at full touch size.
+- **Settings**: the tab highlight follows a tab opened from code.
+- **Text**: the Shop's notice fits one line; shorter results footers and How
+  to Play lines; Practice no longer mentions the old 30 s wait.

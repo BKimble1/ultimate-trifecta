@@ -105,6 +105,8 @@ var detail_box: VBoxContainer
 var detail_panel: PanelContainer
 var _legend: Array = []
 var cell_size := CELL
+var _nav_h := 0.0
+var nav_strip: ScrollContainer
 var cell_w := CELL * CELL_ASPECT
 var focus_tier := 1
 var focus_track := "free"
@@ -185,7 +187,7 @@ func build() -> void:
 	pv.add_child(_status_line())
 	# the chips never widen the panel: they take a shorter form on a narrow
 	# panel (_fit_nav), and scroll sideways only as a last resort
-	var nav_strip := UIKit.scroll_area(true)
+	nav_strip = UIKit.scroll_area(true)
 	nav_strip.name = "NavStrip"
 	nav_strip.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	nav_strip.custom_minimum_size.y = UIKit.row_h()
@@ -635,6 +637,8 @@ func set_maximized(on: bool) -> void:
 	max_btn.accessibility_name = "Back to the reward view" if on else "Show the whole pass"
 	max_btn.tooltip_text = max_btn.accessibility_name
 	back_action = (func() -> void: set_maximized(false)) if on else _go_hub
+	if is_instance_valid(nav_strip):
+		nav_strip.visible = true   # (re-measured by _fit_cells)
 	_fit_cells.call_deferred()
 	_fit_nav.call_deferred()
 	_scroll_to.call_deferred(focus_tier)
@@ -694,6 +698,18 @@ func _fit_cells() -> void:
 		return
 	var hbar := track_scroll.get_h_scroll_bar().get_combined_minimum_size().y
 	var c := floorf((h - hbar - TIER_H - GAP * 2.0 - 2.0) * 0.5)
+	# (2.2 build 18) both reward rows always whole: when they would need to
+	# shrink under a full touch target (a status notice on a phone), the
+	# milestone shortcuts step aside; they come back when there's room
+	if is_instance_valid(nav_strip):
+		var nav_h := nav_strip.size.y + float(UIKit.SP_S)
+		if nav_strip.visible and c < UIKit.touch_min():
+			_nav_h = nav_h
+			nav_strip.visible = false
+			return
+		if not nav_strip.visible and _nav_h > 0.0 and c - _nav_h * 0.5 >= UIKit.touch_min() + 4.0:
+			nav_strip.visible = true
+			return
 	c = clampf(c, UIKit.touch_min(), CELL_MAX_H)
 	var w := floorf(clampf(c * CELL_ASPECT, UIKit.touch_min(), 210.0))
 	# a narrow, tall track (the iPad, beside the stage and the side panel)

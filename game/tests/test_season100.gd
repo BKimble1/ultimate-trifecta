@@ -618,3 +618,30 @@ func test_premium_lock_reason_fits_the_iphone_se() -> void:
 		t.check(_inside(act.get_global_rect(), _safe()) and _inside(act.get_global_rect(), sp.detail_panel.get_global_rect()), "%s: on screen, inside the panel" % key)
 		t.check(_inside(sp.detail_panel.get_global_rect(), _safe()), "%s: the panel inside the safe area (no overflow)" % key)
 	await _end()
+
+
+func test_free_and_premium_rows_whole_with_the_status_notice() -> void:
+	# (2.2 build 18) the service off: the "Rewards unavailable" notice shows,
+	# and both reward rows still fit whole, in the panel and full screen
+	await _begin(false)
+	for key in DEVICES:
+		await _device(key)
+		App.goto(SeasonScreen)
+		await _frames(8)
+		var sp := App.screen as SeasonScreen
+		for full in [false, true]:
+			sp.set_maximized(full)
+			await _frames(8)
+			var tr := sp.track_scroll.get_global_rect().grow(1.0)
+			var seen := 0
+			for cell in sp.cells:
+				var r := (cell as Control).get_global_rect()
+				if r.end.x < tr.position.x or r.position.x > tr.end.x:
+					continue   # scrolled sideways out of view
+				seen += 1
+				t.check(r.position.y >= tr.position.y and r.end.y <= tr.end.y,
+					"%s%s: a %s cell whole (%s in %s)" % [key, " full" if full else "", cell.get("track"), r, tr])
+			t.check(seen >= 4, "%s%s: cells in view (%d)" % [key, " full" if full else "", seen])
+			t.check((sp.cells[0] as Control).size.y >= UIKit.touch_min() - 0.5, "%s: cells stay 44 pt targets" % key)
+		sp.set_maximized(false)
+	await _end()
