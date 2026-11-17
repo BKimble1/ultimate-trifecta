@@ -269,7 +269,7 @@ func test_past_the_written_schedule_the_shop_still_rotates() -> void:
 	t.eq(Offers.active().size(), 4, "from the service")
 	t.check(ids.all(func(id: String) -> bool: return Catalogue.is_rotation(id)), "all rotating skins")
 	var o: Dictionary = Offers.active()[0]
-	t.check(String(o["offer_id"]).begins_with("r1-2027"), "with the rule's own ids: %s" % o["offer_id"])
+	t.check(String(o["offer_id"]).begins_with("r%d-2027" % int(sec["cycle"]["revision"])), "with the rule's own ids: %s" % o["offer_id"])
 	rig.svc.grant(Cloud.profile_id(), 2000)
 	await Wallet.refresh()
 	var r: Dictionary = await Wallet.spend(String(o["item_id"]), o)

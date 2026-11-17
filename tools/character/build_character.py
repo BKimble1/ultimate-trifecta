@@ -7,7 +7,7 @@ Output (default): game/assets/characters/runner.glb plus runner_manifest.json
 and (V7) game/src/view/character_art.gd, the art version the portrait cache
 keys on (Portraits.key_of), so a new asset never reuses old thumbnails.
 Everything is generated from the Python sources in this folder (geo.py,
-rig.py, parts.py, outfits_v6.py, outfits_p8.py, skins_p9.py, anims.py), which are the editable
+rig.py, parts.py, outfits_v6.py, outfits_p8.py, skins_p9.py, outfits_b18.py, anims.py), which are the editable
 source of the asset.
 The build is deterministic: the same sources give the same GLB.
 """
@@ -29,6 +29,7 @@ import parts  # noqa: E402
 import anims  # noqa: E402
 import outfits_v6  # noqa: E402
 import outfits_p8  # noqa: E402
+import outfits_b18  # noqa: E402
 import skins_p9  # noqa: E402
 
 REPO = os.path.abspath(os.path.join(HERE, '..', '..'))
@@ -260,7 +261,7 @@ def main():
     meshes = {}
     stats = {}
     assert skins_p9.FACE_KEYS == SHAPE_KEYS
-    for fn in parts.ALL_PARTS + outfits_v6.ALL + outfits_p8.ALL + skins_p9.ALL:
+    for fn in parts.ALL_PARTS + outfits_v6.ALL + outfits_p8.ALL + skins_p9.ALL + outfits_b18.ALL:
         mb = fn()
         ob = make_mesh(mb, arm_ob, scn)
         if mb.name == 'base':

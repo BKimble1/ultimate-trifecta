@@ -108,6 +108,43 @@ const CATALOG := {
 			"Raccoon hood with round ears and a mask band above the face (replaces hat and hair while worn)",
 			"Ringed raccoon tail",
 			"Footed paws with cream soles (worn instead of your shoes with this outfit)"]},
+		# Build 18 rotating Shop outfits: two for Thanksgiving, three for
+		# Christmas, one for winter (tools/character/outfits_b18.py).  As in
+		# Pass 8, each draws its own footwear; Turkey Trot, Reindeer Onesie
+		# and Snow Day wear their hoods up; the elf cap is headwear worn with
+		# no hat.
+		"turkey_trot": {"id": 24, "name": "Turkey Trot", "cost": 900, "includes": [
+			"Cosy chestnut turkey onesie with a feathered cream breast and wing feathers on the sleeves",
+			"Turkey hood with eyes, a little beak and a feather tuft (replaces hat and hair while worn)",
+			"Tail fan of banded autumn feathers",
+			"Orange footed booties (worn instead of your shoes with this outfit)"]},
+		"harvest_flannel": {"id": 25, "name": "Harvest Flannel", "cost": 800, "includes": [
+			"Red buffalo-check flannel shirt with a pointed collar, buttons and a pocket",
+			"Chunky mustard knit scarf with a fringed end",
+			"Embroidered maple leaves on the pocket and the back",
+			"Denim jeans with turned-up cuffs",
+			"Laced duck boots (worn instead of your shoes with this outfit)"]},
+		"reindeer_onesie": {"id": 26, "name": "Reindeer Onesie", "cost": 1000, "includes": [
+			"Caramel reindeer onesie with a cream belly, cream cuffs and a fluffy tail",
+			"Red ribbon bow with a gold bell",
+			"Reindeer hood with soft antlers, ears, eyes and a red pompom nose (replaces hat and hair while worn)",
+			"Footed hooves (worn instead of your shoes with this outfit)"]},
+		"gingerbread_buddy": {"id": 27, "name": "Gingerbread Buddy", "cost": 900, "includes": [
+			"Gingerbread-brown suit with piped white icing at the collar, hem, cuffs and ankles",
+			"Three gumdrop buttons and a red bow",
+			"An icing heart on the back",
+			"Iced gingerbread booties (worn instead of your shoes with this outfit)"]},
+		"elf_helper": {"id": 28, "name": "Elf Helper", "cost": 1100, "includes": [
+			"Green tunic with a red petal collar, a belt with a gold buckle and a white hem",
+			"Red-and-white striped stockings",
+			"Curled green shoes with gold bells (worn instead of your shoes with this outfit)",
+			"Green elf cap with a red band, holly and a gold bell (shown when no other hat is worn)"]},
+		"snow_day": {"id": 29, "name": "Snow Day", "cost": 1200, "includes": [
+			"Quilted sunshine-yellow parka with a snowflake on the back and the sleeve",
+			"Hood worn up with a faux-fur rim (replaces hat and hair while worn)",
+			"Red knit mittens",
+			"Puffy navy snow pants",
+			"Fur-cuffed snow boots (worn instead of your shoes with this outfit)"]},
 		# Pass 9 complete skins: Season 1 Premium rewards (tier 50 and tier
 		# 100).  Each draws its own head and face, hair, body and footwear
 		# (COMPLETE_SKINS, tools/character/skins_p9.py); the player's own
@@ -244,6 +281,8 @@ const OUTFIT_PARTS := {"pj": ["pj"], "swim": ["swim", "body_skin"], "robe": ["ro
 	"after_hours_hoodie": ["hoodie"], "night_owl": ["owl"], "glow_jogger": ["jogger"], "library_cardigan": ["cardigan"],
 	"midnight_mechanic": ["mechanic"], "moonwalk_cadet": ["cadet"], "pumpkin_pajamas": ["pumpkin"], "arcade_sprinter": ["arcade"],
 	"cloud_nine": ["cloud"], "bedtime_bandit": ["bandit"],
+	"turkey_trot": ["turkey"], "harvest_flannel": ["flannel"], "reindeer_onesie": ["reindeer"], "gingerbread_buddy": ["gingerbread"],
+	"elf_helper": ["elf"], "snow_day": ["snowday"],
 	"record_breaker": ["rb_head", "rb_hair", "rb_body"], "dr_doom": ["dd_head", "dd_fringe", "dd_suit"]}
 ## Pass 9: complete character skins.  While one is worn, its own parts (its
 ## head with its own face and face shapes, its hair or fringe, its body with
@@ -266,11 +305,11 @@ const COMPLETE_SKINS := {
 ## the player's own choices a complete skin draws instead (Shop and Locker copy)
 const SKIN_REPLACES := ["hat", "hair", "hair_color", "shoes", "skin", "face", "brows", "marks", "color", "trim", "pattern"]
 ## hoods replace hats and hair entirely
-const HOOD_OUTFITS := ["duck", "frog", "night_owl", "cloud_nine", "bedtime_bandit"]
+const HOOD_OUTFITS := ["duck", "frog", "night_owl", "cloud_nine", "bedtime_bandit", "turkey_trot", "reindeer_onesie", "snow_day"]
 ## V6: outfits whose own footwear replaces the chosen shoes (drawn in the outfit's part)
-## (Pass 8: every rotating outfit: its trousers end over, or tuck into, that footwear)
+## (Pass 8 and build 18: every rotating outfit: its trousers end over, or tuck into, that footwear)
 const OUTFIT_OWN_SHOES := ["raincoat_explorer", "midnight_mechanic", "moonwalk_cadet", "pumpkin_pajamas", "arcade_sprinter",
-	"cloud_nine", "bedtime_bandit"]
+	"cloud_nine", "bedtime_bandit", "turkey_trot", "harvest_flannel", "reindeer_onesie", "gingerbread_buddy", "elf_helper", "snow_day"]
 ## V6: headwear that comes with an outfit (a separate part), and the hats it
 ## is worn with.  With any other hat the chosen hat wins and this is hidden.
 const OUTFIT_HEADWEAR := {
@@ -278,10 +317,12 @@ const OUTFIT_HEADWEAR := {
 	"campus_courier": {"parts": ["acc_courier_cap"], "with_hats": ["none"]},
 	"moonwalk_cadet": {"parts": ["acc_cadet_cap"], "with_hats": ["none"]},
 	"pumpkin_pajamas": {"parts": ["acc_pumpkin_cap"], "with_hats": ["none"]},
+	"elf_helper": {"parts": ["acc_elf_cap"], "with_hats": ["none"]},
 }
 ## Headwear that is worn the way a hat is, for the hair rules below: the
-## courier, cadet and pumpkin caps behave like a cap, the sleep mask like a headband.
-const HEADWEAR_AS_HAT := {"acc_courier_cap": "@cap", "acc_sleepmask": "@mask", "acc_cadet_cap": "@cap", "acc_pumpkin_cap": "@cap"}
+## courier, cadet, pumpkin and elf caps behave like a cap, the sleep mask like a headband.
+const HEADWEAR_AS_HAT := {"acc_courier_cap": "@cap", "acc_sleepmask": "@mask", "acc_cadet_cap": "@cap", "acc_pumpkin_cap": "@cap",
+	"acc_elf_cap": "@cap"}
 ## hair/hat compatibility: which hair parts each hat hides
 const HAT_HIDES_HAIR := {
 	"nightcap": ["hair", "hair_bob", "hair_curly", "hair_buns", "hair_buns_knots"],

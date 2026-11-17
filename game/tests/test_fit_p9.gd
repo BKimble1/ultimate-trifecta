@@ -37,10 +37,11 @@ const IMPORT_TOL := 0.002
 ## runner scenarios and Night Watch scenarios run on every checked look
 const RUNNER_SCENARIOS := ["start", "stop", "reverse", "ramp", "jump_run", "dive", "emote"]
 const WATCH_SCENARIOS := ["nw_run", "tag_miss", "tag_hit", "cart"]
-## the looks run through the motion scenarios: the Pass 8 Shop outfits, the
-## Season 1 pass outfits and the default pajamas
+## the looks run through the motion scenarios: the Pass 8 and build 18 Shop
+## outfits, the Season 1 pass outfits and the default pajamas
 const MOTION_LOOKS := ["midnight_mechanic", "moonwalk_cadet", "pumpkin_pajamas", "arcade_sprinter", "cloud_nine", "bedtime_bandit",
-	"after_hours_hoodie", "night_owl", "glow_jogger", "library_cardigan", "pj", "record_breaker", "dr_doom"]
+	"after_hours_hoodie", "night_owl", "glow_jogger", "library_cardigan", "pj", "record_breaker", "dr_doom",
+	"turkey_trot", "harvest_flannel", "reindeer_onesie", "gingerbread_buddy", "elf_helper", "snow_day"]
 
 
 var _fixture: Dictionary = {}

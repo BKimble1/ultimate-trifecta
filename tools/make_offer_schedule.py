@@ -10,7 +10,10 @@ The rule (Pass 8, docs/ECONOMY.md section 2.1):
     change every day.  Slots 3-4 open their first offer one day before
     `start_utc`, so every offer, including the first, is a full 48 h.
   - The pool is every catalogue item with "rotation": true, in catalogue
-    order.  At each change, each changing slot (in slot order) takes the pool
+    order.  Build 18: an item with "rotation_from" (a 00:00 UTC time) joins
+    the pool only at that change day, so adding skins changes no offer
+    before it (and none already published), and a seasonal skin first
+    appears in its season.  At each change, each changing slot (in slot order) takes the pool
     item that left the Shop longest ago (never shown counts as longest; ties
     in catalogue order) among those not on show in another slot, not chosen
     for another slot at the same moment and not leaving at that moment.  So
@@ -19,8 +22,11 @@ The rule (Pass 8, docs/ECONOMY.md section 2.1):
     `start_utc + days`; the last ones end up to a day later.
   - Price = the item's catalogue Coin price (no sale prices).
   - offer_id = "r<revision>-<YYYYMMDD of start>-s<slot>": unique and never
-    reused.  An existing offer with the same slot, times, item and price keeps
-    its id (so an extension or a revision leaves published offers alone).
+    reused.  An existing offer with the same slot, times, item and price is
+    kept exactly as written, its id and revision included (so an extension or
+    a revision leaves published offers alone; build 18: before, the kept
+    offer took the new revision number, so no revision could ever be
+    written without --force).
 
 Published offers are history: writing refuses to change or drop an offer
 that started before --now (default: the current time) unless --force.
@@ -88,11 +94,14 @@ def generate(cat, days=None):
     assert len(pool) >= slots + 2, "the pool needs more skins than slots (plus the two leaving)"
     order = {it["id"]: i for i, it in enumerate(pool)}
     price = {it["id"]: int(it["price"]) for it in pool}
+    joins = {it["id"]: parse(it["rotation_from"]) for it in pool if it.get("rotation_from")}
+    for i, j in joins.items():
+        assert j.hour == 0 and j.minute == 0 and j.second == 0, "%s: rotation_from must be 00:00 UTC" % i
     left_at = {it["id"]: None for it in pool}      # when it last left the Shop
     showing = {}                                    # slot -> (item, ends)
     keep = {}
     for o in off.get("schedule", []):
-        keep[(o["slot"], o["starts_at_utc"], o["ends_at_utc"], o["item_id"], o["price"])] = o["offer_id"]
+        keep[(o["slot"], o["starts_at_utc"], o["ends_at_utc"], o["item_id"], o["price"])] = o
     out = []
     first = min(phase)
     for d in range(first - 1, int(rule["days"]) if days is None else days):
@@ -107,16 +116,19 @@ def generate(cat, days=None):
                 del showing[s]
         busy = {v[0] for v in showing.values()}
         for s in changing:
-            cands = [i for i in order if i not in busy and i not in leaving]
+            cands = [i for i in order if i not in busy and i not in leaving and (i not in joins or joins[i] <= t)]
             cands.sort(key=lambda i: (left_at[i] is not None, left_at[i] or t, order[i]))
             pick = cands[0]
             busy.add(pick)
             ends = t + span * DAY
             showing[s] = (pick, ends)
             a, b = iso(t), iso(ends)
-            oid = keep.get((s + 1, a, b, pick, price[pick])) or "r%d-%s-s%d" % (rev, t.strftime("%Y%m%d"), s + 1)
-            out.append({"offer_id": oid, "item_id": pick, "slot": s + 1, "starts_at_utc": a, "ends_at_utc": b,
-                        "price": price[pick], "revision": rev})
+            old = keep.get((s + 1, a, b, pick, price[pick]))
+            if old is not None:
+                out.append(dict(old))
+                continue
+            out.append({"offer_id": "r%d-%s-s%d" % (rev, t.strftime("%Y%m%d"), s + 1), "item_id": pick, "slot": s + 1,
+                        "starts_at_utc": a, "ends_at_utc": b, "price": price[pick], "revision": rev})
     out.sort(key=lambda o: (o["starts_at_utc"], o["slot"]))
     return out
 

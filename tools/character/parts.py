@@ -837,10 +837,12 @@ def hood_project(extra_grow=0.035, opening=HOOD_OPENING):
     return f
 
 
-def _hood(mb, base, rim_style, extra_grow=0.035, opening=HOOD_OPENING):
+def _hood(mb, base, rim_style, extra_grow=0.035, opening=HOOD_OPENING, segs=36, rings=26):
     """Mascot hood: a shell over the head with a face opening and a rolled rim.
     opening: the face opening's half-width, half-height and centre height
     (Pass 8: the rotating outfits' hoods open a little wider, clear of the brows).
+    segs, rings: the shell's resolution (build 18: a lighter shell under a
+    fur rim; every earlier hood keeps the default).
     Final sweep: the shell rolls in to the face round the opening
     (hood_grow), and the rim sits on that edge."""
     ox, oz, oc = opening
@@ -857,7 +859,7 @@ def _hood(mb, base, rim_style, extra_grow=0.035, opening=HOOD_OPENING):
     f0 = len(mb.f)
     v0 = len(mb.v)
     ellipsoid(mb, HEAD_C, (HEAD_R[0] + extra_grow, HEAD_R[1] + extra_grow, HEAD_R[2] + extra_grow), base, hw,
-              segs=36, rings=26, power=HEAD_P, keep=keep, deform=rig.head_deform(extra_grow))
+              segs=segs, rings=rings, power=HEAD_P, keep=keep, deform=rig.head_deform(extra_grow))
     # V6: the face opening was cut by dropping whole quads, a stepped edge
     # that showed skin in blocks beside the rim (duck, frog).  Slide the
     # opening's boundary vertices onto the rim's ellipse.
