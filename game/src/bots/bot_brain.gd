@@ -440,25 +440,28 @@ func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 				var rel2 := target.pos() - p.pos()
 				cmd.cam_yaw = atan2(-rel2.x, -rel2.z)
 				reaction = rng.randf_range(0.12, 0.3) / skill
+		_keep_dry(sim, p, cmd)
 		_hop_obstacles(sim, p, cmd)
 		return
 
 	# --- no runner in sight: investigate or patrol a route
+	# (a water's patrol stop or a splash to look into is the water's centre:
+	# the Night Watch goes to its bank, and has arrived there)
 	var dest := Vector2.INF
 	if investigate_t > 0.0 and investigate != Vector3.INF:
-		dest = Vector2(investigate.x, investigate.z)
+		dest = _dry_point(sim, p, Vector2(investigate.x, investigate.z))
 		if p.pos2().distance_to(dest) < 4.0:
 			investigate_t = 0.0
 	if dest == Vector2.INF:
 		if patrol_stops.is_empty():
 			_make_patrol_route(sim)
-		var stop: Vector2 = patrol_stops[stop_i % patrol_stops.size()]
+		var stop := _dry_point(sim, p, patrol_stops[stop_i % patrol_stops.size()])
 		if p.pos2().distance_to(stop) < 8.0:
 			linger_t += dt
 			if linger_t > rng.randf_range(3.0, 6.0):
 				linger_t = 0.0
 				stop_i += 1
-		dest = patrol_stops[stop_i % patrol_stops.size()]
+		dest = _dry_point(sim, p, patrol_stops[stop_i % patrol_stops.size()])
 	if in_cart:
 		var drive_dest := _park_point(sim, dest)
 		if p.pos2().distance_to(drive_dest) < 6.0 and p.pos2().distance_to(dest) > 8.0:
@@ -481,8 +484,63 @@ func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 		replan_t = 3.0
 		_repath(p.pos2(), goal, false)
 	_follow(sim, p, cmd, dt, false)
+	_keep_dry(sim, p, cmd)
 	_hop_obstacles(sim, p, cmd)
 	cmd.cam_yaw = p.yaw + sin(float(sim.tick) * 0.03 + slot) * 0.9   # look around
+
+
+## A destination in a water (its centre: a patrol stop, a splash marker, a
+## noise) becomes the nearest dry, walkable point on its bank: one of the
+## water's shore exits, snapped to the foot grid.  Steering at the centre
+## walked the Night Watch into the water: on the last step of a path (it
+## heads for the goal itself), or all the way when the path was empty
+## (Moonbrook College's Boathouse Inlet: the nearest open cell to its centre
+## is on the dock, which the foot grid doesn't join to the shore).  And on a
+## water wider than the 8 m "arrived" radius it resurfaced on the bank,
+## never arrived, and went straight back in.
+func _dry_point(sim: MatchSim, p: SimPlayer, dest: Vector2) -> Vector2:
+	var wi := CampusBuilder.water_at(sim.layout, dest)
+	if wi < 0:
+		return dest
+	var best := dest
+	var bd := INF
+	for e in sim.layout.waters[wi]["exits"]:
+		var c := nav.to_world(nav.nearest_open(nav.foot, Vector2(e.x, e.z), 3))
+		if not nav.is_walkable(c) or CampusBuilder.water_at(sim.layout, c) >= 0:
+			continue
+		var d := p.pos2().distance_to(c)
+		if d < bd:
+			bd = d
+			best = c
+	return best
+
+
+## The Night Watch on foot never steps into a water (a runner does: that's
+## the game).  The bank ahead is probed along the move; a step into a water
+## turns along the bank instead, or stops.  A footbridge's or a dock's deck
+## is open on the foot grid and is walked on.
+func _keep_dry(sim: MatchSim, p: SimPlayer, cmd: InputCmd) -> void:
+	if p.state != TC.PState.ACTIVE or cmd.move.length() < 0.1:
+		return
+	var m := cmd.move
+	if not _wet(sim, p.pos2(), m):
+		return
+	for k in range(1, 5):
+		for side in [1.0, -1.0]:
+			var cand := m.rotated(side * 0.4 * k)
+			if not _wet(sim, p.pos2(), cand):
+				cmd.move = cand
+				return
+	cmd.move = Vector2.ZERO
+
+
+func _wet(sim: MatchSim, at: Vector2, move: Vector2) -> bool:
+	var dir := move.normalized()
+	for reach in [0.7, 1.4]:
+		var q: Vector2 = at + dir * reach
+		if CampusBuilder.water_at(sim.layout, q) >= 0 and not nav.is_walkable(q):
+			return true
+	return false
 
 
 ## Where a cart stops for a destination: the nearest drivable cell (a
@@ -555,6 +613,7 @@ func _go_to_cart(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 		replan_t = 1.5
 		_repath(p.pos2(), cp, false)
 	_follow(sim, p, cmd, dt, false)
+	_keep_dry(sim, p, cmd)
 	_hop_obstacles(sim, p, cmd)
 
 
