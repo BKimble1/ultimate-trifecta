@@ -173,10 +173,7 @@ func build() -> void:
 		run_btn.text = "Idle" if preview_run else "Run")
 	pv.add_child(run_btn)
 	pv.move_child(run_btn, 0)
-	# (2.2 build 18) Random look and three saved looks, over Run
-	if not first_run:
-		pv.add_child(_looks_row())
-		pv.move_child(pv.get_child(pv.get_child_count() - 1), 0)
+
 	stage_area.resized.connect(func() -> void: pv.position = Vector2(0, stage_area.size.y - pv.get_combined_minimum_size().y))
 
 	# right: one panel with categories, the grid and the footer.  Its width
@@ -448,6 +445,9 @@ func _build_tab() -> void:
 		return
 	if tab == "move":
 		body.add_child(_emote_slot_row(gw))
+	if tab == "outfit" and not first_run:
+		# (2.2 build 18) Random look and three kept looks, atop Outfit
+		body.add_child(_looks_row())
 	for f in fields:
 		# section header: the field and, for colours, the chosen one's name
 		var hdr := UIKit.hbox(10)
@@ -967,6 +967,10 @@ var look_btns: Array = []
 func _looks_row() -> Control:
 	var row := UIKit.hbox(8)
 	row.name = "Looks"
+	var lt := UIKit.styled("Looks", "overline", UIKit.IVORY_MUTED)
+	lt.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(lt)
+	row.add_child(UIKit.spacer_h())
 	var dice := UIKit.icon_button("dice")
 	dice.name = "RandomLook"
 	dice.tooltip_text = "Random look"

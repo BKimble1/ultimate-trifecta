@@ -196,6 +196,10 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 			["coin", Catalogue.format_coins(int(c["coins"])), "Coins back"]]:
 		stats.add_child(_stat(String(st[0]), String(st[1]), String(st[2]), k))
 	v.add_child(stats)
+	# (2.2 build 18) a short space (the Shop's Season 1 tab) keeps the
+	# headline, the line and the buttons
+	var short := not tall and sz.y < 430.0
+	stats.visible = not short
 	v.add_child(UIKit.spacer_v())
 	# the two ways to buy it
 	var row := UIKit.hbox(12)
@@ -207,7 +211,6 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	var coins := UIKit.quiet("%s Coins" % Catalogue.format_coins(Catalogue.price(premium_item())), Vector2(0, bh), int(maxf(17.0, float(UIKit.T_LABEL + 1) * k)))
 	coins.name = "BuyCoins"
 	coins.icon = null
-	UIKit.face_of(coins).icon = "coin"
 	row.add_child(coins)
 	v.add_child(row)
 	var fine := UIKit.styled("", "caption", UIKit.IVORY_MUTED)
@@ -216,6 +219,8 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	fine.custom_minimum_size.x = text_w
 	fine.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	v.add_child(fine)
+	if short:
+		ov.visible = false
 	var paint := func() -> void:
 		if not is_instance_valid(buy):
 			return
