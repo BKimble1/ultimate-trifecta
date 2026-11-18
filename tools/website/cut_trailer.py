@@ -65,10 +65,13 @@ def main():
             sp = float(it.get("speed", 1.0))
             vf = f"{GRADE},scale={W}:{H}:flags=lanczos,unsharp=5:5:0.35:5:5:0.0,setpts={1 / sp:.4f}*PTS,fps={fps}"
             n = (e - s) / sp
+            if "frames" in it:
+                n = int(it["frames"]) / fps
             af = f"atempo={max(0.5, sp):.3f}," if sp != 1.0 else ""
             af += f"afade=t=in:d=0.04,afade=t=out:st={max(0.0, n - 0.06):.3f}:d=0.06"
             run(["ffmpeg", "-v", "error", "-y", "-ss", f"{s:.3f}", "-t", f"{e - s:.3f}", "-i", str(root / it["src"]),
-                 "-vf", vf, "-af", af, "-t", f"{n:.3f}", *common, str(p)])
+                 "-vf", vf, "-af", af, "-t", f"{n:.4f}",
+                 *(["-frames:v", str(int(it["frames"]))] if "frames" in it else []), *common, str(p)])
         elif "card" in it:
             d = float(it["dur"])
             fi = float(it.get("fade_in", 0.25))
@@ -76,7 +79,7 @@ def main():
                  "-f", "lavfi", "-t", f"{d:.3f}", "-i", "anullsrc=r=48000:cl=stereo",
                  "-vf", f"scale={W}:{H},fade=t=in:st=0:d={fi},format=yuv420p", "-shortest", *common, str(p)])
         elif "black" in it:
-            d = float(it["black"])
+            d = int(it["frames"]) / fps if "frames" in it else float(it["black"])
             run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-t", f"{d:.3f}", "-i", f"color=c=0x070b16:s={W}x{H}:r={fps}",
                  "-f", "lavfi", "-t", f"{d:.3f}", "-i", "anullsrc=r=48000:cl=stereo", "-shortest", *common, str(p)])
     # join

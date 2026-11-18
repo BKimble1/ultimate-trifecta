@@ -69,3 +69,11 @@ Apple frameworks (GameKit, GameController) are part of the iOS SDK and are used 
 
 - No analytics, advertising, crash-reporting or tracking SDKs.
 - No third-party networking service. Online play uses Apple Game Center, plus the game's own service (`service/`), which runs on the owner's Cloudflare account once deployed. Until then it is off, and nothing claims it is live.
+
+## Website and trailer
+
+| Asset | Source | Where |
+|---|---|---|
+| Trailer score (59 s, 122 bpm, instrumental) | Generated with ElevenLabs Music (`music_v1`) on the owner's ElevenLabs account from the composition plan in `tools/website/trailer_score_plan.json`; the owner confirmed their plan covers commercial use. | `art_src/audio/trailer_score.mp3`, mixed into `website/assets/video/trailer.mp4` |
+| Trailer and website footage | Recorded from the game itself: real offline bot rounds filmed by `game/src/dev/film_director.gd` (`tools/capture_film.sh`) and the character lineup in the dorm. Nothing staged or painted over. | `website/assets/video/` |
+| Website fonts | Archivo and Manrope, SIL Open Font License 1.1 (`website/assets/fonts/OFL.txt`). | `website/assets/fonts/` |

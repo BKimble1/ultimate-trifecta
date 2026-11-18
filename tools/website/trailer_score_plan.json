@@ -1,0 +1,15 @@
+{
+  "model_id": "music_v1",
+  "composition_plan": {
+    "positive_global_styles": ["playful orchestral-pop game trailer", "cartoon heist", "family-friendly", "night-time mischief", "pizzicato strings", "bright brass", "glockenspiel", "snappy drums", "122 bpm", "polished modern mix", "instrumental"],
+    "negative_global_styles": ["vocals", "lyrics", "choir", "dark horror", "heavy metal", "dubstep", "lo-fi", "ambient drone", "sirens"],
+    "sections": [
+      {"section_name": "3 A.M. cold open", "positive_local_styles": ["quiet sneaky pizzicato on tiptoe", "soft ticking clock", "celesta notes", "held breath before the start", "sparse and suspenseful but cute"], "negative_local_styles": ["drums", "brass", "loud"], "duration_ms": 5000, "lines": []},
+      {"section_name": "Breakout and splash", "positive_local_styles": ["the beat drops in on the first bar", "bouncy heist groove", "walking bass", "pizzicato ostinato", "brass stabs", "glockenspiel melody hook", "splashy cymbal accents", "joyful and cheeky"], "negative_local_styles": ["slow", "sparse"], "duration_ms": 14000, "lines": []},
+      {"section_name": "The chase", "positive_local_styles": ["rising tension", "faster driving drums", "staccato strings", "brass hits on the downbeats", "woodwind runs", "playful danger", "build-up with risers"], "negative_local_styles": ["calm", "ambient"], "duration_ms": 16000, "lines": []},
+      {"section_name": "Race home climax", "positive_local_styles": ["triumphant full orchestra", "bold brass fanfare of the main hook", "big drums", "euphoric", "ends on a sharp hit and a short silence"], "negative_local_styles": ["fade out", "minimal"], "duration_ms": 11000, "lines": []},
+      {"section_name": "Winter break interlude", "positive_local_styles": ["cozy festive sleigh bells", "celesta and glockenspiel playing the main hook gently", "warm pizzicato", "light swing", "snowy holiday sparkle"], "negative_local_styles": ["heavy drums", "loud brass"], "duration_ms": 7000, "lines": []},
+      {"section_name": "Title button", "positive_local_styles": ["full band returns for one bar", "final brass and drum button hit on the downbeat", "short sparkling glockenspiel tail", "clean ending"], "negative_local_styles": ["fade out", "long outro"], "duration_ms": 6000, "lines": []}
+    ]
+  }
+}
