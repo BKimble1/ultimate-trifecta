@@ -1111,24 +1111,50 @@ func _check_rifts(dt: float) -> void:
 			continue
 		var at := Rifts.world(layout, int(rf["at"]))
 		for p in players:
-			if p.state != TC.PState.ACTIVE and p.state != TC.PState.STUMBLE:
+			# (build 20) on foot, or driving: a cart takes its driver through
+			var in_cart := (p.state == TC.PState.IN_CART) and p.cart_id >= 0
+			if not in_cart and p.state != TC.PState.ACTIVE and p.state != TC.PState.STUMBLE:
 				continue
-			var pp := p.pos()
-			if Vector2(pp.x - at.x, pp.z - at.z).length() > Rifts.RADIUS or absf(pp.y - at.y) > 1.6:
+			var pp := carts[p.cart_id].pos() if in_cart else p.pos()
+			if absf(pp.y - at.y) > Rifts.HEIGHT:
+				continue
+			# swept: the step from where it was this tick, so a fast run or a
+			# jump can't skip over the portal between two ticks
+			var from := pp if in_cart or p.prev_pos == Vector3.INF else p.prev_pos
+			var reach := Rifts.CART_RADIUS if in_cart else Rifts.RADIUS
+			if _seg_dist_2d(Vector2(at.x, at.z), Vector2(from.x, from.z), Vector2(pp.x, pp.z)) > reach:
 				continue
 			var to := Rifts.world(layout, int(rf["to"]))
-			var out := to + Vector3(-sin(p.yaw), 0.0, -cos(p.yaw)) * 1.4 + Vector3(0, 0.1, 0)
-			p.body.global_position = out
-			p.body.velocity = Vector3.ZERO
-			p.vel = Vector3.ZERO
-			p.end_air_actions()
-			p.tag_phase = SimPlayer.TagPhase.NONE
+			if in_cart:
+				var c: SimCart = carts[p.cart_id]
+				# out of the far end, facing the same way, still rolling
+				var cout := to + c.forward() * 2.6 + Vector3(0, 0.05, 0)
+				c.body.global_position = cout
+				c.body.velocity = Vector3.ZERO
+				p.body.global_position = c.pos() + c.right() * -0.35 + Vector3(0, 0.3, 0)
+			else:
+				var out := to + Vector3(-sin(p.yaw), 0.0, -cos(p.yaw)) * 1.4 + Vector3(0, 0.1, 0)
+				p.body.global_position = out
+				p.body.velocity = Vector3.ZERO
+				p.vel = Vector3.ZERO
+				p.end_air_actions()
+				p.tag_phase = SimPlayer.TagPhase.NONE
 			p.clear_history()
 			p.prev_pos = Vector3.INF
 			rf["open"] = false
 			rf["wait"] = _rift_rng.randf_range(Rifts.REOPEN_WAIT.x, Rifts.REOPEN_WAIT.y)
 			_emit(TC.Ev.RIFT, p.id, -1, int(rf["to"]), at, i)
 			break
+
+
+## Distance from a point to a segment, in the ground plane.
+static func _seg_dist_2d(q: Vector2, a: Vector2, b: Vector2) -> float:
+	var ab := b - a
+	var l2 := ab.length_squared()
+	if l2 < 0.000001:
+		return q.distance_to(a)
+	var t := clampf((q - a).dot(ab) / l2, 0.0, 1.0)
+	return q.distance_to(a + ab * t)
 
 
 ## (2.2 build 16) The Squeaky Duck lands: the Night Watch close to it trip

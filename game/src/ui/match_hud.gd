@@ -1629,6 +1629,23 @@ func suggested_goal() -> Array:
 	return ["water", bi] if bi >= 0 else []
 
 
+## (build 20) The closest cart nobody is driving: {pos: Vector2, dist} or {}.
+func nearest_free_cart(me: Vector3) -> Dictionary:
+	var best := {}
+	if mc == null:
+		return best
+	for i in mc.cart_views.size():
+		var crs: Dictionary = mc._cart_rs(i)
+		if crs.is_empty() or bool(crs.get("occupied", false)):
+			continue
+		var cp: Vector3 = crs["pos"]
+		var q := Vector2(cp.x, cp.z)
+		var d := q.distance_to(Vector2(me.x, me.z))
+		if best.is_empty() or d < float(best["dist"]):
+			best = {"pos": q, "dist": d}
+	return best
+
+
 func _bearing(me: Vector3, p: Vector2) -> float:
 	var cam := mc.camera
 	return wrapf(atan2(p.x - me.x, -(p.y - me.z)) + (cam.yaw if cam else 0.0), -PI, PI)
@@ -1667,7 +1684,16 @@ func _personal_rows(phase: int, role: int) -> Array:
 			tag_txt = "Tag recharging"
 		else:
 			tag_txt = "Tag lights up in reach"
-		if not over:
+		# (build 20) on foot with nothing to say about the tag yet: the row
+		# points at the nearest free cart instead (arrow and metres, like the
+		# runners' "Next" row); "Tag ready" / "Tag recharging" still win
+		var nc := {}
+		if not over and tag_txt == "Tag lights up in reach" and (st == TC.PState.ACTIVE or st == TC.PState.STUMBLE):
+			nc = nearest_free_cart(pos)
+		if not nc.is_empty() and float(nc["dist"]) > 5.0:
+			rows.append({"type": "goal", "icon": "cart", "col": UIKit.PATROL, "text": "Nearest cart", "small": true,
+				"bearing": _bearing(pos, nc["pos"]), "dist": float(nc["dist"])})
+		elif not over:
 			rows.append({"type": "line", "icon": tag_icon, "col": tag_col, "text": tag_txt, "small": true})
 		var guard: Array = []
 		for i in tg.size():

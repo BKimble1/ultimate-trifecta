@@ -466,3 +466,49 @@ func test_layout_at_phone_and_ipad_sizes() -> void:
 	UIKit.emulation = orig_emu
 	t.get_tree().root.size = orig_size
 	await _frames(2)
+
+
+func test_nearest_cart_arrow_points_at_the_cart() -> void:
+	# (build 20) on foot, the Night Watch's card has an arrow and metres to
+	# the nearest free cart, camera-relative like the runners' "Next" arrow
+	var mc := await _begin("patrol", 2)
+	mc.sim._set_phase(TC.Phase.PLAYING)
+	var me := mc.sim.player(mc.local_slot)
+	if me.cart_id >= 0:
+		var c0: SimCart = mc.sim.carts[me.cart_id]
+		c0.occupant = -1
+		me.cart_id = -1
+		Motor.set_body_enabled(me.body, true)
+	me.state = TC.PState.ACTIVE
+	# the free cart nearest a spot 20 m due east of cart 1
+	var cart: SimCart = mc.sim.carts[1]
+	cart.occupant = -1
+	var cp := cart.pos()
+	me.body.global_position = Vector3(cp.x + 20.0, cp.y + 0.6, cp.z)
+	await _frames(6)
+	mc.camera.yaw = 0.0                      # looking north (-z): the cart is to the left
+	var row := {}
+	for r in _rows(mc):
+		if String(r.get("text", "")) == "Nearest cart":
+			row = r
+	t.check(not row.is_empty(), "a Nearest cart row on foot")
+	if not row.is_empty():
+		var near := mc.hud.nearest_free_cart(me.pos())
+		t.check(absf(float(row["dist"]) - float(near["dist"])) < 0.5, "its metres are the nearest free cart's (%d)" % int(row["dist"]))
+		var want := wrapf(atan2((near["pos"] as Vector2).x - me.pos().x, -((near["pos"] as Vector2).y - me.pos().z)), -PI, PI)
+		t.check(absf(wrapf(float(row["bearing"]) - want, -PI, PI)) < 0.05, "it points at that cart")
+	# face the cart: the arrow points straight up
+	var np := mc.hud.nearest_free_cart(me.pos())
+	var to := (np["pos"] as Vector2) - Vector2(me.pos().x, me.pos().z)
+	mc.camera.yaw = atan2(-to.x, -to.y)
+	for r in _rows(mc):
+		if String(r.get("text", "")) == "Nearest cart":
+			t.check(absf(float(r["bearing"])) < 0.05, "facing the cart, the arrow points ahead (%.2f)" % float(r["bearing"]))
+	# driving: no cart arrow
+	me.state = TC.PState.IN_CART
+	var none := true
+	for r in _rows(mc):
+		if String(r.get("text", "")) == "Nearest cart":
+			none = false
+	t.check(none, "no cart arrow while driving")
+	await _end(mc)

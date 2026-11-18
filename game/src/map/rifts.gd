@@ -11,7 +11,13 @@ extends RefCounted
 ## (2.2 build 17) rarer: at most two at once, each appearing after a random
 ## wait, staying a while, then fading if nobody used it
 const COUNT := 2            # rift slots (at most this many open at once)
-const RADIUS := 1.1         # step this close to the centre to go through
+## (build 20) the catch matches the portal you see: its glowing ground ring
+## is 1.25 m across the middle and a runner is ~0.35 m wide, so anyone whose
+## body touches the ring goes through (1.1 m let runners pass the visible
+## portal's edge with nothing happening).  A cart's middle within CART_RADIUS.
+const RADIUS := 1.55
+const CART_RADIUS := 2.1
+const HEIGHT := 2.6         # the portal's height: a jump through it counts
 const FIRST_WAIT := Vector2(20.0, 70.0)   # seconds into the round a slot first opens
 const REOPEN_WAIT := Vector2(50.0, 110.0) # after it closes (used or faded)
 const LIFE := Vector2(45.0, 75.0)         # how long an unused rift stays open
