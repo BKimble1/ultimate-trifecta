@@ -1023,7 +1023,7 @@ func challenge_cards() -> Array:
 	var items: Array = snap.get("items", []) if snap.get("items") is Array else []
 	var pin := pinned_challenge_id()
 	var out: Array = []
-	for d in ChallengeRules.defs():
+	for d in ChallengeRules.defs(t):   # (build 22) today's three on the weekly schedule
 		var kind := String(d["period"])
 		var per := ChallengeRules.period_of(kind, t)
 		var card := {"id": String(d["id"]), "name": String(d["name"]), "task": String(d["task"]), "period": kind, "metric": String(d["metric"]),
@@ -1162,7 +1162,7 @@ func _round_challenges(rec: Dictionary) -> Dictionary:
 		var before: Dictionary = rec.get("challenge_before", {})
 		var lines: Array = []
 		var xp := 0
-		for d in ChallengeRules.defs():
+		for d in ChallengeRules.defs(server_now()):
 			var add := int(inc.get(String(d["metric"]), 0))
 			if add <= 0:
 				continue

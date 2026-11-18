@@ -1,5 +1,8 @@
 // Pass 8 challenges: three daily and three weekly goals that add Season XP
-// to the existing pass.  The game's ChallengeRules (game/src/core/
+// to the existing pass.  (2.2 build 22) The daily three come from a pool of
+// 21 on a fixed Monday-to-Sunday schedule (economy.challenges.daily_pool /
+// daily_schedule, UTC days, Monday first) that repeats every week; a round
+// counts toward the daily three of the UTC day it started on.  The game's ChallengeRules (game/src/core/
 // challenge_rules.gd) implements the same rules from the same catalogue
 // numbers (economy.challenges).
 //
@@ -36,9 +39,35 @@ export function config() {
   return C;
 }
 
-// The goals in display order: daily then weekly.
-export function defs() {
-  return [...C.daily.map((d) => ({ ...d, period: 'daily' })), ...C.weekly.map((d) => ({ ...d, period: 'weekly' }))];
+export function dailyPool() {
+  return C.daily_pool || C.daily || [];
+}
+
+// 0 Monday .. 6 Sunday (UTC; 1970-01-01 was a Thursday).
+export function weekdayIndex(t) {
+  return (Math.floor(t / DAY) + 3) % 7;
+}
+
+// The daily challenges of the UTC day containing t, in schedule order.
+export function dailyDefs(t) {
+  const sched = C.daily_schedule;
+  const pool = dailyPool();
+  if (!Array.isArray(sched) || sched.length !== 7) return pool.slice(0, 3);
+  const out = sched[weekdayIndex(t)].map((id) => pool.find((d) => d.id === id)).filter(Boolean);
+  return out.length ? out : pool.slice(0, 3);
+}
+
+// The goals in display order: the daily three of t's day, then weekly.
+export function defs(t = Date.now()) {
+  return [...dailyDefs(t).map((d) => ({ ...d, period: 'daily' })), ...C.weekly.map((d) => ({ ...d, period: 'weekly' }))];
+}
+
+// Every challenge there is (any day's daily and the weekly), by id.
+export function defById(id) {
+  const d = dailyPool().find((x) => x.id === id);
+  if (d) return { ...d, period: 'daily' };
+  const w = C.weekly.find((x) => x.id === id);
+  return w ? { ...w, period: 'weekly' } : null;
 }
 
 export function graceMs() {
@@ -88,12 +117,27 @@ function teamWon(row, outcome) {
   return (row.role === ROLE.RUNNER && outcome === OUTCOME.RUNNERS_WIN) || (row.role === ROLE.PATROL && outcome === OUTCOME.PATROL_WIN);
 }
 
-// What one verified row adds: {state, active_rounds, credits, round_wins}.
+// Every metric a challenge can count (build 22: the daily pool's).
+export const METRICS = ['active_rounds', 'credits', 'round_wins', 'stamps', 'trifectas', 'homes', 'first_homes', 'captures', 'coins',
+  'runner_rounds', 'watch_rounds', 'runner_wins', 'watch_wins'];
+
+// What one verified row adds: {state, and one count per METRICS entry}.
 export function increments(row, outcome, roundTime) {
-  const none = { active_rounds: 0, credits: 0, round_wins: 0 };
+  const none = Object.fromEntries(METRICS.map((m) => [m, 0]));
   if ((row.v | 0) < REPORT_VERSION) return { state: 'no_evidence', ...none };
   if (!activeEnough(row, roundTime)) return { state: 'inactive', ...none };
-  return { state: 'applied', active_rounds: 1, credits: credits(row), round_wins: teamWon(row, outcome) ? 1 : 0 };
+  const runner = (row.role | 0) === ROLE.RUNNER;
+  const won = teamWon(row, outcome);
+  const stamps = runner ? Math.min(Math.max(0, row.stamps | 0), 3) : 0;
+  const home = runner && !!row.finished;
+  const coinCap = CAT.economy.eligibility.max_coin_spawns;
+  return {
+    state: 'applied', active_rounds: 1, credits: credits(row), round_wins: won ? 1 : 0,
+    stamps, trifectas: stamps >= 3 ? 1 : 0, homes: home ? 1 : 0, first_homes: home && row.first_home ? 1 : 0,
+    captures: runner ? 0 : Math.min(Math.max(0, row.unique_captures | 0), 7),
+    coins: Math.min(Math.max(0, row.coins_picked | 0), coinCap),
+    runner_rounds: runner ? 1 : 0, watch_rounds: runner ? 0 : 1, runner_wins: runner && won ? 1 : 0, watch_wins: !runner && won ? 1 : 0,
+  };
 }
 
 // ---------------------------------------------------------------- settlement
@@ -112,7 +156,7 @@ export function settleStmts(q, e, pid, mid, rd, row, sid, t) {
         closed.push(kind);
         continue;
       }
-      for (const d of defs().filter((x) => x.period === kind)) {
+      for (const d of defs(rd.started_at).filter((x) => x.period === kind)) {
         const n = inc[d.metric] | 0;
         if (n <= 0) continue;
         const iid = instanceId(kind, per.key, d.id);
@@ -192,7 +236,7 @@ export async function snapshot(q, e, pid, t) {
   });
   const items = [];
   const seen = new Set();
-  for (const d of defs()) {
+  for (const d of defs(t)) {
     const per = periods[d.period];
     const iid = instanceId(d.period, per.key, d.id);
     seen.add(iid);
@@ -200,8 +244,7 @@ export async function snapshot(q, e, pid, t) {
       set_version: C.version, metric: d.metric, goal: d.goal, xp: d.xp, progress: 0 };
     items.push(view(r, d, true));
   }
-  const defOf = new Map(defs().map((d) => [d.id, d]));
-  const recent = rows.filter((r) => !seen.has(r.instance_id) && r.progress > 0).map((r) => view(r, defOf.get(r.challenge_id), false));
+  const recent = rows.filter((r) => !seen.has(r.instance_id) && r.progress > 0).map((r) => view(r, defById(r.challenge_id), false));
   return {
     version: C.version, server_time: t, grace_s: C.grace_s,
     daily: { start: periods.daily.start, end: periods.daily.end }, weekly: { start: periods.weekly.start, end: periods.weekly.end },

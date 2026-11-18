@@ -2067,8 +2067,34 @@ func _build_challenges() -> void:
 	var list := UIKit.vbox(UIKit.SP_S)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sc.add_child(list)
+	var hint := UIKit.styled("Tap a goal to pin it.", "caption", UIKit.IVORY_MUTED)
+	hint.name = "PinHint"
+	hint.add_theme_font_size_override("font_size", 18)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_ch = {"head": head, "role": role, "status": status, "scroll": sc, "list": list, "groups": {}, "hint": hint, "day": -1}
+	_fill_challenge_cards()
+	detail_panel.resized.connect(_fit_challenges)
+	# reset times and a new period are checked twice a minute (labels are
+	# updated in place: nothing is rebuilt)
+	_ch_timer = Timer.new()
+	_ch_timer.wait_time = 30.0
+	_ch_timer.timeout.connect(_on_challenge_tick)
+	add_child(_ch_timer)
+	_ch_timer.start()
+
+
+## (build 22) One card per goal of the current day (the daily three change
+## every day on the weekly schedule) and the weekly three; called again when
+## a new UTC day starts while the screen is open.
+func _fill_challenge_cards() -> void:
+	var list: VBoxContainer = _ch["list"]
+	for c in list.get_children():
+		list.remove_child(c)
+		if c != _ch["hint"]:
+			c.queue_free()
+	challenge_cards.clear()
 	var groups := {}
-	for d in ChallengeRules.defs():
+	for d in ChallengeRules.defs(Wallet.server_now()):
 		var kind := String(d["period"])
 		if not groups.has(kind):
 			var gh := UIKit.styled("", "overline", UIKit.IVORY_MUTED)
@@ -2081,20 +2107,8 @@ func _build_challenges() -> void:
 		card.pressed.connect(_toggle_pin.bind(String(d["id"])))
 		list.add_child(card)
 		challenge_cards.append(card)
-	var hint := UIKit.styled("Tap a goal to pin it.", "caption", UIKit.IVORY_MUTED)
-	hint.name = "PinHint"
-	hint.add_theme_font_size_override("font_size", 18)
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	list.add_child(hint)
-	_ch = {"head": head, "role": role, "status": status, "scroll": sc, "list": list, "groups": groups, "hint": hint, "day": -1}
-	detail_panel.resized.connect(_fit_challenges)
-	# reset times and a new period are checked twice a minute (labels are
-	# updated in place: nothing is rebuilt)
-	_ch_timer = Timer.new()
-	_ch_timer.wait_time = 30.0
-	_ch_timer.timeout.connect(_on_challenge_tick)
-	add_child(_ch_timer)
-	_ch_timer.start()
+	list.add_child(_ch["hint"])
+	_ch["groups"] = groups
 
 
 ## Wrapping labels get their width from the panel's allocated width.
@@ -2139,6 +2153,8 @@ func _refresh_challenges() -> void:
 func _on_challenge_tick() -> void:
 	var day := ChallengeRules.day_start(Wallet.server_now())
 	var rolled := int(_ch.get("day", -1)) >= 0 and day != int(_ch["day"])
+	if rolled:
+		_fill_challenge_cards()   # (build 22) the new day's three
 	_refresh_challenges()
 	if rolled and Cloud.signed_in() and not Wallet.syncing:
 		Wallet.refresh()

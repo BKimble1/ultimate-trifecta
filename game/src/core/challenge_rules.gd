@@ -1,7 +1,10 @@
 class_name ChallengeRules
 extends RefCounted
 ## Pass 8 challenges: three daily and three weekly goals that add Season XP
-## to the existing pass (docs/ECONOMY.md §10).  The numbers live in
+## to the existing pass (docs/ECONOMY.md §10).  (2.2 build 22) The daily
+## three come from a pool of 21 on a fixed Monday-to-Sunday schedule
+## ("daily_pool", "daily_schedule": UTC days, Monday first) that repeats
+## every week; the weekly three stay the same.  The numbers live in
 ## config/catalogue.json "economy.challenges"; service/src/challenges.js
 ## implements the same rules and is the authority (it settles progress and
 ## the completion bonus with the round, once).  Pure functions, no scene
@@ -20,7 +23,7 @@ extends RefCounted
 const DAY_S := 86400
 ## the host report version that carries active_s (Economy.row_canonical v2)
 const REPORT_VERSION := 2
-const ROLE_LINE := "Splash waters or tag different runners."
+const ROLE_LINE := "New daily goals each day. Online rounds count."
 
 
 static func cfg() -> Dictionary:
@@ -28,21 +31,63 @@ static func cfg() -> Dictionary:
 	return c if c is Dictionary else {}
 
 
-## The goals in display order (daily, then weekly), each with its "period".
-static func defs() -> Array:
+## (build 22) Every daily challenge there is (the pool).
+static func daily_pool() -> Array:
+	var p: Variant = cfg().get("daily_pool", cfg().get("daily", []))
+	return p if p is Array else []
+
+
+## Which day of the schedule a time falls on: 0 Monday .. 6 Sunday (UTC).
+static func weekday_index(t: int) -> int:
+	return posmod(int(floor(float(t) / DAY_S)) + 3, 7)
+
+
+## The daily challenges of the UTC day containing `t`, in schedule order.
+static func daily_defs(t: int) -> Array:
+	var sched: Variant = cfg().get("daily_schedule", [])
+	var ids: Array = []
+	if sched is Array and (sched as Array).size() == 7:
+		ids = sched[weekday_index(t)]
 	var out: Array = []
-	for kind in ["daily", "weekly"]:
-		for d in cfg().get(kind, []):
-			var e: Dictionary = (d as Dictionary).duplicate()
-			e["period"] = kind
-			out.append(e)
+	for cid in ids:
+		for d in daily_pool():
+			if String(d["id"]) == String(cid):
+				out.append(d)
+	if out.is_empty():
+		out = daily_pool().slice(0, 3)   # (an older catalogue: its fixed three)
 	return out
 
 
+## The goals in display order (daily, then weekly), each with its "period":
+## today's daily three (the service's clock, `t`; now by default) and the
+## weekly three.
+static func defs(t: int = -1) -> Array:
+	if t < 0:
+		t = int(Time.get_unix_time_from_system())
+	var out: Array = []
+	for d in daily_defs(t):
+		var e: Dictionary = (d as Dictionary).duplicate()
+		e["period"] = "daily"
+		out.append(e)
+	for d in cfg().get("weekly", []):
+		var e2: Dictionary = (d as Dictionary).duplicate()
+		e2["period"] = "weekly"
+		out.append(e2)
+	return out
+
+
+## Any challenge by id: the whole daily pool and the weekly ones.
 static func def(id: String) -> Dictionary:
-	for d in defs():
+	for d in daily_pool():
 		if String(d["id"]) == id:
-			return d
+			var e: Dictionary = (d as Dictionary).duplicate()
+			e["period"] = "daily"
+			return e
+	for d in cfg().get("weekly", []):
+		if String(d["id"]) == id:
+			var e2: Dictionary = (d as Dictionary).duplicate()
+			e2["period"] = "weekly"
+			return e2
 	return {}
 
 
@@ -50,9 +95,28 @@ static func grace_s() -> int:
 	return int(cfg().get("grace_s", DAY_S))
 
 
+## The most Season XP a period's challenges can give: the weekly three, or
+## (daily) the richest day of the schedule.
 static func max_xp(kind: String) -> int:
+	if kind == "daily":
+		var best := 0
+		for i in 7:
+			var n0 := 0
+			for d in daily_defs(i * DAY_S + (4 * DAY_S)):   # 1970-01-05 was a Monday
+				n0 += int(d.get("xp", 0))
+			best = maxi(best, n0)
+		return best
 	var n := 0
 	for d in cfg().get(kind, []):
+		n += int(d.get("xp", 0))
+	return n
+
+
+## The Season XP the daily challenges of the schedule's day `i` (0 Monday)
+## give in all.
+static func day_xp(i: int) -> int:
+	var n := 0
+	for d in daily_defs((4 + i) * DAY_S):
 		n += int(d.get("xp", 0))
 	return n
 
@@ -96,13 +160,38 @@ static func credits(row: Dictionary) -> int:
 	return mini(int(cfg().get("credit_cap_per_round", 3)), s + u)
 
 
+## Every metric a challenge can count (build 22: the daily pool's).
+const METRICS := ["active_rounds", "credits", "round_wins", "stamps", "trifectas", "homes", "first_homes", "captures", "coins",
+	"runner_rounds", "watch_rounds", "runner_wins", "watch_wins"]
+
+
 ## What a round row adds to challenges, as the service will settle it:
-## {state: "applied" | "inactive", active_rounds, credits, round_wins}.
+## {state: "applied" | "inactive", and one count per METRICS entry}.
 static func increments(row: Dictionary, results: Dictionary) -> Dictionary:
+	var out := {"state": "inactive"}
+	for m in METRICS:
+		out[m] = 0
 	if not active_enough(row, float(results.get("round_time", 0.0))):
-		return {"state": "inactive", "active_rounds": 0, "credits": 0, "round_wins": 0}
-	return {"state": "applied", "active_rounds": 1, "credits": credits(row),
-		"round_wins": 1 if Economy.team_won(row, int(results.get("outcome", 0))) else 0}
+		return out
+	var runner := int(row.get("role", 0)) == TC.Role.RUNNER
+	var won := Economy.team_won(row, int(results.get("outcome", 0)))
+	var stamps := clampi(int(row.get("stamps", 0)), 0, 3) if runner else 0
+	var home := runner and bool(row.get("finished", false))
+	out["state"] = "applied"
+	out["active_rounds"] = 1
+	out["credits"] = credits(row)
+	out["round_wins"] = 1 if won else 0
+	out["stamps"] = stamps
+	out["trifectas"] = 1 if stamps >= 3 else 0
+	out["homes"] = 1 if home else 0
+	out["first_homes"] = 1 if home and bool(row.get("first_home", false)) else 0
+	out["captures"] = 0 if runner else clampi(int(row.get("unique_captures", 0)), 0, 7)
+	out["coins"] = clampi(int(row.get("coins_picked", 0)), 0, int(Economy.cfg().get("eligibility", {}).get("max_coin_spawns", 10)))
+	out["runner_rounds"] = 1 if runner else 0
+	out["watch_rounds"] = 0 if runner else 1
+	out["runner_wins"] = 1 if runner and won else 0
+	out["watch_wins"] = 1 if won and not runner else 0
+	return out
 
 
 # ------------------------------------------------------------------ text

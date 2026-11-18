@@ -447,24 +447,35 @@ func _base_season_xp() -> float:
 
 ## One modelled week: `days` active days of `per_day` eligible, active
 ## rounds.  A goal counts as completed when the period's expected amount
-## (1 active round, 1.85 credits = half 2.2 splashes / half 1.5 different
-## tags, 0.5 Round Wins per round) reaches it.  {base, daily, weekly, total}.
+## reaches it.  Per round, half as a runner and half as the Night Watch:
+## 1 active round, 1.85 credits (half 2.2 splashes / half 1.5 different
+## tags), 0.5 Round Wins, 1.1 waters, 0.2 full trifectas, 0.3 times home,
+## 0.06 first home, 0.75 runners tagged, 1.5 Coins, half a round in each
+## role and a quarter of a win in each.  (2.2 build 22) The daily goals
+## follow the weekly schedule: the week's daily XP is the average day's
+## times the active days.  {base, daily, weekly, total}.
+const PER_ROUND := {"active_rounds": 1.0, "credits": (2.2 + 1.5) * 0.5, "round_wins": 0.5, "stamps": 1.1, "trifectas": 0.2,
+	"homes": 0.3, "first_homes": 0.06, "captures": 0.75, "coins": 1.5, "runner_rounds": 0.5, "watch_rounds": 0.5,
+	"runner_wins": 0.25, "watch_wins": 0.25}
+
+
 func _model_week(days: int, per_day: int) -> Dictionary:
-	var per_round := {"active_rounds": 1.0, "credits": (2.2 + 1.5) * 0.5, "round_wins": 0.5}
 	var c := ChallengeRules.cfg()
-	var daily := 0
-	for d in c["daily"]:
-		if float(per_round[String(d["metric"])]) * per_day >= float(d["goal"]) - 0.0001:
-			daily += int(d["xp"])
+	var daily_week := 0.0
+	for i in 7:
+		for d in ChallengeRules.daily_defs((4 + i) * 86400):   # 1970-01-05 was a Monday
+			if float(PER_ROUND[String(d["metric"])]) * per_day >= float(d["goal"]) - 0.0001:
+				daily_week += float(d["xp"])
+	var daily := daily_week / 7.0 * days
 	var weekly := 0
 	for d in c["weekly"]:
-		if float(per_round[String(d["metric"])]) * per_day * days >= float(d["goal"]) - 0.0001:
+		if float(PER_ROUND[String(d["metric"])]) * per_day * days >= float(d["goal"]) - 0.0001:
 			weekly += int(d["xp"])
 	if days * per_day == 0:
-		daily = 0
+		daily = 0.0
 		weekly = 0
 	var base := _base_season_xp() * days * per_day
-	return {"base": base, "daily": daily * days, "weekly": weekly, "total": base + daily * days + weekly}
+	return {"base": base, "daily": daily, "weekly": weekly, "total": base + daily + weekly}
 
 
 ## Pass 8: challenges add Season XP to the same pass (no other currency).
@@ -472,7 +483,8 @@ func _model_week(days: int, per_day: int) -> Dictionary:
 ## challenges"), recomputed from the live catalogue; the brief's sample
 ## week (20 rounds over 5 days) is the typical one.
 func test_challenges_accelerate_the_pass_as_documented() -> void:
-	t.eq(ChallengeRules.max_xp("daily"), 150, "daily challenges: at most 150 Season XP a day")
+	t.eq(ChallengeRules.max_xp("daily"), 200, "(build 22) daily challenges: at most 200 Season XP on the richest day")
+	t.eq(range(7).map(func(i: int) -> int: return ChallengeRules.day_xp(i)), [150, 150, 170, 160, 180, 200, 180], "each day of the schedule (Monday first)")
 	t.eq(ChallengeRules.max_xp("weekly"), 450, "weekly challenges: at most 450 Season XP a week")
 	var tier30 := float(Economy.tier_xp("s1", 30))
 	t.eq(int(tier30), 8300, "tier 30 and its threshold are unchanged")
@@ -480,25 +492,26 @@ func test_challenges_accelerate_the_pass_as_documented() -> void:
 	var typical := _model_week(5, 4)
 	var heavy := _model_week(7, 8)
 	t.near(float(typical["base"]), 1715.0, 0.5, "typical week: 20 rounds of base XP")
-	t.eq(int(typical["daily"]), 750, "typical week: every daily goal on 5 days")
+	t.near(float(typical["daily"]), 585.7, 0.1, "typical week: the daily goals 4 rounds reach, on 5 days of the schedule")
 	t.eq(int(typical["weekly"]), 450, "typical week: every weekly goal")
-	t.near(float(typical["total"]), 2915.0, 0.5, "typical week: about 2,915 Season XP")
-	t.near(tier30 / float(typical["total"]), 2.85, 0.01, "typical: tier 30 in about 2.85 weeks")
-	t.near(tier30 / (float(typical["total"]) / 20.0), 56.9, 0.1, "typical: about 57 rounds to tier 30 (97 without challenges)")
-	t.near(float(light["total"]), 714.5, 0.5, "light week (2 days x 3 rounds): Night Shift and Team Effort only")
+	t.near(float(typical["total"]), 2750.7, 0.5, "typical week: about 2,750 Season XP")
+	t.near(tier30 / float(typical["total"]), 3.02, 0.01, "typical: tier 30 in about 3 weeks")
+	t.near(tier30 / (float(typical["total"]) / 20.0), 60.3, 0.1, "typical: about 60 rounds to tier 30 (97 without challenges)")
+	t.near(float(light["total"]), 617.4, 0.5, "light week (2 days x 3 rounds)")
 	t.eq(int(light["weekly"]), 0, "light week: no weekly goal")
-	t.near(tier30 / float(light["total"]), 11.6, 0.05, "light: about 11.6 weeks (16.1 without challenges)")
-	t.near(float(heavy["total"]), 6302.0, 0.5, "heavy week (7 days x 8 rounds)")
-	t.near(tier30 / float(heavy["total"]), 1.32, 0.01, "heavy: about 1.3 weeks")
+	t.near(tier30 / float(light["total"]), 13.44, 0.05, "light: about 13.4 weeks (16.1 without challenges)")
+	t.near(float(heavy["total"]), 6372.0, 0.5, "heavy week (7 days x 8 rounds)")
+	t.near(tier30 / float(heavy["total"]), 1.30, 0.01, "heavy: about 1.3 weeks")
 	# challenges accelerate without replacing the base: their share stays under half
 	for wk in [light, typical, heavy]:
 		var share := (float(wk["daily"]) + float(wk["weekly"])) / float(wk["total"])
 		t.check(share < 0.45, "challenges are %.0f%% of a modelled week's Season XP" % (share * 100.0))
 	# no round, no challenge XP; challenges give Season XP only
 	t.eq(int(_model_week(0, 0)["total"]), 0, "no rounds, nothing")
-	for d in ChallengeRules.defs():
-		t.check(not (d as Dictionary).has("coins") and String(d["metric"]) in ["active_rounds", "credits", "round_wins"],
-			"%s: Season XP from play only (no Coins, no purchase metric)" % d["id"])
+	for d in ChallengeRules.daily_pool() + (ChallengeRules.cfg()["weekly"] as Array):
+		t.check(not (d as Dictionary).has("coins") and String(d["metric"]) in ChallengeRules.METRICS,
+			"%s: Season XP from play only (no Coins reward, no purchase metric)" % d["id"])
+		t.check(int(d["xp"]) >= 50 and int(d["goal"]) >= 1, "%s: a fair goal and reward" % d["id"])
 
 
 ## Pass 9: the 100-tier pacing model (docs/ECONOMY.md §4 "Pacing to tier
@@ -515,20 +528,20 @@ func test_pass_to_tier_100_pacing_model() -> void:
 	var frequent := _model_week(7, 8)
 	var base := _base_season_xp()
 	# regular: 5 days x 4 rounds
-	t.near(t50 / float(regular["total"]), 5.25, 0.01, "regular: tier 50 in about 5.25 weeks")
-	t.near(t100 / float(regular["total"]), 11.25, 0.01, "regular: tier 100 in about 11.25 weeks")
+	t.near(t50 / float(regular["total"]), 5.56, 0.01, "regular: tier 50 in about 5.6 weeks")
+	t.near(t100 / float(regular["total"]), 11.92, 0.01, "regular: tier 100 in about 11.9 weeks")
 	t.check(t100 / float(regular["total"]) <= 12.0, "regular: inside a 12-week season")
-	t.near(t100 / (float(regular["total"]) / 20.0), 225.0, 0.5, "regular: about 225 rounds to tier 100")
-	t.near(t50 / (float(regular["total"]) / 20.0), 105.0, 0.5, "regular: about 105 rounds to tier 50")
+	t.near(t100 / (float(regular["total"]) / 20.0), 238.5, 0.5, "regular: about 238 rounds to tier 100")
+	t.near(t50 / (float(regular["total"]) / 20.0), 111.2, 0.5, "regular: about 111 rounds to tier 50")
 	# frequent: 7 days x 8 rounds
-	t.near(t50 / float(frequent["total"]), 2.43, 0.01, "frequent: tier 50 in about 2.4 weeks")
-	t.near(t100 / float(frequent["total"]), 5.20, 0.01, "frequent: tier 100 in about 5.2 weeks")
-	t.near(t100 / (float(frequent["total"]) / 56.0), 291.5, 0.5, "frequent: about 291 rounds")
+	t.near(t50 / float(frequent["total"]), 2.40, 0.01, "frequent: tier 50 in about 2.4 weeks")
+	t.near(t100 / float(frequent["total"]), 5.15, 0.01, "frequent: tier 100 in about 5.1 weeks")
+	t.near(t100 / (float(frequent["total"]) / 56.0), 288.3, 0.5, "frequent: about 288 rounds")
 	t.check(t100 / float(frequent["total"]) >= 4.5, "not finished in a month even playing every day")
 	# modest: 2 days x 3 rounds
-	t.near(t50 / float(modest["total"]), 21.41, 0.01, "modest: tier 50 in about 21 weeks")
-	t.near(t100 / float(modest["total"]), 45.91, 0.01, "modest: tier 100 in about 46 weeks (not expected in one season)")
-	t.near(float(Economy.tier_xp("s1", 30)) / float(modest["total"]), 11.6, 0.05, "modest: tier 30 as before (11.6 weeks)")
+	t.near(t50 / float(modest["total"]), 24.78, 0.01, "modest: tier 50 in about 25 weeks")
+	t.near(t100 / float(modest["total"]), 53.13, 0.01, "modest: tier 100 in about 53 weeks (not expected in one season)")
+	t.near(float(Economy.tier_xp("s1", 30)) / float(modest["total"]), 13.44, 0.05, "modest: tier 30 in about 13.4 weeks")
 	# base Season XP only (no challenges)
 	t.near(t100 / base, 382.5, 0.5, "base only: about 383 rounds to tier 100")
 	# the curve rule: tiers 31-100 never cheaper than tiers 21-30, never a
@@ -538,7 +551,7 @@ func test_pass_to_tier_100_pacing_model() -> void:
 		t.check(Economy.tier_xp("s1", n) - Economy.tier_xp("s1", n - 1) >= step_21_30, "tier %d costs at least the tier 21-30 step" % n)
 	t.near(t100 / float(Economy.tier_xp("s1", 30)), 3.95, 0.01, "tier 100 = 3.95 x the old cap (70 more tiers of 350), not a multiplied cap")
 	# hours: a round is 4-6 minutes in all (docs/ECONOMY.md §3)
-	t.near(225.0 * 4.0 / 60.0, 15.0, 0.01, "regular to tier 100: 15-22.5 hours")
+	t.near(238.5 * 4.0 / 60.0, 15.9, 0.01, "regular to tier 100: about 16-24 hours")
 
 
 func test_legacy_import_is_bounded() -> void:

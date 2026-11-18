@@ -623,14 +623,42 @@
     "legacy_import": {"cap": 2000, "per_online_round": 75, "per_practice_round": 38},
     "challenges": {
       "_comment": "Pass 8: daily and weekly goals that add Season XP to the existing pass (no other currency, no boost, nothing to buy, no claim button). Progress comes only from eligible, service-verified, completed online rounds the player actively played (active_s: seconds of real input or objective play counted by the host's simulation; a round is active when active_s >= min(active.min_s, active.min_share x round time)). A round belongs to the UTC day (00:00 UTC) and week (Monday 00:00 UTC) of its registered start and can settle into that period until grace_s after the period ends. Contribution credits: each unique required-water stamp or each different runner tagged, at most credit_cap_per_round a round. Bonus XP is added in the round's settlement, once per player and challenge instance.",
-      "version": 1,
+      "version": 2,
       "grace_s": 86400,
       "credit_cap_per_round": 3,
       "active": {"min_s": 60, "min_share": 0.4, "window_s": 5},
-      "daily": [
+      "_daily_comment": "2.2 build 22: 21 daily challenges, three a day on a fixed Monday-to-Sunday schedule (daily_schedule, Monday first, UTC days) that repeats every week. Each day has at least one goal anyone can make progress on in any role. Metrics, all from the verified round row of an active online round: active_rounds 1; credits min(3, stamps + runners tagged); round_wins 1 when your team won; stamps unique required-water stamps (0-3); trifectas 1 when all three were splashed; homes 1 when a runner made it home; first_homes 1 when first home; captures different runners tagged (0-7); coins Coins picked up (at most the round's spawns); runner_rounds / watch_rounds 1 in that role; runner_wins / watch_wins 1 when that role's team won.",
+      "daily_pool": [
         {"id": "night_shift", "name": "Night Shift", "task": "Play 2 online rounds", "metric": "active_rounds", "goal": 2, "xp": 50},
         {"id": "campus_contribution", "name": "Campus Contribution", "task": "Earn 6 contribution credits", "metric": "credits", "goal": 6, "xp": 50},
-        {"id": "team_effort", "name": "Team Effort", "task": "Win 1 round, either role", "metric": "round_wins", "goal": 1, "xp": 50}
+        {"id": "team_effort", "name": "Team Effort", "task": "Win 1 round, either role", "metric": "round_wins", "goal": 1, "xp": 50},
+        {"id": "splash_zone", "name": "Splash Zone", "task": "Splash 3 waters as a runner", "metric": "stamps", "goal": 3, "xp": 50},
+        {"id": "home_free", "name": "Home Free", "task": "Make it home as a runner", "metric": "homes", "goal": 1, "xp": 50},
+        {"id": "coin_collector", "name": "Coin Collector", "task": "Pick up 5 Coins on campus", "metric": "coins", "goal": 5, "xp": 50},
+        {"id": "lights_out", "name": "Lights Out", "task": "Tag 2 runners as the Night Watch", "metric": "captures", "goal": 2, "xp": 50},
+        {"id": "warm_up", "name": "Warm Up", "task": "Play 3 online rounds", "metric": "active_rounds", "goal": 3, "xp": 60},
+        {"id": "pocket_change", "name": "Pocket Change", "task": "Pick up 10 Coins on campus", "metric": "coins", "goal": 10, "xp": 60},
+        {"id": "busy_night", "name": "Busy Night", "task": "Earn 8 contribution credits", "metric": "credits", "goal": 8, "xp": 60},
+        {"id": "night_owl", "name": "Night Owl", "task": "Play a round as a runner", "metric": "runner_rounds", "goal": 1, "xp": 50},
+        {"id": "patrol_duty", "name": "Patrol Duty", "task": "Play a round as the Night Watch", "metric": "watch_rounds", "goal": 1, "xp": 50},
+        {"id": "winning_streak", "name": "Winning Streak", "task": "Win 2 rounds, either role", "metric": "round_wins", "goal": 2, "xp": 60},
+        {"id": "double_dip", "name": "Double Dip", "task": "Splash 5 waters as a runner", "metric": "stamps", "goal": 5, "xp": 60},
+        {"id": "on_the_case", "name": "On the Case", "task": "Tag 3 runners as the Night Watch", "metric": "captures", "goal": 3, "xp": 60},
+        {"id": "all_nighter", "name": "All-Nighter", "task": "Play 4 online rounds", "metric": "active_rounds", "goal": 4, "xp": 70},
+        {"id": "full_trifecta", "name": "Full Trifecta", "task": "Splash all 3 waters in one round", "metric": "trifectas", "goal": 1, "xp": 60},
+        {"id": "first_one_in", "name": "First One In", "task": "Be the first runner home in a round", "metric": "first_homes", "goal": 1, "xp": 70},
+        {"id": "great_escape", "name": "Great Escape", "task": "Win a round as a runner", "metric": "runner_wins", "goal": 1, "xp": 60},
+        {"id": "lockdown", "name": "Lockdown", "task": "Win a round as the Night Watch", "metric": "watch_wins", "goal": 1, "xp": 60},
+        {"id": "back_to_bed", "name": "Back to Bed", "task": "Make it home twice as a runner", "metric": "homes", "goal": 2, "xp": 60}
+      ],
+      "daily_schedule": [
+        ["night_shift", "campus_contribution", "team_effort"],
+        ["coin_collector", "splash_zone", "home_free"],
+        ["warm_up", "pocket_change", "lights_out"],
+        ["busy_night", "night_owl", "patrol_duty"],
+        ["winning_streak", "double_dip", "on_the_case"],
+        ["all_nighter", "full_trifecta", "first_one_in"],
+        ["great_escape", "lockdown", "back_to_bed"]
       ],
       "weekly": [
         {"id": "campus_regular", "name": "Campus Regular", "task": "Play 10 online rounds", "metric": "active_rounds", "goal": 10, "xp": 150},

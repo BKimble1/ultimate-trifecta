@@ -98,8 +98,22 @@ function progress(w, cid, current = true) {
 }
 
 test('challenge rules: the catalogue set, UTC periods, Monday weeks, credits, the active threshold, the schema', () => {
-  assert.deepEqual(C.daily.map((d) => [d.id, d.metric, d.goal, d.xp]), [
-    ['night_shift', 'active_rounds', 2, 50], ['campus_contribution', 'credits', 6, 50], ['team_effort', 'round_wins', 1, 50]]);
+  // (build 22) 21 daily goals, three a day on a Monday-to-Sunday schedule that repeats every week
+  assert.equal(C.daily_pool.length, 21);
+  assert.equal(new Set(C.daily_pool.map((d) => d.id)).size, 21, 'unique ids');
+  assert.equal(C.daily_schedule.length, 7);
+  const scheduled = C.daily_schedule.flat();
+  assert.equal(scheduled.length, 21);
+  assert.deepEqual([...new Set(scheduled)].sort(), C.daily_pool.map((d) => d.id).sort(), 'every pool goal on exactly one day');
+  for (const d of C.daily_pool) {
+    assert.ok(CH.METRICS.includes(d.metric), `${d.id}: a metric the settlement counts`);
+    assert.ok(d.goal >= 1 && d.xp >= 50 && d.xp <= 70, `${d.id}: a fair goal and reward`);
+  }
+  const monday = nextMonday();
+  assert.deepEqual(CH.dailyDefs(monday + 5 * 3600e3).map((d) => d.id), ['night_shift', 'campus_contribution', 'team_effort'], 'Monday');
+  assert.deepEqual(CH.dailyDefs(monday + DAY).map((d) => d.id), C.daily_schedule[1], 'Tuesday');
+  assert.deepEqual(CH.dailyDefs(monday + 6 * DAY + DAY - 1).map((d) => d.id), C.daily_schedule[6], 'Sunday up to 23:59:59.999');
+  assert.deepEqual(CH.dailyDefs(monday + 7 * DAY).map((d) => d.id), C.daily_schedule[0], 'and the week repeats');
   assert.deepEqual(C.weekly.map((d) => [d.id, d.metric, d.goal, d.xp]), [
     ['campus_regular', 'active_rounds', 10, 150], ['pull_your_weight', 'credits', 18, 150], ['strong_together', 'round_wins', 4, 150]]);
   assert.equal(C.grace_s, 86400, '24 h settlement grace');
@@ -126,8 +140,15 @@ test('challenge rules: the catalogue set, UTC periods, Monday weeks, credits, th
   assert.equal(CH.activeNeed(100), 40);
   assert.ok(CH.activeEnough({ v: 2, active_s: 60 }, 240) && !CH.activeEnough({ v: 2, active_s: 59 }, 240));
   assert.ok(!CH.activeEnough({ active_s: 200 }, 240), 'a v1 row proves no activity');
-  assert.deepEqual(CH.increments({ v: 2, role: 1, unique_captures: 2, active_s: 100 }, 2, 240), { state: 'applied', active_rounds: 1, credits: 2, round_wins: 1 });
-  assert.deepEqual(CH.increments({ v: 2, role: 0, stamps: 3, active_s: 10 }, 1, 240), { state: 'inactive', active_rounds: 0, credits: 0, round_wins: 0 });
+  const zero = Object.fromEntries(CH.METRICS.map((m) => [m, 0]));
+  assert.deepEqual(CH.increments({ v: 2, role: 1, unique_captures: 2, active_s: 100 }, 2, 240),
+    { ...zero, state: 'applied', active_rounds: 1, credits: 2, round_wins: 1, captures: 2, watch_rounds: 1, watch_wins: 1 });
+  assert.deepEqual(CH.increments({ v: 2, role: 0, stamps: 3, active_s: 10 }, 1, 240), { ...zero, state: 'inactive' });
+  assert.deepEqual(CH.increments({ v: 2, role: 0, stamps: 3, finished: true, first_home: true, coins_picked: 4, active_s: 100 }, 1, 240),
+    { ...zero, state: 'applied', active_rounds: 1, credits: 3, round_wins: 1, stamps: 3, trifectas: 1, homes: 1, first_homes: 1, coins: 4,
+      runner_rounds: 1, runner_wins: 1 });
+  assert.equal(CH.increments({ v: 2, role: 0, coins_picked: 99, active_s: 100 }, 2, 240).coins, E.ECONOMY.eligibility.max_coin_spawns, 'coins at most a round\'s spawns');
+  assert.equal(CH.increments({ v: 2, role: 1, stamps: 3, finished: true, active_s: 100 }, 2, 240).homes, 0, 'only runners make it home');
   // the schema's per-round credit bound is the catalogue's
   const sql = readFileSync(new URL('../migrations/0004_challenges.sql', import.meta.url), 'utf8');
   assert.ok(sql.includes(`credits <= ${C.credit_cap_per_round})`), 'credit CHECK = economy.challenges.credit_cap_per_round');
@@ -232,27 +253,27 @@ test('periods: the registered start\'s UTC day and Monday week, the 24 h grace, 
   assert.ok(s.items.every((i) => i.instance_id.includes(sunday) || i.instance_id.includes(lastWeek)), 'credited to Sunday and last week');
   let hw = await wallet(ctx, P.host);
   assert.equal(progress(hw, 'team_effort'), '0/1', 'Monday\'s goal starts empty');
-  assert.equal(progress(hw, 'team_effort', false), '1/1 +50', 'Sunday\'s completed goal is still shown (within its grace)');
+  assert.equal(progress(hw, 'great_escape', false), '1/1 +60', 'Sunday\'s completed goal (a runners\' win) is still shown (within its grace)');
   assert.equal(hw.challenges.daily.start, mon, 'the current day');
   assert.equal(hw.challenges.weekly.start, mon, 'the current week starts this Monday');
   // a round registered after the reset belongs to the new period: Sunday's expired goal takes no more rounds
   const fresh = await playRound(ctx, P, { outcome: 1 });
   assert.ok(fresh.ah.body.settlement.challenges.items.every((i) => i.instance_id.includes(new Date(mon).toISOString().slice(0, 10))));
   hw = await wallet(ctx, P.host);
-  assert.equal(progress(hw, 'campus_contribution', false), '3/6', 'Sunday\'s goal stays where it stopped');
+  assert.equal(progress(hw, 'back_to_bed', false), '1/2', 'Sunday\'s goal stays where it stopped');
   assert.equal(progress(hw, 'campus_contribution'), '3/6', 'Monday\'s has its own progress');
 
   // Tuesday 23:50: a round whose confirmation arrives late
   ctx.clock.t = mon + 2 * DAY - 10 * 60 * 1000;
   P = await party(ctx, 'again');
-  const tue = await playRound(ctx, P, { outcome: 1, ack: false });
+  const tue = await playRound(ctx, P, { outcome: 1, ack: false, guest: { coins_picked: 2 } });
   const tueKey = new Date(mon + DAY).toISOString().slice(0, 10);
   // ... the guest's game confirms exactly at the end of the grace (Wednesday 24:00): still Tuesday's
   ctx.clock.t = mon + 2 * DAY + CH.graceMs();
   let guest = await user(ctx, 'T:_guest', null);
   const onTime = await call(ctx, 'POST', `/v1/rounds/${tue.mid}/ack`, { digest: await tue.dig(tue.gr) }, guest.token);
   assert.equal(onTime.body.settlement.state, 'settled');
-  assert.ok(onTime.body.settlement.challenges.items.some((i) => i.instance_id === `d:${tueKey}:night_shift`), 'within the grace: Tuesday\'s goal');
+  assert.ok(onTime.body.settlement.challenges.items.some((i) => i.instance_id === `d:${tueKey}:coin_collector`), 'within the grace: Tuesday\'s goal');
   // ... the host's game confirms 1 ms after the grace: no daily progress, the week still counts, Coins and XP still paid
   ctx.clock.t += 1;
   let host = await user(ctx, 'T:_host', null);

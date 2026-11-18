@@ -679,19 +679,41 @@ Coins and purchases never advance a goal. Definitions:
 other number). Rules: `service/src/challenges.js` (the authority) and
 `game/src/core/challenge_rules.gd` (the same rules for display).
 
-| Period | Goal | Requirement | Metric | Reward |
-|---|---|---|---|---|
-| Daily | Night Shift | Play 2 online rounds (active) | active rounds | 50 Season XP |
-| Daily | Campus Contribution | Earn 6 contribution credits | credits | 50 Season XP |
-| Daily | Team Effort | Win 1 round, either role | Round Wins | 50 Season XP |
-| Weekly | Campus Regular | Play 10 online rounds (active) | active rounds | 150 Season XP |
-| Weekly | Pull Your Weight | Earn 18 contribution credits | credits | 150 Season XP |
-| Weekly | Strong Together | Win 4 rounds, either role | Round Wins | 150 Season XP |
+(2.2 build 22) **21 daily goals**, three a day on a fixed Monday-to-Sunday
+schedule (`daily_pool`, `daily_schedule`; UTC days, Monday first) that
+repeats every week; the **weekly three** stay the same. A round counts
+toward the daily three of the UTC day it started on.
 
-Every player gets the same six goals; all are role-flexible ("Splash
-waters or tag different runners."), so nobody has to quit or re-roll to
-become the Night Watch. There are no distance, near-miss, spam or
-repeat-tag goals.
+| Day | Daily goals (Season XP) |
+|---|---|
+| Monday | Night Shift: play 2 online rounds (50) · Campus Contribution: earn 6 contribution credits (50) · Team Effort: win 1 round, either role (50) |
+| Tuesday | Coin Collector: pick up 5 Coins (50) · Splash Zone: splash 3 waters as a runner (50) · Home Free: make it home as a runner (50) |
+| Wednesday | Warm Up: play 3 online rounds (60) · Pocket Change: pick up 10 Coins (60) · Lights Out: tag 2 runners as the Night Watch (50) |
+| Thursday | Busy Night: earn 8 contribution credits (60) · Night Owl: play a round as a runner (50) · Patrol Duty: play a round as the Night Watch (50) |
+| Friday | Winning Streak: win 2 rounds, either role (60) · Double Dip: splash 5 waters as a runner (60) · On the Case: tag 3 runners as the Night Watch (60) |
+| Saturday | All-Nighter: play 4 online rounds (70) · Full Trifecta: splash all 3 waters in one round (60) · First One In: be the first runner home in a round (70) |
+| Sunday | Great Escape: win a round as a runner (60) · Lockdown: win a round as the Night Watch (60) · Back to Bed: make it home twice as a runner (60) |
+
+| Weekly goal | Requirement | Metric | Reward |
+|---|---|---|---|
+| Campus Regular | Play 10 online rounds (active) | active rounds | 150 Season XP |
+| Pull Your Weight | Earn 18 contribution credits | credits | 150 Season XP |
+| Strong Together | Win 4 rounds, either role | Round Wins | 150 Season XP |
+
+Metrics, all from the verified row of an active online round: active rounds
+(1), contribution credits (min(3, water stamps + different runners
+tagged)), Round Wins, water stamps (0-3, runners), full trifectas (all 3 in
+a round), made it home, first home, different runners tagged (0-7, Night
+Watch), Coins picked up (at most the round's spawns), a round in each role
+and a win in each role. Every day has a goal either role can make progress
+on, or one for each role, so nobody has to quit or re-roll to switch side.
+Every goal is reachable in at most 4 good rounds. A day's daily XP is 150 to
+200 (Monday 150, Tuesday 150, Wednesday 170, Thursday 160, Friday 180,
+Saturday 200, Sunday 180). With the pacing model of §3 / §4 (half the rounds
+in each role): a regular week (5 days × 4 rounds) is about 2,750 Season XP
+and tier 100 takes about 11.9 weeks (inside a 12-week season); a frequent
+week (7 × 8) about 6,370 and 5.1 weeks; challenges stay 17-38% of a week's
+Season XP. There are no distance, near-miss, spam or repeat-tag goals.
 
 ### What a round adds
 

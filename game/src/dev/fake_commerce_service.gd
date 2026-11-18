@@ -621,7 +621,7 @@ func _settle_challenges(pid: String, mid: String, rd: Dictionary, row: Dictionar
 			if t > int(per["end"]) + ChallengeRules.grace_s():
 				closed.append(kind)
 				continue
-			for d in ChallengeRules.defs():
+			for d in ChallengeRules.defs(started):
 				if String(d["period"]) != kind or int(inc.get(String(d["metric"]), 0)) <= 0:
 					continue
 				var n := int(inc[String(d["metric"])])
@@ -682,7 +682,7 @@ func _challenges_view(pid: String) -> Dictionary:
 	var bon: Dictionary = challenge_bonus.get(pid, {})
 	var items: Array = []
 	var seen := {}
-	for d in ChallengeRules.defs():
+	for d in ChallengeRules.defs(t):
 		var kind := String(d["period"])
 		var per := ChallengeRules.period_of(kind, t)
 		var iid := ChallengeRules.instance_id(kind, String(per["key"]), String(d["id"]))

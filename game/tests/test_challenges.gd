@@ -19,6 +19,24 @@ var t
 var rig
 var _saved := {}
 
+
+## (build 22) The daily goals rotate on a Monday-to-Sunday schedule; these
+## tests play on a Monday (the Night Shift / Campus Contribution / Team
+## Effort day): this week's Monday at the current time of day, on the
+## Wallet's and the test service's clocks.
+func _on_monday() -> void:
+	# a running clock, shifted onto this week's Monday (the service checks
+	# that rounds really take time)
+	var now := int(Time.get_unix_time_from_system())
+	var shift := ChallengeRules.week_start(now) - ChallengeRules.day_start(now)
+	Wallet.clock_override = func() -> int: return int(Time.get_unix_time_from_system()) + shift
+	if rig != null and rig.svc != null:
+		rig.svc.clock_ms = func() -> float: return (Time.get_unix_time_from_system() + float(shift)) * 1000.0
+
+
+func _off_monday() -> void:
+	Wallet.clock_override = Callable()
+
 const DEVICES := {
 	"se_667x375": [Vector2i(1334, 750), 2.0, Rect2(0, 0, 0, 0)],
 	"p14_844x390": [Vector2i(2532, 1170), 3.0, Rect2(47, 0, 47, 21)],
@@ -30,8 +48,10 @@ const DEVICES := {
 # ------------------------------------------------------------------ rules
 func test_rules_periods_credits_and_the_active_threshold() -> void:
 	var c := ChallengeRules.cfg()
-	t.eq((c["daily"] as Array).map(func(d: Dictionary) -> String: return "%s:%d:%d" % [d["id"], d["goal"], d["xp"]]),
-		["night_shift:2:50", "campus_contribution:6:50", "team_effort:1:50"], "the daily set")
+	t.eq(ChallengeRules.daily_pool().size(), 21, "(build 22) 21 daily challenges")
+	t.eq(ChallengeRules.daily_defs(int(Time.get_unix_time_from_datetime_string("2026-10-05T10:00:00"))).map(
+		func(d: Dictionary) -> String: return "%s:%d:%d" % [d["id"], d["goal"], d["xp"]]),
+		["night_shift:2:50", "campus_contribution:6:50", "team_effort:1:50"], "Monday's daily three")
 	t.eq((c["weekly"] as Array).map(func(d: Dictionary) -> String: return "%s:%d:%d" % [d["id"], d["goal"], d["xp"]]),
 		["campus_regular:10:150", "pull_your_weight:18:150", "strong_together:4:150"], "the weekly set")
 	# 2026-10-05 is a Monday
@@ -53,8 +73,9 @@ func test_rules_periods_credits_and_the_active_threshold() -> void:
 	t.near(ChallengeRules.active_need(240.0), 60.0, 0.001, "a full round needs 60 s")
 	t.near(ChallengeRules.active_need(100.0), 40.0, 0.001, "a short one 40%")
 	var res := {"outcome": TC.Outcome.PATROL_WIN, "round_time": 240.0}
-	t.eq(ChallengeRules.increments({"role": TC.Role.PATROL, "unique_captures": 2, "active_s": 61}, res),
-		{"state": "applied", "active_rounds": 1, "credits": 2, "round_wins": 1}, "Night Watch: active, 2 credits, a Round Win")
+	var nw := ChallengeRules.increments({"role": TC.Role.PATROL, "unique_captures": 2, "active_s": 61}, res)
+	t.eq([nw["state"], nw["active_rounds"], nw["credits"], nw["round_wins"], nw["captures"], nw["watch_rounds"], nw["watch_wins"], nw["stamps"], nw["homes"]],
+		["applied", 1, 2, 1, 2, 1, 1, 0, 0], "Night Watch: active, 2 credits, a Round Win, 2 tags, a Night Watch round and win")
 	t.eq(ChallengeRules.increments({"role": TC.Role.RUNNER, "stamps": 3, "active_s": 59}, res)["state"], "inactive", "59 s: not active")
 	# local reset time (presentation only)
 	t.eq(ChallengeRules.local_clock(mon, -4 * 3600, 1), "8:00 PM", "UTC midnight in New York (EDT)")
@@ -179,6 +200,7 @@ func _report(res: Dictionary, pid: String) -> Dictionary:
 func test_service_off_and_practice_add_nothing_and_say_so() -> void:
 	rig = preload("res://tests/commerce_rig.gd").new(t)
 	await rig.begin(false, false)
+	_on_monday()
 	var cards := Wallet.challenge_cards()
 	t.eq(cards.size(), 6, "six goals previewed")
 	t.check(cards.all(func(c: Dictionary) -> bool: return not bool(c["known"]) and int(c["progress"]) == 0), "no progress pretended")
@@ -203,12 +225,14 @@ func test_service_off_and_practice_add_nothing_and_say_so() -> void:
 	var cx := Wallet.settle_round(_round("C-1", me, TC.Outcome.CANCELLED), me, false)
 	t.eq(String(cx["challenges"]["state"]), "none", "cancelled: nothing")
 	t.eq(int(Wallet.season_state("s1")["xp"]), 0, "no Season XP anywhere")
+	_off_monday()
 	await rig.end()
 
 
 func test_settled_round_completes_a_goal_once_and_moves_the_pass() -> void:
 	rig = preload("res://tests/commerce_rig.gd").new(t)
 	await rig.begin()
+	_on_monday()
 	await rig.sign_in("T:_host")
 	var pid := Cloud.profile_id()
 	rig.svc.set_challenge(pid, "campus_contribution", 4, false)
@@ -275,6 +299,7 @@ func test_settled_round_completes_a_goal_once_and_moves_the_pass() -> void:
 	t.check(texts.has("Campus Contribution complete · +50 Season XP"), "results line: %s" % [texts])
 	box.free()
 	App.party_code = ""
+	_off_monday()
 	await rig.end()
 
 
@@ -311,6 +336,7 @@ func _frames(n: int) -> void:
 func _begin(with_service: bool) -> void:
 	rig = preload("res://tests/commerce_rig.gd").new(t)
 	await rig.begin(with_service, with_service)
+	_on_monday()
 	if with_service:
 		await rig.sign_in()
 	_saved = {"emulate": Input.emulate_touch_from_mouse, "device": Controls.device, "size": t.get_tree().root.size, "emu": UIKit.emulation.duplicate()}
@@ -328,6 +354,7 @@ func _end() -> void:
 	Controls.device = _saved["device"]
 	UIKit.emulation = _saved["emu"]
 	t.get_tree().root.size = _saved["size"]
+	_off_monday()
 	await rig.end()
 
 
@@ -386,7 +413,7 @@ func test_season_pass_challenges_fit_with_both_rows_whole() -> void:
 		t.check(sp.challenge_page.is_visible_in_tree(), "%s: and is shown" % key)
 		var head := sp._ch["head"] as Label
 		t.eq(head.text, "Challenges · Earn Season XP", "%s: the heading" % key)
-		t.eq((sp._ch["role"] as Label).text, "Splash waters or tag different runners.", "%s: the role line, once" % key)
+		t.eq((sp._ch["role"] as Label).text, ChallengeRules.ROLE_LINE, "%s: the line under the heading, once" % key)
 		t.check(not (sp._ch["status"] as Label).visible, "%s: live: no status line" % key)
 		t.check(_inside(sp.challenge_page.get_global_rect(), sp.detail_panel.get_global_rect()), "%s: the page inside the side panel" % key)
 		t.check(_inside(sp.detail_panel.get_global_rect(), safe), "%s: the side panel inside the safe area" % key)
@@ -517,3 +544,50 @@ func test_completion_confirms_once_with_shared_motion() -> void:
 	for n in [c, c2, c3]:
 		n.queue_free()
 	await t.get_tree().process_frame
+
+
+## (build 22) 21 daily goals, three a day on a Monday-to-Sunday schedule
+## that repeats every week: the Season Pass shows each day's three, every
+## goal counts something an active online round's verified row really
+## reports, and each is reachable in a few rounds by the role it names
+## (either role when it names none).
+func test_every_day_of_the_schedule_and_every_goal_works() -> void:
+	var mon := int(Time.get_unix_time_from_datetime_string("2026-10-05T12:00:00"))
+	var sched: Array = ChallengeRules.cfg()["daily_schedule"]
+	var seen := {}
+	for i in 7:
+		var ids: Array = ChallengeRules.daily_defs(mon + i * 86400).map(func(d: Dictionary) -> String: return String(d["id"]))
+		t.eq(ids, sched[i], "day %d: its three" % i)
+		t.eq(ids.size(), 3, "day %d: three goals" % i)
+		for cid in ids:
+			seen[cid] = true
+		t.eq(ChallengeRules.daily_defs(mon + (i + 7) * 86400).map(func(d: Dictionary) -> String: return String(d["id"])), ids, "day %d: the same next week" % i)
+		# every day has a goal either role can make progress on, or one for each role
+		var metrics: Array = ChallengeRules.daily_defs(mon + i * 86400).map(func(d: Dictionary) -> String: return String(d["metric"]))
+		var any_role := metrics.any(func(m: String) -> bool: return m in ["active_rounds", "credits", "round_wins", "coins"])
+		var both := metrics.any(func(m: String) -> bool: return m in ["stamps", "trifectas", "homes", "first_homes", "runner_rounds", "runner_wins"]) \
+			and metrics.any(func(m: String) -> bool: return m in ["captures", "watch_rounds", "watch_wins"])
+		t.check(any_role or both, "day %d: something for whichever role you get (%s)" % [i, str(metrics)])
+	t.eq(seen.size(), 21, "all 21 goals appear in the week")
+	# each goal: a good round in the right role reaches it within 4 rounds
+	var res_r := {"outcome": TC.Outcome.RUNNERS_WIN, "round_time": 240.0}
+	var res_w := {"outcome": TC.Outcome.PATROL_WIN, "round_time": 240.0}
+	var runner := ChallengeRules.increments({"role": TC.Role.RUNNER, "stamps": 3, "finished": true, "first_home": true, "coins_picked": 4, "active_s": 120}, res_r)
+	var watch := ChallengeRules.increments({"role": TC.Role.PATROL, "unique_captures": 3, "coins_picked": 2, "active_s": 120}, res_w)
+	for d in ChallengeRules.daily_pool():
+		var m := String(d["metric"])
+		var best := maxi(int(runner[m]), int(watch[m]))
+		t.check(best > 0 and ceili(float(d["goal"]) / float(best)) <= 4, "%s (%s %d): reachable in %d good rounds" % [d["id"], m, d["goal"], ceili(float(d["goal"]) / maxf(1.0, float(best)))])
+	# an idle round counts for nothing
+	var idle := ChallengeRules.increments({"role": TC.Role.RUNNER, "stamps": 3, "finished": true, "active_s": 5}, res_r)
+	t.check(ChallengeRules.METRICS.all(func(m: String) -> bool: return int(idle[m]) == 0), "no active play: no progress on anything")
+	# the Season Pass shows the day's three: Wednesday on the test service
+	await _begin(true)
+	var wed := ChallengeRules.week_start(int(Time.get_unix_time_from_system())) + 2 * 86400 + 12 * 3600
+	Wallet.clock_override = func() -> int: return wed
+	rig.svc.clock_ms = func() -> float: return float(wed) * 1000.0
+	var cards := Wallet.challenge_cards()
+	t.eq(cards.filter(func(c: Dictionary) -> bool: return String(c["period"]) == "daily").map(func(c: Dictionary) -> String: return String(c["id"])),
+		sched[2], "Wednesday's three on the pass")
+	t.eq(cards.filter(func(c: Dictionary) -> bool: return String(c["period"]) == "weekly").size(), 3, "and the weekly three")
+	await _end()
