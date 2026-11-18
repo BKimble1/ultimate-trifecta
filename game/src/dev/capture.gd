@@ -573,9 +573,9 @@ func _snow21() -> void:
 ## and from a door, and a building close up.  Each stop: the runner is put
 ## there facing the subject, a shot a moment later.
 const MAP22_STOPS := [
-	["xing_a", Vector2(5.0, 87.0), Vector2(0.0, 91.2)],
-	["xing_b", Vector2(-28.0, -6.0), Vector2(-32.9, -11.4)],
-	["xing_c", Vector2(-73.0, 9.0), Vector2(-78.0, 4.0)],
+	["xing_a", Vector2(5.0, 87.0), Vector2(0.0, 88.0)],
+	["xing_b", Vector2(-28.0, -6.0), Vector2(-36.0, -14.0)],
+	["xing_c", Vector2(-73.0, 9.0), Vector2(15.7, 88.0)],
 	["xing_d", Vector2(73.0, 37.0), Vector2(78.0, 32.0)],
 ]
 

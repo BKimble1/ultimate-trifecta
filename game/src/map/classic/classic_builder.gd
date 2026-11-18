@@ -151,6 +151,9 @@ var arch: ClassicArchitecture
 var marks: ClassicLandmarks
 var dorm_art: ClassicDormArt
 var dressing: Dictionary = {}
+## (2.2 build 22) where a path crosses a road: [centre on the road's middle
+## line, road direction, road half width, half the crossing's length]
+var _xings: Array = []
 var _trees: Dictionary = {}       # chunk key -> {species: [[Transform3D, tint, custom], ...]}
 var _decor: Dictionary = {}       # coarse key -> {kind: [[Transform3D, tint, custom], ...]}
 var _far: Dictionary = {}         # 3x coarse key -> {species: [...]} (forest beyond the bounds)
@@ -749,11 +752,13 @@ func _path(pth: Dictionary) -> void:
 			var p1 := a + d * (seg * float(s + 1) / float(pieces))
 			var mid := (p0 + p1) * 0.5
 			var k := _kit_at(mid.x, mid.y)
-			if L.is_on_road_line(mid, -0.3):
-				# (2.2 build 22) across a road: no paving or verge on the
-				# asphalt (it overlapped the road, its kerbs and dashes), a
-				# zebra crossing instead
-				_crossing(k, p0, p1, d, nrm, hin)
+			# (2.2 build 22) near a road the paving is cut off exactly at the
+			# road's edge (it used to run on over the asphalt, its kerbs and
+			# dashes); the road draws a zebra crossing where a path goes over
+			if L.is_on_road_line(mid, hout + 0.4 + seg / float(pieces)):
+				k.mat = mat
+				_pave_clipped(k, PackedVector2Array([p0 - nrm * hw, p1 - nrm * hw, p1 + nrm * hw, p0 + nrm * hw]), PATH_Y, pc)
+				k.mat = 0.0
 				continue
 			k.mat = mat
 			k.quad(_v3(p0 - nrm * hin, PATH_Y), _v3(p1 - nrm * hin, PATH_Y), _v3(p1 + nrm * hin, PATH_Y), _v3(p0 + nrm * hin, PATH_Y), pc)
@@ -770,9 +775,16 @@ func _path(pth: Dictionary) -> void:
 				_verge_quad(k, p0 + nrm * sg * hin, p1 + nrm * sg * hin, p1 + nrm * sg * hout, p0 + nrm * sg * hout, pc, lp, vmat, sg < 0.0)
 	for i in pts.size():
 		var c := pts[i]
-		if L.is_on_road_line(c, -0.3):
-			continue   # (build 22) no round paving cap sitting on the road
 		var k2 := _kit_at(c.x, c.y)
+		if L.is_on_road_line(c, hout + 0.1):
+			# (build 22) the round cap is cut at the road's edge too
+			var poly := PackedVector2Array()
+			for j in 16:
+				poly.append(c + Vector2.from_angle(TAU * float(j) / 16.0) * hw)
+			k2.mat = mat
+			_pave_clipped(k2, poly, PATH_Y + 0.0015, pc)
+			k2.mat = 0.0
+			continue
 		k2.mat = mat
 		k2.disc(Vector3(c.x, PATH_Y + 0.0015, c.y), hin, pc, 16)
 		k2.mat = 0.0
@@ -788,19 +800,134 @@ func _path(pth: Dictionary) -> void:
 			_verge_ring(k2, c, hin, hout, pc, _lawn_packed(c.x + hw, c.y), vmat, VERGE_Y - 0.004, 16)
 
 
-## (2.2 build 22) A zebra crossing over one piece of a path where it crosses
-## a road: white bars across the walkway, half a metre wide, a metre apart,
-## just above the asphalt (under the kerbs, which drop to the crossing).
-func _crossing(k: MeshKit, p0: Vector2, p1: Vector2, d: Vector2, nrm: Vector2, hin: float) -> void:
-	var len := p0.distance_to(p1)
-	var bar := Color(0.86, 0.86, 0.82)
+## (2.2 build 22) Flat paving over `poly` minus every road's carriageway
+## (and its kerbs), so nothing a path lays lies on the asphalt.
+func _pave_clipped(k: MeshKit, poly: PackedVector2Array, y: float, col: Color) -> void:
+	var c := Vector2.ZERO
+	for q in poly:
+		c += q
+	c /= float(poly.size())
+	var reach := 0.0
+	for q in poly:
+		reach = maxf(reach, q.distance_to(c))
+	var parts: Array = [poly]
+	for r in L.roads:
+		var pts: PackedVector2Array = r["pts"]
+		var hw: float = float(r["w"]) * 0.5 + 0.35
+		for i in pts.size() - 1:
+			if ClassicLayout._dist_to_segment(c, pts[i], pts[i + 1]) > hw + reach:
+				continue
+			var dd := (pts[i + 1] - pts[i]).normalized()
+			var nn := Vector2(-dd.y, dd.x) * hw
+			# carry the cut past each end: a bend's joint is round asphalt
+			var a := pts[i] - dd * (hw if i > 0 else 0.0)
+			var b := pts[i + 1] + dd * (hw if i + 1 < pts.size() - 1 else 0.0)
+			var cut := PackedVector2Array([a - nn, b - nn, b + nn, a + nn])
+			var next: Array = []
+			for pp in parts:
+				for res: PackedVector2Array in Geometry2D.clip_polygons(pp, cut):
+					if res.size() >= 3:
+						next.append(res)
+			parts = next
+	var tris := PackedVector3Array()
+	for pp: PackedVector2Array in parts:
+		var idx := Geometry2D.triangulate_polygon(pp)
+		for t in range(0, idx.size() - 2, 3):
+			var A := pp[idx[t]]
+			var B := pp[idx[t + 1]]
+			var C := pp[idx[t + 2]]
+			# up-facing here is anticlockwise in (x, z) (as _quad_up)
+			if (B - A).cross(C - A) < 0.0:
+				var tmp := B
+				B = C
+				C = tmp
+			tris.append(_v3(A, y))
+			tris.append(_v3(B, y))
+			tris.append(_v3(C, y))
+	k.up_tris(tris, col)
+
+
+## (2.2 build 22) Every place a path goes right over a road (paving on both
+## sides of it; a path that just ends at the road gets none), once each.
+func _find_crossings() -> void:
+	_xings.clear()
+	for pth in L.paths:
+		var pts: PackedVector2Array = pth["pts"]
+		var phw: float = float(pth["w"]) * 0.5
+		for i in pts.size() - 1:
+			for r in L.roads:
+				var rp: PackedVector2Array = r["pts"]
+				var hw: float = float(r["w"]) * 0.5
+				for j in rp.size() - 1:
+					var x: Variant = Geometry2D.segment_intersects_segment(pts[i], pts[i + 1], rp[j], rp[j + 1])
+					if x == null:
+						continue
+					var dir := (rp[j + 1] - rp[j]).normalized()
+					var nrm := Vector2(-dir.y, dir.x)
+					# paving on both sides, along the walk: it goes on over the
+					# road (rather than ending on it)
+					if _walk_crosses(pts, x, rp[j], nrm, hw):
+						_add_crossing(x, dir, hw, phw)
+
+
+## Does the walk `pts` reach past both kerbs of the road (centre line
+## through `on` with normal `nrm`) within a few metres of where it meets the
+## middle line at `x`?  (A walk may bend on the road, so it follows the
+## walk itself, not a straight line.)
+func _walk_crosses(pts: PackedVector2Array, x: Vector2, on: Vector2, nrm: Vector2, hw: float) -> bool:
+	var lo := 0.0
+	var hi := 0.0
+	for i in pts.size() - 1:
+		var seg := pts[i].distance_to(pts[i + 1])
+		var n := maxi(1, int(ceil(seg / 0.5)))
+		for j in n + 1:
+			var q := pts[i].lerp(pts[i + 1], float(j) / float(n))
+			if q.distance_to(x) > hw + 8.0:
+				continue
+			var off := (q - on).dot(nrm)
+			lo = minf(lo, off)
+			hi = maxf(hi, off)
+	# a walk that ends on the road still meets one going on from the far kerb
+	var far := hw + 1.0
+	return (lo < -(hw + 0.5) or L.is_on_path(x - nrm * far, 0.8)) and (hi > hw + 0.5 or L.is_on_path(x + nrm * far, 0.8))
+
+
+func _add_crossing(at: Vector2, dir: Vector2, hw: float, phw: float) -> void:
+	for x in _xings:
+		if (x[0] as Vector2).distance_to(at) < 4.0:
+			return
+	_xings.append([at, dir, hw, clampf(phw + 0.3, 1.2, 1.8)])
+
+
+## Is road point `p` within a zebra crossing's band (`extra` m to spare)?
+func _near_crossing(p: Vector2, extra: float) -> bool:
+	for x in _xings:
+		var rel := p - (x[0] as Vector2)
+		var along := absf(rel.dot(x[1] as Vector2))
+		if along <= float(x[3]) + extra and rel.length() < float(x[2]) + 2.0:
+			return true
+	return false
+
+
+## A zebra crossing square to the road: white bars along the traffic, half
+## a metre wide and a metre apart, from kerb to kerb, just above the asphalt.
+func _zebra(x: Array) -> void:
+	var c: Vector2 = x[0]
+	var dir: Vector2 = x[1]
+	var hw: float = x[2]
+	var half: float = x[3]
+	var nrm := Vector2(-dir.y, dir.x)
+	var k := _kit_at(c.x, c.y)
 	k.mat = MeshKit.M_PLAIN
-	var x := fposmod(-p0.dot(d), 1.0) + 0.25
-	while x + 0.25 <= len:
-		var c0 := p0 + d * (x - 0.25)
-		var c1 := p0 + d * (x + 0.25)
-		k.quad(_v3(c0 - nrm * hin, 0.056), _v3(c1 - nrm * hin, 0.056), _v3(c1 + nrm * hin, 0.056), _v3(c0 + nrm * hin, 0.056), bar)
-		x += 1.0
+	var bar := Color(0.86, 0.86, 0.82)
+	var n := int(floor((2.0 * hw - 0.4) / 1.0))
+	var start := -float(n - 1) * 0.5
+	for i in n:
+		var o := nrm * (start + float(i))
+		var a := c + o - dir * half
+		var b := c + o + dir * half
+		var w := nrm * 0.25
+		k.quad(_v3(a - w, 0.056), _v3(b - w, 0.056), _v3(b + w, 0.056), _v3(a + w, 0.056), bar)
 	k.mat = 0.0
 
 
@@ -960,6 +1087,9 @@ func _annulus(k: MeshKit, c: Vector2, r0: float, r1: float, y: float, col: Color
 
 ## Roads: asphalt in 4 m pieces, a raised kerb on each side, glowing dashes.
 func _roads() -> void:
+	_find_crossings()
+	for x in _xings:
+		_zebra(x)
 	var asphalt := Color(0.17, 0.18, 0.22)
 	var kerb := Color(0.50, 0.50, 0.54)
 	for r in L.roads:
@@ -980,30 +1110,32 @@ func _roads() -> void:
 				k.mat = MeshKit.M_ASPHALT
 				k.quad(_v3(p0 - nrm * hw, 0.05), _v3(p1 - nrm * hw, 0.05), _v3(p1 + nrm * hw, 0.05), _v3(p0 + nrm * hw, 0.05), asphalt)
 				k.mat = MeshKit.M_STONE
-				# (2.2 build 22) a path crossing here reaches both kerbs (a walk
-				# beside the road touches only one)
-				var crossing := L.is_on_path(mid - nrm * (hw + 0.2), 0.3) and L.is_on_path(mid + nrm * (hw + 0.2), 0.3)
-				for sg: float in [-1.0, 1.0]:
-					var e0 := p0 + nrm * sg * hw
-					var e1 := p1 + nrm * sg * hw
-					var o0 := p0 + nrm * sg * (hw + 0.35)
-					var o1 := p1 + nrm * sg * (hw + 0.35)
-					# (2.2 build 22) a dropped kerb where a path crosses: level
-					# with the paving, no step up out of the road
-					var ky := 0.07 if crossing else 0.12
-					if sg > 0.0:
-						k.quad(_v3(e0, ky), _v3(e1, ky), _v3(o1, ky), _v3(o0, ky), kerb)
-						k.quad(_v3(e1, ky), _v3(e0, ky), _v3(e0, 0.05), _v3(e1, 0.05), kerb.darkened(0.25))
-					else:
-						k.quad(_v3(o0, ky), _v3(o1, ky), _v3(e1, ky), _v3(e0, ky), kerb)
-						k.quad(_v3(e0, ky), _v3(e1, ky), _v3(e1, 0.05), _v3(e0, 0.05), kerb.darkened(0.25))
+				# (2.2 build 22) the kerb drops level with the paving across a
+				# zebra crossing (in half-metre steps: no step up out of it)
+				var plen := p0.distance_to(p1)
+				var nk := maxi(1, int(ceil(plen / 0.5)))
+				for ki in nk:
+					var q0 := p0 + dir * (plen * float(ki) / float(nk))
+					var q1 := p0 + dir * (plen * float(ki + 1) / float(nk))
+					var ky := 0.07 if _near_crossing((q0 + q1) * 0.5, 0.3) else 0.12
+					for sg: float in [-1.0, 1.0]:
+						var e0 := q0 + nrm * sg * hw
+						var e1 := q1 + nrm * sg * hw
+						var o0 := q0 + nrm * sg * (hw + 0.35)
+						var o1 := q1 + nrm * sg * (hw + 0.35)
+						if sg > 0.0:
+							k.quad(_v3(e0, ky), _v3(e1, ky), _v3(o1, ky), _v3(o0, ky), kerb)
+							k.quad(_v3(e1, ky), _v3(e0, ky), _v3(e0, 0.05), _v3(e1, 0.05), kerb.darkened(0.25))
+						else:
+							k.quad(_v3(o0, ky), _v3(o1, ky), _v3(e1, ky), _v3(e0, ky), kerb)
+							k.quad(_v3(e0, ky), _v3(e1, ky), _v3(e1, 0.05), _v3(e0, 0.05), kerb.darkened(0.25))
 				k.mat = 0.0
 			# centre-line dashes (slightly emissive so roads read at night)
 			var sd := 2.0
 			while sd < seg - 2.0:
 				var q0 := a + dir * sd
 				var q1 := a + dir * (sd + 1.6)
-				if not (L.is_on_path(q0, 0.4) or L.is_on_path(q1, 0.4) or L.is_on_path((q0 + q1) * 0.5, 0.4)):
+				if not (_near_crossing(q0, 0.5) or _near_crossing(q1, 0.5) or _near_crossing((q0 + q1) * 0.5, 0.5)):
 					_kit_at(q0.x, q0.y).ribbon(PackedVector2Array([q0, q1]), 0.22, 0.06, Color(0.95, 0.82, 0.35), 0.35, false)
 				sd += 4.0
 		for i in range(1, pts.size() - 1):
