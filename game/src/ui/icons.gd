@@ -259,6 +259,24 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 			ci.draw_circle(c + Vector2(-r * 0.6, r * 0.55), r * 0.3, col)
 			ci.draw_circle(c + Vector2(r * 0.6, r * 0.55), r * 0.3, col)
 			return
+		"couch":
+			# (build 20) a sofa: back, seat, two rolled arms, little feet
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.72, -r * 0.62), Vector2(r * 1.44, r * 0.62)), col)
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.72, r * 0.02), Vector2(r * 1.44, r * 0.42)), col.darkened(0.12))
+			for sx in [-1.0, 1.0]:
+				ci.draw_circle(c + Vector2(sx * r * 0.78, -r * 0.08), r * 0.24, col)
+				ci.draw_rect(Rect2(c + Vector2(sx * r * 0.78 - r * 0.24, -r * 0.08), Vector2(r * 0.48, r * 0.52)), col)
+				ci.draw_rect(Rect2(c + Vector2(sx * r * 0.7 - r * 0.07, r * 0.44), Vector2(r * 0.14, r * 0.24)), col.darkened(0.3))
+			return
+		"bulb":
+			# (build 20) a light bulb with its screw cap
+			ci.draw_circle(c + Vector2(0, -r * 0.22), r * 0.58, col)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.4, r * 0.1), c + Vector2(r * 0.4, r * 0.1),
+				c + Vector2(r * 0.26, r * 0.45), c + Vector2(-r * 0.26, r * 0.45)]), col)
+			for i in 2:
+				ci.draw_line(c + Vector2(-r * 0.26, r * (0.58 + 0.17 * float(i))), c + Vector2(r * 0.26, r * (0.58 + 0.17 * float(i))), col.darkened(0.25), r * 0.12, true)
+			ci.draw_circle(c + Vector2(0, r * 0.94), r * 0.1, col.darkened(0.25))
+			return
 		"bolt":
 			pts = PackedVector2Array([c + Vector2(r * 0.2, -r), c + Vector2(-r * 0.6, r * 0.1), c + Vector2(-r * 0.05, r * 0.1),
 				c + Vector2(-r * 0.25, r), c + Vector2(r * 0.6, -r * 0.15), c + Vector2(r * 0.05, -r * 0.15)])

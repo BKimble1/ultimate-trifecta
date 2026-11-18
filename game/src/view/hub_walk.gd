@@ -18,10 +18,29 @@ extends Node
 ## HubSync drops every pose at a start, so all members switch consistently.
 ## No jump, no player-to-player collision (nobody can be trapped or body-
 ## blocked), and avatars exist only for members of the roster.
+##
+## (build 20) Things to do: walk up to the couch, the floor lamp or the plant
+## by the fireplace and prompt() offers what you can do there (LobbyScreen
+## shows it as one button on the right).  Jumping on the couch hops you up
+## onto the seat and you bounce until you press Stop jumping (the cushions
+## squash under you); Hide ducks you into the plant (it rustles) until Jump
+## out.  Everyone sees it: the couch and the plant are pose modes (HubSync),
+## one person at a time, and each device draws the same hop up, bounce and
+## hop down from the pose.  The lamp is one switch for the whole party.
 
 const RETURN_SPEED := 2.0
 ## (2.2 build 16) at most this long turning round on the mark
 const TURN_S := 0.5
+## (build 20) the couch and the plant
+const COUCH_IN_S := 0.55
+const COUCH_OUT_S := 0.5
+const BOUNCE_S := 0.7
+const BOUNCE_H := 0.42
+const PLANT_IN_S := 0.4
+const PLANT_OUT_S := 0.42
+
+## (build 20) something to tell the player ("Someone's already on the couch")
+signal notice(text: String)
 
 var stage: DormStage
 var session: NetSession
@@ -38,6 +57,13 @@ var _turning: Dictionary = {}      # key -> seconds spent turning round on the m
 var _last: Dictionary = {}         # key -> last drawn position (Vector2)
 ## frames in which movement input was read (tests: menu input never moves)
 var moved_frames := 0
+## (build 20) what the local runner is doing: HubSync.MODE_WALK, MODE_COUCH
+## or MODE_PLANT
+var act := HubSync.MODE_WALK
+## key -> {mode, phase ("in", "on", "out"), t, from (floor spot, Vector2),
+## at (drawn position when the phase began), yaw0, last (Vector3), n}
+var _acts: Dictionary = {}
+var _hub_hooked: HubSync
 
 
 static func attach(p_stage: DormStage, p_session: NetSession) -> HubWalk:
@@ -52,6 +78,24 @@ static func attach(p_stage: DormStage, p_session: NetSession) -> HubWalk:
 	w.session = p_session
 	p_stage.add_child(w)
 	return w
+
+
+## (build 20) the session's HubSync tells us when the couch or the plant
+## was someone else's, and when the lamp goes off or on (connected once per
+## session).
+func _hook_hub() -> void:
+	if session == null or not is_instance_valid(session):
+		return
+	var h := session.social.hub
+	if h == _hub_hooked:
+		return
+	_hub_hooked = h
+	h.denied.connect(_on_denied)
+	h.lamp_changed.connect(func(on: bool) -> void:
+		if stage != null and is_instance_valid(stage):
+			stage.set_lamp(on))
+	if stage != null and is_instance_valid(stage):
+		stage.set_lamp(h.lamp_on, false)
 
 
 func local_key() -> String:
@@ -79,6 +123,8 @@ func set_walking(on: bool) -> void:
 		stage.stop_previews()
 		walking = true
 		_pos = HubRoom.resolve(Vector2(v.position.x, v.position.z))
+		if _acts.has(key):
+			_pos = _acts[key]["from"]   # (build 20) still hopping off the couch
 		_yaw = v.rotation.y
 		_vel = Vector2.ZERO
 		_returning.erase(key)
@@ -91,6 +137,10 @@ func set_walking(on: bool) -> void:
 		stick = Vector2.ZERO
 		_vel = Vector2.ZERO
 		Controls.reset_touch()
+		if act != HubSync.MODE_WALK:
+			# off the couch / out of the plant first, then the stroll back
+			act = HubSync.MODE_WALK
+			_end_act(key)
 		if key != "" and stage.free_roam.has(key):
 			_returning[key] = true
 		if session != null and is_instance_valid(session):
@@ -108,7 +158,11 @@ func reset() -> void:
 	_returning.clear()
 	_turning.clear()
 	_last.clear()
+	act = HubSync.MODE_WALK
+	_acts.clear()
 	if stage != null and is_instance_valid(stage):
+		stage.clear_hiding()
+		stage.couch_bounce(0.0)
 		for k in stage.free_roam.keys():
 			stage.free_roam.erase(k)
 			stage.place(k)
@@ -134,12 +188,21 @@ func _movement_input() -> Vector2:
 
 func _process(delta: float) -> void:
 	if not in_party_room():
+		# (build 20) the lamp is back on outside the party room
+		if stage != null and is_instance_valid(stage) and stage.props != null and not stage.props.lamp_on:
+			stage.set_lamp(true, false)
 		var roaming := stage != null and is_instance_valid(stage) and not stage.free_roam.is_empty()
 		if walking or roaming:
 			reset()
 		return
+	_hook_hub()
 	var key := local_key()
-	if walking and key != "":
+	if walking and key != "" and (act != HubSync.MODE_WALK or _acts.has(key)):
+		# (build 20) on the couch, in the plant or hopping off: no walking
+		_vel = Vector2.ZERO
+		session.social.hub.set_local(act, _pos, _yaw, 0.0)
+		stage.walk_focus = Vector3(_pos.x, 0.75 if act == HubSync.MODE_COUCH else 0.0, _pos.y)
+	elif walking and key != "":
 		var inp := _movement_input()
 		if inp != Vector2.ZERO:
 			moved_frames += 1
@@ -164,7 +227,20 @@ func _process(delta: float) -> void:
 		if not stage.chars.has(k):
 			continue
 		var s := hub.sample(i)
-		if not s.is_empty() and int(s["mode"]) == HubSync.MODE_WALK:
+		var smode := int(s["mode"]) if not s.is_empty() else HubSync.MODE_MARK
+		if HubSync.is_act(smode):
+			# (build 20) on the couch / in the plant: everyone draws the hop
+			_returning.erase(k)
+			stage.free_roam[k] = true
+			var a: Dictionary = _acts.get(k, {})
+			if a.is_empty() or int(a["mode"]) != smode or String(a["phase"]) == "out":
+				_start_act(k, smode, s["pos"])
+			continue
+		if _acts.has(k):
+			if String(_acts[k]["phase"]) != "out":
+				_end_act(k)
+			continue   # hopping down / out first
+		if smode == HubSync.MODE_WALK:
 			_returning.erase(k)
 			stage.free_roam[k] = true
 			var p: Vector2 = s["pos"]
@@ -180,8 +256,15 @@ func _process(delta: float) -> void:
 		if not stage.chars.has(k):
 			stage.free_roam.erase(k)
 			_last.erase(k)
+	# (build 20) the couch and the plant
+	var bounce := 0.0
+	for k in _acts.keys():
+		bounce = maxf(bounce, _draw_act(k, delta))
+	stage.couch_bounce(bounce)
 	# strolling back to the mark
 	for k in _returning.keys():
+		if _acts.has(k):
+			continue   # (build 20) off the couch / out of the plant first
 		var v: CharacterView = stage.chars.get(k)
 		if v == null or not is_instance_valid(v) or (k == key and walking):
 			_returning.erase(k)
@@ -223,3 +306,213 @@ func _draw(k: String, p: Vector2, yaw: float, vel: Vector2) -> void:
 		return
 	v.apply_state({"pos": stage.to_global(Vector3(p.x, 0.0, p.y)), "yaw": yaw, "vel": Vector3(vel.x, 0.0, vel.y),
 		"on_floor": true, "state": TC.PState.ACTIVE, "fast": false})
+
+
+# ---------------------------------------------------------------------------
+# (build 20) Things to do in the room
+# ---------------------------------------------------------------------------
+## What the button beside the local runner offers right now: {} (nothing in
+## reach) or {prop, text, icon, enabled}.
+func prompt() -> Dictionary:
+	var key := local_key()
+	if not walking or key == "" or not in_party_room():
+		return {}
+	if act == HubSync.MODE_COUCH:
+		return {"prop": HubRoom.PROP_COUCH, "text": "Stop jumping", "icon": "couch", "enabled": true}
+	if act == HubSync.MODE_PLANT:
+		return {"prop": HubRoom.PROP_PLANT, "text": "Jump out", "icon": "leaf", "enabled": true}
+	if _acts.has(key):
+		return {}   # hopping down
+	var hub := session.social.hub
+	match HubRoom.prop_near(_pos):
+		HubRoom.PROP_COUCH:
+			if hub.occupant(HubSync.MODE_COUCH) >= 0:
+				return {"prop": HubRoom.PROP_COUCH, "text": "Couch taken", "icon": "couch", "enabled": false}
+			return {"prop": HubRoom.PROP_COUCH, "text": "Jump on couch", "icon": "couch", "enabled": true}
+		HubRoom.PROP_LAMP:
+			return {"prop": HubRoom.PROP_LAMP, "text": "Lights off" if hub.lamp_on else "Lights on",
+				"icon": "bulb", "enabled": true}
+		HubRoom.PROP_PLANT:
+			# (a hider stays secret: the button is always offered and the
+			# host says if someone's already in there)
+			return {"prop": HubRoom.PROP_PLANT, "text": "Hide", "icon": "leaf", "enabled": true}
+	return {}
+
+
+## The button was pressed (or the interact key): do what prompt() offers.
+func interact() -> void:
+	var p := prompt()
+	if p.is_empty() or not bool(p.get("enabled", true)) or not input_open():
+		return
+	var key := local_key()
+	var hub := session.social.hub
+	match String(p["prop"]):
+		HubRoom.PROP_COUCH, HubRoom.PROP_PLANT:
+			var mode := HubSync.prop_mode(String(p["prop"]))
+			if act == mode:
+				act = HubSync.MODE_WALK
+				_end_act(key)
+				hub.set_local(HubSync.MODE_WALK, _pos, _yaw, 0.0)
+			else:
+				act = mode
+				_vel = Vector2.ZERO
+				_start_act(key, mode, _pos)
+				hub.set_local(mode, _pos, _yaw, 0.0)
+		HubRoom.PROP_LAMP:
+			# turn to the lamp and flick the switch
+			var c: Array = HubRoom.CIRCLES[0]
+			var to := Vector2(float(c[0]), float(c[1])) - _pos
+			if to.length() > 0.01:
+				_yaw = atan2(-to.x, -to.y)
+				_draw(key, _pos, _yaw, Vector2.ZERO)
+			hub.request_lamp()
+	Haptics.tap()
+
+
+## The host gave the couch / the plant to someone else first.
+func _on_denied(mode: int, taken: bool) -> void:
+	if act == mode:
+		act = HubSync.MODE_WALK
+		_end_act(local_key())
+	if not taken:
+		return   # (out of reach by the time the host heard: just walk on)
+	if mode == HubSync.MODE_COUCH:
+		notice.emit("Someone's already on the couch")
+	else:
+		notice.emit("Someone's already hiding in there!")
+		if stage != null and is_instance_valid(stage):
+			stage.rustle_plant()
+
+
+func _start_act(k: String, mode: int, from: Vector2) -> void:
+	var v: CharacterView = stage.chars.get(k)
+	if v == null or not is_instance_valid(v):
+		return
+	var at := stage.to_local(v.global_position)
+	_acts[k] = {"mode": mode, "phase": "in", "t": 0.0, "from": from, "at": at, "yaw0": v.rotation.y,
+		"last": at, "n": -1}
+	stage.free_roam[k] = true
+	_returning.erase(k)
+
+
+func _end_act(k: String) -> void:
+	var a: Dictionary = _acts.get(k, {})
+	if a.is_empty() or String(a["phase"]) == "out":
+		return
+	a["at"] = a["last"]
+	a["phase"] = "out"
+	a["t"] = 0.0
+	if int(a["mode"]) == HubSync.MODE_PLANT:
+		a["at"] = HubRoom.plant_middle()
+		if stage.is_hiding(k):
+			stage.set_hiding(k, false)
+			stage.rustle_plant()
+			if _near(k):
+				Sfx.play("hop", stage.to_global(a["at"]), -6.0)
+
+
+## A hop from `a` to `b` (stage space) with an arc `h` high, u in 0..1.
+static func _arc(a: Vector3, b: Vector3, u: float, h: float) -> Vector3:
+	var e := u * u * (3.0 - 2.0 * u)
+	var p := a.lerp(b, e)
+	p.y = lerpf(a.y, b.y, u) + h * 4.0 * u * (1.0 - u)
+	return p
+
+
+## Close enough to the camera to be heard.
+func _near(k: String) -> bool:
+	if k == local_key():
+		return true
+	var v: Variant = stage.chars.get(k)
+	return stage.cam != null and v != null and is_instance_valid(v) and stage.cam.global_position.distance_to((v as Node3D).global_position) < 14.0
+
+
+## Draws one runner on the couch / in the plant; returns how hard the couch
+## is being pressed down this frame (0..1.5).
+func _draw_act(k: String, delta: float) -> float:
+	var a: Dictionary = _acts[k]
+	var v: CharacterView = stage.chars.get(k)
+	if v == null or not is_instance_valid(v):
+		_acts.erase(k)
+		stage.set_hiding(k, false)
+		return 0.0
+	a["t"] = float(a["t"]) + delta
+	var t := float(a["t"])
+	var from: Vector2 = a["from"]
+	var floor_p := Vector3(from.x, 0.0, from.y)
+	var p := floor_p
+	var yaw := v.rotation.y
+	var on_floor := false
+	var press := 0.0
+	var phase := String(a["phase"])
+	if int(a["mode"]) == HubSync.MODE_COUCH:
+		var seat := HubRoom.couch_seat(from)
+		match phase:
+			"in":
+				var u := minf(1.0, t / COUCH_IN_S)
+				p = _arc(a["at"], seat, u, 0.5)
+				# turning round to face the room on the way up
+				yaw = lerp_angle(float(a["yaw0"]), PI, minf(1.0, u * 1.6))
+				if u >= 1.0:
+					a["phase"] = "on"
+					a["t"] = 0.0
+			"on":
+				var n := int(t / BOUNCE_S)
+				var u := fmod(t, BOUNCE_S) / BOUNCE_S
+				# every fourth bounce goes higher
+				var big := n % 4 == 3
+				var h := BOUNCE_H * (1.5 if big else 1.0)
+				p = seat + Vector3(0, h * 4.0 * u * (1.0 - u), 0)
+				if stage.props != null:
+					p.y -= stage.props.seat_drop()   # feet on the squashed cushion
+				yaw = PI
+				on_floor = u < 0.05 or u > 0.95
+				press = (1.0 - smoothstep(0.0, 0.16, minf(u, 1.0 - u))) * (h / BOUNCE_H)
+				if n != int(a["n"]):
+					a["n"] = n
+					if _near(k):
+						Sfx.play("boing", stage.to_global(seat), -13.0 if big else -16.0, randf_range(0.92, 1.08))
+			"out":
+				var u2 := minf(1.0, t / COUCH_OUT_S)
+				p = _arc(a["at"], floor_p, u2, 0.4)
+				if u2 >= 1.0:
+					_acts.erase(k)
+	else:
+		var mid := HubRoom.plant_middle()
+		match phase:
+			"in":
+				var u := minf(1.0, t / PLANT_IN_S)
+				p = _arc(a["at"], mid, u, 0.55)
+				var to := Vector2(mid.x, mid.z) - from
+				if to.length() > 0.05:
+					yaw = atan2(-to.x, -to.y)
+				if u >= 0.8 and not stage.is_hiding(k):
+					stage.set_hiding(k, true)
+					stage.rustle_plant()
+					if _near(k):
+						Sfx.play("hop", stage.to_global(mid), -6.0)
+				if u >= 1.0:
+					a["phase"] = "on"
+					a["t"] = 0.0
+			"on":
+				p = mid
+				if not stage.is_hiding(k):
+					stage.set_hiding(k, true)
+			"out":
+				var u2 := minf(1.0, t / PLANT_OUT_S)
+				p = _arc(a["at"], floor_p, u2, 0.5)
+				var away := from - Vector2(mid.x, mid.z)
+				if away.length() > 0.05:
+					yaw = atan2(-away.x, -away.y)
+				if u2 >= 1.0:
+					_acts.erase(k)
+	var last: Vector3 = a["last"]
+	var vel := (p - last) / maxf(delta, 0.001) if delta > 0.0 else Vector3.ZERO
+	a["last"] = p
+	_last[k] = Vector2(p.x, p.z)
+	if not _acts.has(k):
+		vel = Vector3.ZERO
+		on_floor = true
+	v.apply_state({"pos": stage.to_global(p), "yaw": yaw, "vel": vel, "on_floor": on_floor,
+		"state": TC.PState.ACTIVE, "fast": false, "quiet": true})
+	return press

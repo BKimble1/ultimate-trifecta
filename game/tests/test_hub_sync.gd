@@ -100,6 +100,7 @@ func test_stale_forged_and_strangers_are_ignored() -> void:
 	t.check(not hub.poses.has(-1) and hub.poses.size() == 1, "no pose for a stranger")
 	# a host message about seats that are empty or bots: no avatars appear
 	var st := Protocol.buf_for(SocialProto.HUB_STATE)
+	st.put_u8(0)   # (build 20) flags: the lamp is on
 	st.put_u8(2)
 	for slot in [5, 6]:
 		st.put_u8(slot)

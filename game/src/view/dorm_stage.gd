@@ -64,8 +64,12 @@ var reduced_motion := false
 var _cam_from: Array = []
 var _cam_t := 1.0
 var _cam_dur := Motion.CAMERA
+const WALK_CAM_S := 0.75
 var _t := 0.0
 var _lamp: OmniLight3D
+## (build 20) the props that move (HubProps) and who is hiding in the plant
+var props: HubProps
+var hiding: Dictionary = {}
 ## Emotes: who is emoting until when.  The newest emote owns the character
 ## (no timers: an older emote can never cancel a newer one), and a repeat of
 ## the same emote restarts it.
@@ -127,7 +131,9 @@ func _cam_for(m: String) -> Array:
 		# reads from front to back and the camera never leaves the room
 		var wf := walk_focus
 		var wfrom := Vector3(clampf(wf.x * 0.8, -3.8, 3.8), cam_h, minf(wf.z + 5.4, 8.0))
-		return [wfrom, Vector3(wf.x, subject.y, wf.z - 0.8), fov]
+		# (build 20) walk_focus.y lifts the view (someone bouncing on the
+		# couch stays in frame under the top bar)
+		return [wfrom + Vector3(0, wf.y * 0.5, 0), Vector3(wf.x, subject.y + wf.y, wf.z - 0.8), fov]
 	if m == "wardrobe":
 		# (V5) centred in the space the item panel leaves, and small enough
 		# that the runner (arms out, ~1.45 m wide with margin) fits there on
@@ -244,10 +250,19 @@ func set_mode(m: String, animate: bool = true) -> void:
 		return
 	if m == mode and _cam_t >= 1.0:
 		return
-	_cam_from = [cam.global_position, cam.global_position - cam.global_transform.basis.z * 3.0, cam.fov]
+	# start from what the camera is really looking at (the old framing's
+	# subject), so the move turns smoothly instead of swinging from a point
+	# a few metres ahead of the lens
+	var from_at := cam.global_position - cam.global_transform.basis.z * 3.0
+	if _cam_t >= 1.0 and FRAMES.has(mode):
+		from_at = (_cam_for(mode)[1] as Vector3) if mode != "walk" else (_walk_at if _walk_at != Vector3.INF else from_at)
+	_cam_from = [cam.global_position, from_at, cam.fov]
+	var walk_move := m == "walk" or mode == "walk"
 	mode = m
 	_cam_t = 0.0 if (animate and not reduced_motion and is_inside_tree()) else 1.0
-	_cam_dur = Motion.CAMERA
+	# (build 20) into and out of Walk: a longer, eased rise over the room
+	# (0.32 s read as a cut to the overhead view)
+	_cam_dur = WALK_CAM_S if walk_move else Motion.CAMERA
 	if _cam_t >= 1.0:
 		_apply_cam(_cam_for(m), 1.0)
 	for k in chars:
@@ -263,6 +278,10 @@ func _apply_cam(c: Array, u: float) -> void:
 		var e := 4.0 * u * u * u if u < 0.5 else 1.0 - pow(-2.0 * u + 2.0, 3.0) * 0.5
 		to_p = (_cam_from[0] as Vector3).lerp(to_p, e)
 		to_at = (_cam_from[1] as Vector3).lerp(to_at, e)
+		if _cam_dur >= WALK_CAM_S:
+			# (build 20) into / out of Walk the camera lifts a little through
+			# the middle of the move: a smooth rise over the room, not a slide
+			to_p.y += sin(PI * e) * 0.35
 		to_fov = lerpf(float(_cam_from[2]), to_fov, e)
 	cam.fov = to_fov
 	cam.look_at_from_position(to_p, to_at)
@@ -295,7 +314,11 @@ func _process(delta: float) -> void:
 		_update_preview(delta)
 	if _cam_t < 1.0:
 		_cam_t = minf(1.0, _cam_t + delta / _cam_dur)
-		_apply_cam(_cam_for(mode), _cam_t)
+		var c := _cam_for(mode)
+		_apply_cam(c, _cam_t)
+		if _cam_t >= 1.0 and mode == "walk":
+			# hand over to the follow camera exactly where the rise landed
+			_walk_at = c[1]
 
 
 ## entries: [{key, role, cosmetic, name, is_bot, local}] (local first).
@@ -360,6 +383,7 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 			_emote_until.erase(k)
 			_bubbles.erase(k)
 			_preview.erase(k)
+			hiding.erase(k)
 	if _mark_of.size() != marks_before:
 		_reframe()
 
@@ -370,7 +394,7 @@ func _rekey(from: String, to: String) -> void:
 	var old: Variant = chars.get(to)
 	if old != null and is_instance_valid(old) and old != chars[from]:
 		(old as Node).queue_free()
-	for d: Dictionary in [chars, _mark_of, _ready_of, _emote_until, _bubbles, _preview, free_roam, _says, emote_starts]:
+	for d: Dictionary in [chars, _mark_of, _ready_of, _emote_until, _bubbles, _preview, free_roam, _says, emote_starts, hiding]:
 		if d.has(from):
 			d[to] = d[from]
 			d.erase(from)
@@ -405,7 +429,7 @@ func _place(key: String) -> void:
 	if v == null:
 		return
 	if free_roam.has(key) and (mode == "lobby" or mode == "walk"):
-		v.visible = true
+		v.visible = not hiding.has(key)
 		return   # walking around: HubWalk places them
 	var mi: int = _mark_of.get(key, 0)
 	var p: Vector3 = MARKS[mi]
@@ -609,6 +633,42 @@ func _follow(delta: float) -> void:
 	cam.look_at_from_position(cam.global_position.lerp(to_p, k), _walk_at)
 
 
+# (build 20) things to do in the party room (HubWalk drives these)
+func set_lamp(on: bool, animate: bool = true) -> void:
+	if props != null:
+		props.set_lamp(on, animate)
+
+
+func couch_bounce(press: float) -> void:
+	if props != null:
+		props.couch_bounce(press)
+
+
+func rustle_plant() -> void:
+	if props != null:
+		props.rustle()
+
+
+## A runner ducked into the plant (out of sight, nameplate and all) or out.
+func set_hiding(key: String, on: bool) -> void:
+	var v: Variant = chars.get(key)
+	if on:
+		hiding[key] = true
+	else:
+		hiding.erase(key)
+	if v != null and is_instance_valid(v):
+		(v as Node3D).visible = not on
+
+
+func is_hiding(key: String) -> bool:
+	return hiding.has(key)
+
+
+func clear_hiding() -> void:
+	for k in hiding.keys():
+		set_hiding(k, false)
+
+
 ## Nameplates over the party (walking around: the party panel is hidden).
 ## Blocked players show as "Blocked player"; bots carry their label.
 func show_names(on: bool) -> void:
@@ -803,20 +863,17 @@ func _build_room() -> void:
 	# (2.3) the upholstered base comes down to just above the floor on short
 	# feet (the feet alone under a high base read as floating legs)
 	k.chamfer_box(Vector3(-3.6, 0.27, -2.75), Vector3(3.0, 0.44, 1.05), cc.darkened(0.1), 0.06)
-	for ci in 2:
-		k.chamfer_box(Vector3(-4.27 + 1.34 * float(ci), 0.58, -2.6), Vector3(1.3, 0.2, 0.85), cc, 0.08)
+	# (build 20) the seat cushions and pillows are HubProps (they squash)
 	k.chamfer_box(Vector3(-3.6, 0.95, -3.18), Vector3(3.0, 0.75, 0.32), cc.darkened(0.05), 0.12)
 	for sx in [-1.0, 1.0]:
 		k.chamfer_box(Vector3(-3.6 + sx * 1.42, 0.66, -2.72), Vector3(0.28, 0.46, 1.05), cc.darkened(0.12), 0.1)
 		k.soft_blob(Vector3(-3.6 + sx * 1.42, 0.89, -2.72), Vector3(0.15, 0.07, 0.52), cc.darkened(0.08), 4, 12)
 		for fz in [-1.0, 1.0]:
 			k.cylinder(Vector3(-3.6 + sx * 1.38, 0.0, -2.75 + fz * 0.42), 0.05, 0.07, wood_d, 10, 0.0, true, 0.035)
-	k.soft_blob(Vector3(-4.2, 0.84, -2.75), Vector3(0.3, 0.19, 0.11), Color("ffc668", FABRIC), 5, 12)
-	k.soft_blob(Vector3(-3.0, 0.84, -2.75), Vector3(0.28, 0.18, 0.1), Color("6fd8cc", FABRIC), 5, 12)
 	# floor lamp + warm shade
 	k.cylinder(Vector3(3.9, 0.0, -1.9), 0.25, 0.04, Color("2a2d36"), 24, 0.0, true, 0.22)
 	k.cylinder(Vector3(3.9, 0.0, -1.9), 0.035, 1.55, Color("2a2d36"), 12)
-	k.cylinder(Vector3(3.9, 1.5, -1.9), 0.36, 0.42, Color("ffd9a0"), 28, 1.4, true, 0.22)
+	# (build 20) the shade is HubProps (it goes dark when the lamp is off)
 	# bookshelf on the right
 	k.chamfer_box(Vector3(5.1, 1.05, -2.9), Vector3(1.5, 2.1, 0.5), wood_d, 0.03)
 	for sh in 4:
@@ -829,10 +886,7 @@ func _build_room() -> void:
 	# plant, beanbag, side table + pizza box, posters, string lights
 	k.cylinder(Vector3(-5.3, 0, 1.6), 0.28, 0.5, Color("c27a4f", GLOSS), 22, 0.0, true, 0.34)
 	k.cylinder(Vector3(-5.3, 0.48, 1.6), 0.36, 0.05, Color("c27a4f", GLOSS).darkened(0.1), 22)
-	for li in 4:
-		var la := TAU * float(li) / 4.0 + 0.4
-		k.soft_blob(Vector3(-5.3 + cos(la) * 0.16, 0.92 + 0.08 * float(li % 2), 1.6 + sin(la) * 0.16), Vector3(0.36, 0.42, 0.36),
-			Color("4f9a5c").lightened(0.04 * float(li)), 5, 12)
+	# (build 20) the leaves are HubProps (they rustle when someone hides)
 	k.soft_blob(Vector3(4.0, 0.32, 1.1), Vector3(0.75, 0.38, 0.7), Color("ff8f6b", FABRIC), 6, 18)
 	# side table: a top on four legs (V4; was one block)
 	k.chamfer_box(Vector3(-1.9, 0.28, -2.1), Vector3(0.8, 0.04, 0.55), wood, 0.012)
@@ -865,6 +919,9 @@ func _build_room() -> void:
 	# (2.3) a fireplace on the left wall, by the back corner: a brick
 	# surround, a wooden mantel, a stone hearth, logs and a flickering fire
 	_fireplace(k, wood, wood_d)
+	# (build 20) more to look at, all on the walls and the furniture (the
+	# floor you can walk on is unchanged)
+	_wall_extras(k)
 	# floor cushions by the couch
 	k.soft_blob(Vector3(-2.1, 0.13, -1.55), Vector3(0.42, 0.14, 0.42), Color("f1c75b", FABRIC), 5, 14)
 	k.soft_blob(Vector3(-1.55, 0.12, -1.85), Vector3(0.36, 0.12, 0.36), Color("9a7bd8", FABRIC), 5, 14)
@@ -881,10 +938,20 @@ func _build_room() -> void:
 		HolidayDecor.build_lights(self, wx, reduced_motion)
 	# warm lamp light on the floor and the wall behind it, the table lamp's
 	# glow, and the window's cool moonlight across the floor
-	_light_pool(Vector3(3.6, 0.03, -1.6), Vector2(4.4, 4.0), Color(1.0, 0.72, 0.42), 0.16, 0.0)
-	_light_pool(Vector3(3.9, 1.9, -3.45), Vector2(3.2, 3.0), Color(1.0, 0.7, 0.4), 0.12, 0.0, true)
+	var lamp_pools := [
+		_light_pool(Vector3(3.6, 0.03, -1.6), Vector2(4.4, 4.0), Color(1.0, 0.72, 0.42), 0.16, 0.0),
+		_light_pool(Vector3(3.9, 1.9, -3.45), Vector2(3.2, 3.0), Color(1.0, 0.7, 0.4), 0.12, 0.0, true)]
 	_light_pool(Vector3(-2.05, 0.9, -3.45), Vector2(1.8, 1.6), Color(1.0, 0.72, 0.42), 0.12, 0.0, true)
 	_light_pool(Vector3(wx + 0.25, 0.03, -2.25), Vector2(3.4, 2.4), Color(0.55, 0.68, 1.0), 0.09, 1.0)
+	# (build 20) the props that move: couch cushions, lamp, plant, the cat
+	props = HubProps.new()
+	props.reduced = reduced_motion
+	add_child(props)
+	props.build(cc, _lamp, lamp_pools, ARMCHAIR, -0.55)
+	# lights off: the warm key and the ambient fall too, so the room really
+	# goes dim (the fire, the tree, the table lamp and the moon stay)
+	props.dim_with(key, "light_energy", 0.45)
+	props.dim_with(env, "ambient_light_energy", 0.7)
 
 
 
@@ -953,6 +1020,61 @@ func _flicker(t: float) -> void:
 	var f := 0.82 + 0.1 * sin(t * 9.0) + 0.06 * sin(t * 23.0 + 1.3) + 0.04 * sin(t * 37.0)
 	_fire.scale = Vector3(1.0, f, 0.95 + 0.08 * sin(t * 13.0))
 	_fire_light.light_energy = 1.1 + 0.35 * f
+
+
+## (build 20) A string of photos and a Moonbrook pennant over the couch, and
+## a trophy and a little globe on top of the bookshelf.
+func _wall_extras(k: MeshKit) -> void:
+	var z := -3.44
+	var a := Vector3(-5.05, 2.42, z)
+	var b := Vector3(-2.35, 2.42, z)
+	var n := 18
+	var cord := Color("e9e2d2")
+	for i in n:
+		var t0 := float(i) / float(n)
+		var t1 := float(i + 1) / float(n)
+		var p0 := a.lerp(b, t0) + Vector3(0, -0.14 * sin(PI * t0), 0)
+		var p1 := a.lerp(b, t1) + Vector3(0, -0.14 * sin(PI * t1), 0)
+		var mid := (p0 + p1) * 0.5
+		k.box(mid, Vector3(p0.distance_to(p1) + 0.01, 0.012, 0.01), cord)
+	var pics := [Color("6fd8cc"), Color("ffc668"), Color("e46a5e"), Color("9a7bd8"), Color("4f9a5c")]
+	for i in 5:
+		var t := 0.12 + 0.19 * float(i)
+		var p := a.lerp(b, t) + Vector3(0, -0.14 * sin(PI * t), 0)
+		k.box(p + Vector3(0, -0.17, 0.012), Vector3(0.25, 0.29, 0.012), Color("f4f2ec", PAPER))
+		k.box(p + Vector3(0, -0.145, 0.02), Vector3(0.2, 0.19, 0.006), (pics[i] as Color).darkened(0.1))
+		k.blob(p + Vector3(0, -0.12, 0.024), Vector3(0.05, 0.05, 0.004), (pics[(i + 2) % 5] as Color).lightened(0.2), 2, 8)
+		k.box(p + Vector3(0, -0.02, 0.022), Vector3(0.035, 0.06, 0.012), Color("c99a3a", GLOSS))
+	# the pennant: a long teal felt triangle with a gold band
+	var nz := Vector3(0, 0, 1)
+	var t_c := Color("2f8f88", FABRIC)
+	var g_c := Color("f2c14e", FABRIC)
+	var root := Vector3(-4.55, 3.12, -3.43)
+	var tip := Vector3(-2.85, 2.98, -3.43)
+	var lo := Vector3(-4.55, 2.74, -3.43)
+	for w in [[root, lo, tip], [root, tip, lo]]:
+		k.tri_n(w[0], w[1], w[2], nz, nz, nz, t_c, t_c, t_c)
+	var b0 := root.lerp(lo, 0.38)
+	var b1 := root.lerp(lo, 0.62)
+	var bt := b0.lerp(tip, 0.82)
+	var bb := b1.lerp(tip, 0.82)
+	var off := Vector3(0, 0, 0.004)
+	for w2 in [[b0 + off, b1 + off, bb + off], [b0 + off, bb + off, bt + off], [b0 + off, bb + off, b1 + off], [b0 + off, bt + off, bb + off]]:
+		k.tri_n(w2[0], w2[1], w2[2], nz, nz, nz, g_c, g_c, g_c)
+	k.box(Vector3(-4.6, 2.93, -3.43), Vector3(0.08, 0.5, 0.03), Color("6e4630", WOOD))
+	# on the bookshelf: a trophy and a globe
+	var gold := Color("f2c14e", GLOSS)
+	var shelf_y := 2.1
+	k.cylinder(Vector3(4.7, shelf_y, -2.85), 0.11, 0.06, Color("3a2a20", WOOD), 16)
+	k.cylinder(Vector3(4.7, shelf_y + 0.06, -2.85), 0.025, 0.12, gold, 10)
+	k.cylinder(Vector3(4.7, shelf_y + 0.18, -2.85), 0.06, 0.16, gold, 18, 0.0, true, 0.12)
+	for sx in [-1.0, 1.0]:
+		k.blob(Vector3(4.7 + sx * 0.14, shelf_y + 0.27, -2.85), Vector3(0.04, 0.05, 0.015), gold, 2, 8)
+	k.cylinder(Vector3(5.45, shelf_y, -2.85), 0.08, 0.03, Color("2a2d36"), 14)
+	k.cylinder(Vector3(5.45, shelf_y + 0.03, -2.85), 0.012, 0.1, Color("2a2d36"), 8)
+	k.blob(Vector3(5.45, shelf_y + 0.24, -2.85), Vector3(0.13, 0.13, 0.13), Color("3d6fd1", GLOSS), 6, 14)
+	k.blob(Vector3(5.47, shelf_y + 0.27, -2.76), Vector3(0.06, 0.05, 0.04), Color("4f9a5c", GLOSS), 3, 8)
+	k.blob(Vector3(5.38, shelf_y + 0.19, -2.78), Vector3(0.05, 0.05, 0.04), Color("4f9a5c", GLOSS), 3, 8)
 
 
 ## A rounded upholstered armchair: seat, back and arms with soft edges, a
@@ -1057,7 +1179,7 @@ func _build_view(wx: float) -> void:
 
 ## An additive light pool (unshaded quad): on the floor (flat) or on the
 ## back wall (`wall` true).  shape 0 round, 1 soft rectangle.
-func _light_pool(center: Vector3, size: Vector2, col: Color, intensity: float, shape: float, wall: bool = false) -> void:
+func _light_pool(center: Vector3, size: Vector2, col: Color, intensity: float, shape: float, wall: bool = false) -> MeshInstance3D:
 	var q := QuadMesh.new()
 	q.size = size
 	var mi := MeshInstance3D.new()
@@ -1075,6 +1197,7 @@ func _light_pool(center: Vector3, size: Vector2, col: Color, intensity: float, s
 	mi.material_override = mat
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
+	return mi
 
 
 ## A disc facing +Z (toward the room).

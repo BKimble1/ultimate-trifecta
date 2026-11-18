@@ -46,6 +46,9 @@ var _last_note := ""
 var hub: HubWalk
 var stick: HubStick
 var walk_btn: Button
+## (build 20) the room's things to do: one button on the right while walking
+var act_btn: Button
+var _act_key := ""
 var chat_btn: Button
 var top_bar: Control
 var bottom_bar: Control
@@ -285,6 +288,20 @@ func build() -> void:
 	stick.walk = hub
 	stick.visible = false
 	add_child(stick)
+	# (build 20) walk up to the couch, the lamp or the plant: a button on the
+	# right says what you can do there
+	act_btn = UIKit.icon_button("couch", "Jump on couch", 92.0)
+	act_btn.custom_minimum_size = Vector2(318, 96)
+	act_btn.visible = false
+	act_btn.focus_mode = Control.FOCUS_NONE
+	act_btn.pressed.connect(func() -> void:
+		if hub != null:
+			hub.interact())
+	add_child(act_btn)
+	if hub != null:
+		hub.notice.connect(func(text: String) -> void:
+			if is_visible_in_tree():
+				UIKit.toast(self, text, 2.5))
 	session.social.chat.changed.connect(_on_chat)
 	_bubbled = _newest_seq()
 	_compact_bottom.call_deferred()
@@ -390,6 +407,7 @@ func _set_walk(on: bool) -> void:
 	stick.visible = on
 	if not on:
 		stick.release()
+		_show_act({})
 	roster_col.visible = not on
 	series_row.visible = not on and session.series_active()
 	if is_instance_valid(season_pill):
@@ -420,6 +438,60 @@ func _layout_stick() -> void:
 	var bottom := bottom_bar.get_global_rect().position.y - 8.0
 	stick.position = Vector2(0, top)
 	stick.size = Vector2(vs.x * 0.5, maxf(120.0, bottom - top))
+	_layout_act()
+
+
+## (build 20) the room button: on the right, level with the middle of the
+## space between the bars (the stick has the left half).
+func _layout_act() -> void:
+	if not is_instance_valid(act_btn) or not is_instance_valid(top_bar) or not is_instance_valid(bottom_bar):
+		return
+	var top := top_bar.get_global_rect().end.y
+	var bottom := bottom_bar.get_global_rect().position.y
+	var sz := act_btn.get_combined_minimum_size()
+	act_btn.size = sz
+	act_btn.position = Vector2(bottom_bar.get_global_rect().end.x - sz.x, (top + bottom) * 0.5 - sz.y * 0.5)
+
+
+func _process(_delta: float) -> void:
+	if hub == null or not is_instance_valid(act_btn):
+		return
+	_show_act(hub.prompt() if hub.walking and not has_modal() else {})
+
+
+## Show what the room offers here ({}: hide the button).
+func _show_act(p: Dictionary) -> void:
+	var key := "" if p.is_empty() else "%s|%s|%s" % [p["text"], p["icon"], p["enabled"]]
+	if key == _act_key:
+		return
+	var was := _act_key != ""
+	_act_key = key
+	if p.is_empty():
+		act_btn.visible = false
+		return
+	var f := UIKit.face_of(act_btn)
+	f.icon = String(p["icon"])
+	f.caption = String(p["text"])
+	var on := String(p["text"]) in ["Stop jumping", "Jump out"]
+	var bg := UIKit.TEAL if on else UIKit.AMBER
+	f.styles["normal"] = UIKit.card_box(bg, UIKit.R_BUTTON, 1.0, 16, 0.12)
+	f.styles["hover"] = UIKit.card_box(bg.lightened(0.08), UIKit.R_BUTTON, 1.0, 16, 0.12)
+	f.styles["pressed"] = UIKit.card_box(bg.darkened(0.12), UIKit.R_BUTTON, 0.0)
+	f.fg["normal"] = UIKit.NAVY
+	act_btn.disabled = not bool(p["enabled"])
+	act_btn.tooltip_text = f.caption
+	act_btn.accessibility_name = f.caption
+	act_btn.visible = true
+	f.queue_redraw()
+	_layout_act()
+	if not was and not Save.get_setting("reduced_motion", false):
+		# a quick pop as it appears
+		act_btn.pivot_offset = act_btn.size * 0.5
+		act_btn.scale = Vector2(0.86, 0.86)
+		act_btn.modulate.a = 0.0
+		var tw := create_tween().set_parallel(true).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(act_btn, "scale", Vector2.ONE, 0.18)
+		tw.tween_property(act_btn, "modulate:a", 1.0, 0.12)
 
 
 ## The bottom row (navigation, Emote, Walk, Chat, the primary action) must
@@ -1124,6 +1196,11 @@ func _play_own_move() -> void:
 ## so one tap is one action.)  Positions and the camera projection are both
 ## in the viewport's canvas units.
 func _unhandled_input(ev: InputEvent) -> void:
+	# (build 20) E / the controller's Y does what the room button offers
+	if hub != null and hub.walking and ev.is_action_pressed("interact") and not ev.is_echo():
+		hub.interact()
+		get_viewport().set_input_as_handled()
+		return
 	if not (ev is InputEventMouseButton) or not (ev as InputEventMouseButton).pressed or (ev as InputEventMouseButton).button_index != MOUSE_BUTTON_LEFT:
 		super(ev)
 		return

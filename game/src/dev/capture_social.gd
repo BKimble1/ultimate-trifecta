@@ -47,6 +47,8 @@ func _process(delta: float) -> void:
 	match scenario:
 		"social_hub":
 			_hub()
+		"social_props":
+			_props()
 		"social_bot":
 			_bot()
 		"social_names":
@@ -559,3 +561,85 @@ func _service_guest() -> void:
 			_next(60.0)
 		4:
 			pass
+
+
+## (build 20) social_props: a LAN room (--net-host), alone: Walk (the camera
+## rising into the walk view, mid-move), then up to the couch (the button on
+## the right), bouncing (several phases), off again, into the plant and out,
+## and the lamp switched off and on.
+func _props() -> void:
+	var s: NetSession = App.session
+	if s == null or _t < _at:
+		return
+	var l := _lobby()
+	if l == null:
+		return
+	match _step:
+		0:
+			if s.human_count() >= 1:
+				_next(4.0)
+		1:
+			_snap("props_menu")
+			_next(0.5)
+		2:
+			l._set_walk(true)
+			_next(0.3)
+		3:
+			_snap("props_walk_rising")
+			_next(1.5)
+		4:
+			_snap("props_walk")
+			l.hub._pos = Vector2(-3.4, -1.75)
+			_next(3.0)
+		5:
+			_snap("props_by_couch")
+			_next(0.5)
+		6:
+			l.act_btn.pressed.emit()
+			_next(1.4)
+		7, 8, 9, 10, 11, 12:
+			_snap("props_bounce_%d" % (_step - 6))
+			_next(0.11)
+		13:
+			l.act_btn.pressed.emit()
+			_next(1.2)
+		14:
+			_snap("props_off_couch")
+			l.hub._pos = Vector2(-4.45, 1.5)
+			_next(3.0)
+		15:
+			_snap("props_by_plant")
+			_next(0.5)
+		16:
+			if _step == 16 and not l.hub.act == HubSync.MODE_PLANT:
+				l.act_btn.pressed.emit()
+				_at = _t + 1.5
+				return
+			_snap("props_hidden")
+			_next(0.5)
+		17:
+			l.act_btn.pressed.emit()
+			_next(0.2)
+		18:
+			_snap("props_jump_out")
+			_next(0.5)
+		19:
+			l.hub._pos = Vector2(3.9, -1.15)
+			_next(4.0)
+		20:
+			_snap("props_by_lamp")
+			_next(0.5)
+		21:
+			l.act_btn.pressed.emit()
+			_next(1.0)
+		22:
+			_snap("props_lamp_off")
+			_next(0.5)
+		23:
+			l._set_walk(false)
+			_next(2.0)
+		24:
+			_snap("props_menu_lamp_off")
+			_next(1.0)
+		25:
+			get_tree().quit()

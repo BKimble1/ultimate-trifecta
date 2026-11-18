@@ -15,7 +15,12 @@ extends RefCounted
 ##   64 HUB_STATE     host -> clients (unreliable at 10 Hz while anyone
 ##                                    walks)  u8 n, n x (u8 slot, the HUB_POSE body)
 ##   65 CHAT_HISTORY  host -> one client on (re)join (reliable)  u8 n, n x CHAT body
-## Clients accept 61, 62, 64 and 65 only from their bound host.
+##   66 HUB_ACT       client -> host  (reliable)  u8 act (build 20: 0 = the lamp switch)
+##   67 HUB_DENY      host -> one client (reliable)  u8 mode, u8 taken (build 20:
+##                                    the couch or the plant is someone else's
+##                                    right now (1) or out of reach (0))
+## (build 20) HUB_STATE starts with u8 flags (bit 0: the floor lamp is off).
+## Clients accept 61, 62, 64, 65 and 67 only from their bound host.
 
 const FIRST := 60
 const LAST := 79
@@ -25,7 +30,9 @@ const CHAT_REJECT := 62
 const HUB_POSE := 63
 const HUB_STATE := 64
 const CHAT_HISTORY := 65
-const HOST_ONLY := [CHAT, CHAT_REJECT, HUB_STATE, CHAT_HISTORY]
+const HUB_ACT := 66
+const HUB_DENY := 67
+const HOST_ONLY := [CHAT, CHAT_REJECT, HUB_STATE, CHAT_HISTORY, HUB_DENY]
 
 ## TEXT: approved and signed by the game service (ChatToken).  MOD_TEXT
 ## (2.2): device-moderated text, filtered with ChatRules.bleep by the

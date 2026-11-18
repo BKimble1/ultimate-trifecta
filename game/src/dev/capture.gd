@@ -88,7 +88,7 @@ func _ready() -> void:
 		sc.set("cap", self)
 		sc.set("scenario", scenario)
 		add_child(sc)
-		if scenario == "social_hub" or scenario == "social_service_host":
+		if scenario == "social_hub" or scenario == "social_service_host" or scenario == "social_props":
 			App.dev_expect = 99   # hold the room open for the capture
 	elif scenario.begins_with("logo_"):
 		# Pass 8 startup-logo evidence: its own driver

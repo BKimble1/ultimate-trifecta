@@ -22,6 +22,8 @@ func host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			chat.host_packet(peer, b)
 		SocialProto.HUB_POSE:
 			hub.host_packet(peer, b)
+		SocialProto.HUB_ACT:
+			hub.host_act(peer, b)
 
 
 ## From the bound host only (NetSession checks the sender).
@@ -31,6 +33,8 @@ func client_packet(type: int, b: StreamPeerBuffer) -> void:
 			chat.client_packet(type, b)
 		SocialProto.HUB_STATE:
 			hub.client_packet(b)
+		SocialProto.HUB_DENY:
+			hub.client_deny(b)
 
 
 ## Host: someone was seated (joined or reconnected).  Their recent party

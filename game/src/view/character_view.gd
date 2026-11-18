@@ -934,7 +934,7 @@ func reset_motion() -> void:
 
 ## rs keys: pos, yaw, vel, state, state_t, on_floor, diving, fast,
 ## tag_phase, protect, bump_protect, spotted, cart_id, steer, emote, emote_t,
-## celebrate, visible, impact.  The caller supplies render-time
+## celebrate, visible, impact, quiet (no jump / landing sounds).  The caller supplies render-time
 ## values (already interpolated); this view does not smooth position again.
 ## snap: the caller saw a discontinuity (respawn, resurfacing, cart seat,
 ## reconnect, a big correction).  Histories reset when the character really
@@ -1171,7 +1171,7 @@ func _process_view(delta: float) -> void:
 	if not _prev_air and air and vel.y > 2.0 and st == TC.PState.ACTIVE and _since_jump > 0.3:
 		_since_jump = 0.0
 		_squash_v = -1.5
-		if _near_camera(25.0):
+		if _near_camera(25.0) and not bool(rs.get("quiet", false)):
 			Sfx.play("jump", global_position, -6.0)
 	if not air:
 		_air_t = 0.0
@@ -1628,7 +1628,8 @@ func _land(fall_speed: float, speed: float) -> void:
 	tree.set("parameters/land_mix_%s/blend_amount" % which, hard)
 	tree.set("parameters/land_%s/request" % which, AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	_squash_v += clampf(fall_speed * 0.32, 1.0, 3.6) * (0.6 if speed > 1.5 else 1.0)
-	if _near_camera(25.0):
+	# (build 20) quiet: the party room's couch bounce has its own sound
+	if _near_camera(25.0) and not bool(rs.get("quiet", false)):
 		Sfx.play("land", global_position, -8.0 + 5.0 * hard)
 
 
