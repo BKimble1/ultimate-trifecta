@@ -76,6 +76,7 @@ static func attach(p_stage: DormStage, p_session: NetSession) -> HubWalk:
 	w.name = "HubWalk"
 	w.stage = p_stage
 	w.session = p_session
+	p_stage.busy_fn = func(k: String) -> bool: return is_instance_valid(w) and w._acts.has(k)
 	p_stage.add_child(w)
 	return w
 

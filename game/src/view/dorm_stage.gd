@@ -70,6 +70,8 @@ var _lamp: OmniLight3D
 ## (build 20) the props that move (HubProps) and who is hiding in the plant
 var props: HubProps
 var hiding: Dictionary = {}
+## (build 20) HubWalk: is this character busy on a prop (no emote then)?
+var busy_fn: Callable
 ## Emotes: who is emoting until when.  The newest emote owns the character
 ## (no timers: an older emote can never cancel a newer one), and a repeat of
 ## the same emote restarts it.
@@ -479,6 +481,8 @@ func emote(key: String, id: int, seconds: float = -1.0) -> bool:
 	var v: CharacterView = chars.get(key)
 	if v == null or not is_instance_valid(v) or not v.visible or id < 0 or id >= TC.EMOTES.size():
 		return false
+	if busy_fn.is_valid() and bool(busy_fn.call(key)):
+		return false   # (build 20) bouncing on the couch / hopping in or out
 	_preview.erase(key)
 	var name: String = TC.EMOTES[id]
 	var dur := seconds if seconds > 0.0 else float(EMOTE_S.get(name, 2.4))
