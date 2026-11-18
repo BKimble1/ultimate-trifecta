@@ -74,9 +74,11 @@ func test_footprints_follow_the_runner_through_the_snow() -> void:
 		pr.track(0, Vector3(p.x, 0.0, p.y), true)
 	var deep := 0
 	for i in range(-int(q.z), int(q.z) + 1):
-		if SnowCover.amount_at(d, Vector2(q.x + i, q.y)) > 0.55:
+		if SnowCover.amount_at(d, Vector2(q.x + i, q.y)) >= SnowPrints.PRINT_MIN:
 			deep += 1
 	t.check(pr.placed >= int(deep / SnowPrints.STRIDE * 0.6), "a print every stride in the snow (%d over ~%d m)" % [pr.placed, deep])
+	for sp in pr.spots:
+		t.check(SnowCover.amount_at(d, Vector2(sp.x, sp.z)) >= SnowPrints.PRINT_MIN, "every print where the snow is drawn solid (%s)" % str(sp))
 	t.check(pr.placed <= int((q.z * 2.0 + 2.0) / SnowPrints.STRIDE) + 2, "and none outside it (%d)" % pr.placed)
 	# left and right in turn
 	var mm := pr.multimesh

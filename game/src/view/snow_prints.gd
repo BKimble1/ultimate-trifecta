@@ -14,6 +14,8 @@ const STRIDE := 0.72
 const SIDE := 0.11
 ## a step longer than this is a jump in position (a respawn, a rift): no print
 const JUMP := 3.0
+## the least snow a print is pressed into (SnowCover's R)
+const PRINT_MIN := 0.8
 
 var cover: Dictionary
 var placed := 0
@@ -87,7 +89,10 @@ func track(slot: int, pos: Vector3, on_floor: bool) -> void:
 		return
 	var dir := d / dl
 	var at := q + Vector2(-dir.y, dir.x) * SIDE * side
-	if SnowCover.amount_at(cover, at) < 0.55:
+	# only where the drift is drawn solid: the shader's ragged edge moves the
+	# rim by up to 0.15 either way (smoothstep 0.38..0.62), so 0.8 is snow
+	# whatever the edge does there
+	if SnowCover.amount_at(cover, at) < PRINT_MIN:
 		return
 	add_print(Vector3(at.x, pos.y + 0.012, at.y), dir)
 
