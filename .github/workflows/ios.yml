@@ -140,10 +140,21 @@ jobs:
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
-      - name: Xcode version
+      # (2.2 build 21) build with Xcode 27 and the iOS 27 SDK: the newest
+      # non-beta Xcode 27 on the runner (a beta only if there is no release),
+      # and the run stops before anything is built if the SDK isn't 27
+      - name: Xcode 27 (iOS 27 SDK)
         run: |
+          echo "Xcodes on this runner:"; ls -d /Applications/Xcode*.app || true
+          X=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
+          [ -n "$X" ] || X=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$X" ]; then echo "::error::no Xcode 27 on this runner image"; exit 1; fi
+          sudo xcode-select -s "$X/Contents/Developer"
+          echo "DEVELOPER_DIR=$X/Contents/Developer" >> "$GITHUB_ENV"
           xcodebuild -version
-          xcrun --sdk iphoneos --show-sdk-version
+          SDK=$(xcrun --sdk iphoneos --show-sdk-version)
+          echo "iphoneos SDK $SDK"
+          case "$SDK" in 27*) ;; *) echo "::error::the iOS SDK is $SDK, not 27"; exit 1;; esac
       - uses: actions/cache@v4
         with:
           path: |
@@ -158,7 +169,7 @@ jobs:
         id: gapcache
         with:
           path: tools/.cache/GodotApplePlugins-addons-*-src.zip
-          key: gap-src-bfade13ff8b6027ede438bac637b5bf93057d404-xcode26
+          key: gap-src-bfade13ff8b6027ede438bac637b5bf93057d404-xcode27
       - name: Fetch pinned plugins
         run: tools/fetch_deps.sh
       # saved right away, so a later failure (signing, upload) never throws
@@ -167,7 +178,7 @@ jobs:
         if: steps.gapcache.outputs.cache-hit != 'true' && hashFiles('tools/.cache/GodotApplePlugins-addons-*-src.zip') != ''
         with:
           path: tools/.cache/GodotApplePlugins-addons-*-src.zip
-          key: gap-src-bfade13ff8b6027ede438bac637b5bf93057d404-xcode26
+          key: gap-src-bfade13ff8b6027ede438bac637b5bf93057d404-xcode27
       - name: Build native extension (UTShare share sheet, iOS xcframework)
         run: GODOT_BIN=$(cat tools/.cache/godot/BIN) tools/build_native.sh
       - name: Signing configuration present?
