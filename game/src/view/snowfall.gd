@@ -98,6 +98,11 @@ func setup(quality: int, reduced: bool) -> void:
 		n = int(n * 0.6)
 	_p = _emitter(n, 6.0, Vector3(14.0, 5.0, 14.0), 0.13, 0.9 if reduced else 1.25, 0.95)
 	_p.local_coords = false
+	# no warm-up simulation while the round is being prepared (1100 flakes
+	# simulated for 6 s held a loading frame for a quarter of a second): the
+	# flakes are born all through the box and fade in, so the snow fills in
+	# over the reveal and countdown
+	_p.preprocess = 0.0
 	_p.position = Vector3(0, 3.5, 0)
 	add_child(_p)
 
