@@ -530,7 +530,7 @@ func _snow21() -> void:
 		var d := toward - p
 		me.yaw = atan2(-d.x, -d.y)
 		mc.camera.snap_to(me.body.global_position, me.yaw)
-	var steps := [[0.0, "a"], [2.5, "s1"], [4.5, "s2"], [6.5, "s3"], [7.0, "b"], [10.0, "s4"], [10.5, "c"], [12.5, "s5"], [13.5, "quit"]]
+	var steps := [[0.0, "a"], [0.8, "s1"], [3.0, "back"], [3.05, "s2"], [3.6, "b"], [6.6, "back"], [6.65, "s3"], [7.2, "c"], [9.5, "s4"], [10.5, "quit"]]
 	if not _scheduled.has("snow_t0"):
 		_scheduled["snow_t0"] = _t
 	var t0 := float(_scheduled["snow_t0"])
@@ -541,9 +541,18 @@ func _snow21() -> void:
 		_scheduled[key] = true
 		match String(st[1]):
 			"a", "b":
+				# in the middle of a drift: the runner's own way out leaves prints
 				var q: Vector4 = ps[0 if String(st[1]) == "a" else mini(1, ps.size() - 1)]
 				var c := Vector2(q.x, q.y)
-				put.call(c + Vector2(q.z + 1.0, 0), c)
+				_scheduled["snow_patch"] = q
+				put.call(c, c + Vector2(1, 0))
+			"back":
+				# from the drift's edge, looking back across it at the prints
+				var q2: Vector4 = _scheduled.get("snow_patch", ps[0])
+				var c2 := Vector2(q2.x, q2.y)
+				var mp := Vector2(me.body.global_position.x, me.body.global_position.z)
+				var away := (mp - c2).normalized() if mp.distance_to(c2) > 0.5 else Vector2(1, 0)
+				put.call(c2 + away * (q2.z + 3.0), c2)
 			"c":
 				if not mc.bush_views.is_empty():
 					var bp := (mc.bush_views[0] as Node3D).global_position
