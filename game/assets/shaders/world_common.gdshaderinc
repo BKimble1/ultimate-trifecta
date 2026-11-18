@@ -358,9 +358,12 @@ void fragment() {
 			// caps: tops of bushes and trees (broken, the green shows
 			// through), roofs, ledges, benches
 			float up = wn.y;
-			float lo = m == 10 ? 0.42 : (m == 6 ? 0.3 : 0.62);
-			float cap = smoothstep(lo, lo + 0.22, up) * smoothstep(0.3, 0.55, nz + (m == 10 ? 0.02 : 0.22));
-			base = mix(base, snow_c, cap * (m == 10 ? 0.88 : 0.95));
+			float lo = m == 10 ? 0.3 : (m == 6 ? 0.3 : 0.62);
+			// leaves: a fuller cover on the crown, broken by the clumps
+			float leaf_n = texture(detail_a, (v_wp.xz + v_wp.y * 0.6) * 0.8).r;
+			float brk = m == 10 ? smoothstep(0.18, 0.45, nz * 0.6 + leaf_n * 0.5) : smoothstep(0.3, 0.55, nz + 0.22);
+			float cap = smoothstep(lo, lo + 0.25, up) * brk;
+			base = mix(base, snow_c, cap * (m == 10 ? 0.9 : 0.95));
 			rough = mix(rough, 0.8, cap);
 			spec = mix(spec, 0.2, cap);
 		}

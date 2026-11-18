@@ -183,6 +183,8 @@ func _process(delta: float) -> void:
 			_v26()
 		"rift26":
 			_rift26()
+		"snow21":
+			_snow21()
 		"b18":
 			_b18()
 		"audit18":
@@ -508,6 +510,49 @@ func _rift26() -> void:
 			later(1.0, "r26_chat")
 	elif _scheduled.has("r3") and _t > float(_scheduled["r3"]) + 2.5:
 		get_tree().quit()
+
+
+## (build 21) Snow evidence (a practice round as a runner, --autoplay):
+## the runner is put at the edge of a snow drift facing across it (the bot
+## then runs its own way, through or past), shots as the prints appear,
+## another drift, then beside a hiding bush to show the snow on top.
+func _snow21() -> void:
+	var mc: MatchController = App.match_ctrl
+	if mc == null or not is_instance_valid(mc) or mc.sim == null:
+		return
+	if int(mc.local_info().get("phase", 0)) != TC.Phase.PLAYING or mc.snow_cover.is_empty():
+		return
+	var s := mc.sim
+	var me := s.player(mc.local_slot)
+	var ps: Array = mc.snow_cover["patches"]
+	var put := func(p: Vector2, toward: Vector2) -> void:
+		me.body.global_position = Vector3(p.x, CampusBuilder.grid_y(s.layout, p.x, p.y) + 0.1, p.y)
+		var d := toward - p
+		me.yaw = atan2(-d.x, -d.y)
+		mc.camera.snap_to(me.body.global_position, me.yaw)
+	var steps := [[0.0, "a"], [2.5, "s1"], [4.5, "s2"], [6.5, "s3"], [7.0, "b"], [10.0, "s4"], [10.5, "c"], [12.5, "s5"], [13.5, "quit"]]
+	if not _scheduled.has("snow_t0"):
+		_scheduled["snow_t0"] = _t
+	var t0 := float(_scheduled["snow_t0"])
+	for st in steps:
+		var key := "snow_%s" % String(st[1])
+		if _t < t0 + float(st[0]) or _scheduled.has(key):
+			continue
+		_scheduled[key] = true
+		match String(st[1]):
+			"a", "b":
+				var q: Vector4 = ps[0 if String(st[1]) == "a" else mini(1, ps.size() - 1)]
+				var c := Vector2(q.x, q.y)
+				put.call(c + Vector2(q.z + 1.0, 0), c)
+			"c":
+				if not mc.bush_views.is_empty():
+					var bp := (mc.bush_views[0] as Node3D).global_position
+					put.call(Vector2(bp.x + 3.5, bp.z + 3.5), Vector2(bp.x, bp.z))
+			"quit":
+				print("SNOW prints placed: %d" % (mc.prints.placed if mc.prints else -1))
+				get_tree().quit()
+			_:
+				snap("snow21_%s" % String(st[1]))
 
 
 func _home() -> void:
