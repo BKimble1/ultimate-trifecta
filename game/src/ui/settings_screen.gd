@@ -33,12 +33,43 @@ const TABS := [
 static var open_tab := 0
 var tab := 0
 var tabs_bar: Control
+var _head: HBoxContainer
+var _head_gap: Control
+
+
+## (build 20) The tabs in the header row when they fit beside Back and the
+## title, else on their own row under it.
+func _place_tabs() -> void:
+	if not is_instance_valid(tabs_bar) or not is_instance_valid(_head) or not is_instance_valid(content):
+		return
+	var avail := content.size.x if content.size.x > 1.0 else get_viewport().get_visible_rect().size.x
+	var need := 0.0
+	for c in _head.get_children():
+		if c != tabs_bar and c != _head_gap and (c as Control).visible:
+			need += (c as Control).get_combined_minimum_size().x + float(_head.get_theme_constant("separation"))
+	need += 24.0 + tabs_bar.get_combined_minimum_size().x
+	var in_head := tabs_bar.get_parent() == _head
+	var fits := need <= avail - 8.0
+	if fits and not in_head:
+		if _head_gap == null:
+			_head_gap = Control.new()
+			_head_gap.custom_minimum_size = Vector2(24, 0)
+			_head_gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tabs_bar.get_parent().remove_child(tabs_bar)
+		_head.add_child(_head_gap)
+		_head.add_child(tabs_bar)
+		tabs_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	elif not fits and in_head:
+		_head.remove_child(tabs_bar)
+		_head.remove_child(_head_gap)
+		content.add_child(tabs_bar)
+		content.move_child(tabs_bar, _head.get_index() + 1)
 
 
 func build() -> void:
 	if App.stage:
 		App.stage.set_mode("home")
-	header("Settings")
+	_head = header("Settings")
 	# an opaque sheet over a dimmed room (no translucent slab)
 	var dim := ColorRect.new()
 	dim.color = Color(UIKit.NAVY, 0.55)
@@ -55,6 +86,11 @@ func build() -> void:
 	tabs_bar.name = "Tabs"
 	tabs_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	content.add_child(tabs_bar)
+	# (build 20) the tabs sit up in the header row beside the title, so the
+	# page starts near the top; a screen too narrow for that keeps them on
+	# their own row under it
+	_place_tabs.call_deferred()
+	get_viewport().size_changed.connect(_place_tabs)
 	_sc = UIKit.scroll_area()
 	_sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_sc.follow_focus = true
