@@ -367,6 +367,12 @@ func is_on_road(p: Vector2, margin: float = 0.0) -> bool:
 	return false
 
 
+## On a road's carriageway (the Classic map has no car parks, so the same as
+## is_on_road; the builder shares this name with CampusLayout).
+func is_on_road_line(p: Vector2, margin: float = 0.0) -> bool:
+	return is_on_road(p, margin)
+
+
 func is_on_path(p: Vector2, margin: float = 0.0) -> bool:
 	for r in paths:
 		var pts: PackedVector2Array = r["pts"]
