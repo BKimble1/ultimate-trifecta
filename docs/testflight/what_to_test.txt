@@ -1,8 +1,8 @@
-2.2 (19): a cleaner UI pass on build 18. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Every phone in a party needs build 18 or 19. Tell us your iPhone or iPad model:
+2.2 (20): your feedback round. The game service still isn't connected, so purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Every phone in a party needs build 20. Tell us your iPhone or iPad model:
 
-- Season Pass: the Free and Premium rows are both fully visible, in the panel and full screen (the milestone shortcuts step aside when there isn't room).
-- Season Pass header: "Season 1 · Free" and your tier, nothing cut off.
-- Locker: all eight tabs fit, Music included.
-- Settings: the highlighted tab matches the page.
-- Shorter text in the Shop notice, results, How to Play and Practice.
-- Still check from build 18: knock-out tags, the new Shop and Sets, the six new skins, the Season pill, haptics.
+- Locker > Emotes: pick a slot, then tap an emote. Nothing should overlap.
+- Snow outside the dorm window and falling during rounds.
+- Boost (bolt, above Jump): 3 seconds of speed, then the bar refills.
+- Rifts: run or drive a cart into the ring, it should always take you.
+- Golf cart wheels on the ground; Night Watch "Nearest cart" arrow.
+- Party room: tap Walk, the camera should rise smoothly. Walk to the couch, lamp or plant and use the button on the right. One person at a time.

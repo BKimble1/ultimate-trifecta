@@ -749,3 +749,63 @@ added:
 - **Settings**: the tab highlight follows a tab opened from code.
 - **Text**: the Shop's notice fits one line; shorter results footers and How
   to Play lines; Practice no longer mentions the old 30 s wait.
+
+## 36. Build 20: ninth pass
+
+Owner feedback round.  Protocol **16** (the running boost travels in the
+motor state, the party room gained couch / plant / lamp messages): build 20
+plays only with build 20.
+- **Emotes (Locker)**: the five slots are a row of tiles, each with its
+  number in the corner, the emote's icon and name centred, the chosen slot
+  in gold and slot 1 tagged "Ready" (it is also your ready move).  One line
+  says what to do ("Pick a slot, then tap an emote below."), the owned emotes
+  are compact cards headed "Emotes you own", and the redundant footer is gone
+  on that tab, so nothing overlaps or is cut off on a phone
+  (`CreatorScreen._emote_slot_row`).
+- **Snow**: soft round flakes past the dorm window all season
+  (`Snowfall.window`), and falling over the campus in rounds around the
+  camera (`Snowfall`, 1100 flakes Standard / 520 Battery Saver, fewer with
+  Reduced Motion), stopping while the camera is inside the dorm.
+- **Running boost**: a Boost button (bolt) above and right of Jump, a little
+  smaller, for runners and the Night Watch on foot (Shift, L1 / left stick
+  click).  It gives 3 s of extra speed (x1.3, capped at 9 m/s), then the bar
+  refills over 10 s; a press while it runs or refills does nothing; a tag
+  ends it; never in a cart.  The button drains in gold while boosting and
+  greys while refilling.  Bots use it when chased or chasing
+  (`Motor.step_foot`, `RulesConfig.boost_*`, tests `test_boost`).
+- **Rifts**: the catch now matches the glowing ring (1.55 m; 1.1 m let you
+  run through the edge), a fast step straight across counts (the tick's
+  whole step is checked), and a golf cart drives through with its driver
+  (`MatchSim._check_rifts`, tests `test_rifts`).
+- **Golf carts** sit on the ground: the view rides 0.3 m higher so the
+  wheels are on the road, not in it (`CartView.RIDE_Y`).
+- **Cart locator**: on foot as the Night Watch, with no runner to tag in
+  reach, the card shows an arrow and the distance to the nearest free cart
+  ("Nearest cart"), when it is more than 5 m away
+  (`MatchHud.nearest_free_cart`).
+- **Party room, Walk**: the camera rises smoothly into the walk view over
+  0.75 s with a slight lift (it used to cut), and hands over to the follow
+  camera where the move lands.
+- **Party room, things to do**: walk up to the couch, the floor lamp or the
+  plant by the fireplace and a button on the right says what you can do
+  there (E / controller Y also work):
+  - *Jump on couch*: you hop up onto the seat, turn to the room and bounce
+    (every fourth bounce higher) until *Stop jumping*; the cushions squash
+    under each landing and spring back; a soft boing.
+  - *Hide*: you duck into the plant (it rustles) and are out of sight,
+    nameplate and all, until *Jump out*.
+  - *Lights off / Lights on*: the lamp, its shade and glow go out and the
+    room dims for everyone.
+  One person at a time on the couch and in the plant.  The host decides
+  (`HubSync`): only from walking (not straight off your mark), only within
+  reach of where the host has you after its anti-teleport clamp; a device
+  that asked too late is told (`HUB_DENY`) and walks on ("Someone's already
+  on the couch").  A hider stays secret: Hide is always offered and only the
+  host's answer reveals someone is in there.  The lamp is one switch
+  (`HUB_ACT`, 0.35 s cooldown); `HUB_STATE` carries it and is repeated once
+  a second while anything is going on, so someone joining sees the room as
+  it is.  A round start resets it all.  Tests `test_hub_props`.
+- **More in the room** (walls and furniture only; the floor you can walk on
+  is unchanged): a cat asleep on the armchair, a throw over the couch arm, a
+  fuller plant, a string of photos and a Moonbrook pennant over the couch, a
+  trophy and a globe on the bookshelf.
