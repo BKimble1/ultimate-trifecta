@@ -83,8 +83,9 @@ static func build_lights(stage: DormStage, wx: float, reduced: bool) -> void:
 	stage.add_child(tl)
 	stage._light_pool(TREE + Vector3(0.0, 0.031, 0.75), Vector2(3.0, 2.2), Color(1.0, 0.74, 0.46), 0.15, 0.0)
 	stage._light_pool(Vector3(TREE.x, 1.4, -3.45), Vector2(2.6, 2.8), Color(1.0, 0.7, 0.45), 0.1, 0.0, true)
+	# (build 20) the snow past the window shows with Reduced Motion too (slower)
+	stage.add_child(Snowfall.window(wx, reduced))
 	if not reduced:
-		stage.add_child(_snowfall(wx))
 		stage.add_child(_steam())
 
 
@@ -400,36 +401,6 @@ static func _wall_strings(b: MeshKit, wx: float) -> void:
 		var su := u * 2.0 - float(seg)
 		var bx := lerpf(wx - 1.85 + 1.85 * float(seg), wx + 1.85 * float(seg), su)
 		_bulb(b, Vector3(bx, 3.36 - 0.2 * sin(su * PI) - 0.07, -3.2), BULB_COLS[(idx + i) % BULB_COLS.size()], fmod(float(idx + i) * 0.7071, 1.0), 0.022)
-
-
-## Snow drifting down past the window (seen only through the opening).
-static func _snowfall(wx: float) -> CPUParticles3D:
-	var p := CPUParticles3D.new()
-	p.name = "Snowfall"
-	p.position = Vector3(wx, 4.2, -7.5)
-	p.amount = 150
-	p.lifetime = 7.0
-	p.preprocess = 7.0
-	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-	p.emission_box_extents = Vector3(4.0, 0.3, 3.2)
-	p.direction = Vector3(0.15, -1.0, 0.0)
-	p.spread = 12.0
-	p.gravity = Vector3(0.0, -0.35, 0.0)
-	p.initial_velocity_min = 0.35
-	p.initial_velocity_max = 0.6
-	p.scale_amount_min = 0.6
-	p.scale_amount_max = 1.2
-	var q := QuadMesh.new()
-	q.size = Vector2(0.045, 0.045)
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = Color(0.86, 0.9, 1.0, 0.85)
-	q.material = mat
-	p.mesh = q
-	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	return p
 
 
 ## The dorm shader's surface treatments by vertex alpha (DormStage's

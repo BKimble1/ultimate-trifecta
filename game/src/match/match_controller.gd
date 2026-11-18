@@ -109,6 +109,7 @@ var water_nodes: Dictionary = {}
 var beacons: Dictionary = {}   # water index -> MeshInstance3D
 var pickup_views: Array[Node3D] = []
 var camera: FollowCamera
+var snow: Snowfall   # (build 20) Season 1 snow over campus (view only)
 var hud: MatchHUD
 var touch: TouchControls
 var fx: Fx
@@ -447,6 +448,11 @@ func _prep_world() -> void:
 	add_child(fx)
 	if with_visuals:
 		fx.warm()
+		# (build 20) Season 1: it snows over campus (view only)
+		if HolidayDecor.ENABLED:
+			snow = Snowfall.new()
+			snow.setup(quality, reduced_motion)
+			add_child(snow)
 	_build_beacons()
 	_build_pickups()
 	_build_bushes()
@@ -1779,6 +1785,9 @@ func _update_camera(delta: float) -> void:
 	elif _foliage_mat:
 		_foliage_mat.set_shader_parameter("focus", Vector4.ZERO)
 	camera.update_camera(delta)
+	if snow:
+		var cp := camera.global_position
+		snow.follow(cp, home_dorm != "" and CampusDorms.in_room(home_dorm, cp))
 	hud.set_spectating(follow_slot if follow_slot != local_slot else -1)
 	if Diag.enabled and touch != null and follow_slot == local_slot:
 		var r := touch.surface.router
