@@ -6,3 +6,4 @@
 - Rifts: run or drive a cart into the ring, it should always take you.
 - Golf cart wheels on the ground; Night Watch "Nearest cart" arrow.
 - Party room: tap Walk, the camera should rise smoothly. Walk to the couch, lamp or plant and use the button on the right. One person at a time.
+- Settings: the tabs sit beside the title, the page starts near the top.

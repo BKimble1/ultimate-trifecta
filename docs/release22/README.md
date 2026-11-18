@@ -809,3 +809,6 @@ plays only with build 20.
   is unchanged): a cat asleep on the armchair, a throw over the couch arm, a
   fuller plant, a string of photos and a Moonbrook pennant over the couch, a
   trophy and a globe on the bookshelf.
+- **Settings**: the tabs sit up in the header row beside Back and the title,
+  so the page starts near the top (a screen too narrow for that keeps them
+  on their own row under it).
