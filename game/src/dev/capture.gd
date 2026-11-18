@@ -530,7 +530,7 @@ func _snow21() -> void:
 		var d := toward - p
 		me.yaw = atan2(-d.x, -d.y)
 		mc.camera.snap_to(me.body.global_position, me.yaw)
-	var steps := [[0.0, "a"], [0.8, "s1"], [3.0, "back"], [3.05, "s2"], [3.6, "b"], [6.6, "back"], [6.65, "s3"], [7.2, "c"], [9.5, "s4"], [10.5, "quit"]]
+	var steps := [[0.0, "a"], [0.8, "s1"], [3.5, "back"], [3.55, "s2"], [4.2, "b"], [7.7, "back"], [7.75, "s3"], [8.3, "c"], [10.5, "s4"], [11.5, "quit"]]
 	if not _scheduled.has("snow_t0"):
 		_scheduled["snow_t0"] = _t
 	var t0 := float(_scheduled["snow_t0"])
@@ -552,7 +552,7 @@ func _snow21() -> void:
 				var c2 := Vector2(q2.x, q2.y)
 				var mp := Vector2(me.body.global_position.x, me.body.global_position.z)
 				var away := (mp - c2).normalized() if mp.distance_to(c2) > 0.5 else Vector2(1, 0)
-				put.call(c2 + away * (q2.z + 3.0), c2)
+				put.call(c2 + away * (q2.z * 0.45), c2)
 			"c":
 				if not mc.bush_views.is_empty():
 					var bp := (mc.bush_views[0] as Node3D).global_position
