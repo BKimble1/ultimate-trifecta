@@ -59,7 +59,7 @@ extends RefCounted
 ## Cloak), the Cloak power-up, rarer timed rifts.
 ## Protocol 15 (2.2 build 18): a tag knocks the runner out (PState.OUT,
 ## Ev.KNOCKED_OUT); an older peer would show them respawning.
-const VERSION := 15
+const VERSION := 16
 
 enum M {
 	ANNOUNCE = 1,   # any -> all: {is_host, uid, room_code}

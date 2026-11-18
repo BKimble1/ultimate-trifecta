@@ -1539,6 +1539,8 @@ func local_info() -> Dictionary:
 			info["gadget_cd"] = p.gadget_cd
 			info["penalty"] = p.penalty
 			info["turbo"] = p.turbo_t
+			info["boost_t"] = p.boost_t
+			info["boost_cd"] = p.boost_cd
 			info["spotted"] = p.spotted
 			info["stamps"] = p.stamps
 			info["noises"] = sim.noises_for(p)
@@ -1564,6 +1566,9 @@ func local_info() -> Dictionary:
 		info["gadget_cd"] = float(_me.get("gadget_cd", 0.0))
 		info["penalty"] = float(_me.get("penalty", 0.0))
 		info["turbo"] = float(_me.get("turbo_t", 0.0))
+		# (build 20) the boost as this device predicts it (instant on a press)
+		info["boost_t"] = pred.boost_t if pred != null else 0.0
+		info["boost_cd"] = pred.boost_cd if pred != null else 0.0
 		info["spotted"] = float(_me.get("spotted", 0.0))
 		info["stamps"] = int(rs.get("stamps", 0))
 		info["noises"] = _me.get("noises", [])

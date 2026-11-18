@@ -506,7 +506,7 @@ func test_guest_prediction_of_full_speed_and_dives() -> void:
 ## game. Update the game to join.") and it never gets a slot; a newer
 ## protocol is refused the same way; the current build stays in the room.
 func test_old_protocol_is_refused_with_update_needed() -> void:
-	t.eq(Protocol.VERSION, 15, "protocol 15 (2.2 build 18: knock-out tags; build 17: the cloak, timed rifts; build 16: moving power-ups, the duck dazes, rifts, carts; 2.3: bush hiding and the new power-ups; 2.2: Night Watch at GO; Pass 9 movement semantics; 24-bit positions; the map, its data and hall versions in the lobby and START)")
+	t.eq(Protocol.VERSION, 16, "protocol 16 (2.2 build 20: the running boost; build 18: knock-out tags; build 17: the cloak, timed rifts; build 16: moving power-ups, the duck dazes, rifts, carts; 2.3: bush hiding and the new power-ups; 2.2: Night Watch at GO; Pass 9 movement semantics; 24-bit positions; the map, its data and hall versions in the lobby and START)")
 	var rig := NetRig.new()
 	t.add_child(rig)
 	rig.setup(20.0, 0.0, 0.0, 1)

@@ -101,8 +101,30 @@ func _think(sim: MatchSim, p: SimPlayer) -> InputCmd:
 		_runner(sim, p, cmd, dt)
 	else:
 		_patrol(sim, p, cmd, dt)
+	_maybe_boost(sim, p, cmd)
 	cmd.quantize()
 	return cmd
+
+
+## (build 20) Bots use the running boost like players: a runner to get away
+## from a Night Watch closing in, a Night Watch to close the last metres on
+## a runner in sight, and now and then on a long open run to a goal.
+func _maybe_boost(sim: MatchSim, p: SimPlayer, cmd: InputCmd) -> void:
+	if p.state != TC.PState.ACTIVE or p.boost_t > 0.0 or p.boost_cd > 0.0 or cmd.move.length() < 0.8:
+		return
+	if p.is_runner():
+		if threat_t > 0.0 and threat != Vector3.INF and threat.distance_to(p.pos()) < 9.0:
+			cmd.pressed |= TC.BTN_BOOST
+		elif goal != Vector2.ZERO and p.pos2().distance_to(goal) > 40.0 and rng.randf() < 0.002:
+			cmd.pressed |= TC.BTN_BOOST
+		return
+	for q in sim.players:
+		if not q.is_runner() or q.state != TC.PState.ACTIVE:
+			continue
+		var d := q.pos().distance_to(p.pos())
+		if d > 2.5 and d < 10.0 and sim.has_los(p.pos() + Vector3(0, 1.4, 0), q.pos() + Vector3(0, 1.2, 0)):
+			cmd.pressed |= TC.BTN_BOOST
+			return
 
 
 # ---------------------------------------------------------------------------

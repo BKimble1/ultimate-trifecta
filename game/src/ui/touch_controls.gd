@@ -59,9 +59,9 @@ static func saved_layout() -> Dictionary:
 
 ## Labels per button name (the editor shows the same ones).
 const LABELS := {"jump": "Jump", "tag": "Tag", "gadget": "Gadget", "cart": "Drive", "gas": "Gas", "brake": "Brake",
-	"next": "Next", "cheer": "Cheer", "hide": "Hide"}
-const ICONS := {"tag": "whistle", "cart": "cart", "next": "eye", "cheer": "star", "hide": "leaf"}
-const COLORS := {"jump": "teal", "tag": "patrol", "gadget": "amber", "gas": "good", "brake": "bad", "cart": "patrol", "hide": "good"}
+	"next": "Next", "cheer": "Cheer", "hide": "Hide", "boost": "Boost"}
+const ICONS := {"tag": "whistle", "cart": "cart", "next": "eye", "cheer": "star", "hide": "leaf", "boost": "bolt"}
+const COLORS := {"jump": "teal", "tag": "patrol", "gadget": "amber", "gas": "good", "brake": "bad", "cart": "patrol", "hide": "good", "boost": "amber"}
 
 
 static func button_color(name: String) -> Color:
@@ -107,6 +107,10 @@ static func draw_button(ci: CanvasItem, b: Dictionary, name: String, label: Stri
 	var busy := float(state.get("busy", 0.0))
 	if busy > 0.01:
 		ci.draw_arc(center, r - 5.0, -PI * 0.5, -PI * 0.5 + TAU * busy, 48, Color(UIKit.NAVY, 0.75 * opacity), 7.0, true)
+	# (build 20) the boost running: a gold ring that drains as it runs out
+	var drain := float(state.get("drain", 0.0))
+	if drain > 0.01:
+		ci.draw_arc(center, r + 6.0, -PI * 0.5, -PI * 0.5 + TAU * drain, 48, Color(UIKit.AMBER, 0.95 * opacity), 6.0, true)
 	var f := UIKit.font_w(650)
 	var text_col := Color(UIKit.IVORY, (0.55 if off else 1.0) * clampf(opacity + 0.15, 0.0, 1.0))
 	if icon != "":
@@ -275,7 +279,7 @@ class TouchSurface:
 					return []
 				# Tag always shows (greyed while it can't be used, e.g. the
 				# head start), so the primary never leaves a hole
-				var out := ["jump", "tag"]
+				var out := ["jump", "tag", "boost"]
 				if c["near_cart"]:
 					out.append("cart")
 				return out
@@ -284,7 +288,7 @@ class TouchSurface:
 		# (2.3) hiding: one button, Jump out
 		if c["st"] == TC.PState.HIDING:
 			return ["hide"]
-		var r := ["jump"]
+		var r := ["jump", "boost"]
 		if c["gadget"] != TC.Gadget.NONE:
 			r.append("gadget")
 		if bool(c.get("near_bush", false)):
@@ -379,6 +383,9 @@ class TouchSurface:
 						_haptic(12)
 				"gadget":
 					Controls.queue_press(TC.BTN_GADGET)
+				"boost":
+					Controls.queue_press(TC.BTN_BOOST)
+					_haptic(10)
 				"cart", "hide":
 					Controls.queue_press(TC.BTN_INTERACT)
 				"next":
@@ -413,7 +420,7 @@ class TouchSurface:
 		if bool(Save.get_setting("haptics", true)) and OS.has_feature("mobile"):
 			Input.vibrate_handheld(ms, 0.4)
 
-	const HINT_ACTIONS := {"jump": "jump", "tag": "tag", "gadget": "gadget", "cart": "interact", "gas": "accelerate",
+	const HINT_ACTIONS := {"jump": "jump", "tag": "tag", "gadget": "gadget", "boost": "boost", "cart": "interact", "gas": "accelerate",
 		"brake": "brake", "next": "spectate_next", "cheer": "emote_1", "hide": "interact"}
 
 	func label_of(name: String, c: Dictionary) -> String:
@@ -501,6 +508,13 @@ class TouchSurface:
 				st["ready"] = bool(c.get("near_bush", false)) and not hid
 			elif name == "gadget":
 				st["busy"] = clampf(float(info.get("gadget_cd", 0.0)) / maxf(0.1, mc.cfg.gadget_use_cooldown_s), 0.0, 1.0) if mc != null else 0.0
+			elif name == "boost" and mc != null:
+				# (build 20) recharging: dim with the time left as a sweep;
+				# running: a gold ring draining; full: ready to press
+				var cd := float(info.get("boost_cd", 0.0))
+				st["off"] = cd > 0.0 or int(c.get("st", TC.PState.ACTIVE)) != TC.PState.ACTIVE
+				st["busy"] = clampf(cd / maxf(0.1, mc.cfg.boost_recharge_s), 0.0, 1.0)
+				st["drain"] = clampf(float(info.get("boost_t", 0.0)) / maxf(0.1, mc.cfg.boost_duration_s), 0.0, 1.0)
 			TouchControls.draw_button(self, router.buttons[name], name, label_of(name, c), icon_of(name, c), opacity, st)
 
 	## Where the dynamic stick rests while untouched: the layout's stick anchor.

@@ -119,6 +119,17 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 
 	# --- timers
 	p.turbo_t = maxf(0.0, p.turbo_t - dt)
+	# (build 20) the running boost: a press on foot when the bar is full; it
+	# runs boost_duration_s, then the bar refills over boost_recharge_s
+	if p.boost_t > 0.0:
+		p.boost_t = maxf(0.0, p.boost_t - dt)
+		if p.boost_t <= 0.0:
+			p.boost_cd = cfg.boost_recharge_s
+	else:
+		p.boost_cd = maxf(0.0, p.boost_cd - dt)
+	if cmd.is_pressed(TC.BTN_BOOST) and p.boost_t <= 0.0 and p.boost_cd <= 0.0 \
+			and (p.state == TC.PState.ACTIVE) and p.tag_phase == SimPlayer.TagPhase.NONE:
+		p.boost_t = cfg.boost_duration_s
 	p.dive_land = maxf(0.0, p.dive_land - dt)
 	p.tag_cd = maxf(0.0, p.tag_cd - dt)
 	p.tag_lockout = maxf(0.0, p.tag_lockout - dt)
@@ -141,6 +152,8 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 	var top := full_speed(p, cfg)
 	if p.turbo_t > 0.0:
 		top = minf(top * cfg.turbo_multiplier, cfg.turbo_speed_cap)
+	if p.boost_t > 0.0:
+		top = minf(top * cfg.boost_multiplier, cfg.boost_speed_cap)
 	var target := Vector2.ZERO
 	if mag > 0.01:
 		target = move.normalized() * top * mag * control

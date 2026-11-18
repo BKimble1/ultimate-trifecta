@@ -66,6 +66,8 @@ const BTN_INTERACT := 8
 const BTN_GADGET := 16
 const BTN_ACCEL := 32
 const BTN_BRAKE := 64
+## (2.2 build 20) the running boost (the last free bit of the input byte)
+const BTN_BOOST := 128
 
 # Collision layers (bit values)
 const L_WORLD := 1

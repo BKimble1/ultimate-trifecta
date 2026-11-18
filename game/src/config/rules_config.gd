@@ -117,6 +117,13 @@ extends Resource
 @export var turbo_duration_s: float = 10.0
 @export var turbo_multiplier: float = 1.25
 @export var turbo_speed_cap: float = 8.0
+## (2.2 build 20) The running boost: a button on foot, both roles.  A burst
+## of speed for boost_duration_s, then the bar refills over boost_recharge_s
+## before it can be used again.  Stacks with Speed Sneakers up to its own cap.
+@export var boost_duration_s: float = 3.0
+@export var boost_recharge_s: float = 10.0
+@export var boost_multiplier: float = 1.3
+@export var boost_speed_cap: float = 9.0
 @export var decoy_range_m: float = 9.0
 @export var decoy_duration_s: float = 5.0
 @export var decoy_step_speed: float = 4.5

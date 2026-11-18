@@ -36,6 +36,8 @@ var air_t: float = 0.0
 var diving := false
 var dive_land: float = 0.0
 var turbo_t: float = 0.0
+var boost_t: float = 0.0     # (build 20) running boost left (s)
+var boost_cd: float = 0.0    # (build 20) recharge left after a boost (s)
 var tag_phase: int = TagPhase.NONE
 var tag_t: float = 0.0
 var tag_cd: float = 0.0
@@ -188,6 +190,8 @@ func write_motor(buf: StreamPeerBuffer) -> void:
 	buf.put_float(jump_buf)
 	buf.put_float(dive_land)
 	buf.put_float(turbo_t)
+	buf.put_float(boost_t)
+	buf.put_float(boost_cd)
 	buf.put_u8(tag_phase)
 	buf.put_float(tag_t)
 	buf.put_float(tag_cd)
@@ -213,6 +217,8 @@ func read_motor(buf: StreamPeerBuffer) -> Dictionary:
 	d["jump_buf"] = buf.get_float()
 	d["dive_land"] = buf.get_float()
 	d["turbo_t"] = buf.get_float()
+	d["boost_t"] = buf.get_float()
+	d["boost_cd"] = buf.get_float()
 	d["tag_phase"] = buf.get_u8()
 	d["tag_t"] = buf.get_float()
 	d["tag_cd"] = buf.get_float()
@@ -240,6 +246,8 @@ func apply_motor(d: Dictionary) -> void:
 	jump_buf = d["jump_buf"]
 	dive_land = d["dive_land"]
 	turbo_t = d["turbo_t"]
+	boost_t = d.get("boost_t", 0.0)
+	boost_cd = d.get("boost_cd", 0.0)
 	tag_phase = d["tag_phase"]
 	tag_t = d["tag_t"]
 	tag_cd = d["tag_cd"]

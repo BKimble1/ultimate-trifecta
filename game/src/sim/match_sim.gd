@@ -730,6 +730,10 @@ func _capture(r: SimPlayer, by: SimPlayer) -> void:
 	r.end_air_actions()
 	r.fast = false
 	r.turbo_t = 0.0
+	if r.boost_t > 0.0:
+		# a boost cut short by a tag still has to recharge
+		r.boost_t = 0.0
+		r.boost_cd = cfg.boost_recharge_s
 	r.vel = Vector3.ZERO
 	r.bush = -1
 	Motor.set_body_enabled(r.body, false)

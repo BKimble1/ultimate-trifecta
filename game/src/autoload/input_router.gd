@@ -15,6 +15,7 @@ const ACTIONS := {
 	"tag": [KEY_F],
 	"interact": [KEY_E],
 	"gadget": [KEY_Q],
+	"boost": [KEY_SHIFT],      # (build 20) the running boost
 	"pause": [KEY_ESCAPE],
 	"cam_left": [KEY_J],
 	"cam_right": [KEY_L],
@@ -29,6 +30,7 @@ const JOY_BUTTONS := {
 	"tag": [JOY_BUTTON_X],
 	"interact": [JOY_BUTTON_Y],
 	"gadget": [JOY_BUTTON_B],
+	"boost": [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_LEFT_STICK],   # (build 20) LB / L1, or click the left stick
 	"pause": [JOY_BUTTON_START],
 	"emote_1": [JOY_BUTTON_DPAD_UP], "emote_2": [JOY_BUTTON_DPAD_RIGHT], "emote_3": [JOY_BUTTON_DPAD_DOWN], "emote_4": [JOY_BUTTON_DPAD_LEFT],
 	"spectate_next": [JOY_BUTTON_RIGHT_SHOULDER],
@@ -244,7 +246,7 @@ func _input(event: InputEvent) -> void:
 		_look_acc += (event as InputEventMouseMotion).relative * 0.0035
 	if not _gameplay_event(event):
 		return
-	for pair in [["jump", TC.BTN_JUMP], ["tag", TC.BTN_TAG], ["interact", TC.BTN_INTERACT], ["gadget", TC.BTN_GADGET]]:
+	for pair in [["jump", TC.BTN_JUMP], ["tag", TC.BTN_TAG], ["interact", TC.BTN_INTERACT], ["gadget", TC.BTN_GADGET], ["boost", TC.BTN_BOOST]]:
 		if event.is_action_pressed(pair[0], false, true):
 			push_edge(int(pair[1]))
 	for i in 5:
@@ -426,10 +428,10 @@ func reset_touch() -> void:
 
 ## Button for an action, by position (south/east/west/north face buttons,
 ## shoulders, triggers, menu) or keyboard key; Glyphs draws it per family.
-const PAD_SLOTS := {"jump": "south", "gadget": "east", "tag": "west", "interact": "north",
+const PAD_SLOTS := {"jump": "south", "gadget": "east", "tag": "west", "interact": "north", "boost": "l1",
 	"accelerate": "r2", "brake": "l2", "pause": "menu", "spectate_next": "r1", "emote_1": "dpad_up", "map": "view",
 	"menu_prev": "l1", "menu_next": "r1", "accept": "south", "back": "east"}
-const KEY_NAMES := {"jump": "Space", "tag": "F", "interact": "E", "gadget": "Q", "pause": "Esc",
+const KEY_NAMES := {"jump": "Space", "tag": "F", "interact": "E", "gadget": "Q", "boost": "Shift", "pause": "Esc",
 	"accelerate": "W", "brake": "S", "spectate_next": "Tab", "emote_1": "1", "map": "M", "menu_prev": "Q", "menu_next": "E",
 	"accept": "Enter", "back": "Esc"}
 const LABELS := {
