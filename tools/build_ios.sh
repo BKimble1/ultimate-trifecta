@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the exported Xcode project (macOS + Xcode 26 required).
+# Builds the exported Xcode project (macOS + Xcode 27 required; CI selects it).
 #   tools/build_ios.sh sim            -> simulator .app (no signing)
 #   tools/build_ios.sh device         -> unsigned device archive (compile proof)
 #   tools/build_ios.sh signed         -> signed App Store archive + .ipa export
