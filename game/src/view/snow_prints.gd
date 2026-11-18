@@ -49,10 +49,10 @@ func setup(cover_d: Dictionary) -> void:
 	name = "SnowPrints"
 	cover = cover_d
 	var pm := PlaneMesh.new()
-	pm.size = Vector2(0.15, 0.3)
+	pm.size = Vector2(0.19, 0.36)
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = _print_texture()
-	mat.albedo_color = Color(0.5, 0.56, 0.7, 0.72)
+	mat.albedo_color = Color(0.36, 0.43, 0.6, 0.88)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.roughness = 0.9
 	mat.disable_receive_shadows = false

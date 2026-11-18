@@ -526,6 +526,7 @@ func _snow21() -> void:
 	var me := s.player(mc.local_slot)
 	var ps: Array = mc.snow_cover["patches"]
 	var put := func(p: Vector2, toward: Vector2) -> void:
+		print("SNOW put at %s (snow %.2f)" % [str(p), SnowCover.amount_at(mc.snow_cover, p)])
 		me.body.global_position = Vector3(p.x, CampusBuilder.grid_y(s.layout, p.x, p.y) + 0.1, p.y)
 		var d := toward - p
 		me.yaw = atan2(-d.x, -d.y)
@@ -561,6 +562,7 @@ func _snow21() -> void:
 				print("SNOW prints placed: %d" % (mc.prints.placed if mc.prints else -1))
 				get_tree().quit()
 			_:
+				print("SNOW shot %s: runner at %s" % [String(st[1]), str(me.body.global_position)])
 				snap("snow21_%s" % String(st[1]))
 
 
