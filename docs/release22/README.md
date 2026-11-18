@@ -844,4 +844,12 @@ Protocol 16 unchanged: builds 20 and 21 play together.
   cat lies across the front of the armchair, clear of its pillow and arms.
 - **Built with Xcode 27 and the iOS 27 SDK**: the iOS job runs on GitHub's
   `xcode-27` image (macOS 27; the `macos-26` image only has Xcode 26.x),
-  selects Xcode 27 and stops before building if the SDK isn't 27.
+  selects Xcode 27 (27.2, iOS SDK 27.2) and stops before building if the SDK
+  isn't 27.  The Game Center / StoreKit plugin frameworks (GodotApplePlugins,
+  pinned commit) stay the binaries built with Xcode 26: their source build's
+  macro tool doesn't link with Xcode 27's swiftc ("unknown argument
+  -Wl,-headerpad_max_install_names"); the app itself compiles and links with
+  Xcode 27.
+- **Footprints only in solid snow**: a print is pressed only where the drift
+  is drawn fully (snow field >= 0.8), never on the ragged rim; checked with
+  a top-down render of the shader's snow against the field.
