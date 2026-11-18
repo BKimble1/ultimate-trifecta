@@ -853,3 +853,36 @@ Protocol 16 unchanged: builds 20 and 21 play together.
 - **Footprints only in solid snow**: a print is pressed only where the drift
   is drawn fully (snow field >= 0.8), never on the ragged rim; checked with
   a top-down render of the shader's snow against the field.
+
+## 38. Build 22: daily challenges, a cleaner campus, richer dorms
+
+Protocol 16 unchanged: builds 20, 21 and 22 play together.
+- **Daily challenges**: 21 daily goals, three a day on a fixed Monday-to-
+  Sunday schedule that repeats every week (`daily_pool`, `daily_schedule` in
+  the catalogue; UTC days).  Each is worth 50-70 Season XP (150-200 a day)
+  and every one counts from the verified row of an online round: rounds
+  played, contribution credits, wins (either role or a set role), Coins
+  picked up, waters splashed, all three waters in one round, home free,
+  first home, tags as the Night Watch.  Targets are one evening's play
+  (1-4 rounds).  The weekly three are unchanged.  The service is the
+  authority (`service/src/challenges.js`); the Season screen refreshes its
+  cards when the day rolls over.  Pacing in `docs/ECONOMY.md` section 10
+  (a regular player reaches tier 100 in about 12 weeks).  Tests
+  `test_challenges` (every day of the schedule, every goal),
+  `service/test/challenges.test.mjs`.
+- **Paths meet roads cleanly**: a path that crosses a road no longer lays
+  paving and a round end cap over the asphalt: it stops at the kerb and the
+  road gets a zebra crossing, with a dropped kerb on both sides and no
+  centre dashes across it (`ClassicBuilder._crossing`).
+- **More shrubbery**: about 110 more shrubs along building fronts, hedges
+  and fences, never on a path, road, plaza or water, clear of doors, lamps,
+  benches, gadgets, Coins and spawns (`ClassicDressing.extras`, the same on
+  every device).
+- **Building details**: window boxes with greenery and red berries under
+  ground-floor windows, and downpipes down the corners of brick buildings
+  (`ClassicArchitecture`).
+- **Dorm interiors**: patterned rugs (border, medallion, fringes), pendant
+  lamps with glowing drum shades, crown moulding, and folded curtains
+  (`ClassicDormArt`).
+- **CI**: Rosetta is installed before the best-effort Simulator run (the
+  simulator slice of Godot's iOS template is x86_64 only).
