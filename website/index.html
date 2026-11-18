@@ -24,8 +24,8 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preload" href="/assets/fonts/archivo-latin-wdth-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/assets/video/hero.jpg" as="image">
-<link rel="stylesheet" href="/assets/css/site.css?v=1">
+<link rel="preload" href="/assets/img/logo-700.webp" as="image" type="image/webp" fetchpriority="high"><link rel="preload" href="/assets/video/hero.jpg" as="image">
+<link rel="stylesheet" href="/assets/css/site.css?v=4">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Ultimate Trifecta","url":"https://ultimatetrifecta.idlery.com/","description":"A late-night campus chase for up to eight players on iPhone and iPad. Splash into three waters and race home before the Night Watch tags you.","gamePlatform":["iPhone","iPad"],"operatingSystem":"iOS 17 or later","applicationCategory":"Game","genre":["Party","Action"],"playMode":["MultiPlayer","SinglePlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":8},"publisher":{"@type":"Organization","name":"Idlery Games"},"image":"https://ultimatetrifecta.idlery.com/assets/img/share.jpg"}</script>
 </head>
 <body class="home">
@@ -56,9 +56,9 @@
   <div class="wrap">
     <picture>
       <source srcset="/assets/img/logo-1400.webp 1400w, /assets/img/logo-700.webp 700w" sizes="(max-width: 780px) 82vw, 640px" type="image/webp">
-      <img class="hero-logo reveal" src="/assets/img/logo-700.png" width="700" height="221" alt="Ultimate Trifecta">
+      <img class="hero-logo" src="/assets/img/logo-700.png" width="700" height="221" alt="Ultimate Trifecta" fetchpriority="high">
     </picture>
-    <h1 class="display reveal d1">Splash three. <span class="gold">Race home.</span></h1>
+    <h1 class="display reveal d1"><span class="nw">Splash three.</span> <span class="gold nw">Race home.</span></h1>
     <p class="lede reveal d2">A late-night campus chase for up to eight players on iPhone and iPad.</p>
     <div class="hero-actions reveal d3">
       <a class="btn store " href="https://apps.apple.com/app/id6818346960" rel="noopener"><small>Download on the</small><span>App Store</span></a>
@@ -259,8 +259,8 @@
 </footer>
 <div class="player" id="player" role="dialog" aria-modal="true" aria-label="Trailer" aria-hidden="true" inert>
   <button class="close" type="button" aria-label="Close trailer"><svg viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2.6" stroke-linecap="round" d="M5 5l14 14M19 5L5 19"/></svg></button>
-  <video controls playsinline preload="none" poster="/assets/video/trailer.jpg" data-src="/assets/video/trailer.mp4"></video>
+  <video controls playsinline preload="none" poster="/assets/video/trailer.jpg" data-trailer="/assets/video/trailer.mp4"></video>
 </div>
-<script src="/assets/js/site.js?v=1" defer></script>
+<script src="/assets/js/site.js?v=3" defer></script>
 </body>
 </html>

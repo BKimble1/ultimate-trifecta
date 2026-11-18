@@ -3,7 +3,7 @@ description: A late-night campus chase for up to eight players on iPhone and iPa
 path: /
 player: true
 body: home
-preload: <link rel="preload" href="/assets/video/hero.jpg" as="image">
+preload: <link rel="preload" href="/assets/img/logo-700.webp" as="image" type="image/webp" fetchpriority="high"><link rel="preload" href="/assets/video/hero.jpg" as="image">
 ---
 <section class="hero" aria-label="Ultimate Trifecta">
   <div class="hero-media">
@@ -13,9 +13,9 @@ preload: <link rel="preload" href="/assets/video/hero.jpg" as="image">
   <div class="wrap">
     <picture>
       <source srcset="/assets/img/logo-1400.webp 1400w, /assets/img/logo-700.webp 700w" sizes="(max-width: 780px) 82vw, 640px" type="image/webp">
-      <img class="hero-logo reveal" src="/assets/img/logo-700.png" width="700" height="221" alt="Ultimate Trifecta">
+      <img class="hero-logo" src="/assets/img/logo-700.png" width="700" height="221" alt="Ultimate Trifecta" fetchpriority="high">
     </picture>
-    <h1 class="display reveal d1">Splash three. <span class="gold">Race home.</span></h1>
+    <h1 class="display reveal d1"><span class="nw">Splash three.</span> <span class="gold nw">Race home.</span></h1>
     <p class="lede reveal d2">A late-night campus chase for up to eight players on iPhone and iPad.</p>
     <div class="hero-actions reveal d3">
       {{STORE_BUTTON}}

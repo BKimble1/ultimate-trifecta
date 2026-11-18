@@ -227,6 +227,12 @@ h1, h2, h3, h4 { margin: 0; font-weight: 800; line-height: 1.1; }
 .hero-media { position: absolute; inset: 0; z-index: -2; }
 .hero-media video, .hero-media img { width: 100%; height: 100%; object-fit: cover; }
 .hero-media video { opacity: 0; transition: opacity 1.2s var(--ease); }
+/* background videos sit exactly over their poster image */
+.hero-media video, .page-hero.media .bg video, .side .bg video, .season .bg video, .final .bg video, .lost .bg video {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+}
+.page-hero.media .bg video, .side .bg video, .season .bg video, .final .bg video { opacity: 0; transition: opacity .8s var(--ease); }
+.page-hero.media .bg video.ready, .side .bg video.ready, .season .bg video.ready, .final .bg video.ready { opacity: 1; }
 .hero-media video.ready { opacity: 1; }
 .hero::after {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
@@ -380,7 +386,7 @@ section { position: relative; }
 .final .bg { position: absolute; inset: 0; z-index: -2; }
 .final .bg video, .final .bg img { width: 100%; height: 100%; object-fit: cover; }
 .final::after { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at center, rgba(7, 11, 22, 0.5) 0%, rgba(7, 11, 22, 0.88) 70%), linear-gradient(0deg, var(--night), rgba(7, 11, 22, 0) 30%); }
-.final img.logo { width: min(560px, 80vw); margin: 0 auto; filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.5)); }
+.final img.logo { width: min(560px, 80vw); height: auto; margin: 0 auto; filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.5)); }
 .final p { margin: 22px auto 30px; font-size: 18px; color: var(--ivory); }
 .final .hero-actions { justify-content: center; }
 
@@ -519,3 +525,4 @@ section { position: relative; }
   .side { min-height: 520px; }
   .step p { font-size: 17px; }
 }
+.nw { white-space: nowrap; }

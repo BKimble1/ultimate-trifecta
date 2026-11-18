@@ -138,7 +138,8 @@
         var on = k === i;
         v.classList.toggle("on", on);
         if (on) {
-          if (motionOK) { load(v); try { v.currentTime = 0; } catch (e) {} play(v); }
+          // (the pinned screen is hidden on phones: its clips stay unloaded there)
+          if (motionOK && v.offsetParent !== null) { load(v); try { v.currentTime = 0; } catch (e) {} play(v); }
         } else if (!v.paused) { v.pause(); }
       });
     }
@@ -160,7 +161,8 @@
     function openPlayer(e) {
       if (e) e.preventDefault();
       opener = document.activeElement;
-      if (!pv.src) pv.src = pv.dataset.src;
+      if (!pv.src) pv.src = pv.dataset.trailer;
+      pv.muted = false;
       player.removeAttribute("inert");
       player.classList.add("open");
       player.setAttribute("aria-hidden", "false");

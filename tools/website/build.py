@@ -100,7 +100,7 @@ FOOTER = f'''<footer class="site-footer">
 
 PLAYER = f'''<div class="player" id="player" role="dialog" aria-modal="true" aria-label="Trailer" aria-hidden="true" inert>
   <button class="close" type="button" aria-label="Close trailer">{ICON["close"]}</button>
-  <video controls playsinline preload="none" poster="/assets/video/trailer.jpg" data-src="/assets/video/trailer.mp4"></video>
+  <video controls playsinline preload="none" poster="/assets/video/trailer.jpg" data-trailer="/assets/video/trailer.mp4"></video>
 </div>'''
 
 
@@ -148,7 +148,7 @@ def page(meta: dict, body: str) -> str:
 <link rel="preload" href="/assets/fonts/archivo-latin-wdth-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 {preload}
-<link rel="stylesheet" href="/assets/css/site.css?v=1">
+<link rel="stylesheet" href="/assets/css/site.css?v=4">
 {ld}
 </head>
 <body class="{meta.get("body", "")}">
@@ -158,7 +158,7 @@ def page(meta: dict, body: str) -> str:
 </main>
 {FOOTER}
 {player}
-<script src="/assets/js/site.js?v=1" defer></script>
+<script src="/assets/js/site.js?v=3" defer></script>
 </body>
 </html>
 '''
