@@ -169,12 +169,16 @@ jobs:
       - name: Fetch Godot + export templates
         run: tools/fetch_godot.sh --templates
       # 2.2: upstream removed the pinned release asset; fetch_deps.sh then
-      # builds the same pinned commit from source (slow), cached here by commit
+      # builds the same pinned commit from source (slow), cached here by commit.
+      # (build 21) That build's macro tool doesn't link with Xcode 27's swiftc
+      # ("unknown argument: -Wl,-headerpad_max_install_names"), so the plugin
+      # frameworks stay the ones built with Xcode 26 (binary frameworks; the
+      # app itself compiles and links with Xcode 27 and the iOS 27 SDK)
       - uses: actions/cache/restore@v4
         id: gapcache
         with:
           path: tools/.cache/GodotApplePlugins-addons-*-src.zip
-          key: gap-src-bfade13ff8b6027ede438bac637b5bf93057d404-xcode27
+          key: gap-src-bfade13ff8b6027ede438bac637b5bf93057d404-xcode26
       - name: Fetch pinned plugins
         run: tools/fetch_deps.sh
       # saved right away, so a later failure (signing, upload) never throws
@@ -183,7 +187,7 @@ jobs:
         if: steps.gapcache.outputs.cache-hit != 'true' && hashFiles('tools/.cache/GodotApplePlugins-addons-*-src.zip') != ''
         with:
           path: tools/.cache/GodotApplePlugins-addons-*-src.zip
-          key: gap-src-bfade13ff8b6027ede438bac637b5bf93057d404-xcode27
+          key: gap-src-bfade13ff8b6027ede438bac637b5bf93057d404-xcode26
       - name: Build native extension (UTShare share sheet, iOS xcframework)
         run: GODOT_BIN=$(cat tools/.cache/godot/BIN) tools/build_native.sh
       - name: Signing configuration present?
