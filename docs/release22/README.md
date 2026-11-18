@@ -870,10 +870,14 @@ Protocol 16 unchanged: builds 20, 21 and 22 play together.
   (a regular player reaches tier 100 in about 12 weeks).  Tests
   `test_challenges` (every day of the schedule, every goal),
   `service/test/challenges.test.mjs`.
-- **Paths meet roads cleanly**: a path that crosses a road no longer lays
-  paving and a round end cap over the asphalt: it stops at the kerb and the
-  road gets a zebra crossing, with a dropped kerb on both sides and no
-  centre dashes across it (`ClassicBuilder._crossing`).
+- **Paths meet roads cleanly**: path paving (and its round end caps) is
+  cut off exactly at the road's kerb instead of running on over the asphalt,
+  its kerbs and centre dashes (`ClassicBuilder._pave_clipped`).  Where a
+  walk really goes over a road (paving on both sides, even if it bends on
+  the road or two walks meet across it) the road gets a full-width zebra
+  crossing square to the road, the kerbs drop level with the paving across
+  it and the centre dashes stop (`_find_crossings`, 7 on the Classic map).
+  A walk that just ends at a road stops at the kerb.
 - **More shrubbery**: about 110 more shrubs along building fronts, hedges
   and fences, never on a path, road, plaza or water, clear of doors, lamps,
   benches, gadgets, Coins and spawns (`ClassicDressing.extras`, the same on
