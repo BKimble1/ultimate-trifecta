@@ -812,3 +812,36 @@ plays only with build 20.
 - **Settings**: the tabs sit up in the header row beside Back and the title,
   so the page starts near the top (a screen too narrow for that keeps them
   on their own row under it).
+
+## 37. Build 21: snow, the new champion poster, Xcode 27
+
+Protocol 16 unchanged: builds 20 and 21 play together.
+- **Champion prize poster**: the popup and the Rankings banner are the
+  owner's artwork ("Season 1 · Winter Break", "Champion prize", "Design
+  next season's skin", the tier 100 card and the trophy;
+  `assets/promo/champion_banner.png`), with a little confetti and the light
+  sweep over it.  The popup's buttons (when it ends, View Rankings,
+  Official rules) sit under the art, never over its words; Close is in its
+  top-right corner (`ChampionPromo.ArtPoster`).
+- **Snow on things**: everything outdoors that faces up wears a broken
+  layer of snow: bush and tree crowns, roofs, ledges, benches, lamp heads,
+  the hiding bushes.  Never indoors: the start dorms' interiors are masked
+  up to each one's ceiling, so roofs above stay white
+  (`world_common.gdshaderinc`, `prop.gdshader`).
+- **Snow on the ground**: 14 soft drifts with ragged edges on open lawn on
+  each map (none near the dorm doors), the same on every device
+  (`SnowCover`: one RG8 texture per map, a metre a texel, built on a worker
+  while the round loads and shared with the shaders as global shader
+  parameters).
+- **Footprints**: runners and the Night Watch on foot leave a print every
+  stride in the drifts, left and right in turn, pressed in (darker and
+  bluer than the snow), and every print stays until the round ends
+  (`SnowPrints`, one MultiMesh, up to 4096).  None in the air or across a
+  rift or respawn.  Tests `test_snow`.
+- **Party room**: the pillows and the cat no longer overlap the furniture:
+  the throw that flickered on the couch arm is gone, the couch pillows lean
+  on the back and no longer tilt into it while the cushions squash, and the
+  cat lies across the front of the armchair, clear of its pillow and arms.
+- **Built with Xcode 27 and the iOS 27 SDK**: the iOS job runs on GitHub's
+  `xcode-27` image (macOS 27; the `macos-26` image only has Xcode 26.x),
+  selects Xcode 27 and stops before building if the SDK isn't 27.
