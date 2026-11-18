@@ -60,10 +60,33 @@ doesn't handle promoted purchases).
 Apple products alone enable nothing in the game: every purchase, claim,
 challenge, rotating offer, verified name and Friends status goes through
 the game's service. Deploy it to your Cloudflare account, twice (sandbox
-for TestFlight and App Review, production for the App Store), following
-[COMMERCE_SETUP.md §3](COMMERCE_SETUP.md):
+for TestFlight and App Review, production for the App Store).
 
-1. `cd service && npm test` (93 pass), `npx wrangler login`.
+**Quickest (2.2 build 22): one GitHub secret, one button.**
+
+1. Cloudflare (free account): My Profile › API Tokens › Create Token ›
+   Custom token with Account › Workers Scripts: Edit, D1: Edit, Cloudflare
+   Pages: Edit, Account Settings: Read, Workers Tail: Read and User › User
+   Details: Read, Memberships: Read.
+2. GitHub › the repository › Settings › Secrets and variables › Actions ›
+   New repository secret: name `CLOUDFLARE_API_TOKEN`, value the token.
+3. Actions › **Deploy game service** › Run workflow (branch
+   `claude/happy-edison-50dynd`, website ticked). It creates both D1
+   databases, applies every migration, deploys both Workers, generates the
+   service secrets on the runner and stores them only in Cloudflare (never
+   in git or in the log; the admin token can be replaced any time with
+   `npx wrangler secret put ADMIN_TOKEN`), publishes the website to
+   Cloudflare Pages and lists the URLs in the run summary
+   (`service/scripts/ci_deploy.sh`). Running it again redeploys and keeps
+   the secrets.
+4. Then put the URLs, database ids and admission public key it printed into
+   `service/wrangler.toml` and `game/config/service.cfg` (step 8 below) and
+   build a new TestFlight build; then do step 7 below (App Store Server
+   Notifications).
+
+**By hand**, following [COMMERCE_SETUP.md §3](COMMERCE_SETUP.md):
+
+1. `cd service && npm test` (97 pass), `npx wrangler login`.
 2. `npx wrangler d1 create trifecta` and `npx wrangler d1 create
    trifecta-production`; put both database IDs in `service/wrangler.toml`.
 3. `scripts/gen_keys.sh` once (writes `service/.secrets/`, git-ignored, and

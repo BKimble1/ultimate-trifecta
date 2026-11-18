@@ -1,0 +1,51 @@
+# Deploys the game service (TestFlight/sandbox and App Store/production
+# deployments) and the website to the owner's Cloudflare account.  Needs one
+# repository secret: CLOUDFLARE_API_TOKEN (optional: CLOUDFLARE_ACCOUNT_ID).
+# See service/scripts/ci_deploy.sh and docs/OWNER_SETUP_GUIDE.md section C.
+name: Deploy game service
+
+on:
+  workflow_dispatch:
+    inputs:
+      website:
+        description: "Also publish website/ to Cloudflare Pages"
+        type: boolean
+        default: true
+      support_email:
+        description: "Public support email shown in the game (optional)"
+        type: string
+        default: ""
+      support_url:
+        description: "Support page URL (optional; default: the website's /support/)"
+        type: string
+        default: ""
+      privacy_url:
+        description: "Privacy page URL (optional; default: the website's /privacy/)"
+        type: string
+        default: ""
+
+concurrency:
+  group: service-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WEBSITE: ${{ github.event.inputs.website }}
+      SUPPORT_EMAIL: ${{ github.event.inputs.support_email }}
+      SUPPORT_URL: ${{ github.event.inputs.support_url }}
+      PRIVACY_URL: ${{ github.event.inputs.privacy_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy
+        run: service/scripts/ci_deploy.sh
