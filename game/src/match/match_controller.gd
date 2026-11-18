@@ -110,6 +110,9 @@ var beacons: Dictionary = {}   # water index -> MeshInstance3D
 var pickup_views: Array[Node3D] = []
 var camera: FollowCamera
 var snow: Snowfall   # (build 20) Season 1 snow over campus (view only)
+## (build 21) snow on the ground and on things, and footprints in it
+var snow_cover: Dictionary = {}
+var prints: SnowPrints
 var hud: MatchHUD
 var touch: TouchControls
 var fx: Fx
@@ -359,8 +362,21 @@ func _look() -> String:
 
 ## V6: freed before it was prepared (Cancel / Leave on the loading screen,
 ## the party ended): nothing keeps running for a round that is gone.
+## (build 21) The snow cover arrived from its worker: on, and footprints.
+func _snow_ready() -> void:
+	snow_cover = SnowCover.poll(layout)
+	if snow_cover.is_empty():
+		return
+	SnowCover.apply(snow_cover)
+	prints = SnowPrints.new()
+	prints.setup(snow_cover)
+	add_child(prints)
+
+
 func _exit_tree() -> void:
 	stage_report = Callable()
+	if not snow_cover.is_empty():
+		SnowCover.off()   # (build 21) no snow on anything outside a round
 	_set_view_held(false)     # menus draw 3D again
 	NavGrid.settle_shared()   # V8: no bot path search left running on a worker
 	PaceFields.hand_off()     # Pass 8: route fields still building are released later, never waited for here
@@ -453,6 +469,9 @@ func _prep_world() -> void:
 			snow = Snowfall.new()
 			snow.setup(quality, reduced_motion)
 			add_child(snow)
+			# (build 21) the ground snow and the caps: built on a worker,
+			# switched on when ready (_snow_ready)
+			SnowCover.request(layout, map_id)
 	_build_beacons()
 	_build_pickups()
 	_build_bushes()
@@ -1696,6 +1715,11 @@ func _process(delta: float) -> void:
 		_discont.erase(slot)
 		v.apply_state(rs, delta, snap)
 		v.reduced_motion = reduced_motion
+		if prints != null:
+			if st == TC.PState.ACTIVE or st == TC.PState.STUMBLE:
+				prints.track(slot, rs["pos"], bool(rs.get("on_floor", true)))
+			else:
+				prints.forget(slot)
 		if snap and slot == (spectate_slot if spectate_slot >= 0 else local_slot) and camera:
 			camera.snap_to(rs["pos"], camera.yaw)
 	for i in cart_views.size():
@@ -1790,6 +1814,8 @@ func _update_camera(delta: float) -> void:
 	elif _foliage_mat:
 		_foliage_mat.set_shader_parameter("focus", Vector4.ZERO)
 	camera.update_camera(delta)
+	if snow and snow_cover.is_empty():
+		_snow_ready()
 	if snow:
 		var cp := camera.global_position
 		snow.follow(cp, home_dorm != "" and CampusDorms.in_room(home_dorm, cp))

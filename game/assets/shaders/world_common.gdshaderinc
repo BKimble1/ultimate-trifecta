@@ -42,6 +42,15 @@ uniform float field_on = 0.0;
 const vec3 FIELD_WARM = vec3(0.42, 0.26, 0.09);
 const vec3 FIELD_COOL = vec3(0.05, 0.20, 0.24);
 uniform vec3 ground_bounce : source_color = vec3(0.10, 0.08, 0.07);
+// (2.2 build 21) Season 1 snow (SnowCover): caps on everything outdoors
+// that faces up, soft drifts on the ground where the snow field's R says
+// so; G marks the start dorms' interiors with their ceiling height (G times
+// snow_indoor_top): no snow below it there.
+global uniform float snow_on;
+global uniform sampler2D snow_field;
+global uniform vec2 snow_origin;
+global uniform vec2 snow_size;
+global uniform float snow_indoor_top;
 
 varying float v_emis;
 varying flat float v_mat;
@@ -323,6 +332,38 @@ void fragment() {
 		base *= mix(1.0, 0.9 + 0.2 * g, fade);
 		rough = 0.9;
 		spec = 0.06;
+	}
+	if (snow_on > 0.5 && m != 15 && m != 20 && m != 21) {
+		vec2 suv = (v_wp.xz - snow_origin) / snow_size;
+		vec2 sf = vec2(0.0);
+		if (suv.x >= 0.0 && suv.y >= 0.0 && suv.x <= 1.0 && suv.y <= 1.0) {
+			sf = texture(snow_field, suv).rg;
+		}
+		bool ground = (m >= 1 && m <= 4) || m == 16 || m == 18 || m == 19;
+		float nz = texture(detail_a, v_wp.xz * 0.23 + vec2(0.13, 0.57)).r;
+		// moonlit snow, warmed by the lamp pools like everything else
+		vec3 snow_c = srgb_to_linear(vec3(0.83, 0.87, 0.95) * lf_mul + lf_add * 0.6);
+		if (ground) {
+			// a drift: ragged edge, a gentle wind-blown relief
+			float a = smoothstep(0.38, 0.62, sf.r + (nz - 0.5) * 0.3);
+			if (a > 0.001) {
+				float drift = texture(detail_a, v_wp.xz * 0.11 + vec2(0.4, 0.2)).r;
+				base = mix(base, snow_c * (0.9 + 0.14 * drift), a);
+				h = mix(h, drift, a);
+				relief = mix(relief, 0.02, a);
+				rough = mix(rough, 0.8, a);
+				spec = mix(spec, 0.24, a);
+			}
+		} else if (!(sf.g > 0.002 && v_wp.y < sf.g * snow_indoor_top)) {
+			// caps: tops of bushes and trees (broken, the green shows
+			// through), roofs, ledges, benches
+			float up = wn.y;
+			float lo = m == 10 ? 0.42 : (m == 6 ? 0.3 : 0.62);
+			float cap = smoothstep(lo, lo + 0.22, up) * smoothstep(0.3, 0.55, nz + (m == 10 ? 0.02 : 0.22));
+			base = mix(base, snow_c, cap * (m == 10 ? 0.88 : 0.95));
+			rough = mix(rough, 0.8, cap);
+			spec = mix(spec, 0.2, cap);
+		}
 	}
 	// V8: the relief comes from screen-space derivatives of a fine pattern:
 	// once a pixel covers more than a few centimetres of surface (distance,

@@ -39,7 +39,7 @@ func _build() -> void:
 		var r := float(c[1]) * 2.0
 		mi.scale = Vector3(r, r * 0.86, r)
 		mi.position = c[0]
-		mi.material_override = PropKit.mat(greens[i % greens.size()], 0.0, Color.WHITE, 0.25)
+		mi.material_override = _snowy(PropKit.mat(greens[i % greens.size()], 0.0, Color.WHITE, 0.25))
 		_body.add_child(mi)
 	# a few blossoms on the crown
 	var fl := SphereMesh.new()
@@ -71,6 +71,19 @@ func _build() -> void:
 	patch.position = Vector3(0, 0.02, 0)
 	add_child(patch)
 	set_process(false)
+
+
+## (2.2 build 21) the bush's own copy of a prop material, wearing snow on
+## top (shared by every bush; SnowCover turns the snow on in a round).
+static var _snow_mats: Dictionary = {}
+static func _snowy(m: ShaderMaterial) -> ShaderMaterial:
+	if not HolidayDecor.ENABLED:
+		return m
+	if not _snow_mats.has(m):
+		var c := m.duplicate() as ShaderMaterial
+		c.set_shader_parameter("snow_caps", 1.0)
+		_snow_mats[m] = c
+	return _snow_mats[m]
 
 
 ## Someone ducked in (true) or jumped out (false): a shake and leaves.
