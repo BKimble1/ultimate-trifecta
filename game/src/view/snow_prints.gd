@@ -33,11 +33,14 @@ static func _print_texture() -> ImageTexture:
 		for x in w:
 			var u := (float(x) + 0.5) / float(w) * 2.0 - 1.0
 			var v := (float(y) + 0.5) / float(h) * 2.0 - 1.0
-			# a sole: wider at the toe (v < 0), a separate rounded heel
-			var toe := Vector2(u / 0.9, (v + 0.32) / 0.62).length()
-			var heel := Vector2(u / 0.7, (v - 0.62) / 0.3).length()
-			var d := minf(toe, heel)
-			var a := clampf((1.0 - d) / 0.28, 0.0, 1.0)
+			# one sole: a wide rounded toe (v < 0) running into a narrower heel
+			# (smooth union, no gap at the waist)
+			var toe := Vector2(u / 0.88, (v + 0.3) / 0.6).length()
+			var heel := Vector2(u / 0.7, (v - 0.5) / 0.42).length()
+			var k := 0.25
+			var hh := clampf(0.5 + 0.5 * (heel - toe) / k, 0.0, 1.0)
+			var d := lerpf(heel, toe, hh) - k * hh * (1.0 - hh)
+			var a := clampf((1.0 - d) / 0.3, 0.0, 1.0)
 			a = a * a * (3.0 - 2.0 * a)
 			# the rim of the print is a touch lighter (packed snow edge)
 			var c := 1.0 - 0.2 * clampf(1.0 - absf(d - 0.85) / 0.15, 0.0, 1.0)
@@ -49,10 +52,10 @@ func setup(cover_d: Dictionary) -> void:
 	name = "SnowPrints"
 	cover = cover_d
 	var pm := PlaneMesh.new()
-	pm.size = Vector2(0.19, 0.36)
+	pm.size = Vector2(0.2, 0.38)
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = _print_texture()
-	mat.albedo_color = Color(0.36, 0.43, 0.6, 0.88)
+	mat.albedo_color = Color(0.5, 0.57, 0.72, 0.85)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.roughness = 0.9
 	mat.disable_receive_shadows = false

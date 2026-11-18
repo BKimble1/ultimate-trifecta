@@ -531,7 +531,7 @@ func _snow21() -> void:
 		var d := toward - p
 		me.yaw = atan2(-d.x, -d.y)
 		mc.camera.snap_to(me.body.global_position, me.yaw)
-	var steps := [[0.0, "a"], [0.8, "s1"], [3.5, "back"], [3.55, "s2"], [4.2, "b"], [7.7, "back"], [7.75, "s3"], [8.3, "c"], [10.5, "s4"], [11.5, "quit"]]
+	var steps := [[0.0, "a"], [0.8, "s1"], [3.5, "back"], [3.55, "s2"], [4.2, "b"], [7.7, "back2"], [7.75, "s3"], [8.3, "c"], [10.5, "s4"], [11.5, "quit"]]
 	if not _scheduled.has("snow_t0"):
 		_scheduled["snow_t0"] = _t
 	var t0 := float(_scheduled["snow_t0"])
@@ -547,7 +547,7 @@ func _snow21() -> void:
 				var c := Vector2(q.x, q.y)
 				_scheduled["snow_patch"] = q
 				put.call(c, c + Vector2(1, 0))
-			"back":
+			"back", "back2":
 				# from the drift's edge, looking back across it at the prints
 				var q2: Vector4 = _scheduled.get("snow_patch", ps[0])
 				var c2 := Vector2(q2.x, q2.y)
