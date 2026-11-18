@@ -51,7 +51,7 @@ static var open_category := ""
 const FIELD_TITLES := {
 	"outfit": "Outfit", "pattern": "Pattern", "color": "Main color", "trim": "Trim", "skin": "Skin tone",
 	"face": "Eyes", "brows": "Brows", "marks": "Cheeks", "hair": "Hairstyle", "hair_color": "Hair color",
-	"hat": "Hat", "shoes": "Shoes", "emote": "Your emotes · tap one to put it in the chosen slot",
+	"hat": "Hat", "shoes": "Shoes", "emote": "Emotes you own",
 	"card": "Name card · shown with your name", "badge": "Badge",
 }
 const PROFILE_FIELDS := ["card", "badge"]
@@ -68,9 +68,9 @@ const ROW_GAP := 6.0
 const STATE_H := 22.0
 const NAME_FS := 20
 ## The picture well's height per content type, as a share of its width.
-const WELL := {"body": 1.04, "hat": 0.9, "head": 0.84, "feet": 0.66, "emote": 0.64, "card": 0.4, "badge": 0.72}
+const WELL := {"body": 1.04, "hat": 0.9, "head": 0.84, "feet": 0.66, "emote": 0.44, "card": 0.4, "badge": 0.72}
 ## Smallest card per content type (name cards are wide plates).
-const CARD_MIN := {"card": 240.0}
+const CARD_MIN := {"card": 240.0, "emote": 116.0}   # (build 20) emotes: six to a row, short cards
 ## The item panel's share of the width beside the runner (stage 1 : panel 1.6).
 const PANEL_RATIO := 1.6
 ## (2.2 build 18) the Locker's panel a little wider than the Shop's: its
@@ -508,20 +508,24 @@ var _slot_btns: Array = []
 
 
 ## (2.2 build 16) The five equipped emotes: pick a slot, then an emote.
+## (build 20) Redrawn so nothing can overlap: each slot's number sits in its
+## corner (slot 1 also says READY), the slot being filled has a gold edge, and
+## the two lines of help sit above and below the row, never on the tiles.
 func _emote_slot_row(gw: float) -> Control:
-	var v := UIKit.vbox(6)
+	var v := UIKit.vbox(8)
 	v.name = "EmoteSlots"
-	var hdr := UIKit.styled("Tap a slot, then an emote.", "caption", UIKit.IVORY_MUTED)
+	var hdr := UIKit.styled("Pick a slot, then tap an emote below.", "caption", UIKit.IVORY_MUTED)
 	hdr.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hdr.custom_minimum_size.x = gw * 0.95
 	v.add_child(hdr)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+	row.add_theme_constant_override("separation", 8)
 	v.add_child(row)
 	_slot_btns.clear()
-	var w := floorf((gw - 6.0 * 4.0) / 5.0)
+	var w := floorf((gw - 8.0 * 4.0) / 5.0)
+	var h := clampf(roundf(w * 0.72), 88.0, 112.0)
 	for i in EmoteSlots.N:
-		var b := UIKit.card_button(Vector2(w, w * 0.9 + 6.0), UIKit.SLATE)
+		var b := UIKit.card_button(Vector2(w, h), UIKit.SLATE)
 		b.name = "Slot_%d" % (i + 1)
 		var idx := i
 		b.pressed.connect(func() -> void:
@@ -535,6 +539,9 @@ func _emote_slot_row(gw: float) -> Control:
 				App.stage.emote(Save.player_uid(), id))
 		row.add_child(b)
 		_slot_btns.append(b)
+	var foot := UIKit.styled("Slot 1 is also your ready move.", "caption", UIKit.IVORY_DIM)
+	foot.add_theme_font_size_override("font_size", 17)
+	v.add_child(foot)
 	_paint_emote_slots()
 	return v
 
@@ -548,31 +555,45 @@ func _paint_emote_slots() -> void:
 		var f := UIKit.face_of(b)
 		for c in f.get_children():
 			c.queue_free()
-		var col := UIKit.vbox(2)
-		col.set_anchors_preset(Control.PRESET_FULL_RECT)
-		col.alignment = BoxContainer.ALIGNMENT_CENTER
-		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var w := b.custom_minimum_size.x
+		var hh := b.custom_minimum_size.y
 		var k := String(ks[i]) if i < ks.size() else ""
 		var choosing := i == _emote_slot
-		var num := UIKit.styled(("%d · Ready move" % (i + 1)) if i == 0 else str(i + 1), "overline", UIKit.AMBER if choosing else UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-		num.add_theme_font_size_override("font_size", 14)
-		col.add_child(num)
+		# the slot's number in its corner; slot 1 also says READY, top right
+		var num := UIKit.styled(str(i + 1), "overline", UIKit.AMBER if choosing else UIKit.IVORY_MUTED)
+		num.add_theme_font_size_override("font_size", 16)
+		num.position = Vector2(10, 6)
+		num.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		f.add_child(num)
+		if i == 0:
+			var rd := UIKit.styled("Ready", "overline", UIKit.AMBER if choosing else UIKit.IVORY_DIM, HORIZONTAL_ALIGNMENT_RIGHT)
+			rd.add_theme_font_size_override("font_size", 12)
+			rd.position = Vector2(30, 8)
+			rd.size = Vector2(w - 40, 18)
+			rd.clip_text = true
+			rd.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			f.add_child(rd)
+		# the emote: its icon and name, centred under the corner labels
+		var col := UIKit.vbox(2)
+		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		col.alignment = BoxContainer.ALIGNMENT_CENTER
+		col.position = Vector2(4, 24)
+		col.size = Vector2(w - 8, hh - 30)
 		if k != "":
-			var ic := Icons.IconRect.new(Icons.emote_icon(TC.EMOTES.find(k)), UIKit.IVORY, b.custom_minimum_size.x * 0.34)
+			var ic := Icons.IconRect.new(Icons.emote_icon(TC.EMOTES.find(k)), UIKit.IVORY, minf(w * 0.36, hh * 0.38))
 			ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			col.add_child(ic)
 			var nm := UIKit.styled(String(Cosmetics.entry("emote", k)["name"]), "caption", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
 			nm.add_theme_font_size_override("font_size", 16)
 			nm.clip_text = true
 			nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			nm.custom_minimum_size.x = w - 12
 			col.add_child(nm)
-		if choosing:
-			var ch := UIKit.styled("Choosing", "caption", UIKit.AMBER, HORIZONTAL_ALIGNMENT_CENTER)
-			ch.add_theme_font_size_override("font_size", 14)
-			col.add_child(ch)
+		else:
+			col.add_child(UIKit.styled("Empty", "caption", UIKit.IVORY_DIM, HORIZONTAL_ALIGNMENT_CENTER))
 		f.add_child(col)
-		# the slot being chosen: a gold edge (the others plain)
-		var sb := UIKit.card_box(Color(UIKit.AMBER.darkened(0.6), 0.9) if choosing else Color(UIKit.SLATE, 0.92), 16, 1.0, 12, 0.08)
+		# the slot being filled: a gold edge (the others plain)
+		var sb := UIKit.card_box(Color(UIKit.AMBER.darkened(0.62), 0.92) if choosing else Color(UIKit.SLATE, 0.92), 16, 1.0, 12, 0.08)
 		if choosing:
 			sb.set_border_width_all(3)
 			sb.border_color = UIKit.AMBER
@@ -580,7 +601,7 @@ func _paint_emote_slots() -> void:
 		f.styles["selected"] = sb
 		f.queue_redraw()
 		UIKit.set_selected(b, choosing)
-		b.accessibility_name = "Emote slot %d, %s%s" % [i + 1, String(Cosmetics.entry("emote", k).get("name", "empty")) if k != "" else "empty", ", selected" if i == _emote_slot else ""]
+		b.accessibility_name = "Emote slot %d%s, %s%s" % [i + 1, " (ready move)" if i == 0 else "", String(Cosmetics.entry("emote", k).get("name", "empty")) if k != "" else "empty", ", selected" if i == _emote_slot else ""]
 
 
 
@@ -900,6 +921,11 @@ func _footer_field() -> String:
 
 func _update_footer() -> void:
 	var ch := changed()
+	# (build 20) Emotes save the moment they're picked and the gold slot shows
+	# what's equipped, so the footer only takes room there when another tab
+	# has unsaved changes (its Save look must stay in reach).
+	if is_instance_valid(footer):
+		footer.visible = not (tab == "move" and not ch and not first_run)
 	undo_btn.visible = ch or first_run
 	apply_btn.visible = ch or first_run
 	apply_btn.disabled = false

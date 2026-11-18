@@ -445,7 +445,9 @@ func test_swipes_from_glyphs_portraits_labels_and_blank_card_areas_never_select(
 		c.scroll.scroll_vertical = 0
 		await _frames(2)
 		var room := c.scroll.get_v_scroll_bar().max_value - c.scroll.size.y
-		t.check(room > 80.0, "%s: a list long enough to scroll (%d)" % [tab, room])
+		# (build 20) the Emotes tab's compact loadout leaves less to scroll on
+		# the SE; it still scrolls, which is all the swipe check needs
+		t.check(room > (24.0 if tab == "move" else 80.0), "%s: a list long enough to scroll (%d)" % [tab, room])
 		if tab == "move":
 			# (2.2 build 16) the loadout row comes first: start at the cards
 			c.scroll.scroll_vertical = int(c.body.get_node("EmoteSlots").size.y) if c.body.has_node("EmoteSlots") else 0
