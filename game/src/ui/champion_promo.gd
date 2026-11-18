@@ -247,11 +247,25 @@ static func rules_text() -> String:
 class ArtPoster:
 	extends GlamPoster
 
+	## the trophy's middle in the artwork (fractions of its size)
+	const TROPHY := Vector2(0.815, 0.5)
+
 	func _ready() -> void:
-		confetti_x = Vector2(0.56, 0.97)
-		confetti_n = 16 if big else 8
-		sparkles_n = 6 if big else 3
+		# confetti falls all down the trophy's side, bigger and livelier
+		confetti_x = Vector2(0.5, 0.98)
+		confetti_n = 34 if big else 16
+		confetti_speed = Vector2(0.12, 0.26)
+		sparkles_n = 9 if big else 5
+		focus = TROPHY
 		super._ready()
+		# the glow and the turning light rays behind the trophy: added light
+		# over the artwork (its own overlay, so the picture keeps its colours)
+		var g := Glow.new()
+		g.poster = self
+		g.set_anchors_preset(Control.PRESET_FULL_RECT)
+		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(g)
+		move_child(g, 0)
 
 	## the artwork's own rounded frame
 	func corner() -> float:
@@ -259,5 +273,69 @@ class ArtPoster:
 
 	func _draw() -> void:
 		draw_texture_rect(ART, Rect2(Vector2.ZERO, size), false)
-		_draw_sparkles()
+		# the confetti tumbles over the art (the glow overlay adds its light
+		# on top)
 		_draw_confetti()
+
+	## The turning rays, the breathing glow behind the trophy, a shine
+	## running round the frame and the twinkles: added light over the art.
+	class Glow:
+		extends Control
+		var poster: ArtPoster
+
+		func _ready() -> void:
+			var m := CanvasItemMaterial.new()
+			m.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+			material = m
+
+		func _process(_d: float) -> void:
+			if is_visible_in_tree():
+				queue_redraw()
+
+		func _draw() -> void:
+			if poster == null:
+				return
+			var t := poster.t
+			var c := Vector2(size.x * TROPHY.x, size.y * TROPHY.y)
+			var L := size.length()
+			# slowly turning rays from behind the trophy
+			var n := 14
+			for i in n:
+				var a := TAU * float(i) / float(n) + t * 0.12
+				var a2 := a + TAU / float(n) * 0.4
+				var ray := PackedVector2Array([c, c + Vector2.from_angle(a) * L, c + Vector2.from_angle(a2) * L])
+				for piece in Geometry2D.intersect_polygons(ray, poster.shape()):
+					if piece.size() >= 3:
+						draw_colored_polygon(piece, Color(1.0, 0.82, 0.4, 0.045))
+			# a warm glow that breathes
+			var pulse := 1.0 + 0.08 * sin(t * 1.8)
+			for k in 7:
+				var r := size.y * 0.42 * pulse * (1.0 - float(k) * 0.12)
+				draw_circle(c, r, Color(1.0, 0.78, 0.36, 0.035), true, -1.0, true)
+			# a shine that runs round the gold frame
+			var u := fposmod(t * 0.12, 1.0)
+			var per := 2.0 * (size.x + size.y)
+			var d := u * per
+			var fp := Vector2.ZERO
+			if d < size.x:
+				fp = Vector2(d, 0)
+			elif d < size.x + size.y:
+				fp = Vector2(size.x, d - size.x)
+			elif d < 2.0 * size.x + size.y:
+				fp = Vector2(size.x - (d - size.x - size.y), size.y)
+			else:
+				fp = Vector2(0, size.y - (d - 2.0 * size.x - size.y))
+			fp = fp.lerp(size * 0.5, 0.012)
+			for k in 4:
+				draw_circle(fp, size.y * (0.05 - 0.01 * k), Color(1.0, 0.9, 0.55, 0.06), true, -1.0, true)
+			poster.draw_twinkles(self)
+
+	## the twinkles, drawn in the glow overlay's added light
+	func draw_twinkles(on: CanvasItem) -> void:
+		var s0 := size.y * (0.03 if big else 0.045)
+		for q in _sparkles:
+			var tw := 0.5 + 0.5 * sin(t * 2.4 * float(q["f"]) + float(q["ph"]))
+			if tw < 0.15:
+				continue
+			var p: Vector2 = q["p"]
+			Icons.draw_shape(on, "star", Vector2(p.x * size.x, p.y * size.y), s0 * float(q["s"]) * tw, Color(1, 1, 0.9, 0.85 * tw))
