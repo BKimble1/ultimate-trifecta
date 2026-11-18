@@ -189,7 +189,13 @@ func begin_visuals(root: Node3D, quality: int = 1) -> void:
 	dorm_art = ClassicDormArt.new(self, arch)
 	_add("kit", func() -> void:
 		ClassicKit.load_kit(quality)
-		dressing = ClassicDressing.load_baked())
+		dressing = ClassicDressing.load_baked()
+		# (2.2 build 22) more foundation planting along the walls
+		var more := ClassicDressing.extras(L, dressing)
+		for kind in more:
+			var cur: PackedFloat32Array = dressing.get(kind, PackedFloat32Array())
+			cur.append_array(more[kind])
+			dressing[kind] = cur)
 	_add("light_trees", func() -> void:
 		kit = ClassicKit.new(L, false)
 		kit.stamp_trees())
@@ -743,6 +749,12 @@ func _path(pth: Dictionary) -> void:
 			var p1 := a + d * (seg * float(s + 1) / float(pieces))
 			var mid := (p0 + p1) * 0.5
 			var k := _kit_at(mid.x, mid.y)
+			if L.is_on_road_line(mid, -0.3):
+				# (2.2 build 22) across a road: no paving or verge on the
+				# asphalt (it overlapped the road, its kerbs and dashes), a
+				# zebra crossing instead
+				_crossing(k, p0, p1, d, nrm, hin)
+				continue
 			k.mat = mat
 			k.quad(_v3(p0 - nrm * hin, PATH_Y), _v3(p1 - nrm * hin, PATH_Y), _v3(p1 + nrm * hin, PATH_Y), _v3(p0 + nrm * hin, PATH_Y), pc)
 			k.mat = 0.0
@@ -758,6 +770,8 @@ func _path(pth: Dictionary) -> void:
 				_verge_quad(k, p0 + nrm * sg * hin, p1 + nrm * sg * hin, p1 + nrm * sg * hout, p0 + nrm * sg * hout, pc, lp, vmat, sg < 0.0)
 	for i in pts.size():
 		var c := pts[i]
+		if L.is_on_road_line(c, -0.3):
+			continue   # (build 22) no round paving cap sitting on the road
 		var k2 := _kit_at(c.x, c.y)
 		k2.mat = mat
 		k2.disc(Vector3(c.x, PATH_Y + 0.0015, c.y), hin, pc, 16)
@@ -772,6 +786,22 @@ func _path(pth: Dictionary) -> void:
 				on_plaza = on_plaza or (absf(c.x - pcn.x) < phs.x and absf(c.y - pcn.y) < phs.y)
 		if not on_plaza and not L.is_on_road(c, hw):
 			_verge_ring(k2, c, hin, hout, pc, _lawn_packed(c.x + hw, c.y), vmat, VERGE_Y - 0.004, 16)
+
+
+## (2.2 build 22) A zebra crossing over one piece of a path where it crosses
+## a road: white bars across the walkway, half a metre wide, a metre apart,
+## just above the asphalt (under the kerbs, which drop to the crossing).
+func _crossing(k: MeshKit, p0: Vector2, p1: Vector2, d: Vector2, nrm: Vector2, hin: float) -> void:
+	var len := p0.distance_to(p1)
+	var bar := Color(0.86, 0.86, 0.82)
+	k.mat = MeshKit.M_PLAIN
+	var x := fposmod(-p0.dot(d), 1.0) + 0.25
+	while x + 0.25 <= len:
+		var c0 := p0 + d * (x - 0.25)
+		var c1 := p0 + d * (x + 0.25)
+		k.quad(_v3(c0 - nrm * hin, 0.056), _v3(c1 - nrm * hin, 0.056), _v3(c1 + nrm * hin, 0.056), _v3(c0 + nrm * hin, 0.056), bar)
+		x += 1.0
+	k.mat = 0.0
 
 
 ## True where the ground is already paved (a plaza or road; a path other
@@ -950,24 +980,31 @@ func _roads() -> void:
 				k.mat = MeshKit.M_ASPHALT
 				k.quad(_v3(p0 - nrm * hw, 0.05), _v3(p1 - nrm * hw, 0.05), _v3(p1 + nrm * hw, 0.05), _v3(p0 + nrm * hw, 0.05), asphalt)
 				k.mat = MeshKit.M_STONE
+				# (2.2 build 22) a path crossing here reaches both kerbs (a walk
+				# beside the road touches only one)
+				var crossing := L.is_on_path(mid - nrm * (hw + 0.2), 0.3) and L.is_on_path(mid + nrm * (hw + 0.2), 0.3)
 				for sg: float in [-1.0, 1.0]:
 					var e0 := p0 + nrm * sg * hw
 					var e1 := p1 + nrm * sg * hw
 					var o0 := p0 + nrm * sg * (hw + 0.35)
 					var o1 := p1 + nrm * sg * (hw + 0.35)
+					# (2.2 build 22) a dropped kerb where a path crosses: level
+					# with the paving, no step up out of the road
+					var ky := 0.07 if crossing else 0.12
 					if sg > 0.0:
-						k.quad(_v3(e0, 0.12), _v3(e1, 0.12), _v3(o1, 0.12), _v3(o0, 0.12), kerb)
-						k.quad(_v3(e1, 0.12), _v3(e0, 0.12), _v3(e0, 0.05), _v3(e1, 0.05), kerb.darkened(0.25))
+						k.quad(_v3(e0, ky), _v3(e1, ky), _v3(o1, ky), _v3(o0, ky), kerb)
+						k.quad(_v3(e1, ky), _v3(e0, ky), _v3(e0, 0.05), _v3(e1, 0.05), kerb.darkened(0.25))
 					else:
-						k.quad(_v3(o0, 0.12), _v3(o1, 0.12), _v3(e1, 0.12), _v3(e0, 0.12), kerb)
-						k.quad(_v3(e0, 0.12), _v3(e1, 0.12), _v3(e1, 0.05), _v3(e0, 0.05), kerb.darkened(0.25))
+						k.quad(_v3(o0, ky), _v3(o1, ky), _v3(e1, ky), _v3(e0, ky), kerb)
+						k.quad(_v3(e0, ky), _v3(e1, ky), _v3(e1, 0.05), _v3(e0, 0.05), kerb.darkened(0.25))
 				k.mat = 0.0
 			# centre-line dashes (slightly emissive so roads read at night)
 			var sd := 2.0
 			while sd < seg - 2.0:
 				var q0 := a + dir * sd
 				var q1 := a + dir * (sd + 1.6)
-				_kit_at(q0.x, q0.y).ribbon(PackedVector2Array([q0, q1]), 0.22, 0.06, Color(0.95, 0.82, 0.35), 0.35, false)
+				if not (L.is_on_path(q0, 0.4) or L.is_on_path(q1, 0.4) or L.is_on_path((q0 + q1) * 0.5, 0.4)):
+					_kit_at(q0.x, q0.y).ribbon(PackedVector2Array([q0, q1]), 0.22, 0.06, Color(0.95, 0.82, 0.35), 0.35, false)
 				sd += 4.0
 		for i in range(1, pts.size() - 1):
 			var k3 := _kit_at(pts[i].x, pts[i].y)

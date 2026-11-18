@@ -185,6 +185,8 @@ func _process(delta: float) -> void:
 			_rift26()
 		"snow21":
 			_snow21()
+		"map22":
+			_map22()
 		"b18":
 			_b18()
 		"audit18":
@@ -564,6 +566,107 @@ func _snow21() -> void:
 			_:
 				print("SNOW shot %s: runner at %s" % [String(st[1]), str(me.body.global_position)])
 				snap("snow21_%s" % String(st[1]))
+
+
+## (build 22) Map clean-up evidence (a practice round as a runner, the bot
+## standing still): road crossings, the home dorm's interior from its room
+## and from a door, and a building close up.  Each stop: the runner is put
+## there facing the subject, a shot a moment later.
+const MAP22_STOPS := [
+	["xing_a", Vector2(5.0, 87.0), Vector2(0.0, 91.2)],
+	["xing_b", Vector2(-28.0, -6.0), Vector2(-32.9, -11.4)],
+	["xing_c", Vector2(-73.0, 9.0), Vector2(-78.0, 4.0)],
+	["xing_d", Vector2(73.0, 37.0), Vector2(78.0, 32.0)],
+]
+
+
+func _map22() -> void:
+	var mc: MatchController = App.match_ctrl
+	if mc == null or not is_instance_valid(mc) or mc.sim == null:
+		return
+	if int(mc.local_info().get("phase", 0)) != TC.Phase.PLAYING:
+		return
+	var s := mc.sim
+	var me := s.player(mc.local_slot)
+	if not _scheduled.has("map_t0"):
+		_scheduled["map_t0"] = _t
+		_scheduled["map_i"] = 0
+		_scheduled["map_next"] = _t
+	if _t < float(_scheduled["map_next"]):
+		return
+	var stops: Array = []
+	# each crossing: from 6 m along the road, looking at it
+	for st0 in MAP22_STOPS:
+		var x: Vector2 = st0[2]
+		var dir := Vector2.RIGHT
+		var best := INF
+		for r in s.layout.roads:
+			var pts: PackedVector2Array = r["pts"]
+			for j in pts.size() - 1:
+				var dd := CampusData.dist_to_segment(x, pts[j], pts[j + 1])
+				if dd < best:
+					best = dd
+					dir = (pts[j + 1] - pts[j]).normalized()
+		stops.append([st0[0], x - dir * 6.0, x])
+	# a building close up (window boxes, downpipes, foundation shrubs)
+	stops.append(["bldg_library", Vector2(-31.0, 12.0), Vector2(-39.0, 20.0)])
+	stops.append(["bldg_dining", Vector2(-30.0, 52.0), Vector2(-42.0, 58.0)])
+	# the home dorm: inside its room (looking across it) and from its door
+	var g := CampusDorms.geometry(mc.home_dorm)
+	if not g.is_empty():
+		var room: PackedVector2Array = g["room"]
+		var c := Vector2.ZERO
+		for v in room:
+			c += v
+		c /= float(room.size())
+		var far := room[0]
+		for v in room:
+			if (v as Vector2).distance_to(c) > far.distance_to(c):
+				far = v
+		stops.append(["dorm_room", c + (c - far).normalized() * 1.5, far])
+		stops.append(["dorm_room2", c + (far - c).normalized() * 2.0, c - (far - c)])
+		var dr: Dictionary = (g["doors"] as Array)[0]
+		stops.append(["dorm_door", (dr["pos"] as Vector2) + (dr["normal"] as Vector2) * 6.0, dr["pos"]])
+	var i := int(_scheduled["map_i"])
+	var step := int(_scheduled.get("map_step", 0))
+	if i >= stops.size():
+		get_tree().quit()
+		return
+	var st: Array = stops[i]
+	if step == 0:
+		# an overhead camera for the crossings (the follow camera sits too low
+		# to read road markings); the follow camera again otherwise
+		var oc: Variant = _scheduled.get("map_cam")
+		if oc != null and is_instance_valid(oc):
+			(oc as Node).queue_free()
+			_scheduled.erase("map_cam")
+			mc.camera.make_current()
+		if String(st[0]).begins_with("xing"):
+			var cam := Camera3D.new()
+			mc.add_child(cam)
+			var xp: Vector2 = st[2]
+			var gy0 := CampusBuilder.grid_y(s.layout, xp.x, xp.y)
+			var back := ((st[1] as Vector2) - xp).normalized()
+			cam.look_at_from_position(Vector3(xp.x + back.x * 7.0, gy0 + 11.0, xp.y + back.y * 7.0), Vector3(xp.x, gy0, xp.y))
+			cam.fov = 55.0
+			cam.make_current()
+			_scheduled["map_cam"] = cam
+		var p: Vector2 = st[1]
+		var to: Vector2 = st[2]
+		var gy := CampusBuilder.grid_y(s.layout, p.x, p.y)
+		if String(st[0]).begins_with("dorm_room"):
+			gy = float(g.get("floor", 0.0))
+		me.body.global_position = Vector3(p.x, gy + 0.1, p.y)
+		var d := to - p
+		me.yaw = atan2(-d.x, -d.y)
+		mc.camera.snap_to(me.body.global_position, me.yaw)
+		_scheduled["map_step"] = 1
+		_scheduled["map_next"] = _t + 1.2
+	else:
+		snap("map22_%s" % String(st[0]))
+		_scheduled["map_step"] = 0
+		_scheduled["map_i"] = i + 1
+		_scheduled["map_next"] = _t + 0.6
 
 
 func _home() -> void:

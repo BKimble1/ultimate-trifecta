@@ -73,6 +73,19 @@ func building(bd: Dictionary) -> void:
 			for cz: float in [-1.0, 1.0]:
 				k.chamfer_box(Vector3(pos.x + cx * (hx - 0.05), (h - 0.7) * 0.5 + 0.35, pos.y + cz * (hz - 0.05)), Vector3(0.7, h - 1.4, 0.7), STONE_TRIM.lerp(wall.lightened(0.16), 0.5), 0.08)
 	k.mat = 0.0
+	if not bd.get("glass", false):
+		# (2.2 build 22) downpipes a metre in from each corner, from the
+		# eaves to the plinth, with a short elbow to the gutter
+		k.mat = MeshKit.M_METAL
+		var pipe := Color(0.26, 0.28, 0.32)
+		for cx2: float in [-1.0, 1.0]:
+			for cz2: float in [-1.0, 1.0]:
+				var px := pos.x + cx2 * (hx + 0.12)
+				var pz := pos.y + cz2 * (hz - 1.0)
+				k.cylinder(Vector3(px, 0.7, pz), 0.06, h - 1.0, pipe, 8)
+				k.cylinder(Vector3(px, 0.62, pz), 0.08, 0.1, pipe.darkened(0.2), 8)
+				k.box(Vector3(px + cx2 * 0.2, h - 0.28, pz), Vector3(0.4, 0.1, 0.1), pipe)
+		k.mat = 0.0
 	if bd.get("glass", false):
 		k.mat = MeshKit.M_GLASS
 		k.box(Vector3(pos.x, h * 0.5, pos.y), Vector3(size.x + 0.05, h * 0.8, size.y + 0.05), Color(0.55, 0.9, 0.8), 0.0, 0.35)
@@ -187,6 +200,21 @@ func _window_face(k: MeshKit, origin: Vector3, right: Vector3, normal: Vector3, 
 			kd.chamfer_box(ctr - hh - up * 0.14 + normal * 0.1, Vector3(1.55, 0.12, 0.24), STONE_TRIM.lightened(0.08), 0.03, yaw)
 			kd.chamfer_box(ctr + hh + up * 0.2 + normal * 0.06, Vector3(1.6, 0.26, 0.14), STONE_TRIM, 0.04, yaw)
 			kd.mat = 0.0
+			# (2.2 build 22) a window box of winter greenery under most
+			# ground-floor windows (0.3 m deep: closer to the wall than a
+			# runner can stand)
+			if r == 0 and rng.randf() < 0.6:
+				var bx := ctr - hh - up * 0.4 + normal * 0.16
+				kd.mat = MeshKit.M_WOOD
+				kd.chamfer_box(bx, Vector3(1.3, 0.26, 0.24), Color(0.22, 0.30, 0.26), 0.03, yaw)
+				kd.mat = MeshKit.M_LEAF
+				for pi in 4:
+					var pp := bx + right * (-0.45 + 0.3 * float(pi)) + up * 0.17
+					kd.soft_blob(pp, Vector3(0.17, 0.13, 0.11), Color(0.2, 0.42, 0.24).lightened(0.05 * float(pi % 2)), 3, 7)
+				kd.mat = MeshKit.M_PLAIN
+				for bi in 3:
+					kd.blob(bx + right * (-0.3 + 0.3 * float(bi)) + up * 0.26 + normal * 0.08, Vector3(0.035, 0.035, 0.035), Color(0.85, 0.12, 0.14), 2, 5, 0.25)
+				kd.mat = 0.0
 
 
 ## Gable roof with thickness: slopes (shingle pattern), a fascia board along

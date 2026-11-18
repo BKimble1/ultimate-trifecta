@@ -316,8 +316,13 @@ func _inner_windows(k: MeshKit, origin: Vector3, right: Vector3, normal: Vector3
 		k.mat = MeshKit.M_PLAIN
 		for sg in [-1.0, 1.0]:
 			var cc := ctr + right * ((0.55 + 0.22) * float(sg)) + normal * 0.06
-			A._quad_facing(k, cc - right * 0.24 + hh * 1.25, cc + right * 0.24 + hh * 1.25, cc + right * 0.2 - hh * 1.2, cc - right * 0.2 - hh * 1.2, curtain, normal)
-			k.cu_emission_last(6, 0.12)
+			# (2.2 build 22) three soft folds instead of one flat panel
+			for fi in 3:
+				var fo := right * (-0.16 + 0.16 * float(fi)) + normal * (0.03 * float(fi % 2))
+				var col: Color = curtain.darkened(0.1 * float(fi % 2))
+				A._quad_facing(k, cc + fo - right * 0.09 + hh * 1.25, cc + fo + right * 0.09 + hh * 1.25, cc + fo + right * 0.08 - hh * 1.2,
+					cc + fo - right * 0.08 - hh * 1.2, col, normal)
+				k.cu_emission_last(6, 0.12)
 		k.mat = MeshKit.M_METAL
 		k.box(ctr + hh * 1.3 + normal * 0.08, right.abs() * 2.0 + normal.abs() * 0.04 + Vector3.UP * 0.04, IRON.lightened(0.2))
 		k.mat = 0.0
@@ -428,6 +433,27 @@ func interior(bd: Dictionary) -> void:
 		A._quad_facing(k, Vector3(rc.x - rs.x * 0.4, 0.04, rc.y - rs.y * 0.38), Vector3(rc.x + rs.x * 0.4, 0.04, rc.y - rs.y * 0.38),
 			Vector3(rc.x + rs.x * 0.4, 0.04, rc.y + rs.y * 0.38), Vector3(rc.x - rs.x * 0.4, 0.04, rc.y + rs.y * 0.38), (d["fabric"] as Color).darkened(0.2), Vector3.UP)
 		k.cu_emission_last(6, 0.12)
+		# (2.2 build 22) a woven look: a cream inner border, a field, a
+		# diamond medallion in the house colour, fringes at the ends
+		var cream := Color(0.92, 0.84, 0.66)
+		for e in [[0.37, 0.35, cream], [0.34, 0.32, (d["fabric"] as Color).darkened(0.32)]]:
+			var ex: float = rs.x * float(e[0])
+			var ez: float = rs.y * float(e[1])
+			A._quad_facing(k, Vector3(rc.x - ex, 0.043 + float(e[0]) * 0.002, rc.y - ez), Vector3(rc.x + ex, 0.043 + float(e[0]) * 0.002, rc.y - ez),
+				Vector3(rc.x + ex, 0.043 + float(e[0]) * 0.002, rc.y + ez), Vector3(rc.x - ex, 0.043 + float(e[0]) * 0.002, rc.y + ez), e[2], Vector3.UP)
+			k.cu_emission_last(6, 0.12)
+		var md := minf(rs.x, rs.y) * 0.22
+		A._quad_facing(k, Vector3(rc.x, 0.047, rc.y - md), Vector3(rc.x + md * 1.4, 0.047, rc.y), Vector3(rc.x, 0.047, rc.y + md), Vector3(rc.x - md * 1.4, 0.047, rc.y), accent.lightened(0.1), Vector3.UP)
+		k.cu_emission_last(6, 0.14)
+		A._quad_facing(k, Vector3(rc.x, 0.049, rc.y - md * 0.5), Vector3(rc.x + md * 0.7, 0.049, rc.y), Vector3(rc.x, 0.049, rc.y + md * 0.5), Vector3(rc.x - md * 0.7, 0.049, rc.y), cream, Vector3.UP)
+		k.cu_emission_last(6, 0.14)
+		for fx2 in [-1.0, 1.0]:
+			var fxp := rc.x + rs.x * 0.5 * float(fx2)
+			var nf := int(rs.y / 0.18)
+			for fi in nf:
+				var fz := rc.y - rs.y * 0.45 + rs.y * 0.9 * (float(fi) + 0.5) / float(nf)
+				A._quad_facing(k, Vector3(fxp, 0.037, fz - 0.035), Vector3(fxp + 0.16 * float(fx2), 0.037, fz - 0.035),
+					Vector3(fxp + 0.16 * float(fx2), 0.037, fz + 0.035), Vector3(fxp, 0.037, fz + 0.035), cream.darkened(0.08), Vector3.UP)
 	# wainscot band around the walls (wood, below the plaster)
 	k.mat = MeshKit.M_WOOD
 	var wc := WOOD_DARK.lightened(0.1)
@@ -449,12 +475,28 @@ func interior(bd: Dictionary) -> void:
 	k.mat = 0.0
 	for i in nb:
 		var px := r0.x + room.size.x * (float(i) + 0.5) / float(nb)
+		# (2.2 build 22) a pendant lamp: ceiling rose, rod, a drum shade
+		# lit from inside and a glowing bulb under it (was a plain blob)
 		kd.mat = MeshKit.M_METAL
+		kd.cylinder(Vector3(px, C - 0.04, c.y), 0.12, 0.04, IRON.lightened(0.3), 12)
 		kd.box(Vector3(px, C - 0.3, c.y), Vector3(0.03, 0.5, 0.03), IRON)
+		kd.mat = MeshKit.M_PLAIN
+		kd.cylinder(Vector3(px, C - 0.86, c.y), 0.36, 0.32, Color(0.98, 0.86, 0.62), 20, 1.1, false, 0.24)
+		kd.cylinder(Vector3(px, C - 0.86, c.y), 0.355, 0.035, accent.darkened(0.2), 20, 0.3, false, 0.355)
+		kd.cylinder(Vector3(px, C - 0.585, c.y), 0.245, 0.03, accent.darkened(0.2), 20, 0.3, false, 0.24)
 		kd.mat = MeshKit.M_GLASS
-		kd.soft_blob(Vector3(px, C - 0.68, c.y), Vector3(0.28, 0.2, 0.28), Color(1.0, 0.82, 0.52), 3, 8, 0.0, 0.0, 0, 1.6)
+		kd.soft_blob(Vector3(px, C - 0.8, c.y), Vector3(0.1, 0.1, 0.1), Color(1.0, 0.9, 0.62), 3, 8, 0.0, 0.0, 0, 2.4)
 		kd.mat = 0.0
 		B.glow_disc(Vector3(px, 0.06, c.y), 3.0)
+	# (2.2 build 22) crown moulding where the walls meet the ceiling
+	k.mat = MeshKit.M_WOOD
+	for cm in [[Vector2(r0.x, r0.y), Vector2(r1.x, r0.y), Vector3(0, 0, 1)], [Vector2(r1.x, r1.y), Vector2(r0.x, r1.y), Vector3(0, 0, -1)],
+			[Vector2(r0.x, r1.y), Vector2(r0.x, r0.y), Vector3(1, 0, 0)], [Vector2(r1.x, r0.y), Vector2(r1.x, r1.y), Vector3(-1, 0, 0)]]:
+		var o: Vector3 = cm[2]
+		var off := Vector2(o.x, o.z)
+		_wall_quad(k, (cm[0] as Vector2) + off * 0.015, (cm[1] as Vector2) + off * 0.015, C - 0.22, C, cm[2], TRIM.darkened(0.08), 0.1)
+		_wall_quad(k, (cm[0] as Vector2) + off * 0.03, (cm[1] as Vector2) + off * 0.03, C - 0.12, C - 0.04, cm[2], TRIM, 0.12)
+	k.mat = 0.0
 	# a low fireplace on the back wall (its hearth is a collider; the mantel
 	# stays under the follow camera's view when it backs up to the wall),
 	# with the house crest above
