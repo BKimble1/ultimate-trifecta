@@ -20,6 +20,7 @@ const LAMP_SHADE := Vector3(3.9, 1.5, -1.9)
 ## how far the cushions give under a bounce (fraction of their 0.2 m)
 const SQUASH := 0.32
 const LAMP_ENERGY := 2.15
+const CAT_SCALE := 0.82
 
 var reduced := false
 var lamp_on := true
@@ -63,17 +64,18 @@ func build(cc: Color, light: OmniLight3D, pools: Array, armchair: Vector3, armch
 	# --- the couch's two seat cushions and its two pillows
 	var k := MeshKit.new()
 	for ci in 2:
-		k.chamfer_box(Vector3(-4.27 + 1.34 * float(ci), 0.58, -2.6) - COUCH_C, Vector3(1.3, 0.2, 0.85), cc, 0.08)
+		k.chamfer_box(Vector3(-4.27 + 1.34 * float(ci), 0.58, -2.6) - COUCH_C, Vector3(1.24, 0.2, 0.85), cc, 0.08)
 	_cushions = _node(k, COUCH_C, mat, "CouchCushions")
 	add_child(_cushions)
 	var kp := MeshKit.new()
-	kp.soft_blob(Vector3(-4.2, 0.84, -2.75) - COUCH_C, Vector3(0.3, 0.19, 0.11), Color("ffc668", DormStage.FABRIC), 5, 12)
-	kp.soft_blob(Vector3(-3.0, 0.84, -2.75) - COUCH_C, Vector3(0.28, 0.18, 0.1), Color("6fd8cc", DormStage.FABRIC), 5, 12)
-	# a plaid throw folded over the left arm
-	kp.soft_blob(Vector3(-5.02, 0.86, -2.62) - COUCH_C, Vector3(0.17, 0.08, 0.42), Color("c7353e", DormStage.FABRIC), 4, 12)
-	kp.soft_blob(Vector3(-4.9, 0.7, -2.22) - COUCH_C, Vector3(0.22, 0.16, 0.05), Color("b02d36", DormStage.FABRIC), 4, 10)
+	# (build 21) the pillows lean on the back (their backs just touch its
+	# front face at z -3.02) and sit on the seat, clear of the arms
+	kp.soft_blob(Vector3(-4.2, 0.85, -2.9) - COUCH_C, Vector3(0.3, 0.19, 0.11), Color("ffc668", DormStage.FABRIC), 5, 12)
+	kp.soft_blob(Vector3(-3.0, 0.85, -2.9) - COUCH_C, Vector3(0.28, 0.18, 0.1), Color("6fd8cc", DormStage.FABRIC), 5, 12)
 	_pillows = _node(kp, COUCH_C, mat, "CouchPillows")
 	add_child(_pillows)
+	# (build 21: the red throw over the left arm is gone: at this size it
+	# read as two lumps fighting the arm's rounded top)
 	# --- the floor lamp's shade (its own material: it goes dark when off)
 	var ks := MeshKit.new()
 	ks.cylinder(Vector3.ZERO, 0.36, 0.42, Color("ffd9a0"), 28, 1.4, true, 0.22)
@@ -98,8 +100,11 @@ func build(cc: Color, light: OmniLight3D, pools: Array, armchair: Vector3, armch
 	_cat = Node3D.new()
 	_cat.name = "Cat"
 	var b := Basis(Vector3.UP, armchair_yaw)
-	_cat.position = armchair + b * Vector3(-0.05, 0.64, 0.12)
-	_cat.rotation.y = armchair_yaw + 0.5
+	# (build 21) at the front of the seat cushion, lying across it, a little
+	# smaller: clear of the chair's cream pillow (back) and its arms (sides)
+	_cat.position = armchair + b * Vector3(0.0, 0.64, 0.24)
+	_cat.rotation.y = armchair_yaw
+	_cat.scale = Vector3.ONE * CAT_SCALE
 	var kc := MeshKit.new()
 	var fur := Color("e08a3c", DormStage.FABRIC)
 	var fur_d := Color("b86a2a", DormStage.FABRIC)
@@ -192,9 +197,11 @@ func _process(delta: float) -> void:
 		_sq_v += ((_press - _sq) * 260.0 - _sq_v * 14.0) * delta
 		_sq += _sq_v * delta
 	var s := clampf(_sq, -0.4, 1.6)
-	_cushions.scale = Vector3(1.0 + 0.04 * s, 1.0 - SQUASH * s, 1.0 + 0.03 * s)
+	# (build 21) only down and a touch forward: growing sideways pushed the
+	# cushions into the arms, and tilting the pillows pushed them into the
+	# back
+	_cushions.scale = Vector3(1.0, 1.0 - SQUASH * s, 1.0 + 0.02 * maxf(s, 0.0))
 	_pillows.position = COUCH_C + Vector3(0, -0.2 * SQUASH * s, 0)
-	_pillows.rotation.x = 0.04 * s
 	# the plant
 	if _rustle > 0.0:
 		_rustle = maxf(0.0, _rustle - delta / 0.75)
@@ -207,7 +214,7 @@ func _process(delta: float) -> void:
 	# the cat breathes
 	if not reduced:
 		var br := sin(_t * 2.1)
-		_cat.scale = Vector3(1.0 + 0.012 * br, 1.0 + 0.035 * br, 1.0 + 0.012 * br)
+		_cat.scale = Vector3(1.0 + 0.012 * br, 1.0 + 0.035 * br, 1.0 + 0.012 * br) * CAT_SCALE
 
 
 ## How far the seat is pressed down right now (m): the bouncer's feet sit
