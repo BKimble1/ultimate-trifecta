@@ -58,6 +58,50 @@ PLIST
     xcodebuild -exportArchive -archivePath build/ios/UltimateTrifecta.xcarchive \
       -exportOptionsPlist build/ios/ExportOptions.plist -exportPath build/ios/export "${AUTH[@]}" | tail -n 40
     ls -la build/ios/export || true
+    # (build 24) what Apple signed the upload with: the distribution
+    # certificate (its type and expiry) and the App Store provisioning
+    # profile, from Xcode's own record of the export, and the archive's
+    # entitlements.  Fails the build if either is missing or expired.
+    python3 - build/ios/export build/ios/UltimateTrifecta.xcarchive <<'PY'
+import glob, os, plistlib, subprocess, sys, datetime
+export, archive = sys.argv[1], sys.argv[2]
+now = datetime.datetime.now(datetime.timezone.utc)
+def when(v):
+    if isinstance(v, datetime.datetime):
+        return v if v.tzinfo else v.replace(tzinfo=datetime.timezone.utc)
+    return None
+ok = True
+print("SIGNING_REPORT_BEGIN")
+found = False
+for f in glob.glob(os.path.join(export, "**", "DistributionSummary.plist"), recursive=True):
+    found = True
+    d = plistlib.load(open(f, "rb"))
+    for app, entries in d.items():
+        for e in entries:
+            c = e.get("certificate", {}) or {}
+            exp = when(c.get("dateExpires"))
+            print("app:", app, "| certificate:", c.get("type"), "| expires:", exp, "| SHA1:", c.get("SHA1"))
+            if exp is None or exp <= now + datetime.timedelta(days=7):
+                ok = False
+                print("::error::the distribution certificate is missing or expires within a week")
+            for pr in (e.get("profile"),) if e.get("profile") else []:
+                pexp = when(pr.get("dateExpires"))
+                print("profile:", pr.get("name"), "| UUID:", pr.get("UUID"), "| expires:", pexp)
+                if pexp is None or pexp <= now:
+                    ok = False
+                    print("::error::the provisioning profile is missing or expired")
+            if not e.get("profile"):
+                ok = False
+                print("::error::no provisioning profile recorded")
+            ents = e.get("entitlements", {}) or {}
+            print("entitlements:", ", ".join("%s=%s" % (k, ents[k]) for k in sorted(ents)))
+if not found:
+    print("::warning::no DistributionSummary.plist in the export: signing details not recorded here")
+    for f in sorted(glob.glob(os.path.join(export, "*"))):
+        print("export file:", os.path.basename(f))
+print("SIGNING_REPORT_END")
+sys.exit(0 if ok else 1)
+PY
     ;;
   *) echo "unknown mode $MODE"; exit 2;;
 esac
