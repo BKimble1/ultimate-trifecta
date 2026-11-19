@@ -25,24 +25,24 @@ The previous version, **2.0 (final release sweep)**, is a provisional App Store-
 
 ## Current release state
 
-**State (2.2): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **2.2 (22)**, **App Store-eligible**, provisional (game service not deployed yet; the nine in-app purchase records exist without prices).
+**State (2.2): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **2.2 (23)** (the Season 1 premiere and the new first-time setup), **App Store-eligible**, provisional (game service not deployed yet; the nine in-app purchase records exist without prices).
 
 It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, nothing was submitted for App Store review, nothing was released, and no purchase of any kind was made.
 
 | | |
 |---|---|
-| Build | `com.idlery.ultimatetrifecta` **2.2 (22)**. App Store Connect build ID `afa50521-d322-4bd2-934a-e367f20bbae1`. (2.2 (21) `4b60796f-…`, 2.2 (20) `f6768187-…`, 2.2 (19) `39bbd93c-…`, 2.2 (18) `c56ada6c-…`, 2.2 (17) `48fb4361-…`, 2.2 (16) `cf0a8982-…`, 2.2 (15) `e9a19fe1-…`, 2.2 (14) `bc03f233-…`, 2.2 (13) `54f2dcc4-…` and 2.2 (12) `c50a97e1-…` are the previous ones.) |
-| Build number | **22**: the lane read the highest existing build (2.2 (21)) and added one. Built with Xcode 27.2, iOS SDK 27.2. |
-| Source | Commit `43ddaf5` on `claude/happy-edison-50dynd`. |
-| Uploaded | 2026-11-18 23:26:23 UTC (Apple's upload time), by GitHub Actions run #277 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/44417043951) with `upload=true` and `distribution=app_store`. The headless tests gate the build and passed in that run (the full suite also passed locally: 641 tests, 0 failures). |
+| Build | `com.idlery.ultimatetrifecta` **2.2 (23)**. App Store Connect build ID `c214ff57-52a3-4847-a1ed-a1b78cc44267`. (2.2 (22) `afa50521-…`, 2.2 (21) `4b60796f-…`, 2.2 (20) `f6768187-…`, 2.2 (19) `39bbd93c-…`, 2.2 (18) `c56ada6c-…`, 2.2 (17) `48fb4361-…`, 2.2 (16) `cf0a8982-…`, 2.2 (15) `e9a19fe1-…`, 2.2 (14) `bc03f233-…`, 2.2 (13) `54f2dcc4-…` and 2.2 (12) `c50a97e1-…` are the previous ones.) |
+| Build number | **23**: the lane read the highest existing build (2.2 (22)) and added one. Built with Xcode 27.2, iOS SDK 27.2. |
+| Source | Commit `3753ec2` on `claude/happy-edison-50dynd`. |
+| Uploaded | 2026-11-19 (about 16:30 UTC), by GitHub Actions run #282 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/44562034120) with `upload=true` and `distribution=app_store`. The headless tests gate the build and passed in that run (run #281 stopped at the tests: the season film played under the test runner on a fresh profile; fixed in `3753ec2`). The film ships in the app (`assets/video/season_s1.ogv`). |
 | Apple's processing | `VALID`. Audience **`APP_STORE_ELIGIBLE`** (checked by the run with `asc.py audience`). Declares no non-exempt encryption. |
-| TestFlight | Internal state `IN_BETA_TESTING`; external state `READY_FOR_BETA_SUBMISSION` (no external group was requested). What to Test is set from `docs/testflight/what_to_test.txt` (705 characters, en-US). TestFlight's automatic notification is on. |
+| TestFlight | Internal state `IN_BETA_TESTING`; external state `READY_FOR_BETA_SUBMISSION` (no external group was requested). What to Test is set from `docs/testflight/what_to_test.txt` (682 characters, en-US). TestFlight's automatic notification is on. |
 | Game Center | Leaderboards `ut.season_points` and `ut.fastest_run` created by run #201 (`iap=gc-create`): recurring every 30 days (`PT720H`) from 2026-12-01 00:00 UTC. They must be added to the 2.2 version page when it is submitted (App Store Connect › the version › Game Center). |
 | Testers | Your existing internal group **"Ultimate Trifecta Internal Testing Group"**, which receives every build. The lane added no one and created no group. |
 | In-app purchases | The nine records (six Coin packs, `pass.s1`, two outfits) created by run #279 (`iap=create`) on 2026-11-18, without prices or review screenshots (the owner's step). |
-| Confirmed by | Apple's API, read by run #277 at 23:31 UTC (2026-11-18). |
+| Confirmed by | Apple's API, read by run #282 at 16:38 UTC (2026-11-19). |
 | Can it be submitted? | Yes (App Store-eligible), once the owner steps below are done. |
-| Network | Protocol 16: builds 20, 21 and 22 play together; earlier builds refuse them at join ("Update the game to join."). |
+| Network | Protocol 16: builds 20 to 23 play together; earlier builds refuse them at join ("Update the game to join."). |
 
 Earlier builds (2.1 and before), as recorded when they shipped, are in [docs/release_history.md](docs/release_history.md).
 
