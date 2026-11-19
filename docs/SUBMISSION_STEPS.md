@@ -43,9 +43,11 @@ be prepared any time. G is last.
 The GitHub Actions upload doesn't use a stored certificate or profile. It
 signs automatically through the App Store Connect API key, and a signing
 check on 19 Nov 2026 (workflow input `sign_check`) showed:
-- **Signer:** Apple's **Cloud Managed Apple Distribution** certificate (Apple
-  keeps its private key). Not the legacy **iOS Distribution** certificate
-  (serial 7E525A3A…) that expires 26 Nov 2026.
+- **Signer:** Apple's **Cloud Managed Apple Distribution** certificate
+  ("Apple Distribution: Blake Kimble", serial 2BF5DB4C…, valid to 24 Aug
+  2027; Apple keeps its private key). Not the legacy **iOS Distribution**
+  certificate (serial 7E525A3A…) that expires 26 Nov 2026. Confirmed by
+  workflow run #285 (sign_check, passed).
 - **Profile:** **iOS Team Store Provisioning Profile:
   com.idlery.ultimatetrifecta**, an App Store profile valid to 12 Sep 2027,
   Game Center on, `get-task-allow` off. Xcode manages and renews it.
