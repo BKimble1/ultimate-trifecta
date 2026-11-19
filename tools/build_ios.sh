@@ -62,73 +62,70 @@ PLIST
     # certificate (its type and expiry) and the App Store provisioning
     # profile, from Xcode's own record of the export, and the archive's
     # entitlements.  Fails the build if either is missing or expired.
-    python3 - build/ios/export build/ios/UltimateTrifecta.xcarchive <<'PY'
-import glob, os, plistlib, subprocess, sys, datetime
-export, archive = sys.argv[1], sys.argv[2]
+    python3 - build/ios/export <<'PY'
+import glob, os, plistlib, subprocess, sys, datetime, tempfile, zipfile
+export = sys.argv[1]
 now = datetime.datetime.now(datetime.timezone.utc)
-def when(v):
-    if isinstance(v, datetime.datetime):
-        return v if v.tzinfo else v.replace(tzinfo=datetime.timezone.utc)
-    return None
+# the expiring legacy "iOS Distribution" certificate (2026-11-26): never the signer
+RETIRED = {"7E525A3A505D780FCCE6C7D8ADE21E4A"}
+def x509(der):
+    out = subprocess.run(["openssl", "x509", "-inform", "DER", "-noout", "-subject", "-enddate", "-serial"],
+                         input=der, capture_output=True).stdout.decode()
+    f = dict(l.split("=", 1) for l in out.splitlines() if "=" in l)
+    end = datetime.datetime.strptime(f.get("notAfter", "").replace(" GMT", ""), "%b %d %H:%M:%S %Y").replace(tzinfo=datetime.timezone.utc) if f.get("notAfter") else None
+    return f.get("subject", "").strip(), end, f.get("serial", "").strip().upper()
 ok = True
 print("SIGNING_REPORT_BEGIN")
-found = False
-for f in glob.glob(os.path.join(export, "**", "DistributionSummary.plist"), recursive=True):
-    found = True
+# Xcode's record of the export (also written when it uploads directly)
+for f in glob.glob(os.path.join(export, "DistributionSummary.plist")):
     d = plistlib.load(open(f, "rb"))
     for app, entries in d.items():
         for e in entries:
-            c = e.get("certificate", {}) or {}
-            exp = when(c.get("dateExpires"))
-            print("app:", app, "| certificate:", c.get("type"), "| expires:", exp, "| SHA1:", c.get("SHA1"))
-            if exp is None or exp <= now + datetime.timedelta(days=7):
+            c = e.get("certificate") or {}
+            pr = e.get("profile") or {}
+            print("export:", app, "| certificate:", c.get("type"), "| SHA1:", c.get("SHA1"), "| expires:", c.get("dateExpires"))
+            print("export: profile", pr.get("name"), "| UUID:", pr.get("UUID"), "| expires:", pr.get("dateExpires"))
+            if "Distribution" not in str(c.get("type")) or "Store" not in str(pr.get("name")):
                 ok = False
-                print("::error::the distribution certificate is missing or expires within a week")
-            for pr in (e.get("profile"),) if e.get("profile") else []:
-                pexp = when(pr.get("dateExpires"))
-                print("profile:", pr.get("name"), "| UUID:", pr.get("UUID"), "| expires:", pexp)
-                if pexp is None or pexp <= now:
-                    ok = False
-                    print("::error::the provisioning profile is missing or expired")
-            if not e.get("profile"):
-                ok = False
-                print("::error::no provisioning profile recorded")
-            ents = e.get("entitlements", {}) or {}
+                print("::error::not signed for App Store distribution")
+            ents = e.get("entitlements") or {}
             print("entitlements:", ", ".join("%s=%s" % (k, ents[k]) for k in sorted(ents)))
-# the signed .ipa itself (a signing check exports one): who signed the app,
-# and the App Store profile embedded in it with its certificates
+# the signed .ipa (a signing check exports one): the certificate that really
+# signed the app, and the App Store profile embedded in it
 for ipa in glob.glob(os.path.join(export, "*.ipa")):
-    found = True
-    import tempfile, zipfile
     tmp = tempfile.mkdtemp()
     zipfile.ZipFile(ipa).extractall(tmp)
     app = glob.glob(os.path.join(tmp, "Payload", "*.app"))[0]
-    cs = subprocess.run(["codesign", "-dvv", app], capture_output=True, text=True)
-    for line in (cs.stdout + cs.stderr).splitlines():
-        if line.startswith(("Authority=", "TeamIdentifier=", "Identifier=")):
-            print("ipa signature:", line)
+    subprocess.run(["codesign", "-d", "--extract-certificates=" + os.path.join(tmp, "signer"), app], capture_output=True)
+    leaf = os.path.join(tmp, "signer0")
+    if not os.path.exists(leaf):
+        ok = False
+        print("::error::could not read the app's signing certificate")
+    else:
+        subj, end, serial = x509(open(leaf, "rb").read())
+        print("signed by:", subj, "| serial:", serial, "| expires:", end)
+        if "Distribution" not in subj or end is None or end <= now + datetime.timedelta(days=30) or serial in RETIRED:
+            ok = False
+            print("::error::the signing certificate is not a current distribution certificate")
     prov = os.path.join(app, "embedded.mobileprovision")
     if not os.path.exists(prov):
         ok = False
         print("::error::the signed app has no embedded provisioning profile")
         continue
-    raw = subprocess.run(["security", "cms", "-D", "-i", prov], capture_output=True).stdout
-    p = plistlib.loads(raw)
-    pexp = when(p.get("ExpirationDate"))
-    kind = "App Store" if not p.get("ProvisionedDevices") and not p.get("ProvisionsAllDevices") else "not App Store"
-    print("embedded profile:", p.get("Name"), "|", kind, "| expires:", pexp, "| team:", ",".join(p.get("TeamIdentifier", [])),
+    p = plistlib.loads(subprocess.run(["security", "cms", "-D", "-i", prov], capture_output=True).stdout)
+    pexp = p.get("ExpirationDate")
+    pexp = pexp.replace(tzinfo=datetime.timezone.utc) if isinstance(pexp, datetime.datetime) and pexp.tzinfo is None else pexp
+    store = not p.get("ProvisionedDevices") and not p.get("ProvisionsAllDevices")
+    print("embedded profile:", p.get("Name"), "|", "App Store" if store else "NOT App Store", "| expires:", pexp,
           "| get-task-allow:", (p.get("Entitlements") or {}).get("get-task-allow"))
-    if pexp is None or pexp <= now or kind != "App Store":
+    if not store or not isinstance(pexp, datetime.datetime) or pexp <= now + datetime.timedelta(days=30):
         ok = False
-        print("::error::the embedded profile is not a valid App Store profile")
+        print("::error::the embedded profile is not a current App Store profile")
     for der in p.get("DeveloperCertificates", []):
-        x = subprocess.run(["openssl", "x509", "-inform", "DER", "-noout", "-subject", "-enddate", "-serial"],
-                           input=der, capture_output=True).stdout.decode()
-        print("profile certificate:", " | ".join(x.split("\n")).strip(" |"))
-if not found:
-    print("::warning::no DistributionSummary.plist in the export: signing details not recorded here")
-    for f in sorted(glob.glob(os.path.join(export, "*"))):
-        print("export file:", os.path.basename(f))
+        subj, end, serial = x509(der)
+        import re
+        cn = re.search(r"CN ?= ?([^,/]+)", subj)
+        print("profile lists:", cn.group(1).strip() if cn else subj, "| serial:", serial, "| expires:", end)
 print("SIGNING_REPORT_END")
 sys.exit(0 if ok else 1)
 PY
