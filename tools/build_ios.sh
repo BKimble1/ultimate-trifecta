@@ -95,6 +95,36 @@ for f in glob.glob(os.path.join(export, "**", "DistributionSummary.plist"), recu
                 print("::error::no provisioning profile recorded")
             ents = e.get("entitlements", {}) or {}
             print("entitlements:", ", ".join("%s=%s" % (k, ents[k]) for k in sorted(ents)))
+# the signed .ipa itself (a signing check exports one): who signed the app,
+# and the App Store profile embedded in it with its certificates
+for ipa in glob.glob(os.path.join(export, "*.ipa")):
+    found = True
+    import tempfile, zipfile
+    tmp = tempfile.mkdtemp()
+    zipfile.ZipFile(ipa).extractall(tmp)
+    app = glob.glob(os.path.join(tmp, "Payload", "*.app"))[0]
+    cs = subprocess.run(["codesign", "-dvv", app], capture_output=True, text=True)
+    for line in (cs.stdout + cs.stderr).splitlines():
+        if line.startswith(("Authority=", "TeamIdentifier=", "Identifier=")):
+            print("ipa signature:", line)
+    prov = os.path.join(app, "embedded.mobileprovision")
+    if not os.path.exists(prov):
+        ok = False
+        print("::error::the signed app has no embedded provisioning profile")
+        continue
+    raw = subprocess.run(["security", "cms", "-D", "-i", prov], capture_output=True).stdout
+    p = plistlib.loads(raw)
+    pexp = when(p.get("ExpirationDate"))
+    kind = "App Store" if not p.get("ProvisionedDevices") and not p.get("ProvisionsAllDevices") else "not App Store"
+    print("embedded profile:", p.get("Name"), "|", kind, "| expires:", pexp, "| team:", ",".join(p.get("TeamIdentifier", [])),
+          "| get-task-allow:", (p.get("Entitlements") or {}).get("get-task-allow"))
+    if pexp is None or pexp <= now or kind != "App Store":
+        ok = False
+        print("::error::the embedded profile is not a valid App Store profile")
+    for der in p.get("DeveloperCertificates", []):
+        x = subprocess.run(["openssl", "x509", "-inform", "DER", "-noout", "-subject", "-enddate", "-serial"],
+                           input=der, capture_output=True).stdout.decode()
+        print("profile certificate:", " | ".join(x.split("\n")).strip(" |"))
 if not found:
     print("::warning::no DistributionSummary.plist in the export: signing details not recorded here")
     for f in sorted(glob.glob(os.path.join(export, "*"))):

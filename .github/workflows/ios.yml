@@ -24,6 +24,10 @@ on:
         type: choice
         options: [internal_only, app_store]
         default: internal_only
+      sign_check:
+        description: "App Store signing check: sign and export the release archive exactly as an upload would, print the certificate and provisioning profile used, and upload nothing"
+        type: boolean
+        default: false
       prune_ci_certs:
         description: "With upload: before signing, revoke the Apple Development certificates earlier CI runs created ('Created via API', over 3 hours old; their keys left with their runners). Distribution certificates are never touched."
         type: boolean
@@ -38,8 +42,8 @@ on:
 # (an App Store Connect product run - iap list/create - has its own group too:
 # a push must never cancel it half way)
 concurrency:
-  group: ios-${{ github.ref }}-${{ github.event.inputs.upload == 'true' && 'upload' || (github.event.inputs.asc_status == 'true' && 'status' || ((github.event.inputs.iap == 'list' || github.event.inputs.iap == 'create' || github.event.inputs.iap == 'gc-list' || github.event.inputs.iap == 'gc-create') && 'iap' || 'build')) }}
-  cancel-in-progress: ${{ github.event.inputs.upload != 'true' && github.event.inputs.asc_status != 'true' && github.event.inputs.iap != 'list' && github.event.inputs.iap != 'create' && github.event.inputs.iap != 'gc-list' && github.event.inputs.iap != 'gc-create' }}
+  group: ios-${{ github.ref }}-${{ (github.event.inputs.upload == 'true' || github.event.inputs.sign_check == 'true') && 'upload' || (github.event.inputs.asc_status == 'true' && 'status' || ((github.event.inputs.iap == 'list' || github.event.inputs.iap == 'create' || github.event.inputs.iap == 'gc-list' || github.event.inputs.iap == 'gc-create') && 'iap' || 'build')) }}
+  cancel-in-progress: ${{ github.event.inputs.upload != 'true' && github.event.inputs.sign_check != 'true' && github.event.inputs.asc_status != 'true' && github.event.inputs.iap != 'list' && github.event.inputs.iap != 'create' && github.event.inputs.iap != 'gc-list' && github.event.inputs.iap != 'gc-create' }}
 
 env:
   GODOT_VERSION: "4.7.2"
@@ -244,7 +248,7 @@ jobs:
         # "powered by" copy in the game data or project text
         run: python3 tools/launch_audit.py build/ios sim-evidence/launch_assets
       - name: Device archive (unsigned arm64 compile + link check)
-        if: steps.sign.outputs.available != 'true' || github.event.inputs.upload != 'true'
+        if: steps.sign.outputs.available != 'true' || (github.event.inputs.upload != 'true' && github.event.inputs.sign_check != 'true')
         run: |
           tools/build_ios.sh device
           APP=$(find build/ios/UltimateTrifecta-unsigned.xcarchive -name '*.app' | head -1)
@@ -268,13 +272,14 @@ jobs:
           "$ASC_PY" tools/asc.py certs-prune --yes --older-than-hours 3
           "$ASC_PY" tools/asc.py certs
       # signed upload first, so Apple processes the build while the Simulator runs
-      - name: Signed archive + upload to TestFlight
-        if: steps.sign.outputs.available == 'true' && github.event.inputs.upload == 'true'
+      - name: Signed archive + upload to TestFlight (or signing check)
+        if: steps.sign.outputs.available == 'true' && (github.event.inputs.upload == 'true' || github.event.inputs.sign_check == 'true')
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          EXPORT_DESTINATION: upload
+          # a signing check exports the signed .ipa here and uploads nothing
+          EXPORT_DESTINATION: ${{ github.event.inputs.upload == 'true' && 'upload' || 'export' }}
           # the audience is an explicit choice: internal_only (default) or an
           # App Store-eligible release candidate (testFlightInternalTestingOnly=false)
           INTERNAL_ONLY: ${{ github.event.inputs.distribution == 'app_store' && 'false' || 'true' }}
@@ -468,7 +473,7 @@ jobs:
       # discarded with the runner): revoked whatever happened above, so the
       # team never reaches its certificate limit again
       - name: Revoke this run's development certificate
-        if: always() && steps.sign.outputs.available == 'true' && github.event.inputs.upload == 'true'
+        if: always() && steps.sign.outputs.available == 'true' && (github.event.inputs.upload == 'true' || github.event.inputs.sign_check == 'true')
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
