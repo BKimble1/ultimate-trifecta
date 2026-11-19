@@ -32,8 +32,9 @@ extends CanvasLayer
 signal ending(how: String)
 signal ended(how: String)
 
-## the season films shipped in the app (only the runtime movie is bundled)
-const FILMS := {"s1": "res://assets/video/season_s1.ogv"}
+## the season films shipped in the app (only the runtime movie is bundled);
+## a var so tests can stage a next season
+static var films := {"s1": "res://assets/video/season_s1.ogv"}
 const FILM_SIZE := Vector2(1280, 720)
 ## the authored running time (s1: 33.0 s); an end well before it is a failure
 const FILM_S := 33.0
@@ -83,7 +84,7 @@ static func film_path(sid: String) -> String:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--premiere-film="):
 			return a.substr(a.find("=") + 1)   # dev: a missing / broken film
-	return String(FILMS.get(sid, ""))
+	return String(films.get(sid, ""))
 
 
 static func has_seen(sid: String) -> bool:
@@ -107,10 +108,18 @@ static func due(sid: String = "") -> bool:
 		return false
 	if App.dev_automation and not args.has("--premiere"):
 		return false
-	var path := film_path(sid)
-	if path == "" or not ResourceLoader.exists(path):
-		return false
+	return film_exists(sid) and eligible(sid)
+
+
+## This profile hasn't watched (or skipped) this season's film, and it
+## hasn't failed to play repeatedly.  Independent of "onboarded".
+static func eligible(sid: String) -> bool:
 	return not has_seen(sid) and failures(sid) < MAX_FAILS
+
+
+static func film_exists(sid: String) -> bool:
+	var path := film_path(sid)
+	return path != "" and ResourceLoader.exists(path)
 
 
 ## The film finished or was skipped: never again this season (saved now).

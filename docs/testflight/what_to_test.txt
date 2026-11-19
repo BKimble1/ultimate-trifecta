@@ -1,6 +1,6 @@
-2.2 (22): daily challenges and a cleaner campus. The game service still isn't connected, so challenge progress, purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Builds 20, 21 and 22 play together. Tell us your iPhone or iPad model:
+2.2 (23): the Season 1 premiere. The game service still isn't connected, so challenge progress, purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Builds 20 to 23 play together. Tell us your iPhone or iPad model:
 
-- Season screen: three new daily challenges each day, a different set every day of the week, repeating weekly.
-- Where paths cross roads there are now zebra crossings, with no paving over the road.
-- More bushes along buildings, hedges and fences, plus window boxes and drainpipes on the buildings.
-- Inside the start dorms: patterned rugs, hanging lamps and new curtains. Tell us if anything flickers or pokes through a wall.
+- Open the game: after the Idlery Games logo the Season 1 film plays once (also if you've played before). Hold "Hold to skip" (bottom right) to skip it.
+- New players: after the film, pick your runner's look, then your name, then "Enter the dorm".
+- Tell us if anything flashes between the logo and the film, or between the film and the game, and whether the sound is right.
+- Reopen the game: the film shouldn't play again.

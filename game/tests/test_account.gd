@@ -82,13 +82,11 @@ func test_first_launch_creates_runner_then_name() -> void:
 	await t.get_tree().process_frame
 	t.check(App.screen is CreatorScreen and (App.screen as CreatorScreen).first_run, "first launch opens Create Your Runner")
 	var c := App.screen as CreatorScreen
-	c._on_apply()
+	# (build 23) Continue goes to the name step on the same screen
+	c.show_name_step()
 	await t.get_tree().process_frame
-	var sheet: NameSheet = null
-	for ch in c.get_children():
-		if ch is NameSheet:
-			sheet = ch
-	t.check(sheet != null, "then asks for a player name")
+	var sheet: NameSheet = c.name_form
+	t.check(sheet != null and sheet.is_visible_in_tree(), "then asks for a player name")
 	if sheet:
 		t.check(sheet.local_only, "first-launch name is kept on this device until the service checks it")
 		sheet.field.text = "Moon Pip"

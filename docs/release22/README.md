@@ -890,3 +890,61 @@ Protocol 16 unchanged: builds 20, 21 and 22 play together.
   (`ClassicDormArt`).
 - **CI**: Rosetta is installed before the best-effort Simulator run (the
   simulator slice of Godot's iOS template is x86_64 only).
+
+## 39. Build 23: the Season 1 premiere and a new first-time setup
+
+Protocol 16 unchanged: builds 20 to 23 play together.
+- **The Season 1 film** (`Ultimate_Trifecta_Winter_Break_V5`, 33 s, the
+  owner's cut from the YouTube-videos repository, branch
+  `claude/friendly-turing-axnlcs`, `Ultimate_Trifecta/winter-break-v5/`)
+  plays on the first cold launch of the season, between the Idlery Games
+  curtain and the game.  Bundled as `assets/video/season_s1.ogv` (Ogg
+  Theora 1280×720 30 fps at 4.5 Mb/s + Vorbis stereo 48 kHz, 18 MB, made
+  from the 1920×1080 delivery copy; Godot 4.7's VideoStreamPlayer plays it
+  offline; only this file ships, the MP4 does not).
+- **Where it plays**: `App._boot` decides before `goto_title` (which never
+  plays it, so returning from a round or the Locker can't).  The film
+  decodes its first frame under the curtain and holds it at 0:00 in
+  silence; the curtain waits for that frame (`BootCurtain.gate`, not the
+  lobby's runner) and fades straight onto it, and the film starts as the
+  mark fades.  The destination (setup, or the party lobby) is built under
+  the film in silence: Sfx holds every track and sound while the film has
+  the soundtrack (`SeasonPremiere.holds_audio`), and the lobby track starts
+  as the film fades onto the destination.  The picture keeps its whole
+  16:9 frame (dark bars on wider phones and on iPad), so the end card is
+  always complete.  Its sound follows the louder of the Music and Effects
+  settings, under Master.
+- **Once per season, independent of setup**: `season_film_seen` (season
+  ids) on the profile, saved the moment the film ends or a skip completes;
+  older profiles have none, so existing players see Season 1 once.  Closing
+  the app mid-film replays it next launch; closing after the film but
+  before setup reopens setup without the film.
+- **Hold to skip**: a quiet pill in the lower-right safe corner after 1.6 s
+  (a tap wakes it early); hold it (or Space / A, shown with the controller
+  or key glyph) for 0.8 s to fill its ring.  Releasing, sliding off or
+  losing focus cancels; a tap never skips.  The finished hold fades picture
+  and sound together (0.33 s) into the same exit as the natural end, and
+  the held finger or button is swallowed until it lifts, so it can't press
+  anything on the next screen.  Backgrounding pauses the film and drops a
+  partial hold; coming back resumes the same player.  The daily present,
+  the champion poster, Shop reminders and Game Center invites wait until
+  the film has gone (an invite that arrived during it is answered then).
+- **When it can't play** (missing, undecodable, stalled, or a file that
+  ends early): the player is released, the destination shows, nothing is
+  marked seen, and after two failures in a season it isn't tried again.
+- **First-time setup** (`CreatorScreen.first_run`, rebuilt): the film's
+  title card fades onto the runner, already framed hat to shoes in the dorm,
+  and the controls come in a beat later (Reduced Motion: a short fade).
+  Step 1, "What does my runner look like?": the starter outfits (with the
+  pattern), main color, skin tone, hairstyle and hair color in four small
+  tabs, each pick shown on the runner at once (drag to turn); Surprise me
+  and Continue.  Step 2, "What should we call you?": the same runner, the
+  generated name filled in (NameSheet embedded: the same rules,
+  suggestions and on-device saving), Back keeps both drafts, and "Enter the
+  dorm" saves the look and finishes setup: the only way it is marked done
+  (the old flow marked it done even when the name sheet was cancelled).
+  With the keyboard up the panel ends above it.  The full Locker (every
+  category, looks, albums, shop links) is unchanged and comes later.
+- Tests `test_season_premiere` (upgraded save, season rollover, interrupted
+  setup, skip racing the natural end, hold-to-skip input, failure, music,
+  setup steps, the reveal); `test_account` follows the new setup.
