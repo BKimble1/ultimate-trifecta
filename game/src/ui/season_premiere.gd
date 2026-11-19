@@ -38,6 +38,9 @@ static var films := {"s1": "res://assets/video/season_s1.ogv"}
 const FILM_SIZE := Vector2(1280, 720)
 ## the authored running time (s1: 33.0 s); an end well before it is a failure
 const FILM_S := 33.0
+## the title card (0:29.8 in s1): the hint steps aside so it reads clean
+## (a hold already under way still completes)
+const TITLE_CARD_S := 29.8
 ## a decoder that has produced no frame by now isn't going to
 const NO_FRAME_S := 1.5
 const LAYER := 90
@@ -271,7 +274,10 @@ func _process(delta: float) -> void:
 				if _stalled > STALL_S:
 					fail("stall" if video.is_playing() else "stopped")
 					return
-			if _play_t >= HINT_DELAY_S and hint.modulate.a < 0.01 and not hint.shown:
+			if pos >= TITLE_CARD_S:
+				if hint.shown and holder == "" and not hint.gone:
+					hint.leave()
+			elif _play_t >= HINT_DELAY_S and hint.modulate.a < 0.01 and not hint.shown:
 				hint.show_hint()
 			if holder != "":
 				hold += delta / HOLD_S
@@ -293,9 +299,9 @@ func _input(event: InputEvent) -> void:
 		var t := event as InputEventScreenTouch
 		var key := "touch:%d" % t.index
 		if t.pressed:
-			if holder == "" and hint.shown and hint.target().has_point(t.position):
+			if holder == "" and hint.shown and not hint.gone and hint.target().has_point(t.position):
 				_start_hold(key)
-			elif not hint.shown and _play_t >= 0.3:
+			elif not hint.shown and _play_t >= 0.3 and video.stream_position < TITLE_CARD_S:
 				hint.show_hint()   # a tap wakes the hint early; it never skips
 		elif holder == key:
 			cancel_hold()
@@ -307,6 +313,8 @@ func _input(event: InputEvent) -> void:
 		for action in ["jump", "ui_accept"]:
 			if event.is_action(action):
 				if event.is_pressed() and not event.is_echo():
+					if hint.gone:
+						return
 					if not hint.shown:
 						hint.show_hint()
 					if holder == "":
@@ -486,8 +494,11 @@ class SkipHint:
 		# the ring drains back quickly instead of snapping
 		Motion.animate(self, "progress", 0.0, 0.18)
 
+	var gone := false
+
 	func leave() -> void:
-		Motion.animate(self, "modulate:a", 0.0, 0.15)
+		gone = true
+		Motion.animate(self, "modulate:a", 0.0, 0.25)
 
 	func _draw() -> void:
 		var r := Rect2(Vector2(0, 6), Vector2(size.x, H))
