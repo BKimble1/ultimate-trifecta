@@ -80,6 +80,30 @@ const LOCKER_RATIO := 2.0
 ## when true (first launch / profile setup), Apply continues with `on_done`
 var first_run := false
 var on_done: Callable
+## (build 23) first launch under the season film: the setup controls wait
+## for reveal_after_film() (the runner is already framed behind the film)
+var await_reveal := false
+var setup_step := "look"           # "look" | "name"
+var setup_panel: PanelContainer
+var name_form: NameSheet
+var continue_btn: Button
+var surprise_btn: Button
+var _step_l: Label
+var _title_l: Label
+var _look_box: Control
+var _name_box: Control
+var _setup_footer: Control
+var _pattern_btns: Dictionary = {}
+var _pattern_row: Control
+var _turn_chip: Control
+var _finishing := false
+var _blocker: Control
+
+
+## Until the controls are revealed, keys and buttons do nothing here.
+func _input(event: InputEvent) -> void:
+	if first_run and is_instance_valid(_blocker) and (event is InputEventKey or event is InputEventJoypadButton):
+		get_viewport().set_input_as_handled()
 ## where Back goes (lobby sets this; default: home)
 var back_action_override: Callable
 
@@ -127,6 +151,9 @@ func build() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	TitleScreen.add_shades(self, 0.45, 0.0)
 	content.add_theme_constant_override("separation", UIKit.SP_M)
+	if first_run:
+		_build_setup()
+		return
 	if not first_run:
 		nav_bar("locker")
 	else:
@@ -344,6 +371,8 @@ func tabs_width(row: HBoxContainer, font_size: int, pad: int) -> float:
 
 
 func _process(delta: float) -> void:
+	if first_run:
+		_keyboard_fit()
 	var v := App.stage.local_character() if App.stage else null
 	if v == null:
 		return
@@ -370,7 +399,13 @@ func _process(delta: float) -> void:
 
 ## Controller shoulders (or Q / E) switch categories.
 func _unhandled_input(event: InputEvent) -> void:
-	if not has_modal():
+	if first_run and setup_step == "look" and not has_modal():
+		for dir in [["menu_prev", -1], ["menu_next", 1]]:
+			if event.is_action_pressed(String(dir[0])):
+				_step_group(int(dir[1]))
+				get_viewport().set_input_as_handled()
+				return
+	if not has_modal() and not first_run:
 		for dir in [["menu_prev", -1], ["menu_next", 1]]:
 			if event.is_action_pressed(String(dir[0])):
 				_step_tab(int(dir[1]))
@@ -775,6 +810,9 @@ func _pick_style(f: String, id: String) -> void:
 ## Everything that depends on the draft: card states and pictures, swatch
 ## rings, notes, and the footer.  Cards are updated in place.
 func _refresh() -> void:
+	if first_run:
+		_setup_refresh()
+		return
 	for c in cards:
 		c.refresh()
 	for sw in swatches:
@@ -982,6 +1020,365 @@ func _on_apply() -> void:
 		on_done.call()
 		return
 	UIKit.toast(self, "Looking good!")
+
+
+# ---------------------------------------------------------------- first run
+## (build 23) Create Your Runner, two steps around one big runner:
+##   look  "What does my runner look like?": the owned starter outfits,
+##         pattern, main colour, skin tone and hairstyle, each applied to the
+##         runner at once (drag to turn); Surprise me (secondary) and
+##         Continue (primary).  The default look is ready to go as it is.
+##   name  "What should we call you?": the same runner, the generated name
+##         already filled in (NameSheet embedded: the same rules, suggestions
+##         and on-device saving); Back returns to the look with both drafts
+##         kept; Enter the dorm saves the look and finishes setup (the only
+##         way onboarding is marked done).
+## The full Locker (every category, looks, albums, shop links) is for later.
+const SETUP_GROUPS := [
+	["outfit", "Outfit", ["outfit"]],
+	["colors", "Color", ["color"]],
+	["skin", "Skin", ["skin"]],
+	["hair", "Hair", ["hair", "hair_color"]],
+]
+const SETUP_TITLES := {"outfit": "Outfit", "color": "Main color", "trim": "Trim", "skin": "Skin tone",
+	"hair": "Hairstyle", "hair_color": "Hair color"}
+var setup_group := "outfit"
+var _seg_btns: Dictionary = {}
+var _seg_boxes: Dictionary = {}
+var _seg_row: Control
+
+
+func _setup_section(f: String) -> Control:
+	var sec := UIKit.vbox(UIKit.SP_S)
+	sec.name = "Section_" + f
+	var hdr := UIKit.hbox(10)
+	hdr.add_child(UIKit.styled(String(SETUP_TITLES[f]), "overline", UIKit.IVORY_MUTED))
+	var pk := UIKit.styled("", "caption", UIKit.IVORY)
+	_picked[f] = pk
+	hdr.add_child(pk)
+	sec.add_child(hdr)
+	if f in SWATCH_FIELDS:
+		var sw := _swatches(f)
+		sw.add_theme_constant_override("h_separation", 8)
+		sw.add_theme_constant_override("v_separation", 8)
+		for b in sw.get_children():
+			(b as Control).custom_minimum_size = Vector2.ONE * maxf(UIKit.touch_min(), 56.0)
+		sec.add_child(sw)
+	elif f == "outfit":
+		# two outfits: the pattern sits beside them, not under them
+		var row := UIKit.hbox(UIKit.SP_L)
+		row.add_child(_setup_cards(f))
+		row.add_child(_pattern_chips())
+		sec.add_child(row)
+	else:
+		sec.add_child(_setup_cards(f))
+	return sec
+
+
+func _select_group(g: String) -> void:
+	setup_group = g
+	for k in _seg_btns:
+		UIKit.set_selected(_seg_btns[k], k == g)
+	for k in _seg_boxes:
+		(_seg_boxes[k] as Control).visible = k == g
+	if is_instance_valid(scroll):
+		scroll.scroll_vertical = 0
+	if is_inside_tree() and is_instance_valid(body):
+		UIKit.fade_in(_seg_boxes[g], UIKit.T_FAST)
+
+
+func _step_group(d: int) -> void:
+	var keys: Array = SETUP_GROUPS.map(func(t: Array) -> String: return String(t[0]))
+	_select_group(String(keys[wrapi(keys.find(setup_group) + d, 0, keys.size())]))
+	UIKit.soft_focus(_seg_btns[setup_group] as Button)
+
+
+func _build_setup() -> void:
+	var mid := UIKit.hbox(UIKit.SP_L)
+	mid.name = "Setup"
+	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(mid)
+	var stage_area := StageDrag.new()
+	stage_area.name = "RunnerArea"
+	_stage_area = stage_area
+	stage_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stage_area.size_flags_stretch_ratio = 0.7
+	stage_area.creator = self
+	mid.add_child(stage_area)
+	_turn_chip = UIKit.chip("Drag to turn", Color(UIKit.NAVY, 0.6), UIKit.IVORY_MUTED, 18)
+	_turn_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage_area.add_child(_turn_chip)
+	stage_area.resized.connect(func() -> void:
+		_turn_chip.position = Vector2(0, stage_area.size.y - _turn_chip.get_combined_minimum_size().y))
+
+	setup_panel = UIKit.panel(Color(UIKit.SLATE, 0.95), UIKit.R_PANEL, UIKit.PAD_PANEL + 8)
+	setup_panel.name = "SetupPanel"
+	setup_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	setup_panel.size_flags_stretch_ratio = 1.0
+	setup_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	mid.add_child(setup_panel)
+	panel = setup_panel
+	var pvb := UIKit.vbox(UIKit.SP_M)
+	setup_panel.add_child(pvb)
+	var head := UIKit.vbox(2)
+	_step_l = UIKit.styled("Step 1 of 2", "overline", UIKit.AMBER)
+	head.add_child(_step_l)
+	_title_l = UIKit.styled("What does my runner look like?", "headline")
+	_title_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	head.add_child(_title_l)
+	pvb.add_child(head)
+
+	# step 1: the look
+	scroll = UIKit.scroll_area()
+	scroll.name = "Look"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
+	_look_box = scroll
+	pvb.add_child(scroll)
+	body = UIKit.vbox(UIKit.SP_M)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(body)
+	# one of three small groups at a time, so everything fits a phone
+	var seg := UIKit.hbox(UIKit.SP_S)
+	seg.name = "Groups"
+	_seg_btns.clear()
+	_seg_boxes.clear()
+	for g in SETUP_GROUPS:
+		var gb := UIKit.secondary(String(g[1]), Vector2(0, UIKit.row_h()), UIKit.T_CAPTION + 1)
+		gb.name = "Group_" + String(g[0])
+		gb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		gb.pressed.connect(_select_group.bind(String(g[0])))
+		seg.add_child(gb)
+		_seg_btns[String(g[0])] = gb
+		var box := UIKit.vbox(UIKit.SP_M)
+		box.name = "Group_" + String(g[0]) + "_Items"
+		for f in g[2]:
+			box.add_child(_setup_section(String(f)))
+		body.add_child(box)
+		_seg_boxes[String(g[0])] = box
+	pvb.add_child(seg)
+	pvb.move_child(seg, pvb.get_child_count() - 2)   # above the list
+	_seg_row = seg
+	_select_group("outfit")
+
+	# step 2: the name (the same runner stays in view)
+	name_form = NameSheet.new()
+	name_form.embed("", "Enter the dorm", "Back")
+	name_form.title_l.visible = false
+	name_form.name = "NameStep"
+	name_form.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	name_form.visible = false
+	name_form.done.connect(func(n: String) -> void:
+		if n != "":
+			_finish_setup())
+	name_form.back_requested.connect(show_look_step)
+	_name_box = name_form
+	pvb.add_child(name_form)
+
+	# the look step's actions
+	var foot := UIKit.hbox(UIKit.SP_M)
+	foot.name = "SetupFooter"
+	_setup_footer = foot
+	surprise_btn = UIKit.quiet("Surprise me", Vector2(maxf(170.0, UIKit.row_h() * 2.0), UIKit.row_h()))
+	surprise_btn.name = "SurpriseMe"
+	surprise_btn.pressed.connect(func() -> void:
+		_on_cancel()
+		var v := App.stage.local_character() if App.stage else null
+		if v and not UIKit.reduced_motion():
+			v.play_arrive()
+		Sfx.play("equip")
+		Haptics.tick())
+	foot.add_child(surprise_btn)
+	continue_btn = UIKit.primary("Continue", Vector2(maxf(220.0, UIKit.row_h() * 2.6), UIKit.row_h()), 26)
+	continue_btn.name = "Continue"
+	continue_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	continue_btn.pressed.connect(show_name_step)
+	foot.add_child(continue_btn)
+	pvb.add_child(foot)
+
+	back_action = func() -> void:
+		if setup_step == "name":
+			show_look_step()
+	focus_first(continue_btn)
+	_setup_refresh()
+	_stage_area.resized.connect(_frame_stage)
+	get_viewport().size_changed.connect(_frame_stage)
+	_frame_stage.call_deferred()
+	var lc := App.stage.local_character() if App.stage else null
+	_yaw = lc.rotation.y if lc else 0.0
+	if await_reveal:
+		# behind the film: the runner is framed and lit, the controls wait
+		setup_panel.modulate.a = 0.0
+		_turn_chip.modulate.a = 0.0
+		_blocker = Control.new()
+		_blocker.name = "RevealBlocker"
+		_blocker.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_blocker.mouse_filter = Control.MOUSE_FILTER_STOP
+		add_child(_blocker)
+	else:
+		UIKit.fade_in(setup_panel)
+
+
+## The film has faded onto the runner: the controls come in a beat later.
+func reveal_after_film(fade_s: float) -> void:
+	if not await_reveal:
+		return
+	await_reveal = false
+	var tree := get_tree()
+	await tree.create_timer(fade_s + (0.12 if UIKit.reduced_motion() else 0.35)).timeout
+	if not is_inside_tree():
+		return
+	if is_instance_valid(_blocker):
+		_blocker.queue_free()
+	if UIKit.reduced_motion():
+		Motion.animate(setup_panel, "modulate:a", 1.0, 0.18)
+		Motion.animate(_turn_chip, "modulate:a", 1.0, 0.18)
+	else:
+		Motion.settle_in(setup_panel, 0.32)
+		Motion.animate(_turn_chip, "modulate:a", 1.0, 0.4, Tween.TRANS_QUAD, Tween.EASE_OUT, 0.25)
+	if Controls.device != "touch":
+		UIKit.soft_focus(continue_btn)
+
+
+## The starter cards for a field: everything owned, in one row.
+func _setup_cards(f: String) -> Control:
+	var keys := shown_keys(f)
+	var g := GridContainer.new()
+	g.name = "Grid_" + f
+	g.add_theme_constant_override("h_separation", int(CARD_GAP))
+	g.add_theme_constant_override("v_separation", int(CARD_GAP))
+	var cols := 4 if f == "hair" else keys.size()
+	g.columns = cols
+	var w := 104.0 if f == "hair" else 128.0
+	for k in keys:
+		var card := ItemCard.new()
+		card.setup(self, f, String(k), w, String(THUMB_FRAMING.get(f, "")))
+		card.pressed.connect(_pick.bind(f, String(k)))
+		g.add_child(card)
+		cards.append(card)
+	grids.append(g)
+	# re-fit the cards to the panel's real width once it is laid out
+	g.resized.connect(func() -> void: _fit_setup_grid(g, keys.size()))
+	return g
+
+
+func _fit_setup_grid(g: GridContainer, n: int) -> void:
+	var avail := scroll.size.x - 4.0 if is_instance_valid(scroll) and scroll.size.x > 2.0 else 0.0
+	if avail < 2.0 or g.get_child_count() == 0:
+		return
+	var cols := g.columns
+	if g.name == "Grid_outfit":
+		avail -= maxf(140.0, UIKit.touch_min() * 1.7) + UIKit.SP_L
+	var w := clampf(UIKit.cell_width(avail, cols, CARD_GAP), 84.0, 132.0 if g.name == "Grid_outfit" else 120.0)
+	for c in g.get_children():
+		var ic := c as ItemCard
+		if ic and absf(ic.custom_minimum_size.x - w) > 1.0:
+			ic.fit_cell(w, ic.name_lines(w))
+
+
+## Pattern for patterned outfits: two small chips under the outfits.
+func _pattern_chips() -> Control:
+	var row := UIKit.vbox(UIKit.SP_S)
+	row.name = "Patterns"
+	row.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_pattern_row = row
+	row.add_child(UIKit.styled("Pattern", "overline", UIKit.IVORY_MUTED))
+	_pattern_btns.clear()
+	for k in shown_keys("pattern"):
+		var b := UIKit.secondary(String(Cosmetics.entry("pattern", String(k))["name"]), Vector2(maxf(140.0, UIKit.touch_min() * 1.7), UIKit.touch_min()), UIKit.T_CAPTION)
+		b.name = "Pattern_" + String(k)
+		b.pressed.connect(_pick.bind("pattern", String(k)))
+		row.add_child(b)
+		_pattern_btns[String(k)] = b
+	return row
+
+
+func _setup_refresh() -> void:
+	for c in cards:
+		c.refresh()
+	for sw in swatches:
+		_paint_swatch(sw)
+	for f in _picked:
+		(_picked[f] as Label).text = "·  %s" % Cosmetics.entry(f, String(draft[f]))["name"]
+	for k in _pattern_btns:
+		UIKit.set_selected(_pattern_btns[k], String(draft["pattern"]) == String(k))
+	if is_instance_valid(_pattern_row):
+		_pattern_row.visible = String(draft["outfit"]) in Cosmetics.PATTERNED_OUTFITS
+
+
+func show_name_step() -> void:
+	if setup_step == "name" or _finishing:
+		return
+	setup_step = "name"
+	_step_l.text = "Step 2 of 2"
+	_title_l.text = "What should we call you?"
+	_look_box.visible = false
+	_seg_row.visible = false
+	setup_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_setup_footer.visible = false
+	name_form.visible = true
+	name_form._on_text(name_form.field.text)
+	UIKit.fade_in(name_form, UIKit.T_FAST)
+	Sfx.play("click")
+	if Controls.device != "touch":
+		UIKit.soft_focus(name_form.save_btn)
+
+
+func show_look_step() -> void:
+	if setup_step == "look" or _finishing:
+		return
+	setup_step = "look"
+	name_form.field.release_focus()
+	DisplayServer.virtual_keyboard_hide()
+	_step_l.text = "Step 1 of 2"
+	_title_l.text = "What does my runner look like?"
+	name_form.visible = false
+	_look_box.visible = true
+	_seg_row.visible = true
+	setup_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_setup_footer.visible = true
+	UIKit.fade_in(_look_box, UIKit.T_FAST)
+	if Controls.device != "touch":
+		UIKit.soft_focus(continue_btn)
+
+
+## Enter the dorm: the look is saved and setup is finished (the name was
+## saved on this device by the name step).  The only way out of setup.
+func _finish_setup() -> void:
+	if _finishing:
+		return
+	_finishing = true
+	DisplayServer.virtual_keyboard_hide()
+	var r := Save.apply_appearance(draft)
+	if not bool(r["ok"]):
+		Save.apply_appearance(Cosmetics.DEFAULT.duplicate())
+	saved = Cosmetics.sanitize(Save.data["cosmetic"])
+	Diag.mark("setup_finished")
+	Save.save_now()
+	App.sync_stage_local()
+	if on_done.is_valid():
+		on_done.call()
+
+
+## While the name field has the keyboard up, the screen's bottom margin
+## follows the keyboard, so the field and Enter the dorm stay above it
+## (small landscape phones give the keyboard about half the height) and the
+## runner reframes into the space left.
+func _keyboard_fit() -> void:
+	if not first_run or not is_instance_valid(name_form) or not is_inside_tree():
+		return
+	var kh := float(DisplayServer.virtual_keyboard_get_height())
+	if kh <= 0.0 and OS.get_cmdline_user_args().has("--sim-keyboard") and name_form.visible and name_form.field.has_focus():
+		kh = float(DisplayServer.window_get_size().y) * 0.52   # dev captures: an iPhone's landscape keyboard
+	var vs := get_viewport().get_visible_rect().size
+	var units := roundf(kh * vs.y / maxf(1.0, float(DisplayServer.window_get_size().y)))
+	var want := int(UIKit.safe_margins(get_viewport()).size.y) + UIKit.EDGE_Y
+	if units > 0.0:
+		want = int(units) + UIKit.SP_S
+	if margin.get_theme_constant("margin_bottom") != want:
+		margin.add_theme_constant_override("margin_bottom", want)
+		name_form.sub_l.visible = units <= 0.0 or vs.y - units > 440.0
 
 
 # ------------------------------------------------------------------ looks
@@ -1329,7 +1726,7 @@ class ItemCard:
 	func refresh() -> void:
 		var st: Dictionary = creator.state_of(field, key)
 		var it: Dictionary = Cosmetics.entry(field, key)
-		state_l.text = "Equipped" if bool(st["equipped"]) else ""
+		state_l.text = "Equipped" if bool(st["equipped"]) and not creator.first_run else ""
 		var sel: bool = String(creator.draft[field]) == key
 		if field == "emote":
 			# (2.2 build 17) which slot it is in; selected = in the slot being chosen

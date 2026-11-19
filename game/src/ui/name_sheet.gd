@@ -9,6 +9,8 @@ extends PanelContainer
 ## show a curated name instead (Save.party_name); the sheet says which.
 
 signal done(name: String)
+## (build 23) embedded in first-run setup: Back instead of Cancel
+signal back_requested
 
 var field: LineEdit
 var msg: Label
@@ -18,16 +20,25 @@ var _busy := false
 ## first launch: keep the name on this device; the service checks it the
 ## first time you create or join a party (online screen asks again if needed)
 var local_only := false
+## (build 23) a step inside another screen's panel (first-run setup): no
+## sheet chrome, no centring, Back keeps the typed name, Save doesn't close
+var embedded := false
+var title_l: Label
+var sub_l: Label
+var cancel_btn: Button
+var button_row: HBoxContainer
 
 
 func _init() -> void:
 	add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.SLATE, 0.99), UIKit.R_PANEL, 0, Color.WHITE, 28))
 	var v := UIKit.vbox(16)
 	add_child(v)
-	v.add_child(UIKit.heading("Your player name", 34))
+	title_l = UIKit.heading("Your player name", 34)
+	v.add_child(title_l)
 	var sub := UIKit.label("Other players see this name. 3-16 letters, numbers, spaces or underscores.", 19, UIKit.IVORY_MUTED)
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sub.custom_minimum_size = Vector2(560, 0)
+	sub_l = sub
 	v.add_child(sub)
 	field = LineEdit.new()
 	field.text = _current()
@@ -48,8 +59,10 @@ func _init() -> void:
 	v.add_child(sugg_row)
 	var row := UIKit.hbox(12)
 	row.alignment = BoxContainer.ALIGNMENT_END
+	button_row = row
 	var cancel := UIKit.quiet("Cancel", Vector2(180, 80), 24)
 	cancel.pressed.connect(cancel_sheet)
+	cancel_btn = cancel
 	row.add_child(cancel)
 	save_btn = UIKit.primary("Save name", Vector2(260, 84), 28)
 	save_btn.pressed.connect(_save)
@@ -59,6 +72,12 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	if embedded:
+		# the name is already filled in: on touch, no keyboard until the
+		# player taps the field; a controller or keyboard starts on Enter
+		if Controls.device != "touch":
+			save_btn.call_deferred("grab_focus")
+		return
 	field.call_deferred("grab_focus")
 	# (V6) suggestions make the sheet taller: keep it centred on screen, and
 	# shrink it back when they go
@@ -72,6 +91,10 @@ func _ready() -> void:
 
 func cancel_sheet() -> void:
 	if _busy:
+		return
+	if embedded:
+		field.release_focus()
+		back_requested.emit()
 		return
 	done.emit("")
 	queue_free()
@@ -127,7 +150,8 @@ func _save() -> void:
 		Save.data["name"] = n
 		Save.save_now()
 		done.emit(n)
-		queue_free()
+		if not embedded:
+			queue_free()
 		return
 	_busy = true
 	save_btn.disabled = true
@@ -146,6 +170,31 @@ func _save() -> void:
 	msg.add_theme_color_override("font_color", UIKit.AMBER)
 	save_btn.disabled = false
 	_suggest(r.get("suggestions", []))
+
+
+## (build 23) Use the sheet as a step inside another panel (first-run
+## setup): its heading, buttons and widths follow that panel.
+func embed(title: String, save_text: String, back_text: String) -> void:
+	embedded = true
+	local_only = true
+	add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	title_l.text = title
+	title_l.add_theme_font_size_override("font_size", UIKit.T_HEADLINE)
+	sub_l.text = "Other players see this name. You can change it later in Settings."
+	sub_l.add_theme_font_size_override("font_size", UIKit.T_CAPTION)
+	for c: Control in [sub_l, msg, field]:
+		c.custom_minimum_size.x = 0.0
+	field.custom_minimum_size.y = maxf(72.0, UIKit.touch_min())
+	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	msg.add_theme_font_size_override("font_size", UIKit.T_CAPTION)
+	cancel_btn.text = back_text
+	cancel_btn.custom_minimum_size = Vector2(maxf(150.0, UIKit.row_h() * 1.8), UIKit.row_h())
+	save_btn.text = save_text
+	save_btn.custom_minimum_size = Vector2(maxf(250.0, UIKit.row_h() * 3.0), UIKit.row_h())
+	save_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cancel_btn.accessibility_name = back_text
+	save_btn.accessibility_name = save_text
+	_on_text(field.text)
 
 
 ## Show the sheet centred over a screen; returns the chosen name ("" = cancelled).

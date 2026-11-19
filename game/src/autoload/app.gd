@@ -159,6 +159,17 @@ func _dev_tools(args: PackedStringArray) -> void:
 					pr.set("shots_dir", a2.get_slice("=", 1))
 					DirAccess.make_dir_recursive_absolute(a2.get_slice("=", 1))
 			add_child(pr)
+	for a in args:
+		if a.begins_with("--premiere-drive=") and ResourceLoader.exists("res://src/dev/premiere_drive.gd"):
+			# dev: a scripted cold launch through the season premiere
+			var pd: Node = (load("res://src/dev/premiere_drive.gd") as GDScript).new()
+			pd.set("plan", PackedStringArray(a.get_slice("=", 1).split(",")))
+			for a2 in args:
+				if a2.begins_with("--premiere-log="):
+					pd.set("log_path", a2.substr(a2.find("=") + 1))
+				elif a2.begins_with("--premiere-shots="):
+					pd.set("shots_dir", a2.substr(a2.find("=") + 1))
+			add_child(pd)
 	var diag_report := ""
 	var capture := ""
 	var capture_dir := ""
@@ -354,8 +365,61 @@ func _boot() -> void:
 			practice_role = a.split("=")[1]
 			start_practice("runner" if practice_role == "tutorial" else practice_role, practice_role == "tutorial")
 			return
-	get_tree().root.add_child(BootCurtain.new())
+	var curtain := BootCurtain.new()
+	get_tree().root.add_child(curtain)
+	# (build 23) a new season's first cold launch: the film, decided here
+	# before goto_title's music and routing (goto_title alone never plays it)
+	if SeasonPremiere.due():
+		_start_premiere(curtain)
 	goto_title()
+
+
+## (build 23) The season film between the curtain and the game.  The
+## destination (setup, or the party lobby) is built under it at once, in
+## silence; the lobby track starts as the film fades onto it.
+var premiere: SeasonPremiere
+var _held_invites: Array = []
+
+
+func _start_premiere(curtain: BootCurtain) -> void:
+	premiere = SeasonPremiere.new()
+	get_tree().root.add_child(premiere)
+	curtain.gate = premiere.frame_ready
+	curtain.leaving.connect(func(why: String) -> void:
+		if not is_instance_valid(premiere):
+			return
+		if premiere.frame_ready():
+			premiere.begin()
+		else:
+			premiere.abandon(), CONNECT_ONE_SHOT)
+	premiere.ending.connect(_on_premiere_ending)
+	premiere.ended.connect(_on_premiere_ended)
+	# no film after all (missing, undecodable): the curtain goes back to
+	# waiting for home as on any other launch, not for a frame that won't come
+	premiere.ending.connect(func(how: String) -> void:
+		if how == "failed" and is_instance_valid(curtain):
+			curtain.gate = Callable(), CONNECT_ONE_SHOT)
+
+
+## The film is fading (or never showed): the destination appears now.
+func _on_premiere_ending(_how: String) -> void:
+	if match_ctrl == null:
+		Sfx.music("menu")
+	if screen is CreatorScreen and (screen as CreatorScreen).first_run:
+		(screen as CreatorScreen).reveal_after_film(SeasonPremiere.FADE_S)
+
+
+func _on_premiere_ended(_how: String) -> void:
+	premiere = null
+	# an invite that arrived during the film is answered now
+	var held := _held_invites.duplicate()
+	_held_invites.clear()
+	for i in held.size():
+		var t: GameKitTransport = held[i]
+		if i < held.size() - 1:
+			t.close()   # only the latest invite counts
+		else:
+			_on_invite_ready(t)
 
 
 func _shape(lag: float, jitter: float, loss: float) -> void:
@@ -455,7 +519,7 @@ func sync_stage_local() -> void:
 func goto_title(message: String = "") -> void:
 	_end_match_scene()
 	_ensure_background()
-	Sfx.music("menu")
+	Sfx.music("menu")   # (build 23) held by Sfx while the season film plays
 	if not bool(Save.data.get("onboarded", false)) and not dev_automation:
 		_onboarding(message)
 		return
@@ -612,11 +676,14 @@ func _quick_bots(note: String) -> void:
 
 ## First launch: Create Your Runner, then a player name (kept on this device
 ## until the service checks it at the first online party).
+## (build 23) Two steps on one screen (look, then name) with the runner in
+## view; only "Enter the dorm" finishes it.  Closing the app before then
+## brings setup back on the next launch.
 func _onboarding(message: String = "") -> void:
 	var c := CreatorScreen.new()
 	c.first_run = true
+	c.await_reveal = SeasonPremiere.active
 	c.on_done = func() -> void:
-		await NameSheet.ask(c, true)
 		Save.data["onboarded"] = true
 		Save.save_now()
 		sync_cloud_appearance()
@@ -774,6 +841,10 @@ func _on_room_failed(message: String) -> void:
 ## invite gets the same checks and credential as typing the code).
 func _on_invite_ready(t: GameKitTransport) -> void:
 	if match_ctrl != null:
+		return
+	if SeasonPremiere.active:
+		# (build 23) kept until the film has gone
+		_held_invites.append(t)
 		return
 	if not await _confirm_party_switch():
 		t.close()

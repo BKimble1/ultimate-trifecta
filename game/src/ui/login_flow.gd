@@ -94,6 +94,10 @@ static func _settle(screen: Variant, tree: SceneTree) -> void:
 	var t0 := Time.get_ticks_msec()
 	while is_instance_valid(screen) and (screen as Node).is_inside_tree() and BootCurtain.live > 0 and Time.get_ticks_msec() - t0 < 15000:
 		await tree.process_frame
+	# (build 23) the season film plays over home on its own clock (it ends
+	# itself, also when it fails): greet once it has gone
+	while is_instance_valid(screen) and (screen as Node).is_inside_tree() and SeasonPremiere.active:
+		await tree.process_frame
 	if is_instance_valid(screen) and (screen as Node).is_inside_tree():
 		await tree.create_timer(SETTLE_S).timeout
 

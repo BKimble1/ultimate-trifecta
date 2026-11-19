@@ -42,6 +42,12 @@ var _placed_for := Rect2()
 ## timings for diagnostics and tests
 var waited := 0.0
 var reason := ""
+## (build 23) the season premiere: when set, the curtain waits for this
+## (the film's first frame held at 0:00) instead of the home screen's runner
+## (which is being built under the film), and `leaving` starts the film as
+## the mark fades.  The cap still applies: no frame in time, no film.
+var gate: Callable
+signal leaving(why: String)
 
 
 ## (2.3) How many curtains are up (one at launch): home waits for zero
@@ -102,7 +108,8 @@ func _process(delta: float) -> void:
 	_t += delta
 	if _leaving:
 		return
-	if app_ready() and steady(delta, _prev_delta):
+	var ready := bool(gate.call()) if gate.is_valid() else app_ready()
+	if ready and steady(delta, _prev_delta):
 		_stable += 1
 	else:
 		_stable = 0
@@ -119,6 +126,7 @@ func _leave(why: String) -> void:
 	reason = why
 	Diag.mark("boot_curtain_out")
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	leaving.emit(why)
 	if UIKit.reduced_motion():
 		Motion.animate(bg, "modulate:a", 0.0, 0.15)
 		Motion.animate(logo, "fade", 0.0, 0.15)

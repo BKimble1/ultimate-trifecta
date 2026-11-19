@@ -61,6 +61,8 @@ static func show_when_settled(screen: Screen) -> void:
 	var t0 := Time.get_ticks_msec()
 	while is_instance_valid(screen) and screen.is_inside_tree() and BootCurtain.live > 0 and Time.get_ticks_msec() - t0 < 15000:
 		await tree.process_frame
+	while is_instance_valid(screen) and screen.is_inside_tree() and SeasonPremiere.active:
+		await tree.process_frame   # (build 23) not over the season film
 	if not is_instance_valid(screen) or not screen.is_inside_tree():
 		return
 	await tree.create_timer(SETTLE_S).timeout

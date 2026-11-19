@@ -324,6 +324,8 @@ func build() -> void:
 	if not App.dev_automation:
 		(func() -> void:
 			await get_tree().create_timer(2.5).timeout
+			while is_inside_tree() and SeasonPremiere.active:
+				await get_tree().process_frame
 			if not is_inside_tree() or has_modal():
 				return
 			var back_in := ShopScreen.reminders_due()

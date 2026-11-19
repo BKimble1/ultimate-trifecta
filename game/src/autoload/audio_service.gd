@@ -179,6 +179,8 @@ func _stream(name: String) -> AudioStream:
 
 
 func play(name: String, pos: Variant = null, volume_db: float = 0.0, pitch: float = 1.0) -> void:
+	if SeasonPremiere.holds_audio():
+		return   # (build 23) the season film has the soundtrack
 	var s := _stream(name)
 	if s == null or sfx_volume <= 0.001:
 		return
@@ -205,6 +207,10 @@ func play(name: String, pos: Variant = null, volume_db: float = 0.0, pitch: floa
 ## Switches to a music track: the current one fades out under it. The same
 ## track again is a no-op (no restart); a track that is fading out comes back.
 func music(name: String) -> void:
+	if SeasonPremiere.holds_audio():
+		# (build 23) whatever the screen under the season film asks for
+		# waits: the destination's track starts as the film fades onto it
+		return
 	if name == _music.track and (_music.sounding() or _held()):
 		return
 	if name == _music_out.track and _music_out.sounding():
@@ -304,7 +310,7 @@ const ALBUM_FADE_IN := 0.4
 
 
 func restart_menu_music() -> void:
-	if _music == null or _music.track != "menu":
+	if _music == null or _music.track != "menu" or SeasonPremiere.holds_audio():
 		return
 	var s := _stream(Albums.stream_key())
 	if s == null or _music.player.stream == s:

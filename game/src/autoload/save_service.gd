@@ -23,11 +23,17 @@ const ADJ := ["Sleepy", "Soggy", "Sneaky", "Snoozy", "Zippy", "Drowsy", "Splashy
 const ANIMALS := ["Otter", "Duck", "Frog", "Llama", "Panda", "Gecko", "Walrus", "Badger", "Koala", "Puffin", "Newt", "Moose"]
 
 var data: Dictionary = {}
+## the profile file (dev/automation: --profile=<path> for an isolated run,
+## e.g. a fresh install or an upgraded save, without touching the real one)
+var path := PATH
 var _dirty := false
 var _save_t := 0.0
 
 
 func _ready() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--profile="):
+			path = a.substr(a.find("=") + 1)
 	load_profile()
 	_apply_settings()
 
@@ -56,6 +62,11 @@ func default_profile() -> Dictionary:
 		"blocked": [],          # [{pid, uid, name}]: persists; also sent to the service when signed in
 		"cloud_profile": {},
 		"onboarded": false,     # first launch: Create Your Runner + name
+		# (build 23) season films watched to the end or skipped, by season
+		# id: independent of "onboarded" (an older profile has none, so the
+		# current season's film plays once on its next cold launch)
+		"season_film_seen": [],
+		"season_film_fails": {},
 	}
 
 
@@ -93,10 +104,10 @@ func _blank_stats() -> Dictionary:
 
 func load_profile() -> void:
 	data = default_profile()
-	if not FileAccess.file_exists(PATH):
+	if not FileAccess.file_exists(path):
 		_dirty = true
 		return
-	var f := FileAccess.open(PATH, FileAccess.READ)
+	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
 		return
 	var parsed: Variant = JSON.parse_string(f.get_as_text())
@@ -162,7 +173,7 @@ func _merge_stats(base: Dictionary, extra: Dictionary) -> Dictionary:
 
 
 func save_now() -> void:
-	var f := FileAccess.open(PATH, FileAccess.WRITE)
+	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(data, "  "))
 	_dirty = false
