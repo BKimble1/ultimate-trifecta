@@ -8,6 +8,7 @@ Written 19 November 2026. Where things stand:
   prices or screenshots.
 - The **2 Game Center leaderboards** exist (`ut.season_points`,
   `ut.fastest_run`).
+- **Signing is in order** (A2): no certificate renewal needed.
 - The **game service and website are not deployed**.
 
 Parts marked **[Claude]** are done in the coding session; tell Claude when
@@ -38,17 +39,24 @@ be prepared any time. G is last.
    few minutes to about a day. Until it's Active, the game shows no prices
    and nothing can be bought.
 
-### A2. Renew the distribution certificate (before 26 November 2026)
-The current iOS Distribution certificate expires 26 Nov 2026; uploads fail
-after that.
-1. Easiest: tell Claude. The upload workflow can create a new one through
-   the App Store Connect API key it already uses.
-2. Or by hand: https://developer.apple.com/account › **Certificates, IDs &
-   Profiles** › **Certificates** › **+** › **Apple Distribution** ›
-   Continue › upload a Certificate Signing Request (made on a Mac in
-   Keychain Access › Certificate Assistant › Request a Certificate From a
-   Certificate Authority, saved to disk) › Continue › Download. Then tell
-   Claude so the workflow uses it.
+### A2. Distribution certificate: nothing to do (checked 19 Nov 2026)
+The GitHub Actions upload doesn't use a stored certificate or profile. It
+signs automatically through the App Store Connect API key, and a signing
+check on 19 Nov 2026 (workflow input `sign_check`) showed:
+- **Signer:** Apple's **Cloud Managed Apple Distribution** certificate (Apple
+  keeps its private key). Not the legacy **iOS Distribution** certificate
+  (serial 7E525A3A…) that expires 26 Nov 2026.
+- **Profile:** **iOS Team Store Provisioning Profile:
+  com.idlery.ultimatetrifecta**, an App Store profile valid to 12 Sep 2027,
+  Game Center on, `get-task-allow` off. Xcode manages and renews it.
+- The team's three **Apple Distribution** certificates are valid to Aug–Sep
+  2027. When the legacy one expires on 26 Nov, uploads keep working.
+- Every signed run now prints this signing report and fails if the signer
+  isn't a current distribution certificate (or is the legacy one), or the
+  profile isn't a current App Store profile.
+- The workflow only ever revokes the temporary development certificates its
+  own runs create ("Created via API"); it never touches a distribution
+  certificate.
 
 ### A3. App price and availability
 1. App Store Connect › **Apps** › **Ultimate Trifecta**.

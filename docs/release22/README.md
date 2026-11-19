@@ -630,8 +630,11 @@ order.  After them, submitting needs no further code change.
    Nights alone by removing the three from `Albums.LIST`.
 5. **Game Center:** add the two leaderboards to the 2.2 version page; have
    the Season Champion rules (docs/release22/CONTEST_RULES.md) reviewed.
-6. **Certificates:** the iOS Distribution certificate expires 2026-11-26;
-   renew it before then.
+6. **Certificates:** nothing to renew.  Uploads are signed by Apple's
+   Cloud Managed Apple Distribution certificate with the Xcode-managed App
+   Store profile (valid to 2027-09-12), not the legacy iOS Distribution
+   certificate that expires 2026-11-26 (signing check, 2026-11-19; every
+   signed run prints and checks this: `tools/build_ios.sh`).
 
 | | |
 |---|---|
