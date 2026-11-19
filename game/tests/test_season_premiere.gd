@@ -57,6 +57,12 @@ func _on_disk() -> Dictionary:
 	return v if v is Dictionary else {}
 
 
+## The test runner boots the app with a fresh profile: no film there.
+func test_off_under_test() -> void:
+	t.check(not SeasonPremiere.enabled and not SeasonPremiere.due(), "no film over screens under test")
+	t.check(not SeasonPremiere.active, "none playing")
+
+
 ## A save from before the premiere (no film fields) is eligible, whatever
 ## its onboarding; the migration adds empty fields.
 func test_upgraded_save_is_eligible() -> void:

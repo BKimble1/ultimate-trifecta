@@ -27,6 +27,8 @@ func _ready() -> void:
 	# (2.2 build 15) no daily present or event poster over screens under test
 	# (loaded by path: this script compiles before the autoloads exist)
 	load("res://src/ui/login_flow.gd").set("enabled", false)
+	# (build 23) and no season film over them either
+	load("res://src/ui/season_premiere.gd").set("enabled", false)
 	var args := OS.get_cmdline_user_args()
 	if args.size() > 0:
 		filter = args[0]

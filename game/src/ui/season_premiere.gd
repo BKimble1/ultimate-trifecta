@@ -55,6 +55,9 @@ enum State { PREPARING, READY, PLAYING, ENDING, DONE }
 
 static var active := false
 static var current: SeasonPremiere = null
+## off under the automated tests (their runner boots the app with a fresh
+## profile: a film there would take every tap for 33 s)
+static var enabled := true
 
 var season := ""
 var state := State.PREPARING
@@ -107,7 +110,7 @@ static func due(sid: String = "") -> bool:
 	if sid == "":
 		sid = Catalogue.current_season_id()
 	var args := OS.get_cmdline_user_args()
-	if args.has("--no-premiere"):
+	if not enabled or args.has("--no-premiere"):
 		return false
 	if App.dev_automation and not args.has("--premiere"):
 		return false
