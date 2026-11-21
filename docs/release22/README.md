@@ -1023,3 +1023,27 @@ builds ignore them and simply show no ball).
   pick-up rules, make and confetti on the guest, a miss, the guest's
   flight, pass only in a party to someone walking, a round start, bad
   requests).  Evidence capture: `--capture=social_ball`.
+
+## 41. Build 25: no swish, a smoother dribble and shot
+
+Protocol 16 unchanged: builds 20 to 25 play together.
+- **No swish**: a basket no longer says "Swish!" or plays a swish sound
+  (the sound file is gone): the shooter sees "Nice shot!", everyone gets
+  the confetti and a soft chime, and the net sways once, slowly.
+- **A smoother dribble** (`HubBallView._held`): the ball eases into and out
+  of the hand at the top of each bounce (it used to reverse there in one
+  frame) and bounces crisply off the floor; its place beside the runner
+  follows their turns gradually and its pace eases between standing and
+  walking; the hand glides between its dribble and windup positions.
+- **Smooth changes of hands**: picking the ball up, catching a pass and
+  letting it go (a shot, a pass, a drop) all glide from where the ball was
+  drawn over 0.36 s on an eased curve instead of jumping; a ball picked up
+  off the floor starts its dribble from the floor and rises into the hand.
+- **A smoother shot**: the windup lifts the ball on an eased curve with a
+  soft gather; through the net the ball is slowed and centred by gentle
+  forces rather than nudged in steps; rounder rim, candy-cane pole and a
+  finer net (16 strands, 5 rows).
+- Test `test_ball_view`: the drawn ball, frame by frame on the real stage,
+  from pick-up through dribbling, walking and turning, the windup, the
+  release, the flight and the net, never moves further in a frame than its
+  speed allows, and a basket says "Nice shot!", never "Swish!".

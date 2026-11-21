@@ -93,15 +93,3 @@ d = 0.22
 t = t_(d)
 thud = np.sin(2 * np.pi * 110 * t) * np.exp(-t * 30) + 0.6 * onepole_lp(rng.uniform(-1, 1, len(t)), 700) * np.exp(-t * 45)
 save("ball_thud", thud, 0.7)
-
-# --- through the net: the swish (a sweep of filtered air through the
-# strings), the strings' soft flutter after it
-d = 0.55
-t = t_(d)
-n = rng.uniform(-1, 1, len(t))
-env = np.minimum(1, t / 0.02) * np.exp(-t * 6.5)
-sw = np.zeros_like(n)
-for f0, amp in [(2600, 1.0), (4200, 0.6), (1500, 0.5)]:
-    sw += amp * bandpass(n, f0, 1.4)
-flutter = 0.6 + 0.4 * np.sin(2 * np.pi * 26 * t)
-save("ball_swish", sw * env * flutter, 0.75)

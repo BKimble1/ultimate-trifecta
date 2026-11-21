@@ -5,7 +5,7 @@ extends Node3D
 ## The hoop is furniture (build_hoop adds it to the room's mesh): a weighted
 ## base wrapped as a present, a candy-cane pole that hooks over to hold the
 ## backboard, a garland of tiny lights and a bow along the board's top, an
-## orange rim and a white net (its own mesh: it swishes when a shot drops).
+## orange rim and a white net (its own mesh: it sways when a shot drops).
 ##
 ## The ball is drawn from BallSync: loose, where its physics has it (eased
 ## after a guest's correction, rolling and spinning as it moves); held, at
@@ -40,6 +40,15 @@ var _wind_from := Vector3.ZERO
 var _last_at: Dictionary = {}     # key -> [position, speed]
 var _iks: Dictionary = {}         # key -> {r, l, tr, tl, pr, pl, wr, wl}
 var _hooked: BallSync
+## (build 25) smoothing: the dribble's offset from the runner (turns ease),
+## its pace, and each IK target
+var _off := Vector3.INF
+var _pace := 0.0
+var _ik_at: Dictionary = {}       # "key|side" -> Vector3 (stage space)
+## a change of hands: the gap at the moment it happened, closed over HANDOFF_S
+## on an eased curve (gentle at both ends)
+var _handoff_t := 9.0
+const HANDOFF_S := 0.36
 ## (tests / captures) the last drawn ball, stage space, and the confetti count
 var last_pos := Vector3.ZERO
 var confetti_bursts := 0
@@ -78,7 +87,7 @@ func build() -> void:
 	_shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_shadow.visible = false
 	add_child(_shadow)
-	# the net (it swishes)
+	# the net (it sways when a shot drops through)
 	_net = MeshInstance3D.new()
 	_net.name = "Net"
 	_net.mesh = _net_mesh()
@@ -196,7 +205,7 @@ static func build_hoop(k: MeshKit) -> void:
 	var stripes := func(s: float, th: float) -> Color:
 		# helical stripes, like a real candy cane
 		return RED if fposmod(s * 7.5 + th / TAU, 1.0) < 0.5 else WHITE
-	_tube(k, path, HubBall.POLE_R, 12, stripes)
+	_tube(k, path, HubBall.POLE_R, 16, stripes)
 	# a sprig of holly where the cane bends
 	var holly := hc + Vector3(0, hook_r + 0.015, 0)
 	var leaf := Color("2b7a46", fabric)
@@ -234,10 +243,10 @@ static func build_hoop(k: MeshKit) -> void:
 	k.box(Vector3(rc.x, rc.y - 0.012, rc.z) - fwd * (HubBall.RIM_R + 0.03), Vector3(0.07, 0.02, 0.07), Color("e8552b", 0.6), yaw)
 	# --- the rim
 	var ring := PackedVector3Array()
-	for i in 33:
-		var th := TAU * float(i) / 32.0
+	for i in 49:
+		var th := TAU * float(i) / 48.0
 		ring.append(rc + Vector3(cos(th), 0, sin(th)) * HubBall.RIM_R)
-	_tube(k, ring, HubBall.RIM_TUBE, 8, func(_s: float, _t: float) -> Color: return Color("e8552b", 0.6))
+	_tube(k, ring, HubBall.RIM_TUBE, 12, func(_s: float, _t: float) -> Color: return Color("e8552b", 0.6))
 	# --- a garland of tiny lights over the frame and down both sides
 	var gl := PackedVector3Array()
 	var gcorner := bc + fwd * (bh.z + 0.012)
@@ -264,8 +273,8 @@ static func build_hoop(k: MeshKit) -> void:
 static func _net_mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var n := 12
-	var levels := 4
+	var n := 16
+	var levels := 5
 	var pts: Array = []
 	for l in levels + 1:
 		var row: Array = []
@@ -342,20 +351,30 @@ func _process(delta: float) -> void:
 	var p: Vector3
 	var want: Dictionary = {}
 	var phase := ball.phase
-	if phase == BallSync.Phase.FREE or v == null:
+	var free := phase == BallSync.Phase.FREE or v == null
+	var was_free := _phase_was == BallSync.Phase.FREE or _phase_was < 0
+	if phase != _phase_was and phase != BallSync.Phase.FREE and v != null:
+		_wind_from = _drawn if _have_drawn else Vector3.INF
+		if was_free:
+			# (build 25) picked up off the floor: the dribble starts at the
+			# bottom of a bounce (where the ball is) and rises into the hand;
+			# caught in the air: it starts at the hand
+			_dribble = 0.5 if (_have_drawn and _drawn.y < 0.25) else 0.0
+			_off = Vector3.INF
+	if free:
 		p = ball.sim.pos + ball.err
-		if _phase_was >= 0 and _phase_was != BallSync.Phase.FREE and _have_drawn:
-			_handoff = _drawn - p   # out of the hand: no jump to the flight
-		_handoff *= exp(-delta * 12.0)
-		p += _handoff
 		var w := ball.sim.spin
 		if w.length() > 0.01:
 			_rot = Basis(w.normalized(), w.length() * delta) * _rot
 	else:
-		_handoff = Vector3.ZERO
 		p = _held(v, key, phase, delta, want)
-	if phase != _phase_was and phase != BallSync.Phase.FREE and v != null:
-		_wind_from = _drawn if _have_drawn else p
+	# (build 25) every change of hands (a pick-up, a catch, a release) glides
+	# from where the ball was drawn instead of jumping
+	if _have_drawn and _phase_was >= 0 and free != was_free:
+		_handoff = _drawn - p + _handoff_now()
+		_handoff_t = 0.0
+	_handoff_t += delta
+	p += _handoff_now()
 	_phase_was = phase
 	_drawn = p
 	_have_drawn = true
@@ -371,7 +390,17 @@ func _process(delta: float) -> void:
 	_relax_all(delta, want)
 
 
+func _handoff_now() -> Vector3:
+	if _handoff_t >= HANDOFF_S:
+		return Vector3.ZERO
+	var u := clampf(_handoff_t / HANDOFF_S, 0.0, 1.0)
+	return _handoff * (1.0 - u * u * u * (u * (u * 6.0 - 15.0) + 10.0))
+
+
 ## Where the ball is in a holder's hands this frame (and what their arms do).
+## (build 25) A smooth dribble: the ball eases into and out of the hand at
+## the top (no snap) and bounces crisply off the floor; its pace and its
+## place beside the runner follow their walking and turning gradually.
 func _held(v: CharacterView, key: String, phase: int, delta: float, want: Dictionary) -> Vector3:
 	var at := stage.to_local(v.global_position)
 	var yaw := v.rotation.y
@@ -379,39 +408,53 @@ func _held(v: CharacterView, key: String, phase: int, delta: float, want: Dictio
 	var right := Vector3(cos(yaw), 0.0, -sin(yaw))
 	var prev: Array = _last_at.get(key, [at, 0.0])
 	var sp := (Vector2(at.x, at.z) - Vector2((prev[0] as Vector3).x, (prev[0] as Vector3).z)).length() / maxf(delta, 0.001)
-	sp = lerpf(float(prev[1]), minf(sp, HubRoom.WALK_SPEED * 1.4), 1.0 - exp(-delta * 8.0))
+	if sp > HubRoom.WALK_SPEED * 2.5:
+		sp = float(prev[1])   # a jump (a correction): not a sprint
+	sp = lerpf(float(prev[1]), minf(sp, HubRoom.WALK_SPEED * 1.2), 1.0 - exp(-delta * 3.0))
 	_last_at[key] = [at, sp]
 	var k := clampf(sp / HubRoom.WALK_SPEED, 0.0, 1.0)
-	var dribble_at := at + right * 0.19 + fwd * (0.05 + 0.1 * k)
+	# beside the right hand, a little ahead when walking; turns ease in
+	var off_want := right * 0.19 + fwd * (0.05 + 0.1 * k)
+	if _off == Vector3.INF:
+		_off = off_want
+	_off = _off.lerp(off_want, 1.0 - exp(-delta * 9.0))
+	var dribble_at := at + _off
+	# the pace eases too (no hiccup when you start or stop walking)
+	var pace_want := 1.0 / lerpf(DRIBBLE_SLOW_S, DRIBBLE_FAST_S, k)
+	_pace = pace_want if _pace <= 0.0 else lerpf(_pace, pace_want, 1.0 - exp(-delta * 4.0))
 	var u_was := _dribble
-	_dribble = fmod(_dribble + delta / lerpf(DRIBBLE_SLOW_S, DRIBBLE_FAST_S, k), 1.0)
+	_dribble = fmod(_dribble + delta * _pace, 1.0)
 	var u := _dribble
-	var y := HubBall.R + (DRIBBLE_TOP - HubBall.R) * pow(2.0 * u - 1.0, 2.0)
-	var dp := dribble_at + Vector3(0, y, 0)
-	var p := dp
+	# |cos|: level and slow at the hand, quick off the floor
+	var y := HubBall.R + (DRIBBLE_TOP - HubBall.R) * absf(cos(PI * u))
+	var p := dribble_at + Vector3(0, y, 0)
 	var shoulder_r := at + right * 0.17 + Vector3(0, 0.84, 0)
 	match phase:
 		BallSync.Phase.HELD:
 			if u_was < 0.5 and u >= 0.5:
-				_play("ball_bounce", dribble_at + Vector3(0, HubBall.R, 0), -13.0 + 4.0 * k, randf_range(0.94, 1.06))
-			# the hand on top of the ball, following it down as far as the arm reaches
-			want[key] = {"r": p + Vector3(0, HubBall.R + 0.012, 0), "pr": shoulder_r + right * 0.35 - fwd * 0.3 + Vector3(0, -0.2, 0)}
-			_rot = Basis(right, -delta * 10.0) * _rot
+				_play("ball_bounce", dribble_at + Vector3(0, HubBall.R, 0), -14.0 + 4.0 * k, randf_range(0.96, 1.04))
+			# the hand rides the top of the ball, down as far as the arm goes
+			var hand := p + Vector3(0, HubBall.R + 0.012, 0)
+			hand.y = maxf(hand.y, 0.5)
+			want[key] = {"r": hand, "pr": shoulder_r + right * 0.35 - fwd * 0.3 + Vector3(0, -0.2, 0)}
+			_rot = Basis(right, -delta * 8.0) * _rot
 		BallSync.Phase.SHOT:
 			var t := clampf(ball.phase_t / BallSync.WINDUP_SHOT, 0.0, 1.0)
-			var e := t * t * (3.0 - 2.0 * t)
+			var e := t * t * t * (t * (t * 6.0 - 15.0) + 10.0)   # smootherstep
 			var hold := at + right * SHOT_HOLD.x + Vector3(0, SHOT_HOLD.y, 0) - fwd * SHOT_HOLD.z
-			p = _wind_from.lerp(hold, e)
-			p.y -= 0.06 * sin(PI * minf(1.0, t * 1.6))   # a little gather down first
+			var from := _wind_from if _wind_from != Vector3.INF else p
+			p = from.lerp(hold, e)
+			p.y -= 0.04 * sin(PI * t) * (1.0 - t)   # a soft gather on the way up
 			want[key] = {"r": p - fwd * (HubBall.R * 0.8) + right * 0.03 - Vector3(0, HubBall.R * 0.4, 0),
 				"l": p - right * (HubBall.R + 0.012),
 				"pr": shoulder_r + right * 0.3 - fwd * 0.15 + Vector3(0, -0.3, 0),
 				"pl": shoulder_r - right * 0.64 - fwd * 0.15 + Vector3(0, -0.3, 0)}
 		BallSync.Phase.PASS:
 			var t2 := clampf(ball.phase_t / BallSync.WINDUP_PASS, 0.0, 1.0)
-			var e2 := t2 * t2 * (3.0 - 2.0 * t2)
+			var e2 := t2 * t2 * t2 * (t2 * (t2 * 6.0 - 15.0) + 10.0)
 			var hold2 := at + right * PASS_HOLD.x + Vector3(0, PASS_HOLD.y, 0) + fwd * PASS_HOLD.z
-			p = _wind_from.lerp(hold2, e2)
+			var from2 := _wind_from if _wind_from != Vector3.INF else p
+			p = from2.lerp(hold2, e2)
 			want[key] = {"r": p + right * (HubBall.R + 0.012), "l": p - right * (HubBall.R + 0.012),
 				"pr": shoulder_r + right * 0.35 + Vector3(0, -0.35, 0) + fwd * 0.05,
 				"pl": shoulder_r - right * 0.69 + Vector3(0, -0.35, 0) + fwd * 0.05}
@@ -485,7 +528,16 @@ func _relax_all(delta: float, want: Dictionary) -> void:
 			e["w" + side] = cur
 			var ik: TwoBoneIK3D = e[side]
 			if on:
-				(e["t" + side] as Node3D).global_position = stage.to_global(w[side])
+				# (build 25) the hand glides to its target (no snap between
+				# the dribble and the windup)
+				var ik_key := "%s|%s" % [key, side]
+				var tgt_now: Vector3 = w[side]
+				var was_at: Vector3 = _ik_at.get(ik_key, tgt_now)
+				if cur < 0.05:
+					was_at = tgt_now
+				var glided := was_at.lerp(tgt_now, 1.0 - exp(-delta * 22.0))
+				_ik_at[ik_key] = glided
+				(e["t" + side] as Node3D).global_position = stage.to_global(glided)
 				(e["p" + side] as Node3D).global_position = stage.to_global(w["p" + side])
 			ik.influence = cur * cur * (3.0 - 2.0 * cur)
 			ik.active = cur > 0.001
@@ -520,15 +572,15 @@ func _on_sound(kind: int, at: Vector3, strength: float) -> void:
 		HubBall.Kind.SOFT, HubBall.Kind.PLAYER:
 			_play("ball_thud", at, lerpf(-22.0, -10.0, loud), randf_range(0.9, 1.1))
 		HubBall.Kind.NET:
-			_play("ball_swish", at, -16.0, 1.1)
+			pass   # (build 25) no swish sound
 
 
-func _on_made(slot: int, swish: bool) -> void:
+func _on_made(slot: int, _swish: bool) -> void:
 	var rc := HubBall.rim_center()
 	_net_t = 0.0
 	_net_k = 1.0
-	_play("ball_swish", rc, -3.0 if swish else -6.0)
-	_play("reward", rc, -9.0)
+	# (build 25) no swish: a soft chime for the basket
+	_play("reward", rc, -8.0)
 	# over the shooter and the hoop
 	var from := Vector3(rc.x, 0, rc.z) + Vector3(HubBall.HOOP_DIR.x, 0, HubBall.HOOP_DIR.y) * 1.8
 	var sv: Variant = stage.chars.get(_key_of(slot)) if stage != null else null
@@ -608,12 +660,15 @@ static func _confetti_node(amount: int, life: float) -> CPUParticles3D:
 func _animate_net() -> void:
 	if _net == null:
 		return
-	if _net_t > 2.0:
+	if _net_t > 2.5:
 		_net.scale = Vector3.ONE
 		_net.rotation = Vector3.ZERO
 		_net_k = 0.0
 		return
+	# (build 25) a soft, slow sway: the net stretches down as the ball drops
+	# through and settles back (no buzzing)
 	var t := _net_t
-	var amp := _net_k * exp(-t * 4.5)
-	_net.scale = Vector3(1.0 - 0.12 * amp * sin(t * 20.0), 1.0 + 0.28 * amp * sin(t * 16.0 + 0.6), 1.0 - 0.12 * amp * sin(t * 20.0))
-	_net.rotation = Vector3(0.1 * amp * sin(t * 13.0), 0.0, 0.1 * amp * cos(t * 11.0))
+	var amp := _net_k * exp(-t * 3.2)
+	var stretch := sin(t * 9.0) * amp
+	_net.scale = Vector3(1.0 - 0.06 * stretch, 1.0 + 0.18 * stretch, 1.0 - 0.06 * stretch)
+	_net.rotation = Vector3(0.06 * amp * sin(t * 6.0), 0.0, 0.06 * amp * cos(t * 5.0))

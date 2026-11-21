@@ -499,26 +499,27 @@ func _net(prev: Vector3, dt: float) -> void:
 		vel.y = -vel.y * 0.25
 		_sound(Kind.NET, 1.0)
 		return
-	# in the net: drag, and drawn to the middle
-	var drag := exp(-7.0 * dt)
+	# in the net: drag, and drawn gently to the middle (forces, not jumps:
+	# the ball glides through)
+	var drag := exp(-5.0 * dt)
 	vel.x *= drag
 	vel.z *= drag
-	vel.y *= exp(-1.6 * dt)
-	if dh > 0.0001:
-		var pull := minf(dh, 2.4 * dt)
-		pos.x -= h.x / dh * pull * 0.5
-		pos.z -= h.y / dh * pull * 0.5
-	if dh > nr - R * 0.4:
-		# the strings hold it in
+	vel.y *= exp(-1.2 * dt)
+	vel.x -= h.x * 30.0 * dt
+	vel.z -= h.y * 30.0 * dt
+	var limit := nr - R * 0.4
+	if dh > limit and dh > 0.0001:
+		# the strings hold it in: turn its outward motion back, and ease it in
 		var dir2 := h / dh
-		var over := dh - (nr - R * 0.4)
-		pos.x -= dir2.x * over
-		pos.z -= dir2.y * over
 		var vh := Vector2(vel.x, vel.z)
-		if vh.dot(dir2) > 0.0:
-			vh -= dir2 * vh.dot(dir2) * 1.2
+		var out := vh.dot(dir2)
+		if out > 0.0:
+			vh -= dir2 * out * 1.1
 			vel.x = vh.x
 			vel.z = vh.y
+		var over := dh - limit
+		pos.x -= dir2.x * over * 0.35
+		pos.z -= dir2.y * over * 0.35
 	spin *= drag
 
 
