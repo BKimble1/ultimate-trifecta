@@ -3,8 +3,8 @@ extends RefCounted
 ## lobby screen: picking it up, dribbling standing and walking and turning,
 ## the shot's windup, its release, its flight and its drop through the net
 ## never jump (each frame the ball moves no further than its own speed
-## allows); the dribble eases in at the hand; a basket says "Nice shot!"
-## (never "Swish!").
+## allows); the dribble eases in at the hand; a basket puts no words on
+## screen (confetti only).
 var t
 
 
@@ -74,8 +74,8 @@ func test_the_ball_moves_smoothly_from_pick_up_to_the_basket() -> void:
 		var cap := float(caps[k])
 		t.check(float(worst[k]) <= cap, "%s: smooth (largest step %.3f m a frame, at most %.3f)" % [k, float(worst[k]), cap])
 	t.check(b.make_seq >= 1, "the shot went in")
-	t.check(said.has("Nice shot!"), "the shooter is told: Nice shot! (%s)" % [said])
-	t.check(not said.has("Swish!"), "never Swish!")
+	t.eq(said.size(), 0, "no words on a basket (no Swish!, no Nice shot!): %s" % [said])
+	t.check(view.confetti_bursts >= 1, "the confetti says it")
 	l.queue_free()
 	stage.queue_free()
 	App.stage = saved_stage

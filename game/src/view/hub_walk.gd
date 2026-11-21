@@ -110,14 +110,12 @@ func _hook_hub() -> void:
 	b.made.connect(_on_made)
 
 
+## (build 25) A basket: a tap for the shooter.  No words on screen (the
+## confetti, the chime and the net say it).
 func _on_made(slot: int, _swish: bool) -> void:
-	if session == null or not is_instance_valid(session) or not walking and slot != session.local_slot:
+	if session == null or not is_instance_valid(session) or slot != session.local_slot:
 		return
 	Haptics.tap()
-	if slot == session.local_slot:
-		notice.emit("Nice shot!")
-	elif slot >= 0 and session.roster[slot] != null:
-		notice.emit("%s scored!" % String(session.roster[slot]["name"]))
 
 
 func local_key() -> String:

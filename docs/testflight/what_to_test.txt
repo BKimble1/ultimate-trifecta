@@ -2,5 +2,5 @@
 
 - On home, tap Walk, walk up to the basketball and tap Pick up: it should rise smoothly into your hand.
 - Walk and turn while dribbling: tell us if the ball ever jumps or stutters.
-- Tap Shoot at the Christmas hoop: the windup, the shot and the ball dropping through the net should all be smooth. A basket shows "Nice shot!" and confetti.
+- Tap Shoot at the Christmas hoop: the windup, the shot and the ball dropping through the net should all be smooth. A basket brings confetti (no text).
 - In a party with a friend (both tap Walk), try Pass; anyone can try Drop.

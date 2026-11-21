@@ -1027,9 +1027,10 @@ builds ignore them and simply show no ball).
 ## 41. Build 25: no swish, a smoother dribble and shot
 
 Protocol 16 unchanged: builds 20 to 25 play together.
-- **No swish**: a basket no longer says "Swish!" or plays a swish sound
-  (the sound file is gone): the shooter sees "Nice shot!", everyone gets
-  the confetti and a soft chime, and the net sways once, slowly.
+- **No swish, no words**: a basket puts no text on screen (no "Swish!",
+  "Nice shot!" or "… scored!") and plays no swish sound (the sound file is
+  gone): everyone gets the confetti and a soft chime, the shooter a haptic
+  tap, and the net sways once, slowly.
 - **A smoother dribble** (`HubBallView._held`): the ball eases into and out
   of the hand at the top of each bounce (it used to reverse there in one
   frame) and bounces crisply off the floor; its place beside the runner
@@ -1053,4 +1054,4 @@ Protocol 16 unchanged: builds 20 to 25 play together.
 - Test `test_ball_view`: the drawn ball, frame by frame on the real stage,
   from pick-up through dribbling, walking and turning, the windup, the
   release, the flight and the net, never moves further in a frame than its
-  speed allows, and a basket says "Nice shot!", never "Swish!".
+  speed allows, and a basket puts no words on screen.
