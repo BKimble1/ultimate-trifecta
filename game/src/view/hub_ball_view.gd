@@ -14,7 +14,7 @@ extends Node3D
 ## for a shot (both hands) or to the chest for a pass.  A shadow under it
 ## grounds it.  A made shot drops confetti over the shooter and the hoop.
 
-const DRIBBLE_TOP := 0.445       # ball centre at the hand (a ~1 m runner)
+const DRIBBLE_TOP := 0.43        # ball centre at the hand (a ~1 m runner; its top at ~0.52)
 const DRIBBLE_SLOW_S := 0.46     # a bounce standing still
 const DRIBBLE_FAST_S := 0.34     # and at full walking speed
 const SHOT_HOLD := Vector3(0.14, 1.06, -0.1)    # up by the right shoulder (right, up, back): seen past the hat
@@ -179,10 +179,10 @@ static func build_hoop(k: MeshKit) -> void:
 	# --- the weighted base: a present (red paper, gold ribbon and bow)
 	var pres := Color("c7353e", fabric)
 	var gold := Color("f2c14e", 0.6)
-	k.ellipse_disc(base + Vector3(0, 0.009, 0), 0.36, 0.36, Color("1a120c"), 20)
-	k.chamfer_box(base + Vector3(0, HubBall.BASE_H * 0.5, 0), Vector3(0.5, HubBall.BASE_H, 0.5), pres, 0.03, yaw)
-	k.box(base + Vector3(0, HubBall.BASE_H * 0.5, 0), Vector3(0.09, HubBall.BASE_H + 0.006, 0.506), gold, yaw)
-	k.box(base + Vector3(0, HubBall.BASE_H * 0.5, 0), Vector3(0.506, HubBall.BASE_H + 0.006, 0.09), gold, yaw)
+	k.ellipse_disc(base + Vector3(0, 0.009, 0), 0.43, 0.43, Color("1a120c"), 20)
+	k.chamfer_box(base + Vector3(0, HubBall.BASE_H * 0.5, 0), Vector3(0.6, HubBall.BASE_H, 0.6), pres, 0.03, yaw)
+	k.box(base + Vector3(0, HubBall.BASE_H * 0.5, 0), Vector3(0.108, HubBall.BASE_H + 0.006, 0.607), gold, yaw)
+	k.box(base + Vector3(0, HubBall.BASE_H * 0.5, 0), Vector3(0.607, HubBall.BASE_H + 0.006, 0.108), gold, yaw)
 	var bow := base + Vector3(0, HubBall.BASE_H + 0.03, 0) + side * 0.12 + fwd * 0.12
 	k.soft_blob(bow + side * 0.05, Vector3(0.06, 0.035, 0.035), gold, 4, 10)
 	k.soft_blob(bow - side * 0.05, Vector3(0.06, 0.035, 0.035), gold, 4, 10)
@@ -220,15 +220,15 @@ static func build_hoop(k: MeshKit) -> void:
 	var bh := HubBall.BOARD_HALF
 	k.chamfer_box(bc, bh * 2.0, Color("f4f6fb", 0.6), 0.012, yaw)
 	var face := bc + fwd * (bh.z + 0.002)
-	var fr := 0.022
+	var fr := 0.026
 	k.box(face + Vector3(0, bh.y - fr * 0.5, 0), Vector3(bh.x * 2.0, fr, 0.006), RED, yaw)
 	k.box(face - Vector3(0, bh.y - fr * 0.5, 0), Vector3(bh.x * 2.0, fr, 0.006), RED, yaw)
 	k.box(face + side * (bh.x - fr * 0.5), Vector3(fr, bh.y * 2.0, 0.006), RED, yaw)
 	k.box(face - side * (bh.x - fr * 0.5), Vector3(fr, bh.y * 2.0, 0.006), RED, yaw)
-	var sq := face + Vector3(0, HubBall.RIM_Y + 0.085 - HubBall.BOARD_Y, 0)
-	var sw := 0.13
-	var shh := 0.09
-	var st := 0.014
+	var sq := face + Vector3(0, HubBall.RIM_Y + 0.102 - HubBall.BOARD_Y, 0)
+	var sw := 0.156
+	var shh := 0.108
+	var st := 0.017
 	k.box(sq + Vector3(0, shh, 0), Vector3(sw * 2.0, st, 0.008), RED, yaw)
 	k.box(sq - Vector3(0, shh, 0), Vector3(sw * 2.0, st, 0.008), RED, yaw)
 	k.box(sq + side * sw, Vector3(st, shh * 2.0, 0.008), RED, yaw)
@@ -238,9 +238,9 @@ static func build_hoop(k: MeshKit) -> void:
 		var u := (float(i) / 8.0 - 0.5) * 2.0
 		k.soft_blob(bc + side * (u * (bh.x - 0.03)) + Vector3(0, bh.y + 0.008, 0), Vector3(0.055, 0.018 + 0.006 * float(i % 2), 0.028), Color("fbfdff", 0.6), 3, 8)
 	# the bracket behind the board and the rim's mount
-	k.box(base + fwd * 0.09 + Vector3(0, HubBall.RIM_Y + 0.05, 0), Vector3(0.04, 0.04, 0.17), Color("c9ccd4", 0.6), yaw)
+	k.box(base + fwd * 0.11 + Vector3(0, HubBall.RIM_Y + 0.06, 0), Vector3(0.048, 0.048, 0.2), Color("c9ccd4", 0.6), yaw)
 	var rc := HubBall.rim_center()
-	k.box(Vector3(rc.x, rc.y - 0.012, rc.z) - fwd * (HubBall.RIM_R + 0.03), Vector3(0.07, 0.02, 0.07), Color("e8552b", 0.6), yaw)
+	k.box(Vector3(rc.x, rc.y - 0.012, rc.z) - fwd * (HubBall.RIM_R + 0.03), Vector3(0.084, 0.024, 0.084), Color("e8552b", 0.6), yaw)
 	# --- the rim
 	var ring := PackedVector3Array()
 	for i in 49:
@@ -285,7 +285,7 @@ static func _net_mesh() -> ArrayMesh:
 			var th := TAU * (float(j) + 0.5 * float(l % 2)) / float(n)
 			row.append(Vector3(cos(th) * r, y, sin(th) * r))
 		pts.append(row)
-	var w := 0.0045
+	var w := 0.0054
 	var seg := func(a: Vector3, b: Vector3) -> void:
 		var d := b - a
 		var out := Vector3(a.x + b.x, 0, a.z + b.z).normalized()
@@ -414,7 +414,7 @@ func _held(v: CharacterView, key: String, phase: int, delta: float, want: Dictio
 	_last_at[key] = [at, sp]
 	var k := clampf(sp / HubRoom.WALK_SPEED, 0.0, 1.0)
 	# beside the right hand, a little ahead when walking; turns ease in
-	var off_want := right * 0.19 + fwd * (0.05 + 0.1 * k)
+	var off_want := right * 0.21 + fwd * (0.05 + 0.1 * k)
 	if _off == Vector3.INF:
 		_off = off_want
 	_off = _off.lerp(off_want, 1.0 - exp(-delta * 9.0))

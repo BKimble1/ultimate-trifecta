@@ -18,7 +18,7 @@ extends RefCounted
 ## Space: stage space (DormStage), y up, the floor at y = 0, x and z the
 ## same as HubRoom's floor plan.
 
-const R := 0.075                 # the ball (a mini ball: runners are ~1 m tall)
+const R := 0.09                  # the ball (a mini ball: runners are ~1 m tall; build 25: 0.075 -> 0.09)
 const G := 9.8
 const DT := 1.0 / 120.0          # fixed physics step
 const MAX_STEPS := 12            # per call (a long frame doesn't spiral)
@@ -39,23 +39,23 @@ const REACH := 0.8
 ## the highest a runner can pick the ball up from
 const REACH_Y := 1.15
 
-# --- the hoop (a freestanding mini hoop by the bookshelf, turned a little
+# --- the hoop (build 25: a fifth bigger) (a freestanding mini hoop by the bookshelf, turned a little
 # toward the room so it reads from the walk camera)
 const HOOP_BASE := Vector2(4.95, -0.6)
 const HOOP_DIR := Vector2(-0.94386, 0.33035)     # (-1, 0.35) normalised: the way it faces
-const RIM_Y := 1.6
-const RIM_R := 0.145
-const RIM_TUBE := 0.011
-const RIM_OUT := 0.40            # pole to the middle of the rim
-const BOARD_OUT := 0.2           # pole to the front of the board
-const BOARD_HALF := Vector3(0.32, 0.21, 0.015)   # half width, height, thickness
-const BOARD_Y := RIM_Y + 0.13
-const NET_DEPTH := 0.27
-const NET_BOTTOM_R := 0.095
-const POLE_R := 0.04
-const POLE_TOP := RIM_Y + 0.52
-const BASE_R := 0.28
-const BASE_H := 0.2
+const RIM_Y := 1.8
+const RIM_R := 0.174
+const RIM_TUBE := 0.013
+const RIM_OUT := 0.48            # pole to the middle of the rim
+const BOARD_OUT := 0.24           # pole to the front of the board
+const BOARD_HALF := Vector3(0.384, 0.252, 0.018)   # half width, height, thickness
+const BOARD_Y := RIM_Y + 0.156
+const NET_DEPTH := 0.32
+const NET_BOTTOM_R := 0.114
+const POLE_R := 0.048
+const POLE_TOP := RIM_Y + 0.62
+const BASE_R := 0.34
+const BASE_H := 0.24
 
 enum Kind { FLOOR, WALL, SOFT, WOOD, RIM, BOARD, POLE, PLAYER, NET }
 
@@ -75,6 +75,7 @@ var shooter := -1
 var _stuck_t := 0.0
 var _rescue_t := 0.0
 var _hops := 0
+var _touching := false
 var _acc := 0.0
 var _make_cool := 0.0
 var _sound_cool: Dictionary = {}
@@ -140,7 +141,8 @@ static func colliders() -> Array:
 	var fz := DormStage.FIRE_Z
 	box.call(Vector3(-6.0, 0.0, fz - 0.86), Vector3(-5.6, 1.32, fz + 0.86), 0.5, Kind.WALL)
 	box.call(Vector3(-5.92, 1.31, fz - 1.0), Vector3(-5.32, 1.43, fz + 1.0), 0.5, Kind.WOOD)
-	box.call(Vector3(-5.81, 0.0, fz - 1.0), Vector3(-5.19, 0.06, fz + 1.0), 0.5, Kind.WALL)
+	# (the hearth reaches the wall: no slit beside it for the ball to wedge in)
+	box.call(Vector3(-6.0, 0.0, fz - 1.0), Vector3(-5.19, 0.06, fz + 1.0), 0.5, Kind.WALL)
 	# the floor lamp: base, pole, shade
 	cyl.call(Vector2(3.9, -1.9), 0.0, 0.05, 0.25, 0.5, Kind.POLE)
 	cyl.call(Vector2(3.9, -1.9), 0.0, 1.55, 0.04, 0.55, Kind.POLE)
@@ -261,6 +263,7 @@ func _step(dt: float) -> void:
 	pos += vel * dt
 	on_floor = false
 	on_top = false
+	_touching = false
 	var top_out := Vector2.ZERO
 	# the floor
 	if pos.y < R:
@@ -307,6 +310,11 @@ func _step(dt: float) -> void:
 			sleeping = true
 	else:
 		spin *= 1.0 - 0.4 * dt
+	if not on_floor and not on_top and _touching and pos.y < R + 0.03 and vel.length() < SLEEP_SPEED * 0.6 and reachable(pos):
+		# (build 25) at rest against something, just off the floor (on a
+		# skirting edge, against a hearth corner) where it can be picked up
+		vel = Vector3.ZERO
+		sleeping = true
 	if on_top:
 		# off the top of whatever it landed on, over the nearest edge
 		vel.x += top_out.x * ROLL_OFF * dt
@@ -420,6 +428,7 @@ func _vs_ell(c: Vector3, rad: Vector3) -> Dictionary:
 ## Bounce off a surface: out of it, the speed into it reflected (e) and a
 ## little scrubbed along it.
 func _contact(n: Vector3, pen: float, e: float, kind: int) -> void:
+	_touching = true
 	pos += n * pen
 	var vn := vel.dot(n)
 	if vn >= 0.0:

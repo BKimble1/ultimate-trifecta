@@ -1043,6 +1043,13 @@ Protocol 16 unchanged: builds 20 to 25 play together.
   soft gather; through the net the ball is slowed and centred by gentle
   forces rather than nudged in steps; rounder rim, candy-cane pole and a
   finer net (16 strands, 5 rows).
+- **A bigger ball and hoop** (a fifth bigger): the ball 7.5 -> 9 cm radius;
+  the rim 14.5 -> 17.4 cm radius at 1.8 m (was 1.6 m), and the backboard,
+  net, candy-cane pole and present base to match (its walk-around obstacle
+  too).  The dribble's top is lowered so the bigger ball still meets the
+  hand.  The hearth now reaches the wall (no slit for the bigger ball to
+  wedge in), and a ball at rest against furniture just off the floor
+  settles there; 1,000 random throws all end on reachable floor.
 - Test `test_ball_view`: the drawn ball, frame by frame on the real stage,
   from pick-up through dribbling, walking and turning, the windup, the
   release, the flight and the net, never moves further in a frame than its

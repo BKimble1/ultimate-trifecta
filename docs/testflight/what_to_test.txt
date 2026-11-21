@@ -1,4 +1,4 @@
-2.2 (25): smoother basketball in the dorm. The game service still isn't connected, so challenge progress, purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Builds 20 to 25 play together. Tell us your iPhone or iPad model:
+2.2 (25): a bigger, smoother basketball and hoop in the dorm. The game service still isn't connected, so challenge progress, purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Builds 20 to 25 play together. Tell us your iPhone or iPad model:
 
 - On home, tap Walk, walk up to the basketball and tap Pick up: it should rise smoothly into your hand.
 - Walk and turn while dribbling: tell us if the ball ever jumps or stutters.
