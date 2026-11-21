@@ -69,6 +69,8 @@ var _t := 0.0
 var _lamp: OmniLight3D
 ## (build 20) the props that move (HubProps) and who is hiding in the plant
 var props: HubProps
+## (build 24) the basketball and the hoop's net
+var ball_view: HubBallView
 var hiding: Dictionary = {}
 ## (build 20) HubWalk: is this character busy on a prop (no emote then)?
 var busy_fn: Callable
@@ -931,6 +933,8 @@ func _build_room() -> void:
 	k.soft_blob(Vector3(-1.55, 0.12, -1.85), Vector3(0.36, 0.12, 0.36), Color("9a7bd8", FABRIC), 5, 14)
 	if HolidayDecor.ENABLED:
 		HolidayDecor.build_solid(k, wx)
+	# (build 24) the Christmas hoop by the bookshelf
+	HubBallView.build_hoop(k)
 	var mi := MeshInstance3D.new()
 	mi.mesh = k.commit()
 	var m := ShaderMaterial.new()
@@ -956,6 +960,12 @@ func _build_room() -> void:
 	# goes dim (the fire, the tree, the table lamp and the moon stay)
 	props.dim_with(key, "light_energy", 0.45)
 	props.dim_with(env, "ambient_light_energy", 0.7)
+	# (build 24) the basketball (HubWalk hands it the party's BallSync)
+	ball_view = HubBallView.new()
+	ball_view.stage = self
+	ball_view.reduced = reduced_motion
+	add_child(ball_view)
+	ball_view.build()
 
 
 

@@ -268,6 +268,32 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 				ci.draw_rect(Rect2(c + Vector2(sx * r * 0.78 - r * 0.24, -r * 0.08), Vector2(r * 0.48, r * 0.52)), col)
 				ci.draw_rect(Rect2(c + Vector2(sx * r * 0.7 - r * 0.07, r * 0.44), Vector2(r * 0.14, r * 0.24)), col.darkened(0.3))
 			return
+		"ball":
+			# (build 24) a basketball: the ball and its seams
+			_ball_icon(ci, c, r * 0.82, col)
+			return
+		"shoot":
+			# (build 24) a ball dropping into a hoop: rim, net, ball above
+			ci.draw_line(c + Vector2(-r * 0.75, r * 0.05), c + Vector2(r * 0.75, r * 0.05), col, r * 0.16, true)
+			for i in 4:
+				var x0 := lerpf(-r * 0.65, r * 0.65, float(i) / 3.0)
+				var x1 := lerpf(-r * 0.35, r * 0.35, float(3 - i) / 3.0)
+				ci.draw_line(c + Vector2(x0, r * 0.08), c + Vector2(x1, r * 0.82), col, r * 0.08, true)
+			ci.draw_line(c + Vector2(-r * 0.42, r * 0.5), c + Vector2(r * 0.42, r * 0.5), col, r * 0.07, true)
+			_ball_icon(ci, c + Vector2(r * 0.12, -r * 0.5), r * 0.36, col)
+			return
+		"pass":
+			# (build 24) a ball and an arrow off to the side
+			_ball_icon(ci, c + Vector2(-r * 0.42, 0), r * 0.44, col)
+			ci.draw_line(c + Vector2(r * 0.12, 0), c + Vector2(r * 0.86, 0), col, r * 0.16, true)
+			ci.draw_polyline(PackedVector2Array([c + Vector2(r * 0.55, -r * 0.3), c + Vector2(r * 0.88, 0), c + Vector2(r * 0.55, r * 0.3)]), col, r * 0.16, true)
+			return
+		"drop":
+			# (build 24) a ball falling to the floor
+			_ball_icon(ci, c + Vector2(0, -r * 0.42), r * 0.42, col)
+			ci.draw_line(c + Vector2(-r * 0.8, r * 0.78), c + Vector2(r * 0.8, r * 0.78), col, r * 0.14, true)
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.26, r * 0.22), c + Vector2(0, r * 0.52), c + Vector2(r * 0.26, r * 0.22)]), col, r * 0.13, true)
+			return
 		"bulb":
 			# (build 20) a light bulb with its screw cap
 			ci.draw_circle(c + Vector2(0, -r * 0.22), r * 0.58, col)
@@ -631,3 +657,14 @@ class IconRect:
 
 	func _draw() -> void:
 		Icons.draw_shape(self, kind, size * 0.5, minf(size.x, size.y) * 0.45, col, filled)
+
+
+## (build 24) A basketball in outline: the ball, its two straight seams and
+## the curved ones (any colour, on any button).
+static func _ball_icon(ci: CanvasItem, c: Vector2, r: float, col: Color) -> void:
+	var w := maxf(1.5, r * 0.16)
+	ci.draw_arc(c, r, 0.0, TAU, 32, col, w, true)
+	ci.draw_line(c + Vector2(0, -r), c + Vector2(0, r), col, w * 0.8, true)
+	ci.draw_line(c + Vector2(-r, 0), c + Vector2(r, 0), col, w * 0.8, true)
+	ci.draw_arc(c + Vector2(-r * 1.25, 0), r * 0.9, -0.85, 0.85, 14, col, w * 0.8, true)
+	ci.draw_arc(c + Vector2(r * 1.25, 0), r * 0.9, PI - 0.85, PI + 0.85, 14, col, w * 0.8, true)

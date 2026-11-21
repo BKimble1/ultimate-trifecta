@@ -26,6 +26,7 @@ const CIRCLES := [
 	[1.5, -2.4, 0.95],            # Season 1: the tree and its presents
 	[-5.3, 1.6, 0.42],            # plant
 	[4.0, 1.1, 0.72],             # beanbag
+	[HubBall.HOOP_BASE.x, HubBall.HOOP_BASE.y, 0.3],   # (build 24) the hoop's base
 ]
 
 

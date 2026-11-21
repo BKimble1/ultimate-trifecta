@@ -951,3 +951,75 @@ Protocol 16 unchanged: builds 20 to 23 play together.
 - Tests `test_season_premiere` (upgraded save, season rollover, interrupted
   setup, skip racing the natural end, hold-to-skip input, failure, music,
   setup steps, the reveal); `test_account` follows the new setup.
+
+## 40. Build 24: a basketball and a Christmas hoop in the dorm
+
+Protocol 16 unchanged: builds 20 to 24 play together (two new party-room
+messages, `BALL_REQ` 68 and `BALL_STATE` 69, in the social range; older
+builds ignore them and simply show no ball).
+- **The ball** (`HubBall`, `BallSync`, `HubBallView`): a mini basketball
+  (7.5 cm radius: the runners are about a metre tall) starts on a random
+  open spot of the dorm floor each time the party room opens (each login,
+  each return from a round), off everyone's marks and in the part of the
+  room home shows.  Walk up to it and the room button says **Pick up**.
+- **Dribbling**: the holder bounces it at their right hand as they walk,
+  faster as they walk faster, the right arm pumping it (a `TwoBoneIK3D` on
+  the arm, faded in and out) and a soft bounce on each beat.  Everyone in
+  the party sees it at the holder's hand.
+- **Shoot / Pass / Drop**: holding it, the button says **Shoot**; **Drop**
+  and, only in a party with other people, **Pass** sit above it.  Shooting
+  plants your feet and turns you to the hoop, lifts the ball up by your
+  right shoulder (0.3 s) and lets it go in a high arc; the walk camera leans
+  toward the hoop while you have the ball and while your shot is in the
+  air, so the hoop isn't under the buttons.  A pass goes to the party
+  member walking around nearest where you face (they catch it); with
+  nobody else walking it says your friends need to tap Walk.  Stopping
+  walking (Done, the couch, the plant, leaving) drops it.
+- **Makes and misses**: the host decides each shot's luck by distance
+  (88% close in, down to 20% from across the room; none from behind the
+  board): a make is aimed at the middle of the rim, a miss just off it
+  (the rim, short or long, or wide), and the physics plays it out, so a
+  miss can still rattle in and a make drops through the net.  A make:
+  the net swishes, confetti rains over the shooter and the hoop on every
+  device in the party, and the shooter sees "Swish!" or "Nice shot!"
+  (others see who scored).
+- **Physics** (`HubBall`, fixed 120 Hz step, the host's word): gravity,
+  a lively bounce on the planks (0.72) and a dead one on fabric, rolling
+  resistance, spin (rolling, backspin on shots), the back and left walls
+  and an invisible line a little past where runners can walk on the open
+  sides, every piece of furniture (the couch's seat, back and arms; the
+  side table's top on legs, so it can roll underneath; the bookshelf; the
+  fireplace, mantel and hearth; the floor lamp; the armchair; the tree as a
+  cone and its presents; the plant; the beanbag and the floor cushions),
+  the hoop (its base, the pole, the backboard, the rim as a ring and the
+  net, which slows and centres a made ball and stops one from below), and
+  runners walking into it knock it along.
+- **Never stuck**: a ball resting on top of anything is eased off its edge
+  toward open floor (out the front of the couch and the armchair); one that
+  stops where nobody could reach it hops toward open floor (low and flat
+  from under the table, higher off a seat, each try a little further
+  round); one still stuck after 5 s, or out of the room, is dropped back
+  onto open floor.  1,000 random throws from anywhere in any direction all
+  ended on reachable floor, none needing the last resort.
+- **The hoop** (furniture, `HubBallView.build_hoop`, in the room's mesh):
+  free-standing by the bookshelf, turned a little toward the room, rim at
+  1.6 m: a weighted base wrapped as a present (gold ribbon and bow), a
+  candy-cane pole with helical stripes that hooks over to hold the
+  backboard, a sprig of holly at the bend, a white board with a red frame
+  and square, snow along its top, a garland of tiny lights and a red bow,
+  an orange rim and a white net (its own mesh: it swings on a make and a
+  little on a rim hit).  The base is a walk-around obstacle.
+- **Sounds** (`tools/gen_ball_audio.py`, synthesised, its own seed):
+  floor bounce, rim clank, backboard knock, soft thud, net swish.
+- **Network**: guests send requests (pick up, drop, shoot, pass); the host
+  checks each (walking, within reach, it's yours, a party for a pass,
+  throttled) and sends the ball's state when it changes hands or is thrown
+  (reliably), 15 times a second while it moves or is held and once a
+  second at rest.  Guests run the same physics between states and ease
+  corrections; a basket counts only on the host's word.
+- Tests: `test_hub_ball` (bounces, every piece of furniture, 300 random
+  throws, makes and misses, chance by distance, runners knocking it, spawn
+  spots, the base as an obstacle), `test_ball_sync` (everyone sees it,
+  pick-up rules, make and confetti on the guest, a miss, the guest's
+  flight, pass only in a party to someone walking, a round start, bad
+  requests).  Evidence capture: `--capture=social_ball`.

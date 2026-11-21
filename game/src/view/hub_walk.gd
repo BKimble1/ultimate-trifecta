@@ -27,6 +27,12 @@ extends Node
 ## out.  Everyone sees it: the couch and the plant are pose modes (HubSync),
 ## one person at a time, and each device draws the same hop up, bounce and
 ## hop down from the pose.  The lamp is one switch for the whole party.
+##
+## (build 24) The basketball (BallSync): walk up to it and the button says
+## Pick up; holding it you dribble as you walk, the button says Shoot (the
+## runner turns to the hoop, winds up and lets it go) and Drop and, with
+## other people in the party, Pass sit above it.  You stand still for the
+## windup.  Holding the ball, the couch, the lamp and the plant wait.
 
 const RETURN_SPEED := 2.0
 ## (2.2 build 16) at most this long turning round on the mark
@@ -97,6 +103,21 @@ func _hook_hub() -> void:
 			stage.set_lamp(on))
 	if stage != null and is_instance_valid(stage):
 		stage.set_lamp(h.lamp_on, false)
+	# (build 24) the basketball
+	var b := session.social.ball
+	if stage != null and is_instance_valid(stage) and stage.ball_view != null:
+		stage.ball_view.ball = b
+	b.made.connect(_on_made)
+
+
+func _on_made(slot: int, swish: bool) -> void:
+	if session == null or not is_instance_valid(session) or not walking and slot != session.local_slot:
+		return
+	Haptics.tap()
+	if slot == session.local_slot:
+		notice.emit("Swish!" if swish else "Nice shot!")
+	elif slot >= 0 and session.roster[slot] != null:
+		notice.emit("%s scored!" % String(session.roster[slot]["name"]))
 
 
 func local_key() -> String:
@@ -203,6 +224,16 @@ func _process(delta: float) -> void:
 		_vel = Vector2.ZERO
 		session.social.hub.set_local(act, _pos, _yaw, 0.0)
 		stage.walk_focus = Vector3(_pos.x, 0.75 if act == HubSync.MODE_COUCH else 0.0, _pos.y)
+	elif walking and key != "" and _winding():
+		# (build 24) winding up a shot or a pass: plant your feet and turn to it
+		_vel = Vector2.ZERO
+		var aim := _wind_aim()
+		if aim.distance_to(_pos) > 0.05:
+			var ty := atan2(-(aim - _pos).x, -(aim - _pos).y)
+			_yaw = lerp_angle(_yaw, ty, 1.0 - exp(-delta * 18.0))
+		_draw(key, _pos, _yaw, Vector2.ZERO)
+		session.social.hub.set_local(HubSync.MODE_WALK, _pos, _yaw, 0.0)
+		stage.walk_focus = _focus(delta)
 	elif walking and key != "":
 		var inp := _movement_input()
 		if inp != Vector2.ZERO:
@@ -217,7 +248,7 @@ func _process(delta: float) -> void:
 			_yaw = atan2(-_vel.x, -_vel.y)
 		_draw(key, _pos, _yaw, _vel)
 		session.social.hub.set_local(HubSync.MODE_WALK, _pos, _yaw, _vel.length())
-		stage.walk_focus = Vector3(_pos.x, 0, _pos.y)
+		stage.walk_focus = _focus(delta)
 	# everyone else
 	var hub := session.social.hub
 	for i in 8:
@@ -324,6 +355,12 @@ func prompt() -> Dictionary:
 		return {"prop": HubRoom.PROP_PLANT, "text": "Jump out", "icon": "leaf", "enabled": true}
 	if _acts.has(key):
 		return {}   # hopping down
+	# (build 24) the basketball comes first
+	var ball := session.social.ball
+	if ball.local_has():
+		return {"prop": "ball", "text": "Shoot", "icon": "shoot", "enabled": ball.phase == BallSync.Phase.HELD}
+	if ball.can_pickup(_pos):
+		return {"prop": "ball_pick", "text": "Pick up", "icon": "ball", "enabled": true}
 	var hub := session.social.hub
 	match HubRoom.prop_near(_pos):
 		HubRoom.PROP_COUCH:
@@ -348,6 +385,10 @@ func interact() -> void:
 	var key := local_key()
 	var hub := session.social.hub
 	match String(p["prop"]):
+		"ball":
+			session.social.ball.request(BallSync.ACT_SHOOT)
+		"ball_pick":
+			session.social.ball.request(BallSync.ACT_PICKUP)
 		HubRoom.PROP_COUCH, HubRoom.PROP_PLANT:
 			var mode := HubSync.prop_mode(String(p["prop"]))
 			if act == mode:
@@ -368,6 +409,99 @@ func interact() -> void:
 				_draw(key, _pos, _yaw, Vector2.ZERO)
 			hub.request_lamp()
 	Haptics.tap()
+
+
+## (build 24) The smaller buttons beside Shoot while you hold the ball:
+## [{id, text, icon, enabled}] (Pass only with other people in the party).
+func ball_extras() -> Array:
+	if not walking or not in_party_room():
+		return []
+	var ball := session.social.ball
+	if not ball.local_has():
+		return []
+	var on := ball.phase == BallSync.Phase.HELD
+	var out: Array = []
+	if ball.party_has_others():
+		out.append({"id": "pass", "text": "Pass", "icon": "pass", "enabled": on})
+	out.append({"id": "drop", "text": "Drop", "icon": "drop", "enabled": on})
+	return out
+
+
+func ball_action(id: String) -> void:
+	if not walking or not input_open() or not in_party_room():
+		return
+	var ball := session.social.ball
+	if not ball.local_has() or ball.phase != BallSync.Phase.HELD:
+		return
+	match id:
+		"pass":
+			var to := _pass_slot()
+			if to < 0:
+				notice.emit("Your friends need to tap Walk to catch a pass")
+				return
+			ball.request(BallSync.ACT_PASS, to)
+		"drop":
+			ball.request(BallSync.ACT_DROP)
+	Haptics.tap()
+
+
+## The party member to pass to: the one walking around nearest where
+## you're facing (-1: nobody is walking around).
+func _pass_slot() -> int:
+	var hub := session.social.hub
+	var best := -1
+	var bs := -INF
+	var fwd := Vector2(-sin(_yaw), -cos(_yaw))
+	for i in 8:
+		var e: Variant = session.roster[i]
+		if i == session.local_slot or e == null or bool(e["is_bot"]) or hub.mode_of(i) != HubSync.MODE_WALK:
+			continue
+		var s := hub.sample(i)
+		if s.is_empty():
+			continue
+		var to: Vector2 = (s["pos"] as Vector2) - _pos
+		var score := fwd.dot(to.normalized()) * 2.0 - to.length() * 0.25
+		if score > bs:
+			bs = score
+			best = i
+	return best
+
+
+## (build 24) Where the walk camera looks: at you, leaning toward the hoop
+## while you have the ball and while your shot is in the air, so the hoop
+## and the flight are on screen (not under the buttons on the right).
+var _lean := 0.0
+
+
+func _focus(delta: float) -> Vector3:
+	var ball := session.social.ball
+	var want := 0.0
+	if ball.local_has() and (ball.phase == BallSync.Phase.HELD or ball.phase == BallSync.Phase.SHOT):
+		want = 1.0
+	elif ball.phase == BallSync.Phase.FREE and ball.sim.shooter == session.local_slot and ball.phase_t < 2.0 and not ball.sim.sleeping:
+		want = 1.0
+	_lean = move_toward(_lean, want, delta / 0.6)
+	var rc := HubBall.rim_center()
+	var to := Vector2(rc.x, rc.z) - _pos
+	var k := _lean * _lean * (3.0 - 2.0 * _lean) * clampf((to.length() - 0.8) / 2.0, 0.0, 1.0)
+	var f := _pos + to * 0.5 * k
+	return Vector3(f.x, 0.0, f.y)
+
+
+func _winding() -> bool:
+	var ball := session.social.ball
+	return ball.local_has() and (ball.phase == BallSync.Phase.SHOT or ball.phase == BallSync.Phase.PASS)
+
+
+func _wind_aim() -> Vector2:
+	var ball := session.social.ball
+	if ball.phase == BallSync.Phase.SHOT:
+		var rc := HubBall.rim_center()
+		return Vector2(rc.x, rc.z)
+	var s := session.social.hub.sample(ball.pass_to) if ball.pass_to >= 0 else {}
+	if not s.is_empty():
+		return s["pos"]
+	return _pos + Vector2(-sin(_yaw), -cos(_yaw))
 
 
 ## The host gave the couch / the plant to someone else first.

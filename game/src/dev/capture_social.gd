@@ -9,6 +9,10 @@ extends Node
 ##                   the chat drawer, a player card and the report sheet
 ##                   (the service is off in these runs: it says reports are
 ##                   unavailable and sends nothing)
+##   social_ball     (build 24) a LAN room, alone: the basketball on the
+##                   floor, Pick up, dribbling standing and walking, a shot's
+##                   windup and flight, a make (confetti), a miss off the
+##                   rim, a drop, and the ball rolling off the couch
 ##   social_bot      a headless client: walks a loop around its mark and
 ##                   sends a Quick Chat phrase now and then
 ##   social_names    the name sheet refusing a name, its suggestions, and a
@@ -49,6 +53,8 @@ func _process(delta: float) -> void:
 			_hub()
 		"social_props":
 			_props()
+		"social_ball":
+			_ball()
 		"social_bot":
 			_bot()
 		"social_names":
@@ -642,4 +648,100 @@ func _props() -> void:
 			_snap("props_menu_lamp_off")
 			_next(1.0)
 		25:
+			get_tree().quit()
+
+
+## (build 24) social_ball: see the header.
+var _shot_t := 0.0
+
+
+func _ball() -> void:
+	var s: NetSession = App.session
+	if s == null or _t < _at:
+		return
+	var l := _lobby()
+	if l == null or l.hub == null:
+		return
+	var b := s.social.ball
+	var rc := HubBall.rim_center()
+	var spot := Vector2(rc.x, rc.z) + HubBall.HOOP_DIR * 2.1
+	match _step:
+		0:
+			if s.human_count() >= 1 and b.spawned:
+				_next(4.0)
+		1:
+			_snap("ball_menu")
+			printerr("BALL spawned at %s" % b.sim.pos)
+			l._set_walk(true)
+			_next(2.0)
+		2:
+			_snap("ball_walk")
+			l.hub._pos = Vector2(b.sim.pos.x, b.sim.pos.z) + Vector2(-0.6, 0.15)
+			_next(2.5)
+		3:
+			_snap("ball_pickup_prompt")
+			printerr("BALL prompt %s" % l.hub.prompt())
+			l.act_btn.pressed.emit()
+			_next(0.6)
+		4, 5, 6:
+			_snap("ball_dribble_%d" % (_step - 3))
+			_next(0.13)
+		7:
+			l.hub.stick = Vector2(0.9, 0.35)
+			_next(0.8)
+		8, 9:
+			_snap("ball_dribble_walk_%d" % (_step - 7))
+			_next(0.25)
+		10:
+			l.hub.stick = Vector2.ZERO
+			l.hub._pos = spot
+			_next(2.5)
+		11:
+			var lv: CharacterView = App.stage.chars.get(l.hub.local_key())
+			printerr("BALL ready char=%s hub=%s view=%s sim=%s phase=%d" % [App.stage.to_local(lv.global_position) if lv else Vector3.INF, l.hub._pos, App.stage.ball_view.last_pos, b.sim.pos, b.phase])
+			_snap("ball_ready_to_shoot")
+			printerr("BALL holder=%d phase=%d prompt=%s extras=%s" % [b.holder, b.phase, l.hub.prompt(), l.hub.ball_extras()])
+			b.force_make = 1
+			l.act_btn.pressed.emit()
+			_shot_t = _t
+			_next(0.1)
+		12, 13, 14, 15, 16, 17, 18, 19:
+			var lv2: CharacterView = App.stage.chars.get(l.hub.local_key())
+			printerr("BALL shotview char=%s view=%s" % [App.stage.to_local(lv2.global_position) if lv2 else Vector3.INF, App.stage.ball_view.last_pos])
+			_snap("ball_shot_%d" % (_step - 11))
+			printerr("BALL shot t=%.2f phase=%d pos=%s" % [_t - _shot_t, b.phase, b.sim.pos])
+			_next([0.15, 0.2, 0.2, 0.2, 0.25, 0.35, 0.6, 0.6][_step - 12])
+		20:
+			printerr("BALL makes=%d bursts=%d" % [b.make_seq, App.stage.ball_view.confetti_bursts])
+			l.hub._pos = Vector2(b.sim.pos.x, b.sim.pos.z) + Vector2(-0.5, 0.2)
+			_next(2.5)
+		21:
+			l.act_btn.pressed.emit()
+			_next(0.6)
+		22:
+			l.hub._pos = spot + Vector2(0.3, 0.5)
+			_next(2.0)
+		23:
+			b.force_make = 0
+			l.act_btn.pressed.emit()
+			_shot_t = _t
+			_next(0.9)
+		24, 25, 26:
+			_snap("ball_miss_%d" % (_step - 23))
+			_next(0.3)
+		27:
+			# the ball dropped onto the couch rolls off it
+			l.hub._pos = Vector2(-3.0, -1.4)
+			b.sim.launch(Vector3(-3.4, 1.4, -2.6), Vector3(0.1, 0.0, -0.1))
+			b._dirty = true
+			_next(1.8)
+		28, 29, 30:
+			_snap("ball_off_couch_%d" % (_step - 27))
+			printerr("BALL couch pos=%s" % b.sim.pos)
+			_next(0.5)
+		31:
+			l._set_walk(false)
+			_next(2.5)
+		32:
+			_snap("ball_menu_after")
 			get_tree().quit()

@@ -298,6 +298,18 @@ func build() -> void:
 		if hub != null:
 			hub.interact())
 	add_child(act_btn)
+	# (build 24) holding the basketball: Pass (in a party) and Drop above Shoot
+	for bid in ["pass", "drop"]:
+		var bb := UIKit.icon_button(bid, "Pass" if bid == "pass" else "Drop", 72.0)
+		bb.custom_minimum_size = Vector2(153, 80)
+		bb.visible = false
+		bb.focus_mode = Control.FOCUS_NONE
+		bb.accessibility_name = "Pass the ball" if bid == "pass" else "Drop the ball"
+		bb.pressed.connect(func() -> void:
+			if hub != null:
+				hub.ball_action(bid))
+		add_child(bb)
+		_ball_btns[bid] = bb
 	if hub != null:
 		hub.notice.connect(func(text: String) -> void:
 			if is_visible_in_tree():
@@ -410,6 +422,7 @@ func _set_walk(on: bool) -> void:
 	if not on:
 		stick.release()
 		_show_act({})
+		_show_ball_extras([])
 	roster_col.visible = not on
 	series_row.visible = not on and session.series_active()
 	if is_instance_valid(season_pill):
@@ -459,6 +472,52 @@ func _process(_delta: float) -> void:
 	if hub == null or not is_instance_valid(act_btn):
 		return
 	_show_act(hub.prompt() if hub.walking and not has_modal() else {})
+	_show_ball_extras(hub.ball_extras() if hub.walking and not has_modal() else [])
+
+
+## (build 24) Pass / Drop while you hold the ball: a row above the room
+## button, ending at its right edge.
+var _ball_btns: Dictionary = {}
+var _ball_key := ""
+
+
+func _show_ball_extras(list: Array) -> void:
+	var key := ""
+	for e in list:
+		key += "%s%s|" % [e["id"], e["enabled"]]
+	if key != _ball_key:
+		_ball_key = key
+		var shown := {}
+		for e in list:
+			shown[String(e["id"])] = e
+		for id in _ball_btns:
+			var b: Button = _ball_btns[id]
+			b.visible = shown.has(id)
+			if shown.has(id):
+				b.disabled = not bool(shown[id]["enabled"])
+				var f := UIKit.face_of(b)
+				var bg := UIKit.TEAL if id == "pass" else Color(UIKit.SLATE, 0.92)
+				f.styles["normal"] = UIKit.card_box(bg, UIKit.R_BUTTON, 1.0, 16, 0.12)
+				f.styles["hover"] = UIKit.card_box(bg.lightened(0.08), UIKit.R_BUTTON, 1.0, 16, 0.12)
+				f.styles["pressed"] = UIKit.card_box(bg.darkened(0.12), UIKit.R_BUTTON, 0.0)
+				f.fg["normal"] = UIKit.NAVY if id == "pass" else UIKit.IVORY
+				f.queue_redraw()
+	if list.is_empty() or not act_btn.visible:
+		for id in _ball_btns:
+			(_ball_btns[id] as Button).visible = false
+		return
+	var right := act_btn.position.x + act_btn.size.x
+	var y := act_btn.position.y - 12.0
+	var x := right
+	for id in ["drop", "pass"]:
+		var b: Button = _ball_btns[id]
+		if not b.visible:
+			continue
+		var sz := b.get_combined_minimum_size()
+		b.size = sz
+		x -= sz.x
+		b.position = Vector2(x, y - sz.y)
+		x -= 12.0
 
 
 ## Show what the room offers here ({}: hide the button).

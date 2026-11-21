@@ -8,12 +8,15 @@ extends RefCounted
 var session: NetSession
 var chat: ChatChannel
 var hub: HubSync
+## (build 24) the party room's basketball
+var ball: BallSync
 
 
 func _init(s: NetSession) -> void:
 	session = s
 	chat = ChatChannel.new(s)
 	hub = HubSync.new(s)
+	ball = BallSync.new(s)
 
 
 func host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
@@ -24,6 +27,8 @@ func host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			hub.host_packet(peer, b)
 		SocialProto.HUB_ACT:
 			hub.host_act(peer, b)
+		SocialProto.BALL_REQ:
+			ball.host_packet(peer, b)
 
 
 ## From the bound host only (NetSession checks the sender).
@@ -35,6 +40,8 @@ func client_packet(type: int, b: StreamPeerBuffer) -> void:
 			hub.client_packet(b)
 		SocialProto.HUB_DENY:
 			hub.client_deny(b)
+		SocialProto.BALL_STATE:
+			ball.client_packet(b)
 
 
 ## Host: someone was seated (joined or reconnected).  Their recent party
@@ -49,6 +56,7 @@ var _history_due: Dictionary = {}
 
 func tick(delta: float) -> void:
 	hub.tick(delta)
+	ball.tick(delta)
 	if not _history_due.is_empty():
 		for peer in _history_due:
 			chat.host_send_history(int(peer), int(_history_due[peer]))

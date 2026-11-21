@@ -1,6 +1,6 @@
-2.2 (23): the Season 1 premiere. The game service still isn't connected, so challenge progress, purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Builds 20 to 23 play together. Tell us your iPhone or iPad model:
+2.2 (24): a basketball and a Christmas hoop in the dorm. The game service still isn't connected, so challenge progress, purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Builds 20 to 24 play together. Tell us your iPhone or iPad model:
 
-- Open the game: after the Idlery Games logo the Season 1 film plays once (also if you've played before). Hold "Hold to skip" (bottom right) to skip it.
-- New players: after the film, pick your runner's look, then your name, then "Enter the dorm".
-- Tell us if anything flashes between the logo and the film, or between the film and the game, and whether the sound is right.
-- Reopen the game: the film shouldn't play again.
+- On home, tap Walk. A small basketball is somewhere on the floor (somewhere different each time you open the game). Walk up to it and tap Pick up.
+- Walk around: you dribble as you go. Tap Shoot to shoot at the Christmas hoop by the bookshelf. Some go in, some don't; closer is easier. A basket rains confetti.
+- Tap Drop to let it go. Throw it at the couch, the chair or the tree: tell us if it ever gets stuck somewhere you can't reach.
+- In a party with a friend: both tap Walk, then Pass throws it to them. Pass only shows when you're in a party with someone.
