@@ -1103,3 +1103,22 @@ Protocol 16 unchanged: builds 20 to 27 play together.
 - The iOS workflow's `service_deploy` option runs the same deploy as
   `service.yml` (startable by hand: it is registered on the default branch);
   the deploy prints each deployment's `/v1/config` to the log.
+
+## 44. Build 28: submission screenshots, a full party fits
+
+Protocol 16 unchanged: builds 20 to 28 play together.
+- **A full party fits the lobby on every iPhone**: with seven or eight in
+  the party the roster takes three columns (three rows of full-size,
+  full-touch-size cards instead of four), the duplicate "Everyone's ready"
+  line goes (the roster header says "8 ready") and the header sits by the
+  party code.  With eight, Start and the bottom row used to be pushed off
+  the bottom of the screen (6.1" and 6.9" iPhones, and the iPhone SE).
+- **The Premium Pass offer shows original outfits only**: Night Owl Onesie,
+  Library Cardigan (tier 30, new in the centre) and Glow Jogger; Dr. Doom
+  (tier 100, based on a real person) is no longer its centrepiece.  The
+  pass's rewards are unchanged.
+- **Submission screenshots** (`docs/media/submission/`): the App Store sets
+  for iPhone 6.9" and iPad 13" and the nine in-app purchase review
+  screenshots with the App Store Connect prices (`tools/asc.py iap-list`
+  now also reads each product's prices, read only).  Rendered from this
+  build's screens by `tools/capture_store_screenshots.sh`.

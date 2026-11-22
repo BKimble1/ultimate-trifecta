@@ -1,7 +1,6 @@
-2.2 (27): the game service is connected. Sign in to Game Center first. Purchases in TestFlight use Apple's sandbox, so nothing is really charged. Builds 20 to 27 play together. Tell us your iPhone or iPad model:
+2.2 (28): a full party fits the lobby. Sign in to Game Center first. Purchases use Apple's sandbox in TestFlight, so nothing is really charged. Builds 20 to 28 play together. Tell us your iPhone or iPad model:
 
-- Open the game signed in to Game Center: your profile should load (your name with its #tag in Settings).
-- Play a round and check the daily challenges move and Season Pass XP goes up.
-- Buying: the in-app purchases have no prices in App Store Connect yet, so the Shop may say they're unavailable. Once prices are set, a sandbox purchase (it says [Sandbox]) should deliver the Coins or the skin.
-- Add a friend and check they show up in Friends.
-- Settings: Privacy and Support should open the website. Tell us anything that says "unavailable" or never finishes loading.
+- Make a party of 7 or 8 (friends or bots): the roster shows in three columns and Start is fully on screen.
+- Season Pass > Get Premium: the offer shows three outfits and "Get Premium" with its price.
+- Shop > Coins: six packs with their prices. Shop > Skins: Moonlight Runner and Starry Sleeper each show "Buy" with a price.
+- Tell us anything that says "unavailable" or never finishes loading.
