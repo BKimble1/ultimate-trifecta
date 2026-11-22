@@ -206,3 +206,38 @@ func test_spawn_spots_are_open_and_vary() -> void:
 func test_the_hoop_base_is_an_obstacle() -> void:
 	t.check(not HubRoom.is_free(HubBall.HOOP_BASE), "nobody stands in the hoop's base")
 	t.check(HubRoom.is_free(HubBall.HOOP_BASE + HubBall.HOOP_DIR * 0.9), "the shooting spot in front is open")
+
+
+## (build 30) A runner standing on their mark is never offered "Pick up":
+## over many rooms (RNG seeds) the ball never starts where the lobby's
+## pick-up check (BallSync.can_pickup: within HubBall.REACH of the runner)
+## would offer it from any mark, with room to spare for the bigger ball.
+func test_spawn_spots_are_out_of_reach_of_every_mark() -> void:
+	var near := 0
+	var worst := INF
+	for i in 2000:
+		var r := RandomNumberGenerator.new()
+		r.seed = i * 7919 + 13
+		var p := HubBall.spawn_spot(r)
+		var f := Vector2(p.x, p.z)
+		if i < 200:
+			t.check(HubRoom.is_free(f) and HubBall.reachable(p), "seed %d: spot %s is open floor" % [i, p])
+		for m in DormStage.MARKS:
+			var d := f.distance_to(Vector2((m as Vector3).x, (m as Vector3).z))
+			worst = minf(worst, d)
+			if d <= HubBall.REACH + HubBall.R + 0.2:
+				near += 1
+	t.eq(near, 0, "no spot within pick-up reach of a mark (closest %.2f m; reach %.2f m)" % [worst, HubBall.REACH])
+
+
+## (build 30) The ball is bigger (40 %) and the rim with it: inside, the rim
+## is twice the ball across (a real court's ratio, the ball 0.5 of it), and
+## the net's bottom still lets it through.
+func test_the_ball_and_the_hoop_are_bigger() -> void:
+	t.check(HubBall.R >= 0.09 * 1.35 and HubBall.R <= 0.09 * 1.5, "the ball is a good deal bigger (radius %.3f m, was 0.09)" % HubBall.R)
+	var inner := HubBall.RIM_R - HubBall.RIM_TUBE
+	t.near((2.0 * HubBall.R) / (2.0 * inner), 0.5, 0.03, "ball / rim inside: %.2f" % ((2.0 * HubBall.R) / (2.0 * inner)))
+	t.check(HubBall.NET_BOTTOM_R > HubBall.R * 1.2, "the net's bottom lets it through")
+	var back := HubBall.RIM_OUT - HubBall.RIM_R - HubBall.RIM_TUBE
+	t.check(back > HubBall.BOARD_OUT + 0.02, "the rim stands off the board (%.3f m behind it)" % (back - HubBall.BOARD_OUT))
+	t.check(HubBall.BOARD_HALF.x > HubBall.RIM_R * 2.0, "the board is wider than the rim")

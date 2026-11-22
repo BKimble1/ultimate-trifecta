@@ -123,6 +123,8 @@ var cosmetic: Dictionary = Cosmetics.DEFAULT
 var slot: int = -1
 var is_local := false
 var reduced_motion := false
+## (build 30) the fastest the drawn body turns (rad/s; INF: no limit)
+var max_turn := INF
 ## idle fidgets (yawn, look around) after standing still for a while
 var fidgets := true
 var rs: Dictionary = {}
@@ -1041,6 +1043,9 @@ func _update_yaw(delta: float) -> float:
 	elif absf(d) < 0.01:
 		_turn_sign = 0.0
 	var step := d * (1.0 - exp(-delta * 24.0))
+	# (build 30) a runner dribbling the basketball turns at most this fast
+	# (HubBallView sets it): the ball and the arms turn with the body
+	step = clampf(step, -max_turn * delta, max_turn * delta)
 	_vis_yaw = wrapf(_vis_yaw + step, -PI, PI)
 	rotation.y = _vis_yaw
 	return step

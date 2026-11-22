@@ -8,28 +8,33 @@ extends Node3D
 ## orange rim and a white net (its own mesh: it sways when a shot drops).
 ##
 ## The ball is drawn from BallSync: loose, where its physics has it (eased
-## after a guest's correction, rolling and spinning as it moves); held, at
-## the holder's right hand, dribbled at the pace they walk with their arm
-## pumping it (a two-bone IK on the arm); winding up, lifted over the head
-## for a shot (both hands) or to the chest for a pass.  A shadow under it
-## grounds it.  A made shot drops confetti over the shooter and the hoop.
+## after a guest's correction, rolling and spinning as it moves); held, in
+## the holder's hands (below); winding up, the shooting form or the chest
+## pass.  A shadow under it grounds it.  A made shot drops confetti over the
+## shooter and the hoop.
 
-## (build 25) the ball meets the hand with the elbow bent (its top at
-## ~0.61 m), so the arm visibly pushes it down and rides it back up
-const DRIBBLE_TOP := 0.52        # ball centre at the hand (a ~1 m runner)
-const HAND_LOW := 0.535          # the lowest the hand reaches (arm straight)
-const HAND_HIGH := 0.64
-const DRIBBLE_SLOW_S := 0.46     # a bounce standing still
-const DRIBBLE_FAST_S := 0.34     # and at full walking speed
-## (build 25) the shooting form, relative to the shooter (right, up, back):
-## the gather at the chest, then the set point up over the right eye (where
-## the ball is released; BallSync.shot_start), then the follow-through
-const SHOT_POCKET := Vector3(0.07, 0.64, -0.17)
-const SHOT_HOLD := Vector3(0.13, 1.1, -0.06)
-const FOLLOW_S := 0.45
-const PASS_HOLD := Vector3(0.0, 0.56, 0.2)      # at the chest (right, up, forward)
-const IK_IN_S := 0.12
-const IK_OUT_S := 0.28
+## (build 30) The ball is 40 % bigger and the hoop half again with it; the body
+## handles it: BallMoves lays out the dribble (the palm on the ball, the
+## elbow and wrist working, knees bent), the moves that hand it from hand to
+## hand as the holder turns (a crossover, between the legs, behind the
+## back), the shooting form (gather, dip, rise, set, release, the
+## follow-through held) and the pass; BallRig (a skeleton modifier on the
+## holder) poses both arms, the legs and the upper body for it.  Nothing
+## new goes over the network: every device lays the moves out from the
+## holder's drawn heading and speed.
+
+## the shot leaves from here, relative to the shooter (right, up, back):
+## in front of the chin, up and forward of the set point, at the top of a
+## little jump (BallSync.shot_start)
+const SHOT_HOLD := BallMoves.REL + Vector3(0, BallMoves.REL_RISE, 0)
+const FOLLOW_S := 0.62
+const IK_IN_S := 0.14
+const IK_OUT_S := 0.3
+## a runner with the ball turns at most this fast (rad/s): the ball turns
+## with them without being flung round
+const BALL_TURN := 9.0
+## and during a dribble move
+const MOVE_TURN := 2.5
 
 var stage: DormStage
 var ball: BallSync
@@ -44,23 +49,27 @@ var _drawn := Vector3.ZERO
 var _have_drawn := false
 var _handoff := Vector3.ZERO
 var _phase_was := -1
-var _dribble := 0.0
-var _wind_from := Vector3.ZERO
+var _holder_was := ""
+var _wind_from := Vector3.INF     # holder space
+var _wind_side := 1
 var _last_at: Dictionary = {}     # key -> [position, speed]
-var _iks: Dictionary = {}         # key -> {r, l, tr, tl, pr, pl, wr, wl}
 var _hooked: BallSync
-## (build 25) smoothing: the dribble's offset from the runner (turns ease),
-## its pace, and each IK target
-var _off := Vector3.INF
-var _pace := 0.0
-var _ik_at: Dictionary = {}       # "key|side" -> Vector3 (stage space)
+## (build 30) the holder's choreography, the ball's frame, each runner's
+## rig and its arms' outputs (holder space, blended between pose families)
+var moves := BallMoves.new()
+var _rigs: Dictionary = {}        # key -> BallRig
+var _arm_out: Dictionary = {}     # key -> [left, right] {key, w, wrist, basis (Quaternion), elbow, shrug, reach, from, bt}
+var _rig_w: Dictionary = {}       # key -> overall weight
 ## a change of hands: the gap at the moment it happened, closed over HANDOFF_S
 ## on an eased curve (gentle at both ends)
 var _handoff_t := 9.0
 const HANDOFF_S := 0.36
-## (tests / captures) the last drawn ball, stage space, and the confetti count
+## (tests / captures) the last drawn ball (stage space), the confetti count,
+## the holder's pose this frame and whose it is
 var last_pos := Vector3.ZERO
 var confetti_bursts := 0
+var pose: Dictionary = {}
+var pose_key := ""
 
 
 static func _mat() -> ShaderMaterial:
@@ -71,13 +80,16 @@ static func _mat() -> ShaderMaterial:
 
 func build() -> void:
 	name = "HubBall"
+	# (build 30) after the runners have moved and turned this frame
+	# (CharacterView._process): the hands are placed for the body as drawn
+	process_priority = 100
 	_ball = MeshInstance3D.new()
 	_ball.name = "Ball"
 	var sm := SphereMesh.new()
 	sm.radius = HubBall.R
 	sm.height = HubBall.R * 2.0
-	sm.radial_segments = 24
-	sm.rings = 12
+	sm.radial_segments = 32
+	sm.rings = 16
 	_ball.mesh = sm
 	var bm := ShaderMaterial.new()
 	bm.shader = preload("res://assets/shaders/ball.gdshader")
@@ -88,7 +100,7 @@ func build() -> void:
 	_shadow = MeshInstance3D.new()
 	_shadow.name = "BallShadow"
 	var pm := PlaneMesh.new()
-	pm.size = Vector2(0.26, 0.26)
+	pm.size = Vector2(0.36, 0.36)
 	_shadow.mesh = pm
 	var sh := ShaderMaterial.new()
 	sh.shader = _shadow_shader()
@@ -229,53 +241,54 @@ static func build_hoop(k: MeshKit) -> void:
 	var bh := HubBall.BOARD_HALF
 	k.chamfer_box(bc, bh * 2.0, Color("f4f6fb", 0.6), 0.012, yaw)
 	var face := bc + fwd * (bh.z + 0.002)
-	var fr := 0.026
+	var fr := 0.034
 	k.box(face + Vector3(0, bh.y - fr * 0.5, 0), Vector3(bh.x * 2.0, fr, 0.006), RED, yaw)
 	k.box(face - Vector3(0, bh.y - fr * 0.5, 0), Vector3(bh.x * 2.0, fr, 0.006), RED, yaw)
 	k.box(face + side * (bh.x - fr * 0.5), Vector3(fr, bh.y * 2.0, 0.006), RED, yaw)
 	k.box(face - side * (bh.x - fr * 0.5), Vector3(fr, bh.y * 2.0, 0.006), RED, yaw)
-	var sq := face + Vector3(0, HubBall.RIM_Y + 0.102 - HubBall.BOARD_Y, 0)
-	var sw := 0.156
-	var shh := 0.108
-	var st := 0.017
+	# (build 30) the shooter's square, half again bigger with the rim
+	var sq := face + Vector3(0, HubBall.RIM_Y + 0.153 - HubBall.BOARD_Y, 0)
+	var sw := 0.234
+	var shh := 0.162
+	var st := 0.024
 	k.box(sq + Vector3(0, shh, 0), Vector3(sw * 2.0, st, 0.008), RED, yaw)
 	k.box(sq - Vector3(0, shh, 0), Vector3(sw * 2.0, st, 0.008), RED, yaw)
 	k.box(sq + side * sw, Vector3(st, shh * 2.0, 0.008), RED, yaw)
 	k.box(sq - side * sw, Vector3(st, shh * 2.0, 0.008), RED, yaw)
 	# snow along the top
-	for i in 9:
-		var u := (float(i) / 8.0 - 0.5) * 2.0
-		k.soft_blob(bc + side * (u * (bh.x - 0.03)) + Vector3(0, bh.y + 0.008, 0), Vector3(0.055, 0.018 + 0.006 * float(i % 2), 0.028), Color("fbfdff", 0.6), 3, 8)
+	for i in 13:
+		var u := (float(i) / 12.0 - 0.5) * 2.0
+		k.soft_blob(bc + side * (u * (bh.x - 0.04)) + Vector3(0, bh.y + 0.01, 0), Vector3(0.065, 0.022 + 0.007 * float(i % 2), 0.034), Color("fbfdff", 0.6), 3, 8)
 	# the bracket behind the board and the rim's mount
 	k.box(base + fwd * 0.11 + Vector3(0, HubBall.RIM_Y + 0.06, 0), Vector3(0.048, 0.048, 0.2), Color("c9ccd4", 0.6), yaw)
 	var rc := HubBall.rim_center()
-	k.box(Vector3(rc.x, rc.y - 0.012, rc.z) - fwd * (HubBall.RIM_R + 0.03), Vector3(0.084, 0.024, 0.084), Color("e8552b", 0.6), yaw)
+	k.box(Vector3(rc.x, rc.y - 0.014, rc.z) - fwd * (HubBall.RIM_R + 0.035), Vector3(0.12, 0.03, 0.09), Color("e8552b", 0.6), yaw)
 	# --- the rim
 	var ring := PackedVector3Array()
-	for i in 49:
-		var th := TAU * float(i) / 48.0
+	for i in 65:
+		var th := TAU * float(i) / 64.0
 		ring.append(rc + Vector3(cos(th), 0, sin(th)) * HubBall.RIM_R)
 	_tube(k, ring, HubBall.RIM_TUBE, 12, func(_s: float, _t: float) -> Color: return Color("e8552b", 0.6))
 	# --- a garland of tiny lights over the frame and down both sides
 	var gl := PackedVector3Array()
 	var gcorner := bc + fwd * (bh.z + 0.012)
-	for i in 21:
-		var u2 := float(i) / 20.0
+	for i in 29:
+		var u2 := float(i) / 28.0
 		var sx := lerpf(-bh.x, bh.x, u2)
-		gl.append(gcorner + side * sx + Vector3(0, bh.y - 0.01 - 0.035 * sin(PI * fposmod(u2 * 3.0, 1.0)), 0))
+		gl.append(gcorner + side * sx + Vector3(0, bh.y - 0.012 - 0.05 * sin(PI * fposmod(u2 * 3.0, 1.0)), 0))
 	var green := Color("2e7d4f", fabric)
 	for i in gl.size():
-		k.soft_blob(gl[i], Vector3(0.022, 0.02, 0.016), green.darkened(0.08 * float(i % 2)), 3, 7)
+		k.soft_blob(gl[i], Vector3(0.026, 0.024, 0.019), green.darkened(0.08 * float(i % 2)), 3, 7)
 		if i % 2 == 0:
 			var bulb: Color = HolidayDecor.BULB_COLS[(i / 2) % HolidayDecor.BULB_COLS.size()]
-			k.blob(gl[i] + fwd * 0.016 - Vector3(0, 0.012, 0), Vector3(0.009, 0.012, 0.009), bulb, 2, 6, 2.6)
+			k.blob(gl[i] + fwd * 0.019 - Vector3(0, 0.014, 0), Vector3(0.011, 0.014, 0.011), bulb, 2, 6, 2.6)
 	# a red bow on the top corner
-	var bw := gcorner + side * (bh.x - 0.02) + Vector3(0, bh.y + 0.005, 0)
-	k.soft_blob(bw + side * 0.035 + Vector3(0, 0.015, 0), Vector3(0.04, 0.026, 0.014), RED, 4, 8)
-	k.soft_blob(bw - side * 0.035 + Vector3(0, 0.015, 0), Vector3(0.04, 0.026, 0.014), RED, 4, 8)
-	k.soft_blob(bw + Vector3(0, 0.012, 0), Vector3(0.016, 0.016, 0.014), Color("b1202f", 0.6), 3, 7)
-	k.box(bw + side * 0.02 - Vector3(0, 0.035, 0), Vector3(0.012, 0.07, 0.005), RED, yaw)
-	k.box(bw - side * 0.02 - Vector3(0, 0.04, 0), Vector3(0.012, 0.08, 0.005), RED, yaw)
+	var bw := gcorner + side * (bh.x - 0.03) + Vector3(0, bh.y + 0.006, 0)
+	k.soft_blob(bw + side * 0.046 + Vector3(0, 0.02, 0), Vector3(0.052, 0.034, 0.018), RED, 4, 8)
+	k.soft_blob(bw - side * 0.046 + Vector3(0, 0.02, 0), Vector3(0.052, 0.034, 0.018), RED, 4, 8)
+	k.soft_blob(bw + Vector3(0, 0.016, 0), Vector3(0.021, 0.021, 0.018), Color("b1202f", 0.6), 3, 7)
+	k.box(bw + side * 0.026 - Vector3(0, 0.046, 0), Vector3(0.016, 0.09, 0.006), RED, yaw)
+	k.box(bw - side * 0.026 - Vector3(0, 0.052, 0), Vector3(0.016, 0.104, 0.006), RED, yaw)
 
 
 ## The net (rim-centred): a diamond mesh of strings narrowing to the bottom.
@@ -294,7 +307,7 @@ static func _net_mesh() -> ArrayMesh:
 			var th := TAU * (float(j) + 0.5 * float(l % 2)) / float(n)
 			row.append(Vector3(cos(th) * r, y, sin(th) * r))
 		pts.append(row)
-	var w := 0.0054
+	var w := 0.0068
 	var seg := func(a: Vector3, b: Vector3) -> void:
 		var d := b - a
 		var out := Vector3(a.x + b.x, 0, a.z + b.z).normalized()
@@ -351,7 +364,9 @@ func _process(delta: float) -> void:
 		_shadow.visible = false
 		_have_drawn = false
 		_phase_was = -1
-		_relax_all(delta, {})
+		pose = {}
+		pose_key = ""
+		_pose_rigs(delta, {})
 		return
 	var key := _key_of(ball.holder)
 	var v: CharacterView = stage.chars.get(key) if key != "" else null
@@ -362,14 +377,20 @@ func _process(delta: float) -> void:
 	var phase := ball.phase
 	var free := phase == BallSync.Phase.FREE or v == null
 	var was_free := _phase_was == BallSync.Phase.FREE or _phase_was < 0
-	if phase != _phase_was and phase != BallSync.Phase.FREE and v != null:
-		_wind_from = _drawn if _have_drawn else Vector3.INF
-		if was_free:
-			# (build 25) picked up off the floor: the dribble starts at the
-			# bottom of a bounce (where the ball is) and rises into the hand;
-			# caught in the air: it starts at the hand
-			_dribble = 0.5 if (_have_drawn and _drawn.y < 0.25) else 0.0
-			_off = Vector3.INF
+	if not free and (key != _holder_was or was_free):
+		# (build 25) picked up off the floor: the dribble starts at the
+		# bottom of a bounce (where the ball is) and rises into the hand;
+		# caught in the air: it starts at the hand
+		moves.reset(_have_drawn and _drawn.y < 0.3)
+		moves.side = 1
+	if phase != _phase_was and not free:
+		_wind_from = _to_holder(v, _drawn) if _have_drawn else Vector3.INF
+		_wind_side = moves.side
+		if phase != BallSync.Phase.HELD:
+			moves.cancel()
+	_holder_was = "" if free else key
+	pose = {}
+	pose_key = ""
 	if free:
 		p = ball.sim.pos + ball.err
 		var w := ball.sim.spin
@@ -397,12 +418,12 @@ func _process(delta: float) -> void:
 	_shadow.scale = Vector3.ONE * (1.0 + h * 0.5)
 	(_shadow.material_override as ShaderMaterial).set_shader_parameter("alpha", 0.5 * (1.0 - clampf(h / 2.0, 0.0, 1.0)))
 	_follow_through(want)
-	_relax_all(delta, want)
+	_pose_rigs(delta, want)
 
 
-## (build 25) Just after a shot leaves the hand: the shooting arm reaches up
-## and out the way it went (the wrist "in the cookie jar"), the guide hand
-## stays up a moment, then both relax.
+## (build 30) Just after a shot leaves the hand: the shooting arm stays up
+## and out, the wrist flicked toward the rim, the guide hand up, the jump
+## lands; then both relax.
 func _follow_through(want: Dictionary) -> void:
 	if ball.phase != BallSync.Phase.FREE or not ball.released_shot or ball.phase_t > FOLLOW_S:
 		return
@@ -412,17 +433,11 @@ func _follow_through(want: Dictionary) -> void:
 	var v: CharacterView = stage.chars.get(key)
 	if v == null or not is_instance_valid(v) or not v.visible:
 		return
-	var at := stage.to_local(v.global_position)
-	var yaw := v.rotation.y
-	var fwd := Vector3(-sin(yaw), 0.0, -cos(yaw))
-	var right := Vector3(cos(yaw), 0.0, -sin(yaw))
-	var shoulder_r := at + right * 0.17 + Vector3(0, 0.84, 0)
-	var shoulder_l := at - right * 0.17 + Vector3(0, 0.84, 0)
-	# (out to the side of the big head, so it reads from behind too)
-	want[key] = {"r": at + right * 0.2 + fwd * 0.2 + Vector3(0, 1.16, 0),
-		"pr": shoulder_r + fwd * 0.2 + right * 0.2 + Vector3(0, -0.1, 0),
-		"l": at - right * 0.06 + fwd * 0.15 + Vector3(0, 1.0, 0),
-		"pl": shoulder_l - right * 0.35 + Vector3(0, -0.2, 0)}
+	var f := BallMoves.follow(ball.phase_t)
+	if ball.phase_t > FOLLOW_S - 0.2:
+		for a in f["arms"]:
+			(a as Dictionary)["key"] = "relax"
+	want[key] = f
 
 
 func _handoff_now() -> Vector3:
@@ -432,161 +447,163 @@ func _handoff_now() -> Vector3:
 	return _handoff * (1.0 - u * u * u * (u * (u * 6.0 - 15.0) + 10.0))
 
 
-## Where the ball is in a holder's hands this frame (and what their arms do).
-## (build 25) A smooth dribble: the ball eases into and out of the hand at
-## the top (no snap) and bounces crisply off the floor; its pace and its
-## place beside the runner follow their walking and turning gradually.
+## The holder's frame (stage space): where they stand, the way they face.
+func _frame(v: CharacterView) -> Transform3D:
+	return Transform3D(Basis(Vector3.UP, v.rotation.y), stage.to_local(v.global_position) * Vector3(1, 0, 1))
+
+
+func _to_holder(v: CharacterView, at: Vector3) -> Vector3:
+	return _frame(v).affine_inverse() * at
+
+
+## Where the ball is in a holder's hands this frame (stage space); the
+## holder's pose goes into `want`.
 func _held(v: CharacterView, key: String, phase: int, delta: float, want: Dictionary) -> Vector3:
 	var at := stage.to_local(v.global_position)
-	var yaw := v.rotation.y
-	var fwd := Vector3(-sin(yaw), 0.0, -cos(yaw))
-	var right := Vector3(cos(yaw), 0.0, -sin(yaw))
 	var prev: Array = _last_at.get(key, [at, 0.0])
 	var sp := (Vector2(at.x, at.z) - Vector2((prev[0] as Vector3).x, (prev[0] as Vector3).z)).length() / maxf(delta, 0.001)
 	if sp > HubRoom.WALK_SPEED * 2.5:
 		sp = float(prev[1])   # a jump (a correction): not a sprint
-	sp = lerpf(float(prev[1]), minf(sp, HubRoom.WALK_SPEED * 1.2), 1.0 - exp(-delta * 3.0))
+	var raw := minf(sp, HubRoom.WALK_SPEED * 1.2)
+	sp = lerpf(float(prev[1]), raw, 1.0 - exp(-delta * 5.0))
 	_last_at[key] = [at, sp]
 	var k := clampf(sp / HubRoom.WALK_SPEED, 0.0, 1.0)
-	# beside the right hand, a little ahead when walking; turns ease in
-	var off_want := right * 0.21 + fwd * (0.05 + 0.1 * k)
-	if _off == Vector3.INF:
-		_off = off_want
-	_off = _off.lerp(off_want, 1.0 - exp(-delta * 9.0))
-	var dribble_at := at + _off
-	# the pace eases too (no hiccup when you start or stop walking)
-	var pace_want := 1.0 / lerpf(DRIBBLE_SLOW_S, DRIBBLE_FAST_S, k)
-	_pace = pace_want if _pace <= 0.0 else lerpf(_pace, pace_want, 1.0 - exp(-delta * 4.0))
-	var u_was := _dribble
-	_dribble = fmod(_dribble + delta * _pace, 1.0)
-	var u := _dribble
-	# |cos|: level and slow at the hand, quick off the floor
-	var y := HubBall.R + (DRIBBLE_TOP - HubBall.R) * absf(cos(PI * u))
-	var p := dribble_at + Vector3(0, y, 0)
-	var shoulder_r := at + right * 0.17 + Vector3(0, 0.84, 0)
+	# (a dribbler turns at most BALL_TURN: the ball and the arms with them)
+	# (and slower in a dribble move: it commits them)
+	v.max_turn = MOVE_TURN if moves.move != "" else BALL_TURN
+	var yaw := v.rotation.y
+	var ps: Dictionary
 	match phase:
 		BallSync.Phase.HELD:
-			if u_was < 0.5 and u >= 0.5:
-				_play("ball_bounce", dribble_at + Vector3(0, HubBall.R, 0), -14.0 + 4.0 * k, randf_range(0.96, 1.04))
-			# (build 25) the arm works the ball: the palm on top of it as it
-			# comes up (elbow bent), pushing it down until the arm is
-			# straight, then waiting low for it and riding it back up
-			var hand := p + Vector3(0, HubBall.R + 0.01, 0) + right * 0.012
-			hand.y = clampf(hand.y, HAND_LOW, HAND_HIGH)
-			want[key] = {"r": hand, "pr": shoulder_r + right * 0.32 - fwd * 0.28 + Vector3(0, -0.12, 0)}
-			_rot = Basis(right, -delta * 8.0) * _rot
+			var kind := moves.detect(delta, yaw, raw)
+			ps = moves.dribble(delta, k, kind)
+			if moves.bounced:
+				var fr := _frame(v)
+				var spot := fr * Vector3((ps["ball"] as Vector3).x, HubBall.R, (ps["ball"] as Vector3).z)
+				_play("ball_bounce", spot, -14.0 + 4.0 * k, randf_range(0.96, 1.04))
+			_rot = Basis(_frame(v).basis.x, -delta * 8.0) * _rot
 		BallSync.Phase.SHOT:
-			# (build 25) the form: both hands bring the ball to the chest,
-			# then up to the set point over the right eye, the shooting hand
-			# under and behind it, the elbow in under the ball, the guide
-			# hand on its side
 			var t := clampf(ball.phase_t / BallSync.WINDUP_SHOT, 0.0, 1.0)
-			var pocket := at + right * SHOT_POCKET.x + Vector3(0, SHOT_POCKET.y, 0) - fwd * SHOT_POCKET.z
-			var hold := at + right * SHOT_HOLD.x + Vector3(0, SHOT_HOLD.y, 0) - fwd * SHOT_HOLD.z
-			var from := _wind_from if _wind_from != Vector3.INF else p
-			if t < 0.4:
-				var u1 := t / 0.4
-				p = from.lerp(pocket, u1 * u1 * u1 * (u1 * (u1 * 6.0 - 15.0) + 10.0))
-			else:
-				var u2 := (t - 0.4) / 0.6
-				p = pocket.lerp(hold, u2 * u2 * (3.0 - 2.0 * u2))
-			var shoulder_l := at - right * 0.17 + Vector3(0, 0.84, 0)
-			want[key] = {"r": p - fwd * (HubBall.R * 0.75) - Vector3(0, HubBall.R * 0.55, 0) + right * 0.015,
-				"l": p - right * (HubBall.R + 0.012) + fwd * 0.01,
-				"pr": shoulder_r + fwd * 0.3 + Vector3(0, -0.35, 0) + right * 0.05,
-				"pl": shoulder_l - right * 0.35 + fwd * 0.1 + Vector3(0, -0.2, 0)}
-		BallSync.Phase.PASS:
+			ps = BallMoves.shot(t, _wind_from if _wind_from != Vector3.INF else BallMoves.POCKET, _wind_side)
+		_:
 			var t2 := clampf(ball.phase_t / BallSync.WINDUP_PASS, 0.0, 1.0)
-			var e2 := t2 * t2 * t2 * (t2 * (t2 * 6.0 - 15.0) + 10.0)
-			var hold2 := at + right * PASS_HOLD.x + Vector3(0, PASS_HOLD.y, 0) + fwd * PASS_HOLD.z
-			var from2 := _wind_from if _wind_from != Vector3.INF else p
-			p = from2.lerp(hold2, e2)
-			want[key] = {"r": p + right * (HubBall.R + 0.012), "l": p - right * (HubBall.R + 0.012),
-				"pr": shoulder_r + right * 0.35 + Vector3(0, -0.35, 0) + fwd * 0.05,
-				"pl": shoulder_r - right * 0.69 + Vector3(0, -0.35, 0) + fwd * 0.05}
-	return p
+			ps = BallMoves.pass_pose(t2, _wind_from if _wind_from != Vector3.INF else BallMoves.PASS_AT)
+	want[key] = ps
+	pose = ps
+	pose_key = key
+	return _frame(v) * (ps["ball"] as Vector3)
 
 
 # ---------------------------------------------------------------------------
-# Arms (a two-bone IK per arm, added to a runner's skeleton the first time
-# they hold the ball, faded in and out)
+# The body (BallRig: added to a runner's skeleton the first time they hold
+# the ball, faded in and out)
 # ---------------------------------------------------------------------------
-func _ik_for(v: CharacterView, key: String) -> Dictionary:
-	var e: Dictionary = _iks.get(key, {})
+func _rig_for(v: CharacterView, key: String) -> BallRig:
+	var rig: BallRig = _rigs.get(key)
 	var sk := v.skeleton
-	if not e.is_empty() and is_instance_valid(e["r"]) and (e["r"] as Node).get_parent() == sk:
-		return e
-	if not e.is_empty():
-		_free_ik(e)
+	if rig != null and is_instance_valid(rig) and rig.get_parent() == sk:
+		return rig
+	if rig != null and is_instance_valid(rig):
+		rig.queue_free()
 	if sk == null:
-		return {}
-	e = {"wr": 0.0, "wl": 0.0}
-	for side in ["r", "l"]:
-		var sfx := "R" if side == "r" else "L"
-		var tgt := Node3D.new()
-		tgt.name = "BallHand" + sfx
-		add_child(tgt)
-		var pole := Node3D.new()
-		pole.name = "BallElbow" + sfx
-		add_child(pole)
-		var ik := TwoBoneIK3D.new()
-		ik.name = "BallArm" + sfx
-		ik.set_setting_count(1)
-		ik.set_root_bone_name(0, "upper_arm." + sfx)
-		ik.set_middle_bone_name(0, "forearm." + sfx)
-		ik.set_end_bone_name(0, "hand." + sfx)
-		ik.influence = 0.0
-		ik.active = false
-		sk.add_child(ik)
-		ik.set_target_node(0, ik.get_path_to(tgt))
-		ik.set_pole_node(0, ik.get_path_to(pole))
-		e[side] = ik
-		e["t" + side] = tgt
-		e["p" + side] = pole
-	_iks[key] = e
-	return e
+		return null
+	rig = BallRig.new()
+	rig.name = "BallRig"
+	sk.add_child(rig)
+	_rigs[key] = rig
+	_arm_out.erase(key)
+	return rig
 
 
-func _free_ik(e: Dictionary) -> void:
-	for n in ["r", "l", "tr", "tl", "pr", "pl"]:
-		var o: Variant = e.get(n)
-		if o != null and is_instance_valid(o):
-			(o as Node).queue_free()
-
-
-func _relax_all(delta: float, want: Dictionary) -> void:
+func _pose_rigs(delta: float, want: Dictionary) -> void:
 	for key in want:
-		var v: CharacterView = stage.chars.get(key)
+		var v: CharacterView = stage.chars.get(key) if stage != null else null
 		if v != null and is_instance_valid(v):
-			_ik_for(v, key)
-	for key in _iks.keys():
-		var e: Dictionary = _iks[key]
+			_rig_for(v, key)
+	for key in _rigs.keys():
+		var rig: BallRig = _rigs[key]
 		var v2: Variant = stage.chars.get(key) if stage != null else null
-		if v2 == null or not is_instance_valid(v2) or not is_instance_valid(e.get("r")):
-			_free_ik(e)
-			_iks.erase(key)
+		if v2 == null or not is_instance_valid(v2) or not is_instance_valid(rig) or rig.get_parent() != (v2 as CharacterView).skeleton:
+			if is_instance_valid(rig):
+				rig.queue_free()
+			_rigs.erase(key)
+			_arm_out.erase(key)
+			_rig_w.erase(key)
 			continue
-		var w: Dictionary = want.get(key, {})
-		for side in ["r", "l"]:
-			var on := w.has(side)
-			var cur := float(e["w" + side])
-			cur = move_toward(cur, 1.0 if on else 0.0, delta / (IK_IN_S if on else IK_OUT_S))
-			e["w" + side] = cur
-			var ik: TwoBoneIK3D = e[side]
-			if on:
-				# (build 25) the hand glides to its target (no snap between
-				# the dribble and the windup)
-				var ik_key := "%s|%s" % [key, side]
-				var tgt_now: Vector3 = w[side]
-				var was_at: Vector3 = _ik_at.get(ik_key, tgt_now)
-				if cur < 0.05:
-					was_at = tgt_now
-				var glided := was_at.lerp(tgt_now, 1.0 - exp(-delta * 22.0))
-				_ik_at[ik_key] = glided
-				(e["t" + side] as Node3D).global_position = stage.to_global(glided)
-				(e["p" + side] as Node3D).global_position = stage.to_global(w["p" + side])
-			ik.influence = cur * cur * (3.0 - 2.0 * cur)
-			ik.active = cur > 0.001
+		var cv := v2 as CharacterView
+		if key != pose_key:
+			cv.max_turn = INF
+		var ps: Dictionary = want.get(key, {})
+		var on := not ps.is_empty()
+		var w := move_toward(float(_rig_w.get(key, 0.0)), 1.0 if on else 0.0, delta / (IK_IN_S if on else IK_OUT_S))
+		_rig_w[key] = w
+		rig.w = w * w * (3.0 - 2.0 * w)
+		rig.active = rig.w > 0.0005
+		if not on:
+			continue
+		var gx := stage.global_transform * _frame(cv)
+		rig.crouch = float(ps["crouch"])
+		rig.rise = float(ps["rise"])
+		rig.lean = float(ps["lean"])
+		rig.turn = float(ps["turn"])
+		rig.look_up = float(ps["look_up"])
+		rig.stance_w = float(ps["stance_w"])
+		# (the stance is in the body's own frame: the skeleton's)
+		rig.stance = ps["stance"]
+		var outs: Array = _arm_out.get(key, [{}, {}])
+		for i in 2:
+			var a: Dictionary = ps["arms"][i]
+			var o: Dictionary = _blend_arm(outs[i], a, delta)
+			outs[i] = o
+			rig.arm_w[i] = float(o["w"])
+			rig.wrist[i] = gx * (o["wrist"] as Vector3)
+			rig.hand_basis[i] = gx.basis * Basis(o["basis"] as Quaternion)
+			rig.elbow[i] = gx * (o["elbow"] as Vector3)
+			rig.shrug[i] = float(o["shrug"])
+			rig.reach[i] = float(o["reach"])
+		_arm_out[key] = outs
+
+
+## One arm's output this frame: the pose asked for, or (just after a
+## change of pose family) a blend to it from where the arm was.
+func _blend_arm(o: Dictionary, a: Dictionary, delta: float) -> Dictionary:
+	var tgt := {"key": a["key"], "w": a["w"], "wrist": a["wrist"], "basis": (a["basis"] as Basis).get_rotation_quaternion(),
+		"elbow": a["elbow"], "shrug": a["shrug"], "reach": a["reach"]}
+	if String(a["key"]) == "relax":
+		# back to the animation: the weight fades where the arm was
+		if o.is_empty():
+			tgt["w"] = 0.0
+			return tgt
+		var r := o.duplicate()
+		r["key"] = "relax"
+		r["w"] = move_toward(float(o["w"]), 0.0, delta / IK_OUT_S)
+		r.erase("from")
+		return r
+	if o.is_empty() or String(o["key"]) == "relax" or float(o["w"]) < 0.02:
+		# from the animation: in where it is going, the weight easing up
+		tgt["w"] = minf(float(a["w"]), (0.0 if o.is_empty() else float(o["w"])) + delta / IK_IN_S)
+		return tgt
+	if String(o["key"]) != String(a["key"]):
+		tgt["from"] = {"wrist": o["wrist"], "basis": o["basis"], "elbow": o["elbow"], "shrug": o["shrug"], "reach": o["reach"], "w": o["w"]}
+		tgt["bt"] = 0.0
+		o = tgt.duplicate()
+	if not o.has("from"):
+		return tgt
+	var bt := float(o.get("bt", 0.0)) + delta
+	if bt >= BallMoves.ARM_BLEND_S:
+		return tgt
+	var f: Dictionary = o["from"]
+	var e := BallMoves.ease3(bt / BallMoves.ARM_BLEND_S)
+	var r2 := tgt.duplicate()
+	r2["from"] = f
+	r2["bt"] = bt
+	r2["wrist"] = (f["wrist"] as Vector3).lerp(tgt["wrist"], e)
+	r2["basis"] = (f["basis"] as Quaternion).slerp(tgt["basis"], e)
+	r2["elbow"] = (f["elbow"] as Vector3).lerp(tgt["elbow"], e)
+	r2["shrug"] = lerpf(float(f["shrug"]), float(tgt["shrug"]), e)
+	r2["reach"] = lerpf(float(f["reach"]), float(tgt["reach"]), e)
+	r2["w"] = lerpf(float(f["w"]), float(tgt["w"]), e)
+	return r2
 
 
 # ---------------------------------------------------------------------------
