@@ -268,9 +268,10 @@ func dialog(text: String, buttons: Array = [["OK", Callable()]]) -> PanelContain
 	p.position = (get_viewport().get_visible_rect().size - p.get_combined_minimum_size()) * 0.5
 	Motion.appear(p, 10.0, UIKit.T_FAST)
 	push_modal(p, cancel_cb)
-	p.tree_exiting.connect(func() -> void:
-		if is_instance_valid(dim):
-			dim.queue_free(), CONNECT_ONE_SHOT)
+	# a bound method, not a lambda: the buttons free dim before p, and a
+	# lambda capturing the freed dim errors ("Lambda capture ... was freed")
+	# when p leaves; this connection simply goes away with dim
+	p.tree_exiting.connect(dim.queue_free, CONNECT_ONE_SHOT)
 	if first:
 		UIKit.soft_focus.call_deferred(first)
 	return p
