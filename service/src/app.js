@@ -12,6 +12,7 @@ import { randomId, newRoomCode, normalizeCode } from './ids.js';
 import { chatCheck, reportMessage } from './chat.js';
 import { routeCommerce, deletionStmts, sweepCommerce } from './commerce.js';
 import { routeFriends, deletionStmts as friendDeletionStmts, signOutStmts, sweepFriends, friendsConfigured } from './friends.js';
+import { myTag, tagKey, takenDiscs, endStmts as friendEndStmts } from './friend_tags.js';
 import CATALOGUE from './catalogue_data.js';
 
 const HOUR = 3600 * 1000;
@@ -146,7 +147,7 @@ async function signIn(req, env) {
     p = await q.one('SELECT * FROM profiles WHERE id = ?', id);
   }
   const { token, payload } = await issueSession(env, p.id, t);
-  return json({ ok: true, token, expires_at: payload.exp * 1000, profile: publicProfile(p, true) });
+  return json({ ok: true, token, expires_at: payload.exp * 1000, profile: { ...publicProfile(p, true), friend_tag: await myTag(q, p, t) } });
 }
 
 async function signOut(req, env) {
@@ -162,7 +163,7 @@ async function signOut(req, env) {
 
 async function getMe(req, env) {
   const { profile } = await requireUser(req, env, { allowSuspended: true });
-  return json({ ok: true, profile: publicProfile(profile, true) });
+  return json({ ok: true, profile: { ...publicProfile(profile, true), friend_tag: await myTag(db(env), profile, clock(env)) } });
 }
 
 async function setName(req, env) {
@@ -182,10 +183,17 @@ async function setName(req, env) {
   if (!m.ok) {
     throw new ApiError(422, m.error, m.message, { reason: m.reason, suggestions: suggestions(p.id + raw, 3, reserved) });
   }
-  // discriminator: a free number for this name (duplicates allowed, told apart)
+  // discriminator: a free number for this name (duplicates allowed, told
+  // apart), also free for the friend tag (the name without spaces), and the
+  // player's own number kept when the name changes if it is still free
   let disc = null;
   const taken = new Set((await q.all('SELECT discriminator FROM profiles WHERE name_norm = ? AND id != ?', m.norm, p.id)).map((r) => r.discriminator));
+  for (const d of await takenDiscs(q, tagKey(m.name), p.id)) taken.add(d);
   if (p.name_norm === m.norm && p.discriminator) disc = p.discriminator;
+  const mine = await q.one('SELECT disc FROM friend_tags WHERE profile_id = ?', p.id);
+  for (const d of [mine && mine.disc, p.discriminator]) {
+    if (disc === null && d && !taken.has(d)) disc = d;
+  }
   for (let i = 0; i < 40 && disc === null; i++) {
     const d = 1 + Math.floor(Math.random() * 9999);
     if (!taken.has(d)) disc = d;
@@ -197,7 +205,8 @@ async function setName(req, env) {
     m.name, m.norm, disc, t, t, p.id);
   await audit(env, p.id, first ? 'name_set' : 'name_changed', p.id, { name: m.name });
   const np = await q.one('SELECT * FROM profiles WHERE id = ?', p.id);
-  return json({ ok: true, profile: publicProfile(np, true) });
+  // the friend tag follows the new name (and keeps its number where free)
+  return json({ ok: true, profile: { ...publicProfile(np, true), friend_tag: await myTag(q, np, t) } });
 }
 
 async function checkName(req, env) {
@@ -272,7 +281,11 @@ async function addBlock(req, env) {
   if (!(await q.one('SELECT id FROM profiles WHERE id = ?', target))) throw new ApiError(404, 'not_found', 'That player could not be found.');
   const n = await q.one('SELECT COUNT(*) AS n FROM blocks WHERE blocker_id = ?', p.id);
   if (n.n >= 500) throw new ApiError(409, 'too_many_blocks', 'Your block list is full. Unblock someone first.');
-  await q.run('INSERT OR IGNORE INTO blocks (blocker_id, blocked_id, created_at) VALUES (?, ?, ?)', p.id, target, clock(env));
+  await q.batch([
+    q.stmt('INSERT OR IGNORE INTO blocks (blocker_id, blocked_id, created_at) VALUES (?, ?, ?)', p.id, target, clock(env)),
+    // a block ends an in-game friendship and any friend request between the two
+    ...friendEndStmts(q, p.id, target, clock(env)),
+  ]);
   return json({ ok: true });
 }
 
@@ -633,7 +646,8 @@ function config(env) {
     // the game keeps typed chat honestly unavailable)
     // Pass 8: scheduled rotating Shop offers (GET /v1/shop/offers)
     // Final: Friends presence and invites (only with FRIEND_HASH_KEY set)
-    features: ['chat', 'message_reports', 'shop_offers', ...(friendsConfigured(env) ? ['friends'] : [])],
+    // Friend tags: add friends in game by tag (works without FRIEND_HASH_KEY)
+    features: ['chat', 'message_reports', 'shop_offers', 'friend_tags', ...(friendsConfigured(env) ? ['friends'] : [])],
   });
 }
 
