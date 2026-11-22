@@ -37,13 +37,17 @@ on:
         type: choice
         options: [none, list, create, gc-list, gc-create]
         default: none
+      service_deploy:
+        description: "Deploy the game service (both deployments) and the website to Cloudflare (needs the CLOUDFLARE_API_TOKEN secret). No build. The same as service.yml, startable here because this workflow is registered on the default branch."
+        type: boolean
+        default: false
 
 # an upload or status run never cancels, or is cancelled by, an ordinary build
 # (an App Store Connect product run - iap list/create - has its own group too:
 # a push must never cancel it half way)
 concurrency:
-  group: ios-${{ github.ref }}-${{ (github.event.inputs.upload == 'true' || github.event.inputs.sign_check == 'true') && 'upload' || (github.event.inputs.asc_status == 'true' && 'status' || ((github.event.inputs.iap == 'list' || github.event.inputs.iap == 'create' || github.event.inputs.iap == 'gc-list' || github.event.inputs.iap == 'gc-create') && 'iap' || 'build')) }}
-  cancel-in-progress: ${{ github.event.inputs.upload != 'true' && github.event.inputs.sign_check != 'true' && github.event.inputs.asc_status != 'true' && github.event.inputs.iap != 'list' && github.event.inputs.iap != 'create' && github.event.inputs.iap != 'gc-list' && github.event.inputs.iap != 'gc-create' }}
+  group: ios-${{ github.ref }}-${{ github.event.inputs.service_deploy == 'true' && 'service' || ((github.event.inputs.upload == 'true' || github.event.inputs.sign_check == 'true') && 'upload' || (github.event.inputs.asc_status == 'true' && 'status' || ((github.event.inputs.iap == 'list' || github.event.inputs.iap == 'create' || github.event.inputs.iap == 'gc-list' || github.event.inputs.iap == 'gc-create') && 'iap' || 'build'))) }}
+  cancel-in-progress: ${{ github.event.inputs.service_deploy != 'true' && github.event.inputs.upload != 'true' && github.event.inputs.sign_check != 'true' && github.event.inputs.asc_status != 'true' && github.event.inputs.iap != 'list' && github.event.inputs.iap != 'create' && github.event.inputs.iap != 'gc-list' && github.event.inputs.iap != 'gc-create' }}
 
 env:
   GODOT_VERSION: "4.7.2"
@@ -51,6 +55,24 @@ env:
   BUNDLE_ID: com.idlery.ultimatetrifecta
 
 jobs:
+  service-deploy:
+    name: Deploy game service + website (Cloudflare)
+    if: github.event.inputs.service_deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WEBSITE: "true"
+      SUPPORT_EMAIL: support@idlery.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy
+        run: service/scripts/ci_deploy.sh
+
   asc-status:
     name: App Store Connect status (read only)
     if: github.event.inputs.asc_status == 'true'
@@ -114,7 +136,7 @@ jobs:
 
   tests:
     name: Rules, simulation and network tests (headless)
-    if: github.event.inputs.asc_status != 'true' && (github.event.inputs.iap == '' || github.event.inputs.iap == 'none' || github.event.inputs.iap == null)
+    if: github.event.inputs.service_deploy != 'true' && github.event.inputs.asc_status != 'true' && (github.event.inputs.iap == '' || github.event.inputs.iap == 'none' || github.event.inputs.iap == null)
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
