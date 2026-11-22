@@ -19,7 +19,14 @@ extends RefCounted
 ##     leaving a party and joins through the same code join; Decline
 ##   - revoked friend access clears this device and the service's copy
 ##   - Report / Block from a friend's row
-##   - layout at SE, iPhone 14, Pro Max and iPad with long names
+##   - layout at SE, iPhone 14, 6.1", Pro Max, 6.9" and both iPads with long
+##     names, each at its own point scale and safe area (touch targets as
+##     on the device), the keyboard up included
+##   - friend tags: the three actions (Invite, Join with code, Add friend),
+##     your tag with Copy, Add friend's answers in a few words, "Requested",
+##     incoming requests with Accept / Decline and the badge, in-game
+##     friends without Game Center's friends list (status and Invite), Join
+##     with code, and the signed-out states
 var t
 
 const FakeFriends := preload("res://src/dev/fake_friends.gd")
@@ -31,6 +38,17 @@ const DEVICES := [
 	["iPhone 14", Vector2i(2532, 1170)],
 	["Pro Max", Vector2i(2778, 1284)],
 	["iPad", Vector2i(2048, 1536)],
+]
+## Layout runs: [name, pixels, point scale, safe area in points (L, T, R, B),
+## keyboard height in points (landscape, with the suggestions bar)]
+const SHAPES := [
+	["SE 667x375", Vector2i(1334, 750), 2.0, Rect2(0, 0, 0, 0), 200.0],
+	["iPhone 14 844x390", Vector2i(2532, 1170), 3.0, Rect2(47, 0, 47, 21), 209.0],
+	["6.1in 852x393", Vector2i(2556, 1179), 3.0, Rect2(59, 0, 59, 21), 209.0],
+	["Pro Max 926x428", Vector2i(2778, 1284), 3.0, Rect2(47, 0, 47, 21), 209.0],
+	["6.9in 956x440", Vector2i(2868, 1320), 3.0, Rect2(62, 0, 62, 21), 209.0],
+	["iPad 1024x768", Vector2i(2048, 1536), 2.0, Rect2(0, 0, 0, 20), 398.0],
+	["iPad 13in 1376x1032", Vector2i(2752, 2064), 2.0, Rect2(0, 0, 0, 20), 420.0],
 ]
 
 
@@ -100,8 +118,11 @@ func _end() -> void:
 	App.screen = null
 	App._clear_background()
 	App.party_code = ""
+	UIKit.emulation = {}
+	UIKit.v7_emulated_keyboard_pt = -1.0
 	await _frames(2)
 	Friends.reset_for_tests()
+	Social.reset_for_tests()
 	ff.uninstall()
 	Friends.reset_for_tests()
 	Friends.access = "unknown"
@@ -654,4 +675,321 @@ func test_layout_four_devices_long_names() -> void:
 		t.check(not tr.intersects(lobby.bottom_bar.get_global_rect()), "%s: clear of the bottom row" % tag)
 		t.check(tr.size.y <= vs.y * 0.4, "%s: a small card (%.0f of %.0f tall)" % [tag, tr.size.y, vs.y])
 		t.check(Friends.toast.title_l.text.begins_with("Wobbly Hedgehog"), "%s: %s" % [tag, String(iv["id"])])
+		await _end()
+
+
+# ------------------------------------------------------------------ friend tags
+func _tab(p: FriendsPanel, k: String) -> void:
+	(p.tab_btns[k] as Button).pressed.emit()
+	await _frames(2)
+
+
+func _press(_p: FriendsPanel, b: Button) -> void:
+	b.pressed.emit()
+	await _until(func() -> bool: return not Friends.adding and Friends.answering.is_empty())
+	await _frames(2)
+
+
+func _buttons(n: Node, text: String) -> Array:
+	return n.find_children("*", "Button", true, false).filter(func(b: Button) -> bool: return b.text == text and b.is_visible_in_tree())
+
+
+## A label's one line is drawn whole (nothing trimmed).
+func _fits(l: Label) -> bool:
+	var f: Font = l.get_theme_font("font")
+	var fs: int = l.get_theme_font_size("font_size")
+	return f.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= l.size.x + 0.5
+
+
+func _request_cards(p: FriendsPanel) -> Array:
+	return p.invites_box.get_children().filter(func(c: Node) -> bool: return String(c.name).begins_with("Request") and not c.is_queued_for_deletion())
+
+
+func test_three_actions_your_tag_and_add_friend() -> void:
+	await _begin()
+	await _signin()
+	var home := await _home()
+	var p := FriendsPanel.open(home)
+	await _until(func() -> bool: return Friends.service == "ok" and Friends.tags == "ok")
+	await _frames(2)
+	for k in ["invite", "join", "add"]:
+		t.check((p.tab_btns[k] as Button).is_visible_in_tree(), "%s: one of the three actions at the top" % k)
+	t.eq(p.tab, "invite", "Invite is first")
+	t.check(p.invite_tab.visible and not p.join_tab.visible and not p.add_tab.visible, "only Invite's part shows")
+	await _tab(p, "add")
+	t.check(p.add_tab.is_visible_in_tree() and not p.invite_tab.visible, "Add friend shows its part")
+	t.eq(p.tag_lbl.text, "QuietDuck#0007", "your tag")
+	t.check(p.tag_copy_btn.is_visible_in_tree(), "with Copy")
+	p.tag_copy_btn.pressed.emit()
+	await _frames(1)
+	t.check(p.add_msg.text.contains("copied"), "Copy says so: %s" % p.add_msg.text)
+	ff.add_player("Comfy Frog", "ComfyFrog#4821", "T:_cf")
+	ff.add_tag_friend("Busy Badger", "BusyBadger#0042", "T:_bb")
+	# the answers, in a few words
+	for c in [["", "Type your friend's tag"], ["ComfyFrog", "Add the #"], ["Comfy-Frog#12", "isn't a tag"], ["quietduck#0007", "your own tag"],
+			["Nobody#1234", "No player with that tag"], ["BusyBadger#0042", "Already friends"]]:
+		p.tag_edit.text = String(c[0])
+		await _press(p, p.add_btn)
+		t.check(p.add_msg.text.contains(String(c[1])), "'%s': %s" % [c[0], p.add_msg.text])
+		t.check(p.add_msg.text.length() <= 60, "short (%d)" % p.add_msg.text.length())
+	t.eq(ff.count(HTTPClient.METHOD_POST, "/v1/friends/requests"), 2, "typing mistakes never reach the service (only the two real tags)")
+	# a real tag, any spelling; a second tap while it is going out does nothing
+	p.tag_edit.text = "@comfyfrog#4821"
+	Friends.adding = true
+	p.add_btn.pressed.emit()
+	await _frames(1)
+	t.eq(ff.count(HTTPClient.METHOD_POST, "/v1/friends/requests"), 2, "a tap while one is in flight sends nothing")
+	Friends.adding = false
+	p.add_btn.pressed.emit()
+	await _until(func() -> bool: return not Friends.adding)
+	await _frames(2)
+	t.eq(ff.count(HTTPClient.METHOD_POST, "/v1/friends/requests"), 3, "one request")
+	t.check(p.add_msg.text.contains("Request sent to Comfy Frog"), p.add_msg.text)
+	t.eq(p.tag_edit.text, "", "the field is cleared")
+	p.tag_edit.text = "ComfyFrog#4821"
+	await _press(p, p.add_btn)
+	t.eq(Friends.requests_out.size(), 1, "asking again: still one request")
+	var req: Array = p.sent_box.find_children("Requested", "Label", true, false)
+	t.check(req.size() == 1 and (req[0] as Label).is_visible_in_tree(), "Sent: Requested")
+	# the service is unreachable: says so
+	ff.network_down = true
+	p.tag_edit.text = "SomeOne#1111"
+	await _press(p, p.add_btn)
+	t.check(p.add_msg.text.contains("Can't reach"), p.add_msg.text)
+	ff.network_down = false
+	p.close()
+	await _end()
+
+
+func test_requests_badge_accept_and_decline() -> void:
+	await _begin()
+	await _signin()
+	var home := await _home()
+	await _until(func() -> bool: return Friends.shared and Friends.tags == "ok")
+	ff.add_request("Comfy Frog", "ComfyFrog#4821", "T:_cf")
+	ff.add_request("Sleepy Panda", "SleepyPanda#0101", "T:_sp", "offline")
+	Friends.beat_now()
+	await _secs(4.0)
+	t.eq(Friends.badge_count(), 2, "the heartbeat counts requests waiting")
+	var badge: Control = home.friends_btn.get_node("Badge")
+	t.check(badge.visible, "a badge on the Friends button")
+	t.check(home.friends_btn.accessibility_name.contains("2 waiting"), home.friends_btn.accessibility_name)
+	var p := FriendsPanel.open(home)
+	await _until(func() -> bool: return Friends.requests_in.size() == 2 and not _request_cards(p).is_empty())
+	await _frames(2)
+	var cards := _request_cards(p)
+	t.check(cards.size() >= 1 and p.invites_box.is_visible_in_tree(), "requests at the top")
+	var texts: Array = (cards[0] as Node).find_children("*", "Label", true, false).map(func(l: Label) -> String: return l.text)
+	t.check(texts.has("Comfy Frog wants to be friends") and texts.has("ComfyFrog#4821"), "who, and their tag: %s" % str(texts))
+	await _press(p, _buttons(cards[0], "Accept")[0])
+	await _until(func() -> bool: return Friends.requests_in.size() == 1 and _names(p).has("Comfy Frog"))
+	t.eq(Friends.badge_count(), 1, "one left")
+	t.check(_names(p).has("Comfy Frog"), "the new friend is on the list: %s" % str(_names(p)))
+	var row: FriendsPanel.Row = null
+	for r in p.rows_in_order():
+		if (r as FriendsPanel.Row).name_l.text == "Comfy Frog":
+			row = r
+	t.check(row != null and row.status_l.text.begins_with("Online"), "with status, like any friend")
+	t.check(row != null and row.action_btn.visible, "and Invite")
+	t.check(p._note.text.contains("friends now"), p._note.text)
+	await _until(func() -> bool: return not _request_cards(p).is_empty())
+	cards = _request_cards(p)
+	await _press(p, _buttons(cards[0], "Decline")[0])
+	await _until(func() -> bool: return Friends.requests_in.is_empty())
+	await _frames(2)
+	t.eq(Friends.badge_count(), 0, "nothing waiting")
+	t.check(not badge.visible, "the badge goes")
+	t.check(not p.invites_box.visible, "and the cards")
+	t.check(not _names(p).has("Sleepy Panda"), "declined: not a friend")
+	p.close()
+	await _end()
+
+
+func test_in_game_friends_without_game_center_list() -> void:
+	# Game Center's friends list is off, but friends added by tag still show,
+	# with status and Invite, and this player's status still goes out
+	await _begin(Vector2i(2532, 1170), "denied")
+	ff.add_tag_friend("Comfy Frog", "ComfyFrog#4821", "T:_cf")
+	await _signin()
+	var home := await _home()
+	var p := FriendsPanel.open(home)
+	await _until(func() -> bool: return p.state_name() == "list" and Friends.service == "ok")
+	await _frames(2)
+	t.eq(_names(p), ["Comfy Frog"], "the in-game friend")
+	t.check(p.hint_lbl.is_visible_in_tree() and p.hint_lbl.text.contains("Game Center friends"), "says why Game Center friends are missing: %s" % p.hint_lbl.text)
+	t.check(ff.count(HTTPClient.METHOD_DELETE, "/v1/friends") >= 1, "the Game Center set is still cleared")
+	var beats: int = ff.count(HTTPClient.METHOD_POST, "/v1/presence")
+	await _secs(21.0)
+	t.check(ff.count(HTTPClient.METHOD_POST, "/v1/presence") > beats, "heartbeats go: an in-game friend can see you")
+	var row: FriendsPanel.Row = p.rows_in_order()[0]
+	t.check(row.action_btn.visible, "Invite")
+	row.action_btn.pressed.emit()
+	await _until(func() -> bool: return Friends.sent.has("T:_cf"), 900)
+	var sent: Array = ff.calls.filter(func(c: Array) -> bool: return String(c[1]) == "/v1/invites" and int(c[0]) == HTTPClient.METHOD_POST)
+	t.check(sent.size() == 1 and String(sent[0][2]["to"]) == "T:_cf", "the invite goes to the friend's verified ID")
+	# Remove (in-game friends only)
+	for c in (App.screen as Node).get_children():
+		if c is FriendsPanel:
+			p = c
+	await _until(func() -> bool: return p.rows_in_order().size() == 1)
+	row = p.rows_in_order()[0]
+	row.card.pressed.emit()
+	await _frames(2)
+	row = p.rows_in_order()[0]
+	var rm: Array = _buttons(row.actions, "Remove…")
+	t.check(rm.size() == 1, "Remove… on an in-game friend")
+	if rm.size() == 1:
+		(rm[0] as Button).pressed.emit()
+		await _frames(2)
+		var yes: Array = _buttons(row.actions, "Remove")
+		t.check(yes.size() == 1, "asks first")
+		if yes.size() == 1:
+			(yes[0] as Button).pressed.emit()
+			await _until(func() -> bool: return ff.tag_friends.is_empty())
+	t.eq(ff.count(HTTPClient.METHOD_DELETE, "/v1/friends/p_cf"), 1, "removed on the service")
+	await _end()
+
+
+func test_join_with_code_from_friends() -> void:
+	await _begin()
+	await _signin()
+	var home := await _home()
+	var p := FriendsPanel.open(home)
+	await _frames(3)
+	await _tab(p, "join")
+	t.check(p.code_edit.is_visible_in_tree() and p.join_btn.is_visible_in_tree(), "a code field and Join")
+	p.code_edit.text = "AB"
+	p.join_btn.pressed.emit()
+	await _frames(2)
+	t.check(p.join_msg.text.contains("6 characters"), "a mistake says what's wrong: %s" % p.join_msg.text)
+	t.check(is_instance_valid(p) and p.is_inside_tree(), "and stays open")
+	p.code_edit.text = "acd-efg"
+	p.join_btn.pressed.emit()
+	await _until(func() -> bool: return ff.count(HTTPClient.METHOD_POST, "/v1/rooms/ACDEFG/join") > 0, 900)
+	t.eq(ff.count(HTTPClient.METHOD_POST, "/v1/rooms/ACDEFG/join"), 1, "the same join as a typed code")
+	t.check(App.screen is OnlineScreen, "with Play with Friends' progress and messages")
+	await _until(func() -> bool: return (App.screen as Screen).has_modal())
+	var texts: Array = []
+	for n in (App.screen as Node).find_children("*", "Label", true, false):
+		texts.append((n as Label).text)
+	t.check(texts.any(func(x: String) -> bool: return x.contains("That party is full")), "the join's own answer is shown")
+	await _end()
+
+
+func test_signed_out_of_game_center_says_so() -> void:
+	await _begin()
+	ff.identity_fail = true
+	Social.authenticated = false
+	var home := await _home()
+	var p := FriendsPanel.open(home)
+	await _until(func() -> bool: return Friends.tags == "signed_out")
+	await _tab(p, "add")
+	t.check(p.add_msg.text.contains("Sign in to Game Center"), "Add friend: %s" % p.add_msg.text)
+	t.check(p.add_btn.disabled and not p.tag_edit.editable, "nothing to type into yet")
+	t.check(not p.tag_copy_btn.visible, "no tag to copy")
+	await _tab(p, "join")
+	t.check(p.join_msg.text.contains("Sign in to Game Center"), "Join with code: %s" % p.join_msg.text)
+	p.code_edit.text = "ACDEFG"
+	p.join_btn.pressed.emit()
+	await _frames(2)
+	t.check(is_instance_valid(p) and p.is_inside_tree() and p.join_msg.text.contains("Sign in"), "Join explains instead of failing")
+	# the service is unavailable: no crash, Add friend says why
+	Social.authenticated = true
+	ff.identity_fail = false
+	ff.unavailable = true
+	Friends.tags = "idle"
+	await Friends.load_tags()
+	t.check(Friends.tags in ["unavailable", "off"], "tags: %s" % Friends.tags)
+	await _tab(p, "add")
+	t.check(p.add_msg.text != "", "Add friend says why: %s" % p.add_msg.text)
+	p.close()
+	await _end()
+
+
+## Every shape, at its own point scale and safe area: the three actions, the
+## waiting cards, the tag, the fields, the keyboard.
+func test_layout_devices_tags_and_keyboard() -> void:
+	for d in SHAPES:
+		var tag := String(d[0])
+		UIKit.emulation = {"scale": float(d[2]), "safe": d[3]}
+		await _begin(d[1])
+		ff.native.set_friends([["Bartholomew Quillfeather-Fan", "T:_long1"], ["Ada Lark", "T:_ada"]])
+		ff.mutual = {"T:_long1": {"name": "Wobbly Hedgehog", "status": "online"}, "T:_ada": {"name": "Comfy Frog", "status": "match"}}
+		ff.add_tag_friend("Snoozy Gecko", "SnoozyGecko#0101", "T:_sg")
+		ff.add_request("Bartholomew Q", "BartholomewQ#9999", "T:_bq")
+		ff.add_request("Moonlit Koala", "MoonlitKoala#0420", "T:_mk")
+		ff.my_tag = "WobblyHedgehog#4821"
+		await _signin()
+		await App.host_room_gamekit()
+		await _frames(6)
+		var lobby := App.screen as LobbyScreen
+		var p := FriendsPanel.open(lobby)
+		await _until(func() -> bool: return Friends.service == "ok" and Friends.tags == "ok" and p.rows_in_order().size() == 3)
+		await _frames(4)
+		var vs: Vector2 = t.get_tree().root.get_visible_rect().size
+		var sm: Rect2 = UIKit.safe_margins(t.get_tree().root.get_viewport())
+		var pr := p.panel.get_global_rect()
+		var tm := UIKit.touch_min()
+		t.check(pr.position.x >= sm.position.x - 0.5 and pr.end.x <= vs.x - sm.size.x + 0.5 and pr.end.y <= vs.y - sm.size.y + 0.5,
+			"%s: the panel inside the safe area (%s)" % [tag, str(pr)])
+		for k in ["invite", "join", "add"]:
+			var b: Button = p.tab_btns[k]
+			t.check(pr.grow(0.5).encloses(b.get_global_rect()), "%s: %s inside the panel" % [tag, k])
+			t.check(minf(b.size.x, b.size.y) >= tm - 0.5, "%s: %s a full touch target (%s, %.0f)" % [tag, k, str(b.size), tm])
+			var cap: Label = b.find_children("Caption", "Label", true, false)[0]
+			t.check(_fits(cap) and b.get_global_rect().grow(0.5).encloses(cap.get_global_rect()), "%s: '%s' whole on its button" % [tag, cap.text])
+		# a waiting card at the top: inside, its buttons full size and whole
+		var cards: Array = p.invites_box.get_children().filter(func(c: Node) -> bool: return not c.is_queued_for_deletion())
+		t.check(cards.size() >= 1, "%s: a request card" % tag)
+		for c in cards:
+			t.check(pr.grow(0.5).encloses((c as Control).get_global_rect()), "%s: card inside the panel" % tag)
+			for b in (c as Node).find_children("*", "Button", true, false):
+				t.check(pr.grow(0.5).encloses((b as Button).get_global_rect()), "%s: '%s' inside" % [tag, (b as Button).text])
+				t.check(UIKit.v7_button_text_fits(b), "%s: '%s' not trimmed" % [tag, (b as Button).text])
+				t.check((b as Button).size.y >= tm - 0.5, "%s: '%s' tall enough" % [tag, (b as Button).text])
+		t.check(p.more_lbl.visible == (Friends.requests_in.size() > p.max_cards()), "%s: the rest are counted" % tag)
+		# the list keeps room for at least one friend under the cards
+		t.check(p.scroll.size.y >= tm, "%s: the list keeps its room (%.0f)" % [tag, p.scroll.size.y])
+		var sr := p.scroll.get_global_rect()
+		t.check(pr.grow(0.5).encloses(sr), "%s: the list inside the panel" % tag)
+		for row in p.rows_in_order():
+			var rr: Rect2 = (row as FriendsPanel.Row).card.get_global_rect()
+			# (rows below the list's edge scroll into view: only their width is checked)
+			t.check(rr.position.x >= pr.position.x - 0.5 and rr.end.x <= pr.end.x + 0.5, "%s: row inside the panel" % tag)
+			var ab: Button = (row as FriendsPanel.Row).action_btn
+			if ab.visible:
+				t.check(UIKit.v7_button_text_fits(ab), "%s: Invite not trimmed" % tag)
+				t.check(rr.grow(0.5).encloses(ab.get_global_rect()), "%s: Invite on its row" % tag)
+		for b in [p.close_btn, p.copy_btn]:
+			t.check(pr.grow(0.5).encloses((b as Button).get_global_rect()), "%s: %s inside" % [tag, (b as Button).text])
+		# Add friend: the tag line and the field
+		await _tab(p, "add")
+		await _frames(2)
+		for c in [p.tag_lbl, p.tag_copy_btn, p.tag_edit, p.add_btn, p.add_msg]:
+			t.check(pr.grow(0.5).encloses((c as Control).get_global_rect()), "%s: %s inside the panel" % [tag, (c as Control).get_class()])
+		t.check(_fits(p.tag_lbl), "%s: the tag whole (%s)" % [tag, p.tag_lbl.text])
+		t.check(UIKit.v7_button_text_fits(p.add_btn) and UIKit.v7_button_text_fits(p.tag_copy_btn), "%s: Add / Copy not trimmed" % tag)
+		t.check(not p.tag_lbl.get_global_rect().intersects(p.tag_copy_btn.get_global_rect()), "%s: the tag clear of Copy" % tag)
+		t.check(not p.tag_edit.get_global_rect().intersects(p.add_btn.get_global_rect()), "%s: the field clear of Add" % tag)
+		# the keyboard comes up over the field: it stays above, folding only what it must
+		UIKit.v7_emulated_keyboard_pt = float(d[4])
+		p.tag_edit.grab_focus()
+		await _frames(12)
+		var kr: Dictionary = p.keyboard_report()
+		var limit: float = vs.y - float(kr["keyboard"])
+		t.check(bool(kr["typing"]), "%s: typing" % tag)
+		t.check((kr["field"] as Rect2).end.y <= limit + 0.5 and (kr["button"] as Rect2).end.y <= limit + 0.5,
+			"%s: field and Add above the keyboard (%.0f, %.0f / %.0f)" % [tag, (kr["field"] as Rect2).end.y, (kr["button"] as Rect2).end.y, limit])
+		t.check(p.close_btn.is_visible_in_tree(), "%s: Close stays" % tag)
+		await _tab(p, "join")
+		p.code_edit.grab_focus()
+		await _frames(12)
+		kr = p.keyboard_report()
+		t.check((kr["field"] as Rect2).end.y <= limit + 0.5 and (kr["button"] as Rect2).end.y <= limit + 0.5,
+			"%s: code field and Join above the keyboard" % tag)
+		p.code_edit.release_focus()
+		UIKit.v7_emulated_keyboard_pt = 0.0
+		await _frames(8)
+		t.check(p.tiles.visible and p._fold == 0, "%s: everything back when the keyboard goes" % tag)
+		p.close()
 		await _end()

@@ -372,3 +372,162 @@ off friend access or Delete Game Profile removes it."*
   COMMERCE's 0007).
 - New: `tools/capture_friends.sh`, `game/src/dev/friends_capture.gd/.tscn`,
   `game/src/dev/fake_friends.gd` (dev only, not exported).
+
+## 14. Friend tags: add friends in game (no Game Center friendship needed)
+
+The owner: "adding friends has been hard … make it obvious: join by code,
+but also add friend, and you can add by their gamer tag in game without
+Game Center."  Players still sign in with Game Center (the service's only
+identity); they no longer need to be Game Center friends.
+
+**What a player sees.**  Friends (Home, the party room, Play with Friends)
+opens with three large actions at the top: **Invite** (the friends list
+with Invite buttons, as before), **Join with code** (a code field and Join;
+the same join as Play with Friends, its progress, Cancel and messages) and
+**Add friend** ("Your tag  ComfyFrog#4821  Copy", a friend's tag and Add,
+the answer in a few words, and "Sent … Requested").  Friend requests and
+party invites waiting show as cards under the actions (Accept / Decline;
+one at a time on a phone, two on an iPad, "+N more waiting"), and the
+Friends button's badge counts both.  With the keyboard up over a field the
+waiting cards, then the three actions, fold away (only as far as needed) so
+the field and its button stay above the keyboard.  Signed out of Game
+Center, Add friend and Join with code say "Sign in to Game Center …" instead
+of failing; with the service down, "Adding friends isn't available right
+now" / "Can't reach the game service".
+
+**Tag.**  The approved display name without spaces, `#`, and the number
+shown as 4 digits.  The name part always follows the current, moderated
+name (a name hidden by moderation has no tag and can't be found); the
+number is the profile's discriminator (POST /v1/me/name now picks one that
+is free for the tag too, and keeps the player's number when the name
+changes if it is still free).  `(tag_key, disc)` is unique per environment
+(each deployment has its own database).
+
+**Service** (`service/src/friend_tags.js`, migration `0007_friend_tags.sql`):
+
+| Route | What |
+|---|---|
+| `GET /v1/friends/me/tag` | `{tag, needs_name}` (also `profile.friend_tag` in sign-in, `/v1/me` and `/v1/me/name`) |
+| `GET /v1/friends/requests` | `{tag, incoming, outgoing, friends}` |
+| `POST /v1/friends/requests {tag}` | `201 {state:"pending", request}`; `200 {state:"accepted"}` when they had asked you; `200 {duplicate}` when you asked already |
+| `POST /v1/friends/requests/<id>/accept` | `{state:"accepted", friend}` (receiver only) |
+| `POST /v1/friends/requests/<id>/decline` (or `DELETE …/<id>`) | the receiver declines / the sender cancels |
+| `DELETE /v1/friends/<profile>` | no longer friends in game (requests and pending party invites between the two end) |
+
+Errors: `bad_tag` (400), `self` (400), `no_player` (404: unknown tag,
+blocked either way, suspended, hidden name: one answer, so blocks can't be
+probed), `already_friends` (409), `friends_full` / `their_friends_full`
+(200 in-game friends), `too_many_requests` (50 waiting from you),
+`their_requests_full` (100 waiting for them), `needs_name` (409),
+`rate_limited` (20 tries / 10 min and 60 / day per player; unknown tags
+count).  Lookups forgive case, spaces, a leading `@` and full-width
+characters.  Blocking someone ends the friendship and requests.  An
+accepted pair (`friend_links`) counts exactly like a mutual Game Center pair
+for presence, status and invites (`isMutual`, `getPresence`; entries say
+`source: game_center | tag | both` and carry `tag`), with the same block and
+suspension checks on every read.  Invites now find their target by the
+verified identity (an in-game friend may never have shared a Game Center
+list).  The heartbeat and presence replies carry `requests` (the badge).
+Deleting the profile erases its tag, friendships and requests (they are in
+`deletionStmts`); the cron sweep deletes requests older than 30 days.
+`/v1/config` lists `friend_tags` (it needs no `FRIEND_HASH_KEY`).
+
+**Game.**  `Friends` (friends_service.gd) gains the tag state, `load_tags`,
+`add_friend`, `answer_request`, `remove_friend`, `join_code` and
+`open_gc_sheet`; heartbeats also go out when the player has in-game friends
+(not only with a shared Game Center list).  The panel is
+`src/ui/friends_panel.gd`; the test double (`src/dev/fake_friends.gd`) has
+a tag directory, in-game friends and requests; `src/dev/friends_capture.gd
+--mode=tags` renders the new states.
+
+Tests: `service/test/friend_tags.test.mjs` (8 tests), `game/tests/
+test_friends.gd` (tags, requests and badge, in-game friends without Game
+Center's list, Join with code, signed-out states, and a layout run at seven
+device shapes with their point scales, safe areas and keyboards),
+`game/tests/test_social_gc.gd` (the hardening below).
+
+## 15. Game Center hardening (crash sweep)
+
+No crash log was available; the whole invite / add-friend path was read
+against the pinned GodotApplePlugins source (`GKMatchmakerViewController`,
+`GKMatchmaker`, `GKLocalPlayer`, `GameCenterManager`, `UIKitIntegration`)
+and UIKit's rules.  Each risky path and what now prevents it:
+
+1. **Apple's sheet twice.**  `Social.invite_friends` stored the new sheet's
+   wrapper in `_invite_vc`, replacing (and freeing) the one on screen.  The
+   wrapper owns the sheet's delegate proxy (`matchmakerDelegate` is weak),
+   so the first sheet lost its delegate: Cancel did nothing and the sheet
+   could never close.  A double tap on Invite with Game Center, or an
+   accepted invite's fallback sheet over the invite sheet, did this.  Now
+   one Apple sheet at a time (`Social.sheet_open()`; Game Center's own
+   friends screen is debounced); `invite_friends` returns false instead.
+2. **Releasing a sheet inside its own signal.**  The sheet's handlers now
+   run deferred, and the wrapper is released only after its signal has
+   finished emitting (never freed mid-emit).
+3. **GameKit answers off the main thread.**  GodotApplePlugins calls the
+   GDScript Callable from GameKit's completion queue (`find_match`,
+   `add_players`, `match_for_invite`, leaderboards).  Those callbacks bound
+   transports and emitted `room_failed` / `room_matched`; `room_failed`
+   makes the App close the session and change screens, i.e. scene-tree and
+   UI work on a background thread.  Every completion now hands over to the
+   main thread (`call_deferred`) first; `test_social_gc.gd` calls them from
+   a real background thread and checks where the work lands.
+4. **Late answers for a party that ended.**  A cancelled code join, a party
+   closed while Apple's sheet was up, or a request replaced by an in-game
+   invite could still bind its match to a dead transport.  Answers are now
+   checked against the current request and dropped (their match
+   disconnected).
+5. **Unbounded recursion.**  `_find_or_add` re-asked `add_players` from
+   inside its own completion; GameKit can fail at once on the caller's
+   stack (signed out, a dead match), recursing until the stack overflows.
+   Now deferred, with a 1, 2, 4 … 30 s backoff after failures.
+6. **Re-entrancy on return from the background.**  GameKit re-runs the
+   authentication handler when the app returns to the foreground; each run
+   registered the invite listener again and replaced the matchmaker, so an
+   accepted invite could arrive twice (two joins, two "Leave your party?"
+   questions).  The listener is registered once, the matchmaker kept, and
+   the same accepted invite is handled once (another one within 10 s while
+   the first is joining is ignored).
+7. **Calls while signed out.**  Every GameKit entry point checks
+   `online_ready()` (stop_matchmaking only cancels while signed in); a
+   Game Center without a local player counts as signed out.
+8. **Accepting while in a round / while another invite asks.**  An accepted
+   Game Center invite arriving during a round was dropped without closing
+   its live match; now it is closed.  A second one while the first is still
+   asking "Leave your party?" is closed with a short toast.  The service
+   invite's Accept is one at a time; a round that starts while the question
+   is up or while the service answers wins.
+9. **Waiting forever on a freed screen.**  `Friends.accept` and
+   `App._confirm_party_switch` waited every frame for an answer from a
+   dialog whose screen could be freed meanwhile (the party ended, an invite
+   moved the player); the coroutine never ended (a wait every frame for the
+   rest of the run, and an accepted Game Center invite's live match was
+   never closed).  The wait now ends as "Not now" / "Stay" when its screen
+   goes, so the new one-at-a-time guards can never stay stuck.
+10. **A coroutine on a freed panel.**  The panel's Invite with Game Center
+    closed the panel and then awaited `App.open_party()`; a coroutine on a
+    freed object never resumes, so from Home the sheet silently never
+    opened.  It now runs in the `Friends` autoload (`open_gc_sheet`).  The
+    Friends button's badge connects only while the button is in the tree.
+11. **Share sheet (`native/ut_share/src/ut_share_ios.m`).**  Always on the
+    main thread; only while the app is active; never a second share sheet
+    while one is up (tracked until its completion handler, with a check
+    that clears it if UIKit refused quietly); a top controller that is
+    mid-presentation or mid-dismissal is retried shortly (up to 2 s)
+    instead of presented on; iPad popovers always get a source view and
+    rect (`UIModalPresentationPopover` set explicitly); the presentation is
+    wrapped in `@try/@catch` so an Objective-C exception is logged instead
+    of ending the app; NULL strings are refused (`stringWithUTF8String:`
+    raises on NULL).  Not compiled here (no Xcode on Linux): build it on
+    the Mac before shipping.
+12. **Empty lists.**  An empty Game Center list, no in-game friends and an
+    unavailable service each have their own state (no path indexes an
+    empty list); in-game friends show even with Game Center's friends list
+    off.
+
+Not reproducible on desktop: GameKit's own threading and UIKit's
+presentation behaviour.  The checks above are code analysis plus desktop
+tests with stand-ins; a device pass (two phones, the §11 procedure, plus:
+double-tap Invite with Game Center, accept a Game Center invite while
+Apple's invite sheet is up, return from the background with Friends open,
+Share on iPad) should confirm them before release.
