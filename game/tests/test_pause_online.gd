@@ -63,7 +63,10 @@ func test_host_menu_keeps_the_round_running() -> void:
 	var p := mc.sim.player(mc.local_slot)
 	t.eq(p.state, TC.PState.ACTIVE, "no immunity or special state while the menu is open")
 	hud._ask_leave()
-	t.check(hud._confirm_text.text.contains("ends the match and the party for everyone"), "the host is told leaving ends it for everyone")
+	# (build 33) the host's Leave ends the round for everyone, never the party
+	t.eq(hud._confirm_head.text, "End the round for everyone?", "the host is asked: end the round for everyone?")
+	t.check(hud._confirm_text.text.contains("party lobby") and hud._confirm_text.text.contains("stay in the party"), "everyone goes back to the party lobby and stays in the party")
+	t.eq(hud.confirm_leave_button().text, "End round", "the button says what it does")
 	hud._cancel_leave()
 	hud.close_pause()
 	await rig.frames(4)
@@ -90,6 +93,10 @@ func test_guest_menu_leave_and_results() -> void:
 	t.check(g._last_snap_tick > snap0, "and keeps reaching the guest behind the menu")
 	hud._ask_leave()
 	t.check(hud._confirm_text.text.contains("others play on") and hud._confirm_text.text.contains("earns you nothing"), "a guest is told the others play on and nothing is earned")
+	# (build 33) and that they stay in the party, back in its lobby
+	t.eq(hud._confirm_head.text, "Back to the party?", "a guest is asked: back to the party?")
+	t.check(hud._confirm_text.text.contains("stay in the party"), "they stay in the party")
+	t.eq(hud.confirm_leave_button().text, "Back to lobby", "the button says where it goes")
 	# Leave: once, through the app's own party departure
 	var quits := [0]
 	var finished := [0]

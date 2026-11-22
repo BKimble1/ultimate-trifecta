@@ -1,7 +1,8 @@
 class_name LobbyScreen
 extends Screen
 ## Party lobby in the dorm common room (V5).
-##   top       Back · the party code with Copy and Share · Friends (Final:
+##   top       Back · Leave party (build 33, where Copy code was: the code
+##             is in Friends › Invite) and Share · Friends (Final:
 ##             who's playing and invites, Apple's sheet inside);
 ##             the settings as short labelled values ("3 rounds",
 ##             "2 Night Watch", "4 home to win"): the host taps them to
@@ -9,11 +10,17 @@ extends Screen
 ##   stage     the 3D room (App.stage) with the party on their marks, left of
 ##             the roster.  Tap your own runner to play your move.
 ##   roster    compact player cards: portrait, the full name where it fits
-##             (a smaller size before any trimming; tap for details), host,
-##             ready and bot status, and one open seat to invite into
+##             (a smaller size before any trimming; tap for details) with a
+##             check beside it once they're ready (build 33), the leader's
+##             crown, "In a round" for someone still playing one (their
+##             character is a hologram on their mark), bot status, and one
+##             open seat to invite into
 ##   bottom    Wardrobe, Emote and Try moves (left); the one primary action
-##             (host: Start / Start round N, guest: Ready) with its status
-##             line (right).  Nothing moves when states change.
+##             with its status line (right).  Nothing moves when states
+##             change.  (build 33) Everyone readies up, the party leader too:
+##             the leader's button is Ready, then Start once everyone is
+##             ready (a small Not ready beside it undoes theirs); anyone
+##             else's is the Ready toggle.
 ## Updates are incremental: lobby_changed rewrites card contents and syncs
 ## the stage by player identity; nothing is rebuilt wholesale.
 ## V6: Walk around (HubWalk: a stick on the left, the roster folds away,
@@ -57,7 +64,10 @@ var _drawer: ChatDrawer
 var _known: Dictionary = {}      # uid -> shown name (join / leave notes)
 # 2.2: home is the party lobby
 var back_btn: Button
-var copy_btn: Button
+## (build 33) Leave party, where Copy code was (the code is in Friends)
+var leave_btn: Button
+## (build 33) the leader's own Not ready (beside Start, once they're ready)
+var unready_btn: Button
 var share_btn: Button
 var code_title: Label
 var mode_btn: Button
@@ -87,7 +97,7 @@ func build() -> void:
 			return
 		if _solo():
 			return   # (2.2) home: there is nothing to leave
-		UIKit.v7_back_chooses(self, dialog("Leave this party?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]]))
+		_ask_leave_party()
 	App.quick_changed.connect(_refresh)
 	# (2.2) home is the party: a look changed in the Locker or Season Pass
 	# since the party began shows on your runner (and to friends) here
@@ -170,12 +180,14 @@ func build() -> void:
 	add_child(holder)
 	holder.add_child(code_title)
 	holder.add_child(code_lbl)
-	copy_btn = UIKit.quiet("", Vector2(0, UIKit.touch_min()), UIKit.T_LABEL)
-	copy_btn.tooltip_text = "Copy party code"
-	copy_btn.accessibility_name = "Copy party code"
-	copy_btn.pressed.connect(func() -> void:
-		DisplayServer.clipboard_set(session.room_code)
-		UIKit.toast(self, "Code %s copied" % session.room_code))
+	# (build 33) Leave party: a clear, red-ish secondary action that asks first
+	leave_btn = UIKit.quiet("Leave party", Vector2(0, UIKit.touch_min()), UIKit.T_CAPTION)
+	leave_btn.name = "LeaveParty"
+	leave_btn.tooltip_text = "Leave party"
+	leave_btn.accessibility_name = "Leave party"
+	leave_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	style_leave(leave_btn)
+	leave_btn.pressed.connect(_ask_leave_party)
 	share_btn = UIKit.icon_button("share")
 	share_btn.tooltip_text = "Share party code"
 	share_btn.accessibility_name = "Share party code"
@@ -221,7 +233,7 @@ func build() -> void:
 	count_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	head.add_child(count_lbl)
 	code_row = head
-	head.add_child(copy_btn)
+	head.add_child(leave_btn)
 	head.add_child(share_btn)
 	_grid = GridContainer.new()
 	_grid.columns = 2
@@ -281,6 +293,16 @@ func build() -> void:
 	sub_lbl = UIKit.outlined(UIKit.styled("", "caption", Color(UIKit.IVORY, 0.88), HORIZONTAL_ALIGNMENT_RIGHT))
 	sub_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	prow.add_child(sub_lbl)
+	unready_btn = UIKit.quiet("Not ready", Vector2(0, UIKit.touch_min()), UIKit.T_CAPTION)
+	unready_btn.name = "NotReady"
+	unready_btn.accessibility_name = "Not ready"
+	unready_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	unready_btn.visible = false
+	unready_btn.pressed.connect(func() -> void:
+		_is_ready = false
+		session.set_local_ready(false)
+		_refresh())
+	prow.add_child(unready_btn)
 	primary_btn = UIKit.primary("PLAY", Vector2(400, 96), 34)
 	primary_btn.pressed.connect(_on_primary)
 	prow.add_child(primary_btn)
@@ -364,6 +386,33 @@ func build() -> void:
 				(wallet_chip as WalletChip).fly_in(amount, Vector2(vs.x * 0.4, vs.y * 0.55)))
 
 
+## (build 33) Leave party, the one way out of a party: asks first.
+func _ask_leave_party() -> void:
+	if has_modal():
+		return
+	UIKit.v7_back_chooses(self, dialog("Leave this party?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]]))
+
+
+## (build 33) The Leave party look: a quiet pill in a soft red, readable on
+## the room (a clear secondary action, never the screen's main one).
+static func style_leave(b: Button) -> void:
+	var f := UIKit.face_of(b)
+	var red := Color("ff6b6b")
+	var n := UIKit.box(Color(0.42, 0.09, 0.12, 0.78), 999, 0, Color.WHITE, 18)
+	n.set_border_width_all(2)
+	n.border_color = Color(red, 0.7)
+	f.styles = {
+		"normal": n,
+		"hover": UIKit._with_bg(n, Color(0.52, 0.12, 0.15, 0.88)),
+		"pressed": UIKit._with_bg(n, Color(0.32, 0.07, 0.09, 0.95)),
+		"disabled": UIKit._with_bg(n, Color(UIKit.SLATE_LO, 0.6)),
+		"selected": n,
+	}
+	f.fg = {"normal": Color("ffd9d6"), "disabled": UIKit.IVORY_DIM, "selected": Color("ffd9d6")}
+	b.add_theme_font_override("font", UIKit.font_w(700))
+	f.queue_redraw()
+
+
 ## The settings as short chips in one tappable group (the map first).
 func _settings_summary() -> Button:
 	var b := UIKit.card_button(Vector2(0, UIKit.touch_min()), Color(UIKit.SLATE, 0.94))
@@ -398,11 +447,11 @@ func _paint_settings() -> void:
 	var parts := PartySeries.summary_parts(session.settings)
 	for i in settings_chips.size():
 		settings_chips[i].text = parts[i]
-	var host := session.is_host() and session.mode != NetSession.Mode.OFFLINE and not session.series_active()
+	var host := session.is_leader() and session.mode != NetSession.Mode.OFFLINE and not session.series_active()
 	settings_lock.kind = "sliders" if host else "lock"
 	settings_lock.col = UIKit.TEAL if host else UIKit.IVORY_MUTED
 	settings_lock.queue_redraw()
-	settings_btn.accessibility_name = "Party settings: %s%s" % [", ".join(parts), "" if host else " (set by the host)"]
+	settings_btn.accessibility_name = "Party settings: %s%s" % [", ".join(parts), "" if host else " (set by the party leader)"]
 
 
 ## Tell the stage how much of the screen is free left of the roster.
@@ -810,12 +859,15 @@ func _on_primary() -> void:
 			"practice":
 				App.goto(PracticeScreen)
 				return
-	if session.is_host():
-		if session.can_start():
+	if away_in_round():
+		return   # (build 33) the others are finishing the round we left
+	# (build 33) the leader readies up like everyone, then starts
+	if session.is_leader() and (session.human_count() <= 1 or _is_ready):
+		if session.start_allowed():
 			if App.stage:
 				App.stage.stop_previews()
 			Diag.mark("round_start")
-			session.host_start_match()
+			session.request_start()
 		return
 	_is_ready = not _is_ready
 	session.set_local_ready(_is_ready)
@@ -977,11 +1029,11 @@ func _mode_sheet() -> void:
 	head.add_child(x)
 	v.add_child(head)
 	if not _solo() or session.human_count() > 1:
-		var note := UIKit.styled("The host picks the map, rounds and Night Watch." if session.is_host() or not _solo() else "", "body", UIKit.IVORY_MUTED)
+		var note := UIKit.styled("The party leader picks the map, rounds and Night Watch." if session.is_host() or not _solo() else "", "body", UIKit.IVORY_MUTED)
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		note.custom_minimum_size.x = 560
 		v.add_child(note)
-		v.add_child(_settings_block(close, session.is_host()))
+		v.add_child(_settings_block(close, session.is_leader() and session.mode != NetSession.Mode.OFFLINE and not session.series_active()))
 	else:
 		# (2.3) three tall mode tiles: a big icon on its own colour, the name,
 		# one line; the chosen one has the accent edge and a check badge
@@ -1065,9 +1117,8 @@ func _refresh() -> void:
 	var solo := _solo()
 	code_title.text = "Your party" if solo else "Party code"
 	code_lbl.text = "Invite friends" if solo else (session.room_code if session.room_code != "" else "…")
-	copy_btn.text = "Code  %s" % code_lbl.text
 	back_btn.visible = not solo
-	copy_btn.visible = not solo
+	leave_btn.visible = not solo
 	share_btn.visible = not solo and _can_invite()
 	invite_btn.visible = _can_invite() or solo
 	# (build 30) the Coins counter is always in the lobby's top bar (home is
@@ -1082,33 +1133,50 @@ func _refresh() -> void:
 	var ready_n := 0
 	var entries: Array = []
 	var order: Array = []
+	# (build 33) we left a round the others still play: the party lobby
+	# shows the people (their bots stay in the round), holograms for whoever
+	# is still playing
+	var round_on := away_in_round()
 	for i in 8:
 		var e: Variant = session.roster[i]
 		if e == null:
 			continue
+		if round_on and bool(e["is_bot"]):
+			continue
 		order.append(i)
 		if not bool(e["is_bot"]):
 			humans += 1
-			var counts := bool(e["ready"]) or int(e["slot"]) == 0
-			if counts:
+			if bool(e["ready"]):
 				ready_n += 1
 			elif i != session.local_slot:
 				not_ready += 1
 		var ent := {"key": String(e["uid"]), "role": TC.Role.RUNNER, "cosmetic": e["cosmetic"], "name": SocialSafety.name_of(e),
-			"is_bot": bool(e["is_bot"]), "local": i == session.local_slot, "ready": bool(e["ready"]) or int(e["slot"]) == 0}
+			"is_bot": bool(e["is_bot"]), "local": i == session.local_slot, "ready": bool(e["ready"]),
+			"hologram": session.member_in_round(i)}
 		if i == session.local_slot:
 			entries.push_front(ent)
 		else:
 			entries.append(ent)
+	if session.local_slot < 0 or session.roster[session.local_slot] == null:
+		# (build 33) our own slot isn't known yet (joining, a spectator): our
+		# runner stays on its mark meanwhile.  Before, the stage emptied and
+		# rebuilt it when the slot arrived, the old one still waving goodbye
+		# on the same spot: two of us, stacked
+		entries.push_front({"key": Save.player_uid(), "role": TC.Role.RUNNER, "cosmetic": Save.data["cosmetic"],
+			"name": Save.player_name(), "is_bot": false, "local": true, "ready": false, "arrive": false})
 	# everyone present, then one open seat (until the party is full)
-	var shown := mini(8, order.size() + (1 if order.size() < 8 else 0))
+	var shown := mini(8, order.size() + (1 if order.size() < 8 and not round_on else 0))
 	for ci in cells.size():
 		var c: SlotCell = cells[ci]
 		c.visible = ci < shown
 		if ci < order.size():
 			var slot: int = order[ci]
 			c.slot = slot
-			c.show_entry(SocialSafety.display_entry(session.roster[slot]), slot == session.local_slot, hosting, session.muted, _can_invite(), false)
+			var de := SocialSafety.display_entry(session.roster[slot])
+			de["leader"] = slot == session.leader_slot
+			de["in_round"] = session.member_in_round(slot)
+			de["alone"] = humans <= 1   # (nobody to be ready with)
+			c.show_entry(de, slot == session.local_slot, hosting, session.muted, _can_invite(), false)
 		elif ci < shown:
 			c.slot = -1
 			c.show_entry(null, false, hosting, session.muted, _can_invite(), true)
@@ -1143,7 +1211,11 @@ func _refresh() -> void:
 	if series_on:
 		var tally := _tally(view)
 		series_lbl.text = "Round %d of %d next  ·  Runners %d – %d Night Watch" % [nxt, total, tally[0], tally[1]]
-	series_row.visible = series_on and not (hub != null and hub.walking)
+	series_row.visible = series_on and not (hub != null and hub.walking) and not round_on
+	# (build 33) the series line and the Season pill share the space under
+	# the tabs: during a series the line takes it (they overlapped)
+	if is_instance_valid(season_pill):
+		season_pill.visible = not (hub != null and hub.walking) and not series_row.visible
 	standings_btn.visible = series_on and not (view.get("standings", {}) as Dictionary).is_empty()
 	var bots := 8 - humans
 	if App.quick_searching:
@@ -1155,35 +1227,61 @@ func _refresh() -> void:
 		sub_lbl.text = ""
 		status_lbl.text = "Finding players… %d:%02d · bots fill empty seats" % [secs / 60, secs % 60]
 		return
+	# (build 33) our own Ready as the party has it (the button follows it)
+	var me_e: Variant = session.roster[session.local_slot] if session.local_slot >= 0 else null
+	if me_e != null:
+		_is_ready = bool(me_e["ready"])
+	unready_btn.visible = false
+	sub_lbl.visible = true
+	var leader := session.is_leader()
+	var bot_txt := "1 bot" if bots == 1 else "%d bots" % bots
 	if hosting and solo and not series_on and play_mode() != "party" and play_mode() != "bots":
 		primary_btn.text = "PLAY"
 		primary_btn.disabled = false
 		UIKit._apply(primary_btn, UIKit.AMBER, UIKit.NAVY)
 		sub_lbl.text = ""
 		status_lbl.text = ""
-	elif hosting:
+	elif round_on:
+		# (build 33) we left the round; the others are finishing it
+		primary_btn.text = "Round in progress"
+		primary_btn.disabled = true
+		UIKit._apply(primary_btn, UIKit.SLATE_HI, UIKit.IVORY)
+		sub_lbl.text = ""
+		status_lbl.text = "Your party is finishing a round · you'll play the next one together"
+	elif leader and (humans <= 1 or _is_ready):
+		# the leader's Start: everyone ready, the leader included
 		primary_btn.text = ("Start round %d" % nxt) if series_on else ("PLAY" if solo else "Start")
-		primary_btn.disabled = not session.can_start()
+		primary_btn.disabled = not session.start_allowed()
 		UIKit._apply(primary_btn, UIKit.AMBER, UIKit.NAVY)
-		var bot_txt := "1 bot" if bots == 1 else "%d bots" % bots
 		sub_lbl.text = ("You + " + bot_txt if humans == 1 else "%d players + %s" % [humans, bot_txt]) if bots > 0 else "Full party"
 		if humans == 1:
 			status_lbl.text = ("Invite friends, or play now." if solo else "Share the code, or start now.") if not series_on else "Start the next round when you're ready."
-		elif not_ready > 0:
-			status_lbl.text = "Waiting for %d to tap Ready" % not_ready
 		else:
-			# (build 28) a big party's roster header already says "8 ready":
-			# the line goes, so Start stays on screen
-			status_lbl.text = "" if _grid.columns >= 3 else "Everyone's ready"
+			unready_btn.visible = true
+			sub_lbl.visible = false
+			if not_ready > 0:
+				status_lbl.text = "You're ready · waiting for %d to tap Ready" % not_ready
+			else:
+				# (build 28) a big party's roster header already says "8 ready":
+				# the line goes, so Start stays on screen
+				status_lbl.text = "" if _grid.columns >= 3 else "Everyone's ready"
+	elif leader:
+		# the leader readies up first, like everyone (then the button is Start)
+		primary_btn.disabled = session.local_slot < 0
+		primary_btn.text = "Ready for round %d" % nxt if series_on else "Ready"
+		UIKit._apply(primary_btn, UIKit.AMBER, UIKit.NAVY)
+		sub_lbl.text = "%d players + %s" % [humans, bot_txt] if bots > 0 else "Full party"
+		status_lbl.text = "Tap Ready · Start once everyone's ready" if not_ready > 0 else "Everyone else is ready · tap Ready, then Start"
 	else:
 		primary_btn.disabled = session.local_slot < 0
 		primary_btn.text = "Not ready" if _is_ready else ("Ready for round %d" % nxt if series_on else "Ready")
 		UIKit._apply(primary_btn, UIKit.SLATE_HI if _is_ready else UIKit.AMBER, UIKit.IVORY if _is_ready else UIKit.NAVY)
 		sub_lbl.text = ""
-		if session.host_peer < 0:
+		if not hosting and session.host_peer < 0:
 			status_lbl.text = "Looking for party %s…" % session.room_code
 		else:
-			status_lbl.text = "You're ready — waiting for the host" if _is_ready else "Tap Ready when you are"
+			status_lbl.text = "You're ready — waiting for %s to start" % _leader_name() if _is_ready else "Tap Ready when you are"
+	if not hosting:
 		# a settings change cleared our ready: say so once
 		if session.settings_note != "" and session.settings_note != _last_note:
 			_last_note = session.settings_note
@@ -1198,6 +1296,22 @@ func _refresh() -> void:
 		status_lbl.text = "Drag on the left to walk · Done to stop" if Controls.device == "touch" else "Move to walk · Back to stop"
 	# (build 28) an empty status line takes no height
 	status_lbl.visible = status_lbl.text != ""
+
+
+## (build 33) We left the round in progress and wait in the party lobby
+## while the others finish it.
+func away_in_round() -> bool:
+	if session.is_host():
+		return false
+	return session.host_phase >= TC.Phase.LOADING and session.host_phase <= TC.Phase.PLAYING
+
+
+## The party leader's name ("the leader" when unknown).
+func _leader_name() -> String:
+	var ls := session.leader_slot
+	if ls >= 0 and ls < 8 and session.roster[ls] != null:
+		return SocialSafety.name_of(session.roster[ls])
+	return "the leader"
 
 
 ## "Comfy Frog joined" / "… left" for people (not bots), once per change.
@@ -1369,13 +1483,14 @@ func hit_own_runner(at: Vector2) -> bool:
 
 
 func _settings_sheet() -> void:
-	var host := session.is_host() and session.mode != NetSession.Mode.OFFLINE
+	# (build 33) the party leader's (a guest leader's changes go through the host)
+	var host := session.is_leader() and session.mode != NetSession.Mode.OFFLINE
 	var locked := session.series_active()
 	var v := UIKit.vbox(12)
 	v.custom_minimum_size = Vector2(560, 0)
 	v.add_child(UIKit.styled("Party settings", "headline"))
 	if not host:
-		v.add_child(UIKit.styled("Set by the host", "caption", UIKit.IVORY_MUTED))
+		v.add_child(UIKit.styled("Set by the party leader", "caption", UIKit.IVORY_MUTED))
 	elif locked:
 		v.add_child(UIKit.styled("Locked for this series (round %d of %d is next)." % [session.next_round_number(), session.rounds_total()], "caption", UIKit.IVORY_MUTED))
 	var cur := session.settings.duplicate()
@@ -1387,7 +1502,7 @@ func _settings_sheet() -> void:
 	var map_row := MapRow.make(String(cur.get("map", CampusMaps.PLAY_DEFAULT)), host and not locked)
 	map_row.pressed.connect(func() -> void:
 		MapSheet.open(self, String(session.settings.get("map", CampusMaps.PLAY_DEFAULT)), host and not locked, func(id: String) -> void:
-			if session.host_set_settings(int(session.settings["watch"]), int(session.settings["rounds"]), id):
+			if session.leader_set_settings(int(session.settings["watch"]), int(session.settings["rounds"]), id):
 				Save.set_setting("party_map", id)
 			_refresh()
 			_settings_sheet()))
@@ -1405,8 +1520,9 @@ func _settings_sheet() -> void:
 			var val: int = o[0]
 			b.pressed.connect(func() -> void:
 				cur[key] = val
-				session.host_set_settings(int(cur["watch"]), int(cur["rounds"]), String(cur.get("map", "")))
-				cur = session.settings.duplicate()
+				session.leader_set_settings(int(cur["watch"]), int(cur["rounds"]), String(cur.get("map", "")))
+				if session.is_host():
+					cur = session.settings.duplicate()
 				_paint_choices(rows, cur, notes)
 				_refresh())
 			row.add_child(b)
@@ -1424,8 +1540,8 @@ func _settings_sheet() -> void:
 	if host and not locked:
 		var reset := UIKit.quiet("Reset to recommended", Vector2(300, 68))
 		reset.pressed.connect(func() -> void:
-			session.host_set_settings(PartySeries.DEFAULT_WATCH, PartySeries.DEFAULT_ROUNDS)
-			cur = session.settings.duplicate()
+			session.leader_set_settings(PartySeries.DEFAULT_WATCH, PartySeries.DEFAULT_ROUNDS)
+			cur = {"watch": PartySeries.DEFAULT_WATCH, "rounds": PartySeries.DEFAULT_ROUNDS, "map": cur.get("map", "")} if not session.is_host() else session.settings.duplicate()
 			_paint_choices(rows, cur, notes)
 			_refresh())
 		foot.add_child(reset)
@@ -1434,8 +1550,9 @@ func _settings_sheet() -> void:
 		endb.pressed.connect(func() -> void:
 			close_popover()
 			UIKit.v7_back_chooses(self, dialog("End this series now? Rounds already played still count; there's no prize for the rest.", [["End series", func() -> void:
-				session.host_end_series()
-				App.show_series_final()], ["Keep playing", Callable()]])))
+				session.leader_end_series()
+				if session.is_host():
+					App.show_series_final()], ["Keep playing", Callable()]])))
 		foot.add_child(endb)
 	foot.add_child(UIKit.spacer_h())
 	var done := UIKit.secondary("Done", Vector2(180, 68))
@@ -1478,7 +1595,6 @@ func _standings_sheet() -> void:
 func _player_popover(i: int, anchor: Control) -> void:
 	var e: Dictionary = session.roster[i]
 	var uid := String(e["uid"])
-	var pid := String(e.get("pid", ""))
 	var me := i == session.local_slot
 	var v := UIKit.vbox(10)
 	v.custom_minimum_size = Vector2(380, 0)
@@ -1493,7 +1609,9 @@ func _player_popover(i: int, anchor: Control) -> void:
 	nm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	nm.custom_minimum_size = Vector2(250, 0)
 	nv.add_child(nm)
-	var st := "Host" if int(e["slot"]) == 0 else ("Bot" if bool(e["is_bot"]) else ("Ready" if bool(e["ready"]) else "In the party"))
+	var st := "Bot" if bool(e["is_bot"]) else ("In a round" if session.member_in_round(i) else ("Ready" if bool(e["ready"]) else "Not ready"))
+	if i == session.leader_slot and not bool(e["is_bot"]):
+		st = "Party leader · " + st
 	nv.add_child(UIKit.styled(("You · " if me else "") + st, "caption", UIKit.IVORY_MUTED))
 	head.add_child(nv)
 	v.add_child(head)
@@ -1532,14 +1650,23 @@ func _player_popover(i: int, anchor: Control) -> void:
 		dialog("Block %s? You won't see their chat, emotes or name, you won't be put in parties together, and they can't join yours." % SocialSafety.name_of(e),
 			[["Block", func() -> void: _block(e, i)], ["Cancel", Callable()]]))
 	v.add_child(bb)
-	if session.is_host():
+	# (build 33) the leader's actions: promote, remove (the host's device
+	# can't be removed: the party lives on it)
+	if session.can_promote(i):
+		var pb := UIKit.secondary("Promote to leader", Vector2(340, 72))
+		pb.name = "Promote"
+		pb.pressed.connect(func() -> void:
+			close_popover()
+			dialog("Make %s the party leader? They'll start rounds and choose the settings." % SocialSafety.name_of(e), [["Promote", func() -> void:
+				session.promote(i)
+				_refresh()], ["Cancel", Callable()]]))
+		v.add_child(pb)
+	if session.is_leader() and i != session.host_slot():
 		var kb := UIKit.quiet("Remove from party", Vector2(340, 72))
 		kb.pressed.connect(func() -> void:
 			close_popover()
 			dialog("Remove %s from the party?" % e["name"], [["Remove", func() -> void:
-				if pid != "" and App.party_code != "":
-					Cloud.kick_from_room(App.party_code, pid)
-				session.kick(i)], ["Cancel", Callable()]]))
+				session.leader_kick(i)], ["Cancel", Callable()]]))
 		v.add_child(kb)
 	popover_at(anchor, v, "left")
 
@@ -1642,6 +1769,10 @@ class Avatar:
 			draw_texture_rect(tex, Rect2(c - Vector2(r, r) * 1.02, Vector2(r, r) * 2.04), false)
 
 
+## (build 33) the hologram blue (CharacterView's hologram, the In a round chip)
+const HOLO_BLUE := Color("4db8ff")
+
+
 ## One roster card (contents updated in place): portrait, name, status and
 ## a status badge.  The card is the hit region; its face draws and presses.
 class SlotCell:
@@ -1656,6 +1787,10 @@ class SlotCell:
 	## the whole party
 	var plate: CardPlate
 	var medal: BadgeMark
+	## (build 33) a clear check beside the name once they're ready
+	var ready_mark: Icons.IconRect
+	## (build 33) "In a round": still playing one (a hologram on their mark)
+	var round_chip: PanelContainer
 	var _me := false
 
 	func _init() -> void:
@@ -1689,11 +1824,26 @@ class SlotCell:
 		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		h.add_child(v)
+		var nrow := UIKit.hbox(6)
+		nrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(nrow)
 		name_l = UIKit.styled("", "label")
 		name_l.custom_minimum_size = Vector2(60, 0)
+		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		UIKit.fit_text(name_l, [UIKit.T_LABEL, UIKit.T_CAPTION, 18])
-		v.add_child(name_l)
+		nrow.add_child(name_l)
+		# a filled teal disc with a navy check: reads at a glance on any card
+		var rm := PanelContainer.new()
+		rm.name = "ReadyMark"
+		rm.add_theme_stylebox_override("panel", UIKit.box(UIKit.TEAL, 999, 0, Color.WHITE, 3))
+		rm.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		rm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ready_mark = Icons.IconRect.new("check", UIKit.NAVY, 20)
+		ready_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rm.add_child(ready_mark)
+		rm.visible = false
+		nrow.add_child(rm)
 		var row := UIKit.hbox(5)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(row)
@@ -1707,6 +1857,18 @@ class SlotCell:
 		sub_l.clip_text = true
 		sub_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(sub_l)
+		round_chip = PanelContainer.new()
+		round_chip.name = "InRound"
+		round_chip.add_theme_stylebox_override("panel", UIKit.box(Color(HOLO_BLUE, 0.22), 999, 1, Color(HOLO_BLUE, 0.85), 8))
+		round_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		round_chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var rl := UIKit.styled("In a round", "caption", HOLO_BLUE.lightened(0.35))
+		rl.add_theme_font_size_override("font_size", 16)
+		rl.add_theme_font_override("font", UIKit.font_w(700))
+		rl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		round_chip.add_child(rl)
+		round_chip.visible = false
+		row.add_child(round_chip)
 		# the badge sits on the portrait's corner (the name keeps the width)
 		medal.position = Vector2(30, 28)
 		face.add_child(medal)
@@ -1741,6 +1903,8 @@ class SlotCell:
 			badge.visible = false
 			plate.visible = false
 			medal.visible = false
+			ready_mark.get_parent().visible = false
+			round_chip.visible = false
 			sub_l.get_parent().visible = sub_l.text != ""
 			accessibility_name = name_l.text
 			UIKit.refit(name_l)
@@ -1760,28 +1924,42 @@ class SlotCell:
 		medal.queue_redraw()
 		name_l.text = String(ent["name"])
 		name_l.add_theme_color_override("font_color", UIKit.IVORY)
+		# (build 33) the leader's crown; a check beside the name when ready;
+		# "In a round" for someone still playing the round we left
 		var bits: Array[String] = []
-		var host_slot := int(ent["slot"]) == 0
+		var lead := bool(ent.get("leader", false)) and not bool(ent["is_bot"])
+		var in_round := bool(ent.get("in_round", false))
+		var rdy := bool(ent["ready"]) and not bool(ent["is_bot"]) and not in_round
+		# (the crown says who leads: the line stays as short as before)
 		if me:
 			bits.append("You")
 		if bool(ent["is_bot"]):
 			bits.append("Bot")
 		elif not bool(ent["connected"]):
 			bits.append("Reconnecting…")
-		elif host_slot:
-			bits.append("Host")
-		elif bool(ent["ready"]):
+		elif in_round or bool(ent.get("alone", false)):
+			pass   # the chip says it (alone: nothing to be ready for)
+		elif rdy:
 			bits.append("Ready")
-		else:
-			bits.append("Not ready")
+		elif not me:
+			bits.append("Not ready")   # (your own card: your button says it)
 		if muted.has(String(ent["uid"])):
 			bits.append("emotes hidden")
 		sub_l.text = " · ".join(bits)
-		var ok := bool(ent["ready"]) or host_slot or bool(ent["is_bot"])
-		badge.kind = "crown" if host_slot else ("bot" if bool(ent["is_bot"]) else ("check" if ok else "smile"))
-		badge.col = UIKit.AMBER if host_slot else (UIKit.TEAL if ok else Color(UIKit.IVORY, 0.35))
+		sub_l.visible = sub_l.text != ""
+		sub_l.add_theme_color_override("font_color", UIKit.TEAL if rdy and not me else UIKit.IVORY_MUTED)
+		ready_mark.get_parent().visible = rdy and not bool(ent.get("alone", false))
+		round_chip.visible = in_round
+		badge.visible = lead or bool(ent["is_bot"]) or in_round
+		badge.kind = "crown" if lead else ("bot" if bool(ent["is_bot"]) else "bolt")
+		badge.col = UIKit.AMBER if lead else (HOLO_BLUE if in_round else Color(UIKit.IVORY, 0.5))
 		badge.queue_redraw()
-		accessibility_name = "%s, %s" % [name_l.text, sub_l.text]
+		var acc := "%s, %s" % [name_l.text, sub_l.text]
+		if lead:
+			acc += ", party leader"
+		if in_round:
+			acc += ", in a round"
+		accessibility_name = acc
 		UIKit.refit(name_l)
 
 

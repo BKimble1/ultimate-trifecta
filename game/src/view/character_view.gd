@@ -51,6 +51,11 @@ extends Node3D
 const SCENE := preload("res://assets/characters/runner.glb")
 const SHADER := preload("res://assets/shaders/character.gdshader")
 const SHADER_TWO_SIDED := preload("res://assets/shaders/character_two_sided.gdshader")
+## (build 33) the hologram (a party member still in a round, on their lobby
+## mark): a depth pass, then the translucent colour pass (set_hologram)
+const HOLO_SHADER := preload("res://assets/shaders/character_holo.gdshader")
+const HOLO_DEPTH_SHADER := preload("res://assets/shaders/character_holo_depth.gdshader")
+const HOLO_PAD_SHADER := preload("res://assets/shaders/holo_pad.gdshader")
 ## Parts drawn without back-face culling: the nightcap's fold crosses itself
 ## (tools/character/parts.py build_nightcap), and culled it showed the head
 ## through the crease.
@@ -707,6 +712,103 @@ func _build_flashlight() -> void:
 
 
 var _cloaked := false
+var _leave_tw: Tween
+## (build 33) shown as a hologram (set_hologram), and how far it has faded in
+var hologram := false
+var holo_amount := 0.0
+var holo_pad: MeshInstance3D
+var _holo_tw: Tween
+static var _holo_mats: Dictionary = {}   # two_sided -> ShaderMaterial (depth pass, colour as next_pass)
+static var _holo_pad_mat: ShaderMaterial
+
+
+## The hologram's materials, shared by every character: the depth pass with
+## the colour pass as its next pass.  Both draw before anything else
+## transparent (render_priority), every depth pass before any colour pass.
+static func _holo_material(two_sided: bool) -> ShaderMaterial:
+	if _holo_mats.has(two_sided):
+		return _holo_mats[two_sided]
+	var depth := ShaderMaterial.new()
+	var col := ShaderMaterial.new()
+	if two_sided:
+		var sd := Shader.new()
+		sd.code = HOLO_DEPTH_SHADER.code.replace("cull_back", "cull_disabled")
+		depth.shader = sd
+		var sc := Shader.new()
+		sc.code = HOLO_SHADER.code.replace("cull_back", "cull_disabled")
+		col.shader = sc
+	else:
+		depth.shader = HOLO_DEPTH_SHADER
+		col.shader = HOLO_SHADER
+	depth.render_priority = -20
+	col.render_priority = -19
+	depth.next_pass = col
+	_holo_mats[two_sided] = depth
+	return depth
+
+
+## (build 33) Show this character as a hologram (on) or as itself (off): a
+## translucent, softly glowing blue version of the same look, on a glowing
+## disc, casting no shadow.  It fades in (at once with Reduced Motion, which
+## also stills the scanline band and the flicker).
+func set_hologram(on: bool, animate: bool = true) -> void:
+	if on == hologram:
+		return
+	hologram = on
+	if model == null:
+		return
+	if on:
+		for n in parts:
+			var mi: MeshInstance3D = parts[n]
+			mi.material_override = _holo_material(TWO_SIDED.has(String(n)))
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			mi.set_instance_shader_parameter("holo_seed", float(get_instance_id() % 997) / 97.0)
+			mi.set_instance_shader_parameter("holo_motion", 0.0 if reduced_motion else 1.0)
+		if holo_pad == null:
+			holo_pad = MeshInstance3D.new()
+			holo_pad.name = "HoloPad"
+			var pm := PlaneMesh.new()
+			pm.size = Vector2(1.15, 1.15)
+			holo_pad.mesh = pm
+			if _holo_pad_mat == null:
+				_holo_pad_mat = ShaderMaterial.new()
+				_holo_pad_mat.shader = HOLO_PAD_SHADER
+			holo_pad.material_override = _holo_pad_mat
+			holo_pad.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			holo_pad.position = Vector3(0, 0.012, 0)
+			add_child(holo_pad)
+		holo_pad.set_instance_shader_parameter("holo_motion", 0.0 if reduced_motion else 1.0)
+		holo_pad.visible = true
+	# in: it fades up; out: the character itself is back at once (the stage
+	# gives it its arrival hop)
+	_fade_holo(1.0 if on else 0.0, on and animate and not reduced_motion and is_inside_tree())
+
+
+func _fade_holo(to: float, animate: bool) -> void:
+	if _holo_tw != null and _holo_tw.is_valid():
+		_holo_tw.kill()
+	if not animate:
+		_set_holo_amount(to)
+		return
+	_holo_tw = create_tween()
+	_holo_tw.tween_method(_set_holo_amount, holo_amount, to, 0.35)
+
+
+func _set_holo_amount(a: float) -> void:
+	holo_amount = a
+	if not hologram and a <= 0.001:
+		# back to the character itself
+		for n in parts:
+			var mi: MeshInstance3D = parts[n]
+			mi.material_override = _shared_material(TWO_SIDED.has(String(n)))
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		if holo_pad != null:
+			holo_pad.visible = false
+		return
+	for n in parts:
+		(parts[n] as MeshInstance3D).set_instance_shader_parameter("holo_fade", a)
+	if holo_pad != null:
+		holo_pad.set_instance_shader_parameter("holo_fade", a)
 
 
 func _label_color() -> Color:
@@ -874,10 +976,30 @@ func play_leave() -> void:
 	set_process(true)
 	rs["emote"] = 0
 	rs["emote_t"] = 1.0
+	if _leave_tw != null and _leave_tw.is_valid():
+		_leave_tw.kill()
 	var tw := create_tween()
+	_leave_tw = tw
 	tw.tween_interval(0.15 if reduced_motion else 0.7)
 	tw.tween_property(self, "scale", Vector3.ONE * 0.01, 0.12 if reduced_motion else 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	tw.tween_callback(queue_free)
+
+
+## (build 33) The same player came back while the leave wave played: they
+## stay (full size, the wave ends).
+func cancel_leave() -> void:
+	if _leave_tw != null and _leave_tw.is_valid():
+		_leave_tw.kill()
+	_leave_tw = null
+	scale = Vector3.ONE
+	var r2 := rs.duplicate()
+	r2["emote"] = -1
+	r2["emote_t"] = 0.0
+	apply_state(r2)
+
+
+func leaving() -> bool:
+	return _leave_tw != null and _leave_tw.is_valid()
 
 
 ## One brief arrival hop (lobby).

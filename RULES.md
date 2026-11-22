@@ -20,12 +20,19 @@ All values come from one resource, `game/config/rules_default.tres` (`RulesConfi
 
 - Eight gameplay slots; bots fill empty seats and stay labelled. `runners = 8 − Night Watch`, `home to win = ceil(2 × runners / 3)` (`PartySeries.required_home`).
 - **Rounds:** 1, 3 (recommended for friends) or 5. The lobby shows one summary line, e.g. "3 rounds · 2 Night Watch · 6 runners · 4 home to win", and Reset to recommended.
-- Only the host can change them, only in the lobby before a series starts. A change bumps a revision, clears guests' Ready and tells them why. Settings lock when the series starts; ending the series (with confirmation) unlocks them. Guests see the host's values read-only.
+- Only the party leader can change them, only in the lobby before a series starts. A change bumps a revision, clears everyone else's Ready and tells them why. Settings lock when the series starts; ending the series (with confirmation) unlocks them. Everyone else sees the leader's values read-only.
+
+## Party leader, Ready and leaving (build 33)
+
+- **Leader and host.** The device hosting the relay room (the host) runs the simulation. The **party leader** (the crown on their card) starts rounds, changes the settings, removes members and promotes another member (tap their card › Promote to leader, with a confirm). A party starts with the host as leader. A guest leader's Start, settings, removals and promotions go to the host, which carries them out only when they come from the leader and are allowed then (everyone ready, settings unlocked, never removing the host). The leader is synced to everyone in LOBBY.
+- When the leader leaves the party (or drops out between rounds), the next member in party order leads (the host when nobody else can). When the host leaves the party, it ends for everyone with a message; there is no host migration.
+- **Ready.** Everyone readies up, the leader too; each ready player's card shows a check beside their name ("Not ready" otherwise). The leader's button is Ready, then Start; Start is enabled once every human in the party is ready (a party of one needs no Ready), and a small Not ready beside it takes the leader's back.
+- **Leaving a round never leaves the party.** A guest who leaves a round (pause › Leave round › Back to lobby, or Back to lobby while it loads) goes back to the party lobby and stays in the party; a bot plays their seat to the end (their row counts as away: no Round Win, no reward). In their lobby, members still playing are holograms on their marks with "In a round" on their cards; when the round ends everyone is back together and plays the next round. The host leaving a round asks "End the round for everyone?": everyone goes back to the party lobby, and the round is cancelled (no loss, no reward, it doesn't use up a round of the series). Only Leave party (the lobby header, with a confirm) leaves the party. With a host on an older build, leaving a round leaves the party as before.
 - Each round starts from an immutable snapshot of the locked settings carried in START; incompatible clients are refused with "Update the game to join." (protocol 8 since Pass 9, when sprint was removed; protocol 7 was Pass 8; a guest whose dorm geometry differs from the round's is refused the same way).
 
 ## Roles
 
-- **Friend parties:** drawn on the host at each round from a seeded random draw. Round 1 gives every human an equal chance; later rounds prefer whoever has had fewer Night Watch turns, ties broken at random. With two or more humans at least one human stays a runner and up to min(Night Watch, humans − 1) humans go on the Night Watch; bots take the remaining Night Watch seats. Saved role preferences play no part.
+- **Friend parties (build 33):** drawn afresh on the host every round: all eight seats, humans and bots, are shuffled and the first (Night Watch count) of the shuffled order are the Night Watch, so every seat has the same chance (count ÷ 8) whatever happened last round. A human who was Night Watch in each of the last two rounds is drawn with a lower weight (0.35), never excluded. With two or more humans, if every human was drawn the lowest-drawn human runs and a bot takes the seat (a party of humans only keeps the draw). Saved role preferences play no part. (Builds up to 32 put exactly one of two friends on the Night Watch by fewest turns, so it alternated predictably.)
 - **One human in a party:** Night Watch with probability (Night Watch count ÷ 8), otherwise runner. Solo practice is the way to pick a role.
 - **Solo practice:** Runner, Night Watch or Random, plus a guided runner tutorial and a guided Night Watch exercise (find a runner, wait for Tag to light, tag, the capture and protection rules, a cart and a hop-out tag; runner bots jog slower there). The choice is stored for practice only.
 - A reconnecting player keeps the same seat and role for the current round. Spectators and newcomers join at a round boundary and never inherit anyone's score.
@@ -33,12 +40,12 @@ All values come from one resource, `game/config/rules_default.tres` (`RulesConfi
 ## Series
 
 - A round is one campus chase; a series is the chosen 1/3/5 completed rounds in the same party. Lifecycle: party setup → role reveal → shared loading and countdown → round → round results → ready for the next round → … → final series results → play another series or back to the lobby.
-- The HUD and results say "Round 2 of 3". The host starts the next round when connected humans are ready (bots are always ready); nothing starts on its own. Guests see "Ready for round N" / "Waiting for host", not a Rematch button.
+- The HUD and results say "Round 2 of 3". The party leader starts the next round when every human is ready (bots are always ready); nothing starts on its own. Everyone else sees "Ready for round N" / "Waiting for the party leader", not a Rematch button.
 - **Round Win:** every eligible participant whose role's team won the round gets one. Personal contribution is shown separately (runners: splashes, home order, times caught; Night Watch: tags and different runners tagged) and never ranked against the other role's numbers.
 - **Final leaderboard:** by Round Wins; ties share a place; "You" highlighted; rounds played shown; late joiners and partial participation marked; bots kept out of the standings. The role-team tally ("Runners won 2, Night Watch won 1") is a tally of roles, not a fixed team's score.
 - **Eligibility:** a human counts as present when connected at the end and away (a bot covering) for no more than 40% of the round; otherwise no Round Win and no coins for that round (it is still recorded so it can't pay later).
 - Results are applied once per series, round and player identity (match ID + uid), so repeated packets, reopened results and reconnects can't pay twice. A cancelled round counts for nothing and doesn't use up a round.
-- The host can end a series early (confirmation); completed rounds stand. Host loss ends the party as before.
+- The party leader can end a series early (confirmation); completed rounds stand. Host loss ends the party as before.
 
 ## Round
 

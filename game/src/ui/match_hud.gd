@@ -392,6 +392,9 @@ var _backdrop: ColorRect
 var _pause_main: Control
 var _pause_confirm: Control
 var _confirm_text: Label
+## (build 33) the confirmation's title ("Leave match?", "End the round for
+## everyone?", "Back to the party?")
+var _confirm_head: Label
 var _status_lbl: Label
 var _info_lbl: Label
 var _overlays: Array[String] = []
@@ -480,7 +483,10 @@ func _build_pause() -> void:
 	_pause_confirm = c
 	c.visible = false
 	stack.add_child(c)
-	c.add_child(UIKit.heading("Leave match?", 30))
+	_confirm_head = UIKit.heading("Leave match?", 30)
+	_confirm_head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_confirm_head.custom_minimum_size = Vector2(bw, 0)
+	c.add_child(_confirm_head)
 	_confirm_text = UIKit.label("", 19, UIKit.IVORY_MUTED)
 	_confirm_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_confirm_text.custom_minimum_size = Vector2(bw, 0)
@@ -634,6 +640,15 @@ func open_pause() -> void:
 	_pause_confirm.visible = false
 	_info_lbl.text = pause_info()
 	_info_lbl.visible = _info_lbl.text != ""
+	# (build 33) what Leave does here: nobody leaves the party from a round
+	var lb: Button = pause_panel.get_meta("leave")
+	match App.round_leave_mode(mc.session if mc != null else null):
+		"end_for_all":
+			lb.text = "End round"
+		"stay":
+			lb.text = "Leave round"
+		_:
+			lb.text = "Leave match"
 	_backdrop.visible = true
 	pause_panel.visible = true
 	_fit_pause()
@@ -699,13 +714,27 @@ func _freeze(on: bool) -> void:
 func _ask_leave() -> void:
 	if _leaving or not paused():
 		return
-	var online := mc.session != null and mc.session.mode != NetSession.Mode.OFFLINE
-	if not online:
-		_confirm_text.text = "This practice round ends. Nothing is earned."
-	elif mc.session.is_host():
-		_confirm_text.text = "You're hosting: leaving ends the match and the party for everyone."
-	else:
-		_confirm_text.text = "You'll leave the party. The others play on, and this round earns you nothing."
+	# (build 33) nobody leaves the party from here (Leave party does that),
+	# except a Quick Match with other players (one round) or an older host
+	var go: Button = pause_panel.get_meta("go")
+	_confirm_head.text = "Leave match?"
+	go.text = "Leave"
+	match App.round_leave_mode(mc.session):
+		"practice":
+			_confirm_text.text = "This practice round ends. Nothing is earned."
+		"end_for_all":
+			_confirm_head.text = "End the round for everyone?"
+			_confirm_text.text = "You're hosting this round: everyone goes back to the party lobby, and the round doesn't count for anyone. You all stay in the party."
+			go.text = "End round"
+		"stay":
+			_confirm_head.text = "Back to the party?"
+			_confirm_text.text = "You stay in the party and wait in the lobby. The others play on with a bot in your place, and this round earns you nothing."
+			go.text = "Back to lobby"
+		_:
+			if mc.session.is_host():
+				_confirm_text.text = "You're hosting: leaving ends the match for everyone."
+			else:
+				_confirm_text.text = "You'll leave the match. The others play on, and this round earns you nothing."
 	_pause_main.visible = false
 	_pause_confirm.visible = true
 	overlay_opened("confirm")

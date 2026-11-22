@@ -14,7 +14,7 @@ extends RefCounted
 ## default resource is never modified.
 ##
 ## A series is the chosen number of completed rounds in the same party.  The
-## host owns it: roles are assigned per round with fair random rotation,
+## host owns it: roles are drawn at random every round (assign_roles),
 ## each completed round is recorded once (by match id), cancelled rounds
 ## don't count, and the friends leaderboard orders humans by Round Wins (ties
 ## share a place).  Bots never appear in the friends standings.
@@ -139,46 +139,57 @@ func in_progress() -> bool:
 	return id != "" and not finished
 
 
-## Fair random roles for one round of a friend party.
-## players: [{slot, uid, is_bot}].  Returns slot -> TC.Role.
-##  * Saved role preferences are ignored.
-##  * Two or more humans: at least one human runner; up to
-##    min(watch, humans - 1) humans are Night Watch, preferring those with
-##    fewer Night Watch turns in this series (ties random), so the first
-##    round is an equal draw and later rounds rotate.
-##  * One human: they are Night Watch with the same odds as any seat
-##    (watch / 8), otherwise a runner.  (Practice lets them choose.)
-##  * Bots fill the remaining Night Watch seats.
+## (build 33) Random roles for one round of a friend party, drawn afresh
+## every round.  players: [{slot, uid, is_bot, streak}] (streak: Night
+## Watch rounds in a row just before this one).  Returns slot -> TC.Role.
+##  * Everyone, humans and bots, is shuffled and the first `watch` seats of
+##    the shuffled order are the Night Watch: each seat has the same chance
+##    (watch / 8), whoever they are and whatever role they had last time.
+##    (Build 32 put exactly one of two humans on the Night Watch, by fewest
+##    turns: it alternated predictably, so a pair of friends always knew.)
+##  * A light fairness rule: a human who was Night Watch in each of the
+##    last STREAK_ROUNDS rounds is drawn with weight STREAK_WEIGHT (less
+##    likely, never excluded).
+##  * With two or more humans, not every human goes on the Night Watch
+##    while a bot could take the seat instead (friends always have someone
+##    to chase or to run with); a party of humans only keeps the draw.
+##  * Saved role preferences play no part.  (Practice lets you choose.)
+const STREAK_ROUNDS := 2
+const STREAK_WEIGHT := 0.35
+
+
 func assign_roles(players: Array, seed_v: int) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_v
 	var watch := int(settings.get("watch", DEFAULT_WATCH))
-	var humans: Array = []
-	var bots: Array = []
-	for p in players:
-		(bots if bool(p.get("is_bot", false)) else humans).append(p)
 	var roles := {}
+	var keyed: Array = []
+	var humans := 0
 	for p in players:
-		roles[int(p["slot"])] = TC.Role.RUNNER
-	var human_watch := 0
-	if humans.size() >= 2:
-		human_watch = mini(watch, humans.size() - 1)
-	elif humans.size() == 1:
-		human_watch = 1 if rng.randf() < float(watch) / float(SLOTS) else 0
-	var ranked: Array = []
-	for h in humans:
-		var st: Dictionary = standings.get(String(h["uid"]), {})
-		ranked.append({"slot": int(h["slot"]), "turns": int(st.get("watch_turns", 0)), "r": rng.randf()})
-	ranked.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return a["turns"] < b["turns"] if a["turns"] != b["turns"] else a["r"] < b["r"])
-	for i in human_watch:
-		roles[int(ranked[i]["slot"])] = TC.Role.PATROL
-	var bot_order: Array = []
-	for b in bots:
-		bot_order.append({"slot": int(b["slot"]), "r": rng.randf()})
-	bot_order.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["r"] < b["r"])
-	for i in mini(watch - human_watch, bot_order.size()):
-		roles[int(bot_order[i]["slot"])] = TC.Role.PATROL
+		var slot := int(p["slot"])
+		roles[slot] = TC.Role.RUNNER
+		var bot := bool(p.get("is_bot", false))
+		if not bot:
+			humans += 1
+		var w := STREAK_WEIGHT if not bot and int(p.get("streak", 0)) >= STREAK_ROUNDS else 1.0
+		# weighted shuffle (Efraimidis-Spirakis): sort by u^(1/w), largest first
+		var u := maxf(rng.randf(), 1e-9)
+		keyed.append({"slot": slot, "bot": bot, "k": pow(u, 1.0 / w)})
+	keyed.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["k"] > b["k"])
+	var n := mini(watch, keyed.size())
+	var picked: Array = keyed.slice(0, n)
+	var rest: Array = keyed.slice(n)
+	if humans >= 2 and picked.filter(func(x: Dictionary) -> bool: return not x["bot"]).size() == humans:
+		# every human drawn: the lowest-drawn human runs, the highest-drawn
+		# bot left over takes the seat (none left: a party of humans only)
+		var spare: Array = rest.filter(func(x: Dictionary) -> bool: return x["bot"])
+		if not spare.is_empty():
+			for i in range(picked.size() - 1, -1, -1):
+				if not picked[i]["bot"]:
+					picked[i] = spare[0]
+					break
+	for x in picked:
+		roles[int(x["slot"])] = TC.Role.PATROL
 	return roles
 
 
