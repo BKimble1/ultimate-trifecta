@@ -147,8 +147,31 @@ func _host(me: Dictionary) -> void:
 	var members: Array = hb.get("members", [])
 	check(members.any(func(m: Dictionary) -> bool: return String(m["profile_id"]) == guest_pid and String(m["state"]) == "connected"),
 		"the room heartbeat keeps the guest's place (connected)")
+	# (build 32) a real round over the relay: the game's own round flow
+	# (loading screen, MatchController), the guest's stick moving its runner
+	say("starting a round")
+	s.host_start_match()
+	got = await wait_for(func() -> bool: return s.phase == TC.Phase.PLAYING, 180.0)
+	check(got, "the round started for both (host PLAYING, phase %d)" % s.phase)
+	if got:
+		var gslot := int(e["slot"])
+		var mc: Variant = a.get("match_ctrl")
+		got = await wait_for(func() -> bool: return mc != null and is_instance_valid(mc) and (mc as MatchController).sim != null, 20.0)
+		if check(got, "the host's match is running"):
+			var sim: MatchSim = (mc as MatchController).sim
+			var gp: SimPlayer = null
+			for pl in sim.players:
+				if int(pl.id) == gslot:
+					gp = pl
+			if check(gp != null, "the guest's runner is in the host's round"):
+				check(await wait_file("guest_steering.txt", 60.0) != "", "the guest is in the round, steering")
+				await get_tree().create_timer(1.0).timeout
+				var p0 := gp.pos()
+				await get_tree().create_timer(4.0).timeout
+				var moved := gp.pos().distance_to(p0)
+				check(moved > 2.0, "the guest's inputs reached the host and moved its runner (%.1f m in 4 s)" % moved)
 	put_file("host_saw_guest.txt", "1")
-	var done := await wait_file("guest_checked.txt", 40.0)
+	var done := await wait_file("guest_checked.txt", 60.0)
 	check(done != "", "the guest finished its checks")
 	say("leaving the party (the guest should be told)")
 	a.call("leave_room")
@@ -188,6 +211,8 @@ func _guest(me: Dictionary) -> void:
 		ends.append(r))
 	s.ended.connect(Callable(a, "_on_session_ended"))
 	check(s.mode == NetSession.Mode.CLIENT and s.transport is RelayTransport, "as a guest over the relay")
+	var snaps := [0]
+	s.snapshot_received.connect(func(_sn: Dictionary) -> void: snaps[0] += 1)
 	check(s.admission != "", "holding the service's admission credential")
 	var got := await wait_for(func() -> bool: return s.local_slot >= 1 and s.human_count() == 2, 30.0)
 	check(got, "the host admitted us: slot %d, %d players in the lobby" % [s.local_slot, s.human_count()])
@@ -199,7 +224,25 @@ func _guest(me: Dictionary) -> void:
 	say("lobby as the guest sees it: %s" % ", ".join(names))
 	check(names.has(String(me.get("host_name", "Host Otter"))), "the host's name is in our lobby")
 	s.set_local_ready(true)
-	var saw := await wait_file("host_saw_guest.txt", 40.0)
+	# (build 32) the round: hold the stick forward once our match exists
+	var steer := func() -> void:
+		var mc: Variant = a.get("match_ctrl")
+		if mc != null and is_instance_valid(mc):
+			(mc as MatchController).input_source = func(_m: MatchController) -> InputCmd:
+				var cmd := InputCmd.new()
+				cmd.move = Vector2(0, -1)
+				return cmd
+	# (a guest's own phase stays LOADING: its match follows the host's
+	# snapshots, which flow once the round is playing)
+	got = await wait_for(func() -> bool: return s.phase == TC.Phase.LOADING and int(snaps[0]) >= 10 and a.get("match_ctrl") != null, 200.0)
+	check(got, "our round started: the host's snapshots arrive (%d)" % int(snaps[0]))
+	if got:
+		steer.call()
+		put_file("guest_steering.txt", "1")
+		var n0: int = snaps[0]
+		await get_tree().create_timer(3.0).timeout
+		check(int(snaps[0]) - n0 >= 20, "the host's snapshots keep arriving in the round (%d in 3 s)" % (int(snaps[0]) - n0))
+	var saw := await wait_file("host_saw_guest.txt", 120.0)
 	check(saw != "", "the host saw us (and our Ready)")
 	await wait_for(func() -> bool: return absf(s.rtt - 0.1) > 0.0001, 10.0)
 	check(absf(s.rtt - 0.1) > 0.0001, "pings round-trip (guest-measured RTT %.0f ms)" % (s.rtt * 1000.0))

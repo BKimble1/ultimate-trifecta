@@ -746,6 +746,11 @@ func can_gc_invite() -> bool:
 		return true
 	if not Social.online_ready():
 		return false
+	# (build 32) parties run on the game service's relay: a Game Center
+	# invite has no Game Center party to land in (the friends list's own
+	# invites and the party code are the way in)
+	if Cloud.relay_ready():
+		return false
 	if App.is_solo_party():
 		return true
 	var s: Variant = App.session
