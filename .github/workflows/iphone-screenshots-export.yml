@@ -50,3 +50,32 @@ jobs:
           path: iphone-medium-2622x1206/*.png
           retention-days: 7
           if-no-files-found: error
+
+  export-iap:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out review screenshots
+        uses: actions/checkout@v4
+      - name: Verify review PNG files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path("docs/media/final/store/iap")
+          names=[
+              "iap_coin_packs.png",
+              "iap_premium_pass.png",
+              "iap_moonlight_runner.png",
+              "iap_starry_sleeper.png",
+          ]
+          for name in names:
+              data=(root/name).read_bytes()
+              assert data[:8] == b"\\x89PNG\\r\\n\\x1a\\n", name
+              print(name,len(data))
+          PY
+      - name: Archive all four IAP screenshot PNGs
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ultimate-Trifecta-IAP-Review-Screenshots
+          path: docs/media/final/store/iap/*.png
+          retention-days: 7
+          if-no-files-found: error
