@@ -110,17 +110,18 @@ for d in $DEVICES; do
   done <<EOF
 01_runner_splash_fountain splash/$(pick_splash "$d")
 02_night_watch_golf_cart cart/$(pick_cart "$d")
-03_party_of_eight store/s03_party
-04_season_pass_record_breaker store/s04_season
-05_shop_featured store/s05_shop
-06_friends_invite store/s06_friends
+03_party_in_the_dorm store/s03_party
+04_basketball_in_the_dorm store/s09_ball
+05_season_pass_winter_break store/s04_season
+06_shop_featured store/s05_shop
 07_locker store/s07_locker
-08_final_standings store/s08_results
+08_friends_invite store/s06_friends
+09_final_standings store/s08_results
 EOF
   if [ "$d" = iphone ] && [ -d "$raw/iap" ]; then
     mkdir -p "$OUT/iap"
     for f in "$raw"/iap/iap_*.png; do
-      [ -f "$f" ] && cp "$f" "$OUT/iap/$(basename "${f%.png}")_reference.png"
+      [ -f "$f" ] && cp "$f" "$OUT/iap/$(basename "$f")"
     done
   fi
 done

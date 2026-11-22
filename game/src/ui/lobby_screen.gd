@@ -210,6 +210,8 @@ func build() -> void:
 	count_lbl = UIKit.outlined(UIKit.styled("", "overline", Color(UIKit.IVORY, 0.88)))
 	count_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	count_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# (build 28) beside the code, clear of the Season pill above a wide roster
+	count_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	head.add_child(count_lbl)
 	code_row = head
 	head.add_child(copy_btn)
@@ -439,6 +441,7 @@ func _set_walk(on: bool) -> void:
 			fo.release_focus()
 		margin.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_DISABLED
 		status_lbl.text = "Drag on the left to walk · Done to stop" if Controls.device == "touch" else "Move to walk · Back to stop"
+		status_lbl.visible = true
 	else:
 		margin.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_INHERITED
 		_refresh()
@@ -988,6 +991,7 @@ func _mode_sheet() -> void:
 func _on_status(txt: String) -> void:
 	if is_instance_valid(status_lbl) and txt != "":
 		status_lbl.text = txt
+		status_lbl.visible = true
 
 
 func _local_key() -> String:
@@ -1047,7 +1051,12 @@ func _refresh() -> void:
 		elif ci < shown:
 			c.slot = -1
 			c.show_entry(null, false, hosting, session.muted, _can_invite(), true)
-	_grid.columns = 1 if shown <= 2 else 2
+	# (build 28) seven or eight in the party: three columns, so the roster is
+	# three rows tall, not four, and Start and the bottom row stay on screen
+	# (the cards keep their full touch size)
+	_grid.columns = 1 if shown <= 2 else (3 if shown >= 7 else 2)
+	var gap := 6 if _grid.columns >= 3 else 10
+	_grid.add_theme_constant_override("v_separation", gap)
 	if App.stage:
 		App.stage.sync_party(entries)
 	_join_leave_notes()
@@ -1090,7 +1099,9 @@ func _refresh() -> void:
 		elif not_ready > 0:
 			status_lbl.text = "Waiting for %d to tap Ready" % not_ready
 		else:
-			status_lbl.text = "Everyone's ready"
+			# (build 28) a big party's roster header already says "8 ready":
+			# the line goes, so Start stays on screen
+			status_lbl.text = "" if _grid.columns >= 3 else "Everyone's ready"
 	else:
 		primary_btn.disabled = session.local_slot < 0
 		primary_btn.text = "Not ready" if _is_ready else ("Ready for round %d" % nxt if series_on else "Ready")
@@ -1112,6 +1123,8 @@ func _refresh() -> void:
 		UIKit.soft_focus.call_deferred(primary_btn)
 	if hub != null and hub.walking:
 		status_lbl.text = "Drag on the left to walk · Done to stop" if Controls.device == "touch" else "Move to walk · Back to stop"
+	# (build 28) an empty status line takes no height
+	status_lbl.visible = status_lbl.text != ""
 
 
 ## "Comfy Frog joined" / "… left" for people (not bots), once per change.

@@ -22,6 +22,8 @@ extends "res://src/dev/season_final_capture.gd"
 ##                   party, in a round; one invited
 ##     s07_locker    the Locker (Outfit), a well-stocked wardrobe
 ##     s08_results   a friend series' final standings
+##     s09_ball      (build 27) the basketball: a shot through the
+##                   Christmas hoop in the dorm, confetti
 ##   --set=iap    App Review references for each product type (simulated
 ##                store: its "(test price)" shows, so each picture carries
 ##                a visible REFERENCE label and is not a store asset):
@@ -39,8 +41,10 @@ const MY_LOOK := {"schema": 2, "outfit": "varsity_sprinter", "color": "tangerine
 	"hair_color": "brown", "hat": "none", "shoes": "sneakers", "face": "bright"}
 ## The party: seven friends in varied outfits (fictional, game-style names).
 const PARTY := [
-	["Sleepy Otter", {"outfit": "record_breaker"}],
-	["Moonlit Owl", {"outfit": "dr_doom"}],
+	# (build 27) no Record Breaker or Dr. Doom (skins based on real people)
+	# in store screenshots: original Season 1 outfits instead
+	["Sleepy Otter", {"outfit": "glow_jogger", "skin": "tone5", "hair": "curly", "hair_color": "brown"}],
+	["Moonlit Owl", {"outfit": "night_owl", "skin": "tone2", "hair": "bob", "hair_color": "blonde"}],
 	["Bouncy Panda", {"outfit": "moonwalk_cadet", "skin": "tone6", "hair": "bob", "hair_color": "black"}],
 	["Twinkly Gecko", {"outfit": "raincoat_explorer", "skin": "tone4", "hair": "curly", "hair_color": "black", "hat": "none"}],
 	["Snug Koala", {"outfit": "pj", "pattern": "stripes", "color": "bubblegum", "skin": "tone7", "hair": "buns", "hair_color": "black",
@@ -59,6 +63,17 @@ const FRIENDS := [
 	["T:_f5", "SockSlider", "Fuzzy Lamb", "offline"],
 	["T:_f6", "lilnapper", "Wobbly Hedgehog", "offline"],
 ]
+## (build 27) the in-app purchases' App Store Connect prices (United States),
+## read 22 Nov 2026 with tools/asc.py iap-list (run #294).  --set=iap shows
+## these through the game's own purchase screens, exactly as StoreKit
+## formats a US price; update them if the prices change.
+const LIVE_PRICES := {
+	"com.idlery.ultimatetrifecta.coins.250": 0.99, "com.idlery.ultimatetrifecta.coins.500": 1.79,
+	"com.idlery.ultimatetrifecta.coins.1000": 2.99, "com.idlery.ultimatetrifecta.coins.1500": 3.99,
+	"com.idlery.ultimatetrifecta.coins.3500": 7.99, "com.idlery.ultimatetrifecta.coins.7500": 14.99,
+	"com.idlery.ultimatetrifecta.pass.s1": 4.99,
+	"com.idlery.ultimatetrifecta.skin.moonlight_runner": 1.99, "com.idlery.ultimatetrifecta.skin.starry_sleeper": 1.99,
+}
 const IAP_LABEL := "REFERENCE ONLY · simulated store (\"(test price)\") · desktop render · retake on a device for App Review"
 
 var _hub: LoopbackTransport.Hub
@@ -109,6 +124,12 @@ func _look(over: Dictionary) -> Dictionary:
 
 
 func _run() -> void:
+	# (build 27) no daily present or Champion Prize poster over the screens
+	LoginFlow.enabled = false
+	# and never the real game service (service.cfg names the deployed one):
+	# every screen runs on the fixtures below
+	Cloud.endpoints = {}
+	Cloud.apply_route()
 	await _wait(0.5)
 	for n in get_tree().root.get_children():
 		if n is BootCurtain:
@@ -140,7 +161,8 @@ func _service_player() -> void:
 	svc._bump(_pid)
 	# the Shop's rotating offers on the fixture service clock (as
 	# capture_shop_p8.gd: 2026-10-06 21:45:51 UTC, then real time)
-	var t0 := float(Catalogue.parse_utc_ms("2026-10-06T21:45:51Z"))
+	# (build 27) a December evening: the Shop's Christmas rotation
+	var t0 := float(Catalogue.parse_utc_ms("2026-12-12T21:45:51Z"))
 	var wall0 := Time.get_unix_time_from_system() * 1000.0
 	svc.clock_ms = func() -> float: return t0 + (Time.get_unix_time_from_system() * 1000.0 - wall0)
 	await Wallet.refresh()
@@ -151,7 +173,7 @@ func _run_store() -> void:
 	await _service_player()
 	# ---- the Season Pass: Record Breaker large on the stage, Tier 50 selected
 	await _shot("s04_season", func(sp: SeasonScreen) -> void:
-		sp.jump_to(50)
+		sp.jump_to(15)   # (build 27) Glow Jogger and the After Hours Hoodie
 		await _wait(0.8), 2.0)
 	# ---- the Shop's Featured page
 	if _wanted("s05_shop"):
@@ -183,15 +205,50 @@ func _run_store() -> void:
 	# party of four, then the full party of eight
 	FakeService.uninstall()
 	svc = null
-	if _wanted("s03_party") or _wanted("s06_friends"):
+	if _wanted("s09_ball") or _wanted("s03_party") or _wanted("s06_friends"):
 		App.goto_title()
 		await _wait(0.6)
+	# ---- (build 27) the basketball: walking with the ball in the dorm, a
+	# shot dropping through the Christmas hoop, confetti
+	if _wanted("s09_ball"):
+		await _party(1)   # just you: nobody between the camera and the hoop
+		var l := App.screen as LobbyScreen
+		if l:
+			l._set_walk(true)
+			await _frames(30)
+			await _wait(1.0)
+			var b := _host.social.ball
+			await _until(func() -> bool: return b.spawned)
+			var rc := HubBall.rim_center()
+			var at := Vector2(rc.x, rc.z) + HubBall.HOOP_DIR * 2.0
+			l.hub._pos = at
+			l.hub._yaw = atan2(HubBall.HOOP_DIR.x, HubBall.HOOP_DIR.y)   # facing the hoop
+			b.sim.place(Vector3(at.x + 0.3, HubBall.R, at.y + 0.15))
+			await _frames(20)
+			# (the button can take a moment to be offered after walking starts)
+			for _try in 8:
+				l.hub.interact()   # Pick up
+				await _frames(10)
+				if b.local_has():
+					break
+			printerr("BALL picked up: %s (same party: %s)" % [b.local_has(), l.hub.session == _host])
+			await _frames(40)
+			await _wait(1.5)
+			b.force_make = 1
+			l.hub.interact()   # Shoot
+			var made0 := b.make_seq
+			await _until(func() -> bool: return b.make_seq != made0, 20.0)
+			await _frames(18)
+			await snap("s09_ball")
+			l._set_walk(false)
+			await _wait(1.5)
 	if _wanted("s06_friends"):
 		await _party(4)
 		await _friends_over_party()
 	if _wanted("s03_party"):
 		await _party(8)
 		await snap("s03_party")
+
 
 
 # ------------------------------------------------------------------ party
@@ -216,8 +273,10 @@ func _party(n: int) -> void:
 		_clients.append(c)
 		_hub.link((_host.transport as LoopbackTransport).id, ct.id)
 		await _wait(0.25)
-	if not (App.screen is LobbyScreen):
+	# (home is a LobbyScreen of the game's own solo party: show this party's)
+	if not (App.screen is LobbyScreen) or (App.screen as LobbyScreen).session != _host:
 		App.show_lobby()
+		await _wait(1.0)
 	# (frames, not seconds: at a store size a software-rendered frame can take
 	# longer than a wait, and the loopback transport runs on physics ticks)
 	await _until(func() -> bool: return _clients.all(func(c: NetSession) -> bool: return c.local_slot >= 0))
@@ -379,9 +438,17 @@ func _ref_label() -> void:
 func _run_iap() -> void:
 	_pid = await _online("T:_review")
 	svc.grant(_pid, 2650)
+	# (build 27) the real App Store Connect prices, as StoreKit shows them in
+	# the United States (no "(test price)", so no reference label)
+	var a: Variant = Purchases.adapter
+	for pid in LIVE_PRICES:
+		if a.catalog.has(pid):
+			a.catalog[pid]["display_price"] = "$%.2f" % float(LIVE_PRICES[pid])
+			a.catalog[pid]["price"] = float(LIVE_PRICES[pid])
+	Purchases.load_products(true)
 	await Wallet.refresh()
 	await Offers.refresh()
-	_ref_label()
+	await _wait(0.5)
 	ShopScreen.hide_owned = false
 	ShopScreen.focus_section = "coins"
 	App.goto_title()
@@ -403,3 +470,16 @@ func _run_iap() -> void:
 			await snap("iap_" + String(id).get_slice(":", 1))
 			shop._close_detail()
 			await _wait(0.6)
+	# the Season 1 Premium Pass: the Season Pass's Get Premium offer
+	App.goto_title()
+	await _wait(0.8)
+	NavShell.open("pass")
+	await _wait(3.0)
+	await _portraits_idle()
+	for n in get_tree().root.find_children("PassOffer", "", true, false):
+		n.queue_free()   # (the automatic one, if it opened: reopen it as a player would)
+	await _wait(0.5)
+	PassOffer.popup(App.screen as Screen)
+	await _wait(3.0)
+	await _portraits_idle()
+	await snap("iap_premium_pass")
