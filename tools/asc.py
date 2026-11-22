@@ -173,6 +173,33 @@ def iap_existing(app_id):
     return out
 
 
+def iap_prices(have):
+    """Read only: each product's manual price in its base territory (and the
+    USA), from its price schedule.  {productId: {"base": "USA 0.99", ...}}"""
+    out = {}
+    for h in have:
+        pid = h.get("productId")
+        r = call("GET", f"/inAppPurchasePriceSchedules/{h['id']}/manualPrices",
+                 params={"include": "inAppPurchasePricePoint,territory", "limit": 200,
+                         "fields[inAppPurchasePricePoints]": "customerPrice,proceeds,territory"})
+        if not r.ok:
+            out[pid] = {"error": "HTTP %d" % r.status_code}
+            continue
+        js = r.json()
+        pts = {i["id"]: i for i in js.get("included", []) if i.get("type") == "inAppPurchasePricePoints"}
+        prices = {}
+        for d in js.get("data", []):
+            rel = d.get("relationships", {})
+            terr = ((rel.get("territory") or {}).get("data") or {}).get("id")
+            ppid = ((rel.get("inAppPurchasePricePoint") or {}).get("data") or {}).get("id")
+            pp = pts.get(ppid, {})
+            cp = pp.get("attributes", {}).get("customerPrice")
+            if terr and cp is not None:
+                prices[terr] = cp
+        out[pid] = prices
+    return out
+
+
 CI_CERT_TYPES = ("DEVELOPMENT", "IOS_DEVELOPMENT")
 CI_CERT_NAME = "Created via API"
 
@@ -433,6 +460,11 @@ def main():
             return 0
         rows, missing, unexpected = iap_diff(iap_plan(), have)
         print_diff(rows, missing, unexpected)
+        if cmd == "iap-list":
+            # (read only) each product's state and manual prices
+            pr = iap_prices(have)
+            for h in sorted(have, key=lambda x: x.get("productId", "")):
+                print("PRICE %s state=%s %s" % (h.get("productId"), h.get("state"), json.dumps(pr.get(h.get("productId"), {}))))
         if cmd == "iap-list" or not missing:
             return 0
         if "--yes" not in sys.argv:
