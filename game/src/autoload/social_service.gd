@@ -62,6 +62,10 @@ const ATTR_JOINER := 0x0000FFFF
 const BUNDLE_ID := "com.idlery.ultimatetrifecta"
 
 var available := false
+## (build 32) see _request / _retry_simpler
+var simple_requests := false
+var _room_code := ""
+var _room_is_host := false
 var authenticated := false
 var auth_error := ""
 var multiplayer_restricted := false
@@ -253,12 +257,39 @@ func _request(code: String, host: bool) -> Object:
 	var req: Object = _new_request()
 	if req == null:
 		return null
+	_room_code = code
+	_room_is_host = host
 	req.set("min_players", 2)
-	req.set("max_players", 8)
+	req.set("max_players", max_players())
 	req.set("player_group", code_group(code))
-	req.set("player_attributes", ATTR_HOST if host else ATTR_JOINER)
+	# (build 32) after Game Center called a request invalid, the simpler
+	# one: no host/joiner roles
+	if not simple_requests:
+		req.set("player_attributes", ATTR_HOST if host else ATTR_JOINER)
 	req.set("invite_message", "Join my Ultimate Trifecta room %s" % code)
 	return req
+
+
+## (build 32) Game Center's own limit for a real-time match (peer to peer),
+## never more than the party's 8: asking for more than it allows makes every
+## request "invalid".
+func max_players() -> int:
+	var m := 8
+	if ClassDB.class_exists("GKMatchRequest"):
+		var allowed: Variant = _static("GKMatchRequest", "max_players_allowed_for_match", [0])
+		if (allowed is int) and int(allowed) >= 2:
+			m = mini(m, int(allowed))
+	return m
+
+
+## (build 32) Game Center said the request is invalid: once, retry with the
+## simpler request (no roles).  True when a retry was started.
+func _retry_simpler(err: Variant) -> bool:
+	if error_code(err) != GKERR_MATCH_REQUEST_INVALID or simple_requests:
+		return false
+	simple_requests = true
+	push_warning("Game Center: match request invalid; retrying without player attributes")
+	return true
 
 
 ## Host: open a code room. Returns the (not yet bound) transport.
@@ -305,6 +336,11 @@ func _on_join_found(t: GameKitTransport, m: Variant, err: Variant) -> void:
 		_drop_match(m, t)     # (the join was cancelled or replaced meanwhile)
 		return
 	if err != null or not (m is Object) or not is_instance_valid(m):
+		if _retry_simpler(err) and matchmaker != null:
+			_room_request = _request(_room_code, false)
+			matchmaker.call("find_match", _room_request, func(m2: Variant, err2: Variant) -> void:
+				_on_join_found.call_deferred(t, m2, err2))
+			return
 		room_failed.emit(error_text(err) if err != null else "Game Center couldn't find that party.")
 		return
 	t.bind(m)
@@ -331,6 +367,10 @@ func _on_host_found(gen: int, t: GameKitTransport, m: Variant, err: Variant) -> 
 		_drop_match(m, t)   # (2.3) replaced by an in-game invite, or the party ended: not a failure
 		return
 	if err != null or not (m is Object) or not is_instance_valid(m):
+		if _retry_simpler(err):
+			_room_request = _request(_room_code, true)
+			_find_or_add()
+			return
 		room_failed.emit(error_text(err) if err != null else "Game Center couldn't open your party.")
 		return
 	t.bind(m)
@@ -344,6 +384,10 @@ func _on_host_added(gen: int, t: GameKitTransport, err: Variant) -> void:
 		return
 	if err == null or error_code(err) == GKERR_CANCELLED:
 		_add_fail = 0
+		_find_or_add()
+		return
+	if _retry_simpler(err):
+		_room_request = _request(_room_code, true)
 		_find_or_add()
 		return
 	# a failing request waits before asking again (1, 2, 4 … 30 s)
@@ -394,7 +438,7 @@ func _send_invites(t: GameKitTransport, picked: Array) -> bool:
 		return false
 	# no player group or attributes: those are for automatch, not invites
 	req.set("min_players", 2)
-	req.set("max_players", 8)
+	req.set("max_players", max_players())
 	req.set("recipients", picked)
 	req.set("invite_message", "Join my Ultimate Trifecta party!")
 	req.set("recipient_response", func(p: Object, r: int) -> void:
@@ -448,7 +492,7 @@ func quick_match_start() -> bool:
 	if req == null:
 		return false
 	req.set("min_players", 2)
-	req.set("max_players", 8)
+	req.set("max_players", max_players())
 	req.set("player_group", QUICK_GROUP_BASE + Protocol.VERSION)
 	_quick_req = req
 	_quick_live = true
@@ -718,6 +762,7 @@ const FRIENDS_ACCESS := ["not_determined", "restricted", "denied", "authorized"]
 ## GodotApplePlugins GKError.Code values for the friend-list errors.
 const GKERR_NOT_AUTHENTICATED := 14
 const GKERR_CANCELLED := 4
+const GKERR_MATCH_REQUEST_INVALID := 13
 const GKERR_FRIEND_LIST_RESTRICTED := 26
 const GKERR_FRIEND_LIST_DENIED := 27
 

@@ -409,3 +409,35 @@ func test_app_invite_ready_during_a_round_ends_cleanly() -> void:
 	mc.free()
 	App._on_invite_ready(null)
 	t.check(App.session == before, "no transport: nothing happens")
+
+
+## (build 32) Game Center called the party's request invalid (the owner's
+## iPhone: "the match request is invalid"): the request asks for no more
+## players than Game Center allows, and an invalid one is retried once
+## without the host/joiner roles; a second refusal is reported.
+func test_an_invalid_request_is_retried_once_simpler() -> void:
+	await _begin()
+	Social.simple_requests = false
+	var tr := Social.host_code_room("ACE347")
+	await _frames(2)
+	t.eq(kit.mm.finds.size(), 1, "the host's room asks Game Center")
+	var first: Object = kit.mm.finds[0][0]
+	t.check(int(first.get("max_players")) <= 8 and int(first.get("max_players")) >= 2, "within Game Center's limit (%s)" % str(first.get("max_players")))
+	t.check(first.get("player_attributes") != null, "first: with roles")
+	var bad := FakeErr.new()
+	bad.code = 13
+	bad.message = "The requested operation could not be completed because the match request is invalid."
+	(kit.mm.finds[0][1] as Callable).call(null, bad)
+	await _frames(3)
+	t.eq(kit.mm.finds.size(), 2, "retried once")
+	var second: Object = kit.mm.finds[1][0]
+	t.eq(second.get("player_attributes"), null, "the retry has no roles")
+	t.eq(int(second.get("player_group")), Social.code_group("ACE347"), "same party code group")
+	t.eq(_events.size(), 0, "nothing reported yet")
+	(kit.mm.finds[1][1] as Callable).call(null, bad)
+	await _frames(3)
+	t.eq(kit.mm.finds.size(), 2, "not retried again")
+	t.check(_events.size() == 1 and String((_events[0] as Array)[0]) == "failed", "then reported: %s" % str(_events))
+	tr.close()
+	Social.simple_requests = false
+	await _end()
