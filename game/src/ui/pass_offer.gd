@@ -179,6 +179,8 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 		gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(gap)
 	var text_w := (sz.x - 64.0) if tall else sz.x * 0.44
+	if not tall:
+		v.add_child(UIKit.spacer_v())
 	var title := UIKit.outlined(UIKit.label("PREMIUM PASS", 46 if tall else int(maxf(32.0, 58.0 * k)), UIKit.AMBER_HI, true), int(maxf(7.0, 11.0 * k)))
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(title)
@@ -195,7 +197,10 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	# headline, the line and the buttons
 	var short := not tall and sz.y < 430.0
 	stats.visible = not short
-	v.add_child(UIKit.spacer_v())
+	var gap2 := Control.new()
+	gap2.custom_minimum_size.y = maxf(12.0, 26.0 * k)
+	gap2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(gap2)
 	# (build 30) one way to buy it: Apple, at the App Store price
 	var row := UIKit.hbox(12)
 	row.name = "BuyRow"
@@ -210,6 +215,7 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	fine.custom_minimum_size.x = text_w
 	fine.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	v.add_child(fine)
+	v.add_child(UIKit.spacer_v())
 	if short:
 		ov.visible = false
 	var paint := func() -> void:
@@ -294,7 +300,10 @@ class Poster:
 		ray_col = Color(1.0, 0.7, 0.95, 0.06)
 		glow_col = Color(1.0, 0.6, 0.85, 0.05)
 		focus = Vector2(0.5, 0.3) if tall else Vector2(0.72, 0.5)
-		confetti_x = Vector2(0.0, 1.0) if tall else Vector2(0.45, 1.0)
+		confetti_x = Vector2(0.0, 1.0) if tall else Vector2(0.5, 1.0)
+		# (build 30) a calmer poster: fewer pieces, none over the words
+		confetti_n = 16
+		sparkles_n = 6
 		confetti_cols = [UIKit.AMBER, Color("ff7aa2"), Color("8fd3ff"), UIKit.IVORY, UIKit.AMBER_HI]
 		super._ready()
 
