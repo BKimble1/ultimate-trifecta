@@ -18,7 +18,7 @@ extends RefCounted
 ## Space: stage space (DormStage), y up, the floor at y = 0, x and z the
 ## same as HubRoom's floor plan.
 
-const R := 0.09                  # the ball (a mini ball: runners are ~1 m tall; build 25: 0.075 -> 0.09)
+const R := 0.125                 # the ball (runners are ~1 m tall; build 25: 0.075 -> 0.09; build 30: 0.125)
 const G := 9.8
 const DT := 1.0 / 120.0          # fixed physics step
 const MAX_STEPS := 12            # per call (a long frame doesn't spiral)
@@ -39,21 +39,23 @@ const REACH := 0.8
 ## the highest a runner can pick the ball up from
 const REACH_Y := 1.15
 
-# --- the hoop (build 25: a fifth bigger) (a freestanding mini hoop by the bookshelf, turned a little
-# toward the room so it reads from the walk camera)
+# --- the hoop (a freestanding hoop by the bookshelf, turned a little toward
+# the room so it reads from the walk camera).  (build 30) Half again bigger
+# with the ball: the rim's inside is twice the ball across, as on a real
+# court (the ball 0.5 of the rim)
 const HOOP_BASE := Vector2(4.95, -0.6)
 const HOOP_DIR := Vector2(-0.94386, 0.33035)     # (-1, 0.35) normalised: the way it faces
 const RIM_Y := 1.8
-const RIM_R := 0.174
-const RIM_TUBE := 0.013
-const RIM_OUT := 0.48            # pole to the middle of the rim
+const RIM_TUBE := 0.016
+const RIM_R := 2.0 * R + RIM_TUBE                # 0.266 to the tube's middle: 0.25 inside
 const BOARD_OUT := 0.24           # pole to the front of the board
-const BOARD_HALF := Vector3(0.384, 0.252, 0.018)   # half width, height, thickness
-const BOARD_Y := RIM_Y + 0.156
-const NET_DEPTH := 0.32
-const NET_BOTTOM_R := 0.114
-const POLE_R := 0.048
-const POLE_TOP := RIM_Y + 0.62
+const RIM_OUT := BOARD_OUT + 0.05 + RIM_R + RIM_TUBE   # pole to the middle of the rim (a gap behind it)
+const BOARD_HALF := Vector3(0.58, 0.37, 0.022)   # half width, height, thickness
+const BOARD_Y := RIM_Y + 0.22
+const NET_DEPTH := 0.46
+const NET_BOTTOM_R := 0.165
+const POLE_R := 0.052
+const POLE_TOP := RIM_Y + 0.76
 const BASE_R := 0.34
 const BASE_H := 0.24
 
@@ -216,20 +218,34 @@ func launch(p: Vector3, v: Vector3, p_spin: Vector3 = Vector3.ZERO) -> void:
 
 
 ## A free spot on the floor for the ball to start on (each new party room):
-## open floor, off the runners' marks and in the part of the room the menus
-## show.
+## open floor, away from the hoop.  (build 30) Out of reach of every
+## runner's mark (SPAWN_CLEAR: the pick-up reach, the ball and a margin), so
+## nobody standing on their mark is offered "Pick up" (the couch / plant /
+## lamp buttons stay theirs): round the group, behind it, toward the
+## fireplace side or in front of it.
+const SPAWN_CLEAR := REACH + R + 0.25
+
+
+static func spawn_ok(p: Vector2) -> bool:
+	if not HubRoom.is_free(p) or p.distance_to(HOOP_BASE) <= 0.9:
+		return false
+	for m in DormStage.MARKS:
+		if p.distance_to(Vector2((m as Vector3).x, (m as Vector3).z)) <= SPAWN_CLEAR:
+			return false
+	return true
+
+
 static func spawn_spot(r: RandomNumberGenerator) -> Vector3:
-	for _i in 80:
-		var p := Vector2(r.randf_range(-2.4, 2.9), r.randf_range(-1.45, 1.6))
-		if not HubRoom.is_free(p):
-			continue
-		var ok := p.distance_to(HOOP_BASE) > 0.9
-		for m in DormStage.MARKS:
-			if p.distance_to(Vector2((m as Vector3).x, (m as Vector3).z)) < 0.75:
-				ok = false
-		if ok:
+	for _i in 200:
+		var p := Vector2(r.randf_range(-4.0, 2.9), r.randf_range(-1.45, 2.0))
+		if spawn_ok(p):
 			return Vector3(p.x, R, p.y)
-	return Vector3(1.6, R, 1.7)
+	# (never in practice) the first open spot along the back of the rug
+	for i in 53:
+		var q := Vector2(-2.4 + 0.1 * float(i), -1.45)
+		if spawn_ok(q):
+			return Vector3(q.x, R, q.y)
+	return Vector3(2.9, R, -1.45)
 
 
 ## Can a runner standing on the floor pick it up where it is?

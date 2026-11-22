@@ -38,9 +38,10 @@ const ACT_DROP := 2
 const ACT_SHOOT := 3
 const ACT_PASS := 4
 enum Phase { FREE, HELD, SHOT, PASS }
-## (build 25) a real shooting form: the gather to the chest, the rise to
-## the set point over the right eye, the release (HubBallView draws it)
-const WINDUP_SHOT := 0.42
+## (build 25) a real shooting form (HubBallView draws it); (build 30) a
+## little longer for the whole of it: the gather to the chest, the dip, the
+## rise to the set point and the release
+const WINDUP_SHOT := 0.6
 ## a shot goes the way the shooter faces; within this angle of the hoop it
 ## is lined up on the rim (an aim assist), the make chance easing off
 ## toward the edge of it
@@ -288,7 +289,10 @@ func _release_drop(p: Dictionary) -> void:
 	var at: Vector2 = p["pos"]
 	var f := _fwd(float(p["yaw"]))
 	var v := _pose_vel(p)
-	var start := Vector3(at.x + f.x * 0.22, 0.42, at.y + f.y * 0.22)
+	# (build 30) from beside the right hand, where it is dribbled (clear of
+	# the legs)
+	var rt := Vector2(-f.y, f.x)
+	var start := Vector3(at.x + f.x * 0.12 + rt.x * 0.37, 0.42, at.y + f.y * 0.12 + rt.y * 0.37)
 	_free_with(start, Vector3(v.x * 0.7, -0.6, v.y * 0.7), Vector3.ZERO)
 
 
@@ -331,16 +335,18 @@ static func shot_aim(at: Vector2, make: bool, r: RandomNumberGenerator) -> Vecto
 	var side := Vector2(-dir.y, dir.x)
 	var roll := r.randf()
 	var off := Vector2.ZERO
+	# (build 30) in terms of the rim and the ball (both bigger)
+	var rr := HubBall.RIM_R
 	if roll < 0.55:
 		# off the rim
 		var ang := r.randf() * TAU
-		off = Vector2(cos(ang), sin(ang)) * r.randf_range(0.11, 0.17)
+		off = Vector2(cos(ang), sin(ang)) * r.randf_range(rr - HubBall.R * 0.4, rr + HubBall.R * 0.15)
 	elif roll < 0.85:
 		# short or long
-		off = dir * (r.randf_range(0.17, 0.3) * (1.0 if r.randf() < 0.5 else -1.0))
+		off = dir * (r.randf_range(rr * 0.98, rr * 1.72) * (1.0 if r.randf() < 0.5 else -1.0))
 	else:
 		# wide
-		off = side * (r.randf_range(0.2, 0.38) * (1.0 if r.randf() < 0.5 else -1.0))
+		off = side * (r.randf_range(rr * 1.15, rr * 2.2) * (1.0 if r.randf() < 0.5 else -1.0))
 	return rc + Vector3(off.x, 0.0, off.y)
 
 
@@ -416,8 +422,9 @@ func _launch_pass() -> void:
 	# lead the catcher a little
 	var lead := to + _pose_vel(tp) * t * 0.8
 	var dir := (lead - at).normalized() if lead.distance_to(at) > 0.01 else _fwd(float(p["yaw"]))
-	var start := Vector3(at.x + dir.x * 0.22, 0.6, at.y + dir.y * 0.22)
-	var aim := Vector3(lead.x, 0.55, lead.y)
+	# (build 30) from the chest, clear of it (HubBallView's chest pass)
+	var start := Vector3(at.x + dir.x * 0.42, 0.75, at.y + dir.y * 0.42)
+	var aim := Vector3(lead.x, 0.6, lead.y)
 	_pass_t = 0.0
 	released_shot = false
 	var target := pass_to
