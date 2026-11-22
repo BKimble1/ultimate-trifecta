@@ -1,9 +1,9 @@
-# App Store submission screenshots · 2.2 (build 29)
+# App Store submission screenshots · 2.2 (build 30)
 
 **Everything to upload for the 2.2 submission: the public App Store
 screenshots (iPhone and iPad) and the review screenshot for each of the
-9 in-app purchases.** Rendered on 22 Nov 2026 from the build 29 source
-(submit build 29: the build these screens come from), at the exact store sizes, with the App Store
+9 in-app purchases.** Rendered on 22 Nov 2026 from the build 30 source
+(submit build 30: the build these screens come from), at the exact store sizes, with the App Store
 Connect prices (USA) on the purchase screens.
 
 ## Upload map
@@ -28,15 +28,15 @@ showing all six packs side by side, each with its price (Apple asks for
 a screenshot of the purchase as the user sees it; the same image may be
 used for several products).
 
-- `iap_coin_packs.png`: Shop › Coins: the six packs (250 / 500 / 1,000 /
-  1,500 / 3,500 / 7,500 Coins) at $0.99 / $1.79 / $2.99 / $3.99 / $7.99 /
-  $14.99, "Best value" on 7,500, Restore Purchases.
+- `iap_coin_packs.png`: Shop › Coins: the six pack tiles (250 / 500 / 1,000 /
+  1,500 / 3,500 / 7,500 Coins) with their price buttons $0.99 / $1.79 /
+  $2.99 / $3.99 / $7.99 / $14.99, "Best value" on 7,500.
 - `iap_moonlight_runner.png` / `iap_starry_sleeper.png`: the outfit's
   detail sheet from Shop › Featured › Always available: the runner wearing
   it, "Buy for $1.99", Restore Purchases.
 - `iap_premium_pass.png`: the Season 1 Premium offer (Season Pass ›
-  Premium): the Premium track's outfits and "Get Premium · $4.99" (plus the
-  1,500 Coins option the game also offers).
+  Get Premium): the Premium track's outfits and its one button, "Get
+  Premium · $4.99" (Premium is sold by Apple only, never for Coins).
 
 ### Public App Store screenshots (the 2.2 version page › Previews and Screenshots)
 
@@ -46,12 +46,12 @@ Upload in this order (01 first), the same nine in both sets.
 |---|---|---|
 | 1 | `01_runner_splash_fountain.png` | Gameplay as a runner: a leap into Founders' Fountain at night with the Night Watch two steps behind; the round HUD |
 | 2 | `02_night_watch_golf_cart.png` | Gameplay as the Night Watch: driving a golf cart down Library Lane after two runners |
-| 3 | `03_party_in_the_dorm.png` | A party of eight in the Christmas dorm lobby, everyone ready, Start |
+| 3 | `03_party_in_the_dorm.png` | A party of eight in the Christmas dorm lobby, everyone ready (Season name cards and badges on the roster), Start |
 | 4 | `04_basketball_in_the_dorm.png` | Walk mode in the lobby: the runner's shot dropping through the Christmas hoop, confetti |
 | 5 | `05_season_pass_winter_break.png` | Season 1 · Winter Break pass: Premium, Tier 43 / 100, a claimed reward on the stage |
 | 6 | `06_shop_featured.png` | The Shop's Featured page: rotating skins with Coin prices and countdowns, the two App Store outfits |
 | 7 | `07_locker.png` | The Locker's Outfit tab with the runner on the stage |
-| 8 | `08_friends_invite.png` | Friends: invite friends to the party, statuses, party code |
+| 8 | `08_friends_invite.png` | Friends: Invite, Join with code, Add friend; friends' statuses and Invite buttons, party code |
 | 9 | `09_final_standings.png` | A party series' Final standings |
 
 | Folder | Where in App Store Connect | Size |
