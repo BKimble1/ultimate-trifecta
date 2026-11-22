@@ -368,3 +368,108 @@ class Pic:
 				var h := minf(size.y, size.x / 2.6)
 				var rr := Rect2(Vector2(0, (size.y - h) * 0.5), Vector2(size.x, h))
 				CommerceArt.name_card(self, rr, id, text, badge_id, int(clampf(h * 0.36, 14.0, 28.0)))
+
+
+# ------------------------------------------------------------ (build 30) coin packs
+## The six Coin pack tiers' colours (low to high), as mobile shops grade
+## their offers: teal, blue, violet, magenta, orange, gold.
+const PACK_TINTS := [Color("1f8a8a"), Color("2f63c9"), Color("6a3fc4"), Color("b5367f"), Color("d2662a"), Color("d9a21f")]
+
+
+## A stack of n Coins seen from slightly above: edges, then the top face.
+static func coin_stack(ci: CanvasItem, base: Vector2, r: float, n: int) -> void:
+	var ry := r * 0.36
+	var step := r * 0.2
+	for i in n:
+		var c := base - Vector2(0, step * i)
+		# the edge band (a little darker each coin down), then the rim line
+		var edge := GOLD_DEEP.lerp(GOLD, 0.25).darkened(0.08 + 0.025 * float(n - i))
+		_ellipse(ci, c + Vector2(0, step), r, ry, edge.darkened(0.22))
+		ci.draw_rect(Rect2(c.x - r, c.y, r * 2.0, step), edge)
+		# the coin's ridge line and a highlight down its left
+		ci.draw_line(c + Vector2(-r, step * 0.98), c + Vector2(r, step * 0.98), edge.darkened(0.35), maxf(1.0, r * 0.06), true)
+		ci.draw_rect(Rect2(c.x - r * 0.72, c.y, r * 0.18, step), Color(GOLD_HI, 0.35))
+		_ellipse(ci, c, r, ry, GOLD_DEEP)
+	var top := base - Vector2(0, step * (n - 1))
+	_ellipse(ci, top, r, ry, GOLD_DEEP)
+	_ellipse(ci, top, r * 0.86, ry * 0.86, GOLD)
+	_ellipse(ci, top + Vector2(-r * 0.12, -ry * 0.1), r * 0.5, ry * 0.42, GOLD_HI.lerp(GOLD, 0.5))
+
+
+static func _ellipse(ci: CanvasItem, c: Vector2, rx: float, ry: float, col: Color) -> void:
+	var pts := PackedVector2Array()
+	for j in 28:
+		var a := TAU * float(j) / 28.0
+		pts.append(c + Vector2(cos(a) * rx, sin(a) * ry))
+	ci.draw_colored_polygon(pts, col)
+
+
+## A pack's heap for its tier (0..5): one short stack and a coin, up to a
+## wide heap of tall stacks with loose coins in front.  c: the heap's base
+## centre; r: one coin's radius.
+static func coin_heap(ci: CanvasItem, c: Vector2, r: float, tier: int) -> void:
+	# [x offset in r, coins in the stack]; drawn back to front
+	var stacks: Array = [
+		[[0.0, 3]],
+		[[-0.7, 3], [0.7, 5]],
+		[[-1.3, 4], [0.0, 6], [1.3, 3]],
+		[[-1.9, 3], [-0.65, 6], [0.65, 7], [1.9, 4]],
+		[[-2.2, 5], [-1.1, 8], [0.0, 9], [1.1, 7], [2.2, 4]],
+		[[-2.5, 6], [-1.5, 9], [-0.5, 11], [0.5, 10], [1.5, 8], [2.5, 5]],
+	][clampi(tier, 0, 5)]
+	var loose: Array = [
+		[[1.05, 0.1]],
+		[[-1.55, 0.12]],
+		[[-2.0, 0.15], [2.0, 0.12]],
+		[[-2.6, 0.18], [2.6, 0.15]],
+		[[-3.0, 0.2], [3.0, 0.18]],
+		[[-3.3, 0.22], [3.3, 0.2]],
+	][clampi(tier, 0, 5)]
+	# the back row (odd indices) sits a little higher, so the heap has depth
+	for pass_i in 2:
+		for i in stacks.size():
+			if i % 2 != (1 - pass_i):
+				continue
+			var s: Array = stacks[i]
+			coin_stack(ci, c + Vector2(float(s[0]) * r, -r * 0.12 * float(1 - pass_i)), r, int(s[1]))
+	for l in loose:
+		coin(ci, c + Vector2(float(l[0]) * r, float(l[1]) * r), r * 0.78)
+
+
+## The tile's backdrop: the tier colour fading down to midnight, a soft glow
+## behind the heap, a light top edge.
+static func pack_backdrop(ci: CanvasItem, rect: Rect2, tier: int, radius: float) -> void:
+	var tint: Color = PACK_TINTS[clampi(tier, 0, 5)]
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = tint.darkened(0.45)
+	sb.set_corner_radius_all(int(radius))
+	sb.anti_aliasing = true
+	ci.draw_style_box(sb, rect)
+	# a vertical fade: bands from the tier colour (top) to the base
+	# (one smooth polygon under a rounded cap: no bands, no seams, the
+	# cap as tall as two radii so its corners keep their full rounding)
+	var fade_h := rect.size.y * 0.66
+	var cap := StyleBoxFlat.new()
+	cap.bg_color = sb.bg_color.lerp(Color(tint, 1.0), 0.62)
+	cap.corner_radius_top_left = int(radius)
+	cap.corner_radius_top_right = int(radius)
+	cap.anti_aliasing = true
+	ci.draw_style_box(cap, Rect2(rect.position, Vector2(rect.size.x, radius * 2.0)))
+	var y0 := rect.position.y + radius * 2.0 - 1.0
+	var y1 := rect.position.y + fade_h
+	if y1 > y0:
+		var cc: Color = cap.bg_color
+		ci.draw_polygon(PackedVector2Array([Vector2(rect.position.x, y0), Vector2(rect.end.x, y0), Vector2(rect.end.x, y1), Vector2(rect.position.x, y1)]),
+			PackedColorArray([cc, cc, Color(cc, 0.0), Color(cc, 0.0)]))
+	# the glow behind the heap
+	var gc := rect.position + Vector2(rect.size.x * 0.5, rect.size.y * 0.36)
+	for k in 14:
+		ci.draw_circle(gc, rect.size.x * (0.44 - 0.026 * k), Color(GOLD_HI, 0.016), true, -1.0, true)
+	# a thin light edge along the top
+	var edge := StyleBoxFlat.new()
+	edge.draw_center = false
+	edge.set_border_width_all(2)
+	edge.border_color = Color(tint.lightened(0.35), 0.55)
+	edge.set_corner_radius_all(int(radius))
+	edge.anti_aliasing = true
+	ci.draw_style_box(edge, rect)

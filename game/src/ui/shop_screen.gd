@@ -1897,46 +1897,73 @@ class ShopCard:
 	## computed "Best value" beside it.  One compact row, not a slab; the
 	## quantity and the price each get the card's full text width.
 	func _setup_pack(face: Control, w: float) -> void:
-		# (2.3) a vertical tile like any mobile shop's coin offer: the pile
-		# centred on top, the amount under it, the price in a pill, a note
-		# ("Best value") last; nothing beside anything, so nothing is squeezed
-		var v := UIKit.vbox(8)
+		# (build 30) a mobile-shop offer tile: the tier's colour, a heap that
+		# grows with the pack, the amount big beside a coin, the price as the
+		# tile's button; "Best value" a corner ribbon.  No inner well, no
+		# repeated "Coins" word.
+		var amount := int(Catalogue.item(id).get("coins", 0))
+		var tiers := [250, 500, 1000, 1500, 3500, 7500]
+		var tier := tiers.find(amount)
+		if tier < 0:
+			tier = clampi(int(log(float(maxi(amount, 1)) / 250.0) / log(2.0)), 0, 5)
+		var bg := PackTile.new()
+		bg.name = "Tile"
+		bg.tier = tier
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.add_child(bg)
+		art = bg
+		var v := UIKit.vbox(6)
 		v.set_anchors_preset(Control.PRESET_FULL_RECT)
-		v.offset_left = 12
-		v.offset_right = -12
-		v.offset_top = 12
-		v.offset_bottom = -12
-		v.alignment = BoxContainer.ALIGNMENT_CENTER
+		v.offset_left = 10
+		v.offset_right = -10
+		v.offset_top = 10
+		v.offset_bottom = -10
 		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		face.add_child(v)
-		art = ShopCard.art_for(shop, id, 0.0, "shop:%s" % id)
-		art.name = "Well"
-		art.custom_minimum_size = Vector2(0, 76)
-		art.size_flags_horizontal = Control.SIZE_FILL
-		v.add_child(art)
-		name_l = UIKit.styled(Catalogue.display_name(id), "num", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER)
-		name_l.add_theme_font_size_override("font_size", 24)
+		var gap := Control.new()
+		gap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(gap)
+		var amt := UIKit.hbox(6)
+		amt.alignment = BoxContainer.ALIGNMENT_CENTER
+		amt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var ci := CommerceArt.Pic.new("coin", "", Color.WHITE, 26)
+		ci.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		amt.add_child(ci)
+		name_l = UIKit.outlined(UIKit.styled(Catalogue.format_coins(amount), "num", UIKit.IVORY, HORIZONTAL_ALIGNMENT_CENTER), 6)
+		name_l.add_theme_font_size_override("font_size", 30)
 		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		v.add_child(name_l)
-		var pr := UIKit.vbox(4)
-		pr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		v.add_child(pr)
+		amt.add_child(name_l)
+		v.add_child(amt)
 		_pill = PanelContainer.new()
 		_pill.name = "PricePill"
 		_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		_pill.size_flags_horizontal = Control.SIZE_FILL
 		price_l = UIKit.styled("", "num", UIKit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
-		price_l.add_theme_font_size_override("font_size", 19)
+		price_l.add_theme_font_size_override("font_size", 21)
+		price_l.clip_text = true
+		price_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		price_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_pill.add_child(price_l)
-		pr.add_child(_pill)
-		_note = UIKit.styled("", "caption", UIKit.TEAL, HORIZONTAL_ALIGNMENT_CENTER)
+		v.add_child(_pill)
+		# the ribbon (Best value) or a state note, top right over the heap
+		_note = UIKit.styled("", "caption", Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 		_note.name = "PackNote"
-		_note.add_theme_font_size_override("font_size", 17)
-		_note.clip_text = true
-		_note.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		_note.add_theme_font_size_override("font_size", 15)
 		_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		pr.add_child(_note)
+		var rib := PanelContainer.new()
+		rib.name = "Ribbon"
+		rib.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var rb := UIKit.box(Color("e5407a"), 999, 0, Color.WHITE, 10)
+		rb.content_margin_top = 3
+		rb.content_margin_bottom = 3
+		rib.add_theme_stylebox_override("panel", rb)
+		rib.add_child(_note)
+		rib.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		rib.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		rib.position = Vector2(-8, 8)
+		face.add_child(rib)
 		fit_cell(w, 1)
 
 	## The wide card is as tall as its text needs at this width (the art is
@@ -2015,24 +2042,27 @@ class ShopCard:
 		var can := bool(st.get("can_buy", false))
 		price_l.text = String(st["text"]) if String(st["text"]) != "" else "Not available"
 		price_l.add_theme_color_override("font_color", UIKit.NAVY if can else UIKit.IVORY_MUTED)
-		var pb := UIKit.box(UIKit.AMBER if can else Color(UIKit.NAVY, 0.5), 999, 0, Color.WHITE, 18)
-		pb.content_margin_top = 6
-		pb.content_margin_bottom = 6
+		var pb := UIKit.box(UIKit.AMBER if can else Color(UIKit.NAVY, 0.55), 14, 0, Color.WHITE, 10)
+		pb.content_margin_top = 8
+		pb.content_margin_bottom = 8
+		if can:
+			pb.shadow_color = Color(0, 0, 0, 0.28)
+			pb.shadow_size = 3
+			pb.shadow_offset = Vector2(0, 3)
 		_pill.add_theme_stylebox_override("panel", pb)
 		var note := ""
 		match String(st.get("state", "")):
 			"delivering":
-				note = "Adding to your account…"
+				note = "Adding…"
 			"pending_approval":
-				note = "Waiting for approval"
-			# "unavailable": the pill already says "Not available" (a tap says
-			# why); FINAL_RELEASE_SWEEP removed the repeated, clipped note
+				note = "Waiting"
 		if note == "" and can and Purchases.best_value_pack() == Catalogue.product_of(id):
 			note = "Best value"
 		_note.text = note
-		_note.visible = note != ""
-		accessibility_name = ("%s. Buy for %s" % [Catalogue.display_name(id), String(st["text"])]) if can \
-			else "%s. %s" % [Catalogue.display_name(id), String(st["text"])]
+		(_note.get_parent() as Control).visible = note != ""
+		var amount := Catalogue.format_coins(int(Catalogue.item(id).get("coins", 0)))
+		accessibility_name = ("%s Coins. Buy for %s" % [amount, String(st["text"])]) if can \
+			else "%s Coins. %s" % [amount, String(st["text"])]
 
 	## The rotation line: label text only (called once a second).
 	func tick() -> void:
@@ -2335,3 +2365,21 @@ class SetCard:
 		v.add_child(row)
 		custom_minimum_size = Vector2(w, 20.0 + 58.0 + 6.0 * 2.0 + 30.0 + 30.0)
 		accessibility_name = "%s set, %s Coins" % [String(e.get("name", "")), Catalogue.format_coins(int(q["price"]))]
+
+
+## (build 30) A Coin pack tile's art: the tier's backdrop and its heap.
+class PackTile:
+	extends Control
+	## the amount row and the price button under the heap (px)
+	const BOTTOM_CHROME := 92.0
+	var tier := 0
+
+	func _draw() -> void:
+		var rect := Rect2(Vector2.ZERO, size)
+		CommerceArt.pack_backdrop(self, rect, tier, float(UIKit.R_CARD))
+		# the heap lives above the amount row and the price button
+		var zone_top := 10.0
+		var zone_bot := size.y - BOTTOM_CHROME
+		var zh := maxf(20.0, zone_bot - zone_top)
+		var r := clampf(minf(size.x / 8.2, zh / 3.6), 7.0, 26.0)
+		CommerceArt.coin_heap(self, Vector2(size.x * 0.5, zone_bot - r * 0.95), r, tier)

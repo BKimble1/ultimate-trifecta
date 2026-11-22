@@ -428,7 +428,9 @@ func test_coin_pack_cards_are_compact_priced_by_storekit_and_honest() -> void:
 	await _frames(2)
 	var packs: Array = shop.cards.filter(func(c: Node) -> bool: return (c as ShopScreen.ShopCard).pack)
 	t.eq(packs.map(func(c: Node) -> String: return (c as ShopScreen.ShopCard).name_l.text),
-		["250 Coins", "500 Coins", "1,000 Coins", "1,500 Coins", "3,500 Coins", "7,500 Coins"], "six packs, full quantities, in order")
+		["250", "500", "1,000", "1,500", "3,500", "7,500"], "six packs, full quantities (beside a coin), in order")
+	# (build 30) VoiceOver still hears "Coins"
+	t.check(packs.all(func(c: Node) -> bool: return (c as Button).accessibility_name.contains(" Coins.")), "each pack's spoken name says Coins")
 	t.eq(packs.map(func(c: Node) -> String: return (c as ShopScreen.ShopCard).price_l.text),
 		["$2.99", "$4.99", "$9.99", "$13.99", "$29.99", "$59.99"], "StoreKit's own localized prices")
 	var grid := (packs[0] as Control).get_parent() as GridContainer
@@ -456,7 +458,7 @@ func test_coin_pack_cards_are_compact_priced_by_storekit_and_honest() -> void:
 	await rig.until(func() -> bool: return Purchases.products_state == "loaded")
 	await _frames(2)
 	t.eq((packs[0] as ShopScreen.ShopCard).price_l.text, "Not available", "a missing product: Not available")
-	t.check(not (packs[0] as ShopScreen.ShopCard)._note.visible, "said once (no repeated, clipped note beside the pill)")
+	t.check(not (packs[0] as ShopScreen.ShopCard)._note.is_visible_in_tree(), "said once (no repeated, clipped note beside the pill)")
 	t.check(not (packs[0] as ShopScreen.ShopCard).price_l.text.contains("$"), "never a made-up price")
 	t.eq(Purchases.best_value_pack(), "", "and no claim from a partial flat list")
 	# a tap is the purchase: Apple's sheet, once
