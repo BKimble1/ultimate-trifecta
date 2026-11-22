@@ -1,9 +1,9 @@
-# App Store submission screenshots · 2.2 (build 31)
+# App Store submission screenshots · 2.2 (build 32)
 
 **Everything to upload for the 2.2 submission: the public App Store
 screenshots (iPhone and iPad) and the review screenshot for each of the
 9 in-app purchases.** Rendered on 22 Nov 2026 from the build 30 source (Friends shot: build 31)
-(submit build 31: the build these screens come from), at the exact store sizes, with the App Store
+(submit build 32: the build these screens come from), at the exact store sizes, with the App Store
 Connect prices (USA) on the purchase screens.
 
 ## Upload map

@@ -278,7 +278,7 @@ current specification):
   2778 × 1284 if 6.9" isn't provided. Up to 10.
 - **iPad 13" display:** 2752 × 2064 (landscape). Up to 10.
 
-The sets for 2.2 (build 31) are in `docs/media/final/store/`: `iphone_6.9/`
+The sets for 2.2 (build 32) are in `docs/media/final/store/`: `iphone_6.9/`
 (9 shots, 2868 × 1320) and `ipad_13/` (9 shots, 2752 × 2064), PNG, 8-bit
 RGB, no alpha, sRGB, all passing `tools/store_shot_check.py`. Renders of the
 real game's screens and a real practice round with fictional player names

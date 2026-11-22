@@ -25,13 +25,13 @@ The previous version, **2.0 (final release sweep)**, is a provisional App Store-
 
 ## Current release state
 
-**State (2.2): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **2.2 (31)** (Friends › Invite makes your own party with a code, no Game Center screen; plus everything in 30), **App Store-eligible**; submit build 31 with the screenshots in `docs/media/final/store/`.
+**State (2.2): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **2.2 (32)** (party codes over the game service's relay instead of Game Center matchmaking; name entry above the keyboard; plus everything in 31), **App Store-eligible**; submit build 32 with the screenshots in `docs/media/final/store/`.
 
 It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, nothing was submitted for App Store review, nothing was released, and no purchase of any kind was made.
 
 | | |
 |---|---|
-| Build | `com.idlery.ultimatetrifecta` **2.2 (31)**. App Store Connect build ID `c2033943-22c0-4252-91ea-d5fd2d5c3145` (workflow run #299). (2.2 (30) `c886b0ee-…`, 2.2 (29) was never uploaded: its CI test run failed on a flaky ball-spawn test, fixed in 30. 2.2 (28) `ee313d6a-…`, 2.2 (27) `5f46a757-…`, 2.2 (26) `61100c01-…`, 2.2 (25) `e5ddb60c-…`, 2.2 (24) `a7f00f71-…`, 2.2 (23) `c214ff57-…`, 2.2 (22) `afa50521-…`, 2.2 (21) `4b60796f-…`, 2.2 (20) `f6768187-…`, 2.2 (19) `39bbd93c-…`, 2.2 (18) `c56ada6c-…`, 2.2 (17) `48fb4361-…`, 2.2 (16) `cf0a8982-…`, 2.2 (15) `e9a19fe1-…`, 2.2 (14) `bc03f233-…`, 2.2 (13) `54f2dcc4-…` and 2.2 (12) `c50a97e1-…` are the previous ones.) |
+| Build | `com.idlery.ultimatetrifecta` **2.2 (32)**. App Store Connect build ID `d914c13c-6001-4cac-926a-01bc30586eb7` (workflow run #302). (2.2 (31) `c2033943-…`, 2.2 (30) `c886b0ee-…`, 2.2 (29) was never uploaded: its CI test run failed on a flaky ball-spawn test, fixed in 30. 2.2 (28) `ee313d6a-…`, 2.2 (27) `5f46a757-…`, 2.2 (26) `61100c01-…`, 2.2 (25) `e5ddb60c-…`, 2.2 (24) `a7f00f71-…`, 2.2 (23) `c214ff57-…`, 2.2 (22) `afa50521-…`, 2.2 (21) `4b60796f-…`, 2.2 (20) `f6768187-…`, 2.2 (19) `39bbd93c-…`, 2.2 (18) `c56ada6c-…`, 2.2 (17) `48fb4361-…`, 2.2 (16) `cf0a8982-…`, 2.2 (15) `e9a19fe1-…`, 2.2 (14) `bc03f233-…`, 2.2 (13) `54f2dcc4-…` and 2.2 (12) `c50a97e1-…` are the previous ones.) |
 | Build number | **27**: the lane read the highest existing build (2.2 (26)) and added one. Built with Xcode 27.2, iOS SDK 27.2. |
 | Source | Commit `3753ec2` on `claude/happy-edison-50dynd`. |
 | Uploaded | 2026-11-19 (about 16:30 UTC), by GitHub Actions run #282 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/44562034120) with `upload=true` and `distribution=app_store`. The headless tests gate the build and passed in that run (run #281 stopped at the tests: the season film played under the test runner on a fresh profile; fixed in `3753ec2`). The film ships in the app (`assets/video/season_s1.ogv`). |
