@@ -69,7 +69,7 @@ jobs:
           ]
           for name in names:
               data=(root/name).read_bytes()
-              assert data[:8] == b"\\x89PNG\\r\\n\\x1a\\n", name
+              assert data[:4] == bytes([137,80,78,71]), name
               print(name,len(data))
           PY
       - name: Archive all four IAP screenshot PNGs
