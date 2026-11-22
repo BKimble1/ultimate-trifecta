@@ -1,6 +1,6 @@
-2.2 (28): a full party fits the lobby. Sign in to Game Center first. Purchases use Apple's sandbox in TestFlight, so nothing is really charged. Builds 20 to 28 play together. Tell us your iPhone or iPad model:
+2.2 (29): a full party looks right on iPad. Sign in to Game Center first. Purchases use Apple's sandbox in TestFlight, so nothing is really charged. Builds 20 to 29 play together. Tell us your iPhone or iPad model:
 
-- Make a party of 7 or 8 (friends or bots): the roster shows in three columns and Start is fully on screen.
-- Season Pass > Get Premium: the offer shows three outfits and "Get Premium" with its price.
-- Shop > Coins: six packs with their prices. Shop > Skins: Moonlight Runner and Starry Sleeper each show "Buy" with a price.
+- iPad: make a party of 7 or 8 (friends or bots): the dorm room fills the screen behind the roster and Start is on screen. Tap Walk: only icons on the bottom row.
+- iPhone: a party of 7 or 8 shows the roster in three columns and Start is fully on screen.
+- Season Pass > Get Premium, Shop > Coins, Shop > Moonlight Runner / Starry Sleeper: each shows its price and Buy.
 - Tell us anything that says "unavailable" or never finishes loading.

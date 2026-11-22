@@ -222,3 +222,43 @@ func test_bottom_bar_fits_with_navigation() -> void:
 	rig.teardown()
 	await t.get_tree().process_frame   # (queued frees happen before the next test)
 	await t.get_tree().process_frame
+
+
+## (build 29) A full party on an iPad keeps the two-column roster (four
+## rows fit), so the stage keeps its width and the camera stays inside the
+## room; a phone takes three columns.  And in Walk the icon-only bottom row
+## (iPad) shows no caption: "Done" used to spill past the check button.
+func test_full_party_and_walk_on_ipad() -> void:
+	var rig := NetRig.new()
+	t.add_child(rig)
+	rig.setup(20, 0, 0.0, 7)
+	await rig.wait_until(func() -> bool: return rig.host.human_count() == 8, 600)
+	var saved_session := App.session
+	var root: Window = t.get_tree().root
+	var saved_size: Vector2i = root.size
+	App.session = rig.host
+	for sz in [Vector2i(2048, 1536), Vector2i(2532, 1170)]:
+		root.size = sz
+		await rig.frames(2)
+		var l := _setup(rig)
+		await rig.frames(20)
+		var ipad: bool = sz.x < sz.y * 1.6
+		t.eq(l._grid.columns, 2 if ipad else 3, "%s: eight players in %d columns" % [str(sz), 2 if ipad else 3])
+		if ipad:
+			t.check(_stage.lobby_free_frac >= 0.45, "%s: the stage keeps half the width (%.2f)" % [str(sz), _stage.lobby_free_frac])
+		l._set_walk(true)
+		await rig.frames(4)
+		var cap := UIKit.face_of(l.walk_btn).caption
+		t.eq(cap, "" if l._compact else "Done", "%s: the Walk button's caption in Walk ('%s')" % [str(sz), cap])
+		l._set_walk(false)
+		await rig.frames(2)
+		t.eq(UIKit.face_of(l.walk_btn).caption, "" if l._compact else "Walk", "%s: and back" % str(sz))
+		l.queue_free()
+		_stage.queue_free()
+		await rig.frames(2)
+	App.stage = null
+	App.session = saved_session
+	root.size = saved_size
+	rig.teardown()
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame

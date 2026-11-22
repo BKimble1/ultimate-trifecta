@@ -1117,8 +1117,27 @@ Protocol 16 unchanged: builds 20 to 28 play together.
   Library Cardigan (tier 30, new in the centre) and Glow Jogger; Dr. Doom
   (tier 100, based on a real person) is no longer its centrepiece.  The
   pass's rewards are unchanged.
-- **Submission screenshots** (`docs/media/submission/`): the App Store sets
+- **Submission screenshots** (`docs/media/final/store/`): the App Store sets
   for iPhone 6.9" and iPad 13" and the nine in-app purchase review
   screenshots with the App Store Connect prices (`tools/asc.py iap-list`
   now also reads each product's prices, read only).  Rendered from this
   build's screens by `tools/capture_store_screenshots.sh`.
+
+## 45. Build 29: the full party on iPad
+
+Protocol 16 unchanged: builds 20 to 29 play together.  Found while
+rendering the iPad submission screenshots:
+- **iPad, a party of seven or eight**: build 28's three-column roster is
+  now for iPhones only.  On an iPad (4:3) it left the stage a third of the
+  screen, so the camera backed out of the dorm room and the room's edges
+  and the dark space around it showed.  The iPad keeps the two-column
+  roster (four rows fit) and the camera stays in the room, as before
+  build 28.
+- **iPad, Walk**: the bottom row on iPad is icon-only; entering Walk wrote
+  "Done" next to the check button (its first letter spilled past the
+  button).  The caption now follows the icon-only row (iPhone still reads
+  "Done").
+- Test: `test_hub_walk::test_full_party_and_walk_on_ipad` (eight players
+  on iPad and phone sizes: the columns, the stage width, the Walk caption).
+- The submission screenshots (`docs/media/final/store/`) are rendered from
+  this build: submit build 29.

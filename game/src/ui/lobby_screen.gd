@@ -429,7 +429,12 @@ func _set_walk(on: bool) -> void:
 	series_row.visible = not on and session.series_active()
 	if is_instance_valid(season_pill):
 		season_pill.visible = not on
-	UIKit.face_of(walk_btn).caption = "Done" if on else "Walk"
+	# (build 29) icon only when the bottom row is compact (iPad): the caption
+	# goes to the remembered one, or a "Done" spilled past the icon button
+	var cap := "Done" if on else "Walk"
+	if walk_btn.has_meta(&"caption"):
+		walk_btn.set_meta(&"caption", cap)
+	UIKit.face_of(walk_btn).caption = "" if _compact else cap
 	UIKit.face_of(walk_btn).icon = "check" if on else "walk"
 	UIKit.face_of(walk_btn).queue_redraw()
 	walk_btn.accessibility_name = "Stop walking" if on else "Walk around"
@@ -1053,8 +1058,13 @@ func _refresh() -> void:
 			c.show_entry(null, false, hosting, session.muted, _can_invite(), true)
 	# (build 28) seven or eight in the party: three columns, so the roster is
 	# three rows tall, not four, and Start and the bottom row stay on screen
-	# (the cards keep their full touch size)
-	_grid.columns = 1 if shown <= 2 else (3 if shown >= 7 else 2)
+	# (the cards keep their full touch size).  (build 29) Only on a wide
+	# screen (phone): an iPad has the height for four rows, and three
+	# columns there left the stage camera too narrow a strip (it backed out
+	# of the room)
+	var vs := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(956, 440)
+	var wide := vs.x / maxf(1.0, vs.y) >= 1.6
+	_grid.columns = 1 if shown <= 2 else (3 if shown >= 7 and wide else 2)
 	var gap := 6 if _grid.columns >= 3 else 10
 	_grid.add_theme_constant_override("v_separation", gap)
 	if App.stage:
