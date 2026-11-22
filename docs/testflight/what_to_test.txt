@@ -1,6 +1,10 @@
-2.2 (32): parties by code work. Sign in to Game Center first. Purchases use Apple's sandbox in TestFlight, so nothing is really charged. Tell us your iPhone or iPad model:
+2.2 (33): parties stay together, Dunk and Block. Sign in to Game Center first. Two phones in one party (Friends > Invite > Create party, then Join with code):
 
-- Two phones: on one, Friends > Invite > Create party and read its code. On the other, Friends > Join with code and type it. You should land in the same lobby within a few seconds. Start a round and play it together.
-- A friend from Friends > Add friend can also be invited with the Invite button next to their name.
-- First launch (or delete and reinstall): type your player name. The name box and Enter the dorm stay above the keyboard.
+- Ready: everyone taps Ready, the leader too, in any order. A check mark shows next to each ready name. The leader's Start lights up when all are ready.
+- Tap a friend's card > Promote to leader. The crown moves; the new leader starts the next round.
+- Roles change at random every round (not always the same person on Night Watch).
+- In a round, a guest taps pause > Leave: you go back to the lobby and stay in the party. Friends still playing show as blue holograms. When their round ends you play the next one together. The leader's Leave asks to end the round for everyone.
+- Leave party (top right of the lobby) is the only way out of a party. The code is under Friends > Invite.
+- Walk with the basketball: the camera stays on you. Near the hoop, Shoot turns into Dunk. Next to a friend who is shooting, tap Block.
+- Change your name in Settings: the name stays above the keyboard.
 - Tell us any error message word for word (a screenshot helps).

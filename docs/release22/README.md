@@ -1230,3 +1230,67 @@ joining "Couldn't connect to that party through Game Center (…)" or
 - Service: migration-free; `wrangler.toml` adds the `RELAY` Durable Object
   (SQLite-backed, free plan) for sandbox and production; deployed 22 Nov
   2026 (`/v1/config` lists `relay`).  Cost note in `service/README.md`.
+
+## 49. Build 33: the party stays together; Dunk and Block
+
+Protocol 16 unchanged; every new message and field is additive (a host
+says what it supports in a trailing LOBBY byte, a guest in HELLO; older
+builds ignore both, and a new guest with an old host behaves as before).
+The owner's two iPhones on build 32:
+- **Leaving a round no longer leaves the party.**  Pause › Leave sent every
+  online player through `leave_room()`.  Now a guest sends `ROUND_LEAVE`
+  and goes back to the party lobby; the host marks them away and a bot
+  plays their runner at once (`MatchSim.leave_round`; no Round Win or
+  Coins for the leaver).  In the leaver's lobby, friends still in the round
+  are holograms on their marks (translucent blue, fresnel rim, scanlines,
+  a glowing disc; a depth pre-pass so no inner faces or z-fighting;
+  Reduced Motion stills them) with "In a round" on their cards.  When
+  the round ends everyone is in the lobby and plays the next one.  The
+  host's Leave asks "End the round for everyone?": the round is cancelled
+  (it counts for nobody) and the party returns to the lobby.  Quick
+  Match: Leave still leaves.
+- **Leave party** (red, with a confirm) replaces Copy code in the lobby
+  header; the code is in Friends › Invite.
+- **Ready**: the leader had no Ready of their own (Start waited on the
+  guests).  Everyone readies now; the leader's button goes Ready → Start
+  (on when every player is ready), with Not ready beside it.  A teal check
+  mark sits by each ready name.
+- **Party leader**, separate from the device hosting the room: a crown,
+  synced to all; Promote to leader in a player's card (confirm).  A guest
+  leader's Start, settings, kick and promote go to the host, which checks
+  they lead.  When the leader leaves, the next member leads; when the host
+  leaves, the party ends (no host migration).
+- **Roles at random every round**: with two players one of them was
+  always Night Watch, by fewest turns, so it alternated (and each new
+  series reset it).  Each round is now a weighted shuffle of all eight
+  seats; a player who was Night Watch the last two rounds in a row is
+  less likely (weight 0.35, never 0).  Over 6,000 seeds two friends are
+  Night Watch about 23% of the time each (`tests/test_series.gd`).
+- **Characters stacked on join**: a guest's lobby could open before its own
+  slot arrived (its runner was dropped and rebuilt on the same mark), and a
+  quick leave and rejoin built a new character over the one still waving
+  goodbye.  One character per player now, tested through quick joins,
+  rejoins, look changes mid-join, returns from a round and promotions.
+- **Basketball**: the Walk camera swung halfway to the hoop while you held
+  the ball (over the middle of the room, so it seemed to track the
+  group); it now stays on you, leading a little the way you move.
+  **Dunk** within 1.5 m of the rim, facing it (Shoot turns orange, Dunk):
+  gather, jump, slam, hang on the bending rim, drop; always in unless
+  blocked.  **Block** shows when a player within 1.8 m is winding up a shot
+  or a dunk: jump with an arm up; the host judges it with the guest's own
+  timing (up to 0.25 s late), knocks the ball down and away; 1 s cooldown.
+  Older builds see a dunk as a jump shot and a block as the ball flying
+  off.  `docs/media/ball_b33/`.
+- **Changing your name later** (Settings, Online): the sheet docks under
+  the top edge while typing, the name (and Save, when it fits) above the
+  keyboard; build 32 fixed only first launch.
+- **Runner bots slightly easier to tag**: they flee at 11 m (was 12) and
+  dive a beat early (3.3 m, was 3.0), spending the dive before the lunge;
+  open-ground chases end about 5% sooner.
+- A coins flight that outlived its chip (screen changed mid-flight) could
+  call into a freed object; the flight now stops with the chip.
+- Tested end to end (`tools/relay_e2e.sh`, real Worker and relay, two game
+  processes): a round, the guest leaves it and stays (host shown as a
+  hologram), both back in the lobby, both ready (host first), the host
+  promotes the guest, whose Start begins round 2 with them in it.
+- Service unchanged.
