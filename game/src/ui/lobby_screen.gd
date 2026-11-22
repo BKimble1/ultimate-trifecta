@@ -1125,6 +1125,10 @@ func _refresh() -> void:
 	_grid.columns = 1 if shown <= 2 else (3 if shown >= 5 and wide else 2)
 	var gap := 6 if _grid.columns >= 3 else 10
 	_grid.add_theme_constant_override("v_separation", gap)
+	# (build 30) three columns: narrower cards, so the stage keeps enough of
+	# the screen and its camera stays inside the room
+	for c in cells:
+		(c as Control).custom_minimum_size.x = 214.0 if _grid.columns >= 3 else 272.0
 	if App.stage:
 		App.stage.sync_party(entries)
 	_join_leave_notes()
