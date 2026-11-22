@@ -1368,19 +1368,32 @@ func _finish_setup() -> void:
 func _keyboard_fit() -> void:
 	if not first_run or not is_instance_valid(name_form) or not is_inside_tree():
 		return
-	# (build 30) only where there is an on-screen keyboard (desktop logged a
-	# warning every frame)
-	var kh := float(DisplayServer.virtual_keyboard_get_height()) if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD) else 0.0
-	if kh <= 0.0 and OS.get_cmdline_user_args().has("--sim-keyboard") and name_form.visible and name_form.field.has_focus():
+	# (build 32) the keyboard height on a phone or tablet, always (build 30
+	# asked only where the display reported an on-screen keyboard, and on
+	# some iPhones that left the name under the keyboard); never on desktop
+	var mobile := OS.has_feature("mobile") or OS.get_name() in ["iOS", "Android"]
+	var kh := float(DisplayServer.virtual_keyboard_get_height()) if mobile else 0.0
+	var sim := OS.get_cmdline_user_args().has("--sim-keyboard")
+	var typing := name_form.visible and name_form.field.has_focus() and (mobile or sim)
+	if kh <= 0.0 and sim and typing:
 		kh = float(DisplayServer.window_get_size().y) * 0.52   # dev captures: an iPhone's landscape keyboard
 	var vs := get_viewport().get_visible_rect().size
 	var units := roundf(kh * vs.y / maxf(1.0, float(DisplayServer.window_get_size().y)))
+	# (build 32) typing on a touch screen: the form docks in the top part of
+	# the screen whatever height the keyboard reports (a landscape iPhone
+	# keyboard takes over half of it), so the name and Enter stay in view
+	if typing:
+		units = maxf(units, roundf(vs.y * 0.6))
 	var want := int(UIKit.safe_margins(get_viewport()).size.y) + UIKit.EDGE_Y
 	if units > 0.0:
 		want = int(units) + UIKit.SP_S
 	if margin.get_theme_constant("margin_bottom") != want:
 		margin.add_theme_constant_override("margin_bottom", want)
-		name_form.sub_l.visible = units <= 0.0 or vs.y - units > 440.0
+	# the small print and the step line make room while typing
+	name_form.sub_l.visible = not typing and (units <= 0.0 or vs.y - units > 440.0)
+	name_form.compact_typing = typing
+	if is_instance_valid(_step_l):
+		_step_l.visible = not typing
 
 
 # ------------------------------------------------------------------ looks

@@ -25,6 +25,13 @@ var local_only := false
 var embedded := false
 var title_l: Label
 var sub_l: Label
+## (build 32) set by the screen while the keyboard is up
+var compact_typing := false:
+	set(v):
+		if v != compact_typing:
+			compact_typing = v
+			if is_instance_valid(field):
+				_on_text(field.text)
 var cancel_btn: Button
 var button_row: HBoxContainer
 
@@ -120,6 +127,9 @@ func _on_text(t: String) -> void:
 			" Parties show %s: without the online name check, parties use the game's own names." % NameRules.generated(String(Save.data.get("uid", ""))))
 	msg.text = err if err != "" else ok_text
 	msg.add_theme_color_override("font_color", UIKit.AMBER if err != "" else UIKit.IVORY_MUTED)
+	# (build 32) while the keyboard is up only a problem is said (the fine
+	# print makes room for the field and its button)
+	msg.visible = err != "" or not compact_typing
 	save_btn.disabled = err != "" or _busy
 	# a refusal for the words in it (not just a typo) comes with safe ideas
 	var words := not bool(m["ok"]) and not String(m["reason"]) in ["length", "characters", "spacing", "letters"]

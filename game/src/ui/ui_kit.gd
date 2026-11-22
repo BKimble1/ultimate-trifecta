@@ -1141,7 +1141,9 @@ static func v7_keyboard_height(vp: Viewport) -> float:
 	var view_h := vp.get_visible_rect().size.y if vp != null else 720.0
 	if v7_emulated_keyboard_pt >= 0.0:
 		return clampf(v7_emulated_keyboard_pt * units_per_point(), 0.0, view_h)
-	var px := DisplayServer.virtual_keyboard_get_height() if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD) else 0
+	# (build 32) asked on any phone or tablet (never on desktop, which logs a
+	# warning), whatever the display reports about an on-screen keyboard
+	var px := DisplayServer.virtual_keyboard_get_height() if (OS.has_feature("mobile") or OS.get_name() in ["iOS", "Android"]) else 0
 	if px <= 0 or vp == null:
 		return 0.0
 	var c2px := vp.get_final_transform().get_scale().y
