@@ -1,0 +1,52 @@
+name: Export App Store iPhone screenshots (one-time)
+on:
+  push:
+    branches:
+      - artifact/iphone-medium-screenshots
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out screenshot source
+        uses: actions/checkout@v4
+      - name: Install image processing
+        run: python3 -m pip install --break-system-packages Pillow
+      - name: Resize actual PNGs for iPhone medium display
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          root = Path("docs/media/final/store/iphone_6.9")
+          output = Path("iphone-medium-2622x1206")
+          output.mkdir(exist_ok=True)
+          names = [
+              "01_runner_splash_fountain.png",
+              "02_night_watch_golf_cart.png",
+              "03_party_in_the_dorm.png",
+              "04_basketball_in_the_dorm.png",
+              "05_season_pass_winter_break.png",
+              "06_shop_featured.png",
+              "07_locker.png",
+              "08_friends_invite.png",
+              "09_final_standings.png",
+          ]
+          for name in names:
+              with Image.open(root / name) as img:
+                  assert img.size == (2868, 1320), (name, img.size)
+                  img = img.convert("RGB").resize((2622, 1206), Image.Resampling.LANCZOS)
+                  img.save(output / name, optimize=True)
+                  print(name, (output / name).stat().st_size)
+          assert len(list(output.glob("*.png"))) == 9
+          PY
+      - name: Archive nine PNGs (download as ZIP)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ultimate-Trifecta-iPhone-Medium-9-Screenshots
+          path: iphone-medium-2622x1206/*.png
+          retention-days: 7
+          if-no-files-found: error
