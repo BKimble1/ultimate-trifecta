@@ -996,6 +996,8 @@ class Face:
 	var shine := false
 	var icon := ""
 	var caption := ""
+	## (build 33) the glyph's size beside a caption (1: the usual)
+	var icon_k := 1.0
 	var glow := 0.0:
 		set(v):
 			glow = v
@@ -1117,7 +1119,7 @@ class Face:
 			Icons.draw_shape(self, icon, size * 0.5, h * 0.24, col)
 			return
 		var ih := minf(h, 72.0)
-		Icons.draw_shape(self, icon, Vector2(ih * 0.56, h * 0.5), ih * 0.21, col)
+		Icons.draw_shape(self, icon, Vector2(ih * 0.56, h * 0.5), ih * 0.21 * icon_k, col)
 		var f := UIKit.font_w(600)
 		var fs := UIKit.T_LABEL
 		var asc := f.get_ascent(fs)

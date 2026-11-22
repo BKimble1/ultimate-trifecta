@@ -301,6 +301,7 @@ func build() -> void:
 	# right says what you can do there
 	act_btn = UIKit.icon_button("couch", "Jump on couch", 92.0)
 	act_btn.custom_minimum_size = Vector2(318, 96)
+	UIKit.face_of(act_btn).icon_k = 1.5   # (build 33) the ball's moves read at a glance
 	act_btn.visible = false
 	act_btn.focus_mode = Control.FOCUS_NONE
 	act_btn.pressed.connect(func() -> void:
@@ -311,6 +312,7 @@ func build() -> void:
 	for bid in ["pass", "drop"]:
 		var bb := UIKit.icon_button(bid, "Pass" if bid == "pass" else "Drop", 72.0)
 		bb.custom_minimum_size = Vector2(153, 80)
+		UIKit.face_of(bb).icon_k = 1.3
 		bb.visible = false
 		bb.focus_mode = Control.FOCUS_NONE
 		bb.accessibility_name = "Pass the ball" if bid == "pass" else "Drop the ball"
@@ -497,6 +499,8 @@ var _ball_key := ""
 
 
 func _show_ball_extras(list: Array) -> void:
+	if not act_btn.visible or act_btn.has_meta(&"leaving"):
+		list = []   # (they sit over the room button: not without it)
 	var key := ""
 	for e in list:
 		key += "%s%s|" % [e["id"], e["enabled"]]
@@ -507,7 +511,12 @@ func _show_ball_extras(list: Array) -> void:
 			shown[String(e["id"])] = e
 		for id in _ball_btns:
 			var b: Button = _ball_btns[id]
-			b.visible = shown.has(id)
+			var was_on := b.visible and not b.has_meta(&"leaving")
+			# (build 33) in with a pop, out with a quick fade
+			if shown.has(id) and not was_on:
+				_btn_in(b)
+			elif not shown.has(id) and was_on:
+				_btn_out(b)
 			if shown.has(id):
 				b.disabled = not bool(shown[id]["enabled"])
 				var f := UIKit.face_of(b)
@@ -517,16 +526,14 @@ func _show_ball_extras(list: Array) -> void:
 				f.styles["pressed"] = UIKit.card_box(bg.darkened(0.12), UIKit.R_BUTTON, 0.0)
 				f.fg["normal"] = UIKit.NAVY if id == "pass" else UIKit.IVORY
 				f.queue_redraw()
-	if list.is_empty() or not act_btn.visible:
-		for id in _ball_btns:
-			(_ball_btns[id] as Button).visible = false
+	if list.is_empty():
 		return
 	var right := act_btn.position.x + act_btn.size.x
 	var y := act_btn.position.y - 12.0
 	var x := right
 	for id in ["drop", "pass"]:
 		var b: Button = _ball_btns[id]
-		if not b.visible:
+		if not b.visible or b.has_meta(&"leaving"):
 			continue
 		var sz := b.get_combined_minimum_size()
 		b.size = sz
@@ -541,15 +548,22 @@ func _show_act(p: Dictionary) -> void:
 	if key == _act_key:
 		return
 	var was := _act_key != ""
+	var was_text := String(_act_key.get_slice("|", 0)) if was else ""
 	_act_key = key
 	if p.is_empty():
-		act_btn.visible = false
+		_btn_out(act_btn)
 		return
 	var f := UIKit.face_of(act_btn)
 	f.icon = String(p["icon"])
 	f.caption = String(p["text"])
 	var on := String(p["text"]) in ["Stop jumping", "Jump out"]
 	var bg := UIKit.TEAL if on else UIKit.AMBER
+	# (build 33) the basketball's big moves have colours of their own
+	match String(p["text"]):
+		"Dunk":
+			bg = UIKit.PATROL
+		"Block":
+			bg = UIKit.BAD
 	f.styles["normal"] = UIKit.card_box(bg, UIKit.R_BUTTON, 1.0, 16, 0.12)
 	f.styles["hover"] = UIKit.card_box(bg.lightened(0.08), UIKit.R_BUTTON, 1.0, 16, 0.12)
 	f.styles["pressed"] = UIKit.card_box(bg.darkened(0.12), UIKit.R_BUTTON, 0.0)
@@ -557,17 +571,72 @@ func _show_act(p: Dictionary) -> void:
 	act_btn.disabled = not bool(p["enabled"])
 	act_btn.tooltip_text = f.caption
 	act_btn.accessibility_name = f.caption
+	var leaving := act_btn.has_meta(&"leaving")
 	act_btn.visible = true
 	f.queue_redraw()
 	_layout_act()
-	if not was and not Save.get_setting("reduced_motion", false):
+	if not was or leaving:
 		# a quick pop as it appears
+		_btn_in(act_btn)
+	elif was_text != f.caption and not Save.get_setting("reduced_motion", false):
+		# (build 33) Shoot <-> Dunk, Pick up -> Block: a little bump says so
+		var tw0: Tween = act_btn.get_meta(&"tween") if act_btn.has_meta(&"tween") else null
+		if tw0 != null and tw0.is_valid():
+			tw0.kill()
 		act_btn.pivot_offset = act_btn.size * 0.5
-		act_btn.scale = Vector2(0.86, 0.86)
-		act_btn.modulate.a = 0.0
-		var tw := create_tween().set_parallel(true).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tw.tween_property(act_btn, "scale", Vector2.ONE, 0.18)
-		tw.tween_property(act_btn, "modulate:a", 1.0, 0.12)
+		act_btn.modulate.a = 1.0
+		act_btn.scale = Vector2(1.1, 1.1)
+		var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(act_btn, "scale", Vector2.ONE, 0.2)
+		act_btn.set_meta(&"tween", tw)
+
+
+## (build 33) A button pops in (scale and fade) ...
+func _btn_in(b: Button) -> void:
+	var tw0: Tween = b.get_meta(&"tween") if b.has_meta(&"tween") else null
+	if tw0 != null and tw0.is_valid():
+		tw0.kill()
+	b.remove_meta(&"leaving")
+	b.visible = true
+	b.mouse_filter = Control.MOUSE_FILTER_STOP
+	if Save.get_setting("reduced_motion", false) or not is_inside_tree():
+		b.scale = Vector2.ONE
+		b.modulate.a = 1.0
+		return
+	b.pivot_offset = b.get_combined_minimum_size() * 0.5
+	b.scale = Vector2(0.86, 0.86)
+	b.modulate.a = 0.0
+	var tw := create_tween().set_parallel(true).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(b, "scale", Vector2.ONE, 0.18)
+	tw.tween_property(b, "modulate:a", 1.0, 0.12)
+	b.set_meta(&"tween", tw)
+
+
+## ... and fades out (no taps meanwhile), then hides.
+func _btn_out(b: Button) -> void:
+	if not b.visible or b.has_meta(&"leaving"):
+		return
+	var tw0: Tween = b.get_meta(&"tween") if b.has_meta(&"tween") else null
+	if tw0 != null and tw0.is_valid():
+		tw0.kill()
+	if Save.get_setting("reduced_motion", false) or not is_inside_tree():
+		b.visible = false
+		b.scale = Vector2.ONE
+		b.modulate.a = 1.0
+		return
+	b.set_meta(&"leaving", true)
+	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.pivot_offset = b.size * 0.5
+	var tw := create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_property(b, "scale", Vector2(0.9, 0.9), 0.12)
+	tw.tween_property(b, "modulate:a", 0.0, 0.12)
+	tw.chain().tween_callback(func() -> void:
+		b.remove_meta(&"leaving")
+		b.visible = false
+		b.scale = Vector2.ONE
+		b.modulate.a = 1.0
+		b.mouse_filter = Control.MOUSE_FILTER_STOP)
+	b.set_meta(&"tween", tw)
 
 
 ## The bottom row (navigation, Emote, Walk, Chat, the primary action) must

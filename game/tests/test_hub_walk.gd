@@ -313,3 +313,214 @@ func test_coins_counter_in_a_party_room() -> void:
 	rig.teardown()
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
+
+
+
+## (build 33) The walk camera follows you and only you: holding the ball
+## (it used to lean halfway to the hoop, over the room's middle where the
+## others stand, which read as the camera tracking the group), with 2 and 4
+## people in the party walking around near you, its point stays on your
+## runner as you walk, and your runner stays in the middle of the screen.
+func test_walk_camera_stays_on_you_with_the_ball() -> void:
+	for n in [2, 4]:
+		var rig := NetRig.new()
+		t.add_child(rig)
+		rig.setup(30, 5, 0.0, n - 1)
+		await rig.wait_until(func() -> bool:
+			for c in rig.clients:
+				if c.local_slot < 0:
+					return false
+			return rig.host.human_count() == n and rig.host.social.ball.spawned, 400)
+		var saved_uid: Variant = Save.data["uid"]
+		var saved_session := App.session
+		var root: Window = t.get_tree().root
+		var saved_size: Vector2i = root.size
+		root.size = Vector2i(2868, 1320)
+		Save.data["uid"] = "uid-host"
+		App.session = rig.host
+		var l := _setup(rig)
+		await rig.frames(12)
+		l._set_walk(true)
+		await rig.frames(4)
+		# far from the hoop, the others walking about the middle of the room
+		l.hub._pos = Vector2(-2.6, 0.9)
+		l.hub._vel = Vector2.ZERO
+		var hb := rig.host.social.ball
+		hb.sim.place(Vector3(-2.2, HubBall.R, 0.9))
+		hb._dirty = true
+		await rig.frames(60)
+		l.hub.interact()
+		await rig.wait_until(func() -> bool: return hb.holder == rig.host.local_slot, 60)
+		t.check(hb.local_has(), "%d players: holding the ball" % n)
+		var v: CharacterView = _stage.chars["uid-host"]
+		var worst := 0.0
+		var sum := 0.0
+		var cnt := 0
+		var worst_screen := 0.0
+		var dirs := [Vector2(1, 0), Vector2(1, -0.6), Vector2(0.2, 1), Vector2(-1, 0.2), Vector2(1, 0.4), Vector2.ZERO]
+		var f := 0
+		for d in dirs:
+			l.hub.stick = Vector2(d.x, -d.y).limit_length(1.0)
+			for i in 34:
+				f += 1
+				for ci in rig.clients.size():
+					var c: NetSession = rig.clients[ci]
+					var a := float(f) * 0.05 + float(ci) * 2.1
+					c.social.hub.set_local(HubSync.MODE_WALK, Vector2(0.2 + cos(a) * 1.3, 0.2 + sin(a) * 0.9), a, 1.5)
+				await rig.frames(1)
+				if f < 20:
+					continue
+				var p := Vector2(v.position.x, v.position.z)
+				var at := _stage._walk_at
+				var off := Vector2(at.x, at.z + 0.8).distance_to(p)
+				worst = maxf(worst, off)
+				sum += off
+				cnt += 1
+				var sp := _stage.cam.unproject_position(v.global_position + Vector3(0, 0.6, 0))
+				var vs := l.get_viewport().get_visible_rect().size
+				worst_screen = maxf(worst_screen, absf(sp.x / vs.x - 0.5))
+		l.hub.stick = Vector2.ZERO
+		t.check(hb.local_has(), "%d players: still holding it" % n)
+		t.check(worst < 0.3, "%d players: the camera's point stays on your runner as you walk with the ball (worst %.2f m)" % [n, worst])
+		t.check(sum / maxf(1.0, float(cnt)) < 0.12, "%d players: on average right on them (%.3f m)" % [n, sum / maxf(1.0, float(cnt))])
+		t.check(worst_screen < 0.08, "%d players: your runner stays in the middle of the screen (at most %.0f%% off)" % [n, worst_screen * 100.0])
+		# and while your shot flies (it used to swing over to the hoop)
+		var at0 := Vector2(v.position.x, v.position.z)
+		var rc := HubBall.rim_center()
+		var to := Vector2(rc.x, rc.z) - at0
+		l.hub._yaw = atan2(-to.x, -to.y)
+		await rig.frames(6)
+		l.hub.interact()
+		var fly := 0.0
+		for i in 90:
+			await rig.frames(1)
+			var p2 := Vector2(v.position.x, v.position.z)
+			fly = maxf(fly, Vector2(_stage._walk_at.x, _stage._walk_at.z + 0.8).distance_to(p2))
+		t.check(not hb.local_has(), "%d players: shot" % n)
+		t.check(fly < 0.1, "%d players: the camera stays on you while the shot flies (%.2f m)" % [n, fly])
+		l.queue_free()
+		_stage.queue_free()
+		await rig.frames(2)
+		App.stage = null
+		App.session = saved_session
+		Save.data["uid"] = saved_uid
+		root.size = saved_size
+		rig.teardown()
+		await t.get_tree().process_frame
+		await t.get_tree().process_frame
+
+
+## (build 33) The ball's buttons (Shoot / Dunk with Pass and Drop above it,
+## Block) on iPhone SE (667x375 pt), a 6.9" iPhone (956x440 pt) and an iPad
+## (1024x768 pt): each on screen, a full touch target, apart from each other,
+## the stick's half of the screen and both bars.
+func test_ball_buttons_fit_every_screen() -> void:
+	var rig := NetRig.new()
+	t.add_child(rig)
+	rig.setup(20, 0, 0.0, 2)
+	await rig.wait_until(func() -> bool:
+		for c in rig.clients:
+			if c.local_slot < 0:
+				return false
+		return rig.host.human_count() == 3 and rig.host.social.ball.spawned, 400)
+	var saved_uid: Variant = Save.data["uid"]
+	var saved_session := App.session
+	var root: Window = t.get_tree().root
+	var saved_size: Vector2i = root.size
+	Save.data["uid"] = "uid-host"
+	App.session = rig.host
+	var hb := rig.host.social.ball
+	var rc := HubBall.rim_center()
+	var rim := Vector2(rc.x, rc.z)
+	var c0: NetSession = rig.clients[0]
+	for sz in [Vector2i(1334, 750), Vector2i(2868, 1320), Vector2i(2048, 1536)]:
+		root.size = sz
+		await rig.frames(2)
+		var l := _setup(rig)
+		await rig.frames(12)
+		l._set_walk(true)
+		await rig.frames(6)
+		# a friend walking (Pass is offered)
+		c0.social.hub.set_local(HubSync.MODE_MARK, Vector2(0.5, 1.0), 0.0, 0.0)
+		await rig.frames(3)
+		c0.social.hub.set_local(HubSync.MODE_WALK, Vector2(0.5, 1.0), 0.0, 0.0)
+		var at := rim + HubBall.HOOP_DIR * 2.6
+		l.hub._pos = at
+		l.hub._yaw = atan2(-(rim - at).x, -(rim - at).y)
+		await rig.wait_until(func() -> bool: return hb.phase == BallSync.Phase.FREE and hb.holder < 0, 200)
+		hb.sim.place(Vector3(at.x + 0.3, HubBall.R, at.y))
+		hb._dirty = true
+		await rig.frames(14)
+		l.hub.interact()
+		await rig.wait_until(func() -> bool: return hb.local_has(), 60)
+		await rig.frames(30)
+		_check_ball_buttons(l, sz, "Shoot", ["pass", "drop"])
+		# in dunk range: the same slot says Dunk
+		var near := rim + HubBall.HOOP_DIR * 1.2
+		l.hub._pos = near
+		l.hub._yaw = atan2(-(rim - near).x, -(rim - near).y)
+		await rig.frames(30)
+		_check_ball_buttons(l, sz, "Dunk", ["pass", "drop"])
+		# Block: the friend shoots next to you
+		l.hub.ball_action("drop")
+		await rig.frames(40)
+		var shoot_at := rim + HubBall.HOOP_DIR * 2.6
+		c0.social.hub.set_local(HubSync.MODE_WALK, shoot_at, 0.0, 0.0)
+		l.hub._pos = shoot_at + Vector2(0.4, -1.1)
+		await rig.frames(20)
+		hb.sim.place(Vector3(shoot_at.x + 0.3, HubBall.R, shoot_at.y))
+		hb._dirty = true
+		await rig.frames(14)
+		c0.social.ball.request(BallSync.ACT_PICKUP)
+		await rig.wait_until(func() -> bool: return hb.holder == c0.local_slot, 60)
+		await rig.frames(12)
+		c0.social.ball.request(BallSync.ACT_SHOOT, -1, atan2(-(rim - shoot_at).x, -(rim - shoot_at).y))
+		await rig.wait_until(func() -> bool: return hb.phase == BallSync.Phase.SHOT, 30)
+		hb._wind = 99.0   # (a long windup, to look at the button)
+		await rig.frames(16)
+		_check_ball_buttons(l, sz, "Block", [])
+		# it goes away smoothly once the chance has gone
+		hb._wind = 0.0
+		await rig.frames(60)
+		t.check(not l.act_btn.visible or UIKit.face_of(l.act_btn).caption != "Block", "%s: Block goes away after the shot" % str(sz))
+		await rig.frames(60)
+		l.queue_free()
+		_stage.queue_free()
+		await rig.frames(2)
+	App.stage = null
+	App.session = saved_session
+	Save.data["uid"] = saved_uid
+	root.size = saved_size
+	rig.teardown()
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+
+
+func _check_ball_buttons(l: LobbyScreen, sz: Vector2i, caption: String, extras: Array) -> void:
+	var tag := "%s %s" % [str(sz), caption]
+	t.check(l.act_btn.visible and UIKit.face_of(l.act_btn).caption == caption, "%s: the button says %s ('%s')" % [tag, caption, UIKit.face_of(l.act_btn).caption])
+	t.check(l.act_btn.modulate.a > 0.99 and l.act_btn.scale.distance_to(Vector2.ONE) < 0.01, "%s: (settled after its pop)" % tag)
+	var items: Array = [[caption, l.act_btn]]
+	for id in extras:
+		var b: Button = l._ball_btns[id]
+		t.check(b.visible, "%s: %s shows" % [tag, id])
+		items.append([id, b])
+	for id in l._ball_btns:
+		if not extras.has(id):
+			t.check(not (l._ball_btns[id] as Button).visible, "%s: no %s" % [tag, id])
+	var view := l.get_viewport().get_visible_rect()
+	var others: Array = [["the stick", l.stick]]
+	for bar in [l.top_bar, l.bottom_bar]:
+		for c in (bar as Control).get_children():
+			if c is Control and (c as Control).visible and (c as Control).get_global_rect().size.x > 1.0:
+				others.append([String((c as Control).name), c])
+	for i in items.size():
+		var r: Rect2 = (items[i][1] as Control).get_global_rect()
+		t.check(view.grow(0.5).encloses(r), "%s: '%s' on screen (%s)" % [tag, items[i][0], str(r)])
+		t.check(r.size.x >= UIKit.touch_min() - 0.5 and r.size.y >= UIKit.touch_min() - 0.5, "%s: '%s' a full touch target (%s)" % [tag, items[i][0], str(r.size)])
+		for j in range(i + 1, items.size()):
+			var r2: Rect2 = (items[j][1] as Control).get_global_rect()
+			t.check(not r.grow(-0.5).intersects(r2.grow(-0.5)), "%s: '%s' and '%s' apart" % [tag, items[i][0], items[j][0]])
+		for o in others:
+			var r3: Rect2 = (o[1] as Control).get_global_rect()
+			t.check(not r.grow(-0.5).intersects(r3.grow(-0.5)), "%s: '%s' clear of %s (%s / %s)" % [tag, items[i][0], o[0], str(r), str(r3)])

@@ -552,3 +552,221 @@ static func pass_pose(t: float, from: Vector3) -> Dictionary:
 		arm("ball", 1.0, true, on_ball(1, c, side_r.slerp(Vector3(0.6, 0.6, 0.5).normalized(), 1.0 - e), Vector3(0.1, 0.4, -0.9)), Vector3(0.7, 0.1, 0.2), 0.0, 0.35 * e)]
 	return {"ball": c, "arms": arms, "crouch": CROUCH, "rise": 0.0, "lean": 0.08, "turn": 0.0, "look_up": 0.0,
 		"stance_w": 0.0, "stance": [Vector3.ZERO, Vector3.ZERO]}
+
+
+# ---------------------------------------------------------------------------
+# (build 33) The dunk and the block
+# ---------------------------------------------------------------------------
+## the gather: both hands bring it to the chest; up in front of the chin at
+## the top of the jump (body-relative: the jump is added)
+const D_CHEST := Vector3(0.0, 0.75, -0.38)
+const D_COCK := Vector3(0.0, 0.95, -0.37)
+const SHOULDER := [Vector3(-0.17, 0.835, 0.0), Vector3(0.17, 0.835, 0.0)]
+
+
+static func _jump_up(r: float) -> float:
+	r = clampf(r, 0.0, 1.0)
+	return 1.0 - (1.0 - r) * (1.0 - r)
+
+
+## The dunk's windup `t` seconds in (0 .. BallSync.WINDUP_DUNK) from the
+## ball at `from` (holder space: where it was as the windup began; its
+## dribbling side `from_side`): the gather step, the load, the jump with the
+## ball carried up in both hands, and the slam down to `rel` (holder space:
+## where it leaves the hands; INF: in front of the chin).
+static func dunk(t: float, from: Vector3, from_side: int, rel: Vector3) -> Dictionary:
+	var t1 := BallSync.DUNK_T_GATHER
+	var t2 := BallSync.DUNK_T_TAKEOFF
+	var t3 := BallSync.DUNK_T_APEX
+	var w := BallSync.WINDUP_DUNK
+	var crouch := CROUCH
+	var rise := 0.0
+	var lean := LEAN
+	var look := 0.0
+	var c: Vector3
+	var side_n := Vector3(1.0, 0.08, 0.05).normalized()
+	var n_r := side_n
+	var n_l := Vector3(-1.0, 0.08, 0.05).normalized()
+	var carry := Vector3(0.1, 0.5, -0.85)
+	var f_r := carry
+	var f_l := Vector3(-0.1, 0.5, -0.85)
+	var contact_l := true
+	var contact_r := true
+	var reach := 0.33
+	var shrug := 0.0
+	var slam := 0.0
+	if t < t1:
+		# the gather (a step in toward the rim): both hands to the chest
+		var e := ease3(t / t1)
+		crouch = lerpf(CROUCH, 0.08, e)
+		lean = lerpf(LEAN, 0.12, e)
+		var to := D_CHEST - Vector3(0, crouch, 0)
+		# (out round the knee as they step, not through it)
+		var ctrl := Vector3(from.x * 0.9, (from.y + to.y) * 0.5, minf(from.z, to.z) - 0.22)
+		c = bez(from, ctrl, to, e)
+		var tn := Vector3(0.0, 1.0, 0.12).normalized()
+		n_r = tn.slerp(side_n, e) if from_side > 0 else side_n
+		n_l = n_l if from_side > 0 else tn.slerp(n_l, e)
+		f_r = Vector3(0.2, -0.2, -1.0).lerp(carry, e) if from_side > 0 else carry
+		f_l = Vector3(-0.2, -0.2, -1.0).lerp(f_l, e) if from_side < 0 else f_l
+		# (the dribbling hand takes it as it comes up; the other joins it)
+		contact_r = (from_side > 0 and from.y > TOP - 0.06) or t / t1 > 0.8
+		contact_l = (from_side < 0 and from.y > TOP - 0.06) or t / t1 > 0.8
+		reach = 0.33 * e
+	elif t < t2:
+		# the load: knees bend, the ball low at the chest, out in front of it
+		var d := ease3((t - t1) / (t2 - t1))
+		crouch = lerpf(0.08, 0.2, d)
+		lean = 0.12
+		c = D_CHEST - Vector3(0, crouch, 0.03 * d)
+	elif t < t3 + 0.06:
+		# the jump: the legs drive up, the ball goes up in front of the chin
+		var r := (t - t2) / (t3 - t2)
+		rise = BallSync.DUNK_APEX * _jump_up(r)
+		crouch = lerpf(0.2, 0.0, ease3(minf(1.0, r * 1.6)))
+		lean = lerpf(0.12, 0.02, ease3(minf(1.0, r * 1.5)))
+		var k := ease5(minf(1.0, r / 0.6))
+		c = (D_CHEST - Vector3(0, 0, 0.03)).lerp(D_COCK, k) + Vector3(0, rise - crouch, 0)
+		look = 0.14 * k
+		shrug = 0.14 * k
+	else:
+		# the slam: forward and down over the rim, the palms over the top of it
+		var q := clampf((t - t3 - 0.06) / maxf(0.01, w - t3 - 0.06), 0.0, 1.0)
+		slam = ease3(q)
+		rise = BallSync.DUNK_APEX - 0.03 * q * q
+		crouch = 0.0
+		lean = 0.02 + 0.08 * slam
+		var cock := D_COCK + Vector3(0, rise, 0)
+		var tgt := rel if rel != Vector3.INF else D_COCK + Vector3(0, rise - 0.04, -0.1)
+		c = bez(cock, cock + Vector3(0, 0.04, -0.05), tgt, q * q * (3.0 - 2.0 * q))
+		look = 0.14 - 0.08 * slam
+		shrug = 0.14 + 0.06 * slam
+	if slam > 0.0:
+		var top_r := Vector3(0.5, 0.48, 0.72).normalized()
+		var top_l := Vector3(-0.5, 0.48, 0.72).normalized()
+		n_r = side_n.slerp(top_r, slam)
+		n_l = Vector3(-1.0, 0.08, 0.05).normalized().slerp(top_l, slam)
+		f_r = carry.lerp(Vector3(0.1, -0.35, -0.95), slam)
+		f_l = Vector3(-0.1, 0.5, -0.85).lerp(Vector3(-0.1, -0.35, -0.95), slam)
+	var body := Vector3(0, rise - crouch, 0)
+	var arms := [arm("ball", 1.0, contact_l, on_ball(0, c, n_l, f_l), Vector3(-0.65, 0.05, 0.25) + body, shrug, reach),
+		arm("ball", 1.0, contact_r, on_ball(1, c, n_r, f_r), Vector3(0.65, 0.05, 0.25) + body, shrug, reach)]
+	return {"ball": c, "arms": arms, "crouch": crouch, "rise": rise, "lean": lean, "turn": 0.0, "look_up": look,
+		"stance_w": 0.0, "stance": [Vector3.ZERO, Vector3.ZERO]}
+
+
+## After the slam, `t` seconds after the ball left the hands: hanging on the
+## rim (the hands on it at `grips`: [left, right] [hand-bone target, basis],
+## holder space; `dip`: how far the bent rim has come down), letting go,
+## the drop and the landing.
+static func dunk_after(t: float, grips: Array, dip: float) -> Dictionary:
+	var let_go := BallSync.DUNK_LET_GO
+	var hang := BallSync.DUNK_HANG
+	var crouch := 0.0
+	var rise := 0.0
+	var lean := 0.0
+	var look := 0.0
+	var arms := [relaxed(), relaxed()]
+	if t < let_go:
+		# (the hands get to the rim before the body comes down to hang)
+		var e := ease3((t - 0.06) / 0.2)
+		rise = lerpf(BallSync.DUNK_APEX - 0.03, hang, e) - dip
+		# the legs swing under them and settle
+		crouch = 0.05 + 0.05 * sin(t * 10.0) * exp(-t * 3.0)
+		lean = -0.05 + 0.07 * sin(t * 9.0 + 0.6) * exp(-t * 3.5)
+		look = 0.2
+		for i in 2:
+			var g: Array = grips[i]
+			var s := -1.0 if i == 0 else 1.0
+			arms[i] = arm("rim", 1.0, false, [g[0], g[1]], Vector3(s * 0.75, rise - 0.2, 0.25), 0.12, 0.3)
+	else:
+		# let go: the drop (falling from where they hung), the landing
+		var tf := t - let_go
+		var h0 := hang
+		var t_land := sqrt(2.0 * h0 / HubBall.G)
+		rise = maxf(0.0, h0 - 0.5 * HubBall.G * tf * tf)
+		var after := tf - t_land
+		if after > 0.0:
+			crouch = 0.15 * sin(PI * clampf(after / 0.32, 0.0, 1.0))
+			lean = 0.08 * sin(PI * clampf(after / 0.4, 0.0, 1.0))
+		else:
+			crouch = 0.04 * clampf(tf / 0.15, 0.0, 1.0)
+			lean = -0.04
+		look = 0.2 * (1.0 - clampf(tf / 0.4, 0.0, 1.0))
+		if after < 0.12:
+			# the arms come down in front (clear of the big head), then relax
+			var k := ease3(tf / 0.3)
+			var body := Vector3(0, rise - crouch, 0)
+			for i in 2:
+				var s := -1.0 if i == 0 else 1.0
+				var sh: Vector3 = SHOULDER[i]
+				var wr := sh + body + Vector3(s * 0.06, lerpf(0.12, -0.12, k), lerpf(-0.28, -0.24, k))
+				var b := hand_basis(i, Vector3(0, -0.6, -0.8).lerp(Vector3(-s, 0, -0.3), k), Vector3(s * 0.1, 0.3, -1.0).lerp(Vector3(0, -0.5, -0.8), k))
+				arms[i] = arm("drop", 1.0, false, [wr, b], Vector3(s * 0.7, -0.4, 0.2) + body, 0.0, 0.2)
+	return {"ball": Vector3.ZERO, "arms": arms, "crouch": crouch, "rise": rise, "lean": lean, "turn": 0.0, "look_up": look,
+		"stance_w": 0.0, "stance": [Vector3.ZERO, Vector3.ZERO]}
+
+
+## A hand on the rim: the hand-bone target and its orientation (holder
+## space) for a grip on the tube at `p` (the tube's centre line), the rim's
+## middle at `rc` (the fingers over the top, toward the middle).
+static func rim_grip(i: int, p: Vector3, rc: Vector3) -> Array:
+	var inward := Vector3(rc.x - p.x, 0.0, rc.z - p.z).normalized()
+	var fingers := (inward * 0.75 + Vector3(0, -0.66, 0)).normalized()
+	var b := hand_basis(i, Vector3(0, -1.0, 0) + inward * 0.25, fingers)
+	# the palm on the top of the tube (its middle a little out of it)
+	var palm := p + Vector3(0, HubBall.RIM_TUBE + 0.012, 0) - inward * 0.025
+	return [palm - b * (PALM[i] as Vector3), b]
+
+
+## The jump to block, `t` seconds in: a dip, up with an arm raised toward
+## `at` (holder space: the ball, or the shooter), down and land.
+static func block_jump(t: float, at: Vector3, hit: bool) -> Dictionary:
+	var apex := 0.42
+	var crouch := 0.0
+	var rise := 0.0
+	if t < 0.08:
+		crouch = 0.1 * ease3(t / 0.08)
+	elif t < 0.3:
+		var r := (t - 0.08) / 0.22
+		rise = apex * _jump_up(r)
+		crouch = lerpf(0.1, 0.04, ease3(minf(1.0, r * 2.0)))
+	elif t < 0.56:
+		var f := (t - 0.3) / 0.26
+		rise = apex * (1.0 - f * f)
+		crouch = 0.04
+	else:
+		var a := (t - 0.56) / 0.14
+		crouch = 0.12 * sin(PI * clampf(a, 0.0, 1.0))
+	var body := Vector3(0, rise - crouch, 0)
+	var s := 1.0 if at.x >= 0.0 else -1.0
+	var i := 1 if s > 0.0 else 0
+	var o := 1 - i
+	var arms := [relaxed(), relaxed()]
+	var up_k := ease3(t / 0.16) * (1.0 - ease3((t - 0.5) / 0.15))
+	if t < 0.62:
+		# the blocking arm: up and forward toward the ball, out past the
+		# big head, the palm to it (a swat: a flick forward and down)
+		var sh: Vector3 = (SHOULDER[i] as Vector3) + body
+		var to := at - sh
+		var hz := Vector2(to.x, to.z)
+		hz = hz.normalized() if hz.length() > 0.05 else Vector2(0, -1)
+		if hz.y > -0.35:
+			hz = Vector2(hz.x, -0.35).normalized()
+		var swat := 0.0
+		if hit:
+			swat = sin(PI * clampf((t - BallSync.BLOCK_HIT_T + 0.03) / 0.16, 0.0, 1.0))
+		var dir := Vector3(hz.x * 0.42 + s * 0.7, 0.74 - 0.3 * swat, hz.y * 0.42).normalized()
+		var rest := Vector3(s * 0.2, -0.95, -0.15).normalized()
+		var d := rest.slerp(dir, up_k).normalized()
+		var wr := sh + d * 0.3
+		var b := hand_basis(i, Vector3(hz.x, 0.15 - 0.6 * swat, hz.y), Vector3(s * 0.25, 1.0, -0.2) + d * 0.6)
+		arms[i] = arm("block", 1.0, false, [wr, b], sh + Vector3(s * 0.6, -0.3, 0.25), 0.1 * up_k, 0.25 * up_k)
+		# the other arm: out and forward for balance
+		var sh2: Vector3 = (SHOULDER[o] as Vector3) + body
+		var d2 := rest * Vector3(-1, 1, 1)
+		d2 = d2.slerp(Vector3(-s * 0.75, 0.3, -0.58).normalized(), up_k * 0.8).normalized()
+		var b2 := hand_basis(o, Vector3(0.0, 0.0, -1.0), Vector3(-s * 0.4, 0.8, -0.3))
+		arms[o] = arm("block", 1.0, false, [sh2 + d2 * 0.28, b2], sh2 + Vector3(-s * 0.6, -0.3, 0.25), 0.0, 0.1 * up_k)
+	return {"ball": Vector3.ZERO, "arms": arms, "crouch": crouch, "rise": rise, "lean": 0.06 * up_k, "turn": 0.0,
+		"look_up": 0.12 * up_k, "stance_w": 0.0, "stance": [Vector3.ZERO, Vector3.ZERO]}

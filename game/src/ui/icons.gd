@@ -282,6 +282,39 @@ static func draw_shape(ci: CanvasItem, kind: String, c: Vector2, r: float, col: 
 			ci.draw_line(c + Vector2(-r * 0.42, r * 0.5), c + Vector2(r * 0.42, r * 0.5), col, r * 0.07, true)
 			_ball_icon(ci, c + Vector2(r * 0.12, -r * 0.5), r * 0.36, col)
 			return
+		"dunk":
+			# (build 33) a ball slammed into the rim: speed streaks above it,
+			# the rim dipping where it went in, the net below
+			var rim_y := r * 0.12
+			for i in 4:
+				var x0 := lerpf(-r * 0.62, r * 0.62, float(i) / 3.0)
+				var x1 := lerpf(-r * 0.32, r * 0.32, float(i) / 3.0)
+				ci.draw_line(c + Vector2(x0, rim_y + r * 0.04), c + Vector2(x1, r * 0.9), col, r * 0.07, true)
+			ci.draw_line(c + Vector2(-r * 0.42, r * 0.56), c + Vector2(r * 0.42, r * 0.56), col, r * 0.06, true)
+			_ball_icon(ci, c + Vector2(0, -r * 0.2), r * 0.38, col)
+			# the rim's front over the ball, bent down a little in the middle
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-r * 0.82, rim_y - r * 0.02), c + Vector2(0, rim_y + r * 0.08),
+				c + Vector2(r * 0.82, rim_y - r * 0.02)]), col, r * 0.15, true)
+			for sx in [-0.34, 0.0, 0.34]:
+				Icons._capsule(ci, c + Vector2(sx * r, -r * 0.98), c + Vector2(sx * r, -r * (0.74 if sx == 0.0 else 0.8)), r * 0.09, col)
+			return
+		"swat":
+			# (build 33) an open hand up, swatting a ball away
+			var hc := c + Vector2(-r * 0.12, r * 0.3)
+			ci.draw_circle(hc, r * 0.34, col)
+			ci.draw_rect(Rect2(hc + Vector2(-r * 0.34, -r * 0.12), Vector2(r * 0.68, r * 0.42)), col)
+			Icons._capsule(ci, hc + Vector2(-r * 0.12, r * 0.55), hc + Vector2(-r * 0.12, r * 0.95), r * 0.4, col)
+			for fi in 4:
+				var fx := lerpf(-r * 0.27, r * 0.27, float(fi) / 3.0)
+				var top := -r * (0.62 if fi == 1 or fi == 2 else 0.48)
+				Icons._capsule(ci, hc + Vector2(fx, -r * 0.05), hc + Vector2(fx * 1.08, top), r * 0.15, col)
+			Icons._capsule(ci, hc + Vector2(-r * 0.3, r * 0.12), hc + Vector2(-r * 0.62, -r * 0.12), r * 0.15, col)
+			_ball_icon(ci, c + Vector2(r * 0.58, -r * 0.6), r * 0.3, col)
+			for k in 3:
+				var a := -0.2 + float(k) * 0.55
+				var d := Vector2(cos(a), sin(a))
+				ci.draw_line(c + Vector2(r * 0.22, -r * 0.42) - d * r * 0.05, c + Vector2(r * 0.22, -r * 0.42) - d * r * 0.24, col, r * 0.08, true)
+			return
 		"pass":
 			# (build 24) a ball and an arrow off to the side
 			_ball_icon(ci, c + Vector2(-r * 0.42, 0), r * 0.44, col)
