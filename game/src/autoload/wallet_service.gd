@@ -620,7 +620,7 @@ func spend(item_id: String, offer: Dictionary = {}) -> Dictionary:
 	var can := can_transact()
 	if not bool(can["ok"]):
 		return {"ok": false, "state": "failed", "message": String(can["message"])}
-	if not Catalogue.kind(item_id) in ["coin_item", "season_premium"]:
+	if Catalogue.kind(item_id) != "coin_item":
 		return {"ok": false, "state": "failed", "message": "That item isn't sold for Coins."}
 	if owns_id(item_id):
 		return {"ok": false, "state": "failed", "message": "You already own this."}

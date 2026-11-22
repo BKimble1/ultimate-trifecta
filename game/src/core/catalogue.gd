@@ -13,7 +13,7 @@ extends RefCounted
 ##   season premium   "season:s1:premium"
 ## Kinds: coin_item (bought with Coins in the Shop), apple_skin (a permanent
 ## non-consumable bought directly from Apple), coin_pack (consumable Coins
-## from Apple), season_premium (bought with Coins), season_reward (earned in
+## from Apple), season_premium (bought from Apple; build 30: never for Coins), season_reward (earned in
 ## the Season Pass, never sold under another ID).
 ##
 ## Runner art lives in Cosmetics (names, meshes); an item whose art is not in
@@ -155,7 +155,7 @@ static func type_label(id: String) -> String:
 ## Price in Coins (0 for items not sold for Coins).
 static func price(id: String) -> int:
 	var it := item(id)
-	if String(it.get("kind", "")) in ["coin_item", "season_premium"]:
+	if String(it.get("kind", "")) == "coin_item":
 		return int(it.get("price", 0))
 	return 0
 
@@ -344,9 +344,9 @@ static func season_reward_ids(sid: String) -> Array:
 ## Where an unowned item can be obtained: "shop", "apple", "season" or "".
 static func source_of(id: String) -> String:
 	match kind(id):
-		"coin_item", "season_premium":
+		"coin_item":
 			return "shop"
-		"apple_skin":
+		"apple_skin", "season_premium":
 			return "apple"
 		"season_reward":
 			return "season"

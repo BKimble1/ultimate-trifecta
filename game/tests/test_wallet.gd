@@ -180,15 +180,19 @@ func test_season_claims_idempotent_and_late_premium() -> void:
 	var again: Dictionary = await Wallet.claim_all("s1")
 	t.check(not bool(again["ok"]), "repeated Claim all: nothing left")
 	t.eq(int(rig.svc.wallet(pid)["balance"]), 1600, "and no Coins granted twice")
-	# buying Premium later makes the already-earned Premium rewards claimable
+	# (build 30) Premium is never sold for Coins
 	var p: Dictionary = await Wallet.spend("season:s1:premium")
-	t.check(bool(p["ok"]), "Premium bought with Coins")
+	t.check(not bool(p["ok"]), "Premium can't be bought with Coins")
+	t.eq(Wallet.balance(), 1600, "nothing debited")
+	# buying Premium later (from Apple) makes the already-earned Premium rewards claimable
+	rig.svc.deliver_premium(pid)
+	await Wallet.refresh()
 	t.check(Wallet.premium("s1"), "Premium owned")
-	t.eq(Wallet.balance(), 100, "1,500 Coins debited")
+	t.eq(Wallet.balance(), 1600, "Premium costs no Coins")
 	t.eq(Wallet.claimable("s1").size(), 3, "late unlock: Premium tiers 1-3 claimable")
 	var pr: Dictionary = await Wallet.claim_all("s1")
 	t.eq((pr["claimed"] as Array).size(), 3, "claimed")
-	t.eq(Wallet.balance(), 150, "tier 2 Premium: +50 Coins once")
+	t.eq(Wallet.balance(), 1650, "tier 2 Premium: +50 Coins once")
 	t.check(Wallet.owns("outfit", "night_owl") or not Catalogue.has_art("outfit:night_owl"), "Night Owl owned (when its art exists)")
 	t.eq(int(Wallet.season_state("s1")["xp"]), 450, "buying never adds Season XP")
 	await rig.end()

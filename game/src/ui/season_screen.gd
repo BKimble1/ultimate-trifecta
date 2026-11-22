@@ -25,7 +25,7 @@ extends Screen
 ##           Challenges page (two 44 pt tabs): the tier and track, the name,
 ##           a state chip (Locked, Needs Premium, Ready to claim, Earned,
 ##           Claiming…, Claimed, Equipped), the requirements from the account
-##           ("15,300 XP to unlock", "Needs Premium · 1,500 Coins"), the
+##           ("15,300 XP to unlock", "Needs Premium · $4.99" (the App Store price)), the
 ##           flavour text lower in a finger-scrollable area, and
 ##           one action fixed at the bottom (Claim, Get / View Premium,
 ##           Equip, View in Locker, Show Tier N)
@@ -1312,7 +1312,9 @@ func _refresh_reward_detail() -> void:
 	var need := Economy.tier_xp(sid, focus_tier) - xp
 	var into := "wallet" if r.has("coins") else "Locker"
 	var lead := ("No Free reward at Tier %d. " % focus_tier) if _from_empty else ""
-	var premium_line := "Needs Premium · %s Coins" % Catalogue.format_coins(Catalogue.price(String(Catalogue.season(sid).get("premium_item", ""))))
+	# (build 30) Premium's one price: the App Store's
+	var ppv := Purchases.view(PassOffer.PRODUCT)
+	var premium_line := ("Needs Premium · %s" % String(ppv["price"])) if bool(ppv["can_buy"]) and String(ppv["price"]) != "" else "Needs Premium"
 	var rules := "Season XP comes from online rounds and challenges. Tiers can't be bought."
 	match st:
 		"empty":

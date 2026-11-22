@@ -238,7 +238,9 @@ async function spend(req, env) {
   await H.rateLimit(env, `spend:${p.id}`, 30, 60 * 1000);
   if (E.set(id)) return spendSet(env, p, id, key, shown);
   const it = E.item(id);
-  if (!it || !['coin_item', 'season_premium'].includes(it.kind)) throw new ApiError(400, 'not_for_sale', "That item isn't sold for Coins.");
+  // (build 30) Season Premium is sold by Apple only (one price everywhere)
+  if (it && it.kind === 'season_premium') throw new ApiError(400, 'not_for_sale', 'Premium is bought in the App Store.');
+  if (!it || it.kind !== 'coin_item') throw new ApiError(400, 'not_for_sale', "That item isn't sold for Coins.");
   const idem = `spend:${p.id}:${key}`;
   // a replay of an accepted purchase returns that result, even after its
   // offer has left the Shop (never a second charge, never a late refusal)

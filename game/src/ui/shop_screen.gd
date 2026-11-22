@@ -927,23 +927,6 @@ func _season_offer(gw: float) -> Control:
 	return card
 
 
-## (2.2 build 16) Premium for Coins from the Season 1 banner: the usual
-## confirm sheet, or what's missing.
-func _buy_premium_with_coins() -> void:
-	var id := String(Catalogue.season(Catalogue.current_season_id()).get("premium_item", "season:s1:premium"))
-	if Wallet.premium(Catalogue.current_season_id()):
-		NavShell.go("pass")
-		return
-	var can := Wallet.can_transact()
-	if not bool(can["ok"]):
-		dialog(String(can["message"]))
-		return
-	if Wallet.balance() < Catalogue.price(id):
-		dialog("You need %s more Coins. Coin packs are in Coins." % Catalogue.format_coins(Catalogue.price(id) - Wallet.balance()))
-		return
-	_confirm_spend(id)
-
-
 ## (2.2 build 18) the card's one line: "44 rewards · 5 outfits · 1,125 Coins back"
 static func premium_short(sid: String) -> String:
 	var c := PassOffer.contents()
@@ -1044,7 +1027,8 @@ func state_of(id: String, offer: Dictionary = {}) -> Dictionary:
 	var k := Catalogue.kind(id)
 	if Wallet.owns_id(id) and k != "coin_pack":
 		return {"text": "Owned", "col": UIKit.TEAL, "kind": "owned", "owned": true}
-	if k == "coin_pack" or k == "apple_skin":
+	# (build 30) Premium is sold by Apple only, at the App Store price
+	if k == "coin_pack" or k == "apple_skin" or k == "season_premium":
 		var pv := Purchases.view(Catalogue.product_of(id))
 		var price := String(pv["price"])
 		var txt := price if bool(pv["can_buy"]) else String(pv["button"])
@@ -1052,7 +1036,7 @@ func state_of(id: String, offer: Dictionary = {}) -> Dictionary:
 			txt = String(pv["button"])
 		return {"text": txt, "col": UIKit.IVORY if bool(pv["can_buy"]) else UIKit.IVORY_MUTED, "kind": "apple", "owned": false,
 			"price": price, "message": String(pv["message"]), "state": String(pv["state"]), "can_buy": bool(pv["can_buy"])}
-	if k in ["coin_item", "season_premium"]:
+	if k == "coin_item":
 		var p := Catalogue.price(id)
 		if Catalogue.is_rotation(id):
 			var o: Dictionary = offer if Offers.is_active(offer) else Offers.offer_for(id)
@@ -1342,7 +1326,7 @@ func _refresh_detail() -> void:
 					status.text = "Gets the %s Coins pack and buys it; %s Coins left over." % [
 						Catalogue.format_coins(int(plan["coins"])), Catalogue.format_coins(int(plan["left"]))]
 			else:
-				action.text = ("Unlock for %s" if Catalogue.kind(id) == "season_premium" else "Buy for %s") % ("%s Coins" % String(st["text"]))
+				action.text = "Buy for %s Coins" % String(st["text"])
 				action.disabled = false
 				status.text = ""
 		"apple":

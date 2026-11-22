@@ -610,7 +610,8 @@ func test_premium_lock_reason_fits_the_iphone_se() -> void:
 		await _frames(30)
 		t.eq(sp.display_state(50, "premium"), "premium_locked", "%s: Record Breaker reached, needs Premium" % key)
 		var sl := sp._d["state"] as Label
-		t.check(sl.text.contains("Premium") and sl.text.contains("1,500 Coins"), "%s: the reason: %s" % [key, sl.text])
+		# (build 30) Premium's one price is the App Store's; never Coins
+		t.check(sl.text.contains("Needs Premium") and not sl.text.contains("Coins"), "%s: the reason: %s" % [key, sl.text])
 		t.check((sp._d["page"] as Control).get_global_rect().grow(1.0).encloses(sl.get_global_rect()), "%s: the whole reason in view" % key)
 		t.check(sl.get_global_rect().end.y <= (sp._d["scroll"] as Control).get_global_rect().position.y + 1.0, "%s: above the description" % key)
 		var act := sp._d["action"] as Button

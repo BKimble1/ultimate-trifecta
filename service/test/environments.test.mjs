@@ -205,7 +205,7 @@ test('a sandbox session cannot spend, claim or deliver on production', async () 
   // sandbox value: Coins, a Coin item, Premium and Season XP
   const g = await call(sandbox, 'POST', `/v1/admin/wallets/${sa.profile.profile_id}/adjust`, { amount: 3000, note: 'test', idempotency_key: 'sandbox-grant-1' }, undefined, ADMIN);
   assert.equal(g.status, 200);
-  assert.equal((await call(sandbox, 'POST', '/v1/wallet/spend', { item_id: 'season:s1:premium', price: 1500, idempotency_key: 'premium-sb-1' }, sa.token)).status, 200);
+  assert.equal((await call(sandbox, 'POST', '/v1/wallet/spend', { item_id: 'outfit:frog', price: 500, idempotency_key: 'frog-sb-1' }, sa.token)).status, 200);
   assert.equal((await call(sandbox, 'POST', '/v1/wallet/spend', { item_id: 'outfit:robe', price: 300, idempotency_key: 'robe-sb-1' }, sa.token)).status, 200);
   // the sandbox session token is bound to its environment: production refuses it
   for (const [m, path, body] of [['GET', '/v1/wallet'], ['POST', '/v1/wallet/spend', { item_id: 'outfit:duck', price: 450, idempotency_key: 'duck-x-1' }],

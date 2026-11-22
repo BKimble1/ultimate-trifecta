@@ -66,7 +66,7 @@ func test_products_are_honest() -> void:
 		t.eq(Catalogue.product_of("coins:%d" % n), pid, "coins:%d names %s" % [n, pid])
 	t.eq(Catalogue.shop_items("coins").map(func(i: Dictionary) -> int: return int(i["coins"])), [250, 500, 1000, 1500, 3500, 7500],
 		"the Shop lists them by quantity")
-	t.eq(Catalogue.price("season:s1:premium"), 1500, "Season 1 Premium costs 1,500 Coins")
+	t.eq(Catalogue.price("season:s1:premium"), 0, "(build 30) Season 1 Premium has no Coin price: App Store only")
 	# 2.2 build 15: Premium also sells directly from Apple (a permanent
 	# non-consumable, never a subscription), beside its Coin price
 	t.eq(Catalogue.product_of("season:s1:premium"), "com.idlery.ultimatetrifecta.pass.s1", "Premium is also a direct Apple purchase")
@@ -207,7 +207,7 @@ func test_season_table_is_complete() -> void:
 	t.eq(free_n, 15 + 14, "Free rewards: 15 in tiers 1-30, 14 in tiers 31-100")
 	t.eq(prem_n, 30 + 14, "Premium rewards: 30 in tiers 1-30, 14 in tiers 31-100")
 	t.eq(Catalogue.season("s1").get("ends_at"), null, "no fabricated end date")
-	t.check(Economy.season_coin_total("s1", "premium") < Catalogue.price("season:s1:premium"), "Premium Coins never pay back the pass (%d)" % Economy.season_coin_total("s1", "premium"))
+	t.check(Economy.season_coin_total("s1", "premium") < 1500, "Premium Coins stay modest (%d)" % Economy.season_coin_total("s1", "premium"))
 	t.eq(Economy.season_coin_total("s1", "premium"), 600 + 7 * 75, "Premium Coins: 600 + 7 x 75")
 	t.eq(Economy.season_coin_total("s1", "free"), 100 + 7 * 50, "Free Coins: 100 + 7 x 50")
 	# the advertised item mix: outfits, accessories, emotes, profile cosmetics
@@ -235,7 +235,7 @@ func test_season_extension_keeps_tiers_1_to_30() -> void:
 	for i in 30:
 		t.eq(tiers[i], old[i], "tier %d unchanged (threshold, rewards)" % (i + 1))
 	t.eq(String(Catalogue.season("s1")["premium_item"]), String(v2["premium_item"]), "the same Premium entitlement")
-	t.eq(Catalogue.price("season:s1:premium"), int(v2["premium_price"]), "the same 1,500-Coin price")
+	t.eq(Catalogue.price("season:s1:premium"), 0, "(build 30) Premium has no Coin price (App Store only)")
 	t.eq(Economy.reward_at("s1", 30, "premium"), {"item": "outfit:library_cardigan"}, "Library Cardigan stays at Premium 30")
 	t.eq(Economy.reward_at("s1", 30, "free"), {"item": "badge:s1_finisher"}, "the old finisher badge stays at Free 30")
 	t.eq(Economy.reward_at("s1", 50, "premium"), {"item": "outfit:record_breaker"}, "Record Breaker at Premium 50")

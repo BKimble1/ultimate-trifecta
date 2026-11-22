@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
-import { makeEnv, call, user, ADMIN } from './helpers.mjs';
+import { makeEnv, call, user, ADMIN, grantPremium } from './helpers.mjs';
 import * as E from '../src/economy.js';
 
 const V2 = JSON.parse(readFileSync(new URL('../../game/tests/data/season_s1_v2.json', import.meta.url), 'utf8'));
@@ -39,10 +39,9 @@ function every(from = 1, to = 100) {
 
 const claim = (ctx, u, claims) => call(ctx, 'POST', '/v1/season/s1/claim', { claims }, u.token);
 
-async function buyPremium(ctx, u, key = 'premium-' + Math.random().toString(36).slice(2, 10)) {
-  await grant(ctx, u, 1500);
-  const r = await call(ctx, 'POST', '/v1/wallet/spend', { item_id: 'season:s1:premium', price: 1500, idempotency_key: key }, u.token);
-  assert.equal(r.status, 200, JSON.stringify(r.body));
+// (build 30) Premium from Apple only
+async function buyPremium(ctx, u) {
+  const r = await grantPremium(ctx, u);
   return r.body.wallet;
 }
 
@@ -78,7 +77,7 @@ test('the 100-tier table keeps tiers 1-30 exactly and extends them from the paci
   assert.equal(E.item('outfit:record_breaker').name, 'Record Breaker');
   assert.equal(E.item('outfit:dr_doom').name, 'Dr. Doom');
   // premium access unchanged
-  assert.equal(E.price('season:s1:premium'), V2.premium_price);
+  assert.equal(E.price('season:s1:premium'), 0, 'build 30: Premium has no Coin price (App Store only)');
   assert.equal(E.season('s1').premium_item, V2.premium_item);
   // no item is granted by two cells (a duplicate would be "already owned")
   const seen = new Map();
@@ -94,7 +93,7 @@ test('the 100-tier table keeps tiers 1-30 exactly and extends them from the paci
   }
   // Premium Coins never pay back the pass
   const coins = (track) => t.reduce((n, r) => n + (r[track] && r[track].coins ? r[track].coins : 0), 0);
-  assert.ok(coins('premium') < E.price('season:s1:premium'), `Premium Coins ${coins('premium')} < 1,500`);
+  assert.ok(coins('premium') < V2.premium_price, `Premium Coins ${coins('premium')} < 1,500 (they never repay the pass)`);
 });
 
 test('migration 0005 keeps every 30-tier-era row and only adds the audit column', () => {

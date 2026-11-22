@@ -158,3 +158,14 @@ export function storeTx(ctx, o = {}) {
     ...(o.revocationDate ? { revocationDate: o.revocationDate } : {}),
   };
 }
+
+// (build 30) Season Premium is sold by Apple only: a test account gets it
+// the way a player does, a verified App Store transaction of the pass.
+export const PASS = 'com.idlery.ultimatetrifecta.pass.s1';
+export async function grantPremium(ctx, u, o = {}) {
+  if (!ctx.env.__appleRootsOnly) trustTestRoot(ctx);
+  const tx = storeTx(ctx, { productId: PASS, type: 'Non-Consumable', ...o });
+  const r = await call(ctx, 'POST', '/v1/wallet/apple', { jws: appleJws(tx), transaction_id: tx.transactionId }, u.token);
+  if (r.status !== 200) throw new Error('grantPremium: ' + JSON.stringify(r.body));
+  return r;
+}

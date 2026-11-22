@@ -4,10 +4,10 @@ extends RefCounted
 ## it opens (a player without Premium; at most once every SHOW_GAP_S), and
 ## again from the pass's "Get Premium" button.  Three Premium outfits stand
 ## in 3D on the right (tiers 1, 30 and 15); the left says what Premium holds
-## (all counted from the catalogue) and sells it two ways:
-##   * from Apple (com.idlery.ultimatetrifecta.pass.s1, a permanent
-##     non-consumable at StoreKit's own localized price, never a stored one)
-##   * for Coins (the Shop's confirm sheet, as before)
+## (all counted from the catalogue) and sells it one way: from Apple
+## (com.idlery.ultimatetrifecta.pass.s1, a permanent non-consumable at
+## StoreKit's own localized price, never a stored one).  (build 30) Premium
+## is never sold for Coins: one price everywhere.
 ## No made-up "was" price: the only prices shown are real ones.
 
 const PRODUCT := "com.idlery.ultimatetrifecta.pass.s1"
@@ -183,13 +183,6 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(title)
 	var c := contents()
-	var sub := UIKit.label("%d more rewards. Everything you've reached unlocks at once." % int(c["rewards"]),
-		int(maxf(17.0, 23.0 * k)), UIKit.IVORY, false)
-	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sub.custom_minimum_size.x = text_w
-	sub.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(sub)
 	var stats := UIKit.hbox(10)
 	stats.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stats.custom_minimum_size.x = text_w
@@ -203,17 +196,13 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 	var short := not tall and sz.y < 430.0
 	stats.visible = not short
 	v.add_child(UIKit.spacer_v())
-	# the two ways to buy it
+	# (build 30) one way to buy it: Apple, at the App Store price
 	var row := UIKit.hbox(12)
 	row.name = "BuyRow"
 	var bh := maxf(UIKit.touch_min() + 8.0, 92.0 * k)
-	var buy := UIKit.primary("Get Premium", Vector2(text_w * 0.62, bh), int(maxf(20.0, 28.0 * k)))
+	var buy := UIKit.primary("Get Premium", Vector2(minf(text_w, 520.0 * maxf(k, 0.8)), bh), int(maxf(20.0, 28.0 * k)))
 	buy.name = "BuyApple"
 	row.add_child(buy)
-	var coins := UIKit.quiet("%s Coins" % Catalogue.format_coins(Catalogue.price(premium_item())), Vector2(0, bh), int(maxf(17.0, float(UIKit.T_LABEL + 1) * k)))
-	coins.name = "BuyCoins"
-	coins.icon = null
-	row.add_child(coins)
 	v.add_child(row)
 	var fine := UIKit.styled("", "caption", UIKit.IVORY_MUTED)
 	fine.name = "Fine"
@@ -231,7 +220,6 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 		if Wallet.premium(Catalogue.current_season_id()):
 			buy.text = "Premium unlocked"
 			buy.disabled = true
-			coins.visible = false
 			fine.text = "Your Premium rewards are ready in the Season Pass."
 			return
 		buy.disabled = false
@@ -242,7 +230,7 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 		else:
 			buy.text = "Get Premium"
 		var msg := String(pv["message"])
-		fine.text = "One-time purchase. Not a subscription."
+		fine.text = "One-time purchase · not a subscription"
 		if not bool(pv["can_buy"]) and msg != "" and not st in ["purchasing", "pending_approval"]:
 			fine.text = msg
 	paint.call()
@@ -255,15 +243,6 @@ static func _fill(poster: Poster, screen: Screen, close: Callable) -> void:
 		elif String(pv["message"]) != "":
 			screen.dialog(String(pv["message"]))
 		paint.call())
-	coins.pressed.connect(func() -> void:
-		if close.is_valid():
-			close.call()
-		if screen is ShopScreen:
-			(screen as ShopScreen)._buy_premium_with_coins()
-			return
-		ShopScreen.focus_section = "season"
-		ShopScreen.focus_item = premium_item()
-		NavShell.go("shop"))
 	var on_change := func(_a: Variant = null) -> void: paint.call()
 	Purchases.state_changed.connect(on_change)
 	Purchases.products_changed.connect(on_change)

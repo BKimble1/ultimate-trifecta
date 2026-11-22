@@ -339,7 +339,10 @@ func _spend(pid: String, b: Dictionary) -> Dictionary:
 	if not Catalogue.set_entry(id).is_empty():
 		return _spend_set(pid, key, id, int(b.get("price", -1)))
 	var price := Catalogue.price(id)
-	if not Catalogue.kind(id) in ["coin_item", "season_premium"]:
+	# (build 30) Premium is sold by Apple only, as the service does
+	if Catalogue.kind(id) == "season_premium":
+		return _err(400, "not_for_sale", "Premium is bought in the App Store.")
+	if Catalogue.kind(id) != "coin_item":
 		return _err(400, "not_for_sale", "That item isn't sold for Coins.")
 	var w := wallet(pid)
 	if (w["entitlements"] as Dictionary).has(id):
@@ -516,7 +519,7 @@ func _claim(pid: String, sid: String, b: Dictionary) -> Dictionary:
 		if not track in ["free", "premium"] or seen.has(key):
 			continue
 		seen[key] = true
-		var st := "empty" if tier < 1 or tier > top else Economy.cell_state(sid, tier, track, int(s["xp"]), bool(s["premium"]), claimed)
+		var st := "empty" if tier < 1 or tier > top else Economy.cell_state(sid, tier, track, int(s["xp"]), _premium(pid, sid), claimed)
 		if st != "claimable":
 			skipped.append({"tier": tier, "track": track, "reason": {"empty": "no_reward", "claimed": "already_claimed", "locked": "locked",
 				"premium_locked": "premium_required"}.get(st, st)})
@@ -714,3 +717,22 @@ func _view(r: Dictionary, bon: Dictionary, current: bool) -> Dictionary:
 	v["bonus_xp"] = int(bon[r["instance_id"]]["xp"]) if bon.has(r["instance_id"]) else 0
 	v["current"] = current
 	return v
+
+
+## (build 30) Tests: Premium the way a player gets it, a verified App Store
+## transaction of the pass (the test-double JWS).
+func deliver_premium(pid: String, sid: String = "s1") -> Dictionary:
+	var prod := String(Catalogue.season(sid).get("premium_item", "season:%s:premium" % sid))
+	var tx := {"transactionId": "prem-%s-%d" % [pid, apple.size()], "productId": Catalogue.product_of(prod),
+		"environment": environment, "appAccountToken": String(wallet(pid)["token"])}
+	return _apple(pid, {"jws": "test." + Marshalls.utf8_to_base64(JSON.stringify(tx))})
+
+
+## Premium: the season flag, or the pass entitlement (Apple) not revoked,
+## as the service's snapshot reads it.
+func _premium(pid: String, sid: String) -> bool:
+	var w := wallet(pid)
+	if bool(w["season"][sid]["premium"]):
+		return true
+	var e: Dictionary = (w["entitlements"] as Dictionary).get(String(Catalogue.season(sid).get("premium_item", "season:%s:premium" % sid)), {})
+	return not e.is_empty() and not bool(e.get("revoked", false))

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { generateKeyPairSync } from 'node:crypto';
-import { makeEnv, call, user, ADMIN, appleChain, appleJws, trustTestRoot, storeTx } from './helpers.mjs';
+import { makeEnv, call, user, ADMIN, appleChain, appleJws, trustTestRoot, storeTx, grantPremium } from './helpers.mjs';
 import * as E from '../src/economy.js';
 import { render } from '../tools/sync_catalogue.mjs';
 import { verifyAppleJws, APPLE_ROOT_G3_SHA256 } from '../src/appstore.js';
@@ -39,7 +39,7 @@ test('the service copy of the catalogue is current; economy matches the game', (
   assert.equal(E.rowCanonical('M-1', 2, 200, row), 'v1|M-1|2|0|2|0|0|0|1|1|3|200');
   const sql = readFileSync(new URL('../migrations/0002_commerce.sql', import.meta.url), 'utf8');
   assert.ok(sql.includes(`CHECK (rounds <= ${E.ECONOMY.eligibility.daily_round_cap})`), 'daily cap in the schema = economy daily_round_cap');
-  assert.equal(E.price('season:s1:premium'), 1500);
+  assert.equal(E.price('season:s1:premium'), 0, 'Premium has no Coin price (build 30: App Store only)');
   assert.equal(E.legacyImportAmount(99999, 10, 0), 750);
   assert.ok(E.maxRoundCoins() <= 40);
 });
@@ -165,13 +165,14 @@ test('refunded Coin pack: Coins taken back, debt when spent, paid from later gra
   const a = await user(ctx, 'T:_ann', 'Ann Otter');
   const tx = storeTx(ctx);
   await deliver(ctx, a, tx);
-  const sp = await call(ctx, 'POST', '/v1/wallet/spend', { item_id: 'season:s1:premium', price: 1500, idempotency_key: 'premium-01' }, a.token);
-  assert.equal(sp.body.wallet.balance, 0);
+  const sp = await call(ctx, 'POST', '/v1/wallet/spend', { item_id: 'outfit:frog', price: 500, idempotency_key: 'frog-spend-01' }, a.token);
+  assert.equal(sp.status, 200, JSON.stringify(sp.body));
+  assert.equal(sp.body.wallet.balance, 1000);
   const r = await deliver(ctx, a, { ...tx, revocationDate: ctx.clock.t });
   assert.equal(r.body.wallet.balance, 0);
-  assert.equal(r.body.wallet.debt, 1500, 'the spent part is recorded as debt');
-  assert.ok(!r.body.wallet.entitlements.find((e) => e.item === 'season:s1:premium').revoked, 'items bought with it are not erased');
-  const g = await grant(ctx, a, 1800);
+  assert.equal(r.body.wallet.debt, 500, 'the spent part is recorded as debt');
+  assert.ok(!r.body.wallet.entitlements.find((e) => e.item === 'outfit:frog').revoked, 'items bought with it are not erased');
+  const g = await grant(ctx, a, 800);
   assert.equal(g.balance, 300, 'later grants pay the debt first');
   assert.equal(g.debt, 0);
   // the refund again: nothing more
@@ -270,7 +271,7 @@ test('legacy import: bounded, once per account and per Game Center player', asyn
   assert.equal((await wallet(ctx, back)).balance, 0, 'deletion forfeited the Coins; nothing re-imported');
 });
 
-test('Season: free claims, Premium for Coins, late unlock, repeated Claim all, duplicates', async () => {
+test('Season: free claims, Premium from Apple (never Coins), late unlock, repeated Claim all, duplicates', async () => {
   const ctx = setup();
   const a = await user(ctx, 'T:_ann', 'Ann Otter');
   const pid = a.profile.profile_id;
@@ -281,9 +282,14 @@ test('Season: free claims, Premium for Coins, late unlock, repeated Claim all, d
   const r = await claimAll(every);
   assert.deepEqual(r.body.claimed.map((c) => `${c.tier}:${c.track}`), ['1:free', '3:free'], 'free track without buying; Premium locked; tier 4+ locked');
   assert.equal((await claimAll(every)).body.claimed.length, 0, 'repeated Claim all: nothing');
-  // Premium for Coins (not Apple, not a subscription), then the late unlock
-  await grant(ctx, a, 1500);
-  const buy = await call(ctx, 'POST', '/v1/wallet/spend', { item_id: 'season:s1:premium', price: 1500, idempotency_key: 'premium-1' }, a.token);
+  // (build 30) Premium is never sold for Coins: refused, nothing charged
+  const before = (await wallet(ctx, a)).balance;
+  const coinsTry = await call(ctx, 'POST', '/v1/wallet/spend', { item_id: 'season:s1:premium', price: 1500, idempotency_key: 'premium-1' }, a.token);
+  assert.equal(coinsTry.status, 400);
+  assert.equal(coinsTry.body.error, 'not_for_sale');
+  assert.equal((await wallet(ctx, a)).balance, before, 'nothing charged');
+  // Premium from Apple (not a subscription), then the late unlock
+  const buy = await grantPremium(ctx, a);
   assert.equal(buy.status, 200);
   assert.equal(buy.body.wallet.season.s1.premium, true);
   assert.equal(buy.body.wallet.season.s1.xp, 400, 'buying adds no XP (no tier skips)');
@@ -473,23 +479,25 @@ test('concurrent spend, claim, Premium and delivery on one account: each exactly
   assert.ok(free.length >= 3 && coinCells.length >= 1, 'free item and Coin cells to claim');
   const tok = (await wallet(ctx, a)).app_account_token;
   const tx = storeTx(ctx, { appAccountToken: tok });
+  // (build 30) Premium from Apple: the same pass transaction from two devices
+  const ptx = storeTx(ctx, { productId: 'com.idlery.ultimatetrifecta.pass.s1', type: 'Non-Consumable', appAccountToken: tok });
   const spend = (u, item, key) => call(ctx, 'POST', '/v1/wallet/spend', { item_id: item, price: E.price(item), idempotency_key: key }, u.token);
   const claimReq = (u) => call(ctx, 'POST', '/v1/season/s1/claim', { claims: free }, u.token);
   const rs = await Promise.all([
-    spend(a, 'season:s1:premium', 'race-prem-1'), spend(a2, 'season:s1:premium', 'race-prem-2'),
+    deliver(ctx, a, ptx), deliver(ctx, a2, ptx),
     spend(a, 'outfit:robe', 'race-robe-1'), spend(a2, 'outfit:robe', 'race-robe-1'),
     claimReq(a), claimReq(a2), deliver(ctx, a, tx), deliver(ctx, a2, tx),
   ]);
   for (const r of rs) assert.ok([200, 409].includes(r.status), JSON.stringify(r.body));
-  assert.equal(rs.slice(0, 2).filter((r) => r.status === 200).length, 1, 'Premium bought once across two devices');
+  assert.ok(rs.slice(0, 2).some((r) => r.status === 200), 'Premium delivered (once: the other is a replay)');
   assert.ok(rs[2].status === 200 && rs[3].status === 200, 'the same key from two devices: one purchase, one replay');
   const w = await wallet(ctx, a);
-  assert.equal(w.balance, 2000 - 1500 - 300 + claimCoins + 1500, `exact: 2000 - Premium - Robe + claims (${claimCoins}) + the pack`);
+  assert.equal(w.balance, 2000 - 300 + claimCoins + 1500, `exact: 2000 - Robe + claims (${claimCoins}) + the pack`);
   assert.ok(w.season.s1.premium);
   assert.equal(w.season.s1.claimed.filter((k) => k.endsWith(':free')).length, free.length, 'each claimed cell once');
   const ledger = (await call(ctx, 'GET', `/v1/admin/wallets/${pid}`, undefined, undefined, ADMIN)).body.ledger;
-  assert.equal(ledger.filter((l) => l.source === 'apple').length, 1, 'the pack once');
-  assert.equal(ledger.filter((l) => l.source === 'coin_purchase').length, 2, 'Premium and the Robe once each');
+  assert.equal(ledger.filter((l) => l.source === 'apple').length, 2, 'the pack and Premium once each');
+  assert.equal(ledger.filter((l) => l.source === 'coin_purchase').length, 1, 'the Robe once');
   assert.equal(ledger.filter((l) => l.source === 'season_claim').length, coinCells.length, 'each Coin cell once');
   assert.ok(ledger.every((l) => l.balance_after >= 0), 'never negative');
 });

@@ -37,7 +37,7 @@ export function setPrice(id, owned) {
 }
 export function price(id) {
   const it = item(id);
-  return it && (it.kind === 'coin_item' || it.kind === 'season_premium') ? it.price : 0;
+  return it && it.kind === 'coin_item' ? it.price : 0;
 }
 
 function teamWon(row, outcome) {
