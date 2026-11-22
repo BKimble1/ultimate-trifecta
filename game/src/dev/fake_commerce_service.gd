@@ -31,6 +31,8 @@ var network_down := false
 var drop_reply := false     # apply the request, then lose the reply (a timeout after commit)
 var calls: Array = []       # [method, path] for assertions
 var gc_player := "T:_tester"
+## the signed-in profile's name (captures set a fixture player's)
+var display_name := "Tester"
 var environment := "Sandbox"
 var _seq := 0
 ## the double's clock (unix ms); unset = the real time
@@ -283,7 +285,7 @@ func _route(method: int, path: String, b: Dictionary, pid: String) -> Dictionary
 	if path == "/v1/auth/gamecenter":
 		var p := _pid_for(String(b.get("player_id", "")))
 		return {"status": 200, "body": {"ok": true, "token": p, "expires_at": (Time.get_unix_time_from_system() + 3600) * 1000,
-			"profile": {"profile_id": p, "display_name": "Tester", "discriminator": "0001", "needs_name": false, "status": "active"}}}
+			"profile": {"profile_id": p, "display_name": display_name, "discriminator": "0001", "needs_name": false, "status": "active"}}}
 	if pid == "" or not profiles.has(pid):
 		return _err(401, "signed_out", "Please sign in.")
 	if method == HTTPClient.METHOD_GET and path == "/v1/wallet":

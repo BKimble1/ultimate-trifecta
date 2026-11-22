@@ -36,6 +36,8 @@ const SVC_OFF := "Service off (as shipped in 1.9): preview only · desktop rende
 
 var out_dir := ""
 var shot_set := "before"
+## the fixture profile's name on the test-double service ("": its default)
+var svc_name := ""
 var only := ""
 var svc
 var measures := {}
@@ -228,6 +230,8 @@ func _online(gc: String) -> String:
 		svc.install()
 		Purchases.use_adapter(TestStore.new())
 	svc.gc_player = gc
+	if svc_name != "":
+		svc.display_name = svc_name
 	Cloud.token = ""
 	await Cloud.sign_in()
 	return Cloud.profile_id()

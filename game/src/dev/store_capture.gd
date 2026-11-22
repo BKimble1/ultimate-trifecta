@@ -126,6 +126,7 @@ func _look(over: Dictionary) -> Dictionary:
 func _run() -> void:
 	# (build 27) no daily present or Champion Prize poster over the screens
 	LoginFlow.enabled = false
+	svc_name = ME   # (the Season Pass name card shows the player's name)
 	# and never the real game service (service.cfg names the deployed one):
 	# every screen runs on the fixtures below
 	Cloud.endpoints = {}

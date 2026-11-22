@@ -25,13 +25,13 @@ The previous version, **2.0 (final release sweep)**, is a provisional App Store-
 
 ## Current release state
 
-**State (2.2): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **2.2 (27)** (the game service connected: both deployments live since 22 Nov 2026), **App Store-eligible**; the nine in-app purchase records still have no prices.
+**State (2.2): source prepared · project compiled · signed archive created · uploaded · processed (VALID) · available to internal testers.** Latest build: **2.2 (28)** (a full party fits the lobby; the Premium offer shows original outfits; the game service connected: both deployments live since 22 Nov 2026), **App Store-eligible**; the nine in-app purchase records have prices and need their review screenshots (`docs/media/submission/`).
 
 It is **not device-tested**: no install or play on an iPhone or iPad has been observed. No external testing was requested, no testers were added, nothing was submitted for App Store review, nothing was released, and no purchase of any kind was made.
 
 | | |
 |---|---|
-| Build | `com.idlery.ultimatetrifecta` **2.2 (27)**. App Store Connect build ID `5f46a757-25ac-424d-8437-dd1d1b11eb05` (workflow run #293). (2.2 (26) `61100c01-…`, 2.2 (25) `e5ddb60c-…`, 2.2 (24) `a7f00f71-…`, 2.2 (23) `c214ff57-…`, 2.2 (22) `afa50521-…`, 2.2 (21) `4b60796f-…`, 2.2 (20) `f6768187-…`, 2.2 (19) `39bbd93c-…`, 2.2 (18) `c56ada6c-…`, 2.2 (17) `48fb4361-…`, 2.2 (16) `cf0a8982-…`, 2.2 (15) `e9a19fe1-…`, 2.2 (14) `bc03f233-…`, 2.2 (13) `54f2dcc4-…` and 2.2 (12) `c50a97e1-…` are the previous ones.) |
+| Build | `com.idlery.ultimatetrifecta` **2.2 (28)**. App Store Connect build ID `ee313d6a-e087-4a49-b9a9-3f9dd8caf319` (workflow run #295). (2.2 (27) `5f46a757-…`, 2.2 (26) `61100c01-…`, 2.2 (25) `e5ddb60c-…`, 2.2 (24) `a7f00f71-…`, 2.2 (23) `c214ff57-…`, 2.2 (22) `afa50521-…`, 2.2 (21) `4b60796f-…`, 2.2 (20) `f6768187-…`, 2.2 (19) `39bbd93c-…`, 2.2 (18) `c56ada6c-…`, 2.2 (17) `48fb4361-…`, 2.2 (16) `cf0a8982-…`, 2.2 (15) `e9a19fe1-…`, 2.2 (14) `bc03f233-…`, 2.2 (13) `54f2dcc4-…` and 2.2 (12) `c50a97e1-…` are the previous ones.) |
 | Build number | **27**: the lane read the highest existing build (2.2 (26)) and added one. Built with Xcode 27.2, iOS SDK 27.2. |
 | Source | Commit `3753ec2` on `claude/happy-edison-50dynd`. |
 | Uploaded | 2026-11-19 (about 16:30 UTC), by GitHub Actions run #282 (https://github.com/BKimble1/ultimate-trifecta/actions/runs/44562034120) with `upload=true` and `distribution=app_store`. The headless tests gate the build and passed in that run (run #281 stopped at the tests: the season film played under the test runner on a fresh profile; fixed in `3753ec2`). The film ships in the app (`assets/video/season_s1.ogv`). |

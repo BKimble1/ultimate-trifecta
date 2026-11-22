@@ -131,9 +131,15 @@ Section **Review Information** › **Review Notes**, paste:
 - Season 1 Premium Pass:
   `Ultimate Trifecta is a cosmetic-only party game. This non-consumable unlocks the Premium reward track of Season 1 - Winter Break for good (restorable with Restore Purchases). Open Season Pass (top bar) > Premium to see it. It is not a subscription and gives no gameplay advantage.`
 
-### B6. Review screenshot (do this after Part D)
-Section **Review Information** › **Screenshot** › upload a screenshot taken
-on your iPhone of that product's purchase screen (Part D6). One per product.
+### B6. Review screenshot
+Section **Review Information** › **Screenshot** › upload the file from
+`docs/media/final/store/iap/` (the upload map is in that folder's README):
+- the six Coin packs: `iap_coin_packs.png` (the same file for all six),
+- Season 1 Premium Pass: `iap_premium_pass.png`,
+- Moonlight Runner: `iap_moonlight_runner.png`,
+- Starry Sleeper: `iap_starry_sleeper.png`.
+They show the App Store Connect prices. (You may replace any with an
+iPhone screenshot from Part D6.)
 
 ### B7. Promotion and status
 - Leave **App Store Promotion** off (the game doesn't handle promoted
@@ -269,9 +275,9 @@ For each, the Apple sheet should say **[Environment: Sandbox]**.
 7. Start a purchase, confirm, and immediately turn on **Airplane Mode**;
    wait 10 s, turn it off, open the game: the item arrives once.
 
-### D6. Purchase screenshots (for B6)
-On the iPhone, open each product's purchase screen and take a screenshot
-(side button + volume up). Nine in total:
+### D6. Purchase screenshots (optional: B6 already has rendered ones)
+To use device screenshots instead, open each product's purchase screen on
+the iPhone and take a screenshot (side button + volume up):
 - Shop › Coins (one screenshot works for all six packs, or one each),
 - Moonlight Runner's page, Starry Sleeper's page,
 - Season Pass › Premium.
@@ -326,13 +332,12 @@ App**: click **2.2 Prepare for Submission**. If there's no 2.2, click the
 
 ### F1. Screenshots
 Section **Previews and Screenshots**:
-1. **iPhone** › **6.9" Display** › drag in the 8 files from
+1. **iPhone** › **6.9" Display** › drag in the 9 files from
    `docs/media/final/store/iphone_6.9/` (2868 × 1320).
-2. **iPad** › **13" Display** › drag in the 8 files from
+2. **iPad** › **13" Display** › drag in the 9 files from
    `docs/media/final/store/ipad_13/` (2752 × 2064).
-3. Shots **03, 04, 06, 08** show Record Breaker or Dr. Doom: upload them
-   only with the permission from E2; otherwise use 01, 02, 05, 07.
-4. Drag to reorder so 01 is first.
+3. Drag to reorder so they run 01 to 09 (the number starts each name).
+   None shows Record Breaker or Dr. Doom large (see the folder's README).
 
 ### F2. Text
 - **Promotional Text**:
