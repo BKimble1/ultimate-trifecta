@@ -538,6 +538,24 @@ func leave_room(code: String) -> Dictionary:
 	return await api(HTTPClient.METHOD_POST, "/v1/rooms/%s/leave" % code.uri_encode(), {})
 
 
+## The party-code relay (service/src/relay.js) carries code parties when
+## this deployment has one: a real service URL (tests' stand-in HTTP layers
+## have none) that offers "relay" (or whose features couldn't be read: the
+## relay itself then says whether it's there).
+func relay_ready() -> bool:
+	if base_url == "" or relay_off:
+		return false
+	return service_config.is_empty() or has_feature("relay")
+
+
+## tests and development: keep code parties on Game Center
+var relay_off := false
+
+
+func relay_url(code: String, role: String) -> String:
+	return RelayTransport.relay_url(base_url, code, role, token)
+
+
 func kick_from_room(code: String, pid: String) -> Dictionary:
 	return await api(HTTPClient.METHOD_POST, "/v1/rooms/%s/kick" % code.uri_encode(), {"profile_id": pid})
 

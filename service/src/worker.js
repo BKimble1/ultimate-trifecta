@@ -4,7 +4,11 @@
 // put): SESSION_KEY, ADMISSION_PRIVATE_KEY, ADMIN_TOKEN.  V6 commerce: var
 // APPLE_ENVIRONMENT (Sandbox | Production); optional secrets ASC_IAP_KEY_ID,
 // ASC_IAP_ISSUER_ID, ASC_IAP_PRIVATE_KEY (App Store Server API).
+// Relay: Durable Object binding RELAY (class RelayRoom, src/relay.js), the
+// party-code WebSocket relay at GET /v1/relay/<code>.
 import { handle, sweep } from './app.js';
+
+export { RelayRoom } from './relay.js';
 
 export default {
   async fetch(req, env) {

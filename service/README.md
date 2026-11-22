@@ -217,6 +217,7 @@ against the deleted profile are closed as "profile deleted".
 | `POST /v1/rooms/:code/join` | session | Reserve a slot and get an admission token |
 | `POST /v1/rooms/:code/heartbeat` | host session | Keep alive, report state and connected players |
 | `POST /v1/rooms/:code/leave`, `/kick`, `DELETE /v1/rooms/:code` | session / host | Leave, remove, close |
+| `GET /v1/relay/:code?role=host\|guest` (WebSocket) | session (`Authorization` or `?token=`); host: the room's host; guest: holds a place from `/join`, not removed or blocked | Relay: the party-code relay (below) |
 | `/v1/admin/*` | `ADMIN_TOKEN` | Reports, profiles, actions, reserved names, audit |
 | `GET /v1/wallet` | session | V6: Coins, debt, revision, appAccountToken (derived per Game Center player; `null` without `APP_ACCOUNT_TOKEN_KEY`), entitlements, Season progress/claims, recent round settlements |
 | `POST /v1/wallet/spend` | session | V6: buy a Coin item or Season Premium (`item_id`, `price`, `idempotency_key`): atomic debit + entitlement |
@@ -248,6 +249,44 @@ Optional secrets: `ASC_IAP_KEY_ID`, `ASC_IAP_ISSUER_ID`,
 `.secrets/` when present. The environment routing, the App Review fallback
 and their tests: [docs/final/commerce.md](../docs/final/commerce.md),
 `test/environments.test.mjs`.
+
+## Party-code relay
+
+Parties joined by code (and accepted Friends invites, which return a code)
+don't use Game Center matchmaking: the host and each guest open one
+WebSocket to `GET /v1/relay/<code>?role=host|guest`. The Worker checks the
+session and the room (`src/relay.js` `relayAuth`), then hands the socket to
+the room code's Durable Object (`RelayRoom`, SQLite-backed, WebSocket
+Hibernation API), which only forwards bytes:
+
+| Direction | Frame (u16 big-endian) |
+|---|---|
+| host → relay | `[u16 to][payload]` (`to` = 0: every guest) |
+| relay → host | `[u16 from][payload]` |
+| relay → host (control) | `[0xFFFF][u8 kind][u16 peer][utf8 player]`: kind 1 joined, 2 left; `player` is the guest's verified Game Center player |
+| guest ↔ relay | `[payload]`, always to or from the host |
+
+The host is peer 1 and guests are 2, 3, .... At most 7 guests and 64 KB per
+payload; a socket over its per-second budget has the excess dropped, and one
+that stays over for 5 s is closed (1008). Close codes: 4000 host left (every
+guest is closed when the host goes), 4001 replaced (the same player
+reconnected), 4002 no host connected, 4003 full. The game protocol,
+admission credentials and names stay between host and guests exactly as
+over Game Center; the relay adds only the verified player in "joined", so
+the host binds admission to the real sender. `GET /v1/config` lists
+`relay` in `features` when the binding exists (older deployments keep code
+parties on Game Center). Tests: `test/relay.test.mjs` (routing over a fake
+of the hibernation API, and the Worker's checks); end to end with
+`wrangler dev`, the real Durable Object and two game processes:
+`tools/relay_e2e.sh` (from the repository root).
+
+Cost: each message a client sends counts as a Durable Object request
+(WebSocket messages are billed 20:1); messages the relay sends are free.
+An 8-player round (about 4.5 minutes with loading and results) sends about
+600 messages/s, about 8,000 billed requests: the Workers Free plan's 100,000
+Durable Object requests a day cover about 12 such rounds (more with fewer
+players); on Workers Paid it is about $0.002 a round beyond the included
+amounts.
 
 ## Why parties can't form without their host
 

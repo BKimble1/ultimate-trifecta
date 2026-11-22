@@ -14,6 +14,7 @@ import { routeCommerce, deletionStmts, sweepCommerce } from './commerce.js';
 import { routeFriends, deletionStmts as friendDeletionStmts, signOutStmts, sweepFriends, friendsConfigured } from './friends.js';
 import { myTag, tagKey, takenDiscs, endStmts as friendEndStmts } from './friend_tags.js';
 import CATALOGUE from './catalogue_data.js';
+import { relayUpgrade } from './relay.js';
 
 const HOUR = 3600 * 1000;
 export const RENAME_COOLDOWN_MS = 24 * HOUR;
@@ -647,7 +648,8 @@ function config(env) {
     // Pass 8: scheduled rotating Shop offers (GET /v1/shop/offers)
     // Final: Friends presence and invites (only with FRIEND_HASH_KEY set)
     // Friend tags: add friends in game by tag (works without FRIEND_HASH_KEY)
-    features: ['chat', 'message_reports', 'shop_offers', 'friend_tags', ...(friendsConfigured(env) ? ['friends'] : [])],
+    // Relay: party codes join over the service's WebSocket relay (GET /v1/relay/<code>)
+    features: ['chat', 'message_reports', 'shop_offers', 'friend_tags', ...(friendsConfigured(env) ? ['friends'] : []), ...(env.RELAY ? ['relay'] : [])],
   });
 }
 
@@ -682,6 +684,10 @@ export async function handle(req, env) {
     const fr = await routeFriends(req, env, path, m, SOCIAL_DEPS);
     if (fr) return fr;
     if (m === 'POST' && path === '/v1/rooms') return await createRoom(req, env);
+    // the party-code relay (src/relay.js): a WebSocket per player, no Game Center matchmaking
+    if (m === 'GET' && (k = path.match(/^\/v1\/relay\/([^/]{1,24})$/))) {
+      return await relayUpgrade(req, env, decodeURIComponent(k[1]), url, { requireUser, liveRoom, db, rateLimit });
+    }
     if ((k = path.match(/^\/v1\/rooms\/([^/]{1,24})(\/[a-z]+)?$/))) {
       const code = decodeURIComponent(k[1]);
       const sub = k[2] || '';

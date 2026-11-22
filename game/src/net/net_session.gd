@@ -1538,7 +1538,7 @@ func _physics_process(delta: float) -> void:
 	if mode == Mode.CLIENT:
 		if host_peer < 0:
 			_no_host_t += delta
-			if _no_host_t > 12.0 and transport.kind == "gamekit":
+			if _no_host_t > 12.0 and transport.kind in ["gamekit", "relay"]:
 				_end("room_not_found")
 		else:
 			_host_silence += delta
