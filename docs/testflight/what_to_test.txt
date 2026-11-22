@@ -1,6 +1,7 @@
-2.2 (29): a full party looks right on iPad. Sign in to Game Center first. Purchases use Apple's sandbox in TestFlight, so nothing is really charged. Builds 20 to 29 play together. Tell us your iPhone or iPad model:
+2.2 (30): final pass before the App Store. Sign in to Game Center first. Purchases use Apple's sandbox in TestFlight, so nothing is really charged. Builds 20 to 30 play together. Tell us your iPhone or iPad model:
 
-- iPad: make a party of 7 or 8 (friends or bots): the dorm room fills the screen behind the roster and Start is on screen. Tap Walk: only icons on the bottom row.
-- iPhone: a party of 7 or 8 shows the roster in three columns and Start is fully on screen.
-- Season Pass > Get Premium, Shop > Coins, Shop > Moonlight Runner / Starry Sleeper: each shows its price and Buy.
-- Tell us anything that says "unavailable" or never finishes loading.
+- Friends: open Friends in the lobby. Try Invite, Join with code and Add friend. Your tag is shown there (Name#1234): add a friend by theirs, accept their request, then invite them.
+- Basketball (Walk in the lobby): dribble standing and walking, turn to see crossovers, between the legs and behind the back, then shoot.
+- Season Pass > Get Premium: one button, $4.99. Shop > Coins: six packs with prices.
+- Play a round: the Coins fly into the counter at the top of the lobby; the results page is short.
+- Equip a name card or badge in the Locker: your party sees it on your roster card.

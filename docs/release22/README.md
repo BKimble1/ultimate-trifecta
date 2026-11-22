@@ -1123,7 +1123,7 @@ Protocol 16 unchanged: builds 20 to 28 play together.
   now also reads each product's prices, read only).  Rendered from this
   build's screens by `tools/capture_store_screenshots.sh`.
 
-## 45. Build 29: the full party on iPad
+## 45. Build 29: the full party on iPad (not uploaded: shipped in build 30)
 
 Protocol 16 unchanged: builds 20 to 29 play together.  Found while
 rendering the iPad submission screenshots:
@@ -1141,3 +1141,49 @@ rendering the iPad submission screenshots:
   on iPad and phone sizes: the columns, the stage width, the Walk caption).
 - The submission screenshots (`docs/media/final/store/`) are rendered from
   this build: submit build 29.
+
+## 46. Build 30: the final pass before the App Store
+
+Protocol 16 unchanged: builds 20 to 30 play together (the name card and
+badge ride in the look as two optional fields older builds skip).
+- **Season Premium is App Store only ($4.99), never Coins.** The offer's
+  "1,500 Coins" button (next to the 1,500-Coin pack's $3.99, which read as a
+  second Premium price) is gone from the offer, the Shop, the Season Pass
+  ("Needs Premium · $4.99") and the service (a Coin spend on Premium is
+  refused: `not_for_sale`).  Website and App Review notes say the same.
+- **The Coins counter is back in the lobby's top bar** (home is a party
+  room on a device, where it had been hidden), so a round's Coins and the
+  daily gift fly into it.  The top bar steps the tabs, then Rankings and
+  Friends, down to icons where the screen is narrow (iPhone SE).
+- **Coin shop**: offer tiles graded by colour (teal to gold), coin heaps
+  that grow with the pack, the amount big beside a coin, the price as the
+  tile's button, "Best value" as a corner ribbon.
+- **Premium poster**: one price and one button, no sentence under the
+  title, the words centred, calmer confetti.
+- **Results, less is more**: one banner (the result, one line why, your
+  stats), the series in one line, rewards only when there are any, no
+  repeated captions or footnotes; Final standings without "Series over",
+  "Ties share a place", "tied" tags or a Played column everyone shares.
+- **Season rewards work in game**: equipped name cards and badges now show
+  on your roster card for the whole party (they were Locker-only).  A test
+  claims all 100 tiers and checks every outfit, hat, shoes, emote, card,
+  badge and Coin reward.
+- **Basketball**: a ball 40% bigger with the hoop scaled to it; both arms
+  dribble (palm on the ball, wrist and elbow working, knees bent); moving
+  turns throw a crossover, between-the-legs or behind-the-back, hand to
+  hand; the shot gathers, dips, rises and releases with the hands on the
+  ball and nothing passing through the body (tested frame by frame).  The
+  ball never spawns within reach of a roster mark.
+- **Friends**: Invite, Join with code and Add friend up front; add friends
+  by their in-game tag (Name#1234; requests with Accept/Decline; in-game
+  friends get status and invites like Game Center friends).  Game Center
+  invite flow hardened: one Apple sheet at a time, GameKit callbacks moved
+  to the main thread, late answers dropped, invites handled once after
+  returning from the background, the share sheet guarded on iPad
+  (`docs/final/friends.md` §15).  Service migration 0007.
+- **Layout**: the lobby fits iPhone SE to iPad 13" (five or more roster
+  cells take three narrower columns on phones; iPad keeps two); every
+  screen of the V7 audit at SE, 6.9", iPad 11" and 13": no clipped,
+  off-screen or trimmed control.
+- Desktop: the keyboard height is asked only where there is an on-screen
+  keyboard.
