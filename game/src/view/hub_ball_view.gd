@@ -13,6 +13,13 @@ extends Node3D
 ## pass.  A shadow under it grounds it.  A made shot drops confetti over the
 ## shooter and the hoop.
 
+## (build 33) Dunks and blocks: the dunk's windup (BallMoves.dunk) is laid
+## out from the dunker's drawn frame, slamming the ball to where the host
+## releases it; then the hang on the rim (its own node now: it bends down
+## under the dunker and wobbles back), the drop and the landing.  A runner
+## jumping to block raises an arm toward the ball; a block swats it with a
+## slap and a burst; a dunk lands with a clang.
+##
 ## (build 30) The ball is 40 % bigger and the hoop half again with it; the body
 ## handles it: BallMoves lays out the dribble (the palm on the ball, the
 ## elbow and wrist working, knees bent), the moves that hand it from hand to
@@ -28,6 +35,8 @@ extends Node3D
 ## little jump (BallSync.shot_start)
 const SHOT_HOLD := BallMoves.REL + Vector3(0, BallMoves.REL_RISE, 0)
 const FOLLOW_S := 0.62
+## (build 33) the rim bends down this far (radians) under a dunker
+const RIM_BEND := 0.1
 const IK_IN_S := 0.14
 const IK_OUT_S := 0.3
 ## a runner with the ball turns at most this fast (rad/s): the ball turns
@@ -70,6 +79,16 @@ var last_pos := Vector3.ZERO
 var confetti_bursts := 0
 var pose: Dictionary = {}
 var pose_key := ""
+## (build 33) the rim (bends under a dunker), its bend now (radians, the
+## front down), and the effects shown (tests / captures)
+var _rim: Node3D
+var rim_bend := 0.0
+var _rim_wobble := 0.0
+var _rim_wob_t := 9.0
+var block_bursts := 0
+var dunk_slams := 0
+## (tests / captures) every runner's pose this frame (key -> pose)
+var poses: Dictionary = {}
 
 
 static func _mat() -> ShaderMaterial:
@@ -117,8 +136,21 @@ func build() -> void:
 	nm.roughness = 0.9
 	nm.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_net.material_override = nm
-	_net.position = HubBall.rim_center()
-	add_child(_net)
+	# (build 33) the rim and the net hang from a hinge at the back of the
+	# rim, so a dunker hanging on it bends it down
+	_rim = Node3D.new()
+	_rim.name = "Rim"
+	_rim.position = rim_hinge()
+	add_child(_rim)
+	var rk := MeshKit.new()
+	build_rim(rk, -rim_hinge())
+	var rmi := MeshInstance3D.new()
+	rmi.name = "RimRing"
+	rmi.mesh = rk.commit()
+	rmi.material_override = _mat()
+	_rim.add_child(rmi)
+	_net.position = HubBall.rim_center() - rim_hinge()
+	_rim.add_child(_net)
 
 
 static func _shadow_shader() -> Shader:
@@ -261,14 +293,7 @@ static func build_hoop(k: MeshKit) -> void:
 		k.soft_blob(bc + side * (u * (bh.x - 0.04)) + Vector3(0, bh.y + 0.01, 0), Vector3(0.065, 0.022 + 0.007 * float(i % 2), 0.034), Color("fbfdff", 0.6), 3, 8)
 	# the bracket behind the board and the rim's mount
 	k.box(base + fwd * 0.11 + Vector3(0, HubBall.RIM_Y + 0.06, 0), Vector3(0.048, 0.048, 0.2), Color("c9ccd4", 0.6), yaw)
-	var rc := HubBall.rim_center()
-	k.box(Vector3(rc.x, rc.y - 0.014, rc.z) - fwd * (HubBall.RIM_R + 0.035), Vector3(0.12, 0.03, 0.09), Color("e8552b", 0.6), yaw)
-	# --- the rim
-	var ring := PackedVector3Array()
-	for i in 65:
-		var th := TAU * float(i) / 64.0
-		ring.append(rc + Vector3(cos(th), 0, sin(th)) * HubBall.RIM_R)
-	_tube(k, ring, HubBall.RIM_TUBE, 12, func(_s: float, _t: float) -> Color: return Color("e8552b", 0.6))
+	# (build 33) the rim itself is HubBallView's own node (build_rim): it bends
 	# --- a garland of tiny lights over the frame and down both sides
 	var gl := PackedVector3Array()
 	var gcorner := bc + fwd * (bh.z + 0.012)
@@ -289,6 +314,33 @@ static func build_hoop(k: MeshKit) -> void:
 	k.soft_blob(bw + Vector3(0, 0.016, 0), Vector3(0.021, 0.021, 0.018), Color("b1202f", 0.6), 3, 7)
 	k.box(bw + side * 0.026 - Vector3(0, 0.046, 0), Vector3(0.016, 0.09, 0.006), RED, yaw)
 	k.box(bw - side * 0.026 - Vector3(0, 0.052, 0), Vector3(0.016, 0.104, 0.006), RED, yaw)
+
+
+## (build 33) The rim's hinge: where its mount meets the board (stage space).
+static func rim_hinge() -> Vector3:
+	var rc := HubBall.rim_center()
+	var fwd := Vector3(HubBall.HOOP_DIR.x, 0.0, HubBall.HOOP_DIR.y)
+	return Vector3(rc.x, rc.y - 0.014, rc.z) - fwd * (HubBall.RIM_R + 0.06)
+
+
+## The rim and its mount plate, offset by `off` (the hinge at the origin).
+static func build_rim(k: MeshKit, off: Vector3) -> void:
+	var fwd := Vector3(HubBall.HOOP_DIR.x, 0.0, HubBall.HOOP_DIR.y)
+	var rc := HubBall.rim_center() + off
+	k.box(Vector3(rc.x, rc.y - 0.014, rc.z) - fwd * (HubBall.RIM_R + 0.035), Vector3(0.12, 0.03, 0.09), Color("e8552b", 0.6), HubBall.hoop_yaw())
+	var ring := PackedVector3Array()
+	for i in 65:
+		var th := TAU * float(i) / 64.0
+		ring.append(rc + Vector3(cos(th), 0, sin(th)) * HubBall.RIM_R)
+	_tube(k, ring, HubBall.RIM_TUBE, 12, func(_s: float, _t: float) -> Color: return Color("e8552b", 0.6))
+
+
+## The rim as it is bent now: stage space from its unbent place.
+func rim_xform() -> Transform3D:
+	var h := rim_hinge()
+	var side := Vector3(-HubBall.HOOP_DIR.y, 0.0, HubBall.HOOP_DIR.x)
+	var b := Basis(side, -rim_bend)
+	return Transform3D(b, h - b * h)
 
 
 ## The net (rim-centred): a diamond mesh of strings narrowing to the bottom.
@@ -346,12 +398,18 @@ func _hook() -> void:
 			_hooked.sound.disconnect(_on_sound)
 		if _hooked.made.is_connected(_on_made):
 			_hooked.made.disconnect(_on_made)
+		if _hooked.blocked.is_connected(_on_blocked):
+			_hooked.blocked.disconnect(_on_blocked)
+		if _hooked.jumped.is_connected(_on_jumped):
+			_hooked.jumped.disconnect(_on_jumped)
 	_hooked = ball
 	_phase_was = -1
 	_have_drawn = false
 	if ball != null:
 		ball.sound.connect(_on_sound)
 		ball.made.connect(_on_made)
+		ball.blocked.connect(_on_blocked)
+		ball.jumped.connect(_on_jumped)
 
 
 func _process(delta: float) -> void:
@@ -359,6 +417,7 @@ func _process(delta: float) -> void:
 	_net_t += delta
 	_animate_net()
 	var live := ball != null and is_instance_valid(ball.session) and ball.spawned and ball.in_room() and stage != null
+	_animate_rim(delta, live)
 	if not live:
 		_ball.visible = false
 		_shadow.visible = false
@@ -366,6 +425,7 @@ func _process(delta: float) -> void:
 		_phase_was = -1
 		pose = {}
 		pose_key = ""
+		poses = {}
 		_pose_rigs(delta, {})
 		return
 	var key := _key_of(ball.holder)
@@ -418,6 +478,9 @@ func _process(delta: float) -> void:
 	_shadow.scale = Vector3.ONE * (1.0 + h * 0.5)
 	(_shadow.material_override as ShaderMaterial).set_shader_parameter("alpha", 0.5 * (1.0 - clampf(h / 2.0, 0.0, 1.0)))
 	_follow_through(want)
+	_dunk_after(want)
+	_block_jumps(want)
+	poses = want
 	_pose_rigs(delta, want)
 
 
@@ -438,6 +501,89 @@ func _follow_through(want: Dictionary) -> void:
 		for a in f["arms"]:
 			(a as Dictionary)["key"] = "relax"
 	want[key] = f
+
+
+## (build 33) After the slam: hanging on the (bending) rim, the drop and
+## the landing.
+func _dunk_after(want: Dictionary) -> void:
+	if ball.phase != BallSync.Phase.FREE or not ball.released_dunk or ball.phase_t > BallSync.DUNK_AFTER_S:
+		return
+	var key := _key_of(ball.sim.shooter)
+	if key == "" or want.has(key):
+		return
+	var v: CharacterView = stage.chars.get(key)
+	if v == null or not is_instance_valid(v) or not v.visible:
+		return
+	var inv := _frame(v).affine_inverse()
+	want[key] = BallMoves.dunk_after(ball.phase_t, rim_grips(inv, BallSync.dunk_dir(ball.dunk_from)), rim_dip())
+
+
+## Where the hands grip the rim (holder space, through `inv`): either side
+## of its near point (the way `u` points), as the rim is bent now.
+func rim_grips(inv: Transform3D, u: Vector2) -> Array:
+	var rc := HubBall.rim_center()
+	var rx := rim_xform()
+	var out: Array = []
+	for a in [-0.46, 0.46]:
+		var d := u.rotated(a)
+		out.append(rx * (rc + Vector3(d.x, 0.0, d.y) * HubBall.RIM_R))
+	var c := inv * (rx * rc)
+	var g0 := inv * (out[0] as Vector3)
+	var g1 := inv * (out[1] as Vector3)
+	if g0.x > g1.x:
+		var tmp := g0
+		g0 = g1
+		g1 = tmp
+	return [BallMoves.rim_grip(0, g0, c), BallMoves.rim_grip(1, g1, c)]
+
+
+## How far the front of the rim has come down (m).
+func rim_dip() -> float:
+	return sin(maxf(rim_bend, 0.0)) * (HubBall.RIM_R * 2.0 + 0.06)
+
+
+## (build 33) Runners jumping to block: an arm up toward the ball.
+func _block_jumps(want: Dictionary) -> void:
+	for s in ball.jumps.keys():
+		var j := ball.jump_of(int(s))
+		if j.is_empty():
+			continue
+		var key := _key_of(int(s))
+		if key == "" or want.has(key):
+			continue
+		var v: CharacterView = stage.chars.get(key)
+		if v == null or not is_instance_valid(v) or not v.visible:
+			continue
+		want[key] = BallMoves.block_jump(float(j["t"]), _to_holder(v, last_pos), bool(j["hit"]))
+
+
+func _animate_rim(delta: float, live: bool) -> void:
+	if _rim == null:
+		return
+	var want := 0.0
+	if live and ball.phase == BallSync.Phase.FREE and ball.released_dunk and ball.phase_t < BallSync.DUNK_LET_GO:
+		# a dunker hanging on it: down, with a little bounce as they swing
+		var t := ball.phase_t
+		want = RIM_BEND * BallMoves.ease3(t / 0.1) * (1.0 + 0.12 * sin(t * 18.0) * exp(-t * 4.0))
+		rim_bend = want
+		_rim_wob_t = 0.0
+		_rim_wobble = rim_bend
+	else:
+		# let go: it springs back and wobbles out
+		_rim_wob_t += delta
+		rim_bend = _rim_wobble * exp(-_rim_wob_t * 5.5) * cos(_rim_wob_t * 26.0)
+		if absf(rim_bend) < 0.0005 and _rim_wob_t > 0.5:
+			rim_bend = 0.0
+			_rim_wobble = 0.0
+	var side := Vector3(-HubBall.HOOP_DIR.y, 0.0, HubBall.HOOP_DIR.x)
+	_rim.basis = Basis(side, -rim_bend)
+
+
+## A shake of the rim (a ball off it, a slam through it).
+func shake_rim(k: float) -> void:
+	if absf(_rim_wobble) < k:
+		_rim_wobble = k
+		_rim_wob_t = 0.0
 
 
 func _handoff_now() -> Vector3:
@@ -483,8 +629,13 @@ func _held(v: CharacterView, key: String, phase: int, delta: float, want: Dictio
 				_play("ball_bounce", spot, -14.0 + 4.0 * k, randf_range(0.96, 1.04))
 			_rot = Basis(_frame(v).basis.x, -delta * 8.0) * _rot
 		BallSync.Phase.SHOT:
-			var t := clampf(ball.phase_t / BallSync.WINDUP_SHOT, 0.0, 1.0)
-			ps = BallMoves.shot(t, _wind_from if _wind_from != Vector3.INF else BallMoves.POCKET, _wind_side)
+			if ball.dunk:
+				# (build 33) the dunk: slammed to where the host lets it go
+				var rel := _frame(v).affine_inverse() * BallSync.dunk_release(ball.dunk_from)
+				ps = BallMoves.dunk(minf(ball.phase_t, BallSync.WINDUP_DUNK), _wind_from if _wind_from != Vector3.INF else BallMoves.POCKET, _wind_side, rel)
+			else:
+				var t := clampf(ball.phase_t / BallSync.WINDUP_SHOT, 0.0, 1.0)
+				ps = BallMoves.shot(t, _wind_from if _wind_from != Vector3.INF else BallMoves.POCKET, _wind_side)
 		_:
 			var t2 := clampf(ball.phase_t / BallSync.WINDUP_PASS, 0.0, 1.0)
 			ps = BallMoves.pass_pose(t2, _wind_from if _wind_from != Vector3.INF else BallMoves.PASS_AT)
@@ -625,6 +776,7 @@ func _on_sound(kind: int, at: Vector3, strength: float) -> void:
 			_play("ball_bounce", at, lerpf(-20.0, -5.0, loud), randf_range(0.95, 1.05))
 		HubBall.Kind.RIM:
 			_play("ball_rim", at, lerpf(-16.0, -4.0, loud), randf_range(0.96, 1.04))
+			shake_rim(0.012 * loud)
 			_net_k = maxf(_net_k, 0.35)
 			if _net_t > 0.2:
 				_net_t = 0.0
@@ -644,12 +796,128 @@ func _on_made(slot: int, _swish: bool) -> void:
 	_net_k = 1.0
 	# (build 25) no swish: a soft chime for the basket
 	_play("reward", rc, -8.0)
+	if ball != null and ball.released_dunk:
+		# (build 33) a dunk: the slam's clang through the rim
+		dunk_slams += 1
+		_play("ball_dunk", rc, -3.0, randf_range(0.97, 1.03))
+		shake_rim(0.05)
 	# over the shooter and the hoop
 	var from := Vector3(rc.x, 0, rc.z) + Vector3(HubBall.HOOP_DIR.x, 0, HubBall.HOOP_DIR.y) * 1.8
 	var sv: Variant = stage.chars.get(_key_of(slot)) if stage != null else null
 	if sv != null and is_instance_valid(sv):
 		from = stage.to_local((sv as Node3D).global_position)
 	confetti(Vector3(rc.x, 0, rc.z), from)
+
+
+## (build 33) A block: a slap and a burst where the hand met the ball.
+func _on_blocked(_blocker: int, _shooter: int) -> void:
+	block_bursts += 1
+	var at := last_pos if _have_drawn else (ball.sim.pos if ball != null else Vector3.ZERO)
+	_play("ball_block", at, -2.0, randf_range(0.96, 1.04))
+	block_burst(at)
+
+
+func _on_jumped(slot: int) -> void:
+	var v: Variant = stage.chars.get(_key_of(slot)) if stage != null else null
+	if v != null and is_instance_valid(v):
+		_play("hop", stage.to_local((v as Node3D).global_position), -12.0, randf_range(1.05, 1.15))
+
+
+## A burst of sparks and a ring at `at` (stage space).
+func block_burst(at: Vector3) -> void:
+	var cp := CPUParticles3D.new()
+	cp.name = "BlockBurst"
+	cp.amount = 14 if reduced else 26
+	cp.lifetime = 0.42
+	cp.one_shot = true
+	cp.explosiveness = 1.0
+	cp.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	cp.emission_sphere_radius = 0.05
+	cp.direction = Vector3.UP
+	cp.spread = 180.0
+	cp.initial_velocity_min = 1.4
+	cp.initial_velocity_max = 2.6
+	cp.gravity = Vector3(0, -3.0, 0)
+	cp.damping_min = 2.0
+	cp.damping_max = 4.0
+	cp.scale_amount_min = 0.7
+	cp.scale_amount_max = 1.2
+	var g := Gradient.new()
+	g.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
+	g.colors = PackedColorArray([Color(1, 1, 0.9, 1), Color(1.0, 0.85, 0.35, 0.95), Color(1.0, 0.6, 0.2, 0.0)])
+	cp.color_ramp = g
+	var q := QuadMesh.new()
+	q.size = Vector2(0.05, 0.05)
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.vertex_color_use_as_albedo = true
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.albedo_texture = _spark_tex()
+	q.material = m
+	cp.mesh = q
+	cp.position = at
+	cp.finished.connect(cp.queue_free)
+	add_child(cp)
+	cp.emitting = true
+	# a ring that flashes out
+	var ring := MeshInstance3D.new()
+	ring.name = "BlockRing"
+	var rq := QuadMesh.new()
+	rq.size = Vector2(0.5, 0.5)
+	ring.mesh = rq
+	var rm := StandardMaterial3D.new()
+	rm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	rm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	rm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	rm.albedo_texture = _ring_tex()
+	rm.albedo_color = Color(1, 0.95, 0.8, 0.95)
+	rm.no_depth_test = false
+	ring.material_override = rm
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ring.position = at
+	ring.scale = Vector3.ONE * 0.3
+	add_child(ring)
+	var tw := ring.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(ring, "scale", Vector3.ONE * (1.0 if reduced else 1.3), 0.26)
+	tw.tween_property(rm, "albedo_color:a", 0.0, 0.26)
+	tw.chain().tween_callback(ring.queue_free)
+
+
+static var _spark: Texture2D
+static var _ring: Texture2D
+
+
+static func _spark_tex() -> Texture2D:
+	if _spark == null:
+		var gt := GradientTexture2D.new()
+		gt.fill = GradientTexture2D.FILL_RADIAL
+		gt.fill_from = Vector2(0.5, 0.5)
+		gt.fill_to = Vector2(1.0, 0.5)
+		gt.width = 32
+		gt.height = 32
+		var g := Gradient.new()
+		g.offsets = PackedFloat32Array([0.0, 0.35, 1.0])
+		g.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 1, 1, 0.8), Color(1, 1, 1, 0)])
+		gt.gradient = g
+		_spark = gt
+	return _spark
+
+
+static func _ring_tex() -> Texture2D:
+	if _ring == null:
+		var gt := GradientTexture2D.new()
+		gt.fill = GradientTexture2D.FILL_RADIAL
+		gt.fill_from = Vector2(0.5, 0.5)
+		gt.fill_to = Vector2(1.0, 0.5)
+		gt.width = 64
+		gt.height = 64
+		var g := Gradient.new()
+		g.offsets = PackedFloat32Array([0.0, 0.55, 0.72, 0.86, 1.0])
+		g.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 0), Color(1, 1, 1, 1), Color(1, 1, 1, 0.3), Color(1, 1, 1, 0)])
+		gt.gradient = g
+		_ring = gt
+	return _ring
 
 
 ## Confetti from above, spread over the line between `a` and `b` (stage

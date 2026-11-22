@@ -33,6 +33,14 @@ extends Node
 ## runner shoots the way they face: (build 25) face the hoop to score) and Drop and, with
 ## other people in the party, Pass sit above it.  You stand still for the
 ## windup.  Holding the ball, the couch, the lamp and the plant wait.
+##
+## (build 33) Close to the rim and facing it, Shoot is Dunk: the runner's
+## gather step, jump, hang and drop are drawn here from BallSync's dunk
+## (every device the same path, so nobody lags behind their own dunk).
+## Close to someone shooting, Block jumps you at them with an arm up.  The
+## walk camera follows you and only you: centred on your runner (a little
+## ahead as you walk, so it never trails), ball or not, whoever else is
+## around; it lifts a little while you dunk.
 
 const RETURN_SPEED := 2.0
 ## (2.2 build 16) at most this long turning round on the mark
@@ -216,8 +224,17 @@ func _process(delta: float) -> void:
 			reset()
 		return
 	_hook_hub()
+	_block_ui_t = maxf(0.0, _block_ui_t - delta)
 	var key := local_key()
-	if walking and key != "" and (act != HubSync.MODE_WALK or _acts.has(key)):
+	var ball := session.social.ball
+	var my_jump := ball.jump_of(session.local_slot) if walking else {}
+	if walking and key != "" and act == HubSync.MODE_WALK and not _acts.has(key) and ball.dunker() == session.local_slot:
+		# (build 33) dunking: the gather step, the jump, the hang, the drop
+		_dunk_local(key, delta)
+	elif walking and key != "" and act == HubSync.MODE_WALK and not _acts.has(key) and not my_jump.is_empty():
+		# (build 33) jumping to block: a lunge at the shooter
+		_jump_local(key, my_jump, delta)
+	elif walking and key != "" and (act != HubSync.MODE_WALK or _acts.has(key)):
 		# (build 20) on the couch, in the plant or hopping off: no walking
 		_vel = Vector2.ZERO
 		session.social.hub.set_local(act, _pos, _yaw, 0.0)
@@ -234,6 +251,7 @@ func _process(delta: float) -> void:
 		session.social.hub.set_local(HubSync.MODE_WALK, _pos, _yaw, 0.0)
 		stage.walk_focus = _focus(delta)
 	elif walking and key != "":
+		_dunk_from_local = Vector2.INF
 		var inp := _movement_input()
 		if inp != Vector2.ZERO:
 			moved_frames += 1
@@ -275,11 +293,27 @@ func _process(delta: float) -> void:
 			_returning.erase(k)
 			stage.free_roam[k] = true
 			var p: Vector2 = s["pos"]
+			var yaw := float(s["yaw"])
+			# (build 33) a dunk or a jump to block: the path everyone draws
+			# (their own device sends it too, but later than the ball's clock)
+			var over: Variant = _path_of(i, ball)
+			var glide: Vector2 = _glide.get(k, Vector2.ZERO)
+			if over != null:
+				p = (over as Array)[0]
+				yaw = float((over as Array)[1])
+				_glide[k] = p - (s["pos"] as Vector2)
+			elif glide != Vector2.ZERO:
+				# (after it: back to their own poses without a jump)
+				glide = glide.move_toward(Vector2.ZERO, delta * 2.5)
+				_glide[k] = glide
+				p += glide
+				if glide == Vector2.ZERO:
+					_glide.erase(k)
 			var prev: Vector2 = _last.get(k, p)
 			var vel := (p - prev) / maxf(delta, 0.001) if delta > 0.0 else Vector2.ZERO
 			if vel.length() > HubRoom.WALK_SPEED * 2.0:
 				vel = Vector2.ZERO   # a correction: no full-speed pose for it
-			_draw(k, p, float(s["yaw"]), vel)
+			_draw(k, p, yaw, vel)
 		elif stage.free_roam.has(k) and not _returning.has(k):
 			_returning[k] = true
 	# someone who left the party leaves no trace
@@ -357,7 +391,26 @@ func prompt() -> Dictionary:
 	# (build 24) the basketball comes first
 	var ball := session.social.ball
 	if ball.local_has():
-		return {"prop": "ball", "text": "Shoot", "icon": "shoot", "enabled": ball.phase == BallSync.Phase.HELD}
+		# (build 33) close to the rim and facing it: Dunk (a little give on
+		# the way out, so it doesn't flicker at the edge)
+		var held := ball.phase == BallSync.Phase.HELD
+		if held:
+			_dunk_ui = BallSync.dunk_ok(_pos, _yaw, 0.1 if _dunk_ui else 0.0)
+		elif ball.phase == BallSync.Phase.SHOT:
+			_dunk_ui = ball.dunk
+		if _dunk_ui:
+			return {"prop": "ball", "text": "Dunk", "icon": "dunk", "enabled": held}
+		return {"prop": "ball", "text": "Shoot", "icon": "shoot", "enabled": held}
+	_dunk_ui = false
+	# (build 33) someone close is shooting: Block (it stays up a moment
+	# after the chance has gone, so it doesn't blink out under a finger)
+	var tg := ball.block_target(_pos)
+	if tg >= 0:
+		_block_ui_t = BLOCK_LINGER
+	if _block_ui_t > 0.0 and ball.jump_of(session.local_slot).is_empty():
+		return {"prop": "block", "text": "Block", "icon": "swat", "enabled": true}
+	if ball.dunker() == session.local_slot:
+		return {}
 	if ball.can_pickup(_pos):
 		return {"prop": "ball_pick", "text": "Pick up", "icon": "ball", "enabled": true}
 	var hub := session.social.hub
@@ -385,8 +438,11 @@ func interact() -> void:
 	var hub := session.social.hub
 	match String(p["prop"]):
 		"ball":
-			# (build 25) the shot goes the way you face
-			session.social.ball.request(BallSync.ACT_SHOOT, -1, _yaw)
+			# (build 25) the shot goes the way you face; (build 33) or a dunk
+			session.social.ball.request(BallSync.ACT_SHOOT, BallSync.ARG_DUNK if String(p["text"]) == "Dunk" else -1, _yaw)
+		"block":
+			_block_ui_t = 0.0
+			session.social.ball.request_block(_pos, _yaw)
 		"ball_pick":
 			session.social.ball.request(BallSync.ACT_PICKUP)
 		HubRoom.PROP_COUCH, HubRoom.PROP_PLANT:
@@ -467,25 +523,95 @@ func _pass_slot() -> int:
 	return best
 
 
-## (build 24) Where the walk camera looks: at you, leaning toward the hoop
-## while you have the ball and while your shot is in the air, so the hoop
-## and the flight are on screen (not under the buttons on the right).
-var _lean := 0.0
+## Where the walk camera looks: at you.  (build 33) Only you: build 24 to
+## 32 leaned it halfway to the hoop while you held the ball or your shot
+## flew, which pulled the view off your runner and over the room's middle,
+## where everyone else stands (it read as the camera tracking the group).
+## Now it is your runner, a little ahead of where you're walking (the
+## camera eases after its point, so without the lead it trailed behind
+## you), lifted while you dunk so the rim stays in the picture.
+const LEAD_S := 1.0 / 6.0
+## (build 33) Block stays up this long after the chance has gone
+const BLOCK_LINGER := 0.35
+var _lift := 0.0
+var _lead := Vector2.ZERO
+var _dunk_ui := false
+var _block_ui_t := 0.0
+var _dunk_from_local := Vector2.INF
+var _focus_was := Vector2.INF
+## a remote runner's offset from their own poses after a dunk or a jump,
+## fading out (key -> Vector2)
+var _glide: Dictionary = {}
 
 
 func _focus(delta: float) -> Vector3:
 	var ball := session.social.ball
-	var want := 0.0
-	if ball.local_has() and (ball.phase == BallSync.Phase.HELD or ball.phase == BallSync.Phase.SHOT):
-		want = 1.0
-	elif ball.phase == BallSync.Phase.FREE and ball.sim.shooter == session.local_slot and ball.phase_t < 2.0 and not ball.sim.sleeping:
-		want = 1.0
-	_lean = move_toward(_lean, want, delta / 0.6)
-	var rc := HubBall.rim_center()
-	var to := Vector2(rc.x, rc.z) - _pos
-	var k := _lean * _lean * (3.0 - 2.0 * _lean) * clampf((to.length() - 0.8) / 2.0, 0.0, 1.0)
-	var f := _pos + to * 0.5 * k
-	return Vector3(f.x, 0.0, f.y)
+	var want := 0.32 if ball.dunker() == session.local_slot else 0.0
+	_lift = move_toward(_lift, want, delta / 0.35)
+	# (how fast you are really going: walking into the couch is no lead)
+	var gone := (_pos - _focus_was) / maxf(delta, 0.001) if _focus_was != Vector2.INF else Vector2.ZERO
+	_focus_was = _pos
+	if gone.length() > HubRoom.WALK_SPEED * 1.5:
+		gone = Vector2.ZERO   # (a jump: a teleport, the dunk's path settling)
+	var lead_s := 0.0 if stage.reduced_motion else LEAD_S
+	_lead = _lead.lerp(gone * lead_s, 1.0 - exp(-delta * 10.0))
+	var f := _pos + _lead
+	var u := _lift / 0.32
+	return Vector3(f.x, 0.32 * u * u * (3.0 - 2.0 * u), f.y)
+
+
+## (build 33) The local dunk: the path from where it started (this device's
+## spot, easing onto the one the host gave everyone), facing the rim.
+func _dunk_local(key: String, delta: float) -> void:
+	var ball := session.social.ball
+	var t := ball.dunk_clock()
+	if _dunk_from_local == Vector2.INF:
+		_dunk_from_local = _pos
+	var p := BallSync.dunk_body(ball.dunk_from, t)
+	var k := BallMoves.ease3(t / 0.35)
+	p += (_dunk_from_local - ball.dunk_from) * (1.0 - k)
+	p = HubRoom.resolve(p)
+	var v := (p - _pos) / maxf(delta, 0.001)
+	if v.length() > HubRoom.WALK_SPEED * 2.5:
+		v = Vector2.ZERO
+	_pos = p
+	_vel = Vector2.ZERO
+	_yaw = lerp_angle(_yaw, BallSync.dunk_yaw(ball.dunk_from), 1.0 - exp(-delta * 16.0))
+	_draw(key, _pos, _yaw, v)
+	session.social.hub.set_local(HubSync.MODE_WALK, _pos, _yaw, minf(v.length(), HubRoom.WALK_SPEED))
+	stage.walk_focus = _focus(delta)
+
+
+## (build 33) The local jump to block: the lunge, no walking until landed.
+func _jump_local(key: String, j: Dictionary, delta: float) -> void:
+	var t := float(j["t"])
+	var p := HubRoom.resolve(BallSync.jump_pos(j, t))
+	var v := (p - _pos) / maxf(delta, 0.001)
+	_pos = p
+	_vel = Vector2.ZERO
+	var to := (j["to"] as Vector2) - (j["from"] as Vector2)
+	if to.length() > 0.05:
+		_yaw = lerp_angle(_yaw, atan2(-to.x, -to.y), 1.0 - exp(-delta * 18.0))
+	_draw(key, _pos, _yaw, v if v.length() < HubRoom.WALK_SPEED * 2.5 else Vector2.ZERO)
+	session.social.hub.set_local(HubSync.MODE_WALK, _pos, _yaw, minf(v.length(), HubRoom.WALK_SPEED))
+	stage.walk_focus = _focus(delta)
+
+
+## (build 33) Where a party member is drawn while dunking or jumping to
+## block ([pos, yaw]), or null.
+func _path_of(slot: int, ball: BallSync) -> Variant:
+	if ball.dunker() == slot:
+		var p := HubRoom.resolve(BallSync.dunk_body(ball.dunk_from, ball.dunk_clock()))
+		return [p, BallSync.dunk_yaw(ball.dunk_from)]
+	var j := ball.jump_of(slot)
+	if not j.is_empty():
+		var to := (j["to"] as Vector2) - (j["from"] as Vector2)
+		var yaw := atan2(-to.x, -to.y) if to.length() > 0.05 else NAN
+		var smp := session.social.hub.sample(slot)
+		if is_nan(yaw):
+			yaw = float(smp.get("yaw", 0.0))
+		return [HubRoom.resolve(BallSync.jump_pos(j, float(j["t"]))), yaw]
+	return null
 
 
 func _winding() -> bool:
