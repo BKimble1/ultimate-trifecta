@@ -34,6 +34,10 @@ var compact_typing := false:
 				_on_text(field.text)
 var cancel_btn: Button
 var button_row: HBoxContainer
+## (build 33) the popup (changing your name later, from Settings or Online)
+## while the keyboard is up: docked to the top, only what fits above it
+var docked := false
+var _title_size := 34
 
 
 func _init() -> void:
@@ -86,14 +90,66 @@ func _ready() -> void:
 			save_btn.call_deferred("grab_focus")
 		return
 	field.call_deferred("grab_focus")
+	set_process(true)
 	# (V6) suggestions make the sheet taller: keep it centred on screen, and
 	# shrink it back when they go
 	resized.connect(func() -> void:
-		if is_inside_tree():
+		if is_inside_tree() and not docked:
 			position = ((get_viewport().get_visible_rect().size - size) * 0.5).max(Vector2.ZERO))
 	minimum_size_changed.connect(func() -> void:
 		if is_inside_tree():
 			reset_size.call_deferred())
+
+
+## (build 33) The popup and the keyboard. Build 32 fixed this for the first
+## launch only; changing the name later (Settings, Online) still opened the
+## sheet in the middle of the screen, where an iPhone's landscape keyboard
+## (over half the screen) covered the name being typed. While typing the
+## sheet now docks just under the top edge and keeps the field (and the
+## buttons, when they fit) above the keyboard; the small print and the
+## heading make room first.
+func _process(_delta: float) -> void:
+	if embedded or not is_inside_tree():
+		return
+	keyboard_fit()
+
+
+func keyboard_fit() -> void:
+	var vp := get_viewport()
+	if vp == null:
+		return
+	var mobile := OS.has_feature("mobile") or OS.get_name() in ["iOS", "Android"]
+	var emulated := UIKit.v7_emulated_keyboard_pt >= 0.0 or OS.get_cmdline_user_args().has("--sim-keyboard")
+	var typing := field.has_focus() and (mobile or emulated)
+	var vs := vp.get_visible_rect().size
+	var kh := UIKit.v7_keyboard_height(vp)
+	if typing:
+		# whatever the keyboard reports (iOS reports it late, or not at all
+		# on some models), keep the field in the top part of the screen
+		kh = maxf(kh, vs.y * 0.6)
+	var want := typing and kh > 0.0
+	if want != docked:
+		docked = want
+		sub_l.visible = not docked
+		title_l.add_theme_font_size_override("font_size", 24 if docked else _title_size)
+		title_l.visible = true
+		button_row.visible = true
+		compact_typing = docked
+	var top := UIKit.safe_margins(vp).position.y + 8.0
+	if docked:
+		var room := vs.y - kh - top - 8.0
+		# the heading, then the buttons go if the field would not fit
+		# (Return on the keyboard still saves)
+		if get_combined_minimum_size().y > room and title_l.visible:
+			title_l.visible = false
+		if get_combined_minimum_size().y > room and button_row.visible:
+			button_row.visible = false
+		reset_size()
+		position = Vector2(maxf(0.0, (vs.x - size.x) * 0.5), top)
+	else:
+		var p := ((vs - size) * 0.5).max(Vector2.ZERO)
+		if position.distance_to(p) > 0.5:
+			position = p
 
 
 func cancel_sheet() -> void:

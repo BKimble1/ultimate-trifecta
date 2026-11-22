@@ -391,6 +391,53 @@ func test_friends_keyboard_keeps_field_and_join_reachable() -> void:
 	await _end()
 
 
+## (build 33) Changing your name later (Settings › Profile, Online): the
+## popup sheet docks under the top edge while typing, so the name being
+## typed (and Save, where it fits) stays above an iPhone's landscape
+## keyboard; closing the keyboard centres it again.
+func test_rename_sheet_stays_above_the_keyboard() -> void:
+	await _begin()
+	for d in _devices():
+		var tag := String(d[0])
+		await _size(d[1])
+		var s: SettingsScreen = await _show(SettingsScreen.new())
+		NameSheet.ask(s, true)
+		await _frames(4)
+		var sheets := s.find_children("*", "NameSheet", true, false)
+		t.check(sheets.size() == 1, "%s: the name sheet opens" % tag)
+		if sheets.is_empty():
+			await _close()
+			continue
+		var ns: NameSheet = sheets[0]
+		ns.field.grab_focus()
+		var view := _view()
+		var pts: float = float(d[2]) if float(d[2]) > 0.0 else view.size.y / UIKit.units_per_point()
+		var dev_upp := view.size.y / pts
+		# the device's own keyboard, and a taller one (60% of the screen)
+		for kb in [float(d[3]) * dev_upp / UIKit.units_per_point(), view.size.y * 0.6 / UIKit.units_per_point()]:
+			UIKit.v7_emulated_keyboard_pt = kb
+			await _frames(4)
+			var top := view.size.y - maxf(UIKit.v7_keyboard_height(t.get_tree().root), view.size.y * 0.6)
+			var f := ns.field.get_global_rect()
+			t.check(ns.docked, "%s: docked while typing (%d pt keyboard)" % [tag, int(kb)])
+			t.check(f.end.y <= top + 0.5 and f.position.y >= _safe().position.y - 0.5,
+				"%s: the name field is in view above a %d pt keyboard (%.0f-%.0f, keyboard at %.0f)" % [tag, int(kb), f.position.y, f.end.y, top])
+			t.check(ns.get_global_rect().end.y <= top + 0.5, "%s: nothing of the sheet is under the keyboard" % tag)
+			if ns.save_btn.is_visible_in_tree():
+				t.check(ns.save_btn.get_global_rect().end.y <= top + 0.5, "%s: Save is above the keyboard" % tag)
+		ns.field.release_focus()
+		UIKit.v7_emulated_keyboard_pt = 0.0
+		await _frames(4)
+		t.check(not ns.docked and ns.save_btn.is_visible_in_tree() and ns.sub_l.visible, "%s: keyboard closed: the whole sheet again" % tag)
+		var c := ns.get_global_rect().get_center()
+		t.check(absf(c.y - view.size.y * 0.5) < 2.0, "%s: and centred (%.0f)" % [tag, c.y])
+		UIKit.v7_emulated_keyboard_pt = -1.0
+		ns.cancel_sheet()
+		await _frames(2)
+		await _close()
+	await _end()
+
+
 # ------------------------------------------------------------- Settings
 static func _tab_of(title: String) -> int:
 	for i in SettingsScreen.TABS.size():
