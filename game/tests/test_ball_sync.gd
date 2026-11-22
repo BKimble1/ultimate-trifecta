@@ -41,6 +41,11 @@ func _walk_to(rig: NetRig, s: NetSession, p: Vector2, yaw: float = 0.0) -> void:
 const SPOT := Vector2(2.6, -0.2)    # open floor in front of the hoop
 
 
+static func _yaw_to(from: Vector2, to: Vector2) -> float:
+	var d := to - from
+	return atan2(-d.x, -d.y)
+
+
 func test_everyone_sees_the_ball_where_the_host_put_it() -> void:
 	var rig := _rig(2)
 	await _ready_party(rig)
@@ -104,8 +109,9 @@ func test_shoot_make_confetti_everywhere_and_miss() -> void:
 	var hb := rig.host.social.ball
 	var rc := HubBall.rim_center()
 	var shoot_from := Vector2(rc.x, rc.z) + HubBall.HOOP_DIR * 1.6
+	var face := _yaw_to(shoot_from, Vector2(rc.x, rc.z))   # (build 25) facing the hoop
 	hb.sim.place(Vector3(shoot_from.x, HubBall.R, shoot_from.y + 0.4))
-	await _walk_to(rig, c0, shoot_from)
+	await _walk_to(rig, c0, shoot_from, face)
 	c0.social.ball.request(BallSync.ACT_PICKUP)
 	await rig.frames(10)
 	t.eq(hb.holder, c0.local_slot, "picked up")
@@ -134,7 +140,7 @@ func test_shoot_make_confetti_everywhere_and_miss() -> void:
 	c0.social.ball.request(BallSync.ACT_PICKUP)
 	await rig.frames(12)
 	t.eq(hb.holder, c0.local_slot, "picked up again")
-	await _walk_to(rig, c0, shoot_from)
+	await _walk_to(rig, c0, shoot_from, face)
 	hb.force_make = 0
 	var before: int = made_host[0]
 	c0.social.ball.request(BallSync.ACT_SHOOT)
@@ -246,4 +252,46 @@ func test_bad_requests_are_ignored() -> void:
 	c0.transport.send(c0.host_peer, b.data_array, true)
 	await rig.frames(4)
 	t.eq(hb.holder, -1, "a broken request is ignored")
+	await _done(rig)
+
+
+func test_a_shot_goes_the_way_you_face() -> void:
+	var rc := HubBall.rim_center()
+	var rim := Vector2(rc.x, rc.z)
+	var at := rim + HubBall.HOOP_DIR * 2.2
+	var on := _yaw_to(at, rim)
+	# the line a shot takes
+	var l0 := BallSync.shot_line(at, on)
+	t.check(bool(l0["rim"]), "facing the hoop: lined up on the rim")
+	var l1 := BallSync.shot_line(at, on + deg_to_rad(10.0))
+	t.check(bool(l1["rim"]) and (l1["dir"] as Vector2).distance_to((rim - at).normalized()) < 0.001, "10 degrees off: still lined up (aim assist)")
+	var l2 := BallSync.shot_line(at, on + deg_to_rad(30.0))
+	t.check(not bool(l2["rim"]), "30 degrees off: not at the hoop")
+	t.check((l2["dir"] as Vector2).distance_to(Vector2(-sin(on + deg_to_rad(30.0)), -cos(on + deg_to_rad(30.0)))) < 0.001, "it goes the way you face")
+	# in the room: facing away from the hoop, the shot flies that way
+	var rig := _rig(1)
+	await _ready_party(rig)
+	var c0: NetSession = rig.clients[0]
+	var hb := rig.host.social.ball
+	var from := Vector2(1.6, 0.6)
+	hb.sim.place(Vector3(from.x + 0.3, HubBall.R, from.y))
+	await _walk_to(rig, c0, from)
+	c0.social.ball.request(BallSync.ACT_PICKUP)
+	await rig.frames(10)
+	t.eq(hb.holder, c0.local_slot, "picked up")
+	var away := _yaw_to(from, rim) + PI * 0.6   # well off to the side, away from the hoop
+	var made := [0]
+	hb.made.connect(func(_s: int, _w: bool) -> void: made[0] += 1)
+	hb.force_make = 1   # (would be a make if it were at the hoop)
+	c0.social.ball.request(BallSync.ACT_SHOOT, -1, away)
+	await rig.wait_until(func() -> bool: return hb.phase == BallSync.Phase.FREE, 120)
+	var start := Vector2(hb.sim.pos.x, hb.sim.pos.z)
+	var f := Vector2(-sin(away), -cos(away))
+	var vh := Vector2(hb.sim.vel.x, hb.sim.vel.z)
+	t.check(vh.normalized().dot(f) > 0.99, "the shot flies the way they faced (%.3f)" % vh.normalized().dot(f))
+	await rig.frames(60)
+	var now := Vector2(hb.sim.pos.x, hb.sim.pos.z)
+	t.check((now - start).dot(f) > 0.8, "and goes off that way (%.2f m)" % (now - start).dot(f))
+	await rig.frames(240)
+	t.eq(made[0], 0, "no basket facing away from the hoop")
 	await _done(rig)

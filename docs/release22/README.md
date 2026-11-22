@@ -1055,3 +1055,30 @@ Protocol 16 unchanged: builds 20 to 25 play together.
   from pick-up through dribbling, walking and turning, the windup, the
   release, the flight and the net, never moves further in a frame than its
   speed allows, and a basket puts no words on screen.
+
+## 42. Build 26: the dribble, the shooting form, shooting the way you face
+
+Protocol 16 unchanged: builds 20 to 26 play together (`BALL_REQ` may carry
+a u16 facing for a shot after its two bytes; a build 24/25 host reads the
+first two and uses the shooter's pose).
+- **The dribble with the arm**: the ball meets the hand with the elbow bent
+  (its top at about 0.61 m); the palm rides the top of the ball and pushes
+  it down until the arm is straight (0.535 m), waits low while it bounces,
+  then rides it back up (the right arm's `TwoBoneIK3D`, elbow out and back).
+- **The shooting form** (0.42 s windup): both hands bring the ball to the
+  chest, then up to the set point over the right eye with the shooting hand
+  under and behind it, the elbow in under the ball and the guide hand on its
+  side; it leaves from the set point; the follow-through reaches the
+  shooting arm up and out the way the shot went (out to the side of the big
+  head, so it reads from behind) and holds the guide hand up for 0.45 s.
+- **Shooting the way you face**: the runner no longer turns to the hoop. A
+  shot flies the way they face; within 14 degrees of the hoop it is lined up
+  on the rim (an aim assist; the make chance eases off toward the edge of
+  that), otherwise it flies that way as far as the hoop is and lands where
+  it lands (no basket).  The shooter's facing goes with the request.
+- Tests: `test_ball_view` measures the arm on the posed skeleton (the IK's
+  result exists only during the skeleton's update): the hand on its target
+  every frame of the dribble, pumping more than 5 cm, the palm on the ball's
+  top; under the ball in the shot; up after the release.  `test_ball_sync`:
+  the shot line (facing, 10 degrees off, 30 degrees off) and a shot facing
+  away flying that way with no basket.

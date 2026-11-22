@@ -695,6 +695,7 @@ func _ball() -> void:
 		10:
 			l.hub.stick = Vector2.ZERO
 			l.hub._pos = spot
+			l.hub._yaw = atan2(HubBall.HOOP_DIR.x, HubBall.HOOP_DIR.y)   # facing the hoop
 			_next(2.5)
 		11:
 			var lv: CharacterView = App.stage.chars.get(l.hub.local_key())
@@ -720,6 +721,8 @@ func _ball() -> void:
 			_next(0.6)
 		22:
 			l.hub._pos = spot + Vector2(0.3, 0.5)
+			var to := Vector2(rc.x, rc.z) - l.hub._pos
+			l.hub._yaw = atan2(-to.x, -to.y)
 			_next(2.0)
 		23:
 			b.force_make = 0

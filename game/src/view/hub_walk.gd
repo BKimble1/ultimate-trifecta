@@ -30,7 +30,7 @@ extends Node
 ##
 ## (build 24) The basketball (BallSync): walk up to it and the button says
 ## Pick up; holding it you dribble as you walk, the button says Shoot (the
-## runner turns to the hoop, winds up and lets it go) and Drop and, with
+## runner shoots the way they face: (build 25) face the hoop to score) and Drop and, with
 ## other people in the party, Pass sit above it.  You stand still for the
 ## windup.  Holding the ball, the couch, the lamp and the plant wait.
 
@@ -223,10 +223,11 @@ func _process(delta: float) -> void:
 		session.social.hub.set_local(act, _pos, _yaw, 0.0)
 		stage.walk_focus = Vector3(_pos.x, 0.75 if act == HubSync.MODE_COUCH else 0.0, _pos.y)
 	elif walking and key != "" and _winding():
-		# (build 24) winding up a shot or a pass: plant your feet and turn to it
+		# winding up: plant your feet.  (build 25) A shot goes the way you
+		# face (no turning to the hoop); a pass turns you to the catcher
 		_vel = Vector2.ZERO
 		var aim := _wind_aim()
-		if aim.distance_to(_pos) > 0.05:
+		if session.social.ball.phase == BallSync.Phase.PASS and aim.distance_to(_pos) > 0.05:
 			var ty := atan2(-(aim - _pos).x, -(aim - _pos).y)
 			_yaw = lerp_angle(_yaw, ty, 1.0 - exp(-delta * 18.0))
 		_draw(key, _pos, _yaw, Vector2.ZERO)
@@ -384,7 +385,8 @@ func interact() -> void:
 	var hub := session.social.hub
 	match String(p["prop"]):
 		"ball":
-			session.social.ball.request(BallSync.ACT_SHOOT)
+			# (build 25) the shot goes the way you face
+			session.social.ball.request(BallSync.ACT_SHOOT, -1, _yaw)
 		"ball_pick":
 			session.social.ball.request(BallSync.ACT_PICKUP)
 		HubRoom.PROP_COUCH, HubRoom.PROP_PLANT:

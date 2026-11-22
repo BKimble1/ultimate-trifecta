@@ -14,10 +14,19 @@ extends Node3D
 ## for a shot (both hands) or to the chest for a pass.  A shadow under it
 ## grounds it.  A made shot drops confetti over the shooter and the hoop.
 
-const DRIBBLE_TOP := 0.43        # ball centre at the hand (a ~1 m runner; its top at ~0.52)
+## (build 25) the ball meets the hand with the elbow bent (its top at
+## ~0.61 m), so the arm visibly pushes it down and rides it back up
+const DRIBBLE_TOP := 0.52        # ball centre at the hand (a ~1 m runner)
+const HAND_LOW := 0.535          # the lowest the hand reaches (arm straight)
+const HAND_HIGH := 0.64
 const DRIBBLE_SLOW_S := 0.46     # a bounce standing still
 const DRIBBLE_FAST_S := 0.34     # and at full walking speed
-const SHOT_HOLD := Vector3(0.14, 1.06, -0.1)    # up by the right shoulder (right, up, back): seen past the hat
+## (build 25) the shooting form, relative to the shooter (right, up, back):
+## the gather at the chest, then the set point up over the right eye (where
+## the ball is released; BallSync.shot_start), then the follow-through
+const SHOT_POCKET := Vector3(0.07, 0.64, -0.17)
+const SHOT_HOLD := Vector3(0.13, 1.1, -0.06)
+const FOLLOW_S := 0.45
 const PASS_HOLD := Vector3(0.0, 0.56, 0.2)      # at the chest (right, up, forward)
 const IK_IN_S := 0.12
 const IK_OUT_S := 0.28
@@ -387,7 +396,33 @@ func _process(delta: float) -> void:
 	_shadow.position = Vector3(p.x, 0.006, p.z)
 	_shadow.scale = Vector3.ONE * (1.0 + h * 0.5)
 	(_shadow.material_override as ShaderMaterial).set_shader_parameter("alpha", 0.5 * (1.0 - clampf(h / 2.0, 0.0, 1.0)))
+	_follow_through(want)
 	_relax_all(delta, want)
+
+
+## (build 25) Just after a shot leaves the hand: the shooting arm reaches up
+## and out the way it went (the wrist "in the cookie jar"), the guide hand
+## stays up a moment, then both relax.
+func _follow_through(want: Dictionary) -> void:
+	if ball.phase != BallSync.Phase.FREE or not ball.released_shot or ball.phase_t > FOLLOW_S:
+		return
+	var key := _key_of(ball.sim.shooter)
+	if key == "" or want.has(key):
+		return
+	var v: CharacterView = stage.chars.get(key)
+	if v == null or not is_instance_valid(v) or not v.visible:
+		return
+	var at := stage.to_local(v.global_position)
+	var yaw := v.rotation.y
+	var fwd := Vector3(-sin(yaw), 0.0, -cos(yaw))
+	var right := Vector3(cos(yaw), 0.0, -sin(yaw))
+	var shoulder_r := at + right * 0.17 + Vector3(0, 0.84, 0)
+	var shoulder_l := at - right * 0.17 + Vector3(0, 0.84, 0)
+	# (out to the side of the big head, so it reads from behind too)
+	want[key] = {"r": at + right * 0.2 + fwd * 0.2 + Vector3(0, 1.16, 0),
+		"pr": shoulder_r + fwd * 0.2 + right * 0.2 + Vector3(0, -0.1, 0),
+		"l": at - right * 0.06 + fwd * 0.15 + Vector3(0, 1.0, 0),
+		"pl": shoulder_l - right * 0.35 + Vector3(0, -0.2, 0)}
 
 
 func _handoff_now() -> Vector3:
@@ -433,22 +468,33 @@ func _held(v: CharacterView, key: String, phase: int, delta: float, want: Dictio
 		BallSync.Phase.HELD:
 			if u_was < 0.5 and u >= 0.5:
 				_play("ball_bounce", dribble_at + Vector3(0, HubBall.R, 0), -14.0 + 4.0 * k, randf_range(0.96, 1.04))
-			# the hand rides the top of the ball, down as far as the arm goes
-			var hand := p + Vector3(0, HubBall.R + 0.012, 0)
-			hand.y = maxf(hand.y, 0.5)
-			want[key] = {"r": hand, "pr": shoulder_r + right * 0.35 - fwd * 0.3 + Vector3(0, -0.2, 0)}
+			# (build 25) the arm works the ball: the palm on top of it as it
+			# comes up (elbow bent), pushing it down until the arm is
+			# straight, then waiting low for it and riding it back up
+			var hand := p + Vector3(0, HubBall.R + 0.01, 0) + right * 0.012
+			hand.y = clampf(hand.y, HAND_LOW, HAND_HIGH)
+			want[key] = {"r": hand, "pr": shoulder_r + right * 0.32 - fwd * 0.28 + Vector3(0, -0.12, 0)}
 			_rot = Basis(right, -delta * 8.0) * _rot
 		BallSync.Phase.SHOT:
+			# (build 25) the form: both hands bring the ball to the chest,
+			# then up to the set point over the right eye, the shooting hand
+			# under and behind it, the elbow in under the ball, the guide
+			# hand on its side
 			var t := clampf(ball.phase_t / BallSync.WINDUP_SHOT, 0.0, 1.0)
-			var e := t * t * t * (t * (t * 6.0 - 15.0) + 10.0)   # smootherstep
+			var pocket := at + right * SHOT_POCKET.x + Vector3(0, SHOT_POCKET.y, 0) - fwd * SHOT_POCKET.z
 			var hold := at + right * SHOT_HOLD.x + Vector3(0, SHOT_HOLD.y, 0) - fwd * SHOT_HOLD.z
 			var from := _wind_from if _wind_from != Vector3.INF else p
-			p = from.lerp(hold, e)
-			p.y -= 0.04 * sin(PI * t) * (1.0 - t)   # a soft gather on the way up
-			want[key] = {"r": p - fwd * (HubBall.R * 0.8) + right * 0.03 - Vector3(0, HubBall.R * 0.4, 0),
-				"l": p - right * (HubBall.R + 0.012),
-				"pr": shoulder_r + right * 0.3 - fwd * 0.15 + Vector3(0, -0.3, 0),
-				"pl": shoulder_r - right * 0.64 - fwd * 0.15 + Vector3(0, -0.3, 0)}
+			if t < 0.4:
+				var u1 := t / 0.4
+				p = from.lerp(pocket, u1 * u1 * u1 * (u1 * (u1 * 6.0 - 15.0) + 10.0))
+			else:
+				var u2 := (t - 0.4) / 0.6
+				p = pocket.lerp(hold, u2 * u2 * (3.0 - 2.0 * u2))
+			var shoulder_l := at - right * 0.17 + Vector3(0, 0.84, 0)
+			want[key] = {"r": p - fwd * (HubBall.R * 0.75) - Vector3(0, HubBall.R * 0.55, 0) + right * 0.015,
+				"l": p - right * (HubBall.R + 0.012) + fwd * 0.01,
+				"pr": shoulder_r + fwd * 0.3 + Vector3(0, -0.35, 0) + right * 0.05,
+				"pl": shoulder_l - right * 0.35 + fwd * 0.1 + Vector3(0, -0.2, 0)}
 		BallSync.Phase.PASS:
 			var t2 := clampf(ball.phase_t / BallSync.WINDUP_PASS, 0.0, 1.0)
 			var e2 := t2 * t2 * t2 * (t2 * (t2 * 6.0 - 15.0) + 10.0)

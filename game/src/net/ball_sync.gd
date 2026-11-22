@@ -38,7 +38,15 @@ const ACT_DROP := 2
 const ACT_SHOOT := 3
 const ACT_PASS := 4
 enum Phase { FREE, HELD, SHOT, PASS }
-const WINDUP_SHOT := 0.3
+## (build 25) a real shooting form: the gather to the chest, the rise to
+## the set point over the right eye, the release (HubBallView draws it)
+const WINDUP_SHOT := 0.42
+## a shot goes the way the shooter faces; within this angle of the hoop it
+## is lined up on the rim (an aim assist), the make chance easing off
+## toward the edge of it
+const AIM_ASSIST := 0.2443   # 14 degrees
+## a shot not at the hoop flies this far (where the hoop would be, within these)
+const FREE_SHOT_D := Vector2(1.6, 4.5)
 const WINDUP_PASS := 0.16
 const SEND_S := 1.0 / 15.0
 const REST_SEND_S := 1.0
@@ -83,6 +91,10 @@ var _make_known := false
 var rng := RandomNumberGenerator.new()
 ## (tests, captures) -1: the shot's luck decides; 0: a miss; 1: a make
 var force_make := -1
+var _shot_yaw := 0.0
+## (build 25) the last release was a shot (the view's follow-through and the
+## shooter's camera); everyone knows (clients: from the phase change)
+var released_shot := false
 
 
 func _init(s: NetSession) -> void:
@@ -128,17 +140,22 @@ func can_pickup(at: Vector2) -> bool:
 	return b.y <= HubBall.REACH_Y and Vector2(b.x, b.z).distance_to(at) <= HubBall.REACH
 
 
-func request(act: int, arg: int = -1) -> void:
+## (build 25) `yaw`: the way the runner faces as they shoot (the shot goes
+## that way); NAN: their last pose's.
+func request(act: int, arg: int = -1, yaw: float = NAN) -> void:
 	if not in_room():
 		return
 	if session.is_host():
-		_host_req(session.local_slot, act, arg)
+		_host_req(session.local_slot, act, arg, yaw)
 		return
 	if session.host_peer < 0:
 		return
 	var b := Protocol.buf_for(SocialProto.BALL_REQ)
 	b.put_u8(act)
 	b.put_8(clampi(arg, -1, 7))
+	if is_finite(yaw):
+		# (build 25) appended: a build 24 host reads the first two bytes only
+		b.put_u16(int(fposmod(yaw, TAU) / TAU * 65535.0) & 0xFFFF)
 	session.transport.send(session.host_peer, b.data_array, true)
 
 
@@ -152,7 +169,10 @@ func host_packet(peer: int, b: StreamPeerBuffer) -> void:
 		return
 	var act := b.get_u8()
 	var arg := b.get_8()
-	_host_req(slot, act, arg)
+	var yaw := NAN
+	if b.get_available_bytes() >= 2:
+		yaw = float(b.get_u16()) / 65535.0 * TAU
+	_host_req(slot, act, arg, yaw)
 
 
 func _pose(slot: int) -> Dictionary:
@@ -172,7 +192,7 @@ func _human(slot: int) -> bool:
 	return slot >= 0 and slot < 8 and session.roster[slot] != null and not bool(session.roster[slot]["is_bot"])
 
 
-func _host_req(slot: int, act: int, arg: int) -> void:
+func _host_req(slot: int, act: int, arg: int, yaw: float = NAN) -> void:
 	if not in_room() or not _human(slot) or not spawned:
 		stat_denied += 1
 		return
@@ -204,6 +224,8 @@ func _host_req(slot: int, act: int, arg: int) -> void:
 				return
 			_set_phase(Phase.SHOT)
 			_wind = WINDUP_SHOT
+			# (build 25) the way they face as they shoot (else their pose's)
+			_shot_yaw = yaw if is_finite(yaw) else float(p["yaw"])
 		ACT_PASS:
 			if holder != slot or phase != Phase.HELD or session.human_count() < 2:
 				stat_denied += 1
@@ -262,6 +284,7 @@ static func _pose_vel(p: Dictionary) -> Vector2:
 
 
 func _release_drop(p: Dictionary) -> void:
+	released_shot = false
 	var at: Vector2 = p["pos"]
 	var f := _fwd(float(p["yaw"]))
 	var v := _pose_vel(p)
@@ -325,21 +348,49 @@ static func shot_time(d: float) -> float:
 	return 0.52 + 0.14 * d   # a high arc: it drops in at 55-70 degrees
 
 
+## Where a shot from `at`, facing `yaw`, goes: {dir (Vector2), rim (bool:
+## lined up on the hoop), off (radians off the hoop)}.
+static func shot_line(at: Vector2, yaw: float) -> Dictionary:
+	var f := Vector2(-sin(yaw), -cos(yaw))
+	var rc := HubBall.rim_center()
+	var to := Vector2(rc.x, rc.z) - at
+	if to.length() < 0.05:
+		return {"dir": f, "rim": true, "off": 0.0}
+	var off := absf(f.angle_to(to))
+	if off <= AIM_ASSIST:
+		return {"dir": to.normalized(), "rim": true, "off": off}
+	return {"dir": f, "rim": false, "off": off}
+
+
+## The set point the ball leaves from (HubBallView.SHOT_HOLD), shooting along `dir`.
+static func shot_start(at: Vector2, dir: Vector2) -> Vector3:
+	var right := Vector2(-dir.y, dir.x)
+	var rel := right * HubBallView.SHOT_HOLD.x - dir * HubBallView.SHOT_HOLD.z
+	return Vector3(at.x + rel.x, HubBallView.SHOT_HOLD.y, at.y + rel.y)
+
+
 func _launch_shot() -> void:
 	var p := _pose(holder)
 	if p.is_empty():
 		_drop_here()
 		return
 	var at: Vector2 = p["pos"]
-	var rc := HubBall.rim_center()
-	var dir := Vector2(rc.x, rc.z) - at
-	dir = dir.normalized() if dir.length() > 0.01 else -HubBall.HOOP_DIR
-	# from up by the right shoulder (where the view holds it: HubBallView.SHOT_HOLD)
-	var right := Vector2(-dir.y, dir.x)
-	var rel := right * HubBallView.SHOT_HOLD.x - dir * HubBallView.SHOT_HOLD.z
-	var start := Vector3(at.x + rel.x, HubBallView.SHOT_HOLD.y, at.y + rel.y)
-	var make := rng.randf() < make_chance(at) if force_make < 0 else force_make == 1
-	var aim := shot_aim(at, make, rng)
+	var line := shot_line(at, _shot_yaw)
+	var dir: Vector2 = line["dir"]
+	var start := shot_start(at, dir)
+	var make := false
+	var aim: Vector3
+	if bool(line["rim"]):
+		# facing the hoop: lined up on the rim; a little off makes it harder
+		var k := float(line["off"]) / AIM_ASSIST
+		var chance := make_chance(at) * (1.0 - 0.45 * k * k)
+		make = rng.randf() < chance if force_make < 0 else force_make == 1
+		aim = shot_aim(at, make, rng)
+	else:
+		# facing elsewhere: it flies that way, as far as the hoop is
+		var rc := HubBall.rim_center()
+		var dd := clampf(Vector2(rc.x, rc.z).distance_to(at), FREE_SHOT_D.x, FREE_SHOT_D.y)
+		aim = Vector3(start.x + dir.x * dd, HubBall.RIM_Y, start.z + dir.y * dd)
 	var d := Vector2(aim.x - start.x, aim.z - start.z).length()
 	var t := shot_time(d)
 	var v := ballistic(start, aim, t)
@@ -348,6 +399,7 @@ func _launch_shot() -> void:
 	# backspin about the axis across the shot
 	var spin := Vector3(-dir.y, 0.0, dir.x) * -14.0
 	_free_with(start, v, spin)
+	released_shot = true
 
 
 func _launch_pass() -> void:
@@ -367,6 +419,7 @@ func _launch_pass() -> void:
 	var start := Vector3(at.x + dir.x * 0.22, 0.6, at.y + dir.y * 0.22)
 	var aim := Vector3(lead.x, 0.55, lead.y)
 	_pass_t = 0.0
+	released_shot = false
 	var target := pass_to
 	_free_with(start, ballistic(start, aim, t), Vector3(-dir.y, 0.0, dir.x) * -6.0)
 	pass_to = target
@@ -525,6 +578,8 @@ func client_packet(b: StreamPeerBuffer) -> void:
 	if ph > Phase.PASS or hold < -1 or hold > 7 or pto < -1 or pto > 7 or not is_finite(p.length()) or not is_finite(v.length()):
 		return
 	var was_free := phase == Phase.FREE and spawned
+	if ph != phase and ph == Phase.FREE:
+		released_shot = phase == Phase.SHOT
 	if ph != phase:
 		phase = ph
 		phase_t = 0.0
