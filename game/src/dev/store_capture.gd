@@ -244,12 +244,14 @@ func _run_store() -> void:
 			await snap("s09_ball")
 			l._set_walk(false)
 			await _wait(1.5)
-	if _wanted("s06_friends"):
-		await _party(4)
-		await _friends_over_party()
+	# (build 30) the full party before Friends (whose fixture signs in a
+	# fresh profile: the Coins counter would read 0)
 	if _wanted("s03_party"):
 		await _party(8)
 		await snap("s03_party")
+	if _wanted("s06_friends"):
+		await _party(4)
+		await _friends_over_party()
 
 
 
