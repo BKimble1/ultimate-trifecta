@@ -37,9 +37,18 @@ extends Node
 ## party, has the service re-check everything, then joins through the same
 ## path as a typed code (App.join_room_gamekit: service admission and Game
 ## Center matchmaking for the code).
+##
+## Friend tags (in-game friends, no Game Center friendship needed).  Every
+## named player has a tag (ComfyFrog#4821: the approved name without spaces
+## and a number).  Add friend sends a request by tag (POST
+## /v1/friends/requests); the other player accepts or declines in their
+## Friends panel (the Friends button counts requests waiting).  Accepted
+## friends get status and invites exactly like Game Center friends, also
+## when this player never shared a Game Center friends list.  Sign-in to the
+## game service is still through Game Center (Cloud.api).
 
 signal changed
-signal invites_changed
+signal invites_changed      # (party invites or friend requests waiting: the badge)
 
 const HEARTBEAT_S := 20.0
 const POLL_S := 10.0
@@ -81,6 +90,19 @@ var gc_invite_test := false
 ## counters for tests and diagnostics
 var beats := 0
 var polls := 0
+## Friend tags.  tags: idle | loading | ok | off (no tags on this service) |
+## signed_out (no Game Center / sign-in) | network | unavailable
+var tags := "idle"
+var tags_message := ""
+var my_tag := ""                 # "ComfyFrog#4821" ("" until known / no name yet)
+var needs_name := false          # no approved name yet: no tag
+var requests_in: Array = []      # [{id, created_at, from: {profile_id, name, tag}}]
+var requests_out: Array = []     # [{id, created_at, to: {...}}]: "Requested"
+var tag_friends: Array = []      # [{profile_id, name, tag, since}]: accepted in-game friends
+var request_count := 0           # requests waiting (heartbeat / presence say so between loads)
+var adding := false              # an Add friend request in flight
+var answering: Dictionary = {}   # request id -> true while Accept / Decline is in flight
+var _tags_loading := false
 
 var _seq := 0
 var _watchers := 0
@@ -158,6 +180,21 @@ func feature_on() -> bool:
 	return Cloud.configured() and Cloud.has_feature("friends")
 
 
+## The service offers friend tags (Add friend by tag).
+func tags_on() -> bool:
+	return Cloud.configured() and Cloud.has_feature("friend_tags")
+
+
+## In-game friends are known (from the list, or from status).
+func has_tag_friends() -> bool:
+	if not tag_friends.is_empty():
+		return true
+	for e in presence.values():
+		if String((e as Dictionary).get("source", "")) in ["tag", "both"]:
+			return true
+	return false
+
+
 ## "Show when I'm playing" (on by default once friend access is given).
 func share_status() -> bool:
 	return bool(Save.get_setting(SETTING, true))
@@ -204,7 +241,9 @@ func derive_state() -> Dictionary:
 
 func _should_beat() -> bool:
 	# (an explicit sign-out stops it; an expired token is renewed by Cloud.api)
-	return _foreground and feature_on() and share_status() and access == "authorized" and shared and Cloud.profile_id() != "" \
+	# Game Center friends shared, or friends added by tag: someone can see it
+	var someone := (access == "authorized" and shared) or has_tag_friends()
+	return _foreground and feature_on() and share_status() and someone and Cloud.profile_id() != "" \
 		and Cloud.state != "signed_out"
 
 
@@ -233,10 +272,28 @@ func _on_cloud() -> void:
 	if not _started and pid != "" and Cloud.signed_in() and feature_on() and native.call("signed_in"):
 		_started = true
 		_quiet_start()
+	# friend tags: the tag, requests waiting (the badge) and in-game friends
+	# (their status needs heartbeats too), quietly once per sign-in
+	if tags == "idle" and pid != "" and Cloud.signed_in() and tags_on() and not _tags_loading:
+		_quiet_tags()
+	var t: Variant = Cloud.profile.get("friend_tag")
+	if t is String and String(t) != "":
+		my_tag = String(t)
 	_update_timers()
 
 
+func _quiet_tags() -> void:
+	await load_tags()
+	_update_timers()
+	if _should_beat():
+		beat_now()
+
+
 func _quiet_start() -> void:
+	if bool(native.call("multiplayer_off")):
+		access = "multiplayer_off"     # (Screen Time: no online friends at all)
+		changed.emit()
+		return
 	var st: String = await native.call("status")
 	if st == "authorized":
 		access = "authorized"
@@ -282,6 +339,15 @@ func _forget() -> void:
 	_synced_sig = ""
 	_started = false
 	_revoked_remote = false
+	tags = "idle"
+	tags_message = ""
+	my_tag = ""
+	needs_name = false
+	requests_in = []
+	requests_out = []
+	tag_friends = []
+	request_count = 0
+	answering = {}
 	_set_incoming([])
 	_update_timers()
 	changed.emit()
@@ -342,6 +408,14 @@ func refresh() -> void:
 		else:
 			service = "off"
 			presence = {}
+	# in-game friends (by tag) need no Game Center friends list: their
+	# requests and status load whatever Game Center's list allows
+	if tags_on() and access != "multiplayer_off":
+		await load_tags()
+	if access not in ["authorized", "multiplayer_off"] and feature_on() and has_tag_friends():
+		_update_timers()
+		beat_now()
+		await _poll()
 	_refreshing = false
 	_update_timers()
 	changed.emit()
@@ -458,7 +532,9 @@ func _poll() -> bool:
 			known[String(f["tid"])] = true
 		for e in r.get("friends", []):
 			var tid := String(e.get("id", ""))
-			if known.has(tid):     # (only friends this device actually has)
+			# (only friends this device actually has: its Game Center
+			# friends, and friends added by tag)
+			if tid != "" and (known.has(tid) or String(e.get("source", "")) in ["tag", "both"]):
 				map[tid] = e
 		presence = map
 		party = r.get("party")
@@ -468,6 +544,7 @@ func _poll() -> bool:
 				sent.erase(tid)
 		if not bool(r.get("shared", true)):
 			shared = false
+		_note_requests(r)
 	else:
 		_poll_fail += 1
 		_service_failed(r)
@@ -482,7 +559,7 @@ func _poll() -> bool:
 
 func _on_poll_timer() -> void:
 	if _watchers > 0 and _foreground:
-		if access == "authorized" and feature_on() and shared:
+		if feature_on() and ((access == "authorized" and shared) or has_tag_friends()):
 			await _poll()
 		elif access == "authorized" and feature_on():
 			refresh()
@@ -528,6 +605,7 @@ func _beat() -> void:
 		_beat_fail = 0
 		_note_time(r)
 		_set_incoming(r.get("invites", []))
+		_note_requests(r)
 	else:
 		_beat_fail += 1
 		if String(r.get("error", "")) == "suspended":
@@ -767,8 +845,9 @@ func _drop_invite(id: String) -> void:
 	_set_incoming(incoming.filter(func(iv: Dictionary) -> bool: return String(iv["id"]) != id))
 
 
+## Party invites plus friend requests waiting (the Friends button's count).
 func badge_count() -> int:
-	return incoming.size()
+	return incoming.size() + maxi(request_count, requests_in.size())
 
 
 ## Never during a round (or its loading): the invite waits for the results
@@ -800,9 +879,18 @@ static func invite_text(iv: Dictionary) -> Array:
 	return ["%s invited you" % who, party_of]
 
 
+## (Crash sweep) One accept at a time: a second tap while the "Leave this
+## party?" question is up, or while the first is with the service, does
+## nothing.  The question ends as "Not now" if its screen goes away (the
+## old loop waited forever on a freed screen, and every later Accept was
+## then ignored); a round that starts meanwhile wins (nobody is pulled out
+## of it, even after the service said yes).
+var _asking := false
+
+
 func accept(iv: Dictionary) -> void:
 	var id := String(iv.get("id", ""))
-	if id == "" or accepting != "" or not can_show_invites():
+	if id == "" or accepting != "" or _asking or not can_show_invites():
 		return     # (never pulls anyone out of a round)
 	var scr: Variant = App.screen
 	var who: String = invite_text(iv)[0].trim_suffix(" invited you")
@@ -810,10 +898,12 @@ func accept(iv: Dictionary) -> void:
 		var hosting := (App.session as NetSession).is_host() and (App.session as NetSession).human_count() > 1
 		var q := ("Leave your party to join %s? Your party ends for everyone in it." if hosting else "Leave this party to join %s?") % who
 		var answer := {"v": -1}
+		_asking = true
 		(scr as Screen).dialog(q, [["Leave and join", func() -> void: answer["v"] = 1], ["Not now", func() -> void: answer["v"] = 0]])
-		while int(answer["v"]) < 0 and is_inside_tree():
+		while int(answer["v"]) < 0 and is_inside_tree() and is_instance_valid(scr) and App.screen == scr:
 			await get_tree().process_frame
-		if int(answer["v"]) != 1:
+		_asking = false
+		if int(answer["v"]) != 1 or not can_show_invites():
 			return
 	accepting = id
 	toast.refresh()
@@ -824,6 +914,8 @@ func accept(iv: Dictionary) -> void:
 	if not bool(r.get("ok", false)):
 		_say(Cloud.explain(r))
 		return
+	if not can_show_invites():
+		return     # (a round started while the service answered)
 	var code := String(r.get("code", ""))
 	if code == App.party_code and in_party():
 		_say("You're already in this party.")
@@ -845,6 +937,260 @@ func _say(text: String) -> void:
 	var scr: Variant = App.screen
 	if scr is Screen and is_instance_valid(scr):
 		(scr as Screen).dialog(text)
+
+
+# ---------------------------------------------------------------- friend tags
+const TAG_EXAMPLE := "ComfyFrog#4821"
+
+
+## What a player typed into Add friend, checked as the service checks it
+## (instant feedback; the service decides): {ok, tag} or {ok:false, message}.
+## Case, spaces, a leading '@' and a full-width '＃' are forgiven.
+static func parse_tag(typed: String) -> Dictionary:
+	var s := typed.replace("＃", "#").strip_edges()
+	if s.begins_with("@"):
+		s = s.substr(1).strip_edges()
+	if s == "":
+		return {"ok": false, "message": "Type your friend's tag, like %s." % TAG_EXAMPLE}
+	var i := s.rfind("#")
+	if i < 0:
+		return {"ok": false, "message": "Add the # and number, like %s." % TAG_EXAMPLE}
+	var name := s.substr(0, i).replace(" ", "")
+	var num := s.substr(i + 1).strip_edges()
+	if RegEx.create_from_string("^[A-Za-z0-9_]{2,16}$").search(name) == null:
+		return {"ok": false, "message": "That isn't a tag. Tags look like %s." % TAG_EXAMPLE}
+	if RegEx.create_from_string("^[0-9]{1,4}$").search(num) == null or int(num) < 1:
+		return {"ok": false, "message": "The number after # has 4 digits, like #4821."}
+	return {"ok": true, "tag": "%s#%s" % [name, num.lpad(4, "0")]}
+
+
+## The service's answer in the player's words (short).
+static func tag_error_text(r: Dictionary) -> String:
+	match String(r.get("error", "")):
+		"game_center", "signed_out", "session_expired":
+			return "Sign in to Game Center to add friends."
+		"service_off", "no_route", "not_configured":
+			return "Adding friends isn't available right now."
+		"network":
+			return "Can't reach the game service. Check your connection."
+		"needs_name":
+			return "Choose a player name first."
+		"no_player":
+			return "No player with that tag."
+		"already_friends":
+			return "Already friends."
+		"self":
+			return "That's your own tag."
+	return Cloud.explain(r)
+
+
+func _tags_failure(r: Dictionary) -> String:
+	match String(r.get("error", "")):
+		"service_off", "no_route":
+			return "off"
+		"network":
+			return "network"
+		"game_center", "signed_out", "session_expired":
+			return "signed_out"
+		"suspended":
+			return "suspended"
+	return "unavailable"
+
+
+## The tag, requests both ways and in-game friends (GET /v1/friends/requests).
+func load_tags() -> void:
+	if _tags_loading:
+		while _tags_loading and is_inside_tree():
+			await get_tree().process_frame
+		return
+	if not tags_on():
+		tags = "off"
+		changed.emit()
+		return
+	_tags_loading = true
+	if tags != "ok":
+		tags = "loading"
+		changed.emit()
+	var r: Dictionary = await Cloud.api(HTTPClient.METHOD_GET, "/v1/friends/requests")
+	_tags_loading = false
+	if bool(r.get("ok", false)):
+		tags = "ok"
+		tags_message = ""
+		_note_time(r)
+		my_tag = String(r["tag"]) if r.get("tag") is String else ""
+		needs_name = bool(r.get("needs_name", false))
+		requests_in = _people(r.get("incoming"), "from")
+		requests_out = _people(r.get("outgoing"), "to")
+		var fl: Array = []
+		for f in (r.get("friends") if r.get("friends") is Array else []):
+			if f is Dictionary and String(f.get("profile_id", "")) != "":
+				fl.append(f)
+		tag_friends = fl
+		_set_request_count(requests_in.size())
+	else:
+		tags = _tags_failure(r)
+		tags_message = tag_error_text(r)
+	changed.emit()
+
+
+static func _people(list: Variant, key: String) -> Array:
+	var out: Array = []
+	if list is Array:
+		for x in list:
+			if x is Dictionary and String(x.get("id", "")) != "" and x.get(key) is Dictionary:
+				out.append(x)
+	return out
+
+
+## Heartbeat / presence replies count the requests waiting (the badge); an
+## open panel loads a new one at once.
+func _note_requests(r: Dictionary) -> void:
+	if not r.has("requests"):
+		return
+	var n := int(r["requests"])
+	var had := request_count
+	_set_request_count(n)
+	if n != had and n != requests_in.size() and _watchers > 0 and not _tags_loading:
+		load_tags()
+
+
+func _set_request_count(n: int) -> void:
+	if n == request_count:
+		return
+	request_count = n
+	invites_changed.emit()
+	changed.emit()
+
+
+## Add friend: a request by tag.  {ok, state (pending | accepted), message}
+## or {ok:false, message} (never throws; a second tap while one is in flight
+## is {ok:false, busy:true}).
+func add_friend(typed: String) -> Dictionary:
+	var p := parse_tag(typed)
+	if not bool(p["ok"]):
+		return {"ok": false, "message": String(p["message"])}
+	if adding:
+		return {"ok": false, "busy": true}
+	if my_tag != "" and String(p["tag"]).to_lower() == my_tag.to_lower():
+		return {"ok": false, "error": "self", "message": "That's your own tag."}
+	if not tags_on():
+		return {"ok": false, "message": "Adding friends isn't available right now."}
+	adding = true
+	changed.emit()
+	var r: Dictionary = await Cloud.api(HTTPClient.METHOD_POST, "/v1/friends/requests", {"tag": String(p["tag"])})
+	adding = false
+	var out := {}
+	if bool(r.get("ok", false)):
+		var st := String(r.get("state", "pending"))
+		var who: Dictionary = r.get("friend", {}) if r.get("friend") is Dictionary else {}
+		if st != "accepted" and r.get("request") is Dictionary:
+			var rq: Dictionary = r["request"]
+			who = rq.get("to", {}) if rq.get("to") is Dictionary else {}
+			if not requests_out.any(func(x: Dictionary) -> bool: return String(x["id"]) == String(rq.get("id", ""))):
+				requests_out.push_front(rq)
+		var name := NameRules.safe_display(String(who["name"])) if who.get("name") is String and String(who["name"]) != "" else String(p["tag"])
+		out = {"ok": true, "state": st, "message": ("You and %s are friends now." if st == "accepted" else "Request sent to %s.") % name}
+		if st == "accepted":
+			_after_new_friend()
+	else:
+		out = {"ok": false, "error": String(r.get("error", "")), "message": tag_error_text(r)}
+	changed.emit()
+	return out
+
+
+## Accept or decline a friend request.  {ok, message}.
+func answer_request(rq: Dictionary, yes: bool) -> Dictionary:
+	var id := String(rq.get("id", ""))
+	if id == "" or answering.has(id):
+		return {"ok": false, "busy": true}
+	answering[id] = true
+	changed.emit()
+	var r: Dictionary = await Cloud.api(HTTPClient.METHOD_POST, "/v1/friends/requests/%s/%s" % [id.uri_encode(), "accept" if yes else "decline"], {})
+	answering.erase(id)
+	var ok := bool(r.get("ok", false))
+	var gone := int(r.get("http_status", 0)) == 410
+	if ok or gone:
+		requests_in = requests_in.filter(func(x: Dictionary) -> bool: return String(x["id"]) != id)
+		_set_request_count(requests_in.size())
+	var out := {"ok": ok, "message": ""}
+	if ok and yes:
+		var from: Dictionary = rq.get("from", {}) if rq.get("from") is Dictionary else {}
+		var name := NameRules.safe_display(String(from["name"])) if from.get("name") is String and String(from["name"]) != "" else "your friend"
+		out["message"] = "You and %s are friends now." % name
+		_after_new_friend()
+	elif not ok:
+		out["message"] = "That request isn't there any more." if gone else tag_error_text(r)
+	changed.emit()
+	return out
+
+
+## No longer friends in game (Game Center friends stay Game Center friends).
+func remove_friend(pid: String) -> Dictionary:
+	if pid == "":
+		return {"ok": false}
+	var r: Dictionary = await Cloud.api(HTTPClient.METHOD_DELETE, "/v1/friends/%s" % pid.uri_encode())
+	if bool(r.get("ok", false)):
+		tag_friends = tag_friends.filter(func(f: Dictionary) -> bool: return String(f.get("profile_id", "")) != pid)
+		for tid in presence.keys():
+			var e: Dictionary = presence[tid]
+			if String(e.get("profile_id", "")) == pid and String(e.get("source", "")) == "tag":
+				presence.erase(tid)
+		changed.emit()
+		return {"ok": true}
+	return {"ok": false, "message": tag_error_text(r)}
+
+
+## A friend was added: the lists, heartbeats (someone can see you now) and
+## the panel's status catch up.
+func _after_new_friend() -> void:
+	await load_tags()
+	_update_timers()
+	beat_now()
+	if _watchers > 0 and feature_on():
+		_poll()
+
+
+## The in-game friends status doesn't list (status unavailable, or before
+## the first poll): [{profile_id, name, tag}].
+func tag_friends_without_status() -> Array:
+	var seen := {}
+	for e in presence.values():
+		seen[String((e as Dictionary).get("profile_id", ""))] = true
+	return tag_friends.filter(func(f: Dictionary) -> bool: return not seen.has(String(f.get("profile_id", ""))))
+
+
+## Join with code from the Friends panel: the same join as Play with Friends
+## (its progress, Cancel and messages).  {ok} or {ok:false, message}.
+func join_code(typed: String) -> Dictionary:
+	var r := Social.parse_code(typed)
+	if not bool(r["ok"]):
+		return {"ok": false, "message": OnlineScreen.short_message(String(r["message"]))}
+	if not Social.online_ready():
+		return {"ok": false, "message": "Sign in to Game Center to join a party."}
+	if App.match_ctrl != null or App.screen is LoadingScreen:
+		return {"ok": false, "message": "Finish the round first."}
+	var code := String(r["code"])
+	if code == App.party_code and in_party():
+		return {"ok": false, "message": "You're already in this party."}
+	App.goto(OnlineScreen)
+	var os: Variant = App.screen
+	if os is OnlineScreen:
+		(os as OnlineScreen).join_typed(code)
+	return {"ok": true}
+
+
+## Apple's invite sheet (Invite with Game Center), from here so it survives
+## the Friends panel closing (a coroutine on a freed panel never resumes:
+## from Home the sheet silently never opened).  False when it can't open.
+func open_gc_sheet(recipients: Array = []) -> bool:
+	if not Social.online_ready():
+		return false
+	if App.is_solo_party() and not await App.open_party():
+		return false
+	var s: Variant = App.session
+	if s == null or not is_instance_valid(s) or not ((s as NetSession).transport is GameKitTransport) or not (s as NetSession).is_host():
+		return false
+	return Social.invite_friends((s as NetSession).transport as GameKitTransport, (s as NetSession).room_code, recipients)
 
 
 ## Tests: back to a fresh launch (keeps the adapter).
@@ -870,6 +1216,9 @@ func reset_for_tests() -> void:
 	_skew_ms = 0.0
 	_toasted = {}
 	accepting = ""
+	_asking = false
+	adding = false
+	_tags_loading = false
 	_pid = Cloud.profile_id()
 	_hb_timer.stop()
 	_poll_timer.stop()

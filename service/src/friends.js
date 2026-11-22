@@ -35,9 +35,16 @@
 // join: accepting returns the room code, and the game joins through
 // POST /v1/rooms/<code>/join exactly as for a typed code.
 //
+// In-game friends (friend_tags.js): a pair that accepted a friend request
+// made by tag counts exactly like a mutual Game Center pair here (isMutual,
+// the presence list, invites), with the same block and suspension checks.
+// Presence entries say where the friendship comes from (`source`:
+// game_center | tag | both) and carry the friend's tag.
+//
 // Routes are registered in app.js; its helpers arrive as `deps`.
 import { ApiError, json, str, int } from './http.js';
 import { normalizeCode, randomId } from './ids.js';
+import { isLinked, incomingCount, shownTag, routeFriendTags, tagDeletionStmts, sweepFriendTags } from './friend_tags.js';
 
 const SEC = 1000;
 const MIN = 60 * SEC;
@@ -147,9 +154,12 @@ function activeSql(alias, nowParam) {
   return `(${alias}.status = 'active' OR (${alias}.status = 'suspended' AND ${alias}.suspended_until IS NOT NULL AND ${alias}.suspended_until <= ${nowParam}))`;
 }
 
+// Friends for presence and invites: mutual Game Center friends, or an
+// accepted in-game friendship (friend_tags.js), never across a block.
 async function isMutual(D, env, a, b, t) {
   const r = await D.db(env).one(`SELECT ${MUTUAL_SQL} AS ok`, a, b, t - FRIEND_SET_TTL_MS, t);
-  return !!(r && r.ok);
+  if (r && r.ok) return true;
+  return isLinked(D.db(env), a, b, t);
 }
 
 // The newest live presence row of a profile (the newest launch wins).
@@ -252,6 +262,34 @@ async function getPresence(req, env, D) {
         AND NOT EXISTS (SELECT 1 FROM blocks bl WHERE (bl.blocker_id = ?1 AND bl.blocked_id = s.profile_id)
                                                   OR (bl.blocker_id = s.profile_id AND bl.blocked_id = ?1))
       LIMIT ${MAX_FRIENDS}`, p.id, fresh, t, envName(env));
+  // in-game friends (added by tag), with the same checks
+  const linked = await q.all(`SELECT pr.id AS pid, i.subject AS tid, pr.display_name, pr.discriminator, pr.forced_rename,
+        (SELECT x.status || '|' || COALESCE(x.room_id, '') || '|' || COALESCE(x.protocol, 0) FROM presence x
+          WHERE x.profile_id = pr.id AND x.expires_at > ?2 ORDER BY x.created_at DESC, x.updated_at DESC LIMIT 1) AS live
+      FROM friend_links l
+      JOIN profiles pr ON pr.id = CASE WHEN l.a_id = ?1 THEN l.b_id ELSE l.a_id END
+      JOIN identities i ON i.profile_id = pr.id AND i.provider = 'gamecenter' AND i.environment = ?3
+      WHERE (l.a_id = ?1 OR l.b_id = ?1) AND ${activeSql('pr', '?2')}
+        AND NOT EXISTS (SELECT 1 FROM blocks bl WHERE (bl.blocker_id = ?1 AND bl.blocked_id = pr.id)
+                                                  OR (bl.blocker_id = pr.id AND bl.blocked_id = ?1))
+      LIMIT ${MAX_FRIENDS}`, p.id, t, envName(env));
+  const source = new Map();
+  for (const r of rows) source.set(r.pid, 'game_center');
+  for (const r of linked) {
+    if (source.has(r.pid)) {
+      source.set(r.pid, 'both');
+    } else {
+      source.set(r.pid, 'tag');
+      rows.push(r);
+    }
+  }
+  const tags = new Map();
+  if (rows.length) {
+    for (const r of await q.all(`SELECT ft.profile_id AS pid, ft.tag_key, ft.disc, pr.display_name, pr.forced_rename FROM friend_tags ft
+        JOIN profiles pr ON pr.id = ft.profile_id WHERE ft.profile_id IN (SELECT value FROM json_each(?))`, JSON.stringify(rows.map((r) => r.pid)))) {
+      tags.set(r.pid, shownTag(r));
+    }
+  }
   const set = await q.one('SELECT synced_at, size FROM friend_sets WHERE profile_id = ?', p.id);
   const room = await myRoom(D, env, p.id, t);
   const mine = await livePresence(D, env, p.id, t);
@@ -284,6 +322,7 @@ async function getPresence(req, env, D) {
     return {
       id: r.tid, profile_id: r.pid, name: shown(r.display_name, r.forced_rename), discriminator: shown(r.display_name, r.forced_rename) ? disc(r.discriminator) : null,
       status, in_your_party: inYourParty, invited, can_invite: why === null, why,
+      source: source.get(r.pid) || 'game_center', tag: tags.get(r.pid) || null,
     };
   });
   return json({
@@ -291,6 +330,7 @@ async function getPresence(req, env, D) {
     shared: !!(set && set.synced_at > fresh), synced_at: set ? set.synced_at : null,
     party: room ? { joinable: roomWhy === null, why: roomWhy, members: room.members, capacity: room.capacity, host: room.host_profile_id === p.id } : null,
     friends,
+    requests: await incomingCount(q, p.id, t),
   });
 }
 
@@ -351,7 +391,7 @@ async function heartbeat(req, env, D) {
     }
   }
   return json({ ok: true, status, room_verified: !!roomId, stale, written, interval_s: PRESENCE_INTERVAL_S, ttl_s: PRESENCE_TTL_MS / 1000,
-    server_time: t, invites: await incomingInvites(D, env, p.id, t) });
+    server_time: t, invites: await incomingInvites(D, env, p.id, t), requests: await incomingCount(q, p.id, t) });
 }
 
 // DELETE /v1/presence {instance}: this launch went to the background or
@@ -393,7 +433,7 @@ async function incomingInvites(D, env, pid, t) {
   return out;
 }
 
-const NOT_FRIEND = () => new ApiError(404, 'not_friend', 'You can invite Game Center friends who also play Ultimate Trifecta and have Friends turned on.');
+const NOT_FRIEND = () => new ApiError(404, 'not_friend', 'You can invite friends who also play Ultimate Trifecta.');
 
 // POST /v1/invites {to: teamPlayerID}
 async function sendInvite(req, env, D) {
@@ -406,8 +446,10 @@ async function sendInvite(req, env, D) {
   const t = D.clock(env);
   await D.rateLimit(env, `invite:${p.id}`, INVITE_RATE.max, INVITE_RATE.windowMs, "You've sent a lot of invites. Try again in a few minutes.");
   // who is that?  Only a mutual, unblocked, active friend; anything else gets
-  // the same answer (no way to probe IDs)
-  const target = await q.one('SELECT profile_id FROM friend_sets WHERE self_hash = ?', await friendHash(env, to));
+  // the same answer (no way to probe IDs).  The verified identity names the
+  // profile (an in-game friend may never have shared a Game Center list).
+  const target = (await q.one('SELECT profile_id FROM identities WHERE provider = ? AND subject = ? AND environment = ?', 'gamecenter', to, envName(env)))
+    || (await q.one('SELECT profile_id FROM friend_sets WHERE self_hash = ?', await friendHash(env, to)));
   if (!target || target.profile_id === p.id || !(await isMutual(D, env, p.id, target.profile_id, t))) throw NOT_FRIEND();
   const tid = target.profile_id;
   const tp = await q.one('SELECT display_name, forced_rename FROM profiles WHERE id = ?', tid);
@@ -531,6 +573,8 @@ export function deletionStmts(q, pid) {
     q.stmt('DELETE FROM friend_sets WHERE profile_id = ?', pid),
     q.stmt('DELETE FROM presence WHERE profile_id = ?', pid),
     q.stmt('DELETE FROM invites WHERE from_id = ? OR to_id = ?', pid, pid),
+    // in-game friends: the tag, friendships and requests both ways
+    ...tagDeletionStmts(q, pid),
   ];
 }
 
@@ -548,11 +592,15 @@ export async function sweepFriends(q, t) {
   await q.run('DELETE FROM invites WHERE created_at < ?', t - INVITE_KEEP_MS);
   await q.run('DELETE FROM friend_claims WHERE profile_id IN (SELECT profile_id FROM friend_sets WHERE synced_at <= ?)', t - FRIEND_SET_TTL_MS);
   await q.run('DELETE FROM friend_sets WHERE synced_at <= ?', t - FRIEND_SET_TTL_MS);
+  await sweepFriendTags(q, t);
 }
 
 // ------------------------------------------------------------ router
 export async function routeFriends(req, env, path, m, D) {
   let k;
+  // in-game friends by tag (no FRIEND_HASH_KEY needed)
+  const tg = await routeFriendTags(req, env, path, m, D);
+  if (tg) return tg;
   if (path === '/v1/friends') {
     if (m === 'PUT') return putFriends(req, env, D);
     if (m === 'DELETE') return deleteFriends(req, env, D);

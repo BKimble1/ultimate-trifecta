@@ -840,13 +840,24 @@ func _on_room_failed(message: String) -> void:
 ## announces its room code and we join that code through the service (so an
 ## invite gets the same checks and credential as typing the code).
 func _on_invite_ready(t: GameKitTransport) -> void:
-	if match_ctrl != null:
+	if t == null:
+		return
+	if match_ctrl != null or screen is LoadingScreen or _invite_asking:
+		# (crash sweep) during a round, or while another accepted invite is
+		# still asking "Leave your party?": this one ends cleanly (before, its
+		# live match was dropped unclosed, and two invites asked twice)
+		t.close()
+		if match_ctrl == null and screen is Control and not (screen is LoadingScreen):
+			UIKit.toast(screen as Control, "One invite at a time. Ask your friend to invite you again.", 3.0)
 		return
 	if SeasonPremiere.active:
 		# (build 23) kept until the film has gone
 		_held_invites.append(t)
 		return
-	if not await _confirm_party_switch():
+	_invite_asking = true
+	var go := await _confirm_party_switch()
+	_invite_asking = false
+	if not go or match_ctrl != null:
 		t.close()
 		return
 	_close_session()
@@ -869,6 +880,7 @@ func _on_invite_ready(t: GameKitTransport) -> void:
 
 signal party_error(message: String, code: String)
 var party_code := ""
+var _invite_asking := false   # an accepted Game Center invite is asking "Leave your party?"
 var _party_req := 0   # bumped by cancel: a cancelled request's result is dropped
 
 
@@ -889,8 +901,10 @@ func _confirm_party_switch() -> bool:
 		return true   # (2.3) alone at home: nothing to leave
 	if screen and screen is Screen:
 		var answer := {"v": -1}
+		var asked: Variant = screen
 		(screen as Screen).dialog("Leave your current party to join this one?", [["Switch", func() -> void: answer["v"] = 1], ["Stay", func() -> void: answer["v"] = 0]])
-		while int(answer["v"]) < 0 and is_inside_tree():
+		# (the question ends as "Stay" if its screen goes away meanwhile)
+		while int(answer["v"]) < 0 and is_inside_tree() and is_instance_valid(asked) and screen == asked:
 			await get_tree().process_frame
 		if int(answer["v"]) != 1:
 			return false

@@ -15,6 +15,30 @@ extends Node
 ## game_player_id, display_name; GKMatchRequest recipients).
 ## If Game Center is unavailable or declined, solo practice still works and the
 ## online buttons explain why they are disabled. Nothing here is mocked.
+##
+## Crash sweep (friends / invites; docs/final/friends.md "Game Center
+## hardening").  The rules every path here follows:
+##   - GameKit completion handlers may run off the main thread
+##     (GodotApplePlugins calls the Callable from the handler's queue), so
+##     every one hands over to the main thread (call_deferred) before it
+##     touches a transport, a signal the UI listens to, or another plugin
+##     call (several plugin methods trap off the main thread:
+##     MainActor.assumeIsolated).
+##   - One Apple sheet at a time (sheet_open): a second GKMatchmaker
+##     controller replaced the first one's wrapper while it was still on
+##     screen; the wrapper owns the sheet's delegate, so the sheet left up
+##     could never be cancelled or closed.  The wrapper is dropped only after
+##     its own signal has finished (deferred), never inside it.
+##   - Answers for a party that has ended meanwhile (cancelled join, closed
+##     party, a replaced request) are dropped and their match disconnected,
+##     never bound to a dead transport.
+##   - Nothing calls GameKit while signed out, and authentication answering
+##     again (GameKit re-runs its handler when the app returns from the
+##     background) registers the invite listener only once, so an accepted
+##     invite arrives once.  The same invite twice is handled once.
+##   - add_players retries back off (a failing request used to re-ask at
+##     once, from inside its own answer: unbounded recursion).
+## `kit` is the seam the desktop tests use in place of GameKit.
 
 signal auth_changed(ok: bool)
 signal invite_ready(transport: GameKitTransport)     # an accepted invite produced a match (we are a client)
@@ -50,6 +74,18 @@ var _pending_transport: GameKitTransport = null
 var _room_request: Object = null
 var _adding := false
 var _invite_vc: Object = null
+var _listening := false
+var _add_fail := 0
+## the Apple sheet up now: "" | invite | invite_accept | gc_friends
+var _sheet := ""
+var _sheet_at := -1.0e12
+const SHEET_STALE_MS := 180000.0   # (a sheet whose delegate never answered: no longer blocks)
+const SHEET_GAP_MS := 1500.0       # Game Center's own screens never answer: a double tap opens one
+var _accepting_invite: Object = null
+var _accepting_at := -1.0e12
+## Tests: stands in for the GameKit classes (new_request, create_controller,
+## create_controller_from_invite, show_type, new_matchmaker).  null on iOS.
+var kit: Object = null
 
 
 func _ready() -> void:
@@ -84,19 +120,57 @@ func authenticate() -> void:
 	gc.call("authenticate")
 
 
+## GameKit answers again whenever the app returns from the background (and
+## when the player changes in Settings): this must be safe to run any number
+## of times.
 func _on_auth(ok: bool) -> void:
+	var lp: Object = gc.get("local_player") if ok and gc != null else null
+	if ok and lp == null:
+		ok = false
 	authenticated = ok
 	if ok:
-		var lp: Object = gc.get("local_player")
 		local_player_id = String(lp.get("game_player_id"))
 		team_player_id = String(lp.get("team_player_id"))
 		display_name = String(lp.get("display_name"))
 		multiplayer_restricted = bool(lp.get("is_multiplayer_gaming_restricted"))
-		lp.call("register_listener")
+		if not _listening:
+			lp.call("register_listener")     # (once: a second registration delivered each invite twice)
+			_listening = true
 		if not lp.is_connected("invite_accepted", _on_invite_accepted):
 			lp.connect("invite_accepted", _on_invite_accepted)
-		matchmaker = ClassDB.instantiate("GKMatchmaker")
+		if matchmaker == null:
+			matchmaker = _new_matchmaker()
 	auth_changed.emit(ok)
+
+
+func _new_matchmaker() -> Object:
+	if kit != null:
+		return kit.call("new_matchmaker")
+	return ClassDB.instantiate("GKMatchmaker") if ClassDB.class_exists("GKMatchmaker") and ClassDB.can_instantiate("GKMatchmaker") else null
+
+
+## An Apple sheet (matchmaker / invite / Game Center screen) is up.
+func sheet_open() -> bool:
+	if _sheet == "":
+		return false
+	var limit := SHEET_GAP_MS if _sheet == "gc_friends" else SHEET_STALE_MS
+	if Time.get_ticks_msec() - _sheet_at > limit:
+		_sheet = ""
+		return false
+	return true
+
+
+func _sheet_up(kind: String) -> void:
+	_sheet = kind
+	_sheet_at = Time.get_ticks_msec()
+
+
+## (deferred: the plugin's signal has finished emitting before the wrapper
+## that emitted it may be released)
+func _sheet_closed(vc: Object) -> void:
+	if vc == _invite_vc:
+		_invite_vc = null
+	_sheet = ""
 
 
 ## Game Center identity-verification signature for the service sign-in:
@@ -176,7 +250,7 @@ static func code_group(code: String) -> int:
 ## null where GameKit isn't there (desktop): callers then report that
 ## matchmaking is unavailable instead of failing on a null object.
 func _request(code: String, host: bool) -> Object:
-	var req: Object = ClassDB.instantiate("GKMatchRequest") if ClassDB.can_instantiate("GKMatchRequest") else null
+	var req: Object = _new_request()
 	if req == null:
 		return null
 	req.set("min_players", 2)
@@ -196,47 +270,88 @@ func host_code_room(code: String) -> GameKitTransport:
 	return t
 
 
+func _new_request() -> Object:
+	if kit != null:
+		return kit.call("new_request")
+	return ClassDB.instantiate("GKMatchRequest") if ClassDB.class_exists("GKMatchRequest") and ClassDB.can_instantiate("GKMatchRequest") else null
+
+
+## A match nobody will use (its party ended, or another request won).
+func _drop_match(m: Variant, t: GameKitTransport = null) -> void:
+	if not (m is Object) or not is_instance_valid(m) or (t != null and t.gk_match == m):
+		return
+	if kit != null:
+		kit.call("drop", m)
+	else:
+		(m as Object).call("disconnect")
+
+
 ## Join a room by code. Room discovery is retried by the NetSession if the
 ## match forms without the code's host (rare when two joiners meet first).
 func join_code_room(code: String) -> GameKitTransport:
 	var t := GameKitTransport.new(false)
 	_pending_transport = t
 	_room_request = _request(code, false)
-	if matchmaker == null or _room_request == null:
+	if not online_ready() or matchmaker == null or _room_request == null:
 		room_failed.emit.call_deferred("Game Center matchmaking isn't available.")
 		return t
-	matchmaker.call("find_match", _room_request, func(m: Object, err: Variant) -> void:
-		if err != null:
-			room_failed.emit(error_text(err))
-			return
-		t.bind(m)
-		room_matched.emit(t))
+	matchmaker.call("find_match", _room_request, func(m: Variant, err: Variant) -> void:
+		_on_join_found.call_deferred(t, m, err))
 	return t
+
+
+func _on_join_found(t: GameKitTransport, m: Variant, err: Variant) -> void:
+	if t != _pending_transport:
+		_drop_match(m, t)     # (the join was cancelled or replaced meanwhile)
+		return
+	if err != null or not (m is Object) or not is_instance_valid(m):
+		room_failed.emit(error_text(err) if err != null else "Game Center couldn't find that party.")
+		return
+	t.bind(m)
+	room_matched.emit(t)
 
 
 func _find_or_add() -> void:
 	var t := _pending_transport
-	if t == null or matchmaker == null or _room_request == null or _invite_live:
+	if t == null or matchmaker == null or _room_request == null or _invite_live or not online_ready():
 		return
 	_room_gen += 1
 	var gen := _room_gen
 	if not t.bound():
-		matchmaker.call("find_match", _room_request, func(m: Object, err: Variant) -> void:
-			if gen != _room_gen:
-				return   # (2.3) replaced by an in-game invite: not a failure
-			if err != null:
-				if t == _pending_transport:
-					room_failed.emit(error_text(err))
-				return
-			t.bind(m)
-			room_matched.emit(t)
-			_find_or_add())
+		matchmaker.call("find_match", _room_request, func(m: Variant, err: Variant) -> void:
+			_on_host_found.call_deferred(gen, t, m, err))
 	elif not _adding:
 		_adding = true
-		matchmaker.call("add_players", t.gk_match, _room_request, func(_e: Variant) -> void:
-			_adding = false
-			if gen == _room_gen and t == _pending_transport and t.peers().size() < 7:
-				_find_or_add())
+		matchmaker.call("add_players", t.gk_match, _room_request, func(e: Variant) -> void:
+			_on_host_added.call_deferred(gen, t, e))
+
+
+func _on_host_found(gen: int, t: GameKitTransport, m: Variant, err: Variant) -> void:
+	if gen != _room_gen or t != _pending_transport:
+		_drop_match(m, t)   # (2.3) replaced by an in-game invite, or the party ended: not a failure
+		return
+	if err != null or not (m is Object) or not is_instance_valid(m):
+		room_failed.emit(error_text(err) if err != null else "Game Center couldn't open your party.")
+		return
+	t.bind(m)
+	room_matched.emit(t)
+	_find_or_add()
+
+
+func _on_host_added(gen: int, t: GameKitTransport, err: Variant) -> void:
+	_adding = false
+	if gen != _room_gen or t != _pending_transport or t.peers().size() >= 7:
+		return
+	if err == null or error_code(err) == GKERR_CANCELLED:
+		_add_fail = 0
+		_find_or_add()
+		return
+	# a failing request waits before asking again (1, 2, 4 … 30 s)
+	_add_fail += 1
+	var wait := minf(pow(2.0, float(_add_fail - 1)), 30.0)
+	get_tree().create_timer(wait).timeout.connect(func() -> void:
+		if gen == _room_gen and t == _pending_transport:
+			_find_or_add())
 
 
 # ---------------------------------------------------------------------------
@@ -251,6 +366,7 @@ signal invite_answered(player: Object, response: int)
 signal invite_send_failed(message: String)
 var _room_gen := 0
 var _invite_live := false
+var _invite_queue: Array = []     # [t, players] waiting while an invite is going out
 
 
 ## Invites these Game Center friends (GKPlayer objects from load_friends)
@@ -258,13 +374,22 @@ var _invite_live := false
 ## answers arrive on invite_answered.  The code room keeps working: its
 ## search pauses while the invite is out and resumes after.  False where
 ## Game Center can't send it (signed out, no GameKit).
-func invite_players(t: GameKitTransport, code: String, players: Array) -> bool:
+func invite_players(t: GameKitTransport, _code: String, players: Array) -> bool:
 	if not online_ready() or matchmaker == null or t == null:
 		return false
 	var picked: Array = players.filter(func(p: Variant) -> bool: return p is Object and is_instance_valid(p))
 	if picked.is_empty():
 		return false
-	var req: Object = ClassDB.instantiate("GKMatchRequest") if ClassDB.can_instantiate("GKMatchRequest") else null
+	if _invite_live:
+		# (one invite request at a time: a second used to cancel the first
+		# mid-flight; it goes out when the first is done)
+		_invite_queue.append([t, picked])
+		return true
+	return _send_invites(t, picked)
+
+
+func _send_invites(t: GameKitTransport, picked: Array) -> bool:
+	var req: Object = _new_request()
 	if req == null:
 		return false
 	# no player group or attributes: those are for automatch, not invites
@@ -282,16 +407,25 @@ func invite_players(t: GameKitTransport, code: String, players: Array) -> bool:
 		_invite_live = false
 		if err != null and error_code(err) != GKERR_CANCELLED:
 			invite_send_failed.emit(error_text(err))
+		while not _invite_queue.is_empty():
+			var nx: Array = _invite_queue.pop_front()
+			if nx[0] == _pending_transport and _send_invites(nx[0], nx[1]):
+				return
 		_find_or_add()       # back to welcoming code joiners
 	if t.bound():
 		matchmaker.call("add_players", t.gk_match, req, func(err: Variant) -> void:
 			done.call_deferred(err))
 	else:
-		matchmaker.call("find_match", req, func(m: Object, err: Variant) -> void:
-			if m != null and err == null:
-				t.bind(m)
-				room_matched.emit.call_deferred(t)
-			done.call_deferred(err))
+		# (the whole answer on the main thread: binding is not thread-safe)
+		matchmaker.call("find_match", req, func(m: Variant, err: Variant) -> void:
+			(func() -> void:
+				if m is Object and is_instance_valid(m) and err == null:
+					if t == _pending_transport and not t.bound():
+						t.bind(m)
+						room_matched.emit(t)
+					else:
+						_drop_match(m, t)
+				done.call(err)).call_deferred())
 	return true
 
 
@@ -310,7 +444,7 @@ var _quick_live := false
 func quick_match_start() -> bool:
 	if matchmaker == null or not online_ready():
 		return false
-	var req: Object = ClassDB.instantiate("GKMatchRequest") if ClassDB.can_instantiate("GKMatchRequest") else null
+	var req: Object = _new_request()
 	if req == null:
 		return false
 	req.set("min_players", 2)
@@ -318,17 +452,20 @@ func quick_match_start() -> bool:
 	req.set("player_group", QUICK_GROUP_BASE + Protocol.VERSION)
 	_quick_req = req
 	_quick_live = true
-	matchmaker.call("find_match", req, func(m: Object, err: Variant) -> void:
-		if not _quick_live:
-			if m != null and m.has_method("disconnect"):
-				m.call("disconnect")
-			return
-		_quick_live = false
-		if err != null or m == null:
-			quick_failed.emit(error_text(err))
-			return
-		quick_found.emit(m))
+	matchmaker.call("find_match", req, func(m: Variant, err: Variant) -> void:
+		_on_quick.call_deferred(m, err))
 	return true
+
+
+func _on_quick(m: Variant, err: Variant) -> void:
+	if not _quick_live:
+		_drop_match(m)
+		return
+	_quick_live = false
+	if err != null or not (m is Object) or not is_instance_valid(m):
+		quick_failed.emit(error_text(err))
+		return
+	quick_found.emit(m)
 
 
 func quick_match_cancel() -> void:
@@ -341,9 +478,17 @@ func quick_match_cancel() -> void:
 ## Friends", which sends a friend request by Game Center nickname.  False
 ## where Game Center isn't there.
 func show_friends_list() -> bool:
-	if not online_ready() or not ClassDB.class_exists("GKGameCenterViewController"):
+	if not online_ready():
 		return false
-	ClassDB.class_call_static("GKGameCenterViewController", "show_type", 5)   # LOCAL_PLAYER_FRIENDS_LIST
+	if sheet_open():
+		return true     # (one is up or opening: a double tap opens one)
+	if kit != null:
+		kit.call("show_type", 5)
+	elif ClassDB.class_exists("GKGameCenterViewController"):
+		ClassDB.class_call_static("GKGameCenterViewController", "show_type", 5)   # LOCAL_PLAYER_FRIENDS_LIST
+	else:
+		return false
+	_sheet_up("gc_friends")
 	return true
 
 
@@ -368,7 +513,10 @@ func submit_score(board_id: String, value: int) -> void:
 ## (2.2) One page of a leaderboard's current occurrence, for the Rankings
 ## screen.  done.call({ok, entries: [{rank, name, score, text, me}], me:
 ## {...} or {}, total, starts, ends, error}).
-func load_board(board_id: String, friends_only: bool, first: int, count: int, done: Callable) -> void:
+func load_board(board_id: String, friends_only: bool, first_entry: int, count: int, on_done: Callable) -> void:
+	# (the answer reaches the Rankings screen on the main thread)
+	var done := func(v: Dictionary) -> void: on_done.call_deferred(v)
+	var first := first_entry
 	if not online_ready() or not ClassDB.class_exists("GKLeaderboard"):
 		done.call({"ok": false, "error": "signed_out"})
 		return
@@ -419,74 +567,148 @@ func local_match_id() -> String:
 
 ## Host stops accepting code joins (room full / leaving).
 func stop_matchmaking() -> void:
-	if matchmaker != null:
+	if matchmaker != null and authenticated:
 		matchmaker.call("cancel")
 	_pending_transport = null
 	_adding = false
+	_add_fail = 0
+	_invite_queue.clear()
 
 
 ## Apple's invite UI: invite Game Center friends to this room (no automatch).
 ## `recipients` (GKPlayer objects from load_friends) pre-selects friends in
 ## Apple's sheet (GKMatchRequest.recipients); the player still sends it there.
-func invite_friends(t: GameKitTransport, code: String, recipients: Array = []) -> void:
-	if not online_ready():
-		return
+## False when it didn't open: signed out, no GameKit, not this party's
+## transport, or another Apple sheet already up (a double tap opens one).
+func invite_friends(t: GameKitTransport, code: String, recipients: Array = []) -> bool:
+	if not online_ready() or matchmaker == null or t == null:
+		return false
+	if sheet_open():
+		return false
 	var req := _request(code, true)
 	if req == null:
 		room_failed.emit("Could not open the Game Center invite screen.")
-		return
+		return false
 	var picked: Array = recipients.filter(func(p: Variant) -> bool: return p is Object and is_instance_valid(p))
 	if not picked.is_empty():
 		req.set("recipients", picked)
-	var vc: Object = _static("GKMatchmakerViewController", "create_controller", [req])
+	var vc: Object = _create_controller(req)
 	if vc == null:
 		room_failed.emit("Could not open the Game Center invite screen.")
-		return
+		return false
 	vc.set("matchmaking_mode", 3)  # invite only: friends, never strangers
 	vc.set("can_start_with_minimum_players", true)
 	if t.bound():
 		vc.call("add_players_to_match", t.gk_match)
 	else:
 		matchmaker.call("cancel")
-	vc.connect("did_find_match", func(m: Object) -> void:
-		t.bind(m)
-		room_matched.emit(t)
-		_find_or_add())
-	vc.connect("cancelled", func(_d: String) -> void: _find_or_add())
-	vc.connect("failed_with_error", func(msg: String) -> void:
-		room_failed.emit(msg)
-		_find_or_add())
+	vc.connect("did_find_match", func(m: Object) -> void: _on_sheet_match.call_deferred(vc, t, m))
+	vc.connect("cancelled", func(_d: String) -> void: _on_sheet_end.call_deferred(vc, ""))
+	vc.connect("failed_with_error", func(msg: String) -> void: _on_sheet_end.call_deferred(vc, msg))
 	_invite_vc = vc
+	_sheet_up("invite")
 	vc.call("present")
+	return true
+
+
+func _create_controller(req: Object) -> Object:
+	if kit != null:
+		return kit.call("create_controller", req)
+	if not ClassDB.class_exists("GKMatchmakerViewController"):
+		return null
+	return _static("GKMatchmakerViewController", "create_controller", [req])
+
+
+func _on_sheet_match(vc: Object, t: GameKitTransport, m: Variant) -> void:
+	_sheet_closed(vc)
+	if not (m is Object) or not is_instance_valid(m):
+		_find_or_add()
+		return
+	if t != _pending_transport:
+		_drop_match(m, t)    # (the party this sheet was for ended while it was up)
+		return
+	t.bind(m)
+	room_matched.emit(t)
+	_find_or_add()
+
+
+func _on_sheet_end(vc: Object, message: String) -> void:
+	_sheet_closed(vc)
+	if message != "":
+		room_failed.emit(message)
+	_find_or_add()
 
 
 func _on_invite_accepted(_player: Object, invite: Object) -> void:
 	# We were invited by a friend: join their room as a client.  (2.3)
 	# Straight into the party (no Apple sheet); the sheet only if that fails.
-	var t := GameKitTransport.new(false)
-	if matchmaker != null and matchmaker.has_method("match_for_invite"):
-		invite_joining.emit()
-		matchmaker.call("match_for_invite", invite, func(m: Object, err: Variant) -> void:
-			if m != null and err == null:
-				t.bind(m)
-				invite_ready.emit.call_deferred(t)
-			else:
-				_invite_sheet.call_deferred(invite, t))
+	if invite == null or not is_instance_valid(invite) or not authenticated or matchmaker == null:
 		return
+	var now := Time.get_ticks_msec()
+	if invite == _accepting_invite or (_accepting_invite != null and now - _accepting_at < 10000.0):
+		return    # (the same invite again, or one already joining: handled once)
+	_accepting_invite = invite
+	_accepting_at = now
+	var t := GameKitTransport.new(false)
+	if matchmaker.has_method("match_for_invite"):
+		invite_joining.emit()
+		matchmaker.call("match_for_invite", invite, func(m: Variant, err: Variant) -> void:
+			_on_invite_match.call_deferred(invite, t, m, err))
+		return
+	_accepting_invite = null
 	_invite_sheet(invite, t)
 
 
-## Apple's invite sheet for an accepted invite (the fallback).
+func _on_invite_match(invite: Object, t: GameKitTransport, m: Variant, err: Variant) -> void:
+	_accepting_invite = null
+	if m is Object and is_instance_valid(m) and err == null:
+		t.bind(m)
+		invite_ready.emit(t)
+	elif is_instance_valid(invite):
+		_invite_sheet(invite, t)
+
+
+## Apple's invite sheet for an accepted invite (the fallback).  Never over
+## another sheet (it would replace that sheet's delegate, see above).
 func _invite_sheet(invite: Object, t: GameKitTransport) -> void:
-	var vc: Object = _static("GKMatchmakerViewController", "create_controller_from_invite", [invite])
+	if not authenticated or invite == null or not is_instance_valid(invite):
+		return
+	if sheet_open():
+		room_failed.emit("Close the Game Center screen, then accept the invite again.")
+		return
+	var vc: Object = null
+	if kit != null:
+		vc = kit.call("create_controller_from_invite", invite)
+	elif ClassDB.class_exists("GKMatchmakerViewController"):
+		vc = _static("GKMatchmakerViewController", "create_controller_from_invite", [invite])
 	if vc == null:
 		return
 	vc.connect("did_find_match", func(m: Object) -> void:
-		t.bind(m)
-		invite_ready.emit(t))
-	vc.connect("failed_with_error", func(msg: String) -> void: room_failed.emit(msg))
+		(func() -> void:
+			_sheet_closed(vc)
+			if m != null and is_instance_valid(m):
+				t.bind(m)
+				invite_ready.emit(t)).call_deferred())
+	vc.connect("cancelled", func(_d: String) -> void: _sheet_closed.call_deferred(vc))
+	vc.connect("failed_with_error", func(msg: String) -> void:
+		(func() -> void:
+			_sheet_closed(vc)
+			room_failed.emit(msg)).call_deferred())
 	_invite_vc = vc
+	_sheet_up("invite_accept")
 	vc.call("present")
+
+
+## Tests: forget sheets, queues and the invite being joined.
+func reset_for_tests() -> void:
+	_sheet = ""
+	_invite_vc = null
+	_invite_queue.clear()
+	_invite_live = false
+	_accepting_invite = null
+	_accepting_at = -1.0e12
+	_add_fail = 0
+	_adding = false
 
 
 # ---------------------------------------------------------------- friends

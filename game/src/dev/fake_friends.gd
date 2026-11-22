@@ -9,6 +9,9 @@ extends RefCounted
 ##            heartbeats, invites, accept/decline, and the room join the
 ##            accept hands over to.  "Mutual" is scripted here (`mutual`), not
 ##            computed: the real rules are the service's and its tests'.
+##            Friend tags too: a directory of findable tags, this player's
+##            in-game friends, and friend requests both ways
+##            (service/src/friend_tags.js is the real thing).
 ## Nothing here is a device, Game Center or a deployment.
 ##
 ## Use: var ff := FakeFriends.new(); ff.install(); ... ff.uninstall()
@@ -29,6 +32,16 @@ var join_reply: Dictionary = {"status": 409, "body": {"ok": false, "error": "ful
 var room_code := "QRTWXY"
 var clock_ms: Callable
 var _n := 0
+## friend tags: this player's tag, the players a tag finds (lowercase tag ->
+## {profile_id, name, tag, tid, status}), in-game friends (profile_id -> the
+## same), requests waiting for / sent by this player
+var my_tag := "QuietDuck#0007"
+var directory: Dictionary = {}
+var tag_friends: Dictionary = {}
+var requests_in: Array = []
+var requests_out: Array = []
+var tag_error: Dictionary = {}       # a forced error for POST /v1/friends/requests
+var identity_fail := false           # Game Center can't sign this player in
 
 
 func _init() -> void:
@@ -42,9 +55,11 @@ func now_ms() -> float:
 func install() -> void:
 	Cloud.transport_override = handle
 	Cloud.identity_override = func() -> Dictionary:
+		if identity_fail:
+			return {"ok": false, "message": "Sign in to Game Center (Settings › Game Center) to play online."}
 		return {"ok": true, "player_id": "T:_me", "bundle_id": Social.BUNDLE_ID, "timestamp": 1, "salt": "c2FsdA==",
 			"signature": "c2ln", "public_key_url": "https://static.gc.apple.com/public-key/gc-prod-10.cer"}
-	Cloud.service_config = {"ok": true, "features": ["chat", "message_reports", "shop_offers", "friends"], "min_build": 0}
+	Cloud.service_config = {"ok": true, "features": ["chat", "message_reports", "shop_offers", "friend_tags", "friends"], "min_build": 0}
 	Friends.native = native
 
 
@@ -71,6 +86,40 @@ func add_invite(from_name: String, from_tid: String, seconds: float = 300.0, fro
 	return iv
 
 
+## A player someone can find by tag (fictional).
+func add_player(name: String, tag: String, tid: String, status: String = "online") -> Dictionary:
+	var p := {"profile_id": "p_" + tid.trim_prefix("T:_").to_lower().replace(" ", ""), "name": name, "tag": tag, "tid": tid, "status": status}
+	directory[tag.to_lower()] = p
+	return p
+
+
+## A friend request from that player, waiting for this one.
+func add_request(name: String, tag: String, tid: String, status: String = "online") -> Dictionary:
+	var p := add_player(name, tag, tid, status)
+	_n += 1
+	var rq := {"id": "frq_test%04d" % _n, "created_at": now_ms(), "from": {"profile_id": p["profile_id"], "name": name, "tag": tag}}
+	requests_in.append(rq)
+	return rq
+
+
+## An accepted in-game friend.
+func add_tag_friend(name: String, tag: String, tid: String, status: String = "online") -> Dictionary:
+	var p := add_player(name, tag, tid, status)
+	tag_friends[p["profile_id"]] = p
+	return p
+
+
+func _tag_friend_by_tid(tid: String) -> Dictionary:
+	for p in tag_friends.values():
+		if String(p["tid"]) == tid:
+			return p
+	return {}
+
+
+func _person(p: Dictionary) -> Dictionary:
+	return {"profile_id": p["profile_id"], "name": p["name"], "tag": p["tag"]}
+
+
 func _ok(body: Dictionary, status: int = 200) -> Dictionary:
 	body["ok"] = true
 	body["server_time"] = now_ms()
@@ -87,7 +136,7 @@ func handle(method: int, path: String, body: Variant, _headers: PackedStringArra
 		return {"status": 0, "body": {"ok": false, "error": "network", "message": "Couldn't reach the game service. Check your connection."}}
 	if path == "/v1/auth/gamecenter":
 		return _ok({"token": "tok-friends", "expires_at": int(now_ms()) + 3600000,
-			"profile": {"profile_id": "p_me", "display_name": "Quiet Duck", "discriminator": "0007", "needs_name": false}})
+			"profile": {"profile_id": "p_me", "display_name": "Quiet Duck", "discriminator": "0007", "needs_name": false, "friend_tag": my_tag}})
 	if unavailable:
 		return {"status": 503, "body": {"ok": false, "error": "not_configured", "message": "Friends aren't set up on this server."}}
 	if path == "/v1/friends" and method == HTTPClient.METHOD_PUT:
@@ -113,19 +162,33 @@ func handle(method: int, path: String, body: Variant, _headers: PackedStringArra
 			elif invited.has(tid):
 				why = "invited"
 			out.append({"id": tid, "profile_id": String(m.get("profile_id", "p_" + String(tid).trim_prefix("T:_"))), "name": m.get("name"),
-				"discriminator": "0001", "status": st, "in_your_party": inp, "invited": invited.has(tid), "can_invite": why == null, "why": why})
-		return _ok({"poll_s": 10, "shared": not uploaded.is_empty(), "friends": out,
+				"discriminator": "0001", "status": st, "in_your_party": inp, "invited": invited.has(tid), "can_invite": why == null, "why": why,
+				"source": "both" if not _tag_friend_by_tid(String(tid)).is_empty() else "game_center", "tag": null})
+		# friends added by tag (whether or not Game Center lists them)
+		for p in tag_friends.values():
+			var tid2 := String(p["tid"])
+			if out.any(func(e: Dictionary) -> bool: return String(e["id"]) == tid2):
+				continue
+			var st2 := String(p.get("status", "offline"))
+			var why2: Variant = null
+			if st2 == "offline":
+				why2 = "offline"
+			elif invited.has(tid2):
+				why2 = "invited"
+			out.append({"id": tid2, "profile_id": p["profile_id"], "name": p["name"], "discriminator": "0001", "status": st2,
+				"in_your_party": false, "invited": invited.has(tid2), "can_invite": why2 == null, "why": why2, "source": "tag", "tag": p["tag"]})
+		return _ok({"poll_s": 10, "shared": not uploaded.is_empty(), "friends": out, "requests": requests_in.size(),
 			"party": {"joinable": true, "why": null, "members": 1, "capacity": 8, "host": true} if party_in else null})
 	if path == "/v1/presence" and method == HTTPClient.METHOD_POST:
 		return _ok({"status": String((body as Dictionary).get("state", "online")), "room_verified": (body as Dictionary).has("room"),
-			"stale": false, "written": true, "interval_s": 20, "ttl_s": 60, "invites": _live_invites()})
+			"stale": false, "written": true, "interval_s": 20, "ttl_s": 60, "invites": _live_invites(), "requests": requests_in.size()})
 	if path == "/v1/presence" and method == HTTPClient.METHOD_DELETE:
 		return _ok({})
 	if path == "/v1/invites" and method == HTTPClient.METHOD_POST:
 		if not invite_error.is_empty():
 			return {"status": int(invite_error.get("status", 409)), "body": invite_error.get("body", {})}
 		var to := String((body as Dictionary).get("to", ""))
-		if not mutual.has(to):
+		if not mutual.has(to) and _tag_friend_by_tid(to).is_empty():
 			return {"status": 404, "body": {"ok": false, "error": "not_friend", "message": "You can invite Game Center friends who also play Ultimate Trifecta and have Friends turned on."}}
 		_n += 1
 		invited[to] = "inv_sent%04d" % _n
@@ -150,6 +213,54 @@ func handle(method: int, path: String, body: Variant, _headers: PackedStringArra
 	if path.begins_with("/v1/rooms/"):
 		return _ok({"room": {"code": room_code, "state": "open"}, "members": []})
 	if path == "/v1/me/appearance":
+		return _ok({})
+	# ---- friend tags
+	if path == "/v1/friends/requests" and method == HTTPClient.METHOD_GET:
+		return _ok({"tag": my_tag, "needs_name": false, "max_friends": 200, "incoming": requests_in.duplicate(true),
+			"outgoing": requests_out.duplicate(true), "friends": tag_friends.values().map(func(p: Dictionary) -> Dictionary: return _person(p))})
+	if path == "/v1/friends/requests" and method == HTTPClient.METHOD_POST:
+		if not tag_error.is_empty():
+			return {"status": int(tag_error.get("status", 409)), "body": tag_error.get("body", {})}
+		var want := String((body as Dictionary).get("tag", "")).to_lower()
+		if want == my_tag.to_lower():
+			return {"status": 400, "body": {"ok": false, "error": "self", "message": "That's your own tag."}}
+		if not directory.has(want):
+			return {"status": 404, "body": {"ok": false, "error": "no_player", "message": "No player with that tag."}}
+		var p: Dictionary = directory[want]
+		if tag_friends.has(p["profile_id"]):
+			return {"status": 409, "body": {"ok": false, "error": "already_friends", "message": "You're already friends with %s." % p["name"],
+				"friend": _person(p)}}
+		for rq in requests_in:
+			if String(rq["from"]["profile_id"]) == String(p["profile_id"]):
+				requests_in.erase(rq)
+				tag_friends[p["profile_id"]] = p
+				return _ok({"state": "accepted", "friend": _person(p)})
+		for rq2 in requests_out:
+			if String(rq2["to"]["profile_id"]) == String(p["profile_id"]):
+				return _ok({"state": "pending", "duplicate": true, "request": rq2})
+		_n += 1
+		var out_rq := {"id": "frq_sent%04d" % _n, "created_at": now_ms(), "to": _person(p)}
+		requests_out.append(out_rq)
+		return _ok({"state": "pending", "request": out_rq}, 201)
+	if path.begins_with("/v1/friends/requests/"):
+		var rid := path.get_slice("/", 4)
+		var verb := path.get_slice("/", 5)
+		for rq in requests_in:
+			if String(rq["id"]) == rid:
+				requests_in.erase(rq)
+				if verb == "accept":
+					var who: Dictionary = directory.get(String(rq["from"]["tag"]).to_lower(), {})
+					if not who.is_empty():
+						tag_friends[who["profile_id"]] = who
+					return _ok({"state": "accepted", "friend": rq["from"]})
+				return _ok({})
+		for rq in requests_out:
+			if String(rq["id"]) == rid:
+				requests_out.erase(rq)
+				return _ok({})
+		return {"status": 410, "body": {"ok": false, "error": "gone", "message": "That request isn't there any more."}}
+	if path.begins_with("/v1/friends/p_") and method == HTTPClient.METHOD_DELETE:
+		tag_friends.erase(path.get_slice("/", 3))
 		return _ok({})
 	return {"status": 404, "body": {"ok": false, "error": "no_route", "message": "Not found."}}
 

@@ -55,7 +55,8 @@ func test_invite_request_is_invite_only() -> void:
 	# the request carries no automatch group or attributes (those would make
 	# Game Center wait for a matching stranger), only the recipients
 	var src := FileAccess.get_file_as_string("res://src/autoload/social_service.gd")
-	var i := src.find("func invite_players(")
+	# (invite_players queues; _send_invites builds the request)
+	var i := src.find("func _send_invites(")
 	var body := src.substr(i, src.find("\nfunc ", i + 10) - i)
 	t.check(body.contains("\"recipients\"") and body.contains("\"recipient_response\""), "recipients and their answers")
 	t.check(not body.contains("player_group") and not body.contains("player_attributes"), "no automatch group or attributes")

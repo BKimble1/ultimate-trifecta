@@ -7,6 +7,9 @@ extends Node
 ##
 ##   --mode=after (default)  the Friends entry points, the panel in each
 ##                           state, invites and the toast
+##   --mode=tags             friend tags only: the three actions, Add friend
+##                           (your tag, an answer, Requested), requests
+##                           waiting, Join with code, the keyboard up
 ##   --mode=before           the same entry points as they were at the
 ##                           baseline (run from a checkout of that commit;
 ##                           only classes that existed then are used)
@@ -92,8 +95,11 @@ func _run() -> void:
 			n.free()
 	if mode == "before":
 		await _before()
+	elif mode == "tags":
+		await _tags()
 	else:
 		await _after()
+		await _tags()
 	printerr("CAPTURE-DONE")
 	get_tree().quit()
 
@@ -267,3 +273,72 @@ func _after() -> void:
 	F.call("accept", iv)
 	await _wait(1.0)
 	await snap("a20_accept_confirm", "Accept while in a party: asks first")
+
+
+# ------------------------------------------------------------------ tags
+## Friend tags: the three actions, Add friend, requests waiting, Join with
+## code, and the layout with the keyboard up (an emulated keyboard height:
+## the band at the bottom stands for it).
+func _tags() -> void:
+	if ff == null:
+		F = get_tree().root.get_node("Friends")
+		_friends_fixture()
+		F.call("reset_for_tests")
+		await Cloud.sign_in()
+	await _close_panels()
+	ff.native.access = "authorized"
+	ff.unavailable = false
+	ff.network_down = false
+	ff.my_tag = "QuietDuck#0007"
+	ff.add_tag_friend("Snoozy Pine", "SnoozyPine#0101", "T:_sp", "online")
+	ff.add_player("Comfy Frog", "ComfyFrog#4821", "T:_cf")
+	ff.add_request("Moonlit Koala", "MoonlitKoala#0420", "T:_mk")
+	ff.add_request("Bartholomew Q", "BartholomewQ#9999", "T:_bq")
+	F.call("reset_for_tests")
+	await F.call("refresh")
+	await App.host_room_gamekit()
+	await _wait(3.0)
+	F.call("beat_now")
+	await _wait(4.0)
+	await snap("t01_lobby_badge", "party room: the Friends button counts what is waiting (2 friend requests)")
+	var p: Control = _panel_on(App.screen)
+	await _wait(1.8)
+	await snap("t02_invite_and_requests", "Friends: Invite | Join with code | Add friend; a request on top; Game Center and in-game friends")
+	p.call("show_tab", "add")
+	await _wait(1.2)
+	await snap("t03_add_friend", "Add friend: your tag with Copy, a friend's tag, Add")
+	p.get("tag_edit").text = "ComfyFrog#4821"
+	await p.call("_add")
+	await _wait(0.8)
+	await snap("t04_add_requested", "Add friend: Request sent; Sent: Requested")
+	p.get("tag_edit").text = "Nobody#1234"
+	await p.call("_add")
+	await _wait(0.8)
+	await snap("t05_add_no_player", "an unknown tag: No player with that tag")
+	# the keyboard up (emulated height; on a phone 209 pt, on an iPad 398 pt)
+	var tall_pt: float = get_viewport().get_visible_rect().size.y / UIKit.units_per_point()
+	var kb_pt := 398.0 if tall_pt >= 600.0 else 209.0
+	UIKit.v7_emulated_keyboard_pt = kb_pt
+	var band := ColorRect.new()
+	band.color = Color(0.85, 0.87, 0.9, 0.92)
+	var kb := UIKit.v7_keyboard_height(get_viewport())
+	var vs := get_viewport().get_visible_rect().size
+	band.position = Vector2(0, vs.y - kb)
+	band.size = Vector2(vs.x, kb)
+	var layer := CanvasLayer.new()
+	layer.layer = 110
+	add_child(layer)
+	layer.add_child(band)
+	(p.get("tag_edit") as LineEdit).grab_focus()
+	await _wait(1.0)
+	await snap("t06_add_keyboard", "typing a tag: the field and Add stay above the keyboard (grey band: emulated keyboard)")
+	p.call("show_tab", "join")
+	(p.get("code_edit") as LineEdit).grab_focus()
+	await _wait(1.0)
+	await snap("t07_join_keyboard", "Join with code, typing: the field and Join stay above the keyboard")
+	(p.get("code_edit") as LineEdit).release_focus()
+	UIKit.v7_emulated_keyboard_pt = -1.0
+	layer.queue_free()
+	await _wait(1.0)
+	await snap("t08_join_code", "Join with code")
+	await _close_panels()

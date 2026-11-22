@@ -402,6 +402,16 @@ func join_invited(code: String, who: String) -> void:
 		_idle()
 
 
+## Join with code from the Friends panel: the code typed there joins here,
+## exactly as if it was typed into this screen's field.
+func join_typed(code: String) -> void:
+	if not is_instance_valid(code_edit):
+		return
+	code_edit.text = code
+	_on_code_text(code)
+	await _join()
+
+
 ## Controller code pad: the code alphabet as buttons plus Delete.  Shown while
 ## a controller is in use; the text field then leaves controller focus so it
 ## can never trap navigation (touch and keyboards type into it as usual).
