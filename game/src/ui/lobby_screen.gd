@@ -152,6 +152,13 @@ func build() -> void:
 	gear.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	gear.pressed.connect(func() -> void: App.goto(SettingsScreen))
 	top.add_child(gear)
+	# (build 30) the top bar fits the screen with the Coins counter in it:
+	# the tabs step down to icons, then Rankings and Friends to icons
+	_top_nav = nav
+	get_viewport().size_changed.connect(func() -> void: _fit_top.call_deferred())
+	wallet_chip.visibility_changed.connect(func() -> void: _fit_top.call_deferred())
+	wallet_chip.minimum_size_changed.connect(func() -> void: _fit_top.call_deferred())
+	_fit_top.call_deferred()
 	# the party code: in the party list's header (tap to copy); sharing it is
 	# in Friends
 	code_title = UIKit.styled("Party code", "overline", UIKit.IVORY_MUTED)
@@ -569,6 +576,52 @@ func _show_act(p: Dictionary) -> void:
 ## icons (names stay in the tooltip and accessibility label; Chat keeps an
 ## unread badge), and the navigation shrinks to what is left.
 var _compact := false
+var _top_nav: NavShell
+
+
+## (build 30) The top bar on screen: everything but the tabs at its natural
+## width, the tabs at the widest level that fits, and when even icon tabs
+## don't, Rankings and Friends lose their captions too.
+func _fit_top() -> void:
+	if not is_instance_valid(top_bar) or not is_instance_valid(_top_nav) or not is_inside_tree():
+		return
+	var vs := get_viewport().get_visible_rect().size
+	var avail := vs.x - float(margin.get_theme_constant("margin_left") + margin.get_theme_constant("margin_right"))
+	var sep := float(top_bar.get_theme_constant("separation"))
+	var capped: Array = []
+	for c in top_bar.get_children():
+		if c is Button and c != _top_nav and UIKit.face_of(c) != null and String(UIKit.face_of(c).icon) != "":
+			if not c.has_meta(&"top_caption"):
+				c.set_meta(&"top_caption", UIKit.face_of(c).caption)
+				c.set_meta(&"top_min_w", (c as Control).custom_minimum_size.x)
+			if String(c.get_meta(&"top_caption")) != "":
+				capped.append(c)
+	var measure := func(icons_only: bool) -> float:
+		var w := 0.0
+		var n := 0
+		for c in top_bar.get_children():
+			if not (c is Control) or not (c as Control).visible or c == _top_nav:
+				continue
+			n += 1
+			if icons_only and c in capped:
+				w += UIKit.touch_min()
+			elif c in capped:
+				var cap := String(c.get_meta(&"top_caption"))
+				w += maxf(float(c.get_meta(&"top_min_w")), UIKit.touch_min() * 0.95 + UIKit.font_w(600).get_string_size(cap, HORIZONTAL_ALIGNMENT_LEFT, -1, UIKit.T_LABEL).x + 30.0)
+			else:
+				w += (c as Control).get_combined_minimum_size().x
+		return w + sep * float(n)
+	var icons: bool = _top_nav.needed_width(2) + float(measure.call(false)) > avail
+	for c in capped:
+		var f := UIKit.face_of(c)
+		f.caption = "" if icons else String(c.get_meta(&"top_caption"))
+		(c as Control).custom_minimum_size.x = UIKit.touch_min() if icons else float(c.get_meta(&"top_min_w"))
+		f.queue_redraw()
+	var others: float = measure.call(icons)
+	var level := 0
+	while level < 2 and _top_nav.needed_width(level) > avail - others + 0.5:
+		level += 1
+	_top_nav.apply_level(level)
 
 
 func _compact_bottom() -> void:
@@ -1067,7 +1120,9 @@ func _refresh() -> void:
 	# of the room)
 	var vs := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(956, 440)
 	var wide := vs.x / maxf(1.0, vs.y) >= 1.6
-	_grid.columns = 1 if shown <= 2 else (3 if shown >= 7 and wide else 2)
+	# (build 30) on a phone, five or more cells take three columns (two
+	# rows): with three rows of two the bottom row left the iPhone SE
+	_grid.columns = 1 if shown <= 2 else (3 if shown >= 5 and wide else 2)
 	var gap := 6 if _grid.columns >= 3 else 10
 	_grid.add_theme_constant_override("v_separation", gap)
 	if App.stage:

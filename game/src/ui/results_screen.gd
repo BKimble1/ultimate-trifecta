@@ -241,8 +241,8 @@ func _round_page() -> void:
 	if not rank.is_empty():
 		_v.add_child(_run_card())
 	var party_series := _party() and not series_view().is_empty()
-	# the series in one line (after the last round, Final standings says it)
-	if party_series and not series_over():
+	# the series in one line
+	if party_series:
 		_series_so_far(false)
 	var rw := _rewards_card()
 	if rw != null:
