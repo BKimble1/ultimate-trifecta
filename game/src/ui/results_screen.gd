@@ -186,21 +186,25 @@ func _build_page() -> void:
 func _round_page() -> void:
 	var d := view_data
 	var practice := bool(results.get("practice", false)) or _practice()
+	# (build 30) less is more: the result, one line why, your part; no
+	# overlines, no repeated "your team won"
 	var head := UIKit.vbox(2)
-	if not practice:
-		head.add_child(UIKit.styled("Round %d of %d" % [int(results.get("round_index", 1)), int(results.get("rounds_total", 1))], "overline", UIKit.IVORY_MUTED))
-	else:
-		head.add_child(UIKit.styled("Practice with bots", "overline", UIKit.IVORY_MUTED))
+	var where := ("Practice" if practice else "Round %d of %d" % [int(results.get("round_index", 1)), int(results.get("rounds_total", 1))])
 	var oc := int(d["outcome"])
 	var t := headline(d)
 	var tl := UIKit.styled(String(t[0]), "display", t[1])
 	tl.name = "Outcome"
 	tl.add_theme_font_size_override("font_size", 50)
 	head.add_child(tl)
-	var why := UIKit.styled(String(t[2]), "body", UIKit.IVORY)
+	var why := UIKit.styled(("%s · %s" % [where, String(t[2])]) if String(t[2]) != "" else where, "body", UIKit.IVORY_MUTED)
 	why.name = "Why"
 	why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	head.add_child(why)
+	if not bool(d["cancelled"]):
+		var mine := UIKit.styled(my_contribution(d.get("me", {})), "label", UIKit.TEAL)
+		mine.name = "Contribution"
+		mine.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		head.add_child(mine)
 	# (2.3) the outcome on a coloured banner (gold for a win), the title
 	# popping in, and confetti over the room when your team won
 	var me: Dictionary = d.get("me", {})
@@ -234,22 +238,21 @@ func _round_page() -> void:
 		if not series_view().is_empty() and _party():
 			_series_so_far(true)
 		return
-	_v.add_child(_contribution_card(d))
 	if not rank.is_empty():
 		_v.add_child(_run_card())
 	var party_series := _party() and not series_view().is_empty()
-	if party_series:
+	# the series in one line (after the last round, Final standings says it)
+	if party_series and not series_over():
 		_series_so_far(false)
-	_v.add_child(_rewards_card())
+	var rw := _rewards_card()
+	if rw != null:
+		_v.add_child(rw)
 	_v.add_child(_celebration(d))
 	_v.add_child(_team_table("Runners", d["runners"], TC.Role.RUNNER, int(d["winners"]) == TC.Role.RUNNER))
 	_v.add_child(_team_table("Night Watch", d["watch"], TC.Role.PATROL, int(d["winners"]) == TC.Role.PATROL))
 	# the friends' standings so far (after the last round: Final standings)
 	if party_series and not series_over():
-		var sv := UIKit.vbox(6)
-		sv.add_child(UIKit.styled("Series standings", "overline", UIKit.IVORY_MUTED))
-		sv.add_child(standings_table(series_view(), Save.player_uid(), 3))
-		_v.add_child(sv)
+		_v.add_child(standings_table(series_view(), Save.player_uid(), 3))
 
 
 ## [title, colour, why] for the top of the round page, from your side:
@@ -267,7 +270,7 @@ static func headline(d: Dictionary) -> Array:
 	var won := int(me["role"]) == int(d["winners"])
 	var team := "Runners" if int(me["role"]) == TC.Role.RUNNER else "Night Watch"
 	return ["Your team won!" if won else "Your team lost", UIKit.AMBER if won else UIKit.IVORY,
-		"%s %s · %s" % [team, "won" if won else "lost", why]]
+		"%s · %s" % [team, why] if why != "" else team]
 
 
 ## 2: what you did this round, in one card.
@@ -310,14 +313,6 @@ func _run_card() -> Control:
 		var pts := UIKit.styled("+%d" % int(rank["points"]), "num", UIKit.AMBER)
 		pts.add_theme_font_size_override("font_size", 34)
 		right.add_child(pts)
-		var bits: Array[String] = []
-		for part in rank.get("parts", []):
-			# one part never breaks across lines ("Splashes ×3 15")
-			bits.append(("%s %d" % [part[0], int(part[1])]).replace(" ", "\u00a0"))
-		var bl := UIKit.styled(" · ".join(bits), "caption", UIKit.IVORY_MUTED)
-		bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		right.add_child(bl)
-		right.add_child(UIKit.styled("%s total: %d" % [Rankings.season_name(), int(rank["season_points"])], "caption", UIKit.IVORY))
 		if not Rankings.boards_open():
 			right.add_child(UIKit.styled("Leaderboards open in %s" % Rankings.time_to_start_text(), "caption", UIKit.IVORY_MUTED))
 	else:
@@ -348,11 +343,9 @@ static func my_contribution(me: Dictionary) -> String:
 func _final_page() -> void:
 	var view := series_view()
 	var head := UIKit.vbox(2)
-	head.add_child(UIKit.styled("Series over" + (" · ended early" if bool(view.get("ended_early", false)) else ""), "overline", UIKit.IVORY_MUTED))
 	head.add_child(UIKit.styled("Final standings", "display", UIKit.AMBER))
-	var sub := UIKit.styled("Ties share a place.", "caption", UIKit.IVORY_MUTED)
-	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	head.add_child(sub)
+	if bool(view.get("ended_early", false)):
+		head.add_child(UIKit.styled("Ended early", "caption", UIKit.IVORY_MUTED))
 	_v.add_child(head)
 	var rows := RoundRanking.series_rows(view, Save.player_uid())
 	if rows.is_empty():
@@ -361,7 +354,7 @@ func _final_page() -> void:
 	_v.add_child(_podium(rows))
 	_v.add_child(standings_table(view, Save.player_uid()))
 	var tally := LobbyScreen._tally(view)
-	var tl := UIKit.styled("Runners %d · Night Watch %d" % [tally[0], tally[1]], "caption", UIKit.IVORY_MUTED)
+	var tl := UIKit.styled("Runners %d – %d Night Watch" % [tally[0], tally[1]], "caption", UIKit.IVORY_MUTED)
 	tl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_v.add_child(tl)
 	_v.add_child(_rounds_list(view))
@@ -374,7 +367,7 @@ func _celebration(d: Dictionary) -> Control:
 	var box := UIKit.vbox(8)
 	var me: Dictionary = d["me"]
 	var won := not me.is_empty() and int(me["role"]) == int(d["winners"])
-	var cap := "Your team won" if won else ("Winning team" if me.is_empty() else "Winning team · your team lost this one")
+	var cap := "Winners"
 	box.add_child(UIKit.styled(cap, "overline", UIKit.AMBER if won else UIKit.IVORY_MUTED))
 	var strip := UIKit.hbox(12)
 	for r in d["celebrate"]:
@@ -517,8 +510,11 @@ func _player_row(r: Dictionary, role: int, vals: Array) -> Control:
 
 
 func _rewards_card() -> Control:
-	var p := UIKit.panel(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 18)
 	var mid := String(results.get("match_id", ""))
+	# (build 30) a round that pays nothing shows no rewards card at all
+	if RoundRewards.summary(mid, reward).is_empty():
+		return null
+	var p := UIKit.panel(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 18)
 	_fill_rewards(p, mid)
 	# the wallet settles the round with the game service: the card follows
 	Wallet.round_updated.connect(func(m: String) -> void:
@@ -537,10 +533,10 @@ func _fill_rewards(p: Control, mid: String) -> void:
 	var s := RoundRewards.summary(mid, reward)
 	var v := UIKit.vbox(4)
 	p.add_child(v)
-	v.add_child(UIKit.styled("Rewards", "overline", UIKit.IVORY_MUTED))
 	if s.is_empty():
-		v.add_child(UIKit.styled("No rewards for this round.", "body", UIKit.IVORY_MUTED))
+		p.visible = false
 		return
+	p.visible = true
 	var top := UIKit.hbox(18)
 	if int(s["coins_collected"]) > 0:
 		top.add_child(_big_number("%d" % int(s["coins_collected"]), "picked up"))
@@ -558,7 +554,8 @@ func _fill_rewards(p: Control, mid: String) -> void:
 	elif bool(s["away"]) and msg == "":
 		msg = "You were away for most of this round, so it pays nothing."
 	if msg == "" and top.get_child_count() == 0:
-		msg = "No rewards for this round."
+		p.visible = false
+		return
 	if msg != "":
 		var ml := UIKit.styled(msg, "caption", UIKit.IVORY if bool(s["settled"]) else UIKit.IVORY_MUTED)
 		ml.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -566,15 +563,6 @@ func _fill_rewards(p: Control, mid: String) -> void:
 		ml.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		top.add_child(ml)
 	v.add_child(top)
-	if bool(s["settled"]) or bool(s["pending"]):
-		var bits: Array[String] = []
-		for line in (s["lines"] as Array) + (s["season_lines"] as Array):
-			bits.append("%s %+d" % [line[0], int(line[1])])
-		if not bits.is_empty():
-			var det := UIKit.styled(" · ".join(bits), "caption", UIKit.IVORY_MUTED)
-			det.add_theme_font_size_override("font_size", 18)
-			det.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			v.add_child(det)
 	add_challenge_lines(v, s.get("challenges", {}) if s.get("challenges") is Dictionary else {})
 	if bool(s["settled"]) and int(s["season_xp"]) > 0:
 		# (2.2 build 18) the bar fills from where you were to where you are
@@ -650,26 +638,19 @@ func _big_number(n: String, label_text: String) -> Control:
 ## the friends' table too (a cancelled round shows nothing else).
 func _series_so_far(with_table: bool = true) -> void:
 	var view := series_view()
-	var p := UIKit.panel(Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 18)
-	p.name = "Series"
 	var sv := UIKit.vbox(4)
+	sv.name = "Series"
 	var tally := LobbyScreen._tally(view)
-	sv.add_child(UIKit.styled("Series final" if series_over() else "Series so far", "overline", UIKit.IVORY_MUTED))
-	# Pass 8: your standing first, in words (never shaped like the pace)
+	# (build 30) one line: your standing, then the roles' score, small
 	var line := RoundRanking.series_line(view, Save.player_uid())
-	if line != "":
-		var sl := UIKit.styled(line, "label", UIKit.AMBER)
-		sl.name = "SeriesLine"
-		sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		sv.add_child(sl)
-	var note := UIKit.styled("So far: Runners %d – %d Night Watch." % [tally[0], tally[1]], "caption", UIKit.IVORY_MUTED)
-	note.add_theme_font_size_override("font_size", 17)
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sv.add_child(note)
+	var sl := UIKit.styled(("%s  ·  Runners %d – %d Night Watch" % [line, tally[0], tally[1]]) if line != "" else "Runners %d – %d Night Watch" % [tally[0], tally[1]],
+		"label", UIKit.AMBER)
+	sl.name = "SeriesLine"
+	sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sv.add_child(sl)
 	if with_table:
 		sv.add_child(standings_table(view, Save.player_uid(), 3))
-	p.add_child(sv)
-	_v.add_child(p)
+	_v.add_child(sv)
 
 
 func _podium(rows: Array) -> Control:
@@ -732,9 +713,17 @@ static func standings_table(view: Dictionary, my_uid: String, limit: int = 0) ->
 	if rows.is_empty():
 		box.add_child(UIKit.styled("No completed rounds yet.", "caption", UIKit.IVORY_MUTED))
 		return box
+	# (build 30) "Played" only when it says something (a late join, rounds
+	# away): everyone played every round is the usual case
+	var uneven := false
+	for r in rows:
+		if int(r["played"]) != int(rows[0]["played"]) or int(r["joined_round"]) > 1 or int(r["partial"]) > 0:
+			uneven = true
+	var cols := [["Place", 70.0, HORIZONTAL_ALIGNMENT_LEFT], ["Player", -1.0, HORIZONTAL_ALIGNMENT_LEFT], ["Round Wins", 130.0, HORIZONTAL_ALIGNMENT_RIGHT]]
+	if uneven:
+		cols.append(["Played", 170.0, HORIZONTAL_ALIGNMENT_RIGHT])
 	var hdr := UIKit.hbox(10)
-	for spec in [["Place", 70.0, HORIZONTAL_ALIGNMENT_LEFT], ["Player", -1.0, HORIZONTAL_ALIGNMENT_LEFT], ["Round Wins", 130.0, HORIZONTAL_ALIGNMENT_RIGHT],
-			["Played", 170.0, HORIZONTAL_ALIGNMENT_RIGHT]]:
+	for spec in cols:
 		var l := UIKit.styled(String(spec[0]), "overline", UIKit.IVORY_MUTED, int(spec[2]))
 		if float(spec[1]) > 0.0:
 			l.custom_minimum_size = Vector2(float(spec[1]), 0)
@@ -765,8 +754,6 @@ static func standings_table(view: Dictionary, my_uid: String, limit: int = 0) ->
 		var tg: Array[String] = []
 		if me:
 			tg.append("You")
-		if bool(r["tied"]):
-			tg.append("tied")
 		if not tg.is_empty():
 			var tl := UIKit.styled(" · ".join(tg), "caption", UIKit.IVORY_MUTED)
 			tl.add_theme_font_size_override("font_size", 17)
@@ -783,15 +770,16 @@ static func standings_table(view: Dictionary, my_uid: String, limit: int = 0) ->
 			extra.append("joined round %d" % int(r["joined_round"]))
 		if int(r["partial"]) > 0:
 			extra.append("away %d" % int(r["partial"]))
-		var pv := UIKit.vbox(0)
-		pv.custom_minimum_size = Vector2(170, 0)
-		pv.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		pv.add_child(UIKit.styled(played, "num", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT))
-		if not extra.is_empty():
-			var ex := UIKit.styled(" · ".join(extra), "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
-			ex.add_theme_font_size_override("font_size", 16)
-			pv.add_child(ex)
-		h.add_child(pv)
+		if uneven:
+			var pv := UIKit.vbox(0)
+			pv.custom_minimum_size = Vector2(170, 0)
+			pv.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			pv.add_child(UIKit.styled(played, "num", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT))
+			if not extra.is_empty():
+				var ex := UIKit.styled(" · ".join(extra), "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
+				ex.add_theme_font_size_override("font_size", 16)
+				pv.add_child(ex)
+			h.add_child(pv)
 		p.add_child(h)
 		p.accessibility_name = "%s, %s, %d Round %s, %s" % [String(r["label"]), String(r["name"]), int(r["wins"]), "Win" if int(r["wins"]) == 1 else "Wins", played]
 		box.add_child(p)
@@ -909,7 +897,8 @@ func _refresh_actions() -> void:
 	if over and page == "round" and not cancelled:
 		_primary.text = "Final standings"
 		UIKit._apply(_primary, UIKit.AMBER, UIKit.NAVY)
-		_status.text = "Last round done."
+		_status.text = ""
+		_status.visible = false
 		return
 	if session.is_host():
 		if over:
