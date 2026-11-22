@@ -136,6 +136,9 @@ P_URL="https://trifecta-service-production.$SUB.workers.dev"
 # --- check
 sleep 10
 check() { curl -sS --max-time 20 "$1/v1/config" | jq -c '{environment, apple_environment, features}' 2>/dev/null || echo "(no answer yet)"; }
+# (also in the log, so a run's answer can be read without the summary page)
+echo "CHECK sandbox $(check "$S_URL")"
+echo "CHECK production $(check "$P_URL")"
 {
   echo "## Game service deployed"
   echo
