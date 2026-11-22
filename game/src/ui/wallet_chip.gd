@@ -85,6 +85,18 @@ func fly_in(amount: int, from: Vector2) -> void:
 	var to := get_global_rect().get_center() + Vector2(-get_global_rect().size.x * 0.25, 0)
 	var rm := UIKit.reduced_motion()
 	var landed := [0]
+	# (build 33) the coins fly on a layer of the window's own, which outlives
+	# this chip: if the chip goes (the screen changes mid-flight) the flight
+	# stops with it, so no landing calls back into a freed chip (that call
+	# could reach whatever object took its place)
+	var tweens: Array[Tween] = []
+	tree_exiting.connect(func() -> void:
+		for tw0 in tweens:
+			if tw0.is_valid():
+				tw0.kill()
+		_flying = false
+		if is_instance_valid(layer):
+			layer.queue_free(), CONNECT_ONE_SHOT)
 	for i in n:
 		var c := CommerceArt.Pic.new("coin", "", Color.WHITE, 44)
 		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -98,6 +110,7 @@ func fly_in(amount: int, from: Vector2) -> void:
 		var delay := 0.08 * float(i) if not rm else 0.0
 		var dur := 0.75 if not rm else 0.01
 		var tw := c.create_tween()
+		tweens.append(tw)
 		tw.tween_interval(delay)
 		tw.tween_property(c, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		var ctrl := p0 + Vector2((to.x - p0.x) * 0.2, -220.0)
