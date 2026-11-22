@@ -1591,12 +1591,29 @@ class SlotCell:
 	var name_l: Label
 	var sub_l: Label
 	var badge: Icons.IconRect
+	## (build 30) the player's equipped name card (the cell's plate) and
+	## Season badge (a medallion, top right): Season Pass rewards, seen by
+	## the whole party
+	var plate: CardPlate
+	var medal: BadgeMark
 	var _me := false
 
 	func _init() -> void:
 		# names up to 16 characters fit whole at 20 units in this width; the
 		# status badge sits in the second line, not in a column of its own
 		UIKit.make_card(self, Vector2(272, maxf(72.0, UIKit.touch_min())), Color(UIKit.SLATE, 0.95))
+		plate = CardPlate.new()
+		plate.name = "NameCard"
+		plate.set_anchors_preset(Control.PRESET_FULL_RECT)
+		plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		plate.visible = false
+		UIKit.face_of(self).add_child(plate)
+		medal = BadgeMark.new()
+		medal.name = "Badge"
+		medal.custom_minimum_size = Vector2(30, 30)
+		medal.size = Vector2(30, 30)
+		medal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		medal.visible = false
 		var h := UIKit.hbox(10)
 		h.set_anchors_preset(Control.PRESET_FULL_RECT)
 		h.offset_left = 10
@@ -1630,6 +1647,8 @@ class SlotCell:
 		sub_l.clip_text = true
 		sub_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(sub_l)
+		medal.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(medal)
 
 	func _style(me: bool, open: bool) -> void:
 		var f := UIKit.face_of(self)
@@ -1659,6 +1678,8 @@ class SlotCell:
 			name_l.add_theme_color_override("font_color", UIKit.TEAL if can_invite else Color(UIKit.IVORY, 0.6))
 			sub_l.text = "" if can_invite else ("Share the code" if first_open else "")
 			badge.visible = false
+			plate.visible = false
+			medal.visible = false
 			sub_l.get_parent().visible = sub_l.text != ""
 			accessibility_name = name_l.text
 			UIKit.refit(name_l)
@@ -1669,6 +1690,13 @@ class SlotCell:
 		badge.visible = true
 		sub_l.get_parent().visible = true
 		face.set_entry(ent["cosmetic"], int(ent.get("role", -1)), "cell%d" % get_instance_id())
+		var cos: Dictionary = ent["cosmetic"]
+		plate.card_id = String(cos.get("card", ""))
+		plate.visible = plate.card_id != "" and not bool(ent["is_bot"])
+		plate.queue_redraw()
+		medal.badge_id = String(cos.get("badge", ""))
+		medal.visible = medal.badge_id != "" and not bool(ent["is_bot"])
+		medal.queue_redraw()
 		name_l.text = String(ent["name"])
 		name_l.add_theme_color_override("font_color", UIKit.IVORY)
 		var bits: Array[String] = []
@@ -1694,3 +1722,34 @@ class SlotCell:
 		badge.queue_redraw()
 		accessibility_name = "%s, %s" % [name_l.text, sub_l.text]
 		UIKit.refit(name_l)
+
+
+
+## (build 30) A roster cell's name card: the card's two-colour plate and its
+## motif, inset so the cell's own frame (your amber ring) still shows.
+class CardPlate:
+	extends Control
+	var card_id := ""
+
+	func _draw() -> void:
+		if card_id == "":
+			return
+		var it := Catalogue.item(card_id)
+		var cols: Array = it.get("colors", ["1b2740", "26355a"])
+		var c0 := Color(String(cols[0]))
+		var c1 := Color(String(cols[1])) if cols.size() > 1 else c0
+		var r := Rect2(Vector2(2, 2), size - Vector2(4, 4))
+		CommerceArt._rounded(self, r, float(UIKit.R_CARD) - 2.0, [Color(c0, 0.97), Color(c1, 0.97)])
+		var motif := String(CommerceArt.CARD_MOTIF.get(card_id, it.get("motif", "moon")))
+		var accent := Color(String(it.get("accent", "f6f3ec")))
+		CommerceArt.glyph(self, motif, Vector2(size.x - size.y * 0.42, size.y * 0.5), size.y * 0.24, Color(accent, 0.22))
+
+
+## (build 30) A roster cell's Season badge.
+class BadgeMark:
+	extends Control
+	var badge_id := ""
+
+	func _draw() -> void:
+		if badge_id != "":
+			CommerceArt.badge(self, badge_id, size * 0.5, minf(size.x, size.y) * 0.5)

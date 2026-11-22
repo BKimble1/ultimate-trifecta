@@ -43,8 +43,9 @@ const MY_LOOK := {"schema": 2, "outfit": "varsity_sprinter", "color": "tangerine
 const PARTY := [
 	# (build 27) no Record Breaker or Dr. Doom (skins based on real people)
 	# in store screenshots: original Season 1 outfits instead
-	["Sleepy Otter", {"outfit": "glow_jogger", "skin": "tone5", "hair": "curly", "hair_color": "brown"}],
-	["Moonlit Owl", {"outfit": "night_owl", "skin": "tone2", "hair": "bob", "hair_color": "blonde"}],
+	# (build 30) Season name cards and badges show on the roster
+	["Sleepy Otter", {"outfit": "glow_jogger", "skin": "tone5", "hair": "curly", "hair_color": "brown", "card": "card:night_sky", "badge": "badge:lantern"}],
+	["Moonlit Owl", {"outfit": "night_owl", "skin": "tone2", "hair": "bob", "hair_color": "blonde", "card": "card:dawn_patrol"}],
 	["Bouncy Panda", {"outfit": "moonwalk_cadet", "skin": "tone6", "hair": "bob", "hair_color": "black"}],
 	["Twinkly Gecko", {"outfit": "raincoat_explorer", "skin": "tone4", "hair": "curly", "hair_color": "black", "hat": "none"}],
 	["Snug Koala", {"outfit": "pj", "pattern": "stripes", "color": "bubblegum", "skin": "tone7", "hair": "buns", "hair_color": "black",
@@ -120,7 +121,7 @@ func _look(over: Dictionary) -> Dictionary:
 	var c: Dictionary = Cosmetics.DEFAULT.duplicate()
 	for k in over:
 		c[k] = over[k]
-	return Cosmetics.sanitize(c)
+	return NetSession.with_style(c)
 
 
 func _run() -> void:

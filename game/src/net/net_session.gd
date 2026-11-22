@@ -197,13 +197,35 @@ func start_client(t: NetTransport, code: String, uid: String, name: String, cosm
 func _set_identity(uid: String, name: String, cosmetic: Dictionary, pref: String) -> void:
 	local_uid = uid
 	local_name = name
-	local_cosmetic = Cosmetics.sanitize(cosmetic)
+	local_cosmetic = local_look(cosmetic)
 	local_pref = pref
+
+
+## (build 30) A look with its name card and badge kept (sanitize keeps the
+## runner fields only); "" or unknown ids are dropped.
+static func with_style(src: Dictionary) -> Dictionary:
+	var c := Cosmetics.sanitize(src)
+	for k in Protocol.STYLE_FIDS:
+		var id := String(src.get(k, ""))
+		if id != "" and Catalogue.item(id).size() > 0:
+			c[k] = id
+	return c
+
+
+## The local player's look with the name card and badge equipped in the
+## Locker (so everyone in the party sees them on the roster).
+static func local_look(c: Dictionary) -> Dictionary:
+	var d := c.duplicate()
+	var ps := Save.profile_style()
+	for k in Protocol.STYLE_FIDS:
+		if String(ps.get(k, "")) != "":
+			d[k] = String(ps[k])
+	return with_style(d)
 
 
 func _entry(slot: int, uid: String, name: String, is_bot: bool, peer: int, cosmetic: Dictionary, pref: String) -> Dictionary:
 	return {"slot": slot, "uid": uid, "name": name, "is_bot": is_bot, "peer": peer, "ready": false,
-		"pref": pref, "cosmetic": Cosmetics.sanitize(cosmetic), "connected": true,
+		"pref": pref, "cosmetic": with_style(cosmetic), "connected": true,
 		"patrol_rounds": 0, "last_was_patrol": false, "role": -1, "pid": "", "rejoin_key": ""}
 
 
@@ -545,7 +567,7 @@ func set_local_pref(pref: String) -> void:
 
 
 func set_local_cosmetic(c: Dictionary) -> void:
-	local_cosmetic = Cosmetics.sanitize(c)
+	local_cosmetic = local_look(c)
 	if is_host():
 		if local_slot >= 0 and roster[local_slot] != null:
 			roster[local_slot]["cosmetic"] = local_cosmetic

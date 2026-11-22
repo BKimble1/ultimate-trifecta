@@ -1368,7 +1368,9 @@ func _finish_setup() -> void:
 func _keyboard_fit() -> void:
 	if not first_run or not is_instance_valid(name_form) or not is_inside_tree():
 		return
-	var kh := float(DisplayServer.virtual_keyboard_get_height())
+	# (build 30) only where there is an on-screen keyboard (desktop logged a
+	# warning every frame)
+	var kh := float(DisplayServer.virtual_keyboard_get_height()) if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD) else 0.0
 	if kh <= 0.0 and OS.get_cmdline_user_args().has("--sim-keyboard") and name_form.visible and name_form.field.has_focus():
 		kh = float(DisplayServer.window_get_size().y) * 0.52   # dev captures: an iPhone's landscape keyboard
 	var vs := get_viewport().get_visible_rect().size

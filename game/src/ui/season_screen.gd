@@ -1453,6 +1453,9 @@ func equip(id: String) -> void:
 	var parts := Catalogue.split(id)
 	if Catalogue.is_profile_item(id):
 		Save.set_profile_style(String(parts[0]), id)
+		# (build 30) the party sees the new name card / badge on the roster
+		if App.session and is_instance_valid(App.session) and App.session.phase == TC.Phase.LOBBY and App.session.mode != NetSession.Mode.OFFLINE:
+			App.session.set_local_cosmetic(Save.data["cosmetic"])
 	elif Catalogue.is_runner_item(id):
 		var look := Cosmetics.sanitize(Save.data["cosmetic"]).duplicate()
 		look[String(parts[0])] = String(parts[1])

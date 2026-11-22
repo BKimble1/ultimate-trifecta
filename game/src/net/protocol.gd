@@ -239,6 +239,20 @@ static func decode_events(b: StreamPeerBuffer) -> Array:
 ## read is bounded and always yields a valid appearance.
 static func put_appearance(b: StreamPeerBuffer, c: Dictionary) -> void:
 	var a := Cosmetics.encode(c)
+	# (build 30) the equipped name card and badge ride along as two more
+	# field pairs; older builds skip field ids they don't know
+	var extra := 0
+	for k in STYLE_FIDS:
+		var id := String(c.get(k, ""))
+		if id != "" and _style_vids(k).has(id):
+			var vid := int(_style_vids(k)[id])
+			a.append(int(STYLE_FIDS[k]))
+			a.append(vid >> 8)
+			a.append(int(STYLE_FIDS[k]) + 1)
+			a.append(vid & 0xFF)
+			extra += 2
+	if extra > 0:
+		a[2] = a[2] + extra
 	b.put_u8(a.size())
 	b.put_data(a)
 
@@ -248,7 +262,52 @@ static func get_appearance(b: StreamPeerBuffer) -> Dictionary:
 	if n == 0 or n > Cosmetics.max_wire_size() or b.get_available_bytes() < n:
 		return Cosmetics.DEFAULT.duplicate()
 	var r: Array = b.get_data(n)
-	return Cosmetics.decode(r[1] if r[0] == OK else PackedByteArray())
+	var bytes: PackedByteArray = r[1] if r[0] == OK else PackedByteArray()
+	var out := Cosmetics.decode(bytes)
+	# the name card and badge, when sent (and known to this build)
+	if bytes.size() >= 3:
+		var pairs := mini(int(bytes[2]), (bytes.size() - 3) / 2)
+		var got := {}
+		for i in pairs:
+			got[int(bytes[3 + i * 2])] = int(bytes[4 + i * 2])
+		for k in STYLE_FIDS:
+			var f := int(STYLE_FIDS[k])
+			if got.has(f) and got.has(f + 1):
+				var id := String(_style_ids(k).get((int(got[f]) << 8) | int(got[f + 1]), ""))
+				if id != "":
+					out[k] = id
+	return out
+
+
+## (build 30) Wire ids for the profile style: field ids no runner field
+## uses (each style takes two: the high and low byte of its id), and a
+## stable 16-bit id per name card / badge (from its item id).
+const STYLE_FIDS := {"card": 200, "badge": 202}
+static var _vids := {}
+static var _ids := {}
+
+
+static func style_vid(id: String) -> int:
+	return int(id.hash() & 0xFFFF)
+
+
+static func _style_vids(kind: String) -> Dictionary:
+	if not _vids.has(kind):
+		var m := {}
+		var back := {}
+		for it in Catalogue.items_of_kind("season_reward") + Catalogue.items_of_kind("coin_item"):
+			var id := String((it as Dictionary).get("id", ""))
+			if id.begins_with(kind + ":"):
+				m[id] = style_vid(id)
+				back[style_vid(id)] = id
+		_vids[kind] = m
+		_ids[kind] = back
+	return _vids[kind]
+
+
+static func _style_ids(kind: String) -> Dictionary:
+	_style_vids(kind)
+	return _ids[kind]
 
 
 # ---------------------------------------------------------------------------
