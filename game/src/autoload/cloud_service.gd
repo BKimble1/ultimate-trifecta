@@ -84,7 +84,10 @@ var identity_override: Callable
 
 func _ready() -> void:
 	var cf := ConfigFile.new()
-	if cf.load(CFG_PATH) == OK:
+	# (build 27) the automated tests never talk to the real game service
+	# (service.cfg names the deployed one): they run with no service, and the
+	# ones about it install their own stand-in transport
+	if not _under_tests() and cf.load(CFG_PATH) == OK:
 		load_endpoints(cf)
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--service-url="):
@@ -98,6 +101,10 @@ func _ready() -> void:
 	add_child(_move_timer)
 	if base_url != "":
 		fetch_config.call_deferred()
+
+
+static func _under_tests() -> bool:
+	return "res://tests/run_tests.gd" in OS.get_cmdline_args()
 
 
 # ------------------------------------------------------------------ routing

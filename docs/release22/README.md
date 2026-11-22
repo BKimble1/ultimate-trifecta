@@ -1082,3 +1082,24 @@ first two and uses the shooter's pose).
   top; under the ball in the shot; up after the release.  `test_ball_sync`:
   the shot line (facing, 10 degrees off, 30 degrees off) and a shot facing
   away flying that way with no basket.
+
+## 43. Build 27: the game service is live
+
+Protocol 16 unchanged: builds 20 to 27 play together.
+- **The game service is deployed** (Cloudflare, 22 Nov 2026, runs #291 and
+  #292): `trifecta-service` (TestFlight and App Review, Apple sandbox, D1
+  `trifecta` 49475d1a-...) and `trifecta-service-production` (the App Store,
+  D1 `trifecta-production` f6db76d5-...), every migration applied, their
+  secrets generated on the runner and kept only in Cloudflare; the website
+  at `https://ultimate-trifecta.pages.dev`.
+- **The game uses it**: `game/config/service.cfg` names both deployments and
+  their admission public key (the game picks one from the install's receipt:
+  TestFlight -> sandbox); `game/config/links.cfg` the Privacy and Support
+  pages and `support@idlery.com` (the e-mail report button is back).  With
+  the service: Game Center sign-in to a verified profile, Coins and
+  purchases, daily challenges, Season rewards and Friends.
+- **Tests never use the real service**: `Cloud` skips `service.cfg` under the
+  test runner (the ones about the service install their own stand-in).
+- The iOS workflow's `service_deploy` option runs the same deploy as
+  `service.yml` (startable by hand: it is registered on the default branch);
+  the deploy prints each deployment's `/v1/config` to the log.

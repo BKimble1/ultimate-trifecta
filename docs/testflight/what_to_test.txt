@@ -1,6 +1,7 @@
-2.2 (26): dribbling and shooting. The game service still isn't connected, so challenge progress, purchases, Coins and Season rewards say they're unavailable; please don't try to buy anything. Builds 20 to 26 play together. Tell us your iPhone or iPad model:
+2.2 (27): the game service is connected. Sign in to Game Center first. Purchases in TestFlight use Apple's sandbox, so nothing is really charged. Builds 20 to 27 play together. Tell us your iPhone or iPad model:
 
-- Tap Walk, pick up the basketball and walk around: your runner's arm should push the ball down and catch it on each bounce.
-- Shots now go the way your runner faces. Turn to face the Christmas hoop, then tap Shoot: the ball comes up to the chest, up over the eye, and leaves with a follow-through.
-- Face away from the hoop and shoot: the ball should fly that way.
-- Tell us if the arm ever looks stuck, twisted or detached from the ball.
+- Open the game signed in to Game Center: your profile should load (your name with its #tag in Settings).
+- Play a round and check the daily challenges move and Season Pass XP goes up.
+- Buying: the in-app purchases have no prices in App Store Connect yet, so the Shop may say they're unavailable. Once prices are set, a sandbox purchase (it says [Sandbox]) should deliver the Coins or the skin.
+- Add a friend and check they show up in Friends.
+- Settings: Privacy and Support should open the website. Tell us anything that says "unavailable" or never finishes loading.

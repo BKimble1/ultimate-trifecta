@@ -13,7 +13,7 @@ crons = ["*/5 * * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "trifecta"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"   # printed by: wrangler d1 create trifecta
+database_id = "49475d1a-0838-4106-9354-5fea55e8d3c7"   # printed by: wrangler d1 create trifecta
 migrations_dir = "migrations"
 
 [vars]
@@ -50,7 +50,7 @@ crons = ["*/5 * * * *"]
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "trifecta-production"
-database_id = "REPLACE_WITH_PRODUCTION_D1_DATABASE_ID"
+database_id = "f6db76d5-e3f0-4c23-b396-de1b8bf30e8e"
 migrations_dir = "migrations"
 
 [env.production.vars]

@@ -183,7 +183,15 @@ currently say **support@idlery.com**: confirm it's a real inbox you read,
 or give another. Apple needs a working support contact and a way to report
 other players.
 
-### C5. [Claude] Deploy
+### C5. [Claude] Deploy  ✅ done 22 Nov 2026 (runs #291 and #292)
+Live: TestFlight/App Review service `https://trifecta-service.blake-kimble2.workers.dev`,
+App Store service `https://trifecta-service-production.blake-kimble2.workers.dev`,
+website `https://ultimate-trifecta.pages.dev` (Privacy `/privacy/`, Support
+`/support/`). Both services answer `/v1/config` (sandbox / Sandbox and
+production / Production; chat, reports, shop offers, friends).
+(Run as the iOS workflow's **service_deploy** option: `service.yml` isn't on
+the default branch, so GitHub can't start it by hand.)
+
 Claude runs **Deploy game service**: it creates the two databases (one for
 TestFlight and App Review, one for the App Store), deploys both services,
 creates their secret keys (kept only in Cloudflare), and publishes the
@@ -198,7 +206,7 @@ Open the Privacy page and the Support page on your phone. Check your name
 or company name and the support email are right. If anything should
 change, tell Claude.
 
-### C7. [Claude] Connect the game and build the launch candidate
+### C7. [Claude] Connect the game and build the launch candidate  ✅ build 27
 Claude fills `game/config/service.cfg` (service addresses and public keys)
 and `game/config/links.cfg` (privacy, support, email), runs the tests and
 uploads the next TestFlight build: the **launch candidate**.
@@ -206,9 +214,11 @@ uploads the next TestFlight build: the **launch candidate**.
 ### C8. App Store Server Notifications
 1. App Store Connect › Apps › Ultimate Trifecta › **App Information**.
 2. Section **App Store Server Notifications** › **Production Server URL** ›
-   paste the production URL from Claude (ends in
-   `/v1/appstore/notifications`) › Version **Version 2**.
-3. **Sandbox Server URL** › paste the sandbox URL › **Version 2**.
+   `https://trifecta-service-production.blake-kimble2.workers.dev/v1/appstore/notifications`
+   › Version **Version 2**.
+3. **Sandbox Server URL** ›
+   `https://trifecta-service.blake-kimble2.workers.dev/v1/appstore/notifications`
+   › **Version 2**.
 4. **Save**.
 
 ---------------------------------------------------------------------------
