@@ -47,6 +47,11 @@ var _wp_at := Vector2.INF
 var _wp_best := INF
 var _wp_t := 0.0
 const WP_STALL_S := 1.5
+## (build 33) a runner bot dives away when the Night Watch is this close
+## (was 3.0 m): diving a beat early spends the dive before the lunge, so
+## open-ground chases end about 5% sooner (tests/test_chase_balance.gd:
+## 6.0 / 9.1 / 6.1 / 8.2 s, were 6.3 / 9.6 / 6.5 / 8.6 s)
+const DIVE_R := 3.3
 var pref_cart := -1
 var prev_pressed := 0
 ## Measurement switch for game/tools/p9_balance.gd only (false = the 1.8
@@ -166,7 +171,9 @@ func _runner(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 			and p.spotted <= 0.0 and HideBushes.near(sim.layout, p.pos2()) >= 0 and p.gadget != TC.Gadget.TURBO:
 		cmd.pressed |= TC.BTN_INTERACT
 		return
-	var danger_r := 12.0 if p.state == TC.PState.ACTIVE else 0.0
+	# (build 33) a touch easier to tag: a runner bot starts fleeing at 11 m
+	# (was 12), and its escape dive comes a beat early (DIVE_R)
+	var danger_r := 11.0 if p.state == TC.PState.ACTIVE else 0.0
 	if nearest_threat != Vector3.INF and nd < danger_r and p.protect <= 0.0:
 		threat = nearest_threat
 		threat_t = 2.5
@@ -367,10 +374,10 @@ func _flee(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 				cmd.move = Vector2.ZERO
 				cmd.pressed |= TC.BTN_GADGET
 	# dive to snatch distance when the patrol is about to lunge
-	if d < 3.0 and jump_cool <= 0.0 and p.on_floor:
+	if d < DIVE_R and jump_cool <= 0.0 and p.on_floor:
 		cmd.pressed |= TC.BTN_JUMP
-		jump_cool = 1.2
-	elif not p.on_floor and not p.diving and d < 3.5 and p.vel.y < 1.5:
+		jump_cool = 1.35
+	elif not p.on_floor and not p.diving and d < DIVE_R + 0.4 and p.vel.y < 1.5:
 		cmd.pressed |= TC.BTN_JUMP
 	_hop_obstacles(sim, p, cmd)
 	replan_t = 0.0
