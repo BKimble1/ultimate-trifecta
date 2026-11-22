@@ -28,6 +28,9 @@ signal status_changed(text: String)
 signal admission_needed(code: String)
 ## the series (standings, completed rounds) changed
 signal series_changed
+## (build 33) host: a member was removed from the party (App also removes
+## them from the service's room record, whoever asked for the kick)
+signal member_kicked(pid: String)
 
 enum Mode { OFFLINE, HOST, CLIENT }
 
@@ -80,6 +83,23 @@ var social: SocialNet
 ## tests and dev automation only: uid -> TC.Role forced after the fair draw
 ## (the Night Watch count is kept by swapping bots)
 var role_override: Dictionary = {}
+## (build 33) the party leader: the member who starts rounds, changes the
+## settings, removes and promotes members (the crown).  Apart from the host,
+## whose device keeps the simulation and the relay room: leadership can pass
+## to a guest, whose requests the host checks (M.LEADER).  Host: the
+## authority; guests: from LOBBY (flag 32), or the host's slot from an older
+## host that has no leader of its own.
+var leader_slot := 0
+## (build 33) guest: what the host offers (Protocol.CAP_*), from LOBBY; 0
+## for an older host (leaving a round then leaves the party, as it did)
+var host_caps := 0
+## (build 33) guest: the host's phase from LOBBY (a guest who left the round
+## is in the party lobby while it runs; its own phase stays the round's)
+var host_phase: int = TC.Phase.LOBBY
+## (build 33) guest: we left the round in progress for the party lobby
+var left_round := false
+## tests: leader requests refused (not the leader, or not allowed now)
+var leader_refusals := 0
 
 # host bookkeeping
 var _peer_slot: Dictionary = {}     # peer -> slot
@@ -92,6 +112,7 @@ var stat_starved: Dictionary = {}   # slot -> ticks with no input available
 var stat_skipped: Dictionary = {}   # slot -> inputs merged while catching up
 var _snap_counter := 0
 var _ping_t := 0.0
+var _finished_mid := ""   # the round host_match_finished last took
 
 # client bookkeeping
 var _last_event_id := 0
@@ -166,6 +187,7 @@ func start_offline(uid: String, name: String, cosmetic: Dictionary, pref: String
 	roster[0] = _entry(0, uid, name, false, -1, cosmetic, pref)
 	roster[0]["ready"] = true
 	local_slot = 0
+	leader_slot = 0
 	room_code = "PRACTICE"
 	connected = true
 
@@ -178,7 +200,9 @@ func start_host(t: NetTransport, code: String, uid: String, name: String, cosmet
 	roster.fill(null)
 	roster[0] = _entry(0, uid, name, false, -1, cosmetic, pref)
 	roster[0]["pid"] = local_pid
+	roster[0]["caps"] = Protocol.CAPS
 	local_slot = 0
+	leader_slot = 0
 	connected = true
 	_wire_transport()
 	_broadcast_lobby()
@@ -190,6 +214,7 @@ func start_client(t: NetTransport, code: String, uid: String, name: String, cosm
 	room_code = code
 	_set_identity(uid, name, cosmetic, pref)
 	roster.fill(null)
+	leader_slot = -1
 	_wire_transport()
 	status_changed.emit("Looking for room %s…" % code)
 
@@ -226,7 +251,10 @@ static func local_look(c: Dictionary) -> Dictionary:
 func _entry(slot: int, uid: String, name: String, is_bot: bool, peer: int, cosmetic: Dictionary, pref: String) -> Dictionary:
 	return {"slot": slot, "uid": uid, "name": name, "is_bot": is_bot, "peer": peer, "ready": false,
 		"pref": pref, "cosmetic": with_style(cosmetic), "connected": true,
-		"patrol_rounds": 0, "last_was_patrol": false, "role": -1, "pid": "", "rejoin_key": ""}
+		"patrol_rounds": 0, "last_was_patrol": false, "role": -1, "pid": "", "rejoin_key": "",
+		# (build 33) left the round for the party lobby; what this member's
+		# build can do (Protocol.CAP_*); Night Watch rounds in a row
+		"away": false, "caps": 0, "watch_streak": 0}
 
 
 func _wire_transport() -> void:
@@ -247,14 +275,104 @@ func human_count() -> int:
 	return n
 
 
+## Host: every human but the leader is ready (the leader's own Ready is
+## checked by start_allowed; development automation and tests start rounds
+## from here).
 func can_start() -> bool:
 	if not is_host() or phase != TC.Phase.LOBBY:
 		return false
 	if series != null and series.finished:
 		return false   # the finished series is on show; Play again resets it
 	for e in roster:
-		if e != null and not bool(e["is_bot"]) and int(e["slot"]) != local_slot and not bool(e["ready"]):
+		if e != null and not bool(e["is_bot"]) and int(e["slot"]) != leader_slot and not bool(e["ready"]):
 			return false
+	return true
+
+
+## (build 33) Is this device's player the party leader?  (Practice and a
+## party of one: always.)
+func is_leader() -> bool:
+	if mode == Mode.OFFLINE:
+		return true
+	return local_slot >= 0 and local_slot == leader_slot
+
+
+## (build 33) Does the host offer `cap` (Protocol.CAP_*)?  The host itself
+## always does; a guest knows from the host's LOBBY.
+func host_supports(cap: int) -> bool:
+	return is_host() or (host_caps & cap) != 0
+
+
+## (build 33) The leader's Start: everyone in the party is ready, the leader
+## included (a party of one needs no Ready), between rounds.  The host checks
+## the same before it starts a guest leader's round.  Works on every device
+## from its own copy of the roster.
+func start_allowed() -> bool:
+	var ph := phase if is_host() else host_phase
+	if ph != TC.Phase.LOBBY and not (ph == TC.Phase.RESULTS and not is_host()):
+		return false
+	if is_host() and series != null and series.finished:
+		return false
+	var humans := 0
+	var all_ready := true
+	for e in roster:
+		if e == null or bool(e["is_bot"]):
+			continue
+		humans += 1
+		if not bool(e["ready"]):
+			all_ready = false
+	return humans <= 1 or all_ready
+
+
+## (build 33) Is this member still playing the round while this device shows
+## the party lobby (a hologram on their mark, "In a round" on their card)?
+func member_in_round(i: int) -> bool:
+	if i < 0 or i >= 8 or roster[i] == null:
+		return false
+	var e: Dictionary = roster[i]
+	var ph := phase if is_host() else host_phase
+	return ph >= TC.Phase.LOADING and ph <= TC.Phase.PLAYING and not bool(e["is_bot"]) and bool(e.get("connected", true)) \
+		and not bool(e.get("away", false)) and i != local_slot
+
+
+## (build 33) The humans of the party in roster order, starting after `from`
+## (the next member after the leader).
+func _next_member(from: int, need_caps: bool = true) -> int:
+	for k in range(1, 9):
+		var i := (from + k) % 8
+		var e: Variant = roster[i]
+		if e == null or bool(e["is_bot"]) or not bool(e["connected"]):
+			continue
+		if need_caps and i != local_slot and (int(e.get("caps", 0)) & Protocol.CAP_LEADER) == 0:
+			continue   # an older build can't lead (it has no Start of its own)
+		return i
+	return local_slot
+
+
+## Host: the leader is gone (left, kicked, dropped): leadership passes to the
+## next member (the host when nobody else can lead).  Returns true if it moved.
+func _check_leader() -> bool:
+	if mode != Mode.HOST:
+		return false
+	var e: Variant = roster[leader_slot] if leader_slot >= 0 and leader_slot < 8 else null
+	if e != null and not bool(e["is_bot"]) and bool(e["connected"]):
+		return false
+	leader_slot = _next_member(leader_slot)
+	return true
+
+
+## Host: make `slot` the party leader (validated: a connected human whose
+## build can lead).  Returns true if applied.
+func _set_leader(slot: int) -> bool:
+	if mode != Mode.HOST or slot < 0 or slot >= 8 or slot == leader_slot or roster[slot] == null:
+		return false
+	var e: Dictionary = roster[slot]
+	if bool(e["is_bot"]) or not bool(e["connected"]):
+		return false
+	if slot != local_slot and (int(e.get("caps", 0)) & Protocol.CAP_LEADER) == 0:
+		return false
+	leader_slot = slot
+	_broadcast_lobby()
 	return true
 
 
@@ -289,6 +407,7 @@ func _drop_slot(slot: int) -> void:
 		return
 	if phase == TC.Phase.LOBBY or phase == TC.Phase.RESULTS:
 		roster[slot] = null
+		_check_leader()   # (build 33) the leader left: the next member leads
 	else:
 		e["connected"] = false
 		e["peer"] = -1
@@ -386,6 +505,8 @@ func _host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 			var pref: String = ["any", "runner", "patrol"][clampi(b.get_u8(), 0, 2)]
 			var key := Protocol.get_str(b, 32)
 			var token := Protocol.get_long_str(b)
+			# (build 33) what the guest's build can do (older builds send nothing)
+			var caps := b.get_u8() & Protocol.CAPS if b.get_available_bytes() >= 1 else 0
 			if transport.peer_uid(peer) != "":
 				uid = transport.peer_uid(peer)   # Game Center identity wins
 			if not require_admission:
@@ -409,6 +530,18 @@ func _host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 				_send_welcome(peer, -1, "not_allowed")
 				return
 			_host_admit(peer, uid, name, cos, pref, pid, key)
+			if _peer_slot.has(peer) and roster[_peer_slot[peer]] != null:
+				roster[_peer_slot[peer]]["caps"] = caps
+			elif spectators.has(peer):
+				spectators[peer]["caps"] = caps
+		Protocol.M.ROUND_LEAVE:
+			# (build 33) a guest left the round for the party lobby: a bot
+			# plays their seat to the end, and they stay in the party
+			if _peer_slot.has(peer):
+				_mark_away(int(_peer_slot[peer]))
+		Protocol.M.LEADER:
+			if b.get_available_bytes() >= 1:
+				_leader_request(int(_peer_slot.get(peer, -1)), b.get_u8(), b)
 		Protocol.M.READY:
 			if _peer_slot.has(peer) and (phase == TC.Phase.LOBBY or phase == TC.Phase.RESULTS) and b.get_available_bytes() >= 2:
 				var e: Dictionary = roster[_peer_slot[peer]]
@@ -425,7 +558,7 @@ func _host_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 				if em < TC.EMOTES.size():
 					_host_emote(_peer_slot[peer], em)
 		Protocol.M.INPUT:
-			if _peer_slot.has(peer) and sim != null:
+			if _peer_slot.has(peer) and sim != null and not _peer_away(peer):
 				var slot: int = _peer_slot[peer]
 				var d := Protocol.decode_inputs(b)
 				_queue_inputs(slot, d["cmds"])
@@ -472,7 +605,7 @@ func _host_admit(peer: int, uid: String, name: String, cosmetic: Dictionary, pre
 	# reconnect into a reserved slot?
 	for e in roster:
 		if e != null and not bool(e["is_bot"]) and String(e["uid"]) == uid and not bool(e["connected"]) and _owns_slot(e, pid, key):
-			if sim != null and phase >= TC.Phase.REVEAL and phase <= TC.Phase.PLAYING:
+			if sim != null and phase >= TC.Phase.REVEAL and phase <= TC.Phase.PLAYING and not bool(e.get("away", false)):
 				if sim.resume(int(e["slot"]), uid):
 					e["connected"] = true
 					e["peer"] = peer
@@ -500,7 +633,7 @@ func _host_admit(peer: int, uid: String, name: String, cosmetic: Dictionary, pre
 			e["peer"] = peer
 			_peer_slot[peer] = int(e["slot"])
 			_send_welcome(peer, int(e["slot"]), "")
-			if phase != TC.Phase.LOBBY:
+			if phase != TC.Phase.LOBBY and not bool(e.get("away", false)):
 				_send_start(peer)
 			_broadcast_lobby()
 			return
@@ -595,8 +728,209 @@ func kick(slot: int) -> void:
 		var b := Protocol.buf_for(Protocol.M.KICK)
 		transport.send(peer, b.data_array, true)
 		_peer_slot.erase(peer)
+	var pid := String(roster[slot].get("pid", ""))
 	roster[slot] = null
+	_check_leader()
 	_broadcast_lobby()
+	if pid != "":
+		member_kicked.emit(pid)
+
+
+# ---------------------------------------------------------------------------
+# (build 33) The party leader and leaving a round
+# ---------------------------------------------------------------------------
+## The leader's Start (the leader's own device).  The host starts it after
+## the same check; a guest leader asks the host.
+func request_start() -> void:
+	if is_host():
+		if is_leader() and start_allowed():
+			host_start_match()
+		return
+	_send_leader(Protocol.LeaderOp.START)
+
+
+## The leader changes the party settings (the map among them).  Returns true
+## when applied here (host) or sent (guest leader).
+func leader_set_settings(watch: int, rounds: int, map_id: String = "") -> bool:
+	if not is_leader():
+		return false
+	if is_host():
+		return host_set_settings(watch, rounds, map_id)
+	var b := Protocol.buf_for(Protocol.M.LEADER)
+	b.put_u8(Protocol.LeaderOp.SETTINGS)
+	b.put_u8(watch)
+	b.put_u8(rounds)
+	Protocol.put_str(b, map_id, 32)
+	if host_peer >= 0:
+		transport.send(host_peer, b.data_array, true)
+	return true
+
+
+## The leader removes a member from the party.
+func leader_kick(slot: int) -> void:
+	if not is_leader():
+		return
+	if is_host():
+		kick(slot)
+	else:
+		_send_leader(Protocol.LeaderOp.KICK, slot)
+
+
+## The leader hands leadership to another member.
+func promote(slot: int) -> void:
+	if not is_leader() or slot == local_slot:
+		return
+	if is_host():
+		_set_leader(slot)
+	else:
+		_send_leader(Protocol.LeaderOp.PROMOTE, slot)
+
+
+## The leader ends the series (between rounds).
+func leader_end_series() -> void:
+	if not is_leader():
+		return
+	if is_host():
+		host_end_series()
+	else:
+		_send_leader(Protocol.LeaderOp.END_SERIES)
+
+
+## Can this member be made leader (popover: Promote to leader)?
+func can_promote(slot: int) -> bool:
+	if not is_leader() or slot == local_slot or slot < 0 or slot >= 8 or roster[slot] == null:
+		return false
+	var e: Dictionary = roster[slot]
+	if bool(e["is_bot"]) or not bool(e.get("connected", true)):
+		return false
+	if not host_supports(Protocol.CAP_LEADER):
+		return false
+	# the host's own slot can always lead; a guest only with a build that can
+	if slot == host_slot():
+		return true
+	return not is_host() or (int(e.get("caps", 0)) & Protocol.CAP_LEADER) != 0
+
+
+## The roster slot of the network host (0 on every build so far).
+func host_slot() -> int:
+	if is_host():
+		return local_slot
+	for i in 8:
+		if roster[i] != null and bool(roster[i].get("is_host", false)):
+			return i
+	return 0
+
+
+func _send_leader(op: int, arg: int = -1) -> void:
+	if host_peer < 0 or not host_supports(Protocol.CAP_LEADER):
+		return
+	var b := Protocol.buf_for(Protocol.M.LEADER)
+	b.put_u8(op)
+	if arg >= 0:
+		b.put_u8(arg)
+	transport.send(host_peer, b.data_array, true)
+
+
+## Host: a request from a guest.  Only the party leader's are carried out,
+## each with the same checks as the host's own (the leader can't remove the
+## host, settings stay locked mid-series, Start needs everyone ready).
+func _leader_request(slot: int, op: int, b: StreamPeerBuffer) -> void:
+	if mode != Mode.HOST or slot < 0 or slot != leader_slot or roster[slot] == null:
+		leader_refusals += 1
+		return
+	match op:
+		Protocol.LeaderOp.START:
+			if phase == TC.Phase.RESULTS and _all_ready():
+				# the leader starts from the party lobby while the host still
+				# reads the results: everyone is back, readiness kept
+				host_return_to_lobby(true)
+			if phase == TC.Phase.LOBBY and start_allowed():
+				host_start_match()
+			else:
+				leader_refusals += 1
+		Protocol.LeaderOp.SETTINGS:
+			if b.get_available_bytes() < 2:
+				return
+			var w := b.get_u8()
+			var r := b.get_u8()
+			var m := Protocol.get_str(b, 32)
+			if m != "" and not CampusMaps.playable(m):
+				leader_refusals += 1
+				return
+			if not host_set_settings(w, r, m):
+				leader_refusals += 1
+		Protocol.LeaderOp.KICK:
+			if b.get_available_bytes() < 1:
+				return
+			var k := b.get_u8()
+			if k < 8 and k != local_slot and k != slot and roster[k] != null and not bool(roster[k]["is_bot"]):
+				kick(k)
+			else:
+				leader_refusals += 1
+		Protocol.LeaderOp.PROMOTE:
+			if b.get_available_bytes() < 1 or not _set_leader(b.get_u8()):
+				leader_refusals += 1
+		Protocol.LeaderOp.END_SERIES:
+			if series != null and series.in_progress() and phase in [TC.Phase.LOBBY, TC.Phase.RESULTS]:
+				host_end_series()
+			else:
+				leader_refusals += 1
+		_:
+			leader_refusals += 1
+
+
+## Host: this member left the round in progress and is in the party lobby.
+## Their seat is a bot's to the end of the round; they get no snapshots and
+## no result, and nobody waits for their loading.
+func _mark_away(slot: int) -> void:
+	if mode != Mode.HOST or slot < 0 or slot >= 8 or roster[slot] == null or slot == local_slot:
+		return
+	if phase < TC.Phase.LOADING or phase > TC.Phase.PLAYING:
+		return
+	var e: Dictionary = roster[slot]
+	if bool(e["is_bot"]) or bool(e.get("away", false)):
+		return
+	e["away"] = true
+	e["ready"] = false
+	_queues.erase(slot)
+	if sim != null:
+		sim.leave_round(slot)
+	_broadcast_lobby()
+
+
+## Guest (build 33): leave the round in progress and stay in the party.  With
+## an older host (no CAP_STAY) this is leaving the party, as before.
+func leave_round() -> bool:
+	if mode != Mode.CLIENT or host_peer < 0 or not host_supports(Protocol.CAP_STAY):
+		return false
+	left_round = true
+	transport.send(host_peer, Protocol.buf_for(Protocol.M.ROUND_LEAVE).data_array, true)
+	if local_slot >= 0 and roster[local_slot] != null:
+		roster[local_slot]["away"] = true
+		roster[local_slot]["ready"] = false
+	lobby_changed.emit()
+	return true
+
+
+## Host (build 33): end the round in progress for everyone (the host left it,
+## or cancelled it while it was loading).  Everyone goes back to the party
+## lobby; the round is cancelled, so it counts for nobody (no loss, no
+## reward, it doesn't use up a round of the series).  Guests are told with
+## RESULTS (outcome CANCELLED, "aborted"): older builds show a cancelled
+## round's results and go back from there.
+func host_abort_round() -> bool:
+	if mode != Mode.HOST or phase < TC.Phase.LOADING or phase > TC.Phase.PLAYING:
+		return false
+	var res: Dictionary
+	if sim != null:
+		sim.cancel_match()
+		res = sim.results.duplicate(true)
+	else:
+		res = {"outcome": TC.Outcome.CANCELLED, "match_id": String(current_start.get("match_id", "")), "players": [], "round_time": 0.0}
+	res["aborted"] = true
+	host_match_finished(res)
+	host_return_to_lobby()
+	return true
 
 
 func _lobby_bytes() -> PackedByteArray:
@@ -628,11 +962,15 @@ func _lobby_bytes() -> PackedByteArray:
 		if bool(e["connected"]): flags |= 4
 		if i == local_slot: flags |= 8
 		if phase >= TC.Phase.LOADING and phase <= TC.Phase.PLAYING and (_loaded.has(i) or bool(e["is_bot"])): flags |= 16
+		if i == leader_slot: flags |= 32           # (build 33) the party leader
+		if bool(e.get("away", false)): flags |= 64  # (build 33) left the round, in the party lobby
 		b.put_u8(flags)
 		b.put_u8(["any", "runner", "patrol"].find(String(e["pref"])))
 		b.put_8(int(e.get("role", -1)))
 		Protocol.put_appearance(b, e["cosmetic"])
 		Protocol.put_str(b, String(e.get("pid", "")), 40)
+	# (build 33) what this host offers (older guests stop reading before it)
+	b.put_u8(Protocol.CAPS)
 	return b.data_array
 
 
@@ -657,6 +995,7 @@ func host_start_match(seed_override: int = -1) -> void:
 			if roster[i] == null or bool(roster[i]["is_bot"]):
 				var sp: Dictionary = spectators[peer]
 				roster[i] = _entry(i, sp["uid"], sp["name"], false, peer, sp["cosmetic"], sp["pref"])
+				roster[i]["caps"] = int(sp.get("caps", 0))
 				_peer_slot[peer] = i
 				_send_welcome(peer, i, "")
 				spectators.erase(peer)
@@ -690,7 +1029,7 @@ func host_start_match(seed_override: int = -1) -> void:
 	else:
 		var plist: Array = []
 		for e in roster:
-			plist.append({"slot": e["slot"], "uid": e["uid"], "is_bot": e["is_bot"]})
+			plist.append({"slot": e["slot"], "uid": e["uid"], "is_bot": e["is_bot"], "streak": int(e.get("watch_streak", 0))})
 		roles = series.assign_roles(plist, seed_v)
 	if tutorial and practice_role == "patrol":
 		# Night Watch training: you watch, everyone else runs
@@ -718,6 +1057,7 @@ func host_start_match(seed_override: int = -1) -> void:
 	for e in roster:
 		e["role"] = roles[e["slot"]]
 		e["ready"] = false
+		e["away"] = false
 		start_roster.append({"slot": e["slot"], "uid": e["uid"], "name": e["name"], "is_bot": e["is_bot"], "role": e["role"], "cosmetic": e["cosmetic"]})
 	var spawns := {}
 	var sm := MatchSim.default_spawns(start_roster)
@@ -868,7 +1208,7 @@ func loads_complete(delta: float = 0.0) -> bool:
 	var waiting := false
 	var moving := false
 	for e in roster:
-		if e != null and not bool(e["is_bot"]) and bool(e["connected"]) and int(e["slot"]) != local_slot and not _loaded.has(int(e["slot"])):
+		if e != null and not bool(e["is_bot"]) and bool(e["connected"]) and not bool(e.get("away", false)) and int(e["slot"]) != local_slot and not _loaded.has(int(e["slot"])):
 			waiting = true
 			if _load_moved.has(int(e["slot"])) and _load_wait - float(_load_moved[int(e["slot"])]) < LOAD_STALL_S:
 				moving = true
@@ -886,7 +1226,7 @@ func loading_names() -> Array:
 	if mode != Mode.HOST:
 		return out
 	for e in roster:
-		if e != null and not bool(e["is_bot"]) and bool(e["connected"]) and int(e["slot"]) != local_slot and not _loaded.has(int(e["slot"])):
+		if e != null and not bool(e["is_bot"]) and bool(e["connected"]) and not bool(e.get("away", false)) and int(e["slot"]) != local_slot and not _loaded.has(int(e["slot"])):
 			out.append(String(e["name"]))
 	return out if not _loads_done else []
 
@@ -899,6 +1239,8 @@ func attach_sim(s: MatchSim) -> void:
 	for e in roster:
 		if e != null and not bool(e["is_bot"]) and not bool(e["connected"]):
 			s.set_disconnected(int(e["slot"]))
+		elif e != null and not bool(e["is_bot"]) and bool(e.get("away", false)):
+			s.leave_round(int(e["slot"]))   # (build 33) left while it loaded
 
 
 func _queue_inputs(slot: int, cmds: Array) -> void:
@@ -949,11 +1291,16 @@ func host_after_step(dt: float) -> void:
 	phase = sim.phase
 	if mode == Mode.HOST:
 		if not _pending_events.is_empty():
-			transport.broadcast(Protocol.encode_events(_pending_events), true)
+			var evb := Protocol.encode_events(_pending_events)
+			for peer in transport.peers():
+				if not _peer_away(peer):
+					transport.send(peer, evb, true)
 		_snap_counter += 1
 		if _snap_counter >= cfg.snapshot_every_ticks:
 			_snap_counter = 0
 			for peer in transport.peers():
+				if _peer_away(peer):
+					continue   # (build 33) in the party lobby: no round to draw
 				var slot := int(_peer_slot.get(peer, -1))
 				var rec: SimPlayer = sim.player(slot) if slot >= 0 else null
 				if rec:
@@ -968,6 +1315,12 @@ func host_after_step(dt: float) -> void:
 			pb.put_double(Time.get_ticks_usec() / 1000000.0)
 			transport.broadcast(pb.data_array, false)
 	_pending_events.clear()
+
+
+## (build 33) Is this peer's player in the party lobby, out of the round?
+func _peer_away(peer: int) -> bool:
+	var slot := int(_peer_slot.get(peer, -1))
+	return slot >= 0 and roster[slot] != null and bool(roster[slot].get("away", false))
 
 
 ## Interest management: patrol clients only receive runners they could plausibly
@@ -1010,6 +1363,12 @@ func _relevant_for(rec: SimPlayer, dt: float) -> Array:
 
 
 func host_match_finished(results: Dictionary) -> void:
+	# (build 33) once per round: the round ended for everyone (aborted) and
+	# the match's own end arriving after it change nothing
+	var fmid := String(results.get("match_id", ""))
+	if fmid != "" and fmid == _finished_mid:
+		return
+	_finished_mid = fmid
 	last_results = results
 	phase = TC.Phase.RESULTS
 	if results.get("outcome", 0) != TC.Outcome.CANCELLED:
@@ -1019,6 +1378,9 @@ func host_match_finished(results: Dictionary) -> void:
 			e["last_was_patrol"] = int(e["role"]) == TC.Role.PATROL
 			if int(e["role"]) == TC.Role.PATROL:
 				e["patrol_rounds"] = int(e["patrol_rounds"]) + 1
+				e["watch_streak"] = int(e.get("watch_streak", 0)) + 1
+			else:
+				e["watch_streak"] = 0
 	if series != null:
 		series.record_round(results)   # idempotent by match id; cancelled rounds don't count
 		series_view = series.to_dict()
@@ -1026,10 +1388,13 @@ func host_match_finished(results: Dictionary) -> void:
 	results["series"] = series_view if series != null else {}
 	results["round_index"] = int(start_series.get("round", 1))
 	results["rounds_total"] = int(start_series.get("total", 1))
-	# readiness for the next round starts over (nobody is rushed off results)
+	# readiness for the next round starts over (nobody is rushed off results),
+	# the leader's included (build 33: everyone readies up); whoever left the
+	# round is back with everyone
 	for e in roster:
-		if e != null and not bool(e["is_bot"]) and int(e["slot"]) != local_slot:
+		if e != null and not bool(e["is_bot"]):
 			e["ready"] = false
+			e["away"] = false
 	if mode == Mode.HOST:
 		var b := Protocol.buf_for(Protocol.M.RESULTS)
 		var u := JSON.stringify(_jsonable(results)).to_utf8_buffer()
@@ -1037,10 +1402,20 @@ func host_match_finished(results: Dictionary) -> void:
 		b.put_data(u)
 		transport.broadcast(b.data_array, true)
 	results_received.emit(results)
+	_broadcast_lobby()   # (build 33) cleared Ready and the round's holograms, for everyone
+
+
+func _all_ready() -> bool:
+	for e in roster:
+		if e != null and not bool(e["is_bot"]) and not bool(e["ready"]):
+			return false
+	return true
 
 
 ## Host: back to the dorm lobby for a rematch (rematch cleanup).
-func host_return_to_lobby() -> void:
+## keep_ready: readiness given on the results screen stands even between
+## series (a guest leader's Start while the host reads the results).
+func host_return_to_lobby(keep_ready: bool = false) -> void:
 	if not is_host():
 		return
 	sim = null
@@ -1059,9 +1434,11 @@ func host_return_to_lobby() -> void:
 		if not bool(e["is_bot"]) and not bool(e["connected"]):
 			roster[i] = null   # disconnected players free their slot between rounds
 			continue
-		if not (series != null and series.in_progress()):
+		if not (series != null and series.in_progress()) and not keep_ready:
 			e["ready"] = false   # between rounds, readiness given on the results screen stands
 		e["role"] = -1
+		e["away"] = false
+	_check_leader()
 	if series != null and series.finished:
 		series = null   # Play again: a new series starts with the next Start
 		series_view = {}
@@ -1085,7 +1462,7 @@ func host_set_settings(watch: int, rounds: int, map_id: String = "") -> bool:
 		return false
 	settings = s
 	for e in roster:
-		if e != null and not bool(e["is_bot"]) and int(e["slot"]) != local_slot:
+		if e != null and not bool(e["is_bot"]) and int(e["slot"]) != leader_slot:
 			e["ready"] = false
 	_broadcast_lobby()
 	return true
@@ -1225,6 +1602,8 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 				return
 			if not fixed.is_empty():
 				current_start = fixed
+				host_phase = TC.Phase.LOADING
+				left_round = false
 				round_no = int(fixed.get("round", round_no))
 				settings = fixed["settings"]
 				round_cfg = PartySeries.rules_for(Rules.cfg, int(settings["watch"]))
@@ -1266,6 +1645,7 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 						series_changed.emit()
 					last_results = fr
 					phase = TC.Phase.RESULTS
+					host_phase = TC.Phase.RESULTS
 					results_received.emit(last_results)
 		Protocol.M.PING:
 			if b.get_available_bytes() < 8:
@@ -1312,6 +1692,7 @@ func _send_hello() -> void:
 	b.put_u8(["any", "runner", "patrol"].find(local_pref))
 	Protocol.put_str(b, rejoin_key, 32)
 	Protocol.put_long_str(b, admission)
+	b.put_u8(Protocol.CAPS)   # (build 33) what this build can do (older hosts stop reading before it)
 	transport.send(host_peer, b.data_array, true)
 	_hello_sent = true
 
@@ -1325,11 +1706,13 @@ func _read_lobby(b: StreamPeerBuffer) -> void:
 	var sstate := b.get_u8()
 	var nxt := b.get_u8()
 	var tot := b.get_u8()
+	var rev_changed := false
 	if not s_in.is_empty():
-		if int(s_in["rev"]) != int(settings["rev"]) and has_meta("lobby_seen") and ph == TC.Phase.LOBBY:
-			settings_note = "The host changed the party settings: %s. Tap Ready again when you're set." % PartySeries.summary(s_in)
+		rev_changed = int(s_in["rev"]) != int(settings["rev"]) and has_meta("lobby_seen") and ph == TC.Phase.LOBBY
 		settings = s_in
 	series_brief = {"state": sstate, "next_round": clampi(nxt, 1, 5), "total": clampi(tot, 1, 5)}
+	var lead := -1
+	var hs := 0
 	for i in 8:
 		if b.get_u8() == 0:
 			roster[i] = null
@@ -1345,8 +1728,21 @@ func _read_lobby(b: StreamPeerBuffer) -> void:
 		e["connected"] = (flags & 4) != 0
 		e["is_host"] = (flags & 8) != 0
 		e["loaded"] = (flags & 16) != 0
+		e["away"] = (flags & 64) != 0
 		e["role"] = role
 		roster[i] = e
+		if (flags & 32) != 0:
+			lead = i
+		if (flags & 8) != 0:
+			hs = i
+	# (build 33) the host's offer; the leader (an older host: the host leads)
+	host_caps = b.get_u8() & Protocol.CAPS if b.get_available_bytes() >= 1 else 0
+	leader_slot = lead if lead >= 0 else hs
+	host_phase = clampi(ph, TC.Phase.LOBBY, TC.Phase.ENDED)
+	if rev_changed and not is_leader():
+		settings_note = "The party leader changed the settings: %s. Tap Ready again when you're set." % PartySeries.summary(settings)
+	if ph == TC.Phase.LOBBY:
+		left_round = false
 	if ph == TC.Phase.LOBBY and phase == TC.Phase.RESULTS:
 		phase = TC.Phase.LOBBY
 	elif ph == TC.Phase.LOBBY:

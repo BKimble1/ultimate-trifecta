@@ -1,7 +1,8 @@
 extends RefCounted
 ## V4 party settings, random fair roles and multi-round series: every
 ## 1/2/3 Night Watch x 1/3/5 round combination, the required-home policy,
-## role counts and human/bot constraints, first-round fairness and rotation,
+## role counts and human/bot constraints, (build 33) a fresh random draw
+## every round with its statistics and the streak rule,
 ## idempotent round recording, cancelled rounds, eligibility after a
 ## disconnect, tie places, and the settings/series traffic between host and
 ## guests (ready reset, guests see the host's settings, reconnect gets the
@@ -38,13 +39,17 @@ func test_settings_combinations_and_rules_copy() -> void:
 
 
 func test_role_counts_and_human_constraints() -> void:
+	# (build 33) a fresh random draw every round: the Night Watch count is
+	# always the setting; with two or more humans they are never all on the
+	# Night Watch while a bot could take the seat; a party of humans only
+	# keeps the draw as it fell
 	for w in [1, 2, 3]:
 		var ps := PartySeries.new()
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 5
 		ps.start({"watch": w, "rounds": 3}, rng)
 		for humans in range(1, 9):
-			for sd in 20:
+			for sd in 40:
 				var roles := ps.assign_roles(_players(humans), sd * 7919 + humans)
 				var watch_total := 0
 				var human_watch := 0
@@ -58,60 +63,132 @@ func test_role_counts_and_human_constraints() -> void:
 						human_run += 1
 				if watch_total != w:
 					t.eq(watch_total, w, "Night Watch count (%d humans, seed %d)" % [humans, sd])
-				if humans >= 2:
-					t.check(human_run >= 1, "at least one human runner")
-					t.eq(human_watch, mini(w, humans - 1), "humans on the Night Watch = min(watch, humans - 1)")
+				if humans >= 2 and humans < 8 and human_run < 1:
+					t.check(false, "%d humans, %d Night Watch, seed %d: at least one human runner while a bot could watch" % [humans, w, sd])
+				if human_watch > mini(w, humans):
+					t.check(false, "no more humans on the Night Watch than seats")
 	t.check(true, "role sweep done")
 
 
-func test_first_round_is_an_equal_draw_and_later_rounds_rotate() -> void:
+## (build 33) Statistics of the draw: over many rounds each human is the
+## Night Watch about the expected share, both outcomes happen for each of
+## two friends, and the role is not predictable from the last round.
+func test_roles_are_random_every_round() -> void:
 	var ps := PartySeries.new()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
 	ps.start({"watch": 2, "rounds": 5}, rng)
-	var counts := {0: 0, 1: 0, 2: 0, 3: 0}
-	var n := 4000
+	var n := 6000
+	# two friends and six bots, 2 Night Watch: each seat 2/8, minus the rare
+	# both-friends draw (1/28) handed to a bot: 1/4 - 1/56 for each friend
+	var exp2 := 0.25 - 1.0 / 56.0
+	var counts := {0: 0, 1: 0}
+	var both := 0
+	var none := 0
+	var same_as_last := 0
+	var prev: Dictionary = {}
 	for sd in n:
-		var roles := ps.assign_roles(_players(4), sd)
+		var roles := ps.assign_roles(_players(2), sd * 2654435761 % 2147483647)
+		var a: bool = roles[0] == TC.Role.PATROL
+		var b: bool = roles[1] == TC.Role.PATROL
+		counts[0] += 1 if a else 0
+		counts[1] += 1 if b else 0
+		both += 1 if a and b else 0
+		none += 1 if not a and not b else 0
+		if not prev.is_empty() and roles[0] == prev[0] and roles[1] == prev[1]:
+			same_as_last += 1
+		prev = roles
+	for s in 2:
+		t.near(float(counts[s]) / n, exp2, 0.02, "friend %d is Night Watch about %.1f%% of rounds" % [s, exp2 * 100.0])
+	t.eq(both, 0, "never both friends on the Night Watch (a bot takes the seat)")
+	t.check(none > n / 3, "often both friends run (%d of %d)" % [none, n])
+	t.check(counts[0] > n / 8 and counts[0] < n - n / 8 and counts[1] > n / 8, "each friend gets both roles, many times")
+	t.check(same_as_last > n / 3 and same_as_last < n - n / 10, "the roles aren't a pattern: as often the same as last round as chance makes them (%d)" % same_as_last)
+	# four humans, 2 Night Watch: each seat 2/8 (four humans can't all watch)
+	var c4 := {0: 0, 1: 0, 2: 0, 3: 0}
+	for sd in n:
+		var roles := ps.assign_roles(_players(4), sd + 99)
 		for s in 4:
 			if roles[s] == TC.Role.PATROL:
-				counts[s] += 1
+				c4[s] += 1
 	for s in 4:
-		t.near(float(counts[s]) / n, 0.5, 0.05, "human %d is Night Watch half the time in round 1" % s)
-	# rotation: record rounds and check nobody repeats before everyone has had a turn
-	var turns := {"h0": 0, "h1": 0, "h2": 0, "h3": 0}
-	for round_i in 4:
-		var roles := ps.assign_roles(_players(4), 1000 + round_i)
-		var rows: Array = []
-		for s in 8:
-			var uid := ("h%d" % s) if s < 4 else "bot-%d" % s
-			rows.append({"slot": s, "uid": uid, "name": uid, "is_bot": s >= 4, "role": roles[s], "present": true, "away_s": 0.0})
-			if s < 4 and roles[s] == TC.Role.PATROL:
-				turns[uid] += 1
-		ps.record_round({"match_id": "m%d" % round_i, "outcome": TC.Outcome.RUNNERS_WIN, "round_time": 200.0, "players": rows})
-		if round_i == 1:
-			t.eq(turns.values(), [1, 1, 1, 1], "after two rounds of 2 Night Watch, all four humans had one turn")
-	t.eq(turns.values(), [2, 2, 2, 2], "after four rounds, two turns each")
+		t.near(float(c4[s]) / n, 0.25, 0.025, "human %d of four is Night Watch a quarter of the time" % s)
+	# one human: the odds of any seat (2 of 8)
+	var one := 0
+	for sd in n:
+		if ps.assign_roles(_players(1), sd + 7)[0] == TC.Role.PATROL:
+			one += 1
+	t.near(float(one) / n, 0.25, 0.02, "alone: Night Watch with the odds of any seat (2 of 8)")
 
 
-func test_one_human_policy() -> void:
+## (build 33) The light fairness rule: two Night Watch rounds in a row make
+## a human less likely to be drawn again, never excluded.
+func test_a_watch_streak_lowers_the_chance() -> void:
 	var ps := PartySeries.new()
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 3
+	rng.seed = 2
 	ps.start({"watch": 2, "rounds": 3}, rng)
-	var watch := 0
-	var n := 4000
+	var n := 6000
+	var streaky := 0
+	var fresh := 0
 	for sd in n:
-		var roles := ps.assign_roles(_players(1), sd)
-		if roles[0] == TC.Role.PATROL:
-			watch += 1
-		var total := 0
-		for s in roles:
-			if roles[s] == TC.Role.PATROL:
-				total += 1
-		if total != 2:
-			t.eq(total, 2, "bots fill the rest of the Night Watch")
-	t.near(float(watch) / n, 2.0 / 8.0, 0.03, "alone: Night Watch with the odds of any seat (2 of 8)")
+		var pl := _players(2)
+		pl[0]["streak"] = 2
+		pl[1]["streak"] = 0
+		var roles := ps.assign_roles(pl, sd * 31 + 5)
+		streaky += 1 if roles[0] == TC.Role.PATROL else 0
+		fresh += 1 if roles[1] == TC.Role.PATROL else 0
+	var ps_ := float(streaky) / n
+	var pf := float(fresh) / n
+	t.check(ps_ < pf * 0.6, "after two Night Watch rounds in a row: drawn less often (%.3f vs %.3f)" % [ps_, pf])
+	t.check(streaky > n / 40, "but never excluded (%d of %d)" % [streaky, n])
+	# one Night Watch round is no streak
+	var one_round := 0
+	for sd in n:
+		var pl := _players(2)
+		pl[0]["streak"] = 1
+		if ps.assign_roles(pl, sd * 17 + 3)[0] == TC.Role.PATROL:
+			one_round += 1
+	t.near(float(one_round) / n, 0.25 - 1.0 / 56.0, 0.02, "a single Night Watch round changes nothing")
+
+
+## (build 33) Through the host over the network: a party of two friends gets
+## both role layouts across rounds (never the same one every time), and the
+## host counts the Night Watch streak each round.
+func test_party_rounds_draw_roles_afresh() -> void:
+	var rig := NetRig.new()
+	t.add_child(rig)
+	rig.setup(60, 20, 0.0, 1)
+	await rig.wait_until(func() -> bool: return rig.host.human_count() == 2, 300)
+	# (the draw only: no match scenes)
+	for s in [rig.host, rig.clients[0]]:
+		for c in s.match_starting.get_connections():
+			s.match_starting.disconnect(c["callable"])
+	var layouts := {}
+	var host_watch := 0
+	var guest_watch := 0
+	for round in 24:
+		rig.host.host_start_match(1000 + round * 7)
+		var roles := {}
+		for e in rig.host.roster:
+			roles[String(e["uid"])] = int(e["role"])
+		layouts["%d%d" % [roles["uid-host"], roles["uid-c0"]]] = true
+		host_watch += 1 if roles["uid-host"] == TC.Role.PATROL else 0
+		guest_watch += 1 if roles["uid-c0"] == TC.Role.PATROL else 0
+		var res := {"match_id": rig.host.current_start["match_id"], "outcome": TC.Outcome.RUNNERS_WIN, "round_time": 200.0, "players": []}
+		rig.host.host_match_finished(res)
+		var streak := int(rig.host.roster[0]["watch_streak"])
+		if roles["uid-host"] == TC.Role.PATROL:
+			t.check(streak >= 1, "the host counts a Night Watch round into the streak")
+		else:
+			t.eq(streak, 0, "a runner round ends the streak")
+		rig.host.host_return_to_lobby()
+		if rig.host.series != null and rig.host.series.finished:
+			rig.host.host_return_to_lobby()
+	t.check(layouts.size() >= 2, "different role layouts across rounds (%s)" % str(layouts.keys()))
+	t.check(host_watch > 0 and guest_watch > 0, "each friend is Night Watch some rounds (host %d, guest %d of 24)" % [host_watch, guest_watch])
+	t.check(host_watch < 24 and guest_watch < 24, "and a runner others")
+	rig.teardown()
 
 
 func _round(ps: PartySeries, mid: String, outcome: int, rows: Array) -> bool:
@@ -215,7 +292,7 @@ func test_settings_and_series_over_the_network() -> void:
 			if not bool(e["is_bot"]):
 				human_patrol += 1
 	t.eq(patrols, 3, "three Night Watch")
-	t.eq(human_patrol, 2, "two of three humans on the Night Watch (one human runner kept)")
+	t.check(human_patrol <= 2, "never all three humans on the Night Watch (one human runner kept; %d)" % human_patrol)
 	rig.queue_free()
 
 
@@ -275,8 +352,10 @@ func test_three_round_series_end_to_end() -> void:
 		t.check(st.has(uid), "%s has one standing for the whole series" % uid)
 		t.eq(int(st[uid]["played"]), 3, "%s played all three rounds (reconnecting kept the standing)" % uid)
 		turns += int(st[uid]["watch_turns"])
-		t.check(int(st[uid]["watch_turns"]) == 2, "%s had two Night Watch turns (fair rotation: 2 human watch x 3 rounds / 3 people)" % uid)
-	t.eq(turns, 6, "two humans on the Night Watch each round")
+		t.eq(int(st[uid]["watch_turns"]) + int(st[uid]["runner_turns"]), 3, "%s has a role every round" % uid)
+	# (build 33) roles are a fresh draw each round: never all three friends
+	# on the Night Watch in a round
+	t.check(turns <= 6, "at most two of the three on the Night Watch in a round (%d turns in 3 rounds)" % turns)
 	var board := PartySeries.leaderboard_of(st)
 	t.eq(board.size(), 3, "three people on the leaderboard (bots kept out)")
 	# Play again: a fresh series with the same settings

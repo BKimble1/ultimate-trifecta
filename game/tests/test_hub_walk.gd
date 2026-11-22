@@ -153,6 +153,7 @@ func test_round_start_cancels_walking_everywhere() -> void:
 	t.check(not _stage.free_roam.is_empty(), "people are walking")
 	guest.set_local_ready(true)
 	await rig.wait_until(func() -> bool: return rig.host.can_start(), 200)
+	rig.host.set_local_ready(true)   # (build 33) the leader readies up too
 	l._on_primary()
 	await rig.frames(3)
 	_press("move_forward", false)

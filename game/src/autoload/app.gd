@@ -1047,6 +1047,11 @@ func _begin_session(mode: int, t: NetTransport, code: String) -> void:
 	session.results_received.connect(_on_results)
 	session.ended.connect(_on_session_ended)
 	session.series_changed.connect(_on_series_changed)
+	# (build 33) whoever asked (the host, or a guest leader through the
+	# host), a removed member leaves the service's room record too
+	session.member_kicked.connect(func(pid: String) -> void:
+		if party_code != "" and Cloud.configured():
+			Cloud.kick_from_room(party_code, pid))
 	show_lobby()
 
 
@@ -1063,9 +1068,18 @@ func _on_session_ended(reason: String) -> void:
 	var msg := ""
 	match reason:
 		"host_left", "host_timeout", "host_ended":
-			msg = "The host left the room, so this round was cancelled (no rewards for an interrupted round)."
+			# (build 33) the party lives on the host's device: it ends with them
+			var who := ""
+			if session != null and is_instance_valid(session):
+				var hs := session.host_slot()
+				if session.roster[hs] != null:
+					who = SocialSafety.name_of(session.roster[hs])
+			msg = "%s ended the party, so everyone's back home." % (who if who != "" else "The host") if reason == "host_ended" \
+				else "Lost the connection to %s, who was hosting, so the party ended." % (who if who != "" else "the host")
+			if match_ctrl != null:
+				msg += " The round in progress was cancelled (nothing is lost or earned)."
 		"kicked":
-			msg = "You were removed from the room by the host."
+			msg = "You were removed from the party by its leader."
 		"room_not_found":
 			msg = "Couldn't find that room. Check the code and that the host's room is open."
 		"version":
@@ -1147,6 +1161,18 @@ func _on_match_starting(info: Dictionary) -> void:
 
 func _on_results(results: Dictionary) -> void:
 	last_results = results
+	if session == null or not is_instance_valid(session) or session.is_host():
+		return
+	if bool(results.get("aborted", false)) and match_ctrl != null:
+		# (build 33) the host ended the round for everyone: straight back to
+		# the party lobby (a cancelled round: it counts for nobody)
+		_end_match_scene()
+		show_lobby()
+		if screen is Control:
+			UIKit.toast(screen as Control, "The host ended the round. Back in the party; this round doesn't count.", 3.5)
+	elif match_ctrl == null and screen is LobbyScreen and session.left_round:
+		# we left this round for the lobby: the others are coming back
+		UIKit.toast(screen as Control, "The round is over. Your party is back.", 3.0)
 
 
 func _on_match_finished(results: Dictionary) -> void:
@@ -1191,12 +1217,59 @@ func cancel_round() -> void:
 	_on_match_quit()
 
 
+## Leave in the pause menu (or the loading screen): practice ends; online,
+## nobody leaves the party (build 33, "like Fortnite"): a guest goes back to
+## the party lobby while a bot plays their seat, and the host (whose device
+## runs the round) ends the round for everyone, back to the party lobby.
+## Only Leave party leaves the party.  An older host that can't keep a
+## guest in the party: leaving the round leaves it, as before.
 func _on_match_quit() -> void:
-	if session and session.mode == NetSession.Mode.OFFLINE:
-		_close_session()
-		goto_title()
-	else:
-		leave_room()
+	match round_leave_mode(session):
+		"practice":
+			_close_session()
+			goto_title()
+		"end_for_all":
+			end_round_for_everyone()
+		"stay":
+			if session.leave_round():
+				_end_match_scene()
+				show_lobby()
+				if screen is Control:
+					UIKit.toast(screen as Control, "Back in the party. A bot finishes the round for you.", 3.0)
+			else:
+				leave_room()
+		_:
+			leave_room()
+
+
+## (build 33) What leaving a round does for this session: "practice" (it
+## ends), "end_for_all" (the host: the round ends for everyone, back to the
+## party lobby), "stay" (a guest: back to the party lobby, still in the
+## party) or "leave" (leaving the party: a Quick Match with other players,
+## which was one round anyway, or a host on an older build).  The pause menu
+## and the loading screen word their Leave from this.
+func round_leave_mode(s: NetSession) -> String:
+	if s == null or not is_instance_valid(s) or s.mode == NetSession.Mode.OFFLINE:
+		return "practice"
+	if quick_round and not is_solo_party():
+		return "leave"
+	if s.is_host():
+		return "end_for_all"
+	return "stay" if s.host_supports(Protocol.CAP_STAY) else "leave"
+
+
+## (build 33) The host leaves the round: it ends for everyone, who all go
+## back to the party lobby.  Nobody leaves the party; the round counts for
+## nobody.
+func end_round_for_everyone() -> void:
+	if session == null or not session.is_host():
+		return
+	Diag.mark("round_ended_early")
+	session.host_abort_round()
+	_end_match_scene()
+	show_lobby()
+	if screen is Control:
+		UIKit.toast(screen as Control, "Round ended for everyone. It doesn't count.", 3.0)
 
 
 ## Everyone back to the party room (host: between rounds, or Play again

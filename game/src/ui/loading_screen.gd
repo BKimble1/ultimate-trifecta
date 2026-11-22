@@ -13,8 +13,10 @@ extends Screen
 ##            "Waiting for players · 3/4 ready" with an indeterminate sweep
 ##            while this device is ready and the wait is on others (V6: an
 ##            unknown wait never shows as a stuck bar)
-##   corner   Cancel (practice) / Leave party (online), usable throughout
-##            (V6; V5 offered it online only, after 25 s)
+##   corner   Cancel (practice) / Back to lobby (an online guest: stays in
+##            the party) / Cancel round (the host, for everyone, after a
+##            confirm), usable throughout (V6; V5 offered it online only,
+##            after 25 s; build 33: nobody leaves the party from here)
 ##
 ## The loop (assets/loading/rig_loop_*): 26 frames at 60 fps in one grid
 ## atlas, GPU-compressed (ASTC 4x4 on iOS, ~13 MB), no sound.  Frames rather
@@ -103,7 +105,7 @@ func build() -> void:
 	var top := UIKit.hbox(0)
 	top.alignment = BoxContainer.ALIGNMENT_BEGIN
 	content.add_child(top)
-	leave_btn = UIKit.quiet("Leave party" if _online() else "Cancel", Vector2(200, 0))
+	leave_btn = UIKit.quiet(_leave_text(), Vector2(200, 0))
 	leave_btn.modulate.a = 0.0
 	leave_btn.disabled = true
 	leave_btn.pressed.connect(_leave)
@@ -185,10 +187,29 @@ func _online() -> bool:
 	return session != null and is_instance_valid(session) and session.mode != NetSession.Mode.OFFLINE
 
 
-## Cancel (practice) or leave the party (online), at any point of the
-## preparation.  App frees the half-prepared round.
+## (build 33) the corner button: nobody leaves the party from here
+func _leave_text() -> String:
+	match App.round_leave_mode(session):
+		"practice":
+			return "Cancel"
+		"end_for_all":
+			return "Cancel round"
+		"stay":
+			return "Back to lobby"
+	return "Leave party"
+
+
+## Cancel (practice), back to the party lobby (an online guest) or the
+## round cancelled for everyone (the host, after a confirm), at any point of
+## the preparation.  App frees the half-prepared round.
 func _leave() -> void:
 	if _closing:
+		return
+	if App.round_leave_mode(session) == "end_for_all" and not has_modal():
+		dialog("End the round for everyone? Everyone goes back to the party lobby, and it doesn't count.", [["End round", func() -> void:
+			_closing = true
+			leave_btn.disabled = true
+			App.cancel_round()], ["Cancel", Callable()]])
 		return
 	_closing = true
 	leave_btn.disabled = true

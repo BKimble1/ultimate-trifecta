@@ -919,7 +919,7 @@ func _refresh_actions() -> void:
 	var rdy := e != null and bool(e["ready"])
 	_primary.text = "Not ready" if rdy else "Ready for round %d" % session.next_round_number()
 	UIKit._apply(_primary, UIKit.SLATE_HI if rdy else UIKit.AMBER, UIKit.IVORY if rdy else UIKit.NAVY)
-	_status.text = "Waiting for the host" if rdy else "Nothing starts until everyone's ready."
+	_status.text = "Waiting for the party leader" if rdy else "Nothing starts until everyone's ready."
 
 
 ## The full round scoreboard in a centred sheet (both teams, full width).

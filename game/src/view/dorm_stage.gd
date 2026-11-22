@@ -98,6 +98,13 @@ var emote_starts: Dictionary = {}
 ## two runners on one spot, "three eyes" on iPhone).
 var _local_key := ""
 var _local_ids := {}   # every id the local player has had here
+## (build 33) characters on their way out (the leave wave): key ->
+## {view, mark}.  Until it has gone, a leaving character keeps its mark (a
+## newcomer takes another) and the same player coming back is the same
+## character again, not a second one on the same spot (the "bunch of
+## characters over top of each other" seen when guests joined, left and
+## rejoined quickly, and when the lobby opened before our own slot arrived).
+var _leaving: Dictionary = {}
 
 ## How long each lobby emote plays: two passes of its loop, so a glance
 ## catches it (the clips are 1.2-1.4 s loops).
@@ -336,11 +343,23 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 		if bool(e.get("local", false)):
 			if _local_key != "" and _local_key != key and chars.has(_local_key):
 				_rekey(_local_key, key)
+			elif _local_key != "" and _local_key != key and _leaving.has(_local_key) and not chars.has(key):
+				# (build 33) our own character, waving goodbye under the old id
+				_leaving[key] = _leaving[_local_key]
+				_leaving.erase(_local_key)
 			_local_key = key
 			_local_ids[key] = true
 		seen[key] = true
 		var v: CharacterView = chars.get(key)
 		var role := int(e.get("role", TC.Role.RUNNER))
+		if (v == null or not is_instance_valid(v)) and _leaving.has(key):
+			var old_mark := int(_leaving[key]["mark"])
+			v = _revive(key)
+			if v != null:
+				var taken := _mark_of.values().has(old_mark)
+				_mark_of[key] = old_mark if old_mark >= 0 and not taken and not bool(e.get("local", false)) \
+					else _free_mark(bool(e.get("local", false)), key)
+				_place(key)
 		if v == null or not is_instance_valid(v):
 			v = CharacterView.new()
 			v.lighting = "indoor"
@@ -348,7 +367,7 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 			add_child(v)
 			v.setup(role, e["cosmetic"], -1, String(e.get("name", "")), bool(e.get("is_bot", false)), bool(e.get("local", false)))
 			chars[key] = v
-			_mark_of[key] = _free_mark(bool(e.get("local", false)))
+			_mark_of[key] = _free_mark(bool(e.get("local", false)), key)
 			_place(key)
 			v.apply_state(_idle_rs(v), 0.0, true)
 			if bool(e.get("arrive", true)) and mode == "lobby":
@@ -365,6 +384,12 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 			if rdy and not bool(_ready_of.get(key, false)) and mode == "lobby" and not emoting(key) and not _preview.has(key):
 				v.play_ready()
 			_ready_of[key] = rdy
+		# (build 33) still playing a round while we're in the lobby: a hologram
+		var holo := bool(e.get("hologram", false))
+		if holo != v.hologram:
+			v.set_hologram(holo)
+			if not holo and mode == "lobby":
+				v.play_arrive()   # back from the round: a hop as they turn solid
 		if v.name_label:
 			var nm := String(e.get("name", ""))
 			v.name_label.text = (nm + "  ·  BOT") if bool(e.get("is_bot", false)) else nm
@@ -379,6 +404,7 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 			if is_instance_valid(v):
 				if mode == "lobby" and is_inside_tree():
 					v.play_leave()
+					_leaving[k] = {"view": v, "mark": int(_mark_of.get(k, -1))}
 				else:
 					v.queue_free()
 			chars.erase(k)
@@ -390,6 +416,57 @@ func sync_party(entries: Array, exclusive: bool = true) -> void:
 			hiding.erase(k)
 	if _mark_of.size() != marks_before:
 		_reframe()
+
+
+## (build 33) The same player is back while their leave wave still plays:
+## the same character stops leaving (no second one on the mark).
+func _revive(key: String) -> CharacterView:
+	var lv: Dictionary = _leaving.get(key, {})
+	_leaving.erase(key)
+	var v: Variant = lv.get("view")
+	if v == null or not is_instance_valid(v) or (v as Node).is_queued_for_deletion():
+		return null
+	var cv := v as CharacterView
+	cv.cancel_leave()
+	chars[key] = cv
+	return cv
+
+
+## (build 33) Leaving characters that have gone are forgotten.
+func _prune_leaving() -> void:
+	for k in _leaving.keys():
+		var v: Variant = _leaving[k].get("view")
+		if v == null or not is_instance_valid(v) or (v as Node).is_queued_for_deletion():
+			_leaving.erase(k)
+
+
+## (build 33, tests and diagnostics) The character views this stage draws,
+## and how many stand on each spot: every visible CharacterView child (a
+## leaving one included until it has shrunk away) by the mark nearest its
+## feet (-1: on no mark, walking around).
+func views_report() -> Dictionary:
+	var by_mark := {}
+	var n := 0
+	for c in get_children():
+		if not (c is CharacterView) or (c as Node).is_queued_for_deletion() or not (c as Node3D).visible:
+			continue
+		var cv := c as CharacterView
+		if cv.scale.x < 0.05:
+			continue   # shrunk away (its free is pending)
+		n += 1
+		var best := -1
+		var bd := INF
+		for i in MARKS.size():
+			var m: Vector3 = MARKS[i]
+			var d := Vector2(cv.position.x - m.x, cv.position.z - m.z).length()
+			if d < bd:
+				bd = d
+				best = i
+		var key := best if bd < 0.3 else -1
+		if mode == "home" or mode == "wardrobe":
+			key = 0
+		by_mark[key] = int(by_mark.get(key, 0)) + 1
+	return {"views": n, "by_mark": by_mark}
 
 
 ## Move everything filed under `from` to `to` (the local player's new id).
@@ -416,12 +493,22 @@ func _resolve(key: String) -> String:
 	return key
 
 
-func _free_mark(local: bool) -> int:
+func _free_mark(local: bool, key: String = "") -> int:
 	if local:
 		return 0
 	var used := {}
 	for k in _mark_of:
-		used[_mark_of[k]] = true
+		if k != key:
+			used[_mark_of[k]] = true
+	# (build 33) a character still waving goodbye keeps its spot until gone
+	_prune_leaving()
+	var parting := {}
+	for k in _leaving:
+		if k != key:
+			parting[int(_leaving[k]["mark"])] = true
+	for i in range(1, MARKS.size()):
+		if not used.has(i) and not parting.has(i):
+			return i
 	for i in range(1, MARKS.size()):
 		if not used.has(i):
 			return i

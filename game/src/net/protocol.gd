@@ -82,7 +82,20 @@ enum M {
 	MUTE,           # unused on wire (local block list)
 	LOADED,         # client -> host: {round} match scene ready (load ack); V6: {round, progress 0..254} while still preparing
 	SERIES,         # host -> all: series standings and completed rounds (JSON)
+	# (build 33, additive within protocol 16: older builds ignore both, and
+	# a new build uses them only with a host that advertised them in LOBBY)
+	ROUND_LEAVE,    # client -> host: I left the round and stay in the party (a bot plays my seat)
+	LEADER,         # client -> host: the party leader's request {op u8, ...} (start, settings, kick, promote, end series)
 }
+
+## (build 33) What a host offers, in the byte after LOBBY's roster (and what
+## a guest can do, in the byte after HELLO's admission): older builds send
+## nothing there and read nothing there.
+const CAP_STAY := 1      # leaving a round keeps you in the party (ROUND_LEAVE)
+const CAP_LEADER := 2    # a party leader apart from the host (LEADER requests)
+const CAPS := CAP_STAY | CAP_LEADER
+## LEADER request ops
+enum LeaderOp { START = 1, SETTINGS, KICK, PROMOTE, END_SERIES }
 
 ## Messages a client accepts only from its bound host (protocol 4).
 const HOST_ONLY := [M.WELCOME, M.LOBBY, M.START, M.SNAP, M.EVENTS, M.RESULTS, M.HOST_END, M.KICK, M.SERIES]

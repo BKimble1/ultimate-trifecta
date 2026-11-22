@@ -169,13 +169,95 @@ func _host(me: Dictionary) -> void:
 				var p0 := gp.pos()
 				await get_tree().create_timer(4.0).timeout
 				var moved := gp.pos().distance_to(p0)
-				check(moved > 2.0, "the guest's inputs reached the host and moved its runner (%.1f m in 4 s)" % moved)
+				check(moved > 2.0 and not gp.is_bot, "the guest's inputs reached the host and moved its %s (%.1f m in 4 s, input seq %d)" % ["Night Watch" if gp.role == TC.Role.PATROL else "runner", moved, gp.last_seq])
 	put_file("host_saw_guest.txt", "1")
-	var done := await wait_file("guest_checked.txt", 60.0)
+	if got:
+		await _host_party_after_round(s, e, rt)
+	var done := await wait_file("guest_checked.txt", 120.0)
 	check(done != "", "the guest finished its checks")
 	say("leaving the party (the guest should be told)")
 	a.call("leave_room")
 	await wait_file("guest_result.txt", 30.0)
+
+
+## (build 33) After the first round: the guest leaves the next part of it
+## and stays in the party, sees us as a hologram, the round ends and we're
+## both in the lobby, we both ready up (us first), we promote the guest and
+## the guest, now the leader, starts the next round.
+func _host_party_after_round(s: NetSession, e: Dictionary, rt: RelayTransport) -> void:
+	var a := app()
+	var gslot := int(e["slot"])
+	var left := await wait_file("guest_left_round.txt", 60.0)
+	if not check(left != "", "the guest left the round midway (pause › Back to lobby)"):
+		return
+	var got := await wait_for(func() -> bool: return bool(e.get("away", false)), 20.0)
+	check(got and bool(e["connected"]) and s.roster[gslot] == e, "the guest is still in our party, out of the round (away, connected)")
+	check(rt.peers().size() == 1, "still connected through the relay")
+	var mc: Variant = a.get("match_ctrl")
+	var sim: MatchSim = (mc as MatchController).sim if mc != null and is_instance_valid(mc) else null
+	if check(sim != null, "our round is still on"):
+		var gp := sim.player(gslot)
+		check(gp != null and gp.is_bot and sim.bots.has(gslot), "a bot plays the guest's runner")
+		check(s.phase == TC.Phase.PLAYING, "the round plays on (phase %d)" % s.phase)
+	put_file("host_round_on.txt", "1")
+	var holo := await wait_file("guest_saw_hologram.txt", 60.0)
+	check(holo == "ok", "the guest sees us as a hologram in its lobby (%s)" % holo)
+	# the round ends (time runs out); we read the results, then back to the party
+	if sim != null:
+		sim.end_tick = sim.tick + 2
+	got = await wait_for(func() -> bool: return a.get("screen") is ResultsScreen, 40.0)
+	check(got, "the round ended: our results")
+	await get_tree().create_timer(1.0).timeout
+	a.call("back_to_party")
+	got = await wait_for(func() -> bool: return s.phase == TC.Phase.LOBBY and a.get("screen") is LobbyScreen, 20.0)
+	check(got, "back in the party lobby (host)")
+	put_file("host_in_lobby.txt", "1")
+	check(await wait_file("guest_in_lobby.txt", 60.0) != "", "the guest is in the lobby with us")
+	var l := a.get("screen") as LobbyScreen
+	if not check(l != null, "our lobby screen"):
+		return
+	await get_tree().create_timer(0.5).timeout
+	var st: DormStage = a.get("stage")
+	check(st != null and st.chars.size() == 2 and st.chars.values().all(func(v: CharacterView) -> bool: return not v.hologram),
+		"two characters in our lobby, neither a hologram")
+	# both ready, the host (leader) first
+	check(l.primary_btn.text.begins_with("Ready") and not l.primary_btn.disabled, "our button is Ready (%s)" % l.primary_btn.text)
+	l._on_primary()
+	got = await wait_for(func() -> bool: return bool(s.roster[s.local_slot]["ready"]), 5.0)
+	check(got, "we're ready first")
+	await get_tree().process_frame
+	check(l.primary_btn.text.begins_with("Start") and l.primary_btn.disabled, "then Start, waiting for the guest (%s, disabled %s)" % [l.primary_btn.text, l.primary_btn.disabled])
+	var mine := _cell_for(l, s.local_slot)
+	check(mine != null and mine.ready_mark.get_parent().visible, "a check beside our name")
+	put_file("host_ready.txt", "1")
+	got = await wait_for(func() -> bool: return bool(e["ready"]), 30.0)
+	check(got, "the guest's Ready arrived")
+	await get_tree().process_frame
+	var gc := _cell_for(l, gslot)
+	check(gc != null and gc.ready_mark.get_parent().visible, "a check beside the guest's name")
+	check(not l.primary_btn.disabled, "everyone's ready: Start is on")
+	# promote the guest
+	check(s.can_promote(gslot), "we can promote the guest")
+	s.promote(gslot)
+	check(s.leader_slot == gslot and not s.is_leader(), "the guest leads now")
+	put_file("host_promoted.txt", "1")
+	got = await wait_for(func() -> bool: return s.phase != TC.Phase.LOBBY, 60.0)
+	check(got, "the guest leader's Start reached us and we started the round")
+	got = await wait_for(func() -> bool: return s.phase == TC.Phase.PLAYING, 180.0)
+	check(got, "round 2 is playing (phase %d)" % s.phase)
+	check(s.roster[gslot] != null and not bool(s.roster[gslot].get("away", false)), "with the guest in it")
+	mc = a.get("match_ctrl")
+	if mc != null and is_instance_valid(mc) and (mc as MatchController).sim != null:
+		var gp2 := (mc as MatchController).sim.player(gslot)
+		check(gp2 != null and not gp2.is_bot, "as themselves (not a bot)")
+	put_file("host_round2.txt", "1")
+
+
+func _cell_for(l: LobbyScreen, slot: int) -> LobbyScreen.SlotCell:
+	for c in l.cells:
+		if c.visible and c.slot == slot:
+			return c
+	return null
 
 
 func _guest_entry(s: NetSession, player: String) -> Variant:
@@ -183,6 +265,70 @@ func _guest_entry(s: NetSession, player: String) -> Variant:
 		if e != null and not bool(e["is_bot"]) and String(e["uid"]) == player:
 			return e
 	return null
+
+
+## (build 33) The guest's side of _host_party_after_round.
+func _guest_party_after_round(s: NetSession, snaps: Array) -> void:
+	var a := app()
+	var mc: Variant = a.get("match_ctrl")
+	if not check(mc != null and is_instance_valid(mc), "our round is on"):
+		return
+	check(s.host_supports(Protocol.CAP_STAY), "the host keeps us in the party when we leave a round")
+	# leave the round midway, through the pause menu's own wiring
+	(mc as MatchController).hud.open_pause()
+	await get_tree().process_frame
+	(mc as MatchController).hud._ask_leave()
+	check((mc as MatchController).hud._confirm_head.text == "Back to the party?", "the pause menu asks: Back to the party?")
+	(mc as MatchController).hud._confirm_leave()
+	var got := await wait_for(func() -> bool: return a.get("match_ctrl") == null and a.get("screen") is LobbyScreen, 10.0)
+	check(got, "we left the round: back in the party lobby")
+	check(a.get("session") == s and s.connected and s.left_round, "still in the party")
+	put_file("guest_left_round.txt", "1")
+	check(await wait_file("host_round_on.txt", 60.0) != "", "the host's round goes on")
+	var hs := s.host_slot()
+	var hkey := String(s.roster[hs]["uid"]) if s.roster[hs] != null else ""
+	got = await wait_for(func() -> bool:
+		var st0: DormStage = a.get("stage")
+		return st0 != null and st0.chars.has(hkey) and (st0.chars[hkey] as CharacterView).hologram, 15.0)
+	var st: DormStage = a.get("stage")
+	check(got, "the host, still in the round, is a hologram on its mark")
+	var l := a.get("screen") as LobbyScreen
+	var hc := _cell_for(l, hs) if l != null else null
+	check(hc != null and hc.round_chip.visible, "the host's card says In a round")
+	var rep: Dictionary = st.views_report() if st != null else {}
+	check(int(rep.get("views", 0)) == 2 and (rep.get("by_mark", {}) as Dictionary).values().all(func(n: int) -> bool: return n == 1),
+		"two characters, one per mark (%s)" % str(rep))
+	var n0: int = snaps[0]
+	await get_tree().create_timer(1.0).timeout
+	check(int(snaps[0]) - n0 <= 1, "no round snapshots reach the lobby (%d)" % (int(snaps[0]) - n0))
+	put_file("guest_saw_hologram.txt", "ok" if got else "no")
+	check(await wait_file("host_in_lobby.txt", 90.0) != "", "the host is back in the lobby")
+	got = await wait_for(func() -> bool:
+		var st1: DormStage = a.get("stage")
+		return s.host_phase == TC.Phase.LOBBY and st1 != null and st1.chars.has(hkey) and not (st1.chars[hkey] as CharacterView).hologram, 20.0)
+	check(got, "the round ended: we're both in the lobby, no hologram")
+	l = a.get("screen") as LobbyScreen
+	check(l != null, "on our lobby screen")
+	put_file("guest_in_lobby.txt", "1")
+	check(await wait_file("host_ready.txt", 60.0) != "", "the host readied up")
+	got = await wait_for(func() -> bool:
+		var c := _cell_for(l, hs)
+		return s.roster[hs] != null and bool(s.roster[hs]["ready"]) and c != null and c.ready_mark.get_parent().visible, 10.0)
+	check(got, "the host's Ready shows with a check beside its name")
+	check(l.primary_btn.text.begins_with("Ready"), "our button is Ready (%s)" % l.primary_btn.text)
+	l._on_primary()
+	check(await wait_file("host_promoted.txt", 60.0) != "", "the host promoted us")
+	got = await wait_for(func() -> bool: return s.is_leader(), 10.0)
+	check(got, "we lead the party now")
+	got = await wait_for(func() -> bool: return l.primary_btn.text.begins_with("Start") and not l.primary_btn.disabled, 10.0)
+	check(got, "our button is Start, everyone ready (%s)" % l.primary_btn.text)
+	var mine := _cell_for(l, s.local_slot)
+	check(mine != null and mine.badge.visible and mine.badge.kind == "crown", "the crown is on our card")
+	var n1: int = snaps[0]
+	l._on_primary()
+	got = await wait_for(func() -> bool: return a.get("match_ctrl") != null and int(snaps[0]) - n1 >= 10, 180.0)
+	check(got, "our Start started the next round: its snapshots arrive (%d)" % (int(snaps[0]) - n1))
+	check(await wait_file("host_round2.txt", 120.0) != "", "the host plays it with us")
 
 
 func _guest(me: Dictionary) -> void:
@@ -228,10 +374,12 @@ func _guest(me: Dictionary) -> void:
 	var steer := func() -> void:
 		var mc: Variant = a.get("match_ctrl")
 		if mc != null and is_instance_valid(mc):
-			(mc as MatchController).input_source = func(_m: MatchController) -> InputCmd:
-				var cmd := InputCmd.new()
-				cmd.move = Vector2(0, -1)
-				return cmd
+			# (build 33) the stick of the game's own automation (Autopilot:
+			# it heads for a door from whichever pad, in whichever of the three
+			# dorms; a fixed "forward" ran into a wall of some of them once
+			# roles and dorms were drawn afresh each round)
+			var ap := Autopilot.new(7)
+			(mc as MatchController).input_source = func(m: MatchController) -> InputCmd: return ap.cmd_for(m)
 	# (a guest's own phase stays LOADING: its match follows the host's
 	# snapshots, which flow once the round is playing)
 	got = await wait_for(func() -> bool: return s.phase == TC.Phase.LOADING and int(snaps[0]) >= 10 and a.get("match_ctrl") != null, 200.0)
@@ -246,6 +394,8 @@ func _guest(me: Dictionary) -> void:
 	check(saw != "", "the host saw us (and our Ready)")
 	await wait_for(func() -> bool: return absf(s.rtt - 0.1) > 0.0001, 10.0)
 	check(absf(s.rtt - 0.1) > 0.0001, "pings round-trip (guest-measured RTT %.0f ms)" % (s.rtt * 1000.0))
+	if got:
+		await _guest_party_after_round(s, snaps)
 	put_file("guest_checked.txt", "1")
 	got = await wait_for(func() -> bool: return not ends.is_empty() or a.get("session") == null, 30.0)
 	check(got, "when the host leaves, our party ends (%s)" % (ends[0] if not ends.is_empty() else "session closed"))

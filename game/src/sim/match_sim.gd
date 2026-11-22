@@ -273,6 +273,24 @@ func set_disconnected(slot: int) -> void:
 	_emit(TC.Ev.PLAYER_BOT_TAKEOVER, slot)
 
 
+## (build 33) The player left the round for the party lobby (they stay in
+## the party): a bot plays their seat to the end at once, no reconnect
+## reservation, and their row counts the time away like a long disconnect
+## (no Round Win, no reward).
+func leave_round(slot: int) -> void:
+	var p := player(slot)
+	if p == null or p.is_bot:
+		return
+	if p.connected:
+		p.connected = false
+		p.bot_takeover = true
+		p.disconnect_t = 0.0
+		if not bots.has(slot) and _bot_factory.is_valid():
+			bots[slot] = _bot_factory.call(self, p)
+	p.is_bot = true
+	_emit(TC.Ev.PLAYER_LEFT, slot)
+
+
 ## Valid reconnect: resumes the same authoritative state (no reset, no immunity).
 func resume(slot: int, uid: String) -> bool:
 	var p := player(slot)
