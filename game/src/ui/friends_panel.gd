@@ -59,6 +59,10 @@ var footer: Container
 var code_lbl: Label
 var copy_btn: Button
 var gc_btn: Button
+var party_card: PanelContainer
+var create_btn: Button
+var code_title: Label
+var code_share_btn: Button
 var share_btn: Button
 ## the Join with code action (party codes are always one tap away)
 var play_btn: Button
@@ -258,6 +262,41 @@ func _build_invite(v: VBoxContainer) -> void:
 	invite_tab = UIKit.vbox(10)
 	invite_tab.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(invite_tab)
+	# (build 31) the party first: not in one yet, "Create party" (your own
+	# lobby with a code, no Apple screen); in one, its code to share
+	party_card = PanelContainer.new()
+	party_card.name = "PartyCard"
+	party_card.add_theme_stylebox_override("panel", UIKit.box(Color(UIKit.NAVY, 0.55), UIKit.R_CARD, 1, Color(UIKit.AMBER, 0.35), 12))
+	var pr := UIKit.hbox(10)
+	party_card.add_child(pr)
+	create_btn = UIKit.primary("Create party", Vector2(0, UIKit.touch_min()), UIKit.T_LABEL)
+	create_btn.name = "CreateParty"
+	create_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	create_btn.pressed.connect(_create_party)
+	pr.add_child(create_btn)
+	code_title = UIKit.styled("Party code", "caption", UIKit.IVORY_MUTED)
+	code_title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pr.add_child(code_title)
+	code_lbl = UIKit.styled("", "num", UIKit.AMBER)
+	code_lbl.add_theme_font_override("font", UIKit.font_num(800))
+	code_lbl.add_theme_font_size_override("font_size", 30)
+	code_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	code_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pr.add_child(code_lbl)
+	copy_btn = UIKit.quiet("Copy", Vector2(0, UIKit.touch_min()), UIKit.T_CAPTION)
+	copy_btn.accessibility_name = "Copy party code"
+	copy_btn.pressed.connect(func() -> void:
+		DisplayServer.clipboard_set(App.party_code)
+		_say("Code %s copied" % App.party_code))
+	pr.add_child(copy_btn)
+	code_share_btn = UIKit.quiet("Share", Vector2(0, UIKit.touch_min()), UIKit.T_CAPTION)
+	code_share_btn.accessibility_name = "Share party code"
+	code_share_btn.pressed.connect(func() -> void:
+		if not Share.share_text(Share.party_message(App.party_code)):
+			DisplayServer.clipboard_set(Share.party_message(App.party_code))
+			_say("Invite message copied: paste it to a friend"))
+	pr.add_child(code_share_btn)
+	invite_tab.add_child(party_card)
 	# one restrained line about status when it can't be confirmed
 	service_lbl = UIKit.styled("", "caption", UIKit.AMBER)
 	service_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -293,19 +332,12 @@ func _build_invite(v: VBoxContainer) -> void:
 	foot.add_theme_constant_override("h_separation", 8)
 	foot.add_theme_constant_override("v_separation", 8)
 	footer = foot
-	code_lbl = UIKit.styled("", "label", UIKit.AMBER)
-	code_lbl.add_theme_font_override("font", UIKit.font_num(800))
-	code_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	foot.add_child(code_lbl)
-	copy_btn = UIKit.quiet("Copy", Vector2(0, UIKit.touch_min()), UIKit.T_CAPTION)
-	copy_btn.accessibility_name = "Copy party code"
-	copy_btn.pressed.connect(func() -> void:
-		DisplayServer.clipboard_set(App.party_code)
-		_say("Code %s copied" % App.party_code))
-	foot.add_child(copy_btn)
+	# (build 31) no Apple invite screen from here: Invite is the party's code
+	# and the friends list below
 	gc_btn = UIKit.quiet("Invite with Game Center", Vector2(0, UIKit.touch_min()), UIKit.T_CAPTION)
-	gc_btn.pressed.connect(func() -> void: _game_center_invite([]))
+	gc_btn.visible = false
 	foot.add_child(gc_btn)
+	foot.visible = false
 	invite_tab.add_child(foot)
 
 
@@ -606,7 +638,7 @@ func _refresh() -> void:
 		return
 	var st := state_name()
 	var in_party := Friends.in_party()
-	sub_lbl.text = {"invite": "Invite friends to this party." if in_party else "Invite starts a party for you.",
+	sub_lbl.text = {"invite": "Share the code, or invite a friend." if in_party else "Create a party, then share its code.",
 		"join": "Join a friend's party with its code.", "add": "Add friends by their tag."}[tab]
 	state_box.visible = st != "list"
 	state_lbl.text = String(STATE_TEXT.get(st, ""))
@@ -618,13 +650,13 @@ func _refresh() -> void:
 	hint_lbl.visible = hint_lbl.text != ""
 	_paint_waiting()
 	_paint_rows(st == "list")
-	# footer
-	code_lbl.visible = in_party
-	copy_btn.visible = in_party
-	code_lbl.text = ("Code " + App.party_code) if in_party else ""
-	# (2.3) Apple's invite sheet only when the game's own list can't invite
-	gc_btn.visible = can_game_center() and (Friends.access != "authorized" or Friends.friends.is_empty())
-	footer.visible = code_lbl.visible or gc_btn.visible
+	# the party card: Create party, or the code to share
+	create_btn.visible = not in_party
+	for c in [code_title, code_lbl, copy_btn, code_share_btn]:
+		(c as Control).visible = in_party
+	code_lbl.text = App.party_code if in_party else ""
+	gc_btn.visible = false
+	footer.visible = false
 	share_btn.visible = (Friends.access == "authorized" or Friends.has_tag_friends()) and Friends.feature_on()
 	share_btn.text = "Show when I'm playing: %s" % ("On" if Friends.share_status() else "Off")
 	share_btn.accessibility_name = share_btn.text
@@ -700,6 +732,17 @@ static func person_name(p: Dictionary) -> String:
 	if p.get("name") is String and String(p["name"]) != "":
 		return NameRules.safe_display(String(p["name"]))
 	return "A player"
+
+
+## (build 31) Your own party: a lobby with a code friends can join with
+## (from the Friends autoload, which reopens this panel in the new lobby).
+func _create_party() -> void:
+	_say("")
+	create_btn.disabled = true
+	close()
+	var r: Dictionary = await Friends.create_party()
+	if not bool(r.get("ok", false)) and App.screen is Control:
+		UIKit.toast(App.screen as Control, String(r.get("message", "Couldn't start a party. Try again.")), 3.0)
 
 
 ## Apple's invite sheet works for the host of a Game Center party.

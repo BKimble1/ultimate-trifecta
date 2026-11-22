@@ -792,6 +792,14 @@ func _on_gc_answer(player: Object, response: int) -> void:
 		UIKit.toast(App.screen as Control, ("%s is joining your party" if ok else "%s can't come right now") % who, 2.6)
 
 
+## (build 31) Create party (the Friends panel's Invite): your own lobby
+## with a code; the new lobby's Friends panel opens on Invite.
+func create_party() -> Dictionary:
+	if in_party():
+		return {"ok": true}
+	return await _start_party()
+
+
 func _start_party() -> Dictionary:
 	var s: Variant = App.session
 	if App.is_solo_party():

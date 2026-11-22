@@ -393,7 +393,9 @@ func test_invite_from_home_starts_a_party_first() -> void:
 	var home := await _home()
 	var p := FriendsPanel.open(home)
 	await _until(func() -> bool: return Friends.service == "ok" and p.rows_in_order().size() == 6)
-	t.check(p.sub_lbl.text.contains("starts a party"), "Home says what Invite does: %s" % p.sub_lbl.text)
+	t.check(p.sub_lbl.text.contains("Create a party"), "Home says what Invite does: %s" % p.sub_lbl.text)
+	t.check(p.create_btn.is_visible_in_tree() and not p.code_lbl.is_visible_in_tree(), "Home: Create party, no code yet")
+	t.check(not p.gc_btn.is_visible_in_tree(), "no Apple invite screen button")
 	t.eq(ff.count(HTTPClient.METHOD_POST, "/v1/rooms"), 0, "no party yet")
 	var row: FriendsPanel.Row = p.rows_in_order()[1]
 	row.action_btn.pressed.emit()
@@ -405,6 +407,33 @@ func test_invite_from_home_starts_a_party_first() -> void:
 	for c in (App.screen as Node).get_children():
 		reopened = reopened or c is FriendsPanel
 	t.check(reopened, "Friends stays open in the new party room (Invited ✓ shows there)")
+	await _end()
+
+
+## (build 31) Invite > Create party: your own lobby with a code (the game
+## service room; no Apple invite screen), and Friends reopens there with the
+## code to share and the friends to invite.
+func test_create_party_shows_the_code_without_game_center() -> void:
+	await _begin()
+	await _signin()
+	var home := await _home()
+	var p := FriendsPanel.open(home)
+	await _until(func() -> bool: return Friends.service == "ok")
+	p.create_btn.pressed.emit()
+	await _until(func() -> bool: return App.screen is LobbyScreen and Friends.in_party(), 900)
+	t.eq(ff.count(HTTPClient.METHOD_POST, "/v1/rooms"), 1, "a party was created")
+	t.check(not Social.sheet_open(), "no Apple invite screen")
+	var np: FriendsPanel = null
+	for c in (App.screen as Node).get_children():
+		if c is FriendsPanel and not c.is_queued_for_deletion():
+			np = c
+	t.check(np != null, "Friends reopens in the new lobby")
+	if np != null:
+		await _secs(0.5)
+		t.check(np.code_lbl.is_visible_in_tree() and np.code_lbl.text == App.party_code and App.party_code != "", "its code, big, to share: %s" % np.code_lbl.text)
+		t.check(np.copy_btn.is_visible_in_tree() and np.code_share_btn.is_visible_in_tree(), "with Copy and Share")
+		t.check(not np.create_btn.is_visible_in_tree(), "no second Create party")
+		np.close()
 	await _end()
 
 

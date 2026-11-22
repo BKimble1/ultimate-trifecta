@@ -1187,3 +1187,13 @@ badge ride in the look as two optional fields older builds skip).
   off-screen or trimmed control.
 - Desktop: the keyboard height is asked only where there is an on-screen
   keyboard.
+
+## 47. Build 31: Invite = your own party and its code
+
+Protocol 16 unchanged: builds 20 to 31 play together.
+- **Friends › Invite never opens Apple's Game Center screen.** Not in a
+  party yet: one button, **Create party** (your own lobby with a code; the
+  game service room, no Apple screen), and Friends reopens in the new lobby.
+  In a party: the **party code** big at the top with Copy and Share, then
+  your friends with Invite buttons.  "Invite with Game Center" is gone.
+- Test: `test_friends::test_create_party_shows_the_code_without_game_center`.

@@ -1,7 +1,6 @@
-2.2 (30): final pass before the App Store. Sign in to Game Center first. Purchases use Apple's sandbox in TestFlight, so nothing is really charged. Builds 20 to 30 play together. Tell us your iPhone or iPad model:
+2.2 (31): Invite makes your own party. Sign in to Game Center first. Purchases use Apple's sandbox in TestFlight, so nothing is really charged. Builds 20 to 31 play together. Tell us your iPhone or iPad model:
 
-- Friends: open Friends in the lobby. Try Invite, Join with code and Add friend. Your tag is shown there (Name#1234): add a friend by theirs, accept their request, then invite them.
-- Basketball (Walk in the lobby): dribble standing and walking, turn to see crossovers, between the legs and behind the back, then shoot.
-- Season Pass > Get Premium: one button, $4.99. Shop > Coins: six packs with prices.
-- Play a round: the Coins fly into the counter at the top of the lobby; the results page is short.
-- Equip a name card or badge in the Locker: your party sees it on your roster card.
+- Friends > Invite: tap Create party. You land in your lobby with its code at the top of Friends (Copy / Share). A friend joins with Join with code, or you tap Invite next to their name. No Game Center screen opens.
+- Friends > Add friend: add someone by their tag (Name#1234), accept their request, then invite them.
+- Basketball (Walk in the lobby): dribble, turn for crossovers, between the legs and behind the back, then shoot.
+- Season Pass > Get Premium: one button, $4.99. Play a round: the Coins fly into the counter in the lobby.
