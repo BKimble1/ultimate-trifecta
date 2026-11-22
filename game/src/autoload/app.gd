@@ -748,9 +748,11 @@ func practice_map() -> String:
 # Online rooms
 # ---------------------------------------------------------------------------
 ## Create a party.  With the service configured: the service creates the
-## room atomically and returns its code; the host then opens the Game Center
-## match for that code and keeps the room alive with heartbeats.  Without it
-## (builds with no service URL) the room is an unverified Game Center room.
+## room atomically and returns its code; the host then opens the service's
+## party relay for that code (RelayTransport: no Game Center matchmaking;
+## a deployment without the relay: the Game Center match for the code) and
+## keeps the room alive with heartbeats.  Without it (builds with no service
+## URL) the room is an unverified Game Center room.
 func host_room_gamekit() -> void:
 	if not await _confirm_party_switch():
 		return
@@ -766,7 +768,25 @@ func host_room_gamekit() -> void:
 			party_error.emit(Cloud.explain(r), String(r.get("error", "")))
 			return
 		var code := String(r["room"]["code"])
-		var t := Social.host_code_room(code)
+		var t: NetTransport
+		if Cloud.relay_ready():
+			var rt := RelayTransport.new(true)
+			rt.host(Cloud.relay_url(code, "host"), Cloud.token)
+			_relay_pending = rt
+			var why := await rt.wait_open(get_tree())
+			_relay_pending = null
+			if req != _party_req:
+				rt.close()
+				Cloud.leave_room(code)
+				return
+			if why != "":
+				Cloud.leave_room(code)
+				party_error.emit(why, "relay")
+				return
+			rt.failed.connect(_on_relay_lost.bind(rt))
+			t = rt
+		else:
+			t = Social.host_code_room(code)
 		_begin_session(NetSession.Mode.HOST, t, code)
 		session.require_admission = Cloud.admission_key != null
 		session.admission_key = Cloud.admission_key
@@ -783,7 +803,9 @@ func host_room_gamekit() -> void:
 
 ## Join a party by code: the service checks the code, room state, capacity,
 ## version and blocks and hands back an admission credential plus the host's
-## Game Center player; we then join that Game Center match and present it.
+## Game Center player; we then connect to the host through the service's
+## party relay (RelayTransport; a deployment without it: the Game Center
+## match for the code) and present the credential.
 ## (Final: an accepted Friends invite joins through here too; `confirmed`
 ## when the player already agreed to leave their party, so it isn't asked
 ## twice.)
@@ -798,6 +820,7 @@ func join_room_gamekit(code: String, confirmed: bool = false) -> void:
 	_close_session()
 	var adm := ""
 	var host_gc := ""
+	var t: NetTransport = null
 	if Cloud.configured():
 		var req := _party_req
 		var r: Dictionary = await Cloud.join_room(c)
@@ -810,12 +833,50 @@ func join_room_gamekit(code: String, confirmed: bool = false) -> void:
 			return
 		adm = String(r["admission"])
 		host_gc = String(r["host_gc_player"])
-	var t := Social.join_code_room(c)
+		if Cloud.relay_ready():
+			var rt := RelayTransport.new(false)
+			rt.join(Cloud.relay_url(c, "guest"), Cloud.token, host_gc)
+			_relay_pending = rt
+			var why := await rt.wait_open(get_tree())
+			_relay_pending = null
+			if req != _party_req:
+				rt.close()
+				Cloud.leave_room(c)
+				return
+			if why != "":
+				Cloud.leave_room(c)
+				party_error.emit(why, "relay")
+				return
+			t = rt
+	if t == null:
+		t = Social.join_code_room(c)
 	_begin_session(NetSession.Mode.CLIENT, t, c)
 	session.admission = adm
 	session.expected_host_uid = host_gc
 	session.local_pid = Cloud.profile_id()
 	party_code = c
+
+
+## The party relay dropped under a party we host (a phone's network blip):
+## guests were ended by the relay; reconnect so friends can join again, a
+## few times, then say so.
+func _on_relay_lost(_message: String, rt: RelayTransport) -> void:
+	var ours := func() -> bool:
+		return session != null and is_instance_valid(session) and session.transport == rt and session.mode == NetSession.Mode.HOST \
+			and party_code != ""
+	if not ours.call():
+		return
+	if rt.reconnects >= RELAY_RECONNECTS:
+		if screen is Control and (screen as Control).is_inside_tree():
+			UIKit.toast(screen as Control, "Your party lost its connection, so friends can't join right now. Make a new party to play online.", 4.0)
+		return
+	rt.reconnects += 1
+	await get_tree().create_timer(1.5 * rt.reconnects).timeout
+	if ours.call():
+		rt.reopen(Cloud.relay_url(party_code, "host"), Cloud.token)
+
+
+const RELAY_RECONNECTS := 3
 
 
 ## Game Center matchmaking failed: a code join (or a party we host) whose
@@ -882,12 +943,15 @@ signal party_error(message: String, code: String)
 var party_code := ""
 var _invite_asking := false   # an accepted Game Center invite is asking "Leave your party?"
 var _party_req := 0   # bumped by cancel: a cancelled request's result is dropped
+var _relay_pending: RelayTransport   # a party relay still connecting (Cancel closes it)
 
 
 ## The player cancelled while the service / Game Center was still working.
 func cancel_party_request() -> void:
 	_party_req += 1
 	Social.stop_matchmaking()
+	if _relay_pending != null:
+		_relay_pending.close()   # (its wait ends at once)
 	if session and is_instance_valid(session) and session.mode == NetSession.Mode.CLIENT and session.host_peer < 0:
 		_close_session(false)
 var _hb_timer: Timer

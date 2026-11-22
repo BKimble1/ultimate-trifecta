@@ -16,6 +16,17 @@ database_name = "trifecta"
 database_id = "49475d1a-0838-4106-9354-5fea55e8d3c7"   # printed by: wrangler d1 create trifecta
 migrations_dir = "migrations"
 
+# Party-code relay (src/relay.js): one Durable Object per room code, WebSocket
+# Hibernation API, SQLite-backed (the only kind the Workers Free plan has).
+# Bindings are not inherited: [env.production] declares its own below.
+[[durable_objects.bindings]]
+name = "RELAY"
+class_name = "RelayRoom"
+
+[[migrations]]
+tag = "relay-v1"
+new_sqlite_classes = ["RelayRoom"]
+
 [vars]
 ENVIRONMENT = "sandbox"            # "production" only in [env.production] below
 # V6 commerce: which App Store environment this deployment accepts.  This
@@ -52,6 +63,14 @@ binding = "DB"
 database_name = "trifecta-production"
 database_id = "f6db76d5-e3f0-4c23-b396-de1b8bf30e8e"
 migrations_dir = "migrations"
+
+[[env.production.durable_objects.bindings]]
+name = "RELAY"
+class_name = "RelayRoom"
+
+[[env.production.migrations]]
+tag = "relay-v1"
+new_sqlite_classes = ["RelayRoom"]
 
 [env.production.vars]
 ENVIRONMENT = "production"

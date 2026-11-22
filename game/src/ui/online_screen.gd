@@ -382,6 +382,7 @@ func _on_party_error(message: String, code: String) -> void:
 		"suspended": "Online play paused",
 		"code_format": "Check the code",
 		"network": "No connection",
+		"relay": "Couldn't connect",
 		"update_required": "Update needed",
 	}.get(code, "")
 	dialog((title + "\n" if title != "" else "") + message)
