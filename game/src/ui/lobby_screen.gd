@@ -1127,8 +1127,9 @@ func _refresh() -> void:
 	_grid.add_theme_constant_override("v_separation", gap)
 	# (build 30) three columns: narrower cards, so the stage keeps enough of
 	# the screen and its camera stays inside the room
+	var w3 := clampf(get_viewport().get_visible_rect().size.x * 0.128, 214.0, 252.0) if is_inside_tree() else 214.0
 	for c in cells:
-		(c as Control).custom_minimum_size.x = 214.0 if _grid.columns >= 3 else 272.0
+		(c as Control).custom_minimum_size.x = w3 if _grid.columns >= 3 else 272.0
 	if App.stage:
 		App.stage.sync_party(entries)
 	_join_leave_notes()
@@ -1669,8 +1670,8 @@ class SlotCell:
 		UIKit.face_of(self).add_child(plate)
 		medal = BadgeMark.new()
 		medal.name = "Badge"
-		medal.custom_minimum_size = Vector2(30, 30)
-		medal.size = Vector2(30, 30)
+		medal.custom_minimum_size = Vector2(26, 26)
+		medal.size = Vector2(26, 26)
 		medal.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		medal.visible = false
 		var h := UIKit.hbox(10)
@@ -1706,8 +1707,9 @@ class SlotCell:
 		sub_l.clip_text = true
 		sub_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(sub_l)
-		medal.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		h.add_child(medal)
+		# the badge sits on the portrait's corner (the name keeps the width)
+		medal.position = Vector2(30, 28)
+		face.add_child(medal)
 
 	func _style(me: bool, open: bool) -> void:
 		var f := UIKit.face_of(self)
