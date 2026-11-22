@@ -1,109 +1,104 @@
-# App Store screenshots · version 2.0 (proposed sets)
+# App Store submission screenshots · 2.2 (build 29)
 
-**For the owner to approve, or to replace any of them with device
-screenshots.** Every picture is a **desktop render of the release
-candidate**: rendered from commit `dcb8209` (this branch merged with the
-release branch `claude/ultimate-trifecta-testflight-oie9r7` at `66e7575`:
-Season Pass, Friends, Shop, lobby lighting and the ARTFIX outfit fixes),
-character art **`v10-49a45748ffed`** (`game/assets/characters/runner_manifest.json`).
-They show the game's own screens and a real practice round,
-drawn by Godot 4.7.2's **Mobile renderer on llvmpipe** (Mesa software
-rendering, limited to AVX by `tools/gd.sh` so characters keep their
-directional light) under Xvfb, at the exact store size, with each device's
-point scale (44 pt touch targets) and landscape safe area. Nothing is drawn
-over the game: no evidence stamp, label, debug overlay or "(test price)"
-(the drivers' `--store-shot` mode). Not a device capture; not frame-rate
-evidence.
+**Everything to upload for the 2.2 submission: the public App Store
+screenshots (iPhone and iPad) and the review screenshot for each of the
+9 in-app purchases.** Rendered on 22 Nov 2026 from the build 29 source
+(submit build 29: the build these screens come from), at the exact store sizes, with the App Store
+Connect prices (USA) on the purchase screens.
 
-**Fixtures.** Season Pass, Shop, wallet and Locker run on the **test-double
-game service** and the **simulated store** (`game/src/dev/fake_commerce_service.gd`,
-`game/src/dev/test_store_adapter.gd`); Friends on the **test-double Friends
-service and Game Center stand-in** (`game/src/dev/fake_friends.gd`); the
-party is eight in-process sessions on the loopback transport (no network);
-the results are a three-round series recorded through the game's own
-`PartySeries`. **All player names and Game Center nicknames are fictional**
-("Comfy Frog" is the player). The two reference skins appear only as
-Record Breaker and Dr. Doom. The service is not deployed and no App Store
-products exist yet: nothing here is a live price, purchase or friend.
+## Upload map
 
-| Set | Size (px) | Device class | Points, scale | Safe area (pt L,T,R,B) |
+### In-app purchases (App Store Connect › your app › Monetization ›
+In-App Purchases › the product › Review Information › Screenshot)
+
+| # | Product (reference name) | Product ID | Price | Upload this file |
 |---|---|---|---|---|
-| [`iphone_6.9/`](iphone_6.9/) | **2868 × 1320** landscape | iPhone 6.9" (16/17 Pro Max class) | 956 × 440 @3x | 62, 0, 62, 21 |
-| [`ipad_13/`](ipad_13/) | **2752 × 2064** landscape | iPad 13" | 1376 × 1032 @2x | 0, 24, 0, 20 |
+| 1 | Coins 250 | `com.idlery.ultimatetrifecta.coins.250` | $0.99 | [`iap/iap_coin_packs.png`](iap/iap_coin_packs.png) |
+| 2 | Coins 500 | `com.idlery.ultimatetrifecta.coins.500` | $1.79 | [`iap/iap_coin_packs.png`](iap/iap_coin_packs.png) |
+| 3 | Coins 1000 | `com.idlery.ultimatetrifecta.coins.1000` | $2.99 | [`iap/iap_coin_packs.png`](iap/iap_coin_packs.png) |
+| 4 | Coins 1500 | `com.idlery.ultimatetrifecta.coins.1500` | $3.99 | [`iap/iap_coin_packs.png`](iap/iap_coin_packs.png) |
+| 5 | Coins 3500 | `com.idlery.ultimatetrifecta.coins.3500` | $7.99 | [`iap/iap_coin_packs.png`](iap/iap_coin_packs.png) |
+| 6 | Coins 7500 | `com.idlery.ultimatetrifecta.coins.7500` | $14.99 | [`iap/iap_coin_packs.png`](iap/iap_coin_packs.png) |
+| 7 | Season 1 Premium Pass | `com.idlery.ultimatetrifecta.pass.s1` | $4.99 | [`iap/iap_premium_pass.png`](iap/iap_premium_pass.png) |
+| 8 | Skin Moonlight Runner | `com.idlery.ultimatetrifecta.skin.moonlight_runner` | $1.99 | [`iap/iap_moonlight_runner.png`](iap/iap_moonlight_runner.png) |
+| 9 | Skin Starry Sleeper | `com.idlery.ultimatetrifecta.skin.starry_sleeper` | $1.99 | [`iap/iap_starry_sleeper.png`](iap/iap_starry_sleeper.png) |
 
-All images: PNG, 8-bit RGB, no alpha, sRGB (`tools/store_shot_check.py`).
+One Coins screenshot serves all six packs: it is the Shop › Coins page
+showing all six packs side by side, each with its price (Apple asks for
+a screenshot of the purchase as the user sees it; the same image may be
+used for several products).
 
-## The shots (same order and names in both sets)
+- `iap_coin_packs.png`: Shop › Coins: the six packs (250 / 500 / 1,000 /
+  1,500 / 3,500 / 7,500 Coins) at $0.99 / $1.79 / $2.99 / $3.99 / $7.99 /
+  $14.99, "Best value" on 7,500, Restore Purchases.
+- `iap_moonlight_runner.png` / `iap_starry_sleeper.png`: the outfit's
+  detail sheet from Shop › Featured › Always available: the runner wearing
+  it, "Buy for $1.99", Restore Purchases.
+- `iap_premium_pass.png`: the Season 1 Premium offer (Season Pass ›
+  Premium): the Premium track's outfits and "Get Premium · $4.99" (plus the
+  1,500 Coins option the game also offers).
 
-| File | What it shows | How it was made |
+### Public App Store screenshots (the 2.2 version page › Previews and Screenshots)
+
+Upload in this order (01 first), the same nine in both sets.
+
+| Order | File | What it shows |
 |---|---|---|
-| `01_runner_splash_fountain.png` | **Gameplay, runner: a near miss.** A runner in the striped pajamas and nightcap leaps for Founders' Fountain at night, Bellweather Tower behind, a Night Watch two steps away. HUD: Runner · Practice, 1/3 waters, "Next: Fountain", "Night Watch in sight · 2 m" (with the danger edge glow), "footsteps nearby", the round clock, minimap, stick and Dive (the jump button in the air). | Practice round, seed 2 (the fountain is one of the round's waters), Standard graphics, fixed 20 fps clock. `store_match_capture.gd` places the runner on the central path and the Night Watch on the plaza, then holds both sticks (the runner straight at the fountain, jumping at the rim; the Watch straight at the runner); the simulation, animation and HUD are the game's. Frame `splash_air_0` (0.1 s after the jump). |
-| `02_night_watch_golf_cart.png` | **Gameplay, Night Watch.** Driving a golf cart down Library Lane, closing on a runner ("Slipper · BOT") with a second runner further ahead; "footsteps nearby" cue; HUD: Night Watch, tags, "Driving · hop out to tag", the three waters' distances, Gas/Brake/Exit and Steer. | Same round as Night Watch: the driver seats the player in a cart on Library Lane, two runner bots run ahead on their own sticks, the player's stick holds the throttle. Frame `cart_d` (1.8 s in). |
-| `03_party_of_eight.png` | A full party of eight in the dorm lobby, everyone ready: party code, Friends, the settings summary (3 rounds · 2 Night Watch · 4 home to win), the roster, Start. Outfits: Varsity Sprinter (you), Record Breaker, Dr. Doom, Moonwalk Cadet, Raincoat Explorer, pink Pajamas, Duck Mascot, Pumpkin Pajamas. | Eight loopback sessions (no network), curated game-style names. |
-| `04_season_pass_record_breaker.png` | The Season Pass (Season 1 · After Hours, Premium, Tier 43 / 100, "Claim all (2)") with Tier 50's **Record Breaker** standing large on the stage beside the reward details (Locked · 2,300 XP to unlock). | Test-double service: 13,000 Season XP, Premium, rewards through tier 43 claimed except tier 40. |
-| `05_shop_featured.png` | The Shop's Featured page: four rotating skins with **Coin prices only** (800 / 900 / 1,000 / 1,000) and their countdowns; Always available below (on iPad the two App Store outfits show "Owned · App Store", so no store price is on screen). | Test-double service on the fixture service clock (2026-10-06 21:45 UTC), 2,650 Coins; both App Store outfits owned. |
-| `06_friends_invite.png` | Friends over a party of four: friends Online, In your party, In a party, In a round, Offline (iPad shows the whole list); one "Invited ✓", Invite buttons, the party code. | Test-double Friends service and Game Center stand-in; fictional nicknames (PillowFortPro, nightowl_88, otterly.fast, quadsprinter, moonbeam.runs, SockSlider, lilnapper). |
-| `07_locker.png` | The Locker's Outfit tab: a well-stocked wardrobe (Pajamas, Swim Trunks, Fluffy Robe, Duck Mascot, Frog Onesie, Moonlight Runner, Starry Sleeper, Varsity Sprinter equipped, …) with the runner on the stage. | Test-double wallet: Shop, Season and App Store outfits owned. |
-| `08_final_standings.png` | A friend series' Final standings: You 1st with 3 Round Wins, Sleepy Otter and Bouncy Panda tied 2nd, the table, Return to lobby. | A three-round series recorded through `PartySeries` (the real Round Win and shared-place rules). |
+| 1 | `01_runner_splash_fountain.png` | Gameplay as a runner: a leap into Founders' Fountain at night with the Night Watch two steps behind; the round HUD |
+| 2 | `02_night_watch_golf_cart.png` | Gameplay as the Night Watch: driving a golf cart down Library Lane after two runners |
+| 3 | `03_party_in_the_dorm.png` | A party of eight in the Christmas dorm lobby, everyone ready, Start |
+| 4 | `04_basketball_in_the_dorm.png` | Walk mode in the lobby: the runner's shot dropping through the Christmas hoop, confetti |
+| 5 | `05_season_pass_winter_break.png` | Season 1 · Winter Break pass: Premium, Tier 43 / 100, a claimed reward on the stage |
+| 6 | `06_shop_featured.png` | The Shop's Featured page: rotating skins with Coin prices and countdowns, the two App Store outfits |
+| 7 | `07_locker.png` | The Locker's Outfit tab with the runner on the stage |
+| 8 | `08_friends_invite.png` | Friends: invite friends to the party, statuses, party code |
+| 9 | `09_final_standings.png` | A party series' Final standings |
 
-**Outfit art.** The sets include the ARTFIX garment fixes (art
-`v10-49a45748ffed`: hooded onesies' belly panels and hood rims, Dr. Doom's
-jacket, the headlamp and head bands). Where those outfits appear: Dr. Doom
-in `03` and `06` (and a small portrait on the 100 chip in `04`), Duck
-Mascot in `03`, `07`; Frog Onesie in `07`; Cloud Nine and Bedtime Bandit
-cards in `05`; Starry Sleeper (sleep mask) in `07` and on a runner in `02`.
-If character art changes again, re-run the script.
+| Folder | Where in App Store Connect | Size |
+|---|---|---|
+| [`iphone_6.9/`](iphone_6.9/) | iPhone › **6.9" Display** | 2868 × 1320 (landscape) |
+| [`ipad_13/`](ipad_13/) | iPad › **13" Display** | 2752 × 2064 (landscape) |
 
-**Likeness (owner decision).** `03`, `04`, `06` and `08` (a small portrait
-in the standings) show Record Breaker or Dr. Doom, the two skins based on
-real people. Upload them only with those people's written permission
-(docs/APP_STORE.md, "Content rights"); otherwise use `01`, `02`, `05` and
-`07`.
+Only these two sizes are needed: App Store Connect scales the 6.9" set to
+every smaller iPhone and the 13" set to every smaller iPad. The app runs
+on iPad, so the iPad set is required.
 
-## App Review references (`iap/`, iPhone size, NOT store assets)
+## How they were made (truthful to the app)
 
-| File | What |
-|---|---|
-| `iap/iap_coin_packs_reference.png` | Shop › Coins: the six Coin packs (consumables) and Restore Purchases |
-| `iap/iap_moonlight_runner_reference.png` | Moonlight Runner's detail sheet (non-consumable App Store outfit): Buy, Restore |
-| `iap/iap_starry_sleeper_reference.png` | Starry Sleeper's detail sheet (non-consumable App Store outfit): Buy, Restore |
+Each picture is the real game's screen drawn by the game itself (Godot
+4.7.2, Mobile renderer, software rendering on Linux at the device's exact
+pixel size, point scale and safe area); nothing is drawn over it: no
+mock-up, frame, caption, debug text or "(test price)" (the drivers'
+`--store-shot` mode). The gameplay shots are a real practice round (seed 2)
+on the game's simulation, with the players steered into the moment; the
+menus run on the game's test-double service and store, so the Coins, Season
+progress and friends are fixtures. **The prices are the App Store Connect
+prices (USA)**, read from App Store Connect on 22 Nov 2026
+(`tools/asc.py iap-list`) and applied to the store fixture
+(`LIVE_PRICES` in `game/src/dev/store_capture.gd`); the purchase screens
+show them exactly as the game formats a StoreKit price.
 
-These show the purchase screens **as the game renders them with the
-simulated store**, so the price reads "(test price)", and each carries a red
-"REFERENCE ONLY" label. Apple's required in-app purchase review screenshots
-**must be retaken on a device** once the products exist in App Store
-Connect (sandbox account, real localized prices). Never submit these.
+All player names and Game Center nicknames are fictional ("Comfy Frog" is
+the player). No outfit based on a real person appears large in any shot;
+only the Season Pass milestone chips (tiers 50 and 100) carry their tiny
+portraits, as the game's Season Pass always does.
+
+Not a device capture. On a device the status bar is hidden in the game,
+so the frames match what the phone shows.
+
+All images: PNG, 8-bit RGB, no alpha, sRGB (`tools/store_shot_check.py`,
+output in [`check.txt`](check.txt)).
 
 ## How to re-render
 
 ```
 tools/capture_store_screenshots.sh OUT_DIR            # both sets + iap
-tools/capture_store_screenshots.sh OUT_DIR iphone     # one device
-ONLY="menus" tools/capture_store_screenshots.sh OUT_DIR ipad   # one part
+SPLASH_PICK=splash_air_2 ONLY=none tools/capture_store_screenshots.sh OUT_DIR   # re-assemble
 python3 tools/store_shot_check.py OUT_DIR             # size / RGB / sRGB
 ```
 
 Drivers (development only, `game/src/dev`, never exported):
-`store_capture.gd/.tscn` (menus, IAP references), `store_match_capture.gd`
-(gameplay, via `--capture=store_match`), `store_shot.gd` (the `--store-shot`
-flag: no stamps or overlays, RGB PNG). The evidence drivers
-`lobby_light_capture.gd`, `season_final_capture.gd`, `friends_capture.gd`,
-`capture_shop_p8.gd`/`capture_shop_final.gd` and `capture.gd` also honour
-`--store-shot`. Every frame the drivers take stays in `OUT_DIR/raw/` (other
-gameplay moments: `splash_air_*`, `splash_in_*` through the splash,
-`cart_a…e`); `SPLASH_PICK=` / `CART_PICK=` choose another and `ONLY=none`
-re-assembles the sets from `raw/` without rendering. Both sets together
-took about 1 h 45 min on this shared 4-core machine.
-
-## Checks done
-
-- `tools/store_shot_check.py` on this folder: **19 images, all pass**
-  (exact size, 8-bit RGB, no alpha, sRGB); output in
-  [`check.txt`](check.txt). Total size 34 MB.
-- By eye, every image at full size (and crops of the HUD, the party and the
-  pass detail): text crisp at the store size; nothing cut by the safe areas
-  (the iPhone HUD and menus sit inside the 62 pt side insets and above the
-  21 pt home-indicator band; the iPad's inside 24/20 pt); characters lit
-  (no dark faces); no evidence stamp, debug text, diagnostics overlay or
-  "(test price)" on the 16 store images (the `iap/` references carry their
-  label and the simulated price on purpose).
+`store_capture.gd/.tscn` (menus, the basketball shot and `--set=iap`),
+`store_match_capture.gd` (gameplay, via `--capture=store_match`). Frames
+used: splash `splash_air_2`, cart `cart_d`. If prices change in App Store
+Connect, update `LIVE_PRICES` and re-render with `ONLY=iap`.
