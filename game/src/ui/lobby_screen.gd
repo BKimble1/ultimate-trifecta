@@ -1017,7 +1017,10 @@ func _refresh() -> void:
 	copy_btn.visible = not solo
 	share_btn.visible = not solo and _can_invite()
 	invite_btn.visible = _can_invite() or solo
-	wallet_chip.visible = solo
+	# (build 30) the Coins counter is always in the lobby's top bar (home is
+	# a party room on a device, so "solo only" hid it there): a round's Coins
+	# and the daily gift fly into it
+	wallet_chip.visible = true
 	season_card.visible = false
 	chat_btn.visible = not solo and session.mode != NetSession.Mode.OFFLINE
 	_paint_mode()

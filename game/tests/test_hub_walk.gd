@@ -262,3 +262,54 @@ func test_full_party_and_walk_on_ipad() -> void:
 	rig.teardown()
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
+
+
+## (build 30) The Coins counter is in the lobby's top bar in a party room
+## too (home is a party room on a device), on screen and clear of the other
+## top-bar items at phone, SE and iPad sizes; a round's Coins fly into it.
+func test_coins_counter_in_a_party_room() -> void:
+	var rig := NetRig.new()
+	t.add_child(rig)
+	rig.setup(20, 0, 0.0, 1)
+	await rig.wait_until(func() -> bool: return rig.host.human_count() == 2, 300)
+	var saved_session := App.session
+	var root: Window = t.get_tree().root
+	var saved_size: Vector2i = root.size
+	App.session = rig.host
+	for sz in [Vector2i(2868, 1320), Vector2i(1334, 750), Vector2i(2048, 1536)]:
+		root.size = sz
+		await rig.frames(2)
+		var l := _setup(rig)
+		await rig.frames(14)
+		t.check(not l._solo(), "%s: a party room (not solo)" % str(sz))
+		var chip: Control = l.wallet_chip
+		t.check(chip.visible and chip.is_visible_in_tree(), "%s: the Coins counter shows" % str(sz))
+		var view := l.get_viewport().get_visible_rect()
+		var r := chip.get_global_rect()
+		t.check(view.grow(0.5).encloses(r) and r.size.x > 40.0, "%s: whole and on screen (%s)" % [str(sz), str(r)])
+		for c in (l.top_bar as Control).get_children():
+			if c == chip or not (c is Control) or not (c as Control).visible:
+				continue
+			var r2 := (c as Control).get_global_rect()
+			t.check(not r.grow(-0.5).intersects(r2.grow(-0.5)), "%s: clear of %s" % [str(sz), (c as Control).name])
+		l.queue_free()
+		_stage.queue_free()
+		await rig.frames(2)
+	# a round's Coins: they fly into the counter
+	root.size = Vector2i(2868, 1320)
+	await rig.frames(2)
+	App.coin_fly_pending = 120
+	var l2 := _setup(rig)
+	await rig.frames(10)
+	t.eq(App.coin_fly_pending, 0, "the pending Coins are taken by the lobby")
+	await t.get_tree().create_timer(0.9).timeout
+	t.check((l2.wallet_chip as WalletChip)._flying, "and fly into the counter")
+	l2.queue_free()
+	_stage.queue_free()
+	await rig.frames(2)
+	App.stage = null
+	App.session = saved_session
+	root.size = saved_size
+	rig.teardown()
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
