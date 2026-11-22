@@ -12,9 +12,9 @@ on:
         type: boolean
         default: true
       support_email:
-        description: "Public support email shown in the game (optional)"
+        description: "Public support email shown in the game"
         type: string
-        default: ""
+        default: "support@idlery.com"
       support_url:
         description: "Support page URL (optional; default: the website's /support/)"
         type: string
