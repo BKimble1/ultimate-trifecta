@@ -1197,3 +1197,36 @@ Protocol 16 unchanged: builds 20 to 31 play together.
   In a party: the **party code** big at the top with Copy and Share, then
   your friends with Invite buttons.  "Invite with Game Center" is gone.
 - Test: `test_friends::test_create_party_shows_the_code_without_game_center`.
+
+## 48. Build 32: parties by code work (the service relay)
+
+Protocol 16 unchanged.  The owner's iPhones (build 31): hosting said
+"Couldn't open your party to others (… the match request is invalid)",
+joining "Couldn't connect to that party through Game Center (…)" or
+"Couldn't find that room".
+- **Party codes no longer use Game Center matchmaking.**  A party you
+  create (Create party, or Play with Friends) and a code you join now
+  connect through the game service's own relay (a Cloudflare Durable
+  Object per room, WebSocket; `service/src/relay.js`, client
+  `game/src/net/relay_transport.gd`).  The service checks the host owns
+  the room and the guest joined it (blocks, kicks and suspensions
+  refused); the host's admission check is unchanged.  Friends-list invites
+  carry the code, so they join the same way.  Short messages on failure
+  ("Couldn't reach that party. Check the code and try again.").
+- **Tested end to end here**: the real Worker, Durable Object and D1 under
+  `wrangler dev`, two game processes: create a party, join by its code,
+  admitted, Ready, a real round (the guest's stick moves its runner on the
+  host; the host's snapshots stream back, ~20 a second; 15 ms round trip),
+  the host leaving ends the guest's party (`tools/relay_e2e.sh`; passed
+  every run).
+- **Game Center requests** (Quick Match): never more players than Game
+  Center allows for a real-time match; a request Game Center calls invalid
+  is retried once without roles.  Game Center invites are off while
+  parties run on the relay (the friends list and the code invite instead).
+- **Player name entry**: the keyboard height is asked on every phone again
+  (build 30 could leave it at 0 on iOS, so the name sat under the
+  keyboard), and while typing the form docks in the top part of the screen
+  without the fine print: the name and Enter the dorm stay in view.
+- Service: migration-free; `wrangler.toml` adds the `RELAY` Durable Object
+  (SQLite-backed, free plan) for sandbox and production; deployed 22 Nov
+  2026 (`/v1/config` lists `relay`).  Cost note in `service/README.md`.
