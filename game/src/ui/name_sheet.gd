@@ -138,12 +138,10 @@ func keyboard_fit() -> void:
 	var top := UIKit.safe_margins(vp).position.y + 8.0
 	if docked:
 		var room := vs.y - kh - top - 8.0
-		# the heading, then the buttons go if the field would not fit
-		# (Return on the keyboard still saves)
+		# the heading goes if the field and its buttons would not fit
+		# (build 34: Save always stays: a tap on it lets go of the keyboard)
 		if get_combined_minimum_size().y > room and title_l.visible:
 			title_l.visible = false
-		if get_combined_minimum_size().y > room and button_row.visible:
-			button_row.visible = false
 		reset_size()
 		position = Vector2(maxf(0.0, (vs.x - size.x) * 0.5), top)
 	else:
@@ -160,7 +158,7 @@ func cancel_sheet() -> void:
 		back_requested.emit()
 		return
 	done.emit("")
-	queue_free()
+	_close()
 
 
 static func _current() -> String:
@@ -208,6 +206,39 @@ func _suggest(names: Array) -> void:
 		sugg_row.add_child(b)
 
 
+## (build 34) The name field gives up the iOS keyboard before the sheet
+## goes: freeing a text field while it still owns the on-screen keyboard
+## crashed the game on iPhone (Return on the keyboard saves; since build 33
+## the Save button can be tucked away while typing, so that is how a phone
+## saves). The sheet is hidden at once and freed a few frames later, after
+## the keyboard has let go.
+func _let_go_of_keyboard() -> void:
+	set_process(false)
+	if is_instance_valid(field):
+		if not embedded:
+			field.editable = false
+		if field.has_focus():
+			field.release_focus()
+	if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+		DisplayServer.virtual_keyboard_hide()
+
+
+func _close() -> void:
+	if is_queued_for_deletion():
+		return
+	_let_go_of_keyboard()
+	hide()
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if not is_inside_tree():
+		queue_free()
+		return
+	var tree := get_tree()
+	for i in 3:
+		await tree.process_frame
+	if is_instance_valid(self):
+		queue_free()
+
+
 func _save() -> void:
 	var n := NameRules.normalize(field.text)
 	if not bool(NameRules.moderate(n)["ok"]) or _busy:
@@ -217,7 +248,9 @@ func _save() -> void:
 		Save.save_now()
 		done.emit(n)
 		if not embedded:
-			queue_free()
+			_close()
+		else:
+			_let_go_of_keyboard()
 		return
 	_busy = true
 	save_btn.disabled = true
@@ -230,7 +263,7 @@ func _save() -> void:
 		Save.data["name"] = n
 		Save.save_now()
 		done.emit(Cloud.full_name())
-		queue_free()
+		_close()
 		return
 	msg.text = Cloud.explain(r)
 	msg.add_theme_color_override("font_color", UIKit.AMBER)

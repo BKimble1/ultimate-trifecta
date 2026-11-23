@@ -1298,3 +1298,17 @@ The owner's two iPhones on build 32:
   hologram), both back in the lobby, both ready (host first), the host
   promotes the guest, whose Start begins round 2 with them in it.
 - Service unchanged.
+
+## 50. App Store Connect 2.2 (33): the crash on saving a name
+
+The owner: saving a new name crashed the app (2.2 (32)).  No crash report
+was shared through TestFlight (`tools/asc.py crashes`, new in the status
+run, read 0).  The name sheet was freed while its text field still held the
+iOS keyboard: since 2.2 (32) the sheet could tuck Save away while typing,
+so a phone saved with the keyboard's Return, and the sheet went at once.
+Now the field lets go of the keyboard first (focus released, keyboard
+hidden), the sheet hides and is freed a few frames later; Save always stays
+in view while typing (only the heading makes room).  Tests:
+`tests/test_rename_flow.gd` (Settings › Change name with the service, on the
+device, and a phone tapping Save with the keyboard up).  From here the
+notes use App Store Connect's build numbers.
