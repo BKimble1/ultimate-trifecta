@@ -387,6 +387,57 @@ def main():
     if cmd == "builds":
         print(json.dumps(builds(a["id"]), indent=2))
         return 0
+    if cmd == "version-check":
+        # (read only) what the App Store version page has filled in: prints
+        # set / missing (never contact details or text bodies)
+        def get(path, **params):
+            r = call("GET", path, params=params or None)
+            return r.json() if r.ok else None
+        def has(v):
+            return "set" if v not in (None, "", [], {}) else "MISSING"
+        aa = get(f"/apps/{a['id']}", **{"fields[apps]": "contentRightsDeclaration,primaryLocale"}) or {}
+        print("content rights:", ((aa.get("data") or {}).get("attributes") or {}).get("contentRightsDeclaration") or "MISSING")
+        ps = get(f"/apps/{a['id']}/appPriceSchedule", include="manualPrices")
+        print("app price schedule:", "set" if ps and ps.get("data") else "MISSING")
+        av = get(f"/apps/{a['id']}/appAvailabilityV2")
+        print("app availability:", "set" if av and av.get("data") else "MISSING (or not readable)")
+        infos = (get(f"/apps/{a['id']}/appInfos") or {}).get("data", [])
+        for inf in infos[:2]:
+            at = inf.get("attributes", {})
+            print("app info", inf["id"][:8], "state:", at.get("appStoreState") or at.get("state"), "age rating:", at.get("appStoreAgeRating"))
+            cat = get(f"/appInfos/{inf['id']}/primaryCategory")
+            print("  primary category:", ((cat or {}).get("data") or {}).get("id", "MISSING"))
+            ard = get(f"/appInfos/{inf['id']}/ageRatingDeclaration")
+            print("  age rating declaration:", "set" if ard and ard.get("data") else "MISSING")
+            for loc in (get(f"/appInfos/{inf['id']}/appInfoLocalizations") or {}).get("data", []):
+                la = loc["attributes"]
+                print(f"  {la.get('locale')}: name {has(la.get('name'))} ({la.get('name')}), subtitle {has(la.get('subtitle'))}, privacy policy URL {has(la.get('privacyPolicyUrl'))}")
+        vers = (get(f"/apps/{a['id']}/appStoreVersions", **{"filter[platform]": "IOS", "limit": 5}) or {}).get("data", [])
+        if not vers:
+            print("NO App Store version record (create 2.2 on the app page)")
+        for v in vers[:3]:
+            at = v["attributes"]
+            print("=== version", at.get("versionString"), "state:", at.get("appStoreState") or at.get("appVersionState"),
+                  "release:", at.get("releaseType"), "copyright:", has(at.get("copyright")))
+            b = get(f"/appStoreVersions/{v['id']}/build")
+            bd = (b or {}).get("data") or {}
+            print("  build:", (bd.get("attributes") or {}).get("version", "NONE ATTACHED"), bd.get("id", ""))
+            for loc in (get(f"/appStoreVersions/{v['id']}/appStoreVersionLocalizations") or {}).get("data", []):
+                la = loc["attributes"]
+                print(f"  {la.get('locale')}: description {has(la.get('description'))}, keywords {has(la.get('keywords'))}, "
+                      f"support URL {has(la.get('supportUrl'))}, marketing URL {has(la.get('marketingUrl'))}, promo text {has(la.get('promotionalText'))}, what's new {has(la.get('whatsNew'))}")
+                for ss in (get(f"/appStoreVersionLocalizations/{loc['id']}/appScreenshotSets") or {}).get("data", []):
+                    n = len((get(f"/appScreenshotSets/{ss['id']}/appScreenshots") or {}).get("data", []))
+                    print(f"    screenshots {ss['attributes'].get('screenshotDisplayType')}: {n}")
+            rd = get(f"/appStoreVersions/{v['id']}/appStoreReviewDetail")
+            rda = ((rd or {}).get("data") or {}).get("attributes") or {}
+            print("  review contact:", "set" if rda.get("contactEmail") and rda.get("contactPhone") and rda.get("contactFirstName") else "MISSING",
+                  "| notes:", has(rda.get("notes")), "| demo account required:", rda.get("demoAccountRequired"))
+            sub = get(f"/appStoreVersions/{v['id']}/appStoreVersionSubmission")
+            print("  submission:", "exists" if sub and sub.get("data") else "none")
+        gc = get(f"/apps/{a['id']}/gameCenterDetail")
+        print("game center detail:", "set" if gc and gc.get("data") else "MISSING (or not readable)")
+        return 0
     if cmd == "crashes":
         # (build 34) TestFlight crash reports testers shared (the "Share" on
         # TestFlight's crash prompt): newest first, with the crash log text

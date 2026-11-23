@@ -103,6 +103,7 @@ jobs:
           echo "in-app purchases (V6):"; "$PY" tools/asc.py iap-list || true
           echo "signing certificates (read only):"; "$PY" tools/asc.py certs || true
           echo "TestFlight crash reports (read only):"; "$PY" tools/asc.py crashes || true
+          echo "App Store version page (read only):"; "$PY" tools/asc.py version-check || true
 
   asc-iap:
     name: App Store Connect in-app purchases (${{ github.event.inputs.iap }})
