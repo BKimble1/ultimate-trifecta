@@ -1,9 +1,10 @@
-# App Store submission screenshots · 2.2 (build 32)
+# App Store submission screenshots · 2.2 (33)
 
 **Everything to upload for the 2.2 submission: the public App Store
 screenshots (iPhone and iPad) and the review screenshot for each of the
-9 in-app purchases.** Rendered on 22 Nov 2026 from the build 30 source (Friends shot: build 31)
-(submit build 32: the build these screens come from), at the exact store sizes, with the App Store
+9 in-app purchases.** Rendered on 22 Nov 2026 from the build 30 source; `03` and `08` re-rendered on 23 Nov 2026
+from the 2.2 (33) source (Leave party, ready checks on the portraits)
+(submit 2.2 (33) or later), at the exact store sizes, with the App Store
 Connect prices (USA) on the purchase screens.
 
 ## Upload map
@@ -46,7 +47,7 @@ Upload in this order (01 first), the same nine in both sets.
 |---|---|---|
 | 1 | `01_runner_splash_fountain.png` | Gameplay as a runner: a leap into Founders' Fountain at night with the Night Watch two steps behind; the round HUD |
 | 2 | `02_night_watch_golf_cart.png` | Gameplay as the Night Watch: driving a golf cart down Library Lane after two runners |
-| 3 | `03_party_in_the_dorm.png` | A party of eight in the Christmas dorm lobby, everyone ready (Season name cards and badges on the roster), Start |
+| 3 | `03_party_in_the_dorm.png` | A party of eight in the Christmas dorm lobby, everyone ready (a check on every card, Season name cards and badges), Leave party, Start |
 | 4 | `04_basketball_in_the_dorm.png` | Walk mode in the lobby: the runner's shot dropping through the Christmas hoop, confetti |
 | 5 | `05_season_pass_winter_break.png` | Season 1 · Winter Break pass: Premium, Tier 43 / 100, a claimed reward on the stage |
 | 6 | `06_shop_featured.png` | The Shop's Featured page: rotating skins with Coin prices and countdowns, the two App Store outfits |
