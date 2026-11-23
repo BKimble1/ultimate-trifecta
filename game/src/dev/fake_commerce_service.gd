@@ -288,6 +288,11 @@ func _route(method: int, path: String, b: Dictionary, pid: String) -> Dictionary
 			"profile": {"profile_id": p, "display_name": display_name, "discriminator": "0001", "needs_name": false, "status": "active"}}}
 	if pid == "" or not profiles.has(pid):
 		return _err(401, "signed_out", "Please sign in.")
+	if method == HTTPClient.METHOD_POST and path == "/v1/me/name":
+		# (build 34) as the service: the name is taken and the profile returned
+		display_name = String(b.get("name", display_name))
+		return {"status": 200, "body": {"ok": true, "profile": {"profile_id": pid, "display_name": display_name,
+			"discriminator": "0001", "needs_name": false, "status": "active"}}}
 	if method == HTTPClient.METHOD_GET and path == "/v1/wallet":
 		return _ok(pid)
 	if method == HTTPClient.METHOD_POST and path == "/v1/wallet/spend":

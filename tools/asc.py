@@ -387,6 +387,30 @@ def main():
     if cmd == "builds":
         print(json.dumps(builds(a["id"]), indent=2))
         return 0
+    if cmd == "crashes":
+        # (build 34) TestFlight crash reports testers shared (the "Share" on
+        # TestFlight's crash prompt): newest first, with the crash log text
+        r = call("GET", f"/apps/{a['id']}/betaFeedbackCrashSubmissions",
+                 params={"limit": 10, "sort": "-createdDate"})
+        if not r.ok:
+            r = call("GET", f"/apps/{a['id']}/betaFeedbackCrashSubmissions", params={"limit": 10})
+        if not r.ok:
+            print("crash submissions unavailable")
+            return 0
+        subs = r.json().get("data", [])
+        print(f"{len(subs)} crash submission(s)")
+        for c in subs:
+            at = c.get("attributes", {})
+            keep = {k: at.get(k) for k in ("createdDate", "comment", "deviceModel", "osVersion", "appUptimeInMilliseconds",
+                                             "buildBundleId", "connectionType", "batteryPercentage")}
+            bl = call("GET", f"/betaFeedbackCrashSubmissions/{c['id']}/relationships/build")
+            print("=== crash", c["id"], json.dumps(keep), "build:", (bl.json().get("data") or {}).get("id") if bl.ok else "?")
+            lg = call("GET", f"/betaFeedbackCrashSubmissions/{c['id']}/crashLog")
+            if lg.ok:
+                text = (lg.json().get("data") or {}).get("attributes", {}).get("logText") or ""
+                print(text[:12000])
+            print("=== end", c["id"])
+        return 0
     if cmd == "next-build":
         marketing = os.environ.get("MARKETING_VERSION", "1.0")
         nums = [int(b["build"]) for b in builds(a["id"], 50) if str(b["build"]).isdigit()]
