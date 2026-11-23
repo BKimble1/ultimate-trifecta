@@ -287,7 +287,10 @@ func _party(n: int) -> void:
 	for c in _clients:
 		if c.local_slot >= 0:
 			c.set_local_ready(true)
-	await _until(func() -> bool: return _host.roster.filter(func(e: Variant) -> bool: return e != null and bool(e["ready"])).size() >= n - 1)
+	# (build 33) the leader readies too, like everyone: a check mark on every
+	# card and Start lit
+	_host.set_local_ready(true)
+	await _until(func() -> bool: return _host.roster.filter(func(e: Variant) -> bool: return e != null and bool(e["ready"])).size() >= n)
 	await _frames(20)
 	await _wait(3.0)
 	await _portraits_idle()

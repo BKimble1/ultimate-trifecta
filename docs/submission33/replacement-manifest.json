@@ -1,32 +1,56 @@
 [
   {
     "path": "docs/media/final/store/iphone_6.1/03_party_in_the_dorm.png",
-    "size": 1465349,
-    "sha256": "2f7430f7e024166f778f6a46b35065786952dd97d87f2503e95a49c0f94455a1"
+    "size": 1448973,
+    "sha256": "b9c8cded6de683ff52f0fbd5a4ff901186ec075912b9c2c601fa7288e0cad635",
+    "git_blob": "c2ffed4b0d706e063481bb0086da401b822db6eb"
   },
   {
     "path": "docs/media/final/store/iphone_6.1/04_basketball_in_the_dorm.png",
     "size": 1600417,
-    "sha256": "91977ffbe000ac830dde54027f2514ad1a9ba948122f4fc6b982a4d007432130"
+    "sha256": "91977ffbe000ac830dde54027f2514ad1a9ba948122f4fc6b982a4d007432130",
+    "git_blob": "11ac18644740187d685f7410b153a76d4cc6dc18"
+  },
+  {
+    "path": "docs/media/final/store/iphone_6.1/08_friends_invite.png",
+    "size": 1011538,
+    "sha256": "7057f906841117cc982106c6c7d14a6bd28761258e41fbb6d331bb4ec7e0ee31",
+    "git_blob": "d597ae6a3ae9759c13f6c6098b662b0b63d00214"
   },
   {
     "path": "docs/media/final/store/iphone_6.9/03_party_in_the_dorm.png",
-    "size": 1725453,
-    "sha256": "b4f475f824d28529ce3d32959fe5c8a2007c8d527ecf1d25404650a37e2ba2ee"
+    "size": 1690795,
+    "sha256": "32eaa877f254a508e64d922c90f1bcd14d5f8084ab705216546281bf5bba2463",
+    "git_blob": "25dbec916c8c0018dbc7cd2719f8c350ee64505f"
   },
   {
     "path": "docs/media/final/store/iphone_6.9/04_basketball_in_the_dorm.png",
     "size": 1899970,
-    "sha256": "3a9c7cd4f824f4c887845ec7a3984bbf7d0a00e8c15648f7ed59312cdd6a8aa7"
+    "sha256": "3a9c7cd4f824f4c887845ec7a3984bbf7d0a00e8c15648f7ed59312cdd6a8aa7",
+    "git_blob": "a5a72c702555f3179c881074ac0a5b89e71e17ec"
+  },
+  {
+    "path": "docs/media/final/store/iphone_6.9/08_friends_invite.png",
+    "size": 1119938,
+    "sha256": "8e42ef9238f9d4af1ab4b313fda07e718d6974b40ab66d431bf61fca422a9c2f",
+    "git_blob": "b85eea6603827912222b78cab04cd4b23d068ccf"
   },
   {
     "path": "docs/media/final/store/ipad_13/03_party_in_the_dorm.png",
-    "size": 2395936,
-    "sha256": "b27d21facb82fa4e5e741cfdcc569172a94dcfd370c8753bb73ce5e86f7e6263"
+    "size": 2362973,
+    "sha256": "4f7ef12a09c6f79a78692f4bc9577a6d493d87a63c7877b9fc0d475402ecb3da",
+    "git_blob": "14597a01f8f9697ea023a281235c49f3cc9dce37"
   },
   {
     "path": "docs/media/final/store/ipad_13/04_basketball_in_the_dorm.png",
     "size": 2685765,
-    "sha256": "06a6cfc2ee5d1c7c768e6e65340c8c29af0642d55419f576cfcf71f415ae4663"
+    "sha256": "06a6cfc2ee5d1c7c768e6e65340c8c29af0642d55419f576cfcf71f415ae4663",
+    "git_blob": "839d4a63267aec5923f1458f9bd8cdc6243d5999"
+  },
+  {
+    "path": "docs/media/final/store/ipad_13/08_friends_invite.png",
+    "size": 1517469,
+    "sha256": "3eede217991a0d0929772f0560aa1a417c9cde89c286ee17f30c4d6dfb7231ca",
+    "git_blob": "7f7c9dce3cbf55607f5bd015cf542d0a833aa7aa"
   }
 ]

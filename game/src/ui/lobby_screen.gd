@@ -1902,17 +1902,20 @@ class SlotCell:
 		name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		UIKit.fit_text(name_l, [UIKit.T_LABEL, UIKit.T_CAPTION, 18])
 		nrow.add_child(name_l)
-		# a filled teal disc with a navy check: reads at a glance on any card
+		# a filled teal disc with a navy check: reads at a glance on any card.
+		# (build 33) on the portrait's corner (bottom left; the Season badge
+		# has the bottom right), so the name keeps the whole width: beside
+		# the name it cut names short with eight in the party on a phone
 		var rm := PanelContainer.new()
 		rm.name = "ReadyMark"
-		rm.add_theme_stylebox_override("panel", UIKit.box(UIKit.TEAL, 999, 0, Color.WHITE, 3))
-		rm.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		rm.add_theme_stylebox_override("panel", UIKit.box(UIKit.TEAL, 999, 0, Color.WHITE, 2))
 		rm.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		ready_mark = Icons.IconRect.new("check", UIKit.NAVY, 20)
+		ready_mark = Icons.IconRect.new("check", UIKit.NAVY, 16)
 		ready_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		rm.add_child(ready_mark)
 		rm.visible = false
-		nrow.add_child(rm)
+		rm.position = Vector2(-6, 30)
+		face.add_child(rm)
 		var row := UIKit.hbox(5)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(row)

@@ -1,0 +1,28 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[ok] test_party_stay::test_guest_leaves_round_stays_in_party_and_plays_the_next (7947 ms)
+[ok] test_party_stay::test_hologram_while_the_others_play_and_gone_after (3841 ms)
+[ok] test_party_stay::test_host_ends_the_round_early_everyone_in_the_lobby (6422 ms)
+[ok] test_party_stay::test_everyone_readies_with_checks_and_the_leader_starts (258 ms)
+[ok] test_party_stay::test_guest_leader_requests_are_checked_by_the_host (457 ms)
+[ok] test_party_stay::test_leadership_passes_on_when_the_leader_leaves (109 ms)
+[ok] test_party_stay::test_join_leave_rejoin_never_stacks_characters (23882 ms)
+[ok] test_party_stay::test_stage_revives_a_quick_rejoin_and_rekeys_its_own_runner (312 ms)
+[ok] test_party_stay::test_leave_party_button_layout_at_three_sizes (1183 ms)
+[ok] test_party_stay::test_guest_leader_ends_the_series_in_the_lobby (515 ms)
+[ok] test_party_stay::test_ending_the_round_reaches_older_guests (5359 ms)
+[ok] test_party_stay::test_no_removals_mid_round_and_a_removed_seat_plays_on (5904 ms)
+[ok] test_party_stay::test_a_host_that_does_not_lead_readies_on_its_results (3080 ms)
+[ok] test_party_stay::test_crown_passes_after_a_drop_and_promote_needs_a_build_that_can_lead (4626 ms)
+[ok] test_rename_flow::test_rename_from_settings_with_the_service (354 ms)
+[ok] test_rename_flow::test_rename_from_settings_on_device (268 ms)
+[ok] test_rename_flow::test_rename_on_a_phone_tapping_save (261 ms)
+
+17 tests, 343 checks, 0 failures in 67.8s
+WARNING: 74 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)
+ERROR: 4 RID allocations of type 'P10JoltBody3D' were leaked at exit.
+ERROR: 1 RID allocations of type 'P10JoltArea3D' were leaked at exit.
+ERROR: 1 RID allocations of type 'P11JoltSpace3D' were leaked at exit.

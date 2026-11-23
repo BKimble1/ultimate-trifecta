@@ -1,6 +1,6 @@
 # Ultimate Trifecta 2.2: every step to App Store submission
 
-Updated for **2.2 (33)**. Use [submission33/README.md](submission33/README.md)
+Updated for the **2.2 submission** (uploaded build 33 plus newer screenshot/layout work). Use [submission33/README.md](submission33/README.md)
 for the current verification record; older build references below are history.
 
 - Build **2.2 (33)** is processed, VALID and APP_STORE_ELIGIBLE (Apple API,
@@ -11,6 +11,8 @@ for the current verification record; older build references below are history.
   The **Season 1 Premium Pass is USD 4.99** (not the older proposed $9.99).
 - Content provenance is settled by the owner's commercial-use confirmation:
   [CONTENT_PROVENANCE.md](CONTENT_PROVENANCE.md).
+- A later working-branch ready-check layout fix (`c3dd861`) is not in the
+  uploaded build 33. Build a new eligible candidate to release that exact UI.
 - The last listing snapshot still had **no build attached** and automatic
   release. App Privacy, IAP attachment and the
   final review submission still need live verification. Nothing here means
@@ -355,7 +357,8 @@ Section **Previews and Screenshots**:
 
 ### F3. Build
 Section **Build** › **Add Build** (or the + next to it) › choose the
-**2.2 (33)** launch candidate › Done. If asked about **encryption**:
+**final phone-tested, App Store-eligible** launch candidate (33 is eligible;
+use a newer build if including the later ready-check layout fix) › Done. If asked about **encryption**:
 "None of the algorithms mentioned above" / exempt (the build already says
 it uses no non-exempt encryption).
 
