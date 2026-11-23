@@ -1,4 +1,4 @@
-2.2 (33): parties stay together, Dunk and Block. Sign in to Game Center first. Two phones in one party (Friends > Invite > Create party, then Join with code):
+2.2 (32): parties stay together, Dunk and Block. Sign in to Game Center first. Two phones in one party (Friends > Invite > Create party, then Join with code):
 
 - Ready: everyone taps Ready, the leader too, in any order. A check mark shows next to each ready name. The leader's Start lights up when all are ready.
 - Tap a friend's card > Promote to leader. The crown moves; the new leader starts the next round.

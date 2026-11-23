@@ -1231,7 +1231,11 @@ joining "Couldn't connect to that party through Game Center (…)" or
   (SQLite-backed, free plan) for sandbox and production; deployed 22 Nov
   2026 (`/v1/config` lists `relay`).  Cost note in `service/README.md`.
 
-## 49. Build 33: the party stays together; Dunk and Block
+## 49. Build 33 (App Store Connect 2.2 (32)): the party stays together; Dunk and Block
+
+Uploaded 23 Nov 2026 (run #303, `5bf731be-…`). Sections 46-48's builds
+30-32 are App Store Connect's 29-31 (29 was never uploaded, so the
+numbers shifted; `TESTFLIGHT_RELEASE.md`).
 
 Protocol 16 unchanged; every new message and field is additive (a host
 says what it supports in a trailing LOBBY byte, a guest in HELLO; older
