@@ -113,6 +113,8 @@ var stat_skipped: Dictionary = {}   # slot -> inputs merged while catching up
 var _snap_counter := 0
 var _ping_t := 0.0
 var _finished_mid := ""   # the round host_match_finished last took
+## tests: older guests sent home when a round was ended before they loaded
+var stat_sent_home := 0
 
 # client bookkeeping
 var _last_event_id := 0
@@ -730,6 +732,12 @@ func kick(slot: int) -> void:
 		_peer_slot.erase(peer)
 	var pid := String(roster[slot].get("pid", ""))
 	roster[slot] = null
+	if phase >= TC.Phase.LOADING and phase <= TC.Phase.PLAYING:
+		# (build 33) a round is running: a bot plays the seat to the end
+		_queues.erase(slot)
+		_loaded[slot] = true
+		if sim != null:
+			sim.leave_round(slot)
 	_check_leader()
 	_broadcast_lobby()
 	if pid != "":
@@ -805,10 +813,11 @@ func can_promote(slot: int) -> bool:
 		return false
 	if not host_supports(Protocol.CAP_LEADER):
 		return false
-	# the host's own slot can always lead; a guest only with a build that can
+	# the host's own slot can always lead; anyone else only with a build that
+	# can (a guest leader knows from LOBBY's can-lead flag; unknown: can't)
 	if slot == host_slot():
 		return true
-	return not is_host() or (int(e.get("caps", 0)) & Protocol.CAP_LEADER) != 0
+	return (int(e.get("caps", 0)) & Protocol.CAP_LEADER) != 0
 
 
 ## The roster slot of the network host (0 on every build so far).
@@ -844,6 +853,8 @@ func _leader_request(slot: int, op: int, b: StreamPeerBuffer) -> void:
 				# the leader starts from the party lobby while the host still
 				# reads the results: everyone is back, readiness kept
 				host_return_to_lobby(true)
+			if phase == TC.Phase.LOBBY and series != null and series.finished:
+				_clear_finished_series()   # the leader starts a new series (Play again)
 			if phase == TC.Phase.LOBBY and start_allowed():
 				host_start_match()
 			else:
@@ -863,7 +874,8 @@ func _leader_request(slot: int, op: int, b: StreamPeerBuffer) -> void:
 			if b.get_available_bytes() < 1:
 				return
 			var k := b.get_u8()
-			if k < 8 and k != local_slot and k != slot and roster[k] != null and not bool(roster[k]["is_bot"]):
+			if k < 8 and k != local_slot and k != slot and roster[k] != null and not bool(roster[k]["is_bot"]) \
+					and phase in [TC.Phase.LOBBY, TC.Phase.RESULTS]:
 				kick(k)
 			else:
 				leader_refusals += 1
@@ -873,10 +885,24 @@ func _leader_request(slot: int, op: int, b: StreamPeerBuffer) -> void:
 		Protocol.LeaderOp.END_SERIES:
 			if series != null and series.in_progress() and phase in [TC.Phase.LOBBY, TC.Phase.RESULTS]:
 				host_end_series()
+				if phase == TC.Phase.LOBBY:
+					_clear_finished_series()
 			else:
 				leader_refusals += 1
 		_:
 			leader_refusals += 1
+
+
+## Host: the series ended (the leader ended it, or it was played out) while
+## everyone is in the party lobby: what Play again does on the host's own
+## results screen.  The next Start begins a new series; the standings stay
+## on show (series_view) and the guests' lobby unlocks the settings.
+func _clear_finished_series() -> void:
+	if series == null or not series.finished:
+		return
+	series = null
+	_broadcast_lobby()
+	series_changed.emit()
 
 
 ## Host: this member left the round in progress and is in the party lobby.
@@ -916,8 +942,14 @@ func leave_round() -> bool:
 ## or cancelled it while it was loading).  Everyone goes back to the party
 ## lobby; the round is cancelled, so it counts for nobody (no loss, no
 ## reward, it doesn't use up a round of the series).  Guests are told with
-## RESULTS (outcome CANCELLED, "aborted"): older builds show a cancelled
-## round's results and go back from there.
+## RESULTS (outcome CANCELLED, "aborted"), and every guest still in the round
+## gets a last snapshot of the ended round (reliable).  An older build
+## (20-32) finishes its round only on a snapshot that says it ended: it then
+## shows the cancelled round's results and goes back to the lobby from
+## there.  An older guest whose round hasn't loaded yet couldn't be told
+## that way (its round reads no snapshot until it has loaded): it is sent
+## home as when a host left (HOST_END), rather than left on the loading
+## screen.
 func host_abort_round() -> bool:
 	if mode != Mode.HOST or phase < TC.Phase.LOADING or phase > TC.Phase.PLAYING:
 		return false
@@ -925,12 +957,44 @@ func host_abort_round() -> bool:
 	if sim != null:
 		sim.cancel_match()
 		res = sim.results.duplicate(true)
+		_send_final_snapshots()
 	else:
 		res = {"outcome": TC.Outcome.CANCELLED, "match_id": String(current_start.get("match_id", "")), "players": [], "round_time": 0.0}
+	# older guests who can't be brought back to the lobby
+	for peer in transport.peers() if transport != null else []:
+		var slot := int(_peer_slot.get(peer, -1))
+		var caps := int(roster[slot].get("caps", 0)) if slot >= 0 and roster[slot] != null else int((spectators.get(peer, {}) as Dictionary).get("caps", 0))
+		if (caps & Protocol.CAP_STAY) != 0 or _peer_away(peer):
+			continue
+		if sim != null and (slot < 0 or _loaded.has(slot)):
+			continue   # its round reads the ENDED snapshot
+		transport.send(peer, Protocol.buf_for(Protocol.M.HOST_END).data_array, true)
+		stat_sent_home += 1
+		if slot >= 0:
+			_peer_slot.erase(peer)
+			roster[slot] = null
+		spectators.erase(peer)
 	res["aborted"] = true
 	host_match_finished(res)
 	host_return_to_lobby()
 	return true
+
+
+## The ended round as each guest still in it sees it, once, reliably (its
+## round finishes on a snapshot whose phase is ENDED).
+func _send_final_snapshots() -> void:
+	if mode != Mode.HOST or transport == null or sim == null:
+		return
+	# a tick of its own: a guest drops a snapshot no newer than its last one
+	# (the round's last regular snapshot can carry this same tick)
+	sim.tick += 1
+	for peer in transport.peers():
+		if _peer_away(peer):
+			continue
+		var slot := int(_peer_slot.get(peer, -1))
+		var rec: SimPlayer = sim.player(slot) if slot >= 0 else null
+		var data := Protocol.encode_snapshot(sim, rec, _relevant_for(rec, 0.0), int(_last_seq.get(slot, -1)), rec != null)
+		transport.send(peer, data, true)
 
 
 func _lobby_bytes() -> PackedByteArray:
@@ -964,6 +1028,7 @@ func _lobby_bytes() -> PackedByteArray:
 		if phase >= TC.Phase.LOADING and phase <= TC.Phase.PLAYING and (_loaded.has(i) or bool(e["is_bot"])): flags |= 16
 		if i == leader_slot: flags |= 32           # (build 33) the party leader
 		if bool(e.get("away", false)): flags |= 64  # (build 33) left the round, in the party lobby
+		if not bool(e["is_bot"]) and (i == local_slot or (int(e.get("caps", 0)) & Protocol.CAP_LEADER) != 0): flags |= 128   # (build 33) can lead
 		b.put_u8(flags)
 		b.put_u8(["any", "runner", "patrol"].find(String(e["pref"])))
 		b.put_8(int(e.get("role", -1)))
@@ -1402,6 +1467,7 @@ func host_match_finished(results: Dictionary) -> void:
 		b.put_data(u)
 		transport.broadcast(b.data_array, true)
 	results_received.emit(results)
+	_check_leader()      # (build 33) a leader who dropped out of the round passes it on
 	_broadcast_lobby()   # (build 33) cleared Ready and the round's holograms, for everyone
 
 
@@ -1729,6 +1795,7 @@ func _read_lobby(b: StreamPeerBuffer) -> void:
 		e["is_host"] = (flags & 8) != 0
 		e["loaded"] = (flags & 16) != 0
 		e["away"] = (flags & 64) != 0
+		e["caps"] = Protocol.CAP_LEADER if (flags & 128) != 0 else 0
 		e["role"] = role
 		roster[i] = e
 		if (flags & 32) != 0:

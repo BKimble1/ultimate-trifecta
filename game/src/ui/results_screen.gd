@@ -838,11 +838,13 @@ func _on_primary() -> void:
 		_build_page()
 		_open_at_top(_sc)
 		return
-	if session.is_host():
-		App.back_to_party()
-		return
-	if series_over() or bool(view_data["cancelled"]):
-		App.show_lobby()
+	# (build 33) the party leader goes back to the lobby to start the next
+	# round; everyone else (a host that doesn't lead too) readies up here
+	if series_over() or bool(view_data["cancelled"]) or session.is_leader():
+		if session.is_host():
+			App.back_to_party()
+		else:
+			App.show_lobby()
 		return
 	_guest_ready()
 
@@ -900,7 +902,7 @@ func _refresh_actions() -> void:
 		_status.text = ""
 		_status.visible = false
 		return
-	if session.is_host():
+	if (session.is_host() and over) or (session.is_leader() and not cancelled):
 		if over:
 			_primary.text = "Return to lobby"
 			_status.text = ""
@@ -913,7 +915,8 @@ func _refresh_actions() -> void:
 	if over or cancelled:
 		_primary.text = "Return to lobby"
 		UIKit._apply(_primary, UIKit.AMBER, UIKit.NAVY)
-		_status.text = "Waiting for the host to start another round." if cancelled else "Waiting for the host to start another series."
+		_status.text = "" if session.is_leader() else ("Waiting for the party leader to start another round." if cancelled else "Waiting for the party leader to start another series.")
+		_status.visible = _status.text != ""
 		return
 	var e: Variant = session.roster[session.local_slot] if session.local_slot >= 0 else null
 	var rdy := e != null and bool(e["ready"])

@@ -1730,7 +1730,7 @@ func _player_popover(i: int, anchor: Control) -> void:
 				session.promote(i)
 				_refresh()], ["Cancel", Callable()]]))
 		v.add_child(pb)
-	if session.is_leader() and i != session.host_slot():
+	if session.is_leader() and i != session.host_slot() and not away_in_round():
 		var kb := UIKit.quiet("Remove from party", Vector2(340, 72))
 		kb.pressed.connect(func() -> void:
 			close_popover()

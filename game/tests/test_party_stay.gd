@@ -575,3 +575,179 @@ func _cancel_event() -> InputEvent:
 	e.action = "ui_cancel"
 	e.pressed = true
 	return e
+
+
+# ---------------------------------------------------------------------------
+# (build 33 review) the party leader's edge cases
+# ---------------------------------------------------------------------------
+## A guest leader ends the series in the lobby: the host clears it (Play
+## again), the settings unlock for everyone and the leader's next Start
+## begins a new series.
+func test_guest_leader_ends_the_series_in_the_lobby() -> void:
+	var rig := _rig(2, 80.0, 30.0, 0.02)
+	await rig.wait_until(func() -> bool: return _all_in(rig), 400)
+	var c0: NetSession = rig.clients[0]
+	var c1: NetSession = rig.clients[1]
+	rig.host.promote(c0.local_slot)
+	await rig.wait_until(func() -> bool: return c0.is_leader(), 200)
+	for s in [rig.host, c0, c1]:
+		s.set_local_ready(true)
+	await rig.wait_until(func() -> bool: return c0.start_allowed(), 300)
+	c0.request_start()
+	await rig.wait_until(func() -> bool: return rig.host.phase != TC.Phase.LOBBY, 300)
+	t.check(rig.host.series != null and rig.host.series.in_progress(), "a series is under way")
+	rig.host.host_abort_round()   # (back in the lobby mid-series)
+	await rig.wait_until(func() -> bool: return c0.host_phase == TC.Phase.LOBBY and c0.series_active(), 300)
+	t.check(c0.series_active(), "the leader sees the series under way (settings locked)")
+	c0.leader_end_series()
+	await rig.wait_until(func() -> bool: return rig.host.series == null and not c0.series_active() and not c1.series_active(), 300)
+	t.check(rig.host.series == null, "the host cleared the ended series (as Play again does)")
+	t.check(not c0.series_active() and not c1.series_active(), "everyone's lobby knows: the settings unlock")
+	t.check(bool(c1.series_view.get("finished", false)) and bool(c1.series_view.get("ended_early", false)), "the guests got the final standings")
+	t.check(c0.leader_set_settings(1, 1), "the leader can change the settings again")
+	await rig.wait_until(func() -> bool: return int(rig.host.settings["rounds"]) == 1, 300)
+	t.eq(int(rig.host.settings["rounds"]), 1, "applied by the host")
+	for s in [rig.host, c0, c1]:
+		s.set_local_ready(true)
+	await rig.wait_until(func() -> bool: return c0.start_allowed() and rig.host.start_allowed(), 300)
+	t.check(rig.host.start_allowed(), "the host agrees the next round can start")
+	rig.started.erase(c1)
+	c0.request_start()
+	await rig.wait_until(func() -> bool: return rig.host.phase != TC.Phase.LOBBY and rig.started.has(c1), 300)
+	t.check(rig.host.phase != TC.Phase.LOBBY, "the leader's Start begins a new series")
+	t.eq(int((rig.started.get(c1, {}) as Dictionary).get("series", {}).get("round", -1)), 1, "round 1 of the new series")
+	rig.teardown()
+
+
+## The host ends the round for everyone: a guest on an older build (no
+## CAP_STAY) finishes its round from a last ENDED snapshot; one still loading
+## when the round is ended is sent home instead of left on the loading screen.
+func test_ending_the_round_reaches_older_guests() -> void:
+	var rig := _rig(2, 90.0, 20.0, 0.02)
+	await rig.wait_until(func() -> bool: return _all_in(rig), 400)
+	var c0: NetSession = rig.clients[0]
+	var c1: NetSession = rig.clients[1]
+	var old := c1.local_slot
+	rig.host.roster[old]["caps"] = 0   # as an older guest's HELLO leaves it
+	t.check(await _start_round(rig), "a party round is playing")
+	var phases: Array = []
+	c1.snapshot_received.connect(func(sn: Dictionary) -> void: phases.append(int(sn.get("phase", -1))))
+	var mc1 := rig.mc_of(c1)
+	var done := [false]
+	mc1.finished.connect(func(_r: Dictionary) -> void: done[0] = true)
+	rig.host.host_abort_round()
+	await rig.wait_until(func() -> bool: return phases.has(TC.Phase.ENDED), 300)
+	t.check(phases.has(TC.Phase.ENDED), "the older guest got the ended round's snapshot")
+	await rig.wait_until(func() -> bool: return done[0], 900)
+	t.check(done[0], "so its round finishes (its results screen, then the lobby)")
+	t.check(rig.ended_reason.is_empty(), "nobody was dropped")
+	# ended while still loading: an older guest is sent home, a new one stays
+	rig.host.set_local_ready(true)
+	for c in [c0, c1]:
+		c.set_local_ready(true)
+	await rig.wait_until(func() -> bool: return rig.host.can_start(), 300)
+	rig.host.host_start_match(12)
+	t.check(not rig.host._loaded.has(old), "(the older guest's round hasn't loaded yet)")
+	rig.host.host_abort_round()
+	await rig.wait_until(func() -> bool: return rig.ended_reason.has(c1), 300)
+	t.eq(String(rig.ended_reason.get(c1, "")), "host_ended", "the older guest is sent home, not left loading")
+	t.eq(rig.host.stat_sent_home, 1, "only that one")
+	t.check(not rig.ended_reason.has(c0), "the new guest stays in the party")
+	await rig.wait_until(func() -> bool: return c0.host_phase == TC.Phase.LOBBY, 300)
+	t.eq(c0.host_phase, TC.Phase.LOBBY, "and is back in its lobby")
+	rig.teardown()
+
+
+## A leader who left the round can't remove anyone while it runs; a removal
+## mid-round (the host's) hands the seat to a bot instead of freezing it.
+func test_no_removals_mid_round_and_a_removed_seat_plays_on() -> void:
+	var rig := _rig(2, 70.0, 20.0, 0.02)
+	await rig.wait_until(func() -> bool: return _all_in(rig), 400)
+	var c0: NetSession = rig.clients[0]
+	var c1: NetSession = rig.clients[1]
+	rig.host.promote(c0.local_slot)
+	await rig.wait_until(func() -> bool: return c0.is_leader(), 200)
+	for s in [rig.host, c0, c1]:
+		s.set_local_ready(true)
+	await rig.wait_until(func() -> bool: return c0.start_allowed(), 300)
+	c0.request_start()
+	await rig.wait_until(func() -> bool: return rig.host.sim != null and rig.host.sim.phase == TC.Phase.PLAYING, 2400)
+	_guest_leaves_round(rig, c0)
+	await rig.wait_until(func() -> bool: return bool(rig.host.roster[c0.local_slot].get("away", false)), 200)
+	var refused := rig.host.leader_refusals
+	c0.leader_kick(c1.local_slot)
+	await rig.frames(30)
+	t.eq(rig.host.leader_refusals, refused + 1, "the leader's Remove is refused while the round runs")
+	t.check(rig.host.roster[c1.local_slot] != null and not rig.ended_reason.has(c1), "the member is still there")
+	var s1 := c1.local_slot
+	rig.host.kick(s1)
+	var p := rig.host.sim.player(s1)
+	t.check(p.is_bot and rig.host.sim.bots.has(s1), "a seat removed mid-round is a bot's to the end")
+	var pos0 := p.pos()
+	await rig.frames(150)
+	t.check(pos0.distance_to(p.pos()) > 0.5 or p.state != TC.PState.ACTIVE, "and it plays on (%.1f m)" % pos0.distance_to(p.pos()))
+	rig.teardown()
+
+
+## A host that doesn't lead readies up on its results screen like anyone,
+## so the guest leader can start the next round from the lobby while the
+## host is still there.
+func test_a_host_that_does_not_lead_readies_on_its_results() -> void:
+	var rig := _rig(1, 80.0, 20.0, 0.02)
+	await rig.wait_until(func() -> bool: return _all_in(rig), 400)
+	var c0: NetSession = rig.clients[0]
+	rig.host.promote(c0.local_slot)
+	await rig.wait_until(func() -> bool: return c0.is_leader(), 200)
+	rig.host.set_local_ready(true)
+	c0.set_local_ready(true)
+	await rig.wait_until(func() -> bool: return c0.start_allowed(), 300)
+	c0.request_start()
+	await rig.wait_until(func() -> bool: return rig.host.sim != null and rig.host.sim.phase == TC.Phase.PLAYING, 2400)
+	rig.host_mc().sim.end_tick = rig.host_mc().sim.tick + 2
+	await rig.wait_until(func() -> bool: return rig.results.has(c0) and rig.host.phase == TC.Phase.RESULTS, 900)
+	var r := ResultsScreen.new()
+	r.results = rig.host.last_results
+	r.reward = {}
+	r.session = rig.host
+	t.add_child(r)
+	await rig.frames(4)
+	t.check(r._primary.text.begins_with("Ready for round"), "the host's results offer Ready (%s)" % r._primary.text)
+	r._on_primary()
+	await rig.frames(2)
+	t.check(bool(rig.host.roster[0]["ready"]), "the host is ready from its results")
+	c0.set_local_ready(true)
+	await rig.wait_until(func() -> bool: return c0.start_allowed() and bool(rig.host.roster[c0.local_slot]["ready"]), 300)
+	c0.request_start()
+	await rig.wait_until(func() -> bool: return rig.host.phase != TC.Phase.RESULTS and rig.host.phase != TC.Phase.LOBBY, 300)
+	t.check(rig.host.phase >= TC.Phase.LOADING and rig.host.phase <= TC.Phase.PLAYING, "the leader's Start began the next round from the host's results")
+	r.queue_free()
+	rig.teardown()
+
+
+## A leader who drops out mid-round hands the crown on when the round ends;
+## a guest leader is offered Promote only for members whose build can lead.
+func test_crown_passes_after_a_drop_and_promote_needs_a_build_that_can_lead() -> void:
+	var rig := _rig(2, 70.0, 20.0, 0.0)
+	await rig.wait_until(func() -> bool: return _all_in(rig), 400)
+	var c0: NetSession = rig.clients[0]
+	var c1: NetSession = rig.clients[1]
+	rig.host.promote(c0.local_slot)
+	await rig.wait_until(func() -> bool: return c0.is_leader(), 200)
+	await rig.frames(10)
+	t.check(c0.can_promote(c1.local_slot), "a guest leader can promote a member whose build can lead")
+	t.check(c0.can_promote(0), "and the host")
+	rig.host.roster[c1.local_slot]["caps"] = 0   # an older build
+	rig.host._broadcast_lobby()
+	await rig.wait_until(func() -> bool: return not c0.can_promote(c1.local_slot), 200)
+	t.check(not c0.can_promote(c1.local_slot), "not a member on an older build (the host would refuse)")
+	rig.host.roster[c1.local_slot]["caps"] = Protocol.CAPS
+	t.check(await _start_round(rig), "a round")
+	var lead := c0.local_slot
+	rig.client_ts[0].close()
+	await rig.wait_until(func() -> bool: return not bool(rig.host.roster[lead]["connected"]), 300)
+	rig.host_mc().sim.end_tick = rig.host_mc().sim.tick + 2
+	await rig.wait_until(func() -> bool: return rig.host.phase == TC.Phase.RESULTS, 900)
+	t.check(rig.host.leader_slot != lead, "the crown passed on when the round ended (now %d)" % rig.host.leader_slot)
+	await rig.wait_until(func() -> bool: return c1.leader_slot == rig.host.leader_slot, 300)
+	t.eq(c1.leader_slot, rig.host.leader_slot, "and everyone sees it")
+	rig.teardown()
