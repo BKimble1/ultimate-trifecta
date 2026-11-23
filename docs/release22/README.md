@@ -1312,3 +1312,28 @@ in view while typing (only the heading makes room).  Tests:
 `tests/test_rename_flow.gd` (Settings › Change name with the service, on the
 device, and a phone tapping Save with the keyboard up).  From here the
 notes use App Store Connect's build numbers.
+
+## 51. 2.2 (34): matches flow like a cup; a clean lobby
+
+The owner (2.2 (33)): between rounds of a match everyone went back to the
+lobby, where the match standings pushed Start, Walk and the rest off
+screen, everyone had to Ready again, and the lobby showed the match's bots.
+- **Between rounds** the results stay up: the round in a line, your part,
+  +Coins / +XP, the match standings, and after ~4 s a 5-second countdown;
+  the next round starts by itself on the host's clock (sent in RESULTS, so
+  every device counts to the same moment).  Leave match is the only button.
+  No lobby, no Ready.  Older guests follow along (START moves them on).
+- **Leave match**: a guest goes to the party lobby and stays in the party
+  (a bot plays the seat, the others are holograms) and is back for the next
+  match; the host or leader ends the match for everyone ("End the match for
+  everyone?").
+- **Last round**: Final standings (podium, table, one Back to lobby).
+- **The lobby** shows only the people in the party (bots exist only inside
+  rounds; the "+ 5 bots" line still counts them) and no match panel.
+- Results text cut down to numbers and short labels.
+- The ready check sits on the portrait's corner: with eight in the party
+  on a phone, names were cut short beside it.
+- Tested: `tests/test_series_flow.gd` (NetRig, 40–100 ms, jitter, loss: a
+  3-round match with no lobby between rounds, countdown in step within
+  0.3 s, Leave match, End match, older guests, the lobby at three sizes) and
+  `tools/relay_e2e.sh` (a 3-round match on the real relay, passed 4 runs).

@@ -1,10 +1,9 @@
-2.2 (33): fixes the crash when saving a new name. Also in this build: parties stay together, Dunk and Block. Sign in to Game Center first. Two phones in one party (Friends > Invite > Create party, then Join with code):
+2.2 (34): matches flow like a cup. Two phones in one party, 3 or 5 rounds:
 
-- Ready: everyone taps Ready, the leader too, in any order. A check mark shows next to each ready name. The leader's Start lights up when all are ready.
-- Tap a friend's card > Promote to leader. The crown moves; the new leader starts the next round.
-- Roles change at random every round (not always the same person on Night Watch).
-- In a round, a guest taps pause > Leave: you go back to the lobby and stay in the party. Friends still playing show as blue holograms. When their round ends you play the next one together. The leader's Leave asks to end the round for everyone.
-- Leave party (top right of the lobby) is the only way out of a party. The code is under Friends > Invite.
-- Walk with the basketball: the camera stays on you. Near the hoop, Shoot turns into Dunk. Next to a friend who is shooting, tap Block.
-- Change your name in Settings: the name stays above the keyboard.
+- After each round: the results and the match standings, then a 5-second countdown and the next round starts by itself. No lobby and no Ready between rounds. Leave match is the only button.
+- A friend who taps Leave match goes back to the lobby and stays in the party (the others show as holograms). The leader's Leave match ends it for everyone.
+- After the last round: Final standings, then Back to lobby.
+- Back in the lobby: only your friends, no bots, and Start, Walk, Emote and Chat all on screen.
+- With 8 in the party, names show in full (the ready check sits on the picture).
+- Change your name in Settings: no crash.
 - Tell us any error message word for word (a screenshot helps).
