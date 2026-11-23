@@ -128,6 +128,7 @@ func _no_stacking(tag: String) -> void:
 # ---------------------------------------------------------------------------
 func test_guest_leaves_round_stays_in_party_and_plays_the_next() -> void:
 	var rig := _rig(2, 100.0, 20.0, 0.03)
+	rig.host.settings["rounds"] = 1   # (one round: a series plays on by itself, test_series_flow)
 	await rig.wait_until(func() -> bool: return _all_in(rig), 400)
 	t.check(await _start_round(rig), "a party round is playing")
 	var c0: NetSession = rig.clients[0]
@@ -184,6 +185,7 @@ func test_guest_leaves_round_stays_in_party_and_plays_the_next() -> void:
 
 func test_hologram_while_the_others_play_and_gone_after() -> void:
 	var rig := _rig(2, 70.0, 25.0, 0.02)
+	rig.host.settings["rounds"] = 1   # (one round: a series plays on by itself, test_series_flow)
 	await rig.wait_until(func() -> bool: return _all_in(rig), 400)
 	t.check(await _start_round(rig), "a party round is playing")
 	var c0: NetSession = rig.clients[0]
@@ -711,15 +713,13 @@ func test_a_host_that_does_not_lead_readies_on_its_results() -> void:
 	r.session = rig.host
 	t.add_child(r)
 	await rig.frames(4)
-	t.check(r._primary.text.begins_with("Ready for round"), "the host's results offer Ready (%s)" % r._primary.text)
-	r._on_primary()
-	await rig.frames(2)
-	t.check(bool(rig.host.roster[0]["ready"]), "the host is ready from its results")
-	c0.set_local_ready(true)
-	await rig.wait_until(func() -> bool: return c0.start_allowed() and bool(rig.host.roster[c0.local_slot]["ready"]), 300)
-	c0.request_start()
-	await rig.wait_until(func() -> bool: return rig.host.phase != TC.Phase.RESULTS and rig.host.phase != TC.Phase.LOBBY, 300)
-	t.check(rig.host.phase >= TC.Phase.LOADING and rig.host.phase <= TC.Phase.PLAYING, "the leader's Start began the next round from the host's results")
+	# (build 34) between the rounds of a series nobody readies: the host's
+	# results (it doesn't lead) offer only Leave match, and the next round
+	# starts by itself
+	t.check(not r._primary.visible and r.leave_btn.text == "Leave match", "the host's results: only Leave match (no Ready)")
+	rig.host.next_round_wait_s = 9.0
+	await rig.wait_until(func() -> bool: return rig.host.phase >= TC.Phase.LOADING and rig.host.phase <= TC.Phase.PLAYING, 900)
+	t.check(rig.host.phase >= TC.Phase.LOADING and rig.host.phase <= TC.Phase.PLAYING, "the next round started by itself (no Ready, no Start)")
 	r.queue_free()
 	rig.teardown()
 

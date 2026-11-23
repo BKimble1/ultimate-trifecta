@@ -64,9 +64,10 @@ func test_host_menu_keeps_the_round_running() -> void:
 	t.eq(p.state, TC.PState.ACTIVE, "no immunity or special state while the menu is open")
 	hud._ask_leave()
 	# (build 33) the host's Leave ends the round for everyone, never the party
-	t.eq(hud._confirm_head.text, "End the round for everyone?", "the host is asked: end the round for everyone?")
-	t.check(hud._confirm_text.text.contains("party lobby") and hud._confirm_text.text.contains("stay in the party"), "everyone goes back to the party lobby and stays in the party")
-	t.eq(hud.confirm_leave_button().text, "End round", "the button says what it does")
+	# (build 34) a 3-round series: the host's Leave ends the match
+	t.eq(hud._confirm_head.text, "End the match for everyone?", "the host is asked: end the match for everyone?")
+	t.check(hud._confirm_text.text.contains("party lobby") and hud._confirm_text.text.contains("Rounds already played count"), "everyone goes back to the party lobby; rounds played count")
+	t.eq(hud.confirm_leave_button().text, "End match", "the button says what it does")
 	hud._cancel_leave()
 	hud.close_pause()
 	await rig.frames(4)

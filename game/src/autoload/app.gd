@@ -1161,16 +1161,19 @@ func _on_match_starting(info: Dictionary) -> void:
 
 func _on_results(results: Dictionary) -> void:
 	last_results = results
-	if session == null or not is_instance_valid(session) or session.is_host():
+	if session == null or not is_instance_valid(session):
 		return
 	if bool(results.get("aborted", false)) and match_ctrl != null:
-		# (build 33) the host ended the round for everyone: straight back to
-		# the party lobby (a cancelled round: it counts for nobody)
+		# (build 33) the round was ended for everyone (the host left it, or
+		# build 34: the leader ended the match): straight back to the party
+		# lobby (a cancelled round: it counts for nobody)
 		_end_match_scene()
 		show_lobby()
 		if screen is Control:
-			UIKit.toast(screen as Control, "The host ended the round. Back in the party; this round doesn't count.", 3.5)
-	elif match_ctrl == null and screen is LobbyScreen and session.left_round:
+			UIKit.toast(screen as Control, "Match ended. Back in the party.", 3.0)
+	elif session.is_host():
+		return
+	elif match_ctrl == null and screen is LobbyScreen and session.left_round and not results.has("next_round_in"):
 		# we left this round for the lobby: the others are coming back
 		UIKit.toast(screen as Control, "The round is over. Your party is back.", 3.0)
 
@@ -1235,7 +1238,8 @@ func _on_match_quit() -> void:
 				_end_match_scene()
 				show_lobby()
 				if screen is Control:
-					UIKit.toast(screen as Control, "Back in the party. A bot finishes the round for you.", 3.0)
+					UIKit.toast(screen as Control, "You left the match. You'll play the next one with your party." if session.series_flow() and session.series_active() \
+						else "Back in the party. A bot finishes the round for you.", 3.0)
 			else:
 				leave_room()
 		_:
@@ -1255,6 +1259,9 @@ func round_leave_mode(s: NetSession) -> String:
 		return "leave"
 	if s.is_host():
 		return "end_for_all"
+	# (build 34) a guest leader ends the match (series) for everyone too
+	if s.is_leader() and s.series_flow() and s.series_active():
+		return "end_for_all"
 	return "stay" if s.host_supports(Protocol.CAP_STAY) else "leave"
 
 
@@ -1262,14 +1269,47 @@ func round_leave_mode(s: NetSession) -> String:
 ## back to the party lobby.  Nobody leaves the party; the round counts for
 ## nobody.
 func end_round_for_everyone() -> void:
-	if session == null or not session.is_host():
+	if session == null or not is_instance_valid(session):
 		return
 	Diag.mark("round_ended_early")
-	session.host_abort_round()
-	_end_match_scene()
-	show_lobby()
-	if screen is Control:
-		UIKit.toast(screen as Control, "Round ended for everyone. It doesn't count.", 3.0)
+	if session.is_host():
+		# (build 34) during a series this ends the match: the rounds already
+		# played stand, nothing more is played
+		if session.series_active():
+			session.host_end_series()
+		session.host_abort_round()   # (its RESULTS bring this device to the lobby: _on_results)
+	elif session.is_leader():
+		session.leader_end_series()   # the host ends the round and the match
+	if match_ctrl != null or not (screen is LobbyScreen):
+		_end_match_scene()
+		show_lobby()
+		if screen is Control:
+			UIKit.toast(screen as Control, "Match ended. Back in the party.", 3.0)
+
+
+## (build 34) Leave match on the results between the rounds of a series:
+## a guest goes to the party lobby and sits out the rest of the match (a
+## bot plays their seat; they're back for the next one); the host or the
+## leader ends the match for everyone (completed rounds stand).
+func leave_series_match() -> void:
+	if session == null or not is_instance_valid(session):
+		return
+	if session.is_host() or session.is_leader():
+		if session.is_host():
+			session.host_end_series()
+			session.host_return_to_lobby()
+		else:
+			session.leader_end_series()
+		show_lobby()
+		if screen is Control:
+			UIKit.toast(screen as Control, "Match ended. Back in the party.", 3.0)
+		return
+	if session.leave_round():
+		show_lobby()
+		if screen is Control:
+			UIKit.toast(screen as Control, "You left the match. You'll play the next one with your party.", 3.0)
+	else:
+		leave_room()
 
 
 ## Everyone back to the party room (host: between rounds, or Play again

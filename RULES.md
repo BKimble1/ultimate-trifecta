@@ -40,12 +40,14 @@ All values come from one resource, `game/config/rules_default.tres` (`RulesConfi
 ## Series
 
 - A round is one campus chase; a series is the chosen 1/3/5 completed rounds in the same party. Lifecycle: party setup → role reveal → shared loading and countdown → round → round results → ready for the next round → … → final series results → play another series or back to the lobby.
-- The HUD and results say "Round 2 of 3". The party leader starts the next round when every human is ready (bots are always ready); nothing starts on its own. Everyone else sees "Ready for round N" / "Waiting for the party leader", not a Rematch button.
+- The HUD and results say "Round 2 of 3". (Build 34) Between the rounds of a series nobody goes back to the lobby or readies up: the results stay on screen (this round's outcome, your part and your Coins / XP, the series standings), then a 5-second countdown, the same on every device (the host's deadline, sent in RESULTS), and the host starts the next round for everyone with fresh random roles. The only action there is Leave match. After the last round: Final standings, then Back to lobby. (With a host on an older build: the party leader starts the next round when every human is ready, as in build 33.)
 - **Round Win:** every eligible participant whose role's team won the round gets one. Personal contribution is shown separately (runners: splashes, home order, times caught; Night Watch: tags and different runners tagged) and never ranked against the other role's numbers.
 - **Final leaderboard:** by Round Wins; ties share a place; "You" highlighted; rounds played shown; late joiners and partial participation marked; bots kept out of the standings. The role-team tally ("Runners won 2, Night Watch won 1") is a tally of roles, not a fixed team's score.
 - **Eligibility:** a human counts as present when connected at the end and away (a bot covering) for no more than 40% of the round; otherwise no Round Win and no coins for that round (it is still recorded so it can't pay later).
 - Results are applied once per series, round and player identity (match ID + uid), so repeated packets, reopened results and reconnects can't pay twice. A cancelled round counts for nothing and doesn't use up a round.
+- **Leave match (build 34).** A guest who leaves a series' match (pause › Leave round, or Leave match on the results between rounds) goes to the party lobby, stays in the party and sits out the rest of that match (a bot plays their seat; holograms show the others while it runs); they play the next match. The host or the party leader leaving asks "End the match for everyone?": everyone goes back to the party lobby and the series ends early (completed rounds stand; an interrupted round counts for nobody).
 - The party leader can end a series early (confirmation); completed rounds stand. Host loss ends the party as before.
+- **The lobby (build 34)** shows the party's people only (bots fill seats in rounds; the playlist line counts them) and no series line or standings.
 
 ## Round
 

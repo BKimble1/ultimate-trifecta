@@ -22,10 +22,17 @@ extends Screen
 ## shared places ("T1"), rounds played, late joins and away rounds, then the
 ## role tally and every round - and only then "Return to lobby".
 ## Actions never scroll and never wait for an animation: the primary
-## (Play again / Next: round N / Ready for round N / Final standings /
-## Return to lobby), Chat (party rounds) and Leave.  Nothing starts or
-## ejects on its own: the host starts the next round only when everyone has
-## tapped Ready, and a guest leaves the results only by choice.
+## (Play again / Final standings / Back to lobby), Chat (party rounds) and
+## Leave.
+## (build 34) Between the rounds of a series (a host that offers it,
+## Protocol.CAP_SERIES) nobody goes back to the lobby or readies up, like a
+## kart racer's cup: this round's outcome in a line, your part and your
+## Coins / XP, the series standings, then a 5-second countdown (the host's,
+## the same on every device) and the next round starts by itself.  The only
+## action is Leave match (a guest sits the rest of the match out in the
+## party lobby; the host or the leader ends it for everyone).  After the
+## last round: Final standings, then Back to lobby.  An older host keeps the
+## build 33 flow (Ready for round N).
 
 var results: Dictionary
 var reward: Dictionary
@@ -44,6 +51,9 @@ var chat_btn: Button
 var _sc: ScrollContainer
 var _v: VBoxContainer
 var _btns: HFlowContainer
+## (build 34) the countdown to the next round of a series
+var countdown: CountdownRing
+var _last_tick := -1
 
 
 func build() -> void:
@@ -110,10 +120,16 @@ func build() -> void:
 	leave.pressed.connect(func() -> void:
 		if _practice():
 			App.goto_title()
+		elif between_rounds():
+			_ask_leave_match()
 		else:
 			UIKit.v7_back_chooses(self, dialog("Leave this party?", [["Leave", func() -> void: App.leave_room()], ["Stay", Callable()]])))
 	_btns.add_child(leave)
 	leave_btn = leave
+	countdown = CountdownRing.new()
+	countdown.name = "NextRound"
+	countdown.visible = false
+	outer.add_child(countdown)
 	outer.add_child(_btns)
 	outer.add_child(_status)
 	_build_page()
@@ -125,6 +141,7 @@ func build() -> void:
 	if _party():
 		session.lobby_changed.connect(_refresh_actions)
 		session.series_changed.connect(_refresh_actions)
+		session.series_changed.connect(_on_series_changed)
 	_refresh_actions()
 	UIKit.appear(sheet, Vector2.ZERO, UIKit.T_SHEET)
 	if not final_only:
@@ -149,6 +166,49 @@ func series_view() -> Dictionary:
 
 func series_over() -> bool:
 	return _party() and (bool(series_view().get("finished", false)) or final_only)
+
+
+## (build 34) Between two rounds of a series the host plays on by itself:
+## the countdown, no lobby, no Ready.
+func between_rounds() -> bool:
+	return _party() and not final_only and session.series_flow() and not series_over() \
+		and not bool(view_data.get("cancelled", false)) and not series_view().is_empty() \
+		and int(results.get("rounds_total", 1)) > 1
+
+
+## (build 34) The match was ended (the host or the leader left it) while we
+## were between its rounds: everyone goes back to the party lobby.
+func _on_series_changed() -> void:
+	if not is_inside_tree() or final_only or not session.series_flow() or page == "final":
+		return
+	var v := session.series_view
+	if bool(v.get("finished", false)) and bool(v.get("ended_early", false)) and int(results.get("round_index", 1)) < int(results.get("rounds_total", 1)):
+		if session.is_host():
+			App.back_to_party()
+		else:
+			App.show_lobby()
+		if App.screen is Control:
+			UIKit.toast(App.screen as Control, "Match ended. Back in the party.", 3.0)
+
+
+func _process(_delta: float) -> void:
+	if not is_instance_valid(countdown):
+		return
+	var on := between_rounds()
+	var left := session.next_round_in() if on else -1.0
+	# the results first (a few seconds), then the 5-second countdown
+	var show := on and left >= 0.0 and left <= NetSession.NEXT_ROUND_COUNTDOWN_S + 0.05
+	if show != countdown.visible:
+		countdown.visible = show
+		_fit_sheet.call_deferred()
+	if not show:
+		return
+	var n := int(ceil(left))
+	countdown.set_left(left, NetSession.NEXT_ROUND_COUNTDOWN_S, int(results.get("round_index", 1)) + 1)
+	if n != _last_tick:
+		_last_tick = n
+		if n > 0:
+			Sfx.play("count")
 
 
 # ---------------------------------------------------------------------------
@@ -184,6 +244,9 @@ func _build_page() -> void:
 ##      challenges stream's add_challenge_lines in _fill_rewards)
 ##   then both teams' tables for the round.
 func _round_page() -> void:
+	if between_rounds():
+		_between_page()
+		return
 	var d := view_data
 	var practice := bool(results.get("practice", false)) or _practice()
 	# (build 30) less is more: the result, one line why, your part; no
@@ -239,7 +302,7 @@ func _round_page() -> void:
 			_series_so_far(true)
 		return
 	if not rank.is_empty():
-		_v.add_child(_run_card())
+		_v.add_child(_run_line())
 	var party_series := _party() and not series_view().is_empty()
 	# the series in one line
 	if party_series:
@@ -247,12 +310,98 @@ func _round_page() -> void:
 	var rw := _rewards_card()
 	if rw != null:
 		_v.add_child(rw)
-	_v.add_child(_celebration(d))
+	# (build 34) the tables say who won; the portrait strip above them went
 	_v.add_child(_team_table("Runners", d["runners"], TC.Role.RUNNER, int(d["winners"]) == TC.Role.RUNNER))
 	_v.add_child(_team_table("Night Watch", d["watch"], TC.Role.PATROL, int(d["winners"]) == TC.Role.PATROL))
 	# the friends' standings so far (after the last round: Final standings)
-	if party_series and not series_over():
+	if party_series and not series_over() and not session.series_flow():
 		_v.add_child(standings_table(series_view(), Save.player_uid(), 3))
+
+
+## (build 34) Between the rounds of a series: the outcome in a line, your
+## part, your Coins and XP, the standings so far; the countdown sits below.
+func _between_page() -> void:
+	var d := view_data
+	var me: Dictionary = d.get("me", {})
+	var won := not me.is_empty() and int(me["role"]) == int(d["winners"])
+	var t := headline(d)
+	var head := UIKit.vbox(2)
+	var tl := UIKit.styled(String(t[0]), "display", t[1])
+	tl.name = "Outcome"
+	tl.add_theme_font_size_override("font_size", 46)
+	head.add_child(tl)
+	var why := UIKit.styled("Round %d of %d%s" % [int(results.get("round_index", 1)), int(results.get("rounds_total", 1)),
+		(" · " + String(d.get("why_short", ""))) if String(d.get("why_short", "")) != "" else ""], "body", UIKit.IVORY_MUTED)
+	why.name = "Why"
+	head.add_child(why)
+	var mine := UIKit.styled(my_contribution(me), "label", UIKit.TEAL)
+	mine.name = "Contribution"
+	head.add_child(mine)
+	var banner := PanelContainer.new()
+	banner.name = "OutcomeBanner"
+	var bsb := UIKit.box(Color(UIKit.AMBER, 0.16) if won else Color(UIKit.NAVY, 0.45), UIKit.R_CARD, 2 if won else 0, Color(UIKit.AMBER, 0.55), 20)
+	bsb.content_margin_top = 10
+	bsb.content_margin_bottom = 12
+	banner.add_theme_stylebox_override("panel", bsb)
+	var bh := UIKit.hbox(16)
+	head.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bh.add_child(head)
+	var chips := _reward_chips()
+	if chips != null:
+		chips.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		bh.add_child(chips)
+	banner.add_child(bh)
+	_v.add_child(banner)
+	if won and not UIKit.reduced_motion():
+		var cf := Confetti.new()
+		cf.set_anchors_preset(Control.PRESET_FULL_RECT)
+		add_child(cf)
+		move_child(cf, 1)
+	var st := standings_table(series_view(), Save.player_uid())
+	st.name = "Standings"
+	_v.add_child(st)
+
+
+## (build 34) This round's Coins and Season XP as two numbers (the details
+## are in the Season Pass and the wallet), or nothing when it pays nothing.
+func _reward_chips() -> Control:
+	var mid := String(results.get("match_id", ""))
+	var s := RoundRewards.summary(mid, reward)
+	if s.is_empty():
+		return null
+	var coins := int(s["coins"]) if bool(s["settled"]) else int(s.get("coins_projected", 0))
+	var xp := int(s["season_xp"]) if bool(s["settled"]) else int(s.get("season_xp_projected", 0))
+	if coins <= 0 and xp <= 0:
+		return null
+	var h := UIKit.hbox(14)
+	h.name = "Rewards"
+	if coins > 0:
+		h.add_child(_big_number("+%s" % Catalogue.format_coins(coins), "Coins"))
+		if bool(s["settled"]) and App.coin_fly_match != mid:
+			App.coin_fly_match = mid
+			App.coin_fly_pending = coins
+	if xp > 0:
+		h.add_child(_big_number("+%d" % xp, "XP"))
+	h.accessibility_name = "%d Coins, %d Season XP%s" % [coins, xp, "" if bool(s["settled"]) else " (pending)"]
+	return h
+
+
+## (build 34) Your run and Season Points in one line ("Run 2:31 · Best
+## 2:10 · +120 Season Points"), replacing the two-column card.
+func _run_line() -> Control:
+	var bits: Array[String] = []
+	var run := float(rank.get("run_time", -1.0))
+	bits.append(("Run %s" % Rankings.fmt_time(run)) if run > 0.0 else "Not home")
+	if bool(rank.get("new_best", false)):
+		bits.append("New best!")
+	elif float(rank.get("best", -1.0)) > 0.0:
+		bits.append("Best %s" % Rankings.fmt_time(float(rank["best"])))
+	if bool(rank.get("counted", false)):
+		bits.append("+%d Season Points" % int(rank["points"]))
+	var l := UIKit.styled(" · ".join(bits), "label", UIKit.AMBER if bool(rank.get("new_best", false)) else UIKit.IVORY)
+	l.name = "RunCard"
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return l
 
 
 ## [title, colour, why] for the top of the round page, from your side:
@@ -353,11 +502,11 @@ func _final_page() -> void:
 		return
 	_v.add_child(_podium(rows))
 	_v.add_child(standings_table(view, Save.player_uid()))
+	# (build 34) the score by role in numbers; the per-round list went
 	var tally := LobbyScreen._tally(view)
 	var tl := UIKit.styled("Runners %d – %d Night Watch" % [tally[0], tally[1]], "caption", UIKit.IVORY_MUTED)
 	tl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_v.add_child(tl)
-	_v.add_child(_rounds_list(view))
 
 
 # ---------------------------------------------------------------------------
@@ -550,9 +699,10 @@ func _fill_rewards(p: Control, mid: String) -> void:
 			top.add_child(_big_number("+%d" % int(s["season_xp"]), "Season XP"))
 	var msg := String(s["message"])
 	if bool(s["pending"]):
-		msg += " Expected: +%s Coins · +%d Season XP (not added yet)." % [Catalogue.format_coins(int(s["coins_projected"])), int(s["season_xp_projected"])]
+		# (build 34) numbers over words
+		msg = "+%s Coins · +%d XP (pending)" % [Catalogue.format_coins(int(s["coins_projected"])), int(s["season_xp_projected"])]
 	elif bool(s["away"]) and msg == "":
-		msg = "You were away for most of this round, so it pays nothing."
+		msg = "Away: no rewards"
 	if msg == "" and top.get_child_count() == 0:
 		p.visible = false
 		return
@@ -833,6 +983,16 @@ func _on_primary() -> void:
 	if _practice():
 		App.rematch()
 		return
+	if between_rounds():
+		return   # (build 34) the next round starts by itself
+	if session.series_flow() and (page == "final" or series_over() or bool(view_data["cancelled"]) or int(results.get("rounds_total", 1)) <= 1) \
+			and not (series_over() and page == "round" and not bool(view_data["cancelled"])):
+		# (build 34) Back to lobby
+		if session.is_host():
+			App.back_to_party()
+		else:
+			App.show_lobby()
+		return
 	if series_over() and page == "round" and not bool(view_data["cancelled"]):
 		page = "final"
 		_build_page()
@@ -882,7 +1042,7 @@ func _fit_sheet() -> void:
 	_sc.custom_minimum_size.y = clampf(_v.get_combined_minimum_size().y, 0.0, maxf(160.0, avail))
 
 
-## Labels and waiting states; nothing starts on its own.
+## Labels and waiting states.
 func _refresh_actions() -> void:
 	if not is_instance_valid(_primary):
 		return
@@ -890,8 +1050,34 @@ func _refresh_actions() -> void:
 		var n: int = session.social.chat.unread
 		UIKit.face_of(chat_btn).caption = "Chat · %d" % n if n > 0 else "Chat"
 		UIKit.face_of(chat_btn).queue_redraw()
+	_primary.visible = true
+	if is_instance_valid(leave_btn):
+		leave_btn.visible = true
+	if is_instance_valid(chat_btn):
+		chat_btn.visible = true
 	if _practice():
 		_primary.text = "Play again"
+		return
+	if session.series_flow():
+		# (build 34) between rounds: only Leave match (the countdown does the
+		# rest); after the last round: Final standings, then Back to lobby
+		_status.visible = false
+		_status.text = ""
+		if between_rounds():
+			_primary.visible = false
+			if is_instance_valid(chat_btn):
+				chat_btn.visible = false
+			leave_btn.text = "Leave match"
+			leave_btn.accessibility_name = "Leave match"
+			_fit_sheet.call_deferred()
+			return
+		if is_instance_valid(chat_btn):
+			chat_btn.visible = false
+		leave_btn.visible = false
+		var to_final := series_over() and page == "round" and not bool(view_data["cancelled"])
+		_primary.text = "Final standings" if to_final else "Back to lobby"
+		UIKit._apply(_primary, UIKit.AMBER, UIKit.NAVY)
+		_fit_sheet.call_deferred()
 		return
 	var over := series_over()
 	var cancelled := bool(view_data["cancelled"]) and not final_only
@@ -969,9 +1155,22 @@ func _toggle_board() -> void:
 	UIKit.appear(sheet, Vector2.ZERO, UIKit.T_FAST)
 
 
+## (build 34) Leave match between the rounds of a series, after a confirm.
+func _ask_leave_match() -> void:
+	if has_modal():
+		return
+	if session.is_host() or session.is_leader():
+		UIKit.v7_back_chooses(self, dialog("End the match for everyone?", [["End match", func() -> void: App.leave_series_match()], ["Keep playing", Callable()]]))
+	else:
+		UIKit.v7_back_chooses(self, dialog("Leave the match? You stay in the party.", [["Leave match", func() -> void: App.leave_series_match()], ["Stay", Callable()]]))
+
+
 func _go_back() -> void:
 	if _board and is_instance_valid(_board):
 		_toggle_board()   # Back / B closes the scoreboard first
+		return
+	if between_rounds():
+		_ask_leave_match()   # (build 34) never straight to the lobby mid-match
 		return
 	if page == "final" and not final_only:
 		page = "round"   # Back from the final standings returns to the round
@@ -981,6 +1180,54 @@ func _go_back() -> void:
 		App.goto_title()
 	else:
 		App.show_lobby()
+
+
+## (build 34) The countdown to the next round of a series: a ring that
+## empties over the last seconds and the seconds left, big, with the round
+## it leads to.
+class CountdownRing:
+	extends Control
+	var left := 5.0
+	var total := 5.0
+	var next_round := 2
+	var _cap: Label
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(0, 112)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_cap = UIKit.styled("", "label", UIKit.IVORY)
+		_cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_cap.add_theme_font_override("font", UIKit.font_w(800))
+		_cap.add_theme_font_size_override("font_size", 30)
+		_cap.position = Vector2(126, 26)
+		add_child(_cap)
+		var sub := UIKit.styled("starts by itself", "caption", UIKit.IVORY_MUTED)
+		sub.name = "Sub"
+		sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sub.position = Vector2(126, 66)
+		add_child(sub)
+
+	func set_left(l: float, t: float, n: int) -> void:
+		left = l
+		total = maxf(0.1, t)
+		next_round = n
+		_cap.text = "Round %d" % n
+		accessibility_name = "Round %d starts in %d" % [n, int(ceil(l))]
+		queue_redraw()
+
+	func _draw() -> void:
+		var c := Vector2(54, size.y * 0.5)
+		var r := 46.0
+		draw_circle(c, r, Color(UIKit.NAVY, 0.6))
+		draw_arc(c, r - 4.0, 0.0, TAU, 64, Color(UIKit.IVORY, 0.14), 7.0, true)
+		var f := clampf(left / total, 0.0, 1.0)
+		if f > 0.0:
+			draw_arc(c, r - 4.0, -PI * 0.5, -PI * 0.5 + TAU * f, 64, UIKit.AMBER, 7.0, true)
+		var n := str(int(ceil(left))) if left > 0.05 else "GO"
+		var font := UIKit.font_num(800)
+		var fs := 50 if n != "GO" else 34
+		var sz := font.get_string_size(n, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
+		draw_string(font, c + Vector2(-sz.x * 0.5, sz.y * 0.32), n, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UIKit.IVORY)
 
 
 ## (2.3) Confetti over the room for a win: a few seconds of falling paper

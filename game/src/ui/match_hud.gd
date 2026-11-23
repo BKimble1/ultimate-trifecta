@@ -644,7 +644,7 @@ func open_pause() -> void:
 	var lb: Button = pause_panel.get_meta("leave")
 	match App.round_leave_mode(mc.session if mc != null else null):
 		"end_for_all":
-			lb.text = "End round"
+			lb.text = "End match" if mc.session.series_flow() and mc.session.series_active() else "End round"
 		"stay":
 			lb.text = "Leave round"
 		_:
@@ -723,12 +723,21 @@ func _ask_leave() -> void:
 		"practice":
 			_confirm_text.text = "This practice round ends. Nothing is earned."
 		"end_for_all":
-			_confirm_head.text = "End the round for everyone?"
-			_confirm_text.text = "You're hosting this round: everyone goes back to the party lobby, and the round doesn't count for anyone. You all stay in the party."
-			go.text = "End round"
+			if mc.session.series_flow() and mc.session.series_active():
+				# (build 34) a series: it ends here (rounds played stand)
+				_confirm_head.text = "End the match for everyone?"
+				_confirm_text.text = "Everyone goes back to the party lobby. Rounds already played count; this one doesn't."
+				go.text = "End match"
+			else:
+				_confirm_head.text = "End the round for everyone?"
+				_confirm_text.text = "You're hosting this round: everyone goes back to the party lobby, and the round doesn't count for anyone. You all stay in the party."
+				go.text = "End round"
 		"stay":
 			_confirm_head.text = "Back to the party?"
-			_confirm_text.text = "You stay in the party and wait in the lobby. The others play on with a bot in your place, and this round earns you nothing."
+			if mc.session.series_flow() and mc.session.series_active():
+				_confirm_text.text = "You stay in the party and wait in the lobby for the next match. The others play on with a bot in your place, and this round earns you nothing."
+			else:
+				_confirm_text.text = "You stay in the party and wait in the lobby. The others play on with a bot in your place, and this round earns you nothing."
 			go.text = "Back to lobby"
 		_:
 			if mc.session.is_host():

@@ -93,7 +93,11 @@ enum M {
 ## nothing there and read nothing there.
 const CAP_STAY := 1      # leaving a round keeps you in the party (ROUND_LEAVE)
 const CAP_LEADER := 2    # a party leader apart from the host (LEADER requests)
-const CAPS := CAP_STAY | CAP_LEADER
+## (build 34) a series plays on by itself: RESULTS carry "next_round_in" (s)
+## and the host starts the next round when it runs out (no Ready, no lobby
+## between rounds); a guest who leaves the match sits out the rest of it
+const CAP_SERIES := 4
+const CAPS := CAP_STAY | CAP_LEADER | CAP_SERIES
 ## LEADER request ops
 enum LeaderOp { START = 1, SETTINGS, KICK, PROMOTE, END_SERIES }
 

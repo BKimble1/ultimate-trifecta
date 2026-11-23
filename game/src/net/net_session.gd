@@ -100,6 +100,19 @@ var host_phase: int = TC.Phase.LOBBY
 var left_round := false
 ## tests: leader requests refused (not the leader, or not allowed now)
 var leader_refusals := 0
+## (build 34) between the rounds of a series nobody goes back to the lobby or
+## readies up: the results stay on screen (NEXT_ROUND_LEAD_S), a countdown
+## (NEXT_ROUND_COUNTDOWN_S) and the host starts the next round for everyone.
+## The deadline goes out in RESULTS ("next_round_in", seconds), so every
+## device counts down together.  Tests shorten next_round_wait_s.
+const NEXT_ROUND_LEAD_S := 4.0
+const NEXT_ROUND_COUNTDOWN_S := 5.0
+var next_round_wait_s := NEXT_ROUND_LEAD_S + NEXT_ROUND_COUNTDOWN_S
+var _next_round_at := -1.0     # session clock (host and guests); < 0: none
+## tests only: the capabilities this build understands (an older build's
+## behaviour in tests: Protocol.CAP_STAY | Protocol.CAP_LEADER is build 33,
+## 0 is builds 20-32)
+var caps_mask := Protocol.CAPS
 
 # host bookkeeping
 var _peer_slot: Dictionary = {}     # peer -> slot
@@ -333,8 +346,32 @@ func member_in_round(i: int) -> bool:
 		return false
 	var e: Dictionary = roster[i]
 	var ph := phase if is_host() else host_phase
-	return ph >= TC.Phase.LOADING and ph <= TC.Phase.PLAYING and not bool(e["is_bot"]) and bool(e.get("connected", true)) \
+	var running := ph >= TC.Phase.LOADING and ph <= TC.Phase.PLAYING
+	if not is_host() and sitting_out() and ph == TC.Phase.RESULTS:
+		running = true   # (build 34) between the rounds of the match we sat out of
+	return running and not bool(e["is_bot"]) and bool(e.get("connected", true)) \
 		and not bool(e.get("away", false)) and i != local_slot
+
+
+## (build 34) Does the party play its series on without the lobby (a host
+## that offers it)?
+func series_flow() -> bool:
+	return host_supports(Protocol.CAP_SERIES)
+
+
+## (build 34) Seconds until the next round of the series starts (-1: none
+## scheduled).  The same on every device, within the network's latency.
+func next_round_in() -> float:
+	if _next_round_at < 0.0:
+		return -1.0
+	return maxf(0.0, _next_round_at - _clock)
+
+
+## (build 34) We left this series' match: we sit out its remaining rounds
+## in the party lobby (our seat is a bot's) and play the next series.
+func sitting_out() -> bool:
+	var e: Variant = roster[local_slot] if local_slot >= 0 and local_slot < 8 else null
+	return e != null and bool(e.get("away", false)) and series_active() and rounds_total() > 1
 
 
 ## (build 33) The humans of the party in roster order, starting after `from`
@@ -883,9 +920,15 @@ func _leader_request(slot: int, op: int, b: StreamPeerBuffer) -> void:
 			if b.get_available_bytes() < 1 or not _set_leader(b.get_u8()):
 				leader_refusals += 1
 		Protocol.LeaderOp.END_SERIES:
-			if series != null and series.in_progress() and phase in [TC.Phase.LOBBY, TC.Phase.RESULTS]:
+			if series != null and series.in_progress():
+				# (build 34) the leader ends the match: from the lobby, between
+				# rounds or mid-round, everyone goes back to the party lobby
 				host_end_series()
-				if phase == TC.Phase.LOBBY:
+				if phase >= TC.Phase.LOADING and phase <= TC.Phase.PLAYING:
+					host_abort_round()
+				elif phase == TC.Phase.RESULTS:
+					host_return_to_lobby()
+				else:
 					_clear_finished_series()
 			else:
 				leader_refusals += 1
@@ -911,7 +954,8 @@ func _clear_finished_series() -> void:
 func _mark_away(slot: int) -> void:
 	if mode != Mode.HOST or slot < 0 or slot >= 8 or roster[slot] == null or slot == local_slot:
 		return
-	if phase < TC.Phase.LOADING or phase > TC.Phase.PLAYING:
+	var between := phase == TC.Phase.RESULTS and series != null and series.in_progress()
+	if (phase < TC.Phase.LOADING or phase > TC.Phase.PLAYING) and not between:
 		return
 	var e: Dictionary = roster[slot]
 	if bool(e["is_bot"]) or bool(e.get("away", false)):
@@ -928,6 +972,8 @@ func _mark_away(slot: int) -> void:
 ## an older host (no CAP_STAY) this is leaving the party, as before.
 func leave_round() -> bool:
 	if mode != Mode.CLIENT or host_peer < 0 or not host_supports(Protocol.CAP_STAY):
+		return false
+	if host_phase == TC.Phase.RESULTS and not series_flow():
 		return false
 	left_round = true
 	transport.send(host_peer, Protocol.buf_for(Protocol.M.ROUND_LEAVE).data_array, true)
@@ -1050,6 +1096,9 @@ func _broadcast_lobby() -> void:
 func host_start_match(seed_override: int = -1) -> void:
 	if not is_host():
 		return
+	_next_round_at = -1.0
+	# (build 34) a series continuing: whoever left its match sits this round out
+	var continuing := mode == Mode.HOST and series != null and series.in_progress()
 	round_no += 1
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
@@ -1122,7 +1171,7 @@ func host_start_match(seed_override: int = -1) -> void:
 	for e in roster:
 		e["role"] = roles[e["slot"]]
 		e["ready"] = false
-		e["away"] = false
+		e["away"] = continuing and bool(e.get("away", false)) and not bool(e["is_bot"])
 		start_roster.append({"slot": e["slot"], "uid": e["uid"], "name": e["name"], "is_bot": e["is_bot"], "role": e["role"], "cosmetic": e["cosmetic"]})
 	var spawns := {}
 	var sm := MatchSim.default_spawns(start_roster)
@@ -1455,11 +1504,21 @@ func host_match_finished(results: Dictionary) -> void:
 	results["rounds_total"] = int(start_series.get("total", 1))
 	# readiness for the next round starts over (nobody is rushed off results),
 	# the leader's included (build 33: everyone readies up); whoever left the
-	# round is back with everyone
+	# round is back with everyone (build 34: once the series is over; until
+	# then they sit out its remaining rounds)
+	var series_on := series != null and series.in_progress()
 	for e in roster:
 		if e != null and not bool(e["is_bot"]):
 			e["ready"] = false
-			e["away"] = false
+			if not series_on:
+				e["away"] = false
+	# (build 34) a series plays on: the next round starts by itself after the
+	# results and a countdown, the same moment on every device
+	_next_round_at = -1.0
+	if mode == Mode.HOST and series_on and int(results.get("outcome", 0)) != TC.Outcome.CANCELLED:
+		_next_round_at = _clock + next_round_wait_s
+		results["next_round_in"] = next_round_wait_s
+		results["next_round"] = series.next_round()
 	if mode == Mode.HOST:
 		var b := Protocol.buf_for(Protocol.M.RESULTS)
 		var u := JSON.stringify(_jsonable(results)).to_utf8_buffer()
@@ -1469,6 +1528,16 @@ func host_match_finished(results: Dictionary) -> void:
 	results_received.emit(results)
 	_check_leader()      # (build 33) a leader who dropped out of the round passes it on
 	_broadcast_lobby()   # (build 33) cleared Ready and the round's holograms, for everyone
+
+
+## (build 34) Host: the series' countdown ran out: the next round starts for
+## everyone (fresh random roles; whoever left the match sits it out).
+func _auto_next_round() -> void:
+	_next_round_at = -1.0
+	if mode != Mode.HOST or phase != TC.Phase.RESULTS or series == null or not series.in_progress():
+		return
+	host_return_to_lobby(true, false)
+	host_start_match()
 
 
 func _all_ready() -> bool:
@@ -1481,7 +1550,9 @@ func _all_ready() -> bool:
 ## Host: back to the dorm lobby for a rematch (rematch cleanup).
 ## keep_ready: readiness given on the results screen stands even between
 ## series (a guest leader's Start while the host reads the results).
-func host_return_to_lobby(keep_ready: bool = false) -> void:
+## announce: tell everyone (build 34: the series' next round skips it, so
+## nobody's screen sees the lobby between rounds; START follows at once).
+func host_return_to_lobby(keep_ready: bool = false, announce: bool = true) -> void:
 	if not is_host():
 		return
 	sim = null
@@ -1503,11 +1574,14 @@ func host_return_to_lobby(keep_ready: bool = false) -> void:
 		if not (series != null and series.in_progress()) and not keep_ready:
 			e["ready"] = false   # between rounds, readiness given on the results screen stands
 		e["role"] = -1
-		e["away"] = false
+		if not (series != null and series.in_progress()):
+			e["away"] = false   # (build 34) a sit-out is back once the series is over
 	_check_leader()
 	if series != null and series.finished:
 		series = null   # Play again: a new series starts with the next Start
 		series_view = {}
+	if not announce:
+		return
 	_broadcast_lobby()
 	series_changed.emit()
 
@@ -1538,6 +1612,7 @@ func host_set_settings(watch: int, rounds: int, map_id: String = "") -> bool:
 func host_end_series() -> void:
 	if not is_host() or series == null or not series.in_progress():
 		return
+	_next_round_at = -1.0
 	series.end_early()
 	series_view = series.to_dict()
 	_send_series_all()
@@ -1666,10 +1741,21 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 				# round (never silently load another map)
 				_end("map_update" if String(fixed.get("_why", "")) == "map" else "version")
 				return
+			if not fixed.is_empty() and sitting_out() and series_flow():
+				# (build 34) the next round of the match we left: a bot plays
+				# our seat; we stay in the party lobby
+				current_start = fixed
+				round_no = int(fixed.get("round", round_no))
+				host_phase = TC.Phase.LOADING
+				left_round = true
+				_next_round_at = -1.0
+				lobby_changed.emit()
+				return
 			if not fixed.is_empty():
 				current_start = fixed
 				host_phase = TC.Phase.LOADING
 				left_round = false
+				_next_round_at = -1.0
 				round_no = int(fixed.get("round", round_no))
 				settings = fixed["settings"]
 				round_cfg = PartySeries.rules_for(Rules.cfg, int(settings["watch"]))
@@ -1712,6 +1798,10 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 					last_results = fr
 					phase = TC.Phase.RESULTS
 					host_phase = TC.Phase.RESULTS
+					# (build 34) the series' next round, counted down with the host
+					_next_round_at = -1.0
+					if series_flow() and fr.has("next_round_in"):
+						_next_round_at = _clock + clampf(float(fr["next_round_in"]), 0.0, 30.0) - clampf(rtt * 0.5, 0.0, 1.0)
 					results_received.emit(last_results)
 		Protocol.M.PING:
 			if b.get_available_bytes() < 8:
@@ -1730,6 +1820,8 @@ func _client_packet(peer: int, type: int, b: StreamPeerBuffer) -> void:
 		Protocol.M.SERIES:
 			var sv := PartySeries.sanitize_view(Protocol.get_json(b), names_verified())
 			if not sv.is_empty():
+				if bool(sv.get("finished", false)):
+					_next_round_at = -1.0   # (build 34) the match was ended: no next round
 				series_view = sv
 				series_changed.emit()
 		Protocol.M.HOST_END:
@@ -1758,7 +1850,8 @@ func _send_hello() -> void:
 	b.put_u8(["any", "runner", "patrol"].find(local_pref))
 	Protocol.put_str(b, rejoin_key, 32)
 	Protocol.put_long_str(b, admission)
-	b.put_u8(Protocol.CAPS)   # (build 33) what this build can do (older hosts stop reading before it)
+	if caps_mask != 0:
+		b.put_u8(Protocol.CAPS & caps_mask)   # (build 33) what this build can do (older hosts stop reading before it)
 	transport.send(host_peer, b.data_array, true)
 	_hello_sent = true
 
@@ -1803,7 +1896,7 @@ func _read_lobby(b: StreamPeerBuffer) -> void:
 		if (flags & 8) != 0:
 			hs = i
 	# (build 33) the host's offer; the leader (an older host: the host leads)
-	host_caps = b.get_u8() & Protocol.CAPS if b.get_available_bytes() >= 1 else 0
+	host_caps = (b.get_u8() & Protocol.CAPS & caps_mask) if b.get_available_bytes() >= 1 else 0
 	leader_slot = lead if lead >= 0 else hs
 	host_phase = clampi(ph, TC.Phase.LOBBY, TC.Phase.ENDED)
 	if rev_changed and not is_leader():
@@ -1998,6 +2091,8 @@ func _physics_process(delta: float) -> void:
 	_clock += delta
 	transport.poll(delta)
 	social.tick(delta)
+	if mode == Mode.HOST and _next_round_at >= 0.0 and _clock >= _next_round_at:
+		_auto_next_round()
 	if mode == Mode.CLIENT:
 		if host_peer < 0:
 			_no_host_t += delta

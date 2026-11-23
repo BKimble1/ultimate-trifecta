@@ -1210,7 +1210,9 @@ func _refresh() -> void:
 		var e: Variant = session.roster[i]
 		if e == null:
 			continue
-		if round_on and bool(e["is_bot"]):
+		# (build 34) the party room shows the people only: bots fill seats in
+		# rounds (the playlist line counts them), never in the lobby
+		if bool(e["is_bot"]):
 			continue
 		order.append(i)
 		if not bool(e["is_bot"]):
@@ -1280,12 +1282,13 @@ func _refresh() -> void:
 	if series_on:
 		var tally := _tally(view)
 		series_lbl.text = "Round %d of %d next  ·  Runners %d – %d Night Watch" % [nxt, total, tally[0], tally[1]]
-	series_row.visible = series_on and not (hub != null and hub.walking) and not round_on
-	# (build 33) the series line and the Season pill share the space under
-	# the tabs: during a series the line takes it (they overlapped)
+	# (build 34) the lobby is clean every time: no series line or standings
+	# here (they live on the results, between rounds); nothing pushes Start,
+	# Walk, Emote or Chat off the screen
+	series_row.visible = false
 	if is_instance_valid(season_pill):
-		season_pill.visible = not (hub != null and hub.walking) and not series_row.visible
-	standings_btn.visible = series_on and not (view.get("standings", {}) as Dictionary).is_empty()
+		season_pill.visible = not (hub != null and hub.walking)
+	standings_btn.visible = false
 	var bots := 8 - humans
 	if App.quick_searching:
 		# 2.2: Quick Match is looking for players
@@ -1312,11 +1315,12 @@ func _refresh() -> void:
 		status_lbl.text = ""
 	elif round_on:
 		# (build 33) we left the round; the others are finishing it
-		primary_btn.text = "Round in progress"
+		var match_on := session.sitting_out()
+		primary_btn.text = "Match in progress" if match_on else "Round in progress"
 		primary_btn.disabled = true
 		UIKit._apply(primary_btn, UIKit.SLATE_HI, UIKit.IVORY)
 		sub_lbl.text = ""
-		status_lbl.text = "Your party is finishing a round · you'll play the next one together"
+		status_lbl.text = "Your party is playing · you'll join the next match" if match_on else "Your party is finishing a round · you'll play the next one together"
 	elif leader and (humans <= 1 or _is_ready):
 		# the leader's Start: everyone ready, the leader included
 		primary_btn.text = ("Start round %d" % nxt) if series_on else ("PLAY" if solo else "Start")
@@ -1372,6 +1376,8 @@ func _refresh() -> void:
 func away_in_round() -> bool:
 	if session.is_host():
 		return false
+	if session.sitting_out() and session.host_phase != TC.Phase.LOBBY:
+		return true   # (build 34) the match we left goes on, between its rounds too
 	return session.host_phase >= TC.Phase.LOADING and session.host_phase <= TC.Phase.PLAYING
 
 
