@@ -120,6 +120,7 @@ first downbeat, the loop bars), and re-run the tests.
 
 ## Rights
 
-The track is the owner's. It was made with the mureka.ai generation service,
-and its provenance and rights, including that service's terms for commercial
-use, are the owner's to confirm. See `ASSET_LICENSES.md`.
+Blake made this track and confirmed commercial-use rights on 22 November
+2026, including the creation tool's terms. See `../CONTENT_PROVENANCE.md`.
+The mureka.ai source details above document the production process; they
+are not evidence of a third-party recording or an unresolved rights issue.

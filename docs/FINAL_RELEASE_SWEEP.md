@@ -1,5 +1,7 @@
 # Final release sweep (version 2.0)
 
+> Historical checklist. Current 2.2 (33) verification: [submission33/README.md](submission33/README.md). Content provenance is confirmed in [CONTENT_PROVENANCE.md](CONTENT_PROVENANCE.md).
+
 The last pass before the App Store: a lighter lobby, a large rotatable
 Season Pass preview with a cleaner hierarchy, Friends with real in-game
 status and lobby invitations, commerce that works for TestFlight, App
@@ -117,7 +119,7 @@ service or a device.
 | U3 | Paid Apps Agreement, tax and banking (not readable by the API key) | StoreKit returns no products without it | A |
 | U4 | No privacy policy or support URL (`config/links.cfg` and the service variables are empty) | Required in the app and on the version page | C.8, F |
 | U5 | Nothing verified on a device or with Apple's sandbox: purchases, restore, Premium, claims, Friends between two accounts, an online round between two devices, Delete Game Profile on the live service | Only a device, a sandbox account and the deployed service can show them | E |
-| U6 | Content rights: written permission from the two people Record Breaker and Dr. Doom are based on; mureka.ai's terms for both music loops; whether to keep the "Dr. Doom" label | Guideline 5.2 (intellectual property, likeness) | F |
+| U6 | Content provenance resolved by the owner on 22 Nov 2026: original skins and owner-created music cleared for commercial use | See CONTENT_PROVENANCE.md; earlier permission assumptions superseded | Confirmed |
 | U7 | The version page: App Privacy answers, age rating, screenshots, review contact, copyright | Only the account holder can enter them | F |
 
 ### Known, not blocking

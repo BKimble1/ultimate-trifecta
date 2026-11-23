@@ -579,8 +579,10 @@ label says Pass 8), `skins_memory.tscn`, `char_budget.tscn`,
   not any comic-book character).
 - Likeness: both skins are stylised likenesses of real people, made from
   reference photos and concept art the owner supplied for this purpose. The
-  photos are not in the repository; their use, and the owner's permission
-  from the people portrayed, are the owner's to record.
+  photos are not in the repository. Blake confirmed commercial-use
+  clearance, including the people portrayed, on 22 November 2026; see
+  `../CONTENT_PROVENANCE.md`. These are original skins, not copied
+  third-party characters.
 - Build tool: Blender as a Python module (bpy 4.5.4, GPL), build time only,
   not shipped (unchanged).
 

@@ -1,10 +1,18 @@
-# App Store submission screenshots · 2.2 (build 32)
+# App Store submission screenshots · 2.2 (build 33)
 
-**Everything to upload for the 2.2 submission: the public App Store
-screenshots (iPhone and iPad) and the review screenshot for each of the
-9 in-app purchases.** Rendered on 22 Nov 2026 from the build 30 source (Friends shot: build 31)
-(submit build 32: the build these screens come from), at the exact store sizes, with the App Store
-Connect prices (USA) on the purchase screens.
+**Current upload sets for 2.2 (33): nine public iPhone screenshots, nine
+public iPad screenshots and four review images for the nine IAP products.**
+
+The party-lobby image (03) was rerendered directly from build 33 source to
+show **Leave party**, the ready checks and the leader's Ready action. The
+basketball image (04) is being refreshed from the same source. The other
+screens retain the existing build 30/31 captures where their visible UI
+is unchanged. These are engine-rendered screenshots, not device captures;
+see capture details below. The purchase prices match Apple's current USA
+price schedule (read-only status run #306, rerun for this audit).
+
+Replacement map and verification: [../../../submission33/README.md](../../../submission33/README.md).
+Content provenance: [../../../CONTENT_PROVENANCE.md](../../../CONTENT_PROVENANCE.md).
 
 ## Upload map
 
@@ -46,7 +54,7 @@ Upload in this order (01 first), the same nine in both sets.
 |---|---|---|
 | 1 | `01_runner_splash_fountain.png` | Gameplay as a runner: a leap into Founders' Fountain at night with the Night Watch two steps behind; the round HUD |
 | 2 | `02_night_watch_golf_cart.png` | Gameplay as the Night Watch: driving a golf cart down Library Lane after two runners |
-| 3 | `03_party_in_the_dorm.png` | A party of eight in the Christmas dorm lobby, everyone ready (Season name cards and badges on the roster), Start |
+| 3 | `03_party_in_the_dorm.png` | A party of eight in the Christmas dorm lobby, seven guests ready, leader ready action, **Leave party** and roster ready checks |
 | 4 | `04_basketball_in_the_dorm.png` | Walk mode in the lobby: the runner's shot dropping through the Christmas hoop, confetti |
 | 5 | `05_season_pass_winter_break.png` | Season 1 · Winter Break pass: Premium, Tier 43 / 100, a claimed reward on the stage |
 | 6 | `06_shop_featured.png` | The Shop's Featured page: rotating skins with Coin prices and countdowns, the two App Store outfits |
@@ -79,9 +87,9 @@ prices (USA)**, read from App Store Connect on 22 Nov 2026
 show them exactly as the game formats a StoreKit price.
 
 All player names and Game Center nicknames are fictional ("Comfy Frog" is
-the player). No outfit based on a real person appears large in any shot;
-only the Season Pass milestone chips (tiers 50 and 100) carry their tiny
-portraits, as the game's Season Pass always does.
+the player). The original skins and owner-created music are cleared for commercial use,
+confirmed by Blake; see `docs/CONTENT_PROVENANCE.md`. The Season Pass
+milestone chips (tiers 50 and 100) show their usual portraits.
 
 Not a device capture. On a device the status bar is hidden in the game,
 so the frames match what the phone shows.

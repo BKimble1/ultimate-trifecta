@@ -249,26 +249,18 @@ the encryption built into iOS (HTTPS to the game service, Game Center), which
 is exempt. Answer App Store Connect's question accordingly; no documentation
 upload is needed.
 
-## Content rights (owner confirms)
+## Content rights (owner confirmed)
 
-- **Likenesses.** Record Breaker and Dr. Doom are stylised likenesses of
-  real people made from the owner's photos. **owner:** written permission
-  from both people for commercial use in the game and its marketing.
-- **"Dr. Doom" name.** "Doctor Doom" is a well-known comic-book character
-  and trademark of another company. The skin is an original character and
-  its art doesn't reference that character, but the name alone could be
-  read as a reference (App Review Guideline 5.2.1, intellectual property).
-  **owner decision:** keep the approved name, or rename the skin's display
-  name (only the label changes; its ID `outfit:dr_doom` and progress stay).
-- **Music.** "Night Campus Loop" (lobby) and "Soft Bounce Loop" (rounds)
-  are the owner's tracks made with mureka.ai. **owner:** confirm that
-  service's terms allow commercial use in an app.
-- **Everything else** is original to the project or under the licences in
-  `ASSET_LICENSES.md` (Godot MIT, GodotApplePlugins MIT, Manrope SIL OFL,
-  DejaVu Sans, Blender-built original characters, synthesized sound
-  effects).
-- Nothing in the app or its metadata suggests endorsement by Apple or by
-  any real person.
+Blake confirmed on 22 November 2026 that the skins are original designs,
+cleared for commercial use including any people portrayed, and that he
+made the music with the necessary commercial-use rights. See
+[CONTENT_PROVENANCE.md](CONTENT_PROVENANCE.md). Dr. Doom is the project's
+original suited character. Do not describe it as a copied comic character.
+
+Keep the asset-source and open-source notices in `ASSET_LICENSES.md`.
+These original skins and tracks alone do not require declaring third-party
+content. This records the owner's confirmation, not independent legal
+clearance or a guarantee of Apple's decision.
 
 ## Screenshots
 
@@ -278,7 +270,7 @@ current specification):
   2778 × 1284 if 6.9" isn't provided. Up to 10.
 - **iPad 13" display:** 2752 × 2064 (landscape). Up to 10.
 
-The sets for 2.2 (build 32) are in `docs/media/final/store/`: `iphone_6.9/`
+The sets for 2.2 (build 33) are in `docs/media/final/store/`: `iphone_6.9/`
 (9 shots, 2868 × 1320) and `ipad_13/` (9 shots, 2752 × 2064), PNG, 8-bit
 RGB, no alpha, sRGB, all passing `tools/store_shot_check.py`. Renders of the
 real game's screens and a real practice round with fictional player names

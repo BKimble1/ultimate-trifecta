@@ -1,15 +1,20 @@
 # Ultimate Trifecta 2.2: every step to App Store submission
 
-Written 19 November 2026. Where things stand:
-- TestFlight build **2.2 (23)** is uploaded and App Store-eligible (Season 1
-  film, new setup). It is **not** the build to submit: the launch build comes
-  after the game service is live (Part C).
-- The **9 in-app purchase records** exist in App Store Connect, with no
-  prices or screenshots.
-- The **2 Game Center leaderboards** exist (`ut.season_points`,
-  `ut.fastest_run`).
-- **Signing is in order** (A2): no certificate renewal needed.
-- The **game service and website are not deployed**.
+Updated for **2.2 (33)**. Use [submission33/README.md](submission33/README.md)
+for the current verification record; older build references below are history.
+
+- Build **2.2 (33)** is processed, VALID and APP_STORE_ELIGIBLE (Apple API,
+  status run #306). Blake confirmed the name-change and two-phone party-round
+  tests pass on this build.
+- Both game services and the website are deployed; the release config names them.
+- All **9 in-app purchases** are READY_TO_SUBMIT with prices and review images.
+  The **Season 1 Premium Pass is USD 4.99** (not the older proposed $9.99).
+- Content provenance is settled by the owner's commercial-use confirmation:
+  [CONTENT_PROVENANCE.md](CONTENT_PROVENANCE.md).
+- The last listing snapshot still had **no build attached** and automatic
+  release. App Privacy, the contest age-rating answer, IAP attachment and the
+  final review submission still need live verification. Nothing here means
+  the app has been submitted or approved.
 
 Parts marked **[Claude]** are done in the coding session; tell Claude when
 the part before is finished. Everything else is yours. Never paste a
@@ -76,9 +81,10 @@ Apps › Ultimate Trifecta › left column › **App Information**:
 3. **Category**: Primary **Games**, subcategory **Action**. Secondary
    (optional): **Games › Family**.
 4. **Content Rights**: click **Set Up Content Rights Information** › "Does
-   your app contain, show, or access third-party content?" › **Yes**, and
-   tick that you have the necessary rights (answer this only after Part E
-   is settled).
+   your app contain, show, or access third-party content?" › answer accurately.
+   The original skins and owner-created music are cleared for commercial
+   use (Part E); they do not by themselves require a **Yes** answer. The last
+   Apple snapshot says **Does not use third-party content**.
 5. **Age Rating**: click **Set Up Age Rating** (or Edit) and answer with
    the table in Part F5.
 6. **App Store Server Notifications**: filled in Part C8.
@@ -114,7 +120,7 @@ characters). Fix if needed and **Save**.
 1. In the product, section **Price Schedule** › **Add Pricing**.
 2. Base country **United States**; choose the USD price from the list
    (your choice for the Coin packs and outfits; the Season 1 Premium Pass
-   is **USD 9.99**, as decided).
+   is **USD 4.99**, confirmed by the Apple price schedule).
 3. Next › let Apple fill the other countries automatically › Confirm.
 
 ### B4. Availability
@@ -301,26 +307,22 @@ If anything in D fails, tell Claude what you saw (a screenshot helps).
 
 ---------------------------------------------------------------------------
 
-## Part E. Rights and decisions
+## Part E. Content provenance and contest
 
-1. **Music.** The lobby albums ("Lobby Pluck", "Cozy Christmas Lobby",
-   "Stardust Reverie") were made with **Suno**: Suno only allows commercial
-   use of songs made while on a **paid plan**. "Night Campus Loop" and
-   "Soft Bounce Loop" were made with **mureka.ai**: check its terms allow
-   use in an app. For each song, confirm or tell Claude to remove it.
-2. **Likenesses.** Record Breaker and Dr. Doom are based on two real
-   people. Get **written permission** from each for use in the game and
-   its marketing (an email saying so is the minimum; a signed release is
-   better). Keep them.
-3. **"Dr. Doom" name.** It echoes a well-known comic-book character
-   (trademark). Decide: keep it, or tell Claude a new display name (players
-   keep the outfit and progress).
-4. **Season Champion contest.** Because there's a prize, have someone
-   check `docs/release22/CONTEST_RULES.md` (eligibility, dates, prize,
-   sponsor = you, "Apple is not a sponsor"). Tell Claude any changes.
-5. **Privacy policy.** It must be in your (or your company's) name, match
-   what the app collects (the App Privacy table in F6), and be reachable
-   at the Privacy Policy URL.
+1. **Original skins and music — confirmed.** Blake confirmed the skins are
+   original designs cleared for commercial use, including any real people
+   portrayed, and that he made the music with commercial-use rights under
+   the creation tools' terms. See `docs/CONTENT_PROVENANCE.md`. Do not label
+   these as copied third-party characters or music, and do not repeat the
+   superseded permission requests in older notes.
+2. **Names.** Keep the approved original character names. No character art
+   or naming change is part of this submission-assets update.
+3. **Season Champion contest.** Check `docs/release22/CONTEST_RULES.md`
+   against the in-app rules and confirm the age questionnaire declares the
+   contest. The shipped rules already name Idlery Games as sponsor and say
+   Apple is not involved.
+4. **Privacy policy.** It must match what the app collects (F6) and be
+   reachable at the Privacy Policy URL.
 
 ---------------------------------------------------------------------------
 
@@ -337,7 +339,8 @@ Section **Previews and Screenshots**:
 2. **iPad** › **13" Display** › drag in the 9 files from
    `docs/media/final/store/ipad_13/` (2752 × 2064).
 3. Drag to reorder so they run 01 to 09 (the number starts each name).
-   None shows Record Breaker or Dr. Doom large (see the folder's README).
+   Screenshot 03 must show the current **Leave party** action. See the
+   folder README for the replacement map and capture provenance.
 
 ### F2. Text
 - **Promotional Text**:
@@ -352,7 +355,7 @@ Section **Previews and Screenshots**:
 
 ### F3. Build
 Section **Build** › **Add Build** (or the + next to it) › choose the
-**launch candidate** from C7 (not 23) › Done. If asked about **encryption**:
+**2.2 (33)** launch candidate › Done. If asked about **encryption**:
 "None of the algorithms mentioned above" / exempt (the build already says
 it uses no non-exempt encryption).
 
@@ -482,7 +485,7 @@ First launch: the Season 1 film plays once after the Idlery Games logo (hold "Ho
 
 Home is your party lobby. The Play button starts the selected mode: Quick Match (random players plus bots), Party vs Bots, or Practice (offline, choose Runner or Night Watch). Practice needs no other players.
 
-Friends and parties: "Invite friends" in the lobby invites Game Center friends; a second device on a different Game Center account can also join with "Join with a code" and the party code. The reviewer's account won't have mutual friends, so a short two-device video is attached.
+Friends and parties: "Invite friends" in the lobby invites Game Center friends; a second device on a different Game Center account can also join with "Join with a code" and the party code. The reviewer's account may not have mutual friends; a party code can be used without mutual friendship.
 
 Purchases (cosmetic only): Shop (top bar) > Coins has six Coin packs (consumable). Shop > Featured > Always available has two permanent outfits, Moonlight Runner and Starry Sleeper (non-consumable). Season Pass (top bar) > Premium sells the Season 1 Premium Pass (non-consumable). Restore Purchases is in the Shop and on each outfit's page. Other outfits are bought with Coins after a confirmation. Every purchase is verified with StoreKit 2 and Apple's signed transaction on our server before delivery. Review purchases use Apple's sandbox; the game detects this and keeps them separate from customers'. Nothing bought changes speed, reach or score.
 

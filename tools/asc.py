@@ -409,6 +409,9 @@ def main():
             print("  primary category:", ((cat or {}).get("data") or {}).get("id", "MISSING"))
             ard = get(f"/appInfos/{inf['id']}/ageRatingDeclaration")
             print("  age rating declaration:", "set" if ard and ard.get("data") else "MISSING")
+            ar = (((ard or {}).get("data") or {}).get("attributes") or {})
+            for key in ("contests", "userGeneratedContent", "messagingAndChat", "gambling", "lootBox"):
+                print(f"    {key}: {ar.get(key, 'NOT READABLE')}")
             for loc in (get(f"/appInfos/{inf['id']}/appInfoLocalizations") or {}).get("data", []):
                 la = loc["attributes"]
                 print(f"  {la.get('locale')}: name {has(la.get('name'))} ({la.get('name')}), subtitle {has(la.get('subtitle'))}, privacy policy URL {has(la.get('privacyPolicyUrl'))}")
@@ -427,8 +430,13 @@ def main():
                 print(f"  {la.get('locale')}: description {has(la.get('description'))}, keywords {has(la.get('keywords'))}, "
                       f"support URL {has(la.get('supportUrl'))}, marketing URL {has(la.get('marketingUrl'))}, promo text {has(la.get('promotionalText'))}, what's new {has(la.get('whatsNew'))}")
                 for ss in (get(f"/appStoreVersionLocalizations/{loc['id']}/appScreenshotSets") or {}).get("data", []):
-                    n = len((get(f"/appScreenshotSets/{ss['id']}/appScreenshots") or {}).get("data", []))
-                    print(f"    screenshots {ss['attributes'].get('screenshotDisplayType')}: {n}")
+                    shots = (get(f"/appScreenshotSets/{ss['id']}/appScreenshots") or {}).get("data", [])
+                    print(f"    screenshots {ss['attributes'].get('screenshotDisplayType')}: {len(shots)}")
+                    for shot in shots:
+                        sa = shot.get("attributes") or {}
+                        asset = sa.get("imageAsset") or {}
+                        delivery = sa.get("assetDeliveryState") or {}
+                        print("      ", sa.get("fileName"), asset.get("width"), "x", asset.get("height"), delivery.get("state", "UNKNOWN"))
             rd = get(f"/appStoreVersions/{v['id']}/appStoreReviewDetail")
             rda = ((rd or {}).get("data") or {}).get("attributes") or {}
             print("  review contact:", "set" if rda.get("contactEmail") and rda.get("contactPhone") and rda.get("contactFirstName") else "MISSING",
