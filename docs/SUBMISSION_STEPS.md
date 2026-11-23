@@ -12,7 +12,7 @@ for the current verification record; older build references below are history.
 - Content provenance is settled by the owner's commercial-use confirmation:
   [CONTENT_PROVENANCE.md](CONTENT_PROVENANCE.md).
 - The last listing snapshot still had **no build attached** and automatic
-  release. App Privacy, the contest age-rating answer, IAP attachment and the
+  release. App Privacy, IAP attachment and the
   final review submission still need live verification. Nothing here means
   the app has been submitted or approved.
 
@@ -317,10 +317,10 @@ If anything in D fails, tell Claude what you saw (a screenshot helps).
    superseded permission requests in older notes.
 2. **Names.** Keep the approved original character names. No character art
    or naming change is part of this submission-assets update.
-3. **Season Champion contest.** Check `docs/release22/CONTEST_RULES.md`
-   against the in-app rules and confirm the age questionnaire declares the
-   contest. The shipped rules already name Idlery Games as sponsor and say
-   Apple is not involved.
+3. **Season Champion contest.** The in-app rules match
+   `docs/release22/CONTEST_RULES.md`; Apple reports contests, user-generated
+   content and messaging/chat declared. The shipped rules name Idlery Games
+   as sponsor and say Apple is not involved.
 4. **Privacy policy.** It must match what the app collects (F6) and be
    reachable at the Privacy Policy URL.
 

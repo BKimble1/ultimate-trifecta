@@ -479,7 +479,7 @@ non-consumable (never a subscription) whose delivery is the
 (`commerce.js`, `PERMANENT`). Refunds take it back. The price is whatever
 StoreKit returns for the product; nothing stores a price. `asc.py
 iap-create` now plans nine products; the owner creates this one and picks
-its price (USD 9.99 tier as asked) in App Store Connect.
+its price (USD 4.99 in the Apple price schedule on 22 Nov 2026) in App Store Connect.
 
 No "was" price is shown: a struck-through price has to be a real earlier
 price, and this pass has never sold for anything else.

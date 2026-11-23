@@ -1,0 +1,34 @@
+[
+  {
+    "url": "https://ultimate-trifecta.pages.dev/",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "url": "https://ultimate-trifecta.pages.dev/privacy/",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "url": "https://ultimate-trifecta.pages.dev/support/",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "url": "https://ultimate-trifecta.pages.dev/terms/",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "url": "https://ultimate-trifecta.pages.dev/rules/",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "url": "https://ultimate-trifecta.pages.dev/delete-account/",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "url": "https://trifecta-service.blake-kimble2.workers.dev/v1/config",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "url": "https://trifecta-service-production.blake-kimble2.workers.dev/v1/config",
+    "error": "HTTP Error 403: Forbidden"
+  }
+]

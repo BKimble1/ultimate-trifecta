@@ -1,0 +1,40 @@
+Apple listing detail, read-only audit run 45108982644
+
+content rights: DOES_NOT_USE_THIRD_PARTY_CONTENT
+app price schedule: set
+app availability: set
+app info f5a6b84c state: PREPARE_FOR_SUBMISSION age rating: TWELVE_PLUS
+  primary category: GAMES
+  age rating declaration: set
+    contests: FREQUENT_OR_INTENSE
+    userGeneratedContent: True
+    messagingAndChat: True
+    gambling: False
+    lootBox: False
+  en-US: name set (Ultimate Trifecta), subtitle set, privacy policy URL set
+=== version 2.2 state: PREPARE_FOR_SUBMISSION release: AFTER_APPROVAL copyright: set
+  build: NONE ATTACHED 
+  en-US: description set, keywords set, support URL set, marketing URL set, promo text set, what's new MISSING
+    screenshots APP_IPHONE_61: 9
+       01_runner_splash_fountain.png 2622 x 1206 COMPLETE
+       02_night_watch_golf_cart.png 2622 x 1206 COMPLETE
+       03_party_in_the_dorm.png 2622 x 1206 COMPLETE
+       04_basketball_in_the_dorm.png 2622 x 1206 COMPLETE
+       05_season_pass_winter_break.png 2622 x 1206 COMPLETE
+       06_shop_featured.png 2622 x 1206 COMPLETE
+       07_locker.png 2622 x 1206 COMPLETE
+       08_friends_invite.png 2622 x 1206 COMPLETE
+       09_final_standings.png 2622 x 1206 COMPLETE
+    screenshots APP_IPAD_PRO_3GEN_129: 9
+       09_final_standings.png 2752 x 2064 COMPLETE
+       08_friends_invite.png 2752 x 2064 COMPLETE
+       07_locker.png 2752 x 2064 COMPLETE
+       06_shop_featured.png 2752 x 2064 COMPLETE
+       05_season_pass_winter_break.png 2752 x 2064 COMPLETE
+       04_basketball_in_the_dorm.png 2752 x 2064 COMPLETE
+       03_party_in_the_dorm.png 2752 x 2064 COMPLETE
+       02_night_watch_golf_cart.png 2752 x 2064 COMPLETE
+       01_runner_splash_fountain (1).png 2752 x 2064 COMPLETE
+  review contact: set | notes: set | demo account required: False
+  submission: none
+game center detail: set

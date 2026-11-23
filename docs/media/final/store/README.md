@@ -5,7 +5,7 @@ public iPad screenshots and four review images for the nine IAP products.**
 
 The party-lobby image (03) was rerendered directly from build 33 source to
 show **Leave party**, the ready checks and the leader's Ready action. The
-basketball image (04) is being refreshed from the same source. The other
+basketball image (04) was also refreshed from the same source. The other
 screens retain the existing build 30/31 captures where their visible UI
 is unchanged. These are engine-rendered screenshots, not device captures;
 see capture details below. The purchase prices match Apple's current USA
@@ -55,7 +55,7 @@ Upload in this order (01 first), the same nine in both sets.
 | 1 | `01_runner_splash_fountain.png` | Gameplay as a runner: a leap into Founders' Fountain at night with the Night Watch two steps behind; the round HUD |
 | 2 | `02_night_watch_golf_cart.png` | Gameplay as the Night Watch: driving a golf cart down Library Lane after two runners |
 | 3 | `03_party_in_the_dorm.png` | A party of eight in the Christmas dorm lobby, seven guests ready, leader ready action, **Leave party** and roster ready checks |
-| 4 | `04_basketball_in_the_dorm.png` | Walk mode in the lobby: the runner's shot dropping through the Christmas hoop, confetti |
+| 4 | `04_basketball_in_the_dorm.png` | Walk mode and basketball in the Christmas dorm, with the in-game celebration |
 | 5 | `05_season_pass_winter_break.png` | Season 1 · Winter Break pass: Premium, Tier 43 / 100, a claimed reward on the stage |
 | 6 | `06_shop_featured.png` | The Shop's Featured page: rotating skins with Coin prices and countdowns, the two App Store outfits |
 | 7 | `07_locker.png` | The Locker's Outfit tab with the runner on the stage |
@@ -66,6 +66,7 @@ Upload in this order (01 first), the same nine in both sets.
 |---|---|---|
 | [`iphone_6.9/`](iphone_6.9/) | iPhone › **6.9" Display** | 2868 × 1320 (landscape) |
 | [`ipad_13/`](ipad_13/) | iPad › **13" Display** | 2752 × 2064 (landscape) |
+| [`iphone_6.1/`](iphone_6.1/) | Existing iPhone **6.1" Display** slot: replacements 03 and 04 only | 2622 × 1206 (landscape) |
 
 Only these two sizes are needed: App Store Connect scales the 6.9" set to
 every smaller iPhone and the 13" set to every smaller iPad. The app runs

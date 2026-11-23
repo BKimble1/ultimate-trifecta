@@ -1,0 +1,32 @@
+[
+  {
+    "path": "docs/media/final/store/iphone_6.1/03_party_in_the_dorm.png",
+    "size": 1465349,
+    "sha256": "2f7430f7e024166f778f6a46b35065786952dd97d87f2503e95a49c0f94455a1"
+  },
+  {
+    "path": "docs/media/final/store/iphone_6.1/04_basketball_in_the_dorm.png",
+    "size": 1600417,
+    "sha256": "91977ffbe000ac830dde54027f2514ad1a9ba948122f4fc6b982a4d007432130"
+  },
+  {
+    "path": "docs/media/final/store/iphone_6.9/03_party_in_the_dorm.png",
+    "size": 1725453,
+    "sha256": "b4f475f824d28529ce3d32959fe5c8a2007c8d527ecf1d25404650a37e2ba2ee"
+  },
+  {
+    "path": "docs/media/final/store/iphone_6.9/04_basketball_in_the_dorm.png",
+    "size": 1899970,
+    "sha256": "3a9c7cd4f824f4c887845ec7a3984bbf7d0a00e8c15648f7ed59312cdd6a8aa7"
+  },
+  {
+    "path": "docs/media/final/store/ipad_13/03_party_in_the_dorm.png",
+    "size": 2395936,
+    "sha256": "b27d21facb82fa4e5e741cfdcc569172a94dcfd370c8753bb73ce5e86f7e6263"
+  },
+  {
+    "path": "docs/media/final/store/ipad_13/04_basketball_in_the_dorm.png",
+    "size": 2685765,
+    "sha256": "06a6cfc2ee5d1c7c768e6e65340c8c29af0642d55419f576cfcf71f415ae4663"
+  }
+]
