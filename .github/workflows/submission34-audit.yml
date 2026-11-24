@@ -1,0 +1,35 @@
+name: Build 34 submission audit (read only)
+on:
+  push:
+    branches: [codex/submission34-audit]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Read current Apple listing
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: |
+          set -e
+          mkdir -p "$RUNNER_TEMP/submission34-keys" audit34
+          export ASC_KEY_PATH="$RUNNER_TEMP/submission34-keys/key.p8"
+          trap 'rm -f "$ASC_KEY_PATH"' EXIT
+          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$ASC_KEY_PATH"
+          python3 -m pip install --quiet pyjwt cryptography requests
+          python3 tools/submission34_apple.py
+          python3 tools/asc.py iap-list > audit34/iap.txt
+          python3 tools/asc.py gc-leaderboards > audit34/leaderboards.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: submission34-apple-read-only
+          path: audit34/
