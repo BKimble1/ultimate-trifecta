@@ -58,5 +58,8 @@ report["review_submissions"] = get("/reviewSubmissions", **{"filter[app]":aid,"l
 report["review_items"] = []
 for sub in report["review_submissions"].get("data", []):
     report["review_items"].append({"id":sub["id"],"items":get(f"/reviewSubmissions/{sub['id']}/items",limit=200)})
+for entry in report["review_items"]:
+    entry["item_details"] = [get("/reviewSubmissionItems/" + item["id"]) for item in entry["items"].get("data", [])]
+report["iap_records"] = asc.iap_existing(aid)
 (out/"listing-detail.json").write_text(json.dumps(report, indent=2)+"\n")
 print("Read-only listing detail saved. Review contact values and credentials excluded.")
