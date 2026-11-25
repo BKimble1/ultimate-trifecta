@@ -701,7 +701,13 @@ async function registerRound(req, env) {
     if (existing.host_profile_id !== p.id) throw new ApiError(409, 'bad_round', 'That round belongs to another party.');
     return json({ ok: true, replay: true });
   }
-  const last = await q.one("SELECT MAX(started_at) AS at FROM rounds WHERE room_id = ? AND state != 'cancelled'", r.id);
+  // 2.2 (35): only a round still open (not yet reported) holds the next one
+  // back.  A party's series starts its next round seconds after the last
+  // one's results; a short round (reported, refused as too short) used to
+  // leave the next round unregistered, so that one paid nobody either.  A
+  // paid round still needs min_round_s between its registration and its
+  // report, so a party is paid for at most one round a minute as before.
+  const last = await q.one("SELECT MAX(started_at) AS at FROM rounds WHERE room_id = ? AND state = 'started'", r.id);
   if (last && last.at && t - last.at < E.ECONOMY.eligibility.min_round_s * 1000) {
     throw new ApiError(429, 'too_soon', 'Rounds in a party start at most once a minute.');
   }

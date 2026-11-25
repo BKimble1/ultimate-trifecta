@@ -117,6 +117,7 @@ func _save() -> void:
 func reset_local() -> void:
 	state = blank_state()
 	_inflight.clear()
+	_follow.clear()
 	_save()
 	_mirror()
 	changed.emit()
@@ -412,6 +413,10 @@ func _on_cloud_changed() -> void:
 
 
 func _process(delta: float) -> void:
+	_follow_t -= delta
+	if _follow_t <= 0.0:
+		_follow_t = 1.0
+		_follow_due()
 	if _auto_at < 0.0:
 		return
 	_auto_at -= delta
@@ -592,6 +597,12 @@ func _after_op(op: Dictionary, r: Dictionary) -> void:
 				var st: Dictionary = r["settlement"]
 				st["match_id"] = mid
 				_apply_round_status(st)
+				# (2.2 (35)) our confirmation got there before the host's
+				# report (a guest, nearly always): the service pays us when
+				# the report arrives; ask again shortly so the Coins land now,
+				# not at the next app launch
+				if String(op["kind"]) == "round_ack" and String(st.get("state", "")) == "pending":
+					follow_round(mid)
 			elif int(r.get("http_status", 0)) >= 400 and String(op["kind"]) == "round_ack":
 				_set_round(mid, {"state": "rejected", "reason": String(r.get("error", "")), "message": Cloud.explain(r)})
 		"legacy_import":
@@ -853,15 +864,38 @@ func settle_round(results: Dictionary, me: Dictionary, practice: bool) -> Dictio
 	else:
 		rec["state"] = "pending"
 	_set_round(mid, rec)
+	var s := App.session
+	var hosting := s != null and is_instance_valid(s) and s.is_host() and s.mode != NetSession.Mode.OFFLINE
+	# (2.2 (35)) the host reports every round it registered, a cancelled or
+	# unpaid one too: an unreported round stayed open on the service and held
+	# the party's next round back for a minute (its registration refused, so
+	# that round paid nobody either)
+	if hosting and not practice and Cloud.configured() and App.party_code != "" and String(rec["state"]) in ["pending", "not_eligible", "cancelled"]:
+		_report_round(results)
+		if String(rec["state"]) != "pending":
+			_pump()
 	if String(rec["state"]) == "pending":
-		var s := App.session
-		var hosting := s != null and is_instance_valid(s) and s.is_host()
-		if hosting:
-			_report_round(results)
 		_enqueue("round_ack", HTTPClient.METHOD_POST, "/v1/rounds/%s/ack" % mid.uri_encode(),
 			{"digest": Economy.row_digest(mid, results, me)}, {"match_id": mid})
 		_pump()
 	return round_summary(mid)
+
+
+## (2.2 (35)) Host: a round ended for everyone before its end (Cancel round,
+## End match) is reported as cancelled, so the service closes it at once
+## (it pays nobody) and the party's next round can register.
+func round_aborted(results: Dictionary) -> void:
+	var s := App.session
+	var mid := String(results.get("match_id", ""))
+	if mid == "" or s == null or not is_instance_valid(s) or not s.is_host() or s.mode == NetSession.Mode.OFFLINE:
+		return
+	if not Cloud.configured() or App.party_code == "" or (state["rounds"] as Dictionary).has(mid):
+		return
+	var r := results.duplicate()
+	r["outcome"] = TC.Outcome.CANCELLED
+	_set_round(mid, {"state": "cancelled", "at": now()})
+	_report_round(r)
+	_pump()
 
 
 func _report_round(results: Dictionary) -> void:
@@ -906,6 +940,55 @@ func _set_round(mid: String, patch: Dictionary) -> void:
 		rounds.erase(victim)
 	_save()
 	round_updated.emit(mid)
+
+
+## (2.2 (35)) Rounds the service has our confirmation for but hasn't settled
+## yet (the host's report was still on its way): the wallet is asked again
+## after each of these waits (s) until the round is settled or refused, so a
+## guest's Coins and Season XP reach the counter within seconds of the
+## host's report.  Before, a guest's round stayed "pending" (its Coins not in
+## the balance) until the next full wallet refresh: an app launch or resume.
+## Nothing is paid by asking: the service settled the round when the report
+## arrived; this only reads the result.  The report window is 20 minutes.
+const FOLLOW_S := [3, 6, 12, 25, 50, 100, 200, 400, 600]
+var _follow: Dictionary = {}     # match id -> {n, at}
+var _follow_t := 0.0
+
+
+func follow_round(mid: String) -> void:
+	if mid == "" or _follow.has(mid):
+		return
+	_follow[mid] = {"n": 0, "at": now() + int(FOLLOW_S[0])}
+
+
+func following() -> Array:
+	return _follow.keys()
+
+
+func _follow_due() -> void:
+	if _follow.is_empty() or syncing or not Cloud.signed_in():
+		return
+	var t := now()
+	var due := false
+	for mid in _follow:
+		if int(_follow[mid]["at"]) <= t:
+			due = true
+	if not due:
+		return
+	await refresh()
+	t = now()
+	for mid in _follow.keys():
+		var st := String((state["rounds"] as Dictionary).get(mid, {}).get("state", ""))
+		if st != "pending":
+			_follow.erase(mid)
+			continue
+		if int(_follow[mid]["at"]) > t:
+			continue
+		var n := int(_follow[mid]["n"]) + 1
+		if n >= FOLLOW_S.size():
+			_follow.erase(mid)   # the next wallet refresh still brings it
+		else:
+			_follow[mid] = {"n": n, "at": t + int(FOLLOW_S[n])}
 
 
 ## A settlement reported by the service ({match_id, state, coins, xp, reason}).
@@ -989,6 +1072,8 @@ func _round_message(rec: Dictionary) -> String:
 		"mismatch":
 			return "Your game and the host's report didn't match, so this round wasn't paid."
 		"rejected":
+			if String(rec.get("reason", "")) == "too_short":
+				return "Rounds pay once they've lasted a minute; this one was shorter."
 			return "The game service couldn't verify this round, so it wasn't paid."
 	return ""
 

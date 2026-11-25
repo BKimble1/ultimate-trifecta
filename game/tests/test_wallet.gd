@@ -211,6 +211,163 @@ func test_duplicate_owned_reward_still_claims_once() -> void:
 	await rig.end()
 
 
+## (2.2 (35)) Owner: "the coins you collect in game don't actually go towards
+## your overall coins".  A guest's confirmation nearly always reaches the
+## service before the host's report: the service answered "pending", paid
+## the guest when the report came, and the guest's game never asked again,
+## so its balance stayed short (and the results said "pending") until the
+## next app launch.  Now the wallet asks again shortly: the Coins land in
+## the balance once, in seconds, and the results follow.
+func test_guest_paid_after_the_hosts_late_report_without_a_relaunch() -> void:
+	await _rig().begin()
+	await rig.sign_in("T:_guest")
+	var guest := Cloud.profile_id()
+	var host: String = rig.svc._pid_for("T:_host")
+	var mid := "QWERTY-4-0000abcd"
+	var t0 := int(Time.get_unix_time_from_system())
+	var offset := {"s": 0}
+	Wallet.clock_override = func() -> int: return t0 + int(offset["s"])
+	rig.svc.rounds[mid] = {"host": host, "participants": {host: 0, guest: 1}, "report": {}, "acks": {}, "settled": {}}
+	App.party_code = "QWERTY"
+	var res := _round_results(mid)
+	var me: Dictionary = res["players"][1]
+	Wallet.settle_round(res, me, false)
+	await rig.until(func() -> bool: return Wallet.pending_ops() == 0)
+	t.eq(String(Wallet.round_summary(mid)["state"]), "pending", "our confirmation is in, the host's report isn't: pending")
+	t.check(Wallet.following().has(mid), "the wallet will ask again")
+	t.eq(Wallet.balance(), 0, "nothing paid yet")
+	# the host's report arrives (the service pays the confirmed guest then)
+	var rows: Array = []
+	for r in res["players"]:
+		if not bool(r["is_bot"]):
+			rows.append({"profile_id": host if String(r["uid"]) == "T:_host" else guest, "slot": int(r["slot"]), "role": int(r["role"]),
+				"stamps": int(r["stamps"]), "finished": bool(r["finished"]), "first_home": Economy.first_home(r, res),
+				"unique_captures": int(r["unique_captures"]), "coins_picked": int(r["coins_picked"]), "present": true, "away_s": 0.0})
+	rig.svc._round_report(host, mid, {"outcome": res["outcome"], "round_time_s": 180.0, "coin_spawns": 8, "players": rows})
+	var want := int(Economy.round_coins(me, res)["coins"])
+	t.check(int(rig.svc.wallet(guest)["balance"]) == want, "the service paid us when the report came (%d)" % want)
+	await rig.frames(5)
+	t.eq(Wallet.balance(), 0, "our game doesn't know yet")
+	offset["s"] = Wallet.FOLLOW_S[0] + 1
+	await rig.until(func() -> bool: return String(Wallet.round_summary(mid)["state"]) == "settled", 240)
+	var s := Wallet.round_summary(mid)
+	t.eq(String(s["state"]), "settled", "a few seconds later the round is settled on our device (no relaunch)")
+	t.eq(int(s["coins"]), want, "with its Coins")
+	t.eq(Wallet.balance(), want, "and the balance holds them")
+	t.check(int(s["xp_after"]) - int(s["xp_before"]) == int(Economy.round_season_xp(me, res)["xp"]), "and the Season XP")
+	t.check(not Wallet.following().has(mid), "the wallet stops asking")
+	# the same round again (results reopened, a repeated packet): nothing more
+	Wallet.settle_round(res, me, false)
+	await Wallet.refresh()
+	t.eq(Wallet.balance(), want, "paid once")
+	t.eq(int(rig.svc.wallet(guest)["balance"]), want, "on the service too")
+	Wallet.clock_override = Callable()
+	App.party_code = ""
+	await rig.end()
+
+
+## (2.2 (35)) The host reports every round it registered, one that pays
+## nobody (too few players) or that was ended early too: left open on the
+## service, it held the party's next round back (registration refused for a
+## minute after its start), so the series' next round paid nobody either.
+func test_host_closes_unpaid_and_aborted_rounds_on_the_service() -> void:
+	await _rig().begin()
+	await rig.sign_in("T:_host")
+	var host := Cloud.profile_id()
+	var hub := LoopbackTransport.Hub.new(3)
+	var s := NetSession.new()
+	t.add_child(s)
+	s.start_host(LoopbackTransport.new(hub, true), "QWERTY", "T:_host", "Host", {}, "any")
+	var saved := App.session
+	App.session = s
+	App.party_code = "QWERTY"
+	var solo := _round_results("QWERTY-6-0000abcd")
+	(solo["players"] as Array).remove_at(1)
+	var gone := _round_results("QWERTY-7-0000abcd")
+	for mid in ["QWERTY-6-0000abcd", "QWERTY-7-0000abcd"]:
+		rig.svc.rounds[mid] = {"host": host, "participants": {host: 0}, "report": {}, "acks": {}, "settled": {}}
+	t.eq(String(Wallet.settle_round(solo, solo["players"][0], false)["state"]), "not_eligible", "you + bots: pays nothing")
+	Wallet.round_aborted(gone)
+	await rig.until(func() -> bool: return Wallet.pending_ops() == 0)
+	t.check(not (rig.svc.rounds["QWERTY-6-0000abcd"]["report"] as Dictionary).is_empty(), "the unpaid round is reported (closed on the service)")
+	t.eq(int(rig.svc.rounds["QWERTY-7-0000abcd"]["report"].get("outcome", -1)), TC.Outcome.CANCELLED, "the round ended early is reported cancelled")
+	t.eq(Wallet.balance(), 0, "neither pays")
+	App.session = saved
+	App.party_code = ""
+	s.queue_free()
+	await rig.end()
+
+
+## (2.2 (35)) A guest the host knows by another player id than this
+## device's own (a host that admitted it through the relay while Game
+## Center isn't signed in here) finds its row by its own seat: before, no
+## row matched, so the round was neither recorded nor confirmed.
+func test_round_row_found_by_seat_when_the_ids_differ() -> void:
+	var res := _round_results("QWERTY-5-0000abcd")
+	var s := NetSession.new()
+	t.add_child(s)
+	s.start_offline("someone-else", "Tester", {}, "runner")
+	var saved := App.session
+	App.session = s
+	s.local_slot = 1
+	s.roster[1] = {"slot": 1, "uid": "T:_guest", "name": "Guest", "is_bot": false}
+	t.eq(App.round_uid(res), "T:_guest", "the uid the host knows us by")
+	(res["players"][1] as Dictionary)["uid"] = Save.player_uid()
+	t.eq(App.round_uid(res), Save.player_uid(), "our own id first when the row has it")
+	App.session = saved
+	s.queue_free()
+
+
+## (2.2 (35)) Between the rounds of a series the results showed the Coins
+## and XP a round *would* pay even when it paid nothing (practice, only bots,
+## away): "+17 Coins" that never reached the wallet.  Now: added amounts in
+## amber, amounts being added muted ("adding…"), a round that pays nothing a
+## few words why; each number gives its breakdown when tapped.
+func test_between_rounds_rewards_show_only_what_is_paid() -> void:
+	var lines := [["Completed the round", 10], ["Coins collected ×3", 3], ["Team win", 4]]
+	var xl := [["Completed the round", 50], ["Splashes ×3", 30], ["Made it home", 20], ["Team win", 15]]
+	var base := {"coins_collected": 3, "coins_projected": 17, "season_xp_projected": 115, "lines": lines, "season_lines": xl}
+	var cases := {
+		"CHIPS-1": base.merged({"state": "not_eligible", "reason": "few_humans"}),
+		"CHIPS-2": base.merged({"state": "practice"}),
+		"CHIPS-3": base.merged({"state": "pending"}),
+		"CHIPS-4": base.merged({"state": "settled", "coins": 17, "season_xp": 115}),
+	}
+	RoundRewards.wallet_override = func(m: String) -> Dictionary: return cases.get(m, {})
+	var fly := [App.coin_fly_match, App.coin_fly_pending]
+	var r := ResultsScreen.new()
+	var chips := {}
+	for mid in cases:
+		r.results = {"match_id": mid}
+		var h := HBoxContainer.new()
+		r._fill_chips(h, mid)
+		chips[mid] = h
+	var no1: HBoxContainer = chips["CHIPS-1"]
+	t.check(no1.find_child("TapCoins", true, false) == null and no1.find_child("TapXP", true, false) == null, "bots only: no Coins or XP shown as paid")
+	t.check(no1.find_child("NoPay", true, false) != null and (no1.find_child("NoPay", true, false) as Label).text == "Coins and XP need 2+ players", "but why, in a few words")
+	t.eq((chips["CHIPS-2"].find_child("NoPay", true, false) as Label).text, "Practice: no Coins or XP", "practice says so")
+	var pend: HBoxContainer = chips["CHIPS-3"]
+	t.check(pend.find_child("TapCoins", true, false) != null, "being added: the amount shows")
+	t.check(String(pend.accessibility_name).contains("being added"), "marked as being added (%s)" % pend.accessibility_name)
+	t.check(App.coin_fly_match != "CHIPS-3", "nothing flies into the counter before it is added")
+	var paid: HBoxContainer = chips["CHIPS-4"]
+	var xp: Control = paid.find_child("TapXP", true, false)
+	t.check(xp != null and xp.mouse_filter == Control.MOUSE_FILTER_STOP, "added: +XP, tappable")
+	t.eq(String(xp.get_meta(&"breakdown", "")), "XP: Completed the round +50 · Splashes ×3 +30 · Made it home +20 · Team win +15", "its breakdown on a tap")
+	t.eq(String((paid.find_child("TapCoins", true, false) as Control).get_meta(&"breakdown", "")),
+		"Coins: Completed the round +10 · Coins collected ×3 +3 · Team win +4", "and the Coins' breakdown")
+	t.eq([App.coin_fly_match, App.coin_fly_pending], ["CHIPS-4", 17], "added Coins fly into the counter back in the lobby")
+	for h in chips.values():
+		(h as Node).free()
+	r.free()
+	RoundRewards.wallet_override = Callable()
+	for mid in cases:
+		RoundRewards._cache.erase(mid)
+		RoundRewards._order.erase(mid)
+	App.coin_fly_match = fly[0]
+	App.coin_fly_pending = fly[1]
+
+
 func _round_results(mid: String, outcome: int = TC.Outcome.RUNNERS_WIN) -> Dictionary:
 	return {"match_id": mid, "outcome": outcome, "fastest_slot": 0, "round_time": 180.0, "coin_spawns": 8, "players": [
 		{"slot": 0, "uid": "T:_host", "role": TC.Role.RUNNER, "stamps": 3, "finished": true, "unique_captures": 0, "coins_picked": 2,

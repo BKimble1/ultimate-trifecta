@@ -1167,6 +1167,7 @@ func _on_results(results: Dictionary) -> void:
 		# (build 33) the round was ended for everyone (the host left it, or
 		# build 34: the leader ended the match): straight back to the party
 		# lobby (a cancelled round: it counts for nobody)
+		Wallet.round_aborted(results)   # (2.2 (35)) closed on the service at once
 		_end_match_scene()
 		show_lobby()
 		if screen is Control:
@@ -1181,7 +1182,7 @@ func _on_results(results: Dictionary) -> void:
 func _on_match_finished(results: Dictionary) -> void:
 	last_results = results
 	var practice := session != null and session.mode == NetSession.Mode.OFFLINE
-	var reward := Save.apply_results(results, session.local_slot if session else -1, practice, Save.player_uid())
+	var reward := Save.apply_results(results, session.local_slot if session else -1, practice, round_uid(results))
 	# 2.2: run time, personal best and Season Points (Game Center when it counts)
 	var rank := Rankings.record(results, session.local_slot if session else -1, practice or (session != null and session.tutorial))
 	_dev_record(results, reward)
@@ -1209,6 +1210,25 @@ func _on_match_finished(results: Dictionary) -> void:
 	r.rank = rank
 	r.session = session
 	_show(r)
+
+
+## The identity our row of `results` carries.  Normally Save.player_uid();
+## but a host that admitted us through the service's relay (or Game Center)
+## knows us by the player id it vouched for, which is not this device's
+## local id while Game Center isn't signed in here (a guest with a saved
+## service session).  Then the row of our own seat in the round is ours
+## (before 2.2 (35) no row matched: the round's stats, Coins and Season XP
+## were never recorded or confirmed on such a guest).
+func round_uid(results: Dictionary) -> String:
+	var mine := Save.player_uid()
+	for r in results.get("players", []):
+		if r is Dictionary and String(r.get("uid", "")) == mine:
+			return mine
+	if session == null or not is_instance_valid(session) or session.local_slot < 0 or session.local_slot >= session.roster.size():
+		return mine
+	var e: Variant = session.roster[session.local_slot]
+	var known := String((e as Dictionary).get("uid", "")) if e is Dictionary else ""
+	return known if known != "" else mine
 
 
 ## V6: Cancel / Leave party on the loading screen, usable at any point of

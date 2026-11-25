@@ -500,3 +500,111 @@ func test_loading_tips_rotate() -> void:
 	t.eq(ls.tip_lbl.text, ls.tips[ls.tip_i], "two long frames in a row still land on the current tip")
 	t.check(is_equal_approx(ls.tip_lbl.modulate.a, 1.0), "never left faded out")
 	ls.queue_free()
+
+
+# ---------------------------------------------------------------------------
+# (2.2 (35)) The online guest's handoff from the loading screen into the
+# round (owner feedback on 2.2 (34): "a lot of glitch at times going from
+# the loading screen into the game").  Measured on the guest
+# (src/dev/handoff_probe.gd, 60-150 ms latency with jitter): the warm-up
+# frames under the loading screen were drawn from the world origin, 100 m
+# and more from the start view, with nobody placed (the reveal was the first
+# time the start view and the characters were ever drawn), the camera faced
+# north instead of the way the runner faces, and the reveal came on the
+# host's first snapshot.  Asserted here over the loopback rig at 120 ms
+# latency with 40 ms jitter, in round 1 and in the series' round 2 (the
+# results go straight into loading, no lobby between).
+# ---------------------------------------------------------------------------
+
+## One guest round from its match controller's first frame to a second
+## after the reveal (the frame round_live() first holds, the frame the
+## loading screen starts to fade).
+func _watch_handoff(mc: MatchController) -> Dictionary:
+	var out := {"snaps": -1, "far_at_reveal": 0.0, "before_far": 0.0, "cam_before_far": 0.0, "view_step": 0.0, "cam_step": 0.0,
+		"cam_yaw_step": 0.0, "hidden_after": 0, "reveal": false, "shown_at_reveal": 0, "before_seen": false}
+	var prev := {}
+	var prev_cam := Vector3.INF
+	var prev_yaw := 0.0
+	var after := -1
+	var shown := {}
+	for f in 60 * 40:
+		await t.get_tree().process_frame
+		if not is_instance_valid(mc) or not mc.prepared or mc.camera == null:
+			continue
+		var me: CharacterView = mc.views.get(mc.local_slot)
+		if after < 0 and mc.stat_snapshots == 0 and me != null and mc.pred != null:
+			# before the host's first snapshot: our runner placed at its
+			# spawn, the camera behind it
+			out["before_seen"] = true
+			out["before_far"] = maxf(float(out["before_far"]), me.global_position.distance_to(mc.pred.pos()))
+			out["cam_before_far"] = maxf(float(out["cam_before_far"]), mc.camera.global_position.distance_to(me.global_position))
+		if after < 0 and mc.round_live():
+			after = 0
+			out["reveal"] = true
+			out["snaps"] = mc.stat_snapshots
+			for slot in mc.views:
+				var v: CharacterView = mc.views[slot]
+				if not v.visible:
+					continue
+				shown[slot] = true
+				var buf: Array = mc._bufs.get(slot, [])
+				if not buf.is_empty() and slot != mc.local_slot:
+					out["far_at_reveal"] = maxf(float(out["far_at_reveal"]), v.global_position.distance_to((buf[buf.size() - 1]["e"] as Dictionary)["pos"]))
+			out["shown_at_reveal"] = shown.size()
+		elif after >= 0:
+			after += 1
+			for slot in mc.views:
+				var v: CharacterView = mc.views[slot]
+				if shown.has(slot) and not v.visible and int(mc._render_rs(slot).get("state", 0)) == TC.PState.ACTIVE:
+					out["hidden_after"] = int(out["hidden_after"]) + 1
+				if v.visible and prev.has(slot):
+					out["view_step"] = maxf(float(out["view_step"]), v.global_position.distance_to(prev[slot]))
+			out["cam_step"] = maxf(float(out["cam_step"]), mc.camera.global_position.distance_to(prev_cam))
+			out["cam_yaw_step"] = maxf(float(out["cam_yaw_step"]), absf(angle_difference(prev_yaw, mc.camera.yaw)))
+			if after >= 60:
+				break
+		for slot in mc.views:
+			prev[slot] = (mc.views[slot] as CharacterView).global_position
+		prev_cam = mc.camera.global_position
+		prev_yaw = mc.camera.yaw
+	return out
+
+
+func _check_handoff(m: Dictionary, what: String) -> void:
+	t.check(bool(m["reveal"]), "%s: the round goes live on the guest" % what)
+	t.check(int(m["snaps"]) >= MatchController.REVEAL_SNAPSHOTS, "%s: the reveal waits for a window of the host's snapshots (%d at the reveal)" % [what, int(m["snaps"])])
+	t.check(bool(m["before_seen"]) and float(m["before_far"]) < 0.05, "%s: before the first snapshot our runner already stands on its spawn (%.2f m off)" % [what, float(m["before_far"])])
+	t.check(float(m["cam_before_far"]) < 8.0, "%s: and the camera is behind it (%.1f m), not at the world origin" % [what, float(m["cam_before_far"])])
+	t.check(int(m["shown_at_reveal"]) >= 2, "%s: the guest and its teammate are drawn at the reveal (%d)" % [what, int(m["shown_at_reveal"])])
+	t.check(float(m["far_at_reveal"]) < 0.3, "%s: everyone is drawn at their snapshot position at the reveal (%.3f m off)" % [what, float(m["far_at_reveal"])])
+	t.check(float(m["view_step"]) < 0.35, "%s: no character jumps in the first second (largest step %.3f m a frame)" % [what, float(m["view_step"])])
+	t.check(float(m["cam_step"]) < 0.35 and rad_to_deg(float(m["cam_yaw_step"])) < 5.0,
+		"%s: the camera is continuous (largest step %.3f m, %.2f°)" % [what, float(m["cam_step"]), rad_to_deg(float(m["cam_yaw_step"]))])
+	t.eq(int(m["hidden_after"]), 0, "%s: nobody drawn at the reveal vanishes in the first second" % what)
+
+
+func test_guest_handoff_is_smooth_in_round_one_and_series_round_two() -> void:
+	var rig := NetRig.new()
+	t.add_child(rig)
+	rig.setup(120.0, 40.0, 0.0, 1, ["runner", "runner"])
+	rig.host.next_round_wait_s = 2.0
+	var c: NetSession = rig.clients[0]
+	await rig.wait_until(func() -> bool: return c.local_slot >= 0, 300)
+	c.set_local_ready(true)
+	rig.host.set_local_ready(true)
+	await rig.wait_until(func() -> bool: return rig.host.start_allowed(), 400)
+	t.check(c.series_flow(), "the series plays on by itself (no lobby between rounds)")
+	rig.host.host_start_match(77)
+	for round in [1, 2]:
+		var ok := await rig.wait_until(func() -> bool:
+			var m: MatchController = rig.mc_of(c)
+			return m != null and is_instance_valid(m) and int((m.start.get("series", {}) as Dictionary).get("round", 0)) == round, 2400)
+		if not t.check(ok, "round %d reaches the guest" % round):
+			break
+		_check_handoff(await _watch_handoff(rig.mc_of(c)), "round %d" % round)
+		if round == 1:
+			var sim := rig.host_mc().sim
+			await rig.wait_until(func() -> bool: return sim.phase == TC.Phase.PLAYING, 1200)
+			sim.end_tick = sim.tick + 2
+	rig.teardown()
+	MatchController.drop_campus_cache()
