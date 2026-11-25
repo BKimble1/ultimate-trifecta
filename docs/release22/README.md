@@ -1337,3 +1337,38 @@ screen, everyone had to Ready again, and the lobby showed the match's bots.
   3-round match with no lobby between rounds, countdown in step within
   0.3 s, Leave match, End match, older guests, the lobby at three sizes) and
   `tools/relay_e2e.sh` (a 3-round match on the real relay, passed 4 runs).
+
+## 52. 2.2 (35): fairer bots; the owner's playtest fixes
+
+The owner's party on 2.2 (34): the Night Watch bots were too good, rounds
+ended with the people never caught (bots caught all the bot runners),
+runner bots swerved a human Night Watch too well, the Squeaky Duck did
+nothing, the portal by the Bell Tower never worked, round Coins never
+reached the wallet, and starting an online round glitched.
+- **Night Watch bots**: a 26 m view in a ±62° cone with line of sight (or
+  2.5 m behind), 0.45-0.8 s to react, short lead, give up 1.6 s after losing
+  sight, uneven lunges; footsteps only turn them to look.
+- **Bushes**: a bot that saw you go in checks that bush (0.6-1 s) and can tag
+  you there; otherwise it walks past.  People tag a hider the same way.
+- **Round end**: the early Night Watch win waits while a person is still
+  running.
+- **Runner bots**: flee later, re-aim less often, boost/dive/panic by chance
+  (a human-like chaser now catches 8 of 8, was 3 of 8).
+- **No Boost for the Night Watch.**
+- **Runners drive empty carts**; a runner's cart never tags or launches
+  (nudge only); the Night Watch can tag the driver (host capability bit 8).
+- **Squeaky Duck**: homes on the nearest Night Watch within 14 m; every
+  Night Watch within 8 m is dazed 2.5 s; it squeaks 5 s and draws bots; ring,
+  label and toasts on every device (`Ev.DUCK`, additive).
+- **Bell Tower portal**: an unused rift view stood open at the world origin
+  (the quad by the Bellweather Tower) going nowhere; rift views now start
+  closed.  The host never picks an unwalkable rift spot.
+- **Coins**: a guest's row is found by seat; a pending confirmation is
+  followed up in seconds; the host closes every round it registered; the
+  service lets the next series round register (deployed 25 Nov 2026,
+  run #309).  XP unchanged (50 a round, 10 a splash up to 3, 20 home, 15 a
+  different runner tagged up to 3, 15 a team win); tap +XP / +Coins for the
+  breakdown.
+- **Online round start**: guests place everyone on their spawn and the
+  camera behind the runner before the first snapshot, and reveal after 3
+  snapshots (warm-up view now within 0.03 m of the reveal, was 106-139 m).

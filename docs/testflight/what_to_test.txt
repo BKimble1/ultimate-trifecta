@@ -1,9 +1,11 @@
-2.2 (34): matches flow like a cup. Two phones in one party, 3 or 5 rounds:
+2.2 (35): fairer bots and fixes from your playtest.
 
-- After each round: the results and the match standings, then a 5-second countdown and the next round starts by itself. No lobby and no Ready between rounds. Leave match is the only button.
-- A friend who taps Leave match goes back to the lobby and stays in the party (the others show as holograms). The leader's Leave match ends it for everyone.
-- After the last round: Final standings, then Back to lobby.
-- Back in the lobby: only your friends, no bots, and Start, Walk, Emote and Chat all on screen.
-- With 8 in the party, names show in full (the ready check sits on the picture).
-- Change your name in Settings: no crash.
-- Tell us any error message word for word (a screenshot helps).
+- Night Watch bots are slower to react and only chase someone they see. Dive into a bush where they can't see you and they walk past; if they saw you go in, they check that bush.
+- The round no longer ends early while a person is still running.
+- As Night Watch, runner bots are easier to catch. The Night Watch has no Boost.
+- Runners can drive an empty golf cart (Drive button next to it). A runner's cart can't tag or knock anyone.
+- Squeaky Duck: throw it near the Night Watch to daze them for 2.5 s; it then squeaks and draws the bots.
+- The portal by the Bell Tower is fixed.
+- Coins you pick up in a round now reach your wallet, for friends too. Tap +XP or +Coins on the results to see the breakdown.
+- Smoother start of an online round (no jump when the round appears).
+- Tell us if the bots now feel too easy.
