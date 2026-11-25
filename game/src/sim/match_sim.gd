@@ -543,6 +543,10 @@ func _resolve_cart_requests(cmds: Dictionary) -> void:
 			continue
 		if p.is_runner() and (p.home_safe or not p.on_floor):
 			continue
+		# (build 35 review) Hide and Drive share the press: beside a bush a
+		# runner hides (as before runner carts), never jumps into a cart
+		if p.is_runner() and HideBushes.near(layout, p.pos2()) >= 0:
+			continue
 		var best := -1
 		var bd := 1e9
 		for c in carts:
@@ -781,7 +785,10 @@ func _leave_cart(p: SimPlayer) -> void:
 	var c: SimCart = carts[p.cart_id]
 	if c.occupant == p.id:
 		c.occupant = -1
-		c.exiting = false
+		# (build 35 review) a driver tagged at speed leaves a moving cart:
+		# with nobody at the wheel it brakes itself (the exit auto-brake)
+		# instead of coasting ~20 m into runners and knocking them down
+		c.exiting = absf(c.speed) > cfg.cart_exit_max_speed
 	p.cart_id = -1
 
 

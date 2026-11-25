@@ -153,3 +153,45 @@ func test_drive_shows_for_a_runner_beside_a_cart_and_no_boost_for_the_watch() ->
 	c["near_cart"] = false
 	t.check(s.visible_set(c).has("boost"), "runners keep theirs")
 	s.free()
+
+
+## (build 35 review) Hide and Drive are the same press: beside a bush a
+## runner hides, even with an empty cart in reach (the cart won before, and
+## a runner bot looped in and out of the cart).
+func test_beside_a_bush_the_press_hides_not_drives() -> void:
+	var h := SimHarness.new(t)
+	h.make([R, P], [0, 1, 2])
+	await h.release_patrol()
+	var bush: Vector2 = HideBushes.spots(h.sim.layout)[0]
+	var c: SimCart = h.sim.carts[0]
+	c.body.global_position = h.on_ground(bush + Vector2(2.6, 0.0), 0.3)
+	h.place(0, h.on_ground(bush + Vector2(0.9, 0.0)))
+	await h.step()
+	t.check(HideBushes.near(h.sim.layout, h.sim.player(0).pos2()) >= 0, "the runner is beside a bush")
+	t.check(c.pos().distance_to(h.sim.player(0).pos()) < h.sim.cfg.cart_enter_range_m, "and an empty cart is in reach")
+	h.press(0, TC.BTN_INTERACT)
+	await h.step(30)
+	t.check(h.sim.player(0).state != TC.PState.IN_CART and c.occupant != 0, "the press hides: no cart (state %d)" % h.sim.player(0).state)
+	t.eq(h.sim.player(0).state, TC.PState.HIDING, "in the bush")
+	h.free_sim()
+
+
+## (build 35 review) A runner tagged at the wheel at speed leaves an empty
+## cart that brakes itself, not one coasting ~20 m into people.
+func test_an_emptied_cart_brakes_itself() -> void:
+	var h := SimHarness.new(t)
+	h.make([R, P], [0, 1, 2])
+	await h.release_patrol()
+	var r := h.sim.player(0)
+	var c: SimCart = h.sim.carts[0]
+	await _seat(h, 0, 0)
+	h.cmd(0).drive = 1.0
+	await h.step(150)
+	var v0 := c.speed
+	t.check(v0 > 6.0, "driving fast (%.1f m/s)" % v0)
+	h.sim._leave_cart(r)
+	var start := c.pos()
+	await h.step(90)
+	t.check(c.occupant == -1 and absf(c.speed) < 0.5, "the empty cart has stopped (%.2f m/s)" % c.speed)
+	t.check(c.pos().distance_to(start) < 12.0, "within a short distance (%.1f m)" % c.pos().distance_to(start))
+	h.free_sim()

@@ -297,8 +297,10 @@ class TouchSurface:
 			r.append("gadget")
 		if bool(c.get("near_bush", false)):
 			r.append("hide")
-		# (build 35) Drive: beside an empty cart (it never tags anyone)
-		if bool(c.get("near_cart", false)):
+		# (build 35) Drive: beside an empty cart (it never tags anyone).  The
+		# same press hides beside a bush, and hiding wins there, so Drive
+		# only shows away from bushes
+		if bool(c.get("near_cart", false)) and not bool(c.get("near_bush", false)):
 			r.append("cart")
 		return r
 

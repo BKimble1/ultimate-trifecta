@@ -426,7 +426,8 @@ func _flee(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 		cmd.pressed |= TC.BTN_GADGET
 	elif p.gadget == TC.Gadget.SPLASH_BOMB:
 		for c in sim.carts:
-			if c.occupant >= 0 and c.pos().distance_to(p.pos()) < 12.0:
+			# (build 35 review) only a Night Watch's cart, never a teammate's
+			if c.occupant >= 0 and sim.player(c.occupant) != null and sim.player(c.occupant).is_patrol() and c.pos().distance_to(p.pos()) < 12.0:
 				var rel := c.pos() - p.pos()
 				cmd.cam_yaw = atan2(-rel.x, -rel.z)
 				cmd.move = Vector2.ZERO
@@ -659,7 +660,10 @@ func _chase(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float, target: SimPl
 	var cfg := sim.cfg
 	var lead := at + Vector3(vel.x, 0, vel.z) * clampf(td / 12.0, 0.0, WATCH_LEAD_MAX_S)
 	if in_cart:
-		var driving_off := target.state == TC.PState.IN_CART
+		# (build 35 review) a runner sitting in a parked cart isn't driving
+		# off: hop out and tag them (ramming a parked cart never catches)
+		var driving_off := target.state == TC.PState.IN_CART and target.cart_id >= 0 \
+			and absf(sim.carts[target.cart_id].speed) > 3.0
 		if (td < 10.0 and not driving_off) or (not nav.is_drivable(Vector2(lead.x, lead.z)) and td < 22.0):
 			cmd.pressed |= TC.BTN_INTERACT   # hop out and chase on foot
 			cmd.drive = -1.0
