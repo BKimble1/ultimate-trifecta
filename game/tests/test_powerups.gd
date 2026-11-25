@@ -123,3 +123,83 @@ func test_the_cloak_hides_you() -> void:
 	await h.step(int(Rules.cfg.cloak_s * 60.0))
 	t.check(r.cloak_t <= 0.0, "and it wears off")
 	h.free_sim()
+
+
+## (build 35) "The squeaky duck doesn't do anything": thrown while fleeing
+## (aimed away from the Night Watch) it used to land 9 m ahead, far from the
+## chaser, and nothing drew it.  Now it flies at the nearest Night Watch in
+## sight, dazes them, says so (Ev.DUCK) and squeaks where it lies.
+func test_a_duck_thrown_while_fleeing_still_dazes_the_chaser() -> void:
+	var h := SimHarness.new(t)
+	h.make([R, P], [0, 1, 2])
+	await h.release_patrol()
+	var r := h.sim.player(0)
+	var w := h.sim.player(1)
+	var at: Vector3 = (h.sim.pickups[0]["pos"] as Vector3) + Vector3(2.5, 0.05, 0)
+	h.place(0, at, 0.0)
+	h.place(1, at + Vector3(0, 0, 7.0), 0.0)    # 7 m behind the runner
+	await h.step(3)
+	r.gadget = TC.Gadget.DECOY
+	h.cmd(0).move = Vector2(0, -1)              # running away, stick forward
+	h.cmd(0).cam_yaw = 0.0
+	h.press(0, TC.BTN_GADGET)
+	var duck := {}
+	for i in 90:
+		await h.step()
+		for e in h.sim.events:
+			if int(e["type"]) == TC.Ev.DUCK:
+				duck = e
+		if not duck.is_empty():
+			break
+	t.check(not duck.is_empty(), "the duck lands and says so")
+	t.eq(int(duck.get("v", -1)), 1, "dazing the Night Watch behind the thrower")
+	t.check(w.tag_lockout > 1.5, "who can't tag for a moment (%.2f s)" % w.tag_lockout)
+	t.check(h.sim.decoys.size() == 1, "and it lies there squeaking")
+	h.cmd(0).move = Vector2.ZERO
+	h.free_sim()
+
+
+func test_a_duck_nobody_is_near_says_so() -> void:
+	var h := SimHarness.new(t)
+	h.make([R, P], [0, 1, 2])
+	await h.release_patrol()
+	var r := h.sim.player(0)
+	var at: Vector3 = (h.sim.pickups[0]["pos"] as Vector3) + Vector3(2.5, 0.05, 0)
+	h.place(0, at, 0.0)
+	h.place(1, at + Vector3(0, 0, 40.0), 0.0)
+	await h.step(3)
+	r.gadget = TC.Gadget.DECOY
+	h.press(0, TC.BTN_GADGET)
+	var e := await h.wait_event(TC.Ev.DUCK, 90)
+	t.check(not e.is_empty() and int(e["v"]) == 0 and int(e["a"]) == 0, "a squeak that dazed nobody (the thrower is told) %s, watch %.1f m away" % [str(e), h.sim.player(1).pos().distance_to(at)])
+	h.free_sim()
+
+
+func test_night_watch_bots_go_to_a_squeaking_duck() -> void:
+	var h := SimHarness.new(t)
+	h.make([R, P], [0, 1, 2], [1])
+	await h.release_patrol()
+	var w := h.sim.player(1)
+	var at: Vector3 = (h.sim.pickups[0]["pos"] as Vector3) + Vector3(2.5, 0.05, 0)
+	h.place(0, at + Vector3(0, 0, 30.0), PI)
+	h.place(1, at + Vector3(16.0, 0, 0), PI * 0.5)
+	h.sim.decoys.append({"pos": at, "dir": Vector3(1, 0, 0), "t": 5.0, "flight": 0.0, "owner": 0, "from": at})
+	var d0 := w.pos().distance_to(at)
+	await h.step(150)
+	t.check(w.pos().distance_to(at) < d0 - 5.0, "a Night Watch bot with nobody to chase goes to the squeak (%.1f -> %.1f m)" % [d0, w.pos().distance_to(at)])
+	h.free_sim()
+
+
+func test_the_duck_is_drawn_on_every_device() -> void:
+	var v := DuckView.new()
+	t.add_child(v)
+	t.check(not v.visible, "nothing until a duck is out")
+	v.show_at(Vector3(3, 0, 4), true)
+	v._process(0.1)
+	t.check(v.visible, "in the air")
+	v.show_at(Vector3(3, 0, 4), false)
+	v._process(0.2)
+	t.check(v.visible and v._label.visible and v._ring.visible, "on the ground: the duck, its SQUEAK! sign and its reach")
+	v.hide_duck()
+	t.check(not v.visible, "gone when it's done")
+	v.queue_free()

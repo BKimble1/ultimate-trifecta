@@ -57,6 +57,8 @@ func _steps() -> Array:
 			return [_wait_round, _watch_on_foot, _watch_map, _watch_map_close, _watch_cart, _watch_urgent, _runners_finish, _results_shot, _quit]
 		"results":
 			return [_series_round, _series_final, _series_watch_lost, _series_cancelled, _quit]
+		"b35":
+			return [_wait_round, _b35_cart, _b35_duck_throw, _b35_duck_landed, _quit]
 	return [_wait_round, _runner_0, _runner_2, _runner_3, _runner_danger, _runner_map, _runner_map_lost, _runner_map_close,
 		_runner_caught, _runner_protected, _runner_home, _runner_urgent, _results_shot, _quit]
 
@@ -120,7 +122,7 @@ func _wait_round() -> float:
 		mc.sim._set_phase(TC.Phase.PLAYING)
 	mc.sim.patrol_release_extra_s = -100.0
 	PaceFields.settle()
-	if part == "runner":
+	if part == "runner" or part == "b35":
 		# the Night Watch bots stand still where the driver puts them (no
 		# chase in the stills): their brains are switched off
 		for p in mc.sim.players:
@@ -615,3 +617,65 @@ func _hud_json(n: String) -> void:
 	if f:
 		f.store_string(JSON.stringify(out, "  "))
 	printerr("HUDJSON %s overlaps=%s" % [n, str(out["overlaps"])])
+
+
+# ---------------------------------------------------------------- build 35
+## (build 35) A runner at the wheel of a Night Watch cart (seated the way the
+## simulation seats any driver), the Night Watch standing beside the road.
+func _b35_cart() -> float:
+	var mc := _mc()
+	var me := _me()
+	var c: SimCart = mc.sim.carts[0]
+	_watch = _first(TC.Role.PATROL)
+	var w := _watch
+	var fw := c.forward()
+	var spot := c.pos() + fw * 7.0 + c.right() * 3.0
+	c.occupant = me.id
+	c.exiting = false
+	me.cart_id = c.id
+	Motor.set_body_enabled(me.body, false)
+	me.state = TC.PState.IN_CART
+	me.state_t = 1.0
+	_hold = func() -> void:
+		_put(w, spot, _yaw_to(spot, c.pos()))
+	mc.camera.snap_to(c.pos(), c.yaw)
+	get_tree().create_timer(1.6).timeout.connect(_snap.bind("b35_runner_drives_a_cart"))
+	return 2.4
+
+
+## A Squeaky Duck thrown over the shoulder at a Night Watch 7 m behind (the
+## sim's own gadget intent): in the air, then landed with its ring and sign.
+func _b35_duck_throw() -> float:
+	var mc := _mc()
+	var me := _me()
+	var c: SimCart = mc.sim.carts[0]
+	_hold = Callable()
+	# out of the cart, on open ground
+	c.occupant = -1
+	me.cart_id = -1
+	me.state = TC.PState.ACTIVE
+	Motor.set_body_enabled(me.body, true)
+	var nav := NavGrid.shared(mc.layout)
+	var at := me.pos()
+	for k in 40:
+		var q := c.pos() + Vector3(cos(k * 0.7) * (8.0 + k), 0, sin(k * 0.7) * (8.0 + k))
+		if nav.is_walkable(Vector2(q.x, q.z)) and nav.is_walkable(Vector2(q.x, q.z + 8.0)):
+			at = Vector3(q.x, CampusBuilder.grid_y(mc.layout, q.x, q.z) + 0.05, q.z)
+			break
+	_stand(at, 0.0)
+	var w := _watch
+	var wp := at + Vector3(0, 0, 7.0)
+	_put(w, wp, _yaw_to(wp, at))
+	mc.camera.snap_to(at + Vector3(0, 0, -2.0), PI)
+	me.gadget = TC.Gadget.DECOY
+	var cmd := InputCmd.new()
+	cmd.pressed = TC.BTN_GADGET
+	cmd.move = Vector2(0, -1)
+	mc.sim._intent_gadget(me, cmd)
+	get_tree().create_timer(0.3).timeout.connect(_snap.bind("b35_duck_in_the_air"))
+	return 0.6
+
+
+func _b35_duck_landed() -> float:
+	get_tree().create_timer(0.5).timeout.connect(_snap.bind("b35_duck_landed_dazes"))
+	return 1.6

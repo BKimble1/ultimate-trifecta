@@ -250,7 +250,10 @@ class TouchSurface:
 		var role: int = info.get("role", TC.Role.RUNNER)
 		var in_cart := st == TC.PState.IN_CART or st == TC.PState.ENTERING
 		var near_cart := false
-		if role == TC.Role.PATROL and st == TC.PState.ACTIVE and rs.has("pos"):
+		# (build 35) runners can drive an empty cart too (a host on an older
+		# build doesn't let them: no Drive button then)
+		var may_drive := role == TC.Role.PATROL or mc.session == null or mc.session.host_supports(Protocol.CAP_RUNNER_CARTS)
+		if may_drive and st == TC.PState.ACTIVE and rs.has("pos"):
 			for i in mc.cart_views.size():
 				var crs := mc._cart_rs(i)
 				if crs.has("pos") and not bool(crs.get("occupied", false)) and (crs["pos"] as Vector3).distance_to(rs["pos"]) < mc.cfg.cart_enter_range_m + 1.2 and absf(float(crs.get("speed", 0.0))) < mc.cfg.cart_enter_max_speed:
@@ -279,7 +282,8 @@ class TouchSurface:
 					return []
 				# Tag always shows (greyed while it can't be used, e.g. the
 				# head start), so the primary never leaves a hole
-				var out := ["jump", "tag", "boost"]
+				# (build 35) no Boost for the Night Watch
+				var out := ["jump", "tag"]
 				if c["near_cart"]:
 					out.append("cart")
 				return out
@@ -293,6 +297,9 @@ class TouchSurface:
 			r.append("gadget")
 		if bool(c.get("near_bush", false)):
 			r.append("hide")
+		# (build 35) Drive: beside an empty cart (it never tags anyone)
+		if bool(c.get("near_cart", false)):
+			r.append("cart")
 		return r
 
 	func _layout_buttons(c: Dictionary) -> void:

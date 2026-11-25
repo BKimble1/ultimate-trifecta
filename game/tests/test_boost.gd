@@ -83,7 +83,9 @@ func test_no_second_boost_until_the_bar_refills() -> void:
 	h.free_sim()
 
 
-func test_the_night_watch_can_boost_too_but_not_in_a_cart() -> void:
+## (build 35) "The cops shouldn't have boost": a Night Watch's press does
+## nothing (a bot's, or a guest's on an older build, alike); nor in a cart.
+func test_the_night_watch_has_no_boost() -> void:
 	var h := SimHarness.new(t)
 	h.make([R, P], [0, 1, 2])
 	await h.release_patrol()
@@ -97,7 +99,9 @@ func test_the_night_watch_can_boost_too_but_not_in_a_cart() -> void:
 	_run(h, 1)
 	h.press(1, TC.BTN_BOOST)
 	await h.step(2)
-	t.check(w.boost_t > 0.0, "a Night Watch on foot boosts")
+	t.eq(w.boost_t, 0.0, "a Night Watch on foot doesn't boost")
+	await h.step(60)
+	t.near(_speed(h, 1), Rules.cfg.patrol_speed, 0.15, "and runs at its steady full speed (%.2f m/s)" % _speed(h, 1))
 	h.free_sim()
 	# driving: nothing
 	var h2 := SimHarness.new(t)

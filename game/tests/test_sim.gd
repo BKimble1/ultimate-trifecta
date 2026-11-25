@@ -344,7 +344,7 @@ func test_cart_seat_race_and_roles() -> void:
 	t.eq(enters.size(), 1, "exactly one seat claim wins the same-tick race")
 	t.eq(c.occupant, 1, "closest patrol gets the seat")
 	t.eq(h.sim.player(2).state, TC.PState.ACTIVE, "loser stays on foot")
-	t.eq(h.sim.player(0).cart_id, -1, "runners can't take a cart")
+	t.eq(h.sim.player(0).cart_id, -1, "a runner further off loses the race too (build 35: runners may drive)")
 	h.press(2, TC.BTN_INTERACT)
 	await h.step(2)
 	t.eq(c.occupant, 1, "occupied cart cannot be entered")

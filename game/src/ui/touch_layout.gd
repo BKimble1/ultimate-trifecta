@@ -39,8 +39,10 @@ const HIT_PAD := 12.0               # extra touch radius when there is room
 const SLOTS := {
 	# (build 20) Boost: a smaller button up and to the right of Jump; Hide
 	# moves to Jump's upper left to make room
-	"runner": {"jump": [0.0, 0.0, 42.0], "gadget": [-112.0, 26.0, 32.0], "hide": [-76.0, -98.0, 32.0], "boost": [60.0, -84.0, 29.0]},   # (Pass 9: no Sprint button; 2.3 Hide)
-	"patrol": {"tag": [0.0, 0.0, 44.0], "jump": [-114.0, 26.0, 33.0], "cart": [8.0, -106.0, 30.0], "boost": [-66.0, -66.0, 28.0]},
+	"runner": {"jump": [0.0, 0.0, 42.0], "gadget": [-112.0, 26.0, 32.0], "hide": [-76.0, -98.0, 32.0], "boost": [60.0, -84.0, 29.0],
+		"cart": [-4.0, -102.0, 28.0]},   # (Pass 9: no Sprint button; 2.3 Hide; build 35: Drive, a runner beside an empty cart)
+	# (build 35) no Boost for the Night Watch
+	"patrol": {"tag": [0.0, 0.0, 44.0], "jump": [-114.0, 26.0, 33.0], "cart": [8.0, -106.0, 30.0]},
 	# Exit is small and well apart from Gas/Brake: no exit while steering
 	"cart": {"gas": [0.0, 0.0, 44.0], "brake": [-112.0, 24.0, 34.0], "cart": [14.0, -132.0, 26.0]},
 	"watch": {"next": [0.0, 0.0, 38.0], "cheer": [-104.0, 22.0, 32.0]},

@@ -43,6 +43,9 @@ func test_a_tag_knocks_the_runner_out_for_the_round() -> void:
 func test_too_few_runners_left_ends_it_for_the_night_watch() -> void:
 	var h := _h()
 	h.make([R, R, R, R, R, R, P], [0, 1, 2], [], 12, {"tag_out": true})
+	# (build 35) every runner a bot (seats with no brain: they stand still)
+	for i in 6:
+		h.sim.player(i).is_bot = true
 	await h.release_patrol()
 	for i in 3:
 		# the same open lawn each time (an out runner has no body)
@@ -65,4 +68,32 @@ func test_respawn_rules_stay_available() -> void:
 	await h.wait_event(TC.Ev.CAPTURE, 60)
 	await h.wait_event(TC.Ev.RESPAWN, int(Rules.cfg.capture_penalty_s * 60.0) + 30)
 	t.eq(h.sim.player(0).state, TC.PState.ACTIVE, "with tag_out off a caught runner comes back")
+	h.free_sim()
+
+
+## (build 35) "The game would end without us even being caught because the
+## cops were just catching all the bots": while a person is still running
+## (not caught, out or home) the round goes on, however many bot runners
+## are out; it ends the moment the last free person is caught.
+func test_the_round_goes_on_while_a_person_is_still_running() -> void:
+	var h := _h()
+	h.make([R, R, R, R, R, R, P], [0, 1, 2], [], 14, {"tag_out": true})
+	for i in 5:
+		h.sim.player(i).is_bot = true    # slot 5 is the one person running
+	await h.release_patrol()
+	for i in 3:
+		await _tag(h, i, 6, Vector2(-20, 60))
+		var ev := await h.wait_event(TC.Ev.CAPTURE, 90)
+		t.eq(int(ev.get("a", -1)), i, "bot runner %d tagged" % i)
+		await h.step(int(maxf(Rules.cfg.tag_hit_recover_s, Rules.cfg.tag_miss_cooldown_s) * 60.0) + 10)
+	await h.step(int(Rules.cfg.tag_out_s * 60.0) + 10)
+	t.check(h.sim.runners_alive() < Rules.cfg.runners_needed, "too few runners left to get four home")
+	t.check(h.sim.human_runner_free(), "but a person is still running")
+	t.eq(h.sim.phase, TC.Phase.PLAYING, "so the round goes on")
+	await _tag(h, 5, 6, Vector2(-20, 60))
+	var ev5 := await h.wait_event(TC.Ev.CAPTURE, 90)
+	t.eq(int(ev5.get("a", -1)), 5, "the person is caught")
+	await h.step(2)
+	t.check(h.sim.phase >= TC.Phase.RESULTS, "and only now does it end")
+	t.eq(int(h.sim.results.get("outcome", -1)), TC.Outcome.PATROL_WIN, "a Night Watch win")
 	h.free_sim()

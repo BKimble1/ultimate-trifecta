@@ -55,6 +55,7 @@ enum Ev {
 	DAZE,             # (2.2 build 16) a = Night Watch dazed by a Squeaky Duck, b = owner
 	RIFT,             # (2.2 build 16) a = player, value = rift index (from pos to m["to"])
 	KNOCKED_OUT,      # (2.2 build 18) a = runner tagged out of the round
+	DUCK,             # (build 35) a Squeaky Duck landed: a = owner, value = Night Watch dazed (older builds ignore it)
 }
 
 # Input button bits (held state) and edge bits (pressed this tick).
@@ -83,7 +84,7 @@ const EMOTE_LABELS := {"wave": "Wave", "cheer": "Cheer", "laugh": "Ha!", "shrug"
 
 const GADGET_NAMES := {Gadget.TURBO: "Speed Sneakers", Gadget.DECOY: "Squeaky Duck", Gadget.SPLASH_BOMB: "Splash Bomb", Gadget.SHIELD: "Pillow Shield", Gadget.CLOAK: "Invisibility Cloak"}
 ## (2.3) what each does, in a few words (pickup toast, HUD)
-const GADGET_BLURBS := {Gadget.TURBO: "Run faster for 10 s", Gadget.DECOY: "Toss it: the Night Watch near it trip and can't tag for a moment", Gadget.SPLASH_BOMB: "Slows a cart", Gadget.SHIELD: "Tags bounce off for 5 s", Gadget.CLOAK: "The Night Watch can't see you for 6 s"}
+const GADGET_BLURBS := {Gadget.TURBO: "Run faster for 10 s", Gadget.DECOY: "Throw it: it flies at the nearest Night Watch, who trips and can't tag for 2.5 s", Gadget.SPLASH_BOMB: "Slows a cart", Gadget.SHIELD: "Tags bounce off for 5 s", Gadget.CLOAK: "The Night Watch can't see you for 6 s"}
 const GADGET_KEYS := {"turbo": Gadget.TURBO, "decoy": Gadget.DECOY, "splash_bomb": Gadget.SPLASH_BOMB, "shield": Gadget.SHIELD, "cloak": Gadget.CLOAK}
 
 ## Role cards from the round's actual rules (the counts vary with the party

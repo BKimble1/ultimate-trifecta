@@ -97,7 +97,11 @@ const CAP_LEADER := 2    # a party leader apart from the host (LEADER requests)
 ## and the host starts the next round when it runs out (no Ready, no lobby
 ## between rounds); a guest who leaves the match sits out the rest of it
 const CAP_SERIES := 4
-const CAPS := CAP_STAY | CAP_LEADER | CAP_SERIES
+## (build 35) runners may drive an empty cart (a guest shows its runner the
+## Drive button only when the host lets runners in; nothing else changes on
+## the wire, and an older guest just sees a runner driving)
+const CAP_RUNNER_CARTS := 8
+const CAPS := CAP_STAY | CAP_LEADER | CAP_SERIES | CAP_RUNNER_CARTS
 ## LEADER request ops
 enum LeaderOp { START = 1, SETTINGS, KICK, PROMOTE, END_SERIES }
 

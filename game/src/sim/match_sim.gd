@@ -436,8 +436,10 @@ func step(inputs: Dictionary) -> void:
 	if phase == TC.Phase.PLAYING:
 		if finished_count >= cfg.runners_needed:
 			_end_match(TC.Outcome.RUNNERS_WIN)
-		elif tag_out and any_out() and runners_alive() < cfg.runners_needed:
-			# (2.2 build 18) too few runners left to get the team home
+		elif tag_out and any_out() and runners_alive() < cfg.runners_needed and not human_runner_free():
+			# (2.2 build 18) too few runners left to get the team home;
+			# (build 35) but never while a person is still running: bot
+			# runners being caught used to end the round on free humans
 			_end_match(TC.Outcome.PATROL_WIN)
 		elif tick >= end_tick:
 			_end_match(TC.Outcome.PATROL_WIN)
@@ -528,15 +530,18 @@ func _move_player(p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 # Carts: entry/exit with deterministic seat-race resolution
 # ---------------------------------------------------------------------------
 func _resolve_cart_requests(cmds: Dictionary) -> void:
-	var claims := {}  # cart id -> [patrol, dist]
+	var claims := {}  # cart id -> [player, dist]
 	for p in players:
 		var cmd: InputCmd = cmds[p.id]
-		if not cmd.is_pressed(TC.BTN_INTERACT) or not p.is_patrol():
+		# (build 35) runners can take an empty cart too (it never tags)
+		if not cmd.is_pressed(TC.BTN_INTERACT):
 			continue
 		if p.state == TC.PState.IN_CART and p.cart_id >= 0:
 			carts[p.cart_id].exiting = true
 			continue
 		if p.state != TC.PState.ACTIVE or p.tag_phase != SimPlayer.TagPhase.NONE:
+			continue
+		if p.is_runner() and (p.home_safe or not p.on_floor):
 			continue
 		var best := -1
 		var bd := 1e9
@@ -662,7 +667,7 @@ func tag_candidate(p: SimPlayer, cam_yaw: float) -> SimPlayer:
 		var score := d * (2.0 - c)
 		if score >= best_score:
 			continue
-		if not has_los(p.pos() + Vector3(0, 1.1, 0), r.pos() + Vector3(0, 1.0, 0)):
+		if not los_to(p.pos() + Vector3(0, 1.1, 0), r):
 			continue
 		best = r
 		best_score = score
@@ -722,7 +727,7 @@ func _resolve_tag(p: SimPlayer) -> void:
 			ok = Vector2(now_pos.x - origin.x, now_pos.z - origin.z).length() <= cfg.tag_reach_m + cfg.tag_lag_comp_slack_m
 		if not ok:
 			continue
-		if not has_los(p.pos() + Vector3(0, 1.1, 0), now_pos + Vector3(0, 1.0, 0)):
+		if not los_to(p.pos() + Vector3(0, 1.1, 0), r):
 			continue
 		var d := origin.distance_to(seen_pos)
 		if d < bd:
@@ -735,9 +740,17 @@ func _resolve_tag(p: SimPlayer) -> void:
 		p.tag_cd = cfg.tag_hit_recover_s
 
 
-func has_los(a: Vector3, b: Vector3) -> bool:
+func has_los(a: Vector3, b: Vector3, exclude_cart: int = -1) -> bool:
 	var rq := PhysicsRayQueryParameters3D.create(a, b, TC.L_WORLD | TC.L_CART)
+	if exclude_cart >= 0 and exclude_cart < carts.size():
+		rq.exclude = [carts[exclude_cart].body.get_rid()]
 	return space_state().intersect_ray(rq).is_empty()
+
+
+## (build 35) Line of sight from `a` to a player's chest: a runner at the
+## wheel sits inside their cart's box, which must not hide them.
+func los_to(a: Vector3, r: SimPlayer) -> bool:
+	return has_los(a, r.pos() + Vector3(0, 1.0, 0), r.cart_id if r.state == TC.PState.IN_CART else -1)
 
 
 func _capture(r: SimPlayer, by: SimPlayer) -> void:
@@ -754,9 +767,22 @@ func _capture(r: SimPlayer, by: SimPlayer) -> void:
 		r.boost_cd = cfg.boost_recharge_s
 	r.vel = Vector3.ZERO
 	r.bush = -1
+	_leave_cart(r)
 	Motor.set_body_enabled(r.body, false)
 	_set_state(r, TC.PState.CAPTURED)
 	_emit(TC.Ev.CAPTURE, r.id, by.id, 0, r.pos())
+
+
+## (build 35) A runner tagged at the wheel: the cart stays where it is, empty.
+func _leave_cart(p: SimPlayer) -> void:
+	if p.cart_id < 0 or p.cart_id >= carts.size():
+		p.cart_id = -1
+		return
+	var c: SimCart = carts[p.cart_id]
+	if c.occupant == p.id:
+		c.occupant = -1
+		c.exiting = false
+	p.cart_id = -1
 
 
 ## (2.2 build 18) Out of the round: no body, no part in play; the player
@@ -779,6 +805,15 @@ func runners_alive() -> int:
 		if p.is_runner() and p.state != TC.PState.OUT and p.state != TC.PState.CAPTURED:
 			n += 1
 	return n
+
+
+## (build 35) A person (not a bot, nor a seat a bot took over for good)
+## still playing as a runner: not caught, out or home.
+func human_runner_free() -> bool:
+	for p in players:
+		if p.is_runner() and not p.is_bot and p.state != TC.PState.OUT and p.state != TC.PState.CAPTURED and p.state != TC.PState.FINISHED:
+			return true
+	return false
 
 
 func any_out() -> bool:
@@ -941,6 +976,10 @@ func _check_bumps() -> void:
 	for c in carts:
 		if absf(c.speed) < cfg.cart_bump_min_speed:
 			continue
+		var drv := player(c.occupant) if c.occupant >= 0 else null
+		if drv != null and drv.is_runner():
+			_nudge_from(c)
+			continue
 		for r in players:
 			if not r.is_runner() or r.state != TC.PState.ACTIVE:
 				continue
@@ -973,6 +1012,28 @@ func _check_bumps() -> void:
 			c.speed *= cfg.cart_bump_speed_keep
 			c.bump_cd[r.id] = cfg.bump_protect_s + 0.5
 			_emit(TC.Ev.BUMP, r.id, c.id, 0, r.pos())
+
+
+## (build 35) A cart a runner drives only nudges people out of its way: a
+## gentle sideways push (no tag, no stumble, no lift, no knockback), so it
+## never sits inside anyone.  Runners and the Night Watch on foot alike.
+func _nudge_from(c: SimCart) -> void:
+	for q in players:
+		if q.id == c.occupant or (q.state != TC.PState.ACTIVE and q.state != TC.PState.STUMBLE and q.state != TC.PState.EXITING):
+			continue
+		if not c.overlaps(q.pos(), Motor.CHAR_RADIUS + 0.05):
+			continue
+		var away := q.pos() - c.pos()
+		away.y = 0.0
+		if away.length() < 0.1:
+			away = c.right()
+		away = away.normalized()
+		var flat := Vector2(q.vel.x, q.vel.z)
+		var push := Vector2(away.x, away.z) * cfg.cart_nudge_speed
+		if flat.dot(push.normalized()) < cfg.cart_nudge_speed:
+			q.vel.x = push.x
+			q.vel.z = push.y
+			q.body.velocity = Vector3(q.vel.x, q.body.velocity.y, q.vel.z)
 
 
 # ---------------------------------------------------------------------------
@@ -1055,7 +1116,18 @@ func _intent_gadget(p: SimPlayer, cmd: InputCmd) -> void:
 		TC.Gadget.TURBO:
 			p.turbo_t = cfg.turbo_duration_s
 		TC.Gadget.DECOY:
-			var land := _toss_landing(p.pos(), aim, cfg.decoy_range_m)
+			# (build 35) at the nearest Night Watch in sight (over your
+			# shoulder while fleeing), where they will be when it lands
+			var dist := cfg.decoy_range_m
+			var w := _duck_target(p)
+			if w != null:
+				var at := w.pos() + Vector3(w.vel.x, 0, w.vel.z) * cfg.toss_flight_s
+				var rel := at - p.pos()
+				rel.y = 0.0
+				if rel.length() > 0.3:
+					aim = rel.normalized()
+					dist = minf(rel.length(), cfg.decoy_assist_m)
+			var land := _toss_landing(p.pos(), aim, dist)
 			var side := Vector3(-aim.z, 0, aim.x) * (1.0 if (tick % 2) == 0 else -1.0)
 			decoys.append({"pos": land, "dir": (aim * 0.4 + side).normalized(), "t": cfg.decoy_duration_s + cfg.toss_flight_s, "flight": cfg.toss_flight_s, "owner": p.id, "from": p.pos()})
 		TC.Gadget.SHIELD:
@@ -1179,10 +1251,28 @@ static func _seg_dist_2d(q: Vector2, a: Vector2, b: Vector2) -> float:
 	return q.distance_to(a + ab * t)
 
 
+## (build 35) The Night Watch a Squeaky Duck flies at: the nearest one (on
+## foot or driving) within decoy_assist_m whom the thrower can see.
+func _duck_target(p: SimPlayer) -> SimPlayer:
+	var best: SimPlayer = null
+	var bd := cfg.decoy_assist_m
+	for q in players:
+		if not q.is_patrol() or (q.state != TC.PState.ACTIVE and q.state != TC.PState.STUMBLE and q.state != TC.PState.IN_CART and q.state != TC.PState.EXITING):
+			continue
+		var d := q.pos().distance_to(p.pos())
+		if d < bd and has_los(p.pos() + Vector3(0, 1.4, 0), q.pos() + Vector3(0, 1.0, 0), q.cart_id if q.state == TC.PState.IN_CART else -1):
+			bd = d
+			best = q
+	return best
+
+
 ## (2.2 build 16) The Squeaky Duck lands: the Night Watch close to it trip
-## and can't tag for a moment; carts there are slowed.
+## and can't tag for a moment; carts there are slowed.  (build 35) Then
+## Ev.DUCK says where it landed and how many it dazed (0: a squeak that
+## caught nobody), so every device can say what it did.
 func _duck_lands(d: Dictionary) -> void:
 	var at: Vector3 = d["pos"]
+	var dazed := 0
 	for q in players:
 		if not q.is_patrol():
 			continue
@@ -1190,14 +1280,17 @@ func _duck_lands(d: Dictionary) -> void:
 			var c: SimCart = carts[q.cart_id]
 			if c.pos().distance_to(at) <= cfg.decoy_daze_m:
 				c.slowed_t = maxf(c.slowed_t, cfg.decoy_daze_s)
+				dazed += 1
 				_emit(TC.Ev.DAZE, q.id, int(d["owner"]), 1, c.pos())
 			continue
-		if q.state != TC.PState.ACTIVE or q.pos().distance_to(at) > cfg.decoy_daze_m:
+		if (q.state != TC.PState.ACTIVE and q.state != TC.PState.STUMBLE and q.state != TC.PState.EXITING) or q.pos().distance_to(at) > cfg.decoy_daze_m:
 			continue
 		q.tag_lockout = maxf(q.tag_lockout, cfg.decoy_daze_s)
 		q.tag_phase = SimPlayer.TagPhase.NONE
 		_set_state(q, TC.PState.STUMBLE)
+		dazed += 1
 		_emit(TC.Ev.DAZE, q.id, int(d["owner"]), 0, q.pos())
+	_emit(TC.Ev.DUCK, int(d["owner"]), -1, dazed, at)
 
 
 ## (2.2 build 16) Where a power-up comes back: the next spot of the pool
@@ -1349,7 +1442,7 @@ func request_emote(slot: int, emote_id: int) -> void:
 # ---------------------------------------------------------------------------
 # Perception: what each side can legitimately know (bots + cues use this)
 # ---------------------------------------------------------------------------
-func can_see(viewer: SimPlayer, target_pos: Vector3, view_yaw: float, max_range: float) -> bool:
+func can_see(viewer: SimPlayer, target_pos: Vector3, view_yaw: float, max_range: float, exclude_cart: int = -1) -> bool:
 	var vp := viewer.pos() + Vector3(0, 1.4, 0)
 	var rel := target_pos + Vector3(0, 1.0, 0) - vp
 	var flat := Vector2(rel.x, rel.z)
@@ -1361,7 +1454,7 @@ func can_see(viewer: SimPlayer, target_pos: Vector3, view_yaw: float, max_range:
 		var ang := rad_to_deg(acos(clampf(view.dot(flat.normalized()), -1.0, 1.0)))
 		if ang > cfg.view_half_fov_deg:
 			return false
-	return has_los(vp, target_pos + Vector3(0, 1.0, 0))
+	return has_los(vp, target_pos + Vector3(0, 1.0, 0), exclude_cart)
 
 
 func view_yaw_of(p: SimPlayer) -> float:
@@ -1382,7 +1475,7 @@ func _perception() -> void:
 			var vy := view_yaw_of(q)
 			if q.state == TC.PState.IN_CART and q.cart_id >= 0:
 				vy = carts[q.cart_id].yaw
-			if can_see(q, r.pos(), vy, cfg.view_range_m):
+			if can_see(q, r.pos(), vy, cfg.view_range_m, r.cart_id if r.state == TC.PState.IN_CART else -1):
 				r.spotted = cfg.spotted_hold_s
 				r.spotted_by_cart = q.state == TC.PState.IN_CART
 				break
@@ -1419,9 +1512,17 @@ func noises_for(listener: SimPlayer) -> Array:
 			var d2 := lp.distance_to(dc["pos"])
 			if d2 <= cfg.noise_fast_m:
 				out.append({"pos": dc["pos"], "kind": "steps", "loud": 1.0 - d2 / cfg.noise_fast_m})
+		# (build 35) a cart a runner took is as loud as any cart
+		for c in carts:
+			var drv := player(c.occupant) if c.occupant >= 0 else null
+			if drv == null or not drv.is_runner():
+				continue
+			var d4 := lp.distance_to(c.pos())
+			if d4 <= cfg.noise_cart_m:
+				out.append({"pos": c.pos(), "kind": "cart", "loud": 1.0 - d4 / cfg.noise_cart_m})
 	else:
 		for c in carts:
-			if c.occupant < 0:
+			if c.occupant < 0 or c.occupant == listener.id:
 				continue
 			var d3 := lp.distance_to(c.pos())
 			if d3 <= cfg.noise_cart_m:

@@ -4,6 +4,15 @@
 Moonbrook College is the playable map (Lakeside Campus is shown as Coming
 soon). Protocol 11.
 
+**Build 35 (the owner's playtest with friends):** a round never ends early
+while a person is still running; the Night Watch has no Boost; runners can
+drive an empty cart (it never tags anyone); the Squeaky Duck flies at the
+nearest Night Watch and is drawn on every device; bush rules are explicit
+(below); Night Watch bots perceive honestly and are a beat slower, runner
+bots are easier for a person to catch; the dead portal on the Moonbrook quad
+is gone. Protocol 16 unchanged (additive: one new event, older builds ignore
+it). Details in [Build 35](#build-35-bots-bushes-carts-duck-rifts).
+
 All values come from one resource, `game/config/rules_default.tres` (`RulesConfig`, `game/src/config/rules_config.gd`). The party's settings derive each round's own copy (`PartySeries.rules_for`), which the simulation, bots, HUD, tutorial, How to Play and results all read; the global default is never changed while a round uses it. The authority is `MatchSim` (`game/src/sim/match_sim.gd`), which runs on the room host, or locally in practice.
 
 **Runner card** (`TC.role_lines`, values filled in from the round; V6 names tonight's dorm): "Run out, splash into the three marked waters, then run back inside Lanternfield House through one of its doors. 4 home wins it for every runner. Caught? You keep your splashes and you're back in 6 s."
@@ -65,7 +74,7 @@ All values come from one resource, `game/config/rules_default.tres` (`RulesConfi
 | Finish (V6) | With all 3 stamps, run back **inside the home dorm through one of its doors**: the host sees the runner's centre cross the door's threshold (the line across the opening at the wall's inner face) from outside to inside during a tick — within the 3 m opening, at feet height (−0.5…1.6 m), on a move shorter than 3 m, with a clear line between the start and end of the move. Starting inside, running out, coming back without all three stamps, another dorm's door, standing against a wall or tunnelling through it never finish; a finish counts once. Approaching the old exterior finish box does nothing (it no longer exists). |
 | Home is safe (V6) | Nobody can be tagged inside the home dorm's common room (the Night Watch may walk in). Other dorms are ordinary buildings. |
 | Runner win | The round ends the tick the required number of runners (see Party settings) are home. A finish on or before the deadline tick counts. |
-| Night Watch win | The clock expires with fewer runners home than required. Tags never eliminate anyone or win by themselves. |
+| Night Watch win | The clock expires with fewer runners home than required; or (build 18, knock-out tags) so many runners are out that the rest can't get enough home — **but (build 35) never while a person (not a bot) is still running** (not caught, out or home). Bot runners being caught can't end a round on free humans; it ends when the last free person is caught, gets home or the clock runs out (`MatchSim.human_runner_free`). |
 | Survival | Not being caught never counts toward winning; only finishes do. |
 
 ### Same-tick ordering
@@ -95,15 +104,15 @@ One explicit contract, shown with the same values on the role reveal, in How to 
   - A miss gives a 0.9 s cooldown; a hit gives a 0.5 s recovery. Tagging is blocked for 0.5 s after leaving a cart.
 - **Tag-ready cue.** The host predicts where the lunge would end if the runner keeps going; when that gap is inside the reach (with a 0.2 m margin) the Night Watch's Tag button glows and a ring under that runner turns amber. The cue and the aimed runner travel in the Night Watch's private snapshot block. The Tag button shows the cooldown or cart-exit lockout as an arc.
 - **Validation (host).** Role, state, cooldown, geometry and line of sight, against the target's position as the tagger saw it up to 150 ms back (lag compensation); the target must also still be within reach + 0.9 m *now*. Protected, finished, splashing and captured runners cannot be tagged; a finish on the same tick wins (finish is resolved before tags).
-- **Penalty.** The runner is held for 6 s and stays a runner with every stamp kept. On screen: "Caught by <name> · back in 6…", then "Back in 5…", with "Your splashes are safe." and where they will return. They can watch teammates meanwhile.
+- **Penalty.** (Build 18: with knock-out tags, the game's rule, the caught moment lasts 2.5 s and the runner is then out for the round; the respawn rules below remain as `RulesConfig.tag_eliminates` false.) The runner is held for 6 s and stays a runner with every stamp kept. On screen: "Caught by <name> · back in 6…", then "Back in 5…", with "Your splashes are safe." and where they will return. They can watch teammates meanwhile.
 - **Tagger.** One confirmation: "Tagged <name>! · 2 catches" (their count this round).
 - **Return.** The runner reappears at a pad around their **last stamped water** — before the first stamp, on one of the pads just inside each door of the **home dorm** — the pad farthest from the Night Watch, with 2 s of visible protection ("Protected · 2"). Out-of-bounds recovery before the first stamp uses the same home-dorm pads.
 
-## Carts (Night Watch only)
+## Carts
 
 - **Fleet.** There are 2 carts.
   - Drivers can enter, accelerate, steer, brake and reverse, stop, and exit.
-  - Runners cannot enter carts.
+  - (Build 35) **Runners can drive an empty cart too**, with the same Drive / Exit button (touch: Drive appears beside an empty cart; keyboard E, controller Y). A runner's cart **never tags, stumbles or launches anyone**: anyone on foot it runs into is only nudged aside at 2.5 m/s (`cart_nudge_speed`), runners and Night Watch alike. A Night Watch on foot **can tag a runner at the wheel** (a lunge at the seat; the cart is left empty where it stands). A runner can't finish, stamp, pick anything up or use a power-up from a cart (waters and doors are cart-free anyway); a cart still takes its driver through a rift. The Night Watch hears a runner's cart like any cart. A runner bot never takes a cart (one left at the wheel by a disconnect stops and gets out); Night Watch bots only ever go for an empty cart, so they use the other one. Host-authoritative as before; an older guest just sees a runner driving.
 - **Handling.** Top speed is 11 m/s on roads and 6.5 m/s off-road, with 6.8 m/s² acceleration. The turn radius widens with speed (3.2 m to 9.5 m), and reverse is capped at 4 m/s.
 - **Where carts can go.** Carts cannot climb stairs, walls or kerbs.
   - Bollard lines (a cart-only collision layer) keep carts out of a zone around every water and around the dorm doors.
@@ -116,7 +125,7 @@ One explicit contract, shown with the same values on the role reveal, in How to 
   - clear capsule space;
   - line of sight from the seat, so you never dismount through a wall.
   - If no side is clear, the driver stays seated.
-- **Bumps.** A cart moving ≥ 2.5 m/s that hits a runner causes a short controlled stumble (0.55 s) with knockback capped at 6 m/s.
+- **Bumps.** (Night Watch driving; build 16: a hit on a taggable runner is a tag and flings them.) A cart moving ≥ 2.5 m/s that hits a runner who can't be tagged causes a short controlled stumble (0.55 s) with knockback capped at 6 m/s. A runner's cart never does either (above).
   - **Never a capture.**
   - The runner gets 1 s of bump protection, against both further bumps and follow-up tags.
   - Each cart has a per-runner cooldown, so there are no stun loops.
@@ -130,6 +139,7 @@ One explicit contract, shown with the same values on the role reveal, in How to 
 | Jump | Jump with 0.12 s coyote time and a 0.13 s jump buffer |
 | Dive | Press jump again in the air: an 8.0 m/s forward dive, one per jump, then a 0.45 s landing recovery before the next jump (a press in its last 0.13 s jumps as it ends) |
 | Night Watch on foot | 6.6 m/s at full input, steady (see the tuning notes) |
+| Boost (build 20) | **Runners only** since build 35: a press gives ×1.3 for 3 s (capped at 9 m/s), then the bar refills over 10 s; never in a cart. The Night Watch has no Boost button, and the simulation ignores a Night Watch's Boost press (a bot's, or a guest's on an older build, too: its own prediction is corrected by the host) |
 
 Ground acceleration is high and turning is fast, so movement stays precise while the animation is silly.
 
@@ -165,9 +175,11 @@ Ground acceleration is high and turning is fast, so movement stays precise while
 
 | Gadget | Effect |
 |---|---|
-| Turbo Sneakers | ×1.25 speed for 3 s (7.5 m/s at full input), capped at 8 m/s. |
-| Squeaky Decoy | Assisted toss up to 9 m, camera-relative. It wanders and emits runner-like footstep noise and the matching visual cue for 5 s. |
-| Splash Bomb | Toss up to 11 m, with assist toward a cart within a 35° cone and 15 m. A hit caps a cart at 4 m/s for 2 s; the cart is then immune for 2.5 s. No screen blinding, no stun on players. |
+| Speed Sneakers (was Turbo) | ×1.25 speed for 10 s (7.5 m/s at full input), capped at 8 m/s. |
+| Squeaky Duck (build 35) | **Thrown at the nearest Night Watch** the runner can see within 14 m, in any direction (so it works thrown over your shoulder while fleeing), aimed where they will be when it lands (0.6 s flight); with nobody in sight, along the stick or camera up to 9 m. Where it lands, every Night Watch within 8 m **trips (0.55 s stumble) and can't tag for 2.5 s**; a cart there is slowed as long. It then lies there squeaking for 5 s: Night Watch bots who aren't chasing anyone within 24 m go to it, and its footstep-like noise reaches the Night Watch's noise cues. Feedback on every device: the duck is drawn (a big rubber duck arcing from the thrower, a pulsing ring showing its 8 m reach, a "SQUEAK!" sign visible through walls, a squeak every 0.85 s), a loud squeak where it lands, the thrower's toast ("Squeak! Dazed 1 Night Watch" / "Nobody close enough to daze"), the dazed player's toast and the feed. |
+| Pillow Shield | Tags and cart hits don't land for 5 s. |
+| Invisibility Cloak | Out of the Night Watch's sight for 6 s (a tag that lands still counts). |
+| Splash Bomb | No longer spawns (2.3). |
 
 ## Information
 
@@ -179,7 +191,49 @@ Ground acceleration is high and turning is fast, so movement stays precise while
 - **Match HUD (Pass 8).** One goal line and one clock: runners see "Team home n/N · Need k more", the Night Watch "Runners home n/N · Hold until m:ss" (amber under 30 s, coral under 10 s). Below it one personal next action: the waters still to stamp and "Next: <water>" with its direction and distance, "Return inside <dorm>", "Caught by X · back in 6", "Protected", or "Home · 2nd to finish · Waiting for team"; the Night Watch reads "You: 3 tags · 2 different runners". A pinned challenge shows in the pause menu and the expanded map.
 - **Runner pace (Pass 8).** Runners (only) see "Runner pace: 3rd/6": home runners first by the tick they crossed a door, then by unique waters stamped, then by the estimated remaining route (through every remaining water in its best order, then to a door, over the same walking grid the bots use; routes within 4 m share a place, competition style 1, 2, 2, 4; a caught runner adds the hold left × 5 m/s). Bots are ranked and counted; "Not home" at the end. While routes are still being measured it says "updating", and a runner whose route can't be measured is placed by stamps and marked approximate. The host computes it every half second from precomputed route fields (no per-player path search) and sends each runner only places and stamp counts, never a position or another runner's next goal. Pace earns no reward.
 - **What the network actually carries.** For smooth movement the host sends each player the positions of opponents within 45 m, or within 90 m in line of sight, whether or not they are visible on screen. The maps and HUD only present what was seen, but a modified client could read more: this is presentation policy, **not anti-cheat secrecy**. The Night Watch's private snapshot block also carries its own tag-ready flag and the runner the assist would pick (always someone already in its line of sight).
-- **Bots** read the same `can_see`, `noises_for` and splash-marker data and nothing else.
+- **Bots** read the same sight lines, `noises_for` and splash-marker data and nothing else (build 35: see [Bots](#bots-build-35)).
+
+## Build 35: bots, bushes, carts, duck, rifts
+
+### Bots (build 35)
+
+From the owner's playtest: "the AI cops are too good", "the cop bots should
+only be able to start running after you if they see you", and "as a cop it's
+so hard to get a bot because they just swerve you so well".
+
+**Night Watch bots (`BotBrain._patrol`)** know only what they honestly perceive:
+
+- **Sight:** line of sight (buildings, walls and carts block it) inside the ±62° view cone, out to 26 m (`WATCH_VIEW_M`; a person sees 34 m). A runner close behind is only "heard" within 2.5 m (`WATCH_HEAR_M`; they used to sense anyone in line of sight within 6 m in any direction). Running footsteps within 7 m only make the bot turn and look (`WATCH_LISTEN_M`); further off, nothing (they used to send it to the sound from up to 24 m). A cloaked runner is noticed only when bumped into (2 m).
+- **No omniscience:** a target is chosen only among runners the bot sees now; it never paths to an unseen runner. After losing sight it runs to the last place it saw them (no prediction) and gives up after 1.6 s (`WATCH_GIVE_UP_S`). Splash markers (shown on a person's map too) and a squeaking duck can send it to a place, never to a runner.
+- **Slower and less exact:** a reaction delay of 0.45–0.8 s on spotting a runner (and on reacquiring one unseen for 1.2 s); at most 0.6 s of lead (was 1.2 s); a short hesitation where its path turns a corner; a Tag press at a "looks close" distance that varies per try from 1.4 to 2.9 m (some lunges fall short and cost the 0.9 s miss cooldown), 0.2–0.45 s after it looks right, aimed with up to ±14° error (the same assist as a person's); a gentler hand on a cart's wheel (gain 1.1, was 1.8, turning at a limited rate). No Boost.
+- Measured (`tests/test_bot_fairness.gd`): a Night Watch bot still catches a careless runner jogging past in plain view (all four lanes, 6.6–19.4 s; it was 1.4 s).
+
+**Runner bots (`BotBrain._runner`, `_flee`)** play like a person who is a beat slow and not always clever: they start fleeing at 9 m (was 11), after 0.3–0.6 s (0.1–0.2 s when the Night Watch is already within 7.5 m); each chase they draw how they'll run it — 35 % boost away once the Night Watch is within 4.5 m, about half try an escape dive and at a distance between 1.8 and 4.6 m (often too early or late), a quarter panic and run straight away without looking for open ground (dead ends included), some freeze for a moment first — and they pick a new direction only every ~0.45 s instead of every tick.
+
+| Measured (real sim, physics and bots) | Before (build 34) | After (build 35) |
+|---|---|---|
+| A human-like Night Watch (straight pursuit, no lead, Tag at 2.4 m) chasing a fleeing runner bot from 6 and 8 m, 4 lanes each | 3 of 8 caught in 20 s | 8 of 8 caught, 5.2–17.4 s (median ≈ 10 s) |
+| Night Watch bot vs runner bot from 8 m (`test_chase_balance`) | 6.0, 9.1, 6.1, 8.2 s | 9.8, escaped, 8.6, 14.3 s |
+| Night Watch bot vs a careless runner jogging past 9 m away | 1.4, 1.4, 1.5, 1.4 s | 19.4, 10.2, 6.6, 10.4 s |
+| Moonbrook round, 2 scripted people (one hides in a bush, one runs the routes) + 4 runner bots vs 2 Night Watch bots, knock-out tags, 3 seeds | every round ended early (57–71 s), a Night Watch win with a person still free; 7 of 12 bot runners caught (48–71 s) | no early end with a person free (runners won two at 86–87 s with 4 home, the third went to time with 3 home); 3 of 12 bot runners caught (at 42, 61 and 74 s), the rest never (median survival 86 s, censored at the round's end) |
+
+These are seeded simulations, not playtests: against two Night Watch bots a
+team of runner bots now wins some rounds (2 of the 3 seeds above, where it
+lost all 3 before). Re-check with people on phones; the knobs are the
+`WATCH_*`, `FLEE_R`, `BOOST_R` and `RUNNER_REACT` constants in `bot_brain.gd`.
+
+### Bushes (build 35: one consistent rule)
+
+- A runner beside a bush hides with Hide (Interact). Inside, nobody sees them: the Night Watch's sight, the spotted cue and their devices (a hidden runner is sent to an opponent's device only from right beside the bush).
+- **Hiding isn't invulnerability.** A Night Watch at the bush who lunges at it tags the runner inside — person or bot, the same rule: the tag assist picks a hidden runner only within 2.2 m of the bush (`hide_tag_assist_m`) and the lunge has its usual reach. So someone who saw you go in can walk up and tag you; someone who didn't has no cue that anyone is there.
+- **Night Watch bots** follow the same knowledge: a bot that saw a runner up to 0.5 s before they vanished into a bush (within its view range) knows which bush; it goes there, searches it for 0.6–1.0 s (`WATCH_SEARCH`), then lunges (again after a miss, while they stay), up to 15 s. A bot that didn't see them go in can't know they're there and walks past (tested: it passes within 0.4 m of the bush and leaves).
+- Runner bots duck into a bush beside them when an unseen Night Watch is closing in, and come out once it has gone.
+
+### Rifts (build 35)
+
+- **The portal by the Bell Tower that never worked** was not a rift: a rift slot that hadn't opened yet (each round's slots start closed on spot 0) had its view drawn open at the world's origin, never moved — on Moonbrook the middle of the quad between the fountain and the Bellweather Tower — for the first 20–70 s of every round, and twice over (one per slot). Nothing could ever go through it. A slot's view now starts closed, only opens at its own rift's spot, and collapses where it is before moving (`RiftView.sync`).
+- A Lakeside spot (index 19) sat inside a rock: the host never picks a spot whose middle isn't on the walking grid (`Rifts.usable`; three of Lakeside's 200, none of Moonbrook's 29). The spot list and its indices are unchanged, so older builds draw rifts in the same places.
+- Tested on every spot of both maps (`tests/test_rift_spots.gd`): a runner walking in from 4 m is sent through and comes out standing at the far end; a cart driven in from 9 m, wherever one can drive up to the spot, goes through with its driver. A runner driving a cart and the duck: `docs/release22/media/b35_runner_cart_and_duck.jpg` (desktop llvmpipe capture, `--p8-part=b35`).
 
 ## Fair target combinations
 

@@ -105,6 +105,9 @@ extends Resource
 @export var cart_bump_min_speed: float = 2.5
 @export var cart_bump_knockback_max: float = 6.0
 @export var cart_bump_speed_keep: float = 0.55
+## (build 35) a cart a runner drives never tags, stumbles or launches
+## anyone: people in its way are only nudged aside at this speed (m/s)
+@export var cart_nudge_speed: float = 2.5
 @export var cart_wall_speed_keep: float = 0.35
 
 @export_group("Gadgets")
@@ -131,6 +134,13 @@ extends Resource
 ## distance trips (a stumble) and can't tag for decoy_daze_s; a cart there
 ## is slowed as long.  Its fake footsteps still run on after.
 @export var decoy_daze_m: float = 8.0
+## (build 35) the duck flies at the nearest Night Watch within this range
+## (in sight, any direction: thrown back over your shoulder while fleeing),
+## leading them, so it lands where it dazes; nobody there: along the aim
+@export var decoy_assist_m: float = 14.0
+## (build 35) after it lands it squeaks for decoy_duration_s; Night Watch
+## bots who aren't chasing anyone go to it from this far
+@export var decoy_lure_m: float = 24.0
 ## (2.2 build 17) Invisibility Cloak: the Night Watch can't see the runner
 ## (nor their devices, beyond arm's length) for this long; a lunge that
 ## finds them still tags

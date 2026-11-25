@@ -52,6 +52,27 @@ const WP_STALL_S := 1.5
 ## open-ground chases end about 5% sooner (tests/test_chase_balance.gd:
 ## 6.0 / 9.1 / 6.1 / 8.2 s, were 6.3 / 9.6 / 6.5 / 8.6 s)
 const DIVE_R := 3.3
+## (build 35) "As a cop it's so hard to get a bot because they just swerve
+## you so well": runner bots are now a person who is a beat slow and not
+## always clever.  They notice a Night Watch closing in later (FLEE_R) and
+## after a reaction delay; each chase they draw how they'll run it: some
+## boost away once the Watch is close (BOOST_R), about half try an escape
+## dive and at a distance that is often wrong, some panic and run straight
+## away without looking for open ground (dead ends included), some freeze
+## for a moment first; and they pick a new direction only every
+## FLEE_TURN_S, not every tick.  Measured in tests/test_bot_fairness.gd.
+const FLEE_R := 9.0
+const RUNNER_REACT := Vector2(0.3, 0.6)
+const BOOST_R := 4.5
+const FLEE_TURN_S := 0.45
+var chase_boost := false
+var dive_r := DIVE_R
+var will_dive := true
+var panic := false
+var freeze_t := 0.0
+var flee_dir := Vector2.ZERO
+var flee_turn_t := 0.0
+var notice_t := -1.0
 var pref_cart := -1
 var prev_pressed := 0
 ## Measurement switch for game/tools/p9_balance.gd only (false = the 1.8
@@ -103,7 +124,13 @@ func _think(sim: MatchSim, p: SimPlayer) -> InputCmd:
 			mode = Mode.PLAN
 			return cmd
 	if p.is_runner():
-		_runner(sim, p, cmd, dt)
+		if p.state == TC.PState.IN_CART:
+			# (build 35) a runner's seat a bot took over at the wheel: stop
+			# and get out (runner bots run)
+			cmd.drive = -1.0
+			cmd.pressed |= TC.BTN_INTERACT if (sim.tick % 20) == 0 else 0
+		else:
+			_runner(sim, p, cmd, dt)
 	else:
 		_patrol(sim, p, cmd, dt)
 	_maybe_boost(sim, p, cmd)
@@ -111,25 +138,19 @@ func _think(sim: MatchSim, p: SimPlayer) -> InputCmd:
 	return cmd
 
 
-## (build 20) Bots use the running boost like players: a runner to get away
-## from a Night Watch closing in, a Night Watch to close the last metres on
-## a runner in sight, and now and then on a long open run to a goal.
-func _maybe_boost(sim: MatchSim, p: SimPlayer, cmd: InputCmd) -> void:
-	if p.state != TC.PState.ACTIVE or p.boost_t > 0.0 or p.boost_cd > 0.0 or cmd.move.length() < 0.8:
+## (build 20) Runner bots use the running boost like players: to get away
+## from a Night Watch closing in, and now and then on a long open run.
+## (build 35) The Night Watch has no boost.  A runner bot boosts away only
+## in some chases (chase_boost, drawn when the chase starts) and only once
+## the Night Watch is close, so a human chaser isn't simply out-run.
+func _maybe_boost(_sim: MatchSim, p: SimPlayer, cmd: InputCmd) -> void:
+	if not p.is_runner() or p.state != TC.PState.ACTIVE or p.boost_t > 0.0 or p.boost_cd > 0.0 or cmd.move.length() < 0.8:
 		return
-	if p.is_runner():
-		if threat_t > 0.0 and threat != Vector3.INF and threat.distance_to(p.pos()) < 9.0:
+	if threat_t > 0.0 and threat != Vector3.INF:
+		if chase_boost and threat.distance_to(p.pos()) < BOOST_R:
 			cmd.pressed |= TC.BTN_BOOST
-		elif goal != Vector2.ZERO and p.pos2().distance_to(goal) > 40.0 and rng.randf() < 0.002:
-			cmd.pressed |= TC.BTN_BOOST
-		return
-	for q in sim.players:
-		if not q.is_runner() or q.state != TC.PState.ACTIVE:
-			continue
-		var d := q.pos().distance_to(p.pos())
-		if d > 2.5 and d < 10.0 and sim.has_los(p.pos() + Vector3(0, 1.4, 0), q.pos() + Vector3(0, 1.2, 0)):
-			cmd.pressed |= TC.BTN_BOOST
-			return
+	elif goal != Vector2.ZERO and p.pos2().distance_to(goal) > 40.0 and rng.randf() < 0.002:
+		cmd.pressed |= TC.BTN_BOOST
 
 
 # ---------------------------------------------------------------------------
@@ -172,13 +193,28 @@ func _runner(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 		cmd.pressed |= TC.BTN_INTERACT
 		return
 	# (build 33) a touch easier to tag: a runner bot starts fleeing at 11 m
-	# (was 12), and its escape dive comes a beat early (DIVE_R)
-	var danger_r := 11.0 if p.state == TC.PState.ACTIVE else 0.0
+	# (was 12), and its escape dive comes a beat early (DIVE_R).  (build
+	# 35) at FLEE_R, after a reaction delay; each chase drawn afresh
+	var danger_r := FLEE_R if p.state == TC.PState.ACTIVE else 0.0
 	if nearest_threat != Vector3.INF and nd < danger_r and p.protect <= 0.0:
-		threat = nearest_threat
-		threat_t = 2.5
+		if threat_t <= 0.0:
+			if notice_t < 0.0:
+				# (right on top of us is noticed at once; further off, a beat late)
+				var close := nd < 7.5
+				notice_t = rng.randf_range(0.1, 0.2) if close else rng.randf_range(RUNNER_REACT.x, RUNNER_REACT.y)
+				_new_chase()
+				if close:
+					freeze_t = 0.0
+			notice_t -= dt
+			if notice_t > 0.0:
+				nearest_threat = Vector3.INF     # not noticed yet: carry on
+		if nearest_threat != Vector3.INF:
+			threat = nearest_threat
+			threat_t = 2.5
 	else:
 		threat_t = maxf(0.0, threat_t - dt)
+		if threat_t <= 0.0:
+			notice_t = -1.0
 
 	if threat_t > 0.0 and threat != Vector3.INF:
 		_flee(sim, p, cmd, dt)
@@ -331,38 +367,60 @@ func _plan_home(sim: MatchSim, p: SimPlayer) -> void:
 	_repath(p.pos2(), goal, false)
 
 
+## (build 35) How this runner bot will run the chase that is starting.
+func _new_chase() -> void:
+	chase_boost = rng.randf() < 0.35
+	will_dive = rng.randf() < 0.5
+	dive_r = rng.randf_range(1.8, 4.6)
+	panic = rng.randf() < 0.25
+	freeze_t = rng.randf_range(0.15, 0.3) if rng.randf() < 0.3 else 0.0
+	flee_turn_t = 0.0
+
+
 func _flee(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 	var cfg := sim.cfg
-	var away := p.pos2() - Vector2(threat.x, threat.z)
-	if away.length() < 0.1:
-		away = Vector2(1, 0)
-	away = away.normalized()
-	# keep making progress toward the goal if it is not toward the threat
-	var to_goal := (goal - p.pos2()).normalized() if goal != Vector2.ZERO else away
-	var dir := away
-	if to_goal.dot(away) > -0.2:
-		dir = (away * 0.6 + to_goal * 0.4).normalized()
-	# avoid running into walls: probe a few angles on the nav grid
-	var best := dir
-	var best_score := -1e9
-	for k in 9:
-		var ang := (float(k) - 4.0) * 0.35
-		var cand := dir.rotated(ang)
-		var probe := p.pos2() + cand * 4.0
-		var score := cand.dot(away) * 2.0 + cand.dot(to_goal) * 0.6 - absf(ang) * 0.2
-		if not nav.is_walkable(probe) or not nav.is_walkable(p.pos2() + cand * 2.0):
-			score -= 10.0
-		if score > best_score:
-			best_score = score
-			best = cand
-	cmd.move = best
 	var d := p.pos2().distance_to(Vector2(threat.x, threat.z))
+	if freeze_t > 0.0:
+		# a moment of panic before running
+		freeze_t -= dt
+		cmd.move = Vector2.ZERO
+		replan_t = 0.0
+		return
+	flee_turn_t -= dt
+	if flee_turn_t <= 0.0 or flee_dir == Vector2.ZERO:
+		flee_turn_t = FLEE_TURN_S * rng.randf_range(0.8, 1.3)
+		var away := p.pos2() - Vector2(threat.x, threat.z)
+		if away.length() < 0.1:
+			away = Vector2(1, 0)
+		away = away.normalized()
+		# keep making progress toward the goal if it is not toward the threat
+		var to_goal := (goal - p.pos2()).normalized() if goal != Vector2.ZERO else away
+		var dir := away
+		if to_goal.dot(away) > -0.2:
+			dir = (away * 0.6 + to_goal * 0.4).normalized()
+		# avoid running into walls: probe a few angles on the nav grid (a
+		# panicking runner just runs, dead ends and all)
+		var best := dir
+		if not panic:
+			var best_score := -1e9
+			for k in 9:
+				var ang := (float(k) - 4.0) * 0.35
+				var cand := dir.rotated(ang)
+				var probe := p.pos2() + cand * 4.0
+				var score := cand.dot(away) * 2.0 + cand.dot(to_goal) * 0.6 - absf(ang) * 0.2
+				if not nav.is_walkable(probe) or not nav.is_walkable(p.pos2() + cand * 2.0):
+					score -= 10.0
+				if score > best_score:
+					best_score = score
+					best = cand
+		flee_dir = best
+	cmd.move = flee_dir
 	if p.gadget == TC.Gadget.TURBO and d < 8.0:
 		cmd.pressed |= TC.BTN_GADGET
-		cmd.cam_yaw = atan2(-best.x, -best.y)
-	elif p.gadget == TC.Gadget.DECOY and d < 14.0:
+		cmd.cam_yaw = atan2(-flee_dir.x, -flee_dir.y)
+	elif p.gadget == TC.Gadget.DECOY and d < 9.0:
+		# (build 35) the duck flies at the Night Watch by itself
 		cmd.pressed |= TC.BTN_GADGET
-		cmd.cam_yaw = atan2(best.x, best.y)  # toss sideways-back
 	elif p.gadget == TC.Gadget.SHIELD and d < 4.5:
 		# (2.3) the pillow goes up as the Night Watch closes in
 		cmd.pressed |= TC.BTN_GADGET
@@ -373,11 +431,12 @@ func _flee(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 				cmd.cam_yaw = atan2(-rel.x, -rel.z)
 				cmd.move = Vector2.ZERO
 				cmd.pressed |= TC.BTN_GADGET
-	# dive to snatch distance when the patrol is about to lunge
-	if d < DIVE_R and jump_cool <= 0.0 and p.on_floor:
+	# dive to snatch distance when the patrol is about to lunge (build 35:
+	# in some chases, at a distance that is often too early or too late)
+	if will_dive and d < dive_r and jump_cool <= 0.0 and p.on_floor:
 		cmd.pressed |= TC.BTN_JUMP
 		jump_cool = 1.35
-	elif not p.on_floor and not p.diving and d < DIVE_R + 0.4 and p.vel.y < 1.5:
+	elif will_dive and not p.on_floor and not p.diving and d < dive_r + 0.4 and p.vel.y < 1.5:
 		cmd.pressed |= TC.BTN_JUMP
 	_hop_obstacles(sim, p, cmd)
 	replan_t = 0.0
@@ -386,93 +445,171 @@ func _flee(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 # ---------------------------------------------------------------------------
 # Patrol
 # ---------------------------------------------------------------------------
+## (build 35) The owner's playtest: "the AI cops are too good" and "they
+## should only start running after you if they see you".  A Night Watch bot
+## now knows only what it honestly perceives, and plays like a person who
+## is a beat slow:
+##   - sight: line of sight inside its view cone, out to WATCH_VIEW_M (less
+##     than a person's 34 m); "heard" only right behind it (WATCH_HEAR_M);
+##     runner footsteps further off only make it turn and look (within
+##     WATCH_LISTEN_M), never send it after anyone;
+##   - a runner it has just spotted gets a reaction delay before the chase
+##     (and again on reacquiring one it lost);
+##   - it aims at where the runner is (a little lead at most), hesitates at
+##     corners, and gives up WATCH_GIVE_UP_S after losing sight (it runs to
+##     the last place it saw them, no further);
+##   - its Tag press comes at a "looks close" distance that varies (some
+##     lunges fall short), after a short delay;
+##   - it steers a cart more gently;
+##   - a runner it saw dive into a bush is in that bush: it goes there,
+##     searches for WATCH_SEARCH s and lunges; one it didn't see go in, it
+##     walks past.
+const WATCH_VIEW_M := 26.0
+const WATCH_HEAR_M := 2.5
+const WATCH_LISTEN_M := 7.0
+const WATCH_GIVE_UP_S := 1.6
+const WATCH_REACT := Vector2(0.45, 0.8)
+const WATCH_REACQUIRE_S := 1.2
+const WATCH_SEARCH := Vector2(0.6, 1.0)
+const WATCH_LEAD_MAX_S := 0.6
+const WATCH_STEER_GAIN := 1.1
+const WATCH_STEER_RATE := 2.6       # steering change per second (carts)
+## the tick each runner was last seen ({slot: tick}) and the bush a runner
+## was seen vanishing into ({slot: [bush, tick]})
+var seen_tick: Dictionary = {}
+var saw_hide: Dictionary = {}
+var chase_id := -1
+var react_t := 0.0
+var search_t := 0.0
+var look_t := 0.0
+var look_dir := Vector2.ZERO
+var hesitate_t := 0.0
+var press_d := 0.0
+var _last_move := Vector2.ZERO
+var _steer := 0.0
+
+
+## Can this Night Watch bot see (or, right behind it, hear) runner r now?
+func _watch_sees(sim: MatchSim, p: SimPlayer, r: SimPlayer, view_yaw: float) -> bool:
+	var eye := p.pos() + Vector3(0, 1.4, 0)
+	var rel := r.pos() - p.pos()
+	var d := Vector2(rel.x, rel.z).length()
+	if r.cloak_t > 0.0:
+		return d < 2.0    # (build 17) cloaked: only bumped into
+	if d > WATCH_VIEW_M:
+		return false
+	if d > WATCH_HEAR_M:
+		var view := Vector2(-sin(view_yaw), -cos(view_yaw))
+		if view.dot(Vector2(rel.x, rel.z) / d) < cos(deg_to_rad(sim.cfg.view_half_fov_deg)):
+			return false
+	return sim.los_to(eye, r)
+
+
 func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 	var cfg := sim.cfg
 	var in_cart := p.state == TC.PState.IN_CART
 	var view_yaw := sim.carts[p.cart_id].yaw if in_cart and p.cart_id >= 0 else p.yaw
-	# --- perceive runners (same limits as humans)
+	react_t = maxf(0.0, react_t - dt)
+	look_t = maxf(0.0, look_t - dt)
+	hesitate_t = maxf(0.0, hesitate_t - dt)
+	# --- perceive runners (the same limits as a person, a bit shorter-sighted)
 	var target: SimPlayer = null
 	var td := 1e9
+	var target_fresh := false
 	for r in sim.players:
 		# (a runner inside the home dorm can't be tagged: not a target)
-		if not r.is_runner() or not r.is_in_play() or r.home_safe:
+		if not r.is_runner() or r.home_safe:
 			continue
-		var seen := false
-		if r.cloak_t > 0.0:
-			seen = r.pos().distance_to(p.pos()) < 2.0   # (build 17) cloaked: only bumped into
-		elif r.state == TC.PState.HIDING:
-			# (2.3) unseen in a bush, unless it's the bush they were last seen
-			# beside (the bot checks it, as a person would)
-			var ls: Dictionary = last_seen.get(r.id, {})
-			seen = not ls.is_empty() and (ls["pos"] as Vector3).distance_to(r.pos()) < 4.0 and r.pos().distance_to(p.pos()) < 7.0
-		else:
-			seen = sim.can_see(p, r.pos(), view_yaw, cfg.view_range_m)
-			if not seen and r.pos().distance_to(p.pos()) < 6.0:
-				seen = sim.has_los(p.pos() + Vector3(0, 1.3, 0), r.pos() + Vector3(0, 1.0, 0))
-		if seen:
-			last_seen[r.id] = {"pos": r.pos(), "vel": r.vel, "t": sim.tick}
-			var d := r.pos().distance_to(p.pos())
-			if r.protect > 0.0 or r.bump_protect > 0.0:
-				d += 8.0
-			if d < td:
-				td = d
-				target = r
-	# hearing + splash markers feed investigation
-	if target == null:
-		var loudest := 0.0
-		for n in sim.noises_for(p):
-			if float(n["loud"]) > loudest:
-				loudest = float(n["loud"])
-				investigate = n["pos"]
-				investigate_t = 6.0
-		for m in sim.splash_markers:
-			var wc: Vector2 = sim.layout.waters[int(m["water"])]["center"]
-			if investigate_t <= 0.0 or rng.randf() < 0.02:
-				investigate = Vector3(wc.x, 0, wc.y)
-				investigate_t = 10.0
-	investigate_t = maxf(0.0, investigate_t - dt)
-
+		if r.state == TC.PState.HIDING:
+			# (build 35) seen up to a moment before they vanished, close
+			# enough to see which bush: this Watch knows where they are
+			if not saw_hide.has(r.id) and seen_tick.has(r.id) and sim.tick - int(seen_tick[r.id]) <= 30 \
+					and r.bush >= 0 and r.pos().distance_to(p.pos()) <= WATCH_VIEW_M:
+				saw_hide[r.id] = [r.bush, sim.tick]
+			continue
+		if not r.is_in_play():
+			continue
+		if not _watch_sees(sim, p, r, view_yaw):
+			continue
+		saw_hide.erase(r.id)
+		var fresh := not seen_tick.has(r.id) or sim.tick - int(seen_tick[r.id]) > int(WATCH_REACQUIRE_S * cfg.sim_hz)
+		seen_tick[r.id] = sim.tick
+		last_seen[r.id] = {"pos": r.pos(), "vel": r.vel, "t": sim.tick}
+		var d := r.pos().distance_to(p.pos())
+		if r.protect > 0.0 or r.bump_protect > 0.0:
+			d += 8.0
+		if r.state == TC.PState.IN_CART and r.cart_id >= 0 and absf(sim.carts[r.cart_id].speed) > 3.0 and not in_cart:
+			d += 20.0     # a runner driving off is no foot chase
+		if d < td:
+			td = d
+			target = r
+			target_fresh = fresh
 	var cart_c: SimCart = sim.carts[p.cart_id] if in_cart else null
 	if target != null:
-		var lead := target.pos() + target.vel * clampf(td / 8.0, 0.0, 1.2)
-		if in_cart:
-			if td < 10.0 or not nav.is_drivable(Vector2(lead.x, lead.z)) and td < 22.0:
-				cmd.pressed |= TC.BTN_INTERACT   # hop out and chase on foot
-				cmd.drive = -1.0
+		if target_fresh and target.id != chase_id:
+			react_t = rng.randf_range(WATCH_REACT.x, WATCH_REACT.y) / skill
+		chase_id = target.id
+		if react_t > 0.0:
+			# just spotted: a beat to take it in (turn toward them, slow down)
+			if in_cart:
+				_drive_to(sim, p, cart_c, target.pos2(), cmd, dt, false)
+				cmd.drive = minf(cmd.drive, 0.3)
 				return
-			var lead2 := Vector2(lead.x, lead.z)
-			_drive_to(sim, p, cart_c, lead2, cmd, dt, true)
+			var rel0 := target.pos2() - p.pos2()
+			cmd.move = rel0.normalized() * 0.2
+			cmd.cam_yaw = atan2(-rel0.x, -rel0.y)
 			return
-		# on foot: chase, tag when close, go back to cart if they get away
-		if td > 30.0 and _free_cart_near(sim, p, 18.0) >= 0:
-			_go_to_cart(sim, p, cmd, dt)
+		_chase(sim, p, cmd, dt, target, target.pos(), target.vel, td, in_cart, cart_c)
+		return
+	# --- a runner seen going into a bush: check that bush
+	for rid in saw_hide.keys():
+		var e: Array = saw_hide[rid]
+		if sim.tick - int(e[1]) > int(15.0 * cfg.sim_hz):
+			saw_hide.erase(rid)
+	if not saw_hide.is_empty() and not in_cart:
+		var rid2: int = saw_hide.keys()[0]
+		var b: int = saw_hide[rid2][0]
+		if _check_bush(sim, p, cmd, dt, rid2, b):
 			return
-		var tp := Vector2(lead.x, lead.z)
-		if path.is_empty() or replan_t <= 0.0 or goal.distance_to(tp) > 3.0:
-			goal = tp
-			goal_kind = "chase"
-			replan_t = 0.5
-			_repath(p.pos2(), goal, false)
-		if td < 6.0 and sim.has_los(p.pos() + Vector3(0, 1.0, 0), target.pos() + Vector3(0, 1.0, 0)):
-			var rel := target.pos() - p.pos()
-			cmd.move = Vector2(rel.x, rel.z).normalized()
-		else:
-			_follow(sim, p, cmd, dt, false)
-		reaction -= dt
-		# a runner faster than the Night Watch on foot (Turbo, a dive; Pass 8
-		# and earlier: a sprint) outpaces the wind-up: wait until closer
-		var outpaces := Vector2(target.vel.x, target.vel.z).length() > cfg.patrol_speed + 0.05
-		var slack := TAG_TRIGGER_SLACK if not outpaces else 0.05
-		if td < cfg.tag_reach_m + slack and p.tag_cd <= 0.0 and p.tag_lockout <= 0.0:
-			if reaction <= 0.0:
-				cmd.pressed |= TC.BTN_TAG
-				var rel2 := target.pos() - p.pos()
-				cmd.cam_yaw = atan2(-rel2.x, -rel2.z)
-				reaction = rng.randf_range(0.12, 0.3) / skill
-		_hop_obstacles(sim, p, cmd)
+	# --- lost sight: run to where they were last seen, then give up
+	if chase_id >= 0 and last_seen.has(chase_id):
+		var ls: Dictionary = last_seen[chase_id]
+		var age := float(sim.tick - int(ls["t"])) / float(cfg.sim_hz)
+		var lp: Vector3 = ls["pos"]
+		if age < WATCH_GIVE_UP_S and p.pos().distance_to(lp) > 1.5:
+			var r2 := sim.player(chase_id)
+			if r2 != null and r2.is_in_play() and r2.state != TC.PState.HIDING:
+				_chase(sim, p, cmd, dt, r2, lp, Vector3.ZERO, p.pos().distance_to(lp), in_cart, cart_c, false)
+				return
+		chase_id = -1
+		search_t = 0.0
+	# hearing (close footsteps: turn and look, nothing more) and the splash
+	# markers (a water a runner just stamped, as on a person's map)
+	var loudest := 0.0
+	for n in sim.noises_for(p):
+		var np: Vector3 = n["pos"]
+		if np.distance_to(p.pos()) <= WATCH_LISTEN_M and float(n["loud"]) > loudest and String(n["kind"]) == "steps":
+			loudest = float(n["loud"])
+			look_dir = Vector2(np.x - p.pos().x, np.z - p.pos().z)
+			if look_t <= 0.0:
+				look_t = 1.0
+	# a squeaking duck is loud: those not chasing anyone go and look
+	for dc in sim.decoys:
+		if float(dc["flight"]) <= 0.0 and (dc["pos"] as Vector3).distance_to(p.pos()) <= cfg.decoy_lure_m:
+			investigate = dc["pos"]
+			investigate_t = maxf(investigate_t, 3.0)
+	for m in sim.splash_markers:
+		var wc: Vector2 = sim.layout.waters[int(m["water"])]["center"]
+		if investigate_t <= 0.0 or rng.randf() < 0.02:
+			investigate = Vector3(wc.x, 0, wc.y)
+			investigate_t = 10.0
+	investigate_t = maxf(0.0, investigate_t - dt)
+	if look_t > 0.0 and not in_cart and look_dir.length() > 0.1:
+		cmd.move = look_dir.normalized() * 0.2
+		cmd.cam_yaw = atan2(-look_dir.x, -look_dir.y)
 		return
 
-	# --- no runner in sight: investigate or patrol a route
+	# --- nobody in sight: investigate or patrol a route
 	var dest := Vector2.INF
 	if investigate_t > 0.0 and investigate != Vector3.INF:
 		dest = Vector2(investigate.x, investigate.z)
@@ -510,8 +647,109 @@ func _patrol(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float) -> void:
 		replan_t = 3.0
 		_repath(p.pos2(), goal, false)
 	_follow(sim, p, cmd, dt, false)
+	_corner_hesitation(cmd)
 	_hop_obstacles(sim, p, cmd)
 	cmd.cam_yaw = p.yaw + sin(float(sim.tick) * 0.03 + slot) * 0.9   # look around
+
+
+## Run (or drive) at a runner: at `at` (where they are, or were last seen),
+## with at most a little lead from `vel`; Tag when they look close.
+func _chase(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float, target: SimPlayer, at: Vector3, vel: Vector3, td: float,
+		in_cart: bool, cart_c: SimCart, can_tag: bool = true) -> void:
+	var cfg := sim.cfg
+	var lead := at + Vector3(vel.x, 0, vel.z) * clampf(td / 12.0, 0.0, WATCH_LEAD_MAX_S)
+	if in_cart:
+		var driving_off := target.state == TC.PState.IN_CART
+		if (td < 10.0 and not driving_off) or (not nav.is_drivable(Vector2(lead.x, lead.z)) and td < 22.0):
+			cmd.pressed |= TC.BTN_INTERACT   # hop out and chase on foot
+			cmd.drive = -1.0
+			return
+		_drive_to(sim, p, cart_c, Vector2(lead.x, lead.z), cmd, dt, true)
+		return
+	# on foot: chase, tag when close, go back to a cart if they get away
+	if td > 30.0 and _free_cart_near(sim, p, 18.0) >= 0:
+		_go_to_cart(sim, p, cmd, dt)
+		return
+	var tp := Vector2(lead.x, lead.z)
+	if path.is_empty() or replan_t <= 0.0 or goal.distance_to(tp) > 3.0:
+		goal = tp
+		goal_kind = "chase"
+		replan_t = 0.6
+		_repath(p.pos2(), goal, false)
+	if td < 6.0 and sim.los_to(p.pos() + Vector3(0, 1.0, 0), target):
+		var rel := at - p.pos()
+		cmd.move = Vector2(rel.x, rel.z).normalized()
+	else:
+		_follow(sim, p, cmd, dt, false)
+		_corner_hesitation(cmd)
+	reaction -= dt
+	if can_tag:
+		# the press comes at a "looks close" distance that varies per try
+		# (some lunges fall short), a moment after it looks right
+		if press_d <= 0.0:
+			press_d = cfg.tag_reach_m + rng.randf_range(-0.2, 1.3)
+		if td < press_d and p.tag_cd <= 0.0 and p.tag_lockout <= 0.0:
+			if reaction <= 0.0:
+				cmd.pressed |= TC.BTN_TAG
+				var rel2 := target.pos() - p.pos()
+				cmd.cam_yaw = atan2(-rel2.x, -rel2.z) + rng.randf_range(-0.25, 0.25)
+				reaction = rng.randf_range(0.2, 0.45) / skill
+				press_d = 0.0
+		elif reaction <= 0.0:
+			reaction = rng.randf_range(0.1, 0.3) / skill
+	_hop_obstacles(sim, p, cmd)
+
+
+## (build 35) A runner this Watch saw dive into bush b: go there, search it
+## for a moment, then lunge at it (and find them if they're still in).
+## False once there's nothing more to do there.
+func _check_bush(sim: MatchSim, p: SimPlayer, cmd: InputCmd, dt: float, rid: int, b: int) -> bool:
+	if b < 0 or b >= sim.hide_bushes.size():
+		saw_hide.erase(rid)
+		return false
+	var bp: Vector2 = sim.hide_bushes[b]
+	var d := p.pos2().distance_to(bp)
+	if d > 1.9:
+		search_t = 0.0
+		if goal.distance_to(bp) > 1.0 or path.is_empty() or replan_t <= 0.0:
+			goal = bp
+			goal_kind = "bush"
+			replan_t = 1.0
+			_repath(p.pos2(), goal, false)
+		_follow(sim, p, cmd, dt, false)
+		_hop_obstacles(sim, p, cmd)
+		return true
+	# at the bush: search it, then lunge into it
+	if search_t <= 0.0:
+		search_t = rng.randf_range(WATCH_SEARCH.x, WATCH_SEARCH.y)
+	search_t -= dt
+	var rel := bp - p.pos2()
+	cmd.move = rel.normalized() * 0.15 if rel.length() > 0.8 else Vector2.ZERO
+	cmd.cam_yaw = atan2(-rel.x, -rel.y)
+	if search_t <= 0.0:
+		var r := sim.player(rid)
+		if r != null and r.state == TC.PState.HIDING and r.bush == b:
+			# found them: lunge into the bush (again after a miss)
+			if p.tag_cd <= 0.0 and p.tag_lockout <= 0.0 and p.tag_phase == SimPlayer.TagPhase.NONE:
+				cmd.pressed |= TC.BTN_TAG
+			search_t = 0.01
+			return true
+		saw_hide.erase(rid)      # gone (or caught): nothing in there now
+		search_t = 0.0
+		return false
+	return true
+
+
+## Slow down for a moment where the path turns a corner, as a person does.
+func _corner_hesitation(cmd: InputCmd) -> void:
+	if cmd.move.length() < 0.3:
+		return
+	var m := cmd.move.normalized()
+	if _last_move != Vector2.ZERO and m.dot(_last_move) < 0.75 and hesitate_t <= 0.0:
+		hesitate_t = rng.randf_range(0.2, 0.4)
+	_last_move = m
+	if hesitate_t > 0.0:
+		cmd.move *= 0.55
 
 
 ## Where a cart stops for a destination: the nearest drivable cell (a
@@ -609,7 +847,10 @@ func _drive_to(sim: MatchSim, p: SimPlayer, c: SimCart, dest: Vector2, cmd: Inpu
 	var to := (aim - cp)
 	var ang := fwd.angle_to(to.normalized()) if to.length() > 0.1 else 0.0
 	# angle_to is positive counter-clockwise in screen space (x right, y=z down) => turn right
-	cmd.steer = clampf(ang * 1.8, -1.0, 1.0)
+	# (build 35) a gentler hand on the wheel: less gain, and the wheel
+	# turns at a limited rate (it used to snap to full lock)
+	_steer = move_toward(_steer, clampf(ang * WATCH_STEER_GAIN, -1.0, 1.0), WATCH_STEER_RATE * dt)
+	cmd.steer = _steer
 	var dist := cp.distance_to(dest)
 	cmd.drive = 1.0
 	if absf(ang) > 1.1:

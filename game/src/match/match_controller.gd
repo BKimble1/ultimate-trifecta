@@ -1733,6 +1733,7 @@ func _process(delta: float) -> void:
 	_scan_seen(delta)
 	_update_pickups()
 	_update_rifts()
+	_update_ducks(delta)
 	_update_home_and_coins()
 	Prof.add("mc_world", tp)
 	tp = Prof.t()
@@ -2005,8 +2006,20 @@ func _present_event(ev: Dictionary, ui: bool = true, world: bool = true) -> void
 			var dz: Dictionary = roster.get(a, {})
 			hud.feed("Squeak! %s is dazed" % dz.get("name", "The Night Watch"), TC.Role.RUNNER)
 			if mine:
-				hud.toast("Dazed by a Squeaky Duck!", Color(1.0, 0.8, 0.3))
+				hud.toast("Dazed by a Squeaky Duck! No tagging for %d s" % int(round(cfg.decoy_daze_s)), Color(1.0, 0.8, 0.3))
 				_haptic(20)
+		TC.Ev.DUCK:
+			# (build 35) a duck landed: v = Night Watch dazed (0: nobody close)
+			if world:
+				Sfx.play("squeak", pos, 4.0, 0.9)
+				fx.bump(pos)
+			if not ui:
+				return
+			var n_dz := int(ev["v"])
+			if mine:
+				hud.toast("Squeak! %s" % ("Dazed %d Night Watch" % n_dz if n_dz > 0 else "Nobody close enough to daze"), Color(1.0, 0.85, 0.3))
+			elif int(roster.get(local_slot, {}).get("role", TC.Role.RUNNER)) == TC.Role.PATROL and n_dz == 0:
+				hud.feed("Squeak! A duck went off nearby", TC.Role.RUNNER)
 		TC.Ev.CART_ENTER:
 			if world:
 				Sfx.play("cart_start", pos)
@@ -2300,16 +2313,62 @@ func _update_rifts() -> void:
 			v.set_open(false)
 			continue
 		var rf: Dictionary = rs[i]
-		var want := Rifts.world(layout, int(rf["at"]))
-		if v.position.distance_to(want) > 0.5:
-			if v.is_shown() and bool(rf["open"]):
-				v.set_open(false)   # (collapses first; reopens here next frames)
-			if not v.is_shown():
-				v.position = want
-		else:
-			v.set_open(bool(rf["open"]))
+		# (build 35) collapses where it was first, then moves; closed slots
+		# are never drawn (RiftView.sync)
+		v.sync(Rifts.world(layout, int(rf["at"])), bool(rf["open"]))
 		if bool(rf["open"]) and hud != null and not spectator:
 			hud.first_tip("rift", "A rift opened!", "Step into the purple swirl to pop out somewhere else on campus. Each rift works once.", "star")
+
+
+## (build 35) Thrown Squeaky Ducks, drawn on every device (DuckView): the
+## host from the sim (with the toss's arc), a guest from its snapshot's
+## effects list (kind 0 within 40 m; it drops in from above when it appears).
+var duck_views: Array = []
+var _duck_age: Array = []
+
+
+func _update_ducks(delta: float) -> void:
+	if not with_visuals:
+		return
+	var list: Array = []   # [pos, flying, heading]
+	if sim:
+		for d in sim.decoys:
+			var land: Vector3 = d["pos"]
+			var fl := float(d["flight"])
+			if fl > 0.0:
+				var k := 1.0 - fl / maxf(0.01, cfg.toss_flight_s)
+				var from: Vector3 = d.get("from", land)
+				var at := from.lerp(land, k) + Vector3(0, 1.2 + sin(k * PI) * 2.2 - 1.2 * k, 0)
+				list.append([at, true, land - from])
+			else:
+				list.append([land, false, d.get("dir", Vector3.ZERO)])
+	else:
+		for f in _me.get("fx", []):
+			if int(f.get("kind", -1)) == 0:
+				list.append([f["pos"], false, Vector3.ZERO])
+	while duck_views.size() < list.size():
+		var v := DuckView.new()
+		v.reduced = reduced_motion
+		v.daze_r = cfg.decoy_daze_m
+		add_child(v)
+		duck_views.append(v)
+		_duck_age.append(0.0)
+	for i in duck_views.size():
+		var v: DuckView = duck_views[i]
+		if i >= list.size():
+			v.hide_duck()
+			_duck_age[i] = 0.0
+			continue
+		var e: Array = list[i]
+		var pos: Vector3 = e[0]
+		var flying: bool = e[1]
+		if not sim:
+			# a guest sees only where it lands: drop it in from above
+			_duck_age[i] = float(_duck_age[i]) + delta
+			var k := clampf(float(_duck_age[i]) / maxf(0.01, cfg.toss_flight_s), 0.0, 1.0)
+			flying = k < 1.0
+			pos += Vector3(0, (1.0 - k) * 3.0, 0)
+		v.show_at(pos, flying, e[2])
 
 
 func _update_pickups() -> void:

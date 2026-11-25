@@ -14,7 +14,12 @@ var _ring: MeshInstance3D
 var _ring_mat: StandardMaterial3D
 var _sparks: Array = []
 var _open := 0.0
-var _want := 1.0
+## (build 35) a new view starts closed: it opened by default, and a slot
+## that hadn't opened yet (spot 0, closed) never moved it off the world's
+## origin, so a portal that took nobody anywhere stood in the middle of the
+## quad (Moonbrook: between the fountain and the Bell Tower) for the first
+## 20-70 s of every round
+var _want := 0.0
 var _t := 0.0
 var reduced := false
 var _flash := 0.0
@@ -82,6 +87,18 @@ func set_open(on: bool) -> void:
 
 func is_shown() -> bool:
 	return _open > 0.02 or _want > 0.0
+
+
+## (build 35) Follow one rift slot: open where the slot's rift stands.  A
+## view showing somewhere else collapses there first, then moves (closed or
+## open) to the slot's spot, so it is never drawn open anywhere a rift isn't.
+func sync(at: Vector3, open: bool) -> void:
+	if position.distance_to(at) > 0.5:
+		if is_shown():
+			set_open(false)
+			return
+		position = at
+	set_open(open)
 
 
 func _process(delta: float) -> void:

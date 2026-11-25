@@ -127,7 +127,10 @@ static func step_foot(p: SimPlayer, cmd: InputCmd, cfg: RulesConfig, dt: float) 
 			p.boost_cd = cfg.boost_recharge_s
 	else:
 		p.boost_cd = maxf(0.0, p.boost_cd - dt)
-	if cmd.is_pressed(TC.BTN_BOOST) and p.boost_t <= 0.0 and p.boost_cd <= 0.0 \
+	# (build 35) runners only: the Night Watch has no boost (the owner's
+	# playtest); a press from a Night Watch, a guest on an older build or a
+	# bot included, does nothing here, on the host and in prediction alike
+	if runner and cmd.is_pressed(TC.BTN_BOOST) and p.boost_t <= 0.0 and p.boost_cd <= 0.0 \
 			and (p.state == TC.PState.ACTIVE) and p.tag_phase == SimPlayer.TagPhase.NONE:
 		p.boost_t = cfg.boost_duration_s
 	p.dive_land = maxf(0.0, p.dive_land - dt)

@@ -128,8 +128,9 @@ func stamp_count() -> int:
 
 
 func is_taggable() -> bool:
-	# (2.3) a runner hiding in a bush can still be tagged (a lunge at the bush)
-	return is_runner() and (state == TC.PState.ACTIVE or state == TC.PState.STUMBLE or state == TC.PState.HIDING) and protect <= 0.0 and bump_protect <= 0.0 and not home_safe
+	# (2.3) a runner hiding in a bush can still be tagged (a lunge at the bush);
+	# (build 35) so can a runner at the wheel of a cart (a lunge at the seat)
+	return is_runner() and (state == TC.PState.ACTIVE or state == TC.PState.STUMBLE or state == TC.PState.HIDING or state == TC.PState.IN_CART) and protect <= 0.0 and bump_protect <= 0.0 and not home_safe
 
 
 func is_in_play() -> bool:

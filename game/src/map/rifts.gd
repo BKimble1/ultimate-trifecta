@@ -82,6 +82,17 @@ static func _v2(d: Variant) -> Vector2:
 	return Vector2.ZERO
 
 
+## (build 35) A spot a runner can actually stand on: its middle is on the
+## walking grid (a Lakeside spot sat inside a rock, so nobody could ever
+## step into a rift there).  Only the host's pick uses this; the spot list
+## and its indices (in the snapshot) are unchanged.
+static func usable(layout: CampusLayout, idx: int) -> bool:
+	var sp := spots(layout)
+	if idx < 0 or idx >= sp.size():
+		return false
+	return NavGrid.shared(layout).is_walkable(sp[idx])
+
+
 ## A fresh rift: {at, to, open, wait} (spot indices), avoiding spots in use.
 static func pick(layout: CampusLayout, rng: RandomNumberGenerator, used: Dictionary) -> Dictionary:
 	var sp := spots(layout)
@@ -89,13 +100,13 @@ static func pick(layout: CampusLayout, rng: RandomNumberGenerator, used: Diction
 		return {}
 	for attempt in 40:
 		var a := rng.randi_range(0, sp.size() - 1)
-		if used.has(a):
+		if used.has(a) or not usable(layout, a):
 			continue
 		var best := -1
 		var best_d := 0.0
 		for k in 12:
 			var b := rng.randi_range(0, sp.size() - 1)
-			if b == a or used.has(b):
+			if b == a or used.has(b) or not usable(layout, b):
 				continue
 			var d := (sp[a] as Vector2).distance_to(sp[b])
 			if d >= MIN_TRIP and d > best_d:
