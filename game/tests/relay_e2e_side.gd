@@ -152,6 +152,7 @@ func _host(me: Dictionary) -> void:
 	# (build 32) a real round over the relay: the game's own round flow
 	# (loading screen, MatchController), the guest's stick moving its runner
 	say("starting a round")
+	_round1_at = Time.get_ticks_msec()
 	s.host_start_match()
 	got = await wait_for(func() -> bool: return s.phase == TC.Phase.PLAYING, 180.0)
 	check(got, "the round started for both (host PLAYING, phase %d)" % s.phase)
@@ -175,6 +176,7 @@ func _host(me: Dictionary) -> void:
 	put_file("host_saw_guest.txt", "1")
 	if got:
 		await _host_party_after_round(s, e, rt)
+	check(await wait_file("host_paid.txt", 60.0) != "", "our round 1 payment was checked")
 	var done := await wait_file("guest_checked.txt", 120.0)
 	check(done != "", "the guest finished its checks")
 	say("leaving the party (the guest should be told)")
@@ -193,10 +195,16 @@ func _host_party_after_round(s: NetSession, e: Dictionary, rt: RelayTransport) -
 	# countdown on both devices, round 2 starts by itself (nobody readies,
 	# nobody sees the lobby)
 	var mc1: Variant = a.get("match_ctrl")
+	# (2.2 (35)) round 1 is a real paid round: the service settles rounds that
+	# lasted at least a minute from their registration (economy
+	# eligibility.min_round_s), so it plays on until then
+	say("round 1 plays on to its first minute (the service pays rounds of a minute or more)")
+	await wait_for(func() -> bool: return Time.get_ticks_msec() - _round1_at > 63000, 70.0)
 	if mc1 != null and is_instance_valid(mc1) and (mc1 as MatchController).sim != null:
 		(mc1 as MatchController).sim.end_tick = (mc1 as MatchController).sim.tick + 2
 	var got := await wait_for(func() -> bool: return a.get("screen") is ResultsScreen, 40.0)
 	check(got, "round 1 ended: our results")
+	_check_round_paid("host")   # (alongside the checks that follow)
 	var rs := a.get("screen") as ResultsScreen
 	check(rs != null and rs.between_rounds() and not rs._primary.visible and rs.leave_btn.text == "Leave match",
 		"between rounds: the standings and only Leave match (no Ready, no lobby)")
@@ -314,15 +322,45 @@ func _guest_entry(s: NetSession, player: String) -> Variant:
 	return null
 
 
+var _round1_at := 0
+
+
+## (2.2 (35)) Round 1's Coins and Season XP reached this player's wallet
+## through the service, once: the round settled (host: its own confirmation
+## after its report; guest: the wallet asks again after a confirmation that
+## got there before the host's report), the balance holds the round's Coins,
+## and the results screen shows them as added.
+func _check_round_paid(who: String) -> void:
+	var w: Node = get_node("/root/Wallet")
+	var res: Dictionary = app().get("last_results")
+	var mid := String(res.get("match_id", ""))
+	var got := await wait_for(func() -> bool: return String(w.call("round_summary", mid).get("state", "")) != "pending", 60.0)
+	var s: Dictionary = w.call("round_summary", mid)
+	check(got and String(s["state"]) == "settled", "%s: round 1 settled by the service (%s %s)" % [who, s.get("state", ""), s.get("reason", "")])
+	var coins := int(s.get("coins", 0))
+	check(coins > 0 and coins == int(s.get("coins_projected", -1)), "%s: its Coins as the results projected (%d of %d; %d picked up)" % [who, coins,
+		int(s.get("coins_projected", -1)), int(s.get("coins_collected", 0))])
+	check(int(w.call("balance")) == coins, "%s: in the wallet's balance, once (%d)" % [who, int(w.call("balance"))])
+	check(int(s.get("season_xp", 0)) > 0, "%s: and its Season XP (+%d)" % [who, int(s.get("season_xp", 0))])
+	var rs: Variant = app().get("screen")
+	if rs is ResultsScreen:
+		var chips := (rs as ResultsScreen).find_child("Rewards", true, false)
+		check(chips != null and chips.find_child("TapCoins", true, false) != null and String(chips.accessibility_name).begins_with("%d Coins" % coins)
+			and not String(chips.accessibility_name).contains("being added"), "%s: the results say +%d Coins, added (%s)" % [who, coins,
+			chips.accessibility_name if chips else "-"])
+	put_file("%s_paid.txt" % who, "%d" % coins)
+
+
 ## (build 33) The guest's side of _host_party_after_round.
 func _guest_party_after_round(s: NetSession, snaps: Array) -> void:
 	var a := app()
 	# (build 34) round 1 ends: our results stay up with the countdown, and
 	# round 2 starts by itself (no Ready, no lobby)
 	check(s.series_flow(), "the host plays the series on by itself")
-	check(await wait_file("host_results1.txt", 60.0) != "", "the host's round 1 ended")
+	check(await wait_file("host_results1.txt", 120.0) != "", "the host's round 1 ended")
 	var got := await wait_for(func() -> bool: return a.get("screen") is ResultsScreen, 30.0)
 	check(got, "our round 1 results")
+	_check_round_paid("guest")   # (alongside the checks that follow)
 	var rs := a.get("screen") as ResultsScreen
 	check(rs != null and rs.between_rounds() and not rs._primary.visible and rs.leave_btn.text == "Leave match", "between rounds: only Leave match")
 	got = await wait_for(func() -> bool: return rs != null and is_instance_valid(rs) and rs.countdown.visible, 15.0)
@@ -487,6 +525,7 @@ func _guest(me: Dictionary) -> void:
 	check(absf(s.rtt - 0.1) > 0.0001, "pings round-trip (guest-measured RTT %.0f ms)" % (s.rtt * 1000.0))
 	if got:
 		await _guest_party_after_round(s, snaps)
+	check(await wait_file("guest_paid.txt", 60.0) != "", "our round 1 payment was checked")
 	put_file("guest_checked.txt", "1")
 	got = await wait_for(func() -> bool: return not ends.is_empty() or a.get("session") == null, 30.0)
 	check(got, "when the host leaves, our party ends (%s)" % (ends[0] if not ends.is_empty() else "session closed"))

@@ -364,6 +364,51 @@ test('round settlement: registered, reported, confirmed, paid once', async () =>
   assert.equal((await call(ctx, 'GET', `/v1/rounds/${mid2}/me`, undefined, guest.token)).body.settlement.state, 'settled');
 });
 
+// 2.2 (35): a series starts its next round seconds after the last one's
+// results.  A short round is still not paid, but it no longer costs the
+// next round its registration (before: 429 too_soon, so that round paid
+// nobody either); an open round still holds the next one back for a minute.
+test('round settlement: series rounds back to back, a short one does not cost the next', async () => {
+  const ctx = setup();
+  const { host, guest, code, beat } = await party(ctx);
+  const hp = host.profile.profile_id;
+  const gp = guest.profile.profile_id;
+  const parts = [{ profile_id: hp, slot: 0 }, { profile_id: gp, slot: 1 }];
+  const report = { report_version: 1, outcome: 1, round_time_s: 30, coin_spawns: 8, players: [hostRow(hp), guestRow(gp)] };
+  const m1 = `${code}-1-0000cafe`;
+  assert.equal((await call(ctx, 'POST', '/v1/rounds', { code, match_id: m1, participants: parts }, host.token)).status, 200);
+  const early = `${code}-9-0000cafe`;
+  assert.equal((await call(ctx, 'POST', '/v1/rounds', { code, match_id: early, participants: parts }, host.token)).body.error, 'too_soon',
+    'an open round holds the next one back');
+  ctx.clock.t += 40 * 1000;
+  await beat();
+  const r1 = await call(ctx, 'POST', `/v1/rounds/${m1}/report`, report, host.token);
+  assert.equal(r1.body.reason, 'too_short', 'a 40-second round is not paid');
+  // the series' next round starts 8 s later
+  ctx.clock.t += 8 * 1000;
+  const m2 = `${code}-2-0000cafe`;
+  const reg = await call(ctx, 'POST', '/v1/rounds', { code, match_id: m2, participants: parts }, host.token);
+  assert.equal(reg.status, 200, `the next round registers at once (${JSON.stringify(reg.body)})`);
+  // the guest confirms first, the host reports after a full round
+  const gd = await E.rowDigest(m2, 1, 180, guestRow(gp));
+  assert.equal((await call(ctx, 'POST', `/v1/rounds/${m2}/ack`, { digest: gd }, guest.token)).body.settlement.state, 'pending');
+  for (let i = 0; i < 4; i++) {
+    ctx.clock.t += 30 * 1000;
+    await beat();
+  }
+  const r2 = await call(ctx, 'POST', `/v1/rounds/${m2}/report`, { ...report, round_time_s: 180 }, host.token);
+  assert.equal(r2.status, 200, JSON.stringify(r2.body));
+  assert.equal(r2.body.settled, 1, 'the guest is paid when the report comes');
+  const hd = await E.rowDigest(m2, 1, 180, hostRow(hp));
+  assert.equal((await call(ctx, 'POST', `/v1/rounds/${m2}/ack`, { digest: hd }, host.token)).body.settlement.state, 'settled');
+  // what a guest's game reads when it asks again (the wallet snapshot)
+  const gw = await wallet(ctx, guest);
+  assert.equal(gw.balance, E.roundCoins(guestRow(gp), 1, 8), "the guest's Coins, once");
+  assert.ok(gw.rounds.some((x) => x.match_id === m2 && x.state === 'settled' && x.coins === gw.balance), 'listed as settled in the snapshot');
+  assert.ok(gw.rounds.some((x) => x.match_id === m1 && x.state === 'rejected' && x.reason === 'too_short'), 'the short round says why');
+  assert.equal((await wallet(ctx, host)).balance, E.roundCoins(hostRow(hp), 1, 8));
+});
+
 test('round settlement: implausible, mismatched, cancelled, away, few humans, daily cap', async () => {
   const ctx = setup();
   const { host, guest, code, beat } = await party(ctx);

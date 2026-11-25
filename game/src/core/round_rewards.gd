@@ -16,7 +16,7 @@ extends RefCounted
 ## reconnect or a repeated packet shows the same thing, never a second
 ## payout; a live wallet answer always wins over the remembered one.
 ##
-## Summary: {state, message, coins_collected, coins (added), coins_projected,
+## Summary: {state, reason, message, coins_collected, coins (added), coins_projected,
 ## season_xp (added), season_xp_projected, tier_before, tier_after,
 ## frac_before, frac_after, lines, season_lines, settled, pending, away,
 ## level_up, level, source, challenge_xp, challenges}.  Empty when there is
@@ -78,6 +78,7 @@ static func _normalize(w: Dictionary, local: Dictionary) -> Dictionary:
 	var settled := st == "settled"
 	return {
 		"state": st,
+		"reason": String(w.get("reason", "")),
 		"message": String(w.get("message", "")),
 		"coins_collected": int(w.get("coins_collected", 0)),
 		"coins": int(w.get("coins", 0)) if settled else 0,

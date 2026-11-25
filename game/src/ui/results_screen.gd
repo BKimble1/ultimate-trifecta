@@ -364,26 +364,121 @@ func _between_page() -> void:
 
 ## (build 34) This round's Coins and Season XP as two numbers (the details
 ## are in the Season Pass and the wallet), or nothing when it pays nothing.
+##
+## (2.2 (35)) Only what the round pays: added (amber) or being added (muted,
+## "adding…", until the service settles it; the chips follow the wallet).  A
+## round that pays nothing (practice, bots only, away, …) no longer shows the
+## Coins it would have paid as if they were added: one short muted reason
+## instead.  Tap a number for its breakdown.
 func _reward_chips() -> Control:
 	var mid := String(results.get("match_id", ""))
-	var s := RoundRewards.summary(mid, reward)
-	if s.is_empty():
-		return null
-	var coins := int(s["coins"]) if bool(s["settled"]) else int(s.get("coins_projected", 0))
-	var xp := int(s["season_xp"]) if bool(s["settled"]) else int(s.get("season_xp_projected", 0))
-	if coins <= 0 and xp <= 0:
+	if RoundRewards.summary(mid, reward).is_empty():
 		return null
 	var h := UIKit.hbox(14)
 	h.name = "Rewards"
+	_fill_chips(h, mid)
+	Wallet.round_updated.connect(func(m: String) -> void:
+		if m == mid and is_instance_valid(h):
+			_fill_chips(h, mid), CONNECT_REFERENCE_COUNTED)
+	return h
+
+
+func _fill_chips(h: HBoxContainer, mid: String) -> void:
+	for c in h.get_children():
+		h.remove_child(c)
+		c.queue_free()
+	var s := RoundRewards.summary(mid, reward)
+	if s.is_empty():
+		return
+	var settled := bool(s["settled"])
+	var pending := bool(s["pending"])
+	if not settled and not pending:
+		var why := short_reason(s)
+		if why != "":
+			var l := UIKit.styled(why, "caption", UIKit.IVORY_MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
+			l.name = "NoPay"
+			h.add_child(l)
+		h.accessibility_name = why
+		return
+	var coins := int(s["coins"]) if settled else int(s.get("coins_projected", 0))
+	var xp := (int(s["season_xp"]) + int(s.get("challenge_xp", 0))) if settled else int(s.get("season_xp_projected", 0))
+	var col := UIKit.AMBER if settled else UIKit.IVORY_MUTED
 	if coins > 0:
-		h.add_child(_big_number("+%s" % Catalogue.format_coins(coins), "Coins"))
-		if bool(s["settled"]) and App.coin_fly_match != mid:
+		h.add_child(_tap_number("+%s" % Catalogue.format_coins(coins), "Coins" if settled else "adding…", col, "Coins", s.get("lines", [])))
+		if settled and App.coin_fly_match != mid:
 			App.coin_fly_match = mid
 			App.coin_fly_pending = coins
 	if xp > 0:
-		h.add_child(_big_number("+%d" % xp, "XP"))
-	h.accessibility_name = "%d Coins, %d Season XP%s" % [coins, xp, "" if bool(s["settled"]) else " (pending)"]
-	return h
+		h.add_child(_tap_number("+%d" % xp, "XP" if settled else "adding…", col, "XP", xp_lines(s)))
+	h.accessibility_name = "%d Coins, %d Season XP%s" % [coins, xp, "" if settled else " (being added)"]
+
+
+## (2.2 (35)) Why a round paid nothing, in a few words (between rounds).
+static func short_reason(s: Dictionary) -> String:
+	match String(s.get("state", "")):
+		"practice":
+			return "Practice: no Coins or XP"
+		"not_eligible":
+			match String(s.get("reason", "")):
+				"few_humans":
+					return "Coins and XP need 2+ players"
+				"away":
+					return "Away: no Coins or XP"
+			return "This round pays nothing"
+		"capped":
+			return "Today's reward limit reached"
+		"cancelled":
+			return ""
+		"rejected":
+			return "Too short to pay" if String(s.get("reason", "")) == "too_short" else "Not added this round"
+		"no_service", "unverified_room", "mismatch":
+			return "Not added this round"
+	return ""
+
+
+## (2.2 (35)) The Season XP lines, with the challenge bonus when it counted.
+static func xp_lines(s: Dictionary) -> Array:
+	var out: Array = (s.get("season_lines", []) as Array).duplicate()
+	if int(s.get("challenge_xp", 0)) > 0:
+		out.append(["Challenges", int(s["challenge_xp"])])
+	return out
+
+
+## One line for a breakdown toast: "XP: Completed the round +50 · Splashes ×3 +30".
+static func breakdown_text(what: String, lines: Array) -> String:
+	var bits: Array[String] = []
+	for l in lines:
+		if l is Array and (l as Array).size() >= 2 and int(l[1]) != 0:
+			bits.append("%s +%d" % [String(l[0]), int(l[1])])
+	return ("%s: %s" % [what, " · ".join(bits)]) if not bits.is_empty() else ""
+
+
+## A big number with its caption that shows its breakdown when tapped.
+func _tap_number(n: String, label_text: String, col: Color, what: String, lines: Array) -> Control:
+	var box := PanelContainer.new()
+	box.name = "Tap" + what
+	box.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	box.mouse_filter = Control.MOUSE_FILTER_STOP
+	box.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var v := _big_number(n, label_text)
+	((v.get_child(0)) as Label).add_theme_color_override("font_color", col)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for c in v.get_children():
+		(c as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(v)
+	var text := breakdown_text(what, lines)
+	box.set_meta(&"breakdown", text)
+	if text != "":
+		box.tooltip_text = text
+		box.gui_input.connect(func(ev: InputEvent) -> void:
+			if ev is InputEventMouseButton and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and not (ev as InputEventMouseButton).pressed:
+				show_breakdown(text))
+	return box
+
+
+func show_breakdown(text: String) -> void:
+	if text != "":
+		UIKit.toast(self, text, 4.0)
 
 
 ## (build 34) Your run and Season Points in one line ("Run 2:31 · Best
@@ -690,13 +785,13 @@ func _fill_rewards(p: Control, mid: String) -> void:
 	if int(s["coins_collected"]) > 0:
 		top.add_child(_big_number("%d" % int(s["coins_collected"]), "picked up"))
 	if bool(s["settled"]):
-		top.add_child(_big_number("+%s" % Catalogue.format_coins(int(s["coins"])), "Coins added"))
+		top.add_child(_tap_number("+%s" % Catalogue.format_coins(int(s["coins"])), "Coins added", UIKit.AMBER, "Coins", s.get("lines", [])))
 		# (2.3) back in the lobby these coins fly into the coin counter
 		if int(s["coins"]) > 0 and App.coin_fly_match != mid:
 			App.coin_fly_match = mid
 			App.coin_fly_pending = int(s["coins"])
 		if int(s["season_xp"]) > 0:
-			top.add_child(_big_number("+%d" % int(s["season_xp"]), "Season XP"))
+			top.add_child(_tap_number("+%d" % (int(s["season_xp"]) + int(s.get("challenge_xp", 0))), "Season XP", UIKit.AMBER, "XP", xp_lines(s)))
 	var msg := String(s["message"])
 	if bool(s["pending"]):
 		# (build 34) numbers over words

@@ -249,6 +249,30 @@ service settles with.
 Tagging the same runner again earns nothing more, distinct tags stop counting
 after three, and idle survival earns nothing. A round pays at most
 10 + 4 + 5 + 10 = 29 Coins and 115 Season XP (`Economy.max_round_coins`).
+Nothing depends on distance run or time played.
+
+Example (2.2 (35)): a runner splashes all three waters, makes it home second,
+picks up 2 coins, and the runners win. Season XP: 50 (completed) + 3×10
+(splashes) + 20 (home) + 15 (team win) = **115**. Coins: 10 + 2 (picked up)
++ 4 (team win) + 3 (home) = **19**. A Night Watch who tags two different
+runners in a lost round: 50 + 2×15 = **80** XP and 10 + 2 = **12** Coins (+
+any coins picked up). The results show one "+115 XP" and one "+19 Coins";
+tapping either shows its lines ("XP: Completed the round +50 · Splashes ×3
++30 · Made it home +20 · Team win +15"). Coins and XP being added (the
+service hasn't confirmed yet) show muted with "adding…"; a round that pays
+nothing (practice, only bots, away) shows a few words why, never the
+amounts it would have paid.
+
+Settlement of a guest (2.2 (35)): a guest's confirmation nearly always
+reaches the service before the host's report, so the service answers
+"pending" and pays the guest when the report arrives. The guest's wallet
+now asks again after 3, 6, 12, … s (`Wallet.FOLLOW_S`, until the round is
+settled or refused) so the Coins reach the counter within seconds; before,
+they reached it only at the next app launch or resume. A guest the host
+knows by another player id than its own local one finds its result row by
+its seat (`App.round_uid`). The service lets a party register its next
+round as soon as the last one is reported (before: a minute after the last
+one's start, so a short round cost the series' next round its payment).
 
 Lifetime level XP (the "Lv" on the profile chip) stays local and separate:
 it keeps the V5 performance values (`RulesConfig` "Rewards" group, practice

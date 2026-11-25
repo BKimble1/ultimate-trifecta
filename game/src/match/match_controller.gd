@@ -795,13 +795,26 @@ func _finish_prepare() -> void:
 
 
 ## The round is under way on this device: the loading screen can go
-## (host: every player has loaded or the wait timed out; guest: the host's
-## first snapshot is here; practice: prepared).
+## (host: every player has loaded or the wait timed out; guest: a short
+## window of the host's snapshots is here; practice: prepared).
+##
+## (2.2 (35)) A guest went live on the host's very first snapshot: its
+## presentation clock had one sample, so remote characters were held, then
+## slewed as the window and its delay filled in under the eyes of the
+## player.  Now it waits for REVEAL_SNAPSHOTS of them and a running
+## presentation clock (about 150 ms; the role reveal and countdown that
+## follow are 7 s), or REVEAL_WAIT_MAX_S after the first one on a lossy link.
+const REVEAL_SNAPSHOTS := 3
+const REVEAL_WAIT_MAX_S := 1.0
 func round_live() -> bool:
 	if not prepared:
 		return false
 	if is_client:
-		return stat_snapshots > 0
+		if stat_snapshots <= 0:
+			return false
+		if stat_snapshots >= REVEAL_SNAPSHOTS and _pres_ok:
+			return true
+		return session != null and _first_snap_clock >= 0.0 and session.clock_s() - _first_snap_clock >= REVEAL_WAIT_MAX_S
 	return session.loads_complete()
 
 
@@ -1105,6 +1118,8 @@ func _on_snapshot(s: Dictionary) -> void:
 		_snap_gap_avg = lerpf(_snap_gap_avg, float(tick - _last_snap_tick), 0.1)
 	_jb_arrival(tick, session.clock_s() * cfg.sim_hz if session != null else 0.0)
 	_last_snap_ms = Time.get_ticks_msec()
+	if _first_snap_clock < 0.0 and session != null:
+		_first_snap_clock = session.clock_s()
 	var prev_tick := _last_snap_tick
 	_last_snap_tick = tick
 	_last_snap = s
@@ -1223,7 +1238,43 @@ func _make_pred_cart(cart_id: int) -> void:
 # ---------------------------------------------------------------------------
 # Render state providers
 # ---------------------------------------------------------------------------
+## (2.2 (35)) Guest: session time of the host's first snapshot this round.
+var _first_snap_clock := -1.0
+var _start_cache: Dictionary = {}
+
+
+## (2.2 (35)) A guest before the host's first snapshot: everyone stands
+## where the round configuration puts them (the spawns MatchSim uses, as
+## the guest's own predicted body already does), so the views and the
+## camera are placed under the loading screen and the warm-up frames draw
+## the real start view (before, an empty campus from the world origin, 100 m
+## and more away: the reveal was the first time the start view and the
+## characters were ever drawn).  Opponents stay hidden: their snapshots
+## decide when they are seen.  The first snapshot finds everyone already in
+## place (the round waits for every player before its reveal).
+func _start_rs(slot: int) -> Dictionary:
+	if not roster.has(slot):
+		return {}
+	if not _start_cache.has(slot):
+		var role := int(roster[slot]["role"])
+		var sp := MatchSim.spawn_point(layout, home_dorm, role, int(_spawn_map().get(slot, 0)))
+		var mine := int(roster[local_slot]["role"]) if roster.has(local_slot) else -1
+		_start_cache[slot] = {"pos": sp[0], "yaw": float(sp[1]), "vel": Vector3.ZERO,
+			"state": TC.PState.WAITING if role == TC.Role.PATROL else TC.PState.ACTIVE, "state_t": 0.0,
+			"on_floor": true, "diving": false, "fast": false, "tag_phase": 0, "protect": 0.0, "bump_protect": 0.0, "spotted": false,
+			"cart_id": -1, "steer": 0.0, "emote": -1, "emote_t": 0.0, "stamps": 0, "cloak": false, "impact": 0,
+			"bot": bool(roster[slot].get("is_bot", false)), "connected": true,
+			"visible": spectator or role == mine or slot == local_slot}
+	var out: Dictionary = (_start_cache[slot] as Dictionary).duplicate()
+	if slot == local_slot and pred != null:
+		out["pos"] = pred.pos()
+		out["yaw"] = pred.yaw
+	return out
+
+
 func _player_rs(slot: int) -> Dictionary:
+	if is_client and _last_snap.is_empty():
+		return _start_rs(slot)
 	if not is_client:
 		var p := sim.player(slot) if sim else null
 		if p == null:
