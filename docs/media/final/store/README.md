@@ -1,11 +1,22 @@
-# App Store submission screenshots · 2.2 (33)
+# App Store submission screenshots · 2.2 submission candidate
 
-**Everything to upload for the 2.2 submission: the public App Store
-screenshots (iPhone and iPad) and the review screenshot for each of the
-9 in-app purchases.** Rendered on 22 Nov 2026 from the build 30 source; `03` and `08` re-rendered on 23 Nov 2026
-from the 2.2 (33) source (Leave party, ready checks on the portraits)
-(submit 2.2 (33) or later), at the exact store sizes, with the App Store
-Connect prices (USA) on the purchase screens.
+**Current upload sets for 2.2 (33): nine public iPhone screenshots, nine
+public iPad screenshots and four review images for the nine IAP products.**
+
+The latest working-branch party (03) and Friends (08) captures from
+`6cbb25f` are preserved in the iPhone 6.9-inch and iPad folders. The party
+shows **Leave party**, ready checks on portraits, full names and the
+leader's Start action. Basketball (04) was also refreshed. The other
+screens retain the previous captures where their visible UI is unchanged.
+These are engine-rendered screenshots, not device captures. The purchase
+prices match Apple's USA price schedule (read-only status run #306).
+
+The ready-check layout fix in `c3dd861` was made after uploaded build 33.
+A new App Store-eligible binary is needed to release that exact newer UI;
+do not mistake these screenshots for proof that the fix shipped in build 33.
+
+Replacement map and verification: [../../../submission33/README.md](../../../submission33/README.md).
+Content provenance: [../../../CONTENT_PROVENANCE.md](../../../CONTENT_PROVENANCE.md).
 
 ## Upload map
 
@@ -47,8 +58,8 @@ Upload in this order (01 first), the same nine in both sets.
 |---|---|---|
 | 1 | `01_runner_splash_fountain.png` | Gameplay as a runner: a leap into Founders' Fountain at night with the Night Watch two steps behind; the round HUD |
 | 2 | `02_night_watch_golf_cart.png` | Gameplay as the Night Watch: driving a golf cart down Library Lane after two runners |
-| 3 | `03_party_in_the_dorm.png` | A party of eight in the Christmas dorm lobby, everyone ready (a check on every card, Season name cards and badges), Leave party, Start |
-| 4 | `04_basketball_in_the_dorm.png` | Walk mode in the lobby: the runner's shot dropping through the Christmas hoop, confetti |
+| 3 | `03_party_in_the_dorm.png` | A party of eight in the Christmas dorm lobby, all eight ready, leader Start action, **Leave party** and roster ready checks |
+| 4 | `04_basketball_in_the_dorm.png` | Walk mode and basketball in the Christmas dorm, with the in-game celebration |
 | 5 | `05_season_pass_winter_break.png` | Season 1 · Winter Break pass: Premium, Tier 43 / 100, a claimed reward on the stage |
 | 6 | `06_shop_featured.png` | The Shop's Featured page: rotating skins with Coin prices and countdowns, the two App Store outfits |
 | 7 | `07_locker.png` | The Locker's Outfit tab with the runner on the stage |
@@ -59,6 +70,7 @@ Upload in this order (01 first), the same nine in both sets.
 |---|---|---|
 | [`iphone_6.9/`](iphone_6.9/) | iPhone › **6.9" Display** | 2868 × 1320 (landscape) |
 | [`ipad_13/`](ipad_13/) | iPad › **13" Display** | 2752 × 2064 (landscape) |
+| [`iphone_6.1/`](iphone_6.1/) | Existing iPhone **6.1" Display** slot: replacements 03, 04 and 08 only | 2622 × 1206 (landscape) |
 
 Only these two sizes are needed: App Store Connect scales the 6.9" set to
 every smaller iPhone and the 13" set to every smaller iPad. The app runs
@@ -80,9 +92,9 @@ prices (USA)**, read from App Store Connect on 22 Nov 2026
 show them exactly as the game formats a StoreKit price.
 
 All player names and Game Center nicknames are fictional ("Comfy Frog" is
-the player). No outfit based on a real person appears large in any shot;
-only the Season Pass milestone chips (tiers 50 and 100) carry their tiny
-portraits, as the game's Season Pass always does.
+the player). The original skins and owner-created music are cleared for commercial use,
+confirmed by Blake; see `docs/CONTENT_PROVENANCE.md`. The Season Pass
+milestone chips (tiers 50 and 100) show their usual portraits.
 
 Not a device capture. On a device the status bar is hidden in the game,
 so the frames match what the phone shows.

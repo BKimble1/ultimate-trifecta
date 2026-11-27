@@ -17,7 +17,7 @@ import os
 import struct
 import sys
 
-SIZES = {"iphone_6.9": (2868, 1320), "ipad_13": (2752, 2064), "iap": (2868, 1320)}
+SIZES = {"iphone_6.9": (2868, 1320), "iphone_6.1": (2622, 1206), "ipad_13": (2752, 2064), "iap": (2868, 1320)}
 
 
 def png_info(path):

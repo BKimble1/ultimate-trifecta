@@ -479,7 +479,7 @@ non-consumable (never a subscription) whose delivery is the
 (`commerce.js`, `PERMANENT`). Refunds take it back. The price is whatever
 StoreKit returns for the product; nothing stores a price. `asc.py
 iap-create` now plans nine products; the owner creates this one and picks
-its price (USD 9.99 tier as asked) in App Store Connect.
+its price (USD 4.99 in the Apple price schedule on 22 Nov 2026) in App Store Connect.
 
 No "was" price is shown: a struck-through price has to be a real earlier
 price, and this pass has never sold for anything else.
@@ -615,19 +615,17 @@ order.  After them, submitting needs no further code change.
    nine planned products, never prices), then in App Store Connect give each
    a price, a review screenshot and the review note: the six Coin packs, the
    two direct skins, and `com.idlery.ultimatetrifecta.pass.s1` (Season 1
-   Premium Pass, non-consumable, USD 9.99 as asked).  Attach them to the 2.2
+   Premium Pass, non-consumable, USD 4.99 in the Apple price schedule on 22 Nov 2026).  Attach them to the 2.2
    version.
 3. **The game service** (docs/OWNER_SETUP_GUIDE.md C): deploy sandbox and
    production, set the App Store Server Notification URLs, fill
    `game/config/service.cfg` and `links.cfg` (support e-mail, privacy URL).
    Coins, purchases, Season rewards, the daily present and typed chat need
    it; then build once more.
-4. **Music rights:** the three albums were made with Suno.  Songs made on
-   Suno's free plan may not be used commercially (Suno's terms give
-   commercial rights only to songs made while subscribed to a paid plan,
-   and not retroactively).  Confirm they were made on a paid plan, or
-   regenerate them on one, before release; the game can ship with Dorm
-   Nights alone by removing the three from `Albums.LIST`.
+4. **Music and skins:** Blake confirmed on 22 November 2026 that he made
+   the music and that the original skins and music are cleared for commercial
+   use. See `docs/CONTENT_PROVENANCE.md`; earlier unresolved rights assumptions
+   are superseded. Keep the approved character names and the source notices.
 5. **Game Center:** add the two leaderboards to the 2.2 version page; have
    the Season Champion rules (docs/release22/CONTEST_RULES.md) reviewed.
 6. **Certificates:** nothing to renew.  Uploads are signed by Apple's

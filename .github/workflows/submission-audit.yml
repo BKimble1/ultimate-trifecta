@@ -1,0 +1,48 @@
+name: Submission 33 audit (read only)
+
+on:
+  push:
+    branches: [codex/app-store-verification]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Screenshot format and service tests
+        run: |
+          mkdir -p audit33
+          python3 tools/store_shot_check.py docs/media/final/store | tee audit33/screenshots.txt
+          node --test service/test/*.test.mjs > audit33/service-tests.txt
+      - name: Public links and deployment routing (read only)
+        run: python3 tools/submission_links.py audit33/live-links.json
+      - name: Apple listing and products (read only)
+        if: always()
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: |
+          test -n "$ASC_KEY_ID" && test -n "$ASC_ISSUER_ID" && test -n "$ASC_KEY_P8_BASE64"
+          mkdir -p "$RUNNER_TEMP/keys"
+          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          trap 'rm -f "$ASC_KEY_PATH"' EXIT
+          python3 -m pip install --quiet pyjwt cryptography requests
+          python3 tools/asc.py builds > audit33/builds.json
+          python3 tools/asc.py iap-list > audit33/iap.txt
+          python3 tools/asc.py version-check > audit33/version.txt
+          cat audit33/version.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: submission33-read-only-audit
+          path: audit33/
+          if-no-files-found: error

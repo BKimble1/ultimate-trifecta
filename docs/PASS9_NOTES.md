@@ -99,12 +99,9 @@ submitted. Details are in `TESTFLIGHT_RELEASE.md` and TEST_REPORT P9.5.
 
 ## Owner dependencies
 
-- **Likeness consent.** Record Breaker and Dr. Doom are stylised likenesses
-  of real people, made from the owner's photos. Confirm their permission
-  before any wider distribution.
-- **Music rights.** "Soft Bounce Loop" and "Night Campus Loop" are the
-  owner's tracks from mureka.ai. Confirm that service's terms for commercial
-  use.
+- **Content provenance.** The original skins and owner-created music are
+  cleared for commercial use, confirmed by Blake on 22 November 2026.
+  `CONTENT_PROVENANCE.md` supersedes the earlier unresolved rights notes.
 - **The economy service** is not deployed and no App Store products exist.
   Season claims, Coin purchases and challenge progress stay previews until it
   is deployed (`docs/COMMERCE_SETUP.md`). Migration 0005 is applied by

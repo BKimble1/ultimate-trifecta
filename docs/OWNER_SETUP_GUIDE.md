@@ -1,5 +1,7 @@
 # Owner setup guide: from the 2.0 candidate to an App Store submission
 
+> Historical checklist. Current 2.2 (33) verification: [submission33/README.md](submission33/README.md). Content provenance is confirmed in [CONTENT_PROVENANCE.md](CONTENT_PROVENANCE.md).
+
 Steps only the account holder can take, in dependency order. Each step says
 what to do, where, and how to check it worked. Nothing here has been done
 on your accounts by the release work: no agreement accepted, no product
@@ -163,17 +165,17 @@ Policy URL (the pages from C.8), App Privacy answers (the table, **not**
 non-exempt encryption), review contact (**yours**) and the review notes
 (sign in to Game Center; no password needed; ideally a link to a short
 two-device Friends video). Screenshots: the 6.9" iPhone and 13" iPad sets
-in `docs/media/final/store/` (or your own device screenshots); shots `03`,
-`04`, `06` and `08` show Record Breaker or Dr. Doom, so use them only with
-the permission below. Also decide:
-written permission from the two people Record Breaker and Dr. Doom are
-based on; mureka.ai's terms for the music; whether to keep the "Dr. Doom"
-label.
+in `docs/media/final/store/` (or your own device screenshots). For the current
+2.2 (33) submission, use `docs/submission33/README.md` and
+`docs/SUBMISSION_STEPS.md`. The owner confirmed the original skins and
+owner-created music are cleared for commercial use; see
+`docs/CONTENT_PROVENANCE.md`. Earlier unresolved rights instructions are
+superseded.
 
 ## G. Submit
 
-Add the 2.0 version **and all eight in-app purchases** to one submission
+Add the 2.2 version **and all nine in-app purchases** to one submission
 (Apple requires the first purchase of each type with a new version), check
-the draft lists all eight, choose **Manually release this version**, then
+the draft lists all nine, choose **Manually release this version**, then
 Submit for Review. If Apple asks questions, the evidence and notes are in
 the docs above. Apple decides approval; nothing here guarantees it.

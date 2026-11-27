@@ -1,0 +1,12 @@
+Build 33 CI test evidence
+Workflow #305: https://github.com/BKimble1/ultimate-trifecta/actions/runs/45094052123
+Job: 137429791608, Rules, simulation and network tests (headless)
+Source commit: 77351e78ebd90c16f804ff1c1eee2e4cc31959d1
+2026-11-23T01:35:49.4599074Z 733 tests, 424013 checks, 0 failures in 838.7s
+
+The fresh local service run also passes all 116 tests (service-tests.txt).
+The screenshot/documentation audit does not change shipped game code.
+
+Compared to audit baseline 577b3511854258d29f1f823e92bc98738869a8d5:
+only game/tests/test_rename_flow.gd.uid differs under game/, native/, service/.
+No shipped game, native or service logic differs.

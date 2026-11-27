@@ -1,5 +1,7 @@
 # App Store readiness: version 2.0 release candidate
 
+> Historical checklist. Current 2.2 (33) verification: [submission33/README.md](submission33/README.md). Content provenance is confirmed in [CONTENT_PROVENANCE.md](CONTENT_PROVENANCE.md).
+
 Status of every meaningful requirement for submitting Ultimate Trifecta 2.0,
 with the evidence behind it. Statuses:
 
@@ -80,7 +82,7 @@ submission). Apple decides approval; nothing here guarantees it.
 | M3 | Review notes, contact, demo | READY (drafted) · OWNER fields | APP_STORE.md review notes | Contact details; optional two-device video |
 | M4 | Age rating questionnaire | READY (answers drafted) · OWNER enters | APP_STORE.md table | Answer in App Store Connect |
 | M5 | Export compliance | READY | `ITSAppUsesNonExemptEncryption=false` (HTTPS only) | Confirm the answer |
-| M6 | Content rights: likenesses, music, the "Dr. Doom" name | **OWNER DECISION** | APP_STORE.md "Content rights" | Written permissions; music terms; keep or rename the label |
+| M6 | Original skins and owner-created music | **OWNER CONFIRMED** (22 Nov 2026) | CONTENT_PROVENANCE.md | Commercial-use clearance confirmed; keep approved character names |
 | M7 | Submit the app and all eight products together | **OWNER** | Apple requires an app's first IAP of each type with a new version | Add all eight to the 2.0 submission |
 
 ### Device and live verification (nobody has observed these)

@@ -7,6 +7,9 @@ OK  iphone_6.9/06_shop_featured.png 2868x1320 RGB 8-bit sRGB chunk 1.5 MB
 OK  iphone_6.9/07_locker.png 2868x1320 RGB 8-bit sRGB chunk 1.4 MB
 OK  iphone_6.9/08_friends_invite.png 2868x1320 RGB 8-bit sRGB chunk 1.1 MB
 OK  iphone_6.9/09_final_standings.png 2868x1320 RGB 8-bit sRGB chunk 1.2 MB
+OK  iphone_6.1/03_party_in_the_dorm.png 2622x1206 RGB 8-bit sRGB chunk 1.4 MB
+OK  iphone_6.1/04_basketball_in_the_dorm.png 2622x1206 RGB 8-bit sRGB chunk 1.6 MB
+OK  iphone_6.1/08_friends_invite.png 2622x1206 RGB 8-bit sRGB chunk 1.0 MB
 OK  ipad_13/01_runner_splash_fountain.png 2752x2064 RGB 8-bit sRGB chunk 3.8 MB
 OK  ipad_13/02_night_watch_golf_cart.png 2752x2064 RGB 8-bit sRGB chunk 4.8 MB
 OK  ipad_13/03_party_in_the_dorm.png 2752x2064 RGB 8-bit sRGB chunk 2.4 MB
@@ -20,4 +23,4 @@ OK  iap/iap_coin_packs.png 2868x1320 RGB 8-bit sRGB chunk 1.4 MB
 OK  iap/iap_moonlight_runner.png 2868x1320 RGB 8-bit sRGB chunk 1.4 MB
 OK  iap/iap_premium_pass.png 2868x1320 RGB 8-bit sRGB chunk 0.6 MB
 OK  iap/iap_starry_sleeper.png 2868x1320 RGB 8-bit sRGB chunk 1.4 MB
-store check: 22 image(s), all pass
+store check: 25 image(s), all pass

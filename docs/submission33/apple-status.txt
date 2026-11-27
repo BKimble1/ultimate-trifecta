@@ -1,0 +1,245 @@
+Read-only App Store Connect snapshot
+Workflow #306, rerun; source 577b3511854258d29f1f823e92bc98738869a8d5
+Captured at 2026-11-23T03:48:30.3830313Z
+{"id": "6818346960", "name": "Ultimate Trifecta", "bundleId": "com.idlery.ultimatetrifecta", "sku": "ULTIMATETRIFECTA1", "primaryLocale": "en-US"}
+[
+  {
+    "id": "0040b63b-b709-4c4e-84de-db65249bb297",
+    "build": "33",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-22T17:47:45-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "5bf731be-9c51-410d-adc3-7b836ef4c096",
+    "build": "32",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-22T16:37:12-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "d914c13c-6001-4cac-926a-01bc30586eb7",
+    "build": "31",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-22T13:44:20-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "c2033943-22c0-4252-91ea-d5fd2d5c3145",
+    "build": "30",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-22T11:15:52-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "c886b0ee-b1fc-4f00-bf07-428e84828909",
+    "build": "29",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-22T04:21:46-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "ee313d6a-e087-4a49-b9a9-3f9dd8caf319",
+    "build": "28",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-21T23:40:00-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "5f46a757-25ac-424d-8437-dd1d1b11eb05",
+    "build": "27",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-21T22:37:36-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "61100c01-cf27-4e82-8313-08b729b50772",
+    "build": "26",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-21T16:41:25-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "e5ddb60c-86a9-472a-9864-27f666d6253d",
+    "build": "25",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-21T15:59:12-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "a7f00f71-fbcb-4499-a150-828f28a2d6ab",
+    "build": "24",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-21T14:37:13-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "c214ff57-52a3-4847-a1ed-a1b78cc44267",
+    "build": "23",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-19T08:31:17-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "afa50521-d322-4bd2-934a-e367f20bbae1",
+    "build": "22",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-18T15:26:23-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "4b60796f-6901-499d-be29-9906f9de9d12",
+    "build": "21",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-18T13:12:05-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "f6768187-d234-4c6d-ba6f-d1ce8372323d",
+    "build": "20",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-18T10:31:07-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "39bbd93c-2e49-4afd-a2cf-032726f0359e",
+    "build": "19",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-16T23:23:34-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "c56ada6c-d0c8-4636-83e1-cd18e9c994a4",
+    "build": "18",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-16T19:05:46-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "48fb4361-e684-4ae6-893d-9248a2bb4e59",
+    "build": "17",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-16T13:55:11-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "cf0a8982-aaf7-4896-a2c2-9db01296e693",
+    "build": "16",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-16T12:11:13-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "e9a19fe1-a043-4dde-b1cc-896ad41ff49e",
+    "build": "15",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-16T07:20:34-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  },
+  {
+    "id": "bc03f233-049c-4b68-a0d2-d916c006a960",
+    "build": "14",
+    "marketing": "2.2",
+    "state": "VALID",
+    "uploaded": "2026-11-15T22:39:44-08:00",
+    "audience": "APP_STORE_ELIGIBLE",
+    "encryption": false
+  }
+]
+build 0040b63b-b709-4c4e-84de-db65249bb297:
+{"internalBuildState": "IN_BETA_TESTING", "externalBuildState": "READY_FOR_BETA_SUBMISSION", "autoNotifyEnabled": true, "whatToTest": {"en-US": "2.2 (33): fixes the crash when saving a new name. Also in this build: parties st"}}
+build 5bf731be-9c51-410d-adc3-7b836ef4c096:
+{"internalBuildState": "IN_BETA_TESTING", "externalBuildState": "READY_FOR_BETA_SUBMISSION", "autoNotifyEnabled": true, "whatToTest": {"en-US": "2.2 (33): parties stay together, Dunk and Block. Sign in to Game Center first. T"}}
+build d914c13c-6001-4cac-926a-01bc30586eb7:
+{"internalBuildState": "IN_BETA_TESTING", "externalBuildState": "READY_FOR_BETA_SUBMISSION", "autoNotifyEnabled": true, "whatToTest": {"en-US": "2.2 (32): parties by code work. Sign in to Game Center first. Purchases use Appl"}}
+in-app purchases (V6):
+com.idlery.ultimatetrifecta.coins.250                CONSUMABLE      present, state READY_TO_SUBMIT
+com.idlery.ultimatetrifecta.coins.500                CONSUMABLE      present, state READY_TO_SUBMIT
+com.idlery.ultimatetrifecta.coins.1000               CONSUMABLE      present, state READY_TO_SUBMIT
+com.idlery.ultimatetrifecta.coins.1500               CONSUMABLE      present, state READY_TO_SUBMIT
+com.idlery.ultimatetrifecta.coins.3500               CONSUMABLE      present, state READY_TO_SUBMIT
+com.idlery.ultimatetrifecta.coins.7500               CONSUMABLE      present, state READY_TO_SUBMIT
+com.idlery.ultimatetrifecta.pass.s1                  NON_CONSUMABLE  present, state READY_TO_SUBMIT
+com.idlery.ultimatetrifecta.skin.moonlight_runner    NON_CONSUMABLE  present, state READY_TO_SUBMIT
+com.idlery.ultimatetrifecta.skin.starry_sleeper      NON_CONSUMABLE  present, state READY_TO_SUBMIT
+9 planned, 9 present, 0 missing
+PRICE com.idlery.ultimatetrifecta.coins.1000 state=READY_TO_SUBMIT {"USA": "2.99"}
+PRICE com.idlery.ultimatetrifecta.coins.1500 state=READY_TO_SUBMIT {"USA": "3.99"}
+PRICE com.idlery.ultimatetrifecta.coins.250 state=READY_TO_SUBMIT {"USA": "0.99"}
+PRICE com.idlery.ultimatetrifecta.coins.3500 state=READY_TO_SUBMIT {"USA": "7.99"}
+PRICE com.idlery.ultimatetrifecta.coins.500 state=READY_TO_SUBMIT {"USA": "1.79"}
+PRICE com.idlery.ultimatetrifecta.coins.7500 state=READY_TO_SUBMIT {"USA": "14.99"}
+PRICE com.idlery.ultimatetrifecta.pass.s1 state=READY_TO_SUBMIT {"USA": "4.99"}
+PRICE com.idlery.ultimatetrifecta.skin.moonlight_runner state=READY_TO_SUBMIT {"USA": "1.99"}
+PRICE com.idlery.ultimatetrifecta.skin.starry_sleeper state=READY_TO_SUBMIT {"USA": "1.99"}
+signing certificates (read only):
+DISTRIBUTION             2027-08-17T14:51:57    -          4FE0A9887B649CA3E8D29E641AD7FFD6 Blake Kimble | Apple Distribution: Blake Kimble
+DISTRIBUTION             2027-08-24T19:36:45    -          66382B285DADDA3B3AEE2E12D54C6D6 Blake Kimble | Apple Distribution: Blake Kimble
+DISTRIBUTION             2027-09-12T20:21:58    -          36AB1D6DB85103AAD6AD11B45A28550B Blake Kimble | Apple Distribution: Blake Kimble
+IOS_DISTRIBUTION         2026-11-26T07:48:16    IOS        7E525A3A505D780FCCE6C7D8ADE21E4A Blake Kimble | iOS Distribution: Blake Kimble
+4 certificates: DISTRIBUTION 3, IOS_DISTRIBUTION 1
+TestFlight crash reports (read only):
+0 crash submission(s)
+App Store version page (read only):
+ASC GET /appStoreVersions/bbc1fe78-e6d3-4c32-8e3b-bbc07775754c/appStoreVersionSubmission -> 404: {
+  "errors" : [ {
+    "id" : "bc4989b5-83f2-4d19-890e-d998eab0043c",
+    "status" : "404",
+    "code" : "NOT_FOUND",
+    "title" : "The specified resource does not exist",
+    "detail" : "There is no resource of type 'appStoreVersionSubmissions' with id 'bbc1fe78-e6d3-4c32-8e3b-bbc07775754c'"
+  } ]
+}
+content rights: DOES_NOT_USE_THIRD_PARTY_CONTENT
+app price schedule: set
+app availability: set
+app info f5a6b84c state: PREPARE_FOR_SUBMISSION age rating: TWELVE_PLUS
+  primary category: GAMES
+  age rating declaration: set
+  en-US: name set (Ultimate Trifecta), subtitle set, privacy policy URL set
+=== version 2.2 state: PREPARE_FOR_SUBMISSION release: AFTER_APPROVAL copyright: set
+  build: NONE ATTACHED 
+  en-US: description set, keywords set, support URL set, marketing URL set, promo text set, what's new MISSING
+    screenshots APP_IPHONE_61: 9
+    screenshots APP_IPAD_PRO_3GEN_129: 9
+  review contact: set | notes: set | demo account required: False
+  submission: none
+game center detail: set
